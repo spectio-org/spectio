@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — runner offline</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Environments / EMBL SLURM · htc / Runner hpc-login-2" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="environments" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+      <section style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+        <div style="height: 4px; background: #DC3B3B;"></div>
+        <div style="padding: 16px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+          <span style="width: 48px; height: 48px; border-radius: 15px; background: #FFF4F4; color: #B02A2A; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7V3 M15 7V3 M6 7h12v4a6 6 0 0 1-12 0z M12 17v4 M3 3l18 18"/></svg></span>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 260px;">
+            <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 26px;">Runner hpc-login-2 is offline</h1>
+            <span style="font-size: 13.5px; color: #4D5065;">Last heartbeat 10:04 (18 min ago) · user tweber · spectio-runner 0.1.0 · EMBL SLURM · htc</span>
+          </div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #33364A;"><input type="checkbox" checked> Notify me when it is back</label>
+        </div>
+        <div style="padding: 0 20px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <span style="font-size: 12px; color: #6E7287;">Heartbeats, last 2 hours (one every 30 s)</span>
+          <div role="img" aria-label="Regular heartbeats until 10:04, then none" style="display: flex; gap: 2px; height: 18px;">
+            <sc-for list="{{beats}}" as="b" hint-placeholder-count="60"><span style="flex: 1 1 0; border-radius: 2px; background: {{b}};"></span></sc-for>
+          </div>
+          <div style="display: flex; justify-content: space-between; font-size: 11.5px; color: #6E7287;"><span>08:22</span><span>10:04 · last contact</span><span>now 10:22</span></div>
+        </div>
+      </section>
+
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+        <section style="border-radius: 16px; background: #F3FAF6; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600; color: #0E5A37; display: flex; align-items: center; gap: 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Still working</h2>
+          <sc-for list="{{works}}" as="w" hint-placeholder-count="3"><div style="display: flex; flex-direction: column; gap: 2px; font-size: 13px;"><span style="font-weight: 600;">{{w.k}}</span><span style="color: #33364A; line-height: 1.45;">{{w.v}}</span></div></sc-for>
+        </section>
+        <section style="border-radius: 16px; background: #FFF8F0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600; color: #6B4205; display: flex; align-items: center; gap: 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5v14 M15 5v14"/></svg>On hold until it is back</h2>
+          <sc-for list="{{held}}" as="w" hint-placeholder-count="4"><div style="display: flex; flex-direction: column; gap: 2px; font-size: 13px;"><span style="font-weight: 600;">{{w.k}}</span><span style="color: #33364A; line-height: 1.45;">{{w.v}}</span></div></sc-for>
+        </section>
+      </div>
+
+      <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start;">
+        <section style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
+          <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 19px;">Affected runs</h2>
+          <sc-for list="{{runs}}" as="r" hint-placeholder-count="3">
+            <div style="display: flex; align-items: stretch; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+              <span style="width: 4px; background: {{r.rail}};"></span>
+              <div style="flex-grow: 1; padding: 12px 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+                <span style="flex: 1 1 200px; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 6px;"><img src="{{r.logo}}" width="15" height="15" alt="" style="display: block;">{{r.name}}</span><span style="font-size: 12.5px; color: {{r.fg}}; font-weight: 600;">{{r.state}}</span></span>
+                <span style="flex: 2 1 260px; font-size: 12.5px; color: #33364A; line-height: 1.45;">{{r.effect}}</span>
+                <button type="button" style="height: 34px; padding: 0 12px; border-radius: 10px; border: none; background: {{r.bbg}}; color: {{r.bfg}}; box-shadow: {{r.bring}}; font: 600 12.5px 'Inter', sans-serif;">{{r.action}}</button>
+              </div>
+            </div>
+          </sc-for>
+        </section>
+
+        <aside style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Likely cause</h2>
+            <sc-for list="{{diag}}" as="d" hint-placeholder-count="4">
+              <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start;">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{d.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="{{d.icon}}"/></svg>
+                <span style="display: flex; flex-direction: column; gap: 1px;"><span style="font-weight: 600;">{{d.k}}</span><span style="color: #4D5065; font-size: 12.5px; line-height: 1.4;">{{d.v}}</span></span>
+              </div>
+            </sc-for>
+          </section>
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Bring it back</h2>
+            <span style="font-size: 12.5px; color: #33364A;">Run once on the login node:</span>
+            <div style="display: flex; gap: 6px; align-items: stretch;">
+              <code style="flex-grow: 1; font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #0F1020; color: #E6E7EF; border-radius: 10px; padding: 9px 11px;">spectio runner start --daemon</code>
+              <button type="button" style="border: none; border-radius: 10px; background: #F6F2FE; color: #4D368B; font: 600 12px 'Inter', sans-serif; padding: 0 10px;">Copy</button>
+            </div>
+            <span style="font-size: 12.5px; color: #33364A; line-height: 1.45;">Auto-restart is <strong>not set up</strong> on this host. With it, the runner comes back by itself after reboots (user systemd service, or cron @reboot where systemd is not available).</span>
+            <a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Set up auto-restart →</a>
+          </section>
+        </aside>
+      </div>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const beats = Array.from({ length: 60 }, (_, i) => i < 51 ? (i === 23 ? '#F2B544' : '#7FCFA6') : '#F2B8B8');
+  const L = { nfcore: '/_blob/b04c0e1634ffbccff3a43d65ce1316d4', smk: '/_blob/7a35665829f51132cb3bcb9a4c3e638c' };
+  const prim = ['#7750D4', '#FFFFFF', 'none'], quiet = ['#FFFFFF', '#22253A', 'inset 0 0 0 1px #DFE1EA'];
+  const run = (name, logo, state, rail, fg, effect, action, b) => ({ name, logo, state, rail, fg, effect, action, bbg: b[0], bfg: b[1], bring: b[2] });
+  return {
+    beats,
+    works: [
+      { k: 'Running workflows keep computing', v: 'Each engine runs as its own SLURM job, not inside the runner, so jobs continue.' },
+      { k: 'Live monitoring continues', v: 'Nextflow and Snakemake send their events straight to the server. Progress, tasks and failures stay up to date.' },
+      { k: 'Published results stay available', v: 'Anything already copied to Results or the archive can still be opened.' }
+    ],
+    held: [
+      { k: 'New launches on this runner', v: '1 run queued. It starts when the runner is back, or move it to hpc-login-1.' },
+      { k: 'Cancel, pause, continue', v: 'Commands are queued and applied on reconnect, in order. You see them as “pending”.' },
+      { k: 'Viewers and evidence files', v: 'Work-directory files are read through the runner. Cached previews still show.' },
+      { k: 'Storage measurements and cleanup', v: 'Last measured at 09:00; no cleanup runs while offline.' }
+    ],
+    runs: [
+      run('sarek-trio-02', L.nfcore, 'Running · stage 3 of 4', '#3B82F6', '#1D5FC9', 'Still computing and reporting progress. Cancel and pause are unavailable until the runner is back.', 'Open run', quiet),
+      run('atac-batch-08', L.smk, 'Queued', '#6E7287', '#33364A', 'Waiting for this runner. hpc-login-1 (same cluster, same storage) is online and can take it.', 'Move to hpc-login-1', prim),
+      run('proteomics-dia-11', L.nfcore, 'Awaiting review', '#D9890B', '#8F5806', 'You can still decide. The decision is recorded now and applied when the runner reconnects.', 'Review', quiet)
+    ],
+    diag: [
+      { k: 'Node maintenance announced', v: 'login02 · 10:00–12:00 today (from the cluster status feed).', icon: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', col: '#D9890B' },
+      { k: 'Last message from the runner', v: '“SIGTERM received, shutting down” at 10:04:12.', icon: 'M4 5h16v11H8l-4 4z', col: '#4D5065' },
+      { k: 'Token still valid', v: 'Expires 2027-01-14; not the cause.', icon: 'M5 12l5 5L20 7', col: '#157A4B' },
+      { k: 'Other runners on this cluster', v: 'hpc-login-1 online, heartbeat 12 s ago.', icon: 'M5 12l5 5L20 7', col: '#157A4B' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

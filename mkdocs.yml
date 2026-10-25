@@ -1,0 +1,61 @@
+site_name: Spectio
+site_description: Launch, monitor and steer Nextflow and Snakemake runs, with QC gates, a headless API and depictio integration.
+repo_url: https://github.com/weber8thomas/spectio
+edit_uri: edit/main/docs/
+docs_dir: docs
+strict: true
+
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - search.highlight
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: deep purple
+      toggle: {icon: material/weather-night, name: Dark mode}
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: deep purple
+      toggle: {icon: material/weather-sunny, name: Light mode}
+
+markdown_extensions:
+  - tables
+  - admonition
+  - attr_list
+  - toc: {permalink: true}
+  - pymdownx.details
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+validation:
+  links:
+    not_found: warn
+    anchors: warn
+
+nav:
+  - Home: README.md
+  - Specifications:
+      - Synthesis: specs/synthesis.md
+      - UI spec: specs/ui-spec.md
+      - Checking scenarios: specs/checking-scenarios.md
+      - API and data model: specs/api-and-data-model.md
+      - Plugins and packaging: specs/architecture-plugins-and-packaging.md
+      - Schedulers and monitoring: specs/schedulers-and-monitoring.md
+      - Administration and operations: specs/admin-and-operations.md
+      - CLI and shared libraries: specs/cli-and-shared-libraries.md
+      - depictio ecosystem reuse: specs/depictio-ecosystem-reuse.md
+  - Decisions:
+      - How decisions are recorded: decisions/README.md
+      - Decision log: decisions/log.md
+  - Research:
+      - depictio harmonisation: research/depictio-harmonization.md
+      - depictio administration and operations: research/depictio-admin-ops.md
+      - depictio CLI and packaging, LabID: research/depictio-cli-packaging.md
+      - depictio frontend and branding: research/depictio-frontend-admin.md

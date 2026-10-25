@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — administration · tasks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:7px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.btn{height:36px;padding:0 12px;border-radius:10px;border:none;font:600 13px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.sel{height:34px;padding:0 28px 0 10px;border-radius:9px;border:1px solid #C4C7D4;background:#FFFFFF;font:500 13px 'Inter',sans-serif;color:#0F1020}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.seg{display:flex;gap:2px;padding:3px;border-radius:11px;background:#EEEFF5;align-self:flex-start}
+.seg label{height:32px;padding:0 12px;border-radius:9px;display:flex;align-items:center;gap:7px;font-size:13px;color:#4D5065;cursor:pointer;font-weight:500}
+.seg label:has(input:checked){background:#FFFFFF;color:#0F1020;font-weight:600;box-shadow:0 1px 2px rgba(15,16,32,0.12)}
+.seg label:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:1px}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.pn{display:none;flex-direction:column;gap:12px}
+.at:has(input[value="tasks"]:checked) .pn-tasks,.at:has(input[value="sched"]:checked) .pn-sched{display:flex}
+.trow{display:grid;grid-template-columns:18px 96px minmax(0,1fr) 128px 52px 66px 78px;gap:10px;align-items:center;padding:9px 14px;border-top:1px solid #EEEFF5;font-size:13px}
+.thead{font-size:12px;font-weight:600;color:#33364A;background:#F7F7FB;border-top:none}
+details.tr > summary{list-style:none;cursor:pointer}
+details.tr > summary::-webkit-details-marker{display:none}
+details.tr > summary:hover{background:#FAFAFC}
+details.tr[open] .chev{transform:rotate(90deg)}
+.chev{transition:transform .15s ease;color:#6E7287}
+.code{margin:0;background:#F7F7FB;border-radius:10px;box-shadow:inset 0 0 0 1px #EEEFF5;padding:10px 12px;font:12px/1.55 'JetBrains Mono',monospace;color:#22253A;white-space:pre-wrap;word-break:break-word}
+.lbl{font-size:11.5px;font-weight:600;letter-spacing:.04em;color:#6E7287}
+details.cli > summary{list-style:none;cursor:pointer}
+details.cli > summary::-webkit-details-marker{display:none}
+details.cli[open] .chev{transform:rotate(90deg)}
+.tg{position:relative;width:34px;height:20px;border-radius:10px;background:#7750D4;display:inline-block}
+.tg::after{content:"";position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:8px;background:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Administration / Tasks" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Administration</h1>
+        <span style="font-size: 14px; color: #4D5065;">People, content, activity and the health of this instance</span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="position: sticky; top: 0; flex-shrink: 0;"><dc-import name="AdminNav" active="tasks" hint-size="208px,860px"></dc-import></div>
+
+      <div class="at" style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+          <div style="flex: 1 1 360px; display: flex; flex-direction: column; gap: 3px;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Tasks</h2>
+            <span style="font-size: 13px; color: #4D5065;">Background work done by the server: checks, deliveries, exports, backups, clean-ups. One ledger, whichever backend runs it.</span>
+          </div>
+          <span style="display: flex; align-items: center; gap: 8px;">
+            <span class="chip" style="height: 28px; padding: 0 10px; background: #F1F2F6; color: #22253A; font-size: 12.5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg>Backend · SQL workers · Postgres 18</span>
+            <a href="AdminPlugins.dc.html" style="font-size: 12.5px; font-weight: 600;">Change in Plugins</a>
+          </span>
+        </div>
+
+        <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px;">
+          <sc-for list="{{stats}}" as="s" hint-placeholder-count="5">
+            <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), inset 3px 0 0 {{s.rail}};">
+              <span style="font-size: 12px; color: #4D5065; font-weight: 500;">{{s.label}}</span>
+              <span style="display: flex; align-items: baseline; gap: 6px;"><span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 24px; color: {{s.fg}};">{{s.value}}</span><span style="font-size: 12px; color: #6E7287;">{{s.unit}}</span></span>
+              <span style="font-size: 11.5px; color: #6E7287;">{{s.sub}}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div class="seg" role="radiogroup" aria-label="View">
+            <label><input type="radio" name="admtasks" value="tasks" checked>Tasks<span style="font-size: 11px; color: #6E7287; font-weight: 600;">1,284 · 24 h</span></label>
+            <label><input type="radio" name="admtasks" value="sched">Schedules<span style="font-size: 11px; color: #6E7287; font-weight: 600;">6</span></label>
+          </div>
+          <span style="font-size: 12.5px; color: #6E7287;">Retention: 14 days, failures 30 days</span>
+        </div>
+
+        <!-- TASKS PANEL -->
+        <div class="pn pn-tasks">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border-radius: 9px; box-shadow: inset 0 0 0 1px #C4C7D4; color: #6E7287; flex: 1 1 200px; min-width: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg><input type="search" placeholder="Task name, ID, run, error text" aria-label="Search tasks" style="border: none; outline: none; font: inherit; font-size: 13px; background: transparent; min-width: 0; flex-grow: 1;"></label>
+            <select class="sel" aria-label="Status"><option>Status: any</option><option>Failed or retrying</option><option>Running</option><option>Queued</option></select>
+            <select class="sel" aria-label="Kind"><option>Kind: any</option><option>check.evaluate</option><option>webhook.deliver</option><option>sink.depictio</option></select>
+            <select class="sel" aria-label="Project"><option>Project: all</option><option>rnaseq-core</option><option>microbiome-lab</option></select>
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #33364A; margin-left: 4px;"><span class="tg" role="switch" aria-checked="true" aria-label="Auto refresh"></span>Live</span>
+            <button type="button" class="btn btn-s" aria-label="Refresh" style="width: 34px; height: 34px; padding: 0; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 5v6h-6"/></svg></button>
+          </div>
+
+          <section class="card" style="overflow: hidden;">
+            <div class="trow thead"><span></span><span>Status</span><span>Task</span><span>Owner</span><span>Tries</span><span>Duration</span><span>When</span></div>
+            <sc-for list="{{rowsA}}" as="r" hint-placeholder-count="3">
+              <details class="tr">
+                <summary class="trow">
+                  <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                  <span class="chip" style="background: {{r.sbg}}; color: {{r.sfg}}; justify-self: start;"><span style="width: 7px; height: 7px; border-radius: 4px; background: {{r.sdot}};"></span>{{r.state}}</span>
+                  <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                    <span style="display: flex; align-items: center; gap: 8px; min-width: 0;"><span class="chip mono" style="height: 20px; font-size: 10.5px; font-weight: 500; background: {{r.kbg}}; color: {{r.kfg}};">{{r.kind}}</span><span class="mono" style="font-size: 12.5px; color: #0F1020; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.name}}</span></span>
+                    <span style="font-size: 12px; color: #6E7287; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.ctx}}</span>
+                  </span>
+                  <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 12.5px; color: #22253A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.owner}}</span><span style="font-size: 11.5px; color: #6E7287;">{{r.okind}}</span></span>
+                  <span class="mono" style="font-size: 12px; color: #33364A;">{{r.tries}}</span>
+                  <span class="mono" style="font-size: 12px; color: #33364A;">{{r.dur}}</span>
+                  <span style="font-size: 12.5px; color: #4D5065; white-space: nowrap;">{{r.when}}</span>
+                </summary>
+                <div style="padding: 4px 14px 14px 42px; font-size: 12.5px; color: #4D5065;">{{r.detail}}</div>
+              </details>
+            </sc-for>
+
+            <!-- expanded failed delivery -->
+            <details class="tr" open>
+              <summary class="trow" style="background: #FFFBF3; box-shadow: inset 3px 0 0 #D9890B;">
+                <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                <span class="chip" style="background: #FDF3E2; color: #8F5806; justify-self: start;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 5v6h-6"/></svg>Retrying</span>
+                <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                  <span style="display: flex; align-items: center; gap: 8px; min-width: 0;"><span class="chip mono" style="height: 20px; font-size: 10.5px; font-weight: 500; background: #EEF6FA; color: #1F536D;">webhook.deliver</span><span class="mono" style="font-size: 12.5px; color: #0F1020; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">labid-hooks → spectio.gate.opened</span></span>
+                  <span style="font-size: 12px; color: #6E7287; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">soil-meta-12 #288 · microbiome-lab · gate Bin QC</span>
+                </span>
+                <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 12.5px; color: #22253A;">labid-svc</span><span style="font-size: 11.5px; color: #6E7287;">service account</span></span>
+                <span class="mono" style="font-size: 12px; color: #8F5806; font-weight: 500;">3 / 8</span>
+                <span class="mono" style="font-size: 12px; color: #33364A;">30.0 s</span>
+                <span style="font-size: 12.5px; color: #4D5065; white-space: nowrap;">2 min ago</span>
+              </summary>
+              <div style="padding: 6px 14px 16px 42px; display: flex; flex-direction: column; gap: 12px; background: #FFFFFF;">
+                <div role="note" style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; border-radius: 10px; background: #FDF3E2; color: #6B4205; font-size: 12.5px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M12 7v6 M12 16.5h.01 M10.3 3.9L2.4 18a2 2 0 0 0 1.7 3h15.8a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                  <span><strong>LabID answered 503 three times.</strong> Next attempt in 1 min 40 s (exponential backoff, capped at 15 min). After 8 attempts the event stays in the outbox as <em>dead</em> and can be replayed from Events &amp; webhooks.</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 250px minmax(0, 1fr); gap: 14px;">
+                  <dl style="margin: 0; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 6px 12px; font-size: 12.5px; align-content: start;">
+                    <sc-for list="{{facts}}" as="f" hint-placeholder-count="8">
+                      <dt style="color: #6E7287;">{{f.k}}</dt><dd style="margin: 0; color: #0F1020; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="{{f.cls}}">{{f.v}}</dd>
+                    </sc-for>
+                  </dl>
+                  <div style="display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+                    <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
+                      <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0;"><span class="lbl">ARGUMENTS</span><pre class="code">{
+  "event": "evt_01JBF7Q2W9…",
+  "type": "spectio.gate.opened",
+  "endpoint": "labid.embl.de/api/hooks/…",
+  "signature": "hmac-sha256",
+  "timeout_s": 30
+}</pre></div>
+                      <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0;"><span class="lbl">ERROR</span><pre class="code" style="background: #FCEBEB; box-shadow: inset 0 0 0 1px #F6CFCF; color: #7E1D1D;">HTTPStatusError: 503 Service Unavailable
+POST labid.embl.de/api/hooks/spectio
+Retry-After: 120
+body: "maintenance until 14:30"</pre><span class="lbl" style="margin-top: 4px;">RESULT</span><span style="font-size: 12.5px; color: #6E7287;">None yet. The task writes its own terminal state.</span></div>
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0;"><span class="lbl">LOGS · ATTEMPT 3</span><pre class="code">13:58:02.114 INFO  delivery start attempt=3 worker=worker-2
+13:58:02.120 DEBUG signing body sha256=9f2c…e1 bytes=1834
+13:58:32.131 WARN  upstream 503, Retry-After=120 honoured
+13:58:32.133 INFO  rescheduled run_after=14:00:12 (backoff 2^3·15 s)</pre></div>
+                    <details style="font-size: 12.5px;"><summary style="cursor: pointer; color: #4D5065; font-weight: 600;">Traceback</summary><pre class="code" style="margin-top: 6px;">File "spectio/server/outbox/deliver.py", line 88, in deliver
+    resp.raise_for_status()
+File "httpx/_models.py", line 829, in raise_for_status
+    raise HTTPStatusError(message, request=request, response=self)</pre></details>
+                  </div>
+                </div>
+                <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                  <a href="#" class="btn btn-p"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 11a8 8 0 1 0-2.3 5.7 M20 5v6h-6"/></svg>Retry now</a>
+                  <a href="#" class="btn btn-s">Cancel</a>
+                  <a href="ReviewCandidates.dc.html" class="btn btn-s">Open run</a>
+                  <a href="#" class="btn btn-s">Open webhook</a>
+                </div>
+              </div>
+            </details>
+
+            <sc-for list="{{rowsB}}" as="r" hint-placeholder-count="6">
+              <details class="tr">
+                <summary class="trow">
+                  <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                  <span class="chip" style="background: {{r.sbg}}; color: {{r.sfg}}; justify-self: start;"><span style="width: 7px; height: 7px; border-radius: 4px; background: {{r.sdot}};"></span>{{r.state}}</span>
+                  <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                    <span style="display: flex; align-items: center; gap: 8px; min-width: 0;"><span class="chip mono" style="height: 20px; font-size: 10.5px; font-weight: 500; background: {{r.kbg}}; color: {{r.kfg}};">{{r.kind}}</span><span class="mono" style="font-size: 12.5px; color: #0F1020; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.name}}</span></span>
+                    <span style="font-size: 12px; color: #6E7287; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.ctx}}</span>
+                  </span>
+                  <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 12.5px; color: #22253A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.owner}}</span><span style="font-size: 11.5px; color: #6E7287;">{{r.okind}}</span></span>
+                  <span class="mono" style="font-size: 12px; color: #33364A;">{{r.tries}}</span>
+                  <span class="mono" style="font-size: 12px; color: #33364A;">{{r.dur}}</span>
+                  <span style="font-size: 12.5px; color: #4D5065; white-space: nowrap;">{{r.when}}</span>
+                </summary>
+                <div style="padding: 4px 14px 14px 42px; font-size: 12.5px; color: #4D5065;">{{r.detail}}</div>
+              </details>
+            </sc-for>
+            <div style="padding: 10px 14px; border-top: 1px solid #EEEFF5; font-size: 12.5px; color: #6E7287; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;"><span>Showing 12 of 1,284 in the last 24 h · users see their own tasks as jobs on runs and projects</span><a href="#" style="font-weight: 600;">Load more</a></div>
+          </section>
+        </div>
+
+        <!-- SCHEDULES PANEL -->
+        <div class="pn pn-sched">
+          <div role="note" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 12px; background: #F7F7FB; font-size: 12.5px; color: #33364A;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; color: #4D5065;"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 7v5l3 2"/></svg>
+            <span>Every server process runs the same loops; each slot is claimed atomically in the database, so exactly one process runs it. No Celery beat, works the same on SQLite and on several Postgres replicas.</span>
+          </div>
+          <section class="card" style="overflow: hidden;">
+            <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) 130px 150px 120px 110px 40px; gap: 10px; padding: 10px 14px; font-size: 12px; font-weight: 600; color: #33364A; background: #F7F7FB;"><span>Job</span><span>Schedule</span><span>Last run</span><span>Next run</span><span>Claimed by</span><span></span></div>
+            <sc-for list="{{sched}}" as="j" hint-placeholder-count="6">
+              <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) 130px 150px 120px 110px 40px; gap: 10px; padding: 11px 14px; border-top: 1px solid #EEEFF5; align-items: center; font-size: 13px;">
+                <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span class="mono" style="font-size: 12.5px;">{{j.name}}</span><span style="font-size: 12px; color: #6E7287;">{{j.what}}</span></span>
+                <span style="color: #22253A;">{{j.cron}}</span>
+                <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 7px; height: 7px; border-radius: 4px; background: {{j.dot}};"></span><span style="color: #22253A;">{{j.last}}</span></span>
+                <span style="color: #22253A;">{{j.next}}</span>
+                <span class="mono" style="font-size: 12px; color: #4D5065;">{{j.by}}</span>
+                <button type="button" class="btn btn-s" aria-label="Run now" title="Run now" style="width: 32px; height: 32px; padding: 0; justify-content: center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M7 4l13 8-13 8z"/></svg></button>
+              </div>
+            </sc-for>
+          </section>
+        </div>
+
+        <details class="cli" style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+          <summary style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 13.5px; font-weight: 600;"><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>CLI equivalent<span style="font-weight: 400; font-size: 12.5px; color: #6E7287;">same API, admin token</span></summary>
+          <pre style="margin: 0 14px 14px; padding: 14px 16px; border-radius: 12px; background: #14152A; color: #E6E7F0; font: 12.5px/1.7 'JetBrains Mono', monospace; overflow-x: auto;"><span style="color: #7FD3AA;">$</span> spectio admin tasks list --state failed,retrying --since 24h
+<span style="color: #7FD3AA;">$</span> spectio admin tasks show task_01JBF7R0K3 <span style="color: #9A9EB0;">--json | jq .error</span>
+<span style="color: #7FD3AA;">$</span> spectio admin tasks retry task_01JBF7R0K3
+<span style="color: #7FD3AA;">$</span> spectio admin tasks cancel task_01JBF6ZT1M
+<span style="color: #7FD3AA;">$</span> spectio admin schedules list   <span style="color: #9A9EB0;"># run one now: spectio admin schedules run backup.create</span></pre>
+        </details>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ST = {
+    running: ['Running', '#EAF2FE', '#1D5FC9', '#3B82F6'],
+    queued: ['Queued', '#F1F2F6', '#33364A', '#6E7287'],
+    failed: ['Failed', '#FCEBEB', '#B02A2A', '#DC3B3B'],
+    succeeded: ['Succeeded', '#E8F6EF', '#157A4B', '#1F9D63'],
+    cancelled: ['Cancelled', '#EEEFF5', '#33364A', '#4D5065']
+  };
+  const KF = {
+    check: ['#F2F1FB', '#3F37A0'], deliver: ['#EEF6FA', '#1F536D'], export: ['#E6F5F3', '#155E57'], maint: ['#F1F2F6', '#33364A']
+  };
+  const row = (st, kind, fam, name, ctx, owner, okind, tries, dur, when, detail) => {
+    const s = ST[st], k = KF[fam];
+    return { state: s[0], sbg: s[1], sfg: s[2], sdot: s[3], kind, kbg: k[0], kfg: k[1], name, ctx, owner, okind, tries, dur, when, detail };
+  };
+  return {
+    stats: [
+      { label: 'Queued', value: '4', unit: 'tasks', sub: 'oldest 12 s', rail: '#6E7287', fg: '#0F1020' },
+      { label: 'Running', value: '2', unit: 'tasks', sub: 'on 3 workers', rail: '#3B82F6', fg: '#0F1020' },
+      { label: 'Failed · 24 h', value: '3', unit: 'of 1,284', sub: '1 retrying, 2 final', rail: '#DC3B3B', fg: '#B02A2A' },
+      { label: 'Median duration', value: '0.8', unit: 's', sub: 'p95 41 s', rail: '#DFE1EA', fg: '#0F1020' },
+      { label: 'Workers', value: '3 / 3', unit: 'alive', sub: 'heartbeat 4 s ago', rail: '#1F9D63', fg: '#157A4B' }
+    ],
+    rowsA: [
+      row('running', 'check.evaluate', 'check', 'gate=mapping_qc source=multiqc', 'liver-tc-03 #301 · rnaseq-core · 24 samples × 6 checks', 'system', 'on run event', '1 / 3', '4.1 s', 'now', 'Evaluates the Mapping QC checks from multiqc_data.json; the gate opens when it ends.'),
+      row('running', 'sink.depictio', 'export', 'depictio-cli ingest --triggered-by spectio', 'scrna-pbmc #314 · single-cell · on runner embl-slurm', 'Anna Smith', 'user · run owner', '1 / 5', '38 s', '1 min ago', 'Hand-off to depictio: the runner runs depictio-cli ingest next to the results and returns the result JSON (project and dashboard links).'),
+      row('queued', 'gate.notify', 'deliver', 'mattermost:imaging-core → 2 reviewers', 'plate-qc-07 #122 · imaging-core', 'system', 'outbox', '0 / 5', '—', 'in 2 s', 'Notifies the assigned reviewers of the Plate QC gate.')
+    ],
+    facts: [
+      { k: 'Task', v: 'task_01JBF7R0K3', cls: 'mono' },
+      { k: 'Queue', v: 'deliveries', cls: 'mono' },
+      { k: 'Worker', v: 'worker-2', cls: 'mono' },
+      { k: 'Attempts', v: '3 of 8', cls: '' },
+      { k: 'Next try', v: '14:00:12 (in 1 min 40 s)', cls: '' },
+      { k: 'Idempotency', v: 'evt_01JBF7Q2W9', cls: 'mono' },
+      { k: 'Project', v: 'microbiome-lab', cls: '' },
+      { k: 'Owner', v: 'labid-svc (service)', cls: '' },
+      { k: 'Created', v: 'today 13:52:41', cls: '' }
+    ],
+    rowsB: [
+      row('failed', 'bridge.mqtt', 'deliver', 'publish spectio/prj_imaging/gate/opened', 'plate-qc-07 #122 · imaging-core · broker mqtt.imaging.embl.de', 'system', 'event bridge', '5 / 5', '10.0 s', '18 min ago', 'Broker unreachable (connection refused). Final after 5 attempts; the event is kept in the outbox and can be replayed.'),
+      row('failed', 'check.evaluate', 'check', 'gate=cell_qc script=cell_qc.py', 'scrna-pbmc #314 · single-cell', 'system', 'on run event', '3 / 3', '2.4 s', '42 min ago', 'script: exited with code 1, KeyError: pct_counts_mt. The gate shows the check as "could not evaluate".'),
+      row('queued', 'rocrate.export', 'export', 'Workflow Run Crate → LabID', 'liver-tc-03 #298 · rnaseq-core', 'Kai Berg', 'user', '0 / 3', '—', 'queued 12 s', 'Waits for a free export slot (max 2 in parallel).'),
+      row('succeeded', 'backup.create', 'maint', 'full → s3://spectio-backups (SeaweedFS)', 'instance · 1.9 GB · checksum verified', 'system', 'schedule', '1 / 1', '2m 14s', 'today 02:00', 'Schedule backup.create, daily 02:00 UTC, smart retention.'),
+      row('succeeded', 'workdir.cleanup', 'maint', 'env=EMBL SLURM · htc policy=keep-14d', 'freed 1.2 TB in 38 work directories', 'system', 'schedule', '1 / 1', '41 s', '34 min ago', 'Removed work directories of runs finished more than 14 days ago, kept pinned runs.'),
+      row('succeeded', 'catalogue.import', 'maint', 'nf-core catalogue 2026-10 (106 pipelines)', 'instance · 4 new versions', 'Thomas Weber', 'admin', '1 / 1', '1m 52s', '3 h ago', 'Imported nextflow_schema.json and spectio.yml presets.'),
+      row('cancelled', 'rocrate.export', 'export', 'Provenance Run Crate → Zenodo', 'soil-meta-11 #270 · microbiome-lab', 'Nora Olsen', 'user', '1 / 3', '9.2 s', 'yesterday', 'Cancelled by Nora Olsen.')
+    ],
+    sched: [
+      { name: 'backup.create', what: 'Full backup: database, file store, keys', cron: 'daily 02:00 UTC', last: 'today 02:00 · 2m 14s', next: 'tomorrow 02:00', by: 'api-1', dot: '#1F9D63' },
+      { name: 'workdir.cleanup', what: 'Apply each environment’s work-directory policy', cron: 'hourly', last: '34 min ago · 41 s', next: 'in 26 min', by: 'worker-1', dot: '#1F9D63' },
+      { name: 'runner.reconcile', what: 'Compare run states with sacct / Kubernetes', cron: 'every 5 min', last: '2 min ago · 3.1 s', next: 'in 3 min', by: 'worker-3', dot: '#1F9D63' },
+      { name: 'token.expire', what: 'Revoke expired tokens and embed tokens', cron: 'every 15 min', last: '9 min ago · 0.2 s', next: 'in 6 min', by: 'api-2', dot: '#1F9D63' },
+      { name: 'logs.prune', what: 'Keep the log store under 256 MB / 14 days', cron: 'hourly', last: '51 min ago · 1.4 s', next: 'in 9 min', by: 'worker-2', dot: '#1F9D63' },
+      { name: 'catalogue.refresh', what: 'Check nf-core and registries for new versions', cron: 'Mon 03:00 UTC', last: 'Mon · rate limited', next: 'Mon 03:00', by: 'worker-1', dot: '#DC3B3B' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Perspectio — couleur : verts</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#141414}a:hover{color:#444444}
+</style>
+</helmet>
+<div style="width: 520px; height: 560px; box-sizing: border-box; background: #FFFFFF; color: #141414; display: flex; flex-direction: column; font-family: 'Outfit', system-ui, sans-serif;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <defs>
+      <mask id="dg" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+        <rect width="200" height="200" fill="#FFFFFF"/>
+        <path d="M100.0 64.0L190.55 116.27 M131.18 82.0L131.18 186.56 M131.18 118.0L40.63 170.28 M100.0 136.0L9.45 83.73 M68.82 118.0L68.82 13.44 M68.82 82.0L159.37 29.72" stroke="#000000" stroke-width="7" stroke-linecap="square"/>
+      </mask>
+    </defs>
+    <symbol id="d" viewBox="0 0 200 200">
+      <g mask="url(#dg)">
+        <path fill="#0B6E57" d="M100.0 64.0L190.55 116.27A92 92 0 0 0 159.37 29.72Z"/>
+        <path fill="#0E9F7E" d="M131.18 82.0L131.18 186.56A92 92 0 0 0 190.55 116.27Z"/>
+        <path fill="#13C79E" d="M131.18 118.0L40.63 170.28A92 92 0 0 0 131.18 186.56Z"/>
+        <path fill="#0B6E57" d="M100.0 136.0L9.45 83.73A92 92 0 0 0 40.63 170.28Z"/>
+        <path fill="#0E9F7E" d="M68.82 118.0L68.82 13.44A92 92 0 0 0 9.45 83.73Z"/>
+        <path fill="#13C79E" d="M68.82 82.0L159.37 29.72A92 92 0 0 0 68.82 13.44Z"/>
+      </g>
+    </symbol>
+    <symbol id="r" viewBox="0 0 200 200">
+      <circle cx="100" cy="100" r="14" fill="#0B6E57"/>
+      <path fill="#0B6E57" d="M106.42 8.22A92 92 0 0 1 160.36 30.57L115.75 81.89A24 24 0 0 0 101.67 76.06Z"/>
+      <path fill="#0E9F7E" d="M137.74 67.2A50 50 0 0 1 149.88 96.51L123.94 98.33A24 24 0 0 0 118.11 84.25Z M152.83 54.08A70 70 0 0 1 169.83 95.12L157.86 95.95A58 58 0 0 0 143.77 61.95Z"/>
+      <path fill="#13C79E" d="M183.8 105.86A84 84 0 0 1 163.4 155.11L118.11 115.75A24 24 0 0 0 123.94 101.67Z"/>
+      <path fill="#5ED8B9" d="M128.87 133.21A44 44 0 0 1 103.07 143.89L101.67 123.94A24 24 0 0 0 115.75 118.11Z M138.05 143.77A58 58 0 0 1 104.05 157.86L103.63 151.87A52 52 0 0 0 134.12 139.24Z"/>
+      <path fill="#0B6E57" d="M93.58 191.78A92 92 0 0 1 39.64 169.43L84.25 118.11A24 24 0 0 0 98.33 123.94Z"/>
+      <path fill="#0E9F7E" d="M42.64 149.86A76 76 0 0 1 24.19 105.3L76.06 101.67A24 24 0 0 0 81.89 115.75Z"/>
+      <path fill="#13C79E" d="M60.1 97.21A40 40 0 0 1 69.81 73.76L81.89 84.25A24 24 0 0 0 76.06 98.33Z M36.16 95.54A64 64 0 0 1 51.7 58.01L63.77 68.51A48 48 0 0 0 52.12 96.65Z"/>
+      <path fill="#5ED8B9" d="M42.27 33.59A88 88 0 0 1 93.86 12.21L98.33 76.06A24 24 0 0 0 84.25 81.89Z"/>
+    </symbol>
+  </svg>
+  <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; gap: 48px;">
+    <svg width="170" height="170" role="img" aria-label="Diaphragme en dégradé de verts"><use href="#d"/></svg>
+    <svg width="170" height="170" role="img" aria-label="Tableau radial en dégradé de verts"><use href="#r"/></svg>
+  </div>
+  <div style="height: 100px; display: flex; align-items: center; justify-content: center; gap: 14px;">
+    <svg width="44" height="44" aria-hidden="true"><use href="#d"/></svg>
+    <span style="font-weight: 800; font-size: 40px; letter-spacing: 0.04em; line-height: 1;">PERSPECTIO</span>
+  </div>
+  <div style="height: 120px; background: #141414; color: #FFFFFF; display: flex; align-items: center; justify-content: center; gap: 12px;">
+    <svg width="38" height="38" aria-hidden="true"><use href="#r"/></svg>
+    <span style="font-weight: 800; font-size: 32px; letter-spacing: 0.04em; line-height: 1;">PERSPECTIO</span>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":520,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

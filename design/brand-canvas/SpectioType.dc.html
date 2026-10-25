@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — typography</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 1400px; height: 620px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; padding: 48px 56px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 40px;">
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; color: #6E7287;">HEADINGS · OUTFIT</span>
+    <span style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 44px; line-height: 1.1;">Runs awaiting review</span>
+    <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px; line-height: 1.2;">Stage 2 · Segmentation</span>
+    <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Quality control</span>
+    <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: #4D5065;">Outfit is already depictio's heading face: it links to the wordmark without copying it.</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; color: #6E7287;">BODY AND UI · INTER</span>
+    <p style="margin: 0; font-size: 16px; line-height: 1.55;">Run <strong>rnaseq-2026-10-25</strong> stopped after alignment. Check the quality metrics, then approve or change the parameters before resuming.</p>
+    <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #4D5065;">Secondary text, 14 px, ink 500.</p>
+    <p style="margin: 0; font-size: 12px; font-weight: 500; color: #6E7287;">Label, 12 px · 1,248 tasks · 3 h 12 min</p>
+    <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: #4D5065;">Inter: highly legible at small sizes, tabular figures for task tables.</p>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 14px;">
+    <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.08em; color: #6E7287;">CODE AND LOGS · JETBRAINS MONO</span>
+    <div style="background: #0F1020; color: #DFE1EA; border-radius: 12px; padding: 18px 20px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; display: flex; flex-direction: column;">
+      <span><span style="color: #9A9EB0;">08:42:11</span> <span style="color: #A39CE4;">ALIGN</span> sample_03 · exit 0</span>
+      <span><span style="color: #9A9EB0;">08:42:15</span> <span style="color: #FABC6F;">QC</span> mapping rate 91.4 %</span>
+      <span><span style="color: #9A9EB0;">08:42:16</span> <span style="color: #F4A5BC;">GATE</span> awaiting review</span>
+      <span><span style="color: #9A9EB0;">08:51:02</span> <span style="color: #BEA4FA;">RESUME</span> --stage analysis</span>
+    </div>
+    <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.5; color: #4D5065;">Brand colours act as landmarks in logs, never as states.</p>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":620}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

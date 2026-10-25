@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — administration · maintenance</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.btn{height:36px;padding:0 13px;border-radius:10px;border:none;font:600 13px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:#33364A;background:#F7F7FB;padding:9px 12px;white-space:nowrap}
+.tbl td{padding:10px 12px;border-top:1px solid #EEEFF5;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.lbl{font-size:12.5px;font-weight:600;color:#33364A}
+.inp{height:36px;box-sizing:border-box;padding:0 10px;border-radius:9px;border:1px solid #C4C7D4;background:#FFFFFF;font:500 13px 'Inter',sans-serif;color:#0F1020;width:100%}
+.sw{width:38px;height:22px;border-radius:11px;position:relative;flex-shrink:0;display:inline-block}
+.sw::after{content:"";position:absolute;top:3px;width:16px;height:16px;border-radius:8px;background:#FFFFFF;box-shadow:0 1px 2px rgba(15,16,32,.25)}
+.sw.on{background:#7750D4}.sw.on::after{left:19px}
+.sw.off{background:#C4C7D4}.sw.off::after{left:3px}
+.sec-h{display:flex;align-items:center;gap:10px;padding:14px 16px}
+.sec-ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+details > summary{list-style:none;cursor:pointer}
+details > summary::-webkit-details-marker{display:none}
+details[open] .chev{transform:rotate(90deg)}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Administration / Maintenance" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Administration</h1>
+        <span style="font-size: 14px; color: #4D5065;">People, content, activity and the health of this instance</span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="position: sticky; top: 0; flex-shrink: 0;"><dc-import name="AdminNav" active="maintenance" hint-size="208px,860px"></dc-import></div>
+
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px;">Maintenance</h2>
+          <span style="font-size: 13px; color: #4D5065;">Pause the instance, talk to users, keep the database and storage tidy, and move to another deployment. Every action here is written to the audit log.</span>
+        </div>
+
+        <!-- (a) maintenance mode + (b) announcement -->
+        <div style="display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 12px; align-items: start;">
+          <section class="card" style="overflow: hidden;">
+            <div class="sec-h">
+              <span class="sec-ic" style="background: #FDF3E2; color: #B06D07;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg></span>
+              <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">Maintenance mode</h3><span style="font-size: 12.5px; color: #4D5065;">Off · last used 21 Oct for the 0015 upgrade (38 min)</span></div>
+              <span class="sw off" role="switch" aria-checked="false" aria-label="Maintenance mode"></span>
+            </div>
+            <div style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span class="lbl">While it is on</span>
+                <sc-for list="{{scopes}}" as="o" hint-placeholder-count="3">
+                  <label style="display: flex; gap: 10px; align-items: flex-start; padding: 9px 10px; border-radius: 11px; box-shadow: inset 0 0 0 1px {{o.ring}}; background: {{o.bg}};">
+                    <span style="width: 18px; height: 18px; border-radius: 5px; margin-top: 1px; flex-shrink: 0; background: {{o.box}}; box-shadow: inset 0 0 0 1.5px {{o.boxr}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5 9-10"/></svg></span>
+                    <span style="display: flex; flex-direction: column; gap: 1px;"><span style="font-size: 13px; font-weight: 600;">{{o.t}}</span><span style="font-size: 12px; color: #4D5065;">{{o.d}}</span></span>
+                  </label>
+                </sc-for>
+              </div>
+              <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
+                <label style="display: flex; flex-direction: column; gap: 5px;"><span class="lbl">Starts</span><span class="inp" style="display: flex; align-items: center;">Now</span></label>
+                <label style="display: flex; flex-direction: column; gap: 5px;"><span class="lbl">Ends (shown to users)</span><span class="inp" style="display: flex; align-items: center;">Today 18:00 CET</span></label>
+              </div>
+              <label style="display: flex; flex-direction: column; gap: 5px;"><span class="lbl">Message</span><span class="inp" style="height: auto; padding: 8px 10px; line-height: 1.45;">Spectio is being upgraded to 0.5. Runs keep going on the clusters; launches and review decisions are paused until 18:00.</span></label>
+              <div style="display: flex; flex-direction: column; gap: 5px;">
+                <span class="lbl">Preview · what users see on every page</span>
+                <div style="border-radius: 12px; padding: 10px 12px; background: #FDF3E2; box-shadow: inset 0 0 0 1px #F2D29A; display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; color: #5C3A04;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B06D07" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.5 2.5-2.4-.6-.6-2.4z"/></svg>
+                  <span><strong>Maintenance until 18:00.</strong> Spectio is being upgraded to 0.5. Runs keep going on the clusters; launches and review decisions are paused until 18:00.</span>
+                </div>
+                <span style="font-size: 12px; color: #6E7287;">API clients get <span class="mono">503</span> with <span class="mono">Retry-After</span> on blocked calls; webhooks emit <span class="mono">spectio.instance.maintenance_started</span>.</span>
+              </div>
+              <div style="display: flex; justify-content: flex-end; gap: 8px;"><a href="#" class="btn btn-s">Schedule</a><a href="#" class="btn btn-p" style="background: #B06D07;">Turn on now</a></div>
+            </div>
+          </section>
+
+          <section class="card" style="overflow: hidden;">
+            <div class="sec-h">
+              <span class="sec-ic" style="background: #EEF6FA; color: #2F7FA8;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 10v4 M4 12h3l9-5v10l-9-5 M18 9a4 4 0 0 1 0 6"/></svg></span>
+              <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">Announcement</h3><span style="font-size: 12.5px; color: #4D5065;">A banner for everyone, without pausing anything</span></div>
+              <span class="sw on" role="switch" aria-checked="true" aria-label="Announcement"></span>
+            </div>
+            <div style="padding: 0 16px 16px; display: flex; flex-direction: column; gap: 10px;">
+              <label style="display: flex; flex-direction: column; gap: 5px;"><span class="lbl">Tone</span>
+                <span style="display: flex; padding: 3px; border-radius: 11px; background: #EEEFF5; gap: 2px;">
+                  <span style="flex: 1; height: 30px; border-radius: 8px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,16,32,.12); font-size: 12.5px; font-weight: 600; display: flex; align-items: center; justify-content: center;">Info</span>
+                  <span style="flex: 1; height: 30px; border-radius: 8px; font-size: 12.5px; color: #4D5065; display: flex; align-items: center; justify-content: center;">Warning</span>
+                  <span style="flex: 1; height: 30px; border-radius: 8px; font-size: 12.5px; color: #4D5065; display: flex; align-items: center; justify-content: center;">Success</span>
+                </span>
+              </label>
+              <label style="display: flex; flex-direction: column; gap: 5px;"><span class="lbl">Text (Markdown links allowed)</span><span class="inp" style="height: auto; padding: 8px 10px; line-height: 1.45;">nf-core/rnaseq 3.27.0 is now in the catalogue. See the [release notes](…).</span></label>
+              <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
+                <label style="display: flex; flex-direction: column; gap: 5px;"><span class="lbl">From</span><span class="inp" style="display: flex; align-items: center;">25 Oct</span></label>
+                <label style="display: flex; flex-direction: column; gap: 5px;"><span class="lbl">Until</span><span class="inp" style="display: flex; align-items: center;">1 Nov</span></label>
+              </div>
+              <label style="display: flex; align-items: center; gap: 10px; font-size: 13px;"><span class="sw on"></span>Users can dismiss it</label>
+              <label style="display: flex; align-items: center; gap: 10px; font-size: 13px;"><span class="sw off"></span>Also show in depictio (co-hosted)</label>
+              <div style="border-radius: 12px; padding: 9px 12px; background: #EEF6FA; font-size: 12.5px; color: #173D50;">nf-core/rnaseq 3.27.0 is now in the catalogue. See the <a href="#">release notes</a>.</div>
+            </div>
+          </section>
+        </div>
+
+        <!-- (c) database and schema -->
+        <section class="card" style="overflow: hidden;">
+          <div class="sec-h">
+            <span class="sec-ic" style="background: #F1F2F6; color: #4D5065;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3"/></svg></span>
+            <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">Database and schema</h3><span style="font-size: 12.5px; color: #4D5065;">Postgres 18.1 · schema managed by Alembic · upgrades run once, by the migrate job, before new servers start</span></div>
+            <span class="chip" style="background: #E8F6EF; color: #157A4B;"><span style="width: 7px; height: 7px; border-radius: 4px; background: #1F9D63;"></span>revision 0015 · head</span>
+          </div>
+          <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr); border-top: 1px solid #EEEFF5;">
+            <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; box-shadow: inset -1px 0 0 #EEEFF5;">
+              <span class="lbl" style="margin-bottom: 4px;">Migration history</span>
+              <sc-for list="{{revs}}" as="r" hint-placeholder-count="4">
+                <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid {{r.sep}};">
+                  <span class="mono" style="width: 40px; color: #4D368B; font-weight: 500;">{{r.id}}</span>
+                  <span style="flex: 1 1 0; min-width: 0; font-size: 13px;">{{r.t}}</span>
+                  <span style="font-size: 12px; color: #6E7287; white-space: nowrap;">{{r.when}}</span>
+                  <span class="chip" style="height: 20px; font-size: 11px; background: {{r.bbg}}; color: {{r.bfg}};">{{r.b}}</span>
+                </div>
+              </sc-for>
+            </div>
+            <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 10px;">
+              <label style="display: flex; align-items: flex-start; gap: 10px;"><span class="sw on" style="margin-top: 1px;"></span><span style="display: flex; flex-direction: column; gap: 1px;"><span style="font-size: 13px; font-weight: 600;">Back up before every upgrade</span><span style="font-size: 12px; color: #4D5065;">A full backup (database + file store manifest) is taken and verified before the first pending revision runs.</span></span></label>
+              <div style="display: flex; flex-direction: column; gap: 6px; padding-top: 8px; border-top: 1px solid #EEEFF5;">
+                <span class="lbl">Upkeep</span>
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 12.5px;"><span style="flex: 1 1 0;">ANALYZE</span><span style="color: #6E7287;">autovacuum · 1 h ago</span><a href="#" class="btn btn-s" style="height: 30px;">Run</a></span>
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 12.5px;"><span style="flex: 1 1 0;">Integrity check</span><span style="color: #6E7287;">clean · 21 Oct</span><a href="#" class="btn btn-s" style="height: 30px;">Run</a></span>
+                <span style="font-size: 11.5px; color: #6E7287;">With SQLite (Python bundle) this panel offers <span class="mono">VACUUM</span>, <span class="mono">ANALYZE</span> and <span class="mono">PRAGMA integrity_check</span> instead.</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- (d) migrate this instance -->
+        <section style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; flex-direction: column; gap: 2px;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">Move this instance</h3><span style="font-size: 12.5px; color: #4D5065;">Same data, another deployment. Each move starts with a dry run, copies (never moves) the data, and verifies counts and checksums before you switch.</span></div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+            <sc-for list="{{moves}}" as="m" hint-placeholder-count="3">
+              <div class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #33364A;">
+                  <span style="padding: 3px 8px; border-radius: 7px; background: #F1F2F6;">{{m.from}}</span>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14 M13 6l6 6-6 6"/></svg>
+                  <span style="padding: 3px 8px; border-radius: 7px; background: #F6F2FE; color: #4D368B;">{{m.to}}</span>
+                </span>
+                <span style="font-size: 14px; font-weight: 600;">{{m.t}}</span>
+                <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45; flex-grow: 1;">{{m.d}}</span>
+                <span class="mono" style="padding: 6px 8px; border-radius: 8px; background: #F7F7FB; color: #33364A; font-size: 11.5px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{m.cli}}</span>
+                <span style="display: flex; align-items: center; gap: 8px;"><a href="#" class="btn btn-s" style="flex-grow: 1; justify-content: center;">{{m.cta}}</a><span style="font-size: 11.5px; color: {{m.sc}};">{{m.state}}</span></span>
+              </div>
+            </sc-for>
+          </div>
+        </section>
+
+        <!-- (e) cleanup jobs -->
+        <section class="card" style="overflow: hidden;">
+          <div class="sec-h">
+            <span class="sec-ic" style="background: #F1F2F6; color: #4D5065;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13 M10 11v6 M14 11v6"/></svg></span>
+            <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 1px;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">Cleanup jobs</h3><span style="font-size: 12.5px; color: #4D5065;">Scheduled tasks on the workers (one claim per slot, so several replicas never run the same job twice)</span></div>
+            <span style="font-size: 12.5px; color: #4D5065;">freed this month <strong style="color: #0F1020;">421 GB</strong></span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="tbl" style="min-width: 820px;">
+              <thead><tr><th>Job</th><th>Rule</th><th>Last run</th><th>Freed</th><th>Next run</th><th></th></tr></thead>
+              <tbody>
+                <sc-for list="{{jobs}}" as="j" hint-placeholder-count="5">
+                  <tr>
+                    <td><span style="display: flex; flex-direction: column;"><span style="font-weight: 600;">{{j.t}}</span><span class="mono" style="font-size: 11px; color: #6E7287;">{{j.k}}</span></span></td>
+                    <td style="color: #33364A; font-size: 12.5px;">{{j.rule}}</td>
+                    <td style="white-space: nowrap;"><span class="chip" style="background: {{j.lbg}}; color: {{j.lfg}};">{{j.last}}</span></td>
+                    <td style="white-space: nowrap; color: #33364A;">{{j.freed}}</td>
+                    <td style="white-space: nowrap; color: #33364A;">{{j.next}}</td>
+                    <td style="text-align: right;"><a href="#" class="btn btn-s" style="height: 30px;">Run now</a></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <details class="card" style="overflow: hidden;">
+          <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
+            <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transition: transform .15s;"><path d="M9 6l6 6-6 6"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>
+            <span style="font-size: 14px; font-weight: 600; flex-grow: 1;">CLI equivalent</span>
+            <span style="font-size: 12px; color: #6E7287;">admin token or the local server</span>
+          </summary>
+          <pre style="margin: 0; padding: 14px 18px; background: #15162A; color: #D9DBE7; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; overflow-x: auto;"><span style="color: #B9A4F2;">$</span> spectio admin maintenance on --message "Upgrade to 0.5" --until 18:00
+<span style="color: #B9A4F2;">$</span> spectio admin maintenance off
+<span style="color: #8E92AB;"># schema</span>
+<span style="color: #B9A4F2;">$</span> spectio db status          <span style="color: #8E92AB;"># current revision, pending revisions</span>
+<span style="color: #B9A4F2;">$</span> spectio db upgrade         <span style="color: #8E92AB;"># backs up first when the setting above is on</span>
+<span style="color: #8E92AB;"># move the instance</span>
+<span style="color: #B9A4F2;">$</span> spectio local export --out ./spectio-compose
+<span style="color: #B9A4F2;">$</span> spectio migrate database --to postgresql://spectio@db/spectio --dry-run
+<span style="color: #B9A4F2;">$</span> spectio migrate storage --to s3://spectio --verify
+<span style="color: #8E92AB;"># cleanup</span>
+<span style="color: #B9A4F2;">$</span> spectio admin cleanup list
+<span style="color: #B9A4F2;">$</span> spectio admin cleanup run workdirs</pre>
+        </details>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const sc = (t, d, on) => ({ t, d, ring: on ? '#C9B8F2' : '#DFE1EA', bg: on ? '#FAF8FF' : '#FFFFFF', box: on ? '#7750D4' : '#FFFFFF', boxr: on ? '#7750D4' : '#9A9EB0' });
+  const L = { ok: ['#E8F6EF', '#157A4B'], paused: ['#FDF3E2', '#8F5806'] };
+  const j = (t, k, rule, last, ls, freed, next) => ({ t, k, rule, last, lbg: L[ls][0], lfg: L[ls][1], freed, next });
+  return {
+    scopes: [
+      sc('Block new launches and gate decisions', 'Runs, reviews and settings stay readable; buttons that change them are disabled with the message below.', true),
+      sc('Make the whole API read-only', 'Also rejects writes from service accounts, LIMS and CLI (503). Needed for a restore or a database move.', false),
+      sc('Keep runners executing', 'Runners finish current tasks and buffer engine events; nothing is lost. Turn off only to stop the clusters too.', true)
+    ],
+    revs: [
+      { id: '0015', t: 'Run notes and review comments', when: '21 Oct 2026', b: 'head', bbg: '#E8F6EF', bfg: '#157A4B', sep: 'transparent' },
+      { id: '0014', t: 'Plugin instances with group and project scope', when: '02 Oct 2026', b: 'applied', bbg: '#F1F2F6', bfg: '#33364A', sep: '#EEEFF5' },
+      { id: '0013', t: 'Tasks ledger and log ring buffer', when: '18 Sep 2026', b: 'applied', bbg: '#F1F2F6', bfg: '#33364A', sep: '#EEEFF5' },
+      { id: '0012', t: 'External refs on runs (LabID, depictio)', when: '29 Aug 2026', b: 'applied', bbg: '#F1F2F6', bfg: '#33364A', sep: '#EEEFF5' }
+    ],
+    moves: [
+      { from: 'Python bundle', to: 'Docker Compose', t: 'Hand over to Docker Compose', d: 'Stops the local server, copies the SQLite database, file store and keys, and writes compose.yaml, an override pinned to this version and a 0600 .env. Tokens stay valid.', cli: 'spectio local export --out DIR', cta: 'Prepare export', state: 'bundle only', sc: '#6E7287' },
+      { from: 'SQLite', to: 'Postgres', t: 'Move the database to Postgres', d: 'Portable export of every table in dependency order, import into an empty Postgres at the same revision, then row counts and checksums compared table by table.', cli: 'spectio migrate database --to postgresql://…', cta: 'Start dry run', state: 'done 12 Sep', sc: '#157A4B' },
+      { from: 'Local directory', to: 'S3 · SeaweedFS', t: 'Move the file store to S3', d: 'Copies every object with its checksum, then switches the store. Orphan cleanup is paused until the copy is verified, so nothing is deleted half-way.', cli: 'spectio migrate storage --to s3://spectio', cta: 'Start dry run', state: 'done 12 Sep', sc: '#157A4B' }
+    ],
+    jobs: [
+      j('Work directories', 'cleanup.workdirs', 'per environment: EMBL SLURM keep 14 days after success, failed runs 30 days', 'ok · 02:10', 'ok', '398 GB', 'tonight 02:10'),
+      j('Orphaned blobs', 'cleanup.orphan_blobs', 'objects no record points to, older than 7 days; paused automatically during a restore or storage move', 'ok · Sat', 'ok', '9 GB', 'Sat 04:00'),
+      j('Expired tokens and sessions', 'cleanup.tokens', 'expired more than 30 days ago', 'ok · 03:00', 'ok', '1,204 rows', 'tonight 03:00'),
+      j('Delivered events and outbox', 'cleanup.outbox', 'delivered events older than 90 days (audit log kept)', 'ok · Sun', 'ok', '2.1 GB', 'Sun 04:00'),
+      j('Log ring buffer', 'cleanup.logs', 'keep 1 GB or 14 days, whichever is smaller', 'ok · hourly', 'ok', '12 GB', 'in 23 min')
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

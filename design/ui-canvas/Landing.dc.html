@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — landing page</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.spx-b,.spx-s{transform-box:view-box;transform-origin:100px 100px}
+.spx-b{animation:spx-open 1.1s cubic-bezier(.22,1.2,.36,1) .15s both}
+.spx-s{opacity:0}
+.spx-home:hover .spx-s,.spx-home:focus-visible .spx-s{animation:spx-scan 1.8s cubic-bezier(.45,0,.55,1) infinite}
+@keyframes spx-open{from{transform:rotate(var(--r))}to{transform:rotate(0)}}
+@keyframes spx-scan{0%{transform:rotate(-95deg);opacity:0}10%{opacity:1}80%{transform:rotate(95deg);opacity:1}81%,100%{transform:rotate(95deg);opacity:0}}
+@media (prefers-reduced-motion: reduce){.spx-b,.spx-home:hover .spx-s{animation:none}}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 2280px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+
+  <header style="max-width: 1200px; margin: 0 auto; padding: 22px 24px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+    <a class="spx-home" href="#" aria-label="Spectio" style="display: flex; align-items: flex-end; gap: 10px; text-decoration: none;">
+      <svg width="52" height="26" viewBox="0 0 200 100" aria-hidden="true" style="overflow: visible; margin-bottom: -1px;">
+        <defs>
+          <clipPath id="spl-fan"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/></clipPath>
+          <linearGradient id="spl-beam" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity=".65"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+        </defs>
+        <path class="spx-b" style="--r: 67.5deg;" fill="#5A4FCF" d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/>
+        <path class="spx-b" style="--r: 22.5deg;" fill="#8B5CF6" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/>
+        <path class="spx-b" style="--r: -22.5deg;" fill="#EC5F87" d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/>
+        <path class="spx-b" style="--r: -67.5deg;" fill="#F9A947" d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/>
+        <g clip-path="url(#spl-fan)"><path class="spx-s" fill="url(#spl-beam)" d="M100 100 L74.12 3.41 A100 100 0 0 1 125.88 3.41 Z"/></g>
+      </svg>
+      <img src="/_blob/7a570e2329427ff0980a12d04b41cb41" alt="" style="height: 22px; width: auto;">
+    </a>
+    <nav style="display: flex; gap: 22px; font-size: 14px; font-weight: 500; flex-grow: 1; flex-wrap: wrap;">
+      <a href="#how" style="color: #33364A; text-decoration: none;">How it works</a>
+      <a href="#checkpoints" style="color: #33364A; text-decoration: none;">Checkpoints</a>
+      <a href="#agents" style="color: #33364A; text-decoration: none;">Humans &amp; agents</a>
+      <a href="#" style="color: #33364A; text-decoration: none;">Docs</a>
+      <a href="#" style="color: #33364A; text-decoration: none;">GitHub</a>
+    </nav>
+    <a href="#how" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center;">Get started</a>
+  </header>
+
+  <section style="max-width: 1200px; margin: 0 auto; padding: 56px 24px 40px; display: flex; gap: 48px; align-items: center; flex-wrap: wrap;">
+    <div style="flex: 1 1 460px; display: flex; flex-direction: column; gap: 22px;">
+      <span style="align-self: flex-start; font-size: 12.5px; font-weight: 600; color: #6344B2; background: #F6F2FE; border-radius: 999px; padding: 6px 12px;">Open source · Nextflow &amp; Snakemake · sister of depictio</span>
+      <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 56px; line-height: 1.05;">See every run.<br>Steer it from the browser.</h1>
+      <p style="margin: 0; font-size: 19px; line-height: 1.55; color: #33364A;">Spectio launches, monitors and checkpoints your bioinformatics workflows, on your laptop or your HPC cluster. Stop a run for quality control, let a person or an AI agent decide, then continue, rerun or restart. No terminal needed.</p>
+      <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+        <a href="#how" style="height: 48px; padding: 0 22px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; text-decoration: none; display: flex; align-items: center;">Install in one line</a>
+        <a href="#" style="height: 48px; padding: 0 22px; border-radius: 12px; border: 1px solid #C4C7D4; color: #0F1020; font-weight: 600; text-decoration: none; display: flex; align-items: center;">Read the docs</a>
+      </div>
+      <code style="align-self: flex-start; font-family: 'JetBrains Mono', monospace; font-size: 14px; background: #0F1020; color: #DFE1EA; border-radius: 10px; padding: 10px 14px;">pip install spectio &amp;&amp; spectio serve</code>
+    </div>
+    <div style="flex: 1 1 480px; min-width: 0; border-radius: 22px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 24px 60px -28px rgba(15,16,32,0.35); padding: 18px; display: flex; flex-direction: column; gap: 10px; background: #FFFFFF;">
+      <div style="display: flex; justify-content: space-between; align-items: center; padding: 2px 4px 6px;">
+        <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Runs</span>
+        <span style="font-size: 12px; color: #4D5065;">live</span>
+      </div>
+      <sc-for list="{{heroRuns}}" as="r" hint-placeholder-count="4">
+        <div style="display: flex; align-items: stretch; border: 1px solid #EEEFF5; border-radius: 12px; overflow: hidden;">
+          <div style="width: 4px; background: {{r.rail}};"></div>
+          <div style="display: flex; align-items: center; gap: 12px; padding: 10px 12px; flex-grow: 1; min-width: 0;">
+            <svg width="44" height="22" viewBox="0 0 200 100" aria-hidden="true">
+              <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="{{r.f0}}"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="{{r.f1}}"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="{{r.f2}}"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="{{r.f3}}"/>
+            </svg>
+            <div style="display: flex; flex-direction: column; min-width: 0; flex-grow: 1;">
+              <span style="font-size: 13.5px; font-weight: 600;">{{r.name}}</span>
+              <span style="font-size: 12px; color: #4D5065;">{{r.ctx}}</span>
+            </div>
+            <span style="font-size: 12.5px; font-weight: 600; color: {{r.fg}};">{{r.state}}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section aria-label="Works with" style="max-width: 1200px; margin: 0 auto; padding: 20px 24px 40px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; color: #4D5065; font-size: 13px;">
+    <span style="font-weight: 600; letter-spacing: 0.06em; font-size: 11.5px;">WORKS WITH</span>
+    <sc-for list="{{works}}" as="w" hint-placeholder-count="8">
+      <span style="border: 1px solid #DFE1EA; border-radius: 10px; padding: 7px 12px; font-weight: 500; color: #22253A; display: flex; align-items: center; gap: 8px;"><sc-if value="{{w.has}}" hint-placeholder-val="{{false}}"><img src="{{w.logo}}" width="18" height="18" alt="" style="display: block; object-fit: contain;"></sc-if>{{w.name}}</span>
+    </sc-for>
+  </section>
+
+  <section style="background: #F7F7FB; padding: 64px 24px;">
+    <div style="max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+      <sc-for list="{{pillars}}" as="p" hint-placeholder-count="3">
+        <div style="background: #FFFFFF; border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.08); padding: 24px; display: flex; flex-direction: column; gap: 12px;">
+          <span style="width: 44px; height: 44px; border-radius: 13px; background: {{p.tint}}; color: {{p.ink}}; display: flex; align-items: center; justify-content: center;">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.icon}}"/></svg>
+          </span>
+          <h3 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">{{p.title}}</h3>
+          <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #33364A;">{{p.text}}</p>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="how" style="max-width: 1200px; margin: 0 auto; padding: 72px 24px; display: flex; flex-direction: column; gap: 28px;">
+    <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 38px;">Running in three steps</h2>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 20px;">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+        <div style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 22px; display: flex; flex-direction: column; gap: 12px;">
+          <span style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 30px; color: {{s.ink}};">{{s.n}}</span>
+          <h3 style="margin: 0; font-size: 18px; font-weight: 600;">{{s.title}}</h3>
+          <p style="margin: 0; font-size: 14.5px; line-height: 1.55; color: #33364A;">{{s.text}}</p>
+          <code style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; background: #0F1020; color: #DFE1EA; border-radius: 10px; padding: 10px 12px; white-space: pre-wrap;">{{s.code}}</code>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section id="checkpoints" style="background: #0F1020; color: #ECEDF5; padding: 72px 24px;">
+    <div style="max-width: 1200px; margin: 0 auto; display: flex; gap: 48px; flex-wrap: wrap; align-items: center;">
+      <div style="flex: 1 1 420px; display: flex; flex-direction: column; gap: 16px;">
+        <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 38px;">Checkpoints, not guesswork</h2>
+        <p style="margin: 0; font-size: 17px; line-height: 1.6; color: #C4C7D4;">Declare stages once in <code style="font-family: 'JetBrains Mono', monospace;">spectio.yml</code>. Spectio stops after each one, shows the QC evidence, and waits for a decision. Change parameters and rerun from that stage, continue to the end, or restart from scratch. The engine cache does the rest.</p>
+      </div>
+      <div style="flex: 1 1 520px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <sc-for list="{{gate}}" as="g" hint-placeholder-count="5">
+          <div style="flex: 1 1 140px; border-radius: 14px; background: #171A2E; box-shadow: inset 0 0 0 1px #33364A; padding: 14px; display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-size: 11.5px; font-weight: 600; color: {{g.ink}}; letter-spacing: 0.06em;">{{g.k}}</span>
+            <span style="font-size: 14px; line-height: 1.45;">{{g.v}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+  </section>
+
+  <section id="agents" style="max-width: 1200px; margin: 0 auto; padding: 72px 24px; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 24px;">
+    <div style="display: flex; flex-direction: column; gap: 14px;">
+      <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 34px;">Built for humans, AI agents and lab robots</h2>
+      <p style="margin: 0; font-size: 16px; line-height: 1.6; color: #33364A;">One API behind three doors: the web app for people, an MCP server for AI agents, webhooks for instruments and LIMS. Every decision records who made it, and why.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <sc-for list="{{doors}}" as="d" hint-placeholder-count="4">
+        <div style="display: flex; gap: 14px; align-items: flex-start; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;">
+          <span style="font-size: 13px; font-weight: 600; color: #6344B2; min-width: 120px;">{{d.k}}</span>
+          <span style="font-size: 14px; line-height: 1.5; color: #33364A;">{{d.v}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="max-width: 1200px; margin: 0 auto 56px; padding: 0 24px;">
+    <div style="border-radius: 22px; background: #F2F1FB; padding: 32px; display: flex; gap: 24px; align-items: center; justify-content: space-between; flex-wrap: wrap;">
+      <div style="display: flex; flex-direction: column; gap: 6px; max-width: 680px;">
+        <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 26px;">From run to dashboard with depictio</h2>
+        <p style="margin: 0; font-size: 15px; line-height: 1.55; color: #33364A;">Spectio runs the pipeline, depictio turns its results into interactive dashboards. Same look, same accounts, one click between them.</p>
+      </div>
+      <a href="#" style="height: 46px; padding: 0 20px; border-radius: 12px; background: #FFFFFF; color: #343078; font-weight: 600; text-decoration: none; display: flex; align-items: center; box-shadow: 0 0 0 1px #C7C3EF;">Discover depictio</a>
+    </div>
+  </section>
+
+  <footer style="border-top: 1px solid #EEEFF5; padding: 28px 24px; max-width: 1200px; margin: 0 auto; display: flex; gap: 24px; flex-wrap: wrap; justify-content: space-between; font-size: 13px; color: #4D5065;">
+    <span>Spectio · open source · [LICENCE]</span>
+    <span>Docs · GitHub · Changelog · depictio</span>
+  </footer>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":2280}}'>
+class Component extends DCLogic {
+renderVals() {
+  const B = ['#5A4FCF','#8B5CF6','#EC5F87','#F9A947'], T = ['#A39CE4','#BEA4FA','#F4A5BC','#FCCF98'], off = '#DFE1EA';
+  const g = (spec) => { const o = {}; spec.forEach((s, i) => { o['f' + i] = s === 'd' ? B[i] : s === 'r' ? T[i] : s === 'x' ? '#DC3B3B' : s === 'g' ? '#FCE7B8' : off; }); return o; };
+  const heroRuns = [
+    { name: 'imaging-cellpose', ctx: 'Gate after segmentation · 12 min', state: 'Awaiting review', fg: '#8F5806', rail: '#D9890B', ...g(['d','g','t','t']) },
+    { name: 'rnaseq-2026-10-25', ctx: 'Stage 3 of 4 · 812 / 1,248 tasks', state: 'Running', fg: '#1D5FC9', rail: '#3B82F6', ...g(['d','d','r','t']) },
+    { name: 'atac-batch-07', ctx: '3 h 12 min · MultiQC ready', state: 'Succeeded', fg: '#157A4B', rail: '#1F9D63', ...g(['d','d','d','d']) },
+    { name: 'variant-calling-wgs', ctx: 'bwa_mem exit 137 · resumable', state: 'Failed', fg: '#B02A2A', rail: '#DC3B3B', ...g(['x','t','t','t']) }
+  ];
+  return {
+    heroRuns,
+    works: [['Nextflow', '/_blob/636203cdee0bc09b61efe0fa351e239b'], ['nf-core', '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'], ['Snakemake', '/_blob/7a35665829f51132cb3bcb9a4c3e638c'], ['SLURM'], ['SGE / PBS / LSF'], ['Kubernetes'], ['GA4GH WES'], ['MCP']].map(([name, logo]) => ({ name, logo: logo || '', has: !!logo })),
+    pillars: [
+      { title: 'Launch without a terminal', text: 'Register a workflow once. Its parameter schema becomes a form, its samplesheet an editable grid. Pick a cluster and launch.', icon: 'M5 4l14 8-14 8z', tint: '#F6F2FE', ink: '#6344B2' },
+      { title: 'See every run', text: 'Live states, tasks, logs and software versions for Nextflow and Snakemake, whether launched here or from the command line.', icon: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', tint: '#F2F1FB', ink: '#423B97' },
+      { title: 'Steer with checkpoints', text: 'Pause after any stage for QC. Continue, change parameters and rerun, or restart. Every decision is logged.', icon: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5', tint: '#FDF2F5', ink: '#A54666' }
+    ],
+    steps: [
+      { n: '1', title: 'Install the server', text: 'A pure Python package. SQLite to start, Postgres when you grow.', code: 'pip install spectio\nspectio serve', ink: '#5A4FCF' },
+      { n: '2', title: 'Connect a cluster', text: 'A runner on the login node opens an outbound connection. No inbound port.', code: 'pip install spectio\nspectio runner connect <token>', ink: '#8B5CF6' },
+      { n: '3', title: 'Launch from the browser', text: 'Pick an nf-core or Snakemake workflow, fill the form, follow the run.', code: 'open http://localhost:8000', ink: '#EC5F87' }
+    ],
+    gate: [
+      { k: 'STAGE 2 DONE', v: 'Segmentation finished on 48 fields', ink: '#BEA4FA' },
+      { k: 'EVIDENCE', v: 'QC metrics, thumbnails, MultiQC', ink: '#F4A5BC' },
+      { k: 'AGENT PROPOSES', v: 'Within thresholds: exclude 3 blurry fields', ink: '#FCCF98' },
+      { k: 'YOU DECIDE', v: 'Approve, change params, or rerun', ink: '#A39CE4' },
+      { k: 'RESUME', v: 'Cache reused, only what changed reruns', ink: '#BEA4FA' }
+    ],
+    doors: [
+      { k: 'Web app', v: 'Review queue, viewers, one-click decisions.' },
+      { k: 'MCP server', v: 'AI agents read evidence and propose or approve within policy.' },
+      { k: 'Webhooks', v: 'Robots and instruments signal when a wet-lab step is done.' },
+      { k: 'REST + WES', v: 'Third-party tools trigger and monitor runs (GA4GH WES 1.1).' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

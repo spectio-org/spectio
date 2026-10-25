@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Perspectio — secteurs égaux, palette Spectre</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#141414}a:hover{color:#444444}
+</style>
+</helmet>
+<div style="width: 1200px; height: 460px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="e" viewBox="0 0 200 100">
+      <path fill="#4361EE" d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/>
+      <path fill="#7B2CBF" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/>
+      <path fill="#F72585" d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/>
+      <path fill="#FF9F1C" d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/>
+    </symbol>
+  </svg>
+  <div style="flex-grow: 1; display: flex; align-items: flex-end; justify-content: center; gap: 30px; padding-bottom: 84px; box-sizing: border-box;">
+    <svg width="220" height="110" role="img" aria-label="Emblème : demi-disque en quatre secteurs égaux, bleu, violet, magenta et orange vifs" style="margin-bottom: -6px;"><use href="#e"/></svg>
+    <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO" style="height: 72px; width: auto;">
+  </div>
+  <div style="height: 130px; background: #141414; display: flex; align-items: center; justify-content: space-between; padding: 0 64px; box-sizing: border-box;">
+    <div style="display: flex; align-items: flex-end; gap: 18px;">
+      <svg width="120" height="60" aria-hidden="true" style="margin-bottom: -3px;"><use href="#e"/></svg>
+      <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO sur fond sombre" style="height: 40px; width: auto; filter: invert(1);">
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="height: 48px; padding: 0 14px 14px; border-radius: 10px; background: #FFFFFF; display: flex; align-items: flex-end; gap: 7px; box-sizing: border-box;">
+        <svg width="36" height="18" aria-hidden="true" style="margin-bottom: -1px;"><use href="#e"/></svg>
+        <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO en très petit" style="height: 12px; width: auto;">
+      </div>
+      <div style="width: 72px; height: 72px; border-radius: 16px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+        <svg width="60" height="30" aria-hidden="true"><use href="#e"/></svg>
+      </div>
+      <div style="width: 32px; height: 32px; border-radius: 7px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+        <svg width="28" height="14" aria-hidden="true"><use href="#e"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":460}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

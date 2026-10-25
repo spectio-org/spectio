@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Écluse 3 — écluse radiale</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#141414}a:hover{color:#444444}
+</style>
+</helmet>
+<div style="width: 520px; height: 560px; box-sizing: border-box; background: #FFFFFF; color: #141414; display: flex; flex-direction: column; font-family: system-ui, sans-serif;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="m" viewBox="0 0 200 200">
+      <path d="M102.09 60.05A40 40 0 0 1 127.79 71.23L105.56 94.25A8 8 0 0 0 100.42 92.01Z M137.54 68.5A49 49 0 0 1 148.99 100.86L108.0 100.14A8 8 0 0 0 106.13 94.86Z M157.57 107.07A58 58 0 0 1 138.81 143.1L105.35 105.95A8 8 0 0 0 107.94 100.97Z M139.38 154.2A67 67 0 0 1 94.16 166.75L99.3 107.97A8 8 0 0 0 104.7 106.47Z M85.5 174.6A76 76 0 0 1 40.11 146.79L93.7 104.93A8 8 0 0 0 98.47 107.85Z M27.92 145.04A85 85 0 0 1 16.05 86.7L92.1 98.75A8 8 0 0 0 93.22 104.24Z M9.2 75.67A94 94 0 0 1 47.44 22.07L95.53 93.37A8 8 0 0 0 92.27 97.93Z" fill="currentColor"/>
+      <path d="M72.17 6.04A98 98 0 0 1 85.51 3.08L98.82 92.09A8 8 0 0 0 97.73 92.33Z" fill="currentColor"/>
+    </symbol>
+  </svg>
+  <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+    <svg width="260" height="260" role="img" aria-label="Écluse radiale : sept niveaux d'eau qui montent en tournant, comme un graphique circulaire en barres, et une porte fermée"><use href="#m"/></svg>
+  </div>
+  <div style="height: 136px; border-top: 1px solid #E6E6E6; display: flex; align-items: center; justify-content: center; gap: 32px;">
+    <svg width="48" height="48" aria-hidden="true"><use href="#m"/></svg>
+    <svg width="24" height="24" aria-hidden="true"><use href="#m"/></svg>
+    <svg width="16" height="16" aria-hidden="true"><use href="#m"/></svg>
+    <div style="width: 72px; height: 72px; border-radius: 16px; background: #141414; color: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+      <svg width="48" height="48" aria-hidden="true"><use href="#m"/></svg>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":520,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

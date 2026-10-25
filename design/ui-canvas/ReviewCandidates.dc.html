@@ -1,0 +1,271 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, candidate list</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rc:has(input[value="sum"]:checked) .pn-sum,
+.rc:has(input[value="bins"]:checked) .pn-bins,
+.rc:has(input[value="samples"]:checked) .pn-samples,
+.rc:has(input[value="report"]:checked) .pn-report,
+.rc:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.bl td,.bl th{padding:8px 10px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/mag · soil-meta-12" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rc" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">6 of 12 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <a href="ReviewReport.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="#" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stages 1 and 2 done, gate after stage 3 open"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#8B5CF6"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Bin QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· soil-meta-12 · #288</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block;">nf-core/mag 3.x · 8 samples · 61 bins · paused after binning (stage 3 of 4) · <strong style="color: #8F5806;">waiting 35 min</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span title="You" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">TW</span>
+        <span title="metagenomics" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">+2</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvcand" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary</label>
+      <label class="rv-tab"><input type="radio" name="rvcand" value="bins" checked aria-label="Bins"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19l4-6 4 3 6-9 M5 5v14h14"/></svg>Bins<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">{{keptLabel}}</span></label>
+      <label class="rv-tab"><input type="radio" name="rvcand" value="samples" aria-label="Samples"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Samples<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">8</span></label>
+      <label class="rv-tab"><input type="radio" name="rvcand" value="report" aria-label="Report"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Report<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">MultiQC</span></label>
+      <label class="rv-tab"><input type="radio" name="rvcand" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">3</span></label>
+    </div>
+
+    <!-- BINS: candidate list -->
+    <section class="rv-pn pn-bins" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-radius: 14px; background: #F6F2FE; padding: 10px 14px;">
+        <span role="switch" aria-checked="true" aria-label="Keep bins of at least medium quality" style="width: 38px; height: 22px; border-radius: 11px; background: #7750D4; position: relative; flex-shrink: 0;"><span style="position: absolute; top: 3px; left: 19px; width: 16px; height: 16px; border-radius: 8px; background: #FFFFFF;"></span></span>
+        <span style="font-size: 13.5px; font-weight: 600; color: #4D368B;">Keep bins ≥ medium quality (MIMAG)</span>
+        <span style="font-size: 12.5px; color: #4D5065;">completeness ≥ 50 % and contamination &lt; 10 % · GUNC pass</span>
+        <span style="flex-grow: 1;"></span>
+        <span style="font-size: 13.5px; font-weight: 700; color: #0F1020;">{{keptCount}} of 61 bins kept</span>
+        <span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #FFFFFF; color: #4D368B;">2 manual overrides</span>
+      </div>
+
+      <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start;">
+        <div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+          <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Completeness vs contamination</h2><span style="font-size: 12px; color: #6E7287;">CheckM2 · one dot per bin</span></div>
+            <div role="img" aria-label="Scatter of 61 bins: completeness against contamination, with MIMAG quality zones" style="display: flex; gap: 6px;">
+              <div style="width: 16px; display: flex; align-items: center; justify-content: center;"><span style="transform: rotate(-90deg); white-space: nowrap; font-size: 11px; color: #33364A;">Contamination (%)</span></div>
+              <div style="width: 24px; position: relative; height: 280px;">
+                <sc-for list="{{gridY}}" as="g" hint-placeholder-count="5"><span style="position: absolute; right: 2px; top: {{g.top}}; transform: translateY(-50%); font-size: 10.5px; color: #6E7287;">{{g.t}}</span></sc-for>
+              </div>
+              <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+                <div style="position: relative; height: 280px; background: #FAFAFC; border-left: 1px solid #DFE1EA; border-bottom: 1px solid #DFE1EA;">
+                  <sc-for list="{{gridX}}" as="g" hint-placeholder-count="6"><span style="position: absolute; left: {{g.left}}; top: 0; bottom: 0; width: 1px; background: #EEEFF5;"></span></sc-for>
+                  <sc-for list="{{gridY}}" as="g" hint-placeholder-count="5"><span style="position: absolute; top: {{g.top}}; left: 0; right: 0; height: 1px; background: #EEEFF5;"></span></sc-for>
+                  <span style="position: absolute; left: 50%; right: 0; top: 50%; bottom: 0; background: rgba(249,169,71,0.16);"></span>
+                  <span style="position: absolute; left: 90%; right: 0; top: 75%; bottom: 0; background: rgba(31,157,99,0.18);"></span>
+                  <span style="position: absolute; left: calc(50% + 6px); top: calc(50% + 4px); font-size: 11px; color: #8F5806;">medium (≥ 50 / &lt; 10)</span>
+                  <span style="position: absolute; left: calc(90% + 3px); top: calc(75% + 4px); font-size: 10px; color: #157A4B;">high</span>
+                  <sc-for list="{{dots}}" as="d" hint-placeholder-count="61"><span title="{{d.title}}" style="position: absolute; left: {{d.left}}; top: {{d.top}}; width: {{d.size}}; height: {{d.size}}; transform: translate(-50%, -50%); border-radius: 50%; background: {{d.fill}}; opacity: {{d.op}}; box-shadow: {{d.ring}};"></span></sc-for>
+                </div>
+                <div style="position: relative; height: 14px;">
+                  <sc-for list="{{gridX}}" as="g" hint-placeholder-count="6"><span style="position: absolute; left: {{g.left}}; transform: translateX(-50%); font-size: 10.5px; color: #6E7287;">{{g.t}}</span></sc-for>
+                </div>
+                <span style="text-align: center; font-size: 11px; color: #33364A;">Completeness (%)</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #33364A;">
+              <sc-for list="{{legend}}" as="l" hint-placeholder-count="4"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 11px; height: 11px; border-radius: 6px; background: {{l.c}}; box-shadow: {{l.ring}};"></span>{{l.t}}</span></sc-for>
+            </div>
+          </div>
+          <div style="border-radius: 16px; box-shadow: inset 0 0 0 2px #7750D4; background: #FBF9FF; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">S03_bin.12 <span style="font-weight: 500; color: #6E7287; font-size: 13px;">· g__Nitrososphaera · high quality</span></h2><a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Contig size viewer (HTML report) →</a></div>
+            <sc-for list="{{evidence}}" as="e" hint-placeholder-count="4">
+              <div style="display: flex; gap: 12px; font-size: 12.5px; padding-top: 6px; border-top: 1px solid #EEE7FD;"><span style="width: 80px; flex-shrink: 0; font-weight: 600; color: #4D368B;">{{e.k}}</span><span style="font-family: 'JetBrains Mono', monospace; color: #22253A;">{{e.v}}</span></div>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="flex: 1 1 520px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 10px 12px; background: #F7F7FB;"><span style="font-size: 13.5px; font-weight: 600;">Ranked bins</span><span style="font-size: 12px; color: #6E7287;">sorted by completeness − 5 × contamination</span></div>
+          <div style="overflow-x: auto;">
+            <table class="bl" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+              <thead><tr style="color: #33364A; font-size: 11.5px;"><th scope="col">Bin</th><th scope="col">Compl.</th><th scope="col">Cont.</th><th scope="col">GUNC</th><th scope="col">Tier</th><th scope="col">Decision</th></tr></thead>
+              <tbody>
+                <sc-for list="{{list}}" as="b" hint-placeholder-count="10">
+                  <tr style="box-shadow: inset 4px 0 0 {{b.rail}}; background: {{b.bg}};">
+                    <td style="padding-left: 14px;"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">{{b.id}}</span><span style="display: block; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4D5065;">{{b.tax}}</span><span style="display: block; font-size: 11px; color: {{b.notec}};">{{b.note}}</span></td>
+                    <td style="font-weight: 600;">{{b.comp}}</td>
+                    <td style="font-weight: 600; color: {{b.contc}};">{{b.cont}}</td>
+                    <td style="color: {{b.guncc}}; font-weight: 600;">{{b.gunc}}</td>
+                    <td><span style="font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 6px; background: {{b.tbg}}; color: {{b.tfg}};">{{b.tier}}</span></td>
+                    <td><span style="display: inline-flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px;"><sc-for list="{{b.opts}}" as="o" hint-placeholder-count="2"><span style="padding: 3px 8px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for></span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding: 8px 12px; font-size: 12px; color: #6E7287; border-top: 1px solid #EEEFF5;">Showing 10 of 61 · the rule decides the rest; overrides are marked</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="gap: 12px; flex-wrap: wrap; align-items: stretch;">
+      <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">from spectio.yml · CheckM2, GUNC, QUAST tables</span></div>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;"><span style="flex: 1 1 240px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span><span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span></div>
+        </sc-for>
+      </div>
+      <div style="flex: 2 1 260px; min-width: 0; border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in</span></div>
+        <sc-for list="{{health}}" as="h" hint-placeholder-count="4"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}};">{{h.v}}</span></div></sc-for>
+      </div>
+    </section>
+
+    <!-- SAMPLES -->
+    <section class="rv-pn pn-samples" style="flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; color: #4D5065;">Bins kept per sample (rule + overrides). A sample with no kept bin is flagged, not excluded.</span>
+      <sc-for list="{{samples}}" as="s" hint-placeholder-count="8">
+        <div style="display: flex; align-items: center; gap: 14px; border-top: 1px solid #EEEFF5; padding: 8px 0; font-size: 13px;"><span style="width: 60px; font-weight: 600;">{{s.id}}</span><span style="flex-grow: 1; display: flex; height: 10px; border-radius: 5px; overflow: hidden; background: #EEEFF5;"><span style="width: {{s.hw}}; background: #1F9D63;"></span><span style="width: {{s.mw}}; background: #F2B544;"></span><span style="width: {{s.lw}}; background: #C4C7D4;"></span></span><span style="width: 140px; text-align: right; color: {{s.fg}}; font-weight: 600;">{{s.t}}</span></div>
+      </sc-for>
+    </section>
+
+    <!-- REPORT -->
+    <section class="rv-pn pn-report" style="flex-direction: column; gap: 8px;">
+      <div role="img" aria-label="MultiQC report in a sandboxed frame (placeholder)" style="height: 420px; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); background: repeating-linear-gradient(135deg, #FAFAFC 0 14px, #F1F2F6 14px 28px); display: flex; align-items: center; justify-content: center; font-size: 13px; color: #4D5065;">multiqc_report.html · sandboxed report reader (see the rnaseq review for the full layout)</div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="3">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 360px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F6F2FE; color: #4D368B;">Rule MIMAG ≥ medium</span><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F6F2FE; color: #4D368B;">2 manual overrides</span><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F1F2F6; color: #33364A;">bins_keep.tsv ({{keptCount}} bins)</span></span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 230px;">
+        <span style="font-size: 11.5px; color: #4D5065;">bins_keep.tsv passed to the annotation stage</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #5A4FCF;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #8B5CF6;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #EC5F87;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #FCCF98;"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  let seed = 7;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) % 2147483648; return seed / 2147483648; };
+  const X = c => c, Y = k => 100 - Math.min(k, 20) / 20 * 100;
+  const tierOf = (c, k) => (c >= 90 && k < 5) ? 'high' : (c >= 50 && k < 10) ? 'medium' : 'low';
+  const bins = [];
+  for (let i = 0; i < 61; i++) {
+    const g = rnd();
+    let c, k;
+    if (g < 0.2) { c = 90 + rnd() * 9.5; k = rnd() * 4.5; }
+    else if (g < 0.5) { c = 52 + rnd() * 42; k = 0.5 + rnd() * 8.8; }
+    else { c = 8 + rnd() * 60; k = rnd() * 18; if (rnd() < 0.35) { c = 60 + rnd() * 35; k = 10.5 + rnd() * 8; } }
+    bins.push({ c: +c.toFixed(1), k: +k.toFixed(1) });
+  }
+  const overrideIn = 17, overrideOut = 5, sel = [0, overrideIn, overrideOut];
+  bins[0] = { c: 96.4, k: 1.8 };
+  bins[overrideIn] = { c: 47.2, k: 3.1 };
+  bins[overrideOut] = { c: 78.5, k: 6.2 };
+  const col = { high: '#1F9D63', medium: '#D9890B', low: '#9A9EB0' };
+  const special = [0, overrideIn, overrideOut];
+  let pre = bins.filter((b, i) => !special.includes(i) && tierOf(b.c, b.k) !== 'low').length + 2;
+  for (let i = bins.length - 1; i >= 0 && pre > 38; i--) { if (!special.includes(i) && tierOf(bins[i].c, bins[i].k) !== 'low') { bins[i] = { c: bins[i].c, k: +(10.5 + (i % 7)).toFixed(1) }; pre--; } }
+  let kept = 0;
+  const dots = bins.map((b, i) => {
+    const t = tierOf(b.c, b.k);
+    let keep = t !== 'low';
+    if (i === overrideIn) keep = true;
+    if (i === overrideOut) keep = false;
+    if (keep) kept++;
+    const isSel = sel.includes(i);
+    return { left: X(b.c).toFixed(1) + '%', top: Y(b.k).toFixed(1) + '%', size: isSel ? '13px' : '9px', fill: col[t], op: keep ? 0.92 : 0.45, ring: isSel ? '0 0 0 2.5px #7750D4, 0 0 0 4px #FFFFFF' : '0 0 0 1px #FFFFFF', title: 'bin ' + i + ' · ' + b.c + ' % / ' + b.k + ' %' };
+  });
+  const opt = (on) => ['Accept', 'Reject'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Reject' ? '#B02A2A' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  const tierChip = { high: ['high', '#E8F6EF', '#157A4B'], medium: ['medium', '#FDF3E2', '#8F5806'], low: ['low', '#F1F2F6', '#4D5065'] };
+  const L = (id, c, k, gunc, tax, decision, note, notec, selected) => {
+    const t = tierOf(c, k), [tier, tbg, tfg] = tierChip[t];
+    return { id, comp: c.toFixed(1), cont: k.toFixed(1), contc: k >= 10 ? '#B02A2A' : k >= 5 ? '#8F5806' : '#22253A', gunc, guncc: gunc === 'pass' ? '#157A4B' : '#B02A2A', tax, tier, tbg, tfg, opts: opt(decision), note, notec: notec || '#6E7287', rail: selected ? '#7750D4' : 'transparent', bg: selected ? '#FBF9FF' : 'transparent' };
+  };
+  return {
+    keptCount: kept, keptLabel: kept + ' kept',
+    dots,
+    gridX: [0, 20, 40, 60, 80, 100].map(v => ({ left: v + '%', t: String(v) })),
+    gridY: [0, 5, 10, 15, 20].map(v => ({ top: Y(v) + '%', t: String(v) })),
+    legend: [{ t: 'High quality', c: col.high, ring: 'none' }, { t: 'Medium', c: col.medium, ring: 'none' }, { t: 'Low (faded = not kept)', c: col.low, ring: 'none' }, { t: 'Selected', c: '#FFFFFF', ring: 'inset 0 0 0 2.5px #7750D4' }],
+    list: [
+      L('S03_bin.12', 96.4, 1.8, 'pass', 'g__Nitrososphaera', 'Accept', 'selected', '#4D368B', true),
+      L('S01_bin.4', 94.8, 2.6, 'pass', 'g__Bradyrhizobium', 'Accept', ''),
+      L('S07_bin.9', 92.1, 3.9, 'pass', 'f__Acidobacteriaceae', 'Accept', ''),
+      L('S02_bin.7', 88.0, 4.4, 'pass', 'g__Streptomyces', 'Accept', ''),
+      L('S05_bin.3', 81.3, 7.9, 'pass', 'o__Rhizobiales', 'Accept', ''),
+      L('S04_bin.21', 78.5, 6.2, 'fail', 'f__Chitinophagaceae', 'Reject', 'override: GUNC chimeric', '#B02A2A', true),
+      L('S06_bin.2', 66.7, 8.1, 'pass', 'p__Chloroflexota', 'Accept', ''),
+      L('S08_bin.15', 47.2, 3.1, 'pass', 'g__Candidatus_Udaeobacter', 'Accept', 'override: keep, rare lineage', '#4D368B', true),
+      L('S01_bin.11', 71.4, 12.6, 'pass', 'c__Gammaproteobacteria', 'Reject', ''),
+      L('S03_bin.30', 31.9, 2.2, 'pass', 'd__Bacteria', 'Reject', '')
+    ],
+    evidence: [
+      { k: 'QUAST', v: '142 contigs · N50 48.2 kb · total 3.12 Mb · GC 41.2 %' },
+      { k: 'BUSCO', v: 'C:93.1% [S:92.4%, D:0.7%], F:2.1%, M:4.8% · archaea_odb10' },
+      { k: 'CheckM2', v: 'completeness 96.4 · contamination 1.8 · model: specific' },
+      { k: 'GUNC', v: 'pass · clade separation score 0.12' }
+    ],
+    checks: [
+      { name: 'Bins at least medium quality', rule: 'MIMAG', value: (kept - 1) + ' + 2 overrides', col: '#22253A' },
+      { name: 'Chimeric bins', rule: 'GUNC pass', value: '4 fail', col: '#B02A2A' },
+      { name: 'Samples with ≥ 1 kept bin', rule: 'count ≥ 1', value: '8 / 8', col: '#157A4B' }
+    ],
+    health: [
+      { k: 'Failed tasks', v: '0', fg: '#157A4B' }, { k: 'Retried tasks', v: '3 (MEGAHIT memory)', fg: '#8F5806' },
+      { k: 'Binning runtime', v: '5 h 40', fg: '#22253A' }, { k: 'Peak memory', v: '410 of 512 GB', fg: '#8F5806' }
+    ],
+    samples: ['S01', 'S02', 'S03', 'S04', 'S05', 'S06', 'S07', 'S08'].map((id, i) => { const h = [3, 2, 4, 1, 2, 1, 3, 0][i], m = [3, 4, 2, 3, 2, 4, 2, 1][i], l = [2, 3, 3, 4, 3, 2, 3, 4][i], n = h + m + l; return { id, hw: (h / n * 100) + '%', mw: (m / n * 100) + '%', lw: (l / n * 100) + '%', t: (h + m) + ' of ' + n + ' kept', fg: h + m === 1 ? '#8F5806' : '#22253A' }; }),
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after binning; annotation held.', at: '11:05' },
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Rule “MIMAG ≥ medium” applied from spectio.yml.', at: '11:06' },
+      { t: 'TW', bg: '#E6DCFC', fg: '#4D368B', text: 'Thomas rejected S04_bin.21 (GUNC chimeric) and kept S08_bin.15 (rare lineage).', at: '11:38' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

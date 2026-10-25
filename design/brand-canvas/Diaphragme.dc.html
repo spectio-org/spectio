@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Perspectio 1 — diaphragme</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#141414}a:hover{color:#444444}
+</style>
+</helmet>
+<div style="width: 520px; height: 560px; box-sizing: border-box; background: #FFFFFF; color: #141414; display: flex; flex-direction: column; font-family: system-ui, sans-serif;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <defs>
+      <mask id="dg" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+        <rect width="200" height="200" fill="#FFFFFF"/>
+        <path d="M100.0 64.0L190.55 116.27 M131.18 82.0L131.18 186.56 M131.18 118.0L40.63 170.28 M100.0 136.0L9.45 83.73 M68.82 118.0L68.82 13.44 M68.82 82.0L159.37 29.72" stroke="#000000" stroke-width="7" stroke-linecap="square"/>
+      </mask>
+    </defs>
+    <symbol id="m" viewBox="0 0 200 200">
+      <g mask="url(#dg)" fill="currentColor">
+        <path d="M100.0 64.0L190.55 116.27A92 92 0 0 0 159.37 29.72Z"/>
+        <path d="M131.18 82.0L131.18 186.56A92 92 0 0 0 190.55 116.27Z"/>
+        <path d="M131.18 118.0L40.63 170.28A92 92 0 0 0 131.18 186.56Z"/>
+        <path d="M100.0 136.0L9.45 83.73A92 92 0 0 0 40.63 170.28Z"/>
+        <path d="M68.82 118.0L68.82 13.44A92 92 0 0 0 9.45 83.73Z"/>
+        <path d="M68.82 82.0L159.37 29.72A92 92 0 0 0 68.82 13.44Z"/>
+      </g>
+    </symbol>
+  </svg>
+  <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+    <svg width="260" height="260" role="img" aria-label="Diaphragme à six lamelles autour d'une ouverture hexagonale"><use href="#m"/></svg>
+  </div>
+  <div style="height: 136px; border-top: 1px solid #E6E6E6; display: flex; align-items: center; justify-content: center; gap: 32px;">
+    <svg width="48" height="48" aria-hidden="true"><use href="#m"/></svg>
+    <svg width="24" height="24" aria-hidden="true"><use href="#m"/></svg>
+    <svg width="16" height="16" aria-hidden="true"><use href="#m"/></svg>
+    <div style="width: 72px; height: 72px; border-radius: 16px; background: #141414; color: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+      <svg width="48" height="48" aria-hidden="true"><use href="#m"/></svg>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":520,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

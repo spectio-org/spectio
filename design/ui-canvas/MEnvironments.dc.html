@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio mobile — environments</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Environments" sub="3 of 4 runners online" back="MMore.dc.html" hint-size="390px,60px"></dc-import></div>
+  <main style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <sc-for list="{{envs}}" as="e" hint-placeholder-count="4">
+      <div style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden; display: flex;">
+        <span style="width: 4px; flex-shrink: 0; background: {{e.rail}};"></span>
+        <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+          <a href="{{e.href}}" style="text-decoration: none; color: inherit; padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+            <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+              <span style="font-size: 16px; font-weight: 600;">{{e.name}}</span>
+              <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: {{e.fg}};"><span style="width: 8px; height: 8px; border-radius: 4px; background: {{e.rail}};"></span>{{e.state}}</span>
+            </span>
+            <span style="font-size: 12.5px; color: #4D5065;">{{e.runner}}</span>
+            <span style="display: flex; flex-direction: column; gap: 5px; padding-top: 6px; border-top: 1px solid #EEEFF5;">
+              <sc-for list="{{e.facts}}" as="f" hint-placeholder-count="3">
+                <span style="display: flex; align-items: center; gap: 10px; font-size: 13px;">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="{{f.icon}}"/></svg>
+                  <span style="width: 64px; color: #6E7287; flex-shrink: 0;">{{f.k}}</span>
+                  <span style="color: #22253A; min-width: 0;">{{f.v}}</span>
+                </span>
+              </sc-for>
+            </span>
+          </a>
+          <sc-if value="{{e.hasStorage}}" hint-placeholder-val="{{false}}">
+            <a href="EnvStorage.dc.html" style="text-decoration: none; color: inherit; margin: 0 14px 12px; border-radius: 12px; background: #FFFBF3; box-shadow: inset 0 0 0 1px #F9DDB0; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+              <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 13px;"><span style="font-weight: 600; color: #6B4205;">Scratch 74 % of 50 TB</span><span style="font-weight: 600; color: #8F5806;">Cleanup 4.2 TB →</span></span>
+              <span style="height: 6px; border-radius: 3px; background: #F3E6CF; overflow: hidden;"><span style="display: block; height: 6px; width: 74%; background: #D9890B;"></span></span>
+            </a>
+          </sc-if>
+        </div>
+      </div>
+    </sc-for>
+    <a href="#" style="height: 48px; border-radius: 14px; box-shadow: inset 0 0 0 1px #D8C8FC; background: #FBF9FF; color: #4D368B; font-size: 14.5px; font-weight: 600; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>Add environment</a>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MobileTabbar" active="more" hint-size="390px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    cpu: 'M7 7h10v10H7z M10 10h4v4h-4z M9 3v4 M15 3v4 M9 17v4 M15 17v4 M3 9h4 M3 15h4 M17 9h4 M17 15h4',
+    db: 'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3z M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6',
+    load: 'M4 20V10 M10 20V4 M16 20v-7 M22 20H2'
+  };
+  const f = (c, s, l) => [{ k: 'Compute', v: c, icon: ic.cpu }, { k: 'Storage', v: s, icon: ic.db }, { k: 'Load', v: l, icon: ic.load }];
+  const ok = ['Online', '#1F9D63', '#157A4B'], off = ['Offline', '#DC3B3B', '#B02A2A'], ph = ['Phase 2', '#C4C7D4', '#4D5065'];
+  const env = (name, s, runner, facts, href, hasStorage) => ({ name, state: s[0], rail: s[1], fg: s[2], runner, facts, href, hasStorage });
+  return { envs: [
+    env('EMBL SLURM · htc', ok, 'Runner on login01 · tweber · heartbeat 12 s ago', f('SLURM · htc, gpu', 'Lustre scratch · NFS results', '4 runs · 312 jobs queued'), 'Environments.dc.html', true),
+    env('EMBL SLURM · htc-2', off, 'Runner hpc-login-2 · last heartbeat 18 min ago', f('SLURM · htc', 'same as htc', '1 run waiting'), 'MRunnerOffline.dc.html', false),
+    env('Kubernetes · dev', ok, 'Runner as a Deployment · heartbeat 4 s ago', f('K8s · 64 vCPU quota', 's3://lab-dev', '1 run · 6 pods'), 'EnvKubernetes.dc.html', false),
+    env('AWS Batch · burst', ph, 'Planned: GA4GH TES or native Batch', f('AWS Batch queues', 'S3', '—'), '#', false)
+  ] };
+}
+}
+</script>
+</body>
+</html>

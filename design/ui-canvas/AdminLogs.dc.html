@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — administration · logs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:7px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.btn{height:34px;padding:0 12px;border-radius:10px;border:none;font:600 13px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.sel{height:34px;padding:0 28px 0 10px;border-radius:9px;border:1px solid #C4C7D4;background:#FFFFFF;font:500 13px 'Inter',sans-serif;color:#0F1020}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace}
+.lrow{display:grid;grid-template-columns:88px 58px 150px minmax(0,1fr);gap:10px;align-items:start;padding:6px 14px;border-top:1px solid #F1F2F6;font:12px/1.5 'JetBrains Mono',monospace}
+.lrow:hover{background:#FAFAFC}
+.cor{display:inline-flex;align-items:center;height:19px;padding:0 6px;border-radius:6px;font:500 11px 'JetBrains Mono',monospace;background:#F7F7FB;color:#4D5065;box-shadow:inset 0 0 0 1px #E6E7EF;text-decoration:none;white-space:nowrap}
+.cor:hover{color:#0F1020;box-shadow:inset 0 0 0 1px #C4C7D4}
+.src{display:inline-flex;align-items:center;gap:5px;height:20px;padding:0 7px;border-radius:6px;font:500 11px 'JetBrains Mono',monospace;color:#33364A;box-shadow:inset 0 0 0 1px #DFE1EA;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.code{margin:0;background:#F7F7FB;border-radius:10px;box-shadow:inset 0 0 0 1px #EEEFF5;padding:10px 12px;font:12px/1.6 'JetBrains Mono',monospace;color:#22253A;white-space:pre-wrap;word-break:break-word}
+.tg{position:relative;width:34px;height:20px;border-radius:10px;background:#7750D4;display:inline-block;flex-shrink:0}
+.tg::after{content:"";position:absolute;top:2px;left:16px;width:16px;height:16px;border-radius:8px;background:#FFFFFF}
+.pulse{width:8px;height:8px;border-radius:4px;background:#1F9D63;box-shadow:0 0 0 0 rgba(31,157,99,.5);animation:pl 1.6s ease-out infinite}
+@keyframes pl{0%{box-shadow:0 0 0 0 rgba(31,157,99,.5)}100%{box-shadow:0 0 0 8px rgba(31,157,99,0)}}
+@media (prefers-reduced-motion: reduce){.pulse{animation:none}}
+details.cli > summary{list-style:none;cursor:pointer}
+details.cli > summary::-webkit-details-marker{display:none}
+details.cli[open] .chev{transform:rotate(90deg)}
+.chev{transition:transform .15s ease;color:#6E7287}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Administration / Logs" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Administration</h1>
+        <span style="font-size: 14px; color: #4D5065;">People, content, activity and the health of this instance</span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="position: sticky; top: 0; flex-shrink: 0;"><dc-import name="AdminNav" active="logs" hint-size="208px,860px"></dc-import></div>
+
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+        <div style="display: flex; align-items: flex-start; gap: 16px; flex-wrap: wrap;">
+          <div style="flex: 1 1 340px; display: flex; flex-direction: column; gap: 3px;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Logs</h2>
+            <span style="font-size: 13px; color: #4D5065;">Structured records from the server, workers, runners (shipped over HTTPS), plugins and engines. Who changed what is in the <a href="#">Audit log</a>, kept separately.</span>
+          </div>
+          <div class="card" style="padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; width: 250px;">
+            <span style="display: flex; justify-content: space-between; font-size: 12px; color: #4D5065;"><span style="font-weight: 600; color: #22253A;">Log store</span><span><span class="mono">142 / 256 MB</span> · 14 days</span></span>
+            <span style="height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; width: 55%; height: 100%; background: #7750D4; border-radius: 3px;"></span></span>
+            <a href="#" style="font-size: 12px; font-weight: 600; display: inline-flex; align-items: center; gap: 5px;">Open in Grafana · Loki<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 4h6v6 M20 4l-9 9 M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"/></svg></a>
+          </div>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 10px; border-radius: 9px; box-shadow: inset 0 0 0 1px #C4C7D4; color: #6E7287; flex: 1 1 200px; min-width: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg><input type="search" placeholder="Message, run, task, request ID" aria-label="Search logs" style="border: none; outline: none; font: inherit; font-size: 13px; background: transparent; min-width: 0; flex-grow: 1;"></label>
+            <select class="sel" aria-label="Level"><option>Level ≥ INFO</option><option>≥ WARNING</option><option>ERROR only</option></select>
+            <select class="sel" aria-label="Project"><option>Project: all</option><option>rnaseq-core</option><option>single-cell</option></select>
+            <select class="sel" aria-label="Time range"><option>Last 1 hour</option><option>Last 24 hours</option><option>Last 14 days</option></select>
+          </div>
+          <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+            <span style="font-size: 12.5px; color: #4D5065; font-weight: 600;">Sources</span>
+            <sc-for list="{{srcFilters}}" as="f" hint-placeholder-count="5">
+              <span class="chip" style="height: 26px; background: {{f.bg}}; color: {{f.fg}}; box-shadow: inset 0 0 0 1px {{f.ring}}; font-weight: 500;"><span class="mono" style="font-size: 11.5px;">{{f.label}}</span>{{f.x}}</span>
+            </sc-for>
+            <a href="#" style="font-size: 12.5px; font-weight: 600;">+ Add source</a>
+            <span style="margin-left: auto; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #22253A;"><span class="tg" role="switch" aria-checked="true" aria-label="Live tail"></span><span class="pulse" aria-hidden="true"></span><strong style="font-weight: 600;">Live</strong><span style="color: #6E7287; font-size: 12.5px;">~3 records/s</span></span>
+          </div>
+        </div>
+
+        <div class="card" style="padding: 10px 14px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 13px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg><span style="font-weight: 600;">Capture floor</span></span>
+          <select class="sel" aria-label="Capture floor"><option>WARNING</option><option>INFO</option><option>DEBUG</option></select>
+          <span style="font-size: 12.5px; color: #4D5065;">applies to all processes, saved</span>
+          <span class="chip" style="height: 26px; background: #EEF6FA; color: #1F536D; font-weight: 500;">override <span class="mono" style="font-size: 11.5px;">runner:embl-slurm → INFO</span> until 16:00</span>
+        </div>
+
+        <section class="card" style="overflow: hidden;">
+          <div class="lrow" style="font: 600 12px 'Inter', sans-serif; color: #33364A; background: #F7F7FB; border-top: none; padding: 9px 14px;"><span>Time</span><span>Level</span><span>Source</span><span>Message</span></div>
+          <sc-for list="{{rowsA}}" as="r" hint-placeholder-count="6">
+            <div class="lrow" style="box-shadow: inset 3px 0 0 {{r.rail}};">
+              <span style="color: #6E7287;">{{r.t}}</span>
+              <span><span class="chip" style="height: 19px; padding: 0 6px; font-size: 10.5px; background: {{r.lbg}}; color: {{r.lfg}};">{{r.lv}}</span></span>
+              <span style="min-width: 0;"><span class="src">{{r.src}}</span></span>
+              <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0;"><span style="color: #0F1020;">{{r.msg}}</span><sc-for list="{{r.cor}}" as="c" hint-placeholder-count="2"><a class="cor" href="{{c.href}}">{{c.l}}</a></sc-for></span>
+            </div>
+          </sc-for>
+
+          <!-- expanded record -->
+          <div style="border-top: 1px solid #F1F2F6; background: #FFF8F8; box-shadow: inset 3px 0 0 #DC3B3B;">
+            <div class="lrow" style="border-top: none;">
+              <span style="color: #6E7287;">14:02:07.931</span>
+              <span><span class="chip" style="height: 19px; padding: 0 6px; font-size: 10.5px; background: #FCEBEB; color: #B02A2A;">ERROR</span></span>
+              <span style="min-width: 0;"><span class="src">plugin:check-script</span></span>
+              <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;"><span style="color: #0F1020; font-weight: 500;">cell_qc.py exited with code 1: KeyError 'pct_counts_mt'</span><a class="cor" href="ReviewCells.dc.html">run scrna-pbmc #314</a><a class="cor" href="AdminTasks.dc.html">task_01JBF6W8QZ</a></span>
+            </div>
+            <div style="padding: 2px 14px 14px 112px; display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 14px;">
+              <pre class="code">{
+  "ts": "2026-10-25T14:02:07.931Z",
+  "level": "ERROR",
+  "source": "plugin:check-script",
+  "logger": "spectio_plugin_script.check",
+  "process": "worker-3",
+  "project_id": "prj_01JA9X…single-cell",
+  "run_id": "run_01JBF5M2TC",
+  "gate_id": "gate_01JBF6V1KD",
+  "task_id": "task_01JBF6W8QZ",
+  "principal": "system",
+  "request_id": null,
+  "exc": "KeyError: 'pct_counts_mt'",
+  "stderr_tail": "cell_qc.py:41 adata.obs['pct_counts_mt']"
+}</pre>
+              <div style="display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 11.5px; font-weight: 600; letter-spacing: .04em; color: #6E7287;">RELATED</span>
+                <a href="ReviewCells.dc.html" class="btn btn-s" style="justify-content: flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#7750D4" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 4l14 8-14 8z"/></svg>Open run</a>
+                <a href="AdminTasks.dc.html" class="btn btn-s" style="justify-content: flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11 M9 12h11 M9 18h11 M4 6l1 1 2-2 M4 12l1 1 2-2 M4 18l1 1 2-2"/></svg>Open task</a>
+                <a href="#" class="btn btn-s" style="justify-content: flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg>Same run only</a>
+                <a href="#" class="btn btn-s" style="justify-content: flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 8h11v11H8z M5 16V5h11"/></svg>Copy as JSON</a>
+              </div>
+            </div>
+          </div>
+
+          <sc-for list="{{rowsB}}" as="r" hint-placeholder-count="8">
+            <div class="lrow" style="box-shadow: inset 3px 0 0 {{r.rail}};">
+              <span style="color: #6E7287;">{{r.t}}</span>
+              <span><span class="chip" style="height: 19px; padding: 0 6px; font-size: 10.5px; background: {{r.lbg}}; color: {{r.lfg}};">{{r.lv}}</span></span>
+              <span style="min-width: 0;"><span class="src">{{r.src}}</span></span>
+              <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; min-width: 0;"><span style="color: #0F1020;">{{r.msg}}</span><sc-for list="{{r.cor}}" as="c" hint-placeholder-count="2"><a class="cor" href="{{c.href}}">{{c.l}}</a></sc-for></span>
+            </div>
+          </sc-for>
+          <div style="padding: 10px 14px; border-top: 1px solid #EEEFF5; font-size: 12.5px; color: #6E7287; display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;"><span>16 of 2,931 records in the last hour · newest first · scrolling pauses the live tail</span><a href="#" style="font-weight: 600;">Older records</a></div>
+        </section>
+
+        <details class="cli" style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+          <summary style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 13.5px; font-weight: 600;"><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>CLI equivalent<span style="font-weight: 400; font-size: 12.5px; color: #6E7287;">same API, admin token</span></summary>
+          <pre style="margin: 0 14px 14px; padding: 14px 16px; border-radius: 12px; background: #14152A; color: #E6E7F0; font: 12.5px/1.7 'JetBrains Mono', monospace; overflow-x: auto;"><span style="color: #7FD3AA;">$</span> spectio admin logs --level warning --source runner:embl-slurm --follow
+<span style="color: #7FD3AA;">$</span> spectio admin logs --run run_01JBF5M2TC --json <span style="color: #9A9EB0;">| jq 'select(.level=="ERROR")'</span>
+<span style="color: #7FD3AA;">$</span> spectio admin logs capture-floor set warning --override runner:embl-slurm=info --until 16:00</pre>
+        </details>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const LV = {
+    INFO: ['#F1F2F6', '#33364A', 'transparent'],
+    WARN: ['#FDF3E2', '#8F5806', '#E9A23B'],
+    ERROR: ['#FCEBEB', '#B02A2A', '#DC3B3B']
+  };
+  const r = (t, lv, src, msg, cor) => ({ t, lv, src, msg, cor: cor || [], lbg: LV[lv][0], lfg: LV[lv][1], rail: LV[lv][2] });
+  const run = (l, href) => ({ l, href: href || 'RunDetail.dc.html' });
+  const task = (l) => ({ l, href: 'AdminTasks.dc.html' });
+  const plain = (l) => ({ l, href: '#' });
+  return {
+    srcFilters: [
+      { label: 'api', x: '', bg: '#FFFFFF', fg: '#22253A', ring: '#DFE1EA' },
+      { label: 'worker', x: '', bg: '#FFFFFF', fg: '#22253A', ring: '#DFE1EA' },
+      { label: 'runner:embl-slurm', x: ' ×', bg: '#F1ECFE', fg: '#4D368B', ring: '#D9CCFA' },
+      { label: 'runner:k8s-dev', x: '', bg: '#FFFFFF', fg: '#22253A', ring: '#DFE1EA' },
+      { label: 'plugin:*', x: '', bg: '#FFFFFF', fg: '#22253A', ring: '#DFE1EA' },
+      { label: 'engine', x: '', bg: '#FFFFFF', fg: '#22253A', ring: '#DFE1EA' }
+    ],
+    rowsA: [
+      r('14:02:11.402', 'WARN', 'worker', 'webhook.deliver: upstream 503 from labid-hooks, rescheduled in 1 min 40 s', [run('soil-meta-12 #288', 'ReviewCandidates.dc.html'), task('task_01JBF7R0K3')]),
+      r('14:02:09.118', 'INFO', 'runner:embl-slurm', 'sacct: job 48213977 RUNNING · NFCORE_RNASEQ:RNASEQ:STAR_ALIGN (sample T3)', [run('liver-tc-03 #301', 'ReviewReport.dc.html')]),
+      r('14:02:08.760', 'INFO', 'runner:embl-slurm', 'batch of 42 engine events sent, 0 buffered, rtt 38 ms', [plain('runner_01JA2…')])
+    ],
+    rowsB: [
+      r('14:01:58.204', 'WARN', 'runner:k8s-dev', 'pod spectio-scrna-314-cellbender OOMKilled, retry 2/3 with memory 32 GiB', [run('scrna-pbmc #314', 'ReviewCells.dc.html')]),
+      r('14:01:44.051', 'INFO', 'runner:embl-slurm', 'launch accepted: gate Mapping QC → stop after stage 2 (ext.when on later stages)', [run('liver-tc-03 #301', 'ReviewReport.dc.html')]),
+      r('14:01:40.377', 'ERROR', 'plugin:bridge-mqtt', 'connection refused mqtt.imaging.embl.de:8883 (attempt 5/5, giving up)', [task('task_01JBF6ZQ4A')]),
+      r('14:01:22.910', 'WARN', 'engine', 'nextflow: process FASTQC (T1) terminated with exit 137, retrying (attempt 2)', [run('liver-tc-03 #301', 'ReviewReport.dc.html')]),
+      r('14:00:51.633', 'WARN', 'api', 'slow request GET /api/v1/runs?project=prj_…rnaseq 2.41 s (p95 320 ms)', [plain('req_7f3c19'), plain('a.smith')]),
+      r('14:00:12.006', 'WARN', 'plugin:depictio', 'depictio-cli 1.19.2 older than server 1.20.0; ingest still compatible', [task('task_01JBF5Z0RS')]),
+      r('13:59:30.488', 'INFO', 'runner:embl-slurm', 'work directory policy keep-14d: 38 directories removed, 1.2 TB freed', [task('task_01JBF5W3PX')]),
+      r('13:58:02.917', 'ERROR', 'api', 'OIDC token from issuer login.embl.de rejected: clock skew 94 s > 60 s', [plain('req_6c2a08'), plain('principal unknown')]),
+      r('13:57:41.250', 'WARN', 'worker', 'runner hpc-login-2 missed 3 heartbeats, marked offline', [{ l: 'Runners', href: 'RunnerOffline.dc.html' }])
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

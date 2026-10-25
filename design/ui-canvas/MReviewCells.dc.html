@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio mobile — cell QC review</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+.mc-tab{flex:1 1 0;position:relative;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#4D5065;cursor:pointer}
+.mc-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.mc-tab:has(input:checked){background:#FFFFFF;color:#0F1020;box-shadow:0 1px 2px rgba(15,16,32,0.15)}
+.mc-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:1px}
+.mc-pn{display:none}
+.mc:has(input[value="cells"]:checked) .pn-cells,
+.mc:has(input[value="samples"]:checked) .pn-samples,
+.mc:has(input[value="sum"]:checked) .pn-sum{display:flex}
+.mc-seg{flex:1 1 0;position:relative;height:34px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:13.5px;font-weight:600;color:#4D5065;cursor:pointer}
+.mc-seg input{position:absolute;opacity:0;width:1px;height:1px}
+.mc-seg:has(input:checked){background:#7750D4;color:#FFFFFF}
+.mm{display:none}
+.mc:has(input[value="genes"]:checked) .mm-genes,
+.mc:has(input[value="counts"]:checked) .mm-counts,
+.mc:has(input[value="mito"]:checked) .mm-mito{display:flex}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Cell QC" sub="scrna-pbmc · 2 of 12" back="MReviewQueue.dc.html" hint-size="390px,60px"></dc-import></div>
+  <main class="mc" style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 172px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; border-radius: 16px; background: #FFFFFF; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.07); padding: 12px 14px 12px 18px;">
+      <svg width="56" height="28" viewBox="0 0 200 100" role="img" aria-label="Stages 1 and 2 done, gate after stage 3 open" style="flex-shrink: 0;"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#8B5CF6"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
+        <span style="font-size: 14px; font-weight: 600; color: #8F5806;">Waiting 22 min</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="13" height="13" alt="nf-core" style="display: block;">scrnaseq · 6 samples · 61.2k cells</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; padding: 4px; border-radius: 16px; background: #EEEFF5;">
+      <label class="mc-tab"><input type="radio" name="mct" value="cells" checked>Cells</label>
+      <label class="mc-tab"><input type="radio" name="mct" value="samples">Samples</label>
+      <label class="mc-tab"><input type="radio" name="mct" value="sum">Summary</label>
+    </div>
+
+    <section class="mc-pn pn-cells" style="flex-direction: column; gap: 10px;">
+      <div role="radiogroup" aria-label="Metric" style="display: flex; gap: 4px; padding: 4px; border-radius: 13px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07);">
+        <label class="mc-seg"><input type="radio" name="mcm" value="genes" checked>Genes</label>
+        <label class="mc-seg"><input type="radio" name="mcm" value="counts">Counts</label>
+        <label class="mc-seg"><input type="radio" name="mcm" value="mito">Mito</label>
+      </div>
+      <sc-for list="{{metrics}}" as="m" hint-placeholder-count="3">
+        <div class="mm {{m.cls}}" style="flex-direction: column; gap: 10px; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); padding: 14px;">
+          <span style="display: flex; justify-content: space-between; align-items: baseline;"><span style="font-size: 14px; font-weight: 600; font-family: 'JetBrains Mono', monospace;">{{m.name}}</span><span style="font-size: 12px; color: #6E7287;">{{m.scale}}</span></span>
+          <div role="img" aria-label="{{m.aria}}" style="position: relative; height: 140px;">
+            <div style="position: absolute; top: 0; height: 120px; left: {{m.shadeL}}; width: {{m.shadeW}}; background: #F1F2F6; border-radius: 4px;"></div>
+            <div style="position: absolute; left: 0; right: 0; top: 6px; height: 114px; display: flex; align-items: flex-end; gap: 1px;">
+              <sc-for list="{{m.bars}}" as="b" hint-placeholder-count="32"><span style="flex: 1 1 0; height: {{b.h}}; background: {{b.fill}}; border-radius: 2px 2px 0 0;"></span></sc-for>
+            </div>
+            <div style="position: absolute; left: 0; right: 0; top: 120px; height: 1px; background: #C4C7D4;"></div>
+            <sc-for list="{{m.ticks}}" as="k" hint-placeholder-count="4"><span style="position: absolute; top: 125px; left: {{k.x}}; transform: translateX(-50%); white-space: nowrap; font-size: 11px; color: #6E7287;">{{k.t}}</span></sc-for>
+            <span style="position: absolute; top: 2px; height: 118px; left: {{m.tx}}; width: 2px; margin-left: -1px; background: #7750D4;"></span>
+          </div>
+          <div style="position: relative; height: 32px;">
+            <div style="position: absolute; left: 0; right: 0; top: 13px; height: 6px; border-radius: 3px; background: #EEEFF5;"></div>
+            <div style="position: absolute; top: 13px; height: 6px; border-radius: 3px; left: {{m.keepL}}; width: {{m.keepW}}; background: #8B5CF6;"></div>
+            <span style="position: absolute; top: 2px; left: {{m.tx}}; width: 28px; height: 28px; margin-left: -14px; border-radius: 14px; background: #FFFFFF; box-shadow: 0 0 0 2.5px #7750D4, 0 2px 6px rgba(15,16,32,0.25);" role="slider" aria-label="{{m.name}} threshold" aria-valuetext="{{m.chip}}"></span>
+          </div>
+          <span style="display: flex; justify-content: space-between; align-items: center;"><span style="font-size: 15px; font-weight: 600; color: #4D368B;">Threshold {{m.chip}}</span><span style="font-size: 13px; color: #B02A2A; font-weight: 600;">{{m.removed}}</span></span>
+        </div>
+      </sc-for>
+      <div style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); padding: 14px; display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 600;">58,940 kept <span style="color: #B02A2A; font-size: 17px;">· 2,260 removed</span></span>
+        <span style="font-size: 12.5px; color: #4D5065;">all three thresholds together, before excluding samples</span>
+      </div>
+      <div style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.05em; color: #4D5065;">KEPT PER SAMPLE</span>
+        <sc-for list="{{samples}}" as="s" hint-placeholder-count="6">
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="display: flex; justify-content: space-between; font-size: 14px;"><strong>{{s.id}}</strong><span style="color: {{s.vfg}}; font-weight: 600;">{{s.kept}} · {{s.verdict}}</span></span>
+            <span style="display: block; height: 8px; border-radius: 4px; background: #F1F2F6; overflow: hidden;"><span style="display: block; height: 8px; width: {{s.pct}}; background: {{s.bar}};"></span></span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <section class="mc-pn pn-samples" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{samples}}" as="s" hint-placeholder-count="6">
+        <div style="display: flex; flex-direction: column; gap: 8px; border-radius: 16px; background: #FFFFFF; box-shadow: inset 4px 0 0 {{s.rail}}, 0 0 0 1px rgba(15,16,32,0.07); padding: 12px 14px 12px 18px;">
+          <span style="display: flex; justify-content: space-between; align-items: baseline;"><strong style="font-size: 15px;">{{s.id}}</strong><span style="font-size: 12.5px; color: #4D5065;">{{s.kept}} of {{s.before}} cells</span></span>
+          <span role="radiogroup" aria-label="Decision for {{s.id}}" style="display: flex; padding: 3px; border-radius: 11px; background: #F1F2F6; font-size: 14px;">
+            <sc-for list="{{s.opts}}" as="o" hint-placeholder-count="2"><span style="flex: 1 1 0; text-align: center; padding: 8px; border-radius: 9px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for>
+          </span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section class="mc-pn pn-sum" style="flex-direction: column; gap: 10px;">
+      <div style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); padding: 12px 14px; display: flex; flex-direction: column;">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.05em; color: #4D5065; padding-bottom: 4px;">GATE CHECKS</span>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 10px; min-height: 52px; border-top: 1px solid #EEEFF5;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="{{c.icon}}"/></svg>
+            <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;"><span style="font-size: 15px; font-weight: 600;">{{c.name}}</span><span style="font-size: 12px; color: #6E7287;">{{c.rule}}</span></span>
+            <span style="font-size: 14px; font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="border-radius: 16px; box-shadow: 0 0 0 1px #E6DCFC; background: #FBF9FF; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #4D368B;"><span style="width: 24px; height: 24px; border-radius: 7px; background: #7750D4; color: #FFFFFF; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>QC agent suggests</span>
+        <span style="font-size: 15px; line-height: 1.5;">Keep the default thresholds and exclude PBMC_4: only 310 viable cells.</span>
+        <button type="button" style="height: 44px; border: none; border-radius: 12px; box-shadow: inset 0 0 0 1.5px #A580F8; background: #FFFFFF; color: #4D368B; font: 600 15px 'Inter', sans-serif;">Apply suggestion</button>
+      </div>
+    </section>
+  </main>
+
+  <div style="position: absolute; left: 8px; right: 8px; bottom: 80px; z-index: 3; box-sizing: border-box; padding: 10px; border-radius: 20px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.10), 0 12px 28px -14px rgba(15,16,32,0.4); display: flex; flex-direction: column; gap: 8px;">
+    <span style="font-size: 12.5px; color: #33364A; padding: 0 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><strong>3 changes</strong> · PBMC_4 out · 58,630 cells kept</span>
+    <span style="display: flex; gap: 8px;">
+      <button type="button" aria-label="More actions" style="width: 48px; height: 48px; flex-shrink: 0; border: none; border-radius: 14px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 18px 'Inter', sans-serif; color: #33364A;">⋯</button>
+      <button type="button" style="flex-grow: 1; height: 48px; border: none; border-radius: 14px; background: #7750D4; color: #FFFFFF; font: 600 16px 'Inter', sans-serif;">Apply and continue</button>
+    </span>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MobileTabbar" active="review" hint-size="390px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z' };
+  const N = 32;
+  const gauss = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2);
+  const hist = (mix, cut, keepAbove) => {
+    const ys = Array.from({ length: N }, (_, i) => { const x = (i + 0.5) / N; return mix.reduce((a, [w, m, s]) => a + w * gauss(x, m, s), 0); });
+    const mx = Math.max(...ys);
+    return ys.map((y, i) => { const c = (i + 0.5) / N; const kept = keepAbove ? c >= cut : c <= cut; return { h: Math.max(1.5, y / mx * 100).toFixed(1) + '%', fill: kept ? '#8B5CF6' : '#C4C7D4' }; });
+  };
+  const lp = (v, lo, hi) => (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo));
+  const pc = v => (v * 100).toFixed(1) + '%';
+  const tk = (vals, pos) => vals.map(([t, v]) => ({ t, x: Math.min(95, Math.max(5, pos(v) * 100)).toFixed(1) + '%' }));
+  const mk = (cls, name, scale, mix, cut, keepAbove, chip, removed, ticks, aria) => ({
+    cls, name, scale, chip, removed, ticks, aria, bars: hist(mix, cut, keepAbove), tx: pc(cut),
+    shadeL: keepAbove ? '0%' : pc(cut), shadeW: pc(keepAbove ? cut : 1 - cut), keepL: keepAbove ? pc(cut) : '0%', keepW: pc(keepAbove ? 1 - cut : cut)
+  });
+  const g = v => lp(v, 10, 10000), c = v => lp(v, 100, 100000), m = v => v / 60;
+  const metrics = [
+    mk('mm-genes', 'n_genes_by_counts', 'log scale', [[0.35, g(90), 0.07], [1, g(1500), 0.11], [0.12, g(3800), 0.06]], g(200), true, '≥ 200 genes', '1,630 removed', tk([['10', 10], ['100', 100], ['1k', 1000], ['10k', 10000]], g), 'Genes per cell, threshold 200'),
+    mk('mm-counts', 'total_counts', 'log scale', [[0.22, c(250), 0.06], [1, c(5200), 0.1], [0.1, c(22000), 0.06]], c(500), true, '≥ 500 counts', '1,410 removed', tk([['100', 100], ['1k', 1000], ['10k', 10000], ['100k', 100000]], c), 'Counts per cell, threshold 500'),
+    mk('mm-mito', 'pct_counts_mt', 'linear', [[1, m(4.5), 0.05], [0.25, m(10), 0.08], [0.06, m(38), 0.12]], m(20), false, '≤ 20 %', '980 removed', tk([['0 %', 0], ['20 %', 20], ['40 %', 40], ['60 %', 60]], m), 'Mitochondrial share, threshold 20 percent')
+  ];
+  const opt = (on) => ['Keep', 'Exclude'].map(t => t === on ? { t, bg: '#FFFFFF', fg: '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  const fmt = n => n.toLocaleString('en-US');
+  const S = [['PBMC_1', 11200, 10890], ['PBMC_2', 10850, 10560], ['PBMC_3', 10400, 10120], ['PBMC_4', 1210, 310], ['PBMC_5', 13900, 13560], ['PBMC_6', 13640, 13500]];
+  const samples = S.map(([id, b, k]) => { const bad = k < 500; return { id, before: fmt(b), kept: fmt(k), pct: (k / b * 100).toFixed(1) + '%', bar: bad ? '#D9890B' : '#8B5CF6', verdict: bad ? 'exclude?' : 'pass', vfg: bad ? '#8F5806' : '#157A4B', rail: bad ? '#D9890B' : 'transparent', opts: opt(bad ? 'Exclude' : 'Keep') }; });
+  return {
+    metrics, samples,
+    checks: [
+      { name: 'Cells kept per sample', rule: '≥ 500', value: '5 / 6', col: '#B02A2A', icon: I.warn },
+      { name: 'Median genes per cell', rule: '≥ 800', value: '5 / 6', col: '#8F5806', icon: I.warn },
+      { name: 'Median mito share', rule: '≤ 10 %', value: '6 / 6', col: '#157A4B', icon: I.check }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

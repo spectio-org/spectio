@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Perspectio — panorama à cinq secteurs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#141414}a:hover{color:#444444}
+</style>
+</helmet>
+<div style="width: 1200px; height: 420px; box-sizing: border-box; background: #FFFFFF; display: flex; flex-direction: column;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="e" viewBox="0 0 200 100">
+      <path fill="#DD6E94" d="M81.68 94.05L58.18 94.05A42.24 42.24 0 0 1 62.67 80.23Z"/>
+      <path fill="#7E5FED" d="M88.68 84.42L25.98 38.87A96 96 0 0 1 64.73 10.71Z"/>
+      <path fill="#627AF1" d="M100.0 80.74L84.38 32.67A69.12 69.12 0 0 1 115.62 32.67Z"/>
+      <path fill="#EF9745" d="M111.32 84.42L126.94 36.35A69.12 69.12 0 0 1 152.21 54.71Z"/>
+      <path fill="#59B4CB" d="M118.32 94.05L181.01 48.5A96 96 0 0 1 195.82 94.05Z"/>
+    </symbol>
+  </svg>
+  <div style="flex-grow: 1; display: flex; align-items: flex-end; justify-content: center; gap: 32px; padding-bottom: 92px; box-sizing: border-box;">
+    <svg width="200" height="100" role="img" aria-label="Emblème panorama : cinq secteurs, rose, violet, bleu, orange et turquoise, posés sur l'horizon" style="margin-bottom: -4px;"><use href="#e"/></svg>
+    <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO" style="height: 72px; width: auto;">
+  </div>
+  <div style="height: 120px; background: #141414; display: flex; align-items: center; justify-content: space-between; padding: 0 72px; box-sizing: border-box;">
+    <div style="display: flex; align-items: flex-end; gap: 20px;">
+      <svg width="112" height="56" aria-hidden="true" style="margin-bottom: -2px;"><use href="#e"/></svg>
+      <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO sur fond sombre" style="height: 40px; width: auto; filter: invert(1);">
+    </div>
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <div style="width: 80px; height: 80px; border-radius: 18px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+        <svg width="68" height="34" aria-hidden="true"><use href="#e"/></svg>
+      </div>
+      <div style="width: 40px; height: 40px; border-radius: 9px; background: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+        <svg width="34" height="17" aria-hidden="true"><use href="#e"/></svg>
+      </div>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":420}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — administration · backups</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:7px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.btn{height:38px;padding:0 14px;border-radius:11px;border:none;font:600 13px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.btn-sm{height:30px;padding:0 10px;border-radius:9px;font-size:12.5px}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:#33364A;background:#F7F7FB;padding:9px 12px;white-space:nowrap}
+.tbl td{padding:10px 12px;border-top:1px solid #EEEFF5;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.sel{height:34px;padding:0 10px;border-radius:9px;box-shadow:inset 0 0 0 1px #C4C7D4;background:#FFFFFF;font:500 13px 'Inter',sans-serif;color:#0F1020;display:inline-flex;align-items:center;gap:8px;justify-content:space-between;box-sizing:border-box}
+.lbl{font-size:12px;font-weight:600;color:#4D5065}
+.ck{width:18px;height:18px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0}
+.sw{width:36px;height:20px;border-radius:10px;position:relative;flex-shrink:0}
+.sw::after{content:'';position:absolute;top:2px;width:16px;height:16px;border-radius:8px;background:#FFFFFF;box-shadow:0 1px 2px rgba(15,16,32,.25)}
+.sw.on{background:#7750D4}.sw.on::after{right:2px}
+.sw.off{background:#C4C7D4}.sw.off::after{left:2px}
+.seg{display:inline-flex;padding:3px;border-radius:10px;background:#EEEFF5;gap:2px}
+.seg span{height:28px;padding:0 10px;border-radius:8px;display:inline-flex;align-items:center;font-size:12.5px;font-weight:500;color:#4D5065}
+.seg span.on{background:#FFFFFF;color:#0F1020;font-weight:600;box-shadow:0 1px 2px rgba(15,16,32,.12)}
+details > summary{list-style:none;cursor:pointer}
+details > summary::-webkit-details-marker{display:none}
+details[open] .chev{transform:rotate(90deg)}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Administration / Backups" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Administration</h1>
+        <span style="font-size: 14px; color: #4D5065;">People, content, activity and the health of this instance</span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="position: sticky; top: 0; flex-shrink: 0;"><dc-import name="AdminNav" active="backups" hint-size="208px,860px"></dc-import></div>
+
+      <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;">
+          <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Backups</h2>
+            <span style="font-size: 13px; color: #4D5065;">One archive holds the database, the file store and the keys. It restores into SQLite or Postgres, so it is also how an instance moves between deployments.</span>
+          </div>
+          <a href="#restore-file" class="btn btn-s"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4 M7 9l5-5 5 5 M5 20h14"/></svg>Restore from file</a>
+        </div>
+
+        <div role="status" style="display: flex; align-items: center; gap: 12px; border-radius: 12px; padding: 10px 14px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #EEEFF5; font-size: 13px; color: #33364A;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F7FA8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 8v4l3 2"/></svg>
+          <span style="flex-grow: 1;"><strong>Live data restored from</strong> <span class="mono">spectio-backup-embl-20261019T020000Z</span> on 19 Oct 2026, 09:14 by Nora Olsen · migrated from schema 0011 to 0012</span>
+          <a href="#" style="font-size: 12.5px; font-weight: 600; white-space: nowrap;">Restore report</a>
+        </div>
+
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px;">
+          <section class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="width: 34px; height: 34px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v4H4z M5 9v10h14V9 M10 13h4"/></svg></span>
+              <div style="flex-grow: 1; display: flex; flex-direction: column;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">Back up now</h3><span style="font-size: 12px; color: #6E7287;">Runs as a task; you can leave this page</span></div>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;"><span class="lbl">Scope</span><span class="seg"><span class="on">Full instance</span><span>One project</span></span></div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+              <span class="lbl">Include</span>
+              <sc-for list="{{includes}}" as="i" hint-placeholder-count="4">
+                <span style="display: flex; align-items: flex-start; gap: 10px; font-size: 13px;">
+                  <span class="ck" style="background: {{i.bg}}; box-shadow: inset 0 0 0 1.5px {{i.bd}};"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity: {{i.op}};"><path d="M5 12l5 5 9-10"/></svg></span>
+                  <span style="display: flex; flex-direction: column; gap: 1px;"><span style="font-weight: 600;">{{i.label}}</span><span style="font-size: 12px; color: #6E7287;">{{i.note}}</span></span>
+                  <span style="margin-left: auto; font-size: 12px; color: #4D5065; white-space: nowrap;">{{i.size}}</span>
+                </span>
+              </sc-for>
+            </div>
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 10px; align-items: end;">
+              <div style="display: flex; flex-direction: column; gap: 6px;"><span class="lbl">Destination</span><span class="sel" style="width: 100%;"><span style="display: flex; align-items: center; gap: 8px;"><span class="chip" style="background: #EEF6FA; color: #1F536D; height: 20px;">S3</span>SeaweedFS · spectio-backups</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></div>
+              <span style="font-size: 12px; color: #4D5065; padding-bottom: 8px; white-space: nowrap;">≈ 1.9 GB compressed</span>
+            </div>
+            <div style="display: flex; gap: 8px; border-top: 1px solid #EEEFF5; padding-top: 12px;">
+              <a href="#" class="btn btn-p">Create backup</a>
+              <span style="font-size: 12px; color: #6E7287; align-self: center;">Not included: work and results directories on clusters (kept by path)</span>
+            </div>
+          </section>
+
+          <section class="card" style="padding: 16px; display: flex; flex-direction: column; gap: 14px;">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <span style="width: 34px; height: 34px; border-radius: 10px; background: #E8F6EF; color: #157A4B; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2"/></svg></span>
+              <div style="flex-grow: 1; display: flex; flex-direction: column;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">Automated backups</h3><span style="font-size: 12px; color: #6E7287;">Run by the worker; one process claims each slot</span></div>
+              <span class="sw on" role="switch" aria-checked="true" aria-label="Automated backups"></span>
+            </div>
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 12px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;"><span class="lbl">Every</span><span class="sel">Day at 02:00 UTC<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></div>
+              <div style="display: flex; flex-direction: column; gap: 6px;"><span class="lbl">Retention</span><span class="seg"><span>Simple</span><span class="on">Smart</span></span></div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+              <span class="chip" style="background: #F6F2FE; color: #4D368B;">30 daily</span>
+              <span style="color: #9A9EB0;">→</span>
+              <span class="chip" style="background: #F6F2FE; color: #4D368B;">4 weekly</span>
+              <span style="color: #9A9EB0;">→</span>
+              <span class="chip" style="background: #F6F2FE; color: #4D368B;">12 monthly</span>
+              <span style="font-size: 12px; color: #6E7287;">· 46 archives at most</span>
+            </div>
+            <span style="display: flex; align-items: center; gap: 10px; font-size: 13px;"><span class="sw on" role="switch" aria-checked="true" aria-label="Back up before every upgrade"></span><span style="display: flex; flex-direction: column;"><span style="font-weight: 600;">Back up before every schema upgrade</span><span style="font-size: 12px; color: #6E7287;">Kept until the next successful upgrade</span></span></span>
+            <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; border-top: 1px solid #EEEFF5; padding-top: 12px; font-size: 12px;">
+              <span style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #6E7287;">Last run</span><span style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 13px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63;"></span>3 h ago · OK</span></span>
+              <span style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #6E7287;">Next run</span><span style="font-weight: 600; font-size: 13px;">in 21 h</span></span>
+              <span style="display: flex; flex-direction: column; gap: 2px;"><span style="color: #6E7287;">Used</span><span style="font-weight: 600; font-size: 13px;">38 archives · 61 GB</span></span>
+            </div>
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #4D5065; flex-wrap: wrap;">Settings source <span class="chip" style="background: #FDF3E2; color: #8F5806;">UI override</span> defaults from <span class="mono">SPECTIO_BACKUP_*</span><a href="#" style="margin-left: auto; font-weight: 600;">Reset to env</a></span>
+          </section>
+        </div>
+
+        <section class="card" style="overflow: hidden;">
+          <div style="padding: 14px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+            <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">Backups · 38</h3><span style="font-size: 12.5px; color: #4D5065;">Each archive has a manifest with Spectio version, schema revision and a SHA-256 per part</span></div>
+            <span class="seg"><span class="on">All</span><span>Full</span><span>Project</span><span>Pre-upgrade</span></span>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="tbl" style="table-layout: fixed;">
+              <colgroup><col style="width: 24%;"><col style="width: 12%;"><col style="width: 13%;"><col style="width: 10%;"><col style="width: 13%;"><col style="width: 11%;"><col style="width: 17%;"></colgroup>
+              <thead><tr><th>Backup</th><th>Created</th><th>Kind</th><th>Version</th><th>Size · where</th><th>Verified</th><th style="text-align: right;"><span class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;">Actions</span></th></tr></thead>
+              <tbody>
+                <sc-for list="{{backups}}" as="b" hint-placeholder-count="7">
+                  <tr>
+                    <td><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-weight: 600; color: #0F1020; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{b.scope}}</span><span class="mono" title="{{b.id}}" style="font-size: 11px; color: #6E7287; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{b.id}}</span></span></td>
+                    <td style="white-space: nowrap; color: #33364A;"><span style="display: flex; flex-direction: column; gap: 1px;"><span>{{b.created}}</span><span style="font-size: 11.5px; color: #6E7287;">{{b.by}}</span></span></td>
+                    <td><span style="display: flex; gap: 4px; flex-wrap: wrap;"><sc-for list="{{b.kinds}}" as="k" hint-placeholder-count="2"><span class="chip" style="background: {{k.bg}}; color: {{k.fg}};">{{k.l}}</span></sc-for></span></td>
+                    <td class="mono" style="color: #33364A;"><span style="display: flex; flex-direction: column; gap: 1px;"><span>{{b.ver}}</span><span style="font-size: 11px; color: #6E7287;">rev {{b.rev}}</span></span></td>
+                    <td style="white-space: nowrap; color: #33364A;"><span style="display: flex; flex-direction: column; gap: 1px;"><span>{{b.size}}</span><span style="font-size: 11.5px; color: #6E7287;">{{b.dest}}</span></span></td>
+                    <td><span class="chip" style="background: {{b.vbg}}; color: {{b.vfg}};">{{b.verified}}</span></td>
+                    <td><span style="display: flex; gap: 6px; justify-content: flex-end;"><a href="#" class="btn btn-s btn-sm" aria-label="Download" title="Download" style="padding: 0 8px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12 M7 11l5 5 5-5 M5 20h14"/></svg></a><a href="AdminRestore.dc.html" class="btn btn-s btn-sm" style="color: #4D368B; padding: 0 9px;">Restore…</a><a href="#" class="btn btn-s btn-sm" aria-label="More: verify, delete" title="Verify, delete" style="padding: 0 8px;">⋯</a></span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="restore-file" style="border-radius: 16px; border: 1.5px dashed #C4C7D4; padding: 18px; display: flex; align-items: center; gap: 14px; background: #FBFBFD;">
+          <span style="width: 40px; height: 40px; border-radius: 12px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 16V4 M7 9l5-5 5 5 M5 20h14"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><strong style="font-size: 14px;">Restore from file</strong><span style="font-size: 12.5px; color: #4D5065;">Drop a <span class="mono">.tar.zst</span> archive or a project export here. It is checked (checksums, schema revision) before anything changes; a backup from a newer Spectio is refused.</span></span>
+          <a href="#" class="btn btn-s">Choose file</a>
+        </section>
+
+        <details class="card" style="overflow: hidden;">
+          <summary style="padding: 13px 16px; display: flex; align-items: center; gap: 10px; font-size: 14px; font-weight: 600;">
+            <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="transition: transform .15s;"><path d="M9 6l6 6-6 6"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>
+            CLI equivalent
+            <span style="font-weight: 400; font-size: 12.5px; color: #6E7287;">every action on this page, from a terminal or a CronJob</span>
+          </summary>
+          <pre style="margin: 0; padding: 14px 18px; background: #0F1020; color: #E6E7F0; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; overflow-x: auto;"><span style="color: #8B8FA8;"># create, list and check</span>
+spectio backup create --include db,files,keys --destination seaweedfs
+spectio backup list
+spectio backup validate spectio-backup-embl-20261025T020000Z
+<span style="color: #8B8FA8;"># restore: dry run first, always</span>
+spectio backup restore spectio-backup-embl-20261025T020000Z --dry-run
+<span style="color: #8B8FA8;"># schedule and retention (stored as a UI override)</span>
+spectio backup schedule set --daily 02:00 --retention smart
+<span style="color: #8B8FA8;"># move one project to another instance (depictio-compatible)</span>
+spectio migrate project liver-time-course --to-server embl-prod --dry-run</pre>
+        </details>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const on = { bg: '#7750D4', bd: '#7750D4', op: 1 };
+  const off = { bg: '#FFFFFF', bd: '#9A9EB0', op: 0 };
+  const K = {
+    full: { l: 'Full', bg: '#F6F2FE', fg: '#4D368B' },
+    fullauto: { l: 'Full · auto', bg: '#F6F2FE', fg: '#4D368B' },
+    fullpre: { l: 'Pre-upgrade', bg: '#FDF3E2', fg: '#8F5806' },
+    projman: { l: 'Project', bg: '#EEF6FA', fg: '#1F536D' },
+    project: { l: 'Project', bg: '#EEF6FA', fg: '#1F536D' },
+    pre: { l: 'Pre-upgrade', bg: '#FDF3E2', fg: '#8F5806' },
+    auto: { l: 'Automatic', bg: '#F1F2F6', fg: '#33364A' },
+    manual: { l: 'Manual', bg: '#F1F2F6', fg: '#33364A' }
+  };
+  const V = { ok: ['✓ OK', '#E8F6EF', '#157A4B'], no: ['Pending', '#F1F2F6', '#4D5065'], bad: ['✕ Bad', '#FCEBEB', '#B02A2A'] };
+  const b = (id, scope, created, kinds, ver, rev, size, dest, v, by) => ({ id, scope, created, kinds: kinds.map(k => K[k]), ver, rev, size, dest, verified: V[v][0], vbg: V[v][1], vfg: V[v][2], by });
+  return {
+    includes: [
+      Object.assign({ label: 'Database', note: 'Portable export, JSON Lines per table: restores into SQLite or Postgres', size: '412 MB' }, on),
+      Object.assign({ label: 'File store', note: 'QC evidence, reports, branding assets', size: '1.6 GB' }, on),
+      Object.assign({ label: 'Keys', note: 'Token-signing keys, so tokens and runner links stay valid', size: '4 kB' }, on),
+      Object.assign({ label: 'Encrypted secrets', note: 'Otherwise only references (env:, file:, vault:) are kept · needs a passphrase or an age recipient', size: '—' }, off)
+    ],
+    backups: [
+      b('spectio-backup-embl-20261025T020000Z', 'Full instance', '25 Oct, 02:00', ['fullauto'], '0.4.0', '0015', '1.9 GB', 'SeaweedFS', 'ok', 'system'),
+      b('spectio-backup-embl-20261024T153112Z', 'Pre-upgrade 0.3.2 → 0.4.0', '24 Oct, 15:31', ['fullpre'], '0.3.2', '0012', '1.8 GB', 'SeaweedFS', 'ok', 'system'),
+      b('spectio-project-liver-time-course-20261024T101500Z', 'Project · Liver time course', '24 Oct, 10:15', ['projman'], '0.3.2', '0012', '214 MB', 'Local dir', 'ok', 'Anna Smith'),
+      b('spectio-backup-embl-20261024T020000Z', 'Full instance', '24 Oct, 02:00', ['fullauto'], '0.3.2', '0012', '1.8 GB', 'SeaweedFS', 'ok', 'system'),
+      b('spectio-backup-embl-20261023T020000Z', 'Full instance', '23 Oct, 02:00', ['fullauto'], '0.3.2', '0012', '1.8 GB', 'SeaweedFS', 'no', 'system'),
+      b('spectio-backup-embl-20261019T020000Z', 'Full instance · weekly', '19 Oct, 02:00', ['fullauto'], '0.3.1', '0011', '1.7 GB', 'SeaweedFS', 'ok', 'system'),
+      b('spectio-backup-embl-20261001T020000Z', 'Full instance · monthly', '1 Oct, 02:00', ['fullauto'], '0.3.0', '0010', '1.5 GB', 'SFTP · archive.embl', 'bad', 'system')
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

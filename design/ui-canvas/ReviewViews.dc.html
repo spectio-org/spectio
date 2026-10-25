@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review model and views</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.bar:hover span:nth-child(2){filter:brightness(.85)}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1320px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; padding: 40px 56px; display: flex; flex-direction: column; gap: 26px;">
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 30px;">Reviews: one model, five views</h1>
+    <p style="margin: 0; font-size: 15.5px; color: #33364A; max-width: 1100px; line-height: 1.5;">Built from the 106 released nf-core pipelines (25/10/2026). Every gate is <strong>items × checks × evidence × decisions</strong>, declared in spectio.yml. What changes between a bulk RNA-seq run, a cell atlas and an imaging plate is the item kind and its scale, so the view changes, not the model.</p>
+  </div>
+
+  <section aria-label="The model" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+    <sc-for list="{{model}}" as="m" hint-placeholder-count="4">
+      <div style="border-radius: 16px; background: {{m.bg}}; padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+        <span style="display: flex; align-items: center; gap: 10px;"><span style="width: 32px; height: 32px; border-radius: 10px; background: #FFFFFF; color: {{m.ink}}; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.icon}}"/></svg></span><span style="font-size: 16px; font-weight: 600;">{{m.k}}</span></span>
+        <span style="font-size: 13px; line-height: 1.5; color: #33364A;">{{m.v}}</span>
+        <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: {{m.ink}};">{{m.yml}}</code>
+      </div>
+    </sc-for>
+  </section>
+
+  <section aria-label="The five views" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px;">
+    <sc-for list="{{views}}" as="v" hint-placeholder-count="5">
+      <article style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden; display: flex; flex-direction: column;">
+        <div style="height: 130px; background: #F7F7FB; display: flex; align-items: center; justify-content: center;">
+          <svg width="200" height="110" viewBox="0 0 200 110" role="img" aria-label="{{v.name}} sketch"><path d="{{v.sketch}}" fill="none" stroke="#9A9EB0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="{{v.accent}}" fill="none" stroke="#7750D4" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </div>
+        <div style="padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 6px; flex-grow: 1;">
+          <span style="font-size: 15px; font-weight: 600;">{{v.name}}</span>
+          <span style="font-size: 11.5px; font-weight: 600; color: #4D368B; background: #F6F2FE; border-radius: 6px; padding: 2px 7px; align-self: flex-start;">{{v.scale}}</span>
+          <span style="font-size: 12.5px; line-height: 1.45; color: #33364A;">{{v.use}}</span>
+          <span style="font-size: 12px; line-height: 1.45; color: #4D5065;"><strong style="color: #22253A;">Decide:</strong> {{v.decide}}</span>
+          <span style="font-size: 12px; line-height: 1.45; color: #4D5065;"><strong style="color: #22253A;">Phone:</strong> {{v.phone}}</span>
+          <a href="{{v.href}}" style="margin-top: auto; font-size: 12.5px; font-weight: 600; text-decoration: none; color: #6344B2;">{{v.example}} →</a>
+        </div>
+      </article>
+    </sc-for>
+  </section>
+
+  <div style="display: flex; gap: 28px; align-items: flex-start;">
+    <section aria-label="Pipelines by item kind" style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 17px; font-weight: 600;">nf-core pipelines by what a reviewer decides on</h2>
+      <span style="font-size: 12.5px; color: #4D5065;">106 released pipelines · hover a bar for examples</span>
+      <div role="img" aria-label="Bar chart: bulk sample 45, sample plus assembly 13, grouped samples plus variants 11, predictions 8, run only 8, image plus cells or tiles 7, sample plus cells 5, MS runs 5, sample plus features 4" style="display: flex; flex-direction: column; gap: 10px; max-width: 780px;">
+        <sc-for list="{{bars}}" as="b" hint-placeholder-count="9">
+          <div class="bar" title="{{b.tip}}" style="display: flex; align-items: center; gap: 10px;">
+            <span style="width: 220px; flex-shrink: 0; font-size: 12.5px; color: #33364A;">{{b.label}}</span>
+            <span style="width: {{b.w}}px; height: 22px; border-radius: 0 4px 4px 0; background: {{b.fill}};"></span>
+            <span style="font-size: 12.5px; font-weight: 600; color: #0F1020;">{{b.n}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+    <section style="width: 470px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 17px; font-weight: 600;">Coverage</h2>
+      <sc-for list="{{facts}}" as="f" hint-placeholder-count="5">
+        <div style="display: flex; gap: 14px; align-items: baseline; border-top: 1px solid #EEEFF5; padding-top: 10px;">
+          <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 26px; min-width: 76px;">{{f.n}}</span>
+          <span style="font-size: 13px; line-height: 1.45; color: #33364A;">{{f.t}}</span>
+        </div>
+      </sc-for>
+      <div style="border-radius: 14px; background: #FFFBF3; box-shadow: inset 0 0 0 1px #F9DDB0; padding: 12px 14px; font-size: 12.5px; line-height: 1.5; color: #33364A;"><strong style="color: #6B4205;">Main limit:</strong> redoing some items with different parameters only works when the pipeline reads that parameter per item. Otherwise the change is global, or the subset becomes a linked child run.</div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+renderVals() {
+  const rows = [
+    ['Bulk sample', 45, 'rnaseq, atacseq, chipseq, methylseq, smrnaseq, cutandrun, ampliseq…'],
+    ['Sample + assembly / bin', 13, 'mag, bacass, genomeassembler, viralrecon, genomeqc…'],
+    ['Grouped samples + variants', 11, 'sarek, raredisease, oncoanalyser, rnadnavar, tumourevo…'],
+    ['Prediction / model', 8, 'proteinfold, multiplesequencealign, proteinfamilies…'],
+    ['Run only (utility)', 8, 'fetchngs, references, createtaxdb, seqsubmit…'],
+    ['Image + cells / tiles', 7, 'mcmicro, molkart, imcyto, sopa, spatialaxe, lsmquant, rangeland'],
+    ['Sample + cells', 5, 'scrnaseq, scnanoseq, hadge, pixelator, airrflow'],
+    ['MS run + features', 5, 'diaproteomics, mhcquant, metaboigniter, ribomsqc, proteogenomicsdb'],
+    ['Sample + features / taxa', 4, 'taxprofiler, funcprofiler, metapep, epitopeprediction']
+  ];
+  const scale = 500 / 45;
+  const bars = rows.map(([label, n, tip], i) => {
+    const y = 4 + i * 36, w = Math.max(6, n * scale);
+    return { label, n, tip: label + ' · ' + n + ' · ' + tip, y, ty: y + 16, w, tx: 230 + w + 8, fill: label.startsWith('Run only') ? '#C4C7D4' : '#5A4FCF' };
+  });
+  return {
+    model: [
+      { k: 'Items', v: 'What one decision is about: a sample, a cell, a well, a bin, a variant, a model. Optionally grouped (pairs, families, replicates) and with sub-items.', yml: 'items: {source, key, group_by, children}', icon: 'M5 5h4v4H5z M15 5h4v4h-4z M5 15h4v4H5z M15 15h4v4h-4z', bg: '#F2F1FB', ink: '#423B97' },
+      { k: 'Checks', v: 'Thresholds, outliers vs the batch, consistency with metadata, completeness, counts of sub-items. Block, warn or info.', yml: 'checks: [{from, min|max|kind, severity}]', icon: 'M5 12l5 5L20 7', bg: '#F6F2FE', ink: '#6344B2' },
+      { k: 'Evidence', v: 'Metrics from MultiQC or tables, HTML reports (run or per item), images, matrices, tracks, structures.', yml: 'evidence: [{kind, path, per_item}]', icon: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z', bg: '#FDF2F5', ink: '#A54666' },
+      { k: 'Decisions', v: 'Gate (approve, go back, stop), item (keep, exclude, redo), rule (thresholds), group, data edits. Constraints warn before applying.', yml: 'decide: {item_actions, rules, constraints}', icon: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5', bg: '#FFF8F0', ink: '#845C34' }
+    ],
+    views: [
+      { name: 'Item table', scale: 'few · 1–200', use: 'Bulk samples, grouped samples, MS runs. Metric columns coloured by check, worst first, groups as lanes.', decide: 'keep / exclude / redo per row; constraint warnings', phone: 'one card per item', example: 'rnaseq mapping QC', href: 'ReviewReport.dc.html', sketch: 'M20 20h160 M20 40h160 M20 60h160 M20 80h160 M20 100h160', accent: 'M20 40h40 M150 40h30' },
+      { name: 'Distributions & thresholds', scale: 'massive · > 10,000', use: 'Cells, spots, features, raw variants. Histograms per metric, kept counts per parent item.', decide: 'thresholds → keep list passed on', phone: 'one metric at a time, slider', example: 'scrnaseq cell QC', href: 'ReviewCells.dc.html', sketch: 'M20 100 L40 96 L60 80 L80 40 L100 20 L120 34 L140 70 L160 92 L180 98', accent: 'M60 10 V105' },
+      { name: 'Spatial grid', scale: 'few to many', use: 'Plates, slides, ROIs, tiles. Plate map, slide overview, image viewer with overlays.', decide: 'per well / tile; image evidence', phone: 'compact grid, tap to open', example: 'imaging plate QC', href: 'Review.dc.html', sketch: 'M30 25h.1 M60 25h.1 M90 25h.1 M120 25h.1 M150 25h.1 M30 55h.1 M60 55h.1 M90 55h.1 M120 55h.1 M150 55h.1 M30 85h.1 M60 85h.1 M90 85h.1 M120 85h.1 M150 85h.1', accent: 'M86 51a5 5 0 1 0 8 8a5 5 0 1 0 -8 -8' },
+      { name: 'Candidate list', scale: 'many · 200–10,000', use: 'MAG bins, candidate variants, structures. Scatter of two key metrics plus a ranked list.', decide: 'rule + manual accept / reject', phone: 'swipeable cards', example: 'mag bin QC', href: 'ReviewCandidates.dc.html', sketch: 'M20 100 H180 M20 100 V10 M40 30h.1 M60 45h.1 M90 25h.1 M120 60h.1 M150 80h.1 M70 70h.1', accent: 'M20 50 H110 V100' },
+      { name: 'Report reader', scale: 'any', use: 'MultiQC and any HTML report, sandboxed, with the checks and flagged items alongside.', decide: 'from the side panel', phone: 'full screen, panel as a sheet', example: 'MultiQC with checks', href: 'ReviewReport.dc.html', sketch: 'M20 15h120v85H20z M30 35h100 M30 50h80 M30 65h90', accent: 'M150 15h30v85h-30z' }
+    ],
+    bars,
+    facts: [
+      { n: '106', t: 'released, not archived nf-core pipelines read (modules, outputs, samplesheet schemas)' },
+      { n: '96', t: 'produce a MultiQC report: per-sample checks come for free from its general-statistics table' },
+      { n: '98', t: 'have something to review; all fit at least one of the five views (8 are utilities)' },
+      { n: '25', t: 'declare groups (pairs, families, replicates, controls): decisions check constraints first' },
+      { n: '86', t: 'also write other HTML reports, often one per sample (FastQC, fastp, SnpEff, PCGR, igv.js)' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

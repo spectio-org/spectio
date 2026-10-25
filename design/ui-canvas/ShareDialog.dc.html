@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — share project</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.st-tab{height:36px;padding:0 10px;border-radius:9px;display:flex;align-items:center;gap:6px;font-size:13px;text-decoration:none;white-space:nowrap}
+.st-tab:hover{color:#0F1020}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.btn{height:40px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:12.5px;font-weight:600;color:#33364A;background:#F7F7FB;padding:10px 14px}
+.tbl td{padding:11px 14px;border-top:1px solid #EEEFF5;vertical-align:middle}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.sel{height:34px;padding:0 30px 0 10px;border-radius:9px;border:1px solid #C4C7D4;background:#FFFFFF;font:500 13px 'Inter',sans-serif;color:#0F1020}
+
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Settings / Projects / Liver time course" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 12px; font-size: 13px;">
+      <a href="Projects.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Projects</a>
+    </div>
+    <div class="card" style="padding: 16px 18px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: inset 4px 0 0 #7750D4, 0 0 0 1px rgba(15,16,32,0.11);">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+      <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 4px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 26px;">Liver time course</h1>
+        <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #4D5065;">Owned by <strong style="color: #1F536D;">rnaseq-core</strong> · 41 runs · created 12 Mar 2026 by Thomas Weber <span class="chip" style="background: #EEF6FA; color: #1F536D;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a7 7 0 0 1 14 0 M17 11a3 3 0 1 0 0-6 M22 21a6 6 0 0 0-4-5.6"/></svg>Group · all rnaseq-core members can view</span></span>
+      </div>
+      <a href="ShareDialog.dc.html" class="btn btn-p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M16 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M8.6 13.5l6.8 4 M15.4 6.5l-6.8 4"/></svg>Share</a>
+    </div>
+    <nav aria-label="Project sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5;">
+      <sc-for list="{{ptabs}}" as="t" hint-placeholder-count="5">
+        <a href="#" aria-current="{{t.cur}}" style="padding: 10px 12px; font-size: 13.5px; text-decoration: none; color: {{t.c}}; font-weight: {{t.w}}; box-shadow: {{t.u}}; display: flex; align-items: center; gap: 6px;">{{t.label}}<span style="font-size: 11px; font-weight: 600; color: #6E7287;">{{t.n}}</span></a>
+      </sc-for>
+    </nav>
+
+    <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div class="card" style="height: 64px; background: #F7F7FB;"></div><div class="card" style="height: 64px; background: #F7F7FB;"></div><div class="card" style="height: 64px; background: #F7F7FB;"></div>
+    </div>
+  </main>
+  <div style="position: absolute; inset: 0; z-index: 5; background: rgba(15,16,32,0.42); display: flex; align-items: flex-start; justify-content: center; padding-top: 96px;">
+    <section role="dialog" aria-modal="true" aria-labelledby="share-title" style="width: 600px; max-width: calc(100% - 32px); border-radius: 22px; background: #FFFFFF; box-shadow: 0 30px 80px -30px rgba(15,16,32,0.55); display: flex; flex-direction: column;">
+      <div style="padding: 18px 20px 10px; display: flex; align-items: center; gap: 12px;">
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><h2 id="share-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px;">Share “Liver time course”</h2><span style="font-size: 13px; color: #4D5065;">People and groups get the role you pick; service accounts are added from Settings.</span></div>
+        <button type="button" aria-label="Close" style="width: 40px; height: 40px; border: none; border-radius: 12px; background: transparent; color: #33364A; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg></button>
+      </div>
+      <div style="padding: 6px 20px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; gap: 8px;">
+          <label style="flex-grow: 1; display: flex; align-items: center; gap: 8px; height: 42px; padding: 0 12px; border-radius: 11px; box-shadow: inset 0 0 0 2px #7750D4; color: #6E7287;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg><input type="search" value="mor" aria-label="Add people or groups" style="border: none; outline: none; font: 14px 'Inter', sans-serif; color: #0F1020; flex-grow: 1; min-width: 0; background: transparent;"></label>
+          <select class="sel" style="height: 42px;" aria-label="Role for new members"><option>Reviewer</option><option>Viewer</option><option>Launcher</option><option>Editor</option><option>Owner</option></select>
+          <button type="button" class="btn btn-p" style="height: 42px;">Add</button>
+        </div>
+        <div role="listbox" aria-label="Suggestions" style="border-radius: 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 12px 24px -16px rgba(15,16,32,0.3); overflow: hidden;">
+          <sc-for list="{{sugg}}" as="s" hint-placeholder-count="2">
+            <div role="option" aria-selected="{{s.sel}}" style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; background: {{s.bg}};"><span style="width: 30px; height: 30px; border-radius: {{s.rad}}; background: {{s.tbg}}; color: {{s.tfg}}; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{s.t}}</span><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 13.5px; font-weight: 600;">{{s.name}}</span><span style="font-size: 12px; color: #6E7287;">{{s.sub}}</span></span><span style="font-size: 12px; color: #6E7287;">{{s.hint}}</span></div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="padding: 12px 20px; border-top: 1px solid #EEEFF5; display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.05em; color: #6E7287;">WHO CAN SEE THIS PROJECT</span>
+        <div role="radiogroup" aria-label="Visibility" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+          <label style="border-radius: 12px; padding: 10px 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); background: #FFFFFF; display: flex; flex-direction: column; gap: 4px; cursor: pointer;"><span style="display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600;"><input type="radio" name="vis" style="margin: 0; accent-color: #7750D4;">Private</span><span style="font-size: 12px; color: #4D5065; line-height: 1.4;">Only the people, groups and accounts listed below.</span></label>
+          <label style="border-radius: 12px; padding: 10px 12px; box-shadow: inset 0 0 0 2px #7750D4; background: #FBF9FF; display: flex; flex-direction: column; gap: 4px; cursor: pointer;"><span style="display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600;"><input type="radio" name="vis" checked style="margin: 0; accent-color: #7750D4;">Group</span><span style="font-size: 12px; color: #4D5065; line-height: 1.4;">Everyone in rnaseq-core can view; roles above add more.</span></label>
+          <label style="border-radius: 12px; padding: 10px 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); background: #FFFFFF; display: flex; flex-direction: column; gap: 4px; cursor: pointer;"><span style="display: flex; align-items: center; gap: 7px; font-size: 13.5px; font-weight: 600;"><input type="radio" name="vis" style="margin: 0; accent-color: #7750D4;">Everyone</span><span style="font-size: 12px; color: #4D5065; line-height: 1.4;">Anyone signed in on this server can view.</span></label>
+        </div>
+      </div>
+      <div style="padding: 12px 20px; border-top: 1px solid #EEEFF5; display: flex; flex-direction: column; gap: 6px;">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.05em; color: #6E7287;">HAS ACCESS · 7</span>
+        <sc-for list="{{access}}" as="a" hint-placeholder-count="4">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 5px 0;"><span style="width: 28px; height: 28px; border-radius: {{a.rad}}; background: {{a.tbg}}; color: {{a.tfg}}; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{a.t}}</span><span style="flex-grow: 1; font-size: 13.5px;">{{a.name}}</span><span class="chip" style="background: {{a.rbg}}; color: {{a.rfg}};">{{a.rl}}</span></div>
+        </sc-for>
+        <a href="ProjectDetail.dc.html" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">See all 7 in Members & roles →</a>
+      </div>
+      <div style="padding: 12px 20px 16px; border-top: 1px solid #EEEFF5; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span style="flex-grow: 1; display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #4D5065; min-width: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1 M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg><code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">spectio.lab.example/p/liver-time-course</code></span>
+        <button type="button" class="btn btn-s">Copy link</button>
+        <button type="button" class="btn btn-p">Done</button>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const P = {
+    person: (t, bg) => ({ kind: 'person', t, tbg: bg || '#8B5CF6', tfg: '#FFFFFF', rad: '50%' }),
+    group: (t) => ({ kind: 'group', t, tbg: '#EEF6FA', tfg: '#1F536D', rad: '9px' }),
+    service: (t) => ({ kind: 'service', t, tbg: '#EEEFF5', tfg: '#33364A', rad: '9px' }),
+    agent: () => ({ kind: 'agent', t: 'AI', tbg: '#7750D4', tfg: '#FFFFFF', rad: '9px' })
+  };
+  const VIS = { private: ['Private', '#F1F2F6', '#33364A', 'M6 11h12v9H6z M8 11V8a4 4 0 0 1 8 0v3'], group: ['Group', '#EEF6FA', '#1F536D', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a7 7 0 0 1 14 0 M17 11a3 3 0 1 0 0-6 M22 21a6 6 0 0 0-4-5.6'], instance: ['Everyone', '#E8F6EF', '#157A4B', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M3 12h18 M12 3c3 3 3 15 0 18 M12 3c-3 3-3 15 0 18'] };
+  const vis = (k) => ({ vl: VIS[k][0], vbg: VIS[k][1], vfg: VIS[k][2], vic: VIS[k][3] });
+  const ROLE = { owner: ['Owner', '#F6F2FE', '#4D368B'], editor: ['Editor', '#F2F1FB', '#423B97'], reviewer: ['Reviewer', '#FDF3E2', '#8F5806'], launcher: ['Launcher', '#FDF2F5', '#A54666'], viewer: ['Viewer', '#F1F2F6', '#33364A'] };
+  const role = (k) => ({ rl: ROLE[k][0], rbg: ROLE[k][1], rfg: ROLE[k][2] });
+  const tabsP = [['Overview', ''], ['Members & roles', '7'], ['Environments', '2'], ['Webhooks', '1'], ['Service accounts', '2']];
+  const ptabs = tabsP.map(([label, n], i) => ({ label, n, cur: i === 1 ? 'page' : 'false', c: i === 1 ? '#0F1020' : '#4D5065', w: i === 1 ? 600 : 500, u: i === 1 ? 'inset 0 -2px 0 #7750D4' : 'none' }));
+  return {
+    ptabs,
+    sugg: [
+      { ...P.person('LM', '#EC5F87'), name: 'Luca Moretti', sub: 'l.moretti@lab.example · imaging-core', hint: 'Person', sel: 'true', bg: '#F6F2FE' },
+      { ...P.group('MO'), name: 'mouse-models', sub: 'Group · 9 members', hint: 'Group', sel: 'false', bg: '#FFFFFF' }
+    ],
+    access: [
+      { ...P.person('TW'), name: 'Thomas Weber (you)', ...role('owner') },
+      { ...P.group('RC'), name: 'rnaseq-core', ...role('viewer') },
+      { ...P.person('AS', '#2F7FA8'), name: 'Anna Smith', ...role('reviewer') },
+      { ...P.service('LB'), name: 'LabID (service account)', ...role('launcher') }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

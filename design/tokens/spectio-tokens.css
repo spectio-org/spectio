@@ -1,0 +1,91 @@
+/* Spectio — design tokens · palette "Dawn (light)" · v0.2 · 2026-10-25
+   Brand scales are for the mark, the stage gauge and accents. The UI uses the role tokens below.
+   Run-state colours never appear in the brand and are always paired with an icon and a word. */
+:root {
+  /* Brand scales (emblem order, left to right) */
+  --sp-indigo-50:#F2F1FB; --sp-indigo-100:#E5E3F7; --sp-indigo-200:#C7C3EF; --sp-indigo-300:#A39CE4; --sp-indigo-400:#7E76DA;
+  --sp-indigo-500:#5A4FCF; --sp-indigo-600:#4E45B3; --sp-indigo-700:#423B97; --sp-indigo-800:#343078; --sp-indigo-900:#272458;
+  --sp-violet-50:#F6F2FE; --sp-violet-100:#ECE5FE; --sp-violet-200:#D8C8FC; --sp-violet-300:#BEA4FA; --sp-violet-400:#A580F8;
+  --sp-violet-500:#8B5CF6; --sp-violet-600:#7750D4; --sp-violet-700:#6344B2; --sp-violet-800:#4D368B; --sp-violet-900:#372864;
+  --sp-coral-50:#FDF2F5; --sp-coral-100:#FCE5EC; --sp-coral-200:#F9C9D6; --sp-coral-300:#F4A5BC; --sp-coral-400:#F082A1;
+  --sp-coral-500:#EC5F87; --sp-coral-600:#C95277; --sp-coral-700:#A54666; --sp-coral-800:#7E3854; --sp-coral-900:#562941;
+  --sp-amber-50:#FFF8F0; --sp-amber-100:#FEF1E2; --sp-amber-200:#FDE2C0; --sp-amber-300:#FCCF98; --sp-amber-400:#FABC6F;
+  --sp-amber-500:#F9A947; --sp-amber-600:#D49141; --sp-amber-700:#AE783B; --sp-amber-800:#845C34; --sp-amber-900:#5A412C;
+
+  /* Support scale (not in the mark): Environments, info, robot actor */
+  --sp-sky-50:#EEF6FA; --sp-sky-100:#DCEDF6; --sp-sky-200:#B9DBEC; --sp-sky-300:#8FC3DF; --sp-sky-400:#5FA8CF;
+  --sp-sky-500:#3B8FBF; --sp-sky-600:#2F7FA8; --sp-sky-700:#276A8C; --sp-sky-800:#1F536D; --sp-sky-900:#173D50;
+
+  /* Neutrals: ink tinted with indigo */
+  --sp-ink-0:#F7F7FB; --sp-ink-50:#EEEFF5; --sp-ink-100:#DFE1EA; --sp-ink-200:#C4C7D4; --sp-ink-300:#9A9EB0;
+  --sp-ink-400:#6E7287; --sp-ink-500:#4D5065; --sp-ink-600:#33364A; --sp-ink-700:#22253A; --sp-ink-800:#171A2E; --sp-ink-900:#0F1020;
+
+  /* Surfaces */
+  --sp-surface-page:#FFFFFF; --sp-surface-subtle:var(--sp-ink-0); --sp-surface-sunken:var(--sp-ink-50);
+  --sp-surface-raised:#FFFFFF; --sp-surface-code:var(--sp-ink-900); --sp-surface-overlay:rgba(15,16,32,.45);
+  /* Lines */
+  --sp-line-hairline:rgba(15,16,32,.11); --sp-line-divider:var(--sp-ink-50); --sp-line-border:var(--sp-ink-100);
+  --sp-line-input:var(--sp-ink-200); --sp-line-focus:var(--sp-violet-600);
+  /* Text */
+  --sp-text-primary:var(--sp-ink-900); --sp-text-secondary:var(--sp-ink-600); --sp-text-muted:var(--sp-ink-500);
+  --sp-text-faint:var(--sp-ink-400); --sp-text-disabled:var(--sp-ink-300); --sp-text-link:var(--sp-violet-700);
+  /* Interaction */
+  --sp-accent:var(--sp-violet-600); --sp-accent-hover:var(--sp-violet-700); --sp-accent-pressed:var(--sp-violet-800);
+  --sp-accent-subtle:var(--sp-violet-50); --sp-accent-on:#FFFFFF; --sp-disabled-fill:var(--sp-ink-200);
+
+  /* Run states: rail (edge, icon) · fg (text) · bg (tint) */
+  --sp-state-queued:#6E7287;    --sp-state-queued-fg:#33364A;    --sp-state-queued-bg:#F1F2F6;
+  --sp-state-running:#3B82F6;   --sp-state-running-fg:#1D5FC9;   --sp-state-running-bg:#EAF2FE;
+  --sp-state-review:#D9890B;    --sp-state-review-fg:#8F5806;    --sp-state-review-bg:#FDF3E2;
+  --sp-state-paused:#8B5CF6;    --sp-state-paused-fg:#6344B2;    --sp-state-paused-bg:#F1ECFE;
+  --sp-state-succeeded:#1F9D63; --sp-state-succeeded-fg:#157A4B; --sp-state-succeeded-bg:#E8F6EF;
+  --sp-state-failed:#DC3B3B;    --sp-state-failed-fg:#B02A2A;    --sp-state-failed-bg:#FCEBEB;
+  --sp-state-cancelled:#4D5065; --sp-state-cancelled-fg:#33364A; --sp-state-cancelled-bg:#EEEFF5;
+  --sp-state-cached:#8A8F98;    --sp-state-cached-fg:#4F5462;    --sp-state-cached-bg:#F1F2F4;
+
+  /* Section colours (sidebar icon + active tint, depictio pattern) */
+  --sp-section-overview:var(--sp-indigo-500); --sp-section-runs:var(--sp-violet-600); --sp-section-review:var(--sp-state-review);
+  --sp-section-launch:var(--sp-coral-500);    --sp-section-workflows:var(--sp-coral-700); --sp-section-environments:var(--sp-sky-600);
+  --sp-section-settings:var(--sp-ink-500);    /* workflows: coral 700, kept apart from depictio Dashboards orange */
+
+  /* Actors */
+  --sp-actor-ai-bg:var(--sp-violet-600);  --sp-actor-ai-fg:#FFFFFF;
+  --sp-actor-person-bg:#E6DCFC;           --sp-actor-person-fg:var(--sp-violet-800);
+  --sp-actor-robot-bg:#E3F1FB;            --sp-actor-robot-fg:#1D5FC9;
+  --sp-actor-system-bg:var(--sp-ink-50);  --sp-actor-system-fg:var(--sp-ink-600);
+
+  /* Data visualisation (fixed categorical order; never reuse a run-state colour for a series) */
+  --sp-viz-1:#5A4FCF; --sp-viz-2:#EC5F87; --sp-viz-3:#3B8FBF; --sp-viz-4:#D49141;
+  --sp-viz-5:#A580F8; --sp-viz-6:#2A9D8F; --sp-viz-7:#A54666; --sp-viz-8:#6E7287;
+  /* Sequential = indigo 50 → 900 · Diverging = coral 700 ← ink 50 → indigo 700 */
+
+  /* Type */
+  --sp-font-display:'Outfit', system-ui, sans-serif;
+  --sp-font-body:'Inter', system-ui, sans-serif;
+  --sp-font-mono:'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Dark mode */
+:root[data-theme="dark"] {
+  --sp-surface-page:var(--sp-ink-900); --sp-surface-subtle:var(--sp-ink-800); --sp-surface-sunken:#0B0C18;
+  --sp-surface-raised:#1D2036; --sp-surface-code:#0B0C18; --sp-surface-overlay:rgba(0,0,0,.6);
+  --sp-line-hairline:rgba(236,237,245,.12); --sp-line-divider:var(--sp-ink-700); --sp-line-border:var(--sp-ink-600);
+  --sp-line-input:var(--sp-ink-500); --sp-line-focus:var(--sp-violet-400);
+  --sp-text-primary:#ECEDF5; --sp-text-secondary:var(--sp-ink-200); --sp-text-muted:var(--sp-ink-300);
+  --sp-text-faint:#8E92A8; --sp-text-disabled:var(--sp-ink-400); --sp-text-link:var(--sp-violet-300);
+  --sp-accent:var(--sp-violet-400); --sp-accent-hover:var(--sp-violet-300); --sp-accent-pressed:var(--sp-violet-200);
+  --sp-accent-subtle:#261E45; --sp-accent-on:var(--sp-ink-900); --sp-disabled-fill:var(--sp-ink-600);
+  --sp-state-queued:#9A9EB0;    --sp-state-queued-fg:#C4C7D4;    --sp-state-queued-bg:#22253A;
+  --sp-state-running:#5B9BF8;   --sp-state-running-fg:#9CC2FB;   --sp-state-running-bg:#1A2747;
+  --sp-state-review:#E9A23B;    --sp-state-review-fg:#F5C779;    --sp-state-review-bg:#33270F;
+  --sp-state-paused:#A580F8;    --sp-state-paused-fg:#C8B2FB;    --sp-state-paused-bg:#261E45;
+  --sp-state-succeeded:#34B27A; --sp-state-succeeded-fg:#7FD3AA; --sp-state-succeeded-bg:#14302A;
+  --sp-state-failed:#EE5A5A;    --sp-state-failed-fg:#F59A9A;    --sp-state-failed-bg:#3A1A1F;
+  --sp-state-cancelled:#6E7287; --sp-state-cancelled-fg:#9A9EB0; --sp-state-cancelled-bg:#1C1F33;
+  --sp-state-cached:#8E92A8;    --sp-state-cached-fg:#B5B8C6;    --sp-state-cached-bg:#22253A;
+  --sp-section-overview:var(--sp-indigo-400); --sp-section-runs:var(--sp-violet-400); --sp-section-launch:var(--sp-coral-400);
+  --sp-section-workflows:var(--sp-coral-300); --sp-section-environments:var(--sp-sky-400); --sp-section-settings:var(--sp-ink-300);
+  --sp-actor-person-bg:var(--sp-violet-900); --sp-actor-person-fg:var(--sp-violet-200);
+  --sp-actor-robot-bg:var(--sp-sky-900);     --sp-actor-robot-fg:var(--sp-sky-300);
+  --sp-actor-system-bg:var(--sp-ink-700);    --sp-actor-system-fg:var(--sp-ink-200);
+}

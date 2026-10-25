@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — launch a Snakemake workflow</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}details>summary .chev{transition:transform .15s}details:not([open])>summary .chev{transform:rotate(180deg)}
+a{color:#6344B2}a:hover{color:#4D368B}
+input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C4C7D4;padding:8px 10px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Launch / rna-seq-star-deseq2" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="launch" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <span style="width: 48px; height: 48px; border-radius: 15px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center;">
+          <img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="30" height="30" alt="Snakemake" style="display: block; object-fit: contain;">
+        </span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Launch rna-seq-star-deseq2 <span style="font-weight: 500; color: #6E7287; font-size: 20px;">v2.1.2</span></h1>
+          <span style="font-size: 14px; color: #4D5065;">Form from workflow/schemas/config.schema.yaml + the <code style="font-family: 'JetBrains Mono', monospace;">ui:</code> block of spectio.yml · saved as config.yaml</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13px 'Inter', sans-serif; color: #22253A;">Expand all</button>
+          <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13px 'Inter', sans-serif; color: #22253A;">Load config.yaml…</button>
+        </div>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: #33364A; background: #F7F7FB; border-radius: 12px; padding: 9px 12px;">
+        <span style="font-weight: 600; color: #4D368B; background: #F6F2FE; border-radius: 7px; padding: 3px 8px;">Snakemake</span>
+        Snakemake config schemas carry types and defaults but no UI hints. Labels, groups and file pickers come from <code style="font-family: 'JetBrains Mono', monospace;">spectio.yml › ui:</code>; fields it does not cover fall back to their raw YAML key.
+      </div>
+
+      <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+        <section style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <input type="search" placeholder="Search 38 config keys" aria-label="Search config keys" style="flex: 1 1 220px; width: auto;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #33364A;"><input type="checkbox" style="width: auto;"> Changed only</label>
+          </div>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="width: 100%; border: none; background: #FFFFFF; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.table}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Samples &amp; units</span><span style="font-size: 12px; color: #4D5065;">samples.tsv + units.tsv · validated against schemas/samples.schema.yaml, units.schema.yaml</span></span>
+              <span style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">1 issue</span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 4px 16px 16px 60px; display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 13px; font-weight: 600;">samples <span style="color: #B02A2A;">*</span> <span style="font-weight: 400; color: #4D5065;">· config/samples.tsv</span></span>
+                <div style="overflow-x: auto; border-radius: 12px; box-shadow: 0 0 0 1px #E6DCFC;">
+                  <table style="width: 100%; min-width: 480px; border-collapse: collapse; font-size: 12.5px;">
+                    <thead><tr style="background: #FBF9FF; text-align: left; color: #33364A; font-size: 11.5px;">
+                      <th scope="col" style="padding: 7px 10px; font-weight: 600;">sample_name</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">condition</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">batch_effect</th>
+                    </tr></thead>
+                    <tbody>
+                      <sc-for list="{{samples}}" as="r" hint-placeholder-count="4">
+                        <tr style="border-top: 1px solid #EEEFF5;"><td style="padding: 7px 10px; font-weight: 600;">{{r.s}}</td><td style="padding: 7px 10px;">{{r.c}}</td><td style="padding: 7px 10px;">{{r.b}}</td></tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+                  <span style="font-size: 13px; font-weight: 600;">units <span style="color: #B02A2A;">*</span> <span style="font-weight: 400; color: #4D5065;">· config/units.tsv · fq1 / fq2 are file pickers (from ui:)</span></span>
+                  <span style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 12px; color: #6E7287;">Files checked by the runner · 10:12</span>
+                    <button type="button" style="height: 32px; padding: 0 10px; border-radius: 9px; border: none; background: #F6F2FE; color: #4D368B; font: 600 12.5px 'Inter', sans-serif; display: flex; align-items: center; gap: 6px; cursor: pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"/></svg>Recheck</button>
+                  </span>
+                </div>
+                <div style="overflow-x: auto; border-radius: 12px; box-shadow: 0 0 0 1px #E6DCFC;">
+                  <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 12.5px;">
+                    <thead><tr style="background: #FBF9FF; text-align: left; color: #33364A; font-size: 11.5px;">
+                      <th scope="col" style="padding: 7px 10px; font-weight: 600;">sample_name</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">unit_name</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">fq1</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">fq2</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">strandedness</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">check</th>
+                    </tr></thead>
+                    <tbody>
+                      <sc-for list="{{units}}" as="u" hint-placeholder-count="4">
+                        <tr style="border-top: 1px solid #EEEFF5;">
+                          <td style="padding: 7px 10px; font-weight: 600;">{{u.s}}</td>
+                          <td style="padding: 7px 10px;">{{u.u}}</td>
+                          <td style="padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">{{u.f1}}</td>
+                          <td style="padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: {{u.f2c}};">{{u.f2}}</td>
+                          <td style="padding: 7px 10px;">{{u.str}}</td>
+                          <td style="padding: 7px 10px; color: {{u.fg}}; font-weight: 600; white-space: nowrap;">{{u.ok}}</td>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+                <span style="font-size: 12px; color: #B02A2A;">ctrl_3 · lane2 · fq2 not found on /g/lab/fastq/2026-10. Fix the path, then Recheck (checks also run before launch).</span>
+              </div>
+            </div>
+          </details>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="width: 100%; border: none; background: #FFFFFF; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.dna}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Reference</span><span style="font-size: 12px; color: #4D5065;">ref.species · ref.release · ref.build</span></span>
+              <span style="font-size: 12.5px; color: #6E7287;">defaults</span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 4px 16px 16px 60px; display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+              <sc-for list="{{ref}}" as="f" hint-placeholder-count="3">
+                <label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">{{f.label}}
+                  <input value="{{f.v}}">
+                  <span style="font-weight: 400; font-size: 12px; color: #4D5065;">{{f.help}}</span>
+                </label>
+              </sc-for>
+            </div>
+          </details>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="width: 100%; border: none; background: #FFFFFF; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.scale}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Differential expression</span><span style="font-size: 12px; color: #4D5065;">diffexp.variables_of_interest · diffexp.contrasts · model</span></span>
+              <span style="font-size: 12.5px; font-weight: 600; color: #8F5806;">2 contrasts</span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 4px 16px 16px 60px; display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 13px; font-weight: 600;">Contrasts <span style="font-weight: 400; color: #4D5065;">· list editor (ui: widget contrasts)</span></span>
+              <sc-for list="{{contrasts}}" as="c" hint-placeholder-count="2">
+                <div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 24px minmax(0, 1fr) 32px; gap: 8px; align-items: center;">
+                  <input value="{{c.name}}" aria-label="Contrast name" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+                  <select aria-label="Test level"><option>{{c.a}}</option></select>
+                  <span style="text-align: center; font-size: 12px; color: #6E7287;">vs</span>
+                  <select aria-label="Reference level"><option>{{c.b}}</option></select>
+                  <button type="button" aria-label="Remove contrast" style="height: 32px; border: none; border-radius: 9px; background: #F7F7FB; color: #6E7287; font: 600 14px 'Inter', sans-serif;">×</button>
+                </div>
+              </sc-for>
+              <a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">+ Add contrast</a>
+              <span style="font-size: 12px; color: #4D5065;">Levels are read from the condition column of samples.tsv · model <code style="font-family: 'JetBrains Mono', monospace;">~batch_effect + condition</code></span>
+            </div>
+          </details>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="width: 100%; border: none; background: #FFFFFF; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.cpu}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Execution</span><span style="font-size: 12px; color: #4D5065;">Snakemake options, not part of config.yaml · written to a workflow profile</span></span>
+              <span style="font-size: 12.5px; color: #6E7287;">from environment</span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 4px 16px 16px 60px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;">
+              <label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">Executor
+                <select><option>slurm (snakemake-executor-plugin-slurm)</option><option>local</option></select>
+              </label>
+              <label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">Software deployment
+                <select><option>--sdm conda apptainer</option><option>--sdm conda</option></select>
+              </label>
+              <label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">Default resources
+                <input value="slurm_partition=htc mem_mb=8000 runtime=120" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">
+              </label>
+              <label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">Max jobs
+                <input type="number" value="200">
+              </label>
+            </div>
+          </details>
+
+          <sc-for list="{{collapsed}}" as="c" hint-placeholder-count="3">
+            <details style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); background: #FFFFFF; overflow: hidden;"><summary style="width: 100%; border: none; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); background: #FFFFFF; padding: 10px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer; box-shadow: none; border-radius: 0;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg></span>
+              <span style="flex-grow: 1; font-size: 14px; font-weight: 600; font-family: {{c.font}};">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12.5px; font-family: 'Inter', sans-serif;">· {{c.n}}</span></span>
+              <span style="font-size: 12.5px; color: {{c.fg}};">{{c.state}}</span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary><div style="padding: 2px 16px 16px 60px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;"><sc-for list="{{c.fields}}" as="f" hint-placeholder-count="2"><label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600; font-family: {{f.font}};">{{f.k}}<input value="{{f.v}}"><span style="font-weight: 400; font-size: 12px; color: #4D5065; font-family: Inter, sans-serif;">{{f.h}}</span></label></sc-for></div></details>
+          </sc-for>
+        </section>
+
+        <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{side}}" as="s" hint-placeholder-count="3">
+            <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px; display: flex; align-items: center; gap: 12px;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"/></svg></span>
+              <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;"><span style="font-size: 12px; color: #6E7287;">{{s.k}}</span><span style="font-size: 13.5px; font-weight: 600;">{{s.v}}</span></span>
+              <a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Change</a>
+            </div>
+          </sc-for>
+          <section style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;">config.yaml preview</h2>
+            <pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.55; white-space: pre-wrap;">samples: config/samples.tsv
+units: config/units.tsv
+ref:
+  species: homo_sapiens
+  release: 113
+  build: GRCh38
+trimming:
+  activate: true
+diffexp:
+  variables_of_interest:
+    condition: { base_level: ctrl }
+  contrasts:
+    treated-vs-ctrl: [treated, ctrl]
+    knockdown-vs-ctrl: [knockdown, ctrl]
+  model: ~batch_effect + condition</pre>
+            <span style="font-size: 11.5px; color: #A6A9BA;">Passed with --configfile · TSVs written next to it · same payload via REST, WES or MCP</span>
+          </section>
+          <button type="button" style="height: 46px; border: none; border-radius: 12px; background: #C4C7D4; color: #FFFFFF; font: 600 14px 'Inter', sans-serif;">Launch · fix 1 issue first</button>
+        </aside>
+      </div>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    table: 'M3 5h18v14H3z M3 10h18 M3 15h18 M9 5v14',
+    dna: 'M7 3c0 6 10 12 10 18 M17 3c0 6-10 12-10 18 M8.5 7h7 M8.5 17h7',
+    scissors: 'M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M8.5 7.5L20 19 M8.5 16.5L20 5',
+    scale: 'M12 4v16 M7 20h10 M5 8h14 M5 8l-3 6a3 3 0 0 0 6 0z M19 8l-3 6a3 3 0 0 0 6 0z',
+    cpu: 'M7 7h10v10H7z M10 10h4v4h-4z M10 3v4 M14 3v4 M10 17v4 M14 17v4 M3 10h4 M3 14h4 M17 10h4 M17 14h4',
+    shield: 'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M9 12l2 2 4-4',
+    code: 'M8 7l-5 5 5 5 M16 7l5 5-5 5',
+    refresh: 'M20 11a8 8 0 0 0-14.9-3 M4 4v4h4 M4 13a8 8 0 0 0 14.9 3 M20 20v-4h-4',
+    server: 'M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01',
+    box: 'M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5 M12 12v9',
+    flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5'
+  };
+  const unit = (s, u, f1, f2, str) => ({ s, u, f1, f2, str, ok: 'OK', fg: '#157A4B', f2c: '#0F1020' });
+  const sans = "'Inter', sans-serif", mono = "'JetBrains Mono', monospace";
+  return {
+    ic,
+    samples: [
+      { s: 'ctrl_1', c: 'ctrl', b: 'b1' },
+      { s: 'ctrl_3', c: 'ctrl', b: 'b2' },
+      { s: 'treated_1', c: 'treated', b: 'b1' },
+      { s: 'kd_2', c: 'knockdown', b: 'b2' }
+    ],
+    units: [
+      unit('ctrl_1', 'lane1', 'ctrl_1_L1_R1.fq.gz', 'ctrl_1_L1_R2.fq.gz', 'none'),
+      unit('ctrl_3', 'lane1', 'ctrl_3_L1_R1.fq.gz', 'ctrl_3_L1_R2.fq.gz', 'none'),
+      { s: 'ctrl_3', u: 'lane2', f1: 'ctrl_3_L2_R1.fq.gz', f2: 'ctrl_3_L2_R2.fq.gz', str: 'none', ok: 'Missing file', fg: '#B02A2A', f2c: '#B02A2A' },
+      unit('treated_1', 'lane1', 'treated_1_L1_R1.fq.gz', 'treated_1_L1_R2.fq.gz', 'yes')
+    ],
+    ref: [
+      { label: 'Species', v: 'homo_sapiens', help: 'ref.species · Ensembl name' },
+      { label: 'Ensembl release', v: '113', help: 'ref.release · integer' },
+      { label: 'Genome build', v: 'GRCh38', help: 'ref.build' }
+    ],
+    contrasts: [
+      { name: 'treated-vs-ctrl', a: 'treated', b: 'ctrl' },
+      { name: 'knockdown-vs-ctrl', a: 'knockdown', b: 'ctrl' }
+    ],
+    collapsed: [
+      { name: 'Trimming', n: '2 keys', state: 'activate: true', icon: ic.scissors, font: sans, fg: '#6E7287', fields: [{ k: 'trimming.activate', v: 'true', h: 'Run cutadapt before alignment', font: sans }, { k: 'params.cutadapt-pe', v: '-a AGATCGGAAGAG', h: 'Extra cutadapt arguments (paired-end)', font: sans }] },
+      { name: 'Quality control', n: '3 keys', state: 'defaults', icon: ic.shield, font: sans, fg: '#6E7287', fields: [{ k: 'qc.fastqc', v: 'true', h: 'Run FastQC on raw reads', font: sans }, { k: 'qc.rseqc', v: 'true', h: 'Run RSeQC on alignments', font: sans }] },
+      { name: 'params.star', n: 'no UI hints · raw key', state: 'string · empty', icon: ic.code, font: mono, fg: '#8F5806', fields: [{ k: 'params.star', v: '', h: 'No label or help in the schema: add one in the ui: block of spectio.yml', font: mono }] }
+    ],
+    side: [
+      { k: 'Environment', v: 'EMBL SLURM · htc (runner online)', icon: ic.server },
+      { k: 'Software', v: 'conda + Apptainer · 9 envs cached', icon: ic.box },
+      { k: 'Gates', v: '1 gate after alignment (spectio.yml)', icon: ic.flag }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — administration · users</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:7px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.btn{height:38px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.btn-d{background:#FFFFFF;color:#B02A2A;box-shadow:inset 0 0 0 1px #F2C4C4}
+.btn-sm{height:32px;padding:0 11px;font-size:12.5px;border-radius:9px}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.seg{display:flex;gap:2px;padding:3px;border-radius:11px;background:#EEEFF5}
+.seg span{height:30px;padding:0 10px;border-radius:8px;display:flex;align-items:center;gap:6px;font-size:12.5px;color:#4D5065;font-weight:500;white-space:nowrap}
+.seg .on{background:#FFFFFF;color:#0F1020;font-weight:600;box-shadow:0 1px 2px rgba(15,16,32,0.12)}
+.seg em{font-style:normal;font-size:11px;color:#6E7287;font-weight:600}
+.sel{height:36px;padding:0 30px 0 10px;border-radius:10px;border:1px solid #DFE1EA;background:#FFFFFF;font:500 13px 'Inter',sans-serif;color:#0F1020}
+.acc{border-top:1px solid #EEEFF5}
+.acc summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:11px 16px;min-height:44px}
+.acc summary::-webkit-details-marker{display:none}
+.acc summary:hover{background:#F7F7FB}
+.acc summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}
+.acc .chev{transition:transform .15s;color:#6E7287;flex-shrink:0}
+.acc[open] .chev{transform:rotate(90deg)}
+.av{width:32px;height:32px;border-radius:16px;color:#FFFFFF;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.facts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 18px;padding:4px 16px 14px 60px}
+.fact{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fact b{font-size:11.5px;font-weight:600;color:#6E7287}
+.fact span{font-size:13px;color:#0F1020}
+.mono{font-family:'JetBrains Mono',ui-monospace,monospace;font-size:12px}
+.fld{display:flex;flex-direction:column;gap:5px;font-size:12.5px;font-weight:600;color:#33364A}
+.inp{height:36px;box-sizing:border-box;padding:0 11px;border-radius:10px;border:1px solid #DFE1EA;font:400 13.5px 'Inter',sans-serif;color:#0F1020;display:flex;align-items:center;background:#FFFFFF}
+.sw{width:36px;height:20px;border-radius:10px;position:relative;flex-shrink:0;background:#C4C7D4}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:8px;background:#FFFFFF;box-shadow:0 1px 2px rgba(15,16,32,0.25)}
+.sw.on{background:#7750D4}.sw.on::after{left:18px}
+.cli-eq{border-radius:14px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.cli-eq summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;font-size:14px;font-weight:600;color:#22253A}
+.cli-eq summary::-webkit-details-marker{display:none}
+.cli-eq .term{margin:0 12px 12px;padding:14px 16px;border-radius:11px;background:#0F1020;color:#E4E6F0;font:400 12.5px/1.7 'JetBrains Mono',ui-monospace,monospace;white-space:pre-wrap}
+.term .c{color:#8C90A6}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Administration / Users" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>
+      </span>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Administration</h1>
+        <span style="font-size: 14px; color: #4D5065;">People, content, activity and the health of this instance</span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="position: sticky; top: 0; flex-shrink: 0;"><dc-import name="AdminNav" active="users" hint-size="208px,860px"></dc-import></div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+
+        <div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;">
+          <div style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 3px;">
+            <h2 style="margin: 0; font-size: 19px; font-weight: 600;">Users</h2>
+            <span style="font-size: 13px; color: #4D5065;">Everyone and everything that can act on this instance. Project roles come from grants; system admins manage the instance and bypass grants.</span>
+          </div>
+          <a href="#" class="btn btn-s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16v12H4z M4 7l8 6 8-6"/></svg>Invite</a>
+          <a href="#create-user" class="btn btn-p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M3 21a7 7 0 0 1 12.5-4.3 M19 14v6 M16 17h6"/></svg>Create user</a>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: #4D5065;">
+          <span style="font-weight: 600; color: #33364A;">Sign-in</span>
+          <span class="chip" style="background: #E8F6EF; color: #157A4B;">OIDC · EMBL SSO</span>
+          <span class="chip" style="background: #E8F6EF; color: #157A4B;">OIDC · LS Login</span>
+          <span class="chip" style="background: #EEF6FA; color: #1F536D;">SAML · Keycloak</span>
+          <span class="chip" style="background: #FDF2E8; color: #9A4A12;">depictio tokens trusted</span>
+          <span class="chip" style="background: #F1F2F6; color: #33364A;">Local accounts: admins only</span>
+          <a href="#" style="margin-left: auto; font-weight: 600; text-decoration: none;">Identity settings →</a>
+        </div>
+
+        <section class="card" style="overflow: hidden;">
+          <div style="padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border-radius: 10px; box-shadow: inset 0 0 0 1px #DFE1EA; color: #6E7287; flex: 1 1 200px; max-width: 260px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg><input type="search" placeholder="Search name, email or ID" aria-label="Search users" style="border: none; outline: none; font: inherit; font-size: 13px; background: transparent; min-width: 0; flex-grow: 1;"></label>
+            <div class="seg" role="tablist" aria-label="Principal kind"><span class="on" role="tab" aria-selected="true">People <em>7</em></span><span role="tab" aria-selected="false">Service accounts <em>4</em></span><span role="tab" aria-selected="false">Agents <em>1</em></span><span role="tab" aria-selected="false">Runners <em>4</em></span></div>
+            <select class="sel" aria-label="Status"><option>All statuses</option><option>Active</option><option>Invited</option><option>Inactive</option></select>
+          </div>
+
+          <sc-for list="{{first}}" as="u" hint-placeholder-count="1">
+            <details class="acc">
+              <summary>
+                <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                <span class="av" style="background: {{u.bg}};">{{u.t}}</span>
+                <span style="display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto;"><span style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><span style="font-weight: 600; font-size: 14px;">{{u.name}}</span><sc-for list="{{u.badges}}" as="b" hint-placeholder-count="2"><span class="chip" style="background: {{b.bg}}; color: {{b.fg}};">{{b.l}}</span></sc-for></span><span style="font-size: 12.5px; color: #6E7287;">{{u.email}}</span></span>
+                <span class="chip" style="background: {{u.abg}}; color: {{u.afg}};">{{u.auth}}</span>
+                <span style="width: 110px; text-align: right; font-size: 12.5px; color: #4D5065; white-space: nowrap;">{{u.seen}}</span>
+              </summary>
+              <div class="facts">
+                <div class="fact"><b>User ID</b><span class="mono">{{u.id}}</span></div>
+                <div class="fact"><b>Registration date</b><span>{{u.reg}}</span></div>
+                <div class="fact"><b>Last login</b><span>{{u.seen}}</span></div>
+                <div class="fact"><b>Groups</b><span>{{u.groupsTxt}}</span></div>
+              </div>
+            </details>
+          </sc-for>
+
+          <details class="acc" open>
+            <summary>
+              <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+              <span class="av" style="background: #2F7FA8;">AS</span>
+              <span style="display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto;"><span style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><span style="font-weight: 600; font-size: 14px;">Anna Smith</span><span class="chip" style="background: #F7F7FB; color: #4D5065;">User</span></span><span style="font-size: 12.5px; color: #6E7287;">a.smith@lab.example</span></span>
+              <span class="chip" style="background: #E8F6EF; color: #157A4B;">OIDC · EMBL SSO</span>
+              <span style="width: 110px; text-align: right; font-size: 12.5px; color: #4D5065; white-space: nowrap;">today 09:40</span>
+            </summary>
+            <div style="background: #FBFBFD; border-top: 1px solid #EEEFF5; padding-top: 12px;">
+              <div class="facts">
+                <div class="fact"><b>User ID</b><span class="mono">usr_01JB3K9V2MQ7</span></div>
+                <div class="fact"><b>Registration date</b><span>12 Mar 2026</span></div>
+                <div class="fact"><b>Last login</b><span>today 09:40 · web</span></div>
+                <div class="fact"><b>Account status</b><span><span class="chip" style="background: #E8F6EF; color: #157A4B;">Active</span></span></div>
+                <div class="fact"><b>Verified</b><span>Yes · by EMBL SSO</span></div>
+                <div class="fact"><b>Linked identities</b><span>EMBL SSO, depictio</span></div>
+                <div class="fact" style="grid-column: span 2;"><b>Groups</b><span style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <span class="chip" style="background: #EEF6FA; color: #1F536D;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="group admin"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>rnaseq-core</span>
+                  <span class="chip" style="background: #EEF6FA; color: #1F536D;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="P.I."><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/></svg>single-cell-club</span>
+                  <span class="chip" style="background: #F1F2F6; color: #33364A;">clinical-genomics</span>
+                  <span class="chip" style="background: #F1F2F6; color: #6E7287;">users</span>
+                </span></div>
+                <div class="fact"><b>Projects</b><span>3 · Owner 1 · Editor 2</span></div>
+                <div class="fact"><b>Tokens</b><span>2 active · last used 4 min ago</span></div>
+                <div class="fact"><b>Runs launched</b><span>58 · last today 08:55</span></div>
+                <div class="fact"><b>Gate decisions</b><span>31 · last yesterday</span></div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding: 2px 16px 14px 60px;">
+                <span style="font-size: 12.5px; font-weight: 600; color: #33364A;">Instance role</span>
+                <div class="seg" role="radiogroup" aria-label="Instance role"><span class="on" role="radio" aria-checked="true">Standard</span><span role="radio" aria-checked="false"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>System admin</span></div>
+                <span style="flex-grow: 1;"></span>
+                <a href="#" class="btn btn-s btn-sm">View tokens</a>
+                <a href="#" class="btn btn-s btn-sm">Deactivate</a>
+                <a href="#" class="btn btn-d btn-sm" title="Asks you to type the email to confirm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13"/></svg>Delete user</a>
+              </div>
+              <div style="margin: 0 16px 14px 60px; padding: 9px 12px; border-radius: 10px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #EEEFF5; font-size: 12.5px; color: #4D5065;">Deactivating keeps her runs, decisions and audit entries, revokes her tokens and blocks sign-in. Deleting asks you to type <span class="mono">a.smith@lab.example</span> and reassigns her projects' ownership first.</div>
+            </div>
+          </details>
+
+          <sc-for list="{{rest}}" as="u" hint-placeholder-count="5">
+            <details class="acc">
+              <summary style="opacity: {{u.op}};">
+                <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                <span class="av" style="background: {{u.bg}};">{{u.t}}</span>
+                <span style="display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto;"><span style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><span style="font-weight: 600; font-size: 14px;">{{u.name}}</span><sc-for list="{{u.badges}}" as="b" hint-placeholder-count="2"><span class="chip" style="background: {{b.bg}}; color: {{b.fg}};">{{b.l}}</span></sc-for></span><span style="font-size: 12.5px; color: #6E7287;">{{u.email}}</span></span>
+                <span class="chip" style="background: {{u.abg}}; color: {{u.afg}};">{{u.auth}}</span>
+                <span style="width: 110px; text-align: right; font-size: 12.5px; color: #4D5065; white-space: nowrap;">{{u.seen}}</span>
+              </summary>
+              <div class="facts">
+                <div class="fact"><b>User ID</b><span class="mono">{{u.id}}</span></div>
+                <div class="fact"><b>Registration date</b><span>{{u.reg}}</span></div>
+                <div class="fact"><b>Account status</b><span>{{u.status}}</span></div>
+                <div class="fact"><b>Groups</b><span>{{u.groupsTxt}}</span></div>
+                <sc-if value="{{u.mustChange}}" hint-placeholder-val="{{false}}"><div class="fact" style="grid-column: span 4;"><b>Password</b><span style="color: #8F5806;">Must be changed at next sign-in</span></div></sc-if>
+              </div>
+            </details>
+          </sc-for>
+          <div style="border-top: 1px solid #EEEFF5; padding: 10px 16px; font-size: 12.5px; color: #6E7287; display: flex; gap: 12px;"><span>7 people · 5 active · 1 invited · 1 inactive</span><span style="margin-left: auto;">Users are matched by email with depictio and LabID accounts</span></div>
+        </section>
+
+        <section id="create-user" class="card" style="padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; max-width: 640px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span style="width: 34px; height: 34px; border-radius: 10px; background: #F6F2FE; color: #4D368B; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M3 21a7 7 0 0 1 12.5-4.3 M19 14v6 M16 17h6"/></svg></span>
+            <span style="display: flex; flex-direction: column; flex-grow: 1;"><span style="font-weight: 600; font-size: 15px;">Create user</span><span style="font-size: 12px; color: #6E7287;">Dialog · same fields as depictio, so one form serves both apps</span></span>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+            <label class="fld">Email<span class="inp">e.fischer@lab.example</span></label>
+            <label class="fld"><span>Display name <span style="font-weight: 500; color: #6E7287;">· optional</span></span><span class="inp">Eva Fischer</span></label>
+            <label class="fld" style="grid-column: span 2;">Initial password
+              <span style="display: flex; gap: 8px;"><span class="inp mono" style="flex-grow: 1; font-size: 13px; letter-spacing: 0.04em;">k7Rv2qXm9LpT4w</span><a href="#" class="btn btn-s btn-sm" style="height: 36px;">Generate another</a><a href="#" class="btn btn-s btn-sm" style="height: 36px;">Copy</a></span>
+            </label>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 10px; font-size: 13px;">
+            <span style="display: flex; align-items: center; gap: 10px;"><span class="sw on" role="switch" aria-checked="true" aria-label="Ask for a new password at first sign-in"></span>Ask for a new password at first sign-in</span>
+            <span style="display: flex; align-items: center; gap: 10px;"><span class="sw" role="switch" aria-checked="false" aria-label="System admin"></span>System admin</span>
+          </div>
+          <div style="padding: 9px 12px; border-radius: 10px; background: #EEF6FA; color: #173D50; font-size: 12.5px;">With SSO only (password login off), the person signs in with single sign-on and no password is set. Their groups arrive from the <span class="mono">memberOf</span> attribute at first sign-in.</div>
+          <div style="display: flex; justify-content: flex-end; gap: 8px;"><a href="#" class="btn btn-s">Cancel</a><a href="#" class="btn btn-p">Create user</a></div>
+        </section>
+
+        <details class="cli-eq">
+          <summary><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>CLI equivalent<span style="font-weight: 500; color: #6E7287; font-size: 12.5px;">same API, same permissions</span></summary>
+          <pre class="term"><span class="c"># list people (other kinds: --kind service|agent|runner)</span>
+spectio user list --kind person --status active --json
+spectio user create e.fischer@lab.example --name "Eva Fischer" --must-change-password
+spectio user set-admin n.olsen@lab.example --on
+spectio user deactivate m.roth@lab.example --reason "left the lab"
+spectio token list --user a.smith@lab.example</pre>
+        </details>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const AUTH = { embl: ['OIDC · EMBL SSO', '#E8F6EF', '#157A4B'], ls: ['OIDC · LS Login', '#E8F6EF', '#157A4B'], saml: ['SAML · Keycloak', '#EEF6FA', '#1F536D'], dep: ['depictio', '#FDF2E8', '#9A4A12'], local: ['Local account', '#F1F2F6', '#33364A'] };
+  const B = { you: ['You', '#F1F2F6', '#33364A'], admin: ['System admin', '#F6F2FE', '#4D368B'], user: ['User', '#F7F7FB', '#4D5065'], invited: ['Invited', '#FDF3E2', '#8F5806'], inactive: ['Inactive', '#FCEBEB', '#B02A2A'] };
+  const u = (t, bg, name, email, badges, a, seen, id, reg, status, groupsTxt, extra = {}) => ({
+    t, bg, name, email, seen, id, reg, status, groupsTxt,
+    badges: badges.map(k => ({ l: B[k][0], bg: B[k][1], fg: B[k][2] })),
+    auth: AUTH[a][0], abg: AUTH[a][1], afg: AUTH[a][2], op: extra.op ?? 1, mustChange: !!extra.mustChange
+  });
+  return {
+    first: [u('TW', '#8B5CF6', 'Thomas Weber', 't.weber@embl.de', ['you', 'admin'], 'embl', 'now', 'usr_01JAX2C8T0WB', '24 Oct 2026', 'Active', 'admin, rnaseq-core (admin), users')],
+    rest: [
+      u('LM', '#EC5F87', 'Luca Moretti', 'l.moretti@lab.example', ['user'], 'dep', 'today 08:12', 'usr_01JB4M1QZ8LM', '2 Apr 2026', 'Active', 'imaging-core (P.I.), users'),
+      u('NO', '#5A4FCF', 'Nora Olsen', 'n.olsen@lab.example', ['admin'], 'saml', '3 days ago', 'usr_01JB5N7KD2NO', '19 Apr 2026', 'Active', 'admin, microbiome-lab (admin), users'),
+      u('JD', '#1F9D63', 'Jo Dupont', 'j.dupont@partner.example', ['user'], 'ls', 'last week', 'usr_01JB8P3VC1JD', '3 Jun 2026', 'Active', 'clinical-genomics, users'),
+      u('KB', '#A54666', 'Kai Berg', 'k.berg@lab.example', ['user', 'invited'], 'local', 'never', 'usr_01JBC2X9R4KB', 'invited 21 Oct 2026', 'Invited · pending P.I. of rnaseq-core', 'rnaseq-core (pending P.I.)', { mustChange: true }),
+      u('MR', '#9A9EB0', 'Mia Roth', 'm.roth@lab.example', ['user', 'inactive'], 'embl', '2 months ago', 'usr_01JB2R6W0MR', '8 Feb 2026', 'Inactive since 1 Sep 2026', 'imaging-core', { op: 0.6 })
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

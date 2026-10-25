@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — UI colours</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1400px; height: 1640px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; padding: 44px 56px; display: flex; flex-direction: column; gap: 26px;">
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">UI colours · roles</h1>
+    <p style="margin: 0; font-size: 14.5px; color: #33364A; max-width: 1080px; line-height: 1.5;">The brand scales stay for the mark, the gauge and accents. Everything else in the interface uses these roles, each with a light and a dark value. Names match <code style="font-family: 'JetBrains Mono', monospace;">spectio-tokens.css</code>. Run-state colours never appear in the brand, and are always shown with an icon and a word.</p>
+  </div>
+
+  <sc-for list="{{groups}}" as="g" hint-placeholder-count="8">
+    <section style="display: flex; gap: 24px; align-items: flex-start;">
+      <div style="width: 210px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 4px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">{{g.title}}</h2>
+        <span style="font-size: 12.5px; line-height: 1.45; color: #4D5065;">{{g.desc}}</span>
+      </div>
+      <div style="flex-grow: 1; display: flex; flex-wrap: wrap; gap: 8px;">
+        <sc-for list="{{g.items}}" as="s" hint-placeholder-count="6">
+          <div style="width: {{g.w}}; border-radius: 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.1); overflow: hidden; display: flex; flex-direction: column;">
+            <div style="display: flex; height: 46px;">
+              <span style="flex: 1 1 0; background: {{s.l}}; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600; color: {{s.lt}};">{{s.lab}}</span>
+              <span style="flex: 1 1 0; background: {{s.d}}; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 600; color: {{s.dt}};">{{s.lab}}</span>
+            </div>
+            <div style="padding: 7px 9px; display: flex; flex-direction: column; gap: 1px;">
+              <span style="font-size: 12px; font-weight: 600;">{{s.name}}</span>
+              <span style="font-size: 10.5px; font-family: 'JetBrains Mono', monospace; color: #4D5065;">{{s.l}} · {{s.d}}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </sc-for>
+
+  <section style="display: flex; gap: 24px; align-items: flex-start;">
+    <div style="width: 210px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 4px;">
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run states</h2>
+      <span style="font-size: 12.5px; line-height: 1.45; color: #4D5065;">Rail (4 px edge, icons), text, tint (backgrounds). Light row, then dark row.</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 8px;">
+      <sc-for list="{{statesRows}}" as="row" hint-placeholder-count="2">
+        <div style="display: flex; gap: 8px; padding: 10px; border-radius: 14px; background: {{row.bg}};">
+          <sc-for list="{{row.items}}" as="s" hint-placeholder-count="8">
+            <div style="flex: 1 1 0; min-width: 0; border-radius: 10px; background: {{s.tint}}; box-shadow: inset 4px 0 0 {{s.rail}}; padding: 9px 10px 9px 14px; display: flex; flex-direction: column; gap: 3px;">
+              <span style="font-size: 12.5px; font-weight: 600; color: {{s.fg}};">{{s.name}}</span>
+              <span style="font-size: 10px; font-family: 'JetBrains Mono', monospace; color: {{s.fg}}; opacity: .8;">{{s.rail}}</span>
+              <span style="font-size: 10px; font-family: 'JetBrains Mono', monospace; color: {{s.fg}}; opacity: .8;">{{s.fg}} · {{s.tint}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-for>
+    </div>
+  </section>
+
+  <section style="display: flex; gap: 24px; align-items: flex-start;">
+    <div style="width: 210px; flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 4px;">
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Data visualisation</h2>
+      <span style="font-size: 12.5px; line-height: 1.45; color: #4D5065;">For charts in run pages and in depictio. Categorical order is fixed; never reuse a run-state colour for a data series.</span>
+    </div>
+    <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <span style="width: 96px; font-size: 12.5px; font-weight: 600;">Categorical</span>
+        <sc-for list="{{cat}}" as="c" hint-placeholder-count="8"><span style="flex: 1 1 0; height: 40px; border-radius: 8px; background: {{c.hex}}; color: #FFFFFF; font-size: 10.5px; font-family: 'JetBrains Mono', monospace; display: flex; align-items: flex-end; padding: 5px 7px; box-sizing: border-box;">{{c.n}} {{c.hex}}</span></sc-for>
+      </div>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <span style="width: 96px; font-size: 12.5px; font-weight: 600;">Sequential</span>
+        <span style="flex-grow: 1; height: 28px; border-radius: 8px; background: linear-gradient(90deg, #F2F1FB, #C7C3EF, #7E76DA, #4E45B3, #272458);"></span>
+        <span style="font-size: 11px; color: #4D5065; width: 170px;">indigo 50 → 900 (heatmaps, coverage)</span>
+      </div>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <span style="width: 96px; font-size: 12.5px; font-weight: 600;">Diverging</span>
+        <span style="flex-grow: 1; height: 28px; border-radius: 8px; background: linear-gradient(90deg, #A54666, #F4A5BC, #EEEFF5, #A39CE4, #423B97);"></span>
+        <span style="font-size: 11px; color: #4D5065; width: 170px;">coral ← neutral → indigo (fold change)</span>
+      </div>
+      <div style="display: flex; gap: 6px; align-items: center;">
+        <span style="width: 96px; font-size: 12.5px; font-weight: 600;">Stage gauge</span>
+        <sc-for list="{{gauge}}" as="c" hint-placeholder-count="4"><span style="width: 110px; height: 28px; border-radius: 8px; background: {{c.solid}}; display: flex; overflow: hidden;"><span style="margin-left: auto; width: 40%; background: {{c.tint}};"></span></span></sc-for>
+        <span style="font-size: 11px; color: #4D5065;">brand 500 = done · brand 300 = running · ink 100 = not started</span>
+      </div>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":1640}}'>
+class Component extends DCLogic {
+renderVals() {
+  const sw = (name, l, d, lab, lt, dt) => ({ name, l, d, lab: lab || '', lt: lt || '#0F1020', dt: dt || '#ECEDF5' });
+  const W = '#FFFFFF';
+  const groups = [
+    { title: 'Surfaces', desc: 'Page, panels and wells. Light / dark halves.', w: '168px', items: [
+      sw('surface.page', '#FFFFFF', '#0F1020', 'Aa'), sw('surface.subtle', '#F7F7FB', '#171A2E', 'Aa'), sw('surface.sunken', '#EEEFF5', '#0B0C18', 'Aa'),
+      sw('surface.raised', '#FFFFFF', '#1D2036', 'Aa'), sw('surface.code', '#0F1020', '#0B0C18', 'Aa', '#E6E7EF', '#E6E7EF'), sw('surface.overlay', 'rgba(15,16,32,.45)', 'rgba(0,0,0,.6)', '', W, W)
+    ] },
+    { title: 'Lines', desc: 'Hairline rings on cards, dividers, form borders.', w: '168px', items: [
+      sw('line.hairline', 'rgba(15,16,32,.11)', 'rgba(236,237,245,.12)'), sw('line.divider', '#EEEFF5', '#22253A'), sw('line.border', '#DFE1EA', '#33364A'), sw('line.input', '#C4C7D4', '#4D5065'), sw('line.focus', '#7750D4', '#A580F8')
+    ] },
+    { title: 'Text', desc: 'Never below text.muted for content; faint only for meta ≥ 12 px.', w: '168px', items: [
+      sw('text.primary', '#0F1020', '#ECEDF5', 'Aa', W, '#0F1020'), sw('text.secondary', '#33364A', '#C4C7D4', 'Aa', W, '#0F1020'), sw('text.muted', '#4D5065', '#9A9EB0', 'Aa', W, '#0F1020'), sw('text.faint', '#6E7287', '#8E92A8', 'Aa', W, '#0F1020'), sw('text.disabled', '#9A9EB0', '#6E7287', 'Aa', W, '#0F1020'), sw('text.link', '#6344B2', '#BEA4FA', 'Aa', W, '#0F1020')
+    ] },
+    { title: 'Interaction', desc: 'One accent for actions; tints for selection.', w: '168px', items: [
+      sw('accent', '#7750D4', '#A580F8', 'Go', W, '#0F1020'), sw('accent.hover', '#6344B2', '#BEA4FA', 'Go', W, '#0F1020'), sw('accent.pressed', '#4D368B', '#D8C8FC', 'Go', W, '#0F1020'), sw('accent.subtle', '#F6F2FE', '#261E45', 'Aa', '#4D368B', '#D8C8FC'), sw('accent.selected-ring', '#7750D4', '#A580F8'), sw('disabled.fill', '#C4C7D4', '#33364A', 'Go', W, '#9A9EB0')
+    ] },
+    { title: 'Section colours', desc: 'Sidebar icons and active tint per menu (depictio pattern). Environments uses the new Sky scale.', w: '168px', items: [
+      sw('section.overview', '#5A4FCF', '#7E76DA', '', W, W), sw('section.runs', '#7750D4', '#A580F8', '', W, W), sw('section.review', '#D9890B', '#E9A23B', '', W, W), sw('section.launch', '#EC5F87', '#F082A1', '', W, W),
+      sw('section.workflows', '#A54666', '#F082A1', '', W, W), sw('section.environments', '#2F7FA8', '#5FA8CF', '', W, W), sw('section.settings', '#4D5065', '#9A9EB0', '', W, W)
+    ] },
+    { title: 'Actors', desc: 'Tiles in histories and activity: who did it.', w: '168px', items: [
+      sw('actor.ai', '#7750D4', '#7750D4', 'AI', W, W), sw('actor.person', '#E6DCFC', '#372864', 'TW', '#4D368B', '#D8C8FC'), sw('actor.robot', '#E3F1FB', '#173D50', 'BOT', '#1D5FC9', '#8FC3DF'), sw('actor.system', '#EEEFF5', '#22253A', 'SYS', '#33364A', '#C4C7D4'), sw('actor.cli', '#F7F7FB', '#171A2E', 'CLI', '#33364A', '#C4C7D4')
+    ] },
+    { title: 'Sky (support scale)', desc: 'New, for Environments, info notices and the robot actor. Not part of the mark.', w: '112px', items:
+      [['50','#EEF6FA'],['100','#DCEDF6'],['200','#B9DBEC'],['300','#8FC3DF'],['400','#5FA8CF'],['500','#3B8FBF'],['600','#2F7FA8'],['700','#276A8C'],['800','#1F536D'],['900','#173D50']].map(([n, h], i) => sw('sky.' + n, h, h, '', i > 4 ? W : '#0F1020', i > 4 ? W : '#0F1020'))
+    }
+  ];
+  const st = (name, rail, fg, tint) => ({ name, rail, fg, tint });
+  const statesRows = [
+    { bg: '#FFFFFF', items: [st('Queued', '#6E7287', '#33364A', '#F1F2F6'), st('Running', '#3B82F6', '#1D5FC9', '#EAF2FE'), st('Awaiting review', '#D9890B', '#8F5806', '#FDF3E2'), st('Paused', '#8B5CF6', '#6344B2', '#F1ECFE'), st('Succeeded', '#1F9D63', '#157A4B', '#E8F6EF'), st('Failed', '#DC3B3B', '#B02A2A', '#FCEBEB'), st('Cancelled', '#4D5065', '#33364A', '#EEEFF5'), st('Cached / skipped', '#8A8F98', '#4F5462', '#F1F2F4')] },
+    { bg: '#0F1020', items: [st('Queued', '#9A9EB0', '#C4C7D4', '#22253A'), st('Running', '#5B9BF8', '#9CC2FB', '#1A2747'), st('Awaiting review', '#E9A23B', '#F5C779', '#33270F'), st('Paused', '#A580F8', '#C8B2FB', '#261E45'), st('Succeeded', '#34B27A', '#7FD3AA', '#14302A'), st('Failed', '#EE5A5A', '#F59A9A', '#3A1A1F'), st('Cancelled', '#6E7287', '#9A9EB0', '#1C1F33'), st('Cached / skipped', '#8E92A8', '#B5B8C6', '#22253A')] }
+  ];
+  const cat = [['1', '#5A4FCF'], ['2', '#EC5F87'], ['3', '#3B8FBF'], ['4', '#D49141'], ['5', '#A580F8'], ['6', '#2A9D8F'], ['7', '#A54666'], ['8', '#6E7287']].map(([n, hex]) => ({ n, hex }));
+  const gauge = [['#5A4FCF', '#A39CE4'], ['#8B5CF6', '#BEA4FA'], ['#EC5F87', '#F4A5BC'], ['#F9A947', '#FCCF98']].map(([solid, tint]) => ({ solid, tint }));
+  return { groups, statesRows, cat, gauge };
+}
+}
+</script>
+</body>
+</html>

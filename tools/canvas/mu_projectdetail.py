@@ -1,0 +1,95 @@
+import sys; sys.path.insert(0, 'tools')
+from mu_common import *
+PROJECT_HEADER = '''    <div style="display: flex; align-items: center; gap: 12px; font-size: 13px;">
+      <a href="Projects.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Projects</a>
+    </div>
+    <div class="card" style="padding: 16px 18px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap; box-shadow: inset 4px 0 0 #7750D4, 0 0 0 1px rgba(15,16,32,0.11);">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+      <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 4px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 26px;">Liver time course</h1>
+        <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #4D5065;">Owned by <strong style="color: #1F536D;">rnaseq-core</strong> · 41 runs · created 12 Mar 2026 by Thomas Weber <span class="chip" style="background: #EEF6FA; color: #1F536D;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a7 7 0 0 1 14 0 M17 11a3 3 0 1 0 0-6 M22 21a6 6 0 0 0-4-5.6"/></svg>Group · all rnaseq-core members can view</span></span>
+      </div>
+      <a href="ShareDialog.dc.html" class="btn btn-p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M16 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M8.6 13.5l6.8 4 M15.4 6.5l-6.8 4"/></svg>Share</a>
+    </div>
+    <nav aria-label="Project sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5;">
+      <sc-for list="{{ptabs}}" as="t" hint-placeholder-count="5">
+        <a href="#" aria-current="{{t.cur}}" style="padding: 10px 12px; font-size: 13.5px; text-decoration: none; color: {{t.c}}; font-weight: {{t.w}}; box-shadow: {{t.u}}; display: flex; align-items: center; gap: 6px;">{{t.label}}<span style="font-size: 11px; font-weight: 600; color: #6E7287;">{{t.n}}</span></a>
+      </sc-for>
+    </nav>
+'''
+body = PROJECT_HEADER + '''
+    <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start;">
+      <section class="card" style="flex: 1 1 100%; min-width: 0; overflow: hidden;">
+        <div style="padding: 14px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><h2 style="margin: 0; font-size: 16px; font-weight: 600;">People, groups and accounts with access</h2><span style="font-size: 12.5px; color: #4D5065;">7 grants · the highest role wins when someone has several</span></div>
+          <label style="display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 10px; border-radius: 10px; box-shadow: inset 0 0 0 1px #DFE1EA; color: #6E7287; width: 220px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg><input type="search" placeholder="Filter" aria-label="Filter grants" style="border: none; outline: none; font: inherit; font-size: 13px; background: transparent; min-width: 0; flex-grow: 1;"></label>
+        </div>
+        <table class="tbl">
+          <thead><tr><th>Who</th><th>Type</th><th>Role</th><th>Source</th><th style="width: 40px;"><span style="position: absolute; left: -9999px;">Remove</span></th></tr></thead>
+          <tbody>
+            <sc-for list="{{grants}}" as="g" hint-placeholder-count="7">
+              <tr>
+                <td><span style="display: flex; align-items: center; gap: 10px;"><span style="width: 32px; height: 32px; border-radius: {{g.rad}}; background: {{g.tbg}}; color: {{g.tfg}}; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{g.t}}</span><span style="display: flex; flex-direction: column;"><span style="font-weight: 600;">{{g.name}}</span><span style="font-size: 12px; color: #6E7287;">{{g.sub}}</span></span></span></td>
+                <td><span class="chip" style="background: #F7F7FB; color: #33364A; box-shadow: inset 0 0 0 1px #EEEFF5;">{{g.type}}</span></td>
+                <td><select class="sel" aria-label="Role for {{g.name}}"><option>{{g.rl}}</option><option>Owner</option><option>Editor</option><option>Reviewer</option><option>Launcher</option><option>Viewer</option></select></td>
+                <td style="font-size: 12.5px; color: #4D5065;">{{g.src}}</td>
+                <td><button type="button" aria-label="Remove {{g.name}}" style="width: 32px; height: 32px; border: none; border-radius: 9px; background: transparent; color: #6E7287; cursor: pointer;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg></button></td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </section>
+
+      <aside style="flex: 1 1 100%; min-width: 0; display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start;">
+        <section class="card" style="flex: 2 1 560px; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">What each role can do</h2>
+          <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+              <thead><tr><th style="text-align: left; padding: 6px 4px; color: #33364A; font-weight: 600;"></th><sc-for list="{{roles}}" as="r" hint-placeholder-count="5"><th style="padding: 6px 2px; font-weight: 600; color: {{r.fg}}; writing-mode: horizontal-tb;">{{r.t}}</th></sc-for></tr></thead>
+              <tbody>
+                <sc-for list="{{matrix}}" as="m" hint-placeholder-count="5">
+                  <tr style="border-top: 1px solid #EEEFF5;"><td style="padding: 7px 4px; color: #22253A;">{{m.action}}</td><sc-for list="{{m.cells}}" as="c" hint-placeholder-count="5"><td style="text-align: center; padding: 7px 2px; color: {{c.fg}}; font-weight: 700;">{{c.t}}</td></sc-for></tr>
+                </sc-for>
+                <tr style="border-top: 1px solid #DFE1EA;"><td style="padding: 7px 4px; color: #6E7287;">depictio role</td><sc-for list="{{dep}}" as="d" hint-placeholder-count="5"><td style="text-align: center; padding: 7px 2px; color: #6E7287; font-size: 11px;">{{d}}</td></sc-for></tr>
+              </tbody>
+            </table>
+          </div>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">Gate policies can be stricter: a reviewer decides only the gates whose policy names them or their group.</span>
+        </section>
+        <section class="card" style="flex: 1 1 320px; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Environments this project may use</h2>
+          <sc-for list="{{envs}}" as="e" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 13px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><span style="width: 8px; height: 8px; border-radius: 4px; background: {{e.dot}};"></span><span style="flex-grow: 1; font-weight: 600;">{{e.name}}</span><span style="color: #4D5065; font-size: 12px;">{{e.via}}</span></div>
+          </sc-for>
+        </section>
+      </aside>
+    </div>
+'''
+js = PRINCIPAL_JS + '''  const tabsP = [['Overview', ''], ['Members & roles', '7'], ['Environments', '2'], ['Webhooks', '1'], ['Service accounts', '2']];
+  const ptabs = tabsP.map(([label, n], i) => ({ label, n, cur: i === 1 ? 'page' : 'false', c: i === 1 ? '#0F1020' : '#4D5065', w: i === 1 ? 600 : 500, u: i === 1 ? 'inset 0 -2px 0 #7750D4' : 'none' }));
+  const gr = (p, name, sub, type, r, src) => ({ ...p, name, sub, type, ...role(r), src });
+  const R = ['owner', 'editor', 'reviewer', 'launcher', 'viewer'];
+  const yes = { t: '✓', fg: '#157A4B' }, no = { t: '·', fg: '#C4C7D4' };
+  const row = (action, minIdx) => ({ action, cells: R.map((_, i) => i <= minIdx ? yes : no) });
+  return {
+    ptabs,
+    grants: [
+      gr(P.person('TW'), 'Thomas Weber', 't.weber@lab.example', 'Person', 'owner', 'Direct · creator'),
+      gr(P.group('RC'), 'rnaseq-core', 'Group · 6 members', 'Group', 'viewer', 'Owning group (visibility: Group)'),
+      gr(P.person('AS', '#2F7FA8'), 'Anna Smith', 'a.smith@lab.example', 'Person', 'reviewer', 'Direct'),
+      gr(P.person('KB', '#A54666'), 'Kai Berg', 'k.berg@lab.example', 'Person', 'launcher', 'Inherited from rnaseq-core · raised here'),
+      gr(P.group('GC'), 'genomics-core-facility', 'Group · 11 members', 'Group', 'launcher', 'Direct'),
+      gr(P.service('LB'), 'LabID', 'Service account · LIMS', 'Service account', 'launcher', 'Direct · token scoped to this project'),
+      gr(P.agent(), 'QC agent', 'AI agent · built-in assistant', 'AI agent', 'viewer', 'Direct · may propose on gates')
+    ],
+    roles: R.map(k => ({ t: role(k).rl, fg: role(k).rfg })),
+    matrix: [row('See runs, logs, outputs', 4), row('Launch and relaunch', 3), row('Decide gates', 2), row('Cancel any run, edit manifests', 1), row('Share, webhooks, delete', 0)],
+    dep: ['Owner', 'Editor', 'Viewer', 'Viewer', 'Viewer'],
+    envs: [
+      { name: 'EMBL SLURM · htc', via: 'granted to rnaseq-core', dot: '#1F9D63' },
+      { name: 'Kubernetes · dev', via: 'granted to this project', dot: '#1F9D63' },
+      { name: 'EMBL SLURM · gpu', via: 'request access', dot: '#C4C7D4' }
+    ]
+  };'''
+open('spectio-ui/project/ProjectDetail.dc.html', 'w').write(build('Spectio — project members', 'Settings / Projects / Liver time course', 'rnaseq-core / Liver time course', 'settings', body, js))
+print('ok')

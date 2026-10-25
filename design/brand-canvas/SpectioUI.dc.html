@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Spectio — exemple d'interface</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 1400px; height: 800px; box-sizing: border-box; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="e" viewBox="0 0 200 100">
+      <path fill="#5A4FCF" d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/>
+      <path fill="#8B5CF6" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/>
+      <path fill="#EC5F87" d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/>
+      <path fill="#F9A947" d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/>
+    </symbol>
+  </svg>
+
+  <header style="height: 64px; background: #FFFFFF; border-bottom: 1px solid #DFE1EA; display: flex; align-items: center; justify-content: space-between; padding: 0 32px; box-sizing: border-box;">
+    <div style="display: flex; align-items: flex-end; gap: 10px;">
+      <svg width="44" height="22" aria-hidden="true" style="margin-bottom: -1px;"><use href="#e"/></svg>
+      <img src="/_blob/ac2267f17eb026573366f5050fe214c5" alt="Spectio" style="height: 20px; width: auto;">
+    </div>
+    <nav style="display: flex; gap: 28px; font-size: 14px; font-weight: 500;">
+      <a href="#" style="color: #0F1020; text-decoration: none; border-bottom: 2px solid #7750D4; padding-bottom: 4px;">Runs</a>
+      <a href="#" style="color: #4D5065; text-decoration: none;">Workflows</a>
+      <a href="#" style="color: #4D5065; text-decoration: none;">Interventions</a>
+      <a href="#" style="color: #4D5065; text-decoration: none;">Environnements</a>
+    </nav>
+    <button type="button" style="height: 36px; padding: 0 16px; border: none; border-radius: 8px; background: #7750D4; color: #FFFFFF; font: 600 14px 'Inter', sans-serif;">Lancer un run</button>
+  </header>
+
+  <main style="flex-grow: 1; display: flex; gap: 24px; padding: 28px 32px; box-sizing: border-box; min-height: 0;">
+    <section style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+      <h1 style="margin: 0 0 6px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 26px;">Runs</h1>
+      <sc-for list="{{runs}}" as="run" hint-placeholder-count="5">
+        <div style="background: #FFFFFF; border: 1px solid #DFE1EA; border-radius: 12px; padding: 14px 18px; display: flex; align-items: center; gap: 18px;">
+          <svg width="56" height="28" viewBox="0 0 200 100" role="img" aria-label="{{run.gaugeLabel}}">
+            <path fill="{{run.g0}}" d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/>
+            <path fill="{{run.g1}}" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/>
+            <path fill="{{run.g2}}" d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/>
+            <path fill="{{run.g3}}" d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/>
+          </svg>
+          <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
+            <span style="font-size: 15px; font-weight: 600;">{{run.name}}</span>
+            <span style="font-size: 12px; color: #4D5065;">{{run.meta}}</span>
+          </div>
+          <span style="font-size: 12px; font-weight: 500; color: #4D5065; background: #EEEFF5; border-radius: 6px; padding: 4px 8px;">{{run.engine}}</span>
+          <span style="display: flex; align-items: center; gap: 7px; height: 28px; padding: 0 11px; border-radius: 14px; background: {{run.bg}}; color: {{run.fg}}; font-size: 12px; font-weight: 600;">
+            <span style="width: 8px; height: 8px; border-radius: 4px; background: {{run.dot}};"></span>{{run.status}}
+          </span>
+        </div>
+      </sc-for>
+    </section>
+
+    <aside style="flex: 1 1 380px; min-width: 0; background: #FFFFFF; border: 1px solid #DFE1EA; border-radius: 14px; padding: 22px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; align-items: center; gap: 8px; color: #8F5806; font-size: 12px; font-weight: 600;">
+        <span style="width: 8px; height: 8px; border-radius: 4px; background: #D9890B;"></span>Attente d’intervention
+      </div>
+      <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">QC après l’étape 2 · segmentation</h2>
+      <p style="margin: 0; font-size: 13px; line-height: 1.5; color: #4D5065;">imaging-cellpose · 48 champs analysés. Vérifiez les métriques avant de continuer.</p>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+        <div style="background: #F7F7FB; border-radius: 10px; padding: 10px;"><div style="font-size: 11px; color: #4D5065;">Cellules / champ</div><div style="font-size: 18px; font-weight: 600;">212</div></div>
+        <div style="background: #F7F7FB; border-radius: 10px; padding: 10px;"><div style="font-size: 11px; color: #4D5065;">Sur-segmentation</div><div style="font-size: 18px; font-weight: 600;">4,1 %</div></div>
+        <div style="background: #F7F7FB; border-radius: 10px; padding: 10px;"><div style="font-size: 11px; color: #4D5065;">Champs flous</div><div style="font-size: 18px; font-weight: 600;">3</div></div>
+      </div>
+      <div style="border-radius: 10px; background: #F2F1FB; padding: 12px; font-size: 12px; line-height: 1.5; color: #343078;">
+        <strong>Proposition de l’agent IA</strong> · métriques dans les seuils, 3 champs flous à exclure. Valider et continuer.
+      </div>
+      <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-top: auto;">
+        <button type="button" style="height: 38px; padding: 0 16px; border: none; border-radius: 8px; background: #7750D4; color: #FFFFFF; font: 600 14px 'Inter', sans-serif;">Valider et continuer</button>
+        <button type="button" style="height: 38px; padding: 0 16px; border: 1px solid #C4C7D4; border-radius: 8px; background: #FFFFFF; color: #0F1020; font: 500 14px 'Inter', sans-serif;">Modifier les paramètres</button>
+        <button type="button" style="height: 38px; padding: 0 16px; border: 1px solid #C4C7D4; border-radius: 8px; background: #FFFFFF; color: #0F1020; font: 500 14px 'Inter', sans-serif;">Relancer</button>
+      </div>
+    </aside>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+  const brand = ['#5A4FCF','#8B5CF6','#EC5F87','#F9A947'];
+  const off = '#DFE1EA';
+  const st = {
+    running: { status: 'En cours', dot: '#3B82F6', bg: '#EAF2FE', fg: '#1D5FC9' },
+    waiting: { status: 'Attente d’intervention', dot: '#D9890B', bg: '#FDF3E2', fg: '#8F5806' },
+    done: { status: 'Réussi', dot: '#1F9D63', bg: '#E8F6EF', fg: '#157A4B' },
+    failed: { status: 'Échoué', dot: '#DC3B3B', bg: '#FCEBEB', fg: '#B02A2A' }
+  };
+  const mk = (name, meta, engine, s, n) => {
+    const g = brand.map((c, i) => (i < n ? c : off));
+    return { name, meta, engine, ...st[s], g0: g[0], g1: g[1], g2: g[2], g3: g[3], gaugeLabel: n + ' étapes sur 4 terminées' };
+  };
+  return {
+    runs: [
+      mk('imaging-cellpose', 'Lancé il y a 42 min · cluster SLURM · étape 2 sur 4', 'Snakemake', 'waiting', 2),
+      mk('rnaseq-2026-10-25', 'Lancé il y a 1 h 05 · 1 248 tâches · étape 3 sur 4', 'Nextflow', 'running', 3),
+      mk('atac-batch-07', 'Terminé il y a 3 h · 3 h 12 min', 'Nextflow', 'done', 4),
+      mk('variant-calling-wgs', 'Échec à l’étape 1 · tâche bwa_mem (exit 137)', 'Snakemake', 'failed', 0),
+      mk('scrna-pbmc', 'Lancé il y a 8 min · étape 1 sur 4', 'Nextflow', 'running', 1)
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>
