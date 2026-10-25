@@ -20,6 +20,8 @@ Spectio is an open-source tool for launching, monitoring and steering workflow r
 | administration, backups and migrations | [`docs/specs/admin-and-operations.md`](docs/specs/admin-and-operations.md) |
 | the CLI and the libraries shared with depictio and LabID | [`docs/specs/cli-and-shared-libraries.md`](docs/specs/cli-and-shared-libraries.md) |
 | what is reused from depictio | [`docs/specs/depictio-ecosystem-reuse.md`](docs/specs/depictio-ecosystem-reuse.md) |
+| how agents check their work: toolchain, local SLURM and Kubernetes, tests, staging | [`docs/specs/dev-environment-and-testing.md`](docs/specs/dev-environment-and-testing.md) |
+| what to do next, with ready-to-paste Claude Code prompts | [`docs/playbooks/next-phase.md`](docs/playbooks/next-phase.md) |
 | why a choice was made, and when | [`docs/decisions/log.md`](docs/decisions/log.md) |
 
 Full map: [`docs/README.md`](docs/README.md).
@@ -29,6 +31,8 @@ Full map: [`docs/README.md`](docs/README.md).
 ```
 docs/
   specs/        living specifications (English), one topic per file
+  playbooks/    step-by-step prompts for the next phases
+  reviews/      review round results (findings, triage)
   decisions/    decision log (append-only) and new decision records
   research/     dated working notes and data the specs cite (code audits, nf-core survey)
 design/
@@ -37,6 +41,8 @@ design/
   brand-canvas/ logo and colour explorations
 tools/canvas/   local renderer for the canvas boards (Playwright) and board generators
 mkdocs.yml      documentation site
+CLAUDE.md       instructions for Claude Code
+.claude/        project agents, skills (incl. vendored superpowers and Karpathy guidelines), settings
 ```
 
 ## Viewing the design

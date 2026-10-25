@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git status*)",
+      "Bash(git diff*)",
+      "Bash(git log*)",
+      "Bash(git show*)",
+      "Bash(git worktree*)",
+      "Bash(node tools/canvas/render.js*)",
+      "Bash(uvx --with mkdocs-material mkdocs build*)",
+      "Bash(npx -y @mermaid-js/mermaid-cli@11*)",
+      "Bash(grep*)",
+      "Bash(ls*)"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./**/*.pem)",
+      "Read(./**/secrets/**)"
+    ]
+  }
+}

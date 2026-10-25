@@ -150,3 +150,16 @@ Everything must be traced, including:
 - Outputs: plain-language pending reasons, failure classes (OOM, timeout, preempted, node failure, image pull…), relaunch suggestions from max RSS and attempts, efficiency and waste, pre-flight checks (walltime vs partition, reservations, quotas, scratch purge).
 - Head process as a small long SLURM head job; runner on login node (systemd --user + linger, or cron watchdog), service node with SSH / slurmrestd, or Kubernetes.
 - Details: [`schedulers-and-monitoring.md`](../specs/schedulers-and-monitoring.md); boards RunScheduler and EnvCapacity.
+
+## 2026-10-25 — Repository, Claude Code setup and pre-implementation playbook
+
+- Documentation moved into `weber8thomas/spectio`. Layout: `docs/specs`, `docs/decisions`, `docs/research`, `docs/reviews`, `docs/playbooks`, `design/`, `tools/canvas`. MkDocs Material site with a strict CI build (broken links fail) and a Mermaid check.
+- Before any product code: review rounds R1–R10 (consistency, facts, journeys, constraints, security, API contract vs UI, UI, depictio and LabID drift, landscape, go/no-go), then the development layer (D1–D5), test infrastructure (T1–T6) and planning (P1–P3). Prompts are in `docs/playbooks/next-phase.md`.
+- Claude Code setup in the repository:
+  - `CLAUDE.md`;
+  - eight agents (spec-reviewer, fact-checker, constraints-hunter, security-reviewer, ux-reviewer, depictio-liaison, test-architect, infra-engineer);
+  - workflow skills (`review-round`, `apply-findings`, `verify-claims`, `render-board`, `spike`);
+  - vendored superpowers skills and Karpathy guidelines (MIT), because cloud sessions do not load plugins.
+- Testing against real tools: sind for SLURM (25.11 / 26.05, slurmdbd, slurmrestd, failure simulation), kind with Kueue, fixture workflows with failure injection, golden fixtures named by tool version, one isolated environment per scenario, Playwright e2e and a side-by-side visual report against the canvas boards.
+- Staging "fake public instance" on Thomas's VM, behind Tailscale Funnel (ports 443/8443/10000), deployed by CI over the tailnet with an ephemeral tag; cloud sessions never hold tailnet keys.
+- Details: `dev-environment-and-testing.md`.

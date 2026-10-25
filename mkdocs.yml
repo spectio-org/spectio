@@ -51,6 +51,11 @@ nav:
       - Administration and operations: specs/admin-and-operations.md
       - CLI and shared libraries: specs/cli-and-shared-libraries.md
       - depictio ecosystem reuse: specs/depictio-ecosystem-reuse.md
+      - Dev environment and testing: specs/dev-environment-and-testing.md
+  - Playbooks:
+      - Next phase (prompts): playbooks/next-phase.md
+  - Reviews:
+      - Format: reviews/README.md
   - Decisions:
       - How decisions are recorded: decisions/README.md
       - Decision log: decisions/log.md

@@ -11,6 +11,12 @@
 7. [Administration and operations](specs/admin-and-operations.md): users and groups, branding, tasks, logs, health, backups, restore, migrations, maintenance.
 8. [CLI and shared libraries](specs/cli-and-shared-libraries.md): the `spectio` command tree, server profiles, and the libraries shared with depictio and LabID.
 9. [depictio ecosystem reuse](specs/depictio-ecosystem-reuse.md): what Spectio depends on, shares, copies, calls or leaves.
+10. [Dev environment and testing](specs/dev-environment-and-testing.md): toolchain, local SLURM (sind) and Kubernetes (kind with Kueue), isolated scenarios, test tiers, staging behind Tailscale Funnel, Claude in the development loop.
+
+## Playbooks and reviews
+
+- [Next phase](playbooks/next-phase.md): ready-to-paste Claude Code prompts for review rounds, the development layer, the test infrastructure and planning.
+- [Reviews](reviews/README.md): one file per review round, and the finding format.
 
 ## Decisions
 
