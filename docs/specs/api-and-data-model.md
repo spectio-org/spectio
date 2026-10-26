@@ -33,7 +33,7 @@ sequenceDiagram
   L->>S: POST /api/v1/runs (workflow, params, samplesheet rows with labid:// inputs, external_refs, Idempotency-Key)
   S->>R: launch command
   R->>R: resolver plugin turns labid://dataset/456 into a path on EMBL storage
-  R-->>S: engine events (Tower protocol / Snakemake logger)
+  R-->>S: engine events (nf-spectio plugin / Snakemake logger)
   S-->>L: webhook spectio.run.state_changed, spectio.gate.opened
   L->>S: GET /api/v1/gates/{id} (or the reviewer decides in the embedded review element)
   S-->>L: webhook spectio.run.completed
@@ -99,7 +99,7 @@ Python entry points, one group per kind (`spectio.engine`, `spectio.notifier`, �
 | Provenance | `GET /runs/{id}/ro-crate` (JSON-LD or zip, profile: workflow-run or provenance-run), `POST /runs:import-crate` (prefill a relaunch) |
 | Search | `GET /search?q=` (runs, workflows, tasks, samples by external ref) |
 | Admin | `GET/PATCH /settings`, `GET /audit-log`, `GET /plugins`, `GET /health`, `GET /version`; full admin surface (users, groups, tasks, logs, health, branding, plugins, backups and restores, migrations, maintenance) under `/admin/*`, see [`admin-and-operations.md`](admin-and-operations.md) §5 |
-| Ingest (engines) | `/trace/*` (Nextflow Tower protocol, token = run-scoped), `POST /ingest/events` (Snakemake logger, companion plugins) |
+| Ingest (engines) | `POST /ingest/events` (Nextflow plugin `nf-spectio`, Snakemake logger). The Tower protocol routes `/trace/*` are not implemented ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)) |
 | Facades | `/ga4gh/wes/v1/*` (WES 1.1 + `x-spectio` extensions), `/mcp` (MCP server) |
 
 ### Example: launch from a LIMS
@@ -264,7 +264,7 @@ Delivery: at least once, from an outbox table written in the same transaction as
 | GA4GH WES 1.1 | facade for launching and tracking; Spectio states map onto WES states (`AWAITING_REVIEW` and `PAUSED` → `PAUSED` with detail in extensions) |
 | GA4GH TRS, DRS | phase 2: catalogue as TRS; artefacts as DRS objects |
 | RO-Crate | import workflows from Workflow RO-Crates (nf-core, WorkflowHub); export runs as Workflow Run / Provenance Run Crates with gate provenance |
-| Nextflow Tower protocol | ingest only (runs launched with `-with-tower`) |
+| Nextflow Tower protocol | not implemented. Nextflow reports through `nf-spectio`, so a run can report to Seqera Platform (`nf-tower`) and to Spectio at the same time ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)) |
 | CloudEvents | webhook envelope |
 | OIDC | authentication (phase 2) |
 

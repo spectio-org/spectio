@@ -121,6 +121,7 @@ nav:
       - Decisions:
           - How decisions are recorded: decisions/README.md
           - Decision log: decisions/log.md
+          - "0001: Nextflow through nf-spectio": decisions/0001-nextflow-through-nf-spectio.md
       - Research:
           - depictio harmonisation: research/depictio-harmonization.md
           - depictio administration and operations: research/depictio-admin-ops.md

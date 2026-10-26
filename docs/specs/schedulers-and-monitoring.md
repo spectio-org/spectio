@@ -13,7 +13,7 @@ Companion docs:
    - Nextflow runs `squeue` every minute;
    - the Snakemake SLURM plugin runs `sacct` or `squeue`, backing off from 40 s up to 180 s.
    
-   Task states reach Spectio from the engine (Tower protocol, logger plugin). The scheduler is asked only for what the engines do not report:
+   Task states reach Spectio from the engine (the `nf-spectio` plugin, the Snakemake logger plugin). The scheduler is asked only for what the engines do not report:
    - why a job waits, and when it will start;
    - what it really used;
    - why it died;
@@ -98,7 +98,7 @@ One `SchedulerObserver` per runner keeps a cache of all jobs of its user. Each l
 
 | Engine | Key | Fallback |
 |---|---|---|
-| Nextflow on a grid | task `nativeId` (Tower protocol, trace `native_id`) = scheduler job ID | job name `nf-<PROCESS>_(<tag>)` + submit time |
+| Nextflow on a grid | task `nativeId` (trace `native_id`, reported by `nf-spectio`) = scheduler job ID | job name `nf-<PROCESS>_(<tag>)` + submit time |
 | Snakemake SLURM | job name = run UUID; Spectio sets `--slurm-jobname-prefix spectio-<run_id>`, then `sacct --name` / `squeue --name`; comment `rule_<rule>_wildcards_<…>` maps a job to the rule | the logger's job submission events |
 | Nextflow on Kubernetes | labels `nextflow.io/runName` + `taskName`; Spectio adds `spectio.io/run-id` through the generated `k8s.pod` label option | — |
 | Job arrays | the parent job ID plus each array element (`<id>_<n>`) are stored n:m with engine attempts (synthesis §2ter) | — |
@@ -215,7 +215,7 @@ Command names and flags for LSF, PBS, Grid Engine and HTCondor are to be checked
 
 ## 7. Monitoring beyond the scheduler
 
-- **Engine liveness.** The Tower protocol heartbeat and the logger's events. When they stop while the head job is still `RUNNING`, the run shows as "head silent" and the runner checks the head's log.
+- **Engine liveness.** The `nf-spectio` heartbeat and the logger's events. When they stop while the head job is still `RUNNING`, the run shows as "head silent" and the runner checks the head's log.
 - **Storage.** Quotas and inodes (Lustre, GPFS, BeeGFS, NFS), free space on the work directory, and scratch purge policies with the work directories at risk. Quotas are the most common cause of failed nf-core runs that a scheduler does not explain.
 - **Software.**
   - Apptainer / Singularity cache size and `NXF_SINGULARITY_CACHEDIR` presence.
