@@ -2,6 +2,8 @@
 
 Status: v0.1 · 2026-10-25.
 
+> **You do not run these steps one by one.** They are the reference prompts for the steps of [`pipeline.yaml`](pipeline.yaml), which the `/autopilot` skill runs in waves, in parallel, with verification and triage. To run everything, see [`autopilot.md`](autopilot.md). Run a single step by hand only to debug it (`/autopilot --only R5`).
+
 Order of work: **R** review rounds → **D** development layer → **T** test infrastructure → **P** planning → implementation.
 - Each step has a ready-to-paste prompt for Claude Code, started at the repository root.
 - Steps marked ∥ can run as parallel cloud sessions (`claude --cloud "<prompt>"`), one branch each.

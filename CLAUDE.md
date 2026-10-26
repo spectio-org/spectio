@@ -13,6 +13,15 @@ Do not start writing product code unless the task explicitly says so. The curren
 - **Accepted findings** are applied in a separate step (`/apply-findings`): spec changes, plus a dated entry in `docs/decisions/log.md`.
 - **Spikes** (throwaway experiments) run in a git worktree under `spikes/<name>/`. Each one ends with a dated note in `docs/research/`.
 
+## Autopilot
+
+`/autopilot` runs the next ready steps of `docs/playbooks/pipeline.yaml` and stores progress in `.autopilot/state.json`:
+- it verifies each step's exit check;
+- it triages findings with `docs/playbooks/triage-policy.md`;
+- it commits to `autopilot/integration` and appends to `.autopilot/journal.md`.
+
+To run the whole pipeline, drive it with `/goal` (see `docs/playbooks/autopilot.md`). Questions for Thomas go to `docs/reviews/inbox.md`. Never merge to `main` or edit statuses in `pipeline.yaml`.
+
 ## Rules
 
 - **Language.** English for every file in the repository. Replies to Thomas may be in French.

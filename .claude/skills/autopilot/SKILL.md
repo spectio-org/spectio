@@ -1,0 +1,111 @@
+---
+name: autopilot
+description: Spectio's orchestrator. Runs the next ready steps of docs/playbooks/pipeline.yaml (review rounds, triage, applying findings, spikes, builds, plans) in parallel where possible, verifies each step's exit check, triages findings with docs/playbooks/triage-policy.md, commits to the integration branch and updates .autopilot/state.json. One invocation is one tick; drive it with /goal or /loop to run the whole pipeline unattended. Use when Thomas says "continue", "autopilot", "run the pipeline", or when a /goal or /loop prompt names it.
+argument-hint: "[--until <step-or-wave>] [--only <step,...>] [--dry-run] [--max-parallel N]"
+---
+
+# Autopilot — one tick
+
+You coordinate. Workers do the steps. Keep your own context small: you read state, dispatch, verify and record. You do not do review or build work inline.
+
+## 0. Sync and load
+
+1. **Sync the branch.**
+   - `git fetch origin` (ignore failure if there is no remote).
+   - Switch to the integration branch from `docs/playbooks/pipeline.yaml` → `defaults.integration_branch`. Create it from `main` if missing.
+   - Rebase it on `origin/main` when that is clean; if the rebase conflicts, abort it and continue without rebasing.
+2. **Load** `docs/playbooks/pipeline.yaml`, `.autopilot/state.json`, `docs/playbooks/triage-policy.md` and `docs/reviews/inbox.md`.
+3. **Apply answered inbox entries first.** For each `Answer:` line not yet handled:
+   - run `/apply-findings` for it, or record the decision;
+   - revert any `assumed — pending Thomas` text that the answer contradicts;
+   - mark the entry handled;
+   - set the steps that were `waiting_human` on it back to `pending`.
+
+## 1. Pick the batch
+
+Run `python3 tools/autopilot/ready.py [--until …] [--only …] [--max-parallel N] --json`. It applies the rules below deterministically and returns the batch, the status line and any human gate reached. Use its output; the rules are listed here so you understand it.
+
+A step is **ready** when all of these hold:
+- its status is `pending`, or `failed` with attempts < `defaults.retries`;
+- every `depends_on` step is `done`, and so are all steps of every wave in the wave's own `depends_on`;
+- it is inside `--until` / `--only` if given.
+
+Take ready steps in pipeline order, up to `--max-parallel` (default `defaults.max_parallel`).
+- `apply` and `triage` steps are single-writer: at most one per batch, never alongside another step that writes specs.
+- A `human_gate` step is never run. Set it to `waiting_human`, add or refresh its inbox entry (question, links, recommendation), and stop scheduling anything that depends on it.
+
+With `--dry-run`, print the batch and stop.
+
+If nothing is ready, go to §5.
+
+## 2. Run the batch
+
+Set each step's status to `running` with `started_at`, then commit the state (`chore(autopilot): start <ids>`) so a parallel or later session sees the claim. Then dispatch every step of the batch **in one message**:
+
+| kind | How to run it |
+|---|---|
+| `review` | Run the `review-round` skill procedure for the step. Its prompt is the code block under the heading `### <prompt_ref>` in `docs/playbooks/next-phase.md`. When the round needs more than 8 agents, or asks for adversarial cross-checking, ask for a **dynamic workflow** ("use a workflow…"), so the fan-out and cross-check run in a script rather than in your context. Otherwise dispatch the named project agents as parallel subagents. |
+| `spike` | Run the `spike` skill procedure in a worktree (`isolation: worktree` subagent, or `using-git-worktrees`). |
+| `build` | One `general-purpose` subagent in its own worktree. Its prompt is the step's prompt from next-phase.md, plus: "Use test-driven-development and verification-before-completion. Commit on branch `autopilot/<step-id>`. Report the commands you ran and their output." |
+| `plan` | One subagent using the `writing-plans` skill with the step's prompt. |
+| `triage` | You do this yourself (§3), not a subagent. |
+| `apply` | Run the `apply-findings` skill for each listed round, sequentially, on the integration branch. |
+
+Give every worker:
+- the rules in `CLAUDE.md`;
+- the files it may write (`writes`);
+- the instruction that reviewers are read-only;
+- a request to end with a short machine-readable summary: status, files written, commands run, open questions.
+
+## 3. Verify, triage, record
+
+**Verify each finished step:**
+1. Check that the expected `writes` exist and are non-empty.
+2. Run the step's `exit_check` (or the wave's, once its last step finishes) and show its output.
+3. For `build` and `spike` steps, merge the step branch into the integration branch (`git merge --no-ff`). On a conflict, set the step to `failed` and note the conflicting files; do not resolve by deleting work.
+4. Run `uvx --with mkdocs-material mkdocs build --strict -d /tmp/spectio-site` after any change to `docs/`.
+
+**Outcome:**
+- **Passes:** status `done`, with `finished_at` and `outputs`.
+- **Fails:** status `failed` and `attempts`+1, with the error in `notes`.
+- **Failed `retries` times:** status `blocked`, with an inbox entry explaining what was tried.
+
+**Triage** (`triage` steps): for each finding in the listed rounds, apply `docs/playbooks/triage-policy.md` literally:
+- set the finding's status to `accepted`, `rejected` (with the reason) or `inbox`;
+- write each inbox item to `docs/reviews/inbox.md` with options, a recommendation, and whether it was assumed;
+- record counts in the journal.
+
+**Commit** on the integration branch, one commit per finished step: `autopilot(<id>): <one line>`.
+
+**Push** if a remote exists and pushing is allowed. Open or update one PR `autopilot/integration → main` whose description is the latest journal entry. Never merge it.
+
+## 4. Journal and state
+
+Append to `.autopilot/journal.md`:
+- time;
+- steps finished, failed or blocked;
+- `exit_check` results, as one line each;
+- triage counts (accepted / rejected / inbox / assumed);
+- what is now waiting on Thomas.
+
+Then update `state.json` (`updated_at`, `current_wave`) and commit both files.
+
+## 5. Report (always, last)
+
+Run `python3 tools/autopilot/ready.py` and print its two lines verbatim, so a `/goal` evaluator can judge from the conversation:
+
+```
+AUTOPILOT  wave=W2  done=11/31  running=0  failed=0  blocked=0  waiting_human=1
+next ready: R3, R6        waiting on Thomas: inbox #4 (roles default), GO
+```
+
+Then end the turn. Stop scheduling further work in this tick when:
+- the next ready step is a `human_gate`;
+- every remaining step is `waiting_human` or `blocked`;
+- `--until` is reached;
+- there is nothing left to do.
+
+**Never:**
+- merge to `main`, force-push, or delete branches or data;
+- edit `docs/playbooks/pipeline.yaml` statuses (state lives in `.autopilot/state.json`);
+- skip a failing check by weakening it.

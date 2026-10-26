@@ -1,0 +1,286 @@
+{
+  "pipeline_version": 1,
+  "updated_at": null,
+  "current_wave": "W1",
+  "steps": {
+    "R1": {
+      "wave": "W1",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "R2": {
+      "wave": "W1",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "R4": {
+      "wave": "W1",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "R5": {
+      "wave": "W1",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "R7": {
+      "wave": "W1",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "R8": {
+      "wave": "W1",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "R9": {
+      "wave": "W1",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "D2": {
+      "wave": "W1",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "TRIAGE1": {
+      "wave": "W2",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "APPLY1": {
+      "wave": "W2",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "R3": {
+      "wave": "W2",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "R6": {
+      "wave": "W2",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "TRIAGE2": {
+      "wave": "W2",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "APPLY2": {
+      "wave": "W2",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "D1": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "D3": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "D4": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "D5": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "T1": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "T2": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "T3": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "T4": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "T5": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "T6": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "TRIAGE3": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "APPLY3": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "R10": {
+      "wave": "W4",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "P1": {
+      "wave": "W4",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "GO": {
+      "wave": "W4",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "P2": {
+      "wave": "W5",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "P3": {
+      "wave": "W5",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    }
+  }
+}

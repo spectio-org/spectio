@@ -1,0 +1,61 @@
+# Spectio pre-implementation pipeline, read by the /autopilot skill.
+# Each step's full prompt is the code block under its heading in next-phase.md (prompt_ref).
+# State lives in .autopilot/state.json (status per step) — never edit statuses here.
+version: 1
+defaults:
+  max_parallel: 8            # steps running at once (W1 fits in one batch)
+  retries: 2                 # a failed step is retried this many times, then blocked
+  integration_branch: autopilot/integration   # all work lands here; humans merge to main
+waves:
+  - id: W1
+    title: Independent reviews and the first spike (read-only, parallel)
+    steps:
+      - {id: R1, kind: review, prompt_ref: "R1", writes: [docs/reviews/R1-consistency.md]}
+      - {id: R2, kind: review, prompt_ref: "R2", writes: [docs/reviews/verification-*.md, docs/reviews/R2-open-validations.md]}
+      - {id: R4, kind: review, prompt_ref: "R4", writes: [docs/reviews/R4-constraints.md]}
+      - {id: R5, kind: review, prompt_ref: "R5", writes: [docs/reviews/R5-security.md]}
+      - {id: R7, kind: review, prompt_ref: "R7", writes: [docs/reviews/R7-ui.md]}
+      - {id: R8, kind: review, prompt_ref: "R8", writes: [docs/reviews/R8-depictio.md]}
+      - {id: R9, kind: review, prompt_ref: "R9", writes: [docs/reviews/R9-landscape.md, docs/research/landscape-*.md]}
+      - {id: D2, kind: spike,  prompt_ref: "D2", writes: [docs/research/spike-cloud-env-*.md], worktree: true}
+    exit_check: "ls docs/reviews/R1-consistency.md docs/reviews/R4-constraints.md docs/reviews/R5-security.md docs/reviews/R7-ui.md docs/reviews/R8-depictio.md docs/reviews/R9-landscape.md >/dev/null"
+  - id: W2
+    title: Triage and apply W1 findings, then the reviews that need cleaned specs
+    depends_on: [W1]
+    steps:
+      - {id: TRIAGE1, kind: triage, rounds: [R1, R2, R4, R5, R7, R8, R9], writes: [docs/reviews/*.md, docs/reviews/inbox.md]}
+      - {id: APPLY1, kind: apply, depends_on: [TRIAGE1], rounds: [R1, R2, R4, R5, R7, R8, R9], writes: [docs/specs/*.md, docs/decisions/log.md]}
+      - {id: R3, kind: review, depends_on: [APPLY1], prompt_ref: "R3", writes: [docs/reviews/R3-journeys.md]}
+      - {id: R6, kind: review, depends_on: [APPLY1], prompt_ref: "R6", writes: [docs/reviews/R6-contract.md], worktree: true}
+      - {id: TRIAGE2, kind: triage, depends_on: [R3, R6], rounds: [R3, R6]}
+      - {id: APPLY2, kind: apply, depends_on: [TRIAGE2], rounds: [R3, R6]}
+    exit_check: "uvx --with mkdocs-material mkdocs build --strict -d /tmp/spectio-site"
+  - id: W3
+    title: Development layer and test infrastructure (parallel worktrees)
+    depends_on: [W2]
+    steps:
+      - {id: D1, kind: build, prompt_ref: "D1", worktree: true}
+      - {id: D3, kind: build, prompt_ref: "D3", worktree: true, exit_check: "bash dev/doctor.sh"}
+      - {id: D4, kind: build, prompt_ref: "D4", worktree: true}
+      - {id: D5, kind: build, prompt_ref: "D5", worktree: true}
+      - {id: T1, kind: build, prompt_ref: "T1", worktree: true}
+      - {id: T2, kind: spike, prompt_ref: "T2", depends_on: [T1], worktree: true}
+      - {id: T3, kind: build, prompt_ref: "T3", depends_on: [D3, T1], worktree: true}
+      - {id: T4, kind: build, prompt_ref: "T4", depends_on: [D3, T1], worktree: true}
+      - {id: T5, kind: build, prompt_ref: "T5", depends_on: [T3, T4], worktree: true}
+      - {id: T6, kind: build, prompt_ref: "T6", depends_on: [T5], worktree: true}
+      - {id: TRIAGE3, kind: triage, depends_on: [T2, T3, T4], rounds: [spikes]}
+      - {id: APPLY3, kind: apply, depends_on: [TRIAGE3], rounds: [spikes]}
+  - id: W4
+    title: Synthesis, plan and the one human decision
+    depends_on: [W3]
+    steps:
+      - {id: R10, kind: review, prompt_ref: "R10", writes: [docs/reviews/R10-synthesis.md]}
+      - {id: P1, kind: plan, prompt_ref: "P1", depends_on: [R10], writes: [docs/plans/P1-walking-skeleton.md]}
+      - {id: GO, kind: human_gate, depends_on: [P1], question: "Go / no-go for implementation, with the MVP cut in R10-synthesis.md and the plan in P1-walking-skeleton.md"}
+  - id: W5
+    title: Implementation of the walking skeleton
+    depends_on: [W4]
+    steps:
+      - {id: P2, kind: plan, prompt_ref: "P2"}
+      - {id: P3, kind: build, prompt_ref: "P3", depends_on: [P2], worktree: true}

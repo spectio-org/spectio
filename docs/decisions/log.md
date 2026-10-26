@@ -163,3 +163,15 @@ Everything must be traced, including:
 - Testing against real tools: sind for SLURM (25.11 / 26.05, slurmdbd, slurmrestd, failure simulation), kind with Kueue, fixture workflows with failure injection, golden fixtures named by tool version, one isolated environment per scenario, Playwright e2e and a side-by-side visual report against the canvas boards.
 - Staging "fake public instance" on Thomas's VM, behind Tailscale Funnel (ports 443/8443/10000), deployed by CI over the tailnet with an ephemeral tag; cloud sessions never hold tailnet keys.
 - Details: `dev-environment-and-testing.md`.
+
+## 2026-10-26 — Autopilot instead of step-by-step prompts
+
+- The playbook steps become nodes of `docs/playbooks/pipeline.yaml` (31 steps, 5 waves). The `/autopilot` skill runs one tick:
+  - it picks ready steps, up to 6 in parallel; writers are serialised and builds run in worktrees;
+  - it verifies exit checks and triages findings by `triage-policy.md`;
+  - it commits to `autopilot/integration` and updates `.autopilot/state.json` and `journal.md`.
+- **Driving it:** `/goal` keeps ticking until nothing is ready, with a separate evaluator model; auto mode removes per-tool prompts.
+- **Where it runs:** interactively, in a cloud session, headless (`tools/autopilot/run.sh`, with stream-json and `--max-budget-usd`), or as a nightly routine.
+- **Large rounds** use dynamic workflows, so the fan-out and cross-checks stay out of the orchestrator's context.
+- **Human touchpoints:** the inbox, which is asynchronous (reversible doc-level questions proceed on the recommended option, marked `assumed — pending Thomas`), and the `GO` gate before product code. The autopilot never merges to `main`.
+- **Permissions:** the permission rules the autopilot needs are documented for Thomas to add (`autopilot.md` §4). Agents do not modify their own permissions.

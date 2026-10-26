@@ -15,7 +15,9 @@
 
 ## Playbooks and reviews
 
-- [Next phase](playbooks/next-phase.md): ready-to-paste Claude Code prompts for review rounds, the development layer, the test infrastructure and planning.
+- [Autopilot](playbooks/autopilot.md): runs the whole pipeline ([`pipeline.yaml`](playbooks/pipeline.yaml)) unattended in five waves, with the [triage policy](playbooks/triage-policy.md) deciding what needs Thomas.
+- [Next phase](playbooks/next-phase.md): the prompt behind each pipeline step (review rounds, development layer, test infrastructure, planning).
+- [Inbox](reviews/inbox.md): the only place Thomas needs to look between runs.
 - [Reviews](reviews/README.md): one file per review round, and the finding format.
 
 ## Decisions

@@ -53,9 +53,12 @@ nav:
       - depictio ecosystem reuse: specs/depictio-ecosystem-reuse.md
       - Dev environment and testing: specs/dev-environment-and-testing.md
   - Playbooks:
-      - Next phase (prompts): playbooks/next-phase.md
+      - Autopilot: playbooks/autopilot.md
+      - Triage policy: playbooks/triage-policy.md
+      - Next phase (step prompts): playbooks/next-phase.md
   - Reviews:
       - Format: reviews/README.md
+      - Inbox (questions for Thomas): reviews/inbox.md
   - Decisions:
       - How decisions are recorded: decisions/README.md
       - Decision log: decisions/log.md

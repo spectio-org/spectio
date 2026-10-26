@@ -21,7 +21,8 @@ Spectio is an open-source tool for launching, monitoring and steering workflow r
 | the CLI and the libraries shared with depictio and LabID | [`docs/specs/cli-and-shared-libraries.md`](docs/specs/cli-and-shared-libraries.md) |
 | what is reused from depictio | [`docs/specs/depictio-ecosystem-reuse.md`](docs/specs/depictio-ecosystem-reuse.md) |
 | how agents check their work: toolchain, local SLURM and Kubernetes, tests, staging | [`docs/specs/dev-environment-and-testing.md`](docs/specs/dev-environment-and-testing.md) |
-| what to do next, with ready-to-paste Claude Code prompts | [`docs/playbooks/next-phase.md`](docs/playbooks/next-phase.md) |
+| run the next phase unattended | [`docs/playbooks/autopilot.md`](docs/playbooks/autopilot.md) (`/autopilot`, driven by `/goal`) |
+| what is waiting on you | [`docs/reviews/inbox.md`](docs/reviews/inbox.md) |
 | why a choice was made, and when | [`docs/decisions/log.md`](docs/decisions/log.md) |
 
 Full map: [`docs/README.md`](docs/README.md).
@@ -43,6 +44,8 @@ tools/canvas/   local renderer for the canvas boards (Playwright) and board gene
 mkdocs.yml      documentation site
 CLAUDE.md       instructions for Claude Code
 .claude/        project agents, skills (incl. vendored superpowers and Karpathy guidelines), settings
+.autopilot/     pipeline state and journal (committed, so any session can resume)
+tools/autopilot/ headless runner for the autopilot
 ```
 
 ## Viewing the design
