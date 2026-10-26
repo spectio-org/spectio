@@ -80,21 +80,21 @@
   "file": "landsat-19870119.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19870119_20201014_02_T1: bands 3-2-1, cloud 3%",
+  "note": "LT05_L1TP_181036_19870119_20201014_02_T1: bands 3-2-1, cloud 4%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19870204.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19870204_20201014_02_T1: bands 3-2-1, cloud 69%",
+  "note": "LT05_L1TP_181036_19870204_20201014_02_T1: bands 3-2-1, cloud 99%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19870324.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19870324_20211112_02_T1: bands 3-2-1, cloud 28%",
+  "note": "LT05_L1TP_181036_19870324_20211112_02_T1: bands 3-2-1, cloud 41%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -108,21 +108,21 @@
   "file": "landsat-19870425.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19870425_20201014_02_T1: bands 3-2-1, cloud 32%",
+  "note": "LT05_L1TP_181036_19870425_20201014_02_T1: bands 3-2-1, cloud 46%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19870511.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19870511_20201014_02_T1: bands 3-2-1, cloud 6%",
+  "note": "LT05_L1TP_181036_19870511_20201014_02_T1: bands 3-2-1, cloud 9%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19870527.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19870527_20211113_02_T1: bands 3-2-1, cloud 13%",
+  "note": "LT05_L1TP_181036_19870527_20211113_02_T1: bands 3-2-1, cloud 19%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -150,21 +150,21 @@
   "file": "landsat-19870730.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19870730_20201014_02_T1: bands 3-2-1, cloud 12%",
+  "note": "LT05_L1TP_181036_19870730_20201014_02_T1: bands 3-2-1, cloud 18%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19870815.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19870815_20201014_02_T1: bands 3-2-1, cloud 23%",
+  "note": "LT05_L1TP_181036_19870815_20201014_02_T1: bands 3-2-1, cloud 33%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19870831.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19870831_20201014_02_T1: bands 3-2-1, cloud 3%",
+  "note": "LT05_L1TP_181036_19870831_20201014_02_T1: bands 3-2-1, cloud 5%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -178,28 +178,28 @@
   "file": "landsat-19871002.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19871002_20201014_02_T1: bands 3-2-1, cloud 63%",
+  "note": "LT05_L1TP_181036_19871002_20201014_02_T1: bands 3-2-1, cloud 91%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19871205.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19871205_20201014_02_T1: bands 3-2-1, cloud 66%",
+  "note": "LT05_L1TP_181036_19871205_20201014_02_T1: bands 3-2-1, cloud 96%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19880106.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19880106_20211116_02_T1: bands 3-2-1, cloud 6%",
+  "note": "LT05_L1TP_181036_19880106_20211116_02_T1: bands 3-2-1, cloud 9%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19880122.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19880122_20200917_02_T1: bands 3-2-1, cloud 15%",
+  "note": "LT05_L1TP_181036_19880122_20200917_02_T1: bands 3-2-1, cloud 22%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -213,14 +213,14 @@
   "file": "landsat-19880223.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19880223_20200917_02_T1: bands 3-2-1, cloud 61%",
+  "note": "LT05_L1TP_181036_19880223_20200917_02_T1: bands 3-2-1, cloud 89%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19880310.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19880310_20200917_02_T1: bands 3-2-1, cloud 41%",
+  "note": "LT05_L1TP_181036_19880310_20200917_02_T1: bands 3-2-1, cloud 59%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -269,7 +269,7 @@
   "file": "landsat-19880801.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19880801_20200917_02_T1: bands 3-2-1, cloud 21%",
+  "note": "LT05_L1TP_181036_19880801_20200917_02_T1: bands 3-2-1, cloud 30%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -283,14 +283,14 @@
   "file": "landsat-19880918.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19880918_20200917_02_T1: bands 3-2-1, cloud 60%",
+  "note": "LT05_L1TP_181036_19880918_20200917_02_T1: bands 3-2-1, cloud 87%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19881004.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19881004_20200917_02_T1: bands 3-2-1, cloud 61%",
+  "note": "LT05_L1TP_181036_19881004_20200917_02_T1: bands 3-2-1, cloud 88%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -304,42 +304,42 @@
   "file": "landsat-19881121.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19881121_20211118_02_T1: bands 3-2-1, cloud 22%",
+  "note": "LT05_L1TP_181036_19881121_20211118_02_T1: bands 3-2-1, cloud 31%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19881129.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT04_L1TP_181036_19881129_20200917_02_T1: bands 3-2-1, cloud 18%",
+  "note": "LT04_L1TP_181036_19881129_20200917_02_T1: bands 3-2-1, cloud 26%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19881223.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19881223_20211119_02_T1: bands 3-2-1, cloud 67%",
+  "note": "LT05_L1TP_181036_19881223_20211119_02_T1: bands 3-2-1, cloud 98%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19881231.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT04_L1TP_181036_19881231_20200916_02_T1: bands 3-2-1, cloud 44%",
+  "note": "LT04_L1TP_181036_19881231_20200916_02_T1: bands 3-2-1, cloud 64%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19890108.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19890108_20200916_02_T1: bands 3-2-1, cloud 69%",
+  "note": "LT05_L1TP_181036_19890108_20200916_02_T1: bands 3-2-1, cloud 100%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19890209.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19890209_20211120_02_T1: bands 3-2-1, cloud 10%",
+  "note": "LT05_L1TP_181036_19890209_20211120_02_T1: bands 3-2-1, cloud 14%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -353,7 +353,7 @@
   "file": "landsat-19890430.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19890430_20200916_02_T1: bands 3-2-1, cloud 4%",
+  "note": "LT05_L1TP_181036_19890430_20200916_02_T1: bands 3-2-1, cloud 5%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -367,7 +367,7 @@
   "file": "landsat-19890601.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19890601_20200916_02_T1: bands 3-2-1, cloud 40%",
+  "note": "LT05_L1TP_181036_19890601_20200916_02_T1: bands 3-2-1, cloud 58%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -381,7 +381,7 @@
   "file": "landsat-19890703.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19890703_20200916_02_T1: bands 3-2-1, cloud 1%",
+  "note": "LT05_L1TP_181036_19890703_20200916_02_T1: bands 3-2-1, cloud 2%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -395,14 +395,14 @@
   "file": "landsat-19890804.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19890804_20200916_02_T1: bands 3-2-1, cloud 15%",
+  "note": "LT05_L1TP_181036_19890804_20200916_02_T1: bands 3-2-1, cloud 22%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19890820.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19890820_20200916_02_T1: bands 3-2-1, cloud 1%",
+  "note": "LT05_L1TP_181036_19890820_20200916_02_T1: bands 3-2-1, cloud 2%",
   "licence": "USGS Landsat: public domain"
  },
  {
@@ -416,42 +416,42 @@
   "file": "landsat-19890921.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19890921_20200916_02_T1: bands 3-2-1, cloud 26%",
+  "note": "LT05_L1TP_181036_19890921_20200916_02_T1: bands 3-2-1, cloud 38%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19891007.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19891007_20200916_02_T1: bands 3-2-1, cloud 69%",
+  "note": "LT05_L1TP_181036_19891007_20200916_02_T1: bands 3-2-1, cloud 100%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19891023.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19891023_20200916_02_T1: bands 3-2-1, cloud 12%",
+  "note": "LT05_L1TP_181036_19891023_20200916_02_T1: bands 3-2-1, cloud 17%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19891108.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19891108_20200916_02_T1: bands 3-2-1, cloud 29%",
+  "note": "LT05_L1TP_181036_19891108_20200916_02_T1: bands 3-2-1, cloud 42%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19891124.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT05_L1TP_181036_19891124_20211121_02_T1: bands 3-2-1, cloud 54%",
+  "note": "LT05_L1TP_181036_19891124_20211121_02_T1: bands 3-2-1, cloud 78%",
   "licence": "USGS Landsat: public domain"
  },
  {
   "file": "landsat-19891202.webp",
   "size": "240×230",
   "source": "nf-core/test-datasets@rangeland Landsat_collection2 (USGS Landsat 4/5 Collection 2, path/row 181/036)",
-  "note": "LT04_L1TP_181036_19891202_20200916_02_T1: bands 3-2-1, cloud 69%",
+  "note": "LT04_L1TP_181036_19891202_20200916_02_T1: bands 3-2-1, cloud 100%",
   "licence": "USGS Landsat: public domain"
  },
  {

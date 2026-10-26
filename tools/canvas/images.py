@@ -321,7 +321,7 @@ def rangeland(data):
         n = p.name
         band = lambda b: tifffile.imread(p / f"{n}_B{b}.TIF")
         qa = tifffile.imread(p / f"{n}_QA_PIXEL.TIF").astype(np.uint16)
-        fill = (qa & 1) > 0
+        fill = ((qa & 1) > 0) | (qa == 0)  # the test subset stores pixels outside the scene as 0, not as fill
         cloud = ((qa >> 3) & 1) | ((qa >> 1) & 1)
         shadow = (qa >> 4) & 1
         valid = (~fill).sum()
