@@ -12,8 +12,10 @@ from __future__ import annotations
 
 import argparse
 import hashlib
+import json
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -56,7 +58,13 @@ def check_mermaid() -> None:
         for i, (md, block) in enumerate(blocks):
             src = pathlib.Path(d, f"{i}.mmd")
             src.write_text(block)
-            r = subprocess.run(["npx", "-y", "@mermaid-js/mermaid-cli@11", "-q", "-i", str(src), "-o", str(src.with_suffix(".svg"))],
+            # GitHub's Ubuntu 24.04 runners forbid Chromium's sandbox (AppArmor user namespaces): run headless without it.
+            pcfg = pathlib.Path(d, "puppeteer.json")
+            base = pathlib.Path("/etc/puppeteer-config.json")  # some dev images ship one with the browser path
+            cfg = json.loads(base.read_text()) if base.exists() else {}
+            cfg["args"] = sorted(set(cfg.get("args", [])) | {"--no-sandbox", "--disable-setuid-sandbox"})
+            pcfg.write_text(json.dumps(cfg))
+            r = subprocess.run(["npx", "-y", "@mermaid-js/mermaid-cli@11", "-q", "-p", str(pcfg), "-i", str(src), "-o", str(src.with_suffix(".svg"))],
                                capture_output=True, text=True)
             if r.returncode:
                 fail("mermaid", f"block {i} does not render: {r.stderr[-400:]}", str(md.relative_to(ROOT)))
@@ -85,6 +93,9 @@ def check_diagrams() -> None:
 
 
 def _duration(p: pathlib.Path) -> float | None:
+    if not shutil.which("ffprobe"):
+        print("::warning::ffprobe not found: video length not checked (install ffmpeg)")
+        return None
     r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(p)],
                        capture_output=True, text=True)
     try:
