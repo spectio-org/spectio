@@ -31,7 +31,7 @@ The 31 steps collapse into **5 waves**:
 |---|---|---|
 | W1 | 7 review rounds + the cloud-environment spike, all in parallel | no |
 | W2 | triage → apply → journeys and API-contract reviews → triage → apply | inbox only |
-| W3 | bootstrap / doctor, CI, staging prep, fixture workflows, engine capture, sind, kind + Kueue, scenarios, Playwright | inbox only |
+| W3 | bootstrap / doctor, CI, dev previews, fixture workflows, engine capture, sind, kind + Kueue, scenarios, Playwright | inbox only |
 | W4 | synthesis (MVP cut), walking-skeleton plan, **GO** | **yes** |
 | W5 | milestone plans, then implementation by subagent-driven development | inbox only |
 
@@ -62,7 +62,7 @@ Use auto mode (Shift+Tab until "auto"), or answer prompts as they come. `/goal` 
 3. Paste the same `/goal` line.
 4. Check it from your phone. Answers go in `docs/reviews/inbox.md`, either in a commit or by telling the session.
 
-**C. Headless, on a VM or the staging host.**
+**C. Headless, on any machine with Claude Code signed in (a laptop, or a codespace).**
 
 ```bash
 tools/autopilot/run.sh --weekly 30                # at most 30 points of the weekly window

@@ -275,3 +275,18 @@ Everything must be traced, including:
   - Order of outreach: design partners first, then neighbouring institutes, then the public beta (Snakemake community, BioHackathon Europe, BOSC, registries, JOSS later).
 - **Virgil** is set aside for now (inbox #1).
 - **Git history.** A clean single-commit `main` was pushed; the old branch is kept until Thomas switches the default and deletes it (inbox #5).
+
+## 2026-10-26 — Dev previews without a server
+
+- **Context.** Thomas has no staging VM, and the institute is behind a VPN that GitHub cannot reach. Dev hosting must cost close to nothing. The public instance for users comes later, on EMBL's Kubernetes, as for depictio.
+- **Decision.** The tailnet VM behind Tailscale Funnel is dropped, and `staging.yml` is replaced by `previews.yml` (`dev-environment-and-testing.md` §7, §13):
+  - **Static previews on Cloudflare Pages.** The built site is uploaded directly, which works for a private repository. Each PR, validated wave and release gets its own alias; every deployment stays reachable at its own URL; a `/versions` page lists them all. The build SHA is shown in the footer and checked after each deploy.
+  - **The full stack on demand in GitHub Codespaces** (`.devcontainer/`), opened from a link on each PR. The free quota is about 60 h a month of a 2-core machine.
+  - **The UI in mock mode,** a static build with a fake API, published per version once the UI exists, to compare front-end iterations side by side.
+  - **The public instance** at the beta, on EMBL Kubernetes, without depictio's `--insecure-skip-tls-verify`.
+- **Rejected, and why:**
+  - Hugging Face Spaces: Docker Spaces are no longer free for new accounts (July 2026).
+  - Oracle Always Free: halved in June 2026, and account approval is uncertain.
+  - A paid VPS: not needed for one developer.
+  - Cloud Run: only useful for a public demo, which will be on EMBL instead.
+- **Not tested here.** Running the dev container setup in this session was refused (it downloads and runs install scripts). Step D5 checks it in a real codespace.

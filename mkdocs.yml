@@ -38,6 +38,10 @@ theme:
       accent: custom
       toggle: {icon: material/weather-sunny, name: Light mode}
 
+extra:
+  build_sha: !ENV [SPECTIO_BUILD_SHA, local]
+  preview: !ENV [SPECTIO_PREVIEW, local]
+
 extra_css:
   - https://cdn.jsdelivr.net/npm/asciinema-player@3.17.0/dist/bundle/asciinema-player.css
   - stylesheets/extra.css

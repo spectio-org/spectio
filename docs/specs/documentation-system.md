@@ -5,7 +5,7 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 **Step page:** [F5](../progress/W0/F5.md), how this spec was written and checked.
 
 **Companion docs:**
-- [`dev-environment-and-testing.md`](dev-environment-and-testing.md): CI workflows (§11), versioning and releases (§12), staging (§13).
+- [`dev-environment-and-testing.md`](dev-environment-and-testing.md): CI workflows (§11), versioning and releases (§12), dev previews (§7), instance verification (§13).
 - [`../playbooks/autopilot.md`](../playbooks/autopilot.md): the loop that runs the steps. This spec says what each step must leave in the docs; the autopilot says when it runs.
 - [`ui-spec.md`](ui-spec.md): the boards that screenshots are taken from.
 
@@ -91,8 +91,9 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 **Toolchain lifetime.** The Material for MkDocs build prints that Material reaches end of life on 2027-05-05, with critical fixes until then, and names Zensical, from the same team, as its successor (build notice seen 2026-10-26). Step D6 evaluates Zensical against this site: hooks, `md_in_html`, mike-style versions.
 
 **Hosting.**
-- GitHub Pages while the repository is public.
-- While it is private, the site is published on staging under `/docs/` behind the same Funnel URL (`dev-environment-and-testing.md` §13). Pages for private repositories needs a paid plan **[to be validated]**.
+- **Dev previews (now):** Cloudflare Pages, one preview per PR, validated wave and release, each kept at its own URL, plus a `/versions` page (`dev-environment-and-testing.md` §7.1). This works while the repository is private, because the built site is uploaded directly.
+- **Released versions** go there too under their `vX-Y-Z` alias. mike's in-site version selector is added once there are real releases (D6).
+- **The public instance** (from the beta, EMBL Kubernetes, `dev-environment-and-testing.md` §7.4) serves its own docs.
 
 **Analytics on the docs site.** None by default. Material's `extra.analytics` can be set per deployment with the same providers as the product (`telemetry-and-analytics.md` §4).
 
@@ -339,7 +340,7 @@ The template keeps depictio's sections and adds Spectio's own. depictio's sectio
 - checklist.
 
 Spectio adds:
-- **docs:** pages changed, with preview links;
+- **docs:** pages changed, with preview links (Cloudflare preview of the PR);
 - **figures:** sketch pairs embedded;
 - **media:** a GIF or a link to the MP4;
 - **specs touched and decision-log entry;**
@@ -358,13 +359,13 @@ Spectio adds:
 Local SLURM cluster with sind for scenario tests (T3).
 
 ## Docs
-- [Progress · T3](<preview>/progress/W3/T3/) · [Dev environment §5](<preview>/specs/dev-environment-and-testing/#5-...)
+- [Progress · T3](https://pr-42.spectio.pages.dev/progress/W3/T3/) · [Dev environment §5](https://pr-42.spectio.pages.dev/specs/dev-environment-and-testing/#5-...)
 
 ## How it works
 ![sind topology](https://raw.githubusercontent.com/weber8thomas/spectio/<sha>/docs/assets/diagrams/sind-topology_light.png)
 
 ## Evidence
-`pytest tests/slurm -q` → 14 passed · scenarios on sind: 11/11 · [cast](<preview>/assets/casts/sind-up.cast)
+`pytest tests/slurm -q` → 14 passed · scenarios on sind: 11/11 · [cast](https://pr-42.spectio.pages.dev/assets/casts/sind-up.cast)
 
 ## Checks
 - [x] docs build --strict · [x] mermaid · [x] diagrams fresh · [x] media manifest · [x] doc-reviewer: approve (13/14)
@@ -372,7 +373,7 @@ Local SLURM cluster with sind for scenario tests (T3).
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 ```
 
-**Preview links.** They point at the PR preview on staging (`/pr-<n>/docs/`), which is deployed by `staging.yml` together with the app.
+**Preview links.** They point at the PR's Cloudflare preview (`https://pr-<n>.spectio.pages.dev/…`). `previews.yml` comments them on the PR, together with the "Open in Codespaces" link.
 
 ### 7.3 PR checks (`docs.yml`, required)
 

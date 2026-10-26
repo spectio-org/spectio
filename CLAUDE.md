@@ -46,7 +46,7 @@ Budget: `/autopilot --budget 30%w` (a share of the weekly window) or `--budget u
 | `ux-reviewer` | UI boards against the UI spec: states, accessibility, consistency, phone |
 | `depictio-liaison` | compatibility claims against the real depictio and LabID code |
 | `test-architect` | test strategy, fixtures, scenario matrix, local SLURM and Kubernetes clusters |
-| `infra-engineer` | dev environments, CI, staging, containers, sind / kind, Tailscale |
+| `infra-engineer` | dev environments, CI, dev previews (Cloudflare Pages, Codespaces), containers, sind / kind |
 | `doc-writer` | Progress pages, guides, PR bodies, changelog drafts, written from the step's real outputs |
 | `diagram-artist` | hand-drawn figures with `tools/diagrams/sketch.py` (pictograms, not boxes) |
 | `media-capture` | screenshots, generated casts, browser videos, combined terminal and browser captures (`tools/media`) |

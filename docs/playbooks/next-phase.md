@@ -215,19 +215,24 @@ comments. Verify the action's current inputs from its README before writing YAML
 Document required secrets in the PR description; do not add any secret yourself.
 ```
 
-### D5 · Staging behind Tailscale Funnel
+### D5 · Dev previews: Cloudflare Pages and Codespaces
 
 ```text
-Use infra-engineer. Prepare (do not apply) everything for the staging VM in
-docs/specs/dev-environment-and-testing.md §7: deploy/staging/compose.yaml (Caddy routing
-/spectio, /depictio, /pr-<n>; a hello-world app standing in for Spectio; a Keycloak test
-realm), a tailnet policy snippet (tag:ci → tag:staging:22, funnel nodeAttr for
-tag:staging), a GitHub Actions deploy workflow using tailscale/github-action with an
-OAuth client and ephemeral tag, and a Playwright smoke test against the public URL.
-Verify current Tailscale Funnel and tailscale/github-action docs before writing. List
-the manual steps I must do on the VM and in the Tailscale admin console. Leave the step's
-docs with write-docs, including the figure tracked from F3: a sketch of the deploy over
-the tailnet, the Funnel check and the scoped share link posted on the PR.
+Use infra-engineer. Make the dev previews of docs/specs/dev-environment-and-testing.md §7
+work end to end, once Thomas has set the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID
+secrets in the GitHub environment "previews" (inbox #10).
+- previews.yml: open a test PR and check the preview URL, the branch alias, the /versions
+  page and the PR comment; check the build SHA in the footer; check that a second push
+  keeps the first deployment's URL reachable; validate the real shape of the deployments
+  API against tools/previews/versions_page.py and fix it.
+- Add a "wave approved" path: when a wave-review PR is labelled wave-approved, deploy a
+  wave-<id> preview.
+- Codespaces: open the branch with the README badge and check that setup.sh finishes,
+  that the docs are served on port 8000, and that the toolchain matches dev/versions.env.
+  Configure a prebuild for main if it fits the free quota.
+- Record whether Cloudflare direct uploads count as builds, and the codespace start time.
+Leave the step's docs with write-docs, including a sketch of the preview flow (PR ->
+Actions -> Cloudflare deployment kept at its own URL -> /versions; Codespaces on demand).
 ```
 
 ### D6 · Docs pipeline in CI ∥
@@ -236,8 +241,8 @@ the tailnet, the Funnel check and the scoped share link posted on the PR.
 Make the documentation system run by itself, following docs/specs/documentation-system.md
 §1, §7 and §8. Wire tools/docs/check.py into docs.yml as the required checks docs-gate
 and pr-body; deploy the site with mike (dev from main, X.Y on release, aliases latest
-and stable) to GitHub Pages, or to staging under /docs/ while the repository is
-private; deploy PR previews under /pr-<n>/docs/ with staging.yml; add hooks/progress.py
+and stable) on the Cloudflare previews of D5 (versions side by side, /versions page);
+evaluate Zensical against this site; add hooks/progress.py
 outputs to the build check. Settle the Virgil font licence (tools/diagrams/FONT-LICENSE.md)
 or switch fonts, and make the figure scripts render the same PNGs in CI. Draw the figures
 tracked from F4 and F6 (a magic-link and share-link sketch: hash at rest, atomic burn,
@@ -305,8 +310,8 @@ network ls, kind get clusters).
 Use test-architect. Set up tests/e2e with Playwright (TypeScript): a config that takes
 the base URL from scenario JSON, desktop and phone projects, screenshot naming after
 canvas boards, and a side-by-side HTML report (real page vs design/ui-canvas render via
-tools/canvas/render.js). Until the product exists, run it against the staging
-hello-world and a static page.
+tools/canvas/render.js). Until the product exists, run it against the Cloudflare
+docs preview and a static page.
 ```
 
 ### T7 · Real pipeline corpus green in CI ∥
@@ -360,4 +365,4 @@ at any spec ambiguity instead of guessing.
 | depictio drift | weekly | `/review-round Rw-depictio-<date> "depictio-liaison on current main"` |
 | nf-core releases | weekly | "Check nf-co.re pipelines.json for releases since last week for pipelines in checking-scenarios.md and depictio templates; report output path changes that break gate evidence globs." |
 | Claim freshness | monthly | `/verify-claims docs/specs/schedulers-and-monitoring.md` (and others whose upstream released) |
-| Staging reset | nightly (CI) | restore the known backup, run the Playwright smoke |
+| Demo instance reset (from the beta) | nightly (CI) | restore the known backup on the public instance, run the Playwright smoke |

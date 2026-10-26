@@ -1,5 +1,7 @@
 # Spectio
 
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/weber8thomas/spectio?quickstart=1)
+
 **Status: design phase, no code yet.** This repository holds the specifications, the decision log, the research behind them and the UI design sources. Code will follow in the same repository (see [`docs/specs/architecture-plugins-and-packaging.md`](docs/specs/architecture-plugins-and-packaging.md) §6 for the planned layout).
 
 Spectio is an open-source tool for launching, monitoring and steering workflow runs. It works with Nextflow and Snakemake today, and with CWL and WDL later.
@@ -20,7 +22,7 @@ Spectio is an open-source tool for launching, monitoring and steering workflow r
 | administration, backups and migrations | [`docs/specs/admin-and-operations.md`](docs/specs/admin-and-operations.md) |
 | the CLI and the libraries shared with depictio and LabID | [`docs/specs/cli-and-shared-libraries.md`](docs/specs/cli-and-shared-libraries.md) |
 | what is reused from depictio | [`docs/specs/depictio-ecosystem-reuse.md`](docs/specs/depictio-ecosystem-reuse.md) |
-| how agents check their work: toolchain, local SLURM and Kubernetes, tests, staging | [`docs/specs/dev-environment-and-testing.md`](docs/specs/dev-environment-and-testing.md) |
+| how agents check their work: toolchain, local SLURM and Kubernetes, tests, dev previews | [`docs/specs/dev-environment-and-testing.md`](docs/specs/dev-environment-and-testing.md) |
 | sign-in, magic links, share links, provisioning | [`docs/specs/authentication-and-access.md`](docs/specs/authentication-and-access.md) |
 | telemetry, install tracking, external analytics | [`docs/specs/telemetry-and-analytics.md`](docs/specs/telemetry-and-analytics.md) |
 | how docs are written, drawn, captured and reviewed at every step | [`docs/specs/documentation-system.md`](docs/specs/documentation-system.md) |

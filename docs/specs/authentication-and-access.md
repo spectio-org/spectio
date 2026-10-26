@@ -7,7 +7,7 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 **Companion docs:**
 - [`api-and-data-model.md`](api-and-data-model.md): principals, tenancy and roles (§6), plus depictio identity (§13). This spec owns the *sign-in methods, sessions, tokens and links*; §6 owns *who may do what*.
 - [`admin-and-operations.md`](admin-and-operations.md): the Users and Settings screens.
-- [`dev-environment-and-testing.md`](dev-environment-and-testing.md): auth tests and staging access.
+- [`dev-environment-and-testing.md`](dev-environment-and-testing.md): auth tests, dev previews and access to the public instance.
 
 **Source for depictio parity:** a code audit of depictio v1.19.2 (`docs/research/depictio-auth-2026-10-26.md`, file:line references).
 
@@ -43,7 +43,7 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 | `single` | `single_user_mode` | **One user.** Requests map to the one local user created at `spectio init`. There is no login page. **Network safeguard:** binds to `127.0.0.1` by default. On any other interface it requires a token (from `spectio login` or a link), because anyone who reaches the port would otherwise be the user (depictio's own risk note on shared login nodes). | Python bundle on a laptop or login node |
 | `local` | standard mode | **Accounts.** Passwords hashed with Argon2id; rate limits per IP and per account; registration errors that do not reveal which accounts exist. **Flags:** `registration_disabled`; `password_login_disabled` (only when another method is enabled); admin-created users with `must_change_password`. | Small team server |
 | `public` | `public_mode` | **Guests.** Visitors get temporary principals (`kind=guest`, sliding 24 h expiry, cleaned up on schedule), optionally behind `SPECTIO_AUTH_PUBLIC_ACCESS_CODE`, which is compared in constant time and rate-limited before the check. **Guests are read-only:** no launches, no gate decisions, no tokens. | Public demo |
-| `demo` | `demo_mode` | `public` + guided tour + nightly data reset | Staging "fake public instance" |
+| `demo` | `demo_mode` | `public` + guided tour + nightly data reset | the public demo instance (beta, EMBL Kubernetes) |
 
 **SSO and links add to a mode; they do not replace it.**
 - In `local`, users may sign in with a password, OIDC, SAML or a magic link.

@@ -19,7 +19,7 @@ A finding is accepted automatically when **all** of these hold:
 - Roles, permissions defaults, security posture defaults, auth modes.
 - Licences, vendoring, anything with legal effect.
 - Anything that commits other people: requests to the depictio or LabID teams, EMBL IT questions.
-- Money and infrastructure: paid services, staging host, domains, tailnet policy.
+- Money and infrastructure: paid services, hosting accounts (Cloudflare, Codespaces quota), domains.
 - Irreversible actions: force-push, deleting branches or data, merging to `main`, publishing.
 - The `GO` gate.
 

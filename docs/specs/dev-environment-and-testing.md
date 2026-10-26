@@ -23,11 +23,11 @@ Companion docs:
    - a developer laptop.
    
    `dev/doctor.sh` proves each tool works.
-5. **A "fake public instance" for staging.**
-   - It runs on a small VM that Thomas owns, on his tailnet. It is public through Tailscale Funnel only for demos and inbound webhooks.
-   - CI deploys to it after merges and for PR previews.
-   - Playwright smoke-tests it after every deploy.
-   - Cloud sessions never hold tailnet credentials.
+5. **Dev previews without a server; a public instance only later, on EMBL Kubernetes** (revised 2026-10-26, §7). There is no staging VM, and the institute network is behind a VPN that GitHub cannot reach.
+   - Every PR, validated wave and release is published as its own static preview on Cloudflare Pages. Nothing is overwritten, and a `/versions` page lists them all.
+   - The full stack runs on demand in GitHub Codespaces, from a link on each PR.
+   - The cost is 0 € within the free quotas.
+   - The public instance for users comes at the beta, on EMBL's Kubernetes, deployed like depictio's.
 6. **Claude is part of the development loop, inside guard rails:**
    - project agents and skills in `.claude/`;
    - PR review by those agents in GitHub Actions;
@@ -69,8 +69,9 @@ Companion docs:
 |---|---|---|
 | **Claude Code on the user's machine** (terminal, desktop) | interactive work, plugins (superpowers, Karpathy guidelines, frontend-design) installed normally | the user's machine resources |
 | **Cloud sessions** (claude.ai/code, `claude --cloud`) | parallel autonomous tasks, one per branch; Docker is available | setup script cached only if it finishes in about 5 min; commands time out at 2 min by default (10 max, then moved to the background, up to 30 more min; `BASH_DEFAULT_TIMEOUT_MS` raises it); outbound network through an allowlist proxy (Trusted, Custom or Full); **plugins are not loaded**, so the skills are vendored in `.claude/skills/`; VM memory limits; idle VMs are reclaimed ([cloud environments](https://code.claude.com/docs/en/cloud-environments.md), [cloud sessions](https://code.claude.com/docs/en/claude-code-on-the-web.md)) |
-| **GitHub Actions** | PR gates, nightly matrix, deploys to staging, Claude PR review | runner time and memory |
-| **Staging VM** | long-lived demo instance, webhooks from outside, real-browser checks over the internet | must hold only fake data |
+| **GitHub Actions** | PR gates, nightly matrix, preview deploys, Claude PR review | runner time and memory |
+| **Cloudflare Pages** | one static preview per PR, wave and release (docs, boards, later the UI with a mocked API) | static only; public unless Cloudflare Access is on |
+| **GitHub Codespaces** | the full stack on demand for Thomas, one per branch | about 60 h a month of a 2-core machine in the free quota; stops when idle |
 
 **Cloud environment settings** (claude.ai/code → environment):
 - **Network:** Custom, with the default list plus the hosts Nextflow, nf-core and the container registries need. The list is to be confirmed by spike D2: `www.nextflow.io`, `get.nextflow.io`, `registry.nextflow.io`, `quay.io`, `ghcr.io`, `community.wave.seqera.io`, `conda.anaconda.org`, `prefix.dev`.
@@ -142,42 +143,63 @@ Whether kind runs inside a Claude Code cloud session (kind needs privileged node
 | 3 · integration | real engines on `slurm-mini` and `k8s-mini`; backup → restore → migrate; bundle → Compose hand-over | PR (smoke subset), < 15 min | PR |
 | 4 · end-to-end | Playwright against the bundle and Compose: launch, watch, review a gate, relaunch, admin pages, phone viewport | PR (smoke), nightly (full) | PR (smoke) |
 | 5 · matrix and compatibility | the full scenario matrix; cross-version backup restore (previous release → current); depictio hand-off with a depictio container | nightly / weekly | release |
-| 6 · staging | deploy + Playwright smoke over the public URL; inbound webhook round trip | after merge | release |
+| 6 · preview and instance | static preview: links and media checked on the deployed URL. Public instance, from the beta: deploy + Playwright smoke over its URL; inbound webhook round trip | after merge | release |
 
 **Visual review.** Playwright saves screenshots of the real pages named after the canvas boards (`RunDetail`, `ReviewQueue`…). A report puts them side by side with the renders of `design/ui-canvas`. This is a review aid for the `ux-reviewer` agent and for humans, not a pixel-diff gate.
 
-## 7. Staging: the fake public instance
+## 7. Dev previews and the public instance
 
-```mermaid
-flowchart LR
-  PR[Pull request or merge] --> CI[GitHub Actions]
-  CI -->|build image from wheel| REG[(ghcr.io)]
-  CI -->|tailscale/github-action, ephemeral tag:ci| TN((tailnet))
-  TN -->|Tailscale SSH: compose pull + up| VM[staging VM: Caddy + Spectio + depictio + Keycloak test realm]
-  VM -->|tailscale funnel 443| NET[Public HTTPS URL]
-  CI -->|Playwright smoke| NET
-  EXT[GitHub / LabID test webhooks] --> NET
-```
+**Context.**
+- **No staging VM:** Thomas has no VM of his own.
+- **No institute host:** the institute's machines are behind a VPN that GitHub cannot reach.
+- **Cost:** it must stay as close to zero as possible.
 
-- **Host.** A small VM or LXC on Thomas's own infrastructure, `tag:staging` on the tailnet. It runs:
-  - Docker Compose with Spectio's `team` profile;
-  - depictio's Compose stack;
-  - Caddy routing `/spectio` and `/depictio`;
-  - a Keycloak test realm, so OIDC and SAML can be tested with fake users.
-- **Public exposure.**
-  - `tailscale funnel` on port 443 forwards to Caddy. Funnel only listens on 443, 8443 or 10000, and needs MagicDNS, HTTPS certificates and the `funnel` node attribute in the tailnet policy ([Tailscale Funnel](https://tailscale.com/docs/features/tailscale-funnel)).
-  - Funnel can be turned off when not demoing; the tailnet-only URL keeps working.
-- **PR previews.** One Compose project per PR on its own port, routed by Caddy under `/pr-<n>/`, torn down when the PR closes. Path-based routing through one Funnel port avoids needing more public ports. This is to be checked against Funnel's serve-path configuration **[to be validated]**.
-- **Deploy path.**
-  - GitHub Actions joins the tailnet with `tailscale/github-action`, using an OAuth client and an ephemeral `tag:ci`. The ACL allows only `tag:ci → tag:staging:22`.
-  - It deploys over Tailscale SSH, then runs the Playwright smoke test against the public URL.
-  - Cloud sessions and agents never receive tailnet keys: they push branches, and CI deploys.
-- **Data and safety.**
-  - Fake data only: fixture runs and nf-core test profiles.
-  - Fake identities from Keycloak.
-  - No single-user mode.
-  - Rate limiting in Caddy.
-  - A banner "staging, data reset nightly", and a nightly reset from a known backup, which also exercises restore.
+The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the decision log of 2026-10-26.
+
+### 7.1 Static previews on Cloudflare Pages (now)
+
+- **What is published.** The built docs site, which already contains the progress pages, figures, casts and board screenshots. Once the UI exists, its build in **mock mode** is published too (§7.3).
+- **How.**
+  - `previews.yml` builds the site in GitHub Actions, then uploads it with `wrangler pages deploy` (direct upload).
+  - Cloudflare never reads the repository, so a private repository is not an issue.
+  - The secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` live in the GitHub environment `previews`, which only `previews.yml` uses.
+- **Versions side by side, nothing overwritten** ([Cloudflare docs](https://developers.cloudflare.com/pages/configuration/preview-deployments/)):
+  - each deployment gets its own hash URL (`<hash>.spectio.pages.dev`), which stays reachable;
+  - each branch gets an alias that follows its latest deployment (`<branch>.spectio.pages.dev`).
+- **Which branch each kind of preview is deployed under:**
+
+  | Event | Branch |
+  |---|---|
+  | a PR | `pr-<n>` |
+  | a validated wave | `wave-<id>`, for example `wave-w2` |
+  | a release | `v<X-Y-Z>` |
+  | `main` | the production URL |
+
+- **The `/versions` page.** It is generated at every deploy from the Cloudflare deployments API (`tools/previews/versions_page.py`) and lists every preview with its date, branch, commit, PR and link. It is the "versions step by step" view.
+- **Privacy.**
+  - Previews are public by default. Cloudflare Access can restrict them to Thomas.
+  - Media are rendered with fixture names (`documentation-system.md` §5.5).
+- **Limits (free plan):** 500 builds a month, 20 000 files and 25 MiB per file ([limits](https://developers.cloudflare.com/pages/platform/limits/)). Whether direct uploads count as builds is **[to be validated]**. The site is far below both limits.
+- **Without the secrets,** the workflow skips the deploy, with a notice, and still builds.
+
+### 7.2 The full stack on demand in GitHub Codespaces (from D3)
+
+- **The dev container** (`.devcontainer/`) installs the pinned toolchain (§1): uv, Python, Java 21, Nextflow, Snakemake, Node and Playwright, plus Docker-in-Docker for sind and kind.
+- **Forwarded ports:** the docs site on 8000, and, once it exists, Spectio on 8080 with a seeded demo.
+- **Opening it.** Each PR comment from `previews.yml` carries an "Open in Codespaces" link for its branch (`https://codespaces.new/weber8thomas/spectio/tree/<branch>?quickstart=1`). Thomas opens it when he wants to try the real thing.
+- **Lifetime.** The codespace stops when idle, and nothing runs when nobody looks.
+- **Cost:** GitHub Free includes 120 hours and 15 GB a month, and 2-core machines count double ([billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces)). Without a payment method, usage stops at the quota instead of being billed.
+- **Showing it to someone.** A forwarded port can be made public (`https://<codespace>-<port>.app.github.dev`), with no sign-in ([ports](https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace)). Use this only for short demos, with demo mode on.
+
+### 7.3 The UI in mock mode (from the first UI milestone)
+
+The front-end has a build flag that replaces the API with fixtures generated from the OpenAPI and the demo dataset (MSW). That build is static, so every UI iteration can be published on Cloudflare Pages and compared side by side with no backend at all. The real backend stays covered by tiers 2–4 and by Codespaces.
+
+### 7.4 The public instance (from the public beta)
+
+- **Where.** On EMBL's Kubernetes, with the Helm chart, as depictio does: a self-hosted runner inside EMBL, `workflow_dispatch` only, behind a GitHub environment with a required reviewer.
+- **What is not copied from depictio** (`docs/reviews/R8b-depictio-tooling.md`, DEP-T-032): `--insecure-skip-tls-verify` and values files kept on the runner's disk.
+- **Before it exists:** nothing public runs Spectio's backend. Inbound webhook tests run in CI against a local instance.
 
 ## 8. Claude in the development loop
 
@@ -201,7 +223,7 @@ flowchart LR
 - A human merges.
 - Reviewers are read-only.
 - No secrets in the repository or in shared environment variables.
-- Staging credentials stay in GitHub Actions.
+- Deploy credentials (Cloudflare now, EMBL later) stay in GitHub environments, never in repository-level secrets (R8b DEP-T-007).
 
 ## 9. First steps (playbook phase D)
 
@@ -212,7 +234,7 @@ flowchart LR
    - can the setup script stay under 5 minutes?
 3. **D3:** write `dev/versions.env`, `dev/bootstrap.sh` and `dev/doctor.sh`, and run them green in a cloud session, in CI and locally.
 4. **D4:** build the fixture workflows and record the first golden fixtures (Tower protocol payloads, Snakemake logger events, `squeue` / `sacct` JSON from sind).
-5. **D5:** set up the staging VM, Funnel, and the CI deploy job with a hello-world container, before Spectio exists.
+5. **D5:** dev previews: the Cloudflare Pages deploy with the `/versions` page, and the Codespaces dev container (§7).
 
 ## 10. Pipeline test corpus
 
@@ -297,7 +319,7 @@ Step page: [F3](../progress/W0/F3.md). Real pipelines run with their own test da
 | `pipelines-slurm.yml` (T3) | PR touching runner code, nightly | `GSI-HPC/sind-action@v2` cluster, synthetic scenarios with the SLURM profiles. Needs cgroup v2 Docker, which GitHub runners have; this cloud session has cgroup v1, so not here |
 | `pipelines-k8s.yml` (T4) | nightly | `helm/kind-action@v1` + Kueue, synthetic scenarios with the k8s profile, nf-core/demo |
 | `release-please.yml` | push to main | release PR with version bump and changelog (§12) |
-| `staging.yml` | push to main; PR labelled `preview` | deploy over the tailnet, verify through the public URL, post a share link (§13) |
+| `previews.yml` | PR, push to main, `v*` tags, wave approvals, manual | build the docs site, deploy it to Cloudflare Pages under its own branch alias, regenerate `/versions`, comment the preview and Codespaces links on the PR (§7) |
 
 ## 12. Versioning and releases
 
@@ -309,7 +331,7 @@ Step page: [F3](../progress/W0/F3.md). Real pipelines run with their own test da
 - **Versions you can see:**
   - `GET /api/v1/version` returns `version`, `git_sha`, `build_date`, `schema_revision` and `deployment`;
   - the UI footer shows the version and links to its changelog entry;
-  - staging shows a "deployed vX.Y.Z+sha" banner;
+  - every preview and instance shows a "vX.Y.Z+sha" banner;
   - `spectio --version` prints the client version and warns when the server differs.
 - **Pre-1.0 policy:** minor versions may break the API, and the changelog says so. From 1.0, semver applies to the public API and the plugin SDK.
 - **The version follows the importance of the change, automatically** (`release-please-config.json`):
@@ -327,21 +349,26 @@ Step page: [F3](../progress/W0/F3.md). Real pipelines run with their own test da
 
 ## 13. Instance verification and access
 
-**Verification after every deploy** (main or preview), all through the public URL, so DNS, TLS and Funnel are exercised too:
-1. `/health/ready` and `/api/v1/version`, whose `git_sha` must match the commit just deployed;
-2. a Playwright smoke test (T6) covering:
-   - sign-in by magic link (Mailpit on staging);
-   - opening a run;
-   - opening a gate and approving it on a synthetic run executed by the staging runner on its sind cluster;
-   - the phone viewport;
-3. a share-link round trip: create a link, open it in a fresh browser context, check the scope, revoke it, and check that the link now fails.
+**Dev previews (now).**
+- After each deploy, `previews.yml` fetches the deployed URL and checks:
+  - the home page and `/versions` answer;
+  - the build's commit SHA is in the page footer;
+  - a sample of internal links resolves.
+- The preview and Codespaces links are posted on the PR.
 
-**Public access, without accounts.**
-- **The URL.** Staging is reachable at its Tailscale Funnel URL (`https://<host>.<tailnet>.ts.net/spectio`, with PR previews under `/pr-<n>/`).
-- **Signing in.** Instead of shared passwords, the deploy job creates a **scoped share link** (`authentication-and-access.md` §2) and posts it on the PR: reviewer role on the demo project, 72 h, 20 uses.
-- **For a demo,** an admin creates the same kind of link from the share dialog.
-- **Guests.** The instance runs in `demo` mode, so visitors without a link only see read-only demo data.
-- **Nightly reset.** A known backup is restored every night, which also tests restore.
+**The public instance (from the beta, §7.4).** Every deploy is verified through its public URL:
+1. **Version:** `/health/ready` and `/api/v1/version`, whose `git_sha` must match the deployed commit.
+2. **Playwright smoke test (T6):**
+   - sign-in by magic link (Mailpit in the test profile);
+   - opening a run;
+   - opening a gate and approving it on a synthetic run;
+   - the phone viewport.
+3. **Share-link round trip:** create a link, open it in a fresh browser context, check its scope, revoke it, and check that it now fails.
+
+**Access without accounts.**
+- **Share links.** On the public instance, demos and outside reviewers use scoped share links (`authentication-and-access.md` §2) instead of shared passwords.
+- **Demo mode.** Visitors without a link see read-only demo data.
+- **Nightly reset.** The demo data is reset every night from a known backup, which also tests restore.
 
 ## 14. Release stages and the 1.0 gate
 

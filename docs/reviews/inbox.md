@@ -81,3 +81,14 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - (b) one organisation shared with depictio;
   - (c) stay under `weber8thomas` until 0.1.0.
 - **Recommendation:** (a) or (b), decided before 0.1.0, with the names reserved then. **Assumed:** (c).
+
+### #10 · Create the Cloudflare account and the two secrets (dev previews)
+
+- **Context:** `dev-environment-and-testing.md` §7.1. Without these secrets, `previews.yml` builds but does not deploy.
+- **Your part (about 10 minutes):**
+  1. Create a free account at dash.cloudflare.com.
+  2. Go to *My Profile → API Tokens → Create token → Custom* and give the token the permission *Account · Cloudflare Pages · Edit*, on your account only.
+  3. Copy the *Account ID* shown on the dashboard.
+  4. In GitHub, go to *Settings → Environments → New environment* `previews`, and add the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+  5. Optional: in *Zero Trust → Access*, restrict `*.spectio.pages.dev` previews to your email.
+- **Answer with:** `done`. Step D5 then checks everything end to end.
