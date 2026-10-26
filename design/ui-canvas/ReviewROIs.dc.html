@@ -97,7 +97,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
           </div>
           <div style="display: flex; gap: 12px; align-items: stretch; flex: 1 1 auto;">
             <div style="position: relative; flex: 0 0 auto; width: 362px; height: 386px; border-radius: 10px; overflow: hidden; background: #0B0C18;">
-              <img src="images/imc-idr0076-mask.webp" alt="idr0076 ROI 10501752: DNA1 blue, panCK green, CD45 red, SMA orange, with the cell mask outlines in yellow" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
+              <img src="/_blob/fcc9c619148891c4fccd2204a17c12be" alt="idr0076 ROI 10501752: DNA1 blue, panCK green, CD45 red, SMA orange, with the cell mask outlines in yellow" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
               <span style="position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px;"><span style="width: 28px; height: 28px; border-radius: 7px; background: rgba(15,16,32,0.7); display: flex; align-items: center; justify-content: center; font-weight: 700;">+</span><span style="width: 28px; height: 28px; border-radius: 7px; background: rgba(15,16,32,0.7); display: flex; align-items: center; justify-content: center; font-weight: 700;">−</span></span>
               <span style="position: absolute; left: 8px; bottom: 8px; font-size: 11px; background: rgba(15,16,32,0.78); padding: 3px 8px; border-radius: 6px;">494 × 464 px · labels/0 · 1,713 cells</span>
             </div>
@@ -106,7 +106,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
               <span style="display: flex; flex-wrap: wrap; gap: 5px;"><sc-for list="{{shown}}" as="c" hint-placeholder-count="4"><span role="checkbox" aria-checked="true" class="chan" style="background: rgba(255,255,255,0.14); color: #FFFFFF; height: 24px;"><span style="width: 9px; height: 9px; border-radius: 5px; background: {{c.c}};"></span>{{c.t}}<span style="font-family: 'JetBrains Mono', monospace; font-weight: 400; color: #C4C7D4; font-size: 11px;">{{c.m}}</span></span></sc-for></span>
               <span style="font-size: 11.5px; font-weight: 600; color: #C4C7D4; letter-spacing: 0.04em; margin-top: 2px;">BACKGROUND CHECK · ArAr80</span>
               <span style="display: flex; gap: 10px; align-items: flex-start;">
-                <img src="images/imc-idr0076-argon.webp" alt="ArAr80 background channel of ROI 10501752, grey, faint horizontal line pattern" style="width: 120px; height: 128px; border-radius: 6px; object-fit: cover; display: block;">
+                <img src="/_blob/622ea55b98cd81a04d703ef1916eb7f6" alt="ArAr80 background channel of ROI 10501752, grey, faint horizontal line pattern" style="width: 120px; height: 128px; border-radius: 6px; object-fit: cover; display: block;">
                 <span style="font-size: 11.5px; line-height: 1.45; color: #E6E7EE;">Mean <strong>6,291</strong> counts<br>row-to-row drift <strong>2.9 %</strong> (max 5 %)<br><span style="color: #9A9EB0;">Faint line pattern, no tissue structure: background only, passes.</span></span>
               </span>
               <span style="font-size: 11.5px; font-weight: 600; color: #C4C7D4; letter-spacing: 0.04em; margin-top: 2px;">HOT PIXELS</span>
@@ -209,15 +209,15 @@ renderVals() {
   const opt = on => ['Keep', 'Exclude', 'Redo segmentation'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? '#B02A2A' : t === 'Keep' ? '#0F1020' : '#4D368B', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
   // Values computed from the source files (see the board summary); "illustrative" marks the two invented cell densities.
   const rois = [
-    { id: 'BRAC3438.6f / ROI_1', what: 'nf-core imcyto test ROI · breast', size: '500 × 498 px · 20 channels · OME-TIFF', src: 'images/imc-imcyto-roi1.webp', alt: 'ROI_1: 191Ir blue, 148Nd green, 168Er red; sparse signal, empty top-left corner', iring: 'none',
+    { id: 'BRAC3438.6f / ROI_1', what: 'nf-core imcyto test ROI · breast', size: '500 × 498 px · 20 channels · OME-TIFF', src: '/_blob/b34937c01f2aebdea85c37852686af75', alt: 'ROI_1: 191Ir blue, 148Nd green, 168Er red; sparse signal, empty top-left corner', iring: 'none',
       m: [ m('low · 19.7 %', 'of pixels > 5 counts (min 30 %) · 191Ir mean 2.6', bad, I.warn), m('drift 10.0 %', 'ArAr80 mean 7,706 · max 5 %', wn, I.warn),
            m('2,150', 'min 3,000 · CellProfiler masks', wn, I.warn, true), m('168Er 238', 'isolated px · 148Nd 148 · 209Bi 46', wn, I.warn) ],
       opts: opt('Redo segmentation'), note: 'add 191Ir to ilastik_stack · child run', rail: '#7750D4', bg: '#FBF9FF' },
-    { id: '5025551', what: 'IDR idr0054 · human tonsil', size: '2,700 × 2,702 px · 27 channels · 8-bit', src: 'images/imc-idr0054.webp', alt: 'Tonsil ROI: DNA1 blue, CD3 red, CD19 green, CD68 orange; follicles visible', iring: 'none',
+    { id: '5025551', what: 'IDR idr0054 · human tonsil', size: '2,700 × 2,702 px · 27 channels · 8-bit', src: '/_blob/b7502816a042766fe376f28c8eeaa938', alt: 'Tonsil ROI: DNA1 blue, CD3 red, CD19 green, CD68 orange; follicles visible', iring: 'none',
       m: [ m('clipped', 'DNA1-191/193Ir p99 = 255 · 8-bit export', bad, I.warn), m('n/a', 'no ArAr80 channel in this image', na, I.na),
            m('11,800', 'on the level 2 preview', ok, I.check, true), m('n/a', '8-bit values, no raw counts', na, I.na) ],
       opts: opt('Exclude'), note: 'reason: 8-bit export · re-export from .mcd', rail: 'transparent', bg: 'transparent' },
-    { id: '10501752', what: 'IDR idr0076 · breast cancer', size: '494 × 464 px · 50 channels', src: 'images/imc-idr0076.webp', alt: 'Breast cancer ROI: DNA1 blue, panCK green, CD45 red, SMA orange', iring: '0 0 0 2px #A78BFA',
+    { id: '10501752', what: 'IDR idr0076 · breast cancer', size: '494 × 464 px · 50 channels', src: '/_blob/0c61d97636fa086331f08925f1cddbcd', alt: 'Breast cancer ROI: DNA1 blue, panCK green, CD45 red, SMA orange', iring: '0 0 0 2px #A78BFA',
       m: [ m('ok · 59.5 %', 'of pixels > 5 counts · DNA1-191Ir mean 17.0', ok, I.check), m('drift 2.9 %', 'ArAr80 mean 6,291 · max 5 %', ok, I.check),
            m('7,473', '1,713 cells in labels/0 · 1 µm/px assumed', ok, I.check), m('162Dy 220', 'isolated px · CD45 · Pb208 226', wn, I.warn) ],
       opts: opt('Keep'), note: 'kept · in the viewer', rail: 'transparent', bg: 'transparent' }
@@ -228,7 +228,7 @@ renderVals() {
     ['E_Cadherin', '167Er', 0], ['Ki67', '168Er', 0], ['HER2', 'Eu151', 0], ['ER', '156Gd', 0], ['vWF-CD31', 'Yb172', 0], ['Vimentin', '149Sm', 0]];
   return {
     rois,
-    vtabs: [vt('10501752', 'images/imc-idr0076.webp', true), vt('ROI_1', 'images/imc-imcyto-roi1.webp', false), vt('5025551', 'images/imc-idr0054.webp', false)],
+    vtabs: [vt('10501752', '/_blob/0c61d97636fa086331f08925f1cddbcd', true), vt('ROI_1', '/_blob/b34937c01f2aebdea85c37852686af75', false), vt('5025551', '/_blob/b7502816a042766fe376f28c8eeaa938', false)],
     shown: [{ t: 'DNA1', m: '191Ir', c: '#4F7BFF' }, { t: 'panCK', m: '175Lu', c: '#3DDC84' }, { t: 'CD45', m: '162Dy', c: '#FF5A5A' }, { t: 'SMA', m: '148Nd', c: '#FFA53D' }],
     picker: P.map(p => ({ t: p[0], m: p[1], on: p[2] ? 'true' : 'false', box: p[2] ? '#7750D4' : '#C4C7D4', fill: p[2] ? '#7750D4' : '#FFFFFF', tick: p[2] ? I.check : '', w: p[2] ? 600 : 400, fg: '#22253A' })),
     checks: [

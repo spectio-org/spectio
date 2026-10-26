@@ -78,7 +78,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
           <div style="display: flex; gap: 8px;">
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <div style="position: relative; width: 270px; height: 270px; border-radius: 8px; overflow: hidden; background: #0B0C18;">
-                <img src="images/lightsheet-idr0066-mip-xy.webp" alt="Maximum intensity projection over z, level 4" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+                <img src="/_blob/bc5b2036e5308937cb68bd3664bfec8c" alt="Maximum intensity projection over z, level 4" style="position: absolute; inset: 0; width: 100%; height: 100%;">
                 <span style="position: absolute; left: 0; right: 0; top: 50%; border-top: 1px solid rgba(242,181,68,0.8);"></span>
                 <span style="position: absolute; top: 0; bottom: 0; left: 46%; border-left: 1px solid rgba(242,181,68,0.8);"></span>
                 <span style="position: absolute; left: 4%; top: 8%; width: 70%; height: 84%; border: 2px dashed #C4B5FD; border-radius: 46% 40% 40% 46%;"></span>
@@ -88,7 +88,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
             </div>
             <div style="display: flex; flex-direction: column; gap: 4px;">
               <div style="position: relative; width: 270px; height: 270px; border-radius: 8px; overflow: hidden; background: #0B0C18; box-shadow: inset 0 0 0 2px #7750D4;">
-                <img src="images/lightsheet-idr0066-z1600.webp" alt="Slice z 1600, level 3" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+                <img src="/_blob/44667e09c1a7ffacbab44416cd3339da" alt="Slice z 1600, level 3" style="position: absolute; inset: 0; width: 100%; height: 100%;">
                 <span style="position: absolute; left: 6px; top: 6px; font-size: 10.5px; font-weight: 600; background: #7750D4; color: #FFFFFF; padding: 2px 6px; border-radius: 5px;">XY · z 1600 · level 3</span>
                 <span style="position: absolute; right: 6px; top: 6px; display: flex; align-items: center; gap: 4px; font-size: 10.5px; font-weight: 600; background: #F2B544; color: #0F1020; padding: 2px 6px; border-radius: 5px;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14 M19 12l-7 7-7-7"/></svg>71 % of peak</span>
                 <span style="position: absolute; left: 6px; bottom: 6px; font-size: 10.5px; background: rgba(15,16,32,0.78); padding: 2px 6px; border-radius: 5px;">256 × 256 · window 0–1,507</span>
@@ -98,7 +98,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
           <div style="display: flex; flex-direction: column; gap: 3px;">
             <span style="font-size: 10.5px; color: #9A9EB0;">XZ · max over y · level 4 · z 0 → 1,936 (left → right)</span>
             <div style="position: relative; width: 548px; height: 72px; border-radius: 6px; overflow: hidden; background: #0B0C18;">
-              <img src="images/lightsheet-idr0066-mip-xz.webp" alt="Maximum intensity projection over y, z along the horizontal axis" style="position: absolute; left: 50%; top: 50%; width: 72px; height: 548px; transform: translate(-50%, -50%) rotate(-90deg);">
+              <img src="/_blob/bf579dd1c69635da582631ee0cb575e3" alt="Maximum intensity projection over y, z along the horizontal axis" style="position: absolute; left: 50%; top: 50%; width: 72px; height: 548px; transform: translate(-50%, -50%) rotate(-90deg);">
               <sc-for list="{{zMarks}}" as="z" hint-placeholder-count="4"><span style="position: absolute; top: 0; bottom: 0; left: {{z.x}}; border-left: {{z.line}};"></span></sc-for>
             </div>
             <div style="position: relative; height: 14px; font-size: 10px; color: #9A9EB0;"><sc-for list="{{zMarks}}" as="z" hint-placeholder-count="4"><span style="position: absolute; left: {{z.x}}; transform: translateX(-50%); color: {{z.fg}}; font-weight: {{z.w}};">{{z.t}}</span></sc-for></div>
@@ -222,6 +222,8 @@ a{color:#6344B2}a:hover{color:#4D368B}
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+const __B = {"lightsheet-idr0066-z1200.webp":"21a2180e5de4c21c7ce8fc3bc58d4ba9","lightsheet-idr0066-z1600.webp":"44667e09c1a7ffacbab44416cd3339da","lightsheet-idr0066-z400.webp":"84fea4a7733e717c43c9d0dfb0937b10","lightsheet-idr0066-z800.webp":"3b2f5ef2eacbf9b27f45d4f91113b235"};
+const __img = n => '/_blob/' + (__B[n + '.webp'] || '');
 class Component extends DCLogic {
 renderVals() {
   const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
@@ -233,7 +235,7 @@ renderVals() {
   const S = [[400, 89.8, 0.68], [800, 98.9, 0.81], [1200, 92.0, 0.80], [1600, 70.4, 0.59]];
   const peak = Math.max(...S.map(s => s[1]));
   const slices = S.map(([z, m, t]) => { const r = m / peak, cur = z === 1600;
-    return { z: fmt(z), src: 'images/lightsheet-idr0066-z' + z + '.webp', mean: fmt(Math.round(m / 255 * 1507)), tis: Math.round(t * 100) + ' %', pct: Math.round(r * 100) + ' %',
+    return { z: fmt(z), src: __img('lightsheet-idr0066-z' + z), mean: fmt(Math.round(m / 255 * 1507)), tis: Math.round(t * 100) + ' %', pct: Math.round(r * 100) + ' %',
       fg: r < 0.75 ? '#B02A2A' : '#157A4B', ring: cur ? 'inset 0 0 0 2px #7750D4' : 'inset 0 0 0 1px #DFE1EA', bg: cur ? '#FBF9FF' : '#FFFFFF' }; });
   const zMarks = [400, 800, 1200, 1600].map(z => ({ x: zx(z), t: 'z ' + fmt(z), line: z === 1600 ? '2px solid #A78BFA' : '1px dashed rgba(255,255,255,0.45)', fg: z === 1600 ? '#4D368B' : '#6E7287', w: z === 1600 ? 700 : 400 }));
   // Depth profile: images/lightsheet-idr0066-mip-xz.webp, mean of tissue pixels per 96 z (rows are every 2nd z).

@@ -268,9 +268,9 @@ renderVals() {
   return {
     panel: M.panel_name,
     views: [
-      { src: 'images/xenium-kidney-dapi.webp', alt: 'DAPI, level 1, max over z', t: 'DAPI', sub: 'ch0000_dapi.ome.tif', band: 'none', scale: 'flex' },
-      { src: 'images/xenium-kidney-protein.webp', alt: 'DAPI blue, ATP1A1, CD45, E-cadherin green, alpha-SMA and vimentin red', t: 'Protein', sub: 'ATP1A1/CD45/E-cad · αSMA/vimentin', band: 'none', scale: 'none' },
-      { src: 'images/xenium-kidney-transcripts.webp', alt: 'Transcripts with qv 20 or more of the six most frequent genes, with cell boundaries', t: 'Transcripts + boundaries', sub: 'top 6 genes · cell_boundaries.parquet', band: 'block', scale: 'none' }
+      { src: '/_blob/d0218ca71c6ccdc2e252417fbea8c2d4', alt: 'DAPI, level 1, max over z', t: 'DAPI', sub: 'ch0000_dapi.ome.tif', band: 'none', scale: 'flex' },
+      { src: '/_blob/3cc9666b4864cdd9f2e351143626a3ac', alt: 'DAPI blue, ATP1A1, CD45, E-cadherin green, alpha-SMA and vimentin red', t: 'Protein', sub: 'ATP1A1/CD45/E-cad · αSMA/vimentin', band: 'none', scale: 'none' },
+      { src: '/_blob/8592e772962574b95b8c3cb64b6c5451', alt: 'Transcripts with qv 20 or more of the six most frequent genes, with cell boundaries', t: 'Transcripts + boundaries', sub: 'top 6 genes · cell_boundaries.parquet', band: 'block', scale: 'none' }
     ],
     genes: Object.keys(TOP).map((g, i) => ({ g, c: PAL[i] })),
     metrics, topGenes, qv, tpc,

@@ -44,6 +44,10 @@ if (fs.existsSync(imgDir)) for (const f of fs.readdirSync(imgDir)) {
   const ext = path.extname(f).slice(1); const mime = { webp: 'image/webp', png: 'image/png', jpg: 'image/jpeg', svg: 'image/svg+xml' }[ext];
   if (mime) blobMap['images/' + f] = `data:${mime};base64,` + fs.readFileSync(path.join(imgDir, f)).toString('base64');
 }
+// On the canvas the images are uploaded assets (/_blob/<id>); images/blobs.json maps each file to its id.
+const blobsJson = path.join(imgDir, 'blobs.json');
+if (fs.existsSync(blobsJson)) for (const [f, id] of Object.entries(JSON.parse(fs.readFileSync(blobsJson, 'utf8'))))
+  if (blobMap['images/' + f]) blobMap['/_blob/' + id] = blobMap['images/' + f];
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: +W, height: +H } });
   await p.setContent('<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0"></body></html>');
