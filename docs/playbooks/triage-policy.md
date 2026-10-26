@@ -20,7 +20,7 @@ A finding is accepted automatically when **all** of these hold:
 - Licences, vendoring, anything with legal effect.
 - Anything that commits other people: requests to the depictio or LabID teams, EMBL IT questions.
 - Money and infrastructure: paid services, hosting accounts (Cloudflare, Codespaces quota), domains.
-- Irreversible actions: force-push, deleting branches or data, merging to `main`, publishing.
+- Irreversible actions: force-push, deleting branches or data, publishing. Merging the promotion PR into `main` is allowed for now once every check passed (Thomas, inbox #3, 2026-10-26); any other merge into `main` stays reserved.
 - The `GO` gate.
 
 ## Inbox and assumptions
