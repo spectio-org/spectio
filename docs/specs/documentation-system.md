@@ -395,7 +395,7 @@ Local SLURM cluster with sind for scenario tests (T3).
 
 **Never auto-merged:**
 - `human_gate` steps;
-- the release PR (it is reviewed, then merged by hand or with `/approve-release`);
+- a release PR at 1.0.0 or above (the 1.0 gate, `dev-environment-and-testing.md` §14). A 0.x release PR auto-merges like the others once `AUTOMERGE_MAIN` is `true`. The autopilot merges one at the end of a milestone or of a wave that changed the product, not after every `feat`;
 - PRs that change `.github/workflows/`, `.claude/settings.json`, auth or secrets code, or `pipeline.yaml` statuses.
 
 **Who configures it.** Thomas sets up branch protection and the auto-merge setting once, with the `gh` commands in `docs/playbooks/autopilot.md` §8. Agents cannot change repository settings or their own permissions.

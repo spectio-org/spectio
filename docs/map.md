@@ -36,6 +36,7 @@ Working notes are dated and kept as written. Specs cite them. When something cha
 - [depictio CLI, models and packaging; LabID CLI](research/depictio-cli-packaging.md).
 - [depictio frontend, branding, users and groups](research/depictio-frontend-admin.md).
 - [depictio authentication](research/depictio-auth-2026-10-26.md), [depictio docs system](research/depictio-docs-system-2026-10-26.md), [test corpus and CI](research/corpus-and-ci-2026-10-26.md), [budget governor and telemetry](research/budget-and-telemetry-2026-10-26.md).
+- [Adoption and positioning](research/adoption-and-positioning-2026-10-26.md): who the first users are, where to find them, and how not to fight Seqera.
 - Spikes: [synthetic pipelines](research/spike-synthetic-pipelines-2026-10-26.md), [docs media tooling](research/spike-docs-media-tooling-2026-10-26.md).
 - `research/data/`: the nf-core survey behind the checking scenarios (`analysis.json`, `classes.json`, `nfcore_released.tsv`, `nfcore_repos.tsv`, and `fetch.sh`, which recreates the sparse clones).
 - `research/depictio-shots/`: depictio screenshots used for comparison.

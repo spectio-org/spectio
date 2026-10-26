@@ -1,0 +1,28 @@
+name: release-guard
+
+# 1.0.0 is a human decision (docs/specs/dev-environment-and-testing.md §14).
+# Fails any PR that moves the manifest to >= 1.0.0 unless the repository variable ALLOW_V1 is "true".
+on:
+  pull_request:
+    paths: [".release-please-manifest.json", "release-please-config.json"]
+
+permissions:
+  contents: read
+
+jobs:
+  version-below-1:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check the proposed version
+        env:
+          ALLOW_V1: ${{ vars.ALLOW_V1 }}
+        run: |
+          v=$(jq -r '."."' .release-please-manifest.json)
+          forced=$(jq -r '.["release-as"] // .packages["."]["release-as"] // ""' release-please-config.json)
+          echo "proposed version: $v  release-as: ${forced:-none}"
+          major=${v%%.*}; fmajor=${forced%%.*}
+          if { [ "${major:-0}" -ge 1 ] || [ "${fmajor:-0}" -ge 1 ]; } && [ "$ALLOW_V1" != "true" ]; then
+            echo "::error::Version $v / release-as ${forced} reaches 1.0.0 or above. That needs the 1.0 gate and ALLOW_V1=true."
+            exit 1
+          fi

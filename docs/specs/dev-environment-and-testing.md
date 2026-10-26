@@ -312,6 +312,18 @@ Step page: [F3](../progress/W0/F3.md). Real pipelines run with their own test da
   - staging shows a "deployed vX.Y.Z+sha" banner;
   - `spectio --version` prints the client version and warns when the server differs.
 - **Pre-1.0 policy:** minor versions may break the API, and the changelog says so. From 1.0, semver applies to the public API and the plugin SDK.
+- **The version follows the importance of the change, automatically** (`release-please-config.json`):
+
+  | Merged since the last release | Next version (while < 1.0) |
+  |---|---|
+  | only `docs`, `test`, `ci`, `chore`, `refactor` | no release |
+  | at least one `fix` or `perf` | patch: 0.3.1 → 0.3.2 |
+  | at least one `feat` | minor: 0.3.1 → 0.4.0 |
+  | a breaking change (`feat!:` or a `BREAKING CHANGE:` footer) | minor too (`bump-minor-pre-major`), never 1.0.0 |
+
+  - **Design phase:** `feat` and `fix` are kept for product code. Tooling (`tools/`, `tests/`, workflows) uses `chore`, `test` or `ci`. Docs, specs and research use `docs`. So no release is cut before the walking skeleton, which is planned as `0.1.0`.
+  - **Docs and tests do not cut releases.** They are hidden from the generated `CHANGELOG.md`, because the curated changelog (`documentation-system.md` §6) covers docs. Whether a visible changelog section alone makes a commit releasable is **[to be validated]** with a dry run (`release-please release-pr --dry-run`).
+  - **1.0.0 is never automatic.** release-please only reaches it when `release-as: 1.0.0` is set in the config (release-please manifest docs). A guard (`release-guard.yml`) also fails any release PR at ≥ 1.0.0 unless the repository variable `ALLOW_V1` is `true`. Thomas sets that variable once the 1.0 gate (§14) is met.
 
 ## 13. Instance verification and access
 
@@ -330,3 +342,24 @@ Step page: [F3](../progress/W0/F3.md). Real pipelines run with their own test da
 - **For a demo,** an admin creates the same kind of link from the share dialog.
 - **Guests.** The instance runs in `demo` mode, so visitors without a link only see read-only demo data.
 - **Nightly reset.** A known backup is restored every night, which also tests restore.
+
+## 14. Release stages and the 1.0 gate
+
+Spectio stays in 0.x until it has been checked, in a fairly robust way, against several use cases and by several users. Each stage has an entry condition, and the docs say which stage a version belongs to: the changelog block's admonition and a badge on the landing page.
+
+| Stage | Versions | Who uses it | Entry condition |
+|---|---|---|---|
+| **Design** | none | Thomas and the agents | — |
+| **Walking skeleton** | 0.1.x | Thomas, on the synthetic pipelines | `GO` gate passed (pipeline W4); one run crosses every layer once (launch, observe, gate, resume, hand-off) |
+| **Private alpha** | 0.2 – 0.4 | 3 to 5 design-partner groups at EMBL (`docs/research/adoption-and-positioning-2026-10-26.md`) | install in under 30 min from the docs alone; real corpus green nightly; backup and restore tested; R5 security findings closed |
+| **Public beta** | 0.5 – 0.9 | anyone, with a public demo instance | 2 weeks without a P0/P1 bug at the partners; upgrade tested across 3 consecutive minors; every guide has a cast or screenshots |
+| **1.0** | 1.0.0 | stable for institutional installs | the **1.0 gate** below, checked by a review step (`R-v1`, added to the pipeline when the beta starts) and decided by Thomas |
+
+**The 1.0 gate** (all of them):
+1. **Use cases.** At least one real pipeline from each scenario class of `checking-scenarios.md` §1 runs through Spectio, with a gate decided by a person other than its author.
+2. **Users and sites.** At least 3 groups, 2 of them outside Thomas's own team, and 10 or more active users over 8 consecutive weeks. At least one site other than EMBL **[to be validated: realistic target]**.
+3. **Engines and schedulers.** Nextflow and Snakemake on SLURM and on Kubernetes in daily use, plus the local runner.
+4. **Tests.** The synthetic suite is green on every PR, and the real corpus is green nightly for 4 consecutive weeks. The auth matrix (`authentication-and-access.md` §6) and the Playwright suite are green.
+5. **Operations.** An upgrade path is tested across at least 3 minors with backup, restore and migration. No open P0 or P1 bug. A documented support channel answers within a week.
+6. **Contracts.** The OpenAPI and the plugin SDK are frozen, with a deprecation policy. The data model has a migration test for every revision.
+7. **Docs.** Install, user, admin and operator guides, the reference (API, CLI, configuration), and a curated changelog for every 0.x version.

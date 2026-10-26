@@ -250,3 +250,28 @@ Everything must be traced, including:
   - design-phase screenshots are light only (§5.1);
   - the per-PR media budget is checked against the base branch (§3.3).
 - **Figures not made yet** are tracked in the prompts of the steps that will make them: the staging figure in D5; the share-link and telemetry figures in D6.
+
+## 2026-10-26 — Versioning by importance, the 1.0 gate, adoption
+
+- **Automatic versions by the weight of the change.**
+  - While below 1.0: `fix` and `perf` bump the patch, `feat` bumps the minor; a breaking change also bumps the minor (`bump-minor-pre-major`). `docs`, `test`, `ci` and `chore` do not cut a release.
+  - During the design phase, `feat` and `fix` are kept for product code, so the first release is the walking skeleton, `0.1.0`.
+  - 0.x release PRs merge like other PRs once `AUTOMERGE_MAIN` is on, one per milestone or per wave that changed the product.
+  - Details: `dev-environment-and-testing.md` §12.
+- **1.0.0 is a human decision.** It requires the 1.0 gate (`dev-environment-and-testing.md` §14):
+  - use cases from every scenario class;
+  - 3 groups and 10 or more users over 8 weeks;
+  - both engines on SLURM and Kubernetes;
+  - 4 weeks of green nightly runs;
+  - upgrades tested across 3 minors;
+  - frozen contracts;
+  - complete docs.
+
+  release-please never reaches 1.0.0 on its own, and `release-guard.yml` fails any release PR at 1.0.0 or above unless `ALLOW_V1=true`.
+- **Release stages:** walking skeleton (0.1), private alpha with EMBL design partners (0.2–0.4), public beta with a demo instance (0.5–0.9), then 1.0.
+- **Adoption and positioning** (`docs/research/adoption-and-positioning-2026-10-26.md`):
+  - Spectio is not presented as an open-source Seqera Platform. It is the gate-and-steer layer for self-hosted HPC, Snakemake first, part of the depictio and LabID platform.
+  - The plan does not count on nf-core endorsement; nf-core pipelines are used unmodified as test cases.
+  - Order of outreach: design partners first, then neighbouring institutes, then the public beta (Snakemake community, BioHackathon Europe, BOSC, registries, JOSS later).
+- **Virgil** is set aside for now (inbox #1).
+- **Git history.** A clean single-commit `main` was pushed; the old branch is kept until Thomas switches the default and deletes it (inbox #5).
