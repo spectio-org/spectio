@@ -3,6 +3,8 @@ name: previews
 # Static dev previews on Cloudflare Pages (docs/specs/dev-environment-and-testing.md §7.1).
 # One branch alias per PR (pr-<n>), validated wave (wave-<id>, manual), release (v0-3-0) and main.
 # Every deployment keeps its own hash URL; /versions lists them all. Without the secrets, it builds and skips the deploy.
+# The CLOUDFARE_* names are the ones set on 2026-10-26 (typo); rename them to CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
+# and drop the fallbacks.
 on:
   pull_request:
   push:
@@ -36,8 +38,8 @@ jobs:
       - name: Check the Cloudflare secrets (names only, never values)
         id: cf
         env:
-          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN }}
+          A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFARE_ACCOUND_ID }}
         run: |
           missing=""
           [ -n "$T" ] || missing="$missing CLOUDFLARE_API_TOKEN"
@@ -77,8 +79,8 @@ jobs:
       - name: Generate /versions from the deployments API
         if: steps.cf.outputs.has == 'true'
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFARE_ACCOUND_ID }}
         run: |
           python3 tools/previews/versions_page.py --project "$CF_PROJECT" --out site/versions/index.html \
             --current-alias "${{ steps.alias.outputs.alias }}" --current-sha "${{ github.event.pull_request.head.sha || github.sha }}"
@@ -87,8 +89,8 @@ jobs:
         id: deploy
         if: steps.cf.outputs.has == 'true'
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFARE_ACCOUND_ID }}
           MSG: ${{ github.event.pull_request.title || github.event.head_commit.message || 'manual preview' }}
         run: |
           npx --yes wrangler@4 pages project create "$CF_PROJECT" --production-branch main >/dev/null 2>&1 || true
