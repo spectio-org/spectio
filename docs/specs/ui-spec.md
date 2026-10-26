@@ -193,7 +193,7 @@ How a gate stops the engine without forking: Nextflow — a generated config set
 How a run started in a terminal with Spectio enabled is handled.
 
 Enabling it:
-- Nextflow: the plugin `nf-spectio` (`-plugins nf-spectio`, or a `spectio` config profile/env set once by `spectio login`). It runs next to `-with-tower`, so the same run can also report to Seqera Platform ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)). Nextflow plugins cannot add new `run` flags, so there is no literal `--spectio`.
+- Nextflow: the plugin `nf-spectio` (`-plugins nf-spectio`, or a `spectio` config profile/env set once by `spectio login`). It runs next to `-with-tower`, so the same run can also report to Seqera Platform (**[to be validated]** in spike T2; [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)). Nextflow plugins cannot add new `run` flags, so there is no literal `--spectio`.
 - Snakemake: `--logger spectio`.
 - Convenience wrapper: `spectio run nextflow …` / `spectio run snakemake …` injects the above and registers the launch directory.
 

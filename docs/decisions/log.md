@@ -311,7 +311,7 @@ Everything must be traced, including:
 
 ## 2026-10-26 — MVP scope, Nextflow through nf-spectio, licence
 
-- **Nextflow ingestion** (inbox #6, closed): Nextflow reports to Spectio only through the `nf-spectio` plugin, from the MVP on. The Tower protocol routes are not implemented. The goal is to sit next to Seqera Platform, not to replace it: a run can report to both at once. Record: [0001](0001-nextflow-through-nf-spectio.md).
+- **Nextflow ingestion** (inbox #6, closed): Nextflow reports to Spectio only through the `nf-spectio` plugin, from the MVP on. The Tower protocol routes are not implemented. The goal is to sit next to Seqera Platform, not to replace it: a run can report to both at once (**[to be validated]** in spike T2). Record: [0001](0001-nextflow-through-nf-spectio.md).
 - **MVP scope** (Thomas):
   - Snakemake and Nextflow from the start;
   - the focus is on checks and quality control: the checks of a stage, their evidence, and the gate;

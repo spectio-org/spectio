@@ -10,7 +10,7 @@ Three decisions shape everything else:
 
 1. **An in-house, engine-independent event log** as the source of truth (append-only). Each engine has its own small agent that writes to it.
 2. **Implement the 5 ingestion routes of the Tower protocol on the server side** (revised on 23/10 after reading the code, see section 2bis). The `nf-tower` plugin ships with Nextflow: you just point `tower.endpoint` at our server, with nothing to install, as nf-shard does. The protocol remains undocumented and accepts no commands from the server, so steering goes through our launcher, not through this protocol.
-   **Revised on 26/10/2026 ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)):** Nextflow reports only through Spectio's own plugin `nf-spectio`. The Tower routes are not implemented, so a run can report to Seqera Platform (`nf-tower`) and to Spectio at the same time.
+   **Revised on 26/10/2026 ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)):** Nextflow reports only through Spectio's own plugin `nf-spectio`. The Tower routes are not implemented, so a run can report to Seqera Platform (`nf-tower`) and to Spectio at the same time (**[to be validated]** in spike T2).
 3. **The QC gate is modelled in our application, not in the engine.** Neither engine has a native pause: the reliable pattern is "stop cleanly after step N, then relaunch with resume".
 
 ## 2. Integration per engine (without log parsing)
@@ -232,7 +232,7 @@ For an unplanned pause ("Pause" button): `PAUSING → PAUSED`, then `resume`.
 - **Unplanned**: SIGINT to Snakemake (which cancels cluster jobs via `cancel_jobs`), SIGTERM to Nextflow (or `scancel` of the head job). Running tasks are lost; finished ones remain in the cache. No native "finish running tasks without submitting new ones" mode **[to be validated]**.
 
 ### 4. Check
-At the end of a stage (last Snakemake `PROGRESS`, Nextflow `/trace/complete`), the platform:
+At the end of a stage (last Snakemake `PROGRESS`, Nextflow `onFlowComplete` reported by `nf-spectio`, [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)), the platform:
 1. collects the declared evidence (globs) and the QC metrics in JSON;
 2. creates the `Intervention`, notifies the UI, the MCP server and the webhooks;
 3. applies the policy (auto-approval under threshold, timeout, escalation).
@@ -336,7 +336,7 @@ Goal: the end user no longer touches the terminal. They register a workflow, lau
    - Snakemake: `config/config.yaml` + `workflow/schemas/config.schema.yaml` (Snakemake workflow catalogue convention) → generated form;
    - optional: `spectio.yml` (stages, interventions, QC evidence, parameter presets).
    Can later be exposed as GA4GH **TRS**, the registry standard (WES has no registry).
-2. **Execution environments + runner.** A Spectio **runner** (`spectio runner`, same pip package, a single logical binary) runs on the login node, under the user's account. It opens an **outgoing** connection to the server, so no inbound port on the cluster. It receives orders (launch, cancel, resume, read a log, browse a directory), submits the head job to the scheduler and configures the plugins automatically (`tower.endpoint`, `--logger`). This is the same principle as Seqera's Tower Agent (outgoing WebSocket, user's account, Slurm/LSF/PBS/SGE). Locally, server and agent run in the same process (`perspectio serve`).
+2. **Execution environments + runner.** A Spectio **runner** (`spectio runner`, same pip package, a single logical binary) runs on the login node, under the user's account. It opens an **outgoing** connection to the server, so no inbound port on the cluster. It receives orders (launch, cancel, resume, read a log, browse a directory), submits the head job to the scheduler and configures the plugins automatically (`nf-spectio` config, `--logger`; [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)). This is the same principle as Seqera's Tower Agent (outgoing WebSocket, user's account, Slurm/LSF/PBS/SGE). Locally, server and agent run in the same process (`perspectio serve`).
 3. **Launching from the interface.** Choose the workflow → the environment → fill in the form (sample sheet uploaded or selected via the agent) → Launch. Then: tracking, per-task debugging page (command, stdout/stderr, exit code, working directory files read on demand via the agent), relaunch with a prefilled form, resume, interventions.
 
 ### Comparison

@@ -264,7 +264,7 @@ Delivery: at least once, from an outbox table written in the same transaction as
 | GA4GH WES 1.1 | facade for launching and tracking; Spectio states map onto WES states (`AWAITING_REVIEW` and `PAUSED` → `PAUSED` with detail in extensions) |
 | GA4GH TRS, DRS | phase 2: catalogue as TRS; artefacts as DRS objects |
 | RO-Crate | import workflows from Workflow RO-Crates (nf-core, WorkflowHub); export runs as Workflow Run / Provenance Run Crates with gate provenance |
-| Nextflow Tower protocol | not implemented. Nextflow reports through `nf-spectio`, so a run can report to Seqera Platform (`nf-tower`) and to Spectio at the same time ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)) |
+| Nextflow Tower protocol | not implemented. Nextflow reports through `nf-spectio`, so a run can report to Seqera Platform (`nf-tower`) and to Spectio at the same time (**[to be validated]** in spike T2; [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)) |
 | CloudEvents | webhook envelope |
 | OIDC | authentication (phase 2) |
 

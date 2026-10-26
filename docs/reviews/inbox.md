@@ -52,7 +52,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
 
 ### #6 · Nextflow ingestion: keep the Tower protocol, or only Spectio's own plugin?
 
-- **Context.** `docs/research/adoption-and-positioning-2026-10-26.md` §2 and `synthesis.md` §2. Accepting Nextflow's built-in Tower protocol gives zero-install monitoring, as nf-shard does, but the protocol is undocumented and positions Spectio closer to Seqera.
+- **Context.** `docs/research/adoption-and-positioning-2026-10-26.md` §2 and `synthesis.md` §1 and §2bis. Accepting Nextflow's built-in Tower protocol gives zero-install monitoring, as nf-shard does, but the protocol is undocumented and positions Spectio closer to Seqera.
 - **Options:**
   - (a) keep both, with the Tower route labelled unofficial and best effort;
   - (b) `nf-spectio` only.
