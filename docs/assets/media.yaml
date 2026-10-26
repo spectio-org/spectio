@@ -28,6 +28,12 @@ media:
       - docs/assets/shots/run-detail_light.webp
       - docs/assets/shots/review-gate_light.webp
       - docs/assets/shots/review-gate-phone_light.webp
+      - docs/assets/shots/overview_light.webp
+      - docs/assets/shots/launch_light.webp
+      - docs/assets/shots/runs_light.webp
+      - docs/assets/shots/review-queue_light.webp
+      - docs/assets/shots/environments_light.webp
+      - docs/assets/shots/admin-plugins_light.webp
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
@@ -42,3 +48,11 @@ media:
     generator: (cd tools/media && npm ci) && python3 tools/media/combo.py tools/media/combos/gate-review.yaml
     outputs:
       - docs/assets/media/gate-review.mp4
+  - id: tool-logos
+    kind: logos
+    generator: "copied from the projects' official assets (Nextflow, nf-core, Snakemake, depictio); nominative use, see the landing page notice"
+    outputs:
+      - docs/assets/logos/logo-nextflow.png
+      - docs/assets/logos/logo-nf-core.png
+      - docs/assets/logos/logo-snakemake.png
+      - docs/assets/logos/logo-depictio.png

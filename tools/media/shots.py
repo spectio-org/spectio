@@ -53,6 +53,12 @@ REGISTRY: dict[str, Shot] = {
         Shot("run-detail", "RunDetail", 1440, 1180, "A running nf-core/rnaseq run: stages, gates, busiest processes, lineage"),
         Shot("review-gate", "Review", 1440, 1180, "The review screen of a QC gate: checks, viewer, AI suggestion, pending changes"),
         Shot("review-gate-phone", "MReview", 390, 844, "The same gate on a phone"),
+        Shot("overview", "Overview", 1440, 1180, "Overview: runs that need attention, gates waiting, environments"),
+        Shot("launch", "Launch", 1440, 1180, "Launching a pipeline: parameters from its schema, samplesheet, environment, gates"),
+        Shot("runs", "RunsTable", 1440, 1180, "Every run in one table, with stage, gates and cost"),
+        Shot("review-queue", "ReviewQueue", 1440, 1180, "The review queue: gates waiting for a decision"),
+        Shot("environments", "Environments", 1440, 1180, "Environments: SLURM and Kubernetes runners, capacity, health"),
+        Shot("admin-plugins", "AdminPlugins", 1440, 1180, "Administration: plugins for engines, auth, storage and notifications"),
     )
 }
 

@@ -35,14 +35,14 @@ def _status(steps, sid):
     return steps.get(sid, {}).get("status", "pending")
 
 
-def _strip(pipeline, steps) -> str:
+def _strip(pipeline, steps, base: str = "") -> str:
     cells = []
     for wave in pipeline["waves"]:
         ids = [s["id"] for s in wave["steps"]]
         done = sum(_status(steps, i) == "done" for i in ids)
         pct = round(100 * done / len(ids)) if ids else 0
         cells.append(
-            f'<a class="sp-wave" href="progress/#{wave["id"].lower()}">'
+            f'<a class="sp-wave" href="{base}progress/#{wave["id"].lower()}">'
             f'<span class="sp-wave__id">{wave["id"]}</span>'
             f'<span class="sp-wave__bar"><span style="width:{pct}%"></span></span>'
             f'<span class="sp-wave__count">{done}/{len(ids)}</span>'
@@ -69,7 +69,9 @@ def on_page_markdown(markdown: str, page, config, files):
         return markdown
     pipeline, steps = _load()
     if "<!-- spectio:progress-strip -->" in markdown:
-        markdown = markdown.replace("<!-- spectio:progress-strip -->", _strip(pipeline, steps))
+        depth = page.file.src_uri.count("/") + (0 if page.file.src_uri.endswith("index.md") or page.file.src_uri == "index.md" else 1)
+        base = "../" * depth
+        markdown = markdown.replace("<!-- spectio:progress-strip -->", _strip(pipeline, steps, base))
     if "<!-- spectio:progress-table -->" in markdown:
         page_dir = pathlib.Path(config["docs_dir"]) / "progress"
         markdown = markdown.replace("<!-- spectio:progress-table -->", _table(pipeline, steps, page_dir))
@@ -82,7 +84,17 @@ def on_nav(nav, config, files):
     from mkdocs.structure.nav import Section, _add_parent_links, _add_previous_and_next_links, _get_by_type
     from mkdocs.structure.pages import Page
 
-    progress = next((i for i in nav.items if isinstance(i, Section) and i.title == "Progress"), None)
+    def find(items):
+        for i in items:
+            if isinstance(i, Section):
+                if i.title == "Progress":
+                    return i
+                hit = find(i.children)
+                if hit:
+                    return hit
+        return None
+
+    progress = find(nav.items)
     if progress is None:
         return nav
     pipeline, _ = _load()

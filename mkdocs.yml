@@ -80,44 +80,57 @@ validation:
 
 nav:
   - Home: index.md
-  - Specifications:
+  - Installation: installation/index.md
+  - Usage: usage/index.md
+  - Features:
+      - features/index.md
+      - Runs: features/runs.md
+      - Runners: features/runners.md
+      - QC gates (optional): features/gates.md
+      - Administration: features/administration.md
+      - depictio: features/depictio.md
+  - API: api/index.md
+  - Developer:
+      - developer/index.md
       - Documentation map: map.md
-      - Synthesis: specs/synthesis.md
-      - UI spec: specs/ui-spec.md
-      - Checking scenarios: specs/checking-scenarios.md
-      - API and data model: specs/api-and-data-model.md
-      - Authentication and access: specs/authentication-and-access.md
-      - Plugins and packaging: specs/architecture-plugins-and-packaging.md
-      - Schedulers and monitoring: specs/schedulers-and-monitoring.md
-      - Administration and operations: specs/admin-and-operations.md
-      - Telemetry and analytics: specs/telemetry-and-analytics.md
-      - CLI and shared libraries: specs/cli-and-shared-libraries.md
-      - depictio ecosystem reuse: specs/depictio-ecosystem-reuse.md
-      - Dev environment and testing: specs/dev-environment-and-testing.md
-      - Documentation system: specs/documentation-system.md
-  - Progress:
-      - progress/index.md
-  - Playbooks:
-      - Autopilot: playbooks/autopilot.md
-      - Triage policy: playbooks/triage-policy.md
-      - Next phase (step prompts): playbooks/next-phase.md
-  - Reviews:
-      - Format: reviews/README.md
-      - Inbox (questions for Thomas): reviews/inbox.md
-      - "R8b: depictio tooling re-audit": reviews/R8b-depictio-tooling.md
-  - Decisions:
-      - How decisions are recorded: decisions/README.md
-      - Decision log: decisions/log.md
-  - Research:
-      - depictio harmonisation: research/depictio-harmonization.md
-      - depictio administration and operations: research/depictio-admin-ops.md
-      - depictio CLI and packaging, LabID: research/depictio-cli-packaging.md
-      - depictio frontend and branding: research/depictio-frontend-admin.md
-      - depictio authentication: research/depictio-auth-2026-10-26.md
-      - depictio docs system: research/depictio-docs-system-2026-10-26.md
-      - Test corpus and CI: research/corpus-and-ci-2026-10-26.md
-      - Budget governor and telemetry: research/budget-and-telemetry-2026-10-26.md
-      - "Spike: synthetic pipelines": research/spike-synthetic-pipelines-2026-10-26.md
-      - "Spike: docs media tooling": research/spike-docs-media-tooling-2026-10-26.md
-      - Adoption and positioning: research/adoption-and-positioning-2026-10-26.md
+      - Progress:
+          - progress/index.md
+      - Specifications:
+          - Synthesis: specs/synthesis.md
+          - UI spec: specs/ui-spec.md
+          - Checking scenarios: specs/checking-scenarios.md
+          - API and data model: specs/api-and-data-model.md
+          - Authentication and access: specs/authentication-and-access.md
+          - Plugins and packaging: specs/architecture-plugins-and-packaging.md
+          - Schedulers and monitoring: specs/schedulers-and-monitoring.md
+          - Administration and operations: specs/admin-and-operations.md
+          - Telemetry and analytics: specs/telemetry-and-analytics.md
+          - CLI and shared libraries: specs/cli-and-shared-libraries.md
+          - depictio ecosystem reuse: specs/depictio-ecosystem-reuse.md
+          - Dev environment and testing: specs/dev-environment-and-testing.md
+          - Documentation system: specs/documentation-system.md
+      - Playbooks:
+          - Autopilot: playbooks/autopilot.md
+          - Triage policy: playbooks/triage-policy.md
+          - Next phase (step prompts): playbooks/next-phase.md
+      - Reviews:
+          - Format: reviews/README.md
+          - Inbox (questions for Thomas): reviews/inbox.md
+          - "R8b: depictio tooling re-audit": reviews/R8b-depictio-tooling.md
+      - Decisions:
+          - How decisions are recorded: decisions/README.md
+          - Decision log: decisions/log.md
+      - Research:
+          - depictio harmonisation: research/depictio-harmonization.md
+          - depictio administration and operations: research/depictio-admin-ops.md
+          - depictio CLI and packaging, LabID: research/depictio-cli-packaging.md
+          - depictio frontend and branding: research/depictio-frontend-admin.md
+          - depictio authentication: research/depictio-auth-2026-10-26.md
+          - depictio docs system: research/depictio-docs-system-2026-10-26.md
+          - Test corpus and CI: research/corpus-and-ci-2026-10-26.md
+          - Budget governor and telemetry: research/budget-and-telemetry-2026-10-26.md
+          - "Spike: synthetic pipelines": research/spike-synthetic-pipelines-2026-10-26.md
+          - "Spike: docs media tooling": research/spike-docs-media-tooling-2026-10-26.md
+          - Adoption and positioning: research/adoption-and-positioning-2026-10-26.md
+  - Roadmap: roadmap/index.md
   - Changelog: changelog/index.md

@@ -3,94 +3,94 @@ title: Spectio
 hide: [navigation, toc]
 ---
 
-<div class="sp-hero" markdown>
-<div class="sp-hero__text" markdown>
-<div class="sp-hero__brand"><img src="assets/brand/emblem.svg" alt="" class="sp-hero__emblem"><span class="sp-hero__name">Spectio</span></div>
-
-<p class="sp-hero__tagline">Launch, watch and steer Nextflow and Snakemake runs.<br>Stop at QC gates, decide from your phone.<br>Hand the results to depictio.</p>
-
-<p class="sp-hero__sub">An open-source run manager for bioinformatics pipelines on HPC and Kubernetes, with a headless API and a plugin for everything. Spectio is in its design phase: everything below is specified and reviewed in the open before code is written.</p>
-
-[Read the design](map.md){ .md-button .md-button--primary } [See progress](progress/index.md){ .md-button }
+<div class="sp-hero2">
+<div class="sp-hero2__brand"><img src="assets/brand/emblem.svg" alt="" class="sp-hero2__emblem"><span class="sp-hero2__name">Spectio</span></div>
+<p class="sp-hero2__tagline">Launch, monitor and relaunch your Nextflow and Snakemake runs, on your own cluster.</p>
+<p class="sp-hero2__sub">Open-source run manager for HPC and Kubernetes. Add quality checks between stages only where you want them. Part of the depictio platform.</p>
+<p class="sp-hero2__actions"><a class="md-button md-button--primary" href="usage/">How it works</a> <a class="md-button" href="roadmap/">Roadmap</a></p>
+<p class="sp-badge">Design phase · nothing to install yet · first release planned as 0.1</p>
 </div>
-<figure class="sp-hero__media">
+
+<figure class="sp-hero2__media">
 <video autoplay muted loop playsinline poster="assets/shots/run-detail_light.webp" aria-label="A terminal runs the synthetic pipeline to its QC gate while the browser shows a gate review design board">
 <source src="assets/media/gate-review.mp4" type="video/mp4">
 </video>
-<figcaption>Terminal and browser side by side: the synthetic Snakemake pipeline stops at its QC gate and resumes from the cache, while the browser pane shows the gate review on a design board (an imaging plate QC gate). Fixture names, no real data.</figcaption>
+<figcaption>A run with an optional QC gate: it stops, someone reviews it, it resumes from the cache. The screens are the current design.</figcaption>
 </figure>
+
+## Works with { .sp-h2 }
+
+<div class="sp-logos" markdown>
+<a class="sp-logo" href="https://www.nextflow.io/" markdown><img src="assets/logos/logo-nextflow.png" alt=""><span>Nextflow</span></a>
+<a class="sp-logo" href="https://snakemake.github.io/" markdown><img src="assets/logos/logo-snakemake.png" alt=""><span>Snakemake</span></a>
+<a class="sp-logo" href="https://nf-co.re/" markdown><img src="assets/logos/logo-nf-core.png" alt=""><span>nf-core pipelines</span></a>
+<a class="sp-logo" href="https://snakemake.github.io/snakemake-workflow-catalog/" markdown><img src="assets/logos/logo-snakemake.png" alt=""><span>Snakemake Workflow Catalog</span></a>
+<a class="sp-logo" href="https://slurm.schedmd.com/" markdown><span class="sp-logo__icon">:material-server-network:</span><span>SLURM and other HPC schedulers</span></a>
+<a class="sp-logo" href="https://kubernetes.io/" markdown><span class="sp-logo__icon sp-k8s">:simple-kubernetes:</span><span>Kubernetes</span></a>
+<a class="sp-logo" href="https://github.com/depictio/depictio" markdown><img src="assets/logos/logo-depictio.png" alt=""><span>depictio dashboards</span></a>
+</div>
+<p class="sp-fine">Logos are trademarks of their owners and show compatibility only.</p>
+
+## How it works { .sp-h2 }
+
+<div class="sp-steps">
+
+<div class="sp-step">
+<div class="sp-step__text">
+<span class="sp-step__num">1</span>
+<h3>Launch</h3>
+<p>Pick a pipeline, fill its parameters from the pipeline's own schema, choose where it runs, and say where it should stop for a check.</p>
+</div>
+<img src="assets/shots/launch_light.webp" alt="The launch form of nf-core/rnaseq">
 </div>
 
-<section class="sp-lead" markdown>
-Pipelines on clusters are still launched by hand, followed in log files, and checked after the fact. A failed sample is noticed when the report is read; a run that should have stopped after QC burns a week of CPU. Spectio watches the run from the engine's own events, stops it at the stages you choose, shows the evidence to whoever must decide, and resumes from the cache.
-</section>
-
-## Works with { .sp-section-title }
-
-<div class="sp-eco" markdown>
-<div class="sp-eco__card" markdown>**Nextflow**<br><span>trace, weblog and `-resume`, 25.10 and 26.10</span></div>
-<div class="sp-eco__card" markdown>**Snakemake**<br><span>logger and executor plugins, `--until`, 9.x</span></div>
-<div class="sp-eco__card" markdown>**nf-core**<br><span>14 pipelines in the test corpus, with their test data</span></div>
-<div class="sp-eco__card" markdown>**Snakemake Workflow Catalog**<br><span>9 workflows, run on their `.test` data</span></div>
-<div class="sp-eco__card" markdown>**depictio**<br><span>same identity, groups and branding; results handed over</span></div>
-<div class="sp-eco__card sp-eco__card--later" markdown>**CWL · WDL**<br><span>later, through engine plugins</span></div>
+<div class="sp-step sp-step--flip">
+<div class="sp-step__text">
+<span class="sp-step__num">2</span>
+<h3>Watch</h3>
+<p>Every run in one place: its stages, its tasks and samples, its logs, and what the cluster is doing with it.</p>
+</div>
+<img src="assets/shots/run-detail_light.webp" alt="The detail page of a running pipeline">
 </div>
 
-## What it is made of { .sp-section-title }
-
-<div class="sp-cards" markdown>
-<a class="sp-card" href="specs/ui-spec/" markdown>:material-play-network:{ .sp-card__icon } **Runs**<br><span>One place for every run, with tasks, samples, logs and costs.</span></a>
-<a class="sp-card" href="specs/checking-scenarios/" markdown>:material-gate:{ .sp-card__icon } **QC gates**<br><span>Stop after a stage, review the evidence, exclude samples, resume.</span></a>
-<a class="sp-card" href="specs/schedulers-and-monitoring/" markdown>:material-server-network:{ .sp-card__icon } **Runners**<br><span>SLURM and other HPC schedulers, Kubernetes with Kueue, a laptop.</span></a>
-<a class="sp-card" href="specs/api-and-data-model/" markdown>:material-api:{ .sp-card__icon } **Headless API**<br><span>Everything the UI does, scripted; events, webhooks, RO-Crate.</span></a>
-<a class="sp-card" href="specs/cli-and-shared-libraries/" markdown>:material-console:{ .sp-card__icon } **CLI**<br><span>`spectio run`, `watch`, `gate`, with models shared with depictio.</span></a>
-<a class="sp-card" href="specs/architecture-plugins-and-packaging/" markdown>:material-puzzle:{ .sp-card__icon } **Plugins**<br><span>Engines, launchers, auth, notifiers, storage: entry points, like Snakemake.</span></a>
-<a class="sp-card" href="specs/admin-and-operations/" markdown>:material-shield-account:{ .sp-card__icon } **Administration**<br><span>Users and groups, branding, tasks, logs, backups and migrations.</span></a>
-<a class="sp-card" href="specs/authentication-and-access/" markdown>:material-link-lock:{ .sp-card__icon } **Share links**<br><span>Magic links, scoped reviewer links, OIDC and SAML, provisioning.</span></a>
-<a class="sp-card" href="specs/depictio-ecosystem-reuse/" markdown>:material-chart-box:{ .sp-card__icon } **depictio hand-off**<br><span>Finished runs become dashboards, with the same users and groups.</span></a>
+<div class="sp-step">
+<div class="sp-step__text">
+<span class="sp-step__num">3</span>
+<h3>Fix and relaunch</h3>
+<p>When a task fails, Spectio says why (out of memory, out of time, a tool error, a node lost) and what to change. Relaunch with the change; finished work comes back from the cache.</p>
+</div>
+<img src="assets/shots/runs_light.webp" alt="Every run in one table, with its stage and status">
 </div>
 
-## Key ideas { .sp-section-title }
-
-<div class="sp-features" markdown>
-<div class="sp-feature" markdown>
-<span class="sp-feature__num">01</span>
-<div markdown>**Gates stop the right stage.** A gate uses the engine's own stop, a generated Nextflow config or a Snakemake `--until`, then resumes from the cache. Measured on the synthetic test pipeline: 25 of 65 tasks come back cached after the QC gate, on both engines.</div>
+<div class="sp-step sp-step--flip">
+<div class="sp-step__text">
+<span class="sp-step__num">4</span>
+<h3>Results and dashboards</h3>
+<p>Outputs, reports and logs stay attached to the run. Finished results can go to depictio as dashboards, with the same users and groups.</p>
 </div>
-<div class="sp-feature" markdown>
-<span class="sp-feature__num">02</span>
-<div markdown>**Decide anywhere** *(planned)*. A reviewer will open a scoped link on a phone, see the QC evidence, exclude a sample and approve, with no account needed and every use audited ([share links](specs/authentication-and-access.md)).</div>
-</div>
-<div class="sp-feature" markdown>
-<span class="sp-feature__num">03</span>
-<div markdown>**Runs where the data is** *(planned)*. A small runner on the login node or in the cluster will pull commands over HTTPS, so the HPC side needs no inbound port ([runners](specs/schedulers-and-monitoring.md)).</div>
-</div>
-<div class="sp-feature" markdown>
-<span class="sp-feature__num">04</span>
-<div markdown>**One Python package to start** *(planned, not published yet)*. One package will give the CLI and the runner, with an extra for the server on SQLite; Docker Compose and a Helm chart come next ([packaging](specs/architecture-plugins-and-packaging.md)).</div>
-</div>
-<div class="sp-feature" markdown>
-<span class="sp-feature__num">05</span>
-<div markdown>**Tested on real pipelines.** Twin synthetic pipelines already pass 11 failure and gate scenarios on two Nextflow versions and Snakemake, and nf-core/demo passes with its test data. The plan: every pull request runs them, then the nf-core and catalog corpus, once CI is green (step T7).</div>
-</div>
+<img src="assets/shots/overview_light.webp" alt="The overview page with runs, gates and environments">
 </div>
 
-## How a gate works { .sp-section-title }
+</div>
 
-[![Stop at the QC gate, drop a sample, resume](assets/diagrams/gate-resume_light.png#only-light)](assets/diagrams/gate-resume_light.png)
-[![Stop at the QC gate, drop a sample, resume](assets/diagrams/gate-resume_dark.png#only-dark)](assets/diagrams/gate-resume_dark.png)
+<div class="sp-optional" markdown>
+<span class="sp-ic sp-ic--amber">:material-gate:</span>
+<div markdown>**Optional: quality checks between stages.** For pipelines where a bad sample should not reach the expensive stage, add a gate: the run stops after a stage, someone looks at the QC evidence, from a desk or a phone, and the run resumes from the cache. Pipelines without gates run straight through. [How gates work](features/gates.md)</div>
+</div>
 
-<p class="sp-note">Task counts measured on the synthetic pipeline; the cluster, runner, share link and phone show the planned flow. Click for the full size.</p>
+## What is inside { .sp-h2 }
 
-<div class="asciinema-cast" data-cast="assets/casts/synthetic-gate.cast"></div>
+<div class="sp-cards2" markdown>
+<a class="sp-card2" href="features/runs/" markdown><span class="sp-ic sp-ic--violet">:material-play-network:</span><b>Runs</b><span>Launch, watch and relaunch.</span></a>
+<a class="sp-card2" href="features/runners/" markdown><span class="sp-ic sp-ic--sky">:material-server-network:</span><b>Runners</b><span>SLURM, Kubernetes, a laptop.</span></a>
+<a class="sp-card2" href="features/gates/" markdown><span class="sp-ic sp-ic--amber">:material-gate:</span><b>QC gates</b><span>Optional checks between stages.</span></a>
+<a class="sp-card2" href="api/" markdown><span class="sp-ic sp-ic--indigo">:material-api:</span><b>API and CLI</b><span>Everything scriptable.</span></a>
+<a class="sp-card2" href="features/administration/" markdown><span class="sp-ic sp-ic--coral">:material-shield-account:</span><b>Administration</b><span>Users, plugins, backups.</span></a>
+<a class="sp-card2" href="features/depictio/" markdown><span class="sp-ic sp-ic--green">:material-chart-box:</span><b>depictio</b><span>Results become dashboards.</span></a>
+</div>
 
-## Where the design stands { .sp-section-title }
+## Where it stands { .sp-h2 }
 
 <!-- spectio:progress-strip -->
 
-## Start reading { .sp-section-title }
-
-1. [Synthesis](specs/synthesis.md): what Spectio is, the engines, the existing tools and the stack.
-2. [UI spec](specs/ui-spec.md): every screen, phone included.
-3. [Checking scenarios](specs/checking-scenarios.md): what a gate checks, across nf-core.
-4. [Documentation map](map.md): every spec and which topic it owns.
+<p class="sp-more"><a href="roadmap/">Roadmap</a> · <a href="developer/">Developer documentation</a> · <a href="changelog/">Changelog</a></p>

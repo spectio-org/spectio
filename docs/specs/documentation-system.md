@@ -57,20 +57,20 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 
 ## 1. Site structure
 
-**Top tabs** (Material `navigation.tabs`):
+**Top tabs** (Material `navigation.tabs`). The order follows depictio-docs: user-facing first, everything technical under Developer. Revised 2026-10-26: the first version put the specs at the top level, which was too technical for a first visit.
 
 | Tab | Content | Phase |
 |---|---|---|
 | Home | landing page (§2) | now |
-| Specifications | the specs, as today | now |
-| Progress | one page per pipeline step, written as the step runs (§3.2) | now |
-| Playbooks | autopilot, triage policy, step prompts | now |
-| Reviews, Decisions, Research | as today | now |
-| Changelog | curated, one block per version (§6) | now (empty until v0.1.0) |
-| Get started | install (bundle, Compose, Kubernetes), first run, first gate | from the walking skeleton |
-| Guides | users (runs, gates, share links), admins (users, backups, plugins), HPC and Kubernetes operators | from M1 |
-| Reference | API (OpenAPI rendered with swagger-ui-tag, §9), CLI (generated from the Typer tree), configuration (generated from the Pydantic settings), plugins SDK | from M1 |
-| Developer | architecture, plugin authoring, testing, docs system (this spec) | now (links to specs) |
+| Installation | the three ways to run Spectio; "nothing to install yet" until 0.1 | now (short), full from 0.1 |
+| Usage | how Spectio works: the five words, a run without gates, a run with an optional gate; later the guides | now (short), guides from M1 |
+| Features | one short page per area (runs, runners, optional QC gates, administration, depictio), each with its screen designs, its status and a link to the owning spec | now |
+| API | the headless API and the CLI in plain words; later the generated reference (§9) | now (short) |
+| Developer | documentation map, Progress (§3.2), specifications, playbooks, reviews, decisions, research | now |
+| Roadmap | done, now, next, ideas, with the release stages as a timeline | now |
+| Changelog | curated, one block per version (§6) | now (empty until 0.1.0) |
+
+**Writing for users.** User-facing pages are short, use plain words, and say plainly what is designed and what is built. Gates are presented as optional: most pipelines run straight through.
 
 **Theme and assets.**
 - Theme `material`, with `custom_dir: overrides`. The overrides preload the Virgil font for inlined sketches and set a footer.
@@ -101,35 +101,14 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 
 Front matter `hide: [navigation, toc]`. The markup is HTML through `md_in_html`; every style lives in `extra.css`.
 
-**Sections, in depictio's order:**
-1. **Hero.**
-   - The emblem and the name.
-   - A three-line tagline: *Launch, watch and steer Nextflow and Snakemake runs / Stop at QC gates, decide from your phone / Hand results to depictio*.
-   - A subtext.
-   - Two buttons: *Read the design* and *See progress*.
-   - Media slot: the combined capture (§5.4), shown as a looping muted video. Until one exists, the light/dark hero image pair is shown.
-2. **Lead.** One paragraph on the problem: runs on HPC and Kubernetes are launched by hand, watched in log files, and checked after the fact.
-3. **Ecosystem cards.** Nextflow, Snakemake, nf-core, the Snakemake Workflow Catalog, depictio; later CWL and WDL.
-4. **Component cards** (3 × 3):
-   - runs;
-   - QC gates;
-   - runners (SLURM, other HPC, Kubernetes);
-   - headless API;
-   - CLI;
-   - plugins;
-   - administration;
-   - share links;
-   - depictio hand-off.
-
-   Each card has an icon, a name, one line, and a link to its spec, later to its guide.
-5. **Numbered key ideas.** "01 Gates stop the right stage", "02 Decide anywhere", "03 Runs where the data is", "04 One Python package to start", "05 Tested on real pipelines". Each one states something measured, or says that it is planned. A screenshot pair is added to an idea once the app has a screen for it; the design boards are already shown in the hero.
-6. **Status strip.** The design phase made visible:
-   - the waves of `pipeline.yaml`, with done and total step counts, read from `.autopilot/state.json` at build time by a small MkDocs hook (`hooks/progress.py`);
-   - a link to the Progress tab.
-7. **Getting started.**
-   - In the design phase: the reading order.
-   - Later: `pip install spectio` and `spectio up`, as a cast.
-8. **Footer.** Licence, EMBL, links.
+**Sections, in depictio's order** (revised 2026-10-26: clearer and more visual):
+1. **Centred hero.** The emblem and the name; one sentence on what Spectio does (launch, monitor and relaunch runs on your cluster); one line on gates being optional and on depictio; two buttons (How it works, Roadmap); a status badge (design phase); then the combined capture as a looping muted video.
+2. **Works with.** Logo cards for Nextflow, Snakemake, nf-core, the Snakemake Workflow Catalog, SLURM, Kubernetes and depictio. The logos are the projects' own assets, or Material's bundled Simple Icons, with a notice that they show compatibility only.
+3. **How it works.** Four illustrated steps (Launch, Watch, Fix and relaunch, Results and dashboards), each with a screen design.
+4. **Optional quality checks.** One box saying what a gate is for and that pipelines without gates run straight through.
+5. **What is inside.** Six cards with coloured icons, linking to the Features pages.
+6. **Where it stands.** The progress strip of the waves (`hooks/progress.py`), and links to the roadmap, the developer docs and the changelog.
+7. **Footer.** Licence, author, links, build SHA.
 
 **Check:**
 - the page is rendered by Playwright at 1440 × 900 and at 390 × 844, light and dark;

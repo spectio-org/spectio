@@ -7,9 +7,12 @@ substitutions:
   - ['Thomas Weber', 'Alice Martin']
   - ['\bThomas\b', 'Alice']
   - ['\bweber\b', 'martin']
+  - ['\btweber\b', 'amartin']
+  - ['/scratch/tweber', '/scratch/demo']
   - ['\bTW\b', 'AL']
   - ['/scratch/tw/', '/scratch/demo/']
   - ['/tw/', '/demo/']
+  - ['\btw-lab\b', 'demo-lab']
   - ['EMBL SLURM', 'demo-hpc SLURM']
   - ['rnaseq-embl', 'rnaseq-demo']
   - ['\bEMBL\b', 'demo-hpc']
@@ -21,6 +24,7 @@ forbidden:
   - '(?i)weber'
   - '\bTW\b'
   - '(?i)/tw/'
+  - '\btw-'
   - '(?i)\bembl'
   - '(?i)gmail'
   - '[\w.+-]+@(?!example\.org)[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}'
