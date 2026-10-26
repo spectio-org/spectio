@@ -29,7 +29,7 @@ Sources:
 | HTTP | one httpx client; hand-rolled retries on 408/425/429/5xx; connect errors always retried; timeouts retried only on endpoints marked idempotent; headers with CLI version, host, instance | requests session, `list_all` pagination | depictio's policy, plus `Idempotency-Key` so POSTs become safe to retry, RFC 9457 errors, cursor pagination |
 | Machine output | `--result-json FILE` on `ingest` (status, IDs, URLs); `--json` on some commands; meaningful exit codes | JSON by default | `--json` on every command, `--result-json FILE` on long ones, documented exit codes |
 | Version check | the CLI sends its version; no negotiation | — | `GET /version` at start, warning on skew, error past the supported window |
-| Telemetry | PostHog, opt-out, `DO_NOT_TRACK`, command path only | — | same ethics, **off by default** for institutional installs |
+| Telemetry | PostHog, opt-out, `DO_NOT_TRACK`, command path only | — | same ethics and the same opt-out default ([`telemetry-and-analytics.md`](telemetry-and-analytics.md) §0.4) |
 | Run-directory readers | `RunInfoReader` protocol (name, priority, footprint, markers, `read`), Nextflow and Snakemake, module list | sniffers for Nextflow runs, samplesheets, nf-prov / Galaxy RO-Crates, loaded from directories on `sys.path` | one shared package, readers through entry points |
 
 ## 2. The `spectio` command tree

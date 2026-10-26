@@ -301,3 +301,10 @@ Everything must be traced, including:
   - results go to `check_results` (now per run, `gate_id` nullable) and the gate reuses them when the file hash is unchanged ([`api-and-data-model.md`](../specs/api-and-data-model.md) §7–8).
 - **Decision: one catalogue, two renderers** ([`api-and-data-model.md`](../specs/api-and-data-model.md) §13.6): gate checks bind to depictio catalogue outputs where they exist; the runner computes the same tables at gate time; Spectio writes `spectio_checks` and `spectio_decisions`, joined on the item key in depictio; review views reuse depictio's renderers with a decision layer on top. Five requests added to [`depictio-ecosystem-reuse.md`](../specs/depictio-ecosystem-reuse.md) §3 (items 7–11).
 - **Boards.** RunLiveChecks, WorkflowWatches, ReviewDashboard, DepictioDecisions, on nf-core/rnaseq megatest data (canvas v52).
+
+## 2026-10-26 — Inbox answers: telemetry, merges into main, organisation
+
+- **Install telemetry is opt-out**, like depictio (inbox #2): on by default, with a one-time notice and the payload shown at `spectio init` and the first admin sign-in; nothing is sent before the notice. Applied in [`telemetry-and-analytics.md`](../specs/telemetry-and-analytics.md) §0.4 and §2.3, and in the two specs that said "off by default".
+- **Claude may merge into `main` for now** (inbox #3): the autopilot merges the promotion PR with a merge commit once every check passed and doc-reviewer approved. Force-push, branch deletion and edits to `pipeline.yaml` statuses stay forbidden.
+- **Packages stay under `weber8thomas`** until Thomas moves them (inbox #9).
+- **Nextflow ingestion** (inbox #6) stays open for discussion.

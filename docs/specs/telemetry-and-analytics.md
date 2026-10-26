@@ -27,11 +27,11 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
    - PyPI download counts are skewed by mirrors, caches and CI.
    - GHCR exposes no pull counts through its API, for images or for the OCI Helm chart.
    - Only an anonymous ping counts installations (§3).
-4. **The default for install telemetry is opt-in with a clear prompt.** This keeps the earlier decision ("same ethics, off by default for institutional installs", `cli-and-shared-libraries.md`; `depictio-ecosystem-reuse.md`):
-   - `spectio init` and the first admin sign-in ask once, with the payload shown.
-   - No answer counts as no.
-
-   depictio chose opt-out (`settings_models.py:1974-1988` in depictio). The question of switching is in the inbox for Thomas.
+4. **Install telemetry is opt-out, as in depictio** (`settings_models.py:1974-1988` in depictio; Thomas, inbox #2, 2026-10-26):
+   - it is on by default;
+   - `spectio init` and the first admin sign-in show a notice once, with the exact payload and the one-line way to turn it off (`SPECTIO_TELEMETRY_ENABLED=false`, or *Settings → Telemetry*);
+   - nothing is sent before that notice has been shown;
+   - the suppressions of §2.3 (`DO_NOT_TRACK`, CI, tests, demo mode) still apply.
 
 ## 1. What is never collected
 
@@ -68,7 +68,8 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 ### 2.3 Switches and transparency
 
 **When it is suppressed.** `telemetry_allowed()` returns a reason, not a boolean. Telemetry is suppressed by any of these:
-- `SPECTIO_TELEMETRY_ENABLED=false`, or consent not given (§0.4);
+- `SPECTIO_TELEMETRY_ENABLED=false`, or turned off in *Settings → Telemetry* (§0.4);
+- the notice of §0.4 not shown yet;
 - `DO_NOT_TRACK` set to anything other than `0` or `false`;
 - CI detected (`CI`, `GITHUB_ACTIONS`…);
 - a pytest run;

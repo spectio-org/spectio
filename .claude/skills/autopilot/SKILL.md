@@ -93,7 +93,7 @@ Give every worker:
 
 **Commit** on the integration branch, one commit per finished step: `autopilot(<id>): <one line>`.
 
-**Push** if a remote exists and pushing is allowed. Open or update one PR `autopilot/integration → main` whose description is the latest journal entry plus the Progress pages of the steps it carries. Enable auto-merge on it (`gh pr merge --auto --squash`) only when the repository variable `AUTOMERGE_MAIN` is `true` (`gh variable get AUTOMERGE_MAIN`). Never merge it yourself.
+**Push** if a remote exists and pushing is allowed. Open or update one PR `autopilot/integration → main` whose description is the latest journal entry plus the Progress pages of the steps it carries. Merge it with a merge commit (`gh pr merge --merge`, never squash, so `autopilot/integration` stays an ancestor of `main`) once `gh pr checks` reports every check passed and doc-reviewer approved; Thomas allows this for now (inbox #3, 2026-10-26). A failed or pending check leaves the PR open. If Thomas withdraws it, fall back to auto-merge only when the repository variable `AUTOMERGE_MAIN` is `true`.
 
 ## 4. Journal and state
 
@@ -123,6 +123,6 @@ Then end the turn. Stop scheduling further work in this tick when:
 - there is nothing left to do.
 
 **Never:**
-- merge to `main`, force-push, or delete branches or data;
+- merge to `main` before every check passed, force-push, or delete branches or data;
 - edit `docs/playbooks/pipeline.yaml` statuses (state lives in `.autopilot/state.json`);
 - skip a failing check by weakening it.

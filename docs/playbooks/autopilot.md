@@ -93,7 +93,7 @@ answers. Stop early when nothing is ready.
 
 ## 4. Permissions to add yourself
 
-Agents may not change their own permission rules, so add these yourself. You can put them in `.claude/settings.local.json` for your machine only, or commit them to `.claude/settings.json` for every session, including cloud ones:
+Agents may not change their own permission rules, so add these yourself. You can put them in `.claude/settings.local.json` for your machine only, or commit them to `.claude/settings.json` for every session, including cloud ones. A complete file, merged with the current settings, is in `tools/autopilot/claude-settings.json` (`cp tools/autopilot/claude-settings.json .claude/settings.json`). It does not deny `git push origin main`, since Claude may merge into `main` for now (inbox #3). The pieces:
 
 ```json
 {
@@ -133,7 +133,7 @@ Protect `main` with a GitHub branch rule that requires a PR and a review. The au
 
 - **Cost.** Each tick fans out several agents; W1 alone starts about 15 to 25 agents. Bound a run with `--max-budget-usd` (headless), a turn clause in the `/goal` condition, or `--until <wave>`. Dynamic workflows show a "Large workflow" warning above 25 agents. Start with `--until W1` to see the real cost of one wave.
 - **Reversibility.** Every change is a commit on `autopilot/integration`, and every triage decision is in the review file and the journal. Assumptions are labelled in the specs.
-- **No silent weakening.** The orchestrator may not edit exit checks or statuses in `pipeline.yaml`, and it never merges to `main`.
+- **No silent weakening.** The orchestrator may not edit exit checks or statuses in `pipeline.yaml`, and it merges into `main` only through the promotion PR, once every check passed (allowed by Thomas for now, inbox #3).
 - **Failures.** A step that fails twice becomes `blocked`, with an inbox entry. Two ticks without progress make `/goal` judge the condition impossible, and the run stops.
 
 ## 6. Budget governor: a share of the weekly window, or until the quota runs out
@@ -199,7 +199,7 @@ Every step leaves its pages (`docs/specs/documentation-system.md` §3). The page
 
 **Where auto-merge applies.**
 - PRs into `autopilot/integration` always auto-merge.
-- The promotion PR to `main` auto-merges only once Thomas sets the repository variable `AUTOMERGE_MAIN=true`.
+- The promotion PR to `main` is merged by the autopilot (merge commit) once every check passed and doc-reviewer approved: Thomas allowed it for now (inbox #3, 2026-10-26). Without that permission, it auto-merges only when the repository variable `AUTOMERGE_MAIN=true`.
 
 **Never auto-merged:** `human_gate` steps, the release PR, and changes to workflows, settings, auth code or `pipeline.yaml`.
 

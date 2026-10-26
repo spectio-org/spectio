@@ -21,6 +21,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - (a) opt-in with a prompt at `spectio init` and at the first admin sign-in (current);
   - (b) opt-out like depictio, with a notice and the payload preview.
 - **Recommendation:** (a) for institutional installs. **Assumed:** (a).
+- **Answer (Thomas, 2026-10-26):** (b) opt-out, like depictio. Applied in `telemetry-and-analytics.md` §0.4 and §2.3. *Handled.*
 
 ### #3 · Let CI merge into `main`?
 
@@ -29,11 +30,13 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - (a) keep human merges into `main` for now;
   - (b) set the variable now.
 - **Recommendation:** (a) until W1 has run once; then (b). **Assumed:** (a).
+- **Answer (Thomas, 2026-10-26):** Claude may merge into `main` for now. The autopilot merges the promotion PR (merge commit) once every check passed and doc-reviewer approved. Applied in `CLAUDE.md`, the autopilot skill and `autopilot.md` §5 and §8. *Handled.*
 
 ### #4 · Permissions, status line and hook for unattended runs
 
 - **What to add:** the JSON in `autopilot.md` §4, which covers the permission rules, the budget status line and the `StopFailure` hook. Agents cannot add it themselves.
 - **Answer with:** `done` when added.
+- **Status (2026-10-26):** a ready file is in `tools/autopilot/claude-settings.json` (the current `.claude/settings.json` plus the rules of `autopilot.md` §4; `git push origin main` is not denied, per #3). An agent may not write `.claude/settings.json` itself (refused as self-modification). Copy it with `cp tools/autopilot/claude-settings.json .claude/settings.json` and commit.
 
 ### #5 · Clean git history before the repository is shared
 
@@ -53,6 +56,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - (a) keep both, with the Tower route labelled unofficial and best effort;
   - (b) `nf-spectio` only.
 - **Recommendation:** (a) for the alpha, revisited before the public beta. **Assumed:** (a).
+- **Answer (Thomas, 2026-10-26):** to discuss, choosing the best balance of sustainability, features, access to information and ease of connection. Proposal sent in the session: `nf-spectio` as the main route, set up once by `spectio login`; the Tower protocol kept as a best-effort fallback for monitoring only. *Open.*
 
 ### #7 · Licence and the date the repository goes public
 
@@ -81,6 +85,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - (b) one organisation shared with depictio;
   - (c) stay under `weber8thomas` until 0.1.0.
 - **Recommendation:** (a) or (b), decided before 0.1.0, with the names reserved then. **Assumed:** (c).
+- **Answer (Thomas, 2026-10-26):** (c) for now; to be moved later. *Handled.*
 
 ### #10 · Create the Cloudflare account and the two secrets (dev previews)
 

@@ -54,7 +54,7 @@ Status: draft v0.1 · 2026-10-25 · author: Thomas Weber (with Claude)
 | `models/models/run_info.py` (`RunInfoReader`) + `nextflow.py` + `snakemake.py` readers | run-directory provenance | **Share** (`bioplatform-runinfo`, with LabID's sniffers) | adopting observed runs, RO-Crate, hand-off |
 | `MongoModel`, `PyObjectId`, `DEPICTIO_CONTEXT` branches in models | storage-bound models | **Leave** | storage-agnostic models, explicit context |
 | Server code (Beanie, Delta, Celery tasks, dashboards) | depictio's own domain | **Leave** | — |
-| `telemetry/` | opt-out PostHog, `DO_NOT_TRACK`, auto-off in CI | **Copy** the ethics, off by default | — |
+| `telemetry/` | opt-out PostHog, `DO_NOT_TRACK`, auto-off in CI | **Copy** the ethics and the opt-out default ([`telemetry-and-analytics.md`](telemetry-and-analytics.md) §0.4) | — |
 
 ### 1.2 CLI and clients
 
