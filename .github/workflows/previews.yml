@@ -101,7 +101,9 @@ jobs:
           echo "$out"
           url=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' <<<"$out" | head -1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
-          echo "alias_url=https://${{ steps.alias.outputs.alias }}.$CF_PROJECT.pages.dev" >> "$GITHUB_OUTPUT"
+          # The production branch (main) is served at the project root; other branches get an alias subdomain.
+          if [ "${{ steps.alias.outputs.alias }}" = main ]; then echo "alias_url=https://$CF_PROJECT.pages.dev" >> "$GITHUB_OUTPUT";
+          else echo "alias_url=https://${{ steps.alias.outputs.alias }}.$CF_PROJECT.pages.dev" >> "$GITHUB_OUTPUT"; fi
 
       - name: Verify the deployed preview
         if: steps.cf.outputs.has == 'true'
@@ -109,8 +111,13 @@ jobs:
           URL: ${{ steps.deploy.outputs.url }}
           SHA: ${{ github.event.pull_request.head.sha || github.sha }}
         run: |
-          for i in 1 2 3 4 5 6; do curl -fsS "$URL/" -o home.html && break; sleep 10; done
-          grep -q "${SHA:0:7}" home.html || { echo "::error::the deployed home page does not show build ${SHA:0:7}"; exit 1; }
+          # A new deployment's hostname can take a minute or two to answer (seen on 2026-10-26: > 60 s).
+          ok=""
+          for i in $(seq 1 24); do
+            if curl -fsS --max-time 15 "$URL/" -o home.html 2>/dev/null && grep -q "build ${SHA:0:7}" home.html; then ok=1; break; fi
+            sleep 10
+          done
+          [ -n "$ok" ] || { echo "::error::$URL does not show build ${SHA:0:7} after 4 minutes"; exit 1; }
           curl -fsS "$URL/versions/" -o /dev/null
           curl -fsS "$URL/progress/" -o /dev/null
           echo "Preview OK: $URL"
