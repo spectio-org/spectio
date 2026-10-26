@@ -1,0 +1,10 @@
+dl.k8s.io kubectl -> https://dl.k8s.io
+get.nextflow.io -> https://get.nextflow.io
+github release asset -> https://release-assets.githubusercontent.com
+ghcr.io/gsi-hpc/sind-node:latest blob -> https://pkg-containers.githubusercontent.com
+registry-1.docker.io/kindest/node:v1.34.0 blob -> https://production.cloudfront.docker.com
+quay.io/biocontainers/fastqc:0.12.1--hdfd78af_0 blob -> https://cdn01.quay.io
+registry.k8s.io/kueue/kueue:v0.15.0 blob -> 
+community.wave.seqera.io/library/fastqc:0.12.1--af7a5314d5015c29 blob -> 
+registry.k8s.io/kueue/kueue:v0.15.0 manifest -> https://us-east5-docker.pkg.dev (region varies; see LOG.md)
+community.wave.seqera.io token realm -> https://cerbero.seqera.io; blob -> https://community-cr-prod.seqera.io (see LOG.md)

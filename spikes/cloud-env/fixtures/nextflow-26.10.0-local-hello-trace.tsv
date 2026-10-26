@@ -1,0 +1,5 @@
+task_id	hash	native_id	name	status	exit	submit	duration	realtime	%cpu	peak_rss	peak_vmem	rchar	wchar
+2	d4/3e856c	23654	SAY (2)	COMPLETED	0	2026-10-26 21:35:28.325	141ms	15ms	23.5%	0	0	53.7 KB	223 B
+1	c7/19991c	23670	SAY (1)	COMPLETED	0	2026-10-26 21:35:28.351	170ms	11ms	57.1%	0	0	53.7 KB	225 B
+3	f7/152b50	23685	SAY (3)	COMPLETED	0	2026-10-26 21:35:28.370	155ms	14ms	25.0%	0	0	53.7 KB	222 B
+4	10/e9436a	23894	COLLECT	COMPLETED	0	2026-10-26 21:35:28.571	86ms	14ms	72.7%	0	0	62.6 KB	294 B

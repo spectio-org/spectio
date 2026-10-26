@@ -1,0 +1,19 @@
+✓ Docker Engine: 29.9.2 (>= 28.0)
+✓ Docker daemon: rootful, no userns-remap
+✓ Docker host: this machine (unix:///var/run/docker.sock)
+✗ cgroupv2: Docker runs containers on cgroup v1 (sind requires cgroupv2)
+! inotify: max_user_instances 128 (clusters of 10 or more nodes need 1024; optional)
+
+Boot with the unified cgroup hierarchy: add
+systemd.unified_cgroup_hierarchy=1 to the kernel command line (for GRUB,
+GRUB_CMDLINE_LINUX in /etc/default/grub), regenerate the boot loader
+configuration and reboot.
+
+Raise the limit now:
+
+sudo sysctl fs.inotify.max_user_instances=1024
+
+Keep it across reboots:
+
+echo fs.inotify.max_user_instances=1024 | sudo tee /etc/sysctl.d/99-sind.conf
+21:35:02.676 ERRO checks failed: cgroupv2

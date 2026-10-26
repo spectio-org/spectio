@@ -1,0 +1,5 @@
+flowchart LR
+  A[Preprocessing] --> G{QC gate}
+  G -->|approve| B[Quantification]
+  G -->|exclude| X[Excluded samples]
+  B --> C[Reporting]

@@ -1,0 +1,24 @@
+# Spike D2: smallest Compose project that proves a service network, a health check and a published port.
+name: spx-d2
+services:
+  web:
+    image: nginx:1.29-alpine
+    ports: ["20080:80"]
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1/"]
+      interval: 2s
+      retries: 10
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_PASSWORD: spike
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "postgres"]
+      interval: 2s
+      retries: 20
+  client:
+    image: alpine:3.22
+    depends_on:
+      web: {condition: service_healthy}
+      db: {condition: service_healthy}
+    command: ["sh", "-c", "wget -q -O- http://web/ | head -c 60; echo; echo client-ok"]

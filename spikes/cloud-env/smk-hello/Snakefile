@@ -1,0 +1,15 @@
+# Spike D2: smallest Snakemake workflow (fan-out, gather, rule resources for SLURM).
+NAMES = ["Bonjour", "Hello", "Hola"]
+
+rule all:
+    input: "results/all.txt"
+
+rule say:
+    output: "work/{name}.txt"
+    resources: mem_mb=100, runtime=1
+    shell: "echo '{wildcards.name} world' > {output}"
+
+rule collect:
+    input: expand("work/{name}.txt", name=NAMES)
+    output: "results/all.txt"
+    shell: "cat {input} | sort > {output}"
