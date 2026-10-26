@@ -1,0 +1,11 @@
+MULTIQC_MAPPINGS_CONFIG:
+  python: 3.9.5
+SRA_FASTQ_FTP:
+  wget: 1.25.0
+SRA_IDS_TO_RUNINFO:
+  python: 3.9.5
+SRA_RUNINFO_TO_FTP:
+  python: 3.9.5
+Workflow:
+    nf-core/fetchngs: v1.13.0
+    Nextflow: 26.04.6

@@ -1,0 +1,6 @@
+{
+ "pipeline": "nf-core/fetchngs",
+ "release": "1.13.0",
+ "commit": "955c892",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/fetchngs/results-955c892\u2026/"
+}
