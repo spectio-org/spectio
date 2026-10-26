@@ -32,9 +32,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: previews
-    env:
-      HAS_CF: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
     steps:
+      - name: Check the Cloudflare secrets (names only, never values)
+        id: cf
+        env:
+          T: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          missing=""
+          [ -n "$T" ] || missing="$missing CLOUDFLARE_API_TOKEN"
+          [ -n "$A" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          if [ -z "$missing" ]; then echo "has=true" >> "$GITHUB_OUTPUT"; echo "Cloudflare secrets: both present";
+          else echo "has=false" >> "$GITHUB_OUTPUT"; echo "::notice::Missing in environment 'previews' (or repository secrets):$missing"; fi
+
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v6
 
@@ -61,11 +71,11 @@ jobs:
         run: uvx --with mkdocs-material mkdocs build --strict -d site
 
       - name: Skip notice (no Cloudflare secrets yet)
-        if: env.HAS_CF != 'true'
+        if: steps.cf.outputs.has != 'true'
         run: echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set in the 'previews' environment; the site was built but not deployed."
 
       - name: Generate /versions from the deployments API
-        if: env.HAS_CF == 'true'
+        if: steps.cf.outputs.has == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -75,7 +85,7 @@ jobs:
 
       - name: Deploy to Cloudflare Pages
         id: deploy
-        if: env.HAS_CF == 'true'
+        if: steps.cf.outputs.has == 'true'
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -92,7 +102,7 @@ jobs:
           echo "alias_url=https://${{ steps.alias.outputs.alias }}.$CF_PROJECT.pages.dev" >> "$GITHUB_OUTPUT"
 
       - name: Verify the deployed preview
-        if: env.HAS_CF == 'true'
+        if: steps.cf.outputs.has == 'true'
         env:
           URL: ${{ steps.deploy.outputs.url }}
           SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -104,7 +114,7 @@ jobs:
           echo "Preview OK: $URL"
 
       - name: Comment the links on the PR
-        if: env.HAS_CF == 'true' && github.event_name == 'pull_request'
+        if: steps.cf.outputs.has == 'true' && github.event_name == 'pull_request'
         uses: actions/github-script@v7
         env:
           URL: ${{ steps.deploy.outputs.url }}
