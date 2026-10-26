@@ -54,7 +54,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
 
       <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
         <section style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
-          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap;"><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Stages</h2><span style="font-size: 12.5px; color: #4D5065;">from spectio.yml · lab overlay “rnaseq-embl” v2 · <a href="#" style="font-weight: 600; text-decoration: none;">view file</a></span></div>
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap;"><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Stages</h2><span style="font-size: 12.5px; color: #4D5065;">from spectio.yml · lab overlay “rnaseq-demo-lab” v2 · <a href="#" style="font-weight: 600; text-decoration: none;">view file</a></span></div>
           <sc-for list="{{stages}}" as="s" hint-placeholder-count="4">
             <div style="display: flex; gap: 14px; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; align-items: flex-start;">
               <span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px; background: {{s.tile}}; color: {{s.tileFg}}; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">{{s.n}}</span>
@@ -127,10 +127,10 @@ renderVals() {
     facts: [
       { k: 'Workflow', v: 'nf-core/rnaseq 3.27.0' },
       { k: 'Engine', v: 'Nextflow 25.10.4 · nf-core' },
-      { k: 'Environment', v: 'EMBL SLURM · htc' },
+      { k: 'Environment', v: 'demo-hpc SLURM · htc' },
       { k: 'Profile', v: 'singularity' },
-      { k: 'Launched', v: 'Thomas · in UI' },
-      { k: 'Work dir', v: '/scratch/tw/rnaseq-1025' }
+      { k: 'Launched', v: 'Alice · in UI' },
+      { k: 'Work dir', v: '/scratch/demo/amartin/rnaseq-1025' }
     ],
     tabs: tabNames.map((label, i) => ({ label, w: i === 0 ? 600 : 500, c: i === 0 ? '#4D368B' : '#4D5065', u: i === 0 ? 'inset 0 -2px 0 #7750D4' : 'none' })),
     stages: [

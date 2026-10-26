@@ -1,0 +1,316 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, whole slide tiles (brightfield IHC)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rsl:has(input[value="sum"]:checked) .pn-sum,
+.rsl:has(input[value="tiles"]:checked) .pn-tiles,
+.rsl:has(input[value="params"]:checked) .pn-params,
+.rsl:has(input[value="report"]:checked) .pn-report,
+.rsl:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.tile{aspect-ratio:94/114;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.chan{display:flex;align-items:center;gap:5px;height:26px;padding:0 8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / demo-lab/wsi-tissue-qc · slide 9798462" project="demo-lab / TLO atlas" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rsl" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">2 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; color: #6E7287;">Images: IDR idr0073 (OME-Zarr), whole slide 9798462 · tile metrics computed from the level-4 tiles</span>
+      <a href="ReviewContamination.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="Review.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stage 1 of 3 done, gate after stage 1 open"><path d="M90.02 94.24L4.17 94.24A96 96 0 0 1 47.10 19.89Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M100.00 88.48L57.07 14.13A96 96 0 0 1 142.93 14.13Z" fill="#DFE1EA"/><path d="M109.98 94.24L152.90 19.89A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Tile QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· slide 9798462 · #368</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="14" height="14" alt="Snakemake" style="display: block;">demo-lab/wsi-tissue-qc 0.2.0 · brightfield IHC (chromogen and counterstain [to be validated]) · 126 tiles · paused after rule <code style="font-family: 'JetBrains Mono', monospace;">tile_qc</code> (stage 1 of 3) · gate from the lab overlay · <strong style="color: #8F5806;">waiting 46 min</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span title="You · Alice Martin" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="Dmitri Novak" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">DN</span>
+        <span title="Bruno Keller · can view, cannot decide (project role: viewer)" style="width: 26px; height: 26px; border-radius: 13px; background: #F1F2F6; color: #6E7287; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center; box-shadow: inset 0 0 0 1px #DFE1EA;">BK</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · suggests</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvsl" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">3 to check</span></label>
+      <label class="rv-tab"><input type="radio" name="rvsl" value="tiles" checked aria-label="Tiles"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Tiles<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">{{flagLabel}}</span></label>
+      <label class="rv-tab"><input type="radio" name="rvsl" value="params" aria-label="Parameters"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg>Parameters<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">unchanged</span></label>
+      <label class="rv-tab"><input type="radio" name="rvsl" value="report" aria-label="Report"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Report<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">tile_qc.html</span></label>
+      <label class="rv-tab"><input type="radio" name="rvsl" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">5</span></label>
+    </div>
+
+    <!-- TILES: spatial grid for one whole slide -->
+    <section class="rv-pn pn-tiles" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <!-- slide overview made of the real tiles -->
+        <div style="flex: 0 1 430px; min-width: 360px; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px;"><img src="images/slide-idr0073-overview.webp" alt="Slide 9798462 overview, level 5" width="34" height="26" style="display: block; width: 34px; height: 26px; border-radius: 4px; object-fit: cover; box-shadow: 0 0 0 1px #DFE1EA;">Slide 9798462 · 14 × 9 tiles</h2><span style="font-size: 12px; color: #6E7287;">{{tissueCount}} with tissue · {{bgCount}} background</span></div>
+          <div role="grid" aria-label="Tile grid of slide 9798462, 14 columns by 9 rows" style="display: grid; grid-template-columns: 14px repeat(14, minmax(0, 1fr)); gap: 1px; align-items: center; background: #FFFFFF;">
+            <span></span>
+            <sc-for list="{{cols}}" as="c" hint-placeholder-count="14"><span style="font-size: 9.5px; color: #6E7287; text-align: center; padding-bottom: 2px;">{{c}}</span></sc-for>
+            <sc-for list="{{grid}}" as="t" hint-placeholder-count="135"><span class="{{t.cls}}" title="{{t.title}}" style="position: relative; overflow: hidden; color: {{t.fg}}; font-size: 9.5px; background: #F3F3F3;"><sc-if value="{{t.img}}" hint-placeholder-val="{{true}}"><img src="{{t.src}}" alt="{{t.title}}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: {{t.iop}};"></sc-if><span style="position: absolute; inset: 0; background: {{t.over}}; box-shadow: {{t.ring}};"></span><span style="position: relative; display: {{t.ishow}}; align-items: center; justify-content: center; width: 15px; height: 15px; border-radius: 8px; background: rgba(15,16,32,0.78);"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"/></svg></span><span style="position: relative;">{{t.t}}</span></span></sc-for>
+          </div>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: #33364A; padding-top: 4px; border-top: 1px solid #EEEFF5;">
+            <sc-for list="{{legend}}" as="l" hint-placeholder-count="7"><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 14px; height: 14px; border-radius: 3px; background: {{l.bg}}; box-shadow: {{l.ring}}; display: flex; align-items: center; justify-content: center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="{{l.ic}}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{l.icon}}"/></svg></span>{{l.t}}</span></sc-for>
+          </div>
+        </div>
+
+        <!-- image viewer: RGB as scanned, no channels -->
+        <div style="flex: 1 1 520px; min-width: 0; border-radius: 16px; background: #14162A; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; color: #E6E7EE;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <strong style="font-size: 13.5px; margin-right: 4px;">Tiles r4c6 · r4c7 · r5c6 · r5c7</strong>
+            <span class="chan" style="background: rgba(255,255,255,0.10); color: #C4C7D4; cursor: default;" title="Brightfield: one RGB image, no channel toggles">RGB as scanned</span>
+            <span style="flex-grow: 1;"></span>
+            <span role="switch" aria-checked="false" class="chan" style="background: transparent; color: #9A9EB0; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.18);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 4h16v16H4z M4 12h16"/></svg>Tissue mask</span>
+            <span role="switch" aria-checked="true" class="chan" style="background: rgba(255,255,255,0.18); color: #FFFFFF;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M4 4h16v16H4z"/></svg>Annotations</span>
+          </div>
+          <div style="position: relative; flex: 1 1 auto; min-height: 300px; border-radius: 10px; overflow: hidden; background: #F2F2F2;">
+            <img src="images/slide-idr0073-viewer.webp" alt="Level 1 crop of slide 9798462 around tiles r4c6 to r5c7: glands, stroma and two DAB-dense aggregates" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
+            <span style="position: absolute; left: 24%; top: 19%; width: 27%; height: 27%; border: 2px dashed #7750D4; border-radius: 10px;"></span>
+            <span style="position: absolute; left: 24%; top: calc(19% - 22px); font-size: 11px; font-weight: 600; color: #FFFFFF; background: #7750D4; padding: 2px 7px; border-radius: 6px;">DAB-dense aggregate · counted in stage 2</span>
+            <span style="position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px;"><span style="width: 28px; height: 28px; border-radius: 7px; background: rgba(15,16,32,0.7); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 700;">+</span><span style="width: 28px; height: 28px; border-radius: 7px; background: rgba(15,16,32,0.7); color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-weight: 700;">−</span></span>
+            <span style="position: absolute; left: 8px; bottom: 8px; font-size: 11px; color: #FFFFFF; background: rgba(15,16,32,0.75); padding: 3px 8px; border-radius: 6px;">level 1 · 1,024 × 1,024 px crop at x 4,096, y 3,072</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 11.5px; color: #C4C7D4;">
+            <span style="font-family: 'JetBrains Mono', monospace;">/data/demo/idr0073/9798462.zarr · results/tiles/9798462_tile_qc.tsv</span>
+            <span>streamed by the runner on demo-hpc</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <!-- distribution of tissue fraction -->
+        <div style="flex: 0 1 430px; min-width: 360px; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Tissue fraction per tile</h2><span style="font-size: 12px; color: #6E7287;">rule tissue_mask · 126 tiles</span></div>
+          <div role="img" aria-label="Histogram of tissue fraction per tile: 44 tiles below 10 percent are background, most tissue tiles are above 80 percent" style="position: relative; height: 138px;">
+            <div style="position: absolute; top: 0; height: 114px; left: 0; width: 10%; background: #F1F2F6; border-radius: 4px;"></div>
+            <div style="position: absolute; left: 0; right: 0; top: 18px; height: 96px; display: flex; align-items: flex-end; gap: 3px;">
+              <sc-for list="{{hist}}" as="b" hint-placeholder-count="10"><span title="{{b.title}}" style="flex: 1 1 0; height: {{b.h}}; background: {{b.fill}}; border-radius: 2px 2px 0 0; position: relative;"><span style="position: absolute; top: -15px; left: 0; right: 0; text-align: center; font-size: 10.5px; color: #4D5065;">{{b.n}}</span></span></sc-for>
+            </div>
+            <div style="position: absolute; left: 0; right: 0; top: 114px; height: 1px; background: #C4C7D4;"></div>
+            <span style="position: absolute; top: 0; height: 114px; left: 10%; border-left: 2px solid #7750D4;"></span>
+            <span style="position: absolute; top: 2px; left: calc(10% + 30px); font-size: 11px; font-weight: 600; color: #4D368B; white-space: nowrap;">min 10 % · below = background, skipped</span>
+            <sc-for list="{{ticks}}" as="k" hint-placeholder-count="6"><span style="position: absolute; top: 120px; left: {{k.x}}; transform: translateX({{k.tx}}); font-size: 11px; color: #6E7287; white-space: nowrap;">{{k.t}}</span></sc-for>
+          </div>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">Values here are computed from the 126 real level-4 tiles (grey &lt; 228 after a 2 px blur; DAB by colour deconvolution, Ruifrok–Johnston vectors). Debris on the glass (a fibre in r7c1, r4c12) sits in background tiles and is not reviewed. No pen marks found.</span>
+          <div style="display: flex; gap: 8px; align-items: flex-start; margin-top: 2px; border-radius: 10px; background: #FFFBF3; box-shadow: inset 0 0 0 1px #F6DDB0; padding: 8px 10px; font-size: 11.5px; line-height: 1.45; color: #33364A;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            <span><strong>Excluding a tile does not rescan it.</strong> Snakemake drops the tile from <code style="font-family: 'JetBrains Mono', monospace;">tiles.tsv</code> and <code style="font-family: 'JetBrains Mono', monospace;">detect_cells</code> runs on the rest. A rescan of the blurred region happens at the scanner, outside Spectio.</span>
+          </div>
+        </div>
+
+        <!-- flagged tiles & decisions -->
+        <div style="flex: 1 1 520px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 3px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Flagged tiles · {{flagCount}}</h2><span style="font-size: 12px; color: #6E7287;">keep · flag · exclude</span></div>
+          <sc-for list="{{flagged}}" as="f" hint-placeholder-count="10">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 2px 0 2px 8px; border-top: 1px solid #EEEFF5; box-shadow: inset 3px 0 0 {{f.rail}}; background: {{f.bg}};">
+              <img src="{{f.src}}" alt="" aria-hidden="true" style="width: 18px; height: 22px; border-radius: 3px; object-fit: cover; box-shadow: 0 0 0 1px #DFE1EA;">
+              <span style="width: 74px; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 12px;">{{f.id}}</span>
+              <span style="flex: 1 1 150px; min-width: 0; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden;"><span style="display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: {{f.wc}}; flex-shrink: 0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.icon}}"/></svg>{{f.why}}</span><span style="font-size: 11px; color: #4D5065; overflow: hidden; text-overflow: ellipsis;" title="{{f.metric}}">{{f.metric}}</span></span>
+              <span role="radiogroup" aria-label="Decision for {{f.id}}" style="display: flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px;"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><span style="padding: 2px 8px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for></span>
+              <span style="width: 104px; font-size: 11px; color: #4D5065; white-space: nowrap;">{{f.note}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">lab overlay · the workflow itself has no gate</span></div>
+          <sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
+              <span style="flex: 1 1 220px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span>
+              <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+              <span style="font-size: 12px; color: #4D5065; min-width: 150px; text-align: right;">{{c.where}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="flex: 2 1 260px; min-width: 0; border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in</span></div>
+          <sc-for list="{{health}}" as="h" hint-placeholder-count="4"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}};">{{h.v}}</span></div></sc-for>
+        </div>
+      </div>
+      <div style="border-radius: 16px; box-shadow: 0 0 0 1px #E6DCFC; background: #FBF9FF; padding: 14px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <span style="width: 28px; height: 28px; border-radius: 8px; background: #7750D4; color: #FFFFFF; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>
+        <span style="flex: 1 1 400px; font-size: 13px; line-height: 1.5;">QC agent suggests excluding r5c4 (smooth, striped patch: out of focus) and the five tiles crossed by the two dark lines (r7c11, r8c11, r9c11, r8c12, r9c12), and flagging r2c6 and r6c4 for dense DAB. It is not sure about r6c7.</span>
+        <button type="button" style="height: 34px; padding: 0 12px; border: none; border-radius: 10px; background: #7750D4; color: #FFFFFF; font: 600 12.5px 'Inter', sans-serif;">Apply suggestion</button>
+      </div>
+    </section>
+
+    <!-- PARAMETERS -->
+    <section class="rv-pn pn-params" style="flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Parameters for the next stages</h2>
+      <sc-for list="{{params}}" as="p" hint-placeholder-count="4">
+        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px;">
+          <code style="flex: 0 0 220px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 600;">{{p.k}}</code>
+          <span style="flex: 0 0 150px; font-size: 13px;">{{p.v}}</span>
+          <span style="flex: 1 1 260px; font-size: 12.5px; color: #4D5065;">{{p.scope}}</span>
+        </div>
+      </sc-for>
+      <span style="font-size: 12px; color: #6E7287;">Keys of the lab workflow's config.yaml (illustrative).</span>
+    </section>
+
+    <!-- REPORT -->
+    <section class="rv-pn pn-report" style="flex-direction: column; gap: 8px;">
+      <div role="img" aria-label="Tile QC report in a sandboxed frame (placeholder)" style="height: 420px; border-radius: 16px; box-shadow: inset 0 0 0 1px #DFE1EA; background: repeating-linear-gradient(135deg, #F7F7FB 0 14px, #F1F2F6 14px 28px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: #4D5065;"><strong style="color: #22253A;">results/report/9798462_tile_qc.html</strong><span>written by rule tile_qc · sandboxed frame · streamed by the runner</span></div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="5">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 340px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3 · 1 OPEN</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{changes}}" as="c" hint-placeholder-count="4"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}}; box-shadow: {{c.ring}};">{{c.t}}</span></sc-for></span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 230px;">
+        <span style="font-size: 11.5px; color: #4D5065; line-height: 1.35;">Stage 2 (detect_cells) on {{keptCount}} tiles, then stage 3</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #5A4FCF;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #8B5CF6;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #EC5F87;"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+    blur: 'M12 3a9 9 0 1 0 0 18z M12 3a9 9 0 0 1 0 18', fold: 'M4 19L10 5l4 9 6-9', stain: 'M12 3c4 5 6 8 6 11a6 6 0 0 1-12 0c0-3 2-6 6-11z',
+    edge: 'M3 6h18 M6 11h12', q: 'M9 9a3 3 0 1 1 4 2.8c-.7.3-1 1-1 1.7 M12 17h.01', info: 'M12 8h.01 M11 12h1v5h1' };
+  // Tissue fraction (%) and mean DAB optical density per tile, computed from images/slide-idr0073-r{r}c{c}.webp (level 4).
+  // Row 1 corrected for the scan-edge line (about 5 % of each tile).
+  const TF = [[0,0,0,0,1,6,39,56,69,14,1,1,0,0],[0,0,0,0,23,88,93,92,97,58,0,0,0,0],[0,0,0,43,84,90,87,76,95,96,16,0,0,0],[0,5,65,92,87,92,100,73,95,90,57,2,0,0],[29,69,75,98,90,99,99,100,94,81,73,38,2,0],[22,85,74,96,91,88,100,97,96,97,80,45,43,0],[0,27,79,90,81,98,99,99,94,97,93,75,93,12],[0,0,6,42,60,77,87,93,97,91,92,99,95,41],[0,0,0,0,0,6,22,24,21,7,28,59,46,7]];
+  const DAB = [[0.07,0.061,0.06,0.06,0.069,0.073,0.085,0.081,0.083,0.074,0.085,0.093,0.071,0.107],[0,0,0,0,0.069,0.125,0.073,0.056,0.069,0.064,0,0,0,0],[0,0,0,0.049,0.053,0.073,0.058,0.05,0.078,0.052,0.058,0,0,0],[0,0.062,0.047,0.043,0.043,0.066,0.094,0.085,0.073,0.055,0.046,0.053,0,0],[0.048,0.059,0.051,0.11,0.05,0.078,0.092,0.092,0.07,0.047,0.043,0.049,0.067,0],[0.049,0.047,0.042,0.114,0.062,0.084,0.09,0.069,0.05,0.048,0.046,0.054,0.076,0],[0,0.042,0.047,0.043,0.045,0.073,0.075,0.072,0.053,0.047,0.068,0.066,0.068,0.059],[0,0,0.06,0.047,0.041,0.035,0.037,0.043,0.045,0.046,0.072,0.073,0.057,0.052],[0,0,0,0,0,0.046,0.056,0.05,0.046,0.044,0.064,0.052,0.046,0.051]];
+  const R = 9, C = 14, MIN = 10;
+  // flags from looking at the tiles: [kind, why, metric, decision, note]
+  const F = {
+    r5c4:  ['blur',  'Out of focus', 'smooth, striped patch, about 40 % of the tile', 'Exclude', 'reason: blur'],
+    r7c11: ['fold',  'Fold / dark line', 'dark diagonal line through tissue', 'Exclude', 'reason: fold'],
+    r8c11: ['fold',  'Fold / dark line', 'same diagonal line', 'Exclude', 'reason: fold'],
+    r9c11: ['fold',  'Fold / dark line', 'line ends at the tissue edge', 'Exclude', 'reason: fold'],
+    r8c12: ['fold',  'Fold / dark line', 'dark vertical line through tissue', 'Exclude', 'reason: fold'],
+    r9c12: ['fold',  'Fold / dark line', 'same vertical line', 'Exclude', 'reason: fold'],
+    r6c7:  ['q',     'Focus unclear', 'pale, low-contrast centre: open at level 1', '', ''],
+    r2c6:  ['stain', 'Stain high', '', 'Flag', 'dense DAB, kept'],
+    r6c4:  ['stain', 'Stain high', '', 'Flag', 'dense DAB, kept'],
+    r1c8:  ['edge',  'Line at scan edge', 'along row 1, outside tissue · r1c7–r1c9', 'Keep', 'not in tissue']
+  };
+  // DAB OD over the 82 tissue tiles: median 0.056, 1.4826·MAD 0.016, so +3 MAD = 0.105
+  F.r2c6[2] = 'DAB OD 0.125 · slide median 0.056 · +3 MAD 0.105';
+  F.r6c4[2] = 'DAB OD 0.114 · above +3 MAD';
+  const inView = { r4c6: 1, r4c7: 1, r5c6: 1, r5c7: 1 };
+  const HATCH = 'repeating-linear-gradient(135deg, rgba(244,244,248,0.55) 0 3px, rgba(77,80,101,0.6) 3px 6px)';
+  const icon = k => I[k] || '';
+  const grid = [];
+  for (let r = 1; r <= R; r++) {
+    grid.push({ cls: '', img: false, t: String(r), title: '', over: 'transparent', ring: 'none', fg: '#6E7287', icon: '', ishow: 'none', src: '' });
+    for (let c = 1; c <= C; c++) {
+      const id = 'r' + r + 'c' + c, tf = TF[r - 1][c - 1];
+      const base = { cls: 'tile', img: true, src: 'images/slide-idr0073-' + id + '.webp', t: '', fg: '#FFFFFF', icon: '', ishow: 'none', iop: 1, over: 'transparent', ring: inView[id] ? 'inset 0 0 0 2px #7750D4' : 'none' };
+      const fk = id === 'r1c7' || id === 'r1c9' ? 'r1c8' : id;
+      const f = F[fk];
+      if (tf < MIN && !f) { grid.push({ ...base, title: id + ' · tissue ' + tf + ' % · background, skipped', iop: 0.32 }); continue; }
+      if (!f) { grid.push({ ...base, title: id + ' · tissue ' + tf + ' % · DAB ' + DAB[r - 1][c - 1] + ' · passes' }); continue; }
+      const dec = f[3];
+      const ring = dec === 'Exclude' ? 'inset 0 0 0 1.5px #33364A' : dec === 'Flag' ? 'inset 0 0 0 2.5px #F2B544' : dec === '' ? 'inset 0 0 0 2.5px #D9890B, inset 0 0 0 4px #FFFFFF' : 'inset 0 0 0 1.5px #9A9EB0';
+      grid.push({ ...base, title: id + ' · ' + f[1] + ' · ' + (dec || 'undecided'), over: dec === 'Exclude' ? HATCH : 'transparent', ring, icon: icon(f[0]), ishow: id === 'r1c7' || id === 'r1c9' ? 'none' : 'flex' });
+    }
+  }
+  // histogram: tissue fraction in bins of 10 %
+  const bins = Array(10).fill(0); TF.flat().forEach(v => bins[Math.min(9, Math.floor(v / 10))]++);
+  const mx = Math.max(...bins);
+  const hist = bins.map((v, i) => ({ n: v, h: (v / mx * 100).toFixed(1) + '%', fill: i === 0 ? '#B8BBC8' : '#8B5CF6', title: (i * 10) + '–' + (i * 10 + 10) + ' %: ' + v + ' tiles' }));
+  const opt = on => ['Keep', 'Flag', 'Exclude'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? '#B02A2A' : t === 'Flag' ? '#8F5806' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  const WC = { blur: '#B02A2A', fold: '#B02A2A', q: '#8F5806', stain: '#8F5806', edge: '#4D5065' };
+  const order = ['r6c7', 'r5c4', 'r7c11', 'r8c11', 'r9c11', 'r8c12', 'r9c12', 'r2c6', 'r6c4', 'r1c8'];
+  const flagged = order.map(k => { const f = F[k];
+    return { id: k === 'r1c8' ? 'r1c7–9' : k, src: 'images/slide-idr0073-' + k + '.webp', why: f[1], wc: WC[f[0]], icon: icon(f[0]), metric: f[2] + (f[0] === 'blur' || f[0] === 'fold' || f[0] === 'q' ? ' · tissue ' + TF[+k.split('c')[0].slice(1) - 1][+k.split('c')[1] - 1] + ' %' : ''),
+      opts: opt(f[3]), note: f[3] === '' ? 'undecided' : f[4], rail: f[3] === '' ? '#D9890B' : 'transparent', bg: f[3] === '' ? '#FFFBF3' : 'transparent' }; });
+  const tissueCount = TF.flat().filter(v => v >= MIN).length;
+  const excl = order.filter(k => F[k][3] === 'Exclude').length;
+  return {
+    flagCount: order.length, flagLabel: order.length + ' flagged', tissueCount, bgCount: R * C - tissueCount, keptCount: tissueCount - excl,
+    cols: Array.from({ length: C }, (_, i) => String(i + 1)),
+    grid, hist,
+    ticks: [0, 20, 40, 60, 80, 100].map(v => ({ x: v + '%', t: v + ' %', tx: v === 0 ? '0' : v === 100 ? '-100%' : '-50%' })),
+    legend: [
+      { t: 'Out of focus', bg: 'rgba(15,16,32,0.78)', ring: 'none', ic: '#FFFFFF', icon: I.blur }, { t: 'Fold', bg: 'rgba(15,16,32,0.78)', ring: 'none', ic: '#FFFFFF', icon: I.fold },
+      { t: 'Stain high', bg: 'rgba(15,16,32,0.78)', ring: 'none', ic: '#FFFFFF', icon: I.stain },
+      { t: 'Excluded', bg: 'repeating-linear-gradient(135deg, #F4F4F8 0 3px, #6E7287 3px 6px)', ring: 'none', ic: 'transparent', icon: '' },
+      { t: 'Flagged, kept', bg: '#F3F3F3', ring: 'inset 0 0 0 2px #F2B544', ic: 'transparent', icon: '' }, { t: 'Undecided', bg: '#F3F3F3', ring: 'inset 0 0 0 2px #D9890B', ic: 'transparent', icon: '' },
+      { t: 'In viewer', bg: '#F3F3F3', ring: 'inset 0 0 0 2px #7750D4', ic: 'transparent', icon: '' }, { t: 'Background', bg: 'rgba(184,187,200,0.35)', ring: 'none', ic: 'transparent', icon: '' }
+    ],
+    flagged,
+    checks: [
+      { name: 'Tissue detected', rule: '≥ 10 % tissue per tile · info', value: tissueCount + ' of 126', col: '#157A4B', icon: I.check, where: (R * C - tissueCount) + ' background tiles skipped' },
+      { name: 'In focus', rule: 'blurred area ≤ 20 % of tissue · block', value: '1 out · 1 unsure', col: '#B02A2A', icon: I.warn, where: 'r5c4 · r6c7' },
+      { name: 'Folds and pen marks', rule: 'dark linear artefacts · block', value: '5 folds · 0 pen', col: '#B02A2A', icon: I.warn, where: 'r7c11–r9c11 · r8c12–r9c12' },
+      { name: 'Stain intensity', rule: 'DAB OD median ± 3 MAD · warn', value: '2 high', col: '#8F5806', icon: I.warn, where: 'r2c6 · r6c4' }
+    ],
+    health: [
+      { k: 'Failed jobs', v: '0', fg: '#157A4B' }, { k: 'Retried jobs', v: '1 (tile_qc, memory)', fg: '#8F5806' },
+      { k: 'Stage 1 runtime', v: '6 min · SLURM', fg: '#22253A' }, { k: 'Peak memory', v: '3.1 of 8 GB', fg: '#22253A' }
+    ],
+    params: [
+      { k: 'tissue_min', v: '0.10', scope: 'Run-wide · unchanged' },
+      { k: 'focus_max_blurred', v: '0.20', scope: 'Run-wide · unchanged' },
+      { k: 'stain.dab_mad_k', v: '3', scope: 'Run-wide · unchanged' },
+      { k: 'detect_cells.channel', v: 'DAB (deconvolved)', scope: 'Stage 2 · unchanged' }
+    ],
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after rule tile_qc; Snakemake stopped with --until tile_qc. Gate from the lab overlay (spectio.yml), not from the workflow.', at: '13:02' },
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Tile checks written to results/tiles/9798462_tile_qc.tsv (126 tiles, 9 × 14 grid on level 4).', at: '13:06' },
+      { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', text: 'QC agent suggested excluding r5c4 and the five fold tiles, flagging r2c6 and r6c4; left r6c7 open.', at: '13:09' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin applied the suggestion and kept r1c7–r1c9 (the line is the scan edge, not tissue).', at: '13:41' },
+      { t: 'DN', bg: '#E6DCFC', fg: '#4D368B', text: 'Dmitri Novak: “r6c7 may be real tissue, I will open it at level 1 after lunch.”', at: '13:44' }
+    ],
+    changes: [
+      { t: excl + ' tiles excluded (blur, folds)', bg: '#F1F2F6', fg: '#33364A' },
+      { t: '2 tiles flagged (stain)', bg: '#FDF3E2', fg: '#8F5806' },
+      { t: 'tiles.tsv v2', bg: '#F6F2FE', fg: '#4D368B' },
+      { t: 'r6c7 undecided · kept by default', bg: '#FFFFFF', fg: '#8F5806', ring: 'inset 0 0 0 1px #F2B544' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

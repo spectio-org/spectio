@@ -64,8 +64,8 @@ renderVals() {
   const ok = ['Online', '#1F9D63', '#157A4B'], off = ['Offline', '#DC3B3B', '#B02A2A'], ph = ['Phase 2', '#C4C7D4', '#4D5065'];
   const env = (name, s, runner, facts, href, hasStorage) => ({ name, state: s[0], rail: s[1], fg: s[2], runner, facts, href, hasStorage });
   return { envs: [
-    env('EMBL SLURM · htc', ok, 'Runner on login01 · tweber · heartbeat 12 s ago', f('SLURM · htc, gpu', 'Lustre scratch · NFS results', '4 runs · 312 jobs queued'), 'Environments.dc.html', true),
-    env('EMBL SLURM · htc-2', off, 'Runner hpc-login-2 · last heartbeat 18 min ago', f('SLURM · htc', 'same as htc', '1 run waiting'), 'MRunnerOffline.dc.html', false),
+    env('demo-hpc SLURM · htc', ok, 'Runner on hpc-login-1 · amartin · heartbeat 12 s ago', f('SLURM · htc, gpu', 'Lustre scratch · NFS results', '4 runs · 312 jobs queued'), 'Environments.dc.html', true),
+    env('demo-hpc SLURM · htc-2', off, 'Runner hpc-login-2 · last heartbeat 18 min ago', f('SLURM · htc', 'same as htc', '1 run waiting'), 'MRunnerOffline.dc.html', false),
     env('Kubernetes · dev', ok, 'Runner as a Deployment · heartbeat 4 s ago', f('K8s · 64 vCPU quota', 's3://lab-dev', '1 run · 6 pods'), 'EnvKubernetes.dc.html', false),
     env('AWS Batch · burst', ph, 'Planned: GA4GH TES or native Batch', f('AWS Batch queues', 'S3', '—'), '#', false)
   ] };

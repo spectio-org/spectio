@@ -79,7 +79,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
 
         <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: #4D5065;">
           <span style="font-weight: 600; color: #33364A;">Sign-in</span>
-          <span class="chip" style="background: #E8F6EF; color: #157A4B;">OIDC · EMBL SSO</span>
+          <span class="chip" style="background: #E8F6EF; color: #157A4B;">OIDC · Demo SSO</span>
           <span class="chip" style="background: #E8F6EF; color: #157A4B;">OIDC · LS Login</span>
           <span class="chip" style="background: #EEF6FA; color: #1F536D;">SAML · Keycloak</span>
           <span class="chip" style="background: #FDF2E8; color: #9A4A12;">depictio tokens trusted</span>
@@ -116,8 +116,8 @@ a{color:#6344B2}a:hover{color:#4D368B}
             <summary>
               <svg class="chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
               <span class="av" style="background: #2F7FA8;">AS</span>
-              <span style="display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto;"><span style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><span style="font-weight: 600; font-size: 14px;">Anna Smith</span><span class="chip" style="background: #F7F7FB; color: #4D5065;">User</span></span><span style="font-size: 12.5px; color: #6E7287;">a.smith@lab.example</span></span>
-              <span class="chip" style="background: #E8F6EF; color: #157A4B;">OIDC · EMBL SSO</span>
+              <span style="display: flex; flex-direction: column; min-width: 0; flex: 1 1 auto;"><span style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><span style="font-weight: 600; font-size: 14px;">Anna Smith</span><span class="chip" style="background: #F7F7FB; color: #4D5065;">User</span></span><span style="font-size: 12.5px; color: #6E7287;">a.smith@example.org</span></span>
+              <span class="chip" style="background: #E8F6EF; color: #157A4B;">OIDC · Demo SSO</span>
               <span style="width: 110px; text-align: right; font-size: 12.5px; color: #4D5065; white-space: nowrap;">today 09:40</span>
             </summary>
             <div style="background: #FBFBFD; border-top: 1px solid #EEEFF5; padding-top: 12px;">
@@ -126,8 +126,8 @@ a{color:#6344B2}a:hover{color:#4D368B}
                 <div class="fact"><b>Registration date</b><span>12 Mar 2026</span></div>
                 <div class="fact"><b>Last login</b><span>today 09:40 · web</span></div>
                 <div class="fact"><b>Account status</b><span><span class="chip" style="background: #E8F6EF; color: #157A4B;">Active</span></span></div>
-                <div class="fact"><b>Verified</b><span>Yes · by EMBL SSO</span></div>
-                <div class="fact"><b>Linked identities</b><span>EMBL SSO, depictio</span></div>
+                <div class="fact"><b>Verified</b><span>Yes · by Demo SSO</span></div>
+                <div class="fact"><b>Linked identities</b><span>Demo SSO, depictio</span></div>
                 <div class="fact" style="grid-column: span 2;"><b>Groups</b><span style="display: flex; gap: 6px; flex-wrap: wrap;">
                   <span class="chip" style="background: #EEF6FA; color: #1F536D;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="group admin"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>rnaseq-core</span>
                   <span class="chip" style="background: #EEF6FA; color: #1F536D;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-label="P.I."><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/></svg>single-cell-club</span>
@@ -147,7 +147,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
                 <a href="#" class="btn btn-s btn-sm">Deactivate</a>
                 <a href="#" class="btn btn-d btn-sm" title="Asks you to type the email to confirm"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16 M9 7V4h6v3 M6 7l1 13h10l1-13"/></svg>Delete user</a>
               </div>
-              <div style="margin: 0 16px 14px 60px; padding: 9px 12px; border-radius: 10px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #EEEFF5; font-size: 12.5px; color: #4D5065;">Deactivating keeps her runs, decisions and audit entries, revokes her tokens and blocks sign-in. Deleting asks you to type <span class="mono">a.smith@lab.example</span> and reassigns her projects' ownership first.</div>
+              <div style="margin: 0 16px 14px 60px; padding: 9px 12px; border-radius: 10px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #EEEFF5; font-size: 12.5px; color: #4D5065;">Deactivating keeps her runs, decisions and audit entries, revokes her tokens and blocks sign-in. Deleting asks you to type <span class="mono">a.smith@example.org</span> and reassigns her projects' ownership first.</div>
             </div>
           </details>
 
@@ -178,7 +178,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
             <span style="display: flex; flex-direction: column; flex-grow: 1;"><span style="font-weight: 600; font-size: 15px;">Create user</span><span style="font-size: 12px; color: #6E7287;">Dialog · same fields as depictio, so one form serves both apps</span></span>
           </div>
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-            <label class="fld">Email<span class="inp">e.fischer@lab.example</span></label>
+            <label class="fld">Email<span class="inp">e.fischer@example.org</span></label>
             <label class="fld"><span>Display name <span style="font-weight: 500; color: #6E7287;">· optional</span></span><span class="inp">Eva Fischer</span></label>
             <label class="fld" style="grid-column: span 2;">Initial password
               <span style="display: flex; gap: 8px;"><span class="inp mono" style="flex-grow: 1; font-size: 13px; letter-spacing: 0.04em;">k7Rv2qXm9LpT4w</span><a href="#" class="btn btn-s btn-sm" style="height: 36px;">Generate another</a><a href="#" class="btn btn-s btn-sm" style="height: 36px;">Copy</a></span>
@@ -196,10 +196,10 @@ a{color:#6344B2}a:hover{color:#4D368B}
           <summary><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>CLI equivalent<span style="font-weight: 500; color: #6E7287; font-size: 12.5px;">same API, same permissions</span></summary>
           <pre class="term"><span class="c"># list people (other kinds: --kind service|agent|runner)</span>
 spectio user list --kind person --status active --json
-spectio user create e.fischer@lab.example --name "Eva Fischer" --must-change-password
-spectio user set-admin n.olsen@lab.example --on
-spectio user deactivate m.roth@lab.example --reason "left the lab"
-spectio token list --user a.smith@lab.example</pre>
+spectio user create e.fischer@example.org --name "Eva Fischer" --must-change-password
+spectio user set-admin n.olsen@example.org --on
+spectio user deactivate m.roth@example.org --reason "left the lab"
+spectio token list --user a.smith@example.org</pre>
         </details>
       </div>
     </div>
@@ -209,7 +209,7 @@ spectio token list --user a.smith@lab.example</pre>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
 class Component extends DCLogic {
 renderVals() {
-  const AUTH = { embl: ['OIDC · EMBL SSO', '#E8F6EF', '#157A4B'], ls: ['OIDC · LS Login', '#E8F6EF', '#157A4B'], saml: ['SAML · Keycloak', '#EEF6FA', '#1F536D'], dep: ['depictio', '#FDF2E8', '#9A4A12'], local: ['Local account', '#F1F2F6', '#33364A'] };
+  const AUTH = { sso: ['OIDC · Demo SSO', '#E8F6EF', '#157A4B'], ls: ['OIDC · LS Login', '#E8F6EF', '#157A4B'], saml: ['SAML · Keycloak', '#EEF6FA', '#1F536D'], dep: ['depictio', '#FDF2E8', '#9A4A12'], local: ['Local account', '#F1F2F6', '#33364A'] };
   const B = { you: ['You', '#F1F2F6', '#33364A'], admin: ['System admin', '#F6F2FE', '#4D368B'], user: ['User', '#F7F7FB', '#4D5065'], invited: ['Invited', '#FDF3E2', '#8F5806'], inactive: ['Inactive', '#FCEBEB', '#B02A2A'] };
   const u = (t, bg, name, email, badges, a, seen, id, reg, status, groupsTxt, extra = {}) => ({
     t, bg, name, email, seen, id, reg, status, groupsTxt,
@@ -217,13 +217,13 @@ renderVals() {
     auth: AUTH[a][0], abg: AUTH[a][1], afg: AUTH[a][2], op: extra.op ?? 1, mustChange: !!extra.mustChange
   });
   return {
-    first: [u('TW', '#8B5CF6', 'Thomas Weber', 't.weber@embl.de', ['you', 'admin'], 'embl', 'now', 'usr_01JAX2C8T0WB', '24 Oct 2026', 'Active', 'admin, rnaseq-core (admin), users')],
+    first: [u('AM', '#8B5CF6', 'Alice Martin', 'amartin@example.org', ['you', 'admin'], 'sso', 'now', 'usr_01JAX2C8T0AM', '24 Oct 2026', 'Active', 'admin, rnaseq-core (admin), users')],
     rest: [
-      u('LM', '#EC5F87', 'Luca Moretti', 'l.moretti@lab.example', ['user'], 'dep', 'today 08:12', 'usr_01JB4M1QZ8LM', '2 Apr 2026', 'Active', 'imaging-core (P.I.), users'),
-      u('NO', '#5A4FCF', 'Nora Olsen', 'n.olsen@lab.example', ['admin'], 'saml', '3 days ago', 'usr_01JB5N7KD2NO', '19 Apr 2026', 'Active', 'admin, microbiome-lab (admin), users'),
+      u('LM', '#EC5F87', 'Luca Moretti', 'l.moretti@example.org', ['user'], 'dep', 'today 08:12', 'usr_01JB4M1QZ8LM', '2 Apr 2026', 'Active', 'imaging-core (P.I.), users'),
+      u('NO', '#5A4FCF', 'Nora Olsen', 'n.olsen@example.org', ['admin'], 'saml', '3 days ago', 'usr_01JB5N7KD2NO', '19 Apr 2026', 'Active', 'admin, microbiome-lab (admin), users'),
       u('JD', '#1F9D63', 'Jo Dupont', 'j.dupont@partner.example', ['user'], 'ls', 'last week', 'usr_01JB8P3VC1JD', '3 Jun 2026', 'Active', 'clinical-genomics, users'),
-      u('KB', '#A54666', 'Kai Berg', 'k.berg@lab.example', ['user', 'invited'], 'local', 'never', 'usr_01JBC2X9R4KB', 'invited 21 Oct 2026', 'Invited · pending P.I. of rnaseq-core', 'rnaseq-core (pending P.I.)', { mustChange: true }),
-      u('MR', '#9A9EB0', 'Mia Roth', 'm.roth@lab.example', ['user', 'inactive'], 'embl', '2 months ago', 'usr_01JB2R6W0MR', '8 Feb 2026', 'Inactive since 1 Sep 2026', 'imaging-core', { op: 0.6 })
+      u('KB', '#A54666', 'Kai Berg', 'k.berg@example.org', ['user', 'invited'], 'local', 'never', 'usr_01JBC2X9R4KB', 'invited 21 Oct 2026', 'Invited · pending P.I. of rnaseq-core', 'rnaseq-core (pending P.I.)', { mustChange: true }),
+      u('MR', '#9A9EB0', 'Mia Roth', 'm.roth@example.org', ['user', 'inactive'], 'sso', '2 months ago', 'usr_01JB2R6W0MR', '8 Feb 2026', 'Inactive since 1 Sep 2026', 'imaging-core', { op: 0.6 })
     ]
   };
 }

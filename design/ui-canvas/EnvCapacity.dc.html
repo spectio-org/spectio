@@ -23,7 +23,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
-  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Environments / EMBL SLURM · htc / Capacity" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Environments / demo-hpc SLURM · htc / Capacity" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
   <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="environments" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
   <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
 
@@ -32,8 +32,8 @@ a{color:#6344B2}a:hover{color:#4D368B}
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.server}}"/></svg>
       </span>
       <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
-        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">EMBL SLURM · htc</h1>
-        <span style="font-size: 14px; color: #4D5065;">What the cluster can give you now, your limits, and whether the next launch fits. Seen as tweber, through the runner on login01.</span>
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">demo-hpc SLURM · htc</h1>
+        <span style="font-size: 14px; color: #4D5065;">What the cluster can give you now, your limits, and whether the next launch fits. Seen as amartin, through the runner on hpc-login-1.</span>
       </div>
       <span style="font-size: 13px; font-weight: 600; color: #157A4B; display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63;"></span>Runner online · Slurm 26.05</span>
     </div>
@@ -83,7 +83,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
         <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
           <span style="display: flex; align-items: center; gap: 10px;">
             <span class="tile" style="background: #F6F2FE; color: #6344B2;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.gauge}}"/></svg></span>
-            <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">My limits</h2><span style="font-size: 12px; color: #4D5065;">Association tweber · account rnaseq-core · QoS normal</span></span>
+            <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">My limits</h2><span style="font-size: 12px; color: #4D5065;">Association amartin · account rnaseq-core · QoS normal</span></span>
           </span>
           <sc-for list="{{limits}}" as="l" hint-placeholder-count="4">
             <span style="display: grid; grid-template-columns: 210px minmax(0, 1fr) 150px; gap: 12px; align-items: center; font-size: 12.5px;">
@@ -205,10 +205,10 @@ renderVals() {
       { k: 'Fairshare', src: 'sshare -U', pct: '42%', v: '0.42 ↓ below average', bar: '#D9890B', fg: '#8F5806' }
     ],
     quotas: [
-      row('Work dir · space', '/scratch/tweber/spectio · Lustre', 74, '37 / 50 TB', 70),
-      row('Work dir · files (inodes)', 'lfs quota -u tweber /scratch', 62, '6.2 M / 10 M', 80),
-      row('Results', '/g/lab/runs · NFS', 31, '6.1 / 20 TB', 80),
-      row('Container cache', '/scratch/tweber/sif', 8, '412 GB · LRU at 500 GB', 80)
+      row('Work dir · space', '/scratch/demo/amartin/spectio · Lustre', 74, '37 / 50 TB', 70),
+      row('Work dir · files (inodes)', 'lfs quota -u amartin /scratch', 62, '6.2 M / 10 M', 80),
+      row('Results', '/data/demo/results · NFS', 31, '6.1 / 20 TB', 80),
+      row('Container cache', '/scratch/demo/amartin/sif', 8, '412 GB · LRU at 500 GB', 80)
     ],
     resv: [
       { kind: 'Maintenance', when: 'Tue 28 Oct 2026, 06:00 – 18:00 · all nodes (maint_1028)', what: 'From now on, jobs whose time limit ends after 06:00 Tue will not start until the window is over (Slurm reason: ReqNodeNotAvail, Reserved for maintenance).', in: 'in 2 d 9 h', bg: '#FDF8EE', fg: '#8F5806' },
@@ -220,8 +220,8 @@ renderVals() {
       chk('warn', 'Work dir quota', '+4.8 TB estimated from 48 samples × last run → 84 % of 50 TB', '74 → 84 %'),
       chk('warn', 'Maintenance in 2 d 9 h', 'Estimated runtime 14 h fits; jobs asking > 57 h will wait until after the window', 'fits'),
       chk('ok', 'Limits', '≈ 900 tasks peak, 500 running at a time (MaxJobs) · Nextflow queueSize 400', 'ok'),
-      chk('ok', 'Containers', '31 / 31 images already in the cache (/scratch/tweber/sif)', 'cached'),
-      chk('ok', 'Inputs readable', '96 FASTQ files on /g/lab/fastq · checked as tweber', 'ok')
+      chk('ok', 'Containers', '31 / 31 images already in the cache (/scratch/demo/amartin/sif)', 'cached'),
+      chk('ok', 'Inputs readable', '96 FASTQ files on /data/demo/fastq · checked as amartin', 'ok')
     ],
     k8s: [
       { k: 'ResourceQuota', v: 'cpu 112 / 256 · memory 410 / 1024 Gi · pods 140 / 500' },

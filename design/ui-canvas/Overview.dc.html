@@ -17,17 +17,17 @@ a{color:#6344B2}a:hover{color:#4D368B}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
-  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Overview" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Overview" project="demo-lab · all projects" hint-size="100%,76px"></dc-import></div>
   <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="overview" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
-    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 20px;">
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
 
       <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
         <span style="width: 48px; height: 48px; border-radius: 15px; background: #F2F1FB; color: #423B97; display: flex; align-items: center; justify-content: center;">
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>
         </span>
         <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
-          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Good morning, Thomas</h1>
-          <span style="font-size: 14px; color: #4D5065;">3 decisions are waiting for you · 4 runs active on 2 clusters</span>
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Good morning</h1>
+          <span style="font-size: 14px; color: #4D5065;">8 decisions are waiting for you · 11 runs active on demo-hpc and k8s-dev · most runs need no decision at all</span>
         </div>
         <a href="Launch.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center;">Launch a run</a>
       </div>
@@ -36,11 +36,11 @@ a{color:#6344B2}a:hover{color:#4D368B}
         <sc-for list="{{attention}}" as="a" hint-placeholder-count="3">
           <a href="{{a.href}}" style="text-decoration: none; color: inherit; border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 10px 28px -20px rgba(15,16,32,0.2); overflow: hidden; display: flex;">
             <span style="width: 5px; background: {{a.color}};"></span>
-            <span style="padding: 16px 18px; display: flex; flex-direction: column; gap: 6px; flex-grow: 1;">
+            <span style="padding: 12px 18px; display: flex; flex-direction: column; gap: 4px; flex-grow: 1;">
               <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: {{a.fg}};">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{a.icon}}"/></svg>{{a.kind}}
               </span>
-              <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 30px;">{{a.value}}</span>
+              <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px; line-height: 1.1;">{{a.value}}</span>
               <span style="font-size: 13px; color: #4D5065;">{{a.detail}}</span>
             </span>
           </a>
@@ -48,27 +48,47 @@ a{color:#6344B2}a:hover{color:#4D368B}
       </section>
 
       <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
-        <section style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+        <section style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
           <div style="display: flex; align-items: center; justify-content: space-between;">
+            <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Waiting for you <span style="font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 500; color: #4D5065;">· 5 of 8 shown</span></h2>
+            <a href="ReviewQueue.dc.html" style="font-size: 13px; font-weight: 600; text-decoration: none;">All 27 in Review →</a>
+          </div>
+          <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <sc-for list="{{mine}}" as="m" hint-placeholder-count="5">
+              <a href="{{m.href}}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px; padding: 8px 14px 8px 16px; border-top: {{m.bt}}; box-shadow: inset 4px 0 0 #D9890B;">
+                <img src="{{m.logo}}" width="18" height="18" alt="{{m.engine}}" title="{{m.engine}}" style="display: block; object-fit: contain; flex-shrink: 0;">
+                <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
+                  <span style="font-size: 13.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{m.gate}} <span style="font-weight: 500; color: #4D5065;">· {{m.run}}</span></span>
+                  <span style="font-size: 12px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{m.wf}} · {{m.items}}</span>
+                </span>
+                <span style="flex: 0 0 200px; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px;">
+                  <span style="font-size: 12.5px; font-weight: 600; color: {{m.cfg}}; white-space: nowrap;">{{m.checks}}</span>
+                  <span style="font-size: 11.5px; color: #6E7287; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px;">{{m.flag}}</span>
+                </span>
+                <span style="flex: 0 0 62px; text-align: right; font-size: 12.5px; font-weight: 600; color: {{m.wfg}};">{{m.wait}}</span>
+              </a>
+            </sc-for>
+          </div>
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px;">
             <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Active runs</h2>
             <a href="RunsTable.dc.html" style="font-size: 13px; font-weight: 600; text-decoration: none;">All runs →</a>
           </div>
           <sc-for list="{{runs}}" as="r" hint-placeholder-count="4">
-            <a href="RunDetail.dc.html" style="text-decoration: none; color: inherit; display: flex; align-items: stretch; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <a href="{{r.href}}" style="text-decoration: none; color: inherit; display: flex; align-items: stretch; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
               <span style="width: 4px; background: {{r.rail}};"></span>
-              <span style="display: flex; align-items: center; gap: 14px; padding: 12px 14px; flex-grow: 1; min-width: 0;">
+              <span style="display: flex; align-items: center; gap: 14px; padding: 8px 14px; flex-grow: 1; min-width: 0;">
                 <svg width="52" height="26" viewBox="0 0 200 100" role="img" aria-label="{{r.gaugeLabel}}">
                   <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="{{r.f0}}" stroke="{{r.s0}}" stroke-width="{{r.w0}}"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="{{r.f1}}" stroke="{{r.s1}}" stroke-width="{{r.w1}}"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="{{r.f2}}" stroke="{{r.s2}}" stroke-width="{{r.w2}}"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="{{r.f3}}" stroke="{{r.s3}}" stroke-width="{{r.w3}}"/>
                 </svg>
                 <span style="display: flex; flex-direction: column; min-width: 0; flex-grow: 1;">
                   <span style="font-size: 14.5px; font-weight: 600;">{{r.name}}</span>
-                  <span style="font-size: 12.5px; color: #4D5065;">{{r.wf}} · {{r.env}}</span>
+                  <span style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.wf}} · {{r.env}} · <span style="color: {{r.gfg}};">{{r.gates}}</span></span>
                 </span>
                 <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 2px;">
                   <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: {{r.fg}};">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"/></svg>{{r.state}}
                   </span>
-                  <span style="font-size: 12px; color: #4D5065;">{{r.ctx}}</span>
+                  <span style="font-size: 12px; color: #4D5065; white-space: nowrap;">{{r.ctx}}</span>
                 </span>
               </span>
             </a>
@@ -79,20 +99,33 @@ a{color:#6344B2}a:hover{color:#4D368B}
               <a href="Launch.dc.html" style="text-decoration: none; font-size: 13px; color: #22253A; border: 1px solid #DFE1EA; border-radius: 10px; padding: 7px 11px;">{{q}}</a>
             </sc-for>
           </div>
+          <p style="margin: 4px 0 0; font-size: 11.5px; color: #6E7287;">Data: gate items, flags and failures from nf-core AWS megatests (rnaseq 3.27.0 results-a1fcddd, mag 5.4.2, chipseq 2.1.0, scrnaseq 4.2.0, sarek 3.10.0, viralrecon 2.6.0) and IDR idr0001 (plate); † illustrative; run names, people, run counts per kind are fixture data.</p>
         </section>
 
-        <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
-          <section style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+        <aside style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+          <section style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px; display: flex; flex-direction: column; gap: 8px;">
             <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Environments</h2>
             <sc-for list="{{envs}}" as="e" hint-placeholder-count="4">
               <div style="display: flex; align-items: center; gap: 10px; font-size: 13px;">
-                <span style="width: 9px; height: 9px; border-radius: 5px; background: {{e.dot}};"></span>
-                <span style="flex-grow: 1; font-weight: 500;">{{e.name}}</span>
-                <span style="color: #4D5065;">{{e.detail}}</span>
+                <span style="width: 9px; height: 9px; flex-shrink: 0; border-radius: 5px; background: {{e.dot}};"></span>
+                <span style="flex-grow: 1; font-weight: 500; white-space: nowrap;">{{e.name}}</span>
+                <span style="color: #4D5065; white-space: nowrap;">{{e.detail}}</span>
               </div>
             </sc-for>
           </section>
-          <section style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;">
+          <section style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Last 7 days by item kind</h2>
+            <span style="font-size: 12.5px; color: #4D5065;">214 runs · <strong style="font-weight: 600; color: #22253A;">173 with no gate</strong> (81 %) · 41 stopped at a gate</span>
+            <sc-for list="{{kindmix}}" as="km" hint-placeholder-count="8">
+              <div style="display: grid; grid-template-columns: 112px minmax(0, 1fr) 30px; align-items: center; gap: 8px; font-size: 12.5px;">
+                <span style="color: #33364A; white-space: nowrap;">{{km.k}}</span>
+                <span role="img" aria-label="{{km.label}}" style="display: flex; height: 9px; border-radius: 4px; overflow: hidden; background: #F7F7FB;"><span style="width: {{km.wNo}}; background: #A39CE4;"></span><span style="width: {{km.wGate}}; background: #D9890B;"></span></span>
+                <span style="text-align: right; font-weight: 600; color: #22253A;">{{km.n}}</span>
+              </div>
+            </sc-for>
+            <span style="display: flex; gap: 14px; font-size: 11.5px; color: #4D5065;"><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2px; background: #A39CE4;"></span>no gate, ran straight through</span><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 2px; background: #D9890B;"></span>stopped at a gate</span></span>
+          </section>
+          <section style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px; display: flex; flex-direction: column; gap: 10px;">
             <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Recent activity</h2>
             <sc-for list="{{activity}}" as="ev" hint-placeholder-count="5">
               <div style="display: flex; gap: 10px; font-size: 13px; line-height: 1.45;">
@@ -106,36 +139,57 @@ a{color:#6344B2}a:hover{color:#4D368B}
     </main>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
 class Component extends DCLogic {
 renderVals() {
   const I = { flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5', cross: 'M6 6l12 12 M18 6L6 18', play: 'M8 5v14l11-7z', plug: 'M9 7V3 M15 7V3 M6 7h12v4a6 6 0 0 1-12 0z M12 17v4', clock: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0' };
   const B = ['#5A4FCF','#8B5CF6','#EC5F87','#F9A947'], T = ['#A39CE4','#BEA4FA','#F4A5BC','#FCCF98'], off = '#DFE1EA';
   const gauge = (spec) => { const o = {}; spec.forEach((s, i) => { let f = off, st = 'none', w = 0; if (s === 'd') f = B[i]; if (s === 'r') f = T[i]; if (s === 'g') { f = '#FDF3E2'; st = '#D9890B'; w = 9; } if (s === 'x') f = '#DC3B3B'; o['f'+i] = f; o['s'+i] = st; o['w'+i] = w; }); return o; };
+  const L = { nfcore: ['nf-core (Nextflow)', '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'], smk: ['Snakemake', '/_blob/7a35665829f51132cb3bcb9a4c3e638c'] };
+  const GT = { none: ['no gate', '#6E7287'], det: ['detected stages, no gate', '#6E7287'], ov: ['lab overlay gate', '#8F5806'], yml: ['spectio.yml gate', '#8F5806'] };
+  const run = (name, wf, env, st, ctx, spec, gt, href) => {
+    const S = { running: ['Running', '#3B82F6', '#1D5FC9', I.play], queued: ['Queued', '#6E7287', '#33364A', I.clock] }[st];
+    return { name, wf, env, state: S[0], rail: S[1], fg: S[2], icon: S[3], ctx, gates: GT[gt][0], gfg: GT[gt][1], gaugeLabel: ctx + ', ' + GT[gt][0], href: href || 'RunDetail.dc.html', ...gauge(spec) };
+  };
+  const gate = (gate, run, eng, wf, items, checks, flag, wait, href, warn) => ({ gate, run, engine: L[eng][0], logo: L[eng][1], wf, items, checks, flag, wait, href, cfg: warn === 2 ? '#B02A2A' : warn ? '#8F5806' : '#157A4B', wfg: /h/.test(wait) ? '#8F5806' : '#33364A' });
+  const mine = [
+    gate('Peak QC with inputs', 'foxa1-ezh2', 'nfcore', 'nf-core/chipseq 2.1.0', '8 ChIP + 8 inputs', '15 / 16 pass · 1 flagged', 'EZH2_IP_TKO_REP2 · below the FRiP minimum', '2 h 10', 'ReviewChip.dc.html', 2),
+    gate('Mapping QC', 'rnaseq-full-a1fcddd', 'nfcore', 'nf-core/rnaseq 3.27.0', '8 samples', '6 / 8 pass · 2 flagged', 'K562_REP1 · PERCENT_DUPLICATION 86.3', '1 h 12', 'ReviewReport.dc.html', 1),
+    gate('Bin QC', 'soil-meta-12', 'nfcore', 'nf-core/mag 5.4.2', '3 samples · 426 bins', '192 / 426 pass · 234 flagged', 'below MIMAG medium · CheckM2 †', '35 min', 'ReviewCandidates.dc.html', 2),
+    gate('Cell QC', 'scrna-pbmc', 'nfcore', 'nf-core/scrnaseq 4.2.0', '3 samples · 17,283 cells', '2 / 3 pass · 1 flagged', 'donor3_pbmc · 388 cells kept (min 500)', '22 min', 'ReviewCells.dc.html', 2),
+    gate('Plate QC', 'JL_120731_S6A', 'smk', 'plate-qc 0.3.1', '96 wells', '91 / 96 pass · 5 flagged', 'G3 · bright streak', '22 min', 'ReviewWells.dc.html', 2)
+  ].map((m, i) => ({ ...m, bt: i ? '1px solid #EEEFF5' : 'none' }));
+  const mixRaw = [['Samples', 128, 24], ['Variants', 19, 5], ['Assemblies, taxa', 17, 4], ['Cells, clones', 11, 2], ['Images', 21, 4], ['MS runs', 4, 1], ['Predictions', 6, 1], ['Utilities', 8, 0]];
+  const max = 128;
+  const mix = mixRaw.map(([k, n, gte]) => ({ k, n, label: `${k}: ${n} runs, ${gte} stopped at a gate`, wNo: (100 * (n - gte) / max).toFixed(1) + '%', wGate: (100 * gte / max).toFixed(1) + '%' }));
   return {
     attention: [
-      { kind: 'Awaiting review', value: '3', detail: 'Oldest: imaging-cellpose, 47 min', color: '#D9890B', fg: '#8F5806', icon: I.flag, href: 'Review.dc.html' },
-      { kind: 'Failed · last 24 h', value: '2', detail: 'Both resumable from the last stage', color: '#DC3B3B', fg: '#B02A2A', icon: I.cross, href: 'RunsTable.dc.html' },
-      { kind: 'Runner offline', value: '1', detail: 'hpc-login-2 · last seen 18 min ago', color: '#6E7287', fg: '#33364A', icon: I.plug, href: 'RunnerOffline.dc.html' }
+      { kind: 'Awaiting review', value: '27', detail: '8 for you · oldest pf-kinases-1200, 6 h 20', color: '#D9890B', fg: '#8F5806', icon: I.flag, href: 'ReviewQueue.dc.html' },
+      { kind: 'Failed · last 24 h', value: '2', detail: 'sarek-wgs-na12878, rnaseq-3.27-validation · both resumable', color: '#DC3B3B', fg: '#B02A2A', icon: I.cross, href: 'RunsRows.dc.html' },
+      { kind: 'Runner offline', value: '1', detail: 'hpc-login-2 · last seen 18 min ago · 2 runs cannot be steered', color: '#6E7287', fg: '#33364A', icon: I.plug, href: 'RunnerOffline.dc.html' }
     ],
+    mine, kindmix: mix,
     runs: [
-      { name: 'imaging-cellpose', wf: 'cellpose-segmentation 1.4', env: 'EMBL SLURM', state: 'Awaiting review', ctx: 'gate after stage 2 · 47 min', rail: '#D9890B', fg: '#8F5806', icon: I.flag, gaugeLabel: 'Stage 2 of 4 awaiting review', ...gauge(['d','g','t','t']) },
-      { name: 'rnaseq-2026-10-25', wf: 'nf-core/rnaseq 3.27.0', env: 'EMBL SLURM', state: 'Running', ctx: 'stage 3 of 4 · 812 / 1,248 tasks', rail: '#3B82F6', fg: '#1D5FC9', icon: I.play, gaugeLabel: 'Stage 3 of 4 running', ...gauge(['d','d','r','t']) },
-      { name: 'scrna-pbmc', wf: 'nf-core/scrnaseq 4.1.0', env: 'Kubernetes · dev', state: 'Running', ctx: 'stage 1 of 4 · 8 min', rail: '#3B82F6', fg: '#1D5FC9', icon: I.play, gaugeLabel: 'Stage 1 of 4 running', ...gauge(['r','t','t','t']) },
-      { name: 'atac-batch-08', wf: 'snakemake ATAC 2.1', env: 'Laptop (local)', state: 'Queued', ctx: 'waiting for runner · 2 min', rail: '#6E7287', fg: '#33364A', icon: I.clock, gaugeLabel: 'Not started', ...gauge(['t','t','t','t']) }
+      run('rnaseq-2026-10-25', 'nf-core/rnaseq 3.27.0', 'demo-hpc', 'running', 'stage 3 of 4 · 812 / 1,248 tasks', ['d','d','r','t'], 'ov'),
+      run('demux-NX-1026', 'nf-core/demultiplex 1.8.0', 'demo-hpc', 'running', 'quarter 3 · 68 % tasks', ['d','d','r','t'], 'none'),
+      run('ki-screen-p05', 'plate-qc 1.4.0 · batch 5 / 12', 'demo-hpc', 'running', 'stage 2 of 4', ['d','r','t','t'], 'yml', 'LaunchBatch.dc.html'),
+      run('sharp_lovelace', 'nf-core/rnaseq 3.27.0 · CLI', 'demo-hpc', 'running', '442 / 881 known tasks', ['d','r','r','t'], 'det', 'RunObserved.dc.html'),
+      run('cutrun-h3k27me3-05', 'nf-core/cutandrun 3.2.2', 'k8s-dev', 'running', 'quarter 2 · 41 % tasks', ['d','r','t','t'], 'none'),
+      run('nanoseq-cdna-02', 'nf-core/nanoseq 3.1.0', 'demo-hpc gpu', 'queued', 'gpu partition · position 3', ['t','t','t','t'], 'none')
     ],
-    quick: ['nf-core/rnaseq', 'cellpose-segmentation', 'snakemake ATAC', 'nf-core/sarek'],
+    quick: ['nf-core/rnaseq', 'nf-core/sarek', 'nf-core/fetchngs', 'nf-core/scrnaseq', 'plate-qc'],
     envs: [
-      { name: 'EMBL SLURM · hpc-login-1', detail: '2 runs · 14 jobs queued', dot: '#1F9D63' },
-      { name: 'EMBL SLURM · hpc-login-2', detail: 'offline 18 min', dot: '#DC3B3B' },
-      { name: 'Kubernetes · dev', detail: '1 run · 6 pods', dot: '#1F9D63' },
+      { name: 'hpc-login-1 (SLURM)', detail: '8 runs · 412 jobs queued', dot: '#1F9D63' },
+      { name: 'hpc-login-2 (SLURM)', detail: 'offline 18 min', dot: '#DC3B3B' },
+      { name: 'gpu partition', detail: '1 queued · 0 / 4 GPUs free', dot: '#D9890B' },
+      { name: 'k8s-dev', detail: '1 run · 6 pods', dot: '#1F9D63' },
       { name: 'Laptop (local)', detail: 'idle', dot: '#1F9D63' }
     ],
     activity: [
-      { who: 'AI', actor: 'QC agent', text: 'proposed "approve, exclude 3 fields" on imaging-cellpose', when: '9 min ago', tile: '#F6F2FE', ink: '#6344B2' },
-      { who: 'TW', actor: 'Thomas', text: 'reran stage 2 of atac-batch-07 with min_peak_q = 0.01', when: '1 h ago', tile: '#F2F1FB', ink: '#423B97' },
-      { who: 'SYS', actor: 'Plate reader', text: 'signalled "plate 12 imaged" for imaging-cellpose', when: '2 h ago', tile: '#FFF8F0', ink: '#845C34' },
-      { who: 'CLI', actor: 'Observed run', text: 'variant-calling-wgs started from the command line', when: '3 h ago', tile: '#F7F7FB', ink: '#33364A' }
+      { who: 'AI', actor: 'QC agent', text: 'proposed "exclude 2 samples" on sars2-wk12 (SAMPLE_23, SAMPLE_39: consensus 100 % N)', when: '9 min ago', tile: '#F6F2FE', ink: '#6344B2' },
+      { who: 'CD', actor: 'Chloé Diallo', text: 'approved Mapping QC on organoids-rnaseq-06; the run went on to stage 3', when: '40 min ago', tile: '#F2F1FB', ink: '#423B97' },
+      { who: 'API', actor: 'Sequencer hook', text: 'launched demux-NX-1026 (nf-core/demultiplex 1.8.0)', when: '49 min ago', tile: '#EEF4FE', ink: '#1D5FC9' },
+      { who: 'CLI', actor: 'Observed run', text: 'sharp_lovelace started from the command line on hpc-login-1', when: '2 h ago', tile: '#F7F7FB', ink: '#33364A' }
     ]
   };
 }

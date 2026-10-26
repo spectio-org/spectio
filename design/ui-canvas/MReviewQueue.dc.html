@@ -17,7 +17,7 @@ main > *{flex-shrink:0}
 </style>
 </helmet>
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
-  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Review" sub="12 waiting · oldest 2 h 10" hint-size="390px,60px"></dc-import></div>
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Review" sub="27 waiting · 8 for you" hint-size="390px,60px"></dc-import></div>
   <main style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 172px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
     <div role="tablist" aria-label="Review scope" style="display: flex; padding: 4px; border-radius: 16px; background: #EEEFF5;">
       <sc-for list="{{scopes}}" as="s" hint-placeholder-count="3">
@@ -68,12 +68,12 @@ renderVals() {
       bbg: ready ? '#ECF8F1' : '#FFFFFF', bfg: ready ? '#0E5A37' : '#22253A', bring: ready ? 'inset 0 0 0 1px #9FD9BA' : 'inset 0 0 0 1px #DFE1EA' };
   };
   return {
-    scopes: [scope('Mine', '5', true), scope('My groups', '4'), scope('All', '12')],
+    scopes: [scope('Mine', '8', true), scope('My groups', '16'), scope('All', '27')],
     cards: [
       card('Segmentation QC', 'imaging-cellpose · plate 07', 'smk', 9, 1, 2, 'ai', 'adjust diameter', '47 min'),
       card('Segmentation QC', 'imaging-cellpose · plate 08', 'smk', 12, 0, 0, 'ai', 'approve', '41 min'),
       card('Segmentation QC', 'imaging-cellpose · plate 09', 'smk', 12, 0, 0, 'ai', 'approve', '38 min'),
-      card('Coverage check', 'sarek-trio-02', 'nfcore', 8, 1, 3, 'bot', 'new data tomorrow', '2 h 10'),
+      card('Coverage check', 'sarek-trio-02', 'nfcore', 2, 0, 1, 'bot', 'new data tomorrow', '22 min'),
       card('Mapping QC', 'rnaseq-liver-tc-04', 'nfcore', 12, 0, 0, 'ai', 'approve', '22 min'),
       card('Library QC', 'proteomics-dia-11', 'nfcore', 6, 2, 0, 'bot', 'signal pending', '6 min')
     ]

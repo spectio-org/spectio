@@ -99,7 +99,7 @@ input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C
                     </tbody>
                   </table>
                 </div>
-                <span style="font-size: 12px; color: #B02A2A;">ctrl_3 · lane2 · fq2 not found on /g/lab/fastq/2026-10. Fix the path, then Recheck (checks also run before launch).</span>
+                <span style="font-size: 12px; color: #B02A2A;">ctrl_3 · lane2 · fq2 not found on /data/demo/fastq/2026-10. Fix the path, then Recheck (checks also run before launch).</span>
               </div>
             </div>
           </details>
@@ -257,7 +257,7 @@ renderVals() {
       { name: 'params.star', n: 'no UI hints · raw key', state: 'string · empty', icon: ic.code, font: mono, fg: '#8F5806', fields: [{ k: 'params.star', v: '', h: 'No label or help in the schema: add one in the ui: block of spectio.yml', font: mono }] }
     ],
     side: [
-      { k: 'Environment', v: 'EMBL SLURM · htc (runner online)', icon: ic.server },
+      { k: 'Environment', v: 'demo-hpc SLURM · htc (runner online)', icon: ic.server },
       { k: 'Software', v: 'conda + Apptainer · 9 envs cached', icon: ic.box },
       { k: 'Gates', v: '1 gate after alignment (spectio.yml)', icon: ic.flag }
     ]

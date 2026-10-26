@@ -23,10 +23,10 @@ a{color:#6344B2}a:hover{color:#4D368B}
     <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
 
       <section style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 18px 20px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
-        <span style="width: 64px; height: 64px; border-radius: 32px; background: #8B5CF6; color: #FFFFFF; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px; display: flex; align-items: center; justify-content: center;">TW</span>
+        <span style="width: 64px; height: 64px; border-radius: 32px; background: #8B5CF6; color: #FFFFFF; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px; display: flex; align-items: center; justify-content: center;">AM</span>
         <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 240px;">
-          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Thomas Weber</h1>
-          <span style="font-size: 14px; color: #4D5065;">t.weber@lab.example · Administrator · member since 3 Oct 2026</span>
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Alice Martin</h1>
+          <span style="font-size: 14px; color: #4D5065;">amartin@example.org · Administrator · member since 3 Oct 2026</span>
         </div>
         <div style="display: flex; gap: 22px;">
           <sc-for list="{{stats}}" as="s" hint-placeholder-count="3">
@@ -69,11 +69,11 @@ a{color:#6344B2}a:hover{color:#4D368B}
               <div style="display: flex; flex-direction: column; gap: 6px;">
                 <span style="font-size: 12.5px; font-weight: 600; color: #33364A;">Use it</span>
                 <pre style="margin: 0; border-radius: 12px; background: #0F1020; color: #E6E7EF; padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.65; white-space: pre-wrap;"><span style="color: #8E92A8;"># once per machine: stores the server and token in ~/.spectio</span>
-spectio login --server https://spectio.lab.example --token ••••••••
+spectio login --server https://spectio.example.org --token ••••••••
 <span style="color: #8E92A8;"># or for scripts and CI</span>
 export SPECTIO_TOKEN=••••••••
 <span style="color: #8E92A8;"># runs started from a terminal then show up in Spectio</span>
-nextflow run nf-core/rnaseq -profile singularity -with-tower https://spectio.lab.example/api
+nextflow run nf-core/rnaseq -profile singularity -with-tower https://spectio.example.org/api
 snakemake --logger spectio --executor slurm</pre>
               </div>
             </div>
@@ -180,11 +180,11 @@ renderVals() {
       tok('Pipeline CI', 'sp_live_44d2…', ['workflows:read', 'runs:launch'], '20 Oct', 'yesterday', '20 Apr 2027', false)
     ],
     account: [
-      { k: 'Name', v: 'Thomas Weber', tag: '', tagc: '#6E7287', action: 'Edit' },
-      { k: 'Email', v: 't.weber@lab.example', tag: '', tagc: '#6E7287', action: 'Edit' },
+      { k: 'Name', v: 'Alice Martin', tag: '', tagc: '#6E7287', action: 'Edit' },
+      { k: 'Email', v: 'amartin@example.org', tag: '', tagc: '#6E7287', action: 'Edit' },
       { k: 'Sign-in', v: 'Single user, no login', tag: 'MVP · SSO via OIDC in phase 2', tagc: '#8F5806', action: '' },
       { k: 'Time zone', v: 'Europe/Paris', tag: '', tagc: '#6E7287', action: 'Change' },
-      { k: 'Default environment', v: 'EMBL SLURM · htc', tag: '', tagc: '#6E7287', action: 'Change' },
+      { k: 'Default environment', v: 'demo-hpc SLURM · htc', tag: '', tagc: '#6E7287', action: 'Change' },
       { k: 'Start page', v: 'Overview', tag: '', tagc: '#6E7287', action: 'Change' }
     ],
     notif: [
@@ -203,7 +203,7 @@ renderVals() {
     ],
     activity: [
       { text: 'Redid stage 2 of imaging-cellpose with diameter 42', at: '10:12', rail: '#D9890B' },
-      { text: 'Launched rnaseq-2026-10-25 on EMBL SLURM', at: '07:40', rail: '#3B82F6' },
+      { text: 'Launched rnaseq-2026-10-25 on demo-hpc SLURM', at: '07:40', rail: '#3B82F6' },
       { text: 'Resumed variant-calling-wgs after out-of-memory', at: 'yesterday', rail: '#DC3B3B' },
       { text: 'Created token “Pipeline CI”', at: '20 Oct', rail: '#7750D4' },
       { text: 'Promoted lab/organoid-qc to the catalog', at: '19 Oct', rail: '#A54666' }

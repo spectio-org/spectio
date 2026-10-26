@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — workflows catalog</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.tb{height:40px;padding:0 12px;border-radius:11px;border:none;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF;font:500 13.5px 'Inter',sans-serif;color:#22253A;white-space:nowrap}
+.wcard{border-radius:16px;background:#FFFFFF;padding:15px 16px 11px;display:flex;flex-direction:column;gap:8px;text-decoration:none;color:#0F1020;min-width:0}
+.wcard:hover{box-shadow:inset 0 4px 0 var(--rail),0 0 0 1px #C4C7D4,0 8px 20px -14px rgba(15,16,32,.35)!important}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mono{font-family:'JetBrains Mono',monospace}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Workflows" project="demo-lab / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="workflows" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <span style="width: 48px; height: 48px; border-radius: 15px; background: #FCE5EC; color: #A54666; display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12 M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 9a9 9 0 0 1-9 9"/></svg>
+        </span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Workflows</h1>
+          <span style="font-size: 14px; color: #4D5065;">18 in the catalog · 2 updates available · 1 lab overlay needs a fix before upgrading</span>
+        </div>
+        <a href="WorkflowImport.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>Add a workflow</a>
+      </div>
+
+      <nav aria-label="Workflow lists" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5;">
+        <a href="WorkflowsCatalog.dc.html" aria-current="page" style="padding: 9px 12px; font-size: 13.5px; text-decoration: none; color: #0F1020; font-weight: 600; box-shadow: inset 0 -2px 0 #A54666; display: flex; align-items: center; gap: 6px;">Catalog<span style="font-size: 11.5px; font-weight: 600; color: #6E7287;">18</span></a>
+        <a href="WorkflowDiscovered.dc.html" style="padding: 9px 12px; font-size: 13.5px; text-decoration: none; color: #4D5065; font-weight: 500; display: flex; align-items: center; gap: 6px;">Discovered from terminal runs<span style="font-size: 11px; font-weight: 700; color: #8F5806; background: #FDF3E2; border-radius: 6px; padding: 1px 6px;">4 new</span></a>
+      </nav>
+
+      <div role="toolbar" aria-label="Workflow list controls" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <label style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; flex: 1 1 240px; color: #6E7287;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg>
+          <input type="search" placeholder="Search name, topic, repository" aria-label="Search workflows" style="border: none; outline: none; font: inherit; font-size: 13.5px; color: #0F1020; flex-grow: 1; min-width: 0; background: transparent;">
+        </label>
+        <button type="button" class="tb">Group: none ▾</button>
+        <button type="button" class="tb">Sort: last run ▾</button>
+        <button type="button" class="tb" style="box-shadow: inset 0 0 0 1px #C4C7D4; background: #F6F2FE; font-weight: 600; color: #4D368B;">Filters · 1</button>
+        <button type="button" class="tb">Share view</button>
+        <div role="group" aria-label="View mode" style="display: flex; padding: 3px; border-radius: 12px; background: #EEEFF5;">
+          <a href="WorkflowsCatalog.dc.html" aria-current="page" style="height: 34px; padding: 0 12px; border-radius: 9px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,16,32,0.12); color: #0F1020; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z"/></svg>Cards</a>
+          <a href="#" style="height: 34px; padding: 0 12px; border-radius: 9px; color: #4D5065; font-size: 13px; font-weight: 500; text-decoration: none; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M4 6h16 M4 12h16 M4 18h16"/></svg>Table</a>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <span style="font-size: 12.5px; color: #4D5065;">Showing 10 of 18 ·</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; border-radius: 8px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #DFE1EA; padding: 5px 8px;">Used in the last 90 days <button type="button" aria-label="Remove filter Used in the last 90 days" style="border: none; background: transparent; color: #6E7287; padding: 0; font: inherit;">×</button></span>
+        <button type="button" style="border: none; background: transparent; font: 600 12.5px 'Inter', sans-serif; color: #6344B2;">Clear all</button>
+        <span style="margin-left: auto; display: flex; gap: 6px; flex-wrap: wrap;">
+          <sc-for list="{{quick}}" as="q" hint-placeholder-count="4">
+            <span style="display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 10px; border-radius: 8px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; font-size: 12.5px; font-weight: 500; color: #33364A;">{{q.t}}<span style="color: #6E7287;">{{q.n}}</span></span>
+          </sc-for>
+        </span>
+      </div>
+
+      <section aria-label="Catalog workflows" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;">
+        <sc-for list="{{wfs}}" as="w" hint-placeholder-count="10">
+          <a href="{{w.href}}" class="wcard" style="--rail: {{w.rail}}; box-shadow: inset 0 4px 0 {{w.rail}}, 0 0 0 1px rgba(15,16,32,0.11);">
+            <span style="display: flex; align-items: center; gap: 11px; min-width: 0;">
+              <span style="width: 38px; height: 38px; flex-shrink: 0; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center;"><img src="{{w.logo}}" width="24" height="24" alt="{{w.engine}}" title="{{w.engine}}" style="display: block; object-fit: contain;"></span>
+              <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+                <span class="ell" style="font-size: 14.5px; font-weight: 600;">{{w.name}}</span>
+                <span class="ell" style="display: flex; align-items: center; gap: 5px; font-size: 12px; color: #4D5065;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="{{w.srcIcon}}"/></svg><span class="ell">{{w.src}}</span></span>
+              </span>
+              <sc-if value="{{w.lock}}" hint-placeholder-val="{{false}}"><span title="{{w.lock}}" class="chip" style="background: #F1F2F6; color: #33364A; flex-shrink: 0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h12v9H6z M8 11V8a4 4 0 0 1 8 0v3"/></svg>{{w.lockShort}}</span></sc-if>
+            </span>
+            <sc-if value="{{!w.note}}" hint-placeholder-val="{{true}}"><span class="ell" style="font-size: 12.5px; color: #33364A;">{{w.desc}}</span></sc-if>
+            <sc-if value="{{w.note}}" hint-placeholder-val="{{false}}"><span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; color: #6B4205; min-width: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D9890B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M12 3l10 18H2z M12 10v5 M12 18h.01"/></svg><span class="ell">{{w.note}}</span></span></sc-if>
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; flex-wrap: wrap;">
+              <span style="color: #4D5065;">Latest <strong class="mono" style="font-size: 12px; color: #0F1020; font-weight: 600;">{{w.latest}}</strong></span>
+              <span style="color: #C4C7D4;">·</span>
+              <span style="color: #4D5065;">In use <strong class="mono" style="font-size: 12px; color: #0F1020; font-weight: 600;">{{w.inuse}}</strong></span>
+              <span class="chip" style="margin-left: auto; background: {{w.vbg}}; color: {{w.vfg}};"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{w.vicon}}"/></svg>{{w.vword}}</span>
+            </span>
+            <span style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <span class="chip" style="background: {{w.sbg}}; color: {{w.sfg}};"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z M3 13l9 5 9-5"/></svg>{{w.stages}}</span>
+              <span class="chip" style="background: {{w.gbg}}; color: {{w.gfg}};"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4 M5 4h12l-2.5 4 2.5 4H5"/></svg>{{w.gates}}</span>
+            </span>
+            <span style="display: flex; align-items: center; gap: 8px; border-top: 1px solid #EEEFF5; padding-top: 8px; font-size: 12.5px; min-width: 0;">
+              <span style="display: flex; align-items: center; gap: 6px; font-weight: 600; color: {{w.fg}}; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{w.icon}}"/></svg>{{w.state}}</span>
+              <span class="ell" style="color: #4D5065; flex-grow: 1;">{{w.ctx}}</span>
+              <span style="color: #6E7287; white-space: nowrap; font-size: 12px;">{{w.when}}</span>
+            </span>
+          </a>
+        </sc-for>
+        <a href="WorkflowImport.dc.html" style="border-radius: 16px; box-shadow: inset 0 0 0 1.5px #C4C7D4; background: #FBFBFD; padding: 16px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; text-align: center; text-decoration: none; color: #33364A; min-height: 150px; background-image: repeating-linear-gradient(135deg, transparent 0 10px, rgba(15,16,32,0.025) 10px 11px);">
+          <span style="width: 40px; height: 40px; border-radius: 12px; background: #FCE5EC; color: #A54666; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg></span>
+          <span style="font-size: 14px; font-weight: 600; color: #0F1020;">Add a workflow</span>
+          <span style="font-size: 12.5px; line-height: 1.45; max-width: 260px;">From nf-core, the Snakemake Workflow Catalog, a Git URL or a path on a cluster</span>
+        </a>
+        <a href="WorkflowDiscovered.dc.html" style="border-radius: 16px; box-shadow: inset 0 0 0 1px #F9DDB0; background: #FFFBF3; padding: 16px; display: flex; flex-direction: column; gap: 8px; text-decoration: none; color: #33364A; min-height: 150px;">
+          <span style="display: flex; align-items: center; gap: 10px;"><span style="width: 32px; height: 32px; border-radius: 10px; background: #FDF3E2; color: #8F5806; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z M8 10l3 2-3 2 M13 15h3"/></svg></span><span style="font-size: 14px; font-weight: 600; color: #6B4205;">4 discovered from terminal runs</span></span>
+          <span style="font-size: 12.5px; line-height: 1.5;">Seen in CLI runs (<code class="mono" style="font-size: 11.5px;">-with-tower</code>, <code class="mono" style="font-size: 11.5px;">--logger spectio</code>) but not curated yet. Not shown in Launch until promoted.</span>
+          <span style="margin-top: auto; font-size: 12.5px; font-weight: 600; color: #8F5806;">Review discovered workflows →</span>
+        </a>
+      </section>
+      <span style="font-size: 12.5px; color: #4D5065;">8 workflows not used in the last 90 days are hidden by the filter. Engine marks are the official files; nf-core appears only next to genuine nf-core pipelines.</span>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5', cross: 'M6 6l12 12 M18 6L6 18', play: 'M8 5v14l11-7z', check: 'M5 12l5 5L20 7', clock: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', pause: 'M9 5v14 M15 5v14', ban: 'M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M5.6 18.4L18.4 5.6', warn: 'M12 3l10 18H2z M12 10v5 M12 18h.01', up: 'M12 19V5 M6 11l6-6 6 6', dash: 'M5 12h14' };
+  const S = {
+    review: ['Awaiting review', '#D9890B', '#8F5806', I.flag], running: ['Running', '#3B82F6', '#1D5FC9', I.play],
+    done: ['Succeeded', '#1F9D63', '#157A4B', I.check], failed: ['Failed', '#DC3B3B', '#B02A2A', I.cross],
+    queued: ['Queued', '#6E7287', '#33364A', I.clock], paused: ['Paused', '#8B5CF6', '#6344B2', I.pause], cancelled: ['Cancelled', '#4D5065', '#33364A', I.ban]
+  };
+  const E = { nf: ['Nextflow', '/_blob/636203cdee0bc09b61efe0fa351e239b'], nfcore: ['nf-core (Nextflow)', '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'], smk: ['Snakemake', '/_blob/7a35665829f51132cb3bcb9a4c3e638c'] };
+  const SRC = {
+    nfcore: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M3 12h18 M12 3c3 3 3 15 0 18 M12 3c-3 3-3 15 0 18',
+    smkcat: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M3 12h18 M12 3c3 3 3 15 0 18 M12 3c-3 3-3 15 0 18',
+    git: 'M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z M4 17a3 3 0 0 1 3-3h11',
+    path: 'M4 4h16v6H4z M4 14h16v6H4z M8 7h.01 M8 17h.01'
+  };
+  const V = {
+    ok: ['Up to date', '#ECF8F1', '#0E5A37', I.check],
+    update: ['Update available', '#EEF4FE', '#1D5FC9', I.up],
+    breaks: ['Fix overlay first', '#FDF3E2', '#6B4205', I.warn],
+    commit: ['Commit pin', '#F1F2F6', '#33364A', I.dash]
+  };
+  const ST = {
+    overlay: ['#F6F2FE', '#4D368B'], repo: ['#F6F2FE', '#4D368B'], draft: ['#FDF2F5', '#A54666'], detected: ['#F2F1FB', '#423B97'], none: ['#F1F2F6', '#4D5065']
+  };
+  const G = { some: ['#FFFBF3', '#8F5806'], none: ['#F1F2F6', '#4D5065'] };
+  const wf = (o) => {
+    const [state, rail, fg, icon] = S[o.st]; const [engine, logo] = E[o.eng]; const [vword, vbg, vfg, vicon] = V[o.v];
+    const [sbg, sfg] = ST[o.sk]; const [gbg, gfg] = G[o.gk];
+    return { ...o, state, rail, fg, icon, engine, logo, vword, vbg, vfg, vicon, sbg, sfg, gbg, gfg, srcIcon: SRC[o.s], href: o.href || 'Workflows.dc.html', note: o.note || '', lock: o.lock || '', lockShort: o.lockShort || '' };
+  };
+  return {
+    quick: [{ t: 'nf-core', n: '11' }, { t: 'Snakemake catalog', n: '2' }, { t: 'Git', n: '4' }, { t: 'Cluster path', n: '1' }],
+    wfs: [
+      wf({ name: 'nf-core/rnaseq', eng: 'nfcore', s: 'nfcore', src: 'nf-core · pipelines.json', desc: 'RNA sequencing analysis: STAR / Salmon, QC, DESeq2', latest: '3.27.0', inuse: '3.26.1', v: 'breaks', note: '3.27.0: 1 stage glob of the overlay matches nothing', stages: '4 stages · lab overlay', sk: 'overlay', gates: 'Gates: 1 optional', gk: 'some', st: 'running', ctx: 'stage 3 of 4 · rnaseq-2026-10-25', when: '07:40', href: 'WorkflowVersions.dc.html' }),
+      wf({ name: 'nf-core/sarek', eng: 'nfcore', s: 'nfcore', src: 'nf-core · pipelines.json', desc: 'Germline and somatic variant calling (WGS, WES, panels)', latest: '3.6.1', inuse: '3.6.1', v: 'ok', stages: '5 stages · lab overlay', sk: 'overlay', gates: 'Gates: 2 optional', gk: 'some', st: 'paused', ctx: 'after stage 2 · resumable', when: 'yesterday', lock: 'You can view; launching is limited to the clinical-genomics group', lockShort: 'View only' }),
+      wf({ name: 'nf-core/scrnaseq', eng: 'nfcore', s: 'nfcore', src: 'nf-core · pipelines.json', desc: 'Single-cell RNA-seq: simpleaf, STARsolo, Cell Ranger', latest: '4.2.0', inuse: '4.1.0', v: 'update', stages: '4 detected · display only', sk: 'detected', gates: 'Gates: none', gk: 'none', st: 'running', ctx: 'stage 1 of 4 · scrna-pbmc', when: '08:51' }),
+      wf({ name: 'nf-core/mag', eng: 'nfcore', s: 'nfcore', src: 'nf-core · pipelines.json', desc: 'Metagenome assembly, binning and bin QC', latest: '3.4.0', inuse: '3.4.0', v: 'ok', stages: '4 stages · lab overlay', sk: 'overlay', gates: 'Gates: 1 optional', gk: 'some', st: 'review', ctx: 'gate after stage 3 · bin QC', when: '2 h' }),
+      wf({ name: 'nf-core/ampliseq', eng: 'nfcore', s: 'nfcore', src: 'nf-core · pipelines.json', desc: 'Amplicon sequencing (16S, ITS) with DADA2 and QIIME2', latest: '2.14.0', inuse: '2.14.0', v: 'ok', stages: 'No stages · task quarters', sk: 'none', gates: 'Gates: none', gk: 'none', st: 'done', ctx: 'soil-16s-04 · 1 h 52', when: '3 days' }),
+      wf({ name: 'nf-core/atacseq', eng: 'nfcore', s: 'nfcore', src: 'nf-core · pipelines.json', desc: 'ATAC-seq: alignment, peak calling, FRiP and TSS QC', latest: '2.1.2', inuse: '2.1.2', v: 'ok', stages: '5 stages · overlay draft', sk: 'draft', gates: 'Gates: 1 optional', gk: 'some', st: 'done', ctx: 'atac-mouse-liver-03 · 18 samples', when: '4 days', href: 'WorkflowOverlay.dc.html' }),
+      wf({ name: 'snakemake-workflows/dna-seq-varlociraptor', eng: 'smk', s: 'smkcat', src: 'Snakemake Workflow Catalog · standardized', desc: 'Variant calling with Varlociraptor, scenario-based', latest: 'v5.2.1', inuse: 'v5.2.1', v: 'ok', stages: '4 stages · in repo', sk: 'repo', gates: 'Gates: 1 optional', gk: 'some', st: 'failed', ctx: 'bwa_mem exit 137 · resumable', when: '05:58', href: 'WorkflowSnakemake.dc.html' }),
+      wf({ name: 'demo-lab/cellpose-segmentation', eng: 'smk', s: 'git', src: 'git.example.org · private · deploy key', desc: 'Cell Painting plates: Cellpose segmentation and features', latest: '1.4.0', inuse: '1.4.0', v: 'ok', stages: '4 stages · in repo', sk: 'repo', gates: 'Gates: 1 optional', gk: 'some', st: 'review', ctx: 'gate after stage 2 · imaging-cellpose', when: '47 min' }),
+      wf({ name: 'demo-lab/atac-seq', eng: 'smk', s: 'git', src: 'git.example.org · public in the lab', desc: 'Lab ATAC-seq workflow (Snakemake modules)', latest: '2.1.0', inuse: '2.1.0', v: 'ok', stages: 'No stages · task quarters', sk: 'none', gates: 'Gates: none', gk: 'none', st: 'queued', ctx: 'atac-batch-08 · waiting for runner', when: '08:57' }),
+      wf({ name: 'methylseq-custom', eng: 'nf', s: 'path', src: 'demo-hpc:/data/demo/pipelines/methylseq-custom', desc: 'Methylation calling, lab fork', note: 'Runner hpc-login-1 offline · path not rechecked', latest: '—', inuse: 'main@a1c9f2e', v: 'commit', stages: '3 detected · display only', sk: 'detected', gates: 'Gates: none', gk: 'none', st: 'cancelled', ctx: 'time limit (policy) · methylseq-pilot', when: 'yesterday', href: 'RunnerOffline.dc.html' })
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

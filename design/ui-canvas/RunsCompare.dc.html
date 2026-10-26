@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — runs, compare a lineage</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+@keyframes spectio-hatch{from{background-position:0 0}to{background-position:22.63px 0}}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-ligatures:none}
+.btn{height:40px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-p:hover{color:#FFFFFF;background:#6344B2}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.cmp{display:grid;grid-template-columns:196px repeat(3,minmax(0,1fr))}
+.lab{padding:7px 14px 7px 16px;font-size:12.5px;color:#33364A;display:flex;flex-direction:column;justify-content:center;gap:1px;border-top:1px solid #EEEFF5}
+.lab small{font-size:11px;color:#6E7287}
+.val{padding:7px 12px;font-size:12.5px;border-top:1px solid #EEEFF5;border-left:1px solid #EEEFF5;display:flex;flex-direction:column;justify-content:center;gap:1px;min-width:0}
+.sec{grid-column:1 / -1;padding:8px 16px 6px;font-size:11.5px;font-weight:600;letter-spacing:.06em;color:#4D5065;background:#F7F7FB;border-top:1px solid #EEEFF5;display:flex;gap:10px;align-items:baseline}
+.sec span{font-weight:500;letter-spacing:0;color:#6E7287}
+.hatch{background:repeating-linear-gradient(135deg,#EEEDFA 0 8px,#D6D2F3 8px 16px);background-size:22.63px 22.63px;animation:spectio-hatch 1.6s linear infinite}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Runs / Compare" project="demo-lab / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="runs" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; align-items: center; gap: 14px;">
+      <span style="width: 48px; height: 48px; flex-shrink: 0; border-radius: 15px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h6v16H4z M14 4h6v16h-6z M10 9h4 M10 15h4"/></svg>
+      </span>
+      <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Compare runs</h1>
+        <span style="font-size: 14px; color: #4D5065;">rnaseq-liver-tc · nf-core/rnaseq 3.27.0 · resumed after a memory failure, then rerun from stage 3</span>
+      </div>
+      <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #22253A; white-space: nowrap; flex-shrink: 0;"><span role="switch" aria-checked="true" style="width: 34px; height: 20px; border-radius: 10px; background: #7750D4; position: relative; display: inline-block;"><span style="position: absolute; right: 2px; top: 2px; width: 16px; height: 16px; border-radius: 8px; background: #FFFFFF;"></span></span>Differences only</label>
+      <button type="button" class="btn btn-s">Add a run</button>
+      <a href="Launch.dc.html" class="btn btn-p">Copy run 3 to a new launch</a>
+    </div>
+
+    <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+      <div class="cmp">
+        <div style="padding: 12px 14px 12px 16px; display: flex; flex-direction: column; justify-content: flex-end; gap: 4px; font-size: 12px; color: #4D5065;">
+          <span style="font-weight: 600; color: #22253A;">Lineage</span>
+          <span style="line-height: 1.4;">Oldest first. Each run says how it was made from the one before.</span>
+        </div>
+        <sc-for list="{{runs}}" as="r" hint-placeholder-count="3">
+          <div style="border-left: 1px solid #EEEFF5; box-shadow: inset 0 4px 0 {{r.rail}}; padding: 14px 12px 10px; display: flex; flex-direction: column; gap: 5px; min-width: 0; position: relative;">
+            <span style="display: flex; align-items: center; gap: 10px;">
+              <svg width="48" height="24" viewBox="0 0 200 100" role="img" aria-label="{{r.gaugeLabel}}" style="flex-shrink: 0;">
+                <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="{{r.g0}}"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="{{r.g1}}"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="{{r.g2}}"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="{{r.g3}}"/>
+              </svg>
+              <span style="display: flex; flex-direction: column; min-width: 0;">
+                <a href="{{r.href}}" style="font-size: 14.5px; font-weight: 600; color: #0F1020; text-decoration: none; white-space: nowrap;">Run {{r.n}} <span class="mono" style="font-size: 12px; color: #6E7287; font-weight: 400;">{{r.id}}</span></a>
+                <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: {{r.fg}};"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"/></svg>{{r.state}}</span>
+              </span>
+            </span>
+            <span style="align-self: flex-start; font-size: 11.5px; font-weight: 600; color: {{r.relFg}}; background: {{r.relBg}}; border-radius: 6px; padding: 3px 7px; white-space: nowrap;">{{r.rel}}</span>
+            <span style="font-size: 11.5px; color: #4D5065;">{{r.who}}</span>
+          </div>
+        </sc-for>
+
+        <div class="sec">STAGES <span>reused (hatched) · computed (solid) · failed (red) · not run (grey)</span></div>
+        <div class="lab">Stage strip<small>from the lab overlay “rnaseq-demo-lab” v2</small></div>
+        <sc-for list="{{strips}}" as="s" hint-placeholder-count="3">
+          <div class="val" style="padding: 8px 10px;">
+            <span style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px;">
+              <sc-for list="{{s.cells}}" as="c" hint-placeholder-count="4">
+                <span title="{{c.tip}}" class="{{c.cls}}" style="height: 38px; border-radius: 7px; background-color: {{c.bg}}; box-shadow: {{c.ring}}; display: flex; flex-direction: column; justify-content: center; padding: 0 6px; min-width: 0; overflow: hidden;">
+                  <span style="font-size: 11px; font-weight: 700; color: {{c.ink}};">{{c.n}}</span>
+                  <span style="font-size: 10px; color: {{c.ink}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.note}}</span>
+                </span>
+              </sc-for>
+            </span>
+          </div>
+        </sc-for>
+
+        <sc-for list="{{sections}}" as="g" hint-placeholder-count="4">
+          <div class="sec">{{g.title}} <span>{{g.sub}}</span></div>
+          <sc-for list="{{g.rows}}" as="row" hint-placeholder-count="3">
+            <div class="lab">{{row.label}}<small>{{row.hint}}</small></div>
+            <sc-for list="{{row.cells}}" as="c" hint-placeholder-count="3">
+              <div class="val" style="background: {{c.bg}};">
+                <span class="{{c.cls}}" style="font-weight: {{c.w}}; color: {{c.fg}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: {{c.fs}};">{{c.v}}</span>
+                <span style="font-size: 11px; color: {{c.subFg}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.sub}}</span>
+              </div>
+            </sc-for>
+          </sc-for>
+        </sc-for>
+
+        <div class="lab" style="border-top: 1px solid #EEEFF5;">CPU-hours<small>solid spent · hatched saved by reuse</small></div>
+        <sc-for list="{{cpu}}" as="c" hint-placeholder-count="3">
+          <div class="val" style="gap: 4px;">
+            <span style="display: flex; height: 10px; border-radius: 4px; overflow: hidden; gap: 2px; background: #FFFFFF;">
+              <span style="flex: 0 0 {{c.spentPct}}; background: #7750D4;"></span>
+              <span style="flex: 0 0 {{c.failPct}}; background: #DC3B3B;"></span>
+              <span class="hatch" style="flex: 0 0 {{c.savedPct}};"></span>
+            </span>
+            <span style="font-size: 12px; color: #33364A; white-space: nowrap;"><strong>{{c.spent}}</strong> <span style="color: #4D5065;">{{c.note}}</span></span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <div style="display: flex; gap: 10px; align-items: center; font-size: 12px; color: #4D5065; flex-wrap: wrap;">
+      <span>97 identical parameters, the samplesheet (v1, 24 samples) and 62 identical containers hidden.</span>
+      <a href="#" style="font-weight: 600; text-decoration: none;">Show everything</a>
+      <span style="margin-left: auto;">CPU-hours from <span class="mono">sacct</span> <span class="mono">TotalCPU</span>; saved = what the reused tasks cost when first computed.</span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const B = ['#5A4FCF', '#8B5CF6', '#EC5F87', '#F9A947'], off = '#DFE1EA', red = '#DC3B3B';
+  const ok = 'M5 12l5 5L20 7', x = 'M6 6l12 12 M18 6L6 18';
+  const HATCH = 'hatch';
+  const cell = (kind, n, note, tip) => {
+    if (kind === 'reused') return { n, note, tip, cls: HATCH, bg: 'transparent', ring: 'none', ink: '#423B97' };
+    if (kind === 'failed') return { n, note, tip, cls: '', bg: '#DC3B3B', ring: 'none', ink: '#FFFFFF' };
+    if (kind === 'none') return { n, note, tip, cls: '', bg: '#F1F2F6', ring: 'none', ink: '#6E7287' };
+    if (kind === 'start') return { n, note, tip, cls: '', bg: kind === 'start' ? '#FBF9FF' : '', ring: 'inset 0 0 0 2px #7750D4', ink: '#4D368B' };
+    return { n, note, tip, cls: '', bg: kind, ring: 'none', ink: '#FFFFFF' };
+  };
+  const C = (v, o) => Object.assign({ v, sub: '', fg: '#22253A', w: 500, bg: 'transparent', cls: '', fs: '12.5px', subFg: '#6E7287' }, o || {});
+  const changed = { bg: '#F2FBF6', fg: '#157A4B', w: 600 };
+  const warn = { bg: '#FFFBF3', fg: '#8F5806', w: 600 };
+  return {
+    runs: [
+      { n: '1', id: '#331', href: 'RunFailed.dc.html', state: 'Failed', fg: '#B02A2A', icon: x, rail: '#DC3B3B', rel: 'Original launch', relBg: '#F1F2F6', relFg: '#33364A', who: 'Alice Martin · in UI · 24 Oct 09:10', gaugeLabel: 'Stage 1 completed, stage 2 failed', g0: B[0], g1: red, g2: off, g3: off },
+      { n: '2', id: '#334', href: 'RunDetail.dc.html', state: 'Succeeded', fg: '#157A4B', icon: ok, rail: '#1F9D63', rel: 'Resume of run 1 · 1 config change', relBg: '#F6F2FE', relFg: '#4D368B', who: 'Alice Martin · Relaunch → Resume · 24 Oct 15:02', gaugeLabel: 'All 4 stages completed', g0: B[0], g1: B[1], g2: B[2], g3: B[3] },
+      { n: '3', id: '#338', href: 'RunOutputs.dc.html', state: 'Succeeded', fg: '#157A4B', icon: ok, rail: '#1F9D63', rel: 'Rerun of run 2 from stage 3 · 1 parameter', relBg: '#F6F2FE', relFg: '#4D368B', who: 'Chloé Diallo · Relaunch → Rerun · 25 Oct 10:47', gaugeLabel: 'All 4 stages completed', g0: B[0], g1: B[1], g2: B[2], g3: B[3] }
+    ],
+    strips: [
+      { cells: [cell(B[0], '1 · 288', 'computed'), cell('failed', '2 · 336', '3 failed', '290 computed, 3 failed, 43 not run'), cell('none', '3', 'not run'), cell('none', '4', 'not run')] },
+      { cells: [cell('reused', '1 · 288', 'reused'), cell('reused', '2 · 336', '+46 run', '290 reused, 46 computed (incl. the 3 STAR_ALIGN tasks)'), cell(B[2], '3 · 300', 'computed'), cell(B[3], '4 · 24', 'computed')] },
+      { cells: [cell('reused', '1 · 288', 'reused'), cell('reused', '2 · 336', 'reused'), cell('start', '3 · 300', 'starts here'), cell(B[3], '4 · 24', 'recomputed')] }
+    ],
+    sections: [
+      { title: 'TASKS', sub: '948 tasks in all three runs', rows: [
+        { label: 'Reused from cache', hint: 'cached by -resume', cells: [C('0', { sub: 'fresh work directory' }), C('578', changed), C('624', changed)] },
+        { label: 'Computed', hint: 'ran in this run', cells: [C('578', { sub: '+ 367 never reached' }), C('370'), C('324', { sub: 'stages 3 and 4' })] },
+        { label: 'Failed · retried', hint: 'after nf-core retries', cells: [C('3 failed · 6 retries', Object.assign({}, warn, { fg: '#B02A2A', bg: '#FFF7F7', sub: 'STAR_ALIGN OUT_OF_MEMORY at 64 GB', subFg: '#B02A2A' })), C('0 failed · 2 retries'), C('0 failed · 0 retries')] },
+        { label: 'Duration', hint: 'wall clock', cells: [C('5 h 12 m', { sub: 'until the failure' }), C('3 h 40 m'), C('1 h 55 m')] }
+      ] },
+      { title: 'PARAMETERS AND CONFIG', sub: 'differences only', rows: [
+        { label: 'extra_salmon_quant_args', hint: 'parameter · stage 3', cells: [C('—', { cls: 'mono', fs: '12px' }), C('—', { cls: 'mono', fs: '12px' }), C('--seqBias --gcBias', Object.assign({ cls: 'mono', fs: '12px', sub: 'changed by Chloé Diallo' }, changed))] },
+        { label: 'STAR_ALIGN memory', hint: 'config overlay, not a parameter', cells: [C('64.GB', { cls: 'mono', fs: '12px' }), C('96.GB · queue bigmem', Object.assign({ cls: 'mono', fs: '12px', sub: 'from the failure suggestion' }, changed)), C('96.GB · queue bigmem', { cls: 'mono', fs: '12px', sub: 'inherited' })] }
+      ] },
+      { title: 'SOFTWARE', sub: 'pipeline_info and the head job', rows: [
+        { label: 'nf-core/rnaseq', hint: 'revision', cells: [C('3.27.0 · 1b2c3d4', { cls: 'mono', fs: '12px' }), C('3.27.0 · 1b2c3d4', { cls: 'mono', fs: '12px' }), C('3.27.0 · 1b2c3d4', { cls: 'mono', fs: '12px' })] },
+        { label: 'Nextflow', hint: 'engine of the head job', cells: [C('25.10.2', { cls: 'mono', fs: '12px' }), C('25.10.2', { cls: 'mono', fs: '12px' }), C('25.10.4', Object.assign({ cls: 'mono', fs: '12px', sub: 'environment default changed on 25 Oct', subFg: '#8F5806' }, warn))] }
+      ] },
+      { title: 'OUTCOME', sub: 'medians over samples, from MultiQC data', rows: [
+        { label: 'STAR uniquely mapped', hint: 'stage 2', cells: [C('91.2 %', { sub: '21 of 24 samples only' }), C('91.4 %'), C('91.4 %', { sub: 'reused from run 2' })] },
+        { label: 'Salmon mapping rate', hint: 'stage 3', cells: [C('—', { fg: '#6E7287', sub: 'not reached' }), C('87.9 %'), C('88.6 %  ▲ 0.7', Object.assign({ sub: 'after --seqBias --gcBias' }, changed))] },
+        { label: 'Reports', hint: '', cells: [C('Log and failed task only', { fg: '#4D5065' }), C('MultiQC · 24 samples', { fg: '#6344B2', w: 600 }), C('MultiQC · depictio dashboard', { fg: '#6344B2', w: 600 })] }
+      ] }
+    ],
+    cpu: [
+      { spentPct: '58%', failPct: '12%', savedPct: '0%', spent: '412 CPU-h', note: '· 61 lost to failed attempts' },
+      { spentPct: '34%', failPct: '0%', savedPct: '66%', spent: '184 CPU-h', note: '· 350 saved by reuse' },
+      { spentPct: '27%', failPct: '0%', savedPct: '73%', spent: '142 CPU-h', note: '· 390 saved by reuse' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

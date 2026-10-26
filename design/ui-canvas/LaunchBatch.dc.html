@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — launch one run per plate</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C4C7D4;padding:8px 10px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',monospace}
+.tile{width:32px;height:32px;border-radius:10px;background:#F6F2FE;color:#6344B2;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn{height:40px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.btn-xs{height:30px;padding:0 10px;border-radius:9px;font-size:12.5px}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;font-size:11.5px;font-weight:600;color:#33364A;background:#F7F7FB;padding:7px 10px}
+.tbl td{padding:5px 10px;border-top:1px solid #EEEFF5;vertical-align:middle}
+.lbl{display:flex;flex-direction:column;gap:4px;font-size:12px;font-weight:600;color:#33364A}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Launch / plate-qc / Batch" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="launch" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center;">
+        <img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="30" height="30" alt="Snakemake" style="display: block; object-fit: contain;">
+      </span>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Launch plate-qc once per plate <span style="font-weight: 500; color: #6E7287; font-size: 20px;">v1.4.0 · 12 runs</span></h1>
+        <span style="font-size: 14px; color: #4D5065;">One row = one run with its own folder and name · grouped as batch <strong style="color: #33364A;">ki-screen-2026-10-26</strong></span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-s">Import plate list (CSV)…</button>
+        <button type="button" class="btn btn-p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12 M7 8l5-5 5 5 M5 21h14"/></svg>Launch 12 runs</button>
+      </div>
+    </div>
+
+    <section class="card" aria-label="Plates" style=" padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.grid}}"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">12 plates → 12 runs</h2><span style="font-size: 12px; color: #4D5065;">12 folders found by the runner on hpc-login-1 · 10:51 · click a cell to override it for one plate</span></span>
+          <span style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <span class="chip" style="background: #F1F2F6; color: #33364A;"><svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>8 start now</span>
+            <span class="chip" style="background: #F1F2F6; color: #4D5065;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2"/></svg>2 wait for a slot</span>
+            <span class="chip" style="background: #FDF3E2; color: #8F5806;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2"/></svg>2 queued · quota</span>
+          </span>
+        </div>
+        <div style="display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) auto; gap: 12px; align-items: end;">
+          <label class="lbl"><span>Input folder → config key <span class="mono" style="font-weight: 400;">plate_dir</span></span>
+            <input class="mono" value="/data/demo/imaging/ki-screen/{plate}/" style="font-size: 12px;">
+          </label>
+          <label class="lbl">Run name template
+            <input class="mono" value="ki-screen-{plate}-{date}" style="font-size: 12px;">
+          </label>
+          <span style="font-size: 12px; color: #4D5065; padding-bottom: 9px;">tokens {plate} {date} {project} {n}</span>
+        </div>
+        <div style="border-radius: 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.09); overflow: hidden;">
+          <table class="tbl">
+            <thead><tr><th scope="col" style="width: 4px; padding: 0;"></th><th scope="col" style="width: 46px;">plate</th><th scope="col" style="width: 210px;">input folder</th><th scope="col" style="width: 108px;">images</th><th scope="col">run name</th><th scope="col" style="width: 96px;">override</th><th scope="col" style="width: 100px;">environment</th><th scope="col" style="width: 300px;">start</th></tr></thead>
+            <tbody>
+              <sc-for list="{{plates}}" as="r" hint-placeholder-count="12">
+                <tr style="background: {{r.bg}};">
+                  <td style="padding: 0; background: {{r.rail}};"></td>
+                  <td style="font-weight: 600;">{{r.p}}</td>
+                  <td class="mono" style="font-size: 11.5px; color: #33364A; white-space: nowrap;">{{r.dir}}</td>
+                  <td style="color: {{r.ifg}}; font-weight: {{r.iw}}; white-space: nowrap;">{{r.img}}</td>
+                  <td class="mono" style="font-size: 11.5px; white-space: nowrap;">{{r.name}}</td>
+                  <td><span class="chip" style="background: {{r.obg}}; color: {{r.ofg}}; height: 22px;">{{r.ov}}</span></td>
+                  <td style="font-size: 12px; color: #33364A; white-space: nowrap;">{{r.env}} <span style="color: #9A9EB0;">▾</span></td>
+                  <td style="white-space: nowrap;"><span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; color: {{r.sfg}};"><svg width="14" height="14" viewBox="0 0 24 24" fill="{{r.sFill}}" stroke="{{r.sStroke}}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.sIcon}}"/></svg>{{r.start}}</span> <span style="font-size: 11.5px; color: #6E7287;">· {{r.why}}</span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <span style="font-size: 12px; color: #4D5065;">P12 has 864 of 1,152 expected images (rows G–H missing): it will run on what is there unless you leave it out. <a href="#" style="font-weight: 600; text-decoration: none;">Leave out P12</a></span>
+      </section>
+
+    <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+      <section class="card" aria-label="Shared parameters" style="flex: 1 1 300px; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="display: flex; align-items: center; gap: 10px;">
+          <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sliders}}"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Shared parameters</h2><span style="font-size: 12px; color: #4D5065;">config.yaml for all 12 · 2 changed</span></span>
+          <a href="LaunchSnakemake.dc.html" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Edit all</a>
+        </span>
+        <sc-for list="{{shared}}" as="p" hint-placeholder-count="5">
+          <span style="display: flex; gap: 10px; align-items: baseline; font-size: 12.5px; border-top: 1px solid #F1F2F6; padding-top: 6px;">
+            <span class="mono" style="font-size: 11.5px; color: #4D5065; min-width: 140px;">{{p.k}}</span>
+            <span class="mono" style="font-size: 12px; font-weight: 600; flex-grow: 1;">{{p.v}}</span>
+            <span style="font-size: 11.5px; font-weight: 600; color: {{p.fg}};">{{p.n}}</span>
+          </span>
+        </sc-for>
+        <span style="margin-top: 4px; font-size: 12px; color: #4D5065; background: #F7F7FB; border-radius: 10px; padding: 8px 10px; line-height: 1.45;">Per-plate overrides win over shared values: <strong style="color: #33364A;">1</strong> (P07 <span class="mono">cellpose.diameter: 45</span>, larger cells after a seeding change).</span>
+      </section>
+
+      <section class="card" aria-label="Run settings" style="flex: 1 1 280px; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="display: flex; align-items: center; gap: 10px;">
+          <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.layers}}"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Concurrency</h2><span style="font-size: 12px; color: #4D5065;">How many of the 12 runs may be active at once</span></span>
+        </span>
+        <span style="display: flex; align-items: center; gap: 10px; font-size: 13px;">
+          At most
+          <span style="display: inline-flex; align-items: center; border-radius: 10px; box-shadow: inset 0 0 0 1px #C4C7D4; overflow: hidden;">
+            <button type="button" aria-label="Fewer" style="width: 32px; height: 34px; border: none; background: #F7F7FB; font: 600 15px 'Inter', sans-serif; color: #33364A;">−</button>
+            <span style="width: 40px; text-align: center; font-weight: 600;">10</span>
+            <button type="button" aria-label="More" style="width: 32px; height: 34px; border: none; background: #F7F7FB; font: 600 15px 'Inter', sans-serif; color: #33364A;">+</button>
+          </span>
+          runs at a time
+        </span>
+        <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">The rest wait in Spectio and start as runs finish. Environment quotas apply on top (Pre-flight).</span>
+        <div style="border-top: 1px solid #EEEFF5; padding-top: 10px; display: flex; gap: 10px; align-items: flex-start;">
+          <span role="switch" aria-checked="false" aria-label="Gates for all runs" style="width: 36px; height: 20px; border-radius: 10px; background: #C4C7D4; position: relative; flex-shrink: 0; margin-top: 1px;"><span style="position: absolute; left: 2px; top: 2px; width: 16px; height: 16px; border-radius: 8px; background: #FFFFFF;"></span></span>
+          <span style="display: flex; flex-direction: column; gap: 2px; font-size: 12.5px;"><strong>Gates off for all 12 · runs go straight through</strong><span style="color: #4D5065;">Optional: turn on to stop each run after <em>Segmentation</em> (offered by spectio.yml) for a plate review.</span></span>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Pre-flight per environment" style="flex: 1.5 1 420px; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="display: flex; align-items: center; gap: 10px;">
+          <span class="tile" style="background: #EEF6FA; color: #2F7FA8;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.server}}"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Pre-flight · demo-hpc SLURM</h2><span style="font-size: 12px; color: #4D5065;">12 plates · runner online · checked 10:52</span></span>
+        </span>
+        <sc-for list="{{hpc}}" as="c" hint-placeholder-count="5">
+          <span style="display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; padding: 5px 0; border-top: 1px solid #EEEFF5;">
+            <span style="width: 22px; height: 22px; border-radius: 11px; background: {{c.bg}}; color: {{c.fg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg></span>
+            <span style="flex-grow: 1; font-size: 12.5px; line-height: 1.4;"><strong style="font-size: 13px;">{{c.t}}</strong> <span style="color: #4D5065;">· {{c.d}}</span></span>
+            <span style="font-size: 11.5px; font-weight: 600; color: {{c.fg}}; white-space: nowrap;">{{c.v}}</span>
+          </span>
+        </sc-for>
+      <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-radius: 12px; background: #F7F7FB; padding: 10px 12px; font-size: 12.5px; color: #33364A;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 2l8.7 5v10L12 22l-8.7-5V7z M12 8v8 M8.5 10l7 4 M15.5 10l-7 4"/></svg>
+        <span style="flex: 1 1 260px;"><strong>Kubernetes · dev could start P09, P10 now</strong> · PVC 4.1 TB free (2 plates need 3.6 TB) · gpu-a100 3 of 8 free · ResourceQuota ok</span>
+        <button type="button" class="btn btn-s btn-xs">Move 2 plates here</button>
+      </div>
+      </section>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    grid: 'M4 4h7v7H4z M13 4h7v7h-7z M4 13h7v7H4z M13 13h7v7h-7z',
+    sliders: 'M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M20 18h0 M18 16v4',
+    layers: 'M12 3l9 5-9 5-9-5z M3 13l9 5 9-5 M3 17l9 5 9-5',
+    server: 'M4 5h16v6H4z M4 13h16v6H4z M8 8h.01 M8 16h.01'
+  };
+  const ok = 'M5 12l5 5L20 7', warn = 'M12 8v5 M12 16h.01';
+  const C = { ok: ['#E8F6EF', '#157A4B', ok], warn: ['#FDF3E2', '#8F5806', warn] };
+  const chk = (s, t, d, v) => ({ t, d, v, bg: C[s][0], fg: C[s][1], icon: C[s][2] });
+  const play = 'M8 5v14l11-7z', clock = 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 7v5l3 2';
+  const row = (i, o) => {
+    const p = 'P' + String(i).padStart(2, '0');
+    return Object.assign({ p, dir: '…/ki-screen/' + p + '/', img: '1,152 TIFF', ifg: '#33364A', iw: 400, name: 'ki-screen-' + p + '-2026-10-26', ov: '—', obg: 'transparent', ofg: '#9A9EB0', env: 'demo-hpc',
+      start: 'Starts now', why: 'slot ' + i + ' of 10', sfg: '#22253A', sIcon: play, sFill: 'currentColor', sStroke: 'none', bg: '#FFFFFF', rail: 'transparent' }, o || {});
+  };
+  const wait = n => ({ start: 'Waits for a slot', why: 'concurrency 10 · ' + n + ' in line', sfg: '#4D5065', sIcon: clock, sFill: 'none', sStroke: 'currentColor', rail: '#C4C7D4' });
+  const quota = n => ({ start: 'Queued · quota', why: 'work dir space · after ' + n, sfg: '#8F5806', sIcon: clock, sFill: 'none', sStroke: 'currentColor', rail: '#D9890B', bg: '#FFFCF5' });
+  const plates = [
+    row(1), row(2), row(3), row(4), row(5), row(6),
+    row(7, { ov: 'diameter 45', obg: '#F6F2FE', ofg: '#4D368B' }), row(8),
+    row(9, quota('P01 clears temp()')),
+    row(10, quota('P02 clears temp()')),
+    row(11, wait(1)),
+    row(12, Object.assign(wait(2), { img: '864 / 1,152', ifg: '#8F5806', iw: 600, bg: '#FFFCF5' }))
+  ];
+  return {
+    ic, plates,
+    shared: [
+      { k: 'channels', v: '[DAPI, GFP, RFP]', n: '', fg: '#6E7287' },
+      { k: 'cellpose.model', v: 'cyto3', n: '', fg: '#6E7287' },
+      { k: 'cellpose.diameter', v: '30', n: 'changed · P07 45', fg: '#8F5806' },
+      { k: 'illumination_correction', v: 'true', n: 'changed', fg: '#8F5806' },
+      { k: 'features', v: '[intensity, shape]', n: '', fg: '#6E7287' }
+    ],
+    hpc: [
+      chk('ok', 'Partition limits', 'cellpose_segment 1 GPU · 4 h on gpu (max 2 days); other rules on htc', 'fits'),
+      chk('ok', 'Containers', '4 / 4 images in the cache (/scratch/demo/sif)', 'cached'),
+      chk('warn', 'Work dir quota', '≈ 1.8 TB per plate while it runs · 14.6 TB free on /scratch/demo → 8 plates at once. P09 and P10 start when earlier runs remove their temp() files.', '2 queued'),
+      chk('ok', 'Job limits', '10 runs × --jobs 40 = 400 jobs ≤ MaxJobs 500', 'ok'),
+      chk('ok', 'Inputs readable', '12 folders · 13,536 images · as amartin', 'ok')
+    ],
+    k8s: [
+      'PVC spectio-work · 4.1 TB free (2 plates need 3.6 TB)',
+      'gpu-a100 node pool · 3 of 8 GPUs free',
+      'ResourceQuota cpu 112 / 256 · Kueue queue spectio-batch'
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

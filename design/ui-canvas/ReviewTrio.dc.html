@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, family trios and consistency checks</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rt:has(input[value="sum"]:checked) .pn-sum,
+.rt:has(input[value="items"]:checked) .pn-items,
+.rt:has(input[value="report"]:checked) .pn-report,
+.rt:has(input[value="sheet"]:checked) .pn-sheet,
+.rt:has(input[value="params"]:checked) .pn-params,
+.rt:has(input[value="files"]:checked) .pn-files,
+.rt:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.mono{font-family:'JetBrains Mono',monospace}
+.ped{position:relative;width:84px;height:66px;flex-shrink:0}
+.ped i{position:absolute;display:block}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/raredisease · rd-cohort-11" project="clinical-genomics / Rare disease dx" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rt" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">6 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <a href="ReviewCoverage.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewProteomics.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stage 1 of 4 finished, gate awaiting review"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#DFE1EA"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Sample identity check <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· rd-cohort-11 · #342</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block;">nf-core/raredisease 2.6.0 · 4 cases · 11 samples · paused after stage 1 of 4 · <strong style="color: #8F5806;">waiting 3 h 05</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span title="You" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="Chloé Diallo, Dmitri Novak" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">+2</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">clinical-genomics · humans only</span>
+      </span>
+    </div>
+
+    <div role="note" aria-label="Restricted access" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-radius: 14px; background: #FFF8F8; box-shadow: inset 0 0 0 1px #F2C4C4; padding: 9px 14px; font-size: 12.5px; color: #33364A; line-height: 1.45;">
+      <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; background: #FCEBEB; color: #B02A2A; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h12v9H6z M8 11V8a4 4 0 0 1 8 0v3"/></svg></span>
+      <span style="flex: 1 1 520px; min-width: 0;"><strong style="color: #8A1F1F;">Restricted · clinical data.</strong> Project roles apply: you see this gate as <strong>reviewer</strong> in clinical-genomics; samples show pseudonyms only. Reports contain personal data (pedigree, phenotypes): they open in the sandboxed reader, downloads are off, every view is logged. AI agents have no access to this gate.</span>
+      <a href="#" style="font-weight: 600; text-decoration: none; white-space: nowrap;">Access log · 7 views</a>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvtrio" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FCEBEB; color: #B02A2A;">2 failing</span></label>
+      <label class="rv-tab"><input type="radio" name="rvtrio" value="items" checked aria-label="Items"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M2 20a7 7 0 0 1 14 0 M16 4.5a3.5 3.5 0 0 1 0 6.5 M18 14a6 6 0 0 1 4 6"/></svg>Items<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">1 excluded</span></label>
+      <label class="rv-tab"><input type="radio" name="rvtrio" value="report" aria-label="Report"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Report<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FCEBEB; color: #B02A2A;">restricted</span></label>
+      <label class="rv-tab"><input type="radio" name="rvtrio" value="sheet" aria-label="Samplesheet"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Samplesheet<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">1 row</span></label>
+      <label class="rv-tab"><input type="radio" name="rvtrio" value="params" aria-label="Parameters"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg>Parameters<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">0</span></label>
+      <label class="rv-tab"><input type="radio" name="rvtrio" value="files" aria-label="Files"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Files<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">none</span></label>
+      <label class="rv-tab"><input type="radio" name="rvtrio" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">5</span></label>
+    </div>
+
+    <!-- ITEMS: family lanes -->
+    <section class="rv-pn pn-items" style="gap: 14px; align-items: flex-start;">
+      <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+          <span style="font-size: 13px; color: #4D5065;">Item table · grouped by <code class="mono">case_id</code> · worst family first · roles from <code class="mono">paternal_id</code> / <code class="mono">maternal_id</code> / <code class="mono">phenotype</code></span>
+          <button type="button" style="height: 30px; padding: 0 10px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #22253A;">Flagged only</button>
+        </div>
+
+        <!-- F07 expanded lane -->
+        <div style="border-radius: 16px; box-shadow: inset 4px 0 0 #DC3B3B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px 12px 18px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#B02A2A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            <strong style="font-size: 14.5px;">Family F07</strong>
+            <span style="font-size: 12.5px; color: #B02A2A; font-weight: 600;">2 checks failing · sample swap suspected (father)</span>
+            <span style="flex-grow: 1;"></span>
+            <span style="font-size: 11.5px; font-weight: 600; padding: 3px 8px; border-radius: 8px; background: #F1F2F6; color: #33364A;">trio · de novo calling needs both parents</span>
+          </div>
+          <div style="display: flex; gap: 10px; align-items: stretch;">
+            <div class="ped" role="img" aria-label="Pedigree F07: father excluded, mother, affected son">
+              <i style="left: 6px; top: 4px; width: 18px; height: 18px; box-sizing: border-box; border: 2px dashed #B02A2A; background: #FFFFFF;"></i>
+              <i style="left: 9px; top: 2px; font-style: normal; font-size: 15px; font-weight: 700; color: #B02A2A; line-height: 22px;">×</i>
+              <i style="left: 60px; top: 4px; width: 18px; height: 18px; box-sizing: border-box; border: 2px solid #22253A; border-radius: 50%; background: #FFFFFF;"></i>
+              <i style="left: 24px; top: 12px; width: 36px; height: 2px; background: #9A9EB0;"></i>
+              <i style="left: 41px; top: 13px; width: 2px; height: 30px; background: #9A9EB0;"></i>
+              <i style="left: 33px; top: 43px; width: 18px; height: 18px; background: #22253A;"></i>
+                          </div>
+            <sc-for list="{{f07}}" as="m" hint-placeholder-count="3">
+              <div style="flex: 1 1 0; min-width: 0; border-radius: 12px; background: {{m.bg}}; box-shadow: inset 0 3px 0 {{m.rail}}, inset 0 0 0 1px #EEEFF5; padding: 10px 11px 10px; display: flex; flex-direction: column; gap: 5px;">
+                <span style="display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap;"><strong style="font-size: 13px;">{{m.role}}</strong><span class="mono" style="font-size: 11.5px; color: #4D5065;">{{m.id}}</span></span>
+                <span style="font-size: 11.5px; color: #6E7287;">{{m.meta}}</span>
+                <span style="display: flex; align-items: center; gap: 6px; font-size: 12px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{m.sexc}}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.sexi}}"/></svg><span style="color: #4D5065;">Sex</span><span style="font-weight: 600; color: {{m.sexc}};">{{m.sex}}</span></span>
+                <span style="display: flex; align-items: center; gap: 6px; font-size: 12px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{m.relc}}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.reli}}"/></svg><span style="color: #4D5065;">Relatedness</span><span style="font-weight: 600; color: {{m.relc}};">{{m.rel}}</span></span>
+                <span style="font-size: 12px; color: #4D5065;">Coverage <strong style="color: #22253A;">{{m.cov}}</strong> · FREEMIX <strong style="color: #22253A;">{{m.mix}}</strong></span>
+                <span role="radiogroup" aria-label="Decision for {{m.id}}" style="display: flex; padding: 3px; border-radius: 10px; background: #F1F2F6; font-size: 12px; margin-top: 3px;">
+                  <sc-for list="{{m.opts}}" as="o" hint-placeholder-count="3"><span style="flex: 1 1 0; text-align: center; padding: 4px 4px; border-radius: 8px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for>
+                </span>
+                <span style="font-size: 11.5px; color: {{m.notec}};">{{m.note}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div role="alert" style="border-radius: 12px; background: #FFFBF3; box-shadow: inset 0 0 0 1px #F5DDB0; padding: 10px 12px; display: flex; gap: 10px; align-items: flex-start;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+            <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; line-height: 1.45; color: #6B4205;">
+              <span><strong>Constraint · trio → duo: de novo calling for family F07 will be skipped.</strong> The <code class="mono">AD_dn</code> inheritance model needs both parents. SNV, SV and CNV calling and ranking still run for the proband and the mother.</span>
+              <span style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+                <span role="checkbox" aria-checked="true" style="display: inline-flex; align-items: center; gap: 7px; font-weight: 600; color: #22253A;"><span style="width: 16px; height: 16px; border-radius: 5px; background: #7750D4; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>Accept degraded group</span>
+                <span style="color: #8F5806;">accepted by you · reason: sample swap suspected, tube F07-F1 sent back to the wet lab</span>
+                <span style="flex-grow: 1;"></span>
+                <a href="#" style="font-weight: 600; text-decoration: none;">Replace the father's FASTQ instead</a>
+              </span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Other families, compact -->
+        <sc-for list="{{fams}}" as="f" hint-placeholder-count="3">
+          <div style="border-radius: 14px; box-shadow: inset 4px 0 0 {{f.rail}}, 0 0 0 1px rgba(15,16,32,0.11); padding: 9px 14px 9px 18px; display: flex; align-items: center; gap: 12px; flex-wrap: nowrap;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{f.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.icon}}"/></svg>
+            <span style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column;"><strong style="font-size: 13.5px;">Family {{f.name}} <span style="font-weight: 400; font-size: 12px; color: #6E7287;">· {{f.kind}}</span></strong><span style="font-size: 11.5px; color: {{f.notec}};">{{f.note}}</span></span>
+            <span style="flex: 0 0 auto; display: flex; gap: 6px;">
+              <sc-for list="{{f.members}}" as="x" hint-placeholder-count="3"><span style="font-size: 11.5px; padding: 4px 8px; border-radius: 8px; background: {{x.bg}}; color: {{x.fg}}; font-weight: 500;"><strong style="font-weight: 600;">{{x.r}}</strong> {{x.t}}</span></sc-for>
+            </span>
+            <span style="font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 9px; background: #F1F2F6; color: #22253A;">Keep all</span>
+          </div>
+        </sc-for>
+        <div style="border-radius: 14px; background: #F7F7FB; padding: 11px 14px; font-size: 12.5px; line-height: 1.5; color: #33364A;"><strong>After Apply:</strong> F07-F1 leaves stages 2–4 and stays in the run record with its reason. Spectio writes samplesheet v2 (F07-P1 <code class="mono">paternal_id</code> → 0) and continues with <code class="mono">-resume</code>: alignments come from cache; per-case steps (peddy, ranking, genmod) rerun for F07. When the lab confirms the right tube, <a href="ReviewCoverage.dc.html" style="font-weight: 600; text-decoration: none;">replace the input</a>: stage 1 reruns for that sample only and F07 becomes a trio again.</div>
+      </div>
+
+      <aside style="flex: 0 0 340px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+        <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 13px 14px; display: flex; flex-direction: column; gap: 9px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">Relatedness · F07</h2><span style="font-size: 11.5px; color: #6E7287;">peddy rel · expected in brackets</span></div>
+          <div role="table" aria-label="Pairwise relatedness for family F07" style="display: grid; grid-template-columns: 74px repeat(3, minmax(0, 1fr)); gap: 3px; font-size: 11.5px;">
+            <span></span><span style="text-align: center; color: #4D5065; font-weight: 600;">Proband</span><span style="text-align: center; color: #4D5065; font-weight: 600;">Mother</span><span style="text-align: center; color: #4D5065; font-weight: 600;">Father</span>
+            <sc-for list="{{kin}}" as="k" hint-placeholder-count="9">
+              <span style="height: 40px; border-radius: 7px; background: {{k.bg}}; color: {{k.fg}}; display: flex; flex-direction: column; align-items: {{k.al}}; justify-content: center; font-weight: {{k.w}}; box-shadow: {{k.ring}}; padding: 0 4px;"><span>{{k.v}}</span><span style="font-size: 10px; font-weight: 500; opacity: 0.8;">{{k.e}}</span></span>
+            </sc-for>
+          </div>
+          <span style="font-size: 12px; line-height: 1.45; color: #33364A;">Father vs proband: <strong style="color: #B02A2A;">0.02</strong> for an expected 0.50, IBS0 4,812 sites (parent–child ≈ 0). Unrelated, so a swapped tube or a wrong pedigree.</span>
+        </div>
+
+        <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 13px 14px; display: flex; flex-direction: column; gap: 7px;">
+          <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">Gate checks</h2><span style="font-size: 11.5px; color: #6E7287;">from spectio.yml</span></div>
+          <sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+            <div style="display: flex; flex-direction: column; gap: 2px; padding-top: 6px; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; align-items: center; gap: 7px; font-size: 12.5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg><strong style="flex-grow: 1; font-weight: 600;">{{c.name}}</strong><span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span></span>
+              <span style="font-size: 11px; color: #6E7287; padding-left: 21px;">{{c.kind}} · {{c.sev}}</span>
+              <code class="mono" style="font-size: 10.5px; color: #4D368B; padding-left: 21px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{c.from}}">{{c.from}}</code><code class="mono" style="font-size: 10.5px; color: #6E7287; padding-left: 21px;">{{c.eq}}</code>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="border-radius: 14px; background: #F7F7FB; padding: 11px 13px; font-size: 12px; line-height: 1.45; color: #4D5065; display: flex; gap: 9px;">
+          <span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: #EEEFF5; color: #6E7287; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>
+          <span><strong style="color: #33364A;">No suggestion.</strong> Agents are off for clinical gates (project policy), so every decision here is made by a person.</span>
+        </div>
+      </aside>
+    </section>
+
+    <section class="rv-pn pn-sum" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">Gate checks and run health; see Items for the family lanes.</span></section>
+    <section class="rv-pn pn-report" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">peddy/rd-cohort-11.peddy.html in the sandboxed reader · restricted.</span></section>
+    <section class="rv-pn pn-sheet" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">samplesheet.csv v2 draft: F07-F1 removed; F07-P1 <code class="mono">paternal_id</code> set to 0.</span></section>
+    <section class="rv-pn pn-params" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">No parameter changes.</span></section>
+    <section class="rv-pn pn-files" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">No editable files declared for this gate.</span></section>
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">5 events.</span></section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 300px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{changes}}" as="c" hint-placeholder-count="3"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}};">{{c.t}}</span></sc-for></span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 250px;">
+        <span style="font-size: 11.5px; color: #4D5065;">Stages 2–4 · 10 samples · F07 no de novo</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #5A4FCF;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #8B5CF6;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #F4A5BC;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #FCCF98;"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', cross: 'M6 6l12 12 M18 6L6 18', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', info: 'M12 8h.01 M11 12h1v5h1 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0' };
+  const G = '#157A4B', R = '#B02A2A', A = '#8F5806', N = '#4D5065';
+  const opt = (on) => ['Keep', 'Redo', 'Exclude'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? R : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: N, w: 500, sh: 'none' });
+  const cell = (v, e, kind) => {
+    const k = { ok: ['#E8F6EF', '#0E5A37', 600, 'none'], bad: ['#FCEBEB', '#B02A2A', 700, 'inset 0 0 0 2px #DC3B3B'], self: ['#F7F7FB', '#9A9EB0', 500, 'none'], head: ['transparent', '#4D5065', 600, 'none'] }[kind];
+    return { v, e, bg: k[0], fg: k[1], w: k[2], ring: k[3], al: kind === 'head' ? 'flex-start' : 'center' };
+  };
+  const mem = (r, t, ok) => ({ r, t, bg: ok ? '#F1F2F6' : '#FDF3E2', fg: ok ? '#33364A' : '#6B4205' });
+  return {
+    f07: [
+      { role: 'Proband', id: 'F07-P1', meta: 'affected · phenotype 2 · son', sex: 'male → male', sexc: G, sexi: I.check, rel: 'self', relc: N, reli: I.info, cov: '33×', mix: '0.4 %', rail: '#1F9D63', bg: '#FFFFFF', opts: opt('Keep'), note: 'All checks pass', notec: G },
+      { role: 'Mother', id: 'F07-M1', meta: 'unaffected · phenotype 1', sex: 'female → female', sexc: G, sexi: I.check, rel: '0.49 (0.50)', relc: G, reli: I.check, cov: '31×', mix: '0.3 %', rail: '#1F9D63', bg: '#FFFFFF', opts: opt('Keep'), note: 'All checks pass', notec: G },
+      { role: 'Father', id: 'F07-F1', meta: 'unaffected · phenotype 1', sex: 'male → female', sexc: R, sexi: I.cross, rel: '0.02 (0.50)', relc: R, reli: I.cross, cov: '35×', mix: '0.5 %', rail: '#9A9EB0', bg: '#FAFAFC', opts: opt('Exclude'), note: 'Excluded · sample swap suspected', notec: R }
+    ],
+    fams: [
+      { name: 'F05', kind: 'trio', note: 'All checks pass', notec: G, rail: '#1F9D63', col: G, icon: I.check, members: [mem('P1', '♂ 0.51 · 36×', true), mem('M1', '♀ 0.50 · 34×', true), mem('F1', '♂ 0.49 · 33×', true)] },
+      { name: 'F06', kind: 'trio',  rail: '#D9890B', col: A, icon: I.info, members: [mem('P1', '♀ 0.50 · 30×', true), mem('M1', 'sex 0 → ♀ · 0.48', false), mem('F1', '♂ 0.51 · 32×', true)], note: 'Mother: sex 0 (missing) in samplesheet, predicted female · info', notec: A },
+      { name: 'F08', kind: 'duo declared',  rail: '#1F9D63', col: G, icon: I.check, members: [mem('P1', '♀ 0.50 · 29×', true), mem('M1', '♀ · 31×', true)], note: 'No father in the samplesheet: de novo already off', notec: N }
+    ],
+    kin: [
+      cell('Proband', '', 'head'), cell('—', '', 'self'), cell('0.49', '(0.50)', 'ok'), cell('0.02', '(0.50)', 'bad'),
+      cell('Mother', '', 'head'), cell('0.49', '(0.50)', 'ok'), cell('—', '', 'self'), cell('0.01', '(0.00)', 'ok'),
+      cell('Father', '', 'head'), cell('0.02', '(0.50)', 'bad'), cell('0.01', '(0.00)', 'ok'), cell('—', '', 'self')
+    ],
+    checks: [
+      { name: 'Sex vs samplesheet', value: '10 / 11', col: R, icon: I.cross, kind: 'consistency · item', sev: 'block', from: 'table:peddy/*.sex_check.csv#sample_id:predicted_sex', eq: 'equals samplesheet:sex' },
+      { name: 'Relatedness vs pedigree', value: '1 pair off', col: R, icon: I.cross, kind: 'consistency · group', sev: 'block', from: 'table:peddy/*.ped_check.csv#sample_a,sample_b:rel', eq: 'matches pedigree · ± 0.1' },
+      { name: 'Mean coverage ≥ 25×', value: '11 / 11', col: G, icon: I.check, kind: 'min · item', sev: 'warn', from: 'multiqc:mosdepth.mean_coverage', eq: '' },
+      { name: 'Contamination ≤ 3 %', value: '11 / 11', col: G, icon: I.check, kind: 'max · item', sev: 'warn', from: 'multiqc:verifybamid.FREEMIX', eq: '' }
+    ],
+    changes: [
+      { t: 'F07-F1 excluded', bg: '#F1F2F6', fg: '#33364A' },
+      { t: 'F07 trio → duo accepted', bg: '#FDF3E2', fg: '#8F5806' },
+      { t: 'samplesheet v2', bg: '#F6F2FE', fg: '#4D368B' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

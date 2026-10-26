@@ -1,0 +1,388 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, predicted structures</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rs:has(input[value="sum"]:checked) .pn-sum,
+.rs:has(input[value="models"]:checked) .pn-models,
+.rs:has(input[value="seqs"]:checked) .pn-seqs,
+.rs:has(input[value="report"]:checked) .pn-report,
+.rs:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.bl td,.bl th{padding:7px 9px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+.vbtn{height:28px;padding:0 9px;border:none;border-radius:8px;background:rgba(255,255,255,0.1);color:#E6E7EE;font:600 11.5px 'Inter',sans-serif}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/proteinfold · enzyme-panel-03" project="demo-lab / Enzyme panel" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rs" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">7 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <a href="ReviewCandidates.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewContamination.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stages 1 and 2 done, gate after stage 3 open"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#8B5CF6"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Structure QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· enzyme-panel-03 · #341</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block;">nf-core/proteinfold 2.0.0 · colabfold · 12 sequences · paused after prediction (stage 3 of 4) · <strong style="color: #8F5806;">waiting 1 h 12</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span title="You · Alice Martin" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="structural-bio" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">+1</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · proposes</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvst" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">2 to check</span></label>
+      <label class="rv-tab"><input type="radio" name="rvst" value="models" checked aria-label="Models"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 4.5v9L12 21l-8-4.5v-9z M12 12l8-4.5 M12 12v9 M12 12L4 7.5"/></svg>Models<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">{{keptLabel}}</span></label>
+      <label class="rv-tab"><input type="radio" name="rvst" value="seqs" aria-label="Sequences"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16 M4 12h16 M4 18h16"/></svg>Sequences<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">12</span></label>
+      <label class="rv-tab"><input type="radio" name="rvst" value="report" aria-label="Report"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Report<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">13</span></label>
+      <label class="rv-tab"><input type="radio" name="rvst" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">4</span></label>
+    </div>
+
+    <!-- MODELS: candidate list -->
+    <section class="rv-pn pn-models" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <div style="flex: 1 1 460px; min-width: 0; border-radius: 14px; background: #F6F2FE; padding: 10px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <span role="switch" aria-checked="true" aria-label="Rule: keep models with mean PAE at most 15 angstrom" style="width: 38px; height: 22px; border-radius: 11px; background: #7750D4; position: relative; flex-shrink: 0;"><span style="position: absolute; top: 3px; left: 19px; width: 16px; height: 16px; border-radius: 8px; background: #FFFFFF;"></span></span>
+          <span style="display: flex; flex-direction: column; gap: 1px; flex: 1 1 200px; min-width: 0;">
+            <span style="font-size: 13.5px; font-weight: 600; color: #4D368B;">Rule · keep models with mean PAE ≤ 15 Å</span>
+            <span style="font-size: 12px; color: #4D5065;">pLDDT check is <strong>warn</strong> only (≥ 70) · from spectio.yml</span>
+          </span>
+          <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 1px;">
+            <span style="font-size: 13.5px; font-weight: 700;">{{keptCount}} of 57 kept</span>
+            <span style="font-size: 11.5px; color: #4D5065;">{{ruleOut}} rejected by the rule</span>
+          </span>
+        </div>
+        <div style="flex: 1 1 460px; min-width: 0; border-radius: 14px; box-shadow: inset 0 0 0 1px #D8C8FC; background: #FBF9FF; padding: 10px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; background: #7750D4; color: #FFFFFF; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>
+          <span style="display: flex; flex-direction: column; gap: 1px; flex: 1 1 220px; min-width: 0;">
+            <span style="font-size: 13px; font-weight: 600;">QC agent proposes: reject 3 models with pLDDT &lt; 50</span>
+            <span style="font-size: 11.5px; color: #4D5065;">ENZ_04 rank_3, rank_4 · ENZ_11 rank_4 · “mostly disordered, no reliable fold” · <span style="color: #8F5806; font-weight: 600;">waiting for a person</span></span>
+          </span>
+          <span style="display: flex; gap: 6px;">
+            <button type="button" style="height: 32px; padding: 0 11px; border: none; border-radius: 9px; background: #7750D4; color: #FFFFFF; font: 600 12.5px 'Inter', sans-serif;">Accept</button>
+            <button type="button" style="height: 32px; padding: 0 11px; border: none; border-radius: 9px; box-shadow: inset 0 0 0 1px #D8C8FC; background: #FFFFFF; color: #4D368B; font: 600 12.5px 'Inter', sans-serif;">Decline</button>
+          </span>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start;">
+        <!-- left: scatter + ranked list -->
+        <div style="flex: 1 1 480px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+          <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Mean pLDDT vs mean PAE</h2><span style="font-size: 12px; color: #6E7287;">one dot per model · 57</span></div>
+            <div role="img" aria-label="Scatter of 57 models: mean pLDDT against mean predicted aligned error, with the PAE rule line at 15 angstrom" style="display: flex; gap: 6px;">
+              <div style="width: 14px; display: flex; align-items: center; justify-content: center;"><span style="transform: rotate(-90deg); white-space: nowrap; font-size: 11px; color: #33364A;">Mean PAE (Å)</span></div>
+              <div style="width: 20px; position: relative; height: 172px;">
+                <sc-for list="{{gridY}}" as="g" hint-placeholder-count="4"><span style="position: absolute; right: 2px; top: {{g.top}}; transform: translateY(-50%); font-size: 10.5px; color: #6E7287;">{{g.t}}</span></sc-for>
+              </div>
+              <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+                <div style="position: relative; height: 172px; background: #FAFAFC; border-left: 1px solid #DFE1EA; border-bottom: 1px solid #DFE1EA;">
+                  <sc-for list="{{gridX}}" as="g" hint-placeholder-count="5"><span style="position: absolute; left: {{g.left}}; top: 0; bottom: 0; width: 1px; background: #EEEFF5;"></span></sc-for>
+                  <sc-for list="{{gridY}}" as="g" hint-placeholder-count="4"><span style="position: absolute; top: {{g.top}}; left: 0; right: 0; height: 1px; background: #EEEFF5;"></span></sc-for>
+                  <span style="position: absolute; left: 0; right: 0; top: 50%; bottom: 0; background: rgba(119,80,212,0.06);"></span>
+                  <span style="position: absolute; left: 0; right: 0; top: 50%; height: 0; border-top: 2px dashed #7750D4;"></span>
+                  <span style="position: absolute; right: 6px; top: calc(50% - 18px); font-size: 11px; font-weight: 600; color: #4D368B;">rule · PAE ≤ 15 Å</span>
+                  <span style="position: absolute; left: 37.5%; top: 0; bottom: 0; width: 0; border-left: 1.5px dotted #D9890B;"></span>
+                  <span style="position: absolute; left: calc(37.5% + 4px); top: 4px; font-size: 10.5px; color: #8F5806;">pLDDT 50 (AI)</span>
+                  <span style="position: absolute; left: 62.5%; top: 0; bottom: 0; width: 0; border-left: 1.5px dotted #9A9EB0;"></span>
+                  <span style="position: absolute; left: calc(62.5% + 4px); top: 4px; font-size: 10.5px; color: #4D5065;">70 (warn)</span>
+                  <sc-for list="{{dots}}" as="d" hint-placeholder-count="57"><span title="{{d.title}}" style="position: absolute; left: {{d.left}}; top: {{d.top}}; width: {{d.size}}; height: {{d.size}}; transform: translate(-50%, -50%); border-radius: {{d.rad}}; background: {{d.fill}}; opacity: {{d.op}}; box-shadow: {{d.ring}};"></span></sc-for>
+                </div>
+                <div style="position: relative; height: 14px;">
+                  <sc-for list="{{gridX}}" as="g" hint-placeholder-count="5"><span style="position: absolute; left: {{g.left}}; transform: translateX(-50%); font-size: 10.5px; color: #6E7287;">{{g.t}}</span></sc-for>
+                </div>
+                <span style="text-align: center; font-size: 11px; color: #33364A;">Mean pLDDT</span>
+              </div>
+            </div>
+            <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: #33364A;">
+              <sc-for list="{{legend}}" as="l" hint-placeholder-count="5"><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: {{l.rad}}; background: {{l.c}}; box-shadow: {{l.ring}};"></span>{{l.t}}</span></sc-for>
+            </div>
+          </div>
+
+          <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; background: #F7F7FB;"><span style="font-size: 13.5px; font-weight: 600;">Ranked models</span><span style="font-size: 12px; color: #6E7287;">flagged first, then by pLDDT</span></div>
+            <table class="bl" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+              <thead><tr style="color: #33364A; font-size: 11.5px;"><th scope="col">Model</th><th scope="col">pLDDT</th><th scope="col">PAE</th><th scope="col">pTM</th><th scope="col">Decision</th></tr></thead>
+              <tbody>
+                <sc-for list="{{list}}" as="b" hint-placeholder-count="8">
+                  <tr style="box-shadow: inset 4px 0 0 {{b.rail}}; background: {{b.bg}};">
+                    <td style="padding-left: 13px; white-space: normal; min-width: 150px;"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">{{b.id}}</span> <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4D5065;">{{b.rank}}</span><span style="display: flex; align-items: center; gap: 4px; font-size: 11px; color: {{b.notec}};"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{b.nicon}}"/></svg>{{b.note}}</span></td>
+                    <td><span style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{b.band}};"></span>{{b.pl}}</span></td>
+                    <td style="font-weight: 600; color: {{b.paec}};">{{b.pae}}</td>
+                    <td style="color: #33364A;">{{b.ptm}}</td>
+                    <td><span style="display: inline-flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px;"><sc-for list="{{b.opts}}" as="o" hint-placeholder-count="2"><span style="padding: 3px 8px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for></span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+            <div style="padding: 7px 12px; font-size: 12px; color: #6E7287; border-top: 1px solid #EEEFF5;">Showing 8 of 57 · the rule decides the rest · <a href="#" style="font-weight: 600; text-decoration: none;">Show all</a></div>
+          </div>
+        </div>
+
+        <!-- right: evidence panel -->
+        <div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+        <div style="border-radius: 16px; box-shadow: inset 0 0 0 2px #7750D4; background: #FBF9FF; padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600;"><span style="font-family: 'JetBrains Mono', monospace;">ENZ_03</span> rank_0 <span style="font-weight: 500; color: #6E7287; font-size: 12.5px;">· 412 aa · alphafold2_ptm · seed 000</span></h2>
+            <a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">ENZ_03_colabfold_report.html →</a>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: stretch;">
+            <div style="flex: 0 0 236px; display: flex; flex-direction: column; gap: 5px;">
+              <span style="display: flex; justify-content: space-between; font-size: 12px;"><strong>PAE</strong><span style="color: #6E7287;">ENZ_03_0_pae.tsv · 32 × 32 bins</span></span>
+              <div style="display: flex; gap: 4px;">
+                <div role="img" aria-label="Predicted aligned error heatmap: two low-error domain blocks (residues 1 to 197 and 215 to 412) with high error between them" style="width: 210px; display: grid; grid-template-columns: repeat(32, 1fr); box-shadow: 0 0 0 1px #DFE1EA;">
+                  <sc-for list="{{pae}}" as="p" hint-placeholder-count="1024"><span style="aspect-ratio: 1; background: {{p}};"></span></sc-for>
+                </div>
+                <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9.5px; color: #6E7287;"><span>0</span><span style="flex-grow: 1; width: 8px; border-radius: 3px; background: linear-gradient(#0B5E2E, #6DBB7E, #FFFFFF); box-shadow: 0 0 0 1px #DFE1EA;"></span><span>30 Å</span></div>
+              </div>
+              <span style="display: flex; justify-content: space-between; font-size: 10px; color: #6E7287; width: 210px;"><span>1</span><span>198–214 linker</span><span>412</span></span>
+            </div>
+            <div style="flex: 1 1 auto; min-width: 0; border-radius: 12px; background: radial-gradient(circle at 38% 42%, rgba(101,203,243,0.55) 0 14%, transparent 15%), radial-gradient(circle at 63% 58%, rgba(0,83,214,0.6) 0 16%, transparent 17%), radial-gradient(circle at 50% 50%, rgba(255,219,19,0.45) 0 4%, transparent 5%), linear-gradient(160deg, #1A1C2E, #2A2D44); display: flex; flex-direction: column; justify-content: space-between; padding: 8px; color: #E6E7EE; position: relative;">
+              <span style="display: flex; gap: 5px; flex-wrap: wrap;"><button type="button" class="vbtn" style="background: rgba(255,255,255,0.22);">Cartoon</button><button type="button" class="vbtn">Surface</button><button type="button" class="vbtn">Colour: pLDDT</button></span>
+              <span role="img" aria-label="3D structure viewer placeholder" style="align-self: center; font-size: 12px; text-align: center; line-height: 1.45; background: rgba(15,16,32,0.55); padding: 6px 10px; border-radius: 8px;">3D viewer · ENZ_03.pdb<br><span style="color: #C4C7D4; font-size: 11px;">PDB streamed by the runner · 1.3 MB</span></span>
+              <span style="display: flex; justify-content: space-between; font-size: 10.5px; color: #C4C7D4;"><span>top_ranked_structures/ENZ_03.pdb</span><span>drag to rotate</span></span>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 4px;">
+            <span style="display: flex; justify-content: space-between; font-size: 12px;"><strong>Per-residue pLDDT</strong><span style="color: #6E7287;">ENZ_03_plddt.tsv · column rank_0</span></span>
+            <div role="img" aria-label="Per-residue pLDDT along 412 residues: very high in both domains, low in the linker 198 to 214 and the C-terminal tail" style="display: flex; height: 18px; border-radius: 4px; overflow: hidden;">
+              <sc-for list="{{strip}}" as="s" hint-placeholder-count="103"><span style="flex: 1 1 0; background: {{s}};"></span></sc-for>
+            </div>
+            <span style="position: relative; height: 13px; font-size: 10px; color: #6E7287;"><span style="position: absolute; left: 0;">1</span><span style="position: absolute; left: 24.3%;">100</span><span style="position: absolute; left: 48.5%;">200</span><span style="position: absolute; left: 72.8%;">300</span><span style="position: absolute; right: 0;">412</span></span>
+            <span style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: #33364A;">
+              <sc-for list="{{bands}}" as="l" hint-placeholder-count="4"><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 2px; background: {{l.c}};"></span>{{l.t}}</span></sc-for>
+            </span>
+          </div>
+
+          <div style="display: flex; flex-direction: column;">
+            <sc-for list="{{evidence}}" as="e" hint-placeholder-count="4">
+              <div style="display: flex; gap: 12px; font-size: 12px; padding: 5px 0; border-top: 1px solid #EEE7FD;"><span style="width: 74px; flex-shrink: 0; font-weight: 600; color: #4D368B;">{{e.k}}</span><span style="font-family: 'JetBrains Mono', monospace; color: #22253A; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{e.v}}</span></div>
+            </sc-for>
+          </div>
+
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 8px; border-top: 1px solid #EEE7FD;">
+            <span role="radiogroup" aria-label="Decision for ENZ_03 rank_0" style="display: flex; padding: 3px; border-radius: 10px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #E6DCFC; font-size: 12.5px;">
+              <span style="padding: 6px 14px; border-radius: 8px; background: #7750D4; color: #FFFFFF; font-weight: 600;">Accept</span>
+              <span style="padding: 6px 14px; border-radius: 8px; color: #4D5065; font-weight: 500;">Reject…</span>
+            </span>
+            <span style="flex: 1 1 200px; font-size: 12px; color: #4D5065; line-height: 1.4;">Domain orientation is uncertain (inter-domain PAE ≈ 14 Å); each domain is confident. Add a flag note instead of rejecting.</span>
+            <button type="button" style="height: 32px; padding: 0 10px; border: none; border-radius: 9px; box-shadow: inset 0 0 0 1px #D8C8FC; background: #FFFFFF; color: #4D368B; font: 600 12px 'Inter', sans-serif;">Flag</button>
+          </div>
+        </div>
+        <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 14px; font-weight: 600;">Other ranks of <span style="font-family: 'JetBrains Mono', monospace;">ENZ_03</span></h2><span style="font-size: 12px; color: #6E7287;">per-residue pLDDT · same scale</span></div>
+          <sc-for list="{{ranks}}" as="r" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+              <span style="width: 52px; font-family: 'JetBrains Mono', monospace; font-weight: 600;">{{r.id}}</span>
+              <span style="flex-grow: 1; display: flex; height: 10px; border-radius: 3px; overflow: hidden;"><sc-for list="{{r.strip}}" as="s" hint-placeholder-count="52"><span style="flex: 1 1 0; background: {{s}};"></span></sc-for></span>
+              <span style="width: 150px; white-space: nowrap; color: #33364A;">{{r.v}}</span>
+              <span style="width: 64px; text-align: right; font-weight: 600; color: {{r.fg}};">{{r.d}}</span>
+            </div>
+          </sc-for>
+        </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="gap: 12px; flex-wrap: wrap; align-items: stretch;">
+      <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">lab overlay spectio.yml · proteinfold declares no gate</span></div>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
+            <span style="flex: 1 1 220px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span>
+            <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+            <span style="font-size: 12px; color: #4D5065; min-width: 130px; text-align: right;">{{c.where}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex: 2 1 260px; min-width: 0; border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in</span></div>
+        <sc-for list="{{health}}" as="h" hint-placeholder-count="4"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}};">{{h.v}}</span></div></sc-for>
+      </div>
+    </section>
+
+    <!-- SEQUENCES -->
+    <section class="rv-pn pn-seqs" style="flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; color: #4D5065;">Models kept per sequence. Excluding a sequence drops its samplesheet row for stage 4 (Foldseek, reports).</span>
+      <sc-for list="{{seqs}}" as="s" hint-placeholder-count="12">
+        <div style="display: flex; align-items: center; gap: 14px; border-top: 1px solid #EEEFF5; padding: 7px 0; font-size: 13px;"><span style="width: 70px; font-family: 'JetBrains Mono', monospace; font-weight: 600;">{{s.id}}</span><span style="flex-grow: 1; display: flex; gap: 3px;"><sc-for list="{{s.m}}" as="m" hint-placeholder-count="5"><span style="flex: 1 1 0; height: 10px; border-radius: 3px; background: {{m}};"></span></sc-for></span><span style="width: 170px; text-align: right; color: {{s.fg}}; font-weight: 600;">{{s.t}}</span></div>
+      </sc-for>
+    </section>
+
+    <!-- REPORT -->
+    <section class="rv-pn pn-report" style="flex-direction: column; gap: 8px;">
+      <div role="img" aria-label="Per-sequence ColabFold report in a sandboxed frame (placeholder)" style="height: 420px; border-radius: 16px; box-shadow: inset 0 0 0 1px #DFE1EA; background: repeating-linear-gradient(135deg, #F7F7FB 0 14px, #F1F2F6 14px 28px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: #4D5065;"><strong style="color: #22253A;">ENZ_03_colabfold_report.html</strong><span>Sandboxed frame · separate origin · streamed by the runner</span></div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="4">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 340px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{changes}}" as="c" hint-placeholder-count="3"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}};">{{c.t}}</span></sc-for></span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 250px;">
+        <span style="font-size: 11.5px; color: #4D5065; line-height: 1.35;">Stage 4 (Foldseek) runs on all 12 top-ranked models: proteinfold reads no keep list</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #5A4FCF;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #8B5CF6;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #EC5F87;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #FCCF98;"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  let seed = 11;
+  const rnd = () => { seed = (seed * 16807) % 2147483647; return seed / 2147483647; };
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', ai: 'M12 3l2.5 6.5L21 12l-6.5 2.5L12 21l-2.5-6.5L3 12l6.5-2.5z', dot: 'M12 12h.01', cross: 'M6 6l12 12 M18 6L6 18' };
+  // AlphaFold pLDDT bands (AlphaFold DB colours)
+  const bandOf = v => v > 90 ? '#0053D6' : v >= 70 ? '#65CBF3' : v >= 50 ? '#FFDB13' : '#FF7D45';
+  // Sequences: base pLDDT of rank_0, PAE of rank_0, models present
+  const S = [['ENZ_01', 91.2, 4.1, 5], ['ENZ_02', 87.9, 5.6, 5], ['ENZ_03', 88.4, 7.9, 5], ['ENZ_04', 61.3, 9.6, 5], ['ENZ_05', 84.0, 6.4, 5], ['ENZ_06', 78.6, 9.8, 5],
+             ['ENZ_07', 72.4, 11.2, 3], ['ENZ_08', 93.1, 3.2, 5], ['ENZ_09', 68.9, 10.4, 5], ['ENZ_10', 80.7, 8.7, 5], ['ENZ_11', 66.0, 9.9, 5], ['ENZ_12', 85.5, 6.1, 5]];
+  const fixed = { 'ENZ_04:3': [46.2, 12.1], 'ENZ_04:4': [41.8, 13.0], 'ENZ_11:4': [38.5, 14.0] };
+  const ai = ['ENZ_04:3', 'ENZ_04:4', 'ENZ_11:4'];
+  const models = [];
+  S.forEach(([id, pl, pae, n], si) => {
+    let cp = pl, ce = pae;
+    for (let r = 0; r < n; r++) {
+      if (r > 0) { cp -= 1.2 + rnd() * 2.6; ce += 0.6 + rnd() * 1.6; }
+      let p = cp, e = ce;
+      if (si === 5 && r >= 3) e = 15.6 + r * 0.9;    // ENZ_06 low ranks: PAE over rule
+      if (si === 9 && r === 4) e = 16.3;              // ENZ_10 rank_4
+      if (si === 6 && r === 2) e = 17.1;              // ENZ_07 rank_2
+      const k = id + ':' + r; if (fixed[k]) { p = fixed[k][0]; e = Math.min(e, 14.6); }
+      models.push({ id, r, p: +p.toFixed(1), e: +e.toFixed(1), k });
+    }
+  });
+  const X = p => ((p - 20) / 80 * 100), Y = e => (100 - e / 30 * 100);
+  let ruleOut = 0, kept = 0;
+  const dots = models.map(m => {
+    const out = m.e > 15; if (out) ruleOut++; else kept++;
+    const isAI = ai.includes(m.k), sel = m.k === 'ENZ_03:0';
+    return { left: X(m.p).toFixed(1) + '%', top: Y(m.e).toFixed(1) + '%', size: sel ? '13px' : isAI ? '11px' : '9px', rad: isAI ? '2px' : '50%', fill: bandOf(m.p), op: out ? 0.4 : 0.95,
+      ring: sel ? '0 0 0 2.5px #7750D4, 0 0 0 4px #FFFFFF' : isAI ? '0 0 0 2px #7750D4' : '0 0 0 1px #FFFFFF', title: m.id + ' rank_' + m.r + ' · pLDDT ' + m.p + ' · PAE ' + m.e + ' Å' };
+  });
+  // PAE heatmap 32 x 32 bins of 412 residues
+  const res = b => Math.round((b + 0.5) * 412 / 32);
+  const dom = i => i < 198 ? 0 : i <= 214 ? 1 : i > 396 ? 3 : 2;
+  const green = v => { const t = Math.min(1, v / 30); const a = [11, 94, 46], m = [109, 187, 126], w = [255, 255, 255];
+    const c = t < 0.4 ? a.map((x, j) => x + (m[j] - x) * t / 0.4) : m.map((x, j) => x + (w[j] - x) * (t - 0.4) / 0.6);
+    return 'rgb(' + c.map(Math.round).join(',') + ')'; };
+  const pae = [];
+  for (let i = 0; i < 32; i++) for (let j = 0; j < 32; j++) {
+    const a = dom(res(i)), b = dom(res(j)); let v;
+    if (i === j) v = 0.6;
+    else if (a === 1 || b === 1) v = 19 + rnd() * 7;
+    else if (a === 3 || b === 3) v = 16 + rnd() * 8;
+    else if (a === b) v = 2.2 + Math.abs(i - j) * 0.12 + rnd() * 1.6;
+    else v = 12.5 + rnd() * 3.5;
+    pae.push(green(v));
+  }
+  // per-residue pLDDT strip: 103 segments of 4 residues
+  const strip = Array.from({ length: 103 }, (_, s) => { const i = s * 4; let v;
+    if (i < 6) v = 62; else if (i >= 196 && i <= 216) v = 44 + rnd() * 18; else if (i > 396) v = 40 + rnd() * 15;
+    else if ((i > 120 && i < 132) || (i > 300 && i < 312)) v = 78 + rnd() * 8; else v = 89 + rnd() * 9;
+    return bandOf(v); });
+  const rankStrip = (shift, tail) => Array.from({ length: 52 }, (_, s) => { const i = s * 8; let v;
+    if (i >= 192 && i <= 216) v = 40 + shift + rnd() * 18; else if (i > 396) v = 38 + rnd() * 12; else v = 86 - shift * 0.6 - (tail && i > 300 ? 14 : 0) + rnd() * 10;
+    return bandOf(v); });
+  const ranks = [1, 2, 3, 4].map(r => { const m = models.find(x => x.id === 'ENZ_03' && x.r === r);
+    return { id: 'rank_' + r, strip: rankStrip(r * 2, r >= 3), v: 'pLDDT ' + m.p.toFixed(1) + ' · PAE ' + m.e.toFixed(1) + ' Å', d: m.e > 15 ? 'rejected' : 'kept', fg: m.e > 15 ? '#B02A2A' : '#157A4B' }; });
+  const opt = (on) => ['Accept', 'Reject'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Reject' ? '#B02A2A' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  const get = (id, r) => models.find(m => m.id === id && m.r === r);
+  const L = (id, r, ptm, decision, note, notec, nicon, selected, rail) => {
+    const m = get(id, r);
+    return { id, rank: 'rank_' + r, pl: m.p.toFixed(1), band: bandOf(m.p), pae: m.e.toFixed(1) + ' Å', paec: m.e > 15 ? '#B02A2A' : m.e > 10 ? '#8F5806' : '#22253A', ptm, opts: opt(decision),
+      note, notec, nicon, rail: rail || (selected ? '#7750D4' : 'transparent'), bg: selected ? '#FBF9FF' : 'transparent' };
+  };
+  return {
+    keptCount: kept, keptLabel: kept + ' kept', ruleOut, ranks,
+    dots, pae, strip,
+    gridX: [20, 40, 60, 80, 100].map(v => ({ left: X(v) + '%', t: String(v) })),
+    gridY: [0, 10, 20, 30].map(v => ({ top: Y(v) + '%', t: String(v) })),
+    legend: [{ t: '> 90', c: '#0053D6', rad: '5px', ring: 'none' }, { t: '70–90', c: '#65CBF3', rad: '5px', ring: 'none' }, { t: '50–70', c: '#FFDB13', rad: '5px', ring: 'none' }, { t: '< 50', c: '#FF7D45', rad: '5px', ring: 'none' },
+             { t: 'AI: reject', c: '#FFFFFF', rad: '2px', ring: 'inset 0 0 0 2px #7750D4' }, { t: 'faded: rejected', c: '#C4C7D4', rad: '5px', ring: 'none' }],
+    bands: [{ t: 'Very high > 90', c: '#0053D6' }, { t: 'Confident 70–90', c: '#65CBF3' }, { t: 'Low 50–70', c: '#FFDB13' }, { t: 'Very low < 50', c: '#FF7D45' }],
+    list: [
+      L('ENZ_11', 4, '0.31', 'Accept', 'AI: reject · pLDDT < 50', '#4D368B', I.ai, false, '#7750D4'),
+      L('ENZ_04', 3, '0.38', 'Accept', 'AI: reject · pLDDT < 50', '#4D368B', I.ai, false, '#7750D4'),
+      L('ENZ_04', 4, '0.35', 'Accept', 'AI: reject · pLDDT < 50', '#4D368B', I.ai, false, '#7750D4'),
+      L('ENZ_07', 2, '0.58', 'Reject', 'rule: PAE > 15 Å · 2 ranks missing', '#B02A2A', I.warn, false, '#D9890B'),
+      L('ENZ_09', 0, '0.69', 'Accept', 'warn: pLDDT < 70 · His-tag', '#8F5806', I.warn, false, '#D9890B'),
+      L('ENZ_08', 0, '0.91', 'Accept', 'passes', '#157A4B', I.check),
+      L('ENZ_01', 0, '0.89', 'Accept', 'passes', '#157A4B', I.check),
+      L('ENZ_03', 0, '0.84', 'Accept', 'selected · passes', '#4D368B', I.check, true)
+    ],
+    evidence: [
+      { k: 'Scores', v: 'mean pLDDT 88.4 · pTM 0.84 · max PAE 28.6 Å · mean PAE 7.9 Å' },
+      { k: 'Domains', v: '1–197 pLDDT 92.1 · 215–396 pLDDT 90.4 · between: PAE ≈ 14 Å' },
+      { k: 'MSA', v: 'colabfold_search · 1,842 sequences · Neff 9.7' },
+      { k: 'Run', v: 'num_recycles 3 · use_amber true · A100 · 6 min 40' }
+    ],
+    checks: [
+      { name: 'Models per sequence', rule: 'completeness · 5 each', value: '11 / 12', col: '#8F5806', icon: I.warn, where: 'ENZ_07 · 3 of 5' },
+      { name: 'Mean PAE', rule: '≤ 15 Å · block', value: ruleOut + ' over', col: '#B02A2A', icon: I.warn, where: 'decided by the rule' },
+      { name: 'Mean pLDDT', rule: '≥ 70 · warn', value: models.filter(m => m.p < 70).length + ' under', col: '#8F5806', icon: I.warn, where: [...new Set(models.filter(m => m.p < 70).map(m => m.id))].join(' · ') },
+      { name: 'Top model per sequence', rule: 'pLDDT ≥ 50', value: '12 / 12', col: '#157A4B', icon: I.check, where: '' }
+    ],
+    health: [
+      { k: 'Failed tasks', v: '1 (COLABFOLD_BATCH · ENZ_07)', fg: '#B02A2A' }, { k: 'Cause', v: 'GPU out of memory, 2 retries', fg: '#8F5806' },
+      { k: 'Stage 3 runtime', v: '1 h 58 · usual 1 h 40', fg: '#22253A' }, { k: 'GPU hours', v: '14.2 on gpu-a100', fg: '#22253A' }
+    ],
+    seqs: S.map(([id, pl, pae, n]) => { const ms = models.filter(m => m.id === id); const m = ms.map(x => x.e > 15 ? '#C4C7D4' : bandOf(x.p)); while (m.length < 5) m.push('repeating-linear-gradient(135deg, #F1F2F6 0 3px, #DFE1EA 3px 6px)');
+      const k = ms.filter(x => x.e <= 15).length; return { id, m, t: n < 5 ? k + ' kept · ' + (5 - n) + ' missing' : k + ' of 5 kept', fg: n < 5 ? '#8F5806' : '#22253A' }; }),
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after COLABFOLD_BATCH; Foldseek search (stage 4) held.', at: '08:14' },
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'COLABFOLD_BATCH for ENZ_07 failed after 2 retries (CUDA out of memory); 3 of 5 models kept.', at: '08:14' },
+      { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', text: 'QC agent proposed rejecting 3 models with pLDDT < 50 (propose only, per spectio.yml).', at: '08:19' },
+      { t: 'CD', bg: '#E6DCFC', fg: '#4D368B', text: 'Chloé Diallo commented on ENZ_09: “N-terminal His-tag, low pLDDT expected.”', at: '09:02' }
+    ],
+    changes: [
+      { t: 'Rule PAE ≤ 15 Å', bg: '#F6F2FE', fg: '#4D368B' },
+      { t: 'ENZ_03 flag: domain orientation', bg: '#F1F2F6', fg: '#33364A' },
+      { t: 'models_keep.tsv (' + kept + ' models)', bg: '#F6F2FE', fg: '#4D368B' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

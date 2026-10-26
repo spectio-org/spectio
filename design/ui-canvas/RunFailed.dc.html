@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — run detail, failed without stages</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+@keyframes spectio-hatch{from{background-position:0 0}to{background-position:22.63px 0}}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-ligatures:none}
+.btn{height:36px;padding:0 12px;border-radius:10px;border:none;font:600 13px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-p:hover{color:#FFFFFF;background:#6344B2}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.btn-off{background:#F7F7FB;color:#9A9EB0;box-shadow:inset 0 0 0 1px #EEEFF5;cursor:not-allowed}
+.kv{display:flex;flex-direction:column;gap:1px;padding:5px 8px;border-radius:7px;background:#F7F7FB;min-width:0}
+.kv b{font-size:10.5px;font-weight:600;color:#6E7287;letter-spacing:.02em}
+.kv span{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:#22253A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tail{margin:0;padding:7px 10px;border-radius:9px;background:#0F1020;color:#DFE1EA;font-family:'JetBrains Mono',monospace;font-variant-ligatures:none;font-size:10.5px;line-height:1.5;display:flex;flex-direction:column;gap:1px}
+.tail span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tail span.err{white-space:normal;color:#F8B4B4}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Runs / wgs-cohort-12 #314" project="demo-lab / WGS cohort" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="runs" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <section class="card" style="border-radius: 20px; overflow: hidden;">
+      <div style="height: 4px; background: #DC3B3B;"></div>
+      <div style="padding: 14px 20px; display: flex; gap: 18px; align-items: center;">
+        <svg width="84" height="42" viewBox="0 0 200 100" role="img" style="flex-shrink: 0;" aria-label="No stages declared: task quarters 1 to 3 completed, failure in quarter 4">
+          <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#8B5CF6"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#EC5F87"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DC3B3B"/>
+        </svg>
+        <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 26px;">wgs-cohort-12 <span style="color: #6E7287; font-weight: 600;">#314</span></h1>
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: #B02A2A;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg>Failed <span style="font-weight: 400; color: #4D5065;">· 2 jobs failed after retries · 143 / 175 jobs done · 9 h 47 m</span>
+          </span>
+          <span style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px;">
+            <span class="chip" style="background: #F7F7FB; color: #33364A; box-shadow: inset 0 0 0 1px #EEEFF5;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="14" height="14" alt="Snakemake" title="Snakemake" style="display: block; object-fit: contain;">wgs-germline v1.3.0 · Snakemake 9.27.1</span>
+            <span class="chip" style="background: #EEF6FA; color: #1F536D;">demo-hpc SLURM · htc</span>
+            <span class="chip" style="background: #F7F7FB; color: #33364A; box-shadow: inset 0 0 0 1px #EEEFF5;">amartin · hpc-login-1</span>
+          </span>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; flex-shrink: 0;">
+          <a href="RelaunchDialog.dc.html" class="btn btn-s" style="height: 40px;">Resume as is</a>
+          <a href="RelaunchDialog.dc.html" class="btn btn-p" style="height: 40px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>Relaunch with 2 suggested changes</a>
+          <a href="Launch.dc.html" class="btn btn-s" title="More: Copy to a new launch, Download logs" aria-label="More actions" style="height: 40px; width: 40px; padding: 0; justify-content: center;">⋯</a>
+        </div>
+      </div>
+    </section>
+
+    <nav aria-label="Run sections" style="display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #EEEFF5;">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="10">
+        <a href="{{t.href}}" aria-current="{{t.cur}}" aria-disabled="{{t.dis}}" title="{{t.tip}}" style="padding: 9px 12px; font-size: 13.5px; font-weight: {{t.w}}; color: {{t.c}}; text-decoration: none; box-shadow: {{t.u}};">{{t.label}}</a>
+      </sc-for>
+    </nav>
+
+    <div role="note" style="display: flex; gap: 12px; align-items: center; font-size: 12.5px; color: #33364A; background: #F7F7FB; border-radius: 12px; padding: 10px 12px; flex-wrap: wrap;">
+      <svg width="40" height="20" viewBox="0 0 200 100" aria-hidden="true" style="flex-shrink: 0;"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#C4C7D4"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#C4C7D4"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#C4C7D4"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#C4C7D4"/></svg>
+      <span style="flex: 1 1 560px; line-height: 1.45;"><strong style="color: #0F1020;">No stages declared.</strong> This workflow has no <span class="mono">spectio.yml</span>, and no Snakemake modules or checkpoints to detect stages from, so the gauge shows <strong>task quarters</strong> (143 of 175 jobs; the failure is in the last quarter). Resume and start fresh work as usual. <strong>Rerun from a stage is unavailable</strong> until stages are declared.</span>
+      <a href="Manifest.dc.html" class="btn btn-s" style="height: 32px;">Declare stages (lab overlay)</a>
+    </div>
+
+    <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start;">
+      <section style="flex: 3 1 640px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+          <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Why it failed</h2>
+          <span style="font-size: 12.5px; color: #4D5065;">Classified from <span class="mono">sacct</span> state, exit code and the job log · <a href="RunScheduler.dc.html" style="font-weight: 600; text-decoration: none;">all jobs in Scheduler →</a></span>
+        </div>
+
+        <sc-for list="{{fails}}" as="f" hint-placeholder-count="2">
+          <article class="card" style="overflow: hidden; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), inset 4px 0 0 #DC3B3B;">
+            <header style="padding: 11px 16px 9px 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-bottom: 1px solid #EEEFF5;">
+              <span class="chip" style="background: #FCEBEB; color: #B02A2A;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.icon}}"/></svg>{{f.state}}</span>
+              <span style="font-size: 14px; font-weight: 600;">{{f.cls}}</span>
+              <span style="font-size: 13px; color: #33364A;">rule <span class="mono" style="font-weight: 600; color: #0F1020;">{{f.rule}}</span> · <span class="mono" style="font-size: 12px;">{{f.wc}}</span></span>
+              <span style="margin-left: auto; font-size: 12px; color: #4D5065;">{{f.meta}}</span>
+            </header>
+            <div style="display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr); gap: 14px; padding: 12px 16px 14px 18px;">
+              <div style="display: flex; flex-direction: column; gap: 7px; min-width: 0;">
+                <span style="font-size: 11.5px; font-weight: 600; color: #6E7287;">EVIDENCE · <span class="mono" style="font-weight: 400;">{{f.cmd}}</span></span>
+                <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 5px;">
+                  <sc-for list="{{f.kv}}" as="k" hint-placeholder-count="6"><div class="kv" style="box-shadow: {{k.ring}};"><b>{{k.k}}</b><span style="color: {{k.fg}};">{{k.v}}</span></div></sc-for>
+                </div>
+                <span style="font-size: 11.5px; font-weight: 600; color: #6E7287;">LOG TAIL · <span class="mono" style="font-weight: 400;">{{f.log}}</span></span>
+                <div class="tail" role="log"><sc-for list="{{f.tail}}" as="l" hint-placeholder-count="3"><span class="{{l.c}}">{{l.t}}</span></sc-for></div>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 8px; min-width: 0; border-radius: 12px; background: #FBF9FF; box-shadow: inset 0 0 0 1px #E9E1FB; padding: 10px 12px;">
+                <span style="display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 600; color: #6344B2;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg>SUGGESTED FIX</span>
+                <span style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;"><code class="mono" style="font-size: 13px; color: #22253A;">{{f.key}}</code><span style="font-size: 15px;"><span style="color: #B02A2A; text-decoration: line-through;">{{f.old}}</span> → <strong style="color: #157A4B;">{{f.new}}</strong></span></span>
+                <span style="font-size: 12.5px; color: #33364A; line-height: 1.45;">{{f.why}}</span>
+                <code class="mono" style="font-size: 11px; color: #22253A; background: #FFFFFF; border-radius: 6px; padding: 4px 7px; box-shadow: inset 0 0 0 1px #EEEFF5;">{{f.cfg}}</code>
+                <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 600; color: #22253A; margin-top: auto;"><input type="checkbox" checked style="width: 16px; height: 16px; accent-color: #7750D4; margin: 0;">Include in the relaunch</label>
+              </div>
+            </div>
+          </article>
+        </sc-for>
+
+        <article class="card" style="overflow: hidden; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), inset 4px 0 0 #1F9D63;">
+          <header style="padding: 11px 16px 9px 18px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span class="chip" style="background: #FCEBEB; color: #B02A2A;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>NODE_FAIL</span>
+            <span style="font-size: 14px; font-weight: 600;">Node failure</span>
+            <span style="font-size: 13px; color: #33364A;">rule <span class="mono" style="font-weight: 600; color: #0F1020;">mark_duplicates</span> · <span class="mono" style="font-size: 12px;">sample=WGS-05</span></span>
+            <span class="chip" style="margin-left: auto; background: #E8F6EF; color: #157A4B;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Recovered on attempt 2</span>
+          </header>
+          <div style="padding: 0 16px 12px 18px; display: flex; gap: 14px; flex-wrap: wrap; align-items: center;">
+            <span style="flex: 1 1 420px; display: flex; gap: 6px; flex-wrap: wrap; align-items: center; font-size: 12px; color: #33364A;">
+              <span class="mono" style="background: #F7F7FB; border-radius: 6px; padding: 3px 7px;">48730877 · NODE_FAIL · 0:0 · demo-hpc-n017 · 00:06:41</span>→
+              <span class="mono" style="background: #E8F6EF; border-radius: 6px; padding: 3px 7px; color: #157A4B;">48730951 · COMPLETED · 0:0 · demo-hpc-n031 · 00:22:08</span>
+            </span>
+            <span style="flex: 1 1 260px; font-size: 12.5px; color: #4D5065; line-height: 1.4;">Node <span class="mono">demo-hpc-n017</span> stopped responding at 23:02 (<span class="mono">sinfo</span>: down, “Not responding”). Snakemake resubmitted the job. No change needed; if it repeats, exclude the node.</span>
+          </div>
+        </article>
+      </section>
+
+      <aside style="flex: 1 1 330px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+        <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">If you relaunch now</h2>
+          <span style="font-size: 12.5px; color: #4D5065; line-height: 1.4;">Resume in the same work directory. Snakemake skips jobs whose outputs are complete and reruns incomplete ones.</span>
+          <span style="display: flex; height: 14px; border-radius: 5px; overflow: hidden; gap: 2px;" role="img" aria-label="143 jobs reused, 2 rerun, 30 still to run">
+            <span style="flex: 143 0 0; background: repeating-linear-gradient(135deg, #EEEDFA 0 8px, #D6D2F3 8px 16px); background-size: 22.63px 22.63px; animation: spectio-hatch 1.6s linear infinite;"></span>
+            <span style="flex: 2 0 0; min-width: 6px; background: #7750D4;"></span>
+            <span style="flex: 30 0 0; background: #C4B5FD;"></span>
+          </span>
+          <span style="display: flex; flex-direction: column; gap: 5px; font-size: 12.5px; color: #33364A;">
+            <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: repeating-linear-gradient(135deg, #EEEDFA 0 3px, #B9B2EC 3px 6px); flex-shrink: 0;"></span>Reused (finished, outputs kept)<strong style="margin-left: auto;">143</strong></span>
+            <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #7750D4; flex-shrink: 0;"></span>Rerun with the changes below<strong style="margin-left: auto;">2</strong></span>
+            <span style="display: flex; align-items: center; gap: 7px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #C4B5FD; flex-shrink: 0;"></span>Not reached yet, will run<strong style="margin-left: auto;">30</strong></span>
+          </span>
+          <div style="border-top: 1px solid #EEEFF5; padding-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+            <span style="font-size: 11.5px; font-weight: 600; color: #6E7287;">2 CHANGES · APPLIED WITH <span class="mono">--set-resources</span>, NOT TO THE SNAKEFILE</span>
+            <sc-for list="{{changes}}" as="c" hint-placeholder-count="2">
+              <span style="display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px;"><code class="mono" style="color: #22253A;">{{c.k}}</code><span><span style="color: #B02A2A; text-decoration: line-through;">{{c.old}}</span> → <strong style="color: #157A4B;">{{c.new}}</strong></span></span>
+            </sc-for>
+          </div>
+          <a href="RelaunchDialog.dc.html" class="btn btn-p" style="justify-content: center; height: 40px;">Relaunch with 2 suggested changes</a>
+          <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid #EEEFF5; padding-top: 10px;">
+            <span style="display: flex; align-items: center; gap: 8px;"><span class="btn btn-off" aria-disabled="true" style="height: 30px; font-size: 12.5px;">Rerun from a stage</span><span style="font-size: 12px; color: #6E7287; line-height: 1.35;">Unavailable: no stages declared</span></span>
+            <span style="display: flex; align-items: center; gap: 8px;"><a href="RelaunchDialog.dc.html" class="btn btn-s" style="height: 30px; font-size: 12.5px;">Start fresh</a><span style="font-size: 12px; color: #6E7287;">New work dir, nothing reused (175 jobs)</span></span>
+          </div>
+        </section>
+
+        <section class="card" style="overflow: hidden;">
+          <div style="padding: 12px 16px 6px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Jobs by rule</h2></div>
+          <table style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+            <tbody>
+              <sc-for list="{{rules}}" as="r" hint-placeholder-count="6">
+                <tr style="border-top: 1px solid #EEEFF5; box-shadow: inset 3px 0 0 {{r.rail}};">
+                  <td class="mono" style="padding: 6px 8px 6px 16px; font-size: 11.5px; color: #22253A;">{{r.rule}}</td>
+                  <td style="padding: 6px 8px; white-space: nowrap; color: #33364A;">{{r.done}}</td>
+                  <td style="padding: 6px 16px 6px 8px; white-space: nowrap; font-size: 12px; font-weight: 600; color: {{r.fg}}; text-align: right;">{{r.note}}</td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </section>
+
+        <section style="font-size: 12px; color: #4D5065; background: #F7F7FB; border-radius: 12px; padding: 10px 12px; line-height: 1.45;">
+          <strong style="color: #22253A;">Work directory kept while resumable</strong> · <span class="mono">/scratch/demo/amartin/wgs-cohort-12</span> · 1.9 TB. The scratch purge deletes files untouched for 30 days: resume before 25 Nov. <a href="EnvStorage.dc.html" style="font-weight: 600; text-decoration: none;">Storage rules →</a>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const tabNames = [['Summary', 'RunFailed.dc.html'], ['Stages & gates', '#'], ['Tasks', '#'], ['Scheduler', 'RunScheduler.dc.html'], ['Logs', '#'], ['Outputs & reports', 'RunOutputs.dc.html'], ['Parameters', '#'], ['Software', '#'], ['Environment', 'Environments.dc.html'], ['Lineage', 'RunsCompare.dc.html']];
+  const ACTIVE = 'Summary';
+  const L = (t, err) => ({ t, c: err ? 'err' : '' });
+  const kv = (k, v, hot) => ({ k, v, fg: hot ? '#B02A2A' : '#22253A', ring: hot ? 'inset 0 0 0 1px #F2B8B8' : 'none' });
+  return {
+    tabs: tabNames.map(([label, href]) => {
+      const on = label === ACTIVE, off = label === 'Stages & gates';
+      return { label: off ? 'Stages & gates · none' : label, href, cur: on ? 'page' : 'false', dis: off ? 'true' : 'false', tip: off ? 'No stages declared in spectio.yml' : '', w: on ? 600 : 500, c: on ? '#4D368B' : (off ? '#9A9EB0' : '#4D5065'), u: on ? 'inset 0 -2px 0 #7750D4' : 'none' };
+    }),
+    fails: [
+      { state: 'OUT_OF_MEMORY', icon: 'M6 6l12 12 M18 6L6 18', cls: 'Out of memory', rule: 'bwa_mem', wc: 'sample=WGS-07', meta: 'job 48731209 · try 2 / 2',
+        cmd: 'sacct -j 48731209', log: 'logs/bwa_mem/WGS-07.log',
+        kv: [kv('State', 'OUT_OF_MEMORY', true), kv('ExitCode', '0:125'), kv('Elapsed', '00:41:12'), kv('ReqMem', '8000M'), kv('MaxRSS', '8187436K (100 %)', true), kv('NodeList', 'demo-hpc-n022')],
+        tail: [L('[M::mem_process_seqs] Processed 400000 reads in 151.204 CPU sec, 19.322 real sec'), L('[M::mem_pestat] # candidate unique pairs for (FF, FR, RF, RR): (12, 168733, 9, 14)'), L('slurmstepd: error: Detected 1 oom_kill event in StepId=48731209.batch. Some of your processes may have been killed by the cgroup out-of-memory handler.', 1)],
+        key: 'mem_mb', old: '8000', new: '16000',
+        why: 'Both tries used all 8000 MB: the rule asks a fixed amount, so the retry hit the same limit. Doubling leaves headroom.',
+        cfg: '--set-resources bwa_mem:mem_mb=16000' },
+      { state: 'TIMEOUT', icon: 'M12 7v5l3 2 M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z', cls: 'Timeout', rule: 'haplotype_caller', wc: 'sample=WGS-03 · interval=0007', meta: 'job 48731544 · try 2 / 2',
+        cmd: 'sacct -j 48731544', log: 'logs/haplotype_caller/WGS-03.0007.log',
+        kv: [kv('State', 'TIMEOUT', true), kv('ExitCode', '0:0'), kv('Timelimit', '04:00:00', true), kv('Elapsed', '04:00:27'), kv('TotalCPU', '03:56:40 (99 %)'), kv('MaxRSS', '5.1G of 12G')],
+        tail: [L('04:09:02.315 INFO  ProgressMeter -  chr7:142381075  236.8  5893000  24886.3'), L('04:10:02.318 INFO  ProgressMeter -  chr7:144102236  237.8  5921000  24898.1'), L('slurmstepd: error: *** JOB 48731544 ON demo-hpc-n042 CANCELLED AT 2026-10-26T04:12:09 DUE TO TIME LIMIT ***', 1)],
+        key: 'runtime', old: '240 min', new: '480 min',
+        why: 'Busy (CPU 99 %) and still progressing on chr7 at the limit: it needs more time, not memory. htc allows 7 days.',
+        cfg: '--set-resources haplotype_caller:runtime=480' }
+    ],
+    changes: [
+      { k: 'bwa_mem · mem_mb', old: '8000', new: '16000' },
+      { k: 'haplotype_caller · runtime', old: '240', new: '480' }
+    ],
+    rules: [
+      { rule: 'fastp', done: '12 / 12', note: 'done', fg: '#157A4B', rail: '#1F9D63' },
+      { rule: 'bwa_mem', done: '11 / 12', note: '1 out of memory', fg: '#B02A2A', rail: '#DC3B3B' },
+      { rule: 'mark_duplicates', done: '11 / 12', note: '1 recovered · 1 waiting', fg: '#157A4B', rail: '#1F9D63' },
+      { rule: 'base_recalibrator · apply_bqsr', done: '22 / 24', note: '2 waiting', fg: '#4D5065', rail: '#DFE1EA' },
+      { rule: 'haplotype_caller', done: '87 / 96', note: '1 timeout', fg: '#B02A2A', rail: '#DC3B3B' },
+      { rule: 'genotype_gvcfs +4', done: '0 / 19', note: 'not reached', fg: '#4D5065', rail: '#DFE1EA' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

@@ -24,17 +24,18 @@ a{color:#6344B2}a:hover{color:#4D368B}
 .rr:has(input[value="report"]:checked) .pn-report,
 .rr:has(input[value="changes"]:checked) .pn-changes,
 .rr:has(input[value="hist"]:checked) .pn-hist{display:flex}
-.it td,.it th{padding:9px 12px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',monospace}
+.it td,.it th{padding:7px 10px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
-  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/rnaseq · liver-tc-03" hint-size="100%,76px"></dc-import></div>
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/rnaseq · rnaseq-full-a1fcddd" hint-size="100%,76px"></dc-import></div>
   <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
-  <main class="rr" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+  <main class="rr" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
 
     <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
       <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
-      <span style="color: #6E7287;">5 of 12 assigned to you</span>
+      <span style="color: #6E7287;">5 of 8 assigned to you</span>
       <span style="flex-grow: 1;"></span>
       <a href="ReviewCoverage.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
       <a href="ReviewCandidates.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
@@ -43,13 +44,13 @@ a{color:#6344B2}a:hover{color:#4D368B}
 
     <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
       <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stage 1 done, gate after stage 2 open"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
-      <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
-        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Mapping QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· liver-tc-03 · #301</span></h1>
-        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block;">nf-core/rnaseq 3.27.0 · 24 samples · paused after stage 2 of 4 · <strong style="color: #8F5806;">waiting 1 h 12</strong></span>
+      <div style="flex: 1 1 0; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Mapping QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· rnaseq-full-a1fcddd · #301</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: block; line-height: 1.45;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">nf-core/rnaseq 3.27.0 · star_rsem · 8 samples · paused after stage 2 of 4 · gate from lab overlay <code class="mono" style="font-size: 12px;">demo-lab/rnaseq-qc</code> · <strong style="color: #8F5806;">waiting 1 h 12</strong></span>
       </div>
       <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
-        <span title="You" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">TW</span>
-        <span title="rnaseq-core" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">+3</span>
+        <span title="You" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="rnaseq-core: Bruno Keller, Chloé Diallo, Dmitri Novak" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">+3</span>
         <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · suggests</span>
       </span>
     </div>
@@ -58,7 +59,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
       <sc-for list="{{tabsBefore}}" as="t" hint-placeholder-count="1">
         <label class="rv-tab"><input type="radio" name="rvrep" value="{{t.v}}" aria-label="{{t.label}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"/></svg>{{t.label}}<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: {{t.bbg}}; color: {{t.bfg}};">{{t.badge}}</span></label>
       </sc-for>
-      <label class="rv-tab"><input type="radio" name="rvrep" value="samples" checked aria-label="Samples"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Samples<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">2 excluded</span></label>
+      <label class="rv-tab"><input type="radio" name="rvrep" value="samples" checked aria-label="Samples"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Samples<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">1 flagged</span></label>
       <sc-for list="{{tabsAfter}}" as="t" hint-placeholder-count="3">
         <label class="rv-tab"><input type="radio" name="rvrep" value="{{t.v}}" aria-label="{{t.label}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"/></svg>{{t.label}}<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: {{t.bbg}}; color: {{t.bfg}};">{{t.badge}}</span></label>
       </sc-for>
@@ -67,59 +68,92 @@ a{color:#6344B2}a:hover{color:#4D368B}
     <!-- SUMMARY -->
     <section class="rv-pn pn-sum" style="gap: 12px; flex-wrap: wrap; align-items: stretch;">
       <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">this workflow · from spectio.yml · values from MultiQC general stats</span></div>
-        <sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+        <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">lab overlay demo-lab/rnaseq-qc · values from multiqc_report_data/</span></div>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="6">
           <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
-            <span style="flex: 1 1 240px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}} · {{c.sev}}</span></span>
+            <span style="flex: 1 1 240px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.kind}} {{c.rule}} · {{c.sev}}</span></span>
             <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
-            <span style="font-size: 12px; color: #4D5065; min-width: 110px; text-align: right;">{{c.where}}</span>
+            <span style="font-size: 12px; color: #4D5065; min-width: 150px; text-align: right;">{{c.where}}</span>
           </div>
         </sc-for>
       </div>
       <div style="flex: 2 1 260px; min-width: 0; border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
-        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in</span></div>
-        <sc-for list="{{health}}" as="h" hint-placeholder-count="4"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}};">{{h.v}}</span></div></sc-for>
+        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in · execution trace</span></div>
+        <sc-for list="{{health}}" as="h" hint-placeholder-count="5"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}}; text-align: right;">{{h.v}}</span></div></sc-for>
       </div>
     </section>
 
     <!-- SAMPLES: item table -->
     <section class="rv-pn pn-samples" style="flex-direction: column; gap: 10px;">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="6">
+          <div style="border-radius: 12px; box-shadow: inset 0 3px 0 {{c.rail}}, 0 0 0 1px rgba(15,16,32,0.11); padding: 8px 11px; display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+            <span style="display: flex; align-items: center; gap: 7px; font-size: 12.5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg><strong style="font-weight: 600;">{{c.name}}</strong><span style="font-size: 11.5px; color: #4D5065;"><code class="mono" style="font-size: 10.5px; color: #33364A;">{{c.kind}}</code> {{c.rule}} · {{c.sev}}</span><span style="flex-grow: 1;"></span><span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span></span>
+            <span style="font-size: 11.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.where}}</span>
+            <code class="mono" title="{{c.from}}" style="font-size: 10.5px; color: #4D368B; background: #F6F2FE; border-radius: 6px; padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.from}}</code>
+          </div>
+        </sc-for>
+      </div>
+
       <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
-        <span style="font-size: 13px; color: #4D5065;">Item table · worst first · grouped by <code style="font-family: 'JetBrains Mono', monospace;">condition</code> · min 2 replicates per group</span>
+        <span style="font-size: 13px; color: #4D5065;">Item table · worst first · grouped by sample name prefix (<code class="mono" style="font-size: 12px;">_REPn</code>) · constraint <code class="mono" style="font-size: 12px;">min_per_group: 2</code> from the lab overlay</span>
         <span style="display: flex; gap: 8px;">
-          <button type="button" style="height: 32px; padding: 0 10px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif;">Flagged only</button>
-          <button type="button" style="height: 32px; padding: 0 10px; border-radius: 9px; border: none; background: #F6F2FE; color: #4D368B; font: 600 12.5px 'Inter', sans-serif;">Exclude all failing</button>
+          <button type="button" style="height: 30px; padding: 0 10px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #F6F2FE; font: 600 12.5px 'Inter', sans-serif; color: #4D368B;">Flagged first</button>
+          <button type="button" disabled title="Excluding every failing sample would break the K562 replicate group" style="height: 30px; padding: 0 10px; border-radius: 9px; border: none; background: #F1F2F6; color: #9A9EB0; font: 600 12.5px 'Inter', sans-serif; cursor: not-allowed;">Exclude all failing</button>
         </span>
       </div>
-      <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
-        <table class="it" style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 13px;">
-          <thead><tr style="background: #F7F7FB; color: #33364A; font-size: 12px;"><th scope="col">Sample</th><th scope="col">Reads (M)</th><th scope="col">Uniquely mapped % <span style="font-weight: 400; color: #6E7287;">≥ 80 · block</span></th><th scope="col">rRNA % <span style="font-weight: 400; color: #6E7287;">≤ 10 · warn</span></th><th scope="col">Strandedness <span style="font-weight: 400; color: #6E7287;">declared → inferred</span></th><th scope="col">Decision</th></tr></thead>
-          <sc-for list="{{lanes}}" as="g" hint-placeholder-count="2">
+      <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+        <table class="it" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+          <thead><tr style="background: #F7F7FB; color: #33364A; font-size: 11.5px;">
+            <th scope="col" style="padding-left: 16px;">Sample</th>
+            <th scope="col">Reads (M)</th>
+            <th scope="col">Uniq. mapped % <span style="font-weight: 400; color: #6E7287;">≥ 85</span></th>
+            <th scope="col">Dup. % <span style="font-weight: 400; color: #6E7287;">≤ 80</span></th>
+            <th scope="col">5'–3' bias <span style="font-weight: 400; color: #6E7287;">≤ 1.3</span></th>
+            <th scope="col">Mt rRNA % <span style="font-weight: 400; color: #6E7287;">≤ 5</span></th>
+            <th scope="col">Genomic origin <span style="font-weight: 400; color: #6E7287;">exonic %</span></th>
+            <th scope="col">Decision</th>
+          </tr></thead>
+          <sc-for list="{{lanes}}" as="g" hint-placeholder-count="3">
             <tbody>
-              <tr style="background: #FBFBFD;"><td colspan="6" style="padding: 8px 12px; font-size: 12px; font-weight: 600; color: #33364A;">{{g.title}} <span style="font-weight: 400; color: #6E7287;">· {{g.meta}}</span></td></tr>
-              <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="4">
+              <tr style="background: #FBFBFD;"><td colspan="8" style="padding: 6px 12px 6px 16px; font-size: 12px; font-weight: 600; color: #33364A;">{{g.title}} <span style="font-weight: 400; color: #6E7287;">· {{g.meta}}</span></td></tr>
+              <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="2">
                 <tr style="box-shadow: inset 4px 0 0 {{r.rail}}; background: {{r.rowbg}};">
-                  <td style="font-weight: 600; padding-left: 16px;">{{r.s}} <span style="font-size: 11.5px; font-weight: 400; color: #6E7287;">{{r.note}}</span></td>
-                  <td style="color: {{r.readsFg}}; background: {{r.readsBg}};">{{r.reads}}</td>
+                  <td style="padding-left: 16px;"><span style="font-weight: 600;">{{r.s}}</span> <span style="font-size: 11px; color: #6E7287;">{{r.note}}</span></td>
+                  <td style="color: #33364A;">{{r.reads}}</td>
                   <td style="color: {{r.mapFg}}; background: {{r.mapBg}}; font-weight: 600;">{{r.map}}</td>
-                  <td style="color: {{r.rrnaFg}}; background: {{r.rrnaBg}}; font-weight: 600;">{{r.rrna}}</td>
-                  <td style="color: {{r.strFg}}; background: {{r.strBg}};">{{r.str}}</td>
+                  <td style="color: {{r.dupFg}}; background: {{r.dupBg}}; font-weight: 600;">{{r.dup}}</td>
+                  <td style="color: {{r.biasFg}}; background: {{r.biasBg}}; font-weight: 600;">{{r.bias}}</td>
+                  <td style="color: {{r.mtFg}}; background: {{r.mtBg}}; font-weight: 600;">{{r.mt}}</td>
+                  <td><span style="display: flex; align-items: center; gap: 8px;"><span role="img" aria-label="{{r.originLabel}}" style="display: flex; width: 110px; height: 10px; border-radius: 5px; overflow: hidden; background: #EEEFF5;"><span style="width: {{r.exW}}; background: #5A4FCF;"></span><span style="width: {{r.inW}}; background: #B9A8F0;"></span><span style="width: {{r.igW}}; background: #D9890B;"></span></span><span style="color: #33364A;">{{r.ex}}</span></span></td>
                   <td>
-                    <span role="radiogroup" aria-label="Decision for {{r.s}}" style="display: inline-flex; padding: 3px; border-radius: 10px; background: #F1F2F6; font-size: 12px;">
-                      <sc-for list="{{r.opts}}" as="o" hint-placeholder-count="2"><span style="padding: 4px 10px; border-radius: 8px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for>
+                    <span role="radiogroup" aria-label="Decision for {{r.s}}" style="display: inline-flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px;">
+                      <sc-for list="{{r.opts}}" as="o" hint-placeholder-count="3"><span style="padding: 3px 9px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for>
                     </span>
                   </td>
                 </tr>
+                <sc-if value="{{r.hasWarn}}" hint-placeholder-val="{{false}}">
+                  <tr><td colspan="8" style="padding: 8px 12px 9px 16px; background: #FFFBF3; box-shadow: inset 4px 0 0 #D9890B; white-space: normal;">
+                    <span style="display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; line-height: 1.45; color: #6B4205;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                      <span>{{r.warn}}</span>
+                    </span>
+                  </td></tr>
+                </sc-if>
               </sc-for>
-              <sc-if value="{{g.hasWarn}}" hint-placeholder-val="{{false}}">
-                <tr><td colspan="6" style="padding: 8px 12px 8px 16px; background: #FFFBF3; color: #6B4205; font-size: 12.5px;"><strong>Constraint:</strong> {{g.warn}}</td></tr>
+              <sc-if value="{{g.hasMore}}" hint-placeholder-val="{{false}}">
+                <tr><td colspan="8" style="padding: 7px 12px 7px 16px; font-size: 12px; color: #4D5065;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#157A4B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: -2px;"><path d="M5 12l5 5L20 7"/></svg> {{g.more}} · <a href="#" style="font-weight: 600; text-decoration: none;">show</a></td></tr>
               </sc-if>
             </tbody>
           </sc-for>
         </table>
       </div>
-      <span style="font-size: 12px; color: #4D5065;">16 more samples pass every check (collapsed). Excluded samples leave the samplesheet for the next stages and stay in the run record with their reason.</span>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div style="flex: 1 1 380px; min-width: 0; border-radius: 14px; background: #F7F7FB; padding: 10px 13px; font-size: 12.5px; line-height: 1.5; color: #33364A;"><strong>Flag</strong> keeps the sample in samplesheet v1 and writes the reason into the run record: nothing reruns. <strong>Exclude</strong> would write samplesheet v2 and continue with <code class="mono" style="font-size: 11.5px;">-resume</code>: DESEQ2_QC_RSEM and MULTIQC rerun, other tasks come from cache.</div>
+        <div style="flex: 1 1 380px; min-width: 0; border-radius: 14px; box-shadow: 0 0 0 1px #E6DCFC; background: #FBF9FF; padding: 10px 13px; font-size: 12.5px; line-height: 1.5; color: #33364A; display: flex; gap: 9px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: #7750D4; color: #FFFFFF; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span><span><strong>QC agent</strong> suggested Flag, not Exclude, for K562_REP1: 0.53 point under the mapping threshold, and its dupRadar intercept (1.04) is close to K562_REP2 (0.88), so both replicates behave alike. You accepted at 09:14.</span></div>
+      </div>
+      <span style="font-size: 11.5px; color: #6E7287;">Data: nf-core/rnaseq 3.27.0 megatest (AWS, results-a1fcddd, aligner star_rsem). Sample names, column names and values are real; thresholds and the group constraint are the lab overlay's (illustrative).</span>
     </section>
 
     <!-- REPORT: report reader -->
@@ -127,28 +161,28 @@ a{color:#6344B2}a:hover{color:#4D368B}
       <div style="flex: 3 1 560px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden; display: flex; flex-direction: column;">
         <div style="display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: #F7F7FB; font-size: 12.5px; color: #33364A; border-bottom: 1px solid #EEEFF5;">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#157A4B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h12v9H6z M8 11V8a4 4 0 0 1 8 0v3"/></svg>
-          <span style="font-family: 'JetBrains Mono', monospace;">multiqc/star_salmon/multiqc_report.html</span><span style="color: #6E7287;">· 18.4 MB · loaded on demand</span>
+          <span class="mono">multiqc/star_rsem/multiqc_report.html</span><span style="color: #6E7287;">· loaded on demand</span>
           <span style="flex-grow: 1;"></span><a href="#" style="font-weight: 600; text-decoration: none;">Open full screen</a>
         </div>
         <div role="img" aria-label="MultiQC report rendered in a sandboxed frame (placeholder)" style="padding: 18px 20px; display: flex; flex-direction: column; gap: 14px; background: #FFFFFF; min-height: 520px;">
-          <div style="display: flex; align-items: baseline; gap: 10px;"><span style="font-size: 20px; font-weight: 700; color: #22253A;">MultiQC</span><span style="font-size: 12px; color: #6E7287;">v1.31 · liver-tc-03 · 24 samples</span></div>
+          <div style="display: flex; align-items: baseline; gap: 10px;"><span style="font-size: 20px; font-weight: 700; color: #22253A;">MultiQC</span><span style="font-size: 12px; color: #6E7287;">nf-core/rnaseq · star_rsem · 8 samples</span></div>
           <div style="font-size: 14px; font-weight: 600; color: #22253A;">General Statistics</div>
-          <div style="border: 1px solid #DFE1EA; border-radius: 6px; overflow: hidden; font-size: 11.5px; font-family: 'JetBrains Mono', monospace;">
-            <div style="display: grid; grid-template-columns: 120px repeat(4, minmax(0, 1fr)); background: #F1F2F6; color: #33364A; font-weight: 600;"><span style="padding: 6px 8px;">Sample</span><span style="padding: 6px 8px;">M Seqs</span><span style="padding: 6px 8px;">% Aligned</span><span style="padding: 6px 8px;">% rRNA</span><span style="padding: 6px 8px;">% Dups</span></div>
-            <sc-for list="{{mqc}}" as="m" hint-placeholder-count="6">
-              <div style="display: grid; grid-template-columns: 120px repeat(4, minmax(0, 1fr)); border-top: 1px solid #EEEFF5; background: {{m.bg}};">
+          <div class="mono" style="border: 1px solid #DFE1EA; border-radius: 6px; overflow: hidden; font-size: 11.5px;">
+            <div style="display: grid; grid-template-columns: 130px repeat(4, minmax(0, 1fr)); background: #F1F2F6; color: #33364A; font-weight: 600;"><span style="padding: 6px 8px;">Sample</span><span style="padding: 6px 8px;">M Reads</span><span style="padding: 6px 8px;">% Uniq.</span><span style="padding: 6px 8px;">% Dups</span><span style="padding: 6px 8px;">5'-3' bias</span></div>
+            <sc-for list="{{mqc}}" as="m" hint-placeholder-count="8">
+              <div style="display: grid; grid-template-columns: 130px repeat(4, minmax(0, 1fr)); border-top: 1px solid #EEEFF5; background: {{m.bg}};">
                 <span style="padding: 5px 8px;">{{m.s}}</span>
                 <span style="padding: 5px 8px; position: relative;"><span style="position: absolute; left: 0; top: 4px; bottom: 4px; width: {{m.rw}}; background: #DCEDF6;"></span><span style="position: relative;">{{m.r}}</span></span>
                 <span style="padding: 5px 8px; position: relative;"><span style="position: absolute; left: 0; top: 4px; bottom: 4px; width: {{m.aw}}; background: #C9EBD8;"></span><span style="position: relative;">{{m.a}}</span></span>
-                <span style="padding: 5px 8px; position: relative;"><span style="position: absolute; left: 0; top: 4px; bottom: 4px; width: {{m.ow}}; background: #FDE2C0;"></span><span style="position: relative;">{{m.o}}</span></span>
-                <span style="padding: 5px 8px;">{{m.d}}</span>
+                <span style="padding: 5px 8px; position: relative;"><span style="position: absolute; left: 0; top: 4px; bottom: 4px; width: {{m.dw}}; background: #FDE2C0;"></span><span style="position: relative;">{{m.d}}</span></span>
+                <span style="padding: 5px 8px;">{{m.b}}</span>
               </div>
             </sc-for>
           </div>
-          <div style="font-size: 14px; font-weight: 600; color: #22253A;">STAR: Alignment Scores</div>
+          <div style="font-size: 14px; font-weight: 600; color: #22253A;">STAR: Alignment Scores <span style="font-weight: 400; font-size: 12px; color: #6E7287;">uniquely mapped · multimapped · unmapped too short · other</span></div>
           <div style="display: flex; flex-direction: column; gap: 4px;">
-            <sc-for list="{{mqc}}" as="m" hint-placeholder-count="6">
-              <div style="display: flex; align-items: center; gap: 8px; font-size: 11px; font-family: 'JetBrains Mono', monospace; color: #33364A;"><span style="width: 60px;">{{m.s}}</span><span style="flex-grow: 1; display: flex; height: 14px; border-radius: 3px; overflow: hidden; box-shadow: {{m.ring}};"><span style="width: {{m.a}}; background: #437BB1;"></span><span style="width: {{m.mm}}; background: #7CB5EC;"></span><span style="flex-grow: 1; background: #F7A35C;"></span></span></div>
+            <sc-for list="{{mqc}}" as="m" hint-placeholder-count="8">
+              <div class="mono" style="display: flex; align-items: center; gap: 8px; font-size: 11px; color: #33364A;"><span style="width: 104px;">{{m.s}}</span><span style="flex-grow: 1; display: flex; height: 14px; border-radius: 3px; overflow: hidden; box-shadow: {{m.ring}};"><span style="width: {{m.a}}; background: #437BB1;"></span><span style="width: {{m.mm}}; background: #7CB5EC;"></span><span style="width: {{m.ts}}; background: #F7A35C;"></span><span style="flex-grow: 1; background: #B1084C;"></span></span></div>
             </sc-for>
           </div>
         </div>
@@ -156,7 +190,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
       <aside style="flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
         <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
           <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Checks</h2>
-          <sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+          <sc-for list="{{checks}}" as="c" hint-placeholder-count="6">
             <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg><span style="flex-grow: 1;">{{c.name}}</span><span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span></div>
           </sc-for>
         </div>
@@ -164,7 +198,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
           <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Flagged samples</h2>
           <span style="font-size: 12px; color: #4D5065;">Click to highlight in the report</span>
           <span style="display: flex; gap: 6px; flex-wrap: wrap;">
-            <sc-for list="{{flagChips}}" as="f" hint-placeholder-count="3"><span style="font-size: 12px; font-weight: 600; padding: 5px 9px; border-radius: 8px; background: {{f.bg}}; color: {{f.fg}}; box-shadow: {{f.ring}}; cursor: pointer;">{{f.t}}</span></sc-for>
+            <sc-for list="{{flagChips}}" as="f" hint-placeholder-count="4"><span style="font-size: 12px; font-weight: 600; padding: 5px 9px; border-radius: 8px; background: {{f.bg}}; color: {{f.fg}}; box-shadow: {{f.ring}}; cursor: pointer;">{{f.t}}</span></sc-for>
           </span>
         </div>
         <div style="border-radius: 14px; background: #E8F6EF; padding: 12px 14px; font-size: 12.5px; line-height: 1.5; color: #0E5A37;"><strong>Sandboxed:</strong> separate origin, no access to your session. Scripts in the report run isolated; links open outside Spectio.</div>
@@ -194,11 +228,11 @@ a{color:#6344B2}a:hover{color:#4D368B}
     <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
       <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 320px; min-width: 0;">
         <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 2</span>
-        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F1F2F6; color: #33364A;">2 samples excluded</span><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F6F2FE; color: #4D368B;">samplesheet v2</span></span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #FDF3E2; color: #8F5806;">K562_REP1 flagged below a block threshold</span><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F1F2F6; color: #33364A;">3 warnings acknowledged</span></span>
       </span>
-      <span style="display: flex; flex-direction: column; gap: 4px; width: 260px;">
-        <span style="font-size: 11.5px; color: #4D5065;">MultiQC, DESeq2 rerun; other tasks from cache</span>
-        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #5A4FCF;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #8B5CF6;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #F4A5BC;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, #F9A947 0 6px, #FDE2C0 6px 12px);"></span></span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 230px;">
+        <span style="font-size: 11.5px; color: #4D5065;">Stages 3–4 · 8 samples · nothing reruns</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #5A4FCF;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #8B5CF6;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #F4A5BC;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #FCCF98;"></span></span>
       </span>
       <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
       <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
@@ -210,66 +244,87 @@ a{color:#6344B2}a:hover{color:#4D368B}
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
 class Component extends DCLogic {
 renderVals() {
-  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z' };
+  // Values: nf-core/rnaseq 3.27.0 megatest, results-a1fcddd/aligner_star_rsem/multiqc/star_rsem/multiqc_report_data/
+  const I = { check: 'M5 12l5 5L20 7', cross: 'M6 6l12 12 M18 6L6 18', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z' };
   const badge = (n, kind) => ({ badge: n, bbg: kind === 'amber' ? '#FDF3E2' : kind === 'violet' ? '#F6F2FE' : '#F1F2F6', bfg: kind === 'amber' ? '#8F5806' : kind === 'violet' ? '#4D368B' : '#4D5065' });
-  const tabsBefore = [{ v: 'sum', label: 'Summary', icon: 'M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z', ...badge('3 to check', 'amber') }];
+  const tabsBefore = [{ v: 'sum', label: 'Summary', icon: 'M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z', ...badge('4 to check', 'amber') }];
   const tabsAfter = [
     { v: 'report', label: 'Report', icon: 'M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6', ...badge('MultiQC', 'grey') },
     { v: 'changes', label: 'Changes', icon: 'M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4', ...badge('2', 'violet') },
     { v: 'hist', label: 'History', icon: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', ...badge('4', 'grey') }
   ];
   const FAIL = ['#B02A2A', '#FCEBEB'], WARN = ['#8F5806', '#FDF3E2'], OK = ['#22253A', 'transparent'];
-  const opt = (on) => ['Keep', 'Exclude'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? '#B02A2A' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
-  const row = (s, note, reads, rc, map, mc, rrna, oc, str, sc, dec) => ({
-    s, note, reads, map, rrna, str,
-    readsFg: rc[0], readsBg: rc[1], mapFg: mc[0], mapBg: mc[1], rrnaFg: oc[0], rrnaBg: oc[1], strFg: sc[0], strBg: sc[1],
-    opts: opt(dec), rail: dec === 'Exclude' ? '#9A9EB0' : (mc === FAIL || sc === FAIL ? '#DC3B3B' : (oc === WARN || mc === WARN ? '#D9890B' : 'transparent')),
-    rowbg: dec === 'Exclude' ? '#FAFAFC' : 'transparent'
-  });
+  const opt = (on) => ['Keep', 'Flag', 'Exclude'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? '#B02A2A' : t === 'Flag' ? '#8F5806' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  // [sample, star-total_reads, star-uniquely_mapped_percent, picard PERCENT_DUPLICATION, qualimap 5_3_bias, Mt_rRNA % of biotype total,
+  //  qualimap exonic, intronic, intergenic, rseqc_inferred %, decision, note, warn]
+  const row = (s, reads, map, dup, bias, mt, ex, intr, ig, strPct, dec, note, warn) => {
+    const mc = map < 85 ? FAIL : OK, dc = dup > 80 ? WARN : OK, bc = bias > 1.3 ? WARN : OK, tc = mt > 5 ? WARN : OK;
+    const tot = ex + intr + ig;
+    return {
+      s, note, reads: reads.toFixed(1), map: map.toFixed(2), dup: dup.toFixed(1), bias: bias.toFixed(2), mt: mt.toFixed(2),
+      mapFg: mc[0], mapBg: mc[1], dupFg: dc[0], dupBg: dc[1], biasFg: bc[0], biasBg: bc[1], mtFg: tc[0], mtBg: tc[1],
+      exW: (ex / tot * 100) + '%', inW: (intr / tot * 100) + '%', igW: (ig / tot * 100) + '%', ex: (ex / tot * 100).toFixed(1) + ' %',
+      originLabel: `exonic ${(ex / tot * 100).toFixed(1)} %, intronic ${(intr / tot * 100).toFixed(1)} %, intergenic ${(ig / tot * 100).toFixed(1)} %`,
+      str: 'reverse → reverse · ' + strPct + ' %',
+      opts: opt(dec), hasWarn: !!warn, warn: warn || '',
+      rail: dec === 'Exclude' ? '#9A9EB0' : mc === FAIL ? '#DC3B3B' : (dc === WARN || bc === WARN || tc === WARN) ? '#D9890B' : 'transparent',
+      rowbg: dec === 'Flag' ? '#FFFDF8' : 'transparent'
+    };
+  };
   const lanes = [
-    { title: 'treated', meta: '3 replicates · 1 excluded', hasWarn: true, warn: 'excluding T1 as well would leave treated with 1 replicate (min 2): DESeq2 contrast treated vs control would be skipped.', rows: [
-      row('T3', 'excluded · low mapping', '18.2', OK, '61.2', FAIL, '14.8', WARN, 'reverse → unstranded', FAIL, 'Exclude'),
-      row('T1', 'borderline', '31.0', OK, '78.9', FAIL, '6.1', OK, 'reverse → reverse', OK, 'Keep'),
-      row('T2', '', '29.4', OK, '88.4', OK, '4.2', OK, 'reverse → reverse', OK, 'Keep')
+    { title: 'K562', meta: '2 replicates · 1 flagged · min 2 per group', hasMore: false, more: '', rows: [
+      row('K562_REP1', 91.481228, 84.47, 86.2623, 1.09, 2.66, 114373252, 25761653, 11833306, 98.8, 'Flag', 'dupRadar 1.04', 'Exclude is blocked by a constraint: K562 would keep 1 replicate (lab rule min_per_group: 2). nf-core/rnaseq itself would carry on: its DESeq2 step is QC only (PCA, sample clustering), with no contrast to lose. Flagged instead: kept, with the reason "0.53 point under the 85 % mapping threshold; duplication shared with K562_REP2".'),
+      row('K562_REP2', 112.470655, 85.31, 83.0755, 1.12, 2.45, 140832167, 35465139, 12460942, 98.3, 'Keep', 'dupRadar 0.88', '')
     ] },
-    { title: 'control', meta: '6 replicates · 1 excluded', hasWarn: false, warn: '', rows: [
-      row('C4', 'excluded · few reads', '4.1', WARN, '72.0', FAIL, '9.4', OK, 'reverse → reverse', OK, 'Exclude'),
-      row('C2', '', '27.8', OK, '84.1', OK, '11.2', WARN, 'reverse → reverse', OK, 'Keep'),
-      row('C1', '', '30.2', OK, '90.3', OK, '3.8', OK, 'reverse → reverse', OK, 'Keep'),
-      row('C3', '', '28.6', OK, '89.7', OK, '4.4', OK, 'reverse → reverse', OK, 'Keep'),
-      row('C5', '', '32.4', OK, '91.0', OK, '3.1', OK, 'reverse → reverse', OK, 'Keep')
-    ] }
+    { title: 'H1', meta: '2 replicates · 5\'–3\' bias above 1.3 on both', hasMore: false, more: '', rows: [
+      row('H1_REP2', 104.405898, 86.27, 53.0556999, 1.39, 1.73, 142107169, 25552542, 9457844, 98.7, 'Keep', '', ''),
+      row('H1_REP1', 121.468977, 88.51, 50.9283999, 1.36, 3.22, 172802295, 28905788, 9895138, 98.8, 'Keep', '', '')
+    ] },
+    { title: 'MCF7', meta: '2 replicates · mitochondrial rRNA above 5 % on both', hasMore: false, more: '', rows: [
+      row('MCF7_REP1', 123.728742, 88.21, 37.3712, 1.15, 6.52, 164517813, 38576614, 12323093, 96.3, 'Keep', '', ''),
+      row('MCF7_REP2', 128.479999, 87.05, 43.696, 1.21, 6.09, 170924931, 38805582, 11006439, 96.5, 'Keep', '', '')
+    ] },
+    { title: 'GM12878', meta: '2 replicates', hasMore: true, more: 'GM12878_REP1 and GM12878_REP2 pass every check', rows: [] }
   ];
-  const m = (s, r, a, o, d, flag) => ({ s, r, a: a + '%', o: o + '%', d: d + '%', rw: Math.min(100, r / 35 * 100) + '%', aw: a + '%', ow: Math.min(100, o * 5) + '%', mm: Math.max(0, 95 - a) * 0.5 + '%', bg: flag ? '#FFF6D6' : 'transparent', ring: flag ? '0 0 0 2px #D9890B' : 'none' });
+  const m = (s, r, a, d, b, mm, ts, flag) => ({ s, r: r.toFixed(1), a: a + '%', d: d.toFixed(1) + '%', b: b.toFixed(2), rw: Math.min(100, r / 130 * 100) + '%', aw: a + '%', dw: d + '%', mm: mm + '%', ts: ts + '%', bg: flag ? '#FFF6D6' : 'transparent', ring: flag ? '0 0 0 2px #D9890B' : 'none' });
   return {
     tabsBefore, tabsAfter, lanes,
     checks: [
-      { name: 'Uniquely mapped', rule: '≥ 80 %', sev: 'block', value: '22 / 24', col: '#B02A2A', icon: I.warn, where: 'T3 · C4 (T1 borderline)' },
-      { name: 'rRNA', rule: '≤ 10 %', sev: 'warn', value: '22 / 24', col: '#8F5806', icon: I.warn, where: 'T3 · C2' },
-      { name: 'Strandedness', rule: 'inferred = declared', sev: 'block', value: '23 / 24', col: '#B02A2A', icon: I.warn, where: 'T3' },
-      { name: 'Reads', rule: '≥ 10 M', sev: 'warn', value: '23 / 24', col: '#8F5806', icon: I.warn, where: 'C4' }
+      { name: 'Uniquely mapped', kind: 'min', rule: '≥ 85 %', sev: 'block', value: '7 / 8', col: '#B02A2A', rail: '#DC3B3B', icon: I.cross, where: 'K562_REP1 84.47', from: 'multiqc:star-uniquely_mapped_percent' },
+      { name: 'Duplication', kind: 'max', rule: '≤ 80 %', sev: 'warn', value: '6 / 8', col: '#8F5806', rail: '#D9890B', icon: I.warn, where: 'K562_REP1 86.3 · REP2 83.1', from: 'multiqc:picard_mark_duplicates-PERCENT_DUPLICATION' },
+      { name: "5'–3' bias", kind: 'max', rule: '≤ 1.3', sev: 'warn', value: '6 / 8', col: '#8F5806', rail: '#D9890B', icon: I.warn, where: 'H1_REP2 1.39 · REP1 1.36', from: 'multiqc:qualimap_rnaseq-5_3_bias' },
+      { name: 'Mt rRNA', kind: 'max', rule: '≤ 5 %', sev: 'warn', value: '6 / 8', col: '#8F5806', rail: '#D9890B', icon: I.warn, where: 'MCF7_REP1 6.52 · REP2 6.09', from: 'expr: multiqc:featurecounts_biotype_plot-Mt_rRNA / row sum' },
+      { name: 'rRNA', kind: 'max', rule: '≤ 10 %', sev: 'warn', value: '8 / 8', col: '#157A4B', rail: '#1F9D63', icon: I.check, where: 'max 0.0005 %', from: 'table:**/featurecounts/*.biotype_counts_rrna_mqc.tsv#Sample:percent_rRNA' },
+      { name: 'Strandedness', kind: 'consistency', rule: '= samplesheet', sev: 'block', value: '8 / 8', col: '#157A4B', rail: '#1F9D63', icon: I.check, where: 'all reverse · rseqc 96.3–98.8 %', from: 'multiqc:strand_check_summary_table-rseqc_inferred = samplesheet:strandedness' }
     ],
     health: [
-      { k: 'Failed tasks', v: '0', fg: '#157A4B' }, { k: 'Retried tasks', v: '1 (STAR memory)', fg: '#8F5806' },
-      { k: 'Stage 2 runtime', v: '2 h 04 · usual 1 h 50', fg: '#22253A' }, { k: 'Peak memory', v: '38 of 64 GB', fg: '#22253A' }
+      { k: 'Failed tasks', v: '0 open · 330 completed', fg: '#157A4B' },
+      { k: 'Retried', v: 'RSEM_CALCULATEEXPRESSION (H1_REP2) · exit 175 twice', fg: '#8F5806' },
+      { k: 'Longest task', v: 'RSEM (MCF7_REP1) 22 h 41', fg: '#22253A' },
+      { k: 'Peak memory', v: 'STAR_ALIGN 32 GB · MarkDuplicates 29.8 GB', fg: '#22253A' },
+      { k: 'Elapsed, stages 1–2', v: '1 d 10 h (RSEM bound)', fg: '#22253A' }
     ],
-    mqc: [m('T3', 18.2, 61.2, 14.8, 38.1, true), m('C4', 4.1, 72.0, 9.4, 22.4, true), m('T1', 31.0, 78.9, 6.1, 30.2, false), m('C2', 27.8, 84.1, 11.2, 25.0, false), m('T2', 29.4, 88.4, 4.2, 24.7, false), m('C1', 30.2, 90.3, 3.8, 21.9, false)],
+    mqc: [
+      m('K562_REP1', 91.5, 84.47, 86.3, 1.09, 5.72, 9.11, true), m('K562_REP2', 112.5, 85.31, 83.1, 1.12, 5.92, 8.26, false),
+      m('GM12878_REP2', 97.0, 85.6, 76.8, 1.09, 5.68, 8.12, false), m('H1_REP2', 104.4, 86.27, 53.1, 1.39, 7.07, 6.51, false),
+      m('MCF7_REP2', 128.5, 87.05, 43.7, 1.21, 6.05, 6.66, false), m('GM12878_REP1', 93.1, 87.46, 76.4, 1.12, 5.98, 6.16, false),
+      m('MCF7_REP1', 123.7, 88.21, 37.4, 1.15, 6.23, 5.28, false), m('H1_REP1', 121.5, 88.51, 50.9, 1.36, 8.09, 3.26, false)
+    ],
     flagChips: [
-      { t: 'T3 · excluded', bg: '#F1F2F6', fg: '#33364A', ring: 'inset 0 0 0 2px #D9890B' },
-      { t: 'C4 · excluded', bg: '#F1F2F6', fg: '#33364A', ring: 'inset 0 0 0 2px #D9890B' },
-      { t: 'T1 · borderline', bg: '#FCEBEB', fg: '#B02A2A', ring: 'none' },
-      { t: 'C2 · rRNA', bg: '#FDF3E2', fg: '#8F5806', ring: 'none' }
+      { t: 'K562_REP1 · flagged', bg: '#FCEBEB', fg: '#B02A2A', ring: 'inset 0 0 0 2px #D9890B' },
+      { t: 'K562_REP2 · duplication', bg: '#FDF3E2', fg: '#8F5806', ring: 'none' },
+      { t: "H1 · 5'–3' bias", bg: '#FDF3E2', fg: '#8F5806', ring: 'none' },
+      { t: 'MCF7 · Mt rRNA', bg: '#FDF3E2', fg: '#8F5806', ring: 'none' }
     ],
     changeRows: [
-      { t: 'Exclude T3', d: 'Reason: low mapping, wrong strandedness (library prep issue)', who: 'TW', icon: 'M6 6l12 12 M18 6L6 18' },
-      { t: 'Exclude C4', d: 'Reason: 4.1 M reads only · resequencing requested', who: 'AI suggested · TW accepted', icon: 'M6 6l12 12 M18 6L6 18' },
-      { t: 'Samplesheet v2', d: '22 of 24 rows · v1 kept in the run record', who: 'derived', icon: 'M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16' }
+      { t: 'Flag K562_REP1', d: 'Kept below the block threshold (84.47 % < 85 %). Reason: 0.53 point under; duplication shared with K562_REP2; exclusion would break the replicate pair', who: 'AI suggested · you accepted', icon: 'M5 21V4 M5 4h11l-2 4 2 4H5' },
+      { t: 'Acknowledge 3 warnings', d: "Duplication (K562), 5'–3' bias (H1), Mt rRNA (MCF7): shared by both replicates, kept as they are", who: 'you', icon: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z' }
     ],
     history: [
-      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after alignment; later stages held by a generated ext.when config.', at: '08:02' },
-      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Checks computed from multiqc_general_stats: 4 samples flagged.', at: '08:03' },
-      { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', text: 'QC agent suggested excluding T3 and C4, keeping T1 (borderline).', at: '08:05' },
-      { t: 'TW', bg: '#E6DCFC', fg: '#4D368B', text: 'Thomas excluded T3 and C4.', at: '09:14' }
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate from the lab overlay demo-lab/rnaseq-qc opened after stage 2 (alignment and quantification); stages 3–4 held.', at: '08:02' },
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Checks computed from multiqc_general_stats.txt and the featureCounts biotype tables: 1 block, 3 warnings, 6 of 8 samples involved.', at: '08:03' },
+      { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', text: 'QC agent suggested flagging K562_REP1 rather than excluding it (replicate constraint).', at: '08:05' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'You flagged K562_REP1 and acknowledged the warnings.', at: '09:14' }
     ]
   };
 }

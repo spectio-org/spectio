@@ -1,0 +1,105 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — scenario coverage</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6344B2;text-decoration:none}a:hover{color:#4D368B;text-decoration:underline}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1320px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; padding: 40px 56px; display: flex; flex-direction: column; gap: 22px;">
+  <div style="display: flex; align-items: flex-end; gap: 24px;">
+    <div style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 6px;">
+      <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 30px;">Scenarios × screens</h1>
+      <p style="margin: 0; font-size: 15px; color: #33364A; max-width: 1000px; line-height: 1.5;">The canvas follows the nf-core catalogue by class (106 released pipelines, survey of 25/10/2026), plus runs without gates and day-to-day operations. Numbers on the boards come from real nf-core megatest outputs; images come from public OME-Zarr (IDR) and nf-core/test-datasets.</p>
+    </div>
+    <div style="flex: 0 0 auto; border-radius: 14px; background: #EAF7F0; color: #155E3B; padding: 12px 16px; display: flex; flex-direction: column; gap: 2px; max-width: 320px;">
+      <span style="font-size: 13px; font-weight: 600;">Gates are optional</span>
+      <span style="font-size: 12.5px; line-height: 1.45;">Most runs go straight through. The boards show gates only where a lab overlay or a workflow's spectio.yml declares one.</span>
+    </div>
+  </div>
+
+  <section aria-label="Catalogue classes and boards" style="display: flex; flex-direction: column; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+    <div style="display: grid; grid-template-columns: 250px 230px 1fr; gap: 0; background: #F7F7FB; font-size: 12px; font-weight: 600; color: #4D5065; padding: 9px 16px;">
+      <span>Class (pipelines in the survey)</span><span>Share of the catalogue</span><span>Boards (pipeline)</span>
+    </div>
+    <sc-for list="{{classes}}" as="c" hint-placeholder-count="11">
+      <div style="display: grid; grid-template-columns: 250px 230px 1fr; align-items: center; padding: 8px 16px; border-top: 1px solid #ECEDF3; font-size: 13px;">
+        <span style="display: flex; flex-direction: column; gap: 1px;"><span style="font-weight: 600;">{{c.name}}</span><span style="font-size: 11.5px; color: #4D5065;">{{c.item}}</span></span>
+        <span style="display: flex; align-items: center; gap: 8px;"><span style="width: 110px; height: 8px; border-radius: 4px; background: #ECEDF3; overflow: hidden; display: block;"><span style="display: block; height: 8px; width: {{c.pct}}; background: {{c.color}}; border-radius: 4px;"></span></span><span style="font-size: 12px; color: #33364A;">{{c.n}}</span></span>
+        <span style="display: flex; flex-wrap: wrap; gap: 6px;">
+          <sc-for list="{{c.boards}}" as="b" hint-placeholder-count="3">
+            <a href="{{b.href}}" style="font-size: 12px; padding: 3px 8px; border-radius: 8px; background: {{b.bg}}; color: #22253A; display: inline-flex; gap: 5px; align-items: center;"><span style="font-weight: 600;">{{b.label}}</span><span style="color: #4D5065;">{{b.pipe}}</span></a>
+          </sc-for>
+        </span>
+      </div>
+    </sc-for>
+  </section>
+
+  <div style="display: flex; align-items: baseline; gap: 12px;">
+    <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">UI patterns to build once</h2>
+    <span style="font-size: 13px; color: #4D5065;">Shared components behind the boards (ui-spec §10.2). Each has empty, loading, error, view-only and n/a states.</span>
+  </div>
+  <section aria-label="UI patterns" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+    <sc-for list="{{patterns}}" as="p" hint-placeholder-count="16">
+      <div style="border-radius: 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.10); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 13px; font-weight: 600;">{{p.name}}</span>
+        <span style="font-size: 11.5px; line-height: 1.4; color: #4D5065;">{{p.used}}</span>
+      </div>
+    </sc-for>
+  </section>
+  <p style="margin: 0; font-size: 12px; color: #4D5065;">Spec gaps found while drawing these boards: docs/reviews/R12-ui-scenarios.md (UX-101 to UX-129).</p>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1320}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const tint = { omics: '#F3EEFF', img: '#E8F4FB', ops: '#F2F3F7', gate: '#FFF4E0' };
+    const b = (label, href, pipe, k) => ({ label, href, pipe, bg: tint[k || 'omics'] });
+    const cls = (name, item, n, color, boards, label) => ({ name, item, n: label || n + ' pipelines', pct: Math.round(n / 45 * 100) + '%', color, boards });
+    return {
+      classes: [
+        cls('Bulk sample', 'samples, groups', 45, '#6344B2', [b('Mapping QC', 'ReviewReport.dc.html', 'rnaseq'), b('Small RNA', 'ReviewSmallRNA.dc.html', 'smrnaseq'), b('Amplicons', 'ReviewAmpliseq.dc.html', 'ampliseq'), b('ChIP + inputs', 'ReviewChip.dc.html', 'chipseq'), b('Bisulfite', 'ReviewMethyl.dc.html', 'methylseq'), b('Fusions', 'ReviewFusions.dc.html', 'rnafusion'), b('Overlay', 'WorkflowOverlay.dc.html', 'atacseq', 'ops')]),
+        cls('Sample + assembly', 'bins, genomes', 13, '#8B5CF6', [b('MAG bins', 'ReviewCandidates.dc.html', 'mag'), b('Amplicon coverage', 'ReviewViral.dc.html', 'viralrecon')]),
+        cls('Grouped samples + variants', 'pairs, trios', 11, '#A54666', [b('Tumour / normal', 'ReviewCoverage.dc.html', 'sarek'), b('Trios', 'ReviewTrio.dc.html', 'raredisease')]),
+        cls('Predictions', 'models, structures', 8, '#D9890B', [b('Structures', 'ReviewStructures.dc.html', 'proteinfold'), b('Signal gate', 'ReviewSignal.dc.html', 'proteinfold', 'gate')]),
+        cls('Run only', 'no review', 8, '#9AA0B4', [b('Accessions → rnaseq', 'LaunchChain.dc.html', 'fetchngs', 'ops')]),
+        cls('Image + cell / tile', 'wells, tiles, ROIs, scenes', 7, '#2F80B7', [b('Plate wells', 'ReviewWells.dc.html', 'lab, IDR', 'img'), b('Slide tiles', 'ReviewSlides.dc.html', 'lab, IDR', 'img'), b('IMC ROIs', 'ReviewROIs.dc.html', 'imcyto', 'img'), b('Spots', 'ReviewSpots.dc.html', 'molkart', 'img'), b('Xenium', 'ReviewXenium.dc.html', 'spatialaxe', 'img'), b('Light-sheet', 'ReviewVolume.dc.html', 'lsmquant', 'img'), b('Satellite', 'ReviewTiles.dc.html', 'rangeland', 'img'), b('Viewer', 'ViewerOmeZarr.dc.html', 'OME-Zarr', 'img')]),
+        cls('Sample + cells', 'cells, clones', 5, '#1F9D63', [b('Cell thresholds', 'ReviewCells.dc.html', 'scrnaseq'), b('Repertoires', 'ReviewRepertoire.dc.html', 'airrflow')]),
+        cls('MS runs', 'runs, peptides', 5, '#3B82F6', [b('No MultiQC', 'ReviewProteomics.dc.html', 'diaproteomics')]),
+        cls('Sample + features', 'taxa', 4, '#0E9F9A', [b('Negative controls', 'ReviewContamination.dc.html', 'taxprofiler')]),
+        cls('No gate (most runs)', 'straight through', 36, '#1F9D63', [b('Outputs', 'RunOutputs.dc.html', 'ampliseq', 'ops'), b('No stages, failed', 'RunFailed.dc.html', 'Snakemake', 'ops'), b('No schema', 'LaunchGitNoSchema.dc.html', 'Git', 'ops'), b('Final review', 'LaunchReview.dc.html', 'rnaseq', 'ops')], 'about 4 runs in 5'),
+        cls('Operations', 'runs, launch, workflows, environments', 0, '#4D5065', [b('Relaunch', 'RelaunchDialog.dc.html', '', 'ops'), b('Observed CLI run', 'RunObserved.dc.html', '', 'ops'), b('Compare', 'RunsCompare.dc.html', '', 'ops'), b('Batch', 'LaunchBatch.dc.html', '', 'ops'), b('Samplesheet', 'LaunchSamplesheet.dc.html', '', 'ops'), b('Catalogue', 'WorkflowsCatalog.dc.html', '', 'ops'), b('Import', 'WorkflowImport.dc.html', '', 'ops'), b('Discovered', 'WorkflowDiscovered.dc.html', '', 'ops'), b('Versions', 'WorkflowVersions.dc.html', '', 'ops'), b('Connect runner', 'EnvConnect.dc.html', '', 'ops'), b('Software', 'EnvSoftware.dc.html', '', 'ops'), b('Single machine', 'EnvLocal.dc.html', '', 'ops'), b('Quotas', 'EnvAccess.dc.html', '', 'ops')], 'every pipeline')
+      ],
+      patterns: [
+        { name: 'Item table', used: 'worst first, lanes by group or role, binding chips, a decision per row: every review' },
+        { name: 'Constraint warning', used: 'degraded group, reassign control, flag instead: Trio, Chip, Report, Ampliseq, Repertoire' },
+        { name: 'Rule strip', used: 'threshold with live counts and per-item exceptions: Cells, Contamination, SmallRNA, Tiles' },
+        { name: 'Distributions in HTML', used: 'histogram, strip, funnel, survival, knee, M-bias: Cells, Wells, Ampliseq, Methyl' },
+        { name: 'Matrix heatmap', used: 'items × sub-regions with column markers: Viral, Tiles' },
+        { name: 'Spatial grid', used: 'real thumbnails with badges, rings, hatching: Wells, Slides, ROIs' },
+        { name: 'OME-Zarr viewer', used: 'pyramid, channel windows, labels, z, brightfield RGB: Viewer and all imaging' },
+        { name: 'Candidate list', used: 'two-metric scatter, evidence panel, accept / reject / flag: Candidates, Structures, Fusions' },
+        { name: 'Report reader', used: 'sandboxed HTML with an item side panel: Report, Outputs' },
+        { name: 'Sticky changes bar', used: 'chips, rerun flow, primary disabled with its reason: every review' },
+        { name: 'Stage strip + reuse bar', used: 'reused, rerun, to run: Relaunch, Failed, Compare, Methyl' },
+        { name: 'Failure card', used: 'class, scheduler evidence, log tail, suggested fix: Failed, Relaunch' },
+        { name: 'Diff views', used: 'parameters, modules, software, files: Compare, Versions, ROIs' },
+        { name: 'File browser via runner', used: 'glob, paging, permission states: Samplesheet, Import, Outputs' },
+        { name: 'Live wizard', used: 'heartbeat, self-checks with inline fix: Connect runner, Import, Launch' },
+        { name: 'Quotas and permissions', used: 'limit bars, partition × group matrix: Access, Software, Batch' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>

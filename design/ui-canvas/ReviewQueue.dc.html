@@ -14,31 +14,34 @@
 body{margin:0}
 main > *{flex-shrink:0}
 a{color:#6344B2}a:hover{color:#4D368B}
+.rq-ell{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
   <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review" hint-size="100%,76px"></dc-import></div>
   <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
-  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
 
     <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
       <span style="width: 48px; height: 48px; border-radius: 15px; background: #FDF3E2; color: #8F5806; display: flex; align-items: center; justify-content: center;">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4 M5 4h12l-2.5 4 2.5 4H5"/></svg>
       </span>
-      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+      <div style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
         <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Review</h1>
-        <span style="font-size: 14px; color: #4D5065;">12 gates waiting · 5 assigned to you · oldest 2 h 10</span>
+        <span style="font-size: 14px; color: #4D5065;">{{total}} gates waiting · {{mine}} for you · oldest 6 h 20 · gates come from lab overlays or a workflow's spectio.yml; <a href="RunsTable.dc.html" style="font-weight: 600; text-decoration: none;">173 of the last 214 runs had none</a> and ran straight through</span>
       </div>
-      <span style="font-size: 12px; color: #4D5065; border-radius: 9px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #EEEFF5; padding: 6px 10px;"><strong style="font-weight: 600; color: #22253A;">J / K</strong> to move · <strong style="font-weight: 600; color: #22253A;">Enter</strong> to open · <strong style="font-weight: 600; color: #22253A;">A</strong> to approve</span>
+      <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #33364A; border-radius: 9px; background: #F6F2FE; padding: 6px 10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z"/></svg>AI agents may approve 2 · propose on 9</span>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #1D5FC9; border-radius: 9px; background: #EEF4FE; padding: 6px 10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h4l2-5 4 10 2-5h4"/></svg>1 waiting for a LIMS signal</span>
+      </div>
     </div>
 
-    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
-      <sc-for list="{{stats}}" as="s" hint-placeholder-count="4">
-        <a href="#" style="text-decoration: none; color: inherit; border-radius: 14px; box-shadow: {{s.ring}}; background: {{s.bg}}; padding: 12px 14px; display: flex; align-items: center; gap: 12px;">
-          <span style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; background: {{s.tile}}; color: {{s.ink}}; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"/></svg></span>
-          <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-family: 'Outfit', sans-serif; font-size: 22px; font-weight: 600; line-height: 1.1;">{{s.v}}</span><span style="font-size: 12.5px; color: #4D5065;">{{s.k}}</span></span>
-        </a>
+    <div role="group" aria-label="Filter by item kind" style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+      <span style="font-size: 12.5px; color: #4D5065; margin-right: 2px;">Item kind</span>
+      <sc-for list="{{kinds}}" as="k" hint-placeholder-count="8">
+        <a href="#" aria-pressed="{{k.on}}" style="height: 30px; padding: 0 10px; border-radius: 9px; box-sizing: border-box; display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; text-decoration: none; color: {{k.fg}}; background: {{k.bg}}; box-shadow: {{k.ring}};">{{k.label}} <span style="font-weight: 700; color: {{k.nfg}};">{{k.n}}</span></a>
       </sc-for>
+
     </div>
 
     <div role="toolbar" aria-label="Review list controls" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
@@ -47,88 +50,91 @@ a{color:#6344B2}a:hover{color:#4D368B}
           <a href="#" aria-current="{{sc.cur}}" style="height: 34px; padding: 0 12px; border-radius: 9px; background: {{sc.bg}}; box-shadow: {{sc.sh}}; color: {{sc.fg}}; font-size: 13px; font-weight: {{sc.w}}; text-decoration: none; display: flex; align-items: center;">{{sc.label}}</a>
         </sc-for>
       </div>
-      <label style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; flex: 1 1 240px; color: #6E7287;">
+      <label style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; flex: 1 1 220px; color: #6E7287;">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg>
         <input type="search" placeholder="Filter by gate, run, sample, workflow" aria-label="Filter reviews" style="border: none; outline: none; font: inherit; font-size: 13.5px; color: #0F1020; flex-grow: 1; min-width: 0; background: transparent;">
       </label>
-      <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #F6F2FE; font: 600 13.5px 'Inter', sans-serif; color: #4D368B;">Group: workflow ▾</button>
-      <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13.5px 'Inter', sans-serif; color: #22253A;">Sort: waiting time ▾</button>
+      <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13.5px 'Inter', sans-serif; color: #22253A;">Group: none ▾</button>
+      <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #F6F2FE; font: 600 13.5px 'Inter', sans-serif; color: #4D368B;">Sort: waiting longest ▾</button>
       <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13.5px 'Inter', sans-serif; color: #22253A;">Share view</button>
     </div>
 
-    <div role="region" aria-label="Bulk actions" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-radius: 14px; background: #0F1020; color: #E6E7EF; padding: 10px 12px 10px 16px;">
-      <span style="font-size: 13.5px; font-weight: 600;">3 selected</span>
+    <div role="region" aria-label="Bulk actions" style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-radius: 14px; background: #0F1020; color: #E6E7EF; padding: 8px 12px 8px 16px;">
+      <span style="font-size: 13.5px; font-weight: 600;">2 selected</span>
       <span style="width: 1px; height: 20px; background: #33364A;"></span>
-      <button type="button" style="height: 34px; padding: 0 12px; border-radius: 10px; border: none; background: #1F9D63; color: #FFFFFF; font: 600 13px 'Inter', sans-serif; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Approve the 3 where all checks pass</button>
-      <button type="button" style="height: 34px; padding: 0 12px; border-radius: 10px; border: none; background: #22253A; color: #E6E7EF; font: 500 13px 'Inter', sans-serif;">Assign to…</button>
-      <button type="button" style="height: 34px; padding: 0 12px; border-radius: 10px; border: none; background: #22253A; color: #E6E7EF; font: 500 13px 'Inter', sans-serif;">Snooze 1 h</button>
+      <button type="button" style="height: 32px; padding: 0 12px; border-radius: 10px; border: none; background: #1F9D63; color: #FFFFFF; font: 600 13px 'Inter', sans-serif; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Approve the 2 where all checks pass</button>
+      <button type="button" style="height: 32px; padding: 0 12px; border-radius: 10px; border: none; background: #22253A; color: #E6E7EF; font: 500 13px 'Inter', sans-serif;">Assign to…</button>
+      <button type="button" style="height: 32px; padding: 0 12px; border-radius: 10px; border: none; background: #22253A; color: #E6E7EF; font: 500 13px 'Inter', sans-serif;">Snooze 1 h</button>
+      <span style="font-size: 12.5px; color: #9A9EB0;">Different workflows: one approval per gate, each logged on its own run</span>
       <span style="flex-grow: 1;"></span>
-      <button type="button" style="height: 34px; padding: 0 10px; border-radius: 10px; border: none; background: transparent; color: #C4C7D4; font: 500 13px 'Inter', sans-serif;">Clear</button>
+      <button type="button" style="height: 32px; padding: 0 10px; border-radius: 10px; border: none; background: transparent; color: #C4C7D4; font: 500 13px 'Inter', sans-serif;">Clear</button>
     </div>
 
-    <div style="overflow-x: auto; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
-      <table style="width: 100%; min-width: 1060px; border-collapse: collapse; font-size: 13.5px;">
+    <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+      <table style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px;">
+        <colgroup><col style="width: 38px;"><col style="width: 160px;"><col style="width: 208px;"><col style="width: 254px;"><col style="width: 146px;"><col style="width: 168px;"><col style="width: 62px;"><col style="width: 72px;"></colgroup>
         <thead>
           <tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12.5px;">
-            <th scope="col" style="padding: 10px 8px 10px 18px; width: 28px;"><span aria-label="Select all" style="width: 16px; height: 16px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px #7750D4; background: #FFFFFF; display: flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 2px; background: #7750D4; border-radius: 1px;"></span></span></th>
-            <th scope="col" style="padding: 10px 14px; font-weight: 600;">Gate</th>
-            <th scope="col" style="padding: 10px 14px; font-weight: 600;">Checks</th>
-            <th scope="col" style="padding: 10px 14px; font-weight: 600;">Suggestion</th>
-            <th scope="col" style="padding: 10px 14px; font-weight: 600;">Can decide</th>
-            <th scope="col" style="padding: 10px 14px; font-weight: 600;">Waiting</th>
-            <th scope="col" style="padding: 10px 14px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Action</span></th>
+            <th scope="col" style="padding: 9px 6px 9px 16px;"><span aria-label="Select all" style="width: 16px; height: 16px; border-radius: 5px; box-shadow: inset 0 0 0 1.5px #7750D4; background: #FFFFFF; display: flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 2px; background: #7750D4; border-radius: 1px;"></span></span></th>
+            <th scope="col" style="padding: 9px 10px; font-weight: 600;">Gate · run</th>
+            <th scope="col" style="padding: 9px 10px; font-weight: 600;">Workflow · items</th>
+            <th scope="col" style="padding: 9px 10px; font-weight: 600;">Checks · worst item</th>
+            <th scope="col" style="padding: 9px 10px; font-weight: 600;">Suggestion</th>
+            <th scope="col" style="padding: 9px 10px; font-weight: 600;">Can decide</th>
+            <th scope="col" style="padding: 9px 10px; font-weight: 600;">Waiting</th>
+            <th scope="col" style="padding: 9px 10px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Action</span></th>
           </tr>
         </thead>
-        <sc-for list="{{groups}}" as="g" hint-placeholder-count="4">
-          <tbody>
-            <tr style="background: #FBFBFD; border-top: 1px solid #EEEFF5;">
-              <td colspan="7" style="padding: 9px 14px 9px 18px;">
-                <span style="display: flex; align-items: center; gap: 9px; font-size: 13px; font-weight: 600; color: #22253A;">
-                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
-                  <img src="{{g.logo}}" width="16" height="16" alt="{{g.engine}}" title="{{g.engine}}" style="display: block; object-fit: contain;">{{g.name}}
-                  <span style="font-weight: 500; color: #6E7287;">· {{g.gate}} · {{g.count}}</span>
+        <tbody>
+          <sc-for list="{{rows}}" as="r" hint-placeholder-count="12">
+            <tr style="border-top: 1px solid #EEEFF5; box-shadow: inset 4px 0 0 #D9890B; background: {{r.rowbg}};">
+              <td style="padding: 9px 6px 9px 16px;"><span role="checkbox" aria-checked="{{r.sel}}" aria-label="Select {{r.run}}" style="width: 16px; height: 16px; border-radius: 5px; box-shadow: {{r.cbring}}; background: {{r.cbbg}}; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="{{r.tick}}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span></td>
+              <td style="padding: 9px 10px; min-width: 0;">
+                <a href="{{r.href}}" class="rq-ell" style="font-weight: 600; color: #0F1020; text-decoration: none;">{{r.title}}</a>
+                <span class="rq-ell" style="font-size: 12px; color: #4D5065;">{{r.run}} <span style="font-family: 'JetBrains Mono', monospace; color: #6E7287;">{{r.id}}</span></span>
+              </td>
+              <td style="padding: 9px 10px; min-width: 0;">
+                <span style="display: flex; align-items: center; gap: 7px; min-width: 0;">
+                  <img src="{{r.logo}}" width="18" height="18" alt="{{r.engine}}" title="{{r.engine}}" style="display: block; object-fit: contain; flex-shrink: 0;">
+                  <span class="rq-ell" title="{{r.wf}} {{r.ver}}" style="color: #22253A; font-size: 12.5px;">{{r.wf}} <span style="color: #6E7287;">{{r.ver}}</span></span>
+                </span>
+                <span class="rq-ell" style="font-size: 12px; color: #4D5065; margin-left: 25px;">{{r.items}}</span>
+              </td>
+              <td style="padding: 9px 10px; min-width: 0;">
+                <span style="display: flex; align-items: center; gap: 9px;">
+                  <span role="img" aria-label="{{r.checkLabel}}" style="display: flex; flex-shrink: 0; width: 54px; height: 8px; border-radius: 4px; overflow: hidden; background: {{r.track}};">
+                    <span style="width: {{r.pPass}}; background: #1F9D63;"></span><span style="width: {{r.pWarn}}; background: #D9890B;"></span><span style="width: {{r.pFail}}; background: #DC3B3B;"></span>
+                  </span>
+                  <span class="rq-ell" style="font-size: 12.5px; color: {{r.cfg}}; font-weight: 600;">{{r.checkText}}</span>
+                </span>
+                <span class="rq-ell" title="{{r.flag}}" style="font-size: 12px; color: #4D5065;">{{r.flag}}</span>
+              </td>
+              <td style="padding: 9px 10px; min-width: 0;">
+                <span style="display: inline-flex; align-items: center; gap: 6px; max-width: 100%; box-sizing: border-box; font-size: 12px; font-weight: 600; border-radius: 8px; padding: 4px 8px; background: {{r.sbg}}; color: {{r.sfg}};"><span style="flex-shrink: 0; display: {{r.stagd}}; font-size: 10px; font-weight: 700; border-radius: 5px; padding: 1px 4px; background: {{r.stbg}}; color: {{r.stfg}};">{{r.stag}}</span><span class="rq-ell">{{r.sug}}</span></span>
+              </td>
+              <td style="padding: 9px 10px;">
+                <span style="display: flex; align-items: center; gap: 4px; flex-wrap: nowrap; overflow: hidden;">
+                  <sc-for list="{{r.who}}" as="w" hint-placeholder-count="2">
+                    <span title="{{w.title}}" style="flex-shrink: 0; min-width: 24px; height: 24px; padding: 0 6px; box-sizing: border-box; border-radius: 12px; background: {{w.bg}}; color: {{w.fg}}; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{w.t}}</span>
+                  </sc-for>
                 </span>
               </td>
+              <td style="padding: 9px 10px; white-space: nowrap; font-weight: 600; color: {{r.wfg}};">{{r.wait}}</td>
+              <td style="padding: 9px 14px 9px 6px; text-align: right;"><a href="{{r.href}}" title="{{r.atitle}}" style="height: 30px; padding: 0 10px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font-size: 12.5px; font-weight: 600; color: {{r.afg}}; text-decoration: none; display: inline-flex; align-items: center; gap: 5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: {{r.lock}};"><path d="M6 11h12v9H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3"/></svg>{{r.action}}</a></td>
             </tr>
-            <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
-              <tr style="border-top: 1px solid #EEEFF5; box-shadow: inset 4px 0 0 #D9890B; background: {{r.rowbg}};">
-                <td style="padding: 11px 8px 11px 18px;"><span role="checkbox" aria-checked="{{r.sel}}" aria-label="Select {{r.run}}" style="width: 16px; height: 16px; border-radius: 5px; box-shadow: {{r.cbring}}; background: {{r.cbbg}}; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="{{r.tick}}" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span></td>
-                <td style="padding: 11px 14px;">
-                  <a href="Review.dc.html" style="font-weight: 600; color: #0F1020; text-decoration: none;">{{r.title}}</a>
-                  <span style="display: block; font-size: 12px; color: #4D5065;">{{r.run}} <span style="font-family: 'JetBrains Mono', monospace; color: #6E7287;">{{r.id}}</span></span>
-                </td>
-                <td style="padding: 11px 14px; white-space: nowrap;">
-                  <span style="display: flex; align-items: center; gap: 10px;">
-                    <span role="img" aria-label="{{r.checkLabel}}" style="display: flex; width: 84px; height: 8px; border-radius: 4px; overflow: hidden; background: #EEEFF5;">
-                      <span style="width: {{r.pPass}}; background: #1F9D63;"></span><span style="width: {{r.pWarn}}; background: #D9890B;"></span><span style="width: {{r.pFail}}; background: #DC3B3B;"></span>
-                    </span>
-                    <span style="font-size: 12.5px; color: {{r.cfg}}; font-weight: 600;">{{r.checkText}}</span>
-                  </span>
-                </td>
-                <td style="padding: 11px 14px; white-space: nowrap;">
-                  <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; border-radius: 8px; padding: 4px 8px; background: {{r.sbg}}; color: {{r.sfg}};"><span style="font-size: 10px; font-weight: 700; border-radius: 5px; padding: 1px 4px; background: {{r.stbg}}; color: {{r.stfg}};">{{r.stag}}</span>{{r.sug}}</span>
-                </td>
-                <td style="padding: 11px 14px; white-space: nowrap;">
-                  <span style="display: flex; align-items: center; gap: 4px;">
-                    <sc-for list="{{r.who}}" as="w" hint-placeholder-count="2">
-                      <span title="{{w.title}}" style="min-width: 26px; height: 26px; padding: 0 7px; box-sizing: border-box; border-radius: 13px; background: {{w.bg}}; color: {{w.fg}}; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{w.t}}</span>
-                    </sc-for>
-                  </span>
-                </td>
-                <td style="padding: 11px 14px; white-space: nowrap; font-weight: 600; color: {{r.wfg}};">{{r.wait}}</td>
-                <td style="padding: 11px 18px 11px 14px; text-align: right;"><a href="Review.dc.html" style="height: 32px; padding: 0 12px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font-size: 13px; font-weight: 600; color: #22253A; text-decoration: none; display: inline-flex; align-items: center;">Open</a></td>
-              </tr>
-            </sc-for>
-          </tbody>
-        </sc-for>
+          </sc-for>
+        </tbody>
       </table>
     </div>
 
     <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 13px; color: #33364A; border-radius: 12px; background: #F7F7FB; padding: 10px 14px;">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#157A4B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>
-      <span><strong style="font-weight: 600;">Auto-approve rules:</strong> 2 gates passed automatically today (all checks green, policy allows).</span>
+      <span><strong style="font-weight: 600;">Auto-approve rules:</strong> 6 gates passed automatically today (all checks green, the overlay's policy allows it).</span>
       <a href="AIAgents.dc.html" style="font-weight: 600; text-decoration: none;">Edit rules</a>
+      <span style="flex-grow: 1;"></span>
+<span style="font-size: 12px; color: #4D5065; border-radius: 9px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #EEEFF5; padding: 6px 10px;"><strong style="font-weight: 600; color: #22253A;">J / K</strong> to move · <strong style="font-weight: 600; color: #22253A;">Enter</strong> to open · <strong style="font-weight: 600; color: #22253A;">A</strong> to approve</span>
     </div>
+    <p style="margin: 0; font-size: 11.5px; color: #6E7287;">Data: nf-core AWS megatests, release shown per row (rnaseq results-a1fcddd, sarek results-8ccac7a, smrnaseq, ampliseq, chipseq, methylseq, airrflow, mag, viralrecon, scrnaseq, rnafusion, taxprofiler); images IDR (idr0001, idr0066, idr0073, idr0076) and nf-core/test-datasets (molkart, imcyto, spatialaxe, rangeland). † illustrative value, no megatest output to read it from. Run names, people and wait times are fixture data.</p>
   </main>
 </div>
 </x-dc>
@@ -136,74 +142,87 @@ a{color:#6344B2}a:hover{color:#4D368B}
 class Component extends DCLogic {
 renderVals() {
   const L = { nfcore: ['nf-core (Nextflow)', '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'], nf: ['Nextflow', '/_blob/636203cdee0bc09b61efe0fa351e239b'], smk: ['Snakemake', '/_blob/7a35665829f51132cb3bcb9a4c3e638c'] };
+  const g = (t, title) => ({ t, title: 'Group ' + title, bg: '#E6DCFC', fg: '#4D368B' });
   const A = {
-    me: { t: 'TW', title: 'You', bg: '#8B5CF6', fg: '#FFFFFF' },
-    img: { t: 'imaging-core', title: 'Group imaging-core', bg: '#E6DCFC', fg: '#4D368B' },
-    clin: { t: 'clinical-genomics', title: 'Group clinical-genomics', bg: '#E6DCFC', fg: '#4D368B' },
-    rna: { t: 'rnaseq-core', title: 'Group rnaseq-core', bg: '#E6DCFC', fg: '#4D368B' },
-    prot: { t: 'proteomics', title: 'Group proteomics', bg: '#E6DCFC', fg: '#4D368B' },
-    ai: { t: 'AI · approve', title: 'QC agent may approve', bg: '#7750D4', fg: '#FFFFFF' },
-    aip: { t: 'AI · propose', title: 'QC agent may propose only', bg: '#F6F2FE', fg: '#4D368B' },
-    bot: { t: 'BOT', title: 'Robot / LIMS signal', bg: '#E3F1FB', fg: '#1D5FC9' }
+    me: { t: 'AM', title: 'You · Alice Martin', bg: '#8B5CF6', fg: '#FFFFFF' },
+    bk: { t: 'BK', title: 'Bruno Keller', bg: '#F2F1FB', fg: '#423B97' },
+    cd: { t: 'CD', title: 'Chloé Diallo', bg: '#F2F1FB', fg: '#423B97' },
+    dn: { t: 'DN', title: 'Dmitri Novak', bg: '#F2F1FB', fg: '#423B97' },
+    rna: g('rnaseq-core', 'rnaseq-core'), clin: g('clinical', 'clinical-genomics'), img: g('imaging', 'imaging-core'),
+    prot: g('proteomics', 'proteomics'), mic: g('microbiome', 'microbiome'), sc: g('single-cell', 'single-cell'),
+    epi: g('epigenomics', 'epigenomics'), str: g('struct-bio', 'structural-bio'), eo: g('earth-obs', 'earth-observation'),
+    ai: { t: 'AI', title: 'QC agent may approve', bg: '#7750D4', fg: '#FFFFFF' },
+    aip: { t: 'AI', title: 'QC agent may propose only', bg: '#F6F2FE', fg: '#4D368B' },
+    bot: { t: 'LIMS', title: 'LIMS signal expected', bg: '#E3F1FB', fg: '#1D5FC9' }
   };
-  const S = {
-    approve: ['AI', 'approve', '#ECF8F1', '#0E5A37', '#7750D4', '#FFFFFF'],
-    diameter: ['AI', 'adjust diameter 30 → 42', '#FFFBF3', '#6B4205', '#7750D4', '#FFFFFF'],
-    exclude: ['AI', 'exclude 1 sample', '#FFFBF3', '#6B4205', '#7750D4', '#FFFFFF'],
-    signal: ['BOT', 'signal pending', '#EEF4FE', '#1D5FC9', '#1D5FC9', '#FFFFFF'],
-    none: ['—', 'no suggestion', '#F7F7FB', '#6E7287', '#DFE1EA', '#4D5065']
-  };
-  let n = 0;
-  const row = (title, run, id, pass, warn, fail, sug, who, wait, sel) => {
-    const tot = pass + warn + fail; const pct = (x) => (100 * x / tot).toFixed(1) + '%';
-    const [stag, s, sbg, sfg, stbg, stfg] = S[sug];
-    const allPass = warn + fail === 0;
-    const long = /h/.test(wait);
+  const SG = (tag, txt, kind) => kind === 'ai' ? ['AI', txt, '#FFFBF3', '#6B4205', '#7750D4', '#FFFFFF'] : kind === 'ok' ? ['AI', txt, '#ECF8F1', '#0E5A37', '#7750D4', '#FFFFFF'] : kind === 'bot' ? ['LIMS', txt, '#EEF4FE', '#1D5FC9', '#1D5FC9', '#FFFFFF'] : ['', txt, 'transparent', '#6E7287', 'transparent', 'transparent'];
+  const mins = (w) => { const h = /(\d+) h/.exec(w); const m = /(\d+)( min)?$/.exec(w); return (h ? +h[1] * 60 : 0) + (m ? +m[1] : 0); };
+  // row(title, run, id, eng, wf, ver, items, [pass,warn,fail] | null, flag, [sugText, sugKind], who, wait, href, opts)
+  const row = (title, run, id, eng, wf, ver, items, ck, noun, flag, sug, who, wait, href, o = {}) => {
+    const [stag, s, sbg, sfg, stbg, stfg] = SG(null, sug[0], sug[1]);
+    let pPass = '0%', pWarn = '0%', pFail = '0%', checkText, checkLabel, cfg, track = '#EEEFF5';
+    if (ck === 'signal') { checkText = 'run-level gate'; checkLabel = 'Run-level gate'; cfg = '#1D5FC9'; track = '#CFE0FB'; }
+    else if (ck === 'busy') { checkText = 'computing checks · 3 of 5'; checkLabel = 'Checks are being computed'; cfg = '#6E7287'; pPass = '60%'; track = '#EEEFF5'; }
+    else {
+      const [p, w, f] = ck; const tot = p + w + f; const pct = (x) => (100 * x / tot).toFixed(1) + '%';
+      pPass = pct(p); pWarn = pct(w); pFail = pct(f);
+      checkText = (w + f === 0) ? `${p} / ${tot} ${noun} pass` : `${p} / ${tot} pass · ${w + f} flagged`;
+      checkLabel = `${p} pass, ${w} warning, ${f} failing`;
+      cfg = (w + f === 0) ? '#157A4B' : f ? '#B02A2A' : '#8F5806';
+    }
+    if (ck === 'busy') pPass = '60%';
+    const sel = !!o.sel; const view = !!o.view;
     return {
-      title, run, id, sug: s, stag, sbg, sfg, stbg, stfg, wait,
-      wfg: long ? '#8F5806' : '#33364A',
-      pPass: pct(pass), pWarn: pct(warn), pFail: pct(fail),
-      checkText: allPass ? `${pass} / ${tot} pass` : `${pass} / ${tot} pass · ${warn + fail} to look at`,
-      checkLabel: `${pass} pass, ${warn} warning, ${fail} failing`,
-      cfg: allPass ? '#157A4B' : fail ? '#B02A2A' : '#8F5806',
+      title, run, id, engine: L[eng][0], logo: L[eng][1], wf, ver, items, flag, href,
+      sug: s, stag, stagd: stag ? 'inline' : 'none', sbg, sfg, stbg, stfg, wait, m: mins(wait),
+      wfg: mins(wait) >= 120 ? '#8F5806' : '#33364A',
+      pPass, pWarn, pFail, checkText, checkLabel, cfg, track,
       who: who.map((k) => A[k]),
-      sel: sel ? 'true' : 'false',
-      cbbg: sel ? '#7750D4' : '#FFFFFF', cbring: sel ? 'none' : 'inset 0 0 0 1.5px #C4C7D4', tick: sel ? '#FFFFFF' : 'transparent',
-      rowbg: sel ? '#FBF9FF' : '#FFFFFF'
+      sel: sel ? 'true' : 'false', cbbg: sel ? '#7750D4' : '#FFFFFF', cbring: sel ? 'none' : 'inset 0 0 0 1.5px #C4C7D4', tick: sel ? '#FFFFFF' : 'transparent',
+      rowbg: sel ? '#FBF9FF' : '#FFFFFF',
+      action: view ? 'View' : 'Open', lock: view ? 'block' : 'none', afg: view ? '#4D5065' : '#22253A',
+      atitle: view ? 'You can view this gate; only clinical-genomics can decide' : 'Open the review'
     };
   };
-  const grp = (eng, name, gate, rows) => ({ engine: L[eng][0], logo: L[eng][1], name, gate, rows, count: rows.length + (rows.length === 1 ? ' gate' : ' gates') });
+  const rows = [
+    row('GPU stage approval', 'pf-kinases-1200', '#361', 'nfcore', 'nf-core/proteinfold', '1.1.1', '1,200 sequences · AlphaFold2', 'signal', '', 'waits for the LIMS gpu-budget signal', ['signal due', 'bot'], ['str', 'bot'], '6 h 20', 'ReviewSignal.dc.html'),
+    row('Bisulfite conversion', 'mshef-wgbs', '#433', 'nfcore', 'nf-core/methylseq', '4.2.0', '7 samples · Bismark', [6, 0, 1], 'samples', 'MShef4_J1 · conversion 98.31 % (min 99)', ['exclude 1', 'ai'], ['epi', 'aip'], '5 h 20', 'ReviewMethyl.dc.html'),
+    row('Sample identity check', 'rd-cohort-11', '#342', 'nfcore', 'nf-core/raredisease', '2.6.0', '11 samples in 4 families', [9, 1, 1], 'samples', 'case 3 · without the father: a duo †', ['none', ''], ['clin', 'dn'], '3 h 05', 'ReviewTrio.dc.html', { view: true }),
+    row('Peak QC with inputs', 'foxa1-ezh2', '#427', 'nfcore', 'nf-core/chipseq', '2.1.0', '8 ChIP + 8 inputs · MACS3', [15, 0, 1], 'libraries', 'EZH2_IP_TKO_REP2 · below the FRiP minimum', ['none', ''], ['me', 'epi'], '2 h 10', 'ReviewChip.dc.html'),
+    row('Volume QC', 'vip-brains-02', '#452', 'nfcore', 'nf-core/lsmquant', '1.0.3', '3 brains · light-sheet', [1, 1, 1], 'brains', 'brain-vip-02 · seam step 18 % † · redo', ['redo 1', 'ai'], ['img', 'aip'], '2 h 10', 'ReviewVolume.dc.html'),
+    row('Contamination QC', 'infant-gut-07', '#352', 'nfcore', 'nf-core/taxprofiler', '2.0.1', '10 samples + 2 negative controls', [9, 1, 2], 'samples', 'negative controls · reads above zero †', ['none', ''], ['mic'], '2 h 05', 'ReviewContamination.dc.html'),
+    row('Denoising QC', 'ampliseq-full-992e6df', '#322', 'nfcore', 'nf-core/ampliseq', '3.0.0', '12 samples in 4 habitats', [11, 1, 0], 'samples', 'SRR10070133 · lost_percent 32.1 %', ['none', ''], ['mic', 'cd'], '2 h 05', 'ReviewAmpliseq.dc.html'),
+    row('Mapping QC', 'rnaseq-full-a1fcddd', '#301', 'nfcore', 'nf-core/rnaseq', '3.27.0', '8 samples · star_rsem', [6, 2, 0], 'samples', 'K562_REP1 · PERCENT_DUPLICATION 86.3', ['approve + note', 'ai'], ['me', 'rna', 'aip'], '1 h 12', 'ReviewReport.dc.html'),
+    row('Structure QC', 'enzyme-panel-03', '#341', 'nfcore', 'nf-core/proteinfold', '2.0.0', '12 sequences · colabfold', [10, 2, 0], 'models', '2 models · mean pLDDT below 70 †', ['none', ''], ['me', 'str'], '1 h 12', 'ReviewStructures.dc.html'),
+    row('ROI QC', 'tme-imc-04', '#377', 'nfcore', 'nf-core/imcyto', '1.0.0', '3 ROIs · IMC', [0, 2, 1], 'ROIs', 'ROI_1 · ArAr80 drift 10.0 % (max 5)', ['none', ''], ['img'], '1 h 12', 'ReviewROIs.dc.html'),
+    row('Repertoire QC', 'airr-lesions', '#323', 'nfcore', 'nf-core/airrflow', '5.1.0', '10 samples · 2 subjects · BCR', [6, 3, 1], 'samples', 'SRR1383456 · 27 after CollapseDuplicates', ['exclude 1', 'ai'], ['sc', 'aip'], '1 h 05', 'ReviewRepertoire.dc.html'),
+    row('Fusion candidates', 'fusion-panel-07', '#327', 'nfcore', 'nf-core/rnafusion', '4.1.3', '1 sample · 3 callers', [0, 1, 0], 'samples', 'test · star-total_reads 12,021 (min 20 M)', ['none', ''], ['clin', 'bk'], '48 min', 'ReviewFusions.dc.html'),
+    row('Tile QC', 'slide 9798462', '#368', 'smk', 'wsi-tissue-qc', '0.2.0', '126 tiles · brightfield IHC', [116, 8, 2], 'tiles', 'r2c6, r6c4 · DAB stain high', ['exclude 2', 'ai'], ['img', 'aip'], '46 min', 'ReviewSlides.dc.html'),
+    row('Amplicon coverage', 'sars2-wk12', '#418', 'nfcore', 'nf-core/viralrecon', '2.6.0', '48 samples + 1 negative control', [40, 6, 2], 'samples', 'SAMPLE_23, SAMPLE_39 · 100 % N', ['exclude 2', 'ai'], ['mic', 'aip'], '42 min', 'ReviewViral.dc.html'),
+    row('MS run QC', 'hela-dia-2610', '#355', 'nfcore', 'nf-core/diaproteomics', '1.2.4', '24 MS runs · DIA', [22, 2, 0], 'runs', '2 runs · precursors −38 % vs batch †', ['none', ''], ['prot'], '41 min', 'ReviewProteomics.dc.html'),
+    row('Library QC', 'smrnaseq-full-cb0af57', '#318', 'nfcore', 'nf-core/smrnaseq', '2.4.1', '28 samples', [25, 3, 0], 'samples', 'c5 · fastp pct_surviving 72.4 %', ['none', ''], ['cd', 'rna'], '38 min', 'ReviewSmallRNA.dc.html'),
+    row('Xenium section QC', 'kidney-xen-01', '#451', 'nfcore', 'nf-core/spatialaxe', '1.0.1', '3 sections', [1, 1, 1], 'sections', 'kidney_tiny · decoded_q20 0.795 (min 0.80)', ['none', ''], ['me', 'img'], '34 min', 'ReviewXenium.dc.html'),
+    row('Cell QC', 'scrna-pbmc', '#444', 'nfcore', 'nf-core/scrnaseq', '4.2.0', '3 samples · 17,283 cells', [2, 0, 1], 'samples', 'donor3_pbmc · 388 cells kept (min 500)', ['exclude 1', 'ai'], ['me', 'sc', 'aip'], '22 min', 'ReviewCells.dc.html'),
+    row('Plate QC', 'JL_120731_S6A', '#412', 'smk', 'plate-qc', '0.3.1', '96 wells · GFP + Cascade blue', [91, 4, 1], 'wells', 'G3 · bright streak, column max ÷ median 1.96', ['exclude 3', 'ai'], ['me', 'img', 'aip'], '22 min', 'ReviewWells.dc.html'),
+    row('Spots and segmentation', 'heart-mc-03', '#413', 'nfcore', 'nf-core/molkart', '1.2.0', '1 sample · 4 tiles · 3 methods', [3, 1, 0], 'tiles', 'Nppa · 1,092 of 2,512 spots (43 %)', ['none', ''], ['img'], '18 min', 'ReviewSpots.dc.html'),
+    row('Mapping QC', 'organoids-07', '#409', 'nfcore', 'nf-core/rnaseq', '3.27.0', '18 samples', [18, 0, 0], 'samples', 'all checks pass · lowest uniquely mapped 84.9 % †', ['approve', 'ok'], ['rna', 'ai'], '12 min', 'ReviewReport.dc.html', { sel: true }),
+    row('Peak QC', 'cutrun-h3k4me3-02', '#408', 'nfcore', 'nf-core/cutandrun', '3.2.2', '8 samples + 2 IgG controls', [7, 1, 0], 'samples', 'IgG_REP2 · higher FRiP than its target †', ['none', ''], ['epi', 'bk'], '10 min', 'ReviewChip.dc.html'),
+    row('Scene QC', 'rangeland-181036', '#453', 'nfcore', 'nf-core/rangeland', '1.0.0', '56 Landsat scenes', [35, 10, 11], 'scenes', '11 scenes · cloud fraction above 0.5', ['exclude 11', 'ai'], ['eo', 'aip'], '9 min', 'ReviewTiles.dc.html'),
+    row('Peak QC', 'atac-limb-e12', '#410', 'nfcore', 'nf-core/atacseq', '2.1.2', '6 samples', [6, 0, 0], 'samples', 'all checks pass · lab overlay atacseq 2.1.x †', ['approve', 'ok'], ['epi', 'cd', 'ai'], '8 min', 'ReviewReport.dc.html', { sel: true }),
+    row('Coverage check', 'sarek-trio-02', '#445', 'nfcore', 'nf-core/sarek', '3.10.0', '3 samples · WGS trio', [2, 0, 1], 'samples', 'NA12892 · mean 22.4× (min 30) †', ['new data tomorrow', 'bot'], ['clin', 'bot'], '22 min', 'ReviewCoverage.dc.html'),
+    row('Mapping QC', 'tcell-stim-02', '#458', 'nfcore', 'nf-core/rnaseq', '3.27.0', '12 samples · salmon', 'busy', 'samples', 'MultiQC parsed · waiting for qualimap', ['none yet', ''], ['me', 'rna'], '4 min', 'ReviewReport.dc.html'),
+    row('Bin QC', 'soil-meta-12', '#288', 'nfcore', 'nf-core/mag', '5.4.2', '3 samples · 426 bins, 5 binners', [192, 0, 234], 'bins', '234 bins below MIMAG medium · CheckM2 †', ['drop 234', 'ai'], ['me', 'mic', 'aip'], '35 min', 'ReviewCandidates.dc.html')
+  ].sort((a, b) => b.m - a.m);
+  const counts = { Samples: 9, Variants: 3, 'Assemblies, taxa': 3, 'Cells, clones': 2, Images: 7, 'MS runs': 1, Predictions: 2 };
+  const kinds = [{ label: 'All', n: rows.length, on: true }].concat(Object.keys(counts).map((k) => ({ label: k, n: counts[k], on: false }))).map((k) => ({
+    ...k, on: k.on ? 'true' : 'false', fg: k.on ? '#FFFFFF' : '#22253A', nfg: k.on ? '#E6DCFC' : '#6344B2', bg: k.on ? '#0F1020' : '#FFFFFF', ring: k.on ? 'none' : 'inset 0 0 0 1px #DFE1EA'
+  }));
   return {
-    stats: [
-      { k: 'Assigned to me', v: '5', icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0', tile: '#FDF3E2', ink: '#8F5806', bg: '#FFFBF3', ring: 'inset 0 0 0 2px #D9890B' },
-      { k: 'My groups', v: '4', icon: 'M9 11a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z M2 20a7 7 0 0 1 14 0 M16 4.5a3.5 3.5 0 0 1 0 6.5 M18 14a6 6 0 0 1 4 6', tile: '#F6F2FE', ink: '#6344B2', bg: '#FFFFFF', ring: '0 0 0 1px rgba(15,16,32,0.11)' },
-      { k: 'Agents may decide', v: '2', icon: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z', tile: '#F6F2FE', ink: '#6344B2', bg: '#FFFFFF', ring: '0 0 0 1px rgba(15,16,32,0.11)' },
-      { k: 'Waiting for a signal (robot / LIMS)', v: '1', icon: 'M4 12h4l2-5 4 10 2-5h4', tile: '#EEF6FA', ink: '#276A8C', bg: '#FFFFFF', ring: '0 0 0 1px rgba(15,16,32,0.11)' }
-    ],
+    total: rows.length, mine: 8, rows, kinds,
     scopes: [
-      { label: 'Assigned to me · 5', cur: 'page', bg: '#FFFFFF', sh: '0 1px 2px rgba(15,16,32,0.12)', fg: '#0F1020', w: 600 },
-      { label: 'My groups · 4', cur: 'false', bg: 'transparent', sh: 'none', fg: '#4D5065', w: 500 },
-      { label: 'All · 12', cur: 'false', bg: 'transparent', sh: 'none', fg: '#4D5065', w: 500 }
-    ],
-    groups: [
-      grp('smk', 'cellpose-segmentation 1.4.0', 'Segmentation QC', [
-        row('Segmentation QC · plate 07', 'imaging-cellpose', '#318', 93, 3, 0, 'diameter', ['me', 'img', 'aip'], '2 h 10', false),
-        row('Segmentation QC · plate 08', 'imaging-cellpose-p08', '#319', 96, 0, 0, 'approve', ['me', 'img', 'aip'], '1 h 42', true),
-        row('Segmentation QC · plate 09', 'imaging-cellpose-p09', '#320', 96, 0, 0, 'approve', ['me', 'img', 'aip'], '1 h 40', true),
-        row('Segmentation QC · plate 10', 'imaging-cellpose-p10', '#321', 89, 5, 2, 'diameter', ['me', 'img', 'aip'], '38 min', false)
-      ]),
-      grp('nfcore', 'nf-core/sarek 3.6.1', 'Coverage check', [
-        row('Coverage check · trio 02', 'sarek-trio-02', '#306', 2, 0, 1, 'exclude', ['clin'], '1 h 05', false),
-        row('Coverage check · cohort batch 4', 'sarek-cohort-b4', '#314', 24, 0, 0, 'approve', ['clin', 'ai'], '52 min', true),
-        row('Coverage check · cohort batch 5', 'sarek-cohort-b5', '#315', 22, 1, 1, 'none', ['clin'], '47 min', false)
-      ]),
-      grp('nfcore', 'nf-core/rnaseq 3.27.0', 'Mapping QC', [
-        row('Mapping QC · liver time course', 'rnaseq-2026-10-25', '#312', 11, 1, 0, 'none', ['me', 'rna'], '24 min', false),
-        row('Mapping QC · organoids', 'rnaseq-organoids-03', '#316', 18, 0, 0, 'approve', ['rna', 'ai'], '12 min', false)
-      ]),
-      grp('nf', 'proteomics-dia main@4be21c0', 'Library QC', [
-        row('Library QC · DIA batch 11', 'proteomics-dia-11', '#317', 6, 0, 0, 'signal', ['prot', 'bot'], '6 min', false)
-      ])
+      { label: 'For me · 8', cur: 'false', bg: 'transparent', sh: 'none', fg: '#4D5065', w: 500 },
+      { label: 'My groups · 16', cur: 'false', bg: 'transparent', sh: 'none', fg: '#4D5065', w: 500 },
+      { label: 'All · ' + rows.length, cur: 'page', bg: '#FFFFFF', sh: '0 1px 2px rgba(15,16,32,0.12)', fg: '#0F1020', w: 600 }
     ]
   };
 }

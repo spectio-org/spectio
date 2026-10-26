@@ -18,7 +18,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
-  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Environments / EMBL SLURM · htc / Storage" hint-size="100%,76px"></dc-import></div>
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Environments / demo-hpc SLURM · htc / Storage" hint-size="100%,76px"></dc-import></div>
   <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="environments" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
     <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
 
@@ -27,7 +27,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
           <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.db}}"/></svg>
         </span>
         <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
-          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">EMBL SLURM · htc</h1>
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">demo-hpc SLURM · htc</h1>
           <span style="font-size: 14px; color: #4D5065;">Where runs read inputs, write work files and publish results. All access goes through the runner, as the run's own Unix user.</span>
         </div>
         <span style="font-size: 13px; font-weight: 600; color: #157A4B; display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63;"></span>Runner online</span>
@@ -166,12 +166,12 @@ renderVals() {
     ic,
     tabs: tabNames.map((label, i) => ({ label, w: i === 1 ? 600 : 500, c: i === 1 ? '#4D368B' : '#4D5065', u: i === 1 ? 'inset 0 -2px 0 #7750D4' : 'none' })),
     locs: [
-      loc('Work (scratch)', ic.bolt, '/scratch/tweber/spectio', 'Lustre', '74%', '37 of 50 TB quota', 'read · write', 'Lifecycle rules below', true),
-      loc('Results', ic.out, '/g/lab/runs', 'NFS (group)', '31%', '6.1 of 20 TB', 'read · write', 'Kept; archive after 180 days', false),
-      loc('Inputs', ic.in, '/g/lab/fastq', 'NFS (group)', '58%', '11.6 of 20 TB', 'read only', 'Not managed by Spectio', false),
-      loc('References', ic.book, '/g/references', 'NFS (shared)', '42%', 'iGenomes + Ensembl 113 · 2.1 TB', 'read only', 'Shared cache, never cleaned', false),
-      loc('Archive', ic.archive, 's3://embl-lab-archive', 'S3 (on-prem Ceph)', '12%', '48 TB · no quota', 'write once', 'Results moved here, 10 years', false),
-      loc('Container cache', ic.box, '/scratch/tweber/sif', 'Lustre', '8%', '412 GB · 96 images', 'read · write', 'LRU above 500 GB', false)
+      loc('Work (scratch)', ic.bolt, '/scratch/demo/amartin/spectio', 'Lustre', '74%', '37 of 50 TB quota', 'read · write', 'Lifecycle rules below', true),
+      loc('Results', ic.out, '/data/demo/results', 'NFS (group)', '31%', '6.1 of 20 TB', 'read · write', 'Kept; archive after 180 days', false),
+      loc('Inputs', ic.in, '/data/demo/fastq', 'NFS (group)', '58%', '11.6 of 20 TB', 'read only', 'Not managed by Spectio', false),
+      loc('References', ic.book, '/data/demo/references', 'NFS (shared)', '42%', 'iGenomes + Ensembl 113 · 2.1 TB', 'read only', 'Shared cache, never cleaned', false),
+      loc('Archive', ic.archive, 's3://demo-lab-archive', 'S3 (on-prem Ceph)', '12%', '48 TB · no quota', 'write once', 'Results moved here, 10 years', false),
+      loc('Container cache', ic.box, '/scratch/demo/amartin/sif', 'Lustre', '8%', '412 GB · 96 images', 'read · write', 'LRU above 500 GB', false)
     ],
     rules: [
       { when: 'Succeeded', what: 'Delete work dir after 30 days', note: 'Results stay in Results; resume is no longer possible after cleaning.', fg: '#157A4B', tile: '#ECF8F1', icon: 'M5 12l5 5L20 7' },
@@ -187,12 +187,12 @@ renderVals() {
     ],
     collapsed: [
       { name: 'Viewer access', sub: 'Files are streamed by the runner on demand (HTTP range requests for OME-Zarr, PDF, HTML); nothing is copied to the server', icon: ic.eye, rows: [{ k: 'Method', v: 'Streamed by the runner on request' }, { k: 'Large images', v: 'HTTP range requests (OME-Zarr chunks, PDF pages)' }, { k: 'Previews cached on server', v: 'thumbnails only, 7 days' }] },
-      { name: 'Staging and transfers', sub: 'Copy inputs from S3 before a run; move results to Archive; Fusion/Wave for cloud environments (phase 2)', icon: ic.swap, rows: [{ k: 'Stage inputs from S3', v: 'before the run, into Work' }, { k: 'Archive results', v: 'after 180 days, to s3://embl-lab-archive' }, { k: 'Cloud staging (Fusion / Wave)', v: 'phase 2' }] },
-      { name: 'Permissions', sub: 'Runs write as the runner’s Unix user; group-writable Results; who may clean shared locations', icon: ic.lock, rows: [{ k: 'Runs write as', v: 'tweber (runner Unix user)' }, { k: 'Results group', v: 'embl-lab · group-writable' }, { k: 'Who may clean shared locations', v: 'environment admins' }] }
+      { name: 'Staging and transfers', sub: 'Copy inputs from S3 before a run; move results to Archive; Fusion/Wave for cloud environments (phase 2)', icon: ic.swap, rows: [{ k: 'Stage inputs from S3', v: 'before the run, into Work' }, { k: 'Archive results', v: 'after 180 days, to s3://demo-lab-archive' }, { k: 'Cloud staging (Fusion / Wave)', v: 'phase 2' }] },
+      { name: 'Permissions', sub: 'Runs write as the runner’s Unix user; group-writable Results; who may clean shared locations', icon: ic.lock, rows: [{ k: 'Runs write as', v: 'amartin (runner Unix user)' }, { k: 'Results group', v: 'demo-lab · group-writable' }, { k: 'Who may clean shared locations', v: 'environment admins' }] }
     ],
     mapping: [
-      { name: 'Nextflow', logo: '/_blob/636203cdee0bc09b61efe0fa351e239b', cfg: '-work-dir /scratch/tweber/spectio/<run>\n--outdir /g/lab/runs/<run>\nsingularity.cacheDir = /scratch/tweber/sif' },
-      { name: 'Snakemake', logo: '/_blob/7a35665829f51132cb3bcb9a4c3e638c', cfg: '--directory /scratch/tweber/spectio/<run>\nresults symlinked or copied to /g/lab/runs/<run>\n--apptainer-prefix /scratch/tweber/sif' }
+      { name: 'Nextflow', logo: '/_blob/636203cdee0bc09b61efe0fa351e239b', cfg: '-work-dir /scratch/demo/amartin/spectio/<run>\n--outdir /data/demo/results/<run>\nsingularity.cacheDir = /scratch/demo/amartin/sif' },
+      { name: 'Snakemake', logo: '/_blob/7a35665829f51132cb3bcb9a4c3e638c', cfg: '--directory /scratch/demo/amartin/spectio/<run>\nresults symlinked or copied to /data/demo/results/<run>\n--apptainer-prefix /scratch/demo/amartin/sif' }
     ]
   };
 }

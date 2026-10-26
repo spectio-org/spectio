@@ -244,7 +244,7 @@ renderVals() {
       { from: 'Local directory', to: 'S3 · SeaweedFS', t: 'Move the file store to S3', d: 'Copies every object with its checksum, then switches the store. Orphan cleanup is paused until the copy is verified, so nothing is deleted half-way.', cli: 'spectio migrate storage --to s3://spectio', cta: 'Start dry run', state: 'done 12 Sep', sc: '#157A4B' }
     ],
     jobs: [
-      j('Work directories', 'cleanup.workdirs', 'per environment: EMBL SLURM keep 14 days after success, failed runs 30 days', 'ok · 02:10', 'ok', '398 GB', 'tonight 02:10'),
+      j('Work directories', 'cleanup.workdirs', 'per environment: demo-hpc SLURM keep 14 days after success, failed runs 30 days', 'ok · 02:10', 'ok', '398 GB', 'tonight 02:10'),
       j('Orphaned blobs', 'cleanup.orphan_blobs', 'objects no record points to, older than 7 days; paused automatically during a restore or storage move', 'ok · Sat', 'ok', '9 GB', 'Sat 04:00'),
       j('Expired tokens and sessions', 'cleanup.tokens', 'expired more than 30 days ago', 'ok · 03:00', 'ok', '1,204 rows', 'tonight 03:00'),
       j('Delivered events and outbox', 'cleanup.outbox', 'delivered events older than 90 days (audit log kept)', 'ok · Sun', 'ok', '2.1 GB', 'Sun 04:00'),

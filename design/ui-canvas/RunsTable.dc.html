@@ -17,7 +17,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
-  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Runs" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Runs" project="demo-lab · all projects" hint-size="100%,76px"></dc-import></div>
   <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="runs" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
     <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
 
@@ -27,7 +27,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
         </span>
         <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
           <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Runs</h1>
-          <span style="font-size: 14px; color: #4D5065;">312 runs · 4 active · 3 awaiting review</span>
+          <span style="font-size: 14px; color: #4D5065;">2,946 runs · 11 active · 27 awaiting review · most runs have no gate and go straight through</span>
         </div>
         <a href="Launch.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center;">Launch a run</a>
       </div>
@@ -39,7 +39,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
         </label>
         <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13.5px 'Inter', sans-serif; color: #22253A;">Group: none ▾</button>
         <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13.5px 'Inter', sans-serif; color: #22253A;">Sort: last activity ▾</button>
-        <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #F6F2FE; font: 600 13.5px 'Inter', sans-serif; color: #4D368B;">Filters · 2</button>
+        <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #F6F2FE; font: 600 13.5px 'Inter', sans-serif; color: #4D368B;">Filters · 1</button>
         <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13.5px 'Inter', sans-serif; color: #22253A;">Share view</button>
         <div role="group" aria-label="View mode" style="display: flex; padding: 3px; border-radius: 12px; background: #EEEFF5;">
           <a href="RunsTable.dc.html" aria-current="page" style="height: 34px; padding: 0 12px; border-radius: 9px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,16,32,0.12); color: #0F1020; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center;">Table</a>
@@ -50,59 +50,62 @@ a{color:#6344B2}a:hover{color:#4D368B}
       <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
         <span style="font-size: 12.5px; color: #4D5065;">Active filters</span>
         <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; border-radius: 8px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #DFE1EA; padding: 5px 8px;">Last 7 days <button type="button" aria-label="Remove filter Last 7 days" style="border: none; background: transparent; color: #6E7287; padding: 0; font: inherit;">×</button></span>
-        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; border-radius: 8px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #DFE1EA; padding: 5px 8px;">Owner: me <button type="button" aria-label="Remove filter Owner me" style="border: none; background: transparent; color: #6E7287; padding: 0; font: inherit;">×</button></span>
         <button type="button" style="border: none; background: transparent; font: 600 12.5px 'Inter', sans-serif; color: #6344B2;">Clear all</button>
+        <span style="flex-grow: 1;"></span>
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #33364A;">
+          <span role="img" aria-label="173 of 214 runs had no gate, 41 had a gate" style="display: flex; width: 120px; height: 8px; border-radius: 4px; overflow: hidden; background: #EEEFF5;"><span style="width: 80.8%; background: #A39CE4;"></span><span style="width: 19.2%; background: #D9890B;"></span></span>
+          <span><strong style="font-weight: 600;">173 of 214</strong> ran with no gate · 41 had a gate from a lab overlay or spectio.yml</span>
+        </span>
       </div>
 
       <div style="overflow-x: auto; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
-        <table style="width: 100%; min-width: 1040px; border-collapse: collapse; font-size: 13.5px;">
+        <table style="width: 100%; table-layout: fixed; border-collapse: collapse; font-size: 13px;">
+          <colgroup><col style="width: 168px;"><col style="width: 212px;"><col style="width: 208px;"><col style="width: 196px;"><col style="width: 112px;"><col style="width: 110px;"><col style="width: 92px;"></colgroup>
           <thead>
             <tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12.5px;">
               <th scope="col" style="padding: 10px 14px 10px 18px; font-weight: 600;">Run</th>
-              <th scope="col" style="padding: 10px 14px; font-weight: 600;">State</th>
-              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Workflow</th>
-              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Progress</th>
-              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Environment</th>
-              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Origin</th>
-              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Started</th>
-              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Duration</th>
+              <th scope="col" style="padding: 10px 12px; font-weight: 600;">State</th>
+              <th scope="col" style="padding: 10px 12px; font-weight: 600;">Workflow</th>
+              <th scope="col" style="padding: 10px 12px; font-weight: 600;">Progress · gates</th>
+              <th scope="col" style="padding: 10px 12px; font-weight: 600;">Environment</th>
+              <th scope="col" style="padding: 10px 12px; font-weight: 600;">Origin</th>
+              <th scope="col" style="padding: 10px 18px 10px 12px; font-weight: 600;">Started · duration</th>
             </tr>
           </thead>
           <tbody>
             <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
               <tr style="border-top: 1px solid #EEEFF5; box-shadow: inset 4px 0 0 {{r.rail}};">
-                <td style="padding: 11px 14px 11px 18px; white-space: nowrap;"><a href="RunDetail.dc.html" style="font-weight: 600; color: #0F1020; text-decoration: none;">{{r.name}}</a><span style="display: block; font-size: 12px; color: #6E7287; font-family: 'JetBrains Mono', monospace;">{{r.id}}</span></td>
-                <td style="padding: 11px 14px; white-space: nowrap;">
+                <td style="padding: 8px 10px 8px 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><a href="{{r.href}}" style="font-weight: 600; color: #0F1020; text-decoration: none;">{{r.name}}</a><span style="display: block; font-size: 12px; color: #6E7287; font-family: 'JetBrains Mono', monospace;">{{r.id}}</span></td>
+                <td style="padding: 8px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                   <span style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: {{r.fg}};">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"/></svg>{{r.state}}
                   </span>
-                  <span style="display: block; font-size: 12px; color: #4D5065; margin-left: 24px;">{{r.ctx}}</span>
+                  <span title="{{r.ctx}}" style="display: block; overflow: hidden; text-overflow: ellipsis; font-size: 12px; color: #4D5065; margin-left: 24px;">{{r.ctx}}</span>
                 </td>
-                <td style="padding: 11px 14px; white-space: nowrap;">
+                <td style="padding: 8px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                   <span style="display: flex; align-items: center; gap: 8px;">
-                    <img src="{{r.logo}}" width="22" height="22" alt="{{r.engine}}" title="{{r.engine}}" style="display: block; object-fit: contain;">
-                    <span>{{r.wf}} <span style="color: #6E7287;">{{r.ver}}</span></span>
+                    <img src="{{r.logo}}" width="20" height="20" alt="{{r.engine}}" title="{{r.engine}}" style="display: block; object-fit: contain; flex-shrink: 0;">
+                    <span title="{{r.wf}} {{r.ver}}" style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">{{r.wf}} <span style="color: #6E7287;">{{r.ver}}</span></span>
                   </span>
                 </td>
-                <td style="padding: 11px 14px; white-space: nowrap;">
+                <td style="padding: 8px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                   <span style="display: flex; align-items: center; gap: 10px;">
-                    <svg width="44" height="22" viewBox="0 0 200 100" role="img" aria-label="{{r.gaugeLabel}}">
+                    <svg width="40" height="20" viewBox="0 0 200 100" role="img" aria-label="{{r.gaugeLabel}}" style="flex-shrink: 0;">
                       <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="{{r.f0}}" stroke="{{r.s0}}" stroke-width="{{r.w0}}"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="{{r.f1}}" stroke="{{r.s1}}" stroke-width="{{r.w1}}"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="{{r.f2}}" stroke="{{r.s2}}" stroke-width="{{r.w2}}"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="{{r.f3}}" stroke="{{r.s3}}" stroke-width="{{r.w3}}"/>
                     </svg>
-                    <span style="font-size: 12.5px; color: #33364A;">{{r.prog}}</span>
+                    <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 12.5px; color: #33364A; overflow: hidden; text-overflow: ellipsis;">{{r.prog}}</span><span style="font-size: 11.5px; color: {{r.gfg}};">{{r.gates}}</span></span>
                   </span>
                 </td>
-                <td style="padding: 11px 14px; white-space: nowrap; color: #33364A;">{{r.env}}</td>
-                <td style="padding: 11px 14px; white-space: nowrap;"><span style="font-size: 12px; font-weight: 500; color: #33364A; border-radius: 6px; background: #EEEFF5; padding: 3px 7px;">{{r.origin}}</span></td>
-                <td style="padding: 11px 14px; white-space: nowrap; color: #33364A;">{{r.started}}</td>
-                <td style="padding: 11px 14px; white-space: nowrap; color: #33364A;">{{r.dur}}</td>
+                <td style="padding: 8px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; color: #33364A;">{{r.env}}</td>
+                <td style="padding: 8px 12px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><span style="font-size: 12px; font-weight: 500; color: #33364A; border-radius: 6px; background: #EEEFF5; padding: 2px 7px;">{{r.origin}}</span><span style="display: block; font-size: 11.5px; color: #6E7287; margin-top: 3px; overflow: hidden; text-overflow: ellipsis;">{{r.odet}}</span></td>
+                <td style="padding: 8px 18px 8px 12px; white-space: nowrap; color: #33364A;">{{r.started}}<span style="display: block; font-size: 12px; color: #6E7287;">{{r.dur}}</span></td>
               </tr>
             </sc-for>
           </tbody>
         </table>
       </div>
       <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #4D5065; flex-wrap: wrap; gap: 8px;">
-        <span>1–8 of 312 runs</span>
+        <span>1–16 of 214 runs in the last 7 days <span style="margin-left: 12px; font-size: 11.5px; color: #6E7287; white-space: nowrap;">Data: failures and task counts from nf-core megatests sarek 3.10.0 (results-8ccac7a), rnaseq 3.27.0 (results-a1fcddd); the rest is fixture data</span></span>
         <span style="display: flex; gap: 6px;">
           <button type="button" style="height: 36px; padding: 0 12px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13px 'Inter', sans-serif; color: #9A9EB0;">Previous</button>
           <button type="button" style="height: 36px; padding: 0 12px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13px 'Inter', sans-serif; color: #22253A;">Next</button>
@@ -111,7 +114,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
     </main>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
 class Component extends DCLogic {
 renderVals() {
   const I = { flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5', cross: 'M6 6l12 12 M18 6L6 18', play: 'M8 5v14l11-7z', check: 'M5 12l5 5L20 7', clock: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', pause: 'M9 5v14 M15 5v14', ban: 'M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M5.6 18.4L18.4 5.6' };
@@ -123,22 +126,32 @@ renderVals() {
   const E = { nf: ['Nextflow', '/_blob/636203cdee0bc09b61efe0fa351e239b'], nfcore: ['nf-core (Nextflow)', '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'], smk: ['Snakemake', '/_blob/7a35665829f51132cb3bcb9a4c3e638c'] };
   const B = ['#5A4FCF','#8B5CF6','#EC5F87','#F9A947'], T = ['#A39CE4','#BEA4FA','#F4A5BC','#FCCF98'], off = '#DFE1EA';
   const gauge = (spec) => { const o = {}; spec.forEach((s, i) => { let f = off, st = 'none', w = 0; if (s === 'd') f = B[i]; if (s === 'r') f = T[i]; if (s === 'g') { f = '#FDF3E2'; st = '#D9890B'; w = 9; } if (s === 'x') f = '#DC3B3B'; o['f'+i] = f; o['s'+i] = st; o['w'+i] = w; }); return o; };
-  const row = (st, ctx, name, eng, wf, ver, spec, prog, env, origin, started, dur) => {
-    const [state, rail, fg, icon] = S[st]; const [engine, logo] = E[eng];
-    return { state, rail, fg, icon, ctx, name, engine, logo, wf, ver, prog, env, origin, started, dur, gaugeLabel: prog, ...gauge(spec) };
+  const GT = { none: ['no stages · no gate', '#6E7287'], det: ['detected stages · no gate', '#6E7287'], ov: ['lab overlay · 1 gate', '#8F5806'], yml: ['spectio.yml · 1 gate', '#8F5806'] };
+  const row = (id, st, ctx, name, eng, wf, ver, spec, prog, gt, env, origin, started, dur, href) => {
+    const [state, rail, fg, icon] = S[st]; const [engine, logo] = E[eng]; const [gates, gfg] = GT[gt];
+    const [o0, odet] = origin.split(' · ');
+    return { id, state, rail, fg, icon, ctx, name, engine, logo, wf, ver, prog, gates, gfg, env, origin: o0, odet: odet || '', started, dur, href: href || 'RunDetail.dc.html', gaugeLabel: prog + ', ' + gates, ...gauge(spec) };
   };
+  const HPC = 'demo-hpc', GPU = 'demo-hpc gpu', K8S = 'k8s-dev', LAP = 'laptop';
   const rows = [
-    row('review', 'gate after stage 2 · 47 min', 'imaging-cellpose', 'smk', 'cellpose-segmentation', '1.4.0', ['d','g','t','t'], '2 of 4 stages', 'EMBL SLURM', 'Launched in UI', 'Today 08:12', '47 min'),
-    row('running', 'stage 3 of 4', 'rnaseq-2026-10-25', 'nfcore', 'nf-core/rnaseq', '3.27.0', ['d','d','r','t'], '812 / 1,248 tasks', 'EMBL SLURM', 'Launched in UI', 'Today 07:40', '1 h 05'),
-    row('running', 'stage 1 of 4', 'scrna-pbmc', 'nfcore', 'nf-core/scrnaseq', '4.1.0', ['r','t','t','t'], '38 / 410 tasks', 'Kubernetes · dev', 'Launched in UI', 'Today 08:51', '8 min'),
-    row('queued', 'waiting for runner', 'atac-batch-08', 'smk', 'atac-seq', '2.1.0', ['t','t','t','t'], 'not started', 'Laptop (local)', 'Launched in UI', 'Today 08:57', '—'),
-    row('failed', 'bwa_mem exit 137 · resumable', 'variant-calling-wgs', 'smk', 'dna-seq-varlociraptor', '5.2.1', ['x','t','t','t'], 'failed in stage 1', 'EMBL SLURM', 'CLI · adopted', 'Today 05:58', '2 h 14'),
-    row('done', 'reports ready', 'atac-batch-07', 'smk', 'atac-seq', '2.1.0', ['d','d','d','d'], '4 of 4 stages', 'EMBL SLURM', 'Rerun from stage 2', 'Yesterday 21:03', '3 h 12'),
-    row('paused', 'paused by Thomas · resumable', 'sarek-trio-02', 'nfcore', 'nf-core/sarek', '3.6.1', ['d','d','t','t'], '2 of 4 stages', 'EMBL SLURM', 'Launched in UI', 'Yesterday 17:20', '5 h 41'),
-    row('cancelled', 'time limit (policy)', 'methylseq-pilot', 'nf', 'methylseq-custom', 'main@a1c9f2e', ['d','t','t','t'], '1 of 4 stages', 'Laptop (local)', 'CLI · observed', 'Yesterday 11:02', '6 h 00')
+    row('#458', 'review', 'Mapping QC · checks computing', 'tcell-stim-02', 'nfcore', 'nf-core/rnaseq', '3.27.0', ['d','g','t','t'], '2 of 4 stages', 'ov', HPC, 'UI · Alice Martin', 'Today 06:05', '2 h 40', 'ReviewReport.dc.html'),
+    row('#422', 'queued', 'gpu partition · position 3', 'nanoseq-cdna-02', 'nfcore', 'nf-core/nanoseq', '3.1.0', ['t','t','t','t'], 'not started', 'none', GPU, 'UI · Bruno Keller', 'Today 08:43', '—'),
+    row('#446', 'running', 'stage 3 of 4 · quantification', 'rnaseq-2026-10-25', 'nfcore', 'nf-core/rnaseq', '3.27.0', ['d','d','r','t'], '812 / 1,248 tasks', 'ov', HPC, 'UI · Alice Martin', 'Today 07:40', '1 h 05'),
+    row('#420', 'running', 'bcl-convert · 4 lanes', 'demux-NX-1026', 'nfcore', 'nf-core/demultiplex', '1.8.0', ['d','d','r','t'], 'quarter 3 · 68 % tasks', 'none', HPC, 'API · sequencer hook', 'Today 07:56', '49 min'),
+    row('#415', 'running', 'plate 05 · Well QC after stage 3', 'ki-screen-p05', 'smk', 'plate-qc', '1.4.0', ['d','r','t','t'], '2 of 4 stages', 'yml', HPC, 'Batch · ki-screen 5 / 12', 'Today 08:11', '34 min'),
+    row('#447', 'running', 'seen from the CLI · not adopted', 'sharp_lovelace', 'nfcore', 'nf-core/rnaseq', '3.27.0', ['d','r','r','t'], '442 / 881 known tasks', 'det', HPC, 'CLI · observed', 'Today 06:37', '2 h 08', 'RunObserved.dc.html'),
+    row('#419', 'running', 'no stages declared', 'cutrun-h3k27me3-05', 'nfcore', 'nf-core/cutandrun', '3.2.2', ['d','r','t','t'], 'quarter 2 · 41 % tasks', 'none', K8S, 'UI · Bruno Keller', 'Today 07:15', '1 h 30'),
+    row('#427', 'review', 'Peak QC with inputs · waiting 2 h 10', 'foxa1-ezh2', 'nfcore', 'nf-core/chipseq', '2.1.0', ['d','d','g','t'], '3 of 4 stages', 'ov', HPC, 'UI · Chloé Diallo', 'Today 02:15', '6 h 30', 'ReviewChip.dc.html'),
+    row('#416', 'done', 'FastQ and samplesheet ready', 'fetch-geo-2610', 'nfcore', 'nf-core/fetchngs', '1.13.0', ['d','d','d','d'], '4 of 4 quarters', 'none', HPC, 'API · lims-sync', 'Today 06:58', '41 min'),
+    row('#405', 'failed', 'exit 1 · DEEPVARIANT_RUNDEEPVARIANT (NA12878)', 'sarek-wgs-na12878', 'nfcore', 'nf-core/sarek', '3.10.0', ['d','d','d','x'], '88 / 178 tasks', 'none', HPC, 'UI · Dmitri Novak', 'Sun 18:10', '4 h 46'),
+    row('#404', 'done', 'MultiQC ready', 'atac-limb-e11', 'nfcore', 'nf-core/atacseq', '2.1.2', ['d','d','d','d'], '4 of 4 quarters', 'none', HPC, 'CLI · adopted', 'Sun 16:02', '3 h 48'),
+    row('#398', 'failed', 'exit 175 ×2 · RSEM_CALCULATEEXPRESSION (H1_REP2)', 'rnaseq-3.27-validation', 'nfcore', 'nf-core/rnaseq', '3.27.0', ['d','d','d','x'], '330 / 332 tasks', 'none', HPC, 'API · CI release check', 'Sat 13:03', '33 h 58'),
+    row('#314', 'failed', '2 jobs failed after retries · resumable', 'wgs-cohort-12', 'smk', 'wgs-germline', 'v1.3.0', ['d','d','x','t'], '143 / 175 jobs', 'det', HPC, 'UI · Dmitri Novak', 'Sat 21:10', '9 h 47', 'RunFailed.dc.html'),
+    row('#397', 'done', 'Illumina amplicon · reports ready', 'sars2-ont-13', 'nfcore', 'nf-core/viralrecon', '2.6.0', ['d','d','d','d'], '4 of 4 quarters', 'none', HPC, 'UI · Alice Martin', 'Sat 09:12', '5 h 20'),
+    row('#396', 'done', 'detected modules · DESeq2 report', 'deseq-organoids-03', 'smk', 'rna-seq-star-deseq2', 'v2.1.2', ['d','d','d','d'], '4 of 4 stages', 'det', LAP, 'CLI · adopted', 'Fri 17:20', '1 h 52'),
+    row('#395', 'cancelled', 'by Dmitri Novak · replaced by #399', 'esmfold-panel-04', 'nfcore', 'nf-core/proteinfold', '2.0.0', ['d','t','t','t'], 'quarter 1 · 19 % tasks', 'none', GPU, 'UI · Dmitri Novak', 'Fri 16:40', '38 min')
   ];
-  const ids = ['#312 · r-8f3a', '#311 · r-2c71', '#310 · r-9be0', '#309 · r-44d2', '#308 · r-a17c', '#307 · r-5e09', '#306 · r-c3b8', '#305 · r-71fa'];
-  return { rows: rows.map((r, i) => ({ ...r, id: ids[i] })) };
+  return { rows };
 }
 }
 </script>

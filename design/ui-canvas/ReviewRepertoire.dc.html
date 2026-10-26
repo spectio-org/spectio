@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review detail, immune repertoires</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rp:has(input[value="sum"]:checked) .pn-sum,
+.rp:has(input[value="samples"]:checked) .pn-samples,
+.rp:has(input[value="thr"]:checked) .pn-thr,
+.rp:has(input[value="report"]:checked) .pn-report,
+.rp:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.it td,.it th{padding:6px 7px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+.it th{font-weight:600}
+.mono{font-family:'JetBrains Mono',monospace}
+.ill{font-size:10.5px;font-weight:600;color:#6E7287;padding:1px 6px;border-radius:6px;box-shadow:inset 0 0 0 1px #DFE1EA;letter-spacing:.02em}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/airrflow · airr-lesions · Repertoire QC" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rp" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">3 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; color: #6E7287;">Data: nf-core/airrflow 5.1.0 megatest (AWS, results-e69d49e) · 10 samples, subjects M4 and M5</span>
+      <a href="ReviewCells.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewFusions.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stages 1 and 2 done, stage 3 done with its gate awaiting review, stage 4 not started" style="flex-shrink: 0;"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#8B5CF6"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Repertoire QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· airr-lesions · #323</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block; flex-shrink: 0;"><span>nf-core/airrflow 5.1.0 · BCR · 10 samples · 2 subjects · after stage 3 of 4 · gate from lab overlay · <strong style="color: #8F5806; white-space: nowrap;">waiting 1 h 05</strong></span></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065; flex-shrink: 0;">Can decide
+        <span title="Alice Martin (you)" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="Chloé Diallo" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">CD</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F1F2F6; color: #4D5065; font-weight: 600; font-size: 11px; display: flex; align-items: center;">humans only</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvrep" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">5 to check</span></label>
+      <label class="rv-tab"><input type="radio" name="rvrep" value="samples" checked aria-label="Samples"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Samples<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">1 excluded</span></label>
+      <label class="rv-tab"><input type="radio" name="rvrep" value="thr" aria-label="Clonal threshold"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 18h16 M7 18V9 M12 18V5 M17 18v-6 M3 9h18"/></svg>Clonal threshold<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">M5 low sensitivity</span></label>
+      <label class="rv-tab"><input type="radio" name="rvrep" value="report" aria-label="Report"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Report<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">2</span></label>
+      <label class="rv-tab"><input type="radio" name="rvrep" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">3</span></label>
+    </div>
+
+    <!-- SAMPLES: item table grouped by subject -->
+    <section class="rv-pn pn-samples" style="flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span style="font-size: 13px; color: #33364A;">Worst first · grouped by <code class="mono">subject_id</code>: clones are built per subject (<code class="mono">cloneby</code>, <code class="mono">crossby</code>), so its samples stay together.</span>
+        <span style="flex-grow: 1;"></span>
+        <button type="button" style="height: 32px; padding: 0 12px; border: none; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #22253A;">Flagged only</button>
+        <button type="button" style="height: 32px; padding: 0 12px; border: none; border-radius: 9px; background: #F6F2FE; font: 600 12.5px 'Inter', sans-serif; color: #4D368B;">Exclude subject…</button>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <div style="flex: 1 1 0; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+          <table class="it" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+            <thead><tr style="color: #33364A; font-size: 11.5px; background: #F7F7FB;"><th scope="col" style="padding-left: 14px;">Sample</th><th scope="col">Read pairs</th><th scope="col">Assembled</th><th scope="col" title="13 steps, log scale: raw → quality → primers → paired → consensus → assembled → unique → ≥ 2 reads → annotated → quality → productive → junction → collapsed">Steps, raw → collapsed</th><th scope="col">Collapsed</th><th scope="col">Checks</th><th scope="col">Decision</th></tr></thead>
+            <sc-for list="{{groups}}" as="g" hint-placeholder-count="2">
+              <tbody>
+                <tr><td colspan="8" style="padding: 7px 14px; background: #FBFBFD; font-size: 12px; color: #33364A;"><strong style="color: #0F1020;">{{g.id}}</strong> · {{g.meta}} <span style="color: #6E7287;">· {{g.count}}</span></td></tr>
+                <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="5">
+                  <tr style="box-shadow: inset 4px 0 0 {{r.rail}}; background: {{r.bg}}; opacity: {{r.op}};">
+                    <td style="padding-left: 14px;"><span class="mono" style="font-weight: 600; text-decoration: {{r.strike}};">{{r.id}}</span><span style="display: block; font-size: 11px; color: #4D5065;">{{r.tissue}}</span></td>
+                    <td>{{r.raw}}<span style="display: block; font-size: 11px; color: #4D5065;">Q30 {{r.q30}}</span></td>
+                    <td style="color: {{r.asFg}}; font-weight: {{r.asW}};">{{r.asm}}</td>
+                    <td><span role="img" aria-label="{{r.aria}}" style="display: flex; align-items: flex-end; gap: 2px; height: 26px; width: 124px;"><sc-for list="{{r.funnel}}" as="b" hint-placeholder-count="13"><span title="{{b.t}}" style="flex: 1 1 0; height: {{b.h}}; background: {{b.c}}; border-radius: 2px 2px 0 0;"></span></sc-for></span></td>
+                    <td style="font-weight: 600; color: {{r.finFg}};">{{r.fin}}</td>
+                    <td><span title="{{r.ctitle}}" style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 8px; background: {{r.cbg}}; color: {{r.cfg}}; display: inline-flex; align-items: center; gap: 5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.cicon}}"/></svg>{{r.cword}}</span></td>
+                    <td><span role="radiogroup" aria-label="Decision for {{r.id}}" style="display: inline-flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 12px;"><sc-for list="{{r.opts}}" as="o" hint-placeholder-count="2"><span style="padding: 3px 9px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for></span></td>
+                  </tr>
+                </sc-for>
+                <sc-if value="{{g.hasWarn}}" hint-placeholder-val="{{false}}">
+                  <tr><td colspan="8" style="padding: 8px 14px; background: #FFFBF3; box-shadow: inset 4px 0 0 #D9890B; color: #6B4205; font-size: 12.5px; white-space: normal; line-height: 1.45;"><strong>Constraint:</strong> {{g.warn}}</td></tr>
+                </sc-if>
+              </tbody>
+            </sc-for>
+          </table>
+          <div style="padding: 8px 14px 10px; border-top: 1px solid #EEEFF5; font-size: 11.5px; color: #4D5065; line-height: 1.5; display: flex; gap: 8px; align-items: flex-start;">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 8h.01 M11 12h1v5h1 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>
+            <span><strong>Metadata · info:</strong> in <code class="mono">samplesheet.valid.tsv</code> every row has <code class="mono">tissue = Baseline</code> and <code class="mono">treatment = Lymph_node / Brain_lesion</code>; the two columns look swapped. Tissue above is read from the FASTQ names. Bindings: <code class="mono">table:repertoire_comparison/Sequence_numbers_summary/Table_sequences_*.tsv#sample_id</code>, <code class="mono">multiqc:fastp.after_filtering_q30_rate</code>.</span>
+          </div>
+        </div>
+
+        <div style="flex: 0 0 316px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+          <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Clonal threshold</h2><span style="font-size: 11.5px; color: #6E7287;" title="FIND_CLONAL_THRESHOLD (all_reps)">gamma-norm · all_reps</span></div>
+            <div role="img" aria-label="Threshold positions on a Hamming distance axis from 0 to 0.1: M5 0.026, mean 0.039, M4 0.053" style="position: relative; height: 44px; margin: 2px 4px 0;">
+              <span style="position: absolute; left: 0; right: 0; top: 24px; height: 2px; background: #DFE1EA;"></span>
+              <sc-for list="{{thrMarks}}" as="k" hint-placeholder-count="3"><span style="position: absolute; left: {{k.x}}; top: {{k.top}}; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 2px;"><span style="font-size: 10.5px; font-weight: 600; color: {{k.fg}}; white-space: nowrap;">{{k.t}}</span><span style="width: 2px; height: {{k.len}}; background: {{k.fg}};"></span></span></sc-for>
+              <sc-for list="{{thrAxis}}" as="k" hint-placeholder-count="3"><span style="position: absolute; left: {{k.x}}; top: 30px; transform: translateX(-50%); font-size: 10px; color: #6E7287;">{{k.t}}</span></sc-for>
+            </div>
+            <sc-for list="{{thr}}" as="t" hint-placeholder-count="2">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; padding-top: 6px; border-top: 1px solid #EEEFF5;">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{t.col}}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="{{t.icon}}"/></svg>
+                <strong style="width: 26px;">{{t.id}}</strong>
+                <span class="mono" style="font-size: 12px;">{{t.v}}</span>
+                <span style="flex-grow: 1; text-align: right; color: {{t.col}}; font-weight: {{t.w}};">{{t.sens}}</span>
+              </div>
+            </sc-for>
+            <span style="font-size: 12px; color: #33364A; line-height: 1.45;"><code class="mono">clonal_threshold = auto</code> applies one value to all subjects: the mean, <strong>0.0394</strong> [to be validated]. It is a global parameter: a per-subject value needs a child run.</span>
+            <span role="radiogroup" aria-label="Clonal threshold" style="display: flex; padding: 3px; border-radius: 10px; background: #F1F2F6; font-size: 12px;">
+              <span style="flex: 1; text-align: center; padding: 5px 6px; border-radius: 8px; color: #4D5065;">Keep auto</span>
+              <span style="flex: 1; text-align: center; padding: 5px 6px; border-radius: 8px; background: #FFFFFF; color: #0F1020; font-weight: 600; box-shadow: 0 1px 2px rgba(15,16,32,0.15);">Pin 0.0394</span>
+              <span style="flex: 1; text-align: center; padding: 5px 6px; border-radius: 8px; color: #4D5065;">Set value…</span>
+            </span>
+            <span style="font-size: 11.5px; color: #4D5065; line-height: 1.45;">Pinned because excluding a sample changes the input of the <code class="mono">all_reps</code> estimate: left on auto, the threshold you reviewed could move.</span>
+          </div>
+
+          <div style="border-radius: 16px; box-shadow: inset 0 0 0 2px #7750D4; background: #FBF9FF; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 14.5px; font-weight: 600;" class="mono">SRR1383456</h2><span style="font-size: 11.5px; color: #4D5065;">M4 · brain lesion · % kept per step</span></div>
+            <sc-for list="{{steps}}" as="s" hint-placeholder-count="13">
+              <div style="display: grid; grid-template-columns: 128px 50px 1fr 40px; align-items: center; gap: 6px; font-size: 11.5px;">
+                <span class="mono" style="font-size: 10.5px; color: #33364A; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="{{s.col}}">{{s.col}}</span>
+                <span style="text-align: right; font-weight: 600;">{{s.n}}</span>
+                <span style="height: 7px; border-radius: 4px; background: #EEE7FD; overflow: hidden;"><span style="display: block; height: 7px; width: {{s.w}}; background: {{s.c}};"></span></span>
+                <span style="text-align: right; color: {{s.fg}}; font-weight: {{s.fw}};">{{s.pct}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="gap: 12px; flex-wrap: wrap; align-items: stretch;">
+      <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">lab overlay demo-lab/airrflow-qc</span></div>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="6">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
+            <span style="flex: 1 1 220px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span>
+            <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+            <span style="font-size: 12px; color: #4D5065; min-width: 150px; text-align: right;">{{c.where}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex: 2 1 260px; min-width: 0; border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in · execution trace</span></div>
+        <sc-for list="{{health}}" as="h" hint-placeholder-count="5"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}}; text-align: right;">{{h.v}}</span></div></sc-for>
+      </div>
+    </section>
+
+    <!-- THRESHOLD -->
+    <section class="rv-pn pn-thr" style="flex-direction: column; gap: 8px;">
+      <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+        <table class="it" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+          <thead><tr style="background: #F7F7FB; font-size: 12px;"><th style="padding-left: 14px;">fields</th><th>model</th><th>cutoff</th><th>loglk</th><th>threshold</th><th>sensitivity</th><th>specificity</th><th>mean_threshold</th></tr></thead>
+          <tbody>
+            <tr><td style="padding-left: 14px; font-weight: 600;">M4</td><td>gamma-norm</td><td>user</td><td>11753.33</td><td>0.0526</td><td>0.906</td><td>0.995</td><td>0.0394</td></tr>
+            <tr style="box-shadow: inset 4px 0 0 #D9890B;"><td style="padding-left: 14px; font-weight: 600;">M5</td><td>gamma-norm</td><td>user</td><td>16714.73</td><td>0.0261</td><td style="color: #8F5806; font-weight: 600;">0.492 · below 0.8</td><td>0.995</td><td>0.0394</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <span style="font-size: 12px; color: #4D5065;">From <code class="mono">clonal_analysis/find_threshold/all_reps_dist_report/tables/all_reps_threshold-summary.tsv</code>. The distance-to-nearest plots live in the report (Report tab).</span>
+    </section>
+
+    <!-- REPORT -->
+    <section class="rv-pn pn-report" style="flex-direction: column; gap: 8px;">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <span style="font-size: 12.5px; font-weight: 600; padding: 6px 10px; border-radius: 9px; background: #7750D4; color: #FFFFFF;">all_reps_dist_report</span>
+        <span style="font-size: 12.5px; font-weight: 600; padding: 6px 10px; border-radius: 9px; background: #F1F2F6; color: #33364A;">MultiQC</span>
+        <span aria-disabled="true" title="Built by AIRRFLOW_REPORT in stage 4, after this gate" style="font-size: 12.5px; font-weight: 600; padding: 6px 10px; border-radius: 9px; background: #F7F7FB; color: #9A9DB0;">Airrflow report · after stage 4</span>
+      </div>
+      <div role="img" aria-label="Sandboxed HTML report placeholder" style="height: 420px; border-radius: 16px; box-shadow: inset 0 0 0 1px #DFE1EA; background: repeating-linear-gradient(135deg, #F7F7FB 0 14px, #F1F2F6 14px 28px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #4D5065; font-size: 13px;">
+        <strong style="color: #22253A;" class="mono">clonal_analysis/find_threshold/all_reps_dist_report/index.html</strong>
+        <span>Sandboxed frame · separate origin · streamed by the runner</span>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="3">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F1F2F6; color: #33364A;">SRR1383456 excluded</span><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F6F2FE; color: #4D368B;">samplesheet v2</span><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F6F2FE; color: #4D368B;">clonal_threshold = 0.0394</span></span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 250px; flex-shrink: 0;">
+        <span style="font-size: 11.5px; color: #4D5065;" title="CLONAL_ASSIGNMENT, DOWSER_LINEAGES, REPERTOIRE_ANALYSIS, reports">Stage 4 reruns for M4; stages 1–2 cached</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, #C4C7D4 0 6px, #EEEFF5 6px 12px);"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, #C4C7D4 0 6px, #EEEFF5 6px 12px);"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #F4A5BC;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #F9A947;"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A; flex-shrink: 0;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A; flex-shrink: 0;">Discard changes</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; flex-shrink: 0;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', cross: 'M6 6l12 12 M18 6L6 18', info: 'M12 8h.01 M11 12h1v5h1 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0' };
+  const badge = (n, kind) => ({ badge: n, bbg: kind === 'violet' ? '#F6F2FE' : kind === 'amber' ? '#FDF3E2' : '#F1F2F6', bfg: kind === 'violet' ? '#4D368B' : kind === 'amber' ? '#8F5806' : '#4D5065' });
+  const fmt = n => n.toLocaleString('en-US');
+  // Real values: Table_sequences_assembly.tsv + Table_sequences_assembled.tsv (airrflow 5.1.0 megatest).
+  // steps: Sequences, Filtered_quality_R2, Mask_primers_R2, Paired, Build_consensus, Assemble_pairs, Unique, Representative_2,
+  //        MakeDB-igblast, FilterQuality, ParseDb-split, FilterJunctionMod3, CollapseDuplicates
+  // (Representative_2 equals AssignGenes-igblast in every row, so it is shown once.)
+  const D = {
+    SRR1383451: ['M4', 'cervical lymph node · section 1', 75.94, 0.64, [1293168, 1124564, 1097325, 1007776, 499411, 492430, 271208, 59111, 57931, 57820, 57493, 57489, 13436]],
+    SRR1383452: ['M4', 'cervical lymph node · section 2', 70.01, 0.53, [1360994, 980449, 958341, 879930, 482008, 474750, 272357, 53851, 52797, 52712, 52433, 52432, 12456]],
+    SRR1383453: ['M4', 'cervical lymph node · section 3', 71.69, 0.27, [1059990, 806828, 794199, 734931, 494069, 488042, 279442, 51421, 50154, 50036, 49848, 49845, 12329]],
+    SRR1383456: ['M4', 'brain lesion · section 3', 72.94, 14.53, [63073, 50989, 48661, 43936, 5481, 1630, 1149, 508, 62, 58, 58, 58, 27]],
+    SRR1383463: ['M5', 'cervical lymph node A · section 1', 67.97, 0.10, [1852661, 1430789, 1395655, 1290122, 989816, 980725, 576656, 103422, 102425, 102384, 101634, 101631, 33482]],
+    SRR1383464: ['M5', 'cervical lymph node A · section 2', 61.76, 0.05, [1648098, 980319, 949025, 883569, 716238, 711194, 461504, 71877, 71478, 71460, 71135, 71135, 25056]],
+    SRR1383465: ['M5', 'cervical lymph node A · section 3', 62.98, 0.13, [2123400, 1302618, 1265261, 1179417, 988171, 980206, 598439, 98677, 97764, 97724, 97242, 97241, 32273]],
+    SRR1383466: ['M5', 'brain lesion · section 1', 64.55, 3.51, [264734, 134551, 127495, 118390, 10415, 6245, 4371, 1456, 979, 973, 960, 960, 494]],
+    SRR1383467: ['M5', 'brain lesion · section 2', 76.85, 0.94, [265299, 228387, 221589, 210703, 6413, 5074, 3264, 1256, 1094, 1091, 1080, 1080, 604]],
+    SRR1383468: ['M5', 'brain lesion · section 3', 72.82, 0.78, [461154, 356602, 345897, 324819, 10035, 8091, 4722, 1739, 1385, 1381, 1368, 1367, 585]]
+  };
+  const STEP = ['Sequences', 'Filtered_quality_R2', 'Mask_primers_R2', 'Paired', 'Build_consensus', 'Assemble_pairs', 'Unique', 'Representative_2', 'MakeDB-igblast', 'FilterQuality', 'ParseDb-split', 'FilterJunctionMod3', 'CollapseDuplicates'];
+  const LMAX = Math.log10(2200000);
+  const seg = (on) => ['Keep', 'Exclude'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? '#B02A2A' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  const row = (id) => {
+    const [subj, tissue, q30, adapter, v] = D[id];
+    const cons = v[4] / v[3] * 100, annot = v[8] / v[7] * 100, fin = v[12], asm = v[5];
+    const fails = [], warns = [];
+    if (fin < 100) fails.push('collapsed ' + fin + ' < 100');
+    if (asm < 5000) warns.push('assembled ' + fmt(asm) + ' < 5,000');
+    if (cons < 20) warns.push('consensus ' + cons.toFixed(1) + ' % < 20 %');
+    if (annot < 80) warns.push('annotated ' + annot.toFixed(0) + ' % < 80 %');
+    if (adapter > 5) warns.push('adapter ' + adapter.toFixed(1) + ' %');
+    const block = fails.length > 0, warn = !block && warns.length > 0;
+    const excluded = id === 'SRR1383456';
+    // biggest relative drop step (excluding step 0)
+    let worst = 1, wr = 1; for (let i = 1; i < v.length; i++) { const r = v[i] / v[i - 1]; if (r < wr) { wr = r; worst = i; } }
+    const funnel = v.map((n, i) => ({ h: Math.max(6, Math.log10(Math.max(n, 1)) / LMAX * 100).toFixed(1) + '%', c: i === worst ? '#D9890B' : '#8B5CF6', t: STEP[i] + ': ' + fmt(n) + (i ? ' (' + (n / v[i - 1] * 100).toFixed(1) + ' % of previous)' : '') }));
+    return {
+      id, subj, tissue, raw: fmt(v[0]), q30: q30.toFixed(1) + ' %', asm: fmt(asm), fin: fmt(fin), funnel,
+      aria: 'Sequences per step for ' + id + ', from ' + fmt(v[0]) + ' to ' + fmt(fin) + '; largest drop at ' + STEP[worst],
+      asFg: asm < 5000 ? '#8F5806' : '#22253A', asW: asm < 5000 ? 600 : 400, finFg: block ? '#B02A2A' : '#0F1020',
+      cword: block ? 'Block · ' + (fails.length + warns.length) : warn ? 'Warn · ' + warns.length : 'Pass', cicon: block ? I.cross : warn ? I.warn : I.check,
+      cbg: block ? '#FCEAEA' : warn ? '#FDF3E2' : '#E8F6EF', cfg: block ? '#B02A2A' : warn ? '#8F5806' : '#157A4B',
+      ctitle: [...fails, ...warns].join(' · ') || 'all checks pass',
+      rail: block ? '#DC3B3B' : warn ? '#D9890B' : 'transparent', bg: excluded ? '#F7F7FB' : 'transparent', op: 1, strike: excluded ? 'line-through' : 'none',
+      opts: seg(excluded ? 'Exclude' : 'Keep'), finN: fin
+    };
+  };
+  const byWorst = (a, b) => a.finN - b.finN;
+  const m4 = ['SRR1383451', 'SRR1383452', 'SRR1383453', 'SRR1383456'].map(row).sort(byWorst);
+  const m5 = ['SRR1383463', 'SRR1383464', 'SRR1383465', 'SRR1383466', 'SRR1383467', 'SRR1383468'].map(row).sort(byWorst);
+  const groups = [
+    { id: 'M4', meta: 'male, 80 · threshold 0.0526', count: '3 lymph node + 1 brain lesion · 1 excluded', rows: m4, hasWarn: true,
+      warn: 'excluding SRR1383456 leaves M4 with no brain-lesion sample. Clones shared between lymph node and brain lesion can no longer be measured for M4; clonal assignment and lineages still run on its 3 lymph-node sections. To drop M4 entirely, use Exclude subject.' },
+    { id: 'M5', meta: 'female, 63 · threshold 0.0261', count: '3 lymph node + 3 brain lesion', rows: m5, hasWarn: false, warn: '' }
+  ];
+  // Selected sample, step by step (real counts).
+  const sel = D.SRR1383456[4];
+  const steps = sel.map((n, i) => {
+    const p = i ? n / sel[i - 1] * 100 : 100, bad = i && p < 50;
+    return { col: STEP[i], n: fmt(n), w: (Math.log10(Math.max(n, 1)) / Math.log10(sel[0]) * 100).toFixed(1) + '%', c: bad ? '#D9890B' : '#8B5CF6', pct: i ? p.toFixed(p < 10 ? 1 : 0) + ' %' : '—', fg: bad ? '#8F5806' : '#4D5065', fw: bad ? 600 : 400 };
+  });
+  const tx = v => (v / 0.08 * 100).toFixed(1) + '%';
+  return {
+    groups, steps,
+    thrMarks: [
+      { t: 'M5', x: tx(0.0261), fg: '#8F5806', top: '0px', len: '10px' },
+      { t: 'mean', x: tx(0.0394), fg: '#4D368B', top: '0px', len: '10px' },
+      { t: 'M4', x: tx(0.0526), fg: '#22253A', top: '0px', len: '10px' }
+    ],
+    thrAxis: [{ t: '0', x: '1%' }, { t: '0.02', x: tx(0.02) }, { t: '0.04', x: tx(0.04) }, { t: '0.06', x: tx(0.06) }, { t: '0.08', x: '98%' }],
+    thr: [
+      { id: 'M4', v: '0.0526', sens: 'sens. 0.906 · spec. 0.995', col: '#157A4B', icon: I.check, w: 400 },
+      { id: 'M5', v: '0.0261', sens: 'sens. 0.492 · below 0.8', col: '#8F5806', icon: I.warn, w: 600 }
+    ],
+    checks: [
+      { name: 'Collapsed sequences per sample', rule: '≥ 100 · block', value: '9 / 10', col: '#B02A2A', icon: I.cross, where: 'SRR1383456 · 27' },
+      { name: 'Sequences assembled', rule: '≥ 5,000 · warn', value: '9 / 10', col: '#8F5806', icon: I.warn, where: 'SRR1383456 · 1,630' },
+      { name: 'UMI consensus yield', rule: 'Build_consensus / Paired ≥ 20 % · warn', value: '6 / 10', col: '#8F5806', icon: I.warn, where: 'all 4 brain lesions · 3.0–12.5 %' },
+      { name: 'IgBLAST annotation rate', rule: 'MakeDB / AssignGenes ≥ 80 % · warn', value: '7 / 10', col: '#8F5806', icon: I.warn, where: 'SRR1383456 · 12 %' },
+      { name: 'Clonal threshold fit', rule: 'sensitivity ≥ 0.8 per subject · warn', value: '1 / 2', col: '#8F5806', icon: I.warn, where: 'M5 · 0.492' },
+      { name: 'Samplesheet tissue / treatment', rule: 'consistency · info', value: 'swapped?', col: '#4D5065', icon: I.info, where: '10 rows' }
+    ],
+    health: [
+      { k: 'Failed tasks', v: '0 of 274', fg: '#157A4B' },
+      { k: 'FIND_CLONAL_THRESHOLD (all_reps)', v: '4 min 29 s · 1.3 GB', fg: '#22253A' },
+      { k: 'Next: CLONAL_ASSIGNMENT (M5)', v: '7 min 9 s · 27.2 GB last run', fg: '#22253A' },
+      { k: 'Next: DOWSER_LINEAGES (M5)', v: '1 h 1 min · 26.8 GB last run', fg: '#8F5806' },
+      { k: 'Software', v: 'presto 0.7.8 · changeo 1.3.4 · enchantr 0.1.25', fg: '#22253A' }
+    ],
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after FIND_CLONAL_THRESHOLD (lab overlay demo-lab/airrflow-qc); 10 samples, 2 subjects.', at: '10:15' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin excluded SRR1383456 (reason: 27 collapsed sequences, 12 % annotated).', at: '11:02' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin pinned clonal_threshold to 0.0394 so the exclusion does not move it.', at: '11:06' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

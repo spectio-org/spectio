@@ -26,7 +26,7 @@ main > *{flex-shrink:0}
 </style>
 </helmet>
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
-  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Segmentation QC" sub="plate 07 · 3 of 12" back="MReviewQueue.dc.html" hint-size="390px,60px"></dc-import></div>
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Segmentation QC" sub="plate 07 · 3 of 8" back="MReviewQueue.dc.html" hint-size="390px,60px"></dc-import></div>
   <main class="mr" style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 172px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
 
     <div style="display: flex; align-items: center; gap: 12px; border-radius: 16px; background: #FFFFFF; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.07); padding: 12px 14px 12px 18px;">
@@ -36,7 +36,7 @@ main > *{flex-shrink:0}
         <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="13" height="13" alt="Snakemake" style="display: block;">imaging-cellpose · after stage 2 of 4</span>
       </span>
       <span style="display: flex; gap: 4px; flex-shrink: 0;">
-        <span title="You" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center;">TW</span>
+        <span title="You" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center;">AM</span>
         <span title="AI suggests" style="width: 26px; height: 26px; border-radius: 13px; background: #7750D4; color: #FFFFFF; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>
       </span>
     </div>
@@ -138,7 +138,7 @@ renderVals() {
     }
   });
   const opt = (on) => ['Keep', 'Redo', 'Exclude'].map(t => t === on ? { t, on: 'true', bg: '#FFFFFF', fg: '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, on: 'false', bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
-  const actor = { SYS: ['#EEEFF5', '#33364A'], AI: ['#7750D4', '#FFFFFF'], BOT: ['#E3F1FB', '#1D5FC9'], TW: ['#E6DCFC', '#4D368B'] };
+  const actor = { SYS: ['#EEEFF5', '#33364A'], AI: ['#7750D4', '#FFFFFF'], BOT: ['#E3F1FB', '#1D5FC9'], AM: ['#E6DCFC', '#4D368B'] };
   const ev = (t, text, at, i) => ({ t, text, at, bg: actor[t][0], fg: actor[t][1], bt: i === 0 ? 'none' : '1px solid #EEEFF5' });
   return {
     checks: [
@@ -169,8 +169,8 @@ renderVals() {
       ev('SYS', 'Gate opened; Snakemake stopped after rule segment_cells.', '09:21', 0),
       ev('AI', 'QC agent posted checks and a suggestion.', '09:24', 1),
       ev('BOT', 'Notified #imaging-qc.', '09:24', 2),
-      ev('TW', 'Thomas applied the suggestion; F02 marked as debris.', '10:08', 3),
-      ev('TW', 'Thomas edited objects_per_well.tsv.', '10:11', 4)
+      ev('AM', 'Alice applied the suggestion; F02 marked as debris.', '10:08', 3),
+      ev('AM', 'Alice edited objects_per_well.tsv.', '10:11', 4)
     ],
     chips: ['2 redo', '1 excluded', 'samplesheet v2', 'tsv v2']
   };

@@ -17,7 +17,7 @@ main > *{flex-shrink:0}
 </style>
 </helmet>
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
-  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Hello, Thomas" sub="12 reviews · 4 runs active" hint-size="390px,60px"></dc-import></div>
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Hello, Alice" sub="27 reviews · 8 for you" hint-size="390px,60px"></dc-import></div>
   <main style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
 
     <h2 style="margin: 6px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">NEEDS ATTENTION</h2>
@@ -81,14 +81,14 @@ renderVals() {
   const run = (i, name, eng, engine, wf, state, rail, fg, spec, prog) => ({ name, logo: L[eng], engine, wf, state, rail, fg, prog, bt: i ? '1px solid #EEEFF5' : 'none', ...gauge(spec) });
   return {
     attention: [
-      { kind: 'Awaiting review', n: '12', line: '5 assigned to you', href: 'MReviewQueue.dc.html', rail: '#D9890B', fg: '#8F5806', icon: I.flag },
+      { kind: 'Awaiting review', n: '27', line: '8 assigned to you', href: 'MReviewQueue.dc.html', rail: '#D9890B', fg: '#8F5806', icon: I.flag },
       { kind: 'Failed · 24 h', n: '2', line: 'Both resumable', href: 'MRuns.dc.html', rail: '#DC3B3B', fg: '#B02A2A', icon: I.cross },
       { kind: 'Runner offline', n: '1', line: 'hpc-login-2 · 18 min', href: 'MRunnerOffline.dc.html', rail: '#6E7287', fg: '#33364A', icon: I.plug }
     ],
     runs: [
       run(0, 'imaging-cellpose · plate 07', 'smk', 'Snakemake', 'cellpose-segmentation 1.4.0', 'Review', '#D9890B', '#8F5806', ['d','g','t','t'], 'Gate after stage 2 of 4'),
       run(1, 'rnaseq-2026-10-25', 'nfcore', 'nf-core', 'nf-core/rnaseq 3.27.0', 'Running', '#3B82F6', '#1D5FC9', ['d','d','r','t'], 'Stage 3 of 4 running'),
-      run(2, 'scrna-pbmc', 'nfcore', 'nf-core', 'nf-core/scrnaseq 4.1.0', 'Running', '#3B82F6', '#1D5FC9', ['r','t','t','t'], 'Task quarter 1 of 4')
+      run(2, 'scrna-pbmc', 'nfcore', 'nf-core', 'nf-core/scrnaseq 4.2.0', 'Running', '#3B82F6', '#1D5FC9', ['r','t','t','t'], 'Task quarter 1 of 4')
     ],
     quick: [
       { name: 'nf-core/rnaseq', logo: L.nfcore },

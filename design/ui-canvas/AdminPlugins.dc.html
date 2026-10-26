@@ -176,7 +176,7 @@ renderVals() {
     r('spectio-plugin-multiqc', '1.0.2 · Spectio', ['check'], 'check 1.0 ✓', 'built', '1 · instance', 'ok', '64 ms'),
     r('spectio-plugin-oidc', '1.1.0 · Spectio', ['auth'], 'auth 1.0 ✓', 'pypi', '1 · instance', 'ok', '22 ms'),
     r('spectio-plugin-depictio', '0.2.0 · depictio', ['auth', 'sink'], 'auth 1.0 ✓ · sink 1.1 ✓', 'pypi', '1 · instance', 'ok', '19 ms'),
-    r('spectio-plugin-labid', '0.1.3 · EMBL MODIS', ['resolver', 'sink', 'api'], 'resolver 1.0 ✓ · sink 1.1 ✓', 'pypi', '2 · instance, group', 'ok', '27 ms', { open: true, labid: true }),
+    r('spectio-plugin-labid', '0.1.3 · demo-lab', ['resolver', 'sink', 'api'], 'resolver 1.0 ✓ · sink 1.1 ✓', 'pypi', '2 · instance, group', 'ok', '27 ms', { open: true, labid: true }),
     r('spectio-plugin-mqtt', '0.1.0 · Spectio', ['bridge'], 'bridge 1.0 ✓', 'cfg', '1 · instance', 'ok', '9 ms'),
     r('spectio-plugin-s3', '0.3.0 · Spectio', ['blobstore', 'backup'], 'blobstore 1.0 ✓ · backup 1.0 ✓', 'cfg', '2 · instance', 'ok', '88 ms'),
     r('spectio-plugin-vitessce', '0.1.1 · community', ['viewer'], 'viewer 1.0 ✓', 'pypi', '—', 'idle', '6 ms')
@@ -200,7 +200,7 @@ renderVals() {
     ],
     labScopes: ['runs:read', 'runs:launch', 'artifacts:read', 'projects:read', 'events:subscribe'],
     labInst: [
-      { name: 'EMBL LabID', sub: 'https://labid.embl.de · service principal svc_labid', scope: 'instance', sbg: '#F1F2F6', sfg: '#33364A', locked: true, editable: false },
+      { name: 'LabID', sub: 'https://labid.example.org · service principal svc_labid', scope: 'instance', sbg: '#F1F2F6', sfg: '#33364A', locked: true, editable: false },
       { name: 'clinical-genomics LabID', sub: 'own credentials · created by Kai Berg · used by 1 project', scope: 'group · clinical-genomics', sbg: '#EEF6FA', sfg: '#1F536D', locked: false, editable: true }
     ]
   };

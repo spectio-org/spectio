@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — component, OME-Zarr viewer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.mono{font-family:'JetBrains Mono',monospace}
+.chan{display:flex;align-items:center;gap:5px;height:26px;padding:0 8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer;white-space:nowrap}
+.tb{width:30px;height:30px;border-radius:8px;background:rgba(255,255,255,0.08);display:flex;align-items:center;justify-content:center;color:#E6E7EE}
+.kv td{padding:5px 8px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+@keyframes shim{0%{background-position:-200px 0}100%{background-position:200px 0}}
+</style>
+</helmet>
+<main style="width: 100%; min-height: 100vh; box-sizing: border-box; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; padding: 24px 32px; display: flex; flex-direction: column; gap: 14px;">
+
+  <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+    <span style="width: 48px; height: 48px; border-radius: 14px; background: #F0EBFD; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z M3 13l9 5 9-5 M3 17.5l9 5 9-5"/></svg></span>
+    <div style="flex: 1 1 0; min-width: 300px; display: flex; flex-direction: column; gap: 2px;">
+      <span style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.05em; color: #6E7287;">SHARED COMPONENT</span>
+      <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 24px;">OME-Zarr viewer</h1>
+      <span style="font-size: 13px; color: #4D5065;">The viewer every imaging review reuses: pyramid levels, channels with contrast windows, label overlays, a z slider. Tiles come from the runner, never from the browser's own storage.</span>
+    </div>
+    <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+      <span style="display: flex; gap: 6px; flex-wrap: wrap; font-size: 12px; align-items: center;"><span style="color: #6E7287;">Used by</span>
+        <a href="Review.dc.html" style="padding: 3px 8px; border-radius: 7px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; text-decoration: none; font-weight: 600;">Plate</a>
+        <a href="ReviewSlides.dc.html" style="padding: 3px 8px; border-radius: 7px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; text-decoration: none; font-weight: 600;">Slides</a>
+        <a href="ReviewSpots.dc.html" style="padding: 3px 8px; border-radius: 7px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; text-decoration: none; font-weight: 600;">Spots</a>
+        <a href="ReviewXenium.dc.html" style="padding: 3px 8px; border-radius: 7px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; text-decoration: none; font-weight: 600;">Xenium</a>
+        <a href="ReviewVolume.dc.html" style="padding: 3px 8px; border-radius: 7px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; text-decoration: none; font-weight: 600;">Volume</a>
+        <a href="RunOutputs.dc.html" style="padding: 3px 8px; border-radius: 7px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; text-decoration: none; font-weight: 600;">Run outputs</a>
+      </span>
+      <span style="font-size: 11.5px; color: #6E7287;">Images: IDR idr0062-blin-nuclearsegmentation, image 6001240 (OME-Zarr v0.4)</span>
+    </span>
+  </div>
+
+  <div style="display: flex; gap: 14px; align-items: flex-start;">
+
+    <!-- DEFAULT STATE -->
+    <div style="flex: 0 0 884px; box-sizing: border-box; border-radius: 18px; background: #14162A; color: #E6E7EE; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <strong class="mono" style="font-size: 13px;">6001240.zarr</strong>
+        <span style="font-size: 11.5px; color: #9A9EB0;">2 channels · 236 z · labels/0</span>
+        <span style="flex-grow: 1;"></span>
+        <span role="radiogroup" aria-label="Pyramid level" style="display: flex; padding: 2px; border-radius: 9px; background: rgba(255,255,255,0.08); font-size: 11.5px;">
+          <sc-for list="{{levels}}" as="l" hint-placeholder-count="4"><span role="radio" aria-checked="{{l.on}}" style="padding: 4px 9px; border-radius: 7px; background: {{l.bg}}; color: {{l.fg}}; font-weight: 600;">{{l.t}}</span></sc-for>
+        </span>
+        <span class="tb" aria-label="Zoom in" style="font-weight: 700;">+</span><span class="tb" aria-label="Zoom out" style="font-weight: 700;">−</span>
+        <span class="tb" aria-label="Fit to view"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 9V4h5 M20 9V4h-5 M4 15v5h5 M20 15v5h-5"/></svg></span>
+        <span class="tb" aria-label="Save view as PNG"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11 M7 10l5 5 5-5 M5 20h14"/></svg></span>
+      </div>
+
+      <div style="display: flex; gap: 12px;">
+        <div role="img" aria-label="Nuclei at z 118, level 0, LaminB1 yellow and Dapi blue, with label outlines" style="position: relative; width: 520px; height: 528px; border-radius: 10px; overflow: hidden; background: #0B0C18;">
+          <img src="images/nuclei-idr0062-labels.webp" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+          <span style="position: absolute; left: 62.5%; top: 21%; width: 11%; height: 10.5%; border-radius: 50%; box-shadow: 0 0 0 2px #FFFFFF;"></span>
+          <span style="position: absolute; left: 44%; top: calc(31.5% + 6px); font-size: 11px; background: rgba(15,16,32,0.85); padding: 4px 8px; border-radius: 7px; line-height: 1.45; white-space: nowrap;"><span class="mono">x 176 · y 61 · z 118</span><br>LaminB1 <strong>812</strong> · Dapi <strong>1,204</strong><br>label <strong>37</strong> <span style="color: #9A9EB0;">· values illustrative</span></span>
+          <span style="position: absolute; left: 10px; bottom: 10px; display: flex; flex-direction: column; gap: 3px; font-size: 11px; background: rgba(15,16,32,0.8); padding: 5px 8px; border-radius: 7px;"><span style="display: block; width: 96px; height: 3px; background: #FFFFFF;"></span>10 µm <span style="color: #9A9EB0;">· from coordinateTransformations</span></span>
+          <span style="position: absolute; right: 10px; bottom: 10px; font-size: 11px; background: rgba(15,16,32,0.8); padding: 5px 8px; border-radius: 7px;">level 0 · 275 × 271 · 100 %</span>
+        </div>
+
+        <!-- side panel -->
+        <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+          <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; color: #9A9EB0;">CHANNELS · omero</span>
+          <sc-for list="{{channels}}" as="c" hint-placeholder-count="2">
+            <div style="border-radius: 12px; background: rgba(255,255,255,0.06); padding: 9px 10px; display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <span role="checkbox" aria-checked="true" style="width: 16px; height: 16px; border-radius: 4px; background: {{c.col}}; display: flex; align-items: center; justify-content: center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#0F1020" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg></span>
+                <strong style="font-size: 13px;">{{c.name}}</strong>
+                <span class="mono" style="font-size: 10.5px; color: #9A9EB0;">c = {{c.idx}}</span>
+                <span style="flex-grow: 1;"></span>
+                <span style="font-size: 11px; color: #9A9EB0;">{{c.hex}}</span>
+              </div>
+              <div role="img" aria-label="Intensity histogram of {{c.name}} with the window from {{c.lo}} to {{c.hi}}" style="position: relative; height: 54px;">
+                <div style="position: absolute; left: 0; right: 0; bottom: 0; height: 46px; display: flex; align-items: flex-end; gap: 1px;"><sc-for list="{{c.bars}}" as="b" hint-placeholder-count="32"><span style="flex: 1 1 0; height: {{b.h}}; background: {{b.fill}}; border-radius: 1px 1px 0 0;"></span></sc-for></div>
+                <span style="position: absolute; top: 0; bottom: 0; left: {{c.loX}}; border-left: 2px solid #FFFFFF;"></span>
+                <span style="position: absolute; top: 0; bottom: 0; left: {{c.hiX}}; border-left: 2px solid #FFFFFF;"></span>
+                <span style="position: absolute; top: 0; left: {{c.loX}}; width: calc({{c.hiX}} - {{c.loX}}); height: 3px; background: {{c.col}};"></span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #C4C7D4;">window
+                <input value="{{c.lo}}" aria-label="{{c.name}} window start" style="width: 46px; font: 600 11.5px 'Inter', sans-serif; border-radius: 6px; border: 1px solid #4D5065; background: #1D2036; color: #FFFFFF; padding: 2px 5px;">–
+                <input value="{{c.hi}}" aria-label="{{c.name}} window end" style="width: 52px; font: 600 11.5px 'Inter', sans-serif; border-radius: 6px; border: 1px solid #4D5065; background: #1D2036; color: #FFFFFF; padding: 2px 5px;">
+                <span style="flex-grow: 1;"></span><span style="color: #9A9EB0;">histogram illustrative</span>
+              </div>
+            </div>
+          </sc-for>
+          <span style="font-size: 11px; font-weight: 600; letter-spacing: 0.05em; color: #9A9EB0; margin-top: 2px;">LABELS</span>
+          <div style="border-radius: 12px; background: rgba(255,255,255,0.06); padding: 9px 10px; display: flex; flex-direction: column; gap: 7px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span role="switch" aria-checked="true" style="width: 30px; height: 17px; border-radius: 9px; background: #7750D4; position: relative;"><span style="position: absolute; right: 2px; top: 2px; width: 13px; height: 13px; border-radius: 7px; background: #FFFFFF;"></span></span>
+              <strong class="mono" style="font-size: 12.5px;">labels/0</strong>
+              <span style="font-size: 11px; color: #9A9EB0;">outlines · <span style="color: #FF4FA3;">■</span> pink</span>
+              <span style="flex-grow: 1;"></span><span style="font-size: 11px; color: #9A9EB0;">L</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 11.5px; color: #C4C7D4;">opacity<span style="flex: 1 1 auto; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15); position: relative;"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: 70%; background: #B9A3F5; border-radius: 2px;"></span><span style="position: absolute; left: 70%; top: -5px; width: 14px; height: 14px; margin-left: -7px; border-radius: 7px; background: #FFFFFF;"></span></span>70 %</div>
+          </div>
+          <div style="margin-top: auto; border-radius: 12px; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.12); padding: 9px 10px; font-size: 11.5px; line-height: 1.5; color: #C4C7D4;">
+            <div style="display: flex; align-items: center; gap: 6px; color: #FFFFFF; font-weight: 600;"><span style="width: 7px; height: 7px; border-radius: 4px; background: #3DDC84;"></span>12 of 12 chunks · 0.31 MB</div>
+            Tiles streamed by the runner over HTTP range requests from <span class="mono">/data/demo/idr0062/6001240.zarr</span> on <span class="mono">hpc-login-1</span>. Only the visible chunks leave the cluster.
+          </div>
+        </div>
+      </div>
+
+      <!-- z slider + filmstrip -->
+      <div style="display: flex; flex-direction: column; gap: 6px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 9px;">
+        <div style="display: flex; align-items: center; gap: 10px; font-size: 12px;">
+          <strong>z</strong>
+          <span class="tb" aria-label="Previous z" style="width: 26px; height: 26px;">‹</span>
+          <input value="118" aria-label="z plane" style="width: 40px; font: 600 12px 'Inter', sans-serif; border-radius: 6px; border: 1px solid #7750D4; background: #1D2036; color: #FFFFFF; padding: 3px 5px;">
+          <span class="tb" aria-label="Next z" style="width: 26px; height: 26px;">›</span>
+          <span style="color: #9A9EB0;">of 0–235 · ← → one plane · Shift ten · loads level 1 while dragging</span>
+          <span style="flex-grow: 1;"></span>
+          <span role="switch" aria-checked="false" class="chan" style="color: #9A9EB0; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.15);">Max projection</span>
+        </div>
+        <div style="position: relative; height: 104px;">
+          <span style="position: absolute; left: 0; right: 0; top: 8px; height: 4px; border-radius: 2px; background: rgba(255,255,255,0.15);"></span>
+          <span style="position: absolute; left: 0; width: {{zCur}}; top: 8px; height: 4px; border-radius: 2px; background: #B9A3F5;"></span>
+          <span role="slider" aria-label="z plane" aria-valuemin="0" aria-valuemax="235" aria-valuenow="118" style="position: absolute; left: {{zCur}}; top: 2px; width: 16px; height: 16px; margin-left: -8px; border-radius: 9px; background: #FFFFFF; box-shadow: 0 0 0 3px #7750D4;"></span>
+          <sc-for list="{{film}}" as="f" hint-placeholder-count="5">
+            <span style="position: absolute; left: {{f.x}}; top: 22px; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; gap: 3px;">
+              <img src="{{f.src}}" alt="z {{f.z}}, level 1" style="display: block; width: 58px; height: 59px; border-radius: 6px; box-shadow: {{f.ring}};">
+              <span style="font-size: 10.5px; font-weight: {{f.w}}; color: {{f.fg}};">z {{f.z}} · {{f.sig}}</span>
+            </span>
+          </sc-for>
+        </div>
+        <span style="font-size: 11px; color: #9A9EB0;">Filmstrip: level 1 thumbnails · signal = mean brightness relative to z 80, measured on the thumbnails (it falls to {{z200}} at z 200).</span>
+      </div>
+    </div>
+
+    <!-- STATES -->
+    <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+      <div style="border-radius: 18px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.08); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Loading</h2><span style="font-size: 12px; color: #6E7287;">coarse level first, then sharper</span></div>
+        <div style="display: flex; gap: 12px;">
+          <div style="position: relative; width: 172px; height: 175px; border-radius: 10px; overflow: hidden; background: #0B0C18; flex-shrink: 0;">
+            <img src="images/nuclei-idr0062-z118.webp" alt="Level 1 shown while level 0 loads" style="position: absolute; inset: 0; width: 100%; height: 100%; filter: blur(1.2px);">
+            <span style="position: absolute; left: 50%; top: 0; right: 0; bottom: 50%; background: linear-gradient(90deg, rgba(255,255,255,0.0), rgba(255,255,255,0.12), rgba(255,255,255,0.0)); background-size: 200px 100%; animation: shim 1.4s infinite linear;"></span>
+            <span style="position: absolute; left: 0; top: 50%; right: 50%; bottom: 0; background: linear-gradient(90deg, rgba(255,255,255,0.0), rgba(255,255,255,0.12), rgba(255,255,255,0.0)); background-size: 200px 100%; animation: shim 1.4s infinite linear;"></span>
+            <span style="position: absolute; left: 8px; top: 8px; font-size: 10.5px; font-weight: 600; color: #FFFFFF; background: rgba(15,16,32,0.8); padding: 2px 7px; border-radius: 6px;">level 1 · 137 × 135</span>
+          </div>
+          <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 1.45; color: #33364A;">
+            <span style="display: flex; align-items: center; gap: 6px; font-weight: 600;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#3B82F6" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 9 9"/></svg>Loading level 0</span>
+            <span style="display: block; height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; width: 58%; height: 6px; background: #3B82F6;"></span></span>
+            <span>7 of 12 chunks · 0.18 of 0.31 MB</span>
+            <span style="color: #4D5065;">Level 2 (68 × 67) paints at once, then level 1, then level 0 tile by tile. Missing tiles shimmer; nothing jumps when they arrive.</span>
+            <span style="color: #6E7287; font-size: 11.5px;">Runner on hpc-login-1 · 240 ms per chunk</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-radius: 18px; background: #FFFFFF; box-shadow: inset 4px 0 0 #DC3B3B, 0 0 0 1px rgba(15,16,32,0.08); padding: 12px 14px 12px 18px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Error · one tile failed</h2><span style="font-size: 12px; color: #6E7287;">the rest stays usable</span></div>
+        <div style="display: flex; gap: 12px;">
+          <div style="position: relative; width: 172px; height: 175px; border-radius: 10px; overflow: hidden; background: #0B0C18; flex-shrink: 0;">
+            <img src="images/nuclei-idr0062.webp" alt="Level 0 with one tile missing" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+            <span style="position: absolute; left: 50%; top: 0; width: 50%; height: 50%; background: repeating-linear-gradient(135deg, rgba(220,59,59,0.35) 0 6px, rgba(15,16,32,0.85) 6px 12px); box-shadow: inset 0 0 0 2px #DC3B3B; display: flex; align-items: center; justify-content: center;"><span style="width: 26px; height: 26px; border-radius: 13px; background: #DC3B3B; display: flex; align-items: center; justify-content: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.8" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg></span></span>
+          </div>
+          <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 1.45; color: #33364A;">
+            <span style="display: flex; align-items: center; gap: 6px; font-weight: 600; color: #B02A2A;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>1 of 12 chunks failed</span>
+            <span class="mono" style="font-size: 11px; color: #4D5065;">0/0/118/0/1 · HTTP 503 from the runner · after 3 tries</span>
+            <span style="color: #4D5065;">Top-right tile, level 0. Other tiles and lower levels are shown; measurements skip the missing area.</span>
+            <span style="display: flex; gap: 6px; margin-top: 2px;">
+              <button type="button" style="height: 32px; padding: 0 12px; border: none; border-radius: 9px; background: #7750D4; color: #FFFFFF; font: 600 12.5px 'Inter', sans-serif;">Retry tile</button>
+              <button type="button" style="height: 32px; padding: 0 10px; border: none; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #33364A;">Use level 1 here</button>
+            </span>
+            <a href="RunnerOffline.dc.html" style="font-size: 11.5px;">Runner status</a>
+          </div>
+        </div>
+      </div>
+
+      <div style="border-radius: 18px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.08); padding: 12px 14px; display: flex; gap: 14px;">
+        <div style="width: 130px; height: 262px; flex-shrink: 0; border-radius: 22px; background: #0F1020; padding: 6px; box-sizing: border-box;">
+          <div style="width: 100%; height: 100%; border-radius: 19px; background: #14162A; overflow: hidden; display: flex; flex-direction: column; color: #E6E7EE;">
+            <div style="height: 24px; display: flex; align-items: center; justify-content: space-between; padding: 0 9px; font-size: 8px; font-weight: 600;"><span>‹ 6001240</span><span>⋯</span></div>
+            <div style="position: relative; height: 112px;"><img src="images/nuclei-idr0062-labels.webp" alt="Phone viewer" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;"><span style="position: absolute; left: 5px; bottom: 5px; font-size: 7px; background: rgba(15,16,32,0.8); padding: 1px 4px; border-radius: 3px;">10 µm</span></div>
+            <div style="padding: 6px 8px; display: flex; flex-direction: column; gap: 5px;">
+              <span style="display: flex; align-items: center; gap: 4px; font-size: 7.5px;">z 118<span style="flex: 1; height: 2px; background: rgba(255,255,255,0.2); position: relative;"><span style="position: absolute; left: 50%; top: -3px; width: 8px; height: 8px; margin-left: -4px; border-radius: 4px; background: #FFFFFF;"></span></span></span>
+              <span style="display: flex; gap: 3px;"><span style="font-size: 7px; font-weight: 600; padding: 2px 4px; border-radius: 4px; background: rgba(255,255,255,0.15);"><span style="color: #FFD54F;">●</span> LaminB1</span><span style="font-size: 7px; font-weight: 600; padding: 2px 4px; border-radius: 4px; background: rgba(255,255,255,0.15);"><span style="color: #4F7BFF;">●</span> Dapi</span><span style="font-size: 7px; font-weight: 600; padding: 2px 4px; border-radius: 4px; background: #7750D4;">Labels</span></span>
+            </div>
+            <div style="margin-top: auto; border-radius: 12px 12px 0 0; background: #FFFFFF; color: #0F1020; padding: 7px 8px; display: flex; flex-direction: column; gap: 4px;">
+              <span style="width: 24px; height: 3px; border-radius: 2px; background: #C4C7D4; align-self: center;"></span>
+              <span style="font-size: 7.5px; font-weight: 600;">LaminB1 window</span>
+              <span style="height: 3px; border-radius: 2px; background: #FFD54F;"></span>
+              <span style="font-size: 7px; color: #6E7287;">0 – 1,500 · drag to adjust</span>
+            </div>
+          </div>
+        </div>
+        <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12px; line-height: 1.45; color: #33364A;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Phone</h2>
+          <span>Image on top, full width; pinch to zoom, two-finger drag pans. The z slider sits under the image; swipe up on a channel for its window in a sheet.</span>
+          <span>Labels and channels are chips. No histogram on the phone: the window is a two-handle slider.</span>
+          <span style="color: #4D5065;">Level 1 is the default on cellular data. See <a href="MReviewCells.dc.html">phone review</a>.</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- METADATA + BEHAVIOUR -->
+  <div style="display: flex; gap: 14px; align-items: stretch;">
+    <div style="flex: 0 0 520px; box-sizing: border-box; border-radius: 18px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.08); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Read from <span class="mono" style="font-size: 13px;">.zattrs</span></h2><span style="font-size: 12px; color: #6E7287;">multiscales v0.4 · axes c, z, y, x</span></div>
+      <table class="kv" style="border-collapse: collapse; font-size: 12px; width: 100%;">
+        <thead><tr style="color: #6E7287; font-size: 11px;"><td>dataset</td><td>shape (c, z, y, x)</td><td>xy factor</td><td>use</td></tr></thead>
+        <tbody>
+          <sc-for list="{{meta}}" as="m" hint-placeholder-count="3"><tr><td class="mono" style="font-weight: 600;">{{m.p}}</td><td class="mono">{{m.shape}}</td><td>{{m.f}}</td><td style="color: #4D5065;">{{m.use}}</td></tr></sc-for>
+          <tr><td class="mono" style="font-weight: 600;">labels/0</td><td class="mono">236 × 275 × 271</td><td>same grid</td><td style="color: #4D5065;">outlines, hover label id</td></tr>
+        </tbody>
+      </table>
+      <span style="font-size: 11.5px; color: #4D5065;">Channels (<span class="mono">omero.channels</span>): 0 LaminB1, 1 Dapi. Display windows 0–1,500 as used for these thumbnails.</span>
+    </div>
+    <div style="flex: 1 1 0; min-width: 0; border-radius: 18px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.08); padding: 12px 14px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; font-size: 12px; line-height: 1.5; color: #33364A;">
+      <div style="display: flex; flex-direction: column; gap: 4px;"><strong style="font-size: 13px; color: #0F1020;">Props</strong><span class="mono" style="font-size: 11px;">source · level=auto · z · channels[] · labels[] · overlays[] · readonly</span><span>Reviews add overlays in HTML on top (tile rings, hatching, boxes); the viewer never draws decisions.</span></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><strong style="font-size: 13px; color: #0F1020;">Keyboard and access</strong><span>← → z · + − zoom · 0 fit · L labels · 1–9 channel on/off. The image has a text summary; the hover readout is also announced on focus.</span></div>
+      <div style="display: flex; flex-direction: column; gap: 4px;"><strong style="font-size: 13px; color: #0F1020;">Limits</strong><span>Zarr v2 and v3 (OME-Zarr 0.4, 0.5). OME-TIFF is converted by the runner first. Plates open well by well.</span><span style="color: #8F5806;">No 3D render yet: volumes use slices and projections.</span></div>
+    </div>
+  </div>
+</main>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ZMAX = 235;
+  const zx = z => (z / ZMAX * 100).toFixed(2) + '%';
+  // Mean brightness of the level 1 thumbnails (images/nuclei-idr0062-z*.webp), relative to z 80.
+  const M = { 40: 18.1, 80: 25.8, 118: 25.5, 160: 17.5, 200: 10.0 };
+  const film = Object.entries(M).map(([z, m]) => ({ z, x: zx(+z), src: 'images/nuclei-idr0062-z' + z + '.webp', sig: Math.round(m / M[80] * 100) + ' %',
+    ring: +z === 118 ? '0 0 0 2px #7750D4' : '0 0 0 1px rgba(255,255,255,0.15)', fg: +z === 118 ? '#FFFFFF' : '#9A9EB0', w: +z === 118 ? 700 : 400 }));
+  // Histogram shapes are illustrative; the windows 0–1500 are the ones used to make the thumbnails.
+  const hist = (peak, width, tail, col, lo, hi, max) => Array.from({ length: 32 }, (_, i) => { const x = (i + 0.5) / 32 * max;
+    const y = Math.exp(-0.5 * ((x - peak) / width) ** 2) + tail * Math.exp(-x / (max * 0.35));
+    return { x, y }; }).map((b, _, a) => { const m = Math.max(...a.map(c => c.y)); return { h: Math.max(3, b.y / m * 100).toFixed(1) + '%', fill: b.x >= lo && b.x <= hi ? col : 'rgba(255,255,255,0.18)' }; });
+  const ch = (name, idx, col, hex, peak, width, tail) => { const lo = 0, hi = 1500, max = 4095;
+    return { name, idx, col, hex, lo: String(lo), hi: '1500', range: '0–4,095', loX: (lo / max * 100) + '%', hiX: (hi / max * 100).toFixed(1) + '%', bars: hist(peak, width, tail, col, lo, hi, max) }; };
+  const lv = (t, on) => ({ t, on: on ? 'true' : 'false', bg: on ? '#7750D4' : 'transparent', fg: on ? '#FFFFFF' : '#C4C7D4' });
+  return {
+    levels: [lv('auto', false), lv('0 · 275 × 271', true), lv('1 · 137 × 135', false), lv('2 · 68 × 67', false)],
+    channels: [ch('LaminB1', 0, '#FFD54F', 'yellow', 160, 120, 0.5), ch('Dapi', 1, '#4F7BFF', 'blue', 220, 160, 0.35)],
+    film, zCur: zx(118), z200: Math.round(M[200] / M[80] * 100) + ' %',
+    meta: [
+      { p: '0', shape: '2 × 236 × 275 × 271', f: '1', use: 'full detail, zoom ≥ 50 %' },
+      { p: '1', shape: '2 × 236 × 137 × 135', f: '2', use: 'z dragging, phone, filmstrip' },
+      { p: '2', shape: '2 × 236 × 68 × 67', f: '4', use: 'first paint, overviews' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

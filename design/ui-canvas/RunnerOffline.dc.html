@@ -17,7 +17,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
-  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Environments / EMBL SLURM · htc / Runner hpc-login-2" hint-size="100%,76px"></dc-import></div>
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Environments / demo-hpc SLURM · htc / Runner hpc-login-2" hint-size="100%,76px"></dc-import></div>
   <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="environments" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
     <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
 
@@ -27,7 +27,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
           <span style="width: 48px; height: 48px; border-radius: 15px; background: #FFF4F4; color: #B02A2A; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 7V3 M15 7V3 M6 7h12v4a6 6 0 0 1-12 0z M12 17v4 M3 3l18 18"/></svg></span>
           <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 260px;">
             <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 26px;">Runner hpc-login-2 is offline</h1>
-            <span style="font-size: 13.5px; color: #4D5065;">Last heartbeat 10:04 (18 min ago) · user tweber · spectio-runner 0.1.0 · EMBL SLURM · htc</span>
+            <span style="font-size: 13.5px; color: #4D5065;">Last heartbeat 10:04 (18 min ago) · user amartin · spectio-runner 0.1.0 · demo-hpc SLURM · htc</span>
           </div>
           <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #33364A;"><input type="checkbox" checked> Notify me when it is back</label>
         </div>
@@ -117,7 +117,7 @@ renderVals() {
       run('proteomics-dia-11', L.nfcore, 'Awaiting review', '#D9890B', '#8F5806', 'You can still decide. The decision is recorded now and applied when the runner reconnects.', 'Review', quiet)
     ],
     diag: [
-      { k: 'Node maintenance announced', v: 'login02 · 10:00–12:00 today (from the cluster status feed).', icon: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', col: '#D9890B' },
+      { k: 'Node maintenance announced', v: 'hpc-login-2 · 10:00–12:00 today (from the cluster status feed).', icon: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', col: '#D9890B' },
       { k: 'Last message from the runner', v: '“SIGTERM received, shutting down” at 10:04:12.', icon: 'M4 5h16v11H8l-4 4z', col: '#4D5065' },
       { k: 'Token still valid', v: 'Expires 2027-01-14; not the cause.', icon: 'M5 12l5 5L20 7', col: '#157A4B' },
       { k: 'Other runners on this cluster', v: 'hpc-login-1 online, heartbeat 12 s ago.', icon: 'M5 12l5 5L20 7', col: '#157A4B' }

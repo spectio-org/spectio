@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — add a workflow</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 7px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.btn{height:40px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.inp{display:flex;align-items:center;gap:8px;height:38px;padding:0 11px;border-radius:10px;box-shadow:inset 0 0 0 1px #C4C7D4;background:#FFFFFF;font-size:13px;color:#0F1020;min-width:0}
+.mono{font-family:'JetBrains Mono',monospace}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl{font-size:11.5px;font-weight:600;letter-spacing:.05em;color:#6E7287}
+.mini{border-radius:16px;background:#FFFFFF;box-shadow:0 20px 50px -30px rgba(15,16,32,.6);padding:14px 16px;display:flex;flex-direction:column;gap:9px;min-width:0}
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{animation:spin 1s linear infinite}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Workflows / Add a workflow" project="demo-lab / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="workflows" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #FCE5EC; color: #A54666; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12 M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 9a9 9 0 0 1-9 9"/></svg></span>
+      <div style="flex-grow: 1;"><h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Workflows</h1><span style="font-size: 14px; color: #4D5065;">18 in the catalog</span></div>
+    </div>
+    <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px;">
+      <div style="height: 190px; border-radius: 16px; background: #F7F7FB;"></div><div style="height: 190px; border-radius: 16px; background: #F7F7FB;"></div><div style="height: 190px; border-radius: 16px; background: #F7F7FB;"></div>
+      <div style="height: 190px; border-radius: 16px; background: #F7F7FB;"></div><div style="height: 190px; border-radius: 16px; background: #F7F7FB;"></div><div style="height: 190px; border-radius: 16px; background: #F7F7FB;"></div>
+    </div>
+  </main>
+
+  <div style="position: absolute; inset: 0; z-index: 5; background: rgba(15,16,32,0.46); display: flex; flex-direction: column; align-items: center; padding: 22px 24px 0; gap: 12px; box-sizing: border-box;">
+    <section role="dialog" aria-modal="true" aria-labelledby="add-title" style="width: 1180px; max-width: 100%; border-radius: 22px; background: #FFFFFF; box-shadow: 0 30px 80px -30px rgba(15,16,32,0.55); display: flex; flex-direction: column;">
+      <div style="padding: 16px 20px 12px; display: flex; align-items: center; gap: 14px; border-bottom: 1px solid #EEEFF5;">
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><h2 id="add-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px;">Add a workflow</h2><span style="font-size: 13px; color: #4D5065;">Pick a source and a release. Spectio reads the repository and shows what it can use before anything is added.</span></div>
+        <ol aria-label="Steps" style="margin: 0; padding: 0; list-style: none; display: flex; gap: 6px; font-size: 12.5px;">
+          <sc-for list="{{steps}}" as="s" hint-placeholder-count="3">
+            <li aria-current="{{s.cur}}" style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 9px; background: {{s.bg}}; color: {{s.fg}}; font-weight: 600;"><span style="width: 18px; height: 18px; border-radius: 6px; background: {{s.nbg}}; color: {{s.nfg}}; font-size: 11px; display: flex; align-items: center; justify-content: center;">{{s.n}}</span>{{s.t}}</li>
+          </sc-for>
+        </ol>
+        <button type="button" aria-label="Close" style="width: 40px; height: 40px; border: none; border-radius: 12px; background: transparent; color: #33364A; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg></button>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 220px minmax(0, 1fr) 380px; min-height: 0;">
+        <div role="tablist" aria-orientation="vertical" aria-label="Source" style="padding: 14px 12px; display: flex; flex-direction: column; gap: 6px; border-right: 1px solid #EEEFF5; background: #FBFBFD; border-bottom-left-radius: 0;">
+          <span class="lbl" style="padding: 0 6px 2px;">SOURCE</span>
+          <sc-for list="{{sources}}" as="s" hint-placeholder-count="4">
+            <a href="#" role="tab" aria-selected="{{s.sel}}" style="display: flex; gap: 10px; align-items: flex-start; padding: 10px; border-radius: 12px; text-decoration: none; color: #0F1020; background: {{s.bg}}; box-shadow: {{s.sh}};">
+              <span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; color: #4D5065; display: flex; align-items: center; justify-content: center;"><sc-if value="{{s.logo}}" hint-placeholder-val="{{true}}"><img src="{{s.logo}}" width="18" height="18" alt="" style="display: block; object-fit: contain;"></sc-if><sc-if value="{{!s.logo}}" hint-placeholder-val="{{false}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"/></svg></sc-if></span>
+              <span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">{{s.t}}</span><span style="font-size: 11.5px; color: #4D5065; line-height: 1.35;">{{s.d}}</span></span>
+            </a>
+          </sc-for>
+        </div>
+
+        <div role="tabpanel" aria-label="nf-core" style="padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label class="inp" style="flex-grow: 1; box-shadow: inset 0 0 0 2px #7750D4;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg><input type="search" value="chromatin" aria-label="Search nf-core pipelines" style="border: none; outline: none; font: 13px 'Inter', sans-serif; color: #0F1020; flex-grow: 1; min-width: 0; background: transparent;"></label>
+            <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #33364A; white-space: nowrap;"><input type="checkbox" checked style="margin: 0; accent-color: #7750D4;" aria-label="Only pipelines with a release">Released only</span>
+          </div>
+          <span style="font-size: 12px; color: #4D5065;">nf-co.re/pipelines.json · 124 pipelines · fetched 10 min ago · 5 match name, description or topics</span>
+          <div role="radiogroup" aria-label="nf-core pipelines" style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <sc-for list="{{pipes}}" as="p" hint-placeholder-count="5">
+              <div style="display: flex; gap: 10px; align-items: center; padding: 9px 12px; border-top: 1px solid #EEEFF5; background: {{p.bg}}; box-shadow: {{p.sh}}; cursor: pointer;">
+                <span role="radio" aria-checked="{{p.chk}}" aria-label="{{p.name}}" style="width: 16px; height: 16px; flex-shrink: 0; border-radius: 8px; box-shadow: inset 0 0 0 {{p.rw}} {{p.rc}}; box-sizing: border-box;"></span>
+                <img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="18" height="18" alt="nf-core" style="display: block; object-fit: contain; flex-shrink: 0;">
+                <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px;"><span style="font-size: 13.5px; font-weight: 600;">{{p.name}} <span style="font-weight: 500; color: #6E7287; font-size: 12px;">★ {{p.stars}}</span></span><span class="ell" style="font-size: 12px; color: #4D5065;">{{p.desc}}</span></span>
+                <span class="mono" style="font-size: 12px; color: #33364A; white-space: nowrap;">{{p.rel}}</span>
+                <span class="chip" style="background: {{p.sbg}}; color: {{p.sfg}};"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.sic}}"/></svg>{{p.schema}}</span>
+                <span style="font-size: 12px; color: {{p.infg}}; white-space: nowrap; width: 74px; text-align: right;">{{p.inc}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <span class="lbl">RELEASE OF NF-CORE/ATACSEQ</span>
+            <div role="radiogroup" aria-label="Release" style="display: flex; gap: 6px; flex-wrap: wrap;">
+              <sc-for list="{{rels}}" as="r" hint-placeholder-count="5">
+                <span role="radio" aria-checked="{{r.sel}}" aria-disabled="{{r.dis}}" title="{{r.why}}" style="display: flex; flex-direction: column; gap: 1px; padding: 6px 10px; border-radius: 10px; background: {{r.bg}}; box-shadow: {{r.sh}}; color: {{r.fg}}; min-width: 0;"><span class="mono" style="font-size: 12.5px; font-weight: 600;">{{r.v}}</span><span style="font-size: 11px;">{{r.d}}</span></span>
+              </sc-for>
+            </div>
+            <span style="font-size: 12px; color: #4D5065;">1.2.2 is a DSL1 release: Nextflow 22.12 and later cannot run it, so it cannot be picked.</span>
+          </div>
+          <div style="border-radius: 14px; background: #F7F7FB; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+            <span class="lbl">FROM THE REPOSITORY AT 2.1.2</span>
+            <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{topics}}" as="t" hint-placeholder-count="5"><span class="chip" style="background: #FFFFFF; color: #33364A; box-shadow: inset 0 0 0 1px #DFE1EA;">{{t}}</span></sc-for></span>
+            <span style="font-size: 12.5px; color: #33364A; line-height: 1.5;">Profiles <code class="mono" style="font-size: 11.5px;">docker, singularity, apptainer, conda, test, test_full</code> · aligners <code class="mono" style="font-size: 11.5px;">bwa, bowtie2, chromap, star</code> · README and CHANGELOG shown on the workflow page.</span>
+          </div>
+        </div>
+
+        <aside aria-label="Checks" style="padding: 14px 18px; border-left: 1px solid #EEEFF5; display: flex; flex-direction: column; gap: 8px; background: #FFFFFF;">
+          <div style="display: flex; align-items: baseline; gap: 8px;"><span style="font-size: 14.5px; font-weight: 600;">Checks</span><span class="mono" style="font-size: 12px; color: #4D5065;">nf-core/atacseq 2.1.2</span></div>
+          <sc-for list="{{checks}}" as="c" hint-placeholder-count="7">
+            <div style="display: flex; gap: 9px; align-items: flex-start; padding: 7px 10px; border-radius: 10px; background: {{c.bg}};">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.ic}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;" class="{{c.cls}}"><path d="{{c.icon}}"/></svg>
+              <span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-size: 13px; font-weight: 600; color: {{c.fg}};">{{c.word}} <span style="font-weight: 500; color: #0F1020;">{{c.k}}</span></span><span style="font-size: 12px; color: #4D5065; line-height: 1.4;">{{c.v}}</span></span>
+            </div>
+          </sc-for>
+        </aside>
+      </div>
+
+      <div style="padding: 12px 20px 14px; border-top: 1px solid #EEEFF5; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span style="flex-grow: 1; font-size: 12.5px; color: #4D5065; min-width: 0;">Added to project <strong style="color: #0F1020;">Liver time course</strong> · visible to <strong style="color: #0F1020;">demo-lab</strong> · launch form built from the schema</span>
+        <button type="button" class="btn btn-s">Cancel</button>
+        <a href="WorkflowOverlay.dc.html" class="btn btn-s">Add, then write an overlay</a>
+        <a href="WorkflowsCatalog.dc.html" class="btn btn-p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>Add to catalog</a>
+      </div>
+    </section>
+
+    <span style="width: 1180px; max-width: 100%; font-size: 12px; font-weight: 600; letter-spacing: 0.05em; color: #FFFFFF;">THE THREE OTHER SOURCES · SAME DIALOG, SAME CHECKS COLUMN</span>
+    <div style="width: 1180px; max-width: 100%; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+
+      <section class="mini" aria-label="Snakemake Workflow Catalog tab">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="18" height="18" alt="" style="display: block;">Snakemake Workflow Catalog</span>
+        <label class="inp"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg><input type="search" value="rna-seq" aria-label="Search the Snakemake catalog" style="border: none; outline: none; font: 13px 'Inter', sans-serif; flex-grow: 1; min-width: 0; background: transparent;"></label>
+        <span style="font-size: 11.5px; color: #4D5065;">data.json · 2,300+ repositories · “standardized” = follows the catalog's usage rules</span>
+        <div style="border-radius: 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden; font-size: 12.5px;">
+          <sc-for list="{{smk}}" as="r" hint-placeholder-count="3">
+            <div style="display: flex; gap: 8px; align-items: center; padding: 7px 10px; border-top: 1px solid #EEEFF5; background: {{r.bg}};"><span class="ell" style="flex-grow: 1; font-weight: 600; min-width: 0;">{{r.name}}</span><span class="mono" style="font-size: 11.5px; color: #33364A; white-space: nowrap;">{{r.rel}}</span><span class="chip" style="background: {{r.cbg}}; color: {{r.cfg}};">{{r.tag}}</span></div>
+          </sc-for>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px; font-size: 12px;">
+          <span style="display: flex; gap: 6px; align-items: center;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1F9D63" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M5 12l5 5L20 7"/></svg><span><strong style="color: #157A4B;">Found</strong> workflow/schemas/config.schema.yaml · 6 keys</span></span>
+          <span style="display: flex; gap: 6px; align-items: flex-start;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D9890B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M12 3l10 18H2z M12 10v5 M12 18h.01"/></svg><span><strong style="color: #8F5806;">No UI hints</strong> · keys show as raw fields until a <code class="mono">ui:</code> block is added in spectio.yml</span></span>
+        </div>
+      </section>
+
+      <section class="mini" aria-label="Git URL tab">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z M4 17a3 3 0 0 1 3-3h11"/></svg>Git URL</span>
+        <label class="inp" style="box-shadow: inset 0 0 0 1px #F2B8B8;"><input type="text" value="git@git.example.org:demo-lab/organoid-qc.git" aria-label="Repository URL" class="mono" style="border: none; outline: none; font: 12px 'JetBrains Mono', monospace; flex-grow: 1; min-width: 0; background: transparent;"></label>
+        <span style="display: flex; gap: 6px; align-items: center; font-size: 12px; color: #B02A2A;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 11h12v9H6z M8 11V8a4 4 0 0 1 8 0v3"/></svg><span><strong>Private repository</strong> · permission denied without a credential</span></span>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) 110px; gap: 8px;">
+          <label style="display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: #4D5065; min-width: 0;">Credential
+            <select aria-label="Credential" style="height: 36px; border-radius: 10px; border: 1px solid #7750D4; padding: 0 8px; font: 600 12.5px 'Inter', sans-serif; color: #0F1020; background: #FBF9FF; min-width: 0;"><option>demo-lab deploy key (SSH)</option><option>Personal token · amartin · expires 2 Dec</option><option>+ Add a credential…</option></select>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 3px; font-size: 11.5px; color: #4D5065;">Ref
+            <select aria-label="Ref" style="height: 36px; border-radius: 10px; border: 1px solid #C4C7D4; padding: 0 8px; font: 600 12.5px 'Inter', sans-serif;"><option>v0.3.0 (tag)</option><option>main</option></select>
+          </label>
+        </div>
+        <span style="font-size: 11.5px; color: #4D5065; line-height: 1.45;">git.example.org is on the lab network: cloned by runner <strong style="color: #0F1020;">hpc-login-2</strong>, not by the server. The key never leaves the environment's credential store.</span>
+        <span style="display: flex; gap: 6px; align-items: center; font-size: 12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1F9D63" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M5 12l5 5L20 7"/></svg><span><strong style="color: #157A4B;">Found</strong> nextflow_schema.json · spectio.yml (3 stages, no gates)</span></span>
+      </section>
+
+      <section class="mini" aria-label="Path on a cluster tab">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v6H4z M4 14h16v6H4z M8 7h.01 M8 17h.01"/></svg>Path on a cluster</span>
+        <div style="display: grid; grid-template-columns: 172px minmax(0, 1fr); gap: 8px;">
+          <select aria-label="Runner" style="height: 36px; border-radius: 10px; border: 1px solid #C4C7D4; padding: 0 8px; font: 600 12.5px 'Inter', sans-serif; min-width: 0;"><option>hpc-login-2 · online</option><option disabled>hpc-login-1 · offline</option></select>
+          <label class="inp" style="height: 36px;"><input type="text" value="/data/demo/pipelines/methylseq-custom" aria-label="Path" style="border: none; outline: none; font: 11.5px 'JetBrains Mono', monospace; flex-grow: 1; min-width: 0; background: transparent;"></label>
+        </div>
+        <div style="border-radius: 12px; background: #F7F7FB; padding: 6px 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">
+          <sc-for list="{{files}}" as="f" hint-placeholder-count="5">
+            <div style="display: flex; gap: 8px; align-items: center; padding: 2px 10px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.icon}}"/></svg><span style="flex-grow: 1;">{{f.n}}</span><span style="font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 600; color: {{f.fg}};">{{f.note}}</span></div>
+          </sc-for>
+        </div>
+        <span style="font-size: 11.5px; color: #4D5065; line-height: 1.45;">Listed through the runner as Unix user <code class="mono">amartin</code>. hpc-login-1 is offline, so it cannot be picked.</span>
+        <span style="display: flex; gap: 6px; align-items: flex-start; font-size: 12px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#D9890B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M12 3l10 18H2z M12 10v5 M12 18h.01"/></svg><span><strong style="color: #8F5806;">Uncommitted changes</strong> · main@a1c9f2e + 2 files; runs record the commit and a diff hash</span></span>
+      </section>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 3l10 18H2z M12 10v5 M12 18h.01', info: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 11v5 M12 8h.01', load: 'M12 3a9 9 0 1 0 9 9', cross: 'M6 6l12 12 M18 6L6 18', file: 'M6 3h8l4 4v14H6z M14 3v4h4', dir: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z' };
+  const step = (n, t, k) => ({ n, t, cur: k === 'cur' ? 'step' : 'false', bg: k === 'cur' ? '#F6F2FE' : (k === 'done' ? '#ECF8F1' : '#F7F7FB'), fg: k === 'cur' ? '#4D368B' : (k === 'done' ? '#0E5A37' : '#6E7287'), nbg: k === 'cur' ? '#7750D4' : (k === 'done' ? '#1F9D63' : '#DFE1EA'), nfg: k === 'todo' ? '#4D5065' : '#FFFFFF' });
+  const src = (t, d, sel, logo, icon) => ({ t, d, sel: sel ? 'true' : 'false', logo: logo || '', icon: icon || '', bg: sel ? '#FFFFFF' : 'transparent', sh: sel ? 'inset 0 0 0 2px #7750D4, 0 1px 2px rgba(15,16,32,.08)' : 'none' });
+  const has = { schema: 'has schema', sbg: '#ECF8F1', sfg: '#0E5A37', sic: I.check };
+  const pipe = (name, stars, desc, rel, sel, inc) => ({ name, stars, desc, rel, ...has, chk: sel ? 'true' : 'false', rw: sel ? '5px' : '1.5px', rc: sel ? '#7750D4' : '#9A9EB0', bg: sel ? '#FBF9FF' : '#FFFFFF', sh: sel ? 'inset 3px 0 0 #7750D4' : 'none', inc: inc || '', infg: inc ? '#157A4B' : '#6E7287' });
+  const rel = (v, d, k, why) => ({ v, d, why: why || '', sel: k === 'sel' ? 'true' : 'false', dis: k === 'dis' ? 'true' : 'false', bg: k === 'sel' ? '#F6F2FE' : (k === 'dis' ? '#F7F7FB' : '#FFFFFF'), sh: k === 'sel' ? 'inset 0 0 0 2px #7750D4' : 'inset 0 0 0 1px #DFE1EA', fg: k === 'dis' ? '#9A9EB0' : '#0F1020' });
+  const ok = (k, v) => ({ word: 'Found', k, v, icon: I.check, ic: '#1F9D63', fg: '#157A4B', bg: '#FFFFFF', cls: '' });
+  const ck = {
+    ok,
+    missing: (k, v) => ({ word: 'Not found', k, v, icon: I.info, ic: '#D9890B', fg: '#8F5806', bg: '#FFFBF3', cls: '' }),
+    fact: (word, k, v) => ({ word, k, v, icon: I.check, ic: '#1F9D63', fg: '#157A4B', bg: '#FFFFFF', cls: '' }),
+    load: (k, v) => ({ word: 'Checking', k, v, icon: I.load, ic: '#3B82F6', fg: '#1D5FC9', bg: '#F5F8FE', cls: 'spin' })
+  };
+  return {
+    topics: ['atac-seq', 'chromatin-accessibility', 'peak-calling', 'qc', 'nextflow'],
+    steps: [step('1', 'Source', 'done'), step('2', 'Checks', 'cur'), step('3', 'Name & access', 'todo')],
+    sources: [
+      src('nf-core', 'pipelines.json · releases · schema', true, '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'),
+      src('Snakemake Workflow Catalog', 'data.json · standardized workflows', false, '/_blob/7a35665829f51132cb3bcb9a4c3e638c'),
+      src('Git URL', 'HTTPS or SSH · private with a credential', false, '', 'M4 4h11a3 3 0 0 1 3 3v13H7a3 3 0 0 1-3-3z M4 17a3 3 0 0 1 3-3h11'),
+      src('Path on a cluster', 'read through a runner', false, '', 'M4 4h16v6H4z M4 14h16v6H4z M8 7h.01 M8 17h.01')
+    ],
+    pipes: [
+      pipe('nf-core/atacseq', '210', 'ATAC-seq peak-calling and QC analysis pipeline', '2.1.2', true),
+      pipe('nf-core/chipseq', '230', 'ChIP-seq peak-calling, QC and differential analysis', '2.1.0', false, 'in catalog'),
+      pipe('nf-core/cutandrun', '95', 'CUT&RUN, CUT&Tag and TIPseq analysis', '3.2.2', false),
+      pipe('nf-core/hic', '95', 'Chromosome conformation capture (Hi-C) analysis', '2.1.0', false),
+      pipe('nf-core/methylseq', '160', 'Methylation (bisulfite) sequencing analysis', '2.7.1', false, 'in catalog')
+    ],
+    rels: [rel('2.1.2', 'latest · has schema', 'sel'), rel('2.1.1', 'has schema'), rel('2.1.0', 'has schema'), rel('2.0', 'has schema'), rel('1.2.2', 'DSL1 · not runnable', 'dis', 'DSL1 is not supported by Nextflow 22.12 and later')],
+    checks: [
+      ck.ok('nextflow_schema.json', 'draft 2020-12 · 10 groups · 78 parameters · drives the launch form'),
+      ck.ok('assets/schema_input.json', 'samplesheet schema · editable grid with file checks'),
+      ck.ok('modules.json', '46 nf-core modules with git_sha'),
+      ck.missing('spectio.yml', 'Stages can be added later as a lab overlay. Until then: 9 subworkflows detected, display only. Gates are optional: without them the run goes straight through.'),
+      ck.fact('Licence', 'MIT', 'from LICENSE'),
+      ck.fact('Last release', '2.1.2', 'tagged in the repository · Nextflow ≥ 23.04.0 (demo-hpc has 25.04.6)'),
+      ck.load('test profile', 'Resolving containers for -profile test on demo-hpc (optional)…')
+    ],
+    smk: [
+      { name: 'snakemake-workflows/rna-seq-star-deseq2', rel: 'v2.1.2', tag: 'standardized', cbg: '#ECF8F1', cfg: '#0E5A37', bg: '#FBF9FF' },
+      { name: 'snakemake-workflows/rna-seq-kallisto-sleuth', rel: 'v2.6.0', tag: 'standardized', cbg: '#ECF8F1', cfg: '#0E5A37', bg: '#FFFFFF' },
+      { name: 'demo-lab/rnaseq-snake', rel: 'no release', tag: 'not standardized', cbg: '#F1F2F6', cfg: '#33364A', bg: '#FFFFFF' }
+    ],
+    files: [
+      { n: '.git/', icon: I.dir, note: 'main@a1c9f2e', fg: '#33364A' },
+      { n: 'main.nf', icon: I.file, note: 'modified', fg: '#8F5806' },
+      { n: 'nextflow.config', icon: I.file, note: 'modified', fg: '#8F5806' },
+      { n: 'nextflow_schema.json', icon: I.file, note: 'schema found', fg: '#157A4B' },
+      { n: 'modules/', icon: I.dir, note: '', fg: '#33364A' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

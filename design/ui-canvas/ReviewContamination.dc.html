@@ -1,0 +1,280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, contamination and negative controls</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rk:has(input[value="sum"]:checked) .pn-sum,
+.rk:has(input[value="samples"]:checked) .pn-samples,
+.rk:has(input[value="taxa"]:checked) .pn-taxa,
+.rk:has(input[value="report"]:checked) .pn-report,
+.rk:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.it td,.it th{padding:7px 7px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+.tx td,.tx th{padding:6px 6px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/taxprofiler · infant-gut-07" project="demo-lab / Infant gut cohort" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rk" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">8 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <a href="ReviewStructures.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewSlides.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stages 1 and 2 done, gate after stage 3 open"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#8B5CF6"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Contamination QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· infant-gut-07 · #352</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block;">nf-core/taxprofiler 2.0.1 · Kraken2 + Bracken · 10 samples + 2 negative controls · paused after profiling (stage 3 of 4) · <strong style="color: #8F5806;">waiting 2 h 05</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span title="You · Alice Martin" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="Bruno Keller" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">BK</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvk" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">3 to check</span></label>
+      <label class="rv-tab"><input type="radio" name="rvk" value="samples" checked aria-label="Samples"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Samples<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">1 excluded</span></label>
+      <label class="rv-tab"><input type="radio" name="rvk" value="taxa" aria-label="Taxa"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v6 M12 9l-6 5 M12 9l6 5 M6 14v4 M18 14v4 M4 21h4 M16 21h4"/></svg>Taxa<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">{{removedLabel}}</span></label>
+      <label class="rv-tab"><input type="radio" name="rvk" value="report" aria-label="Report"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Report<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">MultiQC · Krona</span></label>
+      <label class="rv-tab"><input type="radio" name="rvk" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">5</span></label>
+    </div>
+
+    <!-- SAMPLES: item table + rule -->
+    <section class="rv-pn pn-samples" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-radius: 14px; background: #F6F2FE; padding: 10px 14px;">
+        <span role="switch" aria-checked="true" aria-label="Rule: remove taxa present in negative controls" style="width: 38px; height: 22px; border-radius: 11px; background: #7750D4; position: relative; flex-shrink: 0;"><span style="position: absolute; top: 3px; left: 19px; width: 16px; height: 16px; border-radius: 8px; background: #FFFFFF;"></span></span>
+        <span style="display: flex; flex-direction: column; gap: 2px; flex: 1 1 360px; min-width: 0;">
+          <span style="font-size: 13.5px; font-weight: 600; color: #4D368B; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">Rule · remove taxa present in negative controls above <input value="0.1" aria-label="Threshold in percent of a control's classified reads" style="width: 46px; font: 600 13px 'Inter', sans-serif; color: #0F1020; border-radius: 7px; border: 1px solid #C4C7D4; padding: 3px 6px; background: #FFFFFF;"> %</span>
+          <span style="font-size: 12px; color: #4D5065;">highest share in NC_EXTRACT or NC_LIBRARY · Bracken species level · taxa protected by a person are kept</span>
+        </span>
+        <span style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <span style="display: flex; flex-direction: column; align-items: flex-end; padding: 4px 10px; border-radius: 10px; background: #FFFFFF;"><strong style="font-size: 15px;">{{removed}}</strong><span style="font-size: 11px; color: #4D5065;">taxa removed</span></span>
+          <span style="display: flex; flex-direction: column; align-items: flex-end; padding: 4px 10px; border-radius: 10px; background: #FFFFFF;"><strong style="font-size: 15px;">{{affected}} of 10</strong><span style="font-size: 11px; color: #4D5065;">samples affected</span></span>
+          <span style="display: flex; flex-direction: column; align-items: flex-end; padding: 4px 10px; border-radius: 10px; background: #FFFFFF;"><strong style="font-size: 15px; color: #8F5806;">1</strong><span style="font-size: 11px; color: #4D5065;">protected</span></span>
+        </span>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-start;">
+        <!-- item table -->
+        <div style="flex: 1 1 660px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; background: #F7F7FB;"><span style="font-size: 13.5px; font-weight: 600;">Items · 12</span><span style="font-size: 12px; color: #6E7287;">controls first, then worst first</span></div>
+          <table class="it" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+            <thead><tr style="color: #33364A; font-size: 11.5px;"><th scope="col" style="padding-left: 12px;">Item</th><th scope="col">Reads</th><th scope="col">Host <span style="font-weight: 400; color: #6E7287;">≤ 5 %</span></th><th scope="col" style="width: 120px;">Taxa (Bracken)</th><th scope="col">Removed</th><th scope="col">Decision</th></tr></thead>
+            <tbody>
+              <sc-for list="{{items}}" as="r" hint-placeholder-count="12">
+                <tr style="box-shadow: inset 4px 0 0 {{r.rail}}; background: {{r.bg}};">
+                  <td style="padding-left: 12px;"><span style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">{{r.id}}</span><span style="display: block; font-size: 11px; color: {{r.rolec}};">{{r.role}}</span></td>
+                  <td><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: {{r.readsc}};"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.readsi}}"/></svg>{{r.reads}}</span><span style="display: block; font-size: 11px; color: #6E7287;">{{r.readsn}}</span></td>
+                  <td><span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600; color: {{r.hostc}};"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.hosti}}"/></svg>{{r.host}}</span></td>
+                  <td><span role="img" aria-label="{{r.aria}}" style="display: flex; width: 120px; height: 14px; border-radius: 4px; overflow: hidden; background: #EEEFF5;"><sc-for list="{{r.bar}}" as="s" hint-placeholder-count="8"><span title="{{s.t}}" style="width: {{s.w}}; background: {{s.c}};"></span></sc-for></span></td>
+                  <td style="color: {{r.remc}}; font-weight: 600;">{{r.rem}}</td>
+                  <td><span style="display: inline-flex; flex-direction: column; gap: 2px;"><span style="display: inline-flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px;"><sc-for list="{{r.opts}}" as="o" hint-placeholder-count="2"><span style="padding: 3px 8px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for></span><span title="{{r.locktip}}" style="display: inline-flex; align-items: center; gap: 3px; font-size: 11px; color: #6E7287;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.locki}}"/></svg>{{r.lock}}</span></span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; padding: 8px 12px; font-size: 11.5px; color: #33364A; border-top: 1px solid #EEEFF5;">
+            <sc-for list="{{legend}}" as="l" hint-placeholder-count="8"><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 11px; height: 11px; border-radius: 3px; background: {{l.c}};"></span><em style="font-style: {{l.fs}};">{{l.t}}</em></span></sc-for>
+          </div>
+        </div>
+
+        <!-- right column -->
+        <div style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+          <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 12px 4px;"><h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">Taxa found in negative controls</h2><span style="font-size: 11.5px; color: #6E7287;">{{ncTaxa}} taxa</span></div>
+            <table class="tx" style="width: 100%; border-collapse: collapse; font-size: 12px;">
+              <thead><tr style="color: #33364A; font-size: 11px;"><th scope="col" style="padding-left: 12px;">Taxon</th><th scope="col">NC_EXT</th><th scope="col">NC_LIB</th><th scope="col">In</th><th scope="col">Result</th></tr></thead>
+              <tbody>
+                <sc-for list="{{taxaTop}}" as="t" hint-placeholder-count="8">
+                  <tr style="box-shadow: inset 4px 0 0 {{t.rail}}; background: {{t.bg}};">
+                    <td style="padding-left: 12px; white-space: normal;"><em style="font-weight: 600;">{{t.name}}</em><span style="display: block; font-size: 10.5px; color: {{t.notec}};">{{t.note}}</span></td>
+                    <td style="font-weight: 600;">{{t.e}}</td><td style="font-weight: 600;">{{t.l}}</td>
+                    <td style="color: #33364A;">{{t.s}}</td>
+                    <td><span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600; padding: 2px 7px; border-radius: 6px; background: {{t.rbg}}; color: {{t.rfg}};"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.ri}}"/></svg>{{t.r}}</span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+            <div style="padding: 7px 12px; font-size: 11.5px; color: #6E7287; border-top: 1px solid #EEEFF5;">Showing 6 of {{ncTaxa}} · <a href="#" style="font-weight: 600; text-decoration: none;">All taxa</a></div>
+          </div>
+
+          <div style="border-radius: 16px; box-shadow: inset 0 0 0 2px #7750D4; background: #FBF9FF; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 14.5px; font-weight: 600;">Filter artifact</h2><span style="font-size: 11.5px; color: #6E7287;">produced by the rule · updates live</span></div>
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 12.5px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D368B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg><code style="font-family: 'JetBrains Mono', monospace; font-weight: 600;">taxa_exclude.tsv</code><span style="color: #4D5065;">· {{removed}} taxids</span></span>
+            <div role="radiogroup" aria-label="Where the filter goes" style="display: flex; flex-direction: column; gap: 6px;">
+              <div style="display: flex; gap: 8px; align-items: flex-start; border-radius: 10px; background: #FFFFFF; box-shadow: inset 0 0 0 1.5px #7750D4; padding: 8px 10px;">
+                <span style="width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; border-radius: 7px; box-shadow: inset 0 0 0 4px #7750D4;"></span>
+                <span style="display: flex; flex-direction: column; gap: 2px; font-size: 12px; line-height: 1.4;"><strong>Next stage · linked run, declared parameter</strong><span style="color: #4D5065;">demo-lab/microbiome-diversity (Snakemake) reads <code style="font-family: 'JetBrains Mono', monospace;">config["taxa_exclude"]</code> in its first stage; also attached to the run for depictio</span></span>
+              </div>
+              <div aria-disabled="true" style="display: flex; gap: 8px; align-items: flex-start; border-radius: 10px; background: #F7F7FB; padding: 8px 10px;">
+                <span style="width: 14px; height: 14px; flex-shrink: 0; margin-top: 1px; border-radius: 7px; box-shadow: inset 0 0 0 1.5px #C4C7D4; background: #EEEFF5;"></span>
+                <span style="display: flex; flex-direction: column; gap: 2px; font-size: 12px; line-height: 1.4; color: #6E7287;"><strong style="color: #4D5065;">Stage 4 of this run (taxpasta, MultiQC)</strong><span>Unavailable: nf-core/taxprofiler 2.0.1 has no parameter that reads a taxa list, so spectio.yml declares no <code style="font-family: 'JetBrains Mono', monospace;">apply: param</code> for it</span></span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="gap: 12px; flex-wrap: wrap; align-items: stretch;">
+      <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">taxprofiler preset · lab overlay (the pipeline declares no gate)</span></div>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
+            <span style="flex: 1 1 220px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span>
+            <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+            <span style="font-size: 12px; color: #4D5065; min-width: 130px; text-align: right;">{{c.where}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex: 2 1 260px; min-width: 0; border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in</span></div>
+        <sc-for list="{{health}}" as="h" hint-placeholder-count="4"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}};">{{h.v}}</span></div></sc-for>
+      </div>
+    </section>
+
+    <!-- TAXA -->
+    <section class="rv-pn pn-taxa" style="flex-direction: column; gap: 8px;">
+      <span style="font-size: 13px; color: #4D5065;">Every taxon seen in a negative control, with its share in each control and in the samples. Protect a taxon to keep it whatever the rule says.</span>
+      <sc-for list="{{taxa}}" as="t" hint-placeholder-count="16">
+        <div style="display: flex; align-items: center; gap: 14px; border-top: 1px solid #EEEFF5; padding: 6px 0; font-size: 12.5px;"><em style="width: 220px; font-weight: 600;">{{t.name}}</em><span style="width: 80px; color: #4D5065;">taxid {{t.id}}</span><span style="width: 130px;">NC max {{t.max}}</span><span style="flex-grow: 1; color: #33364A;">{{t.s}} · median {{t.med}} in samples</span><span style="font-weight: 600; color: {{t.rfg}};">{{t.r}}</span></div>
+      </sc-for>
+    </section>
+
+    <!-- REPORT -->
+    <section class="rv-pn pn-report" style="flex-direction: column; gap: 8px;">
+      <div role="img" aria-label="Krona chart of NC_EXTRACT in a sandboxed frame (placeholder)" style="height: 420px; border-radius: 16px; box-shadow: inset 0 0 0 1px #DFE1EA; background: repeating-linear-gradient(135deg, #F7F7FB 0 14px, #F1F2F6 14px 28px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: #4D5065;"><strong style="color: #22253A;">krona/kraken2_k2_standard_16gb.html · NC_EXTRACT</strong><span>Sandboxed frame · separate origin · streamed by the runner</span></div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="5">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 340px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 4</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{changes}}" as="c" hint-placeholder-count="4"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}};">{{c.t}}</span></sc-for></span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 230px;">
+        <span style="font-size: 11.5px; color: #4D5065; line-height: 1.35;">Stage 4 for 11 items (IG_06 dropped), then the linked run</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #5A4FCF;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #8B5CF6;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #EC5F87;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #FCCF98;"></span><span style="flex: 0 0 22px; height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, #9A9EB0 0 4px, transparent 4px 7px);"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', cross: 'M6 6l12 12 M18 6L6 18', shield: 'M12 3l8 3v6c0 5-3.5 8-8 9c-4.5-1-8-4-8-9V6z', minus: 'M6 12h12' };
+  const T = 0.1; // threshold, % of a control's classified reads
+  // [name, taxid, NC_EXTRACT %, NC_LIBRARY %, samples present (of 10), median % in samples, protected]
+  const NC = [
+    ['Ralstonia pickettii', 329, 31.2, 4.1, 9, '0.42 %'], ['Cutibacterium acnes', 1747, 8.9, 22.5, 10, '0.35 %'], ['Bradyrhizobium sp.', 374, 12.4, 0.8, 7, '0.21 %'],
+    ['Sphingomonas sp.', 13687, 6.1, 0, 6, '0.12 %'], ['Staphylococcus epidermidis', 1282, 0.6, 5.8, 9, '0.30 %'], ['Corynebacterium sp.', 1716, 0.9, 3.2, 8, '0.18 %'],
+    ['Escherichia coli', 562, 0.38, 0, 10, '18.6 %', true], ['Caulobacter sp.', 75, 0.07, 0, 1, '0.01 %'],
+    ['Methylobacterium sp.', 407, 4.8, 0.3, 5, '0.09 %'], ['Delftia acidovorans', 80866, 3.9, 0, 4, '0.08 %'], ['Pseudomonas fluorescens', 294, 2.2, 1.0, 6, '0.06 %'],
+    ['Burkholderia sp.', 32008, 1.7, 0, 3, '0.04 %'], ['Acinetobacter sp.', 469, 1.1, 0.6, 5, '0.05 %'], ['Stenotrophomonas maltophilia', 40324, 0.4, 0, 2, '0.02 %'],
+    ['Micrococcus luteus', 1270, 0.12, 0.9, 3, '0.02 %'], ['Bacillus sp.', 1386, 0.05, 0.02, 2, '0.01 %']
+  ];
+  const resOf = t => { const mx = Math.max(t[2], t[3]); return t[6] ? 'protected' : mx > T ? 'removed' : 'below'; };
+  const removed = NC.filter(t => resOf(t) === 'removed').length;
+  const pct = v => v === 0 ? '—' : (v < 1 ? v.toFixed(2) : v.toFixed(1)) + ' %';
+  const R = { removed: ['Removed', '#FDECEC', '#B02A2A', I.cross], protected: ['Protected', '#FDF3E2', '#8F5806', I.shield], below: ['Below 0.1 %', '#F1F2F6', '#4D5065', I.minus] };
+  const taxRow = t => { const r = resOf(t), [lab, rbg, rfg, ri] = R[r];
+    return { name: t[0], id: t[1], e: pct(t[2]), l: pct(t[3]), s: t[4] + ' / 10', med: t[5], max: pct(Math.max(t[2], t[3])), r: lab, rbg, rfg, ri,
+      note: t[6] ? '18.6 % median in samples: spill-over · protected by AM' : 'taxid ' + t[1], notec: t[6] ? '#8F5806' : '#6E7287',
+      rail: t[6] ? '#D9890B' : 'transparent', bg: t[6] ? '#FFFBF3' : 'transparent' }; };
+  // Taxa palette (genera) and the hatched contaminant pattern
+  const G = { Bif: ['Bifidobacterium', '#5A4FCF'], Bac: ['Bacteroides', '#8B5CF6'], Esc: ['Escherichia', '#3B82F6'], Ent: ['Enterococcus', '#1F9D63'], Kle: ['Klebsiella', '#F2B544'], Vei: ['Veillonella', '#EC5F87'], Oth: ['other', '#C4C7D4'] };
+  const CON = 'repeating-linear-gradient(135deg, #B02A2A 0 2px, #F4C4C4 2px 5px)';
+  const bar = (mix, con) => { const tot = Object.values(mix).reduce((a, b) => a + b, 0) + con; const out = Object.entries(mix).map(([k, v]) => ({ w: (v / tot * 100).toFixed(1) + '%', c: G[k][1], t: G[k][0] + ' ' + v + ' %' }));
+    if (con > 0) out.push({ w: (con / tot * 100).toFixed(1) + '%', c: CON, t: 'taxa found in negative controls ' + con + ' %' }); return out; };
+  const opt = (on, dis) => ['Keep', 'Exclude'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? '#B02A2A' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: dis ? '#B4B7C6' : '#4D5065', w: 500, sh: 'none' });
+  const row = (id, role, reads, readsn, readsBad, host, hostBad, mix, con, rem, decision, extra) => ({
+    id, role, rolec: extra && extra.rolec || '#6E7287', reads, readsn, readsc: readsBad ? '#B02A2A' : '#22253A', readsi: readsBad ? I.warn : I.check,
+    host, hostc: hostBad ? '#B02A2A' : '#22253A', hosti: hostBad ? I.warn : I.check,
+    bar: bar(mix, con), aria: id + ': taxa composition, ' + con + ' % from taxa found in negative controls',
+    rem, remc: rem === '—' ? '#6E7287' : parseFloat(rem) > 5 ? '#B02A2A' : '#22253A',
+    opts: opt(decision, extra && extra.locked), lock: extra && extra.locked ? 'locked · read by the rule' : '', locki: extra && extra.locked ? 'M6 11h12v10H6z M8 11V7a4 4 0 0 1 8 0v4' : '', locktip: extra && extra.locked ? 'Exclude is disabled: the rule reads this control' : '',
+    rail: extra && extra.rail || 'transparent', bg: extra && extra.bg || 'transparent' });
+  const items = [
+    row('NC_EXTRACT', 'control · extraction blank', '18,450', 'max 5,000', true, '0.3 %', false, { Oth: 9 }, 91, '—', 'Keep', { locked: true, rail: '#D9890B', bg: '#FFFBF3', rolec: '#8F5806' }),
+    row('NC_LIBRARY', 'control · library blank', '1,920', 'max 5,000', false, '0.9 %', false, { Oth: 21 }, 79, '—', 'Keep', { locked: true }),
+    row('IG_06', 'meconium · day 1', '0.9 M', 'low biomass', true, '7.8 %', true, { Esc: 22, Ent: 31, Kle: 9, Oth: 16 }, 21.7, '21.7 %', 'Exclude', { rail: '#B02A2A', bg: '#FFF8F8', rolec: '#B02A2A' }),
+    row('IG_09', 'stool · week 2', '3.1 M', '', false, '2.4 %', false, { Bif: 18, Esc: 34, Ent: 14, Kle: 12, Vei: 6, Oth: 12.6 }, 3.4, '3.4 %', 'Keep'),
+    row('IG_04', 'stool · week 4', '6.8 M', '', false, '1.1 %', false, { Bif: 42, Bac: 8, Esc: 21, Ent: 6, Vei: 9, Oth: 11.9 }, 2.1, '2.1 %', 'Keep'),
+    row('IG_07', 'stool · week 4', '7.4 M', '', false, '0.8 %', false, { Bif: 51, Bac: 6, Esc: 16, Ent: 4, Vei: 7, Oth: 14.5 }, 1.5, '1.5 %', 'Keep'),
+    row('IG_02', 'stool · week 8', '9.2 M', '', false, '0.6 %', false, { Bif: 48, Bac: 15, Esc: 12, Kle: 4, Vei: 8, Oth: 11.8 }, 1.2, '1.2 %', 'Keep'),
+    row('IG_10', 'stool · week 8', '8.7 M', '', false, '0.5 %', false, { Bif: 55, Bac: 12, Esc: 10, Vei: 6, Oth: 15.9 }, 1.1, '1.1 %', 'Keep'),
+    row('IG_01', 'stool · week 12', '10.3 M', '', false, '0.3 %', false, { Bif: 39, Bac: 28, Esc: 9, Vei: 8, Oth: 15.1 }, 0.9, '0.9 %', 'Keep'),
+    row('IG_05', 'stool · week 12', '9.9 M', '', false, '0.4 %', false, { Bif: 44, Bac: 21, Esc: 11, Kle: 3, Vei: 7, Oth: 13.1 }, 0.9, '0.9 %', 'Keep'),
+    row('IG_03', 'stool · week 12', '12.1 M', '', false, '0.2 %', false, { Bif: 41, Bac: 30, Esc: 7, Vei: 8, Oth: 13.6 }, 0.4, '0.4 %', 'Keep'),
+    row('IG_08', 'stool · week 12', '11.6 M', 'no control taxa', false, '0.2 %', false, { Bif: 46, Bac: 24, Esc: 8, Vei: 9, Oth: 13 }, 0, '—', 'Keep')
+  ];
+  const changes = [
+    { t: 'Rule NC > 0.1 % · ' + removed + ' taxa', bg: '#F6F2FE', fg: '#4D368B' },
+    { t: 'E. coli protected', bg: '#FDF3E2', fg: '#8F5806' },
+    { t: 'IG_06 excluded · host 7.8 %', bg: '#F1F2F6', fg: '#33364A' },
+    { t: 'taxa_exclude.tsv (' + removed + ' taxids)', bg: '#F6F2FE', fg: '#4D368B' }
+  ];
+  return {
+    removed, removedLabel: removed + ' removed', affected: 9, ncTaxa: NC.length,
+    items, changes,
+    taxaTop: [0, 1, 2, 4, 6, 7].map(i => taxRow(NC[i])), taxa: NC.map(taxRow),
+    legend: [...Object.values(G).map(([t, c]) => ({ t, c, fs: t === 'other' ? 'normal' : 'italic' })), { t: 'found in negative controls', c: CON, fs: 'normal' }],
+    checks: [
+      { name: 'Host reads', rule: 'presence · max 5 % · block', value: '9 / 10', col: '#B02A2A', icon: I.warn, where: 'IG_06 · 7.8 %' },
+      { name: 'Reads in negative controls', rule: 'presence · ≤ 5,000 · warn', value: '1 of 2 over', col: '#8F5806', icon: I.warn, where: 'NC_EXTRACT · 18,450' },
+      { name: 'Contaminant taxa in negative controls', rule: 'presence · > 0.1 % · rule', value: (removed + 1) + ' found', col: '#8F5806', icon: I.warn, where: removed + ' removed · 1 protected' },
+      { name: 'Classified reads', rule: 'min 50 % · warn', value: '10 / 10', col: '#157A4B', icon: I.check, where: 'median 81 %' }
+    ],
+    health: [
+      { k: 'Failed tasks', v: '0', fg: '#157A4B' }, { k: 'Retried tasks', v: '2 (KRAKEN2 memory)', fg: '#8F5806' },
+      { k: 'Stage 3 runtime', v: '1 h 22 · usual 1 h 10', fg: '#22253A' }, { k: 'Database', v: 'k2_standard_16gb', fg: '#22253A' }
+    ],
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after profiling (KRAKEN2_KRAKEN2, BRACKEN_BRACKEN); taxpasta and MultiQC held.', at: '07:40' },
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Rule “remove taxa found in negative controls above 0.1 %” applied from spectio.yml.', at: '07:40' },
+      { t: 'BK', bg: '#E6DCFC', fg: '#4D368B', text: 'Bruno Keller: “NC_EXTRACT is high; the kit lot changed on 12 Oct.”', at: '08:55' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin protected Escherichia coli (abundant in all samples; spill-over into the blank).', at: '09:31' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin excluded IG_06 (host 7.8 %, low biomass).', at: '09:34' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

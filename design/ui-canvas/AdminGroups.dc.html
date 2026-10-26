@@ -111,7 +111,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
 
             <div style="display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: 12px; background: #FDF3E2; box-shadow: inset 3px 0 0 #D9890B; flex-wrap: wrap;">
               <span style="width: 30px; height: 30px; border-radius: 9px; background: #FFFFFF; color: #8F5806; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8l4 4 5-7 5 7 4-4-2 11H5z"/></svg></span>
-              <span style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; color: #5C3A06;"><strong style="font-size: 13px;">P.I. pending — k.berg@lab.example</strong><span>Becomes P.I. and group admin at first sign-in. Only system admins set the P.I.</span></span>
+              <span style="flex: 1 1 260px; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px; color: #5C3A06;"><strong style="font-size: 13px;">P.I. pending — k.berg@example.org</strong><span>Becomes P.I. and group admin at first sign-in. Only system admins set the P.I.</span></span>
               <a href="#" class="btn btn-s" style="height: 32px;">Clear</a>
             </div>
 
@@ -151,8 +151,8 @@ a{color:#6344B2}a:hover{color:#4D368B}
               </div>
               <div style="display: flex; flex-direction: column; gap: 8px;">
                 <span style="font-size: 12.5px; font-weight: 600; color: #33364A;">Environments owned</span>
-                <a href="EnvStorage.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #0F1020; font-size: 13px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2F7FA8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v6H4z M4 13h16v6H4z M8 8h.01 M8 16h.01"/></svg>EMBL SLURM · seneca</a>
-                <a href="EnvKubernetes.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #0F1020; font-size: 13px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2F7FA8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v6H4z M4 13h16v6H4z M8 8h.01 M8 16h.01"/></svg>EMBL Kubernetes · gpu</a>
+                <a href="EnvStorage.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #0F1020; font-size: 13px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2F7FA8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v6H4z M4 13h16v6H4z M8 8h.01 M8 16h.01"/></svg>demo-hpc SLURM · gpu</a>
+                <a href="EnvKubernetes.dc.html" style="display: flex; align-items: center; gap: 8px; text-decoration: none; color: #0F1020; font-size: 13px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#2F7FA8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v6H4z M4 13h16v6H4z M8 8h.01 M8 16h.01"/></svg>Kubernetes · dev</a>
                 <span style="font-size: 12px; color: #6E7287;">depictio: 2 projects, 5 dashboards</span>
               </div>
             </div>
@@ -163,11 +163,11 @@ a{color:#6344B2}a:hover{color:#4D368B}
           <summary><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>CLI equivalent<span style="font-weight: 500; color: #6E7287; font-size: 12.5px;">same API, same permissions</span></summary>
           <pre class="term">spectio group list --json
 spectio group create rnaseq-core --description "Bulk and single-cell RNA-seq core facility"
-spectio group add rnaseq-core r.costa@lab.example
-spectio group set-admin rnaseq-core a.smith@lab.example --on
+spectio group add rnaseq-core r.costa@example.org
+spectio group set-admin rnaseq-core a.smith@example.org --on
 <span class="c"># system admins only; stays pending until the person first signs in</span>
-spectio group set-pi rnaseq-core k.berg@lab.example
-spectio group remove rnaseq-core p.novak@lab.example</pre>
+spectio group set-pi rnaseq-core k.berg@example.org
+spectio group remove rnaseq-core p.novak@example.org</pre>
         </details>
       </div>
     </div>
@@ -192,12 +192,12 @@ renderVals() {
       g('users', '9', { lock: true })
     ],
     members: [
-      m('t.weber@embl.de', 'Thomas Weber', true, true),
-      m('a.smith@lab.example', 'Anna Smith', true),
-      m('s.lee@lab.example', 'Sam Lee', false),
-      m('p.novak@lab.example', 'Petra Novák', false),
-      m('r.costa@lab.example', 'Rui Costa', false),
-      m('e.fischer@lab.example', '—', false)
+      m('amartin@example.org', 'Alice Martin', true, true),
+      m('a.smith@example.org', 'Anna Smith', true),
+      m('s.lee@example.org', 'Sam Lee', false),
+      m('p.novak@example.org', 'Petra Novák', false),
+      m('r.costa@example.org', 'Rui Costa', false),
+      m('e.fischer@example.org', '—', false)
     ],
     shared: [p('Liver time course', 'Owner'), p('PBMC atlas', 'Owner'), p('Rare disease trios', 'Viewer')]
   };

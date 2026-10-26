@@ -1,0 +1,268 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, imaging mass cytometry ROIs</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rr:has(input[value="sum"]:checked) .pn-sum,
+.rr:has(input[value="rois"]:checked) .pn-rois,
+.rr:has(input[value="files"]:checked) .pn-files,
+.rr:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.chan{display:flex;align-items:center;gap:5px;height:26px;padding:0 8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+.tsv td,.tsv th{padding:6px 10px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/imcyto · tme-imc-04" project="demo-lab / Tumour microenvironment IMC" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rr" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">1 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; color: #6E7287;">Images: nf-core/test-datasets@imcyto, IDR idr0076, idr0054 (OME-TIFF, OME-Zarr) · ROI metrics computed from the source files</span>
+      <a href="ReviewSlides.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewCells.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stage 1 of 3 done, gate after stage 2 open"><path d="M90.02 94.24L4.17 94.24A96 96 0 0 1 47.10 19.89Z" fill="#5A4FCF"/><path d="M100.00 88.48L57.07 14.13A96 96 0 0 1 142.93 14.13Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M109.98 94.24L152.90 19.89A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">ROI QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· tme-imc-04 · #377</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block;">nf-core/imcyto 1.0.0 (DSL1, run with Nextflow 22.10.8) · 3 ROIs · paused after <code style="font-family: 'JetBrains Mono', monospace;">SEGMENTATION</code> (stage 2 of 3) · gate and stage 3 (publish to depictio) from the lab overlay · <strong style="color: #8F5806;">waiting 1 h 12 min</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span title="You · Alice Martin" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="Dmitri Novak" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">DN</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · suggests</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvr" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">4 to check</span></label>
+      <label class="rv-tab"><input type="radio" name="rvr" value="rois" checked aria-label="ROIs"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h7v7H4z M13 13h7v7h-7z M13 4h7v7h-7z"/></svg>ROIs<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">3 · 2 changed</span></label>
+      <label class="rv-tab"><input type="radio" name="rvr" value="files" aria-label="Files"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Files<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">metadata.csv · 1 edit</span></label>
+      <label class="rv-tab"><input type="radio" name="rvr" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">5</span></label>
+    </div>
+
+    <!-- ROIS -->
+    <section class="rv-pn pn-rois" style="flex-direction: column; gap: 12px;">
+      <!-- item table: one row per ROI -->
+      <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px 6px; display: flex; flex-direction: column; gap: 0;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-bottom: 6px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">ROIs · 3</h2><span style="font-size: 12px; color: #6E7287;">item = ROI · keep · exclude · redo segmentation · worst first</span></div>
+        <div style="display: grid; grid-template-columns: 250px repeat(4, minmax(0, 1fr)) 250px; gap: 0 12px; align-items: center; font-size: 11.5px; color: #6E7287; font-weight: 600; padding: 4px 0 4px 10px; border-top: 1px solid #EEEFF5;">
+          <span>ROI</span><span>DNA · Ir191 / Ir193</span><span>Background · ArAr80</span><span>Cells per mm²</span><span>Hot pixels / spillover</span><span>Decision</span>
+        </div>
+        <sc-for list="{{rois}}" as="r" hint-placeholder-count="3">
+          <div style="display: grid; grid-template-columns: 250px repeat(4, minmax(0, 1fr)) 250px; gap: 0 12px; align-items: center; padding: 6px 0 6px 10px; border-top: 1px solid #EEEFF5; box-shadow: inset 3px 0 0 {{r.rail}}; background: {{r.bg}};">
+            <span style="display: flex; align-items: center; gap: 10px; min-width: 0;">
+              <img src="{{r.src}}" alt="{{r.alt}}" style="width: 56px; height: 56px; border-radius: 6px; object-fit: cover; display: block; flex-shrink: 0; box-shadow: {{r.iring}};">
+              <span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><strong style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">{{r.id}}</strong><span style="font-size: 11.5px; color: #33364A;">{{r.what}}</span><span style="font-size: 11px; color: #6E7287;">{{r.size}}</span></span>
+            </span>
+            <sc-for list="{{r.m}}" as="m" hint-placeholder-count="4">
+              <span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="display: flex; align-items: center; gap: 5px; font-size: 12.5px; font-weight: 600; color: {{m.col}};"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.icon}}"/></svg>{{m.v}}<span style="display: {{m.ishow}}; font-size: 10px; font-weight: 600; color: #6E7287; background: #F1F2F6; padding: 0 5px; border-radius: 5px;">illustrative</span></span><span style="font-size: 11px; color: #4D5065; line-height: 1.3;">{{m.sub}}</span></span>
+            </sc-for>
+            <span style="display: flex; flex-direction: column; gap: 3px;">
+              <span role="radiogroup" aria-label="Decision for {{r.id}}" style="display: flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px; align-self: flex-start;"><sc-for list="{{r.opts}}" as="o" hint-placeholder-count="3"><span style="padding: 3px 8px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for></span>
+              <span style="font-size: 11px; color: #4D5065; line-height: 1.3;">{{r.note}}</span>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <!-- viewer -->
+        <div style="flex: 1 1 600px; min-width: 0; border-radius: 16px; background: #14162A; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; color: #E6E7EE;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <sc-for list="{{vtabs}}" as="v" hint-placeholder-count="3"><span role="tab" aria-selected="{{v.sel}}" class="chan" style="background: {{v.bg}}; color: {{v.fg}};"><img src="{{v.src}}" alt="" aria-hidden="true" style="width: 16px; height: 16px; border-radius: 3px; object-fit: cover;">{{v.t}}</span></sc-for>
+            <span style="flex-grow: 1;"></span>
+            <span role="switch" aria-checked="true" class="chan" style="background: rgba(255,255,255,0.18); color: #FFFFFF;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16z"/></svg>Cell mask</span>
+          </div>
+          <div style="display: flex; gap: 12px; align-items: stretch; flex: 1 1 auto;">
+            <div style="position: relative; flex: 0 0 auto; width: 362px; height: 386px; border-radius: 10px; overflow: hidden; background: #0B0C18;">
+              <img src="images/imc-idr0076-mask.webp" alt="idr0076 ROI 10501752: DNA1 blue, panCK green, CD45 red, SMA orange, with the cell mask outlines in yellow" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
+              <span style="position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px;"><span style="width: 28px; height: 28px; border-radius: 7px; background: rgba(15,16,32,0.7); display: flex; align-items: center; justify-content: center; font-weight: 700;">+</span><span style="width: 28px; height: 28px; border-radius: 7px; background: rgba(15,16,32,0.7); display: flex; align-items: center; justify-content: center; font-weight: 700;">−</span></span>
+              <span style="position: absolute; left: 8px; bottom: 8px; font-size: 11px; background: rgba(15,16,32,0.78); padding: 3px 8px; border-radius: 6px;">494 × 464 px · labels/0 · 1,713 cells</span>
+            </div>
+            <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
+              <span style="font-size: 11.5px; font-weight: 600; color: #C4C7D4; letter-spacing: 0.04em;">SHOWN</span>
+              <span style="display: flex; flex-wrap: wrap; gap: 5px;"><sc-for list="{{shown}}" as="c" hint-placeholder-count="4"><span role="checkbox" aria-checked="true" class="chan" style="background: rgba(255,255,255,0.14); color: #FFFFFF; height: 24px;"><span style="width: 9px; height: 9px; border-radius: 5px; background: {{c.c}};"></span>{{c.t}}<span style="font-family: 'JetBrains Mono', monospace; font-weight: 400; color: #C4C7D4; font-size: 11px;">{{c.m}}</span></span></sc-for></span>
+              <span style="font-size: 11.5px; font-weight: 600; color: #C4C7D4; letter-spacing: 0.04em; margin-top: 2px;">BACKGROUND CHECK · ArAr80</span>
+              <span style="display: flex; gap: 10px; align-items: flex-start;">
+                <img src="images/imc-idr0076-argon.webp" alt="ArAr80 background channel of ROI 10501752, grey, faint horizontal line pattern" style="width: 120px; height: 128px; border-radius: 6px; object-fit: cover; display: block;">
+                <span style="font-size: 11.5px; line-height: 1.45; color: #E6E7EE;">Mean <strong>6,291</strong> counts<br>row-to-row drift <strong>2.9 %</strong> (max 5 %)<br><span style="color: #9A9EB0;">Faint line pattern, no tissue structure: background only, passes.</span></span>
+              </span>
+              <span style="font-size: 11.5px; font-weight: 600; color: #C4C7D4; letter-spacing: 0.04em; margin-top: 2px;">HOT PIXELS</span>
+              <span style="font-size: 11.5px; line-height: 1.45;">CD45-162Dy <strong style="color: #F2B544;">220</strong> isolated pixels · Pb208 226 (not a marker) · DNA1-191Ir 1</span>
+              <span style="margin-top: auto; font-size: 11px; color: #9A9EB0; font-family: 'JetBrains Mono', monospace;">/data/demo/idr0076/10501752.zarr · streamed by the runner on demo-hpc</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- channel picker -->
+        <div style="flex: 0 1 340px; min-width: 300px; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px; display: flex; flex-direction: column; gap: 7px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Channels · 50</h2><span style="font-size: 11.5px; color: #6E7287;">10501752 · pick up to 6</span></div>
+          <span style="display: flex; align-items: center; gap: 6px; height: 30px; padding: 0 10px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; font-size: 12.5px; color: #6E7287;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M11 4a7 7 0 1 0 0 14a7 7 0 1 0 0-14z M20 20l-4-4"/></svg>Marker or metal, e.g. CD3, 152Sm</span>
+          <div style="display: flex; flex-direction: column; gap: 0; position: relative;">
+            <sc-for list="{{picker}}" as="p" hint-placeholder-count="14">
+              <span style="display: flex; align-items: center; gap: 8px; padding: 3px 2px; border-top: 1px solid #F1F2F6; font-size: 12px; color: {{p.fg}};">
+                <span role="checkbox" aria-checked="{{p.on}}" style="width: 14px; height: 14px; border-radius: 4px; box-shadow: inset 0 0 0 1.5px {{p.box}}; background: {{p.fill}}; display: flex; align-items: center; justify-content: center;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.tick}}"/></svg></span>
+                <span style="flex: 1 1 auto; font-weight: {{p.w}};">{{p.t}}</span>
+                <code style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #4D5065; background: #F7F7FB; padding: 1px 5px; border-radius: 5px;">{{p.m}}</code>
+              </span>
+            </sc-for>
+            <span style="font-size: 11.5px; color: #6E7287; padding-top: 5px; border-top: 1px solid #F1F2F6;">+ 25 more markers · 11 background and calibration channels (Xe126, I127, Xe131, Xe134, Ce140, Hg202, Pb202–208, ArAr80)</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">lab overlay · imcyto declares no gate and writes no QC table</span></div>
+          <sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
+              <span style="flex: 1 1 220px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span>
+              <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+              <span style="font-size: 12px; color: #4D5065; min-width: 170px; text-align: right;">{{c.where}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="flex: 2 1 260px; min-width: 0; border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in</span></div>
+          <sc-for list="{{health}}" as="h" hint-placeholder-count="4"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}};">{{h.v}}</span></div></sc-for>
+        </div>
+      </div>
+      <div style="border-radius: 16px; box-shadow: 0 0 0 1px #E6DCFC; background: #FBF9FF; padding: 14px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <span style="width: 28px; height: 28px; border-radius: 8px; background: #7750D4; color: #FFFFFF; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>
+        <span style="flex: 1 1 400px; font-size: 13px; line-height: 1.5;">QC agent suggests redoing the segmentation of ROI_1 with 191Ir added to the ilastik stack (its DNA signal is weak in 193Ir alone), excluding 5025551 (8-bit export, DNA clipped at 255) and keeping 10501752.</span>
+        <button type="button" style="height: 34px; padding: 0 12px; border: none; border-radius: 10px; background: #7750D4; color: #FFFFFF; font: 600 12.5px 'Inter', sans-serif;">Apply suggestion</button>
+      </div>
+    </section>
+
+    <!-- FILES: metadata.csv is the run-wide channel table of imcyto -->
+    <section class="rv-pn pn-files" style="gap: 16px; flex-wrap: wrap; align-items: flex-start;">
+      <div style="flex: 3 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
+        <span style="font-size: 13px;"><strong>metadata.csv</strong> · v1 → v2 · 1 change · columns <code style="font-family: 'JetBrains Mono', monospace;">metal, full_stack, ilastik_stack</code></span>
+        <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+          <table class="tsv" style="width: 100%; border-collapse: collapse; font-size: 12.5px; font-family: 'JetBrains Mono', monospace;">
+            <thead><tr style="background: #F7F7FB; color: #33364A; font-family: 'Inter', sans-serif;"><th>metal</th><th>full_stack</th><th>ilastik_stack</th><th style="font-family: 'Inter', sans-serif;">note</th></tr></thead>
+            <tbody>
+              <sc-for list="{{meta}}" as="r" hint-placeholder-count="5"><tr style="background: {{r.bg}};"><td>{{r.m}}</td><td>{{r.f}}</td><td><span style="color: #B02A2A; text-decoration: line-through;">{{r.old}}</span> <strong style="color: {{r.ic}};">{{r.i}}</strong></td><td style="font-family: 'Inter', sans-serif; color: #4D5065;">{{r.n}}</td></tr></sc-for>
+            </tbody>
+          </table>
+        </div>
+        <span style="font-size: 12px; color: #4D5065;">The test metadata.csv lists 21 metals; ROI_1's OME-TIFF has 20 channels (no 104Ru).</span>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="5">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 10px 24px 12px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 300px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{changes}}" as="c" hint-placeholder-count="3"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}};">{{c.t}}</span></sc-for></span>
+      </span>
+      <span style="display: flex; gap: 8px; align-items: flex-start; max-width: 380px; border-radius: 10px; background: #FFFBF3; box-shadow: inset 0 0 0 1px #F6DDB0; padding: 6px 10px; font-size: 11.5px; line-height: 1.4; color: #33364A;">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        <span><strong>metadata.csv is run-wide.</strong> Editing it reruns ILASTIK and SEGMENTATION for every ROI. Chosen: a linked child run for ROI_1 only.</span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Rerun all ROIs instead · Go back to an earlier stage · Stop the run here">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', na: 'M5 12h14', redo: 'M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7' };
+  const ok = '#157A4B', wn = '#8F5806', bad = '#B02A2A', na = '#6E7287';
+  const m = (v, sub, col, icon, ill) => ({ v, sub, col, icon, ishow: ill ? 'inline' : 'none' });
+  const opt = on => ['Keep', 'Exclude', 'Redo segmentation'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? '#B02A2A' : t === 'Keep' ? '#0F1020' : '#4D368B', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  // Values computed from the source files (see the board summary); "illustrative" marks the two invented cell densities.
+  const rois = [
+    { id: 'BRAC3438.6f / ROI_1', what: 'nf-core imcyto test ROI · breast', size: '500 × 498 px · 20 channels · OME-TIFF', src: 'images/imc-imcyto-roi1.webp', alt: 'ROI_1: 191Ir blue, 148Nd green, 168Er red; sparse signal, empty top-left corner', iring: 'none',
+      m: [ m('low · 19.7 %', 'of pixels > 5 counts (min 30 %) · 191Ir mean 2.6', bad, I.warn), m('drift 10.0 %', 'ArAr80 mean 7,706 · max 5 %', wn, I.warn),
+           m('2,150', 'min 3,000 · CellProfiler masks', wn, I.warn, true), m('168Er 238', 'isolated px · 148Nd 148 · 209Bi 46', wn, I.warn) ],
+      opts: opt('Redo segmentation'), note: 'add 191Ir to ilastik_stack · child run', rail: '#7750D4', bg: '#FBF9FF' },
+    { id: '5025551', what: 'IDR idr0054 · human tonsil', size: '2,700 × 2,702 px · 27 channels · 8-bit', src: 'images/imc-idr0054.webp', alt: 'Tonsil ROI: DNA1 blue, CD3 red, CD19 green, CD68 orange; follicles visible', iring: 'none',
+      m: [ m('clipped', 'DNA1-191/193Ir p99 = 255 · 8-bit export', bad, I.warn), m('n/a', 'no ArAr80 channel in this image', na, I.na),
+           m('11,800', 'on the level 2 preview', ok, I.check, true), m('n/a', '8-bit values, no raw counts', na, I.na) ],
+      opts: opt('Exclude'), note: 'reason: 8-bit export · re-export from .mcd', rail: 'transparent', bg: 'transparent' },
+    { id: '10501752', what: 'IDR idr0076 · breast cancer', size: '494 × 464 px · 50 channels', src: 'images/imc-idr0076.webp', alt: 'Breast cancer ROI: DNA1 blue, panCK green, CD45 red, SMA orange', iring: '0 0 0 2px #A78BFA',
+      m: [ m('ok · 59.5 %', 'of pixels > 5 counts · DNA1-191Ir mean 17.0', ok, I.check), m('drift 2.9 %', 'ArAr80 mean 6,291 · max 5 %', ok, I.check),
+           m('7,473', '1,713 cells in labels/0 · 1 µm/px assumed', ok, I.check), m('162Dy 220', 'isolated px · CD45 · Pb208 226', wn, I.warn) ],
+      opts: opt('Keep'), note: 'kept · in the viewer', rail: 'transparent', bg: 'transparent' }
+  ];
+  const vt = (t, src, sel) => ({ t, src, sel: sel ? 'true' : 'false', bg: sel ? 'rgba(255,255,255,0.18)' : 'transparent', fg: sel ? '#FFFFFF' : '#9A9EB0' });
+  // Real channel labels of idr0076 image 10501752 (omero.channels in the OME-Zarr .zattrs).
+  const P = [['DNA1', '191Ir', 1], ['panCK', '175Lu', 1], ['CD45', '162Dy', 1], ['SMA', '148Nd', 1], ['DNA2', '193Ir', 0], ['CD3', 'Sm152', 0], ['CD20', '164Dy', 0], ['CD68', '146Nd', 0],
+    ['E_Cadherin', '167Er', 0], ['Ki67', '168Er', 0], ['HER2', 'Eu151', 0], ['ER', '156Gd', 0], ['vWF-CD31', 'Yb172', 0], ['Vimentin', '149Sm', 0]];
+  return {
+    rois,
+    vtabs: [vt('10501752', 'images/imc-idr0076.webp', true), vt('ROI_1', 'images/imc-imcyto-roi1.webp', false), vt('5025551', 'images/imc-idr0054.webp', false)],
+    shown: [{ t: 'DNA1', m: '191Ir', c: '#4F7BFF' }, { t: 'panCK', m: '175Lu', c: '#3DDC84' }, { t: 'CD45', m: '162Dy', c: '#FF5A5A' }, { t: 'SMA', m: '148Nd', c: '#FFA53D' }],
+    picker: P.map(p => ({ t: p[0], m: p[1], on: p[2] ? 'true' : 'false', box: p[2] ? '#7750D4' : '#C4C7D4', fill: p[2] ? '#7750D4' : '#FFFFFF', tick: p[2] ? I.check : '', w: p[2] ? 600 : 400, fg: '#22253A' })),
+    checks: [
+      { name: 'DNA signal present', rule: '≥ 30 % of pixels > 5 counts in 191Ir or 193Ir · block', value: '1 low · 1 clipped', col: bad, icon: I.warn, where: 'ROI_1 · 5025551' },
+      { name: 'Background (ArAr80)', rule: 'row-to-row drift ≤ 5 % · warn', value: '1 high · 1 n/a', col: wn, icon: I.warn, where: 'ROI_1 10.0 % · 5025551 no channel' },
+      { name: 'Cells segmented per mm²', rule: '≥ 3,000 · warn', value: '1 low', col: wn, icon: I.warn, where: 'ROI_1 (illustrative)' },
+      { name: 'Hot pixels / spillover', rule: '≤ 100 isolated pixels per marker · warn', value: '2 ROIs', col: wn, icon: I.warn, where: 'ROI_1 168Er · 10501752 162Dy' }
+    ],
+    health: [
+      { k: 'Failed tasks', v: '0', fg: ok }, { k: 'Retried tasks', v: '1 (ILASTIK, memory)', fg: wn },
+      { k: 'Stage 2 runtime', v: '38 min', fg: '#22253A' }, { k: 'Peak memory', v: '14.2 of 16 GB', fg: wn }
+    ],
+    meta: [
+      { m: '150Nd', f: '1', old: '', i: '1', ic: '#22253A', n: 'ilastik stack (test data)', bg: 'transparent' },
+      { m: '191Ir', f: '1', old: '0', i: '1', ic: '#4D368B', n: 'AM · for ROI_1 only, through a child run', bg: '#FBF9FF' },
+      { m: '193Ir', f: '1', old: '', i: '1', ic: '#22253A', n: 'ilastik stack (test data)', bg: 'transparent' },
+      { m: '104Ru', f: '1', old: '', i: '0', ic: '#22253A', n: 'not in ROI_1 OME-TIFF', bg: '#FFFBF3' },
+      { m: '168Er', f: '1', old: '', i: '0', ic: '#22253A', n: '', bg: 'transparent' }
+    ],
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after SEGMENTATION (lab overlay); publishing to depictio held.', at: '14:10' },
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'ROI checks computed by script:imc_roi_qc.py from imctools/*/full_stack TIFFs.', at: '14:14' },
+      { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', text: 'QC agent suggested redoing ROI_1 with 191Ir in the ilastik stack and excluding 5025551.', at: '14:16' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin applied the suggestion and chose a child run for ROI_1 instead of a run-wide rerun.', at: '15:02' },
+      { t: 'DN', bg: '#E6DCFC', fg: '#4D368B', text: 'Dmitri Novak: “162Dy speckle on 10501752 is fine, we filter hot pixels in histoCAT.”', at: '15:20' }
+    ],
+    changes: [
+      { t: 'ROI_1 redo · child run', bg: '#F6F2FE', fg: '#4D368B' },
+      { t: '5025551 excluded', bg: '#F1F2F6', fg: '#33364A' },
+      { t: 'metadata.csv v2 (child run)', bg: '#F6F2FE', fg: '#4D368B' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

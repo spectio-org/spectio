@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, wells on a plate (OME-Zarr)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rw:has(input[value="sum"]:checked) .pn-sum,
+.rw:has(input[value="wells"]:checked) .pn-wells,
+.rw:has(input[value="params"]:checked) .pn-params,
+.rw:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.well{aspect-ratio:86/65;border-radius:5px;display:flex;align-items:flex-start;justify-content:flex-start;cursor:pointer}
+.chan{display:flex;align-items:center;gap:5px;height:26px;padding:0 8px;border-radius:8px;font-size:12px;font-weight:600;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / demo-lab/plate-qc · JL_120731_S6A" project="demo-lab / Yeast GFP screen" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rw" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">4 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; color: #6E7287;">Images: IDR idr0001, idr0033 (OME-Zarr)</span>
+      <a href="Review.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewSlides.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stage 1 of 3 done, gate after stage 1 open"><path d="M90.02 94.24L4.17 94.24A96 96 0 0 1 47.10 19.89Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M100.00 88.48L57.07 14.13A96 96 0 0 1 142.93 14.13Z" fill="#DFE1EA"/><path d="M109.98 94.24L152.90 19.89A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex: 1 1 400px; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Plate QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· JL_120731_S6A · #412</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="14" height="14" alt="Snakemake" style="display: block;">demo-lab/plate-qc 0.3.1 · 96 wells, GFP + Cascade blue · paused after rule <code style="font-family: 'JetBrains Mono', monospace;">well_qc</code> (stage 1 of 3), before Cellpose · gate from the lab overlay · <strong style="color: #8F5806;">waiting 22 min</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span title="You · Alice Martin" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="Chloé Diallo" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">CD</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · suggests</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvw" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">1 block</span></label>
+      <label class="rv-tab"><input type="radio" name="rvw" value="wells" checked aria-label="Wells"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 5h4v4H5z M15 5h4v4h-4z M5 15h4v4H5z M15 15h4v4h-4z"/></svg>Wells<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">{{flagCount}} flagged</span></label>
+      <label class="rv-tab"><input type="radio" name="rvw" value="params" aria-label="Parameters"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg>Parameters<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">unchanged</span></label>
+      <label class="rv-tab"><input type="radio" name="rvw" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">5</span></label>
+    </div>
+
+    <!-- WELLS: plate map of real thumbnails -->
+    <section class="rv-pn pn-wells" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <div style="flex: 0 1 540px; min-width: 420px; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Plate JL_120731_S6A · 96 wells</h2><span style="font-size: 12px; color: #6E7287;">field 0 · level 4 · z 8 · one contrast for the plate</span></div>
+          <div role="grid" aria-label="Plate map, 12 columns by 8 rows, one thumbnail per well" style="display: grid; grid-template-columns: 14px repeat(12, minmax(0, 1fr)); gap: 3px; align-items: center;">
+            <span></span>
+            <sc-for list="{{cols}}" as="c" hint-placeholder-count="12"><span style="font-size: 10px; color: #6E7287; text-align: center;">{{c}}</span></sc-for>
+            <sc-for list="{{cells}}" as="w" hint-placeholder-count="104"><span class="{{w.cls}}" title="{{w.title}}" style="position: relative; overflow: hidden; color: {{w.fg}}; font-size: 10px; background: {{w.bgc}};"><sc-if value="{{w.img}}" hint-placeholder-val="{{true}}"><img src="{{w.src}}" alt="{{w.title}}" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;"></sc-if><span style="position: absolute; inset: 0; border-radius: 5px; background: {{w.over}}; box-shadow: {{w.ring}};"></span><span style="position: relative; margin: 2px; display: {{w.ishow}}; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 7px; background: {{w.ibg}};"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{w.icon}}"/></svg></span><span style="position: relative; align-self: center; margin: auto;">{{w.t}}</span></span></sc-for>
+          </div>
+          <div style="display: flex; gap: 9px; flex-wrap: wrap; font-size: 11px; color: #33364A; padding-top: 4px; border-top: 1px solid #EEEFF5;">
+            <sc-for list="{{legend}}" as="l" hint-placeholder-count="7"><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 16px; height: 12px; border-radius: 3px; background: {{l.bg}}; box-shadow: {{l.ring}}; display: flex; align-items: center; justify-content: center;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="{{l.ic}}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{l.icon}}"/></svg></span>{{l.t}}</span></sc-for>
+          </div>
+          <!-- strip plot of the proxy check -->
+          <div style="display: flex; flex-direction: column; gap: 3px;">
+            <span style="display: flex; justify-content: space-between; font-size: 11.5px;"><strong>GFP mean per well</strong><span style="color: #6E7287;">plate median 57.1 · SD 2.0 · min 55.0</span></span>
+            <div role="img" aria-label="Strip plot of GFP mean for 96 wells from 52.9 to 61.7; 9 wells below 55.0; G3 at 61.3 is high because of the streak" style="position: relative; height: 36px;">
+              <div style="position: absolute; left: 0; top: 4px; height: 16px; width: {{thr}}; background: #FDF3E2; border-radius: 4px;"></div>
+              <div style="position: absolute; left: 0; right: 0; top: 12px; height: 1px; background: #C4C7D4;"></div>
+              <sc-for list="{{dots}}" as="d" hint-placeholder-count="96"><span title="{{d.title}}" style="position: absolute; left: {{d.x}}; top: {{d.y}}; width: 7px; height: 7px; margin-left: -3.5px; border-radius: 4px; background: {{d.c}}; box-shadow: {{d.ring}};"></span></sc-for>
+              <span style="position: absolute; top: 0; height: 22px; left: {{thr}}; border-left: 2px solid #D9890B;"></span>
+              <sc-for list="{{sticks}}" as="k" hint-placeholder-count="6"><span style="position: absolute; top: 23px; left: {{k.x}}; transform: translateX(-50%); font-size: 10.5px; color: #6E7287;">{{k.t}}</span></sc-for>
+            </div>
+          </div>
+        </div>
+
+        <!-- viewer -->
+        <div style="flex: 1 1 480px; min-width: 0; border-radius: 16px; background: #14162A; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; color: #E6E7EE;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <strong style="font-size: 13.5px; margin-right: 4px;">Well C5 · passes</strong>
+            <span role="checkbox" aria-checked="true" class="chan" style="background: rgba(255,255,255,0.16); color: #FFFFFF;"><span style="width: 9px; height: 9px; border-radius: 5px; background: #3DDC84;"></span>GFP</span>
+            <span role="checkbox" aria-checked="true" class="chan" style="background: rgba(255,255,255,0.16); color: #FFFFFF;"><span style="width: 9px; height: 9px; border-radius: 5px; background: #4F7BFF;"></span>Cascade blue</span>
+            <span style="flex-grow: 1;"></span>
+            <span role="switch" aria-checked="false" aria-disabled="true" class="chan" title="Masks exist after stage 2 (cellpose_segment)" style="background: transparent; color: #6E7287; box-shadow: inset 0 0 0 1px rgba(255,255,255,0.14); cursor: not-allowed;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" aria-hidden="true"><path d="M12 4a8 8 0 1 0 0 16a8 8 0 1 0 0-16z"/></svg>Cellpose masks · after stage 2</span>
+          </div>
+          <div style="position: relative; flex: 1 1 auto; min-height: 300px; border-radius: 10px; overflow: hidden; background: #0B0C18;">
+            <img src="images/plate-idr0001-viewer-C5.webp" alt="Well C5, field 0, level 1: yeast cells, GFP green on Cascade blue" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;">
+            <span style="position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px;"><span style="width: 28px; height: 28px; border-radius: 7px; background: rgba(15,16,32,0.7); display: flex; align-items: center; justify-content: center; font-weight: 700;">+</span><span style="width: 28px; height: 28px; border-radius: 7px; background: rgba(15,16,32,0.7); display: flex; align-items: center; justify-content: center; font-weight: 700;">−</span></span>
+            <span style="position: absolute; right: 8px; bottom: 8px; display: flex; flex-direction: column; gap: 4px; align-items: flex-end; padding: 6px; border-radius: 9px; background: rgba(15,16,32,0.82);">
+              <span style="font-size: 10.5px; font-weight: 600; color: #F2B544;">Compare · G3 (streak)</span>
+              <span style="position: relative; width: 129px; height: 97px; border-radius: 5px; overflow: hidden; box-shadow: 0 0 0 2px #D9890B;"><img src="images/plate-idr0001-G3.webp" alt="Well G3 thumbnail with a bright vertical streak on the right" style="width: 100%; height: 100%; object-fit: cover; display: block;"><span style="position: absolute; left: 68%; top: 0; bottom: 0; width: 16%; border: 1.5px dashed #F2B544; border-radius: 3px;"></span></span>
+              <span style="font-size: 10px; color: #C4C7D4;">level 4 only in the run</span>
+            </span>
+            <span style="position: absolute; left: 8px; bottom: 8px; font-size: 11px; background: rgba(15,16,32,0.75); padding: 3px 8px; border-radius: 6px;">level 1 · 688 × 520 px · z 8 of 16</span>
+          </div>
+          <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 11.5px; color: #C4C7D4;">
+            <span style="font-family: 'JetBrains Mono', monospace;">/data/demo/idr0001/2551.zarr/C/5/0 · results/qc/well_qc.tsv</span>
+            <span>streamed by the runner on demo-hpc</span>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <!-- flagged wells -->
+        <div style="flex: 1 1 560px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px; display: flex; flex-direction: column; gap: 0;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding-bottom: 4px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Flagged wells · {{flagCount}}</h2><span style="font-size: 12px; color: #6E7287;">keep · flag · exclude · item = well</span></div>
+          <sc-for list="{{flagged}}" as="f" hint-placeholder-count="13">
+            <div style="display: flex; align-items: center; gap: 9px; padding: 1px 0 1px 8px; border-top: 1px solid #EEEFF5; box-shadow: inset 3px 0 0 {{f.rail}}; background: {{f.bg}};">
+              <img src="{{f.src}}" alt="" aria-hidden="true" style="width: 24px; height: 18px; border-radius: 3px; object-fit: cover; display: block;">
+              <span style="width: 30px; font-family: 'JetBrains Mono', monospace; font-weight: 600; font-size: 12px;">{{f.id}}</span>
+              <span style="flex: 1 1 200px; min-width: 0; display: flex; align-items: center; gap: 6px; white-space: nowrap; overflow: hidden;"><span style="display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 600; color: {{f.wc}}; flex-shrink: 0;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.icon}}"/></svg>{{f.why}}</span><span style="font-size: 11px; color: #4D5065; overflow: hidden; text-overflow: ellipsis;" title="{{f.metric}}">{{f.metric}}</span></span>
+              <span title="Flagged by" style="width: 40px; text-align: center; font-size: 10.5px; font-weight: 600; padding: 1px 0; border-radius: 6px; background: {{f.wbg}}; color: {{f.wfg}};">{{f.who}}</span>
+              <span role="radiogroup" aria-label="Decision for {{f.id}}" style="display: flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px; box-shadow: {{f.gring}};"><sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><span style="padding: 1px 8px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for></span>
+              <span style="width: 112px; font-size: 11px; color: {{f.nfg}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{f.note}}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- 5-channel case: Cell Painting -->
+        <div style="flex: 0 1 430px; min-width: 360px; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Same view, 5 channels</h2><span style="font-size: 11.5px; color: #6E7287;">Cell Painting · plate BR00109990 · C2</span></div>
+          <div style="display: flex; gap: 10px; align-items: flex-start;">
+            <div style="flex: 0 0 176px; display: flex; flex-direction: column; gap: 4px;">
+              <img src="images/cellpainting-idr0033-C2.webp" alt="Cell Painting well C2, composite of 5 channels" style="width: 176px; height: 131px; object-fit: cover; border-radius: 8px; display: block;">
+              <span style="font-size: 10.5px; color: #4D5065; line-height: 1.35;">Composite of the 5 channels, level 1 (776 × 1,040). A thumbnail per well on the plate map shows the composite; the viewer offers one toggle per channel.</span>
+            </div>
+            <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+              <sc-for list="{{cp}}" as="c" hint-placeholder-count="5">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <img src="{{c.src}}" alt="Channel {{c.t}}, grey" style="width: 52px; height: 39px; object-fit: cover; border-radius: 4px; display: block; box-shadow: inset 0 0 0 1px #DFE1EA;">
+                  <span role="checkbox" aria-checked="{{c.on}}" style="width: 10px; height: 10px; border-radius: 5px; background: {{c.c}}; flex-shrink: 0; opacity: {{c.op}};"></span>
+                  <span style="flex: 1 1 auto; min-width: 0; font-size: 11.5px; font-weight: 600; line-height: 1.25; color: {{c.fg}};">{{c.t}}<span style="display: block; font-weight: 400; font-size: 10.5px; color: #6E7287;">ch{{c.i}}</span></span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+          <span style="font-size: 10.5px; color: #6E7287;">Illustrative pairing: a plate from another study (idr0033) to show the 5-channel case.</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">lab overlay · the workflow itself has no gate</span></div>
+          <sc-for list="{{checks}}" as="c" hint-placeholder-count="5">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
+              <span style="flex: 1 1 220px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span>
+              <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+              <span style="font-size: 12px; color: #4D5065; min-width: 170px; text-align: right;">{{c.where}}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div style="flex: 2 1 260px; min-width: 0; border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in</span></div>
+          <sc-for list="{{health}}" as="h" hint-placeholder-count="4"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}};">{{h.v}}</span></div></sc-for>
+        </div>
+      </div>
+      <div style="border-radius: 16px; box-shadow: 0 0 0 1px #E6DCFC; background: #FBF9FF; padding: 14px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <span style="width: 28px; height: 28px; border-radius: 8px; background: #7750D4; color: #FFFFFF; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>
+        <span style="flex: 1 1 400px; font-size: 13px; line-height: 1.5;">QC agent suggests excluding the 7 empty wells below the GFP minimum, keeping A2 and flagging G2 (few cells, not empty). G3 has a bright vertical streak on its right side: exclude it, or keep it and mask the band before Cellpose. The GFP mean misses empty wells near the median: D8, E8 and H12 look empty.</span>
+        <button type="button" style="height: 34px; padding: 0 12px; border: none; border-radius: 10px; background: #7750D4; color: #FFFFFF; font: 600 12.5px 'Inter', sans-serif;">Apply suggestion</button>
+      </div>
+    </section>
+
+    <!-- PARAMETERS -->
+    <section class="rv-pn pn-params" style="flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Parameters for the next stages</h2>
+      <sc-for list="{{params}}" as="p" hint-placeholder-count="4">
+        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px;">
+          <code style="flex: 0 0 220px; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; font-weight: 600;">{{p.k}}</code>
+          <span style="flex: 0 0 150px; font-size: 13px;">{{p.v}}</span>
+          <span style="flex: 1 1 260px; font-size: 12.5px; color: #4D5065;">{{p.scope}}</span>
+        </div>
+      </sc-for>
+      <span style="font-size: 12px; color: #6E7287;">Keys of the lab workflow's config.yaml (illustrative). Excluded wells leave <code style="font-family: 'JetBrains Mono', monospace;">wells.tsv</code>; the rules that depend on it rerun.</span>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="5">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 340px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3 · 1 OPEN</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{changes}}" as="c" hint-placeholder-count="4"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}}; box-shadow: {{c.ring}};">{{c.t}}</span></sc-for></span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 220px;">
+        <span style="font-size: 11.5px; color: #4D5065; line-height: 1.35;">Stage 2 (cellpose_segment) on 85 or 86 wells, then stage 3</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #5A4FCF;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #8B5CF6;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #EC5F87;"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
+        <button type="button" disabled aria-describedby="why-disabled" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #D8C8FC; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; cursor: not-allowed;">Apply and continue</button>
+        <span id="why-disabled" style="font-size: 11px; color: #8F5806;">Decide G3 first (block check)</span>
+      </span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+    low: 'M12 5v14 M19 12l-7 7-7-7', streak: 'M15 3v18 M9 3v18', eye: 'M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z M12 9a3 3 0 1 0 0 6a3 3 0 1 0 0-6z', info: 'M12 8h.01 M11 12h1v5h1' };
+  // GFP and Cascade blue means per well: images/plate-idr0001.json (level 4, z 8, field 0).
+  const G = {"A1":55.1,"A2":54.9,"A3":55.2,"A4":56.7,"A5":59.5,"A6":54.7,"A7":58.1,"A8":61.0,"A9":58.6,"A10":57.3,"A11":60.9,"A12":59.7,
+    "B1":59.1,"B2":57.1,"B3":58.0,"B4":54.5,"B5":55.3,"B6":56.0,"B7":58.4,"B8":60.1,"B9":58.2,"B10":58.4,"B11":60.1,"B12":58.0,
+    "C1":55.2,"C2":55.5,"C3":55.9,"C4":60.7,"C5":55.6,"C6":57.1,"C7":56.6,"C8":56.3,"C9":57.1,"C10":58.1,"C11":58.2,"C12":58.1,
+    "D1":59.4,"D2":58.5,"D3":54.1,"D4":56.0,"D5":57.1,"D6":56.8,"D7":56.7,"D8":55.7,"D9":56.7,"D10":59.0,"D11":59.2,"D12":58.5,
+    "E1":56.1,"E2":56.1,"E3":55.7,"E4":53.7,"E5":56.0,"E6":59.2,"E7":56.8,"E8":55.3,"E9":56.1,"E10":58.6,"E11":59.0,"E12":59.4,
+    "F1":55.6,"F2":56.1,"F3":56.2,"F4":57.7,"F5":55.4,"F6":60.0,"F7":61.7,"F8":55.8,"F9":56.2,"F10":57.3,"F11":57.9,"F12":59.5,
+    "G1":61.6,"G2":53.9,"G3":61.3,"G4":55.0,"G5":59.9,"G6":56.7,"G7":55.5,"G8":55.1,"G9":57.7,"G10":56.7,"G11":58.4,"G12":58.0,
+    "H1":59.1,"H2":52.9,"H3":53.8,"H4":53.6,"H5":55.8,"H6":58.8,"H7":57.6,"H8":59.0,"H9":55.7,"H10":58.2,"H11":56.8,"H12":55.8};
+  const MIN = 55.0;
+  // flags: [kind, why, metric, decision, who, note]
+  const F = {
+    G3:  ['streak', 'Bright streak', 'vertical band on the right · column max ÷ median 1.96 (max 1.8) · GFP 61.3', '', 'check', 'undecided · block'],
+    H2:  ['low', 'GFP low', 'GFP 52.9 · empty well', 'Exclude', 'check', 'reason: empty'],
+    H4:  ['low', 'GFP low', 'GFP 53.6 · empty well', 'Exclude', 'check', 'reason: empty'],
+    E4:  ['low', 'GFP low', 'GFP 53.7 · empty well', 'Exclude', 'check', 'reason: empty'],
+    H3:  ['low', 'GFP low', 'GFP 53.8 · empty well', 'Exclude', 'check', 'reason: empty'],
+    G2:  ['low', 'GFP low', 'GFP 53.9 · a few cells', 'Flag', 'check', 'sparse, kept'],
+    D3:  ['low', 'GFP low', 'GFP 54.1 · empty well', 'Exclude', 'check', 'reason: empty'],
+    B4:  ['low', 'GFP low', 'GFP 54.5 · empty well', 'Exclude', 'check', 'reason: empty'],
+    A6:  ['low', 'GFP low', 'GFP 54.7 · empty well', 'Exclude', 'check', 'reason: empty'],
+    A2:  ['low', 'GFP low', 'GFP 54.9 · cells present, sparse', 'Keep', 'check', 'not empty'],
+    E8:  ['eye', 'Empty by eye', 'GFP 55.3 passes the check', 'Exclude', 'AM', 'reason: empty'],
+    D8:  ['eye', 'Empty by eye', 'GFP 55.7 passes the check', 'Exclude', 'AM', 'reason: empty'],
+    H12: ['eye', 'Empty by eye', 'GFP 55.8 passes the check', 'Exclude', 'AM', 'reason: empty']
+  };
+  const order = ['G3', 'H2', 'H4', 'E4', 'H3', 'D3', 'B4', 'A6', 'G2', 'A2', 'E8', 'D8', 'H12'];
+  const HATCH = 'repeating-linear-gradient(135deg, rgba(244,244,248,0.55) 0 3px, rgba(77,80,101,0.55) 3px 6px)';
+  const cells = [];
+  'ABCDEFGH'.split('').forEach(r => {
+    cells.push({ cls: '', img: false, t: r, title: '', over: 'transparent', ring: 'none', fg: '#6E7287', ishow: 'none', icon: '', ibg: 'transparent', src: '', bgc: 'transparent' });
+    for (let c = 1; c <= 12; c++) {
+      const id = r + c, f = F[id];
+      const base = { cls: 'well', bgc: '#0B0C18', img: true, src: 'images/plate-idr0001-' + id + '.webp', t: '', fg: '#FFFFFF', over: 'transparent', ring: 'none', ishow: 'none', icon: '', ibg: 'rgba(15,16,32,0.8)' };
+      if (id === 'C5') { cells.push({ ...base, title: 'C5 · GFP '+G.C5+' · passes · in viewer', ring: 'inset 0 0 0 2.5px #A78BFA, inset 0 0 0 4px #FFFFFF' }); continue; }
+      if (!f) { cells.push({ ...base, title: id + ' · GFP ' + G[id] + ' · passes' }); continue; }
+      const dec = f[3];
+      const ring = dec === 'Exclude' ? 'inset 0 0 0 1.5px #C4C7D4' : dec === 'Flag' ? 'inset 0 0 0 2.5px #F2B544' : dec === 'Keep' ? 'inset 0 0 0 1.5px #3FB57E' : 'inset 0 0 0 2.5px #D9890B, inset 0 0 0 4px #FFFFFF';
+      cells.push({ ...base, title: id + ' · ' + f[1] + ' · ' + (dec || 'undecided'), over: dec === 'Exclude' ? HATCH : 'transparent', ring, ishow: 'flex', icon: I[f[0]], ibg: dec === '' ? '#D9890B' : 'rgba(15,16,32,0.8)' });
+    }
+  });
+  const lo = 52.5, hi = 62.0, X = v => ((v - lo) / (hi - lo) * 100).toFixed(2) + '%';
+  const stack = {};
+  const dots = Object.keys(G).map(k => { const v = G[k], b = Math.round(v * 5); stack[b] = (stack[b] || 0) + 1; const f = F[k];
+    const c = k === 'G3' ? '#D9890B' : f && f[0] === 'eye' ? '#7750D4' : v < MIN ? '#D9890B' : '#9A9EB0';
+    return { x: X(v), y: (9 + ((stack[b] - 1) % 3 - 1) * 5) + 'px', c, ring: k === 'G3' || (f && f[0] === 'eye') ? '0 0 0 1.5px #FFFFFF, 0 0 0 3px ' + c : 'none', title: k + ' · GFP ' + v }; });
+  const opt = on => ['Keep', 'Flag', 'Exclude'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? '#B02A2A' : t === 'Flag' ? '#8F5806' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  const WC = { streak: '#B02A2A', low: '#8F5806', eye: '#4D368B' };
+  const flagged = order.map(k => { const f = F[k]; const und = f[3] === '';
+    return { id: k, src: 'images/plate-idr0001-' + k + '.webp', why: f[1], wc: WC[f[0]], icon: I[f[0]], metric: f[2], opts: opt(f[3]),
+      who: f[4] === 'AM' ? 'AM' : 'check', wbg: f[4] === 'AM' ? '#E6DCFC' : '#F1F2F6', wfg: f[4] === 'AM' ? '#4D368B' : '#4D5065',
+      note: f[5], nfg: und ? '#8F5806' : '#4D5065', rail: und ? '#D9890B' : 'transparent', bg: und ? '#FFFBF3' : 'transparent', gring: und ? 'inset 0 0 0 1.5px #F2B544' : 'none' }; });
+  const CP = [['Nuclei', '#4F7BFF'], ['ER', '#3DDC84'], ['Nucleoli / Cytoplasmic RNA', '#FF5A5A'], ['Actin / Golgi / Membrane', '#FFA53D'], ['Mitochondria', '#3DD6F5']];
+  const excl = order.filter(k => F[k][3] === 'Exclude').length;
+  return {
+    flagCount: order.length,
+    cols: Array.from({ length: 12 }, (_, i) => String(i + 1)),
+    cells, dots, thr: X(MIN),
+    sticks: [53, 55, 57, 59, 61].map(v => ({ x: X(v), t: String(v) })),
+    legend: [
+      { t: 'Low GFP', bg: 'rgba(15,16,32,0.8)', ring: 'none', ic: '#FFFFFF', icon: I.low }, { t: 'Streak', bg: '#D9890B', ring: 'none', ic: '#FFFFFF', icon: I.streak },
+      { t: 'By eye', bg: 'rgba(15,16,32,0.8)', ring: 'none', ic: '#FFFFFF', icon: I.eye },
+      { t: 'Excluded', bg: 'repeating-linear-gradient(135deg, #F4F4F8 0 3px, #6E7287 3px 6px)', ring: 'none', ic: 'transparent', icon: '' },
+      { t: 'Flagged', bg: '#0B0C18', ring: 'inset 0 0 0 2px #F2B544', ic: 'transparent', icon: '' }, { t: 'Undecided', bg: '#0B0C18', ring: 'inset 0 0 0 2px #D9890B', ic: 'transparent', icon: '' },
+      { t: 'In viewer', bg: '#0B0C18', ring: 'inset 0 0 0 2px #A78BFA', ic: 'transparent', icon: '' }
+    ],
+    flagged,
+    cp: CP.map((c, i) => ({ t: c[0], c: c[1], i: i + 1, src: 'images/cellpainting-idr0033-C2-ch' + (i + 1) + '.webp', on: 'true', op: 1, fg: '#22253A' })),
+    checks: [
+      { name: 'Wells imaged', rule: 'completeness · 96 · block', value: '96 / 96', col: '#157A4B', icon: I.check, where: '' },
+      { name: 'GFP mean', rule: 'min 55.0 (median 57.1 − 1 SD) · warn', value: '9 wells', col: '#8F5806', icon: I.warn, where: 'H2 H4 E4 H3 G2 D3 B4 A6 A2' },
+      { name: 'Bright streak', rule: 'column profile max ÷ median ≤ 1.8 · block', value: '1 well', col: '#B02A2A', icon: I.warn, where: 'G3 · 1.96' },
+      { name: 'Cascade blue, column 1', rule: 'outlier versus plate · info', value: '−14 %', col: '#4D5065', icon: I.info, where: 'col 1 median 214 · plate 248' },
+      { name: 'Empty wells the proxy missed', rule: 'added by a reviewer', value: '3 wells', col: '#4D368B', icon: I.eye, where: 'D8 · E8 · H12 (GFP 55.3–55.8)' }
+    ],
+    health: [
+      { k: 'Failed jobs', v: '0', fg: '#157A4B' }, { k: 'Retried jobs', v: '0', fg: '#157A4B' },
+      { k: 'Stage 1 runtime', v: '4 min · 96 jobs', fg: '#22253A' }, { k: 'Peak memory', v: '1.2 of 4 GB', fg: '#22253A' }
+    ],
+    params: [
+      { k: 'well_qc.gfp_min', v: '55.0', scope: 'Run-wide · unchanged' },
+      { k: 'well_qc.streak_max', v: '1.8', scope: 'Run-wide · unchanged' },
+      { k: 'cellpose.model', v: 'cyto3', scope: 'Stage 2 · unchanged' },
+      { k: 'cellpose.diameter', v: '0 (auto)', scope: 'Stage 2 · per well possible (wells.tsv column)' }
+    ],
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after rule well_qc; Snakemake stopped with --until well_qc. Gate from the lab overlay (spectio.yml), not from the workflow.', at: '10:02' },
+      { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', text: 'QC agent suggested excluding 7 empty wells, flagging G2, keeping A2, and asked a human to decide G3.', at: '10:04' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin applied the suggestion and added D8, E8 and H12 as empty (they pass the GFP check).', at: '10:16' },
+      { t: 'CD', bg: '#E6DCFC', fg: '#4D368B', text: 'Chloé Diallo: “G3 is a light leak on one edge; can we mask the band instead of losing the well?”', at: '10:19' },
+      { t: 'BOT', bg: '#E3F1FB', fg: '#1D5FC9', text: 'Notified the lab channel #plate-qc.', at: '10:20' }
+    ],
+    changes: [
+      { t: excl + ' wells excluded (empty)', bg: '#F1F2F6', fg: '#33364A', ring: 'none' },
+      { t: '1 well flagged (G2)', bg: '#FDF3E2', fg: '#8F5806', ring: 'none' },
+      { t: 'wells.tsv v2', bg: '#F6F2FE', fg: '#4D368B', ring: 'none' },
+      { t: 'G3 undecided', bg: '#FFFFFF', fg: '#8F5806', ring: 'inset 0 0 0 1px #F2B544' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

@@ -39,7 +39,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
       <span style="width: 48px; height: 48px; border-radius: 15px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
       <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 4px;">
         <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 26px;">Liver time course</h1>
-        <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #4D5065;">Owned by <strong style="color: #1F536D;">rnaseq-core</strong> · 41 runs · created 12 Mar 2026 by Thomas Weber <span class="chip" style="background: #EEF6FA; color: #1F536D;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a7 7 0 0 1 14 0 M17 11a3 3 0 1 0 0-6 M22 21a6 6 0 0 0-4-5.6"/></svg>Group · all rnaseq-core members can view</span></span>
+        <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #4D5065;">Owned by <strong style="color: #1F536D;">rnaseq-core</strong> · 41 runs · created 12 Mar 2026 by Alice Martin <span class="chip" style="background: #EEF6FA; color: #1F536D;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a7 7 0 0 1 14 0 M17 11a3 3 0 1 0 0-6 M22 21a6 6 0 0 0-4-5.6"/></svg>Group · all rnaseq-core members can view</span></span>
       </div>
       <a href="ShareDialog.dc.html" class="btn btn-p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 8a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M16 22a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M8.6 13.5l6.8 4 M15.4 6.5l-6.8 4"/></svg>Share</a>
     </div>
@@ -120,10 +120,10 @@ renderVals() {
   return {
     ptabs,
     grants: [
-      gr(P.person('TW'), 'Thomas Weber', 't.weber@lab.example', 'Person', 'owner', 'Direct · creator'),
+      gr(P.person('AM'), 'Alice Martin', 'amartin@example.org', 'Person', 'owner', 'Direct · creator'),
       gr(P.group('RC'), 'rnaseq-core', 'Group · 6 members', 'Group', 'viewer', 'Owning group (visibility: Group)'),
-      gr(P.person('AS', '#2F7FA8'), 'Anna Smith', 'a.smith@lab.example', 'Person', 'reviewer', 'Direct'),
-      gr(P.person('KB', '#A54666'), 'Kai Berg', 'k.berg@lab.example', 'Person', 'launcher', 'Inherited from rnaseq-core · raised here'),
+      gr(P.person('AS', '#2F7FA8'), 'Anna Smith', 'a.smith@example.org', 'Person', 'reviewer', 'Direct'),
+      gr(P.person('KB', '#A54666'), 'Kai Berg', 'k.berg@example.org', 'Person', 'launcher', 'Inherited from rnaseq-core · raised here'),
       gr(P.group('GC'), 'genomics-core-facility', 'Group · 11 members', 'Group', 'launcher', 'Direct'),
       gr(P.service('LB'), 'LabID', 'Service account · LIMS', 'Service account', 'launcher', 'Direct · token scoped to this project'),
       gr(P.agent(), 'QC agent', 'AI agent · built-in assistant', 'AI agent', 'viewer', 'Direct · may propose on gates')
@@ -132,9 +132,9 @@ renderVals() {
     matrix: [row('See runs, logs, outputs', 4), row('Launch and relaunch', 3), row('Decide gates', 2), row('Cancel any run, edit manifests', 1), row('Share, webhooks, delete', 0)],
     dep: ['Owner', 'Editor', 'Viewer', 'Viewer', 'Viewer'],
     envs: [
-      { name: 'EMBL SLURM · htc', via: 'granted to rnaseq-core', dot: '#1F9D63' },
+      { name: 'demo-hpc SLURM · htc', via: 'granted to rnaseq-core', dot: '#1F9D63' },
       { name: 'Kubernetes · dev', via: 'granted to this project', dot: '#1F9D63' },
-      { name: 'EMBL SLURM · gpu', via: 'request access', dot: '#C4C7D4' }
+      { name: 'demo-hpc SLURM · gpu', via: 'request access', dot: '#C4C7D4' }
     ]
   };
 }

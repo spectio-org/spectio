@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — discovered workflows</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 7px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.tb{height:38px;padding:0 12px;border-radius:11px;border:none;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF;font:500 13px 'Inter',sans-serif;color:#22253A;white-space:nowrap}
+.btn{height:40px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.mono{font-family:'JetBrains Mono',monospace}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl{font-size:11.5px;font-weight:600;letter-spacing:.05em;color:#6E7287}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:#33364A;background:#F7F7FB;padding:9px 10px}
+.tbl td{padding:11px 10px;border-top:1px solid #EEEFF5;vertical-align:top}
+.inp{display:flex;align-items:center;height:36px;padding:0 10px;border-radius:10px;box-shadow:inset 0 0 0 1px #C4C7D4;background:#FFFFFF;font-size:13px;min-width:0}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Workflows / Discovered" project="demo-lab / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="workflows" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <span style="width: 48px; height: 48px; border-radius: 15px; background: #FCE5EC; color: #A54666; display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12 M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 9a9 9 0 0 1-9 9"/></svg>
+        </span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Workflows</h1>
+          <span style="font-size: 14px; color: #4D5065;">Discovered: workflows seen in terminal runs, not curated yet · not offered in Launch until promoted</span>
+        </div>
+        <a href="WorkflowImport.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>Add a workflow</a>
+      </div>
+
+      <nav aria-label="Workflow lists" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5;">
+        <a href="WorkflowsCatalog.dc.html" style="padding: 9px 12px; font-size: 13.5px; text-decoration: none; color: #4D5065; font-weight: 500; display: flex; align-items: center; gap: 6px;">Catalog<span style="font-size: 11.5px; font-weight: 600; color: #6E7287;">18</span></a>
+        <a href="WorkflowDiscovered.dc.html" aria-current="page" style="padding: 9px 12px; font-size: 13.5px; text-decoration: none; color: #0F1020; font-weight: 600; box-shadow: inset 0 -2px 0 #A54666; display: flex; align-items: center; gap: 6px;">Discovered from terminal runs<span style="font-size: 11.5px; font-weight: 600; color: #6E7287;">4</span></a>
+      </nav>
+
+      <div style="display: flex; gap: 16px; align-items: flex-start;">
+        <section aria-label="Discovered workflows" style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+          <div role="toolbar" aria-label="Discovered list controls" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+            <label style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; flex: 1 1 180px; color: #6E7287;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg>
+              <input type="search" placeholder="Repository, revision, user" aria-label="Search discovered workflows" style="border: none; outline: none; font: inherit; font-size: 13px; color: #0F1020; flex-grow: 1; min-width: 0; background: transparent;">
+            </label>
+            <button type="button" class="tb">Engine: any ▾</button>
+            <button type="button" class="tb">Sort: last seen ▾</button>
+            <button type="button" class="tb">Ignored · 1</button>
+          </div>
+
+          <div style="overflow-x: auto; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+            <table class="tbl">
+              <thead><tr><th scope="col" style="padding-left: 16px;">Workflow · key (repository + revision)</th><th scope="col">Runs</th><th scope="col">Who</th><th scope="col">Seen</th></tr></thead>
+              <tbody>
+                <sc-for list="{{rows}}" as="r" hint-placeholder-count="4">
+                  <tr style="background: {{r.bg}}; box-shadow: inset 4px 0 0 {{r.rail}};">
+                    <td style="padding-left: 16px;">
+                      <span style="display: flex; gap: 10px; align-items: flex-start;">
+                        <img src="{{r.logo}}" width="22" height="22" alt="{{r.engine}}" title="{{r.engine}}" style="display: block; object-fit: contain; flex-shrink: 0; margin-top: 1px;">
+                        <span style="display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+                          <span style="font-weight: 600; font-size: 13.5px;">{{r.name}}</span>
+                          <span class="mono" style="font-size: 11.5px; color: #33364A; word-break: break-all;">{{r.repo}}</span>
+                          <span style="display: flex; gap: 5px; flex-wrap: wrap;"><sc-for list="{{r.keys}}" as="k" hint-placeholder-count="2"><span class="chip mono" style="font-weight: 400; background: #F1F2F6; color: #33364A; font-size: 11px;">{{k}}</span></sc-for></span>
+                          <sc-if value="{{r.note}}" hint-placeholder-val="{{false}}"><span style="display: flex; gap: 6px; align-items: flex-start; font-size: 12px; color: {{r.nfg}}; margin-top: 2px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="{{r.nic}}"/></svg><span>{{r.note}}</span></span></sc-if>
+                        </span>
+                      </span>
+                    </td>
+                    <td style="white-space: nowrap;">
+                      <span style="display: flex; flex-direction: column; gap: 5px;">
+                        <span style="font-weight: 600;">{{r.runs}} runs</span>
+                        <span aria-hidden="true" style="display: flex; width: 96px; height: 6px; border-radius: 3px; overflow: hidden; background: #EEEFF5;"><span style="width: {{r.adw}}; background: #1F9D63;"></span><span style="width: {{r.obw}}; background-image: repeating-linear-gradient(135deg, #9A9EB0 0 2px, #DFE1EA 2px 4px);"></span></span>
+                        <span style="font-size: 11.5px; color: #33364A;">{{r.ad}} adopted · {{r.ob}} observed</span>
+                      </span>
+                    </td>
+                    <td>
+                      <span style="display: flex; align-items: center; padding-left: 6px;"><sc-for list="{{r.users}}" as="u" hint-placeholder-count="2"><span title="{{u.n}}" style="width: 26px; height: 26px; margin-left: -6px; border-radius: 13px; box-shadow: 0 0 0 2px #FFFFFF; background: {{u.bg}}; color: #FFFFFF; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center;">{{u.t}}</span></sc-for></span>
+                    </td>
+                    <td style="white-space: nowrap; font-size: 12px; color: #33364A;"><span style="display: block;">first {{r.first}}</span><span style="display: block; font-weight: 600; color: #0F1020;">last {{r.last}}</span><span style="display: block; margin-top: 6px;"><a href="{{r.ahref}}" style="font-weight: 600; font-size: 12.5px; text-decoration: none; color: {{r.afg}};" aria-disabled="{{r.adis}}">{{r.action}}</a></span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+
+          <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
+            <span style="font-size: 13px; font-weight: 600;">Runs of demo-lab/organoid-qc <span style="font-weight: 500; color: #6E7287;">· what the defaults were captured from</span></span>
+            <sc-for list="{{wruns}}" as="r" hint-placeholder-count="4">
+              <a href="RunDetail.dc.html" style="display: flex; gap: 10px; align-items: center; font-size: 12.5px; text-decoration: none; color: #22253A; box-shadow: inset 3px 0 0 {{r.rail}}; padding: 4px 0 4px 10px;">
+                <span style="display: flex; align-items: center; gap: 6px; width: 104px; flex-shrink: 0; font-weight: 600; color: {{r.fg}};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"/></svg>{{r.state}}</span>
+                <span style="font-weight: 600; width: 150px; flex-shrink: 0;">{{r.name}}</span>
+                <span class="mono" style="font-size: 11.5px; color: #4D5065; width: 70px; flex-shrink: 0;">{{r.rev}}</span>
+                <span style="font-size: 11.5px; font-weight: 500; color: #33364A; border-radius: 6px; background: #EEEFF5; padding: 2px 7px; white-space: nowrap;">{{r.origin}}</span>
+                <span class="ell" style="color: #4D5065; flex-grow: 1; text-align: right;">{{r.who}}</span>
+              </a>
+            </sc-for>
+          </div>
+
+          <div style="display: flex; gap: 12px; align-items: flex-start; border-radius: 14px; background: #F7F7FB; padding: 12px 14px;">
+            <span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px; background: #FFFFFF; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z M8 10l3 2-3 2 M13 15h3"/></svg></span>
+            <span style="display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: #33364A; line-height: 1.5;">
+              <span><strong style="color: #0F1020;">How a workflow lands here.</strong> Any run started in a terminal with Spectio enabled (<code class="mono" style="font-size: 11.5px;">-with-tower</code> pointed at Spectio, or <code class="mono" style="font-size: 11.5px;">--logger spectio</code>) is keyed by repository + revision: Nextflow <code class="mono" style="font-size: 11.5px;">manifest</code> and <code class="mono" style="font-size: 11.5px;">commitId</code>; Snakemake git remote + Snakefile hash.</span>
+              <span>Auto-registration is <strong style="color: #157A4B;">on</strong> for this instance (Administration › Content). Parameters, command line, config and software versions of each run are kept.</span>
+            </span>
+          </div>
+        </section>
+
+        <aside aria-label="Promote to catalog" style="width: 412px; flex-shrink: 0; border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 16px 40px -28px rgba(15,16,32,.45); display: flex; flex-direction: column;">
+          <div style="padding: 14px 16px 10px; display: flex; gap: 10px; align-items: flex-start; border-bottom: 1px solid #EEEFF5;">
+            <span style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center;"><img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="22" height="22" alt="Nextflow" style="display: block; object-fit: contain;"></span>
+            <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-family: 'Outfit', sans-serif; font-size: 18px; font-weight: 600;">Promote to catalog</span><span style="font-size: 12px; color: #4D5065;"><code class="mono" style="font-size: 11.5px;">demo-lab/organoid-qc</code> · its 4 runs move here</span></span>
+            <button type="button" aria-label="Close panel" style="width: 32px; height: 32px; border: none; border-radius: 10px; background: transparent; color: #33364A;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg></button>
+          </div>
+          <div style="padding: 12px 16px; display: flex; flex-direction: column; gap: 12px;">
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 8px;">
+              <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #4D5065;">Name in the catalog<span class="inp" style="font-weight: 600; color: #0F1020;">Organoid QC</span></label>
+              <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #4D5065;">Source<span class="inp mono" style="font-size: 11.5px; color: #33364A; background: #F7F7FB; white-space: nowrap; overflow: hidden;">…/demo-lab/organoid-qc</span></label>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <span class="lbl">REVISION TO PIN</span>
+              <sc-for list="{{revs}}" as="v" hint-placeholder-count="3">
+                <div role="radio" aria-checked="{{v.sel}}" aria-disabled="{{v.dis}}" style="display: flex; gap: 9px; align-items: center; padding: 7px 10px; border-radius: 10px; background: {{v.bg}}; box-shadow: {{v.sh}}; color: {{v.fg}};">
+                  <span style="width: 15px; height: 15px; flex-shrink: 0; border-radius: 8px; box-sizing: border-box; box-shadow: inset 0 0 0 {{v.rw}} {{v.rc}};"></span>
+                  <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;"><span style="font-size: 12.5px; font-weight: 600;">{{v.t}}</span><span style="font-size: 11.5px; color: {{v.sfg}};">{{v.s}}</span></span>
+                  <span style="font-size: 11.5px; white-space: nowrap;">{{v.runs}}</span>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <span class="lbl" style="display: flex;">DEFAULTS CAPTURED FROM THE RUNS<span style="margin-left: auto; font-weight: 500; letter-spacing: 0;">3 of 5 kept</span></span>
+              <div style="border-radius: 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+                <sc-for list="{{defs}}" as="d" hint-placeholder-count="5">
+                  <div style="display: flex; gap: 9px; align-items: center; padding: 6px 10px; border-top: 1px solid #EEEFF5; font-size: 12px; background: {{d.bg}};">
+                    <span style="width: 15px; height: 15px; flex-shrink: 0; border-radius: 4px; background: {{d.cb}}; box-shadow: inset 0 0 0 1.5px {{d.cbb}}; color: #FFFFFF; display: flex; align-items: center; justify-content: center;" role="checkbox" aria-checked="{{d.on}}"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{d.tick}}"/></svg></span>
+                    <code class="mono" style="font-size: 11.5px; font-weight: 600; width: 112px; flex-shrink: 0;">{{d.k}}</code>
+                    <span class="mono ell" style="font-size: 11.5px; color: #33364A; flex-grow: 1; min-width: 0;">{{d.v}}</span>
+                    <span style="font-size: 11.5px; color: {{d.sfg}}; white-space: nowrap;">{{d.seen}}</span>
+                  </div>
+                </sc-for>
+              </div>
+              <span style="font-size: 11.5px; color: #4D5065;">Values that differ per run are not made defaults; “Duplicate” on a run still pre-fills them.</span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <span class="lbl">WHO CAN SEE AND LAUNCH IT</span>
+              <span style="display: flex; gap: 6px; flex-wrap: wrap; align-items: center;">
+                <span class="chip" style="height: 26px; background: #EEF6FA; color: #1F536D;">demo-lab · launch</span>
+                <span class="chip" style="height: 26px; background: #EEF6FA; color: #1F536D;">imaging-core · view</span>
+                <button type="button" style="height: 26px; padding: 0 8px; border: none; border-radius: 7px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; font: 600 11.5px 'Inter', sans-serif; color: #33364A;">+ Group</button>
+                <span style="font-size: 11.5px; color: #4D5065;">owned by project Liver time course</span>
+              </span>
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <span class="lbl">STAGES · OPTIONAL</span>
+              <sc-for list="{{stg}}" as="s" hint-placeholder-count="3">
+                <a href="{{s.href}}" role="radio" aria-checked="{{s.sel}}" style="display: flex; gap: 9px; align-items: flex-start; padding: 7px 10px; border-radius: 10px; text-decoration: none; color: #0F1020; background: {{s.bg}}; box-shadow: {{s.sh}};">
+                  <span style="width: 15px; height: 15px; margin-top: 1px; flex-shrink: 0; border-radius: 8px; box-sizing: border-box; box-shadow: inset 0 0 0 {{s.rw}} {{s.rc}};"></span>
+                  <span style="display: flex; flex-direction: column; gap: 1px;"><span style="font-size: 12.5px; font-weight: 600;">{{s.t}}</span><span style="font-size: 11.5px; color: #4D5065;">{{s.d}}</span></span>
+                </a>
+              </sc-for>
+              <span style="font-size: 11.5px; color: #4D5065;">No gates: runs go straight through. A gate can be added later in the overlay.</span>
+            </div>
+          </div>
+          <div style="margin-top: auto; padding: 12px 16px; border-top: 1px solid #EEEFF5; display: flex; gap: 8px; align-items: center;">
+            <button type="button" class="btn btn-s">Ignore</button>
+            <span style="flex-grow: 1;"></span>
+            <a href="WorkflowsCatalog.dc.html" class="btn btn-p">Promote to catalog</a>
+          </div>
+        </aside>
+      </div>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const E = { nf: ['Nextflow', '/_blob/636203cdee0bc09b61efe0fa351e239b'], nfcore: ['nf-core (Nextflow)', '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'], smk: ['Snakemake', '/_blob/7a35665829f51132cb3bcb9a4c3e638c'] };
+  const U = { AM: { t: 'AM', bg: '#8B5CF6', n: 'Alice Martin (amartin)' }, BK: { t: 'BK', bg: '#2F7FA8', n: 'Bruno Keller' }, CD: { t: 'CD', bg: '#EC5F87', n: 'Chloé Diallo' }, DN: { t: 'DN', bg: '#5A4FCF', n: 'Dmitri Novak' } };
+  const N = { warn: ['#8F5806', 'M12 3l10 18H2z M12 10v5 M12 18h.01'], info: ['#1D5FC9', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 11v5 M12 8h.01'], block: ['#B02A2A', 'M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M5.6 18.4L18.4 5.6'] };
+  const row = (o) => {
+    const [engine, logo] = E[o.eng]; const tot = o.ad + o.ob;
+    const n = o.nk ? N[o.nk] : ['', ''];
+    return { ...o, engine, logo, adw: Math.round(96 * o.ad / tot) + 'px', obw: Math.round(96 * o.ob / tot) + 'px', nfg: n[0], nic: n[1], note: o.note || '',
+      bg: o.sel ? '#FBF9FF' : '#FFFFFF', rail: o.sel ? '#7750D4' : 'transparent', ahref: o.ahref || '#', afg: o.adis === 'true' ? '#9A9EB0' : '#6344B2', adis: o.adis || 'false', ulist: o.users.map(u => u.t).length === 1 ? o.users[0].n : o.users.length + ' people' };
+  };
+  const radio = (sel, dis) => ({ sel: sel ? 'true' : 'false', dis: dis ? 'true' : 'false', rw: sel ? '5px' : '1.5px', rc: sel ? '#7750D4' : (dis ? '#DFE1EA' : '#9A9EB0'), bg: sel ? '#FBF9FF' : (dis ? '#F7F7FB' : '#FFFFFF'), sh: sel ? 'inset 0 0 0 2px #7750D4' : 'inset 0 0 0 1px #DFE1EA', fg: dis ? '#9A9EB0' : '#0F1020' });
+  const def = (k, v, seen, on, warn) => ({ k, v, seen, on: on ? 'true' : 'false', cb: on ? '#7750D4' : '#FFFFFF', cbb: on ? '#7750D4' : '#9A9EB0', tick: on ? 'M5 12l5 5L20 7' : '', sfg: warn ? '#8F5806' : '#4D5065', bg: on ? '#FFFFFF' : '#FBFBFD' });
+  return {
+    rows: [
+      row({ sel: true, eng: 'nf', name: 'demo-lab/organoid-qc', repo: 'git.example.org/demo-lab/organoid-qc', keys: ['manifest.name demo-lab/organoid-qc', 'commitId 7c1e2f0 + 1 more'], runs: 4, ad: 3, ob: 1, users: [U.AM, U.CD], first: '12 Oct', last: 'today 09:14', action: 'Selected', adis: 'false' }),
+      row({ eng: 'nfcore', name: 'nf-core/methylseq', repo: 'github.com/nf-core/methylseq', keys: ['revision 2.7.1', 'commitId 4f1d2b8'], runs: 5, ad: 0, ob: 5, users: [U.DN], first: '2 Oct', last: 'yesterday', nk: 'info', note: 'A genuine nf-core release: add it from nf-core so releases and the schema stay in sync.', action: 'Add from nf-core', ahref: 'WorkflowImport.dc.html' }),
+      row({ eng: 'smk', name: 'demo-lab/hic-snake', repo: 'git.example.org/demo-lab/hic-snake', keys: ['remote origin · main', 'Snakefile sha256:3be1c04e'], runs: 7, ad: 0, ob: 7, users: [U.BK], first: '29 Sep', last: '3 days ago', nk: 'warn', note: 'Observed only: no runner runs as bkeller on hpc-login-1, so the launch directory /scratch/demo/bkeller/hic is unreadable.', action: 'Promote', ahref: '#' }),
+      row({ eng: 'nf', name: 'main.nf (no repository)', repo: 'demo-hpc:/scratch/demo/dnovak/tests/main.nf', keys: ['no git remote', 'script sha256:91ac7d20'], runs: 2, ad: 2, ob: 0, users: [U.DN], first: '20 Oct', last: '20 Oct', nk: 'block', note: 'Cannot be promoted: no repository, so no revision to pin. Push it to a Git remote first.', action: 'Promote unavailable', adis: 'true' })
+    ],
+    wruns: [
+      { state: 'Succeeded', rail: '#1F9D63', fg: '#157A4B', icon: 'M5 12l5 5L20 7', name: 'organoid-plate-14', rev: '7c1e2f0', origin: 'CLI · adopted', who: 'amartin · today 09:14' },
+      { state: 'Running', rail: '#3B82F6', fg: '#1D5FC9', icon: 'M8 5v14l11-7z', name: 'organoid-plate-13', rev: '7c1e2f0', origin: 'CLI · adopted', who: 'Chloé Diallo · today 08:02' },
+      { state: 'Succeeded', rail: '#1F9D63', fg: '#157A4B', icon: 'M5 12l5 5L20 7', name: 'organoid-plate-12', rev: '7c1e2f0', origin: 'CLI · adopted', who: 'amartin · 18 Oct' },
+      { state: 'Failed', rail: '#DC3B3B', fg: '#B02A2A', icon: 'M6 6l12 12 M18 6L6 18', name: 'organoid-test', rev: 'a41d9c2*', origin: 'CLI · observed', who: 'amartin · laptop · 12 Oct' }
+    ],
+    revs: [
+      { ...radio(true), t: 'Tag v0.3.0 = 7c1e2f0', s: 'clean checkout · nextflow_schema.json present', sfg: '#4D5065', runs: '3 runs' },
+      { ...radio(false, true), t: 'a41d9c2 · dirty working tree', s: 'cannot be pinned: 2 uncommitted files in that run', sfg: '#9A9EB0', runs: '1 run' },
+      { ...radio(false), t: 'Follow branch main', s: 'every launch resolves the newest commit', sfg: '#4D5065', runs: '' }
+    ],
+    defs: [
+      def('-profile', 'singularity,demo_hpc', '4 of 4 runs', true),
+      def('--genome', 'GRCh38', '4 of 4 runs', true),
+      def('--min_cells', '200', '3 of 4 · one ran 150', true, true),
+      def('--input', 'differs in every run', 'not kept', false),
+      def('--outdir', 'differs in every run', 'not kept', false)
+    ],
+    stg: [
+      { ...radio(true), t: 'Show 3 detected subworkflows', d: 'PREPROCESS, SEGMENT_ORGANOIDS, REPORT · display only', href: '#' },
+      { ...radio(false), t: 'Write a lab overlay now', d: 'stages with match globs, optional gates → overlay editor', href: 'WorkflowOverlay.dc.html' },
+      { ...radio(false), t: 'None', d: 'the gauge shows task quarters', href: '#' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

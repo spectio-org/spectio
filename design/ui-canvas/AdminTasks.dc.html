@@ -150,12 +150,12 @@ details.cli[open] .chev{transform:rotate(90deg)}
                       <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0;"><span class="lbl">ARGUMENTS</span><pre class="code">{
   "event": "evt_01JBF7Q2W9…",
   "type": "spectio.gate.opened",
-  "endpoint": "labid.embl.de/api/hooks/…",
+  "endpoint": "labid.example.org/api/hooks/…",
   "signature": "hmac-sha256",
   "timeout_s": 30
 }</pre></div>
                       <div style="display: flex; flex-direction: column; gap: 5px; min-width: 0;"><span class="lbl">ERROR</span><pre class="code" style="background: #FCEBEB; box-shadow: inset 0 0 0 1px #F6CFCF; color: #7E1D1D;">HTTPStatusError: 503 Service Unavailable
-POST labid.embl.de/api/hooks/spectio
+POST labid.example.org/api/hooks/spectio
 Retry-After: 120
 body: "maintenance until 14:30"</pre><span class="lbl" style="margin-top: 4px;">RESULT</span><span style="font-size: 12.5px; color: #6E7287;">None yet. The task writes its own terminal state.</span></div>
                     </div>
@@ -259,8 +259,8 @@ renderVals() {
       { label: 'Workers', value: '3 / 3', unit: 'alive', sub: 'heartbeat 4 s ago', rail: '#1F9D63', fg: '#157A4B' }
     ],
     rowsA: [
-      row('running', 'check.evaluate', 'check', 'gate=mapping_qc source=multiqc', 'liver-tc-03 #301 · rnaseq-core · 24 samples × 6 checks', 'system', 'on run event', '1 / 3', '4.1 s', 'now', 'Evaluates the Mapping QC checks from multiqc_data.json; the gate opens when it ends.'),
-      row('running', 'sink.depictio', 'export', 'depictio-cli ingest --triggered-by spectio', 'scrna-pbmc #314 · single-cell · on runner embl-slurm', 'Anna Smith', 'user · run owner', '1 / 5', '38 s', '1 min ago', 'Hand-off to depictio: the runner runs depictio-cli ingest next to the results and returns the result JSON (project and dashboard links).'),
+      row('running', 'check.evaluate', 'check', 'gate=mapping_qc source=multiqc', 'liver-tc-03 #302 · rnaseq-core · 24 samples × 6 checks', 'system', 'on run event', '1 / 3', '4.1 s', 'now', 'Evaluates the Mapping QC checks from multiqc_data.json; the gate opens when it ends.'),
+      row('running', 'sink.depictio', 'export', 'depictio-cli ingest --triggered-by spectio', 'scrna-pbmc #444 · single-cell · on runner demo-hpc', 'Anna Smith', 'user · run owner', '1 / 5', '38 s', '1 min ago', 'Hand-off to depictio: the runner runs depictio-cli ingest next to the results and returns the result JSON (project and dashboard links).'),
       row('queued', 'gate.notify', 'deliver', 'mattermost:imaging-core → 2 reviewers', 'plate-qc-07 #122 · imaging-core', 'system', 'outbox', '0 / 5', '—', 'in 2 s', 'Notifies the assigned reviewers of the Plate QC gate.')
     ],
     facts: [
@@ -275,12 +275,12 @@ renderVals() {
       { k: 'Created', v: 'today 13:52:41', cls: '' }
     ],
     rowsB: [
-      row('failed', 'bridge.mqtt', 'deliver', 'publish spectio/prj_imaging/gate/opened', 'plate-qc-07 #122 · imaging-core · broker mqtt.imaging.embl.de', 'system', 'event bridge', '5 / 5', '10.0 s', '18 min ago', 'Broker unreachable (connection refused). Final after 5 attempts; the event is kept in the outbox and can be replayed.'),
-      row('failed', 'check.evaluate', 'check', 'gate=cell_qc script=cell_qc.py', 'scrna-pbmc #314 · single-cell', 'system', 'on run event', '3 / 3', '2.4 s', '42 min ago', 'script: exited with code 1, KeyError: pct_counts_mt. The gate shows the check as "could not evaluate".'),
-      row('queued', 'rocrate.export', 'export', 'Workflow Run Crate → LabID', 'liver-tc-03 #298 · rnaseq-core', 'Kai Berg', 'user', '0 / 3', '—', 'queued 12 s', 'Waits for a free export slot (max 2 in parallel).'),
+      row('failed', 'bridge.mqtt', 'deliver', 'publish spectio/prj_imaging/gate/opened', 'plate-qc-07 #122 · imaging-core · broker mqtt.imaging.example.org', 'system', 'event bridge', '5 / 5', '10.0 s', '18 min ago', 'Broker unreachable (connection refused). Final after 5 attempts; the event is kept in the outbox and can be replayed.'),
+      row('failed', 'check.evaluate', 'check', 'gate=cell_qc script=cell_qc.py', 'scrna-pbmc #444 · single-cell', 'system', 'on run event', '3 / 3', '2.4 s', '42 min ago', 'script: exited with code 1, KeyError: pct_counts_mt. The gate shows the check as "could not evaluate".'),
+      row('queued', 'rocrate.export', 'export', 'Workflow Run Crate → LabID', 'liver-tc-03 #302 · rnaseq-core', 'Kai Berg', 'user', '0 / 3', '—', 'queued 12 s', 'Waits for a free export slot (max 2 in parallel).'),
       row('succeeded', 'backup.create', 'maint', 'full → s3://spectio-backups (SeaweedFS)', 'instance · 1.9 GB · checksum verified', 'system', 'schedule', '1 / 1', '2m 14s', 'today 02:00', 'Schedule backup.create, daily 02:00 UTC, smart retention.'),
-      row('succeeded', 'workdir.cleanup', 'maint', 'env=EMBL SLURM · htc policy=keep-14d', 'freed 1.2 TB in 38 work directories', 'system', 'schedule', '1 / 1', '41 s', '34 min ago', 'Removed work directories of runs finished more than 14 days ago, kept pinned runs.'),
-      row('succeeded', 'catalogue.import', 'maint', 'nf-core catalogue 2026-10 (106 pipelines)', 'instance · 4 new versions', 'Thomas Weber', 'admin', '1 / 1', '1m 52s', '3 h ago', 'Imported nextflow_schema.json and spectio.yml presets.'),
+      row('succeeded', 'workdir.cleanup', 'maint', 'env=demo-hpc SLURM · htc policy=keep-14d', 'freed 1.2 TB in 38 work directories', 'system', 'schedule', '1 / 1', '41 s', '34 min ago', 'Removed work directories of runs finished more than 14 days ago, kept pinned runs.'),
+      row('succeeded', 'catalogue.import', 'maint', 'nf-core catalogue 2026-10 (106 pipelines)', 'instance · 4 new versions', 'Alice Martin', 'admin', '1 / 1', '1m 52s', '3 h ago', 'Imported nextflow_schema.json and spectio.yml presets.'),
       row('cancelled', 'rocrate.export', 'export', 'Provenance Run Crate → Zenodo', 'soil-meta-11 #270 · microbiome-lab', 'Nora Olsen', 'user', '1 / 3', '9.2 s', 'yesterday', 'Cancelled by Nora Olsen.')
     ],
     sched: [

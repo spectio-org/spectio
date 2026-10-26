@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — launch a Git pipeline without a schema</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C4C7D4;padding:8px 10px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',monospace}
+.tile{width:32px;height:32px;border-radius:10px;background:#F6F2FE;color:#6344B2;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn{height:40px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.kv{width:100%;border-collapse:collapse;font-size:12.5px}
+.kv th{text-align:left;font-size:11.5px;font-weight:600;color:#33364A;background:#F7F7FB;padding:7px 10px}
+.kv td{padding:5px 10px;border-top:1px solid #EEEFF5;vertical-align:middle}
+.kv input{padding:5px 8px;font-size:12px;border-radius:8px}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Launch / demo-lab/chip-pipeline" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="launch" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center;">
+        <img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="30" height="30" alt="Nextflow" style="display: block; object-fit: contain;">
+      </span>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px; display: flex; align-items: center; gap: 10px;">Launch chip-pipeline <span class="chip" style="background: #F1F2F6; color: #33364A; font-family: 'Inter', sans-serif;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.lock}}"/></svg>private Git</span></h1>
+        <span style="font-size: 14px; color: #4D5065;"><span class="mono" style="font-size: 12.5px;">git.example.org/demo-lab/chip-pipeline</span> · no schema, so parameters are read from <span class="mono" style="font-size: 12.5px;">nextflow.config</span></span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-s">Load params file…</button>
+        <a href="LaunchReview.dc.html" class="btn btn-p">Review &amp; launch</a>
+      </div>
+    </div>
+
+    <nav aria-label="Launch steps" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="6">
+        <a href="{{s.href}}" aria-current="{{s.cur}}" style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px 0 6px; border-radius: 10px; background: {{s.bg}}; text-decoration: none; color: {{s.fg}}; font-size: 13px; font-weight: {{s.w}};">
+          <span style="width: 22px; height: 22px; border-radius: 11px; background: {{s.dot}}; color: {{s.dotFg}}; box-shadow: {{s.ring}}; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700;">{{s.mark}}</span>{{s.label}}<span style="font-weight: 400; color: #6E7287; font-size: 12px;">{{s.sub}}</span>
+        </a>
+        <span aria-hidden="true" style="color: #C4C7D4; font-size: 12px;">{{s.sep}}</span>
+      </sc-for>
+    </nav>
+
+    <div role="note" style="display: flex; gap: 12px; align-items: flex-start; border-radius: 14px; padding: 12px 14px; background: #FBF9FF; box-shadow: inset 0 0 0 1px #E6DCFC;">
+      <span class="tile" style="background: #FFFFFF;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.info}}"/></svg></span>
+      <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; font-size: 13px; color: #33364A; line-height: 1.45;">
+        <strong style="color: #0F1020;">No <span class="mono" style="font-size: 12.5px;">nextflow_schema.json</span> at this revision — you can still launch.</strong>
+        <span>Spectio read 11 parameters from <span class="mono" style="font-size: 12px;">nextflow.config</span> and 2 from <span class="mono" style="font-size: 12px;">main.nf</span>, and guessed each type from its default. Add a schema to get a full form with groups, help text, validation and file checks.</span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 6px; align-items: flex-end; flex-shrink: 0;">
+        <span class="chip" style="background: #FFFFFF; color: #4D5065; box-shadow: inset 0 0 0 1px #DFE1EA;">Optional</span>
+        <span style="font-size: 12px; color: #4D5065;">Draft one with <span class="mono" style="font-size: 11.5px; background: #FFFFFF; border-radius: 5px; padding: 2px 5px; box-shadow: inset 0 0 0 1px #EEEFF5;">nf-core pipelines schema build</span></span>
+      </span>
+    </div>
+
+    <section class="card" aria-label="Revision" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+      <span style="display: flex; align-items: center; gap: 10px;">
+        <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.branch}}"/></svg></span>
+        <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Revision</h2><span style="font-size: 12px; color: #4D5065;">Cloned by the runner with the read-only credential <strong style="color: #33364A;">demo-lab deploy key</strong> · <a href="#" style="text-decoration: none; font-weight: 600;">Credentials</a></span></span>
+      </span>
+      <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 14px; align-items: start;">
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <div role="radiogroup" aria-label="Revision kind" style="display: flex; gap: 3px; background: #F7F7FB; border-radius: 10px; padding: 3px;">
+          <sc-for list="{{kinds}}" as="k" hint-placeholder-count="3">
+            <button type="button" role="radio" aria-checked="{{k.on}}" style="height: 30px; padding: 0 12px; border: none; border-radius: 8px; background: {{k.bg}}; box-shadow: {{k.sh}}; font: 600 12.5px 'Inter', sans-serif; color: {{k.fg}}; cursor: pointer;">{{k.label}}</button>
+          </sc-for>
+        </div>
+        <select aria-label="Branch" style="flex: 1 1 200px; width: auto;"><option>main · 4f2a9c1 · 2 days ago</option></select>
+      </div>
+      <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">A branch moves: the run records commit <span class="mono">4f2a9c1</span>, so Resume and Relaunch use exactly this code. Pick a tag or a commit to pin it in the params file too.</span>
+      <span style="display: flex; gap: 8px; align-items: center; font-size: 12px; color: #7A1F1F; background: #FCEBEB; border-radius: 10px; padding: 7px 10px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 6l12 12 M18 6L6 18"/></svg><span><strong>feature/idr</strong> cannot be launched: nextflow.config does not parse at 9e01b7d (line 48).</span></span>
+      </div>
+      <div style="border-radius: 12px; box-shadow: 0 0 0 1px #EEEFF5; overflow: hidden;">
+        <sc-for list="{{refs}}" as="r" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 12px; border-top: 1px solid #F1F2F6; font-size: 12.5px; background: {{r.bg}};">
+            <span class="chip" style="background: {{r.kbg}}; color: {{r.kfg}}; min-width: 46px; justify-content: center;">{{r.kind}}</span>
+            <span class="mono" style="font-size: 12px; font-weight: 600; color: {{r.fg}}; min-width: 92px;">{{r.name}}</span>
+            <span class="mono" style="font-size: 11.5px; color: #6E7287; min-width: 60px;">{{r.sha}}</span>
+            <span style="flex-grow: 1; color: {{r.sub}}; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.msg}}</span>
+            <span title="{{r.why}}" style="font-size: 12px; font-weight: 600; color: {{r.nfg}}; white-space: nowrap;">{{r.note}}</span>
+          </div>
+        </sc-for>
+      </div>
+      </div>
+    </section>
+
+    <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start;">
+      <div style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+
+
+
+        <section class="card" aria-label="Parameters" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sliders}}"/></svg></span>
+            <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Parameters · 13 detected · 4 changed</h2><span style="font-size: 12px; color: #4D5065;">Key / value editor · types guessed from the defaults</span></span>
+            <input type="search" placeholder="Filter keys" aria-label="Filter parameters" style="width: 180px; padding: 6px 10px;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #33364A; white-space: nowrap;"><input type="checkbox" style="width: auto;"> Changed only</label>
+          </div>
+          <div style="border-radius: 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.09); overflow: hidden;">
+            <table class="kv">
+              <thead><tr><th scope="col" style="width: 4px; padding: 0;"></th><th scope="col" style="width: 112px;">key</th><th scope="col" style="width: 100px;">type <span style="font-weight: 400; color: #6E7287;">guessed</span></th><th scope="col">value</th><th scope="col" style="width: 150px;">default · source</th></tr></thead>
+              <tbody>
+                <sc-for list="{{params}}" as="p" hint-placeholder-count="12">
+                  <tr style="background: {{p.bg}};">
+                    <td style="padding: 0; background: {{p.rail}};"></td>
+                    <td class="mono" style="font-size: 12px; font-weight: 600;">{{p.k}}</td>
+                    <td><span class="chip" style="background: {{p.tbg}}; color: {{p.tfg}}; height: 22px; gap: 4px;">{{p.t}}<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></td>
+                    <td>
+                      <span style="display: flex; flex-direction: column; gap: 2px;">
+                        <input class="mono" value="{{p.v}}" aria-label="{{p.k}}" style="color: {{p.vfg}}; background: {{p.vbg}};">
+                        <span style="font-size: 11.5px; color: {{p.hfg}}; font-weight: {{p.hw}};">{{p.h}}</span>
+                      </span>
+                    </td>
+                    <td style="font-size: 11.5px; color: #4D5065;"><span class="mono" style="color: #33364A;">{{p.d}}</span><br><span style="color: #6E7287;">{{p.src}}</span></td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <span style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap; font-size: 12px; color: #4D5065;">
+            <a href="#" style="font-weight: 600; text-decoration: none;">+ Add parameter</a>
+            <span>Names not in the config are passed as <span class="mono">--name value</span> without any check (there is no schema to check them).</span>
+          </span>
+        </section>
+      </div>
+
+      <aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+        <section class="card" aria-label="Profiles" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <span style="display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Profiles</h2><span style="font-size: 12px; color: #4D5065;">From <span class="mono">profiles {}</span> in nextflow.config · pick one or more</span></span>
+          <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+            <sc-for list="{{profiles}}" as="p" hint-placeholder-count="5">
+              <button type="button" aria-pressed="{{p.on}}" title="{{p.why}}" style="height: 30px; padding: 0 10px; border: none; border-radius: 9px; background: {{p.bg}}; box-shadow: {{p.sh}}; color: {{p.fg}}; font: 600 12.5px 'Inter', sans-serif; display: inline-flex; align-items: center; gap: 5px; cursor: pointer; text-decoration: {{p.td}};">{{p.mark}}{{p.name}}</button>
+            </sc-for>
+          </div>
+          <span style="font-size: 12px; color: #4D5065;"><span class="mono" style="color: #22253A;">-profile slurm,singularity</span> · <span style="color: #8F5806;">docker</span> is not available on demo-hpc (no Docker daemon on the nodes).</span>
+        </section>
+
+        <section class="card" aria-label="Stages" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <span style="display: flex; align-items: center; gap: 12px;">
+            <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="No stages: four task quarters, not started">
+              <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#EEEFF5"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#EEEFF5"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#EEEFF5"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#EEEFF5"/>
+            </svg>
+            <span style="display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">No stages</h2><span style="font-size: 12.5px; color: #157A4B; font-weight: 600;">Runs straight through, no gates</span></span>
+          </span>
+          <span style="font-size: 12.5px; color: #33364A; line-height: 1.45;">No <span class="mono" style="font-size: 12px;">spectio.yml</span>, and the workflow is flat (no top-level subworkflows to detect). The gauge shows task quarters. Resume and Start fresh work; Rerun from a stage does not.</span>
+          <a href="Manifest.dc.html" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Declare stages in spectio.yml (optional) →</a>
+        </section>
+
+        <sc-for list="{{side}}" as="s" hint-placeholder-count="3">
+          <div class="card" style="border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 12px;">
+            <span class="tile" style="background: #F7F7FB; color: #4D5065;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"/></svg></span>
+            <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;"><span style="font-size: 12px; color: #6E7287;">{{s.k}}</span><span style="font-size: 13.5px; font-weight: 600;">{{s.v}}</span></span>
+            <a href="{{s.href}}" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">{{s.act}}</a>
+          </div>
+        </sc-for>
+
+        <section style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;">params.yaml preview</h2>
+          <pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.55; white-space: pre-wrap;">input: /data/demo/chip/2026-10/samplesheet.csv
+outdir: /scratch/demo/chip/2026-10-26
+bwa_index: /data/demo/references/GRCh38/bwa/
+idr_threshold: 0.01</pre>
+          <span style="font-size: 11.5px; color: #A6A9BA;">Only non-default values · <span class="mono">-r 4f2a9c1 -profile slurm,singularity</span></span>
+        </section>
+        <a href="LaunchReview.dc.html" class="btn btn-p" style="height: 46px; justify-content: center;">Review &amp; launch</a>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    lock: 'M6 11h12v10H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3',
+    info: 'M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M12 11v5 M12 8h.01',
+    branch: 'M6 3v12 M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 9a9 9 0 0 1-9 9',
+    sliders: 'M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M20 18h0 M18 16v4',
+    server: 'M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01',
+    box: 'M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5 M12 12v9',
+    flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5'
+  };
+  const stepDefs = [['Workflow', 'chip-pipeline', 'done', 'Workflows.dc.html'], ['Version', 'main · 4f2a9c1', 'done', '#'], ['Parameters', '4 changed', 'cur', '#'], ['Inputs', '', 'todo', '#'], ['Environment', '', 'todo', '#'], ['Review & launch', '', 'todo', 'LaunchReview.dc.html']];
+  const steps = stepDefs.map(([label, sub, st, href], i) => ({
+    label, sub, href, cur: st === 'cur' ? 'step' : 'false', sep: i < stepDefs.length - 1 ? '›' : '',
+    bg: st === 'cur' ? '#F6F2FE' : 'transparent', fg: st === 'todo' ? '#6E7287' : '#22253A', w: st === 'cur' ? 600 : 500,
+    dot: st === 'done' ? '#7750D4' : (st === 'cur' ? '#FFFFFF' : '#F1F2F6'), dotFg: st === 'done' ? '#FFFFFF' : (st === 'cur' ? '#6344B2' : '#6E7287'),
+    ring: st === 'cur' ? 'inset 0 0 0 2px #7750D4' : 'none', mark: st === 'done' ? '✓' : String(i + 1)
+  }));
+  const seg = (label, on) => ({ label, on: on ? 'true' : 'false', bg: on ? '#FFFFFF' : 'transparent', sh: on ? '0 1px 2px rgba(15,16,32,0.12)' : 'none', fg: on ? '#0F1020' : '#4D5065' });
+  const ref = (kind, name, sha, msg, note, o) => Object.assign({ kind, name, sha, msg, note, bg: '#FFFFFF', kbg: kind === 'tag' ? '#EEF6FA' : '#F6F2FE', kfg: kind === 'tag' ? '#1F536D' : '#4D368B', fg: '#0F1020', sub: '#33364A', nfg: '#6E7287' }, o || {});
+  const T = { path: ['#EEF6FA', '#1F536D'], string: ['#F1F2F6', '#33364A'], integer: ['#F6F2FE', '#4D368B'], number: ['#F6F2FE', '#4D368B'], boolean: ['#E8F6EF', '#157A4B'], expression: ['#FDF3E2', '#8F5806'] };
+  const P = (k, t, v, d, src, h, o) => Object.assign({ k, t, v, d, src, h: h || '', tbg: T[t][0], tfg: T[t][1], bg: '#FFFFFF', rail: 'transparent', vfg: '#0F1020', vbg: '#FFFFFF', hfg: '#6E7287', hw: 400 }, o || {});
+  const chg = { rail: '#D9890B', hfg: '#8F5806', hw: 600 };
+  return {
+    ic, steps,
+    kinds: [seg('Branch', true), seg('Tag', false), seg('Commit', false)],
+    refs: [
+      ref('branch', 'main', '4f2a9c1', 'Merge pull request #42 from bkeller/macs3 · Bruno Keller', 'selected', { bg: '#FBF9FF', nfg: '#4D368B' }),
+      ref('tag', 'v0.4.0', 'b71d03e', 'Release 0.4.0 · MACS3 peak calling · Chloé Diallo · 3 weeks ago', 'latest tag'),
+      ref('tag', 'v0.3.1', '2c9e6f4', 'Fix blacklist path for GRCh38 · Dmitri Novak · 2 months ago', ''),
+      ref('branch', 'feature/idr', '9e01b7d', 'WIP IDR on replicates · Alice Martin · 5 h ago', 'config error · line 48', { fg: '#6E7287', sub: '#6E7287', nfg: '#B02A2A', bg: '#FAFAFC', why: 'nextflow.config does not parse at 9e01b7d (line 48): this branch cannot be launched' })
+    ],
+    params: [
+      P('input', 'path', '/data/demo/chip/2026-10/samplesheet.csv', 'null', 'nextflow.config:3', 'changed · null in the config, so probably required', chg),
+      P('outdir', 'path', '/scratch/demo/chip/2026-10-26', "'results'", 'nextflow.config:4', 'changed', chg),
+      P('genome', 'string', 'GRCh38', "'GRCh38'", 'nextflow.config:5'),
+      P('bwa_index', 'path', '/data/demo/references/GRCh38/bwa/', 'null', 'nextflow.config:6', 'changed', chg),
+      P('blacklist', 'expression', '"${projectDir}/assets/GRCh38-blacklist.v2.bed"', '${projectDir}/…', 'nextflow.config:7', 'Groovy string, evaluated at run time · type a path to override', { vfg: '#6E7287', vbg: '#FAFAFC' }),
+      P('macs_gsize', 'number', '2.7e9', '2.7e9', 'nextflow.config:8', 'Guessed number · MACS also takes hs or mm: switch to string', { hfg: '#8F5806', bg: '#FFFCF5' }),
+      P('narrow_peak', 'boolean', 'true', 'true', 'nextflow.config:9'),
+      P('min_reads', 'integer', '1000000', '1000000', 'nextflow.config:10'),
+      P('fragment_size', 'integer', '200', '200', 'nextflow.config:11'),
+      P('keep_dups', 'boolean', 'false', 'false', 'nextflow.config:12'),
+      P('max_memory', 'string', '128.GB', "'128.GB'", 'nextflow.config:14', 'Looks like a memory unit · kept as text'),
+      P('save_bam', 'boolean', 'false', 'false', 'main.nf:11 · params.save_bam'),
+      P('idr_threshold', 'number', '0.01', '0.05', 'main.nf:12 · params.idr_threshold', 'changed', chg)
+    ],
+    profiles: [
+      { name: 'standard', on: 'false', bg: '#FFFFFF', sh: 'inset 0 0 0 1px #DFE1EA', fg: '#33364A', mark: '', td: 'none', why: '' },
+      { name: 'slurm', on: 'true', bg: '#F6F2FE', sh: 'inset 0 0 0 1.5px #7750D4', fg: '#4D368B', mark: '✓ ', td: 'none', why: '' },
+      { name: 'singularity', on: 'true', bg: '#F6F2FE', sh: 'inset 0 0 0 1.5px #7750D4', fg: '#4D368B', mark: '✓ ', td: 'none', why: '' },
+      { name: 'docker', on: 'false', bg: '#F7F7FB', sh: 'none', fg: '#9A9EB0', mark: '', td: 'line-through', why: 'Not available on demo-hpc' },
+      { name: 'test', on: 'false', bg: '#FFFFFF', sh: 'inset 0 0 0 1px #DFE1EA', fg: '#33364A', mark: '', td: 'none', why: '' }
+    ],
+    side: [
+      { k: 'Environment', v: 'demo-hpc SLURM · htc', icon: ic.server, act: 'Change', href: 'EnvCapacity.dc.html' },
+      { k: 'Software', v: 'Apptainer · 6 images, 2 to pull', icon: ic.box, act: 'Change', href: '#' },
+      { k: 'Gates', v: 'None · no stages to stop after', icon: ic.flag, act: '', href: '#' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, DIA MS runs without MultiQC</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rp:has(input[value="sum"]:checked) .pn-sum,
+.rp:has(input[value="items"]:checked) .pn-items,
+.rp:has(input[value="sheet"]:checked) .pn-sheet,
+.rp:has(input[value="params"]:checked) .pn-params,
+.rp:has(input[value="files"]:checked) .pn-files,
+.rp:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.mono{font-family:'JetBrains Mono',monospace}
+.it td,.it th{padding:5px 8px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/diaproteomics · hela-dia-2610" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rp" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">7 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <a href="ReviewTrio.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewSignal.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stage 1 done, gate after stage 2 open"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">MS run QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· hela-dia-2610 · #355</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block;">nf-core/diaproteomics 1.2.4 · DIA · 24 MS runs · paused after stage 2 of 4 (OpenSWATH + PyProphet) · <strong style="color: #8F5806;">waiting 41 min</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span title="You" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="proteomics: Bruno Keller, Chloé Diallo" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">+2</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · suggests</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvms" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">4 to check</span></label>
+      <label class="rv-tab"><input type="radio" name="rvms" value="items" checked aria-label="Items"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Items · MS runs<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">2 changed</span></label>
+      <label class="rv-tab"><input type="radio" name="rvms" value="sheet" aria-label="Samplesheet"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Samplesheet<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">sample sheet · 1 row</span></label>
+      <label class="rv-tab"><input type="radio" name="rvms" value="params" aria-label="Parameters"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg>Parameters<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">1 global</span></label>
+      <label class="rv-tab"><input type="radio" name="rvms" value="files" aria-label="Files"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Files<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">none</span></label>
+      <label class="rv-tab"><input type="radio" name="rvms" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">4</span></label>
+    </div>
+
+    <section class="rv-pn pn-items" style="flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; font-size: 12.5px; color: #33364A;">
+        <span style="display: inline-flex; align-items: center; gap: 6px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #F1F2F6; color: #33364A;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M5.6 5.6l12.8 12.8"/></svg>No MultiQC general stats</span>
+        <span>so every check reads a <strong>table binding</strong> from the lab overlay <code class="mono">demo-lab/diaproteomics-qc</code> · items = <code class="mono">sample_sheet.tsv</code> rows</span>
+        <span style="flex-grow: 1;"></span>
+        <a href="Workflows.dc.html" style="font-weight: 600; text-decoration: none;">Open spectio.yml</a>
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+          <div style="border-radius: 14px; box-shadow: inset 0 3px 0 {{c.rail}}, 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 12px; display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+            <span style="display: flex; align-items: center; gap: 7px; font-size: 13px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg><strong style="flex-grow: 1; font-weight: 600;">{{c.name}}</strong><span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span></span>
+            <span style="font-size: 11.5px; color: #4D5065;"><code class="mono" style="font-size: 11px; color: #33364A;">{{c.kind}}</code> {{c.rule}} · {{c.sev}} · {{c.where}}</span>
+            <code class="mono" title="{{c.from}}" style="font-size: 10px; color: #4D368B; background: #F6F2FE; border-radius: 6px; padding: 3px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.from}}</code>
+          </div>
+        </sc-for>
+      </div>
+      <span style="font-size: 11.5px; color: #6E7287; margin-top: -4px;">File and column names are illustrative [to be validated]</span>
+
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+        <span style="font-size: 13px; color: #4D5065;">Item table · worst first · grouped by batch (outliers are judged per batch) · RT shift from the iRT / DIAlignR alignment</span>
+        <span style="display: flex; gap: 8px;">
+          <button type="button" style="height: 30px; padding: 0 10px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #F6F2FE; font: 600 12.5px 'Inter', sans-serif; color: #4D368B;">Flagged first</button>
+          <button type="button" style="height: 30px; padding: 0 10px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #22253A;">Exclude all failing</button>
+        </span>
+      </div>
+
+      <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+        <table class="it" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+          <thead><tr style="background: #F7F7FB; color: #33364A; font-size: 11.5px;">
+            <th scope="col" style="padding-left: 16px;">MS run</th>
+            <th scope="col">MS2 spectra</th>
+            <th scope="col">Precursors <span style="font-weight: 400; color: #6E7287;">q ≤ 0.01</span></th>
+            <th scope="col">Proteins</th>
+            <th scope="col">q-value FDR</th>
+            <th scope="col">RT alignment <span style="font-weight: 400; color: #6E7287;">band = median ± 3·MAD</span></th>
+            <th scope="col">TIC</th>
+            <th scope="col">Decision</th>
+          </tr></thead>
+          <sc-for list="{{lanes}}" as="g" hint-placeholder-count="2">
+            <tbody>
+              <tr style="background: #FBFBFD;"><td colspan="8" style="padding: 6px 12px 6px 16px; font-size: 12px; font-weight: 600; color: #33364A;">{{g.title}} <span style="font-weight: 400; color: #6E7287;">· {{g.meta}}</span></td></tr>
+              <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="6">
+                <tr style="box-shadow: inset 4px 0 0 {{r.rail}}; background: {{r.rowbg}};">
+                  <td style="padding-left: 16px;"><span class="mono" style="font-size: 11.5px; font-weight: 600; text-decoration: {{r.deco}}; color: {{r.namefg}};">{{r.run}}</span> <span style="font-size: 11px; color: #6E7287;">{{r.note}}</span></td>
+                  <td style="color: {{r.ms2Fg}}; background: {{r.ms2Bg}}; font-weight: 600;">{{r.ms2}}</td>
+                  <td style="color: {{r.idFg}}; background: {{r.idBg}}; font-weight: 600;">{{r.id}}</td>
+                  <td style="color: #33364A;">{{r.pep}}</td>
+                  <td style="color: {{r.fdrFg}}; font-weight: 600;">{{r.fdr}}</td>
+                  <td style="background: {{r.rtBg}};"><span style="display: flex; align-items: center; gap: 8px;"><span role="img" aria-label="{{r.rtLabel}}" style="position: relative; width: 92px; height: 12px; border-radius: 6px; background: #EEEFF5;"><span style="position: absolute; left: {{r.bandL}}; width: {{r.bandW}}; top: 0; bottom: 0; background: #BFE5D0; border-radius: 6px;"></span><span style="position: absolute; left: {{r.medL}}; top: 1px; bottom: 1px; width: 1px; background: #157A4B;"></span><span style="position: absolute; left: {{r.dotL}}; top: 2px; width: 8px; height: 8px; margin-left: -4px; border-radius: 4px; background: {{r.dotC}}; box-shadow: 0 0 0 1.5px #FFFFFF; display: {{r.dotD}};"></span></span><span style="font-weight: 600; color: {{r.rtFg}}; min-width: 52px;">{{r.rt}}</span></span></td>
+                  <td><span role="img" aria-label="{{r.ticLabel}}" style="display: flex; align-items: flex-end; gap: 1px; width: 96px; height: 18px; border-bottom: 1px solid #DFE1EA;"><sc-for list="{{r.tic}}" as="b" hint-placeholder-count="22"><span style="flex: 1 1 0; height: {{b}}; background: {{r.ticC}}; border-radius: 1px 1px 0 0;"></span></sc-for></span></td>
+                  <td><span role="radiogroup" aria-label="Decision for {{r.run}}" style="display: inline-flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px;"><sc-for list="{{r.opts}}" as="o" hint-placeholder-count="3"><span style="padding: 3px 9px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for></span></td>
+                </tr>
+                <sc-if value="{{r.hasWarn}}" hint-placeholder-val="{{false}}">
+                  <tr><td colspan="8" style="padding: 8px 12px 9px 16px; background: #FFFBF3; box-shadow: inset 4px 0 0 #D9890B; white-space: normal;">
+                    <span style="display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; line-height: 1.45; color: #6B4205;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                      <span style="display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+                        <span><strong>Per-item parameter not available → this would rerun all runs.</strong> Redo B2_R03 with <code class="mono">rt_extraction_window</code> <span style="text-decoration: line-through;">600</span> → <strong>900</strong> s: the parameter is global in diaproteomics and not listed under <code class="mono">per_item</code> in spectio.yml, so OpenSWATH extraction and PyProphet rerun for all 24 runs (≈ 7 h 10 on demo-hpc).</span>
+                        <span role="radiogroup" aria-label="How to redo B2_R03" style="display: flex; gap: 6px; flex-wrap: wrap;">
+                          <span style="font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 9px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #E8C98F; color: #6B4205;">Apply to all 24 runs</span>
+                          <span style="font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 9px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #E8C98F; color: #6B4205;">Child run for B2_R03 only · outputs kept separate</span>
+                          <span style="font-size: 12px; font-weight: 600; padding: 5px 10px; border-radius: 9px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #E8C98F; color: #6B4205;">Redo with the same parameters</span>
+                          <span style="font-size: 12px; color: #8F5806; align-self: center;">not chosen yet</span>
+                        </span>
+                      </span>
+                    </span>
+                  </td></tr>
+                </sc-if>
+              </sc-for>
+              <sc-if value="{{g.hasMore}}" hint-placeholder-val="{{false}}">
+                <tr><td colspan="8" style="padding: 7px 12px 7px 16px; font-size: 12px; color: #4D5065;"><a href="#" style="font-weight: 600; text-decoration: none;">{{g.more}}</a></td></tr>
+              </sc-if>
+            </tbody>
+          </sc-for>
+        </table>
+      </div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <div style="flex: 1 1 380px; min-width: 0; border-radius: 14px; background: #F7F7FB; padding: 10px 13px; font-size: 12.5px; line-height: 1.5; color: #33364A;"><strong>After Apply:</strong> excluded runs leave the sample sheet (v2) and stay in the run record with their reason. Nextflow continues with <code class="mono">-resume</code>: OpenSWATH and PyProphet results come from cache; DIAlignR and MSstats rerun on 23 runs.</div>
+        <div style="flex: 1 1 380px; min-width: 0; border-radius: 14px; box-shadow: 0 0 0 1px #E6DCFC; background: #FBF9FF; padding: 10px 13px; font-size: 12.5px; line-height: 1.5; color: #33364A; display: flex; gap: 9px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: #7750D4; color: #FFFFFF; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span><span><strong>QC agent</strong> suggested excluding B2_R07 (TIC dropouts, 3,118 precursors: spray failure) and keeping B2_R11 (DIAlignR absorbs a 4.6 min shift). You accepted the exclusion at 10:12.</span></div>
+      </div>
+    </section>
+
+    <section class="rv-pn pn-sum" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">Gate checks, run health and the spectio.yml bindings; see Items for the MS runs.</span></section>
+    <section class="rv-pn pn-sheet" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">sample_sheet.tsv v2 draft: HeLa_DIA_B2_R07.mzML removed.</span></section>
+    <section class="rv-pn pn-params" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">rt_extraction_window is global: a change applies to all 24 runs.</span></section>
+    <section class="rv-pn pn-files" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">No editable files declared for this gate.</span></section>
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">4 events.</span></section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 300px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{changes}}" as="c" hint-placeholder-count="3"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}};">{{c.t}}</span></sc-for></span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 230px;">
+        <span style="font-size: 11.5px; color: #4D5065;">Stages 3–4 · 23 runs</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #5A4FCF;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #8B5CF6;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #F4A5BC;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #FCCF98;"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 3px;">
+        <button type="button" disabled aria-describedby="apply-why" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #E6E7EF; color: #6E7287; font: 600 13.5px 'Inter', sans-serif; cursor: not-allowed;">Apply and continue</button>
+        <span id="apply-why" style="font-size: 11.5px; color: #8F5806;">Choose how to redo B2_R03 first</span>
+      </span>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', cross: 'M6 6l12 12 M18 6L6 18', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z' };
+  const FAIL = ['#B02A2A', '#FCEBEB'], WARN = ['#8F5806', '#FDF3E2'], OK = ['#22253A', 'transparent'];
+  const opt = (on) => ['Keep', 'Exclude', 'Redo'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? '#B02A2A' : t === 'Redo' ? '#8F5806' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  // RT drift scale: -2 .. +6 min over the 92 px track
+  const pos = (v) => Math.max(0, Math.min(100, (v + 2) / 8 * 100)) + '%';
+  // TIC: chromatographic envelope over 22 bins
+  const seedRand = (s) => () => { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+  const tic = (seed, amp, shift, drop) => { const r = seedRand(seed); return Array.from({ length: 22 }, (_, i) => { const x = (i - 2 - shift) / 17; let e = x < 0 ? 0.08 : x > 1 ? 0.05 : Math.sin(Math.PI * Math.pow(x, 0.8)) * 0.9 + 0.1; if (drop && (i % 5 === 2 || i % 7 === 4)) e *= 0.1; return Math.max(4, Math.round(e * amp * (0.82 + 0.18 * r()) * 100)) + '%'; }); };
+  const row = (run, note, ms2, m2c, id, idc, pep, fdr, fdc, rt, rtFlag, seed, amp, shift, drop, dec, warn) => {
+    const fail = idc === FAIL || fdc === FAIL; const w = m2c === WARN || rtFlag;
+    return {
+      run, note, ms2, id, pep, fdr,
+      ms2Fg: m2c[0], ms2Bg: m2c[1], idFg: idc[0], idBg: idc[1], fdrFg: fdc[0],
+      rt: rt === null ? 'n/a' : (rt > 0 ? '+' : '') + rt.toFixed(1) + ' min', rtFg: rt === null ? '#6E7287' : rtFlag ? '#8F5806' : '#22253A', rtBg: rtFlag ? '#FDF3E2' : 'transparent',
+      rtLabel: rt === null ? 'RT drift not computed: too few identifications' : `RT drift ${rt} min, batch band -0.9 to +1.5 min${rtFlag ? ', outlier' : ''}`,
+      bandL: pos(-0.9), bandW: (2.4 / 8 * 100) + '%', medL: pos(0.3), dotL: pos(rt === null ? 0 : rt), dotC: rtFlag ? '#D9890B' : '#4D5065', dotD: rt === null ? 'none' : 'block',
+      tic: tic(seed, amp, shift, drop), ticC: drop ? '#DC3B3B' : shift ? '#D9890B' : '#7E8BB8',
+      ticLabel: drop ? 'TIC low with dropouts (spray failure)' : shift ? 'TIC shifted later in the gradient' : 'TIC normal gradient profile',
+      opts: opt(dec), hasWarn: !!warn,
+      rail: dec === 'Exclude' ? '#9A9EB0' : fail ? '#DC3B3B' : w ? '#D9890B' : 'transparent',
+      rowbg: dec === 'Exclude' ? '#FAFAFC' : 'transparent', deco: dec === 'Exclude' ? 'line-through' : 'none', namefg: dec === 'Exclude' ? '#6E7287' : '#0F1020'
+    };
+  };
+  const b2 = [
+    row('HeLa_DIA_B2_R07.mzML', 'spray failure', '41,260', WARN, '3,118', FAIL, '702', '1.0 %', OK, null, false, 7, 0.32, 0, true, 'Exclude', false),
+    row('HeLa_DIA_B2_R03.mzML', 'few precursors', '182,410', OK, '17,904', FAIL, '3,216', '1.0 %', OK, 0.2, false, 3, 0.8, 0, false, 'Redo', true),
+    row('HeLa_DIA_B2_R11.mzML', 'late elution', '181,955', OK, '38,420', OK, '5,612', '0.9 %', OK, 4.6, true, 11, 0.9, 2, false, 'Keep', false),
+    row('HeLa_DIA_B2_R05.mzML', '', '183,020', OK, '41,207', OK, '5,840', '0.9 %', OK, 1.1, false, 5, 0.95, 0, false, 'Keep', false),
+    row('HeLa_DIA_B2_R01.mzML', '', '182,876', OK, '42,315', OK, '5,902', '0.8 %', OK, 0.4, false, 1, 1.0, 0, false, 'Keep', false),
+    row('HeLa_DIA_B2_R09.mzML', '', '182,640', OK, '40,988', OK, '5,815', '0.9 %', OK, -0.3, false, 9, 0.92, 0, false, 'Keep', false)
+  ];
+  const b1 = [
+    row('HeLa_DIA_B1_R05.mzML', 'aborted at 96 min', '118,300', WARN, '30,512', OK, '5,104', '0.9 %', OK, 0.1, false, 15, 0.85, 0, false, 'Keep', false),
+    row('HeLa_DIA_B1_R12.mzML', '', '183,104', OK, '42,880', OK, '5,931', '0.8 %', OK, 0.6, false, 12, 1.0, 0, false, 'Keep', false),
+    row('HeLa_DIA_B1_R02.mzML', '', '182,990', OK, '42,104', OK, '5,889', '0.8 %', OK, -0.5, false, 2, 0.97, 0, false, 'Keep', false)
+  ];
+  return {
+    checks: [
+      { name: 'Precursors', value: '22 / 24', col: '#B02A2A', rail: '#DC3B3B', icon: I.cross, kind: 'min', rule: '≥ 20,000', sev: 'block', where: 'B2_R07, B2_R03', from: 'table:*_run_summary.tsv#run:precursors' },
+      { name: 'q-value FDR', value: '24 / 24', col: '#157A4B', rail: '#1F9D63', icon: I.check, kind: 'max', rule: '≤ 1 %', sev: 'block', where: 'all pass', from: 'table:*_run_summary.tsv#run:qvalue_fdr' },
+      { name: 'MS2 spectra', value: '22 / 24', col: '#8F5806', rail: '#D9890B', icon: I.warn, kind: 'min', rule: '≥ 150,000', sev: 'warn', where: 'B2_R07, B1_R05', from: 'table:ms_run_stats.tsv#run:ms2_spectra' },
+      { name: 'RT alignment', value: '22 / 23', col: '#8F5806', rail: '#D9890B', icon: I.warn, kind: 'outlier', rule: '3·MAD per batch', sev: 'warn', where: 'B2_R11', from: 'table:ms_run_stats.tsv#run:rt_shift' }
+    ],
+    lanes: [
+      { title: 'Batch B2', meta: '12 runs · Orbitrap Exploris 480 · 2026-10-21 · RT median +0.3 min, MAD 0.4', rows: b2, hasMore: true, more: '6 more runs in B2 pass every check · show' },
+      { title: 'Batch B1', meta: '12 runs · 2026-10-19 · RT median +0.1 min, MAD 0.3', rows: b1, hasMore: true, more: '9 more runs in B1 pass every check · show' }
+    ],
+    changes: [
+      { t: 'B2_R07 excluded', bg: '#F1F2F6', fg: '#33364A' },
+      { t: 'B2_R03 redo · not chosen', bg: '#FDF3E2', fg: '#8F5806' },
+      { t: 'sample sheet v2', bg: '#F6F2FE', fg: '#4D368B' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

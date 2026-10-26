@@ -1,0 +1,252 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — build the samplesheet from files</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C4C7D4;padding:8px 10px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',monospace}
+.tile{width:32px;height:32px;border-radius:10px;background:#F6F2FE;color:#6344B2;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn{height:40px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.btn-xs{height:28px;padding:0 9px;border-radius:8px;font-size:12px}
+.grid{width:100%;border-collapse:collapse;font-size:12.5px}
+.grid th{text-align:left;font-size:11.5px;font-weight:600;color:#33364A;background:#FBF9FF;padding:7px 10px}
+.grid td{padding:6px 10px;border-top:1px solid #EEEFF5;vertical-align:middle}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Launch / nf-core/rnaseq / Samplesheet" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="launch" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center;">
+        <img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="30" height="30" alt="nf-core" style="display: block; object-fit: contain;">
+      </span>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Build the samplesheet <span style="font-weight: 500; color: #6E7287; font-size: 20px;">nf-core/rnaseq 3.27.0</span></h1>
+        <span style="font-size: 14px; color: #4D5065;">Pick FASTQ files on the Inputs storage · reads paired and named for you · for the <span class="mono" style="font-size: 12.5px;">input</span> parameter</span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-s">Load existing CSV…</button>
+        <a href="Launch.dc.html" class="btn btn-p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Use 47 rows</a>
+      </div>
+    </div>
+
+    <nav aria-label="Launch steps" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="6">
+        <a href="{{s.href}}" aria-current="{{s.cur}}" style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px 0 6px; border-radius: 10px; background: {{s.bg}}; text-decoration: none; color: {{s.fg}}; font-size: 13px; font-weight: {{s.w}};">
+          <span style="width: 22px; height: 22px; border-radius: 11px; background: {{s.dot}}; color: {{s.dotFg}}; box-shadow: {{s.ring}}; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700;">{{s.mark}}</span>{{s.label}}<span style="font-weight: 400; color: #6E7287; font-size: 12px;">{{s.sub}}</span>
+        </a>
+        <span aria-hidden="true" style="color: #C4C7D4; font-size: 12px;">{{s.sep}}</span>
+      </sc-for>
+    </nav>
+
+    <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: stretch;">
+      <section class="card" aria-label="File browser" style="flex: 3 1 560px; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="display: flex; align-items: center; gap: 10px;">
+          <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.folder}}"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Inputs storage · demo-hpc</h2><span style="font-size: 12px; color: #4D5065;">Read only · listed by the runner on hpc-login-1 as amartin · 10:42</span></span>
+          <button type="button" class="btn btn-s btn-xs"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"/></svg>Refresh</button>
+        </span>
+        <div style="display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 10px;">
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #33364A;">Folder
+            <input class="mono" value="/data/demo/fastq/2026-10-liver/" style="font-size: 12px;">
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #33364A;">Glob pattern
+            <input class="mono" value="**/*_R{1,2}_001.fastq.gz" style="font-size: 12px;">
+          </label>
+        </div>
+        <span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; font-size: 12px; color: #4D5065;">
+          <span class="chip" style="background: #F6F2FE; color: #4D368B;">97 match</span>
+          <span class="chip" style="background: #F7F7FB; color: #33364A; box-shadow: inset 0 0 0 1px #EEEFF5;">Exclude <span class="mono" style="font-weight: 400;">Undetermined_*</span> · 2 files</span>
+          <span>→ 95 files · 212 GB · in 2 sequencing runs</span>
+          <a href="#" style="margin-left: auto; font-weight: 600; text-decoration: none;">+ Add exclude</a>
+        </span>
+        <div role="tree" aria-label="Files" style="border-radius: 12px; box-shadow: 0 0 0 1px #EEEFF5; overflow: hidden; font-size: 12.5px;">
+          <sc-for list="{{tree}}" as="t" hint-placeholder-count="10">
+            <div role="treeitem" style="display: flex; align-items: center; gap: 8px; padding: 5px 10px 5px {{t.pad}}; border-top: 1px solid #F1F2F6; background: {{t.bg}}; color: {{t.fg}};">
+              <span style="width: 14px; text-align: center; color: #6E7287; font-size: 11px;">{{t.chev}}</span>
+              <span role="checkbox" aria-checked="{{t.chk}}" aria-label="Select {{t.name}}" style="width: 14px; height: 14px; border-radius: 4px; flex-shrink: 0; box-sizing: border-box; background: {{t.cbBg}}; box-shadow: {{t.cbRing}}; color: #FFFFFF; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{t.cbMark}}</span>
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{t.icc}}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="{{t.icon}}"/></svg>
+              <span class="{{t.cls}}" style="flex-grow: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-size: {{t.fs}};">{{t.name}}</span>
+              <span style="font-size: 11.5px; color: {{t.nfg}}; font-weight: {{t.nw}}; white-space: nowrap;">{{t.note}}</span>
+              <span style="width: 62px; text-align: right; font-size: 11.5px; color: #6E7287; white-space: nowrap;">{{t.size}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </section>
+
+      <section class="card" aria-label="Pairing and sample names" style="flex: 2 1 400px; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+        <span style="display: flex; align-items: center; gap: 10px;">
+          <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.pair}}"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Pairing and sample names</h2><span style="font-size: 12px; color: #4D5065;">Detected from the file names · change if the guess is wrong</span></span>
+        </span>
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 10px;">
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #33364A;">Pair reads by
+            <select><option>_R1 / _R2 token (detected)</option><option>_1 / _2 suffix</option><option>Single-end, no pairing</option></select>
+          </label>
+          <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #33364A;">strandedness for all rows
+            <select><option>auto</option><option>forward</option><option>reverse</option><option>unstranded</option></select>
+          </label>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600; color: #33364A;">Sample name from the file name
+          <input class="mono" value="{sample}_S{n}_R{read}_001.fastq.gz" style="font-size: 12px;">
+        </label>
+        <div style="border-radius: 12px; background: #F7F7FB; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px; font-size: 12px;">
+          <span style="color: #4D5065;">Preview on the first file</span>
+          <span class="mono" style="font-size: 12px; color: #0F1020;"><span style="background: #E6DCFC; color: #4D368B; border-radius: 4px; padding: 1px 3px;">LIV_T0_1</span>_S1_R<span style="background: #DCEBFB; color: #1D5FC9; border-radius: 4px; padding: 1px 3px;">1</span>_001.fastq.gz</span>
+          <span style="display: flex; gap: 14px; color: #33364A;"><span><span style="display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: #E6DCFC;"></span> sample → <strong>LIV_T0_1</strong></span><span><span style="display: inline-block; width: 9px; height: 9px; border-radius: 2px; background: #DCEBFB;"></span> read 1 → fastq_1</span></span>
+        </div>
+        <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 12px; font-size: 12.5px;">
+          <sc-for list="{{tally}}" as="t" hint-placeholder-count="4">
+            <div style="display: flex; flex-direction: column;"><dt style="color: #6E7287; font-size: 11.5px;">{{t.k}}</dt><dd style="margin: 0; font-weight: 600; color: {{t.fg}};">{{t.v}}</dd></div>
+          </sc-for>
+        </dl>
+        <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">Rows that share a sample name are runs of one sample: nf-core/rnaseq concatenates their reads. Spectio flags them so you can confirm.</span>
+      </section>
+    </div>
+
+    <section class="card" aria-label="Samplesheet" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.table}}"/></svg></span>
+        <span style="display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">samplesheet.csv · 48 rows</h2><span style="font-size: 12px; color: #4D5065;">Editable · each cell validated against <span class="mono">assets/schema_input.json</span> (nf-schema) · files checked by the runner · 10:43</span></span>
+        <span style="flex-grow: 1;"></span>
+        <div role="tablist" aria-label="Filter rows" style="display: flex; gap: 4px; background: #F7F7FB; border-radius: 10px; padding: 3px;">
+          <sc-for list="{{filters}}" as="f" hint-placeholder-count="3">
+            <button type="button" role="tab" aria-selected="{{f.on}}" style="height: 28px; padding: 0 10px; border: none; border-radius: 8px; background: {{f.bg}}; box-shadow: {{f.sh}}; font: 600 12px 'Inter', sans-serif; color: {{f.fg}}; cursor: pointer;">{{f.label}}</button>
+          </sc-for>
+        </div>
+        <button type="button" class="btn btn-s btn-xs"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"/></svg>Recheck</button>
+      </div>
+      <div style="border-radius: 12px; box-shadow: 0 0 0 1px #E6DCFC; overflow: hidden;">
+        <table class="grid">
+          <thead><tr>
+            <th scope="col" style="width: 4px; padding: 0;"></th><th scope="col" style="width: 26px;">#</th><th scope="col">sample <span style="font-weight: 400; color: #6E7287;">string · no spaces</span></th><th scope="col">fastq_1 <span style="font-weight: 400; color: #6E7287;">file · exists</span></th><th scope="col">fastq_2 <span style="font-weight: 400; color: #6E7287;">file · optional</span></th><th scope="col" style="width: 118px;">strandedness</th><th scope="col" style="width: 120px;">check</th>
+          </tr></thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+              <tr style="background: {{r.bg}};">
+                <td style="padding: 0; background: {{r.rail}};"></td>
+                <td style="color: #6E7287; font-size: 11.5px;">{{r.n}}</td>
+                <td><span style="display: inline-block; font-weight: 600; padding: 3px 6px; margin: -3px -6px; border-radius: 6px; box-shadow: {{r.sRing}}; background: {{r.sBg}};">{{r.s}}</span></td>
+                <td class="mono" style="font-size: 11.5px;">{{r.f1}}</td>
+                <td class="mono" style="font-size: 11.5px;"><span style="display: inline-block; padding: 3px 6px; margin: -3px -6px; border-radius: 6px; box-shadow: {{r.f2Ring}}; background: {{r.f2Bg}}; color: {{r.f2c}};">{{r.f2}}</span></td>
+                <td>{{r.str}}</td>
+                <td style="white-space: nowrap;"><span style="display: inline-flex; align-items: center; gap: 5px; font-weight: 600; color: {{r.fg}};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"/></svg>{{r.ok}}</span></td>
+              </tr>
+              <sc-if value="{{r.hasMsg}}" hint-placeholder-val="{{false}}">
+                <tr style="background: {{r.bg}};">
+                  <td style="padding: 0; background: {{r.rail}}; border-top: none;"></td>
+                  <td style="border-top: none;"></td>
+                  <td colspan="5" style="border-top: none; padding: 0 10px 9px;">
+                    <span style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12px; color: {{r.msgFg}};">
+                      <span style="flex: 1 1 420px;"><strong>{{r.msgT}}</strong> {{r.msg}}</span>
+                      <sc-for list="{{r.acts}}" as="a" hint-placeholder-count="2">
+                        <button type="button" class="btn btn-xs" style="background: {{a.bg}}; color: {{a.fg}}; box-shadow: {{a.sh}};">{{a.label}}</button>
+                      </sc-for>
+                    </span>
+                  </td>
+                </tr>
+              </sc-if>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: #33364A; border-top: 1px solid #EEEFF5; padding-top: 10px;">
+        <span style="flex: 1 1 520px;"><strong>47 rows will be used.</strong> Row 37 is left out (unpaired) unless you pick its R2 · LIV_T4 stays one sample sequenced twice (default, change above) · showing 8 of 48 rows, scroll for the rest.</span>
+        <a href="Launch.dc.html" class="btn btn-s">Cancel</a>
+        <a href="Launch.dc.html" class="btn btn-p">Use 47 rows · back to the form</a>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+    file: 'M6 3h8l4 4v14H6z M14 3v4h4',
+    lock: 'M6 11h12v10H6z M8.5 11V8a3.5 3.5 0 0 1 7 0v3',
+    refresh: 'M20 11a8 8 0 0 0-14.9-3 M4 4v4h4 M4 13a8 8 0 0 0 14.9 3 M20 20v-4h-4',
+    pair: 'M7 4v16 M17 4v16 M7 9h10 M7 15h10',
+    table: 'M3 5h18v14H3z M3 10h18 M3 15h18 M9 5v14'
+  };
+  const okI = 'M5 12l5 5L20 7', warnI = 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', noI = 'M6 6l12 12 M18 6L6 18';
+  const stepDefs = [
+    ['Workflow', 'nf-core/rnaseq', 'done', 'Workflows.dc.html'],
+    ['Version', '3.27.0', 'done', '#'],
+    ['Parameters', '4 changed', 'done', 'Launch.dc.html'],
+    ['Inputs', 'samplesheet', 'cur', '#'],
+    ['Environment', '', 'todo', '#'],
+    ['Review & launch', '', 'todo', 'LaunchReview.dc.html']
+  ];
+  const steps = stepDefs.map(([label, sub, st, href], i) => ({
+    label, sub, href, cur: st === 'cur' ? 'step' : 'false', sep: i < stepDefs.length - 1 ? '›' : '',
+    bg: st === 'cur' ? '#F6F2FE' : 'transparent', fg: st === 'todo' ? '#6E7287' : '#22253A', w: st === 'cur' ? 600 : 500,
+    dot: st === 'done' ? '#7750D4' : (st === 'cur' ? '#FFFFFF' : '#F1F2F6'), dotFg: st === 'done' ? '#FFFFFF' : (st === 'cur' ? '#6344B2' : '#6E7287'),
+    ring: st === 'cur' ? 'inset 0 0 0 2px #7750D4' : 'none', mark: st === 'done' ? '✓' : String(i + 1)
+  }));
+  const T = (pad, chev, name, note, size, o) => { const t = Object.assign({ pad, chev, name, note, size, chk: 'true', dis: null, icon: ic.file, icc: '#6E7287', cls: 'mono', fs: '11.5px', bg: '#FFFFFF', fg: '#0F1020', nfg: '#6E7287', nw: 400 }, o || {}); const on = t.chk === 'true'; t.cbBg = on ? '#7750D4' : (t.dis ? '#F1F2F6' : '#FFFFFF'); t.cbRing = on ? 'none' : 'inset 0 0 0 1.5px #C4C7D4'; t.cbMark = on ? '✓' : ''; if (name.startsWith('…')) t.cbRing = 'none'; t.chk = on ? 'true' : 'false'; return t; };
+  const dir = { icon: ic.folder, icc: '#6344B2', cls: '', fs: '12.5px', nw: 600, nfg: '#4D368B' };
+  const tree = [
+    T('10px', '▾', '2026-10-liver/', '95 of 98 files', '212 GB', Object.assign({}, dir)),
+    T('30px', '▾', 'run_A2210/', '48 files · 24 pairs', '108 GB', Object.assign({}, dir)),
+    T('54px', '', 'LIV_T0_1_S1_R1_001.fastq.gz', 'R1 · LIV_T0_1', '2.3 GB'),
+    T('54px', '', 'LIV_T0_1_S1_R2_001.fastq.gz', 'R2 · LIV_T0_1', '2.3 GB'),
+    T('54px', '', '… 46 more', '', '', { chk: null, cls: '', fs: '12px', fg: '#6E7287', icc: 'transparent' }),
+    T('30px', '▸', 'run_A2231/', '47 files · 23 pairs + 1 unpaired', '104 GB', Object.assign({}, dir)),
+    T('30px', '▸', 'undetermined/', 'excluded · Undetermined_*', '9.8 GB', Object.assign({}, dir, { chk: null, fg: '#6E7287', icc: '#9A9EB0', nfg: '#6E7287', nw: 400, bg: '#FAFAFC' })),
+    T('30px', '▸', 'restricted/', 'no read permission for amartin', '—', Object.assign({}, dir, { chk: null, dis: 'true', icon: ic.lock, icc: '#9A9EB0', fg: '#6E7287', nfg: '#8F5806', nw: 600, bg: '#FAFAFC' })),
+    T('30px', '', 'md5sums.txt', 'not matched by the glob', '6 KB', { chk: null, fg: '#6E7287', bg: '#FAFAFC' })
+  ];
+  const tally = [
+    { k: 'Rows', v: '48', fg: '#0F1020' },
+    { k: 'Paired', v: '47 · R1 + R2', fg: '#157A4B' },
+    { k: 'Unpaired', v: '1 · R1 only', fg: '#B02A2A' },
+    { k: 'Same sample name', v: '1 name · 2 rows', fg: '#8F5806' }
+  ];
+  const fl = (label, on) => ({ label, on: on ? 'true' : 'false', bg: on ? '#FFFFFF' : 'transparent', sh: on ? '0 1px 2px rgba(15,16,32,0.12)' : 'none', fg: on ? '#0F1020' : '#4D5065' });
+  const ok = (n, s, f1, f2, str) => ({ n, s, f1, f2, str: str || 'auto', ok: 'OK', fg: '#157A4B', icon: okI, bg: '#FFFFFF', rail: '#1F9D63', sRing: 'none', sBg: 'transparent', f2Ring: 'none', f2Bg: 'transparent', f2c: '#0F1020', hasMsg: false, acts: [] });
+  const P = (s, run) => [s + '_' + run + '_R1_001.fastq.gz', s + '_' + run + '_R2_001.fastq.gz'];
+  const r = [];
+  r.push(ok('1', 'LIV_T0_1', ...P('LIV_T0_1', 'S1')));
+  r.push(ok('2', 'LIV_T0_2', ...P('LIV_T0_2', 'S2')));
+  r.push(ok('3', 'LIV_T0_3', ...P('LIV_T0_3', 'S3')));
+  r.push(Object.assign(ok('12', 'LIV_T4', ...P('LIV_T4', 'S12')), {
+    ok: 'Same name', fg: '#8F5806', icon: warnI, bg: '#FFFCF5', rail: '#D9890B', sRing: 'inset 0 0 0 1.5px #D9890B', sBg: '#FDF3E2',
+    hasMsg: true, msgFg: '#5C3A05', msgT: 'Duplicate sample name.', msg: 'LIV_T4 also comes from row 31 (run_A2231/LIV_T4_S40…). Same sample sequenced twice → keep, the pipeline concatenates them. Different samples → rename one.',
+    acts: [{ label: 'Keep as one sample', bg: '#FFFFFF', fg: '#22253A', sh: 'inset 0 0 0 1px #DFE1EA' }, { label: 'Rename row 31…', bg: '#FFFFFF', fg: '#22253A', sh: 'inset 0 0 0 1px #DFE1EA' }]
+  }));
+  r.push(Object.assign(ok('31', 'LIV_T4', ...P('LIV_T4', 'S40')), { ok: 'Same name', fg: '#8F5806', icon: warnI, bg: '#FFFCF5', rail: '#D9890B', sRing: 'inset 0 0 0 1.5px #D9890B', sBg: '#FDF3E2' }));
+  r.push(Object.assign(ok('37', 'LIV_T6_2', 'LIV_T6_2_S18_R1_001.fastq.gz', 'empty · no R2 found'), {
+    ok: 'Unpaired', fg: '#B02A2A', icon: noI, bg: '#FFF8F8', rail: '#DC3B3B', f2Ring: 'inset 0 0 0 1.5px #DC3B3B', f2Bg: '#FCEBEB', f2c: '#B02A2A',
+    hasMsg: true, msgFg: '#7A1F1F', msgT: 'No matching R2.', msg: 'run_A2231/ has LIV_T6_2_S18_R1_001.fastq.gz but no _R2_ file. The other 46 samples are paired-end, so a single-end row here is probably a missing file.',
+    acts: [{ label: 'Pick R2…', bg: '#FFFFFF', fg: '#22253A', sh: 'inset 0 0 0 1px #DFE1EA' }, { label: 'Keep as single-end', bg: '#FFFFFF', fg: '#22253A', sh: 'inset 0 0 0 1px #DFE1EA' }, { label: 'Leave out', bg: '#FCEBEB', fg: '#B02A2A', sh: 'none' }]
+  }));
+  r.push(ok('38', 'LIV_T6_3', ...P('LIV_T6_3', 'S19'), 'reverse'));
+  r.push(ok('48', 'LIV_T8_4', ...P('LIV_T8_4', 'S48')));
+  return {
+    ic, steps, tree, tally, rows: r,
+    filters: [fl('All 48', true), fl('With issues 3', false), fl('OK 45', false)]
+  };
+}
+}
+</script>
+</body>
+</html>

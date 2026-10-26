@@ -65,7 +65,7 @@ details[open] .chev{transform:rotate(90deg)}
 
         <div role="status" style="display: flex; align-items: center; gap: 12px; border-radius: 12px; padding: 10px 14px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #EEEFF5; font-size: 13px; color: #33364A;">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F7FA8" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 8v4l3 2"/></svg>
-          <span style="flex-grow: 1;"><strong>Live data restored from</strong> <span class="mono">spectio-backup-embl-20261019T020000Z</span> on 19 Oct 2026, 09:14 by Nora Olsen · migrated from schema 0011 to 0012</span>
+          <span style="flex-grow: 1;"><strong>Live data restored from</strong> <span class="mono">spectio-backup-demo-20261019T020000Z</span> on 19 Oct 2026, 09:14 by Nora Olsen · migrated from schema 0011 to 0012</span>
           <a href="#" style="font-size: 12.5px; font-weight: 600; white-space: nowrap;">Restore report</a>
         </div>
 
@@ -166,13 +166,13 @@ details[open] .chev{transform:rotate(90deg)}
           <pre style="margin: 0; padding: 14px 18px; background: #0F1020; color: #E6E7F0; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; overflow-x: auto;"><span style="color: #8B8FA8;"># create, list and check</span>
 spectio backup create --include db,files,keys --destination seaweedfs
 spectio backup list
-spectio backup validate spectio-backup-embl-20261025T020000Z
+spectio backup validate spectio-backup-demo-20261025T020000Z
 <span style="color: #8B8FA8;"># restore: dry run first, always</span>
-spectio backup restore spectio-backup-embl-20261025T020000Z --dry-run
+spectio backup restore spectio-backup-demo-20261025T020000Z --dry-run
 <span style="color: #8B8FA8;"># schedule and retention (stored as a UI override)</span>
 spectio backup schedule set --daily 02:00 --retention smart
 <span style="color: #8B8FA8;"># move one project to another instance (depictio-compatible)</span>
-spectio migrate project liver-time-course --to-server embl-prod --dry-run</pre>
+spectio migrate project liver-time-course --to-server demo-prod --dry-run</pre>
         </details>
       </div>
     </div>
@@ -204,13 +204,13 @@ renderVals() {
       Object.assign({ label: 'Encrypted secrets', note: 'Otherwise only references (env:, file:, vault:) are kept · needs a passphrase or an age recipient', size: '—' }, off)
     ],
     backups: [
-      b('spectio-backup-embl-20261025T020000Z', 'Full instance', '25 Oct, 02:00', ['fullauto'], '0.4.0', '0015', '1.9 GB', 'SeaweedFS', 'ok', 'system'),
-      b('spectio-backup-embl-20261024T153112Z', 'Pre-upgrade 0.3.2 → 0.4.0', '24 Oct, 15:31', ['fullpre'], '0.3.2', '0012', '1.8 GB', 'SeaweedFS', 'ok', 'system'),
+      b('spectio-backup-demo-20261025T020000Z', 'Full instance', '25 Oct, 02:00', ['fullauto'], '0.4.0', '0015', '1.9 GB', 'SeaweedFS', 'ok', 'system'),
+      b('spectio-backup-demo-20261024T153112Z', 'Pre-upgrade 0.3.2 → 0.4.0', '24 Oct, 15:31', ['fullpre'], '0.3.2', '0012', '1.8 GB', 'SeaweedFS', 'ok', 'system'),
       b('spectio-project-liver-time-course-20261024T101500Z', 'Project · Liver time course', '24 Oct, 10:15', ['projman'], '0.3.2', '0012', '214 MB', 'Local dir', 'ok', 'Anna Smith'),
-      b('spectio-backup-embl-20261024T020000Z', 'Full instance', '24 Oct, 02:00', ['fullauto'], '0.3.2', '0012', '1.8 GB', 'SeaweedFS', 'ok', 'system'),
-      b('spectio-backup-embl-20261023T020000Z', 'Full instance', '23 Oct, 02:00', ['fullauto'], '0.3.2', '0012', '1.8 GB', 'SeaweedFS', 'no', 'system'),
-      b('spectio-backup-embl-20261019T020000Z', 'Full instance · weekly', '19 Oct, 02:00', ['fullauto'], '0.3.1', '0011', '1.7 GB', 'SeaweedFS', 'ok', 'system'),
-      b('spectio-backup-embl-20261001T020000Z', 'Full instance · monthly', '1 Oct, 02:00', ['fullauto'], '0.3.0', '0010', '1.5 GB', 'SFTP · archive.embl', 'bad', 'system')
+      b('spectio-backup-demo-20261024T020000Z', 'Full instance', '24 Oct, 02:00', ['fullauto'], '0.3.2', '0012', '1.8 GB', 'SeaweedFS', 'ok', 'system'),
+      b('spectio-backup-demo-20261023T020000Z', 'Full instance', '23 Oct, 02:00', ['fullauto'], '0.3.2', '0012', '1.8 GB', 'SeaweedFS', 'no', 'system'),
+      b('spectio-backup-demo-20261019T020000Z', 'Full instance · weekly', '19 Oct, 02:00', ['fullauto'], '0.3.1', '0011', '1.7 GB', 'SeaweedFS', 'ok', 'system'),
+      b('spectio-backup-demo-20261001T020000Z', 'Full instance · monthly', '1 Oct, 02:00', ['fullauto'], '0.3.0', '0010', '1.5 GB', 'SFTP · archive.example.org', 'bad', 'system')
     ]
   };
 }

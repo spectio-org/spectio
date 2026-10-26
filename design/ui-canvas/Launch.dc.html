@@ -80,7 +80,7 @@ input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C
                     </tbody>
                   </table>
                 </div>
-                <span style="font-size: 12px; color: #B02A2A;">S4 · fastq_2 not found on /g/lab/fastq. Fix the path or upload, then Recheck (checks run again automatically before launch).</span>
+                <span style="font-size: 12px; color: #B02A2A;">S4 · fastq_2 not found on /data/demo/fastq. Fix the path or upload, then Recheck (checks run again automatically before launch).</span>
               </div>
               <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
                 <sc-for list="{{io}}" as="f" hint-placeholder-count="2">
@@ -136,7 +136,7 @@ input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C
             <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;">params.json preview</h2>
             <pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.55; white-space: pre-wrap;">{
   "input": "samplesheet.csv",
-  "outdir": "/g/lab/rnaseq/2026-10-25",
+  "outdir": "/data/demo/rnaseq/2026-10-25",
   "min_mapped_reads": 10,
   "skip_pseudo_alignment": true
 }</pre>
@@ -215,7 +215,7 @@ renderVals() {
       { s: 'S4', f1: 'S4_R1.fastq.gz', f2: 'S4_R2.fastq.gz', str: 'auto', ok: 'Missing file', fg: '#B02A2A', f2c: '#B02A2A' }
     ],
     io: [
-      { k: 'outdir *', v: '/g/lab/rnaseq/2026-10-25', help: 'directory-path · picker browses the environment storage' },
+      { k: 'outdir *', v: '/data/demo/rnaseq/2026-10-25', help: 'directory-path · picker browses the environment storage' },
       { k: 'multiqc_title', v: 'Liver time course', help: 'Optional title for the MultiQC report' }
     ],
     collapsed: [
@@ -223,11 +223,11 @@ renderVals() {
       { name: 'Read trimming options', n: '7', state: 'defaults', icon: ic.scissors, fields: [{ k: 'trimmer', v: 'trimgalore', h: 'trimgalore or fastp', p: '' }, { k: 'extra_trimgalore_args', v: '', h: 'Extra arguments passed to Trim Galore', p: '--quality 20' }, { k: 'min_trimmed_reads', v: '10000', h: 'Samples with fewer reads are dropped', p: '' }] },
       { name: 'Quality control', n: '9', state: 'defaults', icon: ic.shield, fields: [{ k: 'deseq2_vst', v: 'true', h: 'Use vst instead of rlog', p: '' }, { k: 'rseqc_modules', v: 'bam_stat,inner_distance,read_distribution', h: 'RSeQC modules to run', p: '' }, { k: 'skip_qc', v: 'false', h: 'Skip all QC steps except MultiQC', p: '' }] },
       { name: 'Process skipping options', n: '21', state: '1 changed', icon: ic.skip, fields: [{ k: 'skip_markduplicates', v: 'false', h: 'Skip Picard MarkDuplicates', p: '' }, { k: 'skip_bigwig', v: 'false', h: 'Skip bigWig creation', p: '' }, { k: 'skip_stringtie', v: 'true', h: 'Changed · default false', p: '' }] },
-      { name: 'Institutional config', n: '6 · hidden', state: 'from environment', icon: ic.building, fields: [{ k: 'custom_config_base', v: 'https://raw.githubusercontent.com/nf-core/configs/master', h: 'Set by the environment', p: '' }, { k: 'config_profile_name', v: 'EMBL', h: 'Set by the environment', p: '' }] },
-      { name: 'Generic options', n: '23 · hidden', state: 'defaults', icon: ic.sliders, fields: [{ k: 'email', v: '', h: 'Notification email', p: 'you@lab.org' }, { k: 'publish_dir_mode', v: 'copy', h: 'How results are published', p: '' }, { k: 'monochrome_logs', v: 'false', h: 'Plain logs without colours', p: '' }] }
+      { name: 'Institutional config', n: '6 · hidden', state: 'from environment', icon: ic.building, fields: [{ k: 'custom_config_base', v: 'https://raw.githubusercontent.com/nf-core/configs/master', h: 'Set by the environment', p: '' }, { k: 'config_profile_name', v: 'demo_hpc', h: 'Set by the environment', p: '' }] },
+      { name: 'Generic options', n: '23 · hidden', state: 'defaults', icon: ic.sliders, fields: [{ k: 'email', v: '', h: 'Notification email', p: 'you@example.org' }, { k: 'publish_dir_mode', v: 'copy', h: 'How results are published', p: '' }, { k: 'monochrome_logs', v: 'false', h: 'Plain logs without colours', p: '' }] }
     ],
     side: [
-      { k: 'Environment', v: 'EMBL SLURM · htc', icon: ic.server },
+      { k: 'Environment', v: 'demo-hpc SLURM · htc', icon: ic.server },
       { k: 'Software', v: 'Profile singularity', icon: ic.box },
       { k: 'Gates', v: '1 gate after stage 2 (spectio.yml)', icon: ic.flag }
     ],

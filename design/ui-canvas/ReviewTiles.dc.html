@@ -1,0 +1,277 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, satellite scenes and cloud cover</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rti:has(input[value="sum"]:checked) .pn-sum,
+.rti:has(input[value="scenes"]:checked) .pn-scenes,
+.rti:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.mono{font-family:'JetBrains Mono',monospace}
+.sc{position:relative;width:40px;display:flex;flex-direction:column;gap:1px;cursor:pointer}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/rangeland · rangeland-181036" project="demo-lab / Land-cover trends" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rti" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">8 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; color: #6E7287;">Data: nf-core/test-datasets@rangeland · Landsat 4/5 Collection 2 (USGS, public domain)</span>
+      <a href="ReviewVolume.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="Review.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stage 1 finished, gate awaiting review, stages 2 to 4 not started"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#DFE1EA"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex: 1 1 0; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Scene QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· rangeland-181036 · #453</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: block; line-height: 1.5;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">nf-core/rangeland 1.0.0 · <code class="mono" style="font-size: 12px;">start_date 1987-01-01 · end_date 1989-12-31 · sensors_level2 LND04 LND05</code> · 56 scenes, WRS-2 path/row 181/036 · paused before level-2 preprocessing (stage 1 of 4) · gate from the lab overlay · <strong style="color: #8F5806;">waiting 51 min</strong></span>
+      </div>
+      <span style="display: flex; flex-direction: column; align-items: flex-end; gap: 6px;">
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+          <span title="You · Alice Martin" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+          <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">Robot · rule</span>
+        </span>
+        <a href="WorkflowVersions.dc.html" style="display: flex; align-items: center; gap: 5px; font-size: 11.5px; font-weight: 600; color: #8F5806; text-decoration: none; background: #FDF3E2; padding: 3px 8px; border-radius: 7px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>nf-core advisory for 1.0.0 · process shell</a>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvti" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">2 to check</span></label>
+      <label class="rv-tab"><input type="radio" name="rvti" value="scenes" checked aria-label="Scenes"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18v14H3z M3 10h18 M3 15h18 M9 5v14 M15 5v14"/></svg>Scenes<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">{{dropLabel}}</span></label>
+      <label class="rv-tab"><input type="radio" name="rvti" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">3</span></label>
+      <span style="flex-grow: 1;"></span>
+      <span style="align-self: center; font-size: 11.5px; color: #6E7287; padding-right: 4px;">No MultiQC section for scenes: rangeland's report lists software versions only</span>
+    </div>
+
+    <!-- SCENES -->
+    <section class="rv-pn pn-scenes" style="flex-direction: column; gap: 12px;">
+      <!-- year × month grid -->
+      <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px 12px; display: flex; flex-direction: column; gap: 6px;">
+        <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Scenes by year and month</h2>
+          <span style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 11.5px; color: #33364A;">
+            <span style="display: flex; align-items: center; gap: 5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#157A4B" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>kept · cloud ≤ {{thr}} %</span>
+            <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 12px; height: 12px; border-radius: 3px; background: repeating-linear-gradient(135deg, #F4F4F8 0 2px, #6E7287 2px 4px);"></span>dropped by the rule</span>
+            <span style="display: flex; align-items: center; gap: 5px;"><span style="width: 12px; height: 12px; border-radius: 3px; box-shadow: inset 0 0 0 2px #F2B544;"></span><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>kept, shadow &gt; 30 %</span>
+            <span style="display: flex; align-items: center; gap: 5px;"><span style="font-size: 10px; font-weight: 700; padding: 0 4px; border-radius: 4px; background: #E6DCFC; color: #4D368B;">L4</span>Landsat 4 · others Landsat 5</span>
+          </span>
+        </div>
+        <div style="display: grid; grid-template-columns: 40px repeat(12, minmax(0, 1fr)); gap: 2px; align-items: start;">
+          <span></span>
+          <sc-for list="{{months}}" as="m" hint-placeholder-count="12"><span style="font-size: 11px; color: #6E7287; text-align: center;">{{m}}</span></sc-for>
+          <sc-for list="{{cells}}" as="c" hint-placeholder-count="39">
+            <div style="min-height: {{c.mh}}; display: flex; flex-wrap: wrap; gap: 2px; align-content: flex-start; justify-content: {{c.jc}}; padding: 3px 2px; border-radius: 8px; background: {{c.bg}}; box-sizing: border-box;">
+              <span style="display: {{c.lshow}}; flex-direction: column; gap: 2px; font-size: 12.5px; font-weight: 600; padding-top: 6px;">{{c.year}}<span style="font-size: 10.5px; font-weight: 600; color: {{c.yfg}}; white-space: nowrap;">{{c.ykept}}</span></span>
+              <span style="display: {{c.eshow}}; font-size: 10px; color: #9A9EB0; align-self: center; margin: auto;">no scene</span>
+              <sc-for list="{{c.scenes}}" as="s" hint-placeholder-count="2">
+                <span class="sc" title="{{s.title}}">
+                  <span style="position: relative; width: 40px; height: 38px; border-radius: 5px; overflow: hidden; box-shadow: {{s.ring}};">
+                    <img src="{{s.src}}" alt="{{s.title}}" style="position: absolute; inset: 0; width: 100%; height: 100%; opacity: {{s.op}};">
+                    <span style="position: absolute; inset: 0; background: {{s.hatch}};"></span>
+                    <span style="position: absolute; left: 2px; top: 2px; display: {{s.l4}}; font-size: 8.5px; font-weight: 700; padding: 0 3px; border-radius: 3px; background: #E6DCFC; color: #4D368B;">L4</span>
+                    <span style="position: absolute; right: 2px; top: 2px; display: {{s.ishow}}; width: 13px; height: 13px; border-radius: 7px; background: {{s.ibg}}; align-items: center; justify-content: center;"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="3.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"/></svg></span>
+                  </span>
+                  <span style="font-size: 9.5px; text-align: center; font-weight: 600; color: {{s.fg}};">{{s.c}}</span>
+                </span>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: stretch;">
+        <!-- selected scene -->
+        <div style="flex: 0 0 420px; box-sizing: border-box; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; gap: 12px;">
+          <div style="display: flex; flex-direction: column; gap: 6px;">
+            <div style="position: relative; width: 200px; height: 192px; border-radius: 8px; overflow: hidden; background: #0B0C18; box-shadow: 0 0 0 2px #7750D4;">
+              <img src="images/landsat-19880122.webp" alt="Scene of 22 January 1988, bands 3-2-1" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+            </div>
+            <span style="font-size: 10.5px; color: #6E7287;">bands 3-2-1 · thumbnail</span>
+            <span role="radiogroup" aria-label="Decision for the scene of 1988-01-22" style="display: flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px; width: max-content;"><span style="padding: 3px 9px; border-radius: 7px; color: #4D5065;">Keep</span><span style="padding: 3px 9px; border-radius: 7px; background: #FFFFFF; color: #B02A2A; font-weight: 600; box-shadow: 0 1px 2px rgba(15,16,32,0.15);">Exclude</span></span>
+          </div>
+          <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 12px;">
+            <strong style="font-size: 13.5px;">22 Jan 1988 · Landsat 5 TM</strong>
+            <span class="mono" style="font-size: 10px; color: #4D5065; word-break: break-all;">LT05_L1TP_181036_19880122_20200917_02_T1</span>
+            <span style="display: flex; justify-content: space-between; border-top: 1px solid #EEEFF5; padding-top: 4px;"><span style="color: #4D5065;">cloud</span><strong style="color: #157A4B;">22.3 %</strong></span>
+            <span style="display: flex; justify-content: space-between;"><span style="color: #4D5065;">cloud shadow</span><strong style="color: #B02A2A;">83.1 %</strong></span>
+            <span style="display: flex; justify-content: space-between;"><span style="color: #4D5065;">scene footprint</span><strong>69.1 % of frame</strong></span>
+            <span style="display: flex; gap: 6px; align-items: flex-start; margin-top: 2px; font-size: 11px; line-height: 1.4; color: #8F5806;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>Passes the cloud rule, but shadow covers 83 % of the scene. Excluded by hand, which puts 1988 at the limit.</span>
+          </div>
+        </div>
+
+        <!-- rule -->
+        <div style="flex: 1 1 0; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 14px; font-weight: 600;">Rule · drop cloudy scenes</h2><span style="font-size: 11.5px; color: #6E7287;">{{nKept}} kept · {{nDrop}} dropped</span></div>
+          <span style="font-size: 12px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">Drop scenes with cloud &gt; <input value="{{thr}}" aria-label="Cloud threshold in percent" style="width: 34px; font: 600 12px 'Inter', sans-serif; border-radius: 6px; border: 1px solid #B9A3F5; padding: 2px 4px; background: #FBF9FF;"> % <span style="color: #6E7287;">· check <span class="mono">cloud ≤ 30 %</span> · block</span></span>
+          <div role="img" aria-label="Histogram of cloud fraction over 56 scenes; threshold at 30 percent" style="position: relative; height: 100px; margin-top: 12px;">
+            <div style="position: absolute; left: {{thrX}}; right: 0; top: 0; height: 80px; background: #F1F2F6; border-radius: 4px;"></div>
+            <div style="position: absolute; left: 0; right: 0; top: 0; height: 80px; display: flex; align-items: flex-end; gap: 3px;">
+              <sc-for list="{{cloudHist}}" as="b" hint-placeholder-count="7"><span title="{{b.t}}: {{b.n}} scenes" style="flex: 1 1 0; height: {{b.h}}; background: {{b.fill}}; border-radius: 3px 3px 0 0; position: relative;"><span style="position: absolute; left: 0; right: 0; top: -14px; text-align: center; font-size: 10px; color: #33364A;">{{b.n}}</span></span></sc-for>
+            </div>
+            <div class="handle" style="position: absolute; top: -4px; height: 84px; left: {{thrX}}; width: 0;"><span style="position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; background: #7750D4;"></span><span style="position: absolute; bottom: -6px; left: -6px; width: 9px; height: 9px; border-radius: 6px; background: #FFFFFF; border: 2.5px solid #7750D4;"></span></div>
+            <div style="position: absolute; left: 0; right: 0; top: 80px; height: 1px; background: #C4C7D4;"></div>
+            <div style="position: absolute; left: 0; right: 0; top: 84px; display: flex; gap: 3px; font-size: 10px; color: #6E7287;"><sc-for list="{{cloudHist}}" as="b" hint-placeholder-count="7"><span style="flex: 1 1 0; text-align: center;">{{b.t}}</span></sc-for></div>
+          </div>
+          <label style="display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: #33364A;"><span role="checkbox" aria-checked="false" style="width: 13px; height: 13px; border-radius: 3px; box-shadow: inset 0 0 0 1.5px #9A9EB0;"></span>Also drop scenes with shadow &gt; 30 % <span style="color: #6E7287;">· would drop {{shadowExtra}} more</span></label>
+        </div>
+
+        <!-- constraint per year -->
+        <div style="flex: 0 0 300px; box-sizing: border-box; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 14px; font-weight: 600;">Constraint · trend</h2><span style="font-size: 11.5px; color: #6E7287;">clear scenes per year</span></div>
+          <span style="font-size: 12px; display: flex; align-items: center; gap: 6px;">each year needs ≥ <input value="{{minN}}" aria-label="Minimum clear scenes per year" style="width: 30px; font: 600 12px 'Inter', sans-serif; border-radius: 6px; border: 1px solid #B9A3F5; padding: 2px 4px; background: #FBF9FF;"> clear scenes</span>
+          <sc-for list="{{years}}" as="y" hint-placeholder-count="3">
+            <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+              <strong style="width: 34px;">{{y.y}}</strong>
+              <span style="flex: 1 1 auto; position: relative; height: 14px; border-radius: 4px; background: #F1F2F6;">
+                <span style="position: absolute; left: 0; top: 0; bottom: 0; width: {{y.w}}; background: {{y.bar}}; border-radius: 4px;"></span>
+                <span style="position: absolute; left: {{y.nx}}; top: -3px; bottom: -3px; border-left: 2px solid #33364A;"></span>
+              </span>
+              <span style="width: 74px; display: flex; align-items: center; gap: 4px; font-weight: 600; color: {{y.fg}};"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{y.icon}}"/></svg>{{y.k}} of {{y.n}}</span>
+            </div>
+          </sc-for>
+          <span style="font-size: 11px; color: #B02A2A; line-height: 1.4; border-top: 1px solid #EEEFF5; padding-top: 5px; font-weight: 600;">{{y87}}</span>
+          <span role="radiogroup" aria-label="How to resolve 1987" style="display: flex; flex-direction: column; gap: 4px;">
+            <sc-for list="{{fixes}}" as="f" hint-placeholder-count="3"><span role="radio" aria-checked="false" style="display: flex; gap: 7px; align-items: flex-start; font-size: 11.5px; line-height: 1.35; padding: 5px 7px; border-radius: 8px; box-shadow: inset 0 0 0 1px #DFE1EA;"><span style="width: 12px; height: 12px; flex-shrink: 0; margin-top: 1px; border-radius: 7px; box-shadow: inset 0 0 0 1.5px #9A9EB0;"></span><span><strong>{{f.t}}</strong> <span style="color: #4D5065;">{{f.d}}</span></span></span></sc-for>
+          </span>
+          <span style="font-size: 11px; color: #8F5806; line-height: 1.4;">{{whatIf}}</span>
+        </div>
+      </div>
+      <div style="border-radius: 14px; background: #F7F7FB; padding: 9px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12.5px; line-height: 1.45;">
+        <span style="height: 24px; padding: 0 8px; border-radius: 7px; background: #EEEFF5; color: #33364A; font-size: 10.5px; font-weight: 700; display: flex; align-items: center;">ROBOT</span>
+        <span style="flex: 1 1 400px;">Auto-approve rule <strong>“rangeland scene QC”</strong> did not approve this gate: 1987 keeps {{yr87}} clear scenes, below the 12 the trend needs, so a person decides. <a href="ReviewQueue.dc.html">Rules in the queue settings</a></span>
+        <span style="font-size: 11.5px; color: #6E7287;">cloud and shadow: QA_PIXEL bits 1, 3 (dilated cloud, cloud) and 4 (shadow)</span>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="flex-direction: column; gap: 12px;">
+      <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">lab overlay · rangeland declares no gate</span></div>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
+            <span style="flex: 1 1 220px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span>
+            <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+            <span style="font-size: 12px; color: #4D5065; min-width: 130px; text-align: right;">{{c.where}}</span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="3">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 300px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 2 · <span style="color: #B02A2A;">1987 unresolved</span></span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{changes}}" as="c" hint-placeholder-count="2"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}};">{{c.t}}</span></sc-for></span>
+      </span>
+      <span style="font-size: 11.5px; color: #4D5065; width: 330px; line-height: 1.4;">rangeland reads every scene under <code class="mono">--input</code>: Spectio stages <code class="mono">/scratch/demo/rangeland-181036/input/</code> with the {{nFinal}} kept scenes and continues.</span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <button type="button" disabled title="Choose how to resolve 1987 first" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #DFE1EA; color: #6E7287; font: 600 13.5px 'Inter', sans-serif;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', cross: 'M6 6l12 12 M18 6L6 18' };
+  // Real scenes: images/landsat-scenes.json (date, sensor LT04/LT05, cloud, shadow fractions from QA_PIXEL).
+  const D = [["19870119","05",0.041,0.075],["19870204","05",0.994,0.058],["19870324","05",0.407,0.161],["19870409","05",0.005,0.009],["19870425","05",0.463,0.196],["19870511","05",0.091,0.055],["19870527","05",0.194,0.064],["19870612","05",0.0,0.0],["19870628","05",0.0,0.0],["19870714","05",0.0,0.0],["19870730","05",0.178,0.072],["19870815","05",0.329,0.154],["19870831","05",0.048,0.035],["19870916","05",0.0,0.0],["19871002","05",0.911,0.121],["19871205","05",0.957,0.103],["19880106","05",0.091,0.112],["19880122","05",0.223,0.831],["19880130","04",0.003,0.006],["19880223","05",0.886,0.215],["19880310","05",0.59,0.278],["19880326","05",0.001,0.001],["19880411","05",0.001,0.001],["19880529","05",0.0,0.0],["19880614","05",0.004,0.003],["19880630","05",0.0,0.0],["19880716","05",0.0,0.0],["19880801","05",0.297,0.123],["19880902","05",0.0,0.0],["19880918","05",0.872,0.084],["19881004","05",0.875,0.275],["19881020","05",0.002,0.003],["19881121","05",0.312,0.19],["19881129","04",0.265,0.145],["19881223","05",0.976,0.126],["19881231","04",0.642,0.166],["19890108","05",0.999,0.003],["19890209","05",0.139,0.153],["19890414","05",0.0,0.0],["19890430","05",0.055,0.043],["19890516","05",0.0,0.0],["19890601","05",0.581,0.179],["19890617","05",0.014,0.014],["19890703","05",0.02,0.012],["19890719","05",0.0,0.0],["19890804","05",0.223,0.069],["19890820","05",0.02,0.015],["19890905","05",0.001,0.001],["19890921","05",0.381,0.122],["19891007","05",1.0,0.0],["19891023","05",0.168,0.119],["19891108","05",0.42,0.263],["19891124","05",0.777,0.192],["19891202","04",1.0,0.001],["19891210","05",0.01,0.035],["19891218","04",0.01,0.021]];
+  const THR = 0.30, SHADOW = 0.30, MIN_N = 12, SEL = '19880122', MANUAL = ['19880122'];
+  const MON = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  const HATCH = 'repeating-linear-gradient(135deg, rgba(244,244,248,0.85) 0 3px, rgba(110,114,135,0.85) 3px 6px)';
+  const years = ['1987', '1988', '1989'];
+  const keep = s => s[2] <= THR;
+  const cells = [];
+  const yearInfo = years.map(y => { const ys = D.filter(s => s[0].startsWith(y)); return { y, n: ys.length, k: ys.filter(keep).length, final: ys.filter(s => keep(s) && !MANUAL.includes(s[0])).length }; });
+  years.forEach((y, yi) => {
+    const yi_ = yearInfo[yi];
+    cells.push({ lshow: 'flex', eshow: 'none', year: y, ykept: yi_.final + ' kept', yfg: yi_.final < MIN_N ? '#B02A2A' : yi_.final === MIN_N ? '#8F5806' : '#157A4B', scenes: [], mh: '50px', jc: 'flex-start', bg: 'transparent' });
+    for (let m = 1; m <= 12; m++) {
+      const mm = String(m).padStart(2, '0');
+      const ss = D.filter(s => s[0].startsWith(y + mm));
+      const scenes = ss.map(s => { const k = keep(s), man = MANUAL.includes(s[0]), sh = s[3] > SHADOW, sel = s[0] === SEL;
+        const dropped = !k || man;
+        return { src: 'images/landsat-' + s[0] + '.webp', d: String(+s[0].slice(6)), c: Math.round(s[2] * 100) + '%',
+          title: 'LT' + s[1] + ' · ' + s[0].slice(0, 4) + '-' + s[0].slice(4, 6) + '-' + s[0].slice(6) + ' · cloud ' + (s[2] * 100).toFixed(1) + ' % · shadow ' + (s[3] * 100).toFixed(1) + ' %' + (dropped ? (man ? ' · excluded by hand' : ' · dropped by the rule') : ' · kept'),
+          hatch: !k ? HATCH : 'transparent', op: !k ? 0.55 : 1, l4: s[1] === '04' ? 'block' : 'none',
+          ring: sel ? '0 0 0 2.5px #7750D4' : sh ? '0 0 0 2px #F2B544' : 'none',
+          ishow: (!k || sh) ? 'flex' : 'none', ibg: !k ? 'rgba(15,16,32,0.8)' : '#B07405', icon: !k ? I.cross : I.warn,
+          fg: !k ? '#9A9EB0' : sh ? '#8F5806' : '#33364A' }; });
+      cells.push({ lshow: 'none', eshow: ss.length ? 'none' : 'block', year: '', ykept: '', yfg: '', scenes, mh: '50px', jc: 'center', bg: ss.length ? '#FAFAFC' : 'repeating-linear-gradient(135deg, #FAFAFC 0 6px, #F4F4F8 6px 12px)' });
+    }
+  });
+  const nKept = D.filter(keep).length;
+  const BIN = 10; const NB = 10;
+  const hb = Array(NB).fill(0); D.forEach(s => hb[Math.min(NB - 1, Math.floor(s[2] * 100 / BIN))]++);
+  const hmx = Math.max(...hb);
+  const cloudHist = hb.map((n, i) => ({ t: i === NB - 1 ? '90+' : (i * BIN) + '–' + ((i + 1) * BIN), n, h: (n === 0 ? 0 : Math.max(4, n / hmx * 84)).toFixed(1) + '%', fill: (i + 1) * BIN <= THR * 100 ? '#8B5CF6' : '#C4C7D4' }));
+  const shadowExtra = D.filter(s => keep(s) && s[3] > SHADOW).length;
+  const maxN = Math.max(...yearInfo.map(y => y.n));
+  const ys = yearInfo.map(y => { const at = y.final === MIN_N, under = y.final < MIN_N;
+    return { y: y.y, k: y.final, n: y.n, w: (y.final / maxN * 100).toFixed(1) + '%', nx: (MIN_N / maxN * 100).toFixed(1) + '%', bar: under ? '#DC3B3B' : at ? '#D9890B' : '#8B5CF6',
+      fg: under ? '#B02A2A' : at ? '#8F5806' : '#157A4B', icon: under ? I.cross : at ? I.warn : I.check }; });
+  const at20 = D.filter(s => s[0].startsWith('1987') && s[2] <= 0.20).length;
+  const at40 = D.filter(s => s[0].startsWith('1987') && s[2] <= 0.40).length, at50 = D.filter(s => s[0].startsWith('1987') && s[2] <= 0.50).length;
+  const s88at20 = D.filter(s => s[0].startsWith('1988') && s[2] <= 0.20).length;
+  const nFinal = D.filter(s => keep(s) && !MANUAL.includes(s[0])).length;
+  return {
+    months: MON, cells, thr: Math.round(THR * 100), thrX: (THR * 100 / (NB * BIN) * 100).toFixed(1) + '%',
+    nKept, nDrop: D.length - nKept, dropLabel: (D.length - nKept) + ' dropped · 1 by hand', cloudHist, shadowExtra, minN: MIN_N, at20, nFinal,
+    years: ys,
+    y87: '1987 keeps ' + ys[0].k + ', below ' + MIN_N + '. No clear scene after 16 Sep (Oct 91 %, Dec 96 %).', yr87: ys[0].k,
+    fixes: [
+      { t: 'Accept 1987 degraded', d: '· trend from ' + ys[0].k + ' scenes, flagged' },
+      { t: 'Relax to cloud ≤ 50 % for 1987', d: '· keeps ' + at50 + ', adds 3 scenes at 33–46 %' },
+      { t: 'Add scenes', d: '· relaunch with wider dates or a neighbouring path/row' }
+    ],
+    whatIf: 'What if: at ≤ 40 % 1987 keeps ' + at40 + '; at ≤ 20 % (stricter) 1988 falls to ' + s88at20 + ' too.',
+    checks: [
+      { name: 'Cloud cover', rule: 'cloud ≤ 30 % per scene · block', value: nKept + ' / ' + D.length, col: '#B02A2A', icon: I.warn, where: (D.length - nKept) + ' scenes dropped' },
+      { name: 'Clear scenes per year', rule: 'constraint · ≥ 12 per year for the trend', value: ys.map(y => y.k).join(' · '), col: '#B02A2A', icon: I.warn, where: '1987 below · 1988 at the limit' },
+      { name: 'Cloud shadow', rule: 'shadow ≤ 30 % · warn', value: (shadowExtra) + ' scene', col: '#8F5806', icon: I.warn, where: '1988-01-22 · 83.1 %' }
+    ],
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened before FORCE level-2 processing; QA_PIXEL read for 56 scenes by script:scene_qc.py.', at: '07:10' },
+      { t: 'BOT', bg: '#EEEFF5', fg: '#33364A', text: 'Rule “cloud ≤ 30 %” applied: ' + (D.length - nKept) + ' scenes dropped. Not auto-approved: 1987 keeps ' + ys[0].k + ', below 12.', at: '07:11' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin excluded 1988-01-22 (shadow 83.1 %); 1988 now at 12.', at: '08:02' }
+    ],
+    changes: [
+      { t: 'cloud ≤ 30 % · ' + (D.length - nKept) + ' dropped', bg: '#F6F2FE', fg: '#4D368B' },
+      { t: '1988-01-22 excluded', bg: '#F1F2F6', fg: '#33364A' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

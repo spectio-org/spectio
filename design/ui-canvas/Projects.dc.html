@@ -98,7 +98,7 @@ spectio project create "Liver time course" --group rnaseq-core --visibility grou
 spectio project share prj_01JB4K… --group clinical-genomics --role viewer
 <span class="c"># move a project between instances (personal → team server)</span>
 spectio project export prj_01JB4K… --out liver.spectio-project
-spectio project import liver.spectio-project --server embl-prod --owner a.smith@lab.example --dry-run</pre>
+spectio project import liver.spectio-project --server demo-prod --owner a.smith@example.org --dry-run</pre>
         </details>
       </div>
     </div>
@@ -132,19 +132,19 @@ renderVals() {
   const ROLE = { owner: ['Owner', '#F6F2FE', '#4D368B'], editor: ['Editor', '#F2F1FB', '#423B97'], reviewer: ['Reviewer', '#FDF3E2', '#8F5806'], launcher: ['Launcher', '#FDF2F5', '#A54666'], viewer: ['Viewer', '#F1F2F6', '#33364A'] };
   const role = (k) => ({ rl: ROLE[k][0], rbg: ROLE[k][1], rfg: ROLE[k][2] });
   const av = (t, bg, name) => ({ t, bg, name });
-  const A = { TW: av('TW', '#8B5CF6', 'Thomas Weber'), AS: av('AS', '#2F7FA8', 'Anna Smith'), LM: av('LM', '#EC5F87', 'Luca Moretti'), KB: av('KB', '#A54666', 'Kai Berg'), NO: av('NO', '#5A4FCF', 'Nora Olsen') };
+  const A = { AM: av('AM', '#8B5CF6', 'Alice Martin'), AS: av('AS', '#2F7FA8', 'Anna Smith'), LM: av('LM', '#EC5F87', 'Luca Moretti'), KB: av('KB', '#A54666', 'Kai Berg'), NO: av('NO', '#5A4FCF', 'Nora Olsen') };
   const proj = (name, desc, dot, group, v, r, runs, last, members, more) => ({ name, desc, dot, group, ...vis(v), ...role(r), runs, last, members, more });
   const scope = (t, n, on) => ({ t, n, w: on ? 600 : 500, bg: on ? '#FFFFFF' : 'transparent', sh: on ? '0 1px 2px rgba(15,16,32,0.12)' : 'none', c: on ? '#0F1020' : '#4D5065' });
   return {
     tabs,
     scopes: [scope('All I can see', '6', true), scope('Mine', '3'), scope('Shared with me', '3')],
     projects: [
-      proj('Liver time course', 'bulk RNA-seq · nf-core/rnaseq', '#7750D4', 'rnaseq-core', 'group', 'owner', '41', 'today 10:12', [A.TW, A.AS, A.KB], '+2'),
-      proj('Drug screen 2026', 'Cell Painting plates · cellpose-segmentation', '#2F7FA8', 'imaging-core', 'private', 'reviewer', '96', 'today 09:21', [A.LM, A.TW, A.NO], '+4'),
-      proj('Rare disease trios', 'WGS trios · nf-core/sarek, raredisease', '#EC5F87', 'clinical-genomics', 'private', 'launcher', '18', 'yesterday', [A.KB, A.TW], ''),
-      proj('PBMC atlas', 'single-cell · nf-core/scrnaseq', '#5A4FCF', 'rnaseq-core', 'instance', 'editor', '12', '3 days ago', [A.AS, A.NO, A.TW], '+1'),
+      proj('Liver time course', 'bulk RNA-seq · nf-core/rnaseq', '#7750D4', 'rnaseq-core', 'group', 'owner', '41', 'today 10:12', [A.AM, A.AS, A.KB], '+2'),
+      proj('Drug screen 2026', 'Cell Painting plates · cellpose-segmentation', '#2F7FA8', 'imaging-core', 'private', 'reviewer', '96', 'today 09:21', [A.LM, A.AM, A.NO], '+4'),
+      proj('Rare disease trios', 'WGS trios · nf-core/sarek, raredisease', '#EC5F87', 'clinical-genomics', 'private', 'launcher', '18', 'yesterday', [A.KB, A.AM], ''),
+      proj('PBMC atlas', 'single-cell · nf-core/scrnaseq', '#5A4FCF', 'rnaseq-core', 'instance', 'editor', '12', '3 days ago', [A.AS, A.NO, A.AM], '+1'),
       proj('Soil metagenomes', 'nf-core/mag, taxprofiler', '#A54666', 'microbiome-lab', 'group', 'viewer', '27', 'last week', [A.NO, A.LM], ''),
-      proj('Pipeline CI', 'test profiles for every release', '#4D5065', 'bioinfo-platform', 'private', 'owner', '210', 'today 06:00', [A.TW], '+ CI')
+      proj('Pipeline CI', 'test profiles for every release', '#4D5065', 'bioinfo-platform', 'private', 'owner', '210', 'today 06:00', [A.AM], '+ CI')
     ]
   };
 }

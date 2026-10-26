@@ -1,0 +1,198 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — relaunch from a failure</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+@keyframes spectio-hatch{from{background-position:0 0}to{background-position:22.63px 0}}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',monospace}
+.btn{height:42px;padding:0 16px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #C4C7D4}
+.cb{width:16px;height:16px;border-radius:4px;background:#7750D4;color:#FFFFFF;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+</style>
+</helmet>
+<div style="position: relative; width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Runs / liver-tc-2026-10-24 / Relaunch" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="runs" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+    <section class="card" style="border-radius: 20px; overflow: hidden;">
+      <div style="height: 4px; background: #DC3B3B;"></div>
+      <div style="padding: 18px 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+        <svg width="120" height="60" viewBox="0 0 200 100" role="img" aria-label="Stage 1 completed, stage 2 failed, stages 3 and 4 not started">
+          <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#DC3B3B"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/>
+        </svg>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 260px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">liver-tc-2026-10-24</h1>
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #B02A2A;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg>Failed <span style="font-weight: 400; color: #4D5065;">· stage 2 of 4 (Alignment &amp; QC) · 4 tasks failed · 2 h ago</span></span>
+        </div>
+        <span class="btn btn-s">Relaunch ▾</span>
+      </div>
+    </section>
+    <div style="display: flex; gap: 4px; border-bottom: 1px solid #EEEFF5; height: 40px;"></div>
+    <div class="card" style="height: 80px; background: #F7F7FB;"></div>
+    <div class="card" style="height: 80px; background: #F7F7FB;"></div>
+    <div class="card" style="height: 80px; background: #F7F7FB;"></div>
+  </main>
+
+  <div style="position: absolute; inset: 0; z-index: 5; background: rgba(15,16,32,0.42); display: flex; align-items: center; justify-content: center; gap: 20px; padding: 24px; box-sizing: border-box;">
+
+    <section role="dialog" aria-modal="true" aria-labelledby="rl-title" style="width: 860px; flex-shrink: 1; min-width: 0; border-radius: 22px; background: #FFFFFF; box-shadow: 0 30px 80px -30px rgba(15,16,32,0.55); padding: 20px 22px; display: flex; flex-direction: column; gap: 14px; box-sizing: border-box;">
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px;">
+          <h2 id="rl-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Relaunch liver-tc-2026-10-24</h2>
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; color: #B02A2A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg>Failed <span style="font-weight: 400; color: #4D5065;">· stage 2 of 4 · nf-core/rnaseq 3.27.0 on demo-hpc SLURM · htc</span></span>
+        </div>
+        <button type="button" aria-label="Close" style="width: 40px; height: 40px; border: none; border-radius: 12px; background: transparent; color: #33364A; cursor: pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg></button>
+      </div>
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <sc-for list="{{failures}}" as="f" hint-placeholder-count="2">
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; border-radius: 10px; padding: 6px 10px; background: #FCEBEB; color: #7A1F1F;">
+            <strong class="mono" style="font-size: 12px;">{{f.p}}</strong><span>· {{f.cls}}</span><span style="color: #9A4A4A;">· {{f.n}}</span>
+          </span>
+        </sc-for>
+        <a href="RunScheduler.dc.html" style="font-size: 12.5px; font-weight: 600; text-decoration: none; align-self: center;">Scheduler record →</a>
+      </div>
+
+      <div role="radiogroup" aria-label="Where to start" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+        <sc-for list="{{modes}}" as="m" hint-placeholder-count="3">
+          <button type="button" role="radio" aria-checked="{{m.on}}" style="border: none; border-radius: 16px; padding: 14px; background: {{m.bg}}; box-shadow: {{m.ring}}; font: inherit; color: #0F1020; display: flex; gap: 12px; align-items: flex-start; text-align: left; cursor: pointer;">
+            <span style="width: 40px; height: 40px; border-radius: 12px; background: {{m.tile}}; color: {{m.ink}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.icon}}"/></svg></span>
+            <span style="display: flex; flex-direction: column; gap: 3px;">
+              <span style="display: flex; align-items: center; gap: 6px; font-weight: 600; font-size: 14.5px;">{{m.label}}<span class="chip" style="display: {{m.tagShow}}; height: 20px; font-size: 11px; background: #E8F6EF; color: #157A4B;">Suggested</span></span>
+              <span style="font-size: 12.5px; color: #33364A; line-height: 1.4;">{{m.desc}}</span>
+            </span>
+          </button>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 7px;">
+        <span style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; color: #4D5065;"><span>Start point · click a stage to rerun from it</span><span style="display: flex; gap: 12px;"><span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: repeating-linear-gradient(135deg, #EEEDFA 0 3px, #D5D2F2 3px 6px); vertical-align: -1px;"></span> reused</span><span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 3px; box-shadow: inset 0 0 0 2px #7750D4; vertical-align: -1px;"></span> starts here</span><span><span style="display: inline-block; width: 10px; height: 10px; border-radius: 3px; background: #E3E5EE; vertical-align: -1px;"></span> will run</span></span></span>
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;">
+          <sc-for list="{{strip}}" as="s" hint-placeholder-count="4">
+            <button type="button" aria-pressed="{{s.on}}" style="border: none; border-radius: 12px; padding: 10px 12px; background: {{s.bg}}; background-size: {{s.bsz}}; animation: {{s.anim}}; box-shadow: {{s.ring}}; font: inherit; text-align: left; display: flex; flex-direction: column; gap: 3px; cursor: pointer;">
+              <span style="font-size: 12.5px; font-weight: 600; color: {{s.ink}};">{{s.n}} · {{s.name}}</span>
+              <span style="font-size: 12px; color: {{s.sub}};">{{s.note}}</span>
+            </button>
+          </sc-for>
+        </div>
+      </div>
+
+      <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="display: flex; align-items: center; gap: 8px;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg>
+          <strong style="font-size: 14px; flex-grow: 1;">Edit parameters · 2 changed</strong>
+          <span style="font-size: 12px; color: #4D5065;">suggested from the failure · from sacct</span>
+        </span>
+        <sc-for list="{{sugg}}" as="g" hint-placeholder-count="2">
+          <span style="display: flex; gap: 10px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;">
+            <span class="cb" role="checkbox" aria-checked="true" style="margin-top: 2px;">✓</span>
+            <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; font-size: 12.5px;">
+              <span><strong class="mono" style="font-size: 12px;">{{g.p}}</strong> {{g.what}} <span class="mono" style="color: #B02A2A; text-decoration: line-through;">{{g.old}}</span> → <span class="mono" style="color: #157A4B; font-weight: 600;">{{g.new}}</span></span>
+              <span style="color: #4D5065;">{{g.why}}</span>
+            </span>
+            <a href="#" style="font-size: 12px; font-weight: 600; text-decoration: none; white-space: nowrap;">Adjust</a>
+          </span>
+        </sc-for>
+        <span style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; border-top: 1px solid #EEEFF5; padding-top: 8px; font-size: 12px; color: #4D5065;">
+          <span style="flex: 1 1 400px;">Sent as an extra config: <span class="mono" style="color: #22253A;">withName: 'STAR_ALIGN' { memory = 96.GB }</span>, <span class="mono" style="color: #22253A;">withName: 'QUALIMAP_RNASEQ' { time = 8.h }</span></span>
+          <a href="Launch.dc.html" style="font-weight: 600; text-decoration: none;">Edit other parameters…</a>
+        </span>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 6px;">
+        <span style="display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px;" role="img" aria-label="602 tasks reused, 4 retried, 330 to run">
+          <span style="flex: 602 0 0; background: repeating-linear-gradient(135deg, #EEEDFA 0 4px, #D5D2F2 4px 8px);"></span>
+          <span style="flex: 12 0 0; background: #EC5F87;"></span>
+          <span style="flex: 330 0 0; background: #8B5CF6;"></span>
+        </span>
+        <span style="display: flex; gap: 16px; flex-wrap: wrap; font-size: 12.5px; color: #33364A;">
+          <span><strong>602</strong> reused</span><span><span style="color: #C23F67; font-weight: 700;">■</span> <strong>4</strong> failed tasks retried with the new limits</span><span><span style="color: #8B5CF6; font-weight: 700;">■</span> <strong>≈ 330</strong> to run</span><span style="color: #4D5065;">· ≈ 2 h 10 · work dir +0.9 TB · pre-flight ok</span>
+        </span>
+      </div>
+
+      <div style="display: flex; gap: 10px; align-items: center; border-top: 1px solid #EEEFF5; padding-top: 12px;">
+        <span style="flex-grow: 1; font-size: 12px; color: #6E7287;">Nextflow <span class="mono">-resume</span> in the same work dir, plus the extra config · on a paused run or an open gate, Resume reads “Continue”.</span>
+        <a href="Launch.dc.html" class="btn btn-s">Copy to a new launch</a>
+        <button type="button" class="btn btn-p">Resume with 2 changes</button>
+      </div>
+    </section>
+
+    <section aria-label="Variant without stages" style="width: 400px; flex-shrink: 0; display: flex; flex-direction: column; gap: 8px;">
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #FFFFFF; opacity: 0.9;">VARIANT · WORKFLOW WITHOUT STAGES</span>
+      <div role="dialog" aria-label="Relaunch chip-h3k27ac-2026-10-20" style="border-radius: 20px; background: #FFFFFF; box-shadow: 0 30px 80px -30px rgba(15,16,32,0.55); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Relaunch chip-h3k27ac-2026-10-20</h2>
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #B02A2A;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg>Failed <span style="font-weight: 400; color: #4D5065;">· chip-pipeline @ 4f2a9c1 · 61 % of tasks</span></span>
+        </div>
+        <span style="display: flex; align-items: center; gap: 10px;">
+          <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Task quarters: two done, third failed, fourth not started">
+            <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#8B5CF6"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DC3B3B"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/>
+          </svg>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.4;">No stages: the gauge shows task quarters, not stages.</span>
+        </span>
+        <sc-for list="{{vmodes}}" as="m" hint-placeholder-count="3">
+          <div role="radio" aria-checked="{{m.on}}" aria-disabled="{{m.dis}}" style="border-radius: 12px; padding: 10px 12px; background: {{m.bg}}; box-shadow: {{m.ring}}; display: flex; flex-direction: column; gap: 3px;">
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: {{m.fg}};"><span style="width: 14px; height: 14px; border-radius: 7px; box-shadow: {{m.dot}}; flex-shrink: 0;"></span>{{m.label}}</span>
+            <span style="font-size: 12px; color: {{m.sub}}; padding-left: 22px; line-height: 1.4;">{{m.desc}}</span>
+          </div>
+        </sc-for>
+        <span style="font-size: 12px; color: #33364A; background: #F7F7FB; border-radius: 10px; padding: 8px 10px; line-height: 1.45;"><strong>No parameter change suggested.</strong> MACS3_CALLPEAK ended with a tool error (exit 1), not a resource limit. <a href="#" style="font-weight: 600; text-decoration: none;">Open the task log</a></span>
+        <span style="font-size: 12px; color: #4D5065;">≈ 410 reused · ≈ 260 to run</span>
+        <div style="display: flex; gap: 8px; justify-content: flex-end;">
+          <a href="LaunchGitNoSchema.dc.html" class="btn btn-s" style="height: 38px;">Copy to a new launch</a>
+          <button type="button" class="btn btn-p" style="height: 38px;">Resume</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const sel = 'inset 0 0 0 2px #7750D4', idle = '0 0 0 1px rgba(15,16,32,0.11)';
+  return {
+    failures: [
+      { p: 'STAR_ALIGN', cls: 'out of memory', n: '3 tasks · OUT_OF_MEMORY' },
+      { p: 'QUALIMAP_RNASEQ', cls: 'timeout', n: '1 task · TIMEOUT' }
+    ],
+    modes: [
+      { label: 'Resume', desc: 'Pick up where it stopped. Finished work is reused; the 4 failed tasks run again.', icon: 'M8 5v14l11-7z', on: 'true', bg: '#FBF9FF', ring: sel, tile: '#7750D4', ink: '#FFFFFF', tagShow: 'inline-flex' },
+      { label: 'Rerun from a stage', desc: 'Click a stage below. Earlier stages are reused, later ones recomputed.', icon: 'M3 12a9 9 0 1 0 3-6.7 M3 4v5h5', on: 'false', bg: '#FFFFFF', ring: idle, tile: '#F6F2FE', ink: '#6344B2', tagShow: 'none' },
+      { label: 'Start fresh', desc: 'New work directory, nothing reused. About 14 h.', icon: 'M12 4v16 M4 12h16', on: 'false', bg: '#FFFFFF', ring: idle, tile: '#F6F2FE', ink: '#6344B2', tagShow: 'none' }
+    ],
+    strip: [
+      { n: '1', name: 'Preprocessing', note: 'Reused · 288 tasks', on: 'false', bsz: '22.63px 22.63px', anim: 'spectio-hatch 1.6s linear infinite', bg: 'repeating-linear-gradient(135deg, #EEEDFA 0 8px, #E2E0F6 8px 16px)', ring: 'none', ink: '#423B97', sub: '#4D5065' },
+      { n: '2', name: 'Alignment & QC', note: 'Starts here · 314 reused · 22 to run', on: 'true', bsz: 'auto', anim: 'none', bg: '#FBF9FF', ring: 'inset 0 0 0 2px #7750D4', ink: '#4D368B', sub: '#4D368B' },
+      { n: '3', name: 'Quantification', note: 'Will run · ≈ 300 tasks', on: 'false', bsz: 'auto', anim: 'none', bg: '#F1F2F6', ring: 'none', ink: '#33364A', sub: '#4D5065' },
+      { n: '4', name: 'Reporting', note: 'Will run · ≈ 12 tasks', on: 'false', bsz: 'auto', anim: 'none', bg: '#F1F2F6', ring: 'none', ink: '#33364A', sub: '#4D5065' }
+    ],
+    sugg: [
+      { p: 'STAR_ALIGN', what: 'memory', old: '72 GB', new: '96 GB', why: 'Max RSS 71.6 GB on attempt 3 of 3 for LIV_T2_1, LIV_T4, LIV_T8_2 · 96 GB fits htc (512 GB per node)' },
+      { p: 'QUALIMAP_RNASEQ', what: 'time', old: '4 h', new: '8 h', why: '1 task hit the 4 h limit at 93 % done (LIV_T4) · htc allows up to 7 days' }
+    ],
+    vmodes: [
+      { label: 'Resume', desc: 'Reuse finished tasks; rerun the failed one.', on: 'true', dis: 'false', bg: '#FBF9FF', ring: sel, fg: '#0F1020', sub: '#33364A', dot: 'inset 0 0 0 4px #7750D4' },
+      { label: 'Rerun from a stage · not available', desc: 'chip-pipeline declares no stages, so there is no stage to start from. Declaring stages in spectio.yml is optional.', on: 'false', dis: 'true', bg: '#F7F7FB', ring: 'none', fg: '#9A9EB0', sub: '#6E7287', dot: 'inset 0 0 0 1.5px #C4C7D4' },
+      { label: 'Start fresh', desc: 'New work directory, nothing reused.', on: 'false', dis: 'false', bg: '#FFFFFF', ring: idle, fg: '#0F1020', sub: '#33364A', dot: 'inset 0 0 0 1.5px #9A9EB0' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — final review before launch</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C4C7D4;padding:8px 10px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',monospace}
+.tile{width:32px;height:32px;border-radius:10px;background:#F6F2FE;color:#6344B2;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn{height:40px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.btn-xs{height:30px;padding:0 10px;border-radius:9px;font-size:12.5px}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;font-size:11.5px;font-weight:600;color:#33364A;background:#F7F7FB;padding:7px 12px}
+.tbl td{padding:7px 12px;border-top:1px solid #EEEFF5;vertical-align:middle}
+.sw{width:32px;height:18px;border-radius:9px;position:relative;flex-shrink:0;display:inline-block}
+.sw>span{position:absolute;top:2px;width:14px;height:14px;border-radius:7px;background:#FFFFFF}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Launch / nf-core/rnaseq / Review" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="launch" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center;">
+        <img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="30" height="30" alt="nf-core" style="display: block; object-fit: contain;">
+      </span>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Review and launch <span style="font-weight: 500; color: #6E7287; font-size: 20px;">nf-core/rnaseq 3.27.0</span></h1>
+        <span style="font-size: 14px; color: #4D5065;">Last step · what will be sent, the pre-flight results, and how the run should behave</span>
+      </div>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <a href="Launch.dc.html" class="btn btn-s">Back to parameters</a>
+        <button type="button" class="btn btn-p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12 M7 8l5-5 5 5 M5 21h14"/></svg>Launch run</button>
+      </div>
+    </div>
+
+    <nav aria-label="Launch steps" style="display: flex; gap: 6px; align-items: center; flex-wrap: wrap;">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="6">
+        <a href="{{s.href}}" aria-current="{{s.cur}}" style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px 0 6px; border-radius: 10px; background: {{s.bg}}; text-decoration: none; color: {{s.fg}}; font-size: 13px; font-weight: {{s.w}};">
+          <span style="width: 22px; height: 22px; border-radius: 11px; background: {{s.dot}}; color: {{s.dotFg}}; box-shadow: {{s.ring}}; display: flex; align-items: center; justify-content: center; font-size: 11.5px; font-weight: 700;">{{s.mark}}</span>{{s.label}}<span style="font-weight: 400; color: #6E7287; font-size: 12px;">{{s.sub}}</span>
+        </a>
+        <span aria-hidden="true" style="color: #C4C7D4; font-size: 12px;">{{s.sep}}</span>
+      </sc-for>
+    </nav>
+
+    <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start;">
+      <div style="flex: 999 1 600px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+
+        <section class="card" aria-label="Summary" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600; flex-grow: 1;">Summary</h2>
+            <label style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #4D5065;">Run name <input class="mono" value="liver-tc-2026-10-26" aria-label="Run name" style="width: 220px; padding: 6px 9px; font-size: 12px;"></label>
+          </div>
+          <dl style="margin: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px 16px; font-size: 13px;">
+            <sc-for list="{{facts}}" as="f" hint-placeholder-count="8">
+              <div style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><dt style="color: #6E7287; font-size: 11.5px; display: flex; justify-content: space-between; gap: 6px;"><span>{{f.k}}</span><a href="{{f.href}}" style="font-weight: 600; text-decoration: none;">{{f.edit}}</a></dt><dd style="margin: 0; font-weight: 600; font-family: {{f.font}}; font-size: {{f.fs}}; overflow-wrap: anywhere;">{{f.v}}</dd></div>
+            </sc-for>
+          </dl>
+        </section>
+
+        <section class="card" aria-label="Changed parameters" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600; flex-grow: 1;">Changed parameters <span style="font-weight: 400; color: #4D5065; font-size: 13px;">· 4 of 94 · everything else stays at the pipeline default</span></h2>
+            <a href="Launch.dc.html" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Show all 94</a>
+          </div>
+          <div style="border-radius: 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.09); overflow: hidden;">
+            <table class="tbl">
+              <thead><tr><th scope="col" style="width: 200px;">parameter</th><th scope="col">default</th><th scope="col">this run</th><th scope="col" style="width: 160px;">section</th></tr></thead>
+              <tbody>
+                <sc-for list="{{changed}}" as="c" hint-placeholder-count="4">
+                  <tr><td class="mono" style="font-size: 12px; font-weight: 600;">{{c.k}}</td><td class="mono" style="font-size: 12px; color: #6E7287; text-decoration: {{c.strike}};">{{c.d}}</td><td class="mono" style="font-size: 12px; color: #157A4B; font-weight: 600;">{{c.v}}</td><td style="font-size: 12px; color: #4D5065;">{{c.g}}</td></tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <span style="font-size: 12px; color: #4D5065;">Set by the environment, not by you: <span class="mono">custom_config_base</span>, <span class="mono">config_profile_name</span> (hidden parameters).</span>
+        </section>
+
+        <section class="card" aria-label="Inputs" style="padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+          <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.table}}"/></svg></span>
+          <span style="flex: 1 1 400px; display: flex; flex-direction: column; gap: 2px;"><strong style="font-size: 14px;">Inputs · samplesheet.csv · 47 rows</strong><span style="font-size: 12.5px; color: #4D5065;">94 FASTQ · 212 GB on /data/demo/fastq/2026-10-liver · built from files · 1 row left out (LIV_T6_2, unpaired) · checked by the runner 10:43</span></span>
+          <a href="LaunchSamplesheet.dc.html" class="btn btn-s btn-xs">Open samplesheet</a>
+        </section>
+
+        <section class="card" aria-label="Pre-flight" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span class="tile" style="background: #EEF6FA; color: #2F7FA8;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.server}}"/></svg></span>
+            <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Pre-flight · demo-hpc SLURM · htc</h2><span style="font-size: 12px; color: #4D5065;">Checked by the runner 10:44 · runs again on Launch</span></span>
+            <span class="chip" style="background: #E8F6EF; color: #157A4B;">5 ok</span><span class="chip" style="background: #FDF3E2; color: #8F5806;">1 warning</span>
+            <button type="button" class="btn btn-s btn-xs"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"/></svg>Recheck</button>
+          </div>
+          <sc-for list="{{checks}}" as="c" hint-placeholder-count="6">
+            <span style="display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; padding: 7px 10px; border-radius: 10px; background: {{c.rowBg}}; box-shadow: {{c.rail}};">
+              <span style="width: 22px; height: 22px; border-radius: 11px; background: {{c.bg}}; color: {{c.fg}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px;"><strong style="font-size: 13px;">{{c.t}}</strong><span style="color: #4D5065;">{{c.d}}</span></span>
+              <span style="font-size: 11.5px; font-weight: 600; color: {{c.fg}}; white-space: nowrap;">{{c.v}}</span>
+            </span>
+          </sc-for>
+        </section>
+      </div>
+
+      <aside style="flex: 1 1 360px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+        <section class="card" aria-label="Gates" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <span class="tile" style="background: #FDF6EA; color: #D9890B;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.flag}}"/></svg></span>
+            <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gates</h2><span style="font-size: 12px; color: #4D5065;">Optional stop points for a review</span></span>
+            <span class="chip" style="background: #F1F2F6; color: #4D5065;">Optional</span>
+          </div>
+          <div style="border-radius: 12px; background: #E8F6EF; padding: 10px 12px; display: flex; gap: 10px; align-items: center;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#157A4B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M4 12h14 M13 6l6 6-6 6"/></svg>
+            <span style="display: flex; flex-direction: column; gap: 1px;"><strong style="font-size: 13.5px; color: #0F1020;">No gates — the run goes straight through</strong><span style="font-size: 12px; color: #33364A;">Default. Nobody needs to approve anything.</span></span>
+          </div>
+          <div role="list" aria-label="Stages" style="display: flex; flex-direction: column;">
+            <sc-for list="{{stages}}" as="s" hint-placeholder-count="4">
+              <div role="listitem" style="display: flex; align-items: center; gap: 10px;">
+                <span style="width: 26px; height: 26px; border-radius: 8px; background: {{s.tile}}; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{s.n}}</span>
+                <span style="flex-grow: 1; font-size: 13px; font-weight: 600;">{{s.name}}</span>
+                <span style="font-size: 11.5px; color: #6E7287;">{{s.tasks}}</span>
+              </div>
+              <div style="display: flex; align-items: center; gap: 10px; height: 24px;">
+                <span style="width: 26px; display: flex; justify-content: center; flex-shrink: 0;"><span style="width: 2px; height: 24px; background: {{s.line}};"></span></span>
+                <a href="#" style="font-size: 11.5px; font-weight: 600; text-decoration: none; color: {{s.addFg}}; display: {{s.addShow}}; align-items: center; gap: 4px;">+ gate here</a>
+                <span style="font-size: 11.5px; color: #157A4B; font-weight: 600; display: {{s.endShow}};">→ results published</span>
+              </div>
+            </sc-for>
+          </div>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">Stages come from the lab overlay <strong style="color: #33364A;">rnaseq-demo-lab v2</strong>; it declares none of them as a gate. You can still pause a running run after any stage from Run detail.</span>
+          <button type="button" class="btn btn-s btn-xs" style="align-self: flex-start;">+ Add a gate after a stage…</button>
+        </section>
+
+        <section class="card" aria-label="Notifications" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Notifications</h2>
+          <sc-for list="{{notif}}" as="n" hint-placeholder-count="3">
+            <span style="display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: {{n.fg}};">
+              <span class="sw" role="switch" aria-checked="{{n.on}}" style="background: {{n.swBg}};"><span style="left: {{n.knob}};"></span></span>
+              <span style="flex-grow: 1;"><strong>{{n.t}}</strong> <span style="color: #6E7287;">· {{n.d}}</span></span>
+            </span>
+          </sc-for>
+          <span style="font-size: 12px; color: #4D5065;">To <span class="mono">amartin@example.org</span> and Mattermost <strong style="color: #33364A;">#demo-lab-runs</strong> · <a href="Profile.dc.html" style="font-weight: 600; text-decoration: none;">defaults in Profile</a></span>
+        </section>
+
+        <section class="card" aria-label="Start" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Start</h2>
+          <div role="radiogroup" aria-label="When to start" style="display: flex; flex-direction: column; gap: 6px; font-size: 13px;">
+            <label style="display: flex; align-items: center; gap: 8px;"><input type="radio" name="start" checked style="width: auto; margin: 0;"> <strong>Now</strong> <span style="color: #6E7287; font-size: 12px;">· estimated 14 h · done Tue 01:10</span></label>
+            <label style="display: flex; align-items: center; gap: 8px; color: #33364A;"><input type="radio" name="start" style="width: auto; margin: 0;"> Later <span style="color: #6E7287; font-size: 12px;">(optional)</span> <input class="mono" value="2026-10-28 18:30" aria-label="Scheduled start" disabled style="width: 150px; padding: 5px 8px; font-size: 12px; background: #F7F7FB; color: #9A9EB0;"></label>
+          </div>
+          <span style="font-size: 12px; color: #4D5065;">A start inside the maintenance window (Tue 28 Oct 06:00–18:00) waits until it ends.</span>
+        </section>
+
+        <div style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+          <span style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><strong style="color: #FFFFFF; font-size: 14px;">Ready · 1 warning, nothing blocks</strong><a href="#" style="color: #C9B8F5; font-size: 12px; font-weight: 600; text-decoration: none;">View request</a></span>
+          <span class="mono" style="font-size: 11.5px; color: #A6A9BA;">POST /api/v1/runs · params-file with 4 values · gates: none</span>
+          <button type="button" class="btn btn-p" style="height: 46px; justify-content: center; background: #8B6BE0;">Launch run</button>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    table: 'M3 5h18v14H3z M3 10h18 M3 15h18 M9 5v14',
+    server: 'M4 5h16v6H4z M4 13h16v6H4z M8 8h.01 M8 16h.01',
+    refresh: 'M20 11a8 8 0 0 0-14.9-3 M4 4v4h4 M4 13a8 8 0 0 0 14.9 3 M20 20v-4h-4',
+    flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5'
+  };
+  const stepDefs = [['Workflow', 'nf-core/rnaseq', 'done', 'Workflows.dc.html'], ['Version', '3.27.0', 'done', '#'], ['Parameters', '4 changed', 'done', 'Launch.dc.html'], ['Inputs', '47 rows', 'done', 'LaunchSamplesheet.dc.html'], ['Environment', 'demo-hpc', 'done', 'EnvCapacity.dc.html'], ['Review & launch', '', 'cur', '#']];
+  const steps = stepDefs.map(([label, sub, st, href], i) => ({
+    label, sub, href, cur: st === 'cur' ? 'step' : 'false', sep: i < stepDefs.length - 1 ? '›' : '',
+    bg: st === 'cur' ? '#F6F2FE' : 'transparent', fg: st === 'todo' ? '#6E7287' : '#22253A', w: st === 'cur' ? 600 : 500,
+    dot: st === 'done' ? '#7750D4' : (st === 'cur' ? '#FFFFFF' : '#F1F2F6'), dotFg: st === 'done' ? '#FFFFFF' : (st === 'cur' ? '#6344B2' : '#6E7287'),
+    ring: st === 'cur' ? 'inset 0 0 0 2px #7750D4' : 'none', mark: st === 'done' ? '✓' : String(i + 1)
+  }));
+  const sans = "'Inter', sans-serif", mono = "'JetBrains Mono', monospace";
+  const F = (k, v, edit, href, m) => ({ k, v, edit: edit || '', href: href || '#', font: m ? mono : sans, fs: m ? '12px' : '13px' });
+  const ok = 'M5 12l5 5L20 7', warn = 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z';
+  const chk = (s, t, d, v) => s === 'ok'
+    ? { t, d, v, bg: '#E8F6EF', fg: '#157A4B', icon: ok, rowBg: 'transparent', rail: 'none' }
+    : { t, d, v, bg: '#FFFFFF', fg: '#8F5806', icon: warn, rowBg: '#FDF3E2', rail: 'inset 4px 0 0 #D9890B' };
+  const tiles = ['#5A4FCF', '#8B5CF6', '#EC5F87', '#F9A947'];
+  const st = [['1', 'Preprocessing', '≈ 288 tasks'], ['2', 'Alignment & QC', '≈ 336 tasks'], ['3', 'Quantification', '≈ 300 tasks'], ['4', 'Reporting', '≈ 12 tasks']];
+  const stages = st.map(([n, name, tasks], i) => ({ n, name, tasks, tile: tiles[i], line: i < 3 ? '#DFE1EA' : 'transparent', addShow: i < 3 ? 'inline-flex' : 'none', endShow: i < 3 ? 'none' : 'inline', addFg: '#8A8DA3' }));
+  const sw = (t, d, on, dis) => ({ t, d, on: on ? 'true' : 'false', swBg: dis ? '#EEEFF5' : (on ? '#7750D4' : '#C4C7D4'), knob: on ? '16px' : '2px', fg: dis ? '#9A9EB0' : '#0F1020' });
+  return {
+    ic, steps, stages,
+    facts: [
+      F('Workflow', 'nf-core/rnaseq', 'Change', 'Workflows.dc.html'),
+      F('Version', '3.27.0 · release tag', 'Change', '#'),
+      F('Project', 'Liver time course', '', '#'),
+      F('Launched as', 'Alice Martin (amartin)', '', '#'),
+      F('Environment', 'demo-hpc SLURM · htc', 'Change', 'EnvCapacity.dc.html'),
+      F('Profile', 'singularity', 'Change', '#'),
+      F('Work dir', '/scratch/demo/spectio/liver-tc-2026-10-26', '', '#', true),
+      F('Results', '/data/demo/results/rnaseq/liver-tc-2026-10-26', '', '#', true)
+    ],
+    changed: [
+      { k: 'input', d: '—', v: 'samplesheet.csv (47 rows)', g: 'Input / output', strike: 'none' },
+      { k: 'outdir', d: '—', v: '…/rnaseq/liver-tc-2026-10-26', g: 'Input / output', strike: 'none' },
+      { k: 'min_mapped_reads', d: '5', v: '10', g: 'Alignment', strike: 'line-through' },
+      { k: 'skip_pseudo_alignment', d: 'false', v: 'true', g: 'Alignment', strike: 'line-through' }
+    ],
+    checks: [
+      chk('warn', 'Work dir quota', '+4.6 TB estimated (47 samples × last run) → 83 % of 50 TB on /scratch/demo. Fits, but 2 old work dirs are near the 30-day purge.', '74 → 83 %'),
+      chk('ok', 'Partition limits', 'Head job 2 CPU · 4 GB · 72 h on htc (max 7 days) · STAR_ALIGN 72 GB ≤ 512 GB per node', 'fits'),
+      chk('ok', 'Container images', '31 needed · 29 in /scratch/demo/sif · 2 pulled at start (1.2 GB)', 'available'),
+      chk('ok', 'Inodes', '≈ 410 k files expected · 6.2 M / 10 M used', 'ok'),
+      chk('ok', 'Maintenance window', 'Estimated 14 h, ends Tue 01:10, before maint_1028 starts at 06:00', 'clear'),
+      chk('ok', 'Inputs readable', '94 FASTQ files read as amartin', 'ok')
+    ],
+    notif: [
+      sw('On failure', 'with the failure class and a relaunch link', true),
+      sw('On success', 'with links to MultiQC and the results', true),
+      sw('When a gate opens', 'not used: this run has no gates', false, true)
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

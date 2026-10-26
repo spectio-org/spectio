@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — environment software deployment</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',monospace}
+.tile{width:32px;height:32px;border-radius:10px;background:#F6F2FE;color:#6344B2;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.btn{height:34px;padding:0 12px;border-radius:10px;border:none;font:600 12.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+@keyframes stripe{from{background-position:0 0}to{background-position:20px 0}}
+.pulling{background-image:repeating-linear-gradient(135deg,#3B82F6 0 6px,#7FB0F9 6px 10px);background-size:20px 100%;animation:stripe 1s linear infinite}
+@media (prefers-reduced-motion: reduce){.pulling{animation:none}}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Environments / demo-hpc · SLURM / Software" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="environments" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.box}}"/></svg>
+      </span>
+      <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">demo-hpc · SLURM</h1>
+        <span style="font-size: 14px; color: #4D5065;">How tasks get their tools here: containers, conda or modules, as found by the runner on hpc-login-1.</span>
+      </div>
+      <span style="font-size: 13px; font-weight: 600; color: #157A4B; display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63;"></span>Runner online · checked 10:41</span>
+    </div>
+
+    <nav aria-label="Environment sections" style="display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #EEEFF5;">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="7">
+        <a href="{{t.href}}" aria-current="{{t.cur}}" style="padding: 9px 12px; font-size: 13.5px; font-weight: {{t.w}}; color: {{t.c}}; text-decoration: none; box-shadow: {{t.u}};">{{t.label}}</a>
+      </sc-for>
+    </nav>
+
+    <div style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px;">
+      <sc-for list="{{methods}}" as="m" hint-placeholder-count="5">
+        <section class="card" style="overflow: hidden; display: flex; flex-direction: column; background: {{m.cbg}};">
+          <span style="height: 4px; background: {{m.rail}};"></span>
+          <div style="padding: 11px 12px; display: flex; flex-direction: column; gap: 6px;">
+            <span style="display: flex; align-items: center; gap: 8px;">
+              <span class="tile" style="width: 28px; height: 28px; border-radius: 9px; background: {{m.tbg}}; color: {{m.tfg}};"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.icon}}"/></svg></span>
+              <span style="font-size: 13.5px; font-weight: 600;">{{m.name}}</span>
+            </span>
+            <span style="display: flex; align-items: center; gap: 5px; font-size: 12px; font-weight: 600; color: {{m.fg}};"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.sicon}}"/></svg>{{m.state}}</span>
+            <span style="font-size: 11.5px; line-height: 1.45; color: #4D5065;">{{m.d}}</span>
+            <a href="#" style="font-size: 12px; font-weight: 600; text-decoration: none;">{{m.link}}</a>
+          </div>
+        </section>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start;">
+      <section class="card" style="flex: 3 1 560px; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="display: flex; align-items: center; gap: 10px;">
+          <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.disk}}"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Apptainer image cache</h2><span style="font-size: 12px; color: #4D5065;"><span class="mono">/scratch/demo/amartin/sif</span> · Lustre · shared by Nextflow and Snakemake runs</span></span>
+          <button type="button" class="btn" style="background: #FFFFFF; color: #B02A2A; box-shadow: inset 0 0 0 1px #F2B8B8;">Clean 18 unused images · 64 GB</button>
+        </span>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span style="position: relative; height: 10px; border-radius: 5px; background: #EEEFF5; overflow: visible; display: block;">
+            <span style="display: block; height: 10px; width: 87.6%; border-radius: 5px; background: #D9890B;"></span>
+            <span title="automatic clean-up threshold" style="position: absolute; left: 90%; top: -3px; width: 2px; height: 16px; background: #33364A;"></span>
+          </span>
+          <span style="display: flex; justify-content: space-between; font-size: 12px;"><span style="color: #8F5806; font-weight: 600;">438 GB of 500 GB quota · 112 images</span><span style="color: #4D5065;">automatic clean-up of the least recently used at 90 % (black mark)</span></span>
+        </div>
+        <div style="border-radius: 12px; box-shadow: 0 0 0 1px #EEEFF5; overflow: hidden;">
+          <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; table-layout: fixed;">
+            <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 11.5px;">
+              <th scope="col" style="padding: 7px 12px; font-weight: 600;">Oldest images</th><th scope="col" style="padding: 7px 8px; font-weight: 600; width: 58px; text-align: right;">Size</th><th scope="col" style="padding: 7px 8px; font-weight: 600; width: 82px;">Last used</th><th scope="col" style="padding: 7px 8px; font-weight: 600; width: 150px;">Last used by</th><th scope="col" style="padding: 7px 12px; font-weight: 600; width: 74px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Action</span></th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{images}}" as="i" hint-placeholder-count="5">
+                <tr style="border-top: 1px solid #EEEFF5;">
+                  <td style="padding: 6px 12px; overflow: hidden; white-space: nowrap;" title="{{i.reg}}/{{i.name}}"><span class="mono" style="display: block; font-size: 11.5px; color: #0F1020; overflow: hidden; text-overflow: ellipsis;">{{i.name}}</span><span style="display: block; font-size: 11px; color: #6E7287;">{{i.reg}}</span></td>
+                  <td style="padding: 7px 8px; text-align: right; font-weight: 600;">{{i.size}}</td>
+                  <td style="padding: 7px 8px; color: #33364A;">{{i.used}}</td>
+                  <td style="padding: 7px 8px; color: {{i.byfg}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{i.by}}</td>
+                  <td style="padding: 5px 12px; text-align: right;"><button type="button" title="{{i.why}}" style="height: 26px; padding: 0 9px; border-radius: 8px; border: none; background: #FFFFFF; box-shadow: inset 0 0 0 1px {{i.ring}}; color: {{i.bfg}}; font: 600 11.5px 'Inter', sans-serif;">{{i.action}}</button></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <span style="font-size: 12px; color: #4D5065;">Images used by a paused or failed run that can still be resumed are kept. Measured by the runner every 6 h (<span class="mono">du</span> on the cache, <span class="mono">lfs quota</span> for the quota).</span>
+      </section>
+
+      <section class="card" style="flex: 2 1 380px; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="display: flex; align-items: center; gap: 10px;">
+          <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sliders}}"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Per-engine settings</h2><span style="font-size: 12px; color: #4D5065;">Added by Spectio at launch · a run can override</span></span>
+          <a href="#" style="font-size: 13px; font-weight: 600; text-decoration: none;">Edit</a>
+        </span>
+        <sc-for list="{{engines}}" as="e" hint-placeholder-count="2">
+          <div style="display: flex; flex-direction: column; gap: 5px;">
+            <span style="display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600;"><img src="{{e.logo}}" width="16" height="16" alt="" style="display: block; object-fit: contain;">{{e.name}}<span style="font-weight: 500; color: #6E7287; font-size: 12px;">{{e.where}}</span></span>
+            <code class="mono" style="font-size: 11.5px; line-height: 1.6; color: #33364A; background: #F7F7FB; border-radius: 8px; padding: 8px 10px; white-space: pre-wrap;">{{e.cfg}}</code>
+          </div>
+        </sc-for>
+        <div role="note" style="display: flex; gap: 8px; align-items: flex-start; font-size: 12px; line-height: 1.45; color: #33364A; border-radius: 10px; background: #EEF4FE; padding: 8px 10px;">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#1D5FC9" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 8h.01 M11 12h1v5h1 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>
+          <span>Compute nodes have no internet here. An image missing from the cache makes the task fail on the node, so pre-pull before launching.</span>
+        </div>
+      </section>
+    </div>
+
+    <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+      <span style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <span class="tile"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.down}}"/></svg></span>
+        <span style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 7px;">Pre-pull images for <img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="16" height="16" alt="" style="display: block;">nf-core/sarek 3.5.1</h2><span style="font-size: 12px; color: #4D5065;">Images of <span class="mono">-profile singularity</span>, pulled by SLURM job 4815162 (htc · 2 CPU · 8 GB · 2 h)</span></span>
+        <span style="font-size: 12.5px; font-weight: 600; color: #1D5FC9; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="#1D5FC9" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Pulling · 49 of 62 · about 6 min left</span>
+        <button type="button" class="btn btn-s">Pause</button>
+        <button type="button" class="btn btn-s" style="color: #B02A2A;">Cancel</button>
+      </span>
+      <div style="display: flex; flex-direction: column; gap: 5px;">
+        <span role="img" aria-label="38 already cached, 10 pulled, 1 failed, 1 pulling, 12 waiting" style="display: flex; height: 12px; border-radius: 6px; overflow: hidden; gap: 2px;">
+          <span style="flex: 38 0 0; background: #1F9D63;"></span>
+          <span style="flex: 10 0 0; background: #7FCFA6;"></span>
+          <span style="flex: 1 0 0; background: #DC3B3B; min-width: 6px;"></span>
+          <span class="pulling" style="flex: 1 0 0; min-width: 6px;"></span>
+          <span style="flex: 12 0 0; background: #E6E7EF;"></span>
+        </span>
+        <span style="display: flex; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #4D5065;">
+          <sc-for list="{{legend}}" as="l" hint-placeholder-count="5"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 2px; background: {{l.c}};"></span><strong style="color: #0F1020;">{{l.n}}</strong> {{l.t}}</span></sc-for>
+          <span style="margin-left: auto;">21.6 GB downloaded · a failed pull is retried once</span>
+        </span>
+      </div>
+      <div style="display: flex; flex-direction: column;">
+        <sc-for list="{{pulls}}" as="p" hint-placeholder-count="5">
+          <div style="display: flex; flex-direction: column; gap: 6px; padding: 7px 0 7px 10px; border-top: 1px solid #EEEFF5; box-shadow: inset 3px 0 0 {{p.rail}};">
+            <span style="display: flex; align-items: center; gap: 12px; font-size: 12.5px;">
+              <span style="width: 92px; flex-shrink: 0; display: flex; align-items: center; gap: 5px; font-weight: 600; color: {{p.fg}};"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.icon}}"/></svg>{{p.state}}</span>
+              <span class="mono" style="flex: 1 1 0; min-width: 0; font-size: 11.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{p.img}}</span>
+              <span style="width: 150px; color: #4D5065; font-size: 12px;">{{p.proc}}</span>
+              <span style="width: 86px; text-align: right; font-weight: 600; white-space: nowrap;">{{p.size}}</span>
+              <span style="width: 54px; text-align: right; color: #4D5065;">{{p.time}}</span>
+            </span>
+            <sc-if value="{{p.err}}" hint-placeholder-val="{{false}}">
+              <div style="margin-left: 104px; display: flex; gap: 12px; align-items: flex-start; flex-wrap: wrap; border-radius: 10px; background: #FFF6F6; box-shadow: inset 0 0 0 1px #F2B8B8; padding: 9px 11px;">
+                <span style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 5px; font-size: 12px; color: #33364A;">
+                  <code class="mono" style="font-size: 11px; line-height: 1.5; color: #8A1F1F; white-space: pre-wrap;">FATAL: While making image from oci registry: error fetching image to cache: … toomanyrequests: You have reached your pull rate limit.</code>
+                  <span><strong>Registry rate limit, not a pipeline error.</strong> Docker Hub counts anonymous pulls per address, and the whole login node shares one. Add a Docker Hub token to this environment, then retry. Two later images come from Docker Hub too.</span>
+                </span>
+                <span style="display: flex; gap: 6px; flex-wrap: wrap;">
+                  <a href="EnvAccess.dc.html" class="btn" style="background: #7750D4; color: #FFFFFF;">Add a registry token</a>
+                  <button type="button" class="btn btn-s">Retry at 11:20</button>
+                </span>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    box: 'M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5 M12 12v9',
+    snake: 'M4 18c3 0 3-4 6-4s3 4 6 4 3-4 4-4 M4 10c3 0 3-4 6-4s3 4 6 4 3-4 4-4',
+    layers: 'M12 3l9 5-9 5-9-5z M3 13l9 5 9-5',
+    whale: 'M3 13h15a3 3 0 0 0 3-3 M5 13v-3h3v3 M8 10V7h3v6 M11 10h3v3 M4 13c0 4 3 6 7 6 5 0 8-3 9-6',
+    wave: 'M3 12c2-3 4-3 6 0s4 3 6 0 4-3 6 0 M3 17c2-3 4-3 6 0s4 3 6 0 4-3 6 0',
+    disk: 'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3',
+    sliders: 'M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4',
+    down: 'M12 4v11 M7 10l5 5 5-5 M5 20h14'
+  };
+  const I = { ok: 'M5 12l5 5L20 7', no: 'M6 6l12 12 M18 6L6 18', na: 'M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M5.6 18.4L18.4 5.6', off: 'M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', play: 'M8 5v14l11-7z', clock: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', star: 'M12 3l2.6 5.6 6 .7-4.5 4.1 1.2 6L12 16.5 6.7 19.4l1.2-6L3.4 9.3l6-.7z' };
+  const tabNames = [['Compute', 'Environments.dc.html'], ['Capacity', 'EnvCapacity.dc.html'], ['Storage', 'EnvStorage.dc.html'], ['Software', 'EnvSoftware.dc.html'], ['Credentials', 'EnvAccess.dc.html'], ['Limits', 'EnvAccess.dc.html'], ['Activity', '#']];
+  const L = { nf: '/_blob/636203cdee0bc09b61efe0fa351e239b', smk: '/_blob/7a35665829f51132cb3bcb9a4c3e638c' };
+  const m = (name, icon, state, sicon, fg, rail, d, link, dim) => ({ name, icon, state, sicon, fg, rail, d, link, cbg: dim ? '#FAFAFC' : '#FFFFFF', tbg: dim ? '#F1F2F6' : '#F6F2FE', tfg: dim ? '#6E7287' : '#6344B2' });
+  const img = (reg, name, size, used, by, action, kind, why) => {
+    const K = { clean: ['#F2B8B8', '#B02A2A', '#33364A'], keep: ['#EEEFF5', '#9A9EB0', '#6344B2'] }[kind];
+    return { reg, name, size, used, by, action, ring: K[0], bfg: K[1], byfg: K[2], why };
+  };
+  const P = { done: ['Pulled', '#157A4B', '#7FCFA6', I.ok], fail: ['Failed', '#B02A2A', '#DC3B3B', I.no], run: ['Pulling', '#1D5FC9', '#3B82F6', I.play], wait: ['Waiting', '#4D5065', '#DFE1EA', I.clock] };
+  const pull = (s, img, proc, size, time, err) => ({ state: P[s][0], fg: P[s][1], rail: P[s][2], icon: P[s][3], img, proc, size, time, err: !!err });
+  return {
+    ic,
+    tabs: tabNames.map(([label, href]) => { const on = label === 'Software'; return { label, href, cur: on ? 'page' : 'false', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' }; }),
+    methods: [
+      m('Apptainer 1.4.2', ic.box, 'Default for containers', I.star, '#157A4B', '#1F9D63', 'From module apptainer/1.4.2. docker:// images are converted to SIF files on first use.', 'Settings', false),
+      m('conda / mamba', ic.snake, 'Available', I.ok, '#157A4B', '#1F9D63', 'Miniforge 24.11 · mamba 2.0.5 · channels conda-forge, bioconda · envs in /scratch/demo/amartin/conda.', '18 environments · 23 GB', false),
+      m('Environment modules', ic.layers, 'Available · not default', I.ok, '#157A4B', '#7FCFA6', 'Lmod 8.7 · 1,240 modules. Used only when a workflow asks for them.', 'Browse modules', false),
+      m('Docker', ic.whale, 'Not on this cluster', I.na, '#4D5065', '#DFE1EA', 'No Docker daemon on login or compute nodes (it needs root). Docker images still run through Apptainer.', 'Why?', true),
+      m('Wave', ic.wave, 'Off · optional', I.off, '#4D5065', '#DFE1EA', 'Builds containers from conda recipes on demand. Needs outbound access to the Wave service and a token.', 'Turn on', true)
+    ],
+    images: [
+      img('depot.galaxyproject.org', 'trim-galore:0.6.7', '0.4 GB', '214 days', 'nf-core/rnaseq 3.12.0', 'Clean', 'clean', ''),
+      img('docker.io', 'nfcore/cellranger:7.1.0', '3.2 GB', '187 days', 'scrnaseq-pilot-02', 'Clean', 'clean', ''),
+      img('quay.io/biocontainers', 'star:2.7.10a', '1.1 GB', '160 days', 'rnaseq-2026-04-11', 'Clean', 'clean', ''),
+      img('depot.galaxyproject.org', 'gatk4:4.4.0.0', '1.6 GB', '96 days', 'sarek-trio-02 · paused', 'Kept', 'keep', 'Kept: sarek-trio-02 is paused and can be resumed'),
+      img('community.wave.seqera.io/library', 'multiqc:1.25.1', '0.6 GB', '88 days', 'atac-batch-08', 'Clean', 'clean', '')
+    ],
+    engines: [
+      { name: 'Nextflow', where: 'config added at launch', logo: L.nf, cfg: "singularity.enabled     = true\nsingularity.autoMounts  = true\nsingularity.cacheDir    = '/scratch/demo/amartin/sif'\nsingularity.pullTimeout = '60 min'\n// nf-core: -profile singularity" },
+      { name: 'Snakemake', where: 'flags added at launch', logo: L.smk, cfg: '--software-deployment-method apptainer conda\n--apptainer-prefix /scratch/demo/amartin/sif\n--apptainer-args "--bind /scratch/demo,/data/demo"\n--conda-prefix /scratch/demo/amartin/conda' }
+    ],
+    legend: [
+      { n: '38', t: 'already cached', c: '#1F9D63' },
+      { n: '10', t: 'pulled now', c: '#7FCFA6' },
+      { n: '1', t: 'failed', c: '#DC3B3B' },
+      { n: '1', t: 'pulling', c: '#3B82F6' },
+      { n: '12', t: 'waiting', c: '#E6E7EF' }
+    ],
+    pulls: [
+      pull('done', 'depot.galaxyproject.org/singularity/bwa-mem2:2.2.1--he70b90d_6', 'BWAMEM2_MEM', '0.5 GB', '38 s'),
+      pull('fail', 'docker://docker.io/google/deepvariant:1.6.1', 'DEEPVARIANT_RUNDEEPVARIANT', '—', '2 s', true),
+      pull('run', 'depot.galaxyproject.org/singularity/ensembl-vep:111.0--pl5321h2a3209d_0', 'ENSEMBLVEP_VEP', '1.3 / 2.4 GB', '1 min'),
+      pull('wait', 'depot.galaxyproject.org/singularity/manta:1.6.0--h9ee0642_1  · and 11 more', 'MANTA_GERMLINE …', '', '')
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

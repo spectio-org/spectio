@@ -1,0 +1,305 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, Xenium section QC</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rxe:has(input[value="sum"]:checked) .pn-sum,
+.rxe:has(input[value="sec"]:checked) .pn-sec,
+.rxe:has(input[value="report"]:checked) .pn-report,
+.rxe:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.tsv td,.tsv th{padding:6px 10px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+.chan{display:flex;align-items:center;gap:5px;height:24px;padding:0 7px;border-radius:8px;font-size:11.5px;font-weight:600;cursor:pointer}
+.mono{font-family:'JetBrains Mono',monospace}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/spatialaxe · kidney-xen-01" project="demo-lab / Kidney spatial atlas" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rxe" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">6 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; color: #6E7287;">Data: nf-core/test-datasets@spatialaxe · Xenium_V1_Protein_Human_Kidney_tiny_outs.zip (10x Genomics)</span>
+      <a href="ReviewSpots.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewVolume.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stage 1 done, stage 2 finished, gate awaiting review, stages 3 and 4 not started"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex: 1 1 0; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Xenium section QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· kidney-xen-01 · #451</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: block; line-height: 1.5;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">nf-core/spatialaxe 1.0.1 · 3 sections · paused after section QC (stage 2 of 4), before resegmentation · gate from the lab overlay · <strong style="color: #8F5806;">waiting 34 min</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span title="You · Alice Martin" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="Bruno Keller" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">BK</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · suggests</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvxe" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">2 to check</span></label>
+      <label class="rv-tab"><input type="radio" name="rvxe" value="sec" checked aria-label="Sections"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M10 10v10"/></svg>Sections<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">3 · 1 rule</span></label>
+      <label class="rv-tab"><input type="radio" name="rvxe" value="report" aria-label="Report"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Report<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">analysis_summary.html</span></label>
+      <label class="rv-tab"><input type="radio" name="rvxe" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">3</span></label>
+    </div>
+
+    <!-- SECTIONS -->
+    <section class="rv-pn pn-sec" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 12px; align-items: stretch;">
+
+        <!-- three views of the real section -->
+        <div style="flex: 0 0 552px; box-sizing: border-box; border-radius: 16px; background: #14162A; padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; color: #E6E7EE;">
+          <div style="display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">
+            <strong style="font-size: 13px;" class="mono">kidney_tiny</strong>
+            <span style="font-size: 11.5px; color: #9A9EB0;">morphology_focus · level 1 · 0.425 µm/px</span>
+            <span style="flex-grow: 1;"></span>
+            <span role="switch" aria-checked="true" class="chan" style="background: rgba(255,255,255,0.18); color: #FFFFFF;">Cell boundaries</span>
+            <span role="switch" aria-checked="true" class="chan" style="background: rgba(255,255,255,0.18); color: #FFFFFF;">qv ≥ 20 only</span>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <sc-for list="{{views}}" as="v" hint-placeholder-count="3">
+              <div style="display: flex; flex-direction: column; gap: 5px; width: 168px;">
+                <div style="position: relative; width: 168px; height: 336px; border-radius: 8px; overflow: hidden; background: #0B0C18;">
+                  <img src="{{v.src}}" alt="{{v.alt}}" style="position: absolute; inset: 0; width: 100%; height: 100%;">
+                  <span style="position: absolute; left: 4%; right: 4%; top: 24%; height: 21%; border: 1.5px dashed #F2B544; border-radius: 6px; display: {{v.band}};"></span>
+                  <span style="position: absolute; left: 6%; top: calc(24% + 4px); font-size: 10px; font-weight: 600; color: #0F1020; background: #F2B544; padding: 1px 5px; border-radius: 5px; display: {{v.band}};">sparse band</span>
+                  <span style="position: absolute; left: 6px; bottom: 6px; display: {{v.scale}}; flex-direction: column; gap: 2px; font-size: 10px; background: rgba(15,16,32,0.78); padding: 3px 6px; border-radius: 5px;"><span style="display: block; width: 68px; height: 3px; background: #FFFFFF;"></span>50 µm</span>
+                </div>
+                <span style="font-size: 11.5px; font-weight: 600;">{{v.t}}</span>
+                <span style="font-size: 10.5px; color: #9A9EB0; line-height: 1.35;">{{v.sub}}</span>
+              </div>
+            </sc-for>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; font-size: 11px; color: #C4C7D4;">
+            <sc-for list="{{genes}}" as="g" hint-placeholder-count="6"><span style="display: flex; align-items: center; gap: 4px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: {{g.c}};"></span><span class="mono">{{g.g}}</span></span></sc-for>
+            <span style="flex-grow: 1;"></span><span>streamed by the runner on demo-hpc</span>
+          </div>
+        </div>
+
+        <!-- metrics_summary -->
+        <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+          <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 14px 2px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">metrics_summary.csv · kidney_tiny</h2><span style="font-size: 12px; color: #6E7287;">Xenium Ranger output · lab thresholds</span></div>
+            <div style="padding: 0 14px 4px; font-size: 11.5px; color: #4D5065;"><span class="mono">panel_name</span> {{panel}}</div>
+            <table class="tsv" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+              <tbody>
+                <sc-for list="{{metrics}}" as="m" hint-placeholder-count="9">
+                  <tr style="box-shadow: inset 3px 0 0 {{m.rail}}; background: {{m.bg}};">
+                    <td style="width: 16px; padding-right: 0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{m.ic}}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.icon}}"/></svg></td>
+                    <td class="mono" style="font-size: 11.5px;">{{m.k}}</td>
+                    <td style="font-weight: 600; text-align: right; color: {{m.fg}};">{{m.v}}</td>
+                    <td style="font-size: 11.5px; color: #4D5065;">{{m.rule}}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+          <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 14px; font-weight: 600;">Top genes · transcripts</h2><span style="font-size: 11.5px; color: #6E7287;">transcripts.parquet · is_gene</span></div>
+            <sc-for list="{{topGenes}}" as="g" hint-placeholder-count="6">
+              <div style="display: flex; align-items: center; gap: 8px; font-size: 12px;">
+                <span class="mono" style="width: 70px; display: flex; align-items: center; gap: 5px; font-weight: 600;"><span style="width: 7px; height: 7px; border-radius: 4px; background: {{g.c}};"></span>{{g.g}}</span>
+                <span style="flex: 1 1 auto; height: 10px; border-radius: 3px; background: #F4F4F8; position: relative;"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: {{g.w}}; background: #8B5CF6; border-radius: 3px;"></span></span>
+                <span style="width: 44px; text-align: right;">{{g.n}}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: stretch;">
+        <!-- qv histogram -->
+        <div style="flex: 0 0 268px; box-sizing: border-box; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 14px; font-weight: 600;">Transcript qv</h2><span style="font-size: 11.5px; color: #6E7287;">{{nTx}} transcripts</span></div>
+          <div role="img" aria-label="Histogram of transcript quality values; {{q20pct}} at qv 20 or more" style="position: relative; height: 118px;">
+            <div style="position: absolute; left: 0; right: 0; top: 0; height: 100px; display: flex; align-items: flex-end; gap: 4px;">
+              <sc-for list="{{qv}}" as="b" hint-placeholder-count="5"><span title="{{b.t}}: {{b.n}}" style="flex: 1 1 0; height: {{b.h}}; background: {{b.fill}}; border-radius: 3px 3px 0 0; position: relative;"><span style="position: absolute; left: 0; right: 0; top: -15px; text-align: center; font-size: 10px; color: #33364A;">{{b.n}}</span></span></sc-for>
+            </div>
+            <span style="position: absolute; top: -2px; height: 102px; left: calc(40% - 1px); border-left: 2px solid #7750D4;"></span>
+            <div style="position: absolute; left: 0; right: 0; top: 100px; height: 1px; background: #C4C7D4;"></div>
+            <div style="position: absolute; left: 0; right: 0; top: 104px; display: flex; gap: 4px; font-size: 10.5px; color: #6E7287;"><sc-for list="{{qv}}" as="b" hint-placeholder-count="5"><span style="flex: 1 1 0; text-align: center;">{{b.t}}</span></sc-for></div>
+          </div>
+          <span style="font-size: 11.5px; color: #4D5065; line-height: 1.4;">qv ≥ 20 (violet line): <strong>{{q20pct}}</strong> by count. <span class="mono">fraction_transcripts_decoded_q20</span> {{q20}} is below the lab's 0.80.</span>
+        </div>
+
+        <!-- transcripts per cell -->
+        <div style="flex: 0 0 300px; box-sizing: border-box; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline;"><h2 style="margin: 0; font-size: 14px; font-weight: 600;">Transcripts per cell</h2><span style="font-size: 11.5px; color: #6E7287;">{{nCells}} cells</span></div>
+          <div role="img" aria-label="Histogram of transcripts per cell; rule keeps cells with 10 or more transcripts" style="position: relative; height: 118px;">
+            <div style="position: absolute; left: 0; width: calc(16.67% - 2px); top: 0; height: 100px; background: #F1F2F6; border-radius: 4px;"></div>
+            <div style="position: absolute; left: 0; right: 0; top: 0; height: 100px; display: flex; align-items: flex-end; gap: 4px;">
+              <sc-for list="{{tpc}}" as="b" hint-placeholder-count="6"><span title="{{b.t}}: {{b.n}} cells" style="flex: 1 1 0; height: {{b.h}}; background: {{b.fill}}; border-radius: 3px 3px 0 0; position: relative;"><span style="position: absolute; left: 0; right: 0; top: -15px; text-align: center; font-size: 10px; color: #33364A;">{{b.n}}</span></span></sc-for>
+            </div>
+            <div class="handle" style="position: absolute; top: 0; height: 100px; left: calc(16.67% - 1px); width: 0;"><span style="position: absolute; top: 0; bottom: 0; left: -1px; width: 2px; background: #7750D4;"></span><span style="position: absolute; bottom: -6px; left: -6px; width: 9px; height: 9px; border-radius: 6px; background: #FFFFFF; border: 2.5px solid #7750D4;"></span></div>
+            <div style="position: absolute; left: 0; right: 0; top: 100px; height: 1px; background: #C4C7D4;"></div>
+            <div style="position: absolute; left: 0; right: 0; top: 104px; display: flex; gap: 4px; font-size: 10.5px; color: #6E7287;"><sc-for list="{{tpc}}" as="b" hint-placeholder-count="6"><span style="flex: 1 1 0; text-align: center;">{{b.t}}</span></sc-for></div>
+          </div>
+          <span style="font-size: 11.5px; color: #4D5065; display: flex; align-items: center; gap: 6px; flex-wrap: wrap;">keep cells with ≥ <input value="10" aria-label="Minimum transcripts per cell" style="width: 36px; font: 600 11.5px 'Inter', sans-serif; border-radius: 6px; border: 1px solid #B9A3F5; padding: 2px 4px; background: #FBF9FF;"> transcripts · <strong style="color: #B02A2A;">{{removed}} cells removed</strong> · median {{med}}</span>
+        </div>
+
+        <!-- sections -->
+        <div style="flex: 1 1 0; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden; display: flex; flex-direction: column;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 10px 14px 2px;"><h2 style="margin: 0; font-size: 14px; font-weight: 600;">Sections · decide</h2><span style="font-size: 11.5px; color: #6E7287;">keep · flag · exclude</span></div>
+          <sc-for list="{{sections}}" as="s" hint-placeholder-count="3">
+            <div style="display: flex; flex-direction: column; gap: 4px; padding: 7px 14px 7px 12px; border-top: 1px solid #EEEFF5; box-shadow: inset 3px 0 0 {{s.rail}}; background: {{s.bg}};">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="{{s.ic}}" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"/></svg>
+                <strong class="mono" style="font-size: 12.5px;">{{s.id}}</strong>
+                <span style="font-size: 10.5px; font-weight: 600; padding: 1px 6px; border-radius: 6px; background: {{s.tbg}}; color: {{s.tfg}};">{{s.tag}}</span>
+                <span style="flex-grow: 1;"></span>
+                <span role="radiogroup" aria-label="Decision for {{s.id}}" style="display: flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px;"><sc-for list="{{s.opts}}" as="o" hint-placeholder-count="3"><span style="padding: 3px 8px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for></span>
+              </div>
+              <span style="font-size: 11.5px; color: #4D5065; padding-left: 21px;">{{s.line}}</span>
+              <span style="font-size: 11.5px; font-weight: 600; color: {{s.wfg}}; padding-left: 21px;">{{s.why}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="border-radius: 14px; box-shadow: 0 0 0 1px #E6DCFC; background: #FBF9FF; padding: 9px 14px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <span style="width: 26px; height: 26px; border-radius: 8px; background: #7750D4; color: #FFFFFF; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>
+        <span style="flex: 1 1 400px; font-size: 12.5px; line-height: 1.45;">QC agent suggests keeping <span class="mono">kidney_tiny</span> with a flag: Q20 is 0.005 under the lab line and 16.5 % of its transcripts sit at qv 10–20; every other check passes. It suggests excluding <span class="mono">kidney_r3</span>.</span>
+        <button type="button" style="height: 32px; padding: 0 12px; border: none; border-radius: 10px; background: #7750D4; color: #FFFFFF; font: 600 12.5px 'Inter', sans-serif;">Apply suggestion</button>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">lab overlay · per section</span></div>
+          <sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+            <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
+              <span style="flex: 1 1 220px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span>
+              <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+              <span style="font-size: 12px; color: #4D5065; min-width: 130px; text-align: right;">{{c.where}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </section>
+
+    <!-- REPORT -->
+    <section class="rv-pn pn-report" style="flex-direction: column; gap: 8px;">
+      <div role="img" aria-label="Xenium analysis summary in a sandboxed frame (placeholder)" style="height: 420px; border-radius: 16px; box-shadow: inset 0 0 0 1px #DFE1EA; background: repeating-linear-gradient(135deg, #F7F7FB 0 14px, #F1F2F6 14px 28px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; font-size: 13px; color: #4D5065;"><strong style="color: #22253A;">kidney_tiny/analysis_summary.html</strong><span>sandboxed frame · separate origin · streamed by the runner</span></div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="3">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 340px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{changes}}" as="c" hint-placeholder-count="3"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}};">{{c.t}}</span></sc-for></span>
+      </span>
+      <span style="font-size: 11.5px; color: #4D5065; width: 260px; line-height: 1.4;">Resegmentation (stage 3) runs for 2 sections; <code class="mono">cells_keep.csv</code> attached for depictio.</span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z',
+    info: 'M12 8h.01 M11 12h1v5h1 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', cross: 'M6 6l12 12 M18 6L6 18' };
+  // Real values: images/xenium-kidney.json (metrics_summary.csv, transcripts.parquet, cells.parquet of the test bundle).
+  const M = { panel_name: 'Human Multi-Tissue and Cancer Panel + Custom Addon', region_area: 37560.426875, num_cells_detected: 358, total_high_quality_decoded_transcripts: 20995,
+    fraction_transcripts_decoded_q20: 0.795476073201228, median_transcripts_per_cell: 41, median_genes_per_cell: 22, fraction_empty_cells: 0.0027932960893855,
+    adjusted_negative_control_probe_rate: 0.00209533787323206, fraction_transcripts_assigned: 0.818718742557752 };
+  const TOP = { VIM: 2361, 'HLA-DRA': 1679, MS4A1: 1039, PTPRC: 695, TNC: 564, ACTA2: 559 };
+  const PAL = ['#FF5A5A', '#3DDC84', '#FFA53D', '#3DD6F5', '#FF4FA3', '#FFD54F'];
+  const NTX = 26463, QV = [1098, 4366, 2141, 266, 18592], TPC = [24, 47, 99, 139, 44, 5];
+  const fmt = n => n.toLocaleString('en-US');
+  const row = (k, v, rule, st, fgOk) => ({ k, v, rule, icon: st === 'warn' ? I.warn : st === 'info' ? I.info : I.check,
+    ic: st === 'warn' ? '#B02A2A' : st === 'info' ? '#6E7287' : '#157A4B', fg: st === 'warn' ? '#B02A2A' : '#22253A', rail: st === 'warn' ? '#D9890B' : 'transparent', bg: st === 'warn' ? '#FFFBF3' : 'transparent' });
+  const metrics = [
+    row('fraction_transcripts_decoded_q20', M.fraction_transcripts_decoded_q20.toFixed(3), '≥ 0.80 · warn', 'warn'),
+    row('adjusted_negative_control_probe_rate', M.adjusted_negative_control_probe_rate.toFixed(4), '≤ 0.01 · block', 'ok'),
+    row('median_transcripts_per_cell', String(M.median_transcripts_per_cell), '≥ 30 · block', 'ok'),
+    row('median_genes_per_cell', String(M.median_genes_per_cell), '≥ 15 · warn', 'ok'),
+    row('fraction_transcripts_assigned', M.fraction_transcripts_assigned.toFixed(3), '≥ 0.70 · warn', 'ok'),
+    row('num_cells_detected', fmt(M.num_cells_detected), 'count ≥ 300', 'ok'),
+    row('fraction_empty_cells', M.fraction_empty_cells.toFixed(4), '≤ 0.05 · warn', 'ok'),
+    row('total_high_quality_decoded_transcripts', fmt(M.total_high_quality_decoded_transcripts), 'info', 'info'),
+    row('region_area', fmt(Math.round(M.region_area)) + ' µm²', 'info · ' + fmt(Math.round(M.num_cells_detected / (M.region_area / 1e6))) + ' cells/mm²', 'info')
+  ];
+  const gmx = Math.max(...Object.values(TOP));
+  const topGenes = Object.entries(TOP).map(([g, n], i) => ({ g, n: fmt(n), c: PAL[i], w: (n / gmx * 100).toFixed(1) + '%' }));
+  const qmx = Math.max(...QV);
+  const qlab = ['<10', '10–20', '20–30', '30–40', '≥40'];
+  const qv = QV.map((n, i) => ({ t: qlab[i], n: fmt(n), h: Math.max(3, n / qmx * 84).toFixed(1) + '%', fill: i < 2 ? '#C4C7D4' : '#8B5CF6' }));
+  const q20 = QV.slice(2).reduce((a, b) => a + b, 0);
+  const tmx = Math.max(...TPC);
+  const tlab = ['<10', '10–20', '20–40', '40–80', '80–160', '≥160'];
+  const tpc = TPC.map((n, i) => ({ t: tlab[i], n: String(n), h: Math.max(3, n / tmx * 84).toFixed(1) + '%', fill: i === 0 ? '#C4C7D4' : '#8B5CF6' }));
+  const opt = (on) => ['Keep', 'Flag', 'Exclude'].map(t => t === on ? { t, bg: '#FFFFFF', fg: t === 'Exclude' ? '#B02A2A' : t === 'Flag' ? '#8F5806' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  const sec = (id, tag, real, line, why, st, dec) => ({ id, tag, line, why, opts: opt(dec),
+    tbg: real ? '#E8F6EF' : '#F1F2F6', tfg: real ? '#157A4B' : '#6E7287',
+    icon: st === 'ok' ? I.check : I.warn, ic: st === 'fail' ? '#B02A2A' : st === 'warn' ? '#8F5806' : '#157A4B', wfg: st === 'fail' ? '#B02A2A' : st === 'warn' ? '#8F5806' : '#157A4B',
+    rail: st === 'fail' ? '#DC3B3B' : st === 'warn' ? '#D9890B' : 'transparent', bg: st === 'fail' ? '#FFF5F5' : st === 'warn' ? '#FFFBF3' : 'transparent' });
+  return {
+    panel: M.panel_name,
+    views: [
+      { src: 'images/xenium-kidney-dapi.webp', alt: 'DAPI, level 1, max over z', t: 'DAPI', sub: 'ch0000_dapi.ome.tif', band: 'none', scale: 'flex' },
+      { src: 'images/xenium-kidney-protein.webp', alt: 'DAPI blue, ATP1A1, CD45, E-cadherin green, alpha-SMA and vimentin red', t: 'Protein', sub: 'ATP1A1/CD45/E-cad · αSMA/vimentin', band: 'none', scale: 'none' },
+      { src: 'images/xenium-kidney-transcripts.webp', alt: 'Transcripts with qv 20 or more of the six most frequent genes, with cell boundaries', t: 'Transcripts + boundaries', sub: 'top 6 genes · cell_boundaries.parquet', band: 'block', scale: 'none' }
+    ],
+    genes: Object.keys(TOP).map((g, i) => ({ g, c: PAL[i] })),
+    metrics, topGenes, qv, tpc,
+    nTx: fmt(NTX), q20pct: (q20 / NTX * 100).toFixed(1) + ' %', q20: M.fraction_transcripts_decoded_q20.toFixed(3),
+    nCells: fmt(M.num_cells_detected), removed: TPC[0], med: M.median_transcripts_per_cell,
+    sections: [
+      sec('kidney_tiny', 'real', true, '358 cells · 20,995 HQ transcripts · median 41 / cell · neg. ctrl 0.0021', 'Q20 0.795 below 0.80 · keep with a flag', 'warn', 'Flag'),
+      sec('kidney_r2', 'illustrative', false, '402 cells · 24,310 HQ transcripts · median 47 / cell · neg. ctrl 0.0018', 'all checks pass', 'ok', 'Keep'),
+      sec('kidney_r3', 'illustrative', false, '296 cells · 9,870 HQ transcripts · median 29 / cell · neg. ctrl 0.0064', 'median 29 < 30 and 296 cells < 300 · block', 'fail', 'Exclude')
+    ],
+    checks: [
+      { name: 'Decoding quality', rule: 'fraction_transcripts_decoded_q20 ≥ 0.80 · warn', value: '2 / 3', col: '#8F5806', icon: I.warn, where: 'kidney_tiny · 0.795' },
+      { name: 'Negative controls', rule: 'adjusted_negative_control_probe_rate ≤ 0.01 · block', value: '3 / 3', col: '#157A4B', icon: I.check, where: 'max 0.0064' },
+      { name: 'Transcripts per cell', rule: 'median_transcripts_per_cell ≥ 30 · block', value: '2 / 3', col: '#B02A2A', icon: I.warn, where: 'kidney_r3 · 29' },
+      { name: 'Cells detected', rule: 'num_cells_detected ≥ 300 · count', value: '2 / 3', col: '#B02A2A', icon: I.warn, where: 'kidney_r3 · 296' }
+    ],
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after section QC; metrics_summary.csv read for 3 sections.', at: '11:02' },
+      { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', text: 'QC agent suggested flagging kidney_tiny (Q20 0.795) and excluding kidney_r3.', at: '11:04' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin set the cell rule to ≥ 10 transcripts (24 cells of kidney_tiny removed).', at: '11:31' }
+    ],
+    changes: [
+      { t: 'kidney_tiny flagged', bg: '#FDF3E2', fg: '#8F5806' },
+      { t: 'kidney_r3 excluded', bg: '#F1F2F6', fg: '#33364A' },
+      { t: 'cells ≥ 10 transcripts', bg: '#F6F2FE', fg: '#4D368B' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

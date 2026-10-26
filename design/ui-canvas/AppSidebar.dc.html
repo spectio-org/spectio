@@ -82,7 +82,7 @@ renderVals() {
   ];
   const items = defs.map(([id, label, href, icon, color, tint]) => {
     const on = id === active;
-    return { label, href, icon, color, cur: on ? 'page' : 'false', bg: on ? tint : 'transparent', fg: on ? '#0F1020' : '#22253A', hasCount: id === 'review', count: 12 };
+    return { label, href, icon, color, cur: on ? 'page' : 'false', bg: on ? tint : 'transparent', fg: on ? '#0F1020' : '#22253A', hasCount: id === 'review', count: 27 };
   });
   return { items, collapsed, expanded: !collapsed };
 }

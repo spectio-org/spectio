@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, run-level gate waiting for a signal</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-tab:has(input:disabled){color:#9A9EB0;cursor:not-allowed}
+.rv-pn{display:none}
+.rs:has(input[value="sum"]:checked) .pn-sum,
+.rs:has(input[value="sheet"]:checked) .pn-sheet,
+.rs:has(input[value="params"]:checked) .pn-params,
+.rs:has(input[value="files"]:checked) .pn-files,
+.rs:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.mono{font-family:'JetBrains Mono',monospace}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);padding:13px 15px;display:flex;flex-direction:column;gap:8px;min-width:0}
+.h2{margin:0;font-size:14.5px;font-weight:600}
+.code{font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.55;background:#0F1020;color:#E6E7EF;border-radius:10px;padding:9px 12px;white-space:pre;margin:0;overflow:hidden}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/proteinfold · pf-kinases-1200" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rs" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">Waiting for a signal · 1 of 1</span>
+      <span style="flex-grow: 1;"></span>
+      <a href="ReviewProteomics.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="Review.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stage 1 done, gate after stage 2 open"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">GPU stage approval <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· pf-kinases-1200 · #361</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block;">nf-core/proteinfold 1.1.1 · AlphaFold2 · paused after stage 2 of 4 (MSA on CPU) · <strong style="color: #8F5806;">waiting 6 h 20</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">structural-bio</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #E3F1FB; color: #1D5FC9; font-weight: 600; font-size: 11px; display: flex; align-items: center;">LIMS · signal</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · propose only</span>
+      </span>
+    </div>
+
+    <div role="note" style="display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: #4D5065; padding: 0 4px;">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 8h.01 M11 12h1v5h1 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>
+      <span>Gates are optional: <strong style="color: #22253A;">171 of 214 runs</strong> in demo-lab this month had no gate and ran straight through. This one stops because its <code class="mono">spectio.yml</code> puts a gate before the GPU stage.</span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvsig" value="sum" checked aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #E3F1FB; color: #1D5FC9;">signal pending</span></label>
+      <label class="rv-tab" title="This gate checks the run as a whole: there are no items to decide on"><input type="radio" name="rvsig" value="items" disabled aria-label="Items, not available: run-level gate"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Items<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F7F7FB; color: #9A9EB0;">none · run-level gate</span></label>
+      <label class="rv-tab"><input type="radio" name="rvsig" value="sheet" aria-label="Samplesheet"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Samplesheet<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">1,200 rows</span></label>
+      <label class="rv-tab"><input type="radio" name="rvsig" value="params" aria-label="Parameters"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg>Parameters<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">0</span></label>
+      <label class="rv-tab"><input type="radio" name="rvsig" value="files" aria-label="Files"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Files<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">none</span></label>
+      <label class="rv-tab"><input type="radio" name="rvsig" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">5</span></label>
+    </div>
+
+    <section class="rv-pn pn-sum" style="gap: 12px; align-items: flex-start;">
+      <!-- LEFT -->
+      <div style="flex: 3 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+        <div class="card" style="box-shadow: inset 0 3px 0 #3B82F6, 0 0 0 1px #B9DBEC;">
+          <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="width: 30px; height: 30px; border-radius: 9px; background: #E3F1FB; color: #1D5FC9; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h4l2-5 4 10 2-5h4"/></svg></span>
+            <span style="display: flex; flex-direction: column; flex: 1 1 260px; min-width: 0;"><h2 class="h2">Waiting for a signal · <code class="mono" style="font-size: 13px;">lims.batch_approved</code></h2><span style="font-size: 12px; color: #4D5065;">from the LIMS, sent as a webhook by service account <code class="mono">svc-lims</code></span></span>
+            <span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #EEF4FE; color: #1D5FC9;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>Not received · 6 h 20</span>
+          </div>
+
+          <div role="img" aria-label="Timeout timeline: 6 h 20 elapsed of 48 h; reminder at 24 h; at 48 h the run is stopped" style="display: flex; flex-direction: column; gap: 4px; padding: 4px 0 2px;">
+            <div style="position: relative; height: 14px; border-radius: 7px; background: #EEEFF5;">
+              <span style="position: absolute; left: 0; top: 0; bottom: 0; width: 13.2%; border-radius: 7px 0 0 7px; background: #3B82F6;"></span>
+              <span style="position: absolute; left: 13.2%; top: -4px; bottom: -4px; width: 2px; margin-left: -1px; background: #0F1020;"></span>
+              <span style="position: absolute; left: 50%; top: 2px; bottom: 2px; width: 2px; background: #D9890B;"></span>
+              <span style="position: absolute; right: 0; top: 0; bottom: 0; width: 6px; border-radius: 0 7px 7px 0; background: #DC3B3B;"></span>
+            </div>
+            <div style="position: relative; height: 30px; font-size: 11.5px; color: #4D5065;">
+              <span style="position: absolute; left: 0;">opened 03:12</span>
+              <span style="position: absolute; left: 13.2%; transform: translateX(-50%); font-weight: 600; color: #0F1020; top: 0; white-space: nowrap; display: none;">now</span>
+              <span style="position: absolute; left: 13.2%; top: 14px; transform: translateX(-20%); font-weight: 600; color: #0F1020; white-space: nowrap;">now · 09:32</span>
+              <span style="position: absolute; left: 50%; transform: translateX(-50%); white-space: nowrap; color: #8F5806;">24 h · remind structural-bio</span>
+              <span style="position: absolute; right: 0; white-space: nowrap; color: #B02A2A; font-weight: 600;">48 h · stop the run</span>
+            </div>
+          </div>
+
+          <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+            <div style="flex: 1 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+              <span style="font-size: 12px; font-weight: 600; color: #33364A;">Expected payload</span>
+<pre class="code">{
+  "signal": "lims.batch_approved",
+  "batch_id": "KIN-2026-10",
+  "status": "approved",     <span style="color: #9A9EB0;">// or "rejected"</span>
+  "approved_by": "amartin",
+  "gpu_hours_cap": 500,
+  "idempotency_key": "lims-4471-1"
+}</pre>
+              <span style="font-size: 11.5px; color: #4D5065; line-height: 1.45;">Sent to <code class="mono">POST /api/v1/gates/gt_361/signals</code> after the LIMS receives <code class="mono">spectio.gate.opened</code>.</span>
+            </div>
+            <div style="flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+              <span style="font-size: 12px; font-weight: 600; color: #33364A;">Signal log</span>
+              <sc-for list="{{log}}" as="l" hint-placeholder-count="4">
+                <div style="display: flex; gap: 8px; align-items: flex-start; font-size: 12px; line-height: 1.4; padding: 5px 0; border-top: 1px solid #EEEFF5;">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{l.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="{{l.icon}}"/></svg>
+                  <span style="flex: 1 1 auto; min-width: 0; color: #22253A;">{{l.t}} <span style="display: block; color: {{l.dfg}};">{{l.d}}</span></span>
+                  <span style="color: #6E7287; font-size: 11.5px;">{{l.at}}</span>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 class="h2">The gate in spectio.yml</h2><span style="font-size: 11.5px; color: #6E7287;">nf-core/proteinfold · lab overlay demo-lab/proteinfold-gpu</span></div>
+<pre class="code">gates:
+  gpu_go:
+    title: GPU stage approval
+    after_stage: msa                <span style="color: #9A9EB0;"># no items: run-level checks only</span>
+    checks:
+      - { id: approved, kind: signal, from: "signal:lims.batch_approved", equals: approved }
+      - { id: budget, scope: run, kind: max, max: 500, severity: warn,
+          from: "script:spectio estimate gpu-hours --stage predict" }
+      - { id: msa, scope: run, kind: completeness, min_pct: 98, severity: warn }
+    decide:
+      humans: [group:structural-bio]
+      systems: [service-account:svc-lims]
+      agents: propose
+      auto_approve: { when: [approved, budget] }
+      timeout: { after: 48h, remind: 24h, action: stop }</pre>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div style="flex: 2 1 0; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+        <div class="card">
+          <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 class="h2">Run-level checks</h2><span style="font-size: 11.5px; color: #6E7287;">no items · scope run</span></div>
+          <sc-for list="{{checks}}" as="c" hint-placeholder-count="4">
+            <div style="display: flex; gap: 9px; align-items: flex-start; padding-top: 7px; border-top: 1px solid #EEEFF5;">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="{{c.icon}}"/></svg>
+              <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
+                <span style="display: flex; gap: 8px; font-size: 13px;"><strong style="flex-grow: 1; font-weight: 600;">{{c.name}}</strong><span style="font-weight: 600; color: {{c.col}}; white-space: nowrap;">{{c.value}}</span></span>
+                <span style="font-size: 11.5px; color: #4D5065; line-height: 1.4;">{{c.d}}</span>
+                <span style="font-size: 11px; color: #6E7287;">{{c.kind}} · {{c.sev}}</span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div class="card">
+          <h2 class="h2">Who can decide</h2>
+          <sc-for list="{{who}}" as="w" hint-placeholder-count="3">
+            <div style="display: flex; gap: 10px; align-items: flex-start; padding-top: 7px; border-top: 1px solid #EEEFF5;">
+              <span style="min-width: 34px; height: 24px; padding: 0 6px; box-sizing: border-box; border-radius: 7px; background: {{w.bg}}; color: {{w.fg}}; font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{w.tag}}</span>
+              <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
+                <span style="font-size: 13px; font-weight: 600;">{{w.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{w.via}}</span></span>
+                <span style="font-size: 12px; color: #4D5065; line-height: 1.4;">{{w.can}}</span>
+              </span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div class="card">
+          <h2 class="h2">Timeout and auto-approve</h2>
+          <div style="display: flex; flex-direction: column; gap: 7px; font-size: 12.5px; line-height: 1.45; color: #33364A;">
+            <span style="display: flex; gap: 8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#B02A2A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg><span><strong>After 48 h without a signal: stop the run</strong> (Cancelled by policy; work directory kept 7 days, Continue still works). <strong style="color: #B02A2A;">41 h 40 left.</strong></span></span>
+            <span style="display: flex; gap: 8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#157A4B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M5 12l5 5L20 7"/></svg><span><strong>Auto-approve</strong> when the signal says <code class="mono">approved</code> and the budget check is not failing.</span></span>
+            <span style="display: flex; gap: 8px; color: #4D5065;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 8h.01 M11 12h1v5h1 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg><span>A late signal is logged; the decision does not change.</span></span>
+          </div>
+          <span style="display: flex; gap: 8px; flex-wrap: wrap; padding-top: 2px;">
+            <button type="button" style="height: 32px; padding: 0 10px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #22253A;">Extend by 24 h</button>
+            <button type="button" disabled title="Needs the instance admin role: the signal secret belongs to svc-lims" style="height: 32px; padding: 0 10px; border-radius: 9px; border: none; background: #F1F2F6; font: 600 12.5px 'Inter', sans-serif; color: #9A9EB0; cursor: not-allowed;">Send a test signal · admins only</button>
+          </span>
+        </div>
+      </div>
+    </section>
+
+    <section class="rv-pn pn-sheet" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">samplesheet.csv · 1,200 sequences (id, fasta) · unchanged.</span></section>
+    <section class="rv-pn pn-params" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">No parameter changes.</span></section>
+    <section class="rv-pn pn-files" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">No editable files declared for this gate.</span></section>
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">5 events.</span></section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 300px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 0</span>
+        <span style="font-size: 12.5px; color: #4D5065;">Nothing changed. Approving now <strong style="color: #8F5806;">overrides the missing signal</strong> and is recorded in History.</span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 250px;">
+        <span style="font-size: 11.5px; color: #4D5065;">Stages 3–4 · 1,184 predictions · ≈ 420 GPU-h</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, #5A4FCF 0 6px, #A9A3E6 6px 12px);"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, #8B5CF6 0 6px, #C9B5FA 6px 12px);"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #F4A5BC;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #FCCF98;"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Reassign · Extend the timeout">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #F2C4C4; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #B02A2A;">Stop the run here</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif;">Approve and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', cross: 'M6 6l12 12 M18 6L6 18', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', clock: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', send: 'M4 12l16-8-6 16-2-6z', info: 'M12 8h.01 M11 12h1v5h1 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0' };
+  const G = '#157A4B', R = '#B02A2A', A = '#8F5806', B = '#1D5FC9';
+  return {
+    log: [
+      { t: 'gate.opened sent to the LIMS', d: 'webhook · 200 OK in 180 ms', dfg: '#4D5065', at: '03:12', icon: I.send, col: B },
+      { t: 'LIMS opened ticket LIMS-4471', d: '“GPU batch approval” · assigned to Alice Martin', dfg: '#4D5065', at: '03:13', icon: I.check, col: G },
+      { t: 'Signal rejected · 422', d: 'payload has no "status" field · nothing changed', dfg: R, at: '08:55', icon: I.cross, col: R },
+      { t: 'No valid signal yet', d: 'next reminder to structural-bio at 03:12 tomorrow', dfg: '#4D5065', at: 'now', icon: I.clock, col: A }
+    ],
+    checks: [
+      { name: 'Batch approved in the LIMS', value: 'waiting', col: B, icon: I.clock, d: 'signal lims.batch_approved, status = approved', kind: 'signal', sev: 'block' },
+      { name: 'GPU budget · next stage', value: '≈ 420 / 500 GPU-h', col: A, icon: I.warn, d: '1,184 predictions × median 21 min on A100 · 69 % of the 610 GPU-h left this quarter', kind: 'max · run', sev: 'warn' },
+      { name: 'MSAs complete', value: '1,184 / 1,200', col: A, icon: I.warn, d: '16 sequences over 2,500 aa skipped', kind: 'completeness · run', sev: 'warn' },
+      { name: 'GPU partition', value: '6 of 8 nodes idle', col: G, icon: I.check, d: 'gpu-a100 on demo-hpc · run health, built in', kind: 'info', sev: 'info' }
+    ],
+    who: [
+      { tag: 'GRP', bg: '#E6DCFC', fg: '#4D368B', name: 'structural-bio', via: 'people · Alice Martin, Bruno Keller +3', can: 'Approve, stop, go back to a stage, extend the timeout.' },
+      { tag: 'BOT', bg: '#E3F1FB', fg: B, name: 'LIMS', via: 'external system · webhook · svc-lims', can: 'Sends the signal: approved resolves the gate (auto-approve), rejected stops the run.' },
+      { tag: 'AI', bg: '#F6F2FE', fg: '#4D368B', name: 'QC agent', via: 'AI agent · MCP', can: 'Propose only: a stage this costly needs a person or the LIMS.' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review, amplicon reads kept through DADA2</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.ra:has(input[value="sum"]:checked) .pn-sum,
+.ra:has(input[value="samples"]:checked) .pn-samples,
+.ra:has(input[value="report"]:checked) .pn-report,
+.ra:has(input[value="changes"]:checked) .pn-changes,
+.ra:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.mono{font-family:'JetBrains Mono',monospace}
+.it td,.it th{padding:5px 9px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+.sw{display:inline-block;width:10px;height:10px;border-radius:2px;vertical-align:-1px;margin-right:4px}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/ampliseq · ampliseq-full-992e6df" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="ra" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">7 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <a href="ReviewSmallRNA.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewProteomics.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stage 1 done, gate after stage 2 open" style="flex-shrink: 0;"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex: 1 1 0; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Denoising QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· ampliseq-full-992e6df · #322</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: block; line-height: 1.45;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: inline-block; vertical-align: -2px; margin-right: 6px;">nf-core/ampliseq 3.0.0 · 16S, paired-end · 12 samples in 4 habitats · paused after stage 2 of 4 (DADA2, taxonomy) · gate from lab overlay <code class="mono" style="font-size: 12px; white-space: nowrap;">demo-lab/ampliseq-qc</code> · <strong style="color: #8F5806;">waiting 2 h 05</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065; flex-shrink: 0;">Can decide
+        <span title="You" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="microbiome: Dmitri Novak" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">DN</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · suggests</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvam" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">3 to check</span></label>
+      <label class="rv-tab"><input type="radio" name="rvam" value="samples" checked aria-label="Samples"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Samples<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">1 excluded</span></label>
+      <label class="rv-tab"><input type="radio" name="rvam" value="report" aria-label="Report"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Report<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">MultiQC · summary_report.html</span></label>
+      <label class="rv-tab"><input type="radio" name="rvam" value="changes" aria-label="Changes"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg>Changes<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">2</span></label>
+      <label class="rv-tab"><input type="radio" name="rvam" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">5</span></label>
+    </div>
+
+    <!-- SAMPLES -->
+    <section class="rv-pn pn-samples" style="flex-direction: column; gap: 9px;">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px;">
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="6">
+          <div style="border-radius: 12px; box-shadow: inset 0 3px 0 {{c.rail}}, 0 0 0 1px rgba(15,16,32,0.11); padding: 7px 11px; display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+            <span style="display: flex; align-items: center; gap: 7px; font-size: 12.5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg><strong style="font-weight: 600;">{{c.name}}</strong><span style="font-size: 11.5px; color: #4D5065;"><code class="mono" style="font-size: 10.5px; color: #33364A;">{{c.kind}}</code> {{c.rule}} · {{c.sev}}</span><span style="flex-grow: 1;"></span><span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span></span>
+            <span style="font-size: 11.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.where}}</span>
+            <code class="mono" title="{{c.from}}" style="font-size: 10.5px; color: #4D368B; background: #F6F2FE; border-radius: 6px; padding: 2px 6px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.from}}</code>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-radius: 12px; background: #F7F7FB; padding: 7px 12px; font-size: 12.5px; color: #33364A;">
+        <span><strong>Rarefaction depth</strong> <span style="color: #6E7287;">= lowest sample after filtering</span></span>
+        <span style="display: flex; align-items: center; gap: 6px;"><span style="font-weight: 600; text-decoration: line-through; color: #6E7287;">23,452</span><span style="color: #6E7287;">SRR10070132</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14 M13 6l6 6-6 6"/></svg><strong style="color: #4D368B;">40,511</strong><span style="color: #6E7287;">SRR10070141, after the exclusion</span></span>
+        <span style="flex-grow: 1;"></span>
+        <span style="font-size: 11.5px; color: #6E7287;">derived; QIIME2_DIVERSITY_CORE sets it at stage 3 [to be validated]</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; font-size: 12px; color: #4D5065;">
+        <span>Item table · worst first · lanes = <code class="mono" style="font-size: 11.5px;">habitat</code> (Metadata_full.tsv) · lost per step:</span>
+        <span style="flex-grow: 1;"></span>
+        <span><span class="sw" style="background: #5A4FCF;"></span>kept</span>
+        <span><span class="sw" style="background: #B9A8F0;"></span>taxa filter</span>
+        <span><span class="sw" style="background: #7E8BB8;"></span>DADA2 (filter, denoise, merge, chimeras)</span>
+        <span><span class="sw" style="background: #DFE1EA;"></span>no primer</span>
+        <span><span class="sw" style="width: 0; border-left: 2px dashed #DC3B3B; border-radius: 0;"></span>floor 30,000</span>
+      </div>
+
+      <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+        <table class="it" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+          <thead><tr style="background: #F7F7FB; color: #33364A; font-size: 11.5px;">
+            <th scope="col" style="padding-left: 16px;">Sample</th>
+            <th scope="col">Input</th>
+            <th scope="col">Primer % <span style="font-weight: 400; color: #6E7287;">≥ 90</span></th>
+            <th scope="col">Reads kept per step <span style="font-weight: 400; color: #6E7287;">0–132k</span></th>
+            <th scope="col">DADA2 % <span style="font-weight: 400; color: #6E7287;">≥ 70</span></th>
+            <th scope="col">Taxa lost % <span style="font-weight: 400; color: #6E7287;">≤ 25</span></th>
+            <th scope="col">Final <span style="font-weight: 400; color: #6E7287;">≥ 30,000</span></th>
+            <th scope="col">Decision</th>
+          </tr></thead>
+          <sc-for list="{{lanes}}" as="g" hint-placeholder-count="4">
+            <tbody>
+              <tr style="background: #FBFBFD;"><td colspan="8" style="padding: 5px 12px 5px 16px; font-size: 12px; font-weight: 600; color: #33364A;">{{g.title}} <span style="font-weight: 400; color: #6E7287;">· {{g.meta}}</span></td></tr>
+              <sc-for list="{{g.rows}}" as="r" hint-placeholder-count="3">
+                <tr style="box-shadow: inset 4px 0 0 {{r.rail}}; background: {{r.rowbg}};">
+                  <td style="padding-left: 16px;"><span class="mono" style="font-size: 12px; font-weight: 600; text-decoration: {{r.deco}}; color: {{r.namefg}};">{{r.s}}</span> <span style="font-size: 11px; color: #6E7287;">{{r.note}}</span></td>
+                  <td style="color: #33364A;">{{r.input}}</td>
+                  <td style="color: {{r.prFg}}; background: {{r.prBg}}; font-weight: 600;">{{r.pr}}</td>
+                  <td><span role="img" aria-label="{{r.label}}" style="position: relative; display: block; width: 210px; height: 12px; border-radius: 3px; background: #F7F7FB;"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: {{r.wIn}}; display: flex; border-radius: 3px; overflow: hidden;"><span style="width: {{r.sFin}}; background: #5A4FCF;"></span><span style="width: {{r.sTax}}; background: #B9A8F0;"></span><span style="width: {{r.sDada}}; background: #7E8BB8;"></span><span style="flex-grow: 1; background: #DFE1EA;"></span></span><span style="position: absolute; left: {{r.floorL}}; top: -3px; bottom: -3px; width: 0; border-left: 2px dashed #DC3B3B;"></span></span></td>
+                  <td style="color: {{r.dkFg}}; background: {{r.dkBg}}; font-weight: 600;">{{r.dk}}</td>
+                  <td style="color: {{r.txFg}}; background: {{r.txBg}}; font-weight: 600;">{{r.tx}}</td>
+                  <td style="color: {{r.fnFg}}; background: {{r.fnBg}}; font-weight: 600;">{{r.fn}}</td>
+                  <td><span role="radiogroup" aria-label="Decision for {{r.s}}" style="display: inline-flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 11.5px;"><sc-for list="{{r.opts}}" as="o" hint-placeholder-count="3"><span title="{{o.title}}" style="padding: 3px 9px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}}; text-decoration: {{o.deco}};">{{o.t}}</span></sc-for></span></td>
+                </tr>
+                <sc-if value="{{r.hasSteps}}" hint-placeholder-val="{{false}}">
+                  <tr><td colspan="8" style="padding: 7px 12px 8px 16px; background: #FAFAFC; box-shadow: inset 4px 0 0 #9A9EB0; white-space: normal;">
+                    <span style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 12px; color: #33364A;">
+                      <span style="flex-basis: 100%; font-weight: 600;">Excluded · reason: 23,452 pairs after the taxa filter (block ≥ 30,000); only 79.3 % carry the primer; reads are shorter (FastQC mean 210 nt vs ≈ 245).</span>
+                      <sc-for list="{{r.steps}}" as="st" hint-placeholder-count="7">
+                        <span style="display: inline-flex; flex-direction: column; gap: 2px; min-width: 84px;"><span style="font-size: 10.5px; color: #6E7287;">{{st.k}}</span><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 34px; height: 6px; border-radius: 3px; background: #EEEFF5; display: block; position: relative;"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: {{st.w}}; border-radius: 3px; background: #5A4FCF;"></span></span><span style="font-weight: 600; font-size: 11.5px;">{{st.v}}</span></span></span>
+                      </sc-for>
+                    </span>
+                  </td></tr>
+                </sc-if>
+                <sc-if value="{{r.hasWarn}}" hint-placeholder-val="{{false}}">
+                  <tr><td colspan="8" style="padding: 7px 12px 8px 16px; background: #FFFBF3; box-shadow: inset 4px 0 0 #D9890B; white-space: normal;">
+                    <span style="display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; line-height: 1.45; color: #6B4205;">
+                      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+                      <span>{{r.warn}}</span>
+                    </span>
+                  </td></tr>
+                </sc-if>
+              </sc-for>
+              <sc-if value="{{g.hasMore}}" hint-placeholder-val="{{false}}">
+                <tr><td colspan="8" style="padding: 6px 12px 6px 16px; font-size: 12px; color: #4D5065;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#157A4B" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="vertical-align: -2px;"><path d="M5 12l5 5L20 7"/></svg> {{g.more}} · <a href="#" style="font-weight: 600; text-decoration: none;">show</a></td></tr>
+              </sc-if>
+            </tbody>
+          </sc-for>
+        </table>
+      </div>
+      <span style="font-size: 11.5px; color: #6E7287;">Data: nf-core/ampliseq 3.0.0 megatest (AWS, results-992e6df): overall_summary.tsv, cutadapt_summary.tsv, multiqc_general_stats.txt; groups from the test dataset's Metadata_full.tsv. Values are real; the 30,000 floor and the 90 / 70 / 25 % thresholds are the lab overlay's (illustrative).</span>
+    </section>
+
+    <section class="rv-pn pn-sum" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">Run health: 219 tasks completed · EPANG_PLACE (bac16s) failed once with exit 137 (out of memory) and completed on retry at 54 GB peak · longest DADA2_TAXONOMY 39 min.</span></section>
+    <section class="rv-pn pn-report" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">MultiQC (cutadapt, FastQC) and the ampliseq summary_report.html, in the sandboxed report reader.</span></section>
+    <section class="rv-pn pn-changes" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">Exclude SRR10070132 · flag SRR10070133 (32.1 % lost to the taxa filter).</span></section>
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 10px;"><span style="font-size: 13px; color: #4D5065;">5 events.</span></section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 300px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 2</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F1F2F6; color: #33364A;">SRR10070132 excluded</span><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #FDF3E2; color: #8F5806;">SRR10070133 flagged</span><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F6F2FE; color: #4D368B;">samplesheet v2</span></span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 250px;">
+        <span style="font-size: 11.5px; color: #4D5065;">DADA2 + taxonomy rerun ≈ 1 h 15, then 3–4</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: #5A4FCF;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #8B5CF6;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #F4A5BC;"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #FCCF98;"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  // Values: nf-core/ampliseq 3.0.0 megatest, results-992e6df (overall_summary.tsv); habitat from nf-core/test-datasets ampliseq/samplesheets/Metadata_full.tsv
+  const I = { check: 'M5 12l5 5L20 7', cross: 'M6 6l12 12 M18 6L6 18', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', info: 'M12 16v-4 M12 8h.01 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', group: 'M9 11a3 3 0 1 0 0-6a3 3 0 0 0 0 6z M17 11a3 3 0 1 0 0-6 M3 20c0-3 3-5 6-5s6 2 6 5 M15 15c3 0 6 2 6 5' };
+  const FAIL = ['#B02A2A', '#FCEBEB'], WARN = ['#8F5806', '#FDF3E2'], OK = ['#22253A', 'transparent'];
+  const MAX = 132193, FLOOR = 30000;
+  const fmt = (n) => n.toLocaleString('en-US');
+  const opt = (on, lockEx) => ['Keep', 'Flag', 'Exclude'].map(t => {
+    const sel = t === on;
+    const locked = lockEx && t === 'Exclude';
+    return { t: locked ? 'Exclude ⚠' : t, title: locked ? 'Would leave Groundwater with 1 sample' : '', bg: sel ? '#FFFFFF' : 'transparent', fg: sel ? (t === 'Exclude' ? '#B02A2A' : t === 'Flag' ? '#8F5806' : '#0F1020') : (locked ? '#8F5806' : '#4D5065'), w: sel ? 600 : 500, sh: sel ? '0 1px 2px rgba(15,16,32,0.15)' : 'none', deco: 'none' };
+  });
+  // [sample, cutadapt_total_processed, DADA2_input, filtered, denoisedPairs, merged, nonchim, filtered_tax_filter, lost_percent, cutadapt_passing_filters_percent]
+  const row = (s, inp, dIn, filt, den, mer, nonchim, fin, lost, prim, dec, note, extra) => {
+    const dk = nonchim / dIn * 100;
+    const pc = prim < 90 ? WARN : OK, kc = dk < 70 ? WARN : OK, tc = lost > 25 ? WARN : OK, fc = fin < FLOOR ? FAIL : OK;
+    const fail = fc === FAIL, w = pc === WARN || kc === WARN || tc === WARN;
+    const steps = [['input', inp], ['primer', dIn], ['filtered', filt], ['denoised', den], ['merged', mer], ['non-chimeric', nonchim], ['taxa filter', fin]];
+    return {
+      s, note, input: fmt(inp), pr: prim.toFixed(1), dk: dk.toFixed(1), tx: lost.toFixed(1), fn: fmt(fin),
+      prFg: pc[0], prBg: pc[1], dkFg: kc[0], dkBg: kc[1], txFg: tc[0], txBg: tc[1], fnFg: fc[0], fnBg: fc[1],
+      wIn: (inp / MAX * 100) + '%', sFin: (fin / inp * 100) + '%', sTax: ((nonchim - fin) / inp * 100) + '%', sDada: ((dIn - nonchim) / inp * 100) + '%',
+      floorL: (FLOOR / MAX * 100) + '%',
+      label: s + ': ' + steps.map(x => x[0] + ' ' + fmt(x[1])).join(', '),
+      steps: steps.map(x => ({ k: x[0], v: fmt(x[1]), w: (x[1] / inp * 100) + '%' })),
+      hasSteps: extra === 'steps', hasWarn: !!(extra && extra !== 'steps'), warn: extra && extra !== 'steps' ? extra : '',
+      opts: opt(dec, extra && extra !== 'steps'),
+      rail: dec === 'Exclude' ? '#9A9EB0' : fail ? '#DC3B3B' : w ? '#D9890B' : 'transparent',
+      rowbg: dec === 'Exclude' ? '#FAFAFC' : 'transparent', deco: dec === 'Exclude' ? 'line-through' : 'none', namefg: dec === 'Exclude' ? '#6E7287' : '#0F1020'
+    };
+  };
+  const collapse = (ls) => ls.map(g => g.more ? Object.assign({}, g, { rows: [], hasMore: true }) : Object.assign({}, g, { hasMore: false, more: '' }));
+  return {
+    lanes: collapse([
+      { title: 'Groundwater', meta: '3 samples → 2 after the exclusion · min 2 per group for pairwise tests', rows: [
+        row('SRR10070132', 50654, 40166, 32508, 31297, 30593, 30500, 23452, 23.11, 79.3, 'Exclude', '', 'steps'),
+        row('SRR10070141', 83833, 77910, 61243, 57712, 55409, 55287, 40511, 26.73, 92.9, 'Keep', '', 'Excluding SRR10070141 as well would leave Groundwater with 1 sample. ampliseq keeps a metadata column for pairwise tests only when every value occurs at least twice (bin/metadata_pairwise.r), so habitat and Riv_vs_Gro would silently drop out of QIIME2_DIVERSITY_BETA. Keep it, or accept the degraded group.'),
+        row('SRR10070133', 132193, 125497, 103194, 101438, 99611, 99084, 67236, 32.14, 94.9, 'Flag', '', '')
+      ] },
+      { title: 'Riverwater', meta: '3 samples', rows: [
+        row('SRR10070130', 99321, 96716, 83136, 77393, 73493, 72128, 65693, 8.92, 97.4, 'Keep', '', ''),
+        row('SRR10070131', 98472, 95566, 85205, 79789, 76149, 74428, 68142, 8.45, 97.0, 'Keep', '', ''),
+        row('SRR10070134', 121987, 118218, 104811, 98873, 93829, 91539, 81457, 11.01, 96.9, 'Keep', '', '')
+      ] },
+      { title: 'Sediment', meta: '3 samples', more: 'SRR10070149, SRR10070150, SRR10070151 pass every check · final 60,878–68,982', rows: [
+        row('SRR10070149', 110013, 107875, 94948, 86654, 80027, 79764, 64172, 19.55, 98.1, 'Keep', '', ''),
+        row('SRR10070151', 103751, 100643, 89637, 81285, 75208, 75021, 60878, 18.85, 97.0, 'Keep', '', ''),
+        row('SRR10070150', 117517, 115193, 101859, 93324, 86737, 86363, 68982, 20.13, 98.0, 'Keep', '', '')
+      ] },
+      { title: 'Soil', meta: '3 samples', more: 'SRR10102392, SRR10102393, SRR10102394 pass every check · final 65,832–73,416', rows: [
+        row('SRR10102392', 101475, 99163, 87016, 82259, 77537, 76473, 65832, 13.91, 97.7, 'Keep', '', ''),
+        row('SRR10102393', 114089, 111582, 95307, 90032, 84895, 83777, 73416, 12.37, 97.8, 'Keep', '', ''),
+        row('SRR10102394', 103240, 100301, 88011, 82527, 77141, 76219, 67411, 11.56, 97.2, 'Keep', '', '')
+      ] }
+    ]),
+    checks: [
+      { name: 'Reads for rarefaction', kind: 'min', rule: '≥ 30,000', sev: 'block', value: '11 / 12', col: '#B02A2A', rail: '#DC3B3B', icon: I.cross, where: 'SRR10070132 23,452 · next lowest SRR10070141 40,511', from: 'table:overall_summary.tsv#sample:filtered_tax_filter' },
+      { name: 'Primer found', kind: 'min', rule: '≥ 90 %', sev: 'warn', value: '11 / 12', col: '#8F5806', rail: '#D9890B', icon: I.warn, where: 'SRR10070132 79.3 % · others 92.9–98.1 %', from: 'table:cutadapt/cutadapt_summary.tsv#sample:cutadapt_passing_filters_percent' },
+      { name: 'Lost to taxa filter', kind: 'max', rule: '≤ 25 %', sev: 'warn', value: '10 / 12', col: '#8F5806', rail: '#D9890B', icon: I.warn, where: 'SRR10070133 32.1 · SRR10070141 26.7 · removes mitochondria, chloroplast', from: 'table:overall_summary.tsv#sample:lost_percent' },
+      { name: 'Kept through DADA2', kind: 'min', rule: '≥ 70 %', sev: 'warn', value: '12 / 12', col: '#157A4B', rail: '#1F9D63', icon: I.check, where: 'lowest SRR10070141 71.0 % · median 75.5 %', from: 'expr: table:overall_summary.tsv#sample:nonchim / DADA2_input' },
+      { name: 'Per habitat', kind: 'constraint', rule: '≥ 2 samples', sev: 'block', value: '4 / 4', col: '#157A4B', rail: '#1F9D63', icon: I.group, where: 'Groundwater 2 after the exclusion · also Riv_vs_Gro, Sed_vs_Soil', from: 'metadata:Metadata_full.tsv#ID:habitat (rule of bin/metadata_pairwise.r)' },
+      { name: 'FastQC duplicates', kind: 'info', rule: 'not gated', sev: 'info', value: '77–92 %', col: '#4D5065', rail: '#C4C7D4', icon: I.info, where: 'expected for amplicons: identical reads by design', from: 'multiqc:fastqc-percent_duplicates' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

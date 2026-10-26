@@ -1,0 +1,297 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review detail, fusion candidates</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rf:has(input[value="sum"]:checked) .pn-sum,
+.rf:has(input[value="cand"]:checked) .pn-cand,
+.rf:has(input[value="qc"]:checked) .pn-qc,
+.rf:has(input[value="report"]:checked) .pn-report,
+.rf:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.fl td,.fl th{padding:7px 6px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap;vertical-align:middle}
+.fl th{font-weight:600}
+.mono{font-family:'JetBrains Mono',monospace}
+.ill{font-size:10.5px;font-weight:600;color:#6E7287;padding:1px 6px;border-radius:6px;box-shadow:inset 0 0 0 1px #DFE1EA;letter-spacing:.02em}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / nf-core/rnafusion · fusion-panel-07 · Fusion candidates" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rf" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">7 of 8 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <span style="font-size: 11.5px; color: #6E7287;">Data: nf-core/rnafusion 4.1.3 megatest (AWS, results-76ad76e) · sample <code class="mono">test</code> · candidate rows illustrative</span>
+      <a href="ReviewRepertoire.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewCandidates.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="3 stages: stage 1 done, stage 2 done with its gate awaiting review, stage 3 not started" style="flex-shrink: 0;"><path d="M86.97 92.47L4.17 94.24A96 96 0 0 1 47.10 19.89Z" fill="#5A4FCF"/><path d="M100.00 84.95L57.08 14.13A96 96 0 0 1 142.92 14.13Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M113.03 92.47L152.90 19.89A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Fusion candidates <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· fusion-panel-07 · #327</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block; flex-shrink: 0;"><span>nf-core/rnafusion 4.1.3 · <code class="mono" style="font-size: 12px;">--tools all</code> · 1 sample · after stage 2 of 3 (detection) · gate from lab overlay · <strong style="color: #8F5806; white-space: nowrap;">waiting 48 min</strong></span></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065; flex-shrink: 0;">Can decide
+        <span title="Alice Martin (you)" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">AM</span>
+        <span title="Dmitri Novak" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">DN</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · suggests</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <label class="rv-tab"><input type="radio" name="rvfus" value="sum" aria-label="Summary"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>Summary<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">1 to check</span></label>
+      <label class="rv-tab"><input type="radio" name="rvfus" value="cand" checked aria-label="Candidates"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h7 M14 12h7 M10 8v8 M14 8v8"/></svg>Candidates<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">5 of 8 accepted</span></label>
+      <label class="rv-tab"><input type="radio" name="rvfus" value="qc" aria-label="Sample QC"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg>Sample QC<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #FDF3E2; color: #8F5806;">low depth</span></label>
+      <label class="rv-tab"><input type="radio" name="rvfus" value="report" aria-label="Report"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6"/></svg>Report<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">fusion-report · MultiQC</span></label>
+      <label class="rv-tab"><input type="radio" name="rvfus" value="hist" aria-label="History"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>History<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F1F2F6; color: #4D5065;">4</span></label>
+    </div>
+
+    <!-- CANDIDATES -->
+    <section class="rv-pn pn-cand" style="flex-direction: column; gap: 10px;">
+      <div role="group" aria-label="Sample QC for test" style="display: flex; align-items: stretch; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+        <div style="flex: 0 0 118px; padding: 9px 12px; background: #F7F7FB; display: flex; flex-direction: column; justify-content: center; gap: 2px;">
+          <span style="font-size: 11px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">SAMPLE QC</span>
+          <span class="mono" style="font-weight: 600; font-size: 14px;">test</span>
+          <span style="font-size: 11px; color: #4D5065;">real · general stats</span>
+        </div>
+        <sc-for list="{{qc}}" as="q" hint-placeholder-count="8">
+          <div title="{{q.bind}}" style="flex: 1 1 0; min-width: 0; padding: 9px 10px; border-left: 1px solid #EEEFF5; box-shadow: inset 0 3px 0 {{q.rail}}; background: {{q.bg}}; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 11px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{q.k}}</span>
+            <span style="font-size: 15px; font-weight: 600; color: {{q.fg}};">{{q.v}}</span>
+            <span style="font-size: 10.5px; color: {{q.rfg}}; display: flex; align-items: center; gap: 3px; white-space: nowrap;"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{q.icon}}"/></svg>{{q.rule}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: flex; align-items: center; gap: 10px; border-radius: 12px; background: #FFFBF3; box-shadow: inset 3px 0 0 #D9890B; padding: 8px 12px; font-size: 12.5px; color: #6B4205;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D9890B" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg>
+        <span><strong>Low depth · warn:</strong> 12,021 input reads against the overlay's ≥ 20 M. Supporting-read counts are small and FFPM is inflated; a fusion missing here is not evidence of absence.</span>
+      </div>
+
+      <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-radius: 14px; background: #F6F2FE; padding: 9px 14px;">
+        <span role="switch" aria-checked="true" aria-label="Accept candidates called by at least 2 tools" style="width: 38px; height: 22px; border-radius: 11px; background: #7750D4; position: relative; flex-shrink: 0;"><span style="position: absolute; top: 3px; left: 19px; width: 16px; height: 16px; border-radius: 8px; background: #FFFFFF;"></span></span>
+        <span style="font-size: 13.5px; font-weight: 600; color: #4D368B;">Accept candidates called by ≥ 2 tools</span>
+        <span style="font-size: 12.5px; color: #4D5065;">overlay rule · pipeline default <code class="mono">tools_cutoff = 1</code></span>
+        <span style="flex-grow: 1;"></span>
+        <span style="font-size: 13.5px; font-weight: 700;">5 of 8 accepted</span>
+        <span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #FFFFFF; color: #4D368B;">3 manual overrides</span>
+      </div>
+
+      <div style="display: flex; gap: 12px; align-items: flex-start;">
+        <div style="flex: 1 1 0; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 9px 12px; background: #F7F7FB;"><span style="font-size: 13.5px; font-weight: 600;">Ranked candidates <span class="ill" style="margin-left: 6px;">illustrative rows</span></span><span style="font-size: 12px; color: #6E7287;">sorted by fusion-report score</span></div>
+          <table class="fl" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+            <thead><tr style="color: #33364A; font-size: 11.5px;"><th scope="col" style="padding-left: 14px;">Fusion · breakpoints (GRCh38)</th><th scope="col" title="arriba · STAR-Fusion · FusionCatcher">Callers</th><th scope="col" title="junction (split) reads · spanning fragments">Junct. · span</th><th scope="col">Known</th><th scope="col">Score</th><th scope="col">Decision</th></tr></thead>
+            <tbody>
+              <sc-for list="{{cands}}" as="c" hint-placeholder-count="8">
+                <tr style="box-shadow: inset 4px 0 0 {{c.rail}}; background: {{c.bg}};">
+                  <td style="padding-left: 14px;"><span style="font-weight: 600; font-size: 13px;">{{c.name}}</span><span class="mono" style="display: block; font-size: 10px; color: #4D5065;">{{c.bp}}</span><span style="display: block; font-size: 11px; color: {{c.notec}};">{{c.note}}</span></td>
+                  <td><span style="display: inline-flex; gap: 3px;"><sc-for list="{{c.callers}}" as="k" hint-placeholder-count="3"><span title="{{k.title}}" style="font-size: 10.5px; font-weight: 700; padding: 2px 5px; border-radius: 5px; background: {{k.bg}}; color: {{k.fg}}; box-shadow: {{k.sh}}; text-decoration: {{k.td}};">{{k.t}}</span></sc-for></span><span style="display: block; font-size: 11px; color: #4D5065; margin-top: 2px;">{{c.ncall}} of 3</span></td>
+                  <td><strong>{{c.jr}}</strong> · {{c.sp}}</td>
+                  <td><span style="font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 7px; background: {{c.kbg}}; color: {{c.kfg}};">{{c.known}}</span></td>
+                  <td style="font-weight: 600;">{{c.score}}</td>
+                  <td><span role="radiogroup" aria-label="Decision for {{c.name}}" style="display: inline-flex; padding: 2px; border-radius: 9px; background: #F1F2F6; font-size: 12px;"><sc-for list="{{c.opts}}" as="o" hint-placeholder-count="3"><span style="padding: 3px 6px; border-radius: 7px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for></span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+          <div style="padding: 8px 14px 10px; border-top: 1px solid #EEEFF5; font-size: 11.5px; color: #4D5065; line-height: 1.5;">A = arriba 2.5.0 · SF = STAR-Fusion 1.15.1 · FC = FusionCatcher 1.35 (versions from the megatest). Known = fusion-report 4.1.1 databases; COSMIC not queried (<code class="mono">no_cosmic = true</code>).</div>
+        </div>
+
+        <div style="flex: 0 0 332px; min-width: 0; border-radius: 16px; box-shadow: inset 0 0 0 2px #7750D4; background: #FBF9FF; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">BCR::ABL1</h2><span class="ill">illustrative</span></div>
+          <span style="font-size: 12px; color: #4D5065; margin-top: -4px;">t(9;22) · e14a2 junction · in-frame · Mitelman, FusionGDB2</span>
+          <div role="img" aria-label="Breakpoint diagram: BCR exons 1 to 14 joined to ABL1 exons 2 to 11" style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0 2px;">
+            <div style="display: flex; align-items: center; height: 18px;">
+              <span style="flex: 0 0 46%; height: 2px; background: #8B5CF6; position: relative; display: flex; align-items: center; justify-content: space-around;"><sc-for list="{{exA}}" as="e" hint-placeholder-count="7"><span style="width: {{e.w}}px; height: 14px; border-radius: 2px; background: #8B5CF6;"></span></sc-for></span>
+              <span style="flex: 0 0 8%; display: flex; justify-content: center;"><span style="width: 2px; height: 20px; background: #D9890B;"></span></span>
+              <span style="flex: 0 0 46%; height: 2px; background: #F4A5BC; position: relative; display: flex; align-items: center; justify-content: space-around;"><sc-for list="{{exB}}" as="e" hint-placeholder-count="6"><span style="width: {{e.w}}px; height: 14px; border-radius: 2px; background: #E07A9A;"></span></sc-for></span>
+            </div>
+            <div style="display: flex; font-size: 10.5px; color: #4D5065;"><span style="flex: 0 0 46%;" class="mono">BCR · chr22 · exons 1–14</span><span style="flex: 0 0 8%;"></span><span style="flex: 0 0 46%; text-align: right;" class="mono">ABL1 · chr9 · exons 2–11</span></div>
+          </div>
+          <sc-for list="{{ev}}" as="e" hint-placeholder-count="4">
+            <div style="display: flex; gap: 10px; font-size: 12px; padding-top: 6px; border-top: 1px solid #EEE7FD;"><span style="width: 92px; flex-shrink: 0; font-weight: 600; color: #4D368B;">{{e.k}}</span><span style="color: #22253A; line-height: 1.45;">{{e.v}}</span></div>
+          </sc-for>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; padding-top: 6px; border-top: 1px solid #EEE7FD;">
+            <a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12h16 M4 6h16 M4 18h10"/></svg>Open reads in igv.js</a>
+            <span aria-disabled="true" title="ARRIBA_VISUALISATION runs in stage 3, after this gate" style="font-size: 12.5px; font-weight: 600; color: #9A9DB0; display: flex; align-items: center; gap: 5px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 11h12v10H6z M8 11V7a4 4 0 0 1 8 0v4"/></svg>arriba plot · after stage 3</span>
+          </div>
+          <span style="font-size: 11.5px; color: #4D5065;">igv.js streams <code class="mono">star/test.Aligned.sortedByCoord.out.bam</code> through the runner (range requests).</span>
+          <div style="display: flex; align-items: center; gap: 8px; padding-top: 6px; border-top: 1px solid #EEE7FD;">
+            <span role="radiogroup" aria-label="Decision for BCR::ABL1" style="display: inline-flex; padding: 3px; border-radius: 10px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #E6DCFC; font-size: 12.5px;">
+              <span style="padding: 4px 12px; border-radius: 8px; background: #7750D4; color: #FFFFFF; font-weight: 600;">Accept</span><span style="padding: 4px 12px; color: #4D5065;">Reject</span><span style="padding: 4px 12px; color: #4D5065;">Flag</span>
+            </span>
+            <span style="font-size: 11.5px; color: #4D5065;">by rule · 3 callers</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="gap: 12px; flex-wrap: wrap; align-items: stretch;">
+      <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">lab overlay demo-lab/rnafusion-review</span></div>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="5">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
+            <span style="flex: 1 1 220px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span>
+            <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex: 2 1 260px; min-width: 0; border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in · execution trace</span></div>
+        <sc-for list="{{health}}" as="h" hint-placeholder-count="5"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}}; text-align: right;">{{h.v}}</span></div></sc-for>
+      </div>
+      <div style="flex: 1 1 100%; border-radius: 16px; box-shadow: 0 0 0 1px #E6DCFC; background: #FBF9FF; padding: 14px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <span style="width: 28px; height: 28px; border-radius: 8px; background: #7750D4; color: #FFFFFF; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>
+        <span style="flex: 1 1 400px; font-size: 13px; line-height: 1.5;">Review agent suggests rejecting KANSL1::ARL17A and TTTY15::USP9Y (common in normal tissue) and flagging ETV6::RUNX1 (known, but one caller).</span>
+        <button type="button" style="height: 34px; padding: 0 12px; border: none; border-radius: 10px; background: #7750D4; color: #FFFFFF; font: 600 12.5px 'Inter', sans-serif;">Apply suggestion</button>
+      </div>
+    </section>
+
+    <!-- SAMPLE QC -->
+    <section class="rv-pn pn-qc" style="flex-direction: column; gap: 8px;">
+      <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+        <table class="fl" style="width: 100%; border-collapse: collapse; font-size: 12.5px;">
+          <thead><tr style="background: #F7F7FB; font-size: 11.5px;"><th style="padding-left: 14px;">MultiQC column</th><th>Value</th><th>Rule</th></tr></thead>
+          <tbody><sc-for list="{{qc}}" as="q" hint-placeholder-count="8"><tr><td style="padding-left: 14px;" class="mono">{{q.bind}}</td><td style="font-weight: 600;">{{q.v}}</td><td style="color: {{q.rfg}};">{{q.rule}}</td></tr></sc-for></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- REPORT -->
+    <section class="rv-pn pn-report" style="flex-direction: column; gap: 8px;">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <span style="font-size: 12.5px; font-weight: 600; padding: 6px 10px; border-radius: 9px; background: #7750D4; color: #FFFFFF;">test · fusion-report</span>
+        <span style="font-size: 12.5px; font-weight: 600; padding: 6px 10px; border-radius: 9px; background: #F1F2F6; color: #33364A;">MultiQC</span>
+        <span aria-disabled="true" title="FusionInspector runs in stage 3, after this gate" style="font-size: 12.5px; font-weight: 600; padding: 6px 10px; border-radius: 9px; background: #F7F7FB; color: #9A9DB0;">FusionInspector · after stage 3</span>
+      </div>
+      <div role="img" aria-label="Sandboxed HTML report placeholder" style="height: 420px; border-radius: 16px; box-shadow: inset 0 0 0 1px #DFE1EA; background: repeating-linear-gradient(135deg, #F7F7FB 0 14px, #F1F2F6 14px 28px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #4D5065; font-size: 13px;">
+        <strong style="color: #22253A;" class="mono">fusionreport/test/index.html</strong>
+        <span>Sandboxed frame · separate origin · streamed by the runner</span>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="4">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 0; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F6F2FE; color: #4D368B;">Rule ≥ 2 callers</span><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F1F2F6; color: #33364A;">3 manual overrides</span><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: #F6F2FE; color: #4D368B;">fusions_accepted.txt · 5</span></span>
+      </span>
+      <span style="display: flex; flex-direction: column; gap: 4px; width: 300px; flex-shrink: 0;">
+        <span style="font-size: 11.5px; color: #4D5065;" title="Passed as --fusioninspector_fusions [to be validated]">Stage 3 for 5 fusions · FusionInspector ~14 min, 37 GB</span>
+        <span style="display: flex; gap: 3px;"><span style="flex: 1; height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, #C4C7D4 0 6px, #EEEFF5 6px 12px);"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: repeating-linear-gradient(90deg, #C4C7D4 0 6px, #EEEFF5 6px 12px);"></span><span style="flex: 1; height: 8px; border-radius: 4px; background: #F4A5BC;"></span></span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A; flex-shrink: 0;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A; flex-shrink: 0;">Discard changes</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; flex-shrink: 0;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z', cross: 'M6 6l12 12 M18 6L6 18', info: 'M12 8h.01 M11 12h1v5h1 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0' };
+  // Real sample QC: multiqc_general_stats.txt, rnafusion 4.1.3 megatest, sample "test".
+  const ok = (rule) => ({ rule, icon: I.check, rfg: '#157A4B', rail: 'transparent', bg: '#FFFFFF', fg: '#0F1020' });
+  const info = (rule) => ({ rule, icon: I.info, rfg: '#4D5065', rail: 'transparent', bg: '#FFFFFF', fg: '#0F1020' });
+  const qc = [
+    { k: 'Input reads (STAR)', v: '12,021', bind: 'star-total_reads', rule: '≥ 20 M · warn', icon: I.warn, rfg: '#8F5806', rail: '#D9890B', bg: '#FFFBF3', fg: '#8F5806' },
+    { k: 'Mapped', v: '87.64 %', bind: 'star-mapped_percent', ...ok('≥ 70 %') },
+    { k: 'Uniquely mapped', v: '87.07 %', bind: 'star-uniquely_mapped_percent', ...ok('≥ 60 %') },
+    { k: 'Duplication', v: '10.03 %', bind: 'picard_mark_duplicates-PERCENT_DUPLICATION', ...ok('≤ 50 %') },
+    { k: 'mRNA bases', v: '99.16 %', bind: 'picard_rnaseqmetrics-PCT_MRNA_BASES', ...ok('≥ 60 %') },
+    { k: 'Ribosomal', v: '0.00 %', bind: 'picard_rnaseqmetrics-PCT_RIBOSOMAL_BASES', ...ok('≤ 10 %') },
+    { k: 'Insert, median', v: '3,156', bind: 'picard_insertsizemetrics-summed_median', ...info('info · spliced pairs') },
+    { k: 'Q30 after fastp', v: '88.67 %', bind: 'fastp-after_filtering_q30_rate', ...ok('≥ 80 %') }
+  ];
+  const callerSet = (a, sf, fc) => [['A', 'arriba', a], ['SF', 'STAR-Fusion', sf], ['FC', 'FusionCatcher', fc]].map(([t, n, on]) => on
+    ? { t, title: n + ': called', bg: '#7750D4', fg: '#FFFFFF', sh: 'none', td: 'none' }
+    : { t, title: n + ': not called', bg: '#FFFFFF', fg: '#9A9DB0', sh: 'inset 0 0 0 1px #DFE1EA', td: 'line-through' });
+  const opts = (on) => ['Accept', 'Reject', 'Flag'].map(t => t === on
+    ? { t, bg: '#FFFFFF', fg: t === 'Reject' ? '#B02A2A' : t === 'Flag' ? '#8F5806' : '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' }
+    : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  const kn = { db: ['Mitelman', '#E8F6EF', '#157A4B'], normal: ['normal tissue', '#FDF3E2', '#8F5806'], rt: ['read-through', '#F1F2F6', '#4D5065'] };
+  // Candidate rows are ILLUSTRATIVE: well-known fusions; coordinates approximate.
+  const C = [
+    ['BCR::ABL1', 'chr22:23,290,413 → chr9:130,854,064', [1, 1, 1], 18, 9, 'db', '0.92', 'Accept', '', true],
+    ['TMPRSS2::ERG', 'chr21:41,508,081 → chr21:38,445,621', [1, 1, 1], 12, 7, 'db', '0.88', 'Accept', '', false],
+    ['EML4::ALK', 'chr2:42,295,516 → chr2:29,223,528', [1, 1, 0], 7, 4, 'db', '0.71', 'Accept', '', false],
+    ['FGFR3::TACC3', 'chr4:1,806,934 → chr4:1,739,325', [1, 0, 1], 5, 2, 'db', '0.55', 'Accept', '', false],
+    ['ETV6::RUNX1', 'chr12:11,869,969 → chr21:34,859,474', [0, 1, 0], 3, 1, 'db', '0.41', 'Flag', 'override: keep, known fusion, 1 caller', false],
+    ['KANSL1::ARL17A', 'chr17:46,094,560 → chr17:46,570,741', [1, 1, 1], 22, 15, 'normal', '0.31', 'Reject', 'override: frequent in normal tissue', false],
+    ['TTTY15::USP9Y', 'chrY:12,662,334 → chrY:12,701,231', [0, 1, 1], 9, 6, 'normal', '0.22', 'Reject', 'override: common in male normal tissue', false],
+    ['CTBS::GNG5', 'chr1:84,563,071 → chr1:84,498,365', [1, 0, 0], 4, 0, 'rt', '0.12', 'Reject', 'by rule: 1 caller', false]
+  ];
+  const cands = C.map(([name, bp, cl, jr, sp, k, score, dec, note, sel]) => {
+    const over = note.startsWith('override');
+    return {
+      name, bp, jr, sp, score, note: sel ? 'selected · by rule' : note, notec: over ? (dec === 'Reject' ? '#B02A2A' : '#8F5806') : '#4D5065',
+      callers: callerSet(...cl), ncall: cl.reduce((a, b) => a + b, 0),
+      known: kn[k][0], kbg: kn[k][1], kfg: kn[k][2], opts: opts(dec),
+      rail: sel ? '#7750D4' : over ? (dec === 'Reject' ? '#DC3B3B' : '#D9890B') : 'transparent', bg: sel ? '#FBF9FF' : 'transparent'
+    };
+  });
+  return {
+    qc, cands,
+    exA: [9, 7, 11, 8, 10, 7, 12].map(w => ({ w })), exB: [10, 8, 7, 9, 7, 14].map(w => ({ w })),
+    ev: [
+      { k: 'arriba', v: 'split reads 18 · discordant mates 9 · confidence high · in-frame' },
+      { k: 'STAR-Fusion', v: 'JunctionReadCount 17 · SpanningFragCount 9 · FFPM 2,163 (inflated by depth)' },
+      { k: 'FusionCatcher', v: 'spanning unique reads 16 · spanning pairs 8' },
+      { k: 'Databases', v: 'Mitelman ✓ · FusionGDB2 ✓ · COSMIC not queried' }
+    ],
+    checks: [
+      { name: 'Input reads', rule: '≥ 20 M · warn', value: '12,021', col: '#8F5806', icon: I.warn },
+      { name: 'Mapped (STAR)', rule: '≥ 70 % · block', value: '87.64 %', col: '#157A4B', icon: I.check },
+      { name: 'Duplication (Picard)', rule: '≤ 50 % · warn', value: '10.03 %', col: '#157A4B', icon: I.check },
+      { name: 'Every caller finished', rule: 'completeness · block', value: '3 / 3', col: '#157A4B', icon: I.check },
+      { name: 'Candidates to review', rule: 'count · info', value: '8 · illustrative', col: '#4D5065', icon: I.info }
+    ],
+    health: [
+      { k: 'Failed tasks', v: '0 of 26', fg: '#157A4B' },
+      { k: 'STAR_ALIGN (test)', v: '7 min 57 s · 32.4 GB', fg: '#22253A' },
+      { k: 'FUSIONCATCHER (test)', v: '7 min 38 s · 5.5 GB', fg: '#22253A' },
+      { k: 'STARFUSION_DETECT (test)', v: '2 min 47 s · 9.4 GB', fg: '#22253A' },
+      { k: 'Next: FUSIONINSPECTOR', v: '13 min 48 s · 37.2 GB last run', fg: '#8F5806' }
+    ],
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after FUSIONREPORT_DETECT (lab overlay demo-lab/rnafusion-review); 8 candidates for sample test.', at: '07:21' },
+      { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', text: 'Review agent suggested rejecting KANSL1::ARL17A and TTTY15::USP9Y, flagging ETV6::RUNX1.', at: '07:22' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin turned on the rule "≥ 2 callers".', at: '08:02' },
+      { t: 'AM', bg: '#E6DCFC', fg: '#4D368B', text: 'Alice Martin applied the suggestion (3 overrides).', at: '08:05' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

@@ -55,7 +55,7 @@ details[open] .chev{transform:rotate(90deg)}
 
         <div role="status" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-radius: 14px; padding: 12px 14px 12px 16px; background: #FDF3E2; box-shadow: inset 4px 0 0 #D9890B;">
           <span style="width: 34px; height: 34px; border-radius: 10px; background: #FFFFFF; color: #B06D07; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg></span>
-          <span style="flex: 1 1 380px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: #5C3A04;"><strong style="font-size: 14px;">Working, with 1 degraded component and 2 notices</strong><span>Runner <span class="mono">embl-slurm · login-2</span> has been offline for 14 min; its 2 runs keep going on the cluster and are picked up when it returns. Everything else is healthy.</span></span>
+          <span style="flex: 1 1 380px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: #5C3A04;"><strong style="font-size: 14px;">Working, with 1 degraded component and 2 notices</strong><span>Runner <span class="mono">demo-hpc · hpc-login-2</span> has been offline for 14 min; its 2 runs keep going on the cluster and are picked up when it returns. Everything else is healthy.</span></span>
           <a href="RunnerOffline.dc.html" class="btn btn-s">Open runner</a>
         </div>
 
@@ -164,13 +164,13 @@ renderVals() {
     c('File store', 'SeaweedFS S3', 'ok', '182 GB', 'used of 2 TB', 'Bucket spectio: evidence, reports, RO-Crates · write test 40 ms', 'M4 5h16v4H4z M5 9v10h14V9 M10 13h4'),
     c('Task backend', 'SQL workers', 'ok', '3 / 3', 'workers alive', '7 queued · oldest 4 s · 3 failed in the last 24 h', 'M9 6h11 M9 12h11 M9 18h11 M4 6l1 1 2-2 M4 12l1 1 2-2 M4 18l1 1 2-2', 'AdminTasks.dc.html'),
     c('Pub/sub', 'LISTEN / NOTIFY', 'ok', '41', 'live SSE clients', 'Fan-out to 2 API processes · round trip 6 ms', 'M5 12a7 7 0 0 1 14 0 M8.5 12a3.5 3.5 0 0 1 7 0 M12 12v8'),
-    c('Identity providers', 'OIDC + SAML', 'note', '41 days', 'until SAML cert expires', 'EMBL SSO discovery OK · SAML (shared with depictio) certificate expires 05 Dec 2026', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0'),
+    c('Identity providers', 'OIDC + SAML', 'note', '41 days', 'until SAML cert expires', 'Demo SSO discovery OK · SAML (shared with depictio) certificate expires 05 Dec 2026', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0'),
     c('Plugins', '15 installed', 'note', '14', 'loaded · 1 failed', 'spectio-plugin-omero 0.3: import error (needs SDK ≥ 1.3)', 'M9 3v4 M15 3v4 M7 7h10v4a5 5 0 0 1-10 0z M12 16v5', 'AdminPlugins.dc.html'),
-    c('Runners', '4 registered', 'bad', '3 / 4', 'online', 'embl-slurm · login-2 offline for 14 min, 2 runs waiting on it', 'M4 17l6-6-6-6 M12 19h8', 'RunnerOffline.dc.html'),
+    c('Runners', '4 registered', 'bad', '3 / 4', 'online', 'demo-hpc · hpc-login-2 offline for 14 min, 2 runs waiting on it', 'M4 17l6-6-6-6 M12 19h8', 'RunnerOffline.dc.html'),
     c('Disk', '/srv/spectio', 'ok', '38 %', 'of 200 GB', 'Logs ring buffer 610 MB of 1 GB · temp 1.2 GB', 'M4 12h16 M4 12a8 8 0 0 1 16 0 M4 12v4h16v-4 M8 16h.01'),
     c('Backups', 'nightly', 'ok', '3 h ago', 'last success · verified', 'Next at 02:00 · 31 kept (30 daily, 1 monthly) · to S3', 'M12 8v4l3 2 M4 12a8 8 0 1 0 2.3-5.7 M4 4v4h4', 'AdminBackups.dc.html'),
     c('Migrations', 'Alembic', 'ok', '0', 'pending', 'At head (0015 · run notes) since 21 Oct', 'M5 12h14 M13 6l6 6-6 6', 'AdminMaintenance.dc.html'),
-    c('TLS certificate', 'spectio.embl.de', 'ok', '62 days', 'left', 'Caddy · Let’s Encrypt, renews at 30 days', 'M6 11V8a6 6 0 1 1 12 0v3 M5 11h14v10H5z M12 15v2'),
+    c('TLS certificate', 'spectio.example.org', 'ok', '62 days', 'left', 'Caddy · Let’s Encrypt, renews at 30 days', 'M6 11V8a6 6 0 1 1 12 0v3 M5 11h14v10H5z M12 15v2'),
     c('Outbox and bridges', '3 bridges', 'ok', '0', 'events waiting', 'Webhook p95 delivery 220 ms · MQTT connected · Kafka lag 0', 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1 M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1')
   ];
   const R = { on: ['Online', '#E8F6EF', '#157A4B', '#1F9D63'], off: ['Offline', '#FCEBEB', '#B02A2A', '#DC3B3B'], drain: ['Draining', '#FDF3E2', '#8F5806', '#D9890B'] };
@@ -178,10 +178,10 @@ renderVals() {
   return {
     versions, checks,
     runners: [
-      r('embl-slurm · login-1', 'rnaseq-core', 'login-1.embl.de', '0.4.0', false, 'EMBL SLURM · htc', 'on', '4 s ago', '6 active', ''),
-      r('embl-slurm · login-2', 'rnaseq-core', 'login-2.embl.de', '0.4.0', false, 'EMBL SLURM · htc', 'off', '14 min ago', '2 waiting', 'host maintenance 10:00–12:00'),
+      r('demo-hpc · hpc-login-1', 'rnaseq-core', 'hpc-login-1.example.org', '0.4.0', false, 'demo-hpc SLURM · htc', 'on', '4 s ago', '6 active', ''),
+      r('demo-hpc · hpc-login-2', 'rnaseq-core', 'hpc-login-2.example.org', '0.4.0', false, 'demo-hpc SLURM · htc', 'off', '14 min ago', '2 waiting', 'host maintenance 10:00–12:00'),
       r('k8s · spectio-dev', 'instance', 'pod runner-7d9c4', '0.4.0', false, 'Kubernetes · dev', 'on', '2 s ago', '1 active', ''),
-      r('tw-lab', 'tweber', 'tw-lab.local', '0.3.2', true, 'Workstation · tw-lab', 'drain', '9 s ago', '1 finishing', '')
+      r('demo-lab', 'amartin', 'demo-lab.local', '0.3.2', true, 'Workstation · demo-lab', 'drain', '9 s ago', '1 finishing', '')
     ]
   };
 }

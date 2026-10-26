@@ -92,7 +92,7 @@ summary::-webkit-details-marker{display:none}
       </sc-for>
       <div style="border-radius: 12px; background: #F7F7FB; padding: 10px 12px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
         <span style="flex: 1 1 280px; font-size: 12.5px; color: #33364A; line-height: 1.45;"><strong>Use your own GPUs.</strong> A runner starts the model server as an ordinary GPU job, registers it here, and stops it after the idle time.</span>
-        <code style="flex: 2 1 420px; font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #0F1020; color: #E6E7EF; border-radius: 9px; padding: 8px 10px;">spectio ai serve --env "EMBL SLURM · gpu" --model &lt;model-id&gt; --gpus 1 --idle-stop 2h</code>
+        <code style="flex: 2 1 420px; font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #0F1020; color: #E6E7EF; border-radius: 9px; padding: 8px 10px;">spectio ai serve --env "demo-hpc SLURM · gpu" --model &lt;model-id&gt; --gpus 1 --idle-stop 2h</code>
       </div>
     </section>
 
@@ -130,7 +130,7 @@ summary::-webkit-details-marker{display:none}
           <summary style="cursor: pointer; padding: 12px 16px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; list-style: none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>CLI equivalent<span style="font-size: 12.5px; font-weight: 500; color: #6E7287;">same API, same permissions</span></summary>
           <pre style="margin: 0; background: #0F1020; color: #E6E7EF; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto;"><span style="color: #8A8FA8;">$</span> spectio ai provider list
 <span style="color: #8A8FA8;">$</span> spectio ai agent list
-<span style="color: #8A8FA8;">$</span> spectio ai serve --env "EMBL SLURM · gpu" --model &lt;model-id&gt; --gpus 1 --idle-stop 2h</pre>
+<span style="color: #8A8FA8;">$</span> spectio ai serve --env "demo-hpc SLURM · gpu" --model &lt;model-id&gt; --gpus 1 --idle-stop 2h</pre>
         </details>
       </div>
     </div>
@@ -162,11 +162,11 @@ renderVals() {
     endpoints: [
       { name: 'Lab GPU · vLLM', def: 'default', kind: 'self-hosted · OpenAI-compatible', where: 'SLURM job on the gpu partition, started by a runner', data: 'Data stays on site', state: 'Running', fg: '#157A4B', rail: '#1F9D63' },
       { name: 'Hosted provider API', def: '', kind: 'provider key, stored encrypted', where: 'Provider cloud', data: 'Metrics and text only, no files', state: 'Disabled', fg: '#6E7287', rail: '#C4C7D4' },
-      { name: 'Workstation · Ollama', def: '', kind: 'self-hosted · local', where: 'tw-lab workstation', data: 'Data stays on site', state: 'Offline', fg: '#B02A2A', rail: '#DC3B3B' }
+      { name: 'Workstation · Ollama', def: '', kind: 'self-hosted · local', where: 'demo-lab workstation', data: 'Data stays on site', state: 'Offline', fg: '#B02A2A', rail: '#DC3B3B' }
     ],
     agents: [
       { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', name: 'QC agent (built-in)', door: 'internal · Lab GPU endpoint', scopes: [chip('read', 'on'), chip('propose', 'on'), chip('approve', 'off'), chip('launch', 'off')], last: 'proposed a change · 9 min ago' },
-      { t: 'AI', bg: '#E6DCFC', fg: '#4D368B', name: 'Thomas’s coding assistant', door: 'MCP · personal token', scopes: [chip('read', 'on'), chip('propose', 'on'), chip('launch on Kubernetes · dev', 'warn')], last: 'listed failed runs · 1 h ago' },
+      { t: 'AI', bg: '#E6DCFC', fg: '#4D368B', name: 'Alice’s coding assistant', door: 'MCP · personal token', scopes: [chip('read', 'on'), chip('propose', 'on'), chip('launch on Kubernetes · dev', 'warn')], last: 'listed failed runs · 1 h ago' },
       { t: 'BOT', bg: '#E3F1FB', fg: '#1D5FC9', name: 'LIMS / plate reader', door: 'Webhook · signed', scopes: [chip('signal gates', 'on'), chip('read', 'off')], last: 'plate 12 imaged · 2 h ago' },
       { t: 'CI', bg: '#F1F2F6', fg: '#33364A', name: 'Pipeline CI', door: 'REST + WES · service token', scopes: [chip('launch test profile', 'warn'), chip('read own runs', 'on')], last: 'test run passed · yesterday' }
     ],

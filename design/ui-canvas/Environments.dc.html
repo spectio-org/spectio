@@ -56,8 +56,8 @@ a{color:#6344B2}a:hover{color:#4D368B}
 
       <section style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 18px 20px; display: flex; flex-direction: column; gap: 14px;">
         <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline;">
-          <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">EMBL SLURM · htc</h2>
-          <span style="font-size: 12.5px; color: #4D5065;">Runner spectio-runner 0.1.0 · user tweber · host login01 · heartbeat 12 s ago · outbound only</span>
+          <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">demo-hpc SLURM · htc</h2>
+          <span style="font-size: 12.5px; color: #4D5065;">Runner spectio-runner 0.1.0 · user amartin · host hpc-login-1 · heartbeat 12 s ago · outbound only</span>
         </div>
         <nav aria-label="Environment sections" style="display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #EEEFF5;">
           <sc-for list="{{tabs}}" as="t" hint-placeholder-count="6">
@@ -77,7 +77,7 @@ a{color:#6344B2}a:hover{color:#4D368B}
         <div style="display: flex; flex-direction: column; gap: 6px;">
           <span style="font-size: 13.5px; font-weight: 600;">Runner setup (one command, no root, no open port)</span>
           <pre style="margin: 0; border-radius: 12px; background: #0F1020; color: #E6E7EF; padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap;">pip install spectio
-spectio runner connect --server https://spectio.embl.de --token ••••••••   # token created in Settings › Tokens</pre>
+spectio runner connect --server https://spectio.example.org --token ••••••••   # token created in Settings › Tokens</pre>
         </div>
       </section>
     </main>
@@ -92,17 +92,17 @@ renderVals() {
   const row = (k, v, m) => ({ k, v, mono: m ? mono : sans });
   return {
     envs: [
-      { name: 'EMBL SLURM · htc', state: 'Online', fg: '#157A4B', rail: '#1F9D63', ring: 'inset 0 0 0 2px #7750D4', runner: 'Runner on login01 · tweber · v0.4.0', compute: 'SLURM 24.05 · partitions htc, gpu', engines: 'Nextflow 25.10.4 · Snakemake 9.13', storage: '/scratch (Lustre) · /g/lab (NFS)', software: 'Apptainer · conda · Lmod modules', load: '4 runs · 312 jobs queued' },
+      { name: 'demo-hpc SLURM · htc', state: 'Online', fg: '#157A4B', rail: '#1F9D63', ring: 'inset 0 0 0 2px #7750D4', runner: 'Runner on hpc-login-1 · amartin · v0.4.0', compute: 'SLURM 24.05 · partitions htc, gpu', engines: 'Nextflow 25.10.4 · Snakemake 9.13', storage: '/scratch (Lustre) · /data/demo (NFS)', software: 'Apptainer · conda · Lmod modules', load: '4 runs · 312 jobs queued' },
       { name: 'Kubernetes · dev', state: 'Online', fg: '#157A4B', rail: '#1F9D63', ring: idle, runner: 'Runner in namespace spectio-dev · v0.4.0', compute: 'K8s 1.33 · 64 vCPU quota', engines: 'Nextflow 25.10.4', storage: 'S3 s3://lab-dev · PVC work', software: 'Docker · Wave', load: '1 run' },
-      { name: 'Workstation · tw-lab', state: 'Offline 2 h', fg: '#B02A2A', rail: '#DC3B3B', ring: idle, runner: 'Runner on tw-lab · last heartbeat 08:02', compute: 'Local executor · 16 cores', engines: 'Snakemake 9.13', storage: 'Local disk /data', software: 'conda', load: 'No runs can start' },
+      { name: 'Workstation · demo-lab', state: 'Offline 2 h', fg: '#B02A2A', rail: '#DC3B3B', ring: idle, runner: 'Runner on demo-lab · last heartbeat 08:02', compute: 'Local executor · 16 cores', engines: 'Snakemake 9.13', storage: 'Local disk /data', software: 'conda', load: 'No runs can start' },
       { name: 'AWS Batch · burst', state: 'Phase 2', fg: '#4D5065', rail: '#DFE1EA', ring: idle, runner: 'Planned: GA4GH TES or native Batch', compute: 'AWS Batch queues', engines: 'Nextflow', storage: 'S3', software: 'Docker · Wave', load: '—' }
     ],
     tabs: tabNames.map((label, i) => ({ label, href: i === 1 ? 'EnvStorage.dc.html' : '#', w: i === 0 ? 600 : 500, c: i === 0 ? '#4D368B' : '#4D5065', u: i === 0 ? 'inset 0 -2px 0 #7750D4' : 'none' })),
     panels: [
       { title: 'Executor / backend', icon: 'M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01', rows: [row('Scheduler', 'SLURM 24.05'), row('Default partition', 'htc'), row('Job arrays', 'enabled · max 1000', false), row('Accounting', 'sacct polled every 60 s')] },
-      { title: 'Engine settings', icon: 'M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4', rows: [row('Nextflow', 'executor = slurm', true), row('Snakemake', '--executor slurm', true), row('Profiles exposed', 'singularity, embl')] },
-      { title: 'Storage', icon: 'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3z M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6', rows: [row('Work dir root', '/scratch/tweber', true), row('Outputs root', '/g/lab/runs', true), row('Retention', 'work dirs purged after 30 days'), row('Viewer access', 'runner streams files on demand')] },
-      { title: 'Software deployment', icon: 'M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5 M12 12v9', rows: [row('Containers', 'Apptainer 1.4 · cache /scratch/sif'), row('Conda', 'Miniforge · --sdm conda'), row('Modules', 'Lmod · not used by default')] }
+      { title: 'Engine settings', icon: 'M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4', rows: [row('Nextflow', 'executor = slurm', true), row('Snakemake', '--executor slurm', true), row('Profiles exposed', 'singularity, demo_hpc')] },
+      { title: 'Storage', icon: 'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3z M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6', rows: [row('Work dir root', '/scratch/demo/amartin', true), row('Outputs root', '/data/demo/results', true), row('Retention', 'work dirs purged after 30 days'), row('Viewer access', 'runner streams files on demand')] },
+      { title: 'Software deployment', icon: 'M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5 M12 12v9', rows: [row('Containers', 'Apptainer 1.4 · cache /scratch/demo/sif'), row('Conda', 'Miniforge · --sdm conda'), row('Modules', 'Lmod · not used by default')] }
     ]
   };
 }

@@ -86,7 +86,7 @@ details.cli[open] .chev{transform:rotate(90deg)}
           <span style="display: flex; align-items: center; gap: 8px; font-size: 13px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18l-7 8v6l-4 2v-8z"/></svg><span style="font-weight: 600;">Capture floor</span></span>
           <select class="sel" aria-label="Capture floor"><option>WARNING</option><option>INFO</option><option>DEBUG</option></select>
           <span style="font-size: 12.5px; color: #4D5065;">applies to all processes, saved</span>
-          <span class="chip" style="height: 26px; background: #EEF6FA; color: #1F536D; font-weight: 500;">override <span class="mono" style="font-size: 11.5px;">runner:embl-slurm → INFO</span> until 16:00</span>
+          <span class="chip" style="height: 26px; background: #EEF6FA; color: #1F536D; font-weight: 500;">override <span class="mono" style="font-size: 11.5px;">runner:demo-hpc → INFO</span> until 16:00</span>
         </div>
 
         <section class="card" style="overflow: hidden;">
@@ -106,7 +106,7 @@ details.cli[open] .chev{transform:rotate(90deg)}
               <span style="color: #6E7287;">14:02:07.931</span>
               <span><span class="chip" style="height: 19px; padding: 0 6px; font-size: 10.5px; background: #FCEBEB; color: #B02A2A;">ERROR</span></span>
               <span style="min-width: 0;"><span class="src">plugin:check-script</span></span>
-              <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;"><span style="color: #0F1020; font-weight: 500;">cell_qc.py exited with code 1: KeyError 'pct_counts_mt'</span><a class="cor" href="ReviewCells.dc.html">run scrna-pbmc #314</a><a class="cor" href="AdminTasks.dc.html">task_01JBF6W8QZ</a></span>
+              <span style="display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px;"><span style="color: #0F1020; font-weight: 500;">cell_qc.py exited with code 1: KeyError 'pct_counts_mt'</span><a class="cor" href="ReviewCells.dc.html">run scrna-pbmc #444</a><a class="cor" href="AdminTasks.dc.html">task_01JBF6W8QZ</a></span>
             </div>
             <div style="padding: 2px 14px 14px 112px; display: grid; grid-template-columns: minmax(0, 1fr) 200px; gap: 14px;">
               <pre class="code">{
@@ -147,9 +147,9 @@ details.cli[open] .chev{transform:rotate(90deg)}
 
         <details class="cli" style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
           <summary style="display: flex; align-items: center; gap: 10px; padding: 12px 14px; font-size: 13.5px; font-weight: 600;"><svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>CLI equivalent<span style="font-weight: 400; font-size: 12.5px; color: #6E7287;">same API, admin token</span></summary>
-          <pre style="margin: 0 14px 14px; padding: 14px 16px; border-radius: 12px; background: #14152A; color: #E6E7F0; font: 12.5px/1.7 'JetBrains Mono', monospace; overflow-x: auto;"><span style="color: #7FD3AA;">$</span> spectio admin logs --level warning --source runner:embl-slurm --follow
+          <pre style="margin: 0 14px 14px; padding: 14px 16px; border-radius: 12px; background: #14152A; color: #E6E7F0; font: 12.5px/1.7 'JetBrains Mono', monospace; overflow-x: auto;"><span style="color: #7FD3AA;">$</span> spectio admin logs --level warning --source runner:demo-hpc --follow
 <span style="color: #7FD3AA;">$</span> spectio admin logs --run run_01JBF5M2TC --json <span style="color: #9A9EB0;">| jq 'select(.level=="ERROR")'</span>
-<span style="color: #7FD3AA;">$</span> spectio admin logs capture-floor set warning --override runner:embl-slurm=info --until 16:00</pre>
+<span style="color: #7FD3AA;">$</span> spectio admin logs capture-floor set warning --override runner:demo-hpc=info --until 16:00</pre>
         </details>
       </div>
     </div>
@@ -172,25 +172,25 @@ renderVals() {
     srcFilters: [
       { label: 'api', x: '', bg: '#FFFFFF', fg: '#22253A', ring: '#DFE1EA' },
       { label: 'worker', x: '', bg: '#FFFFFF', fg: '#22253A', ring: '#DFE1EA' },
-      { label: 'runner:embl-slurm', x: ' ×', bg: '#F1ECFE', fg: '#4D368B', ring: '#D9CCFA' },
+      { label: 'runner:demo-hpc', x: ' ×', bg: '#F1ECFE', fg: '#4D368B', ring: '#D9CCFA' },
       { label: 'runner:k8s-dev', x: '', bg: '#FFFFFF', fg: '#22253A', ring: '#DFE1EA' },
       { label: 'plugin:*', x: '', bg: '#FFFFFF', fg: '#22253A', ring: '#DFE1EA' },
       { label: 'engine', x: '', bg: '#FFFFFF', fg: '#22253A', ring: '#DFE1EA' }
     ],
     rowsA: [
       r('14:02:11.402', 'WARN', 'worker', 'webhook.deliver: upstream 503 from labid-hooks, rescheduled in 1 min 40 s', [run('soil-meta-12 #288', 'ReviewCandidates.dc.html'), task('task_01JBF7R0K3')]),
-      r('14:02:09.118', 'INFO', 'runner:embl-slurm', 'sacct: job 48213977 RUNNING · NFCORE_RNASEQ:RNASEQ:STAR_ALIGN (sample T3)', [run('liver-tc-03 #301', 'ReviewReport.dc.html')]),
-      r('14:02:08.760', 'INFO', 'runner:embl-slurm', 'batch of 42 engine events sent, 0 buffered, rtt 38 ms', [plain('runner_01JA2…')])
+      r('14:02:09.118', 'INFO', 'runner:demo-hpc', 'sacct: job 48213977 RUNNING · NFCORE_RNASEQ:RNASEQ:STAR_ALIGN (sample T3)', [run('liver-tc-03 #302', 'RunScheduler.dc.html')]),
+      r('14:02:08.760', 'INFO', 'runner:demo-hpc', 'batch of 42 engine events sent, 0 buffered, rtt 38 ms', [plain('runner_01JA2…')])
     ],
     rowsB: [
-      r('14:01:58.204', 'WARN', 'runner:k8s-dev', 'pod spectio-scrna-314-cellbender OOMKilled, retry 2/3 with memory 32 GiB', [run('scrna-pbmc #314', 'ReviewCells.dc.html')]),
-      r('14:01:44.051', 'INFO', 'runner:embl-slurm', 'launch accepted: gate Mapping QC → stop after stage 2 (ext.when on later stages)', [run('liver-tc-03 #301', 'ReviewReport.dc.html')]),
-      r('14:01:40.377', 'ERROR', 'plugin:bridge-mqtt', 'connection refused mqtt.imaging.embl.de:8883 (attempt 5/5, giving up)', [task('task_01JBF6ZQ4A')]),
-      r('14:01:22.910', 'WARN', 'engine', 'nextflow: process FASTQC (T1) terminated with exit 137, retrying (attempt 2)', [run('liver-tc-03 #301', 'ReviewReport.dc.html')]),
+      r('14:01:58.204', 'WARN', 'runner:k8s-dev', 'pod spectio-scrna-444-cellbender OOMKilled, retry 2/3 with memory 32 GiB', [run('scrna-pbmc #444', 'ReviewCells.dc.html')]),
+      r('14:01:44.051', 'INFO', 'runner:demo-hpc', 'launch accepted: gate Mapping QC → stop after stage 2 (ext.when on later stages)', [run('liver-tc-03 #302', 'RunScheduler.dc.html')]),
+      r('14:01:40.377', 'ERROR', 'plugin:bridge-mqtt', 'connection refused mqtt.imaging.example.org:8883 (attempt 5/5, giving up)', [task('task_01JBF6ZQ4A')]),
+      r('14:01:22.910', 'WARN', 'engine', 'nextflow: process FASTQC (T1) terminated with exit 137, retrying (attempt 2)', [run('liver-tc-03 #302', 'RunScheduler.dc.html')]),
       r('14:00:51.633', 'WARN', 'api', 'slow request GET /api/v1/runs?project=prj_…rnaseq 2.41 s (p95 320 ms)', [plain('req_7f3c19'), plain('a.smith')]),
       r('14:00:12.006', 'WARN', 'plugin:depictio', 'depictio-cli 1.19.2 older than server 1.20.0; ingest still compatible', [task('task_01JBF5Z0RS')]),
-      r('13:59:30.488', 'INFO', 'runner:embl-slurm', 'work directory policy keep-14d: 38 directories removed, 1.2 TB freed', [task('task_01JBF5W3PX')]),
-      r('13:58:02.917', 'ERROR', 'api', 'OIDC token from issuer login.embl.de rejected: clock skew 94 s > 60 s', [plain('req_6c2a08'), plain('principal unknown')]),
+      r('13:59:30.488', 'INFO', 'runner:demo-hpc', 'work directory policy keep-14d: 38 directories removed, 1.2 TB freed', [task('task_01JBF5W3PX')]),
+      r('13:58:02.917', 'ERROR', 'api', 'OIDC token from issuer sso.example.org rejected: clock skew 94 s > 60 s', [plain('req_6c2a08'), plain('principal unknown')]),
       r('13:57:41.250', 'WARN', 'worker', 'runner hpc-login-2 missed 3 heartbeats, marked offline', [{ l: 'Runners', href: 'RunnerOffline.dc.html' }])
     ]
   };
