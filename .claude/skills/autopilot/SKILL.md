@@ -1,7 +1,7 @@
 ---
 name: autopilot
 description: Spectio's orchestrator. Runs the next ready steps of docs/playbooks/pipeline.yaml (review rounds, triage, applying findings, spikes, builds, plans) in parallel where possible, verifies each step's exit check, triages findings with docs/playbooks/triage-policy.md, commits to the integration branch and updates .autopilot/state.json. One invocation is one tick; drive it with /goal or /loop to run the whole pipeline unattended. Use when Thomas says "continue", "autopilot", "run the pipeline", or when a /goal or /loop prompt names it.
-argument-hint: "[--until <step-or-wave>] [--only <step,...>] [--dry-run] [--max-parallel N] [--budget 30%w | 40%5h | until-exhausted [--deadline HH:MM]]"
+argument-hint: "[--until <step-or-wave>] [--only <step,...>] [--dry-run] [--max-parallel N] [--budget 30%w | 40%5h | until-exhausted [--deadline HH:MM]] [--now <used %>]"
 ---
 
 # Autopilot — one tick
@@ -40,7 +40,8 @@ With `--dry-run`, print the batch and stop.
 - If `--budget` was given, start it first:
   - `30%w` → `python3 tools/autopilot/budget.py start --weekly 30`;
   - `40%5h` → `--five-hour 40`;
-  - `until-exhausted` → `--until-exhausted`, plus `--deadline`.
+  - `until-exhausted` → `--until-exhausted`, plus `--deadline`;
+  - `--now 42` → pass `--now 42` too: the current used % of that window as Thomas read it in `/usage`. Use it when no status line feeds `.autopilot/usage.json` (cloud sessions, where the status line may not run **[to be validated]**).
 - Then run `python3 tools/autopilot/budget.py check --kinds <comma-separated kinds of the batch>` and act on its answer:
   - `go` with `fits: N`: keep the first N steps of the batch;
   - `wait`: dispatch nothing, journal "waiting for the five-hour reset at <wait_until_local>", go to §5. An interactive `/loop` resumes later; a headless `run.sh` sleeps;
