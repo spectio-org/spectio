@@ -1,11 +1,24 @@
 {
   "permissions": {
     "allow": [
+      "Workflow",
       "Bash(git status*)",
       "Bash(git diff*)",
       "Bash(git log*)",
       "Bash(git show*)",
       "Bash(git worktree*)",
+      "Bash(git fetch *)",
+      "Bash(git switch *)",
+      "Bash(git checkout *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push origin autopilot/*)",
+      "Bash(gh pr *)",
+      "Bash(bash dev/doctor.sh *)",
+      "Bash(python3 tools/autopilot/*)",
+      "Bash(python3 tools/docs/check.py*)",
       "Bash(node tools/canvas/render.js*)",
       "Bash(uvx --with mkdocs-material mkdocs build*)",
       "Bash(npx -y @mermaid-js/mermaid-cli@11*)",
@@ -15,7 +28,26 @@
     "deny": [
       "Read(./.env)",
       "Read(./**/*.pem)",
-      "Read(./**/secrets/**)"
+      "Read(./**/secrets/**)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(git push --force-with-lease *)",
+      "Bash(git branch -D *)"
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "python3 tools/autopilot/statusline.py",
+    "refreshInterval": 60
+  },
+  "hooks": {
+    "StopFailure": [
+      {
+        "matcher": "rate_limit",
+        "hooks": [
+          {"type": "command", "command": "python3 tools/autopilot/budget.py limit-hit --reason rate_limit"}
+        ]
+      }
     ]
   }
 }
