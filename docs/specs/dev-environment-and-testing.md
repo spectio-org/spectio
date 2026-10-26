@@ -273,7 +273,7 @@ These run against sind and kind in T3 and T4.
 
 ### 10.2 Real pipelines (`tests/pipelines/real/corpus.yaml`)
 
-Real pipelines run with their own test datasets. They are chosen to cover the scenario classes of [`checking-scenarios.md`](checking-scenarios.md) §1. Sources: `docs/research/corpus-and-ci-2026-10-26.md`.
+Step page: [F3](../progress/W0/F3.md). Real pipelines run with their own test datasets. They are chosen to cover the scenario classes of [`checking-scenarios.md`](checking-scenarios.md) §1. Sources: `docs/research/corpus-and-ci-2026-10-26.md`.
 
 | Source | PR tier | Nightly tier |
 |---|---|---|

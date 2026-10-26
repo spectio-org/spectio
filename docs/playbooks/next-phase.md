@@ -120,6 +120,9 @@ EnvStorage, EnvKubernetes, EnvCapacity, Administration boards; (c) all phone boa
 Render every board with /render-board before judging. Focus on missing loading /
 empty / error / no-permission states, accessibility, and consistency with the Legend
 board and design/tokens/spectio-tokens.css."
+Include the sign-in flows of docs/specs/authentication-and-access.md §5 (sign-in page,
+magic-link confirmation, share-link landing, share dialog "Create link" tab, Settings →
+Sign-in): propose the boards that are missing.
 ```
 
 ### R8 · depictio and LabID drift ∥
@@ -313,7 +316,8 @@ Make pipelines-real.yml pass on GitHub runners for the PR tier and run the night
 (tests/pipelines/real/corpus.yaml). Use run_corpus.py (git clone at the pinned tag,
 --limits private on private runners). For each failure, decide: a runner limit (adjust
 resourceLimits or move the entry to nightly), an upstream issue (link it), or a corpus
-bug (fix it). Record pass/fail, duration and peak memory per entry in a dated research
+bug (fix it). Measure the memory each runner type leaves free to the local executor and set
+runner_limits from it. Record pass/fail, duration and peak memory per entry in a dated research
 note, and update the corpus tiers. Snakemake catalog entries run on their own .test data
 with snakemake-github-action. Keep the synthetic suite green on all three engine legs.
 ```

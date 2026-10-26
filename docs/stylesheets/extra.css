@@ -106,5 +106,5 @@
 [data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary) { color: #BEA4FA; border-color: #BEA4FA; }
 [data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary):hover { color: #11121F; background: #BEA4FA; }
 /* footer */
-.sp-footer { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; padding: .9rem 0; font-size: .64rem; color: var(--md-footer-fg-color--light); }
+.sp-footer { padding-left: .8rem; padding-right: .8rem; display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; padding: .9rem 0; font-size: .64rem; color: var(--md-footer-fg-color--light); }
 .sp-footer a { color: var(--md-footer-fg-color); }

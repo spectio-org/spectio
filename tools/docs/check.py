@@ -25,6 +25,7 @@ DOCS = ROOT / "docs"
 MEDIA_DIRS = ["docs/assets/shots", "docs/assets/casts", "docs/assets/media", "docs/assets/diagrams"]
 VIDEO_MAX = 3 * 2**20
 VIDEO_SECONDS = 30
+MEDIA_EXT = {".png", ".webp", ".jpg", ".jpeg", ".gif", ".svg", ".cast", ".mp4", ".webm"}
 PR_MEDIA_MAX = 5 * 2**20
 STATUSES = {"running", "done", "blocked"}
 REVIEWS = {None, "approve", "changes", "block"}
@@ -94,9 +95,10 @@ def _duration(p: pathlib.Path) -> float | None:
 
 def check_media_budget(base: str) -> None:
     """New or changed media against the base branch: at most 5 MB per PR."""
-    r = subprocess.run(["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD", "--", *MEDIA_DIRS],
+    r = subprocess.run(["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD"],
                        cwd=ROOT, capture_output=True, text=True)
-    total = sum((ROOT / f).stat().st_size for f in r.stdout.split() if (ROOT / f).exists())
+    media = [f for f in r.stdout.split() if pathlib.Path(f).suffix.lower() in MEDIA_EXT and not f.startswith("design/")]
+    total = sum((ROOT / f).stat().st_size for f in media if (ROOT / f).exists())
     if total > PR_MEDIA_MAX:
         fail("media", f"this change adds {total / 2**20:.1f} MB of media (max 5 MB per PR)")
     print(f"media budget: {total / 2**20:.2f} MB new or changed against {base}")
@@ -127,6 +129,9 @@ def check_media() -> None:
             fail("media", f"listed but missing (generator: {m.get('generator')})", rel)
         if not m.get("generator"):
             fail("media", "no generator command", rel)
+    tracked_gifs = subprocess.run(["git", "ls-files", "*.gif", "*.GIF"], cwd=ROOT, capture_output=True, text=True).stdout.split()
+    for g in tracked_gifs:
+        fail("media", "GIF previews are for PR bodies and are not committed (git rm --cached it)", g)
     print(f"media: {len(listed)} outputs in the manifest")
 
 

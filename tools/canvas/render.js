@@ -8,8 +8,23 @@ const blobs = { // asset urls → local files
   '/_blob/b04c0e1634ffbccff3a43d65ce1316d4': 'logos/logo-nf-core.png',
   '/_blob/7a35665829f51132cb3bcb9a4c3e638c': 'logos/logo-snakemake.png',
 };
+// Logos are third-party assets and are not committed. Looked up in $SPECTIO_LOGOS_DIR, then <repo>/../logos;
+// when missing, a neutral placeholder with the engine name is drawn instead of a broken image.
 const scratch = path.resolve(dir, '../..');
-const toData = p => 'data:image/png;base64,' + fs.readFileSync(path.join(scratch, p)).toString('base64');
+const logoDirs = [process.env.SPECTIO_LOGOS_DIR, path.join(scratch, 'logos')].filter(Boolean);
+const placeholder = p => {
+  const name = path.basename(p, '.png').replace(/^logo-/, '');
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="96" height="96"><rect width="96" height="96" rx="20" fill="#EEEFF5"/>` +
+    `<text x="48" y="56" font-family="Inter,sans-serif" font-size="18" font-weight="600" text-anchor="middle" fill="#4D5065">${name}</text></svg>`;
+  return 'data:image/svg+xml;base64,' + Buffer.from(svg).toString('base64');
+};
+const toData = p => {
+  for (const d of logoDirs) {
+    const f = path.join(d, path.basename(p));
+    if (fs.existsSync(f)) return 'data:image/png;base64,' + fs.readFileSync(f).toString('base64');
+  }
+  return placeholder(p);
+};
 function prep(src) {
   const x = src.match(/<x-dc>([\s\S]*?)<\/x-dc>/)[1];
   const helmet = (x.match(/<helmet>([\s\S]*?)<\/helmet>/) || [,''])[1];

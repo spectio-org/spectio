@@ -55,19 +55,19 @@ Pipelines on clusters are still launched by hand, followed in log files, and che
 <div class="sp-features" markdown>
 <div class="sp-feature" markdown>
 <span class="sp-feature__num">01</span>
-<div markdown>**Gates stop the right stage.** Spectio generates the engine's own stop (a Nextflow config, a Snakemake `--until`) and resumes with the cache: on the synthetic test pipeline, 25 of 65 tasks come back cached after the QC gate.</div>
+<div markdown>**Gates stop the right stage.** A gate uses the engine's own stop, a generated Nextflow config or a Snakemake `--until`, then resumes from the cache. Measured on the synthetic test pipeline: 25 of 65 tasks come back cached after the QC gate, on both engines.</div>
 </div>
 <div class="sp-feature" markdown>
 <span class="sp-feature__num">02</span>
-<div markdown>**Decide anywhere.** A reviewer opens a scoped link on a phone, sees the QC evidence, excludes a sample and approves. No account needed, every use audited.</div>
+<div markdown>**Decide anywhere** *(planned)*. A reviewer will open a scoped link on a phone, see the QC evidence, exclude a sample and approve, with no account needed and every use audited ([share links](specs/authentication-and-access.md)).</div>
 </div>
 <div class="sp-feature" markdown>
 <span class="sp-feature__num">03</span>
-<div markdown>**Runs where the data is.** A small runner on the login node or in the cluster pulls commands over HTTPS. No inbound ports on the HPC side.</div>
+<div markdown>**Runs where the data is** *(planned)*. A small runner on the login node or in the cluster will pull commands over HTTPS, so the HPC side needs no inbound port ([runners](specs/schedulers-and-monitoring.md)).</div>
 </div>
 <div class="sp-feature" markdown>
 <span class="sp-feature__num">04</span>
-<div markdown>**One Python package to start.** `pip install spectio` gives the CLI and runner; `spectio[server]` adds the server with SQLite. Docker Compose and a Helm chart come next.</div>
+<div markdown>**One Python package to start** *(planned, not published yet)*. One package will give the CLI and the runner, with an extra for the server on SQLite; Docker Compose and a Helm chart come next ([packaging](specs/architecture-plugins-and-packaging.md)).</div>
 </div>
 <div class="sp-feature" markdown>
 <span class="sp-feature__num">05</span>
