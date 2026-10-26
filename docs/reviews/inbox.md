@@ -37,6 +37,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
 - **What to add:** the JSON in `autopilot.md` §4, which covers the permission rules, the budget status line and the `StopFailure` hook. Agents cannot add it themselves.
 - **Answer with:** `done` when added.
 - **Status (2026-10-26):** a ready file is in `tools/autopilot/claude-settings.json` (the current `.claude/settings.json` plus the rules of `autopilot.md` §4; `git push origin main` is not denied, per #3). An agent may not write `.claude/settings.json` itself (refused as self-modification). Copy it with `cp tools/autopilot/claude-settings.json .claude/settings.json` and commit.
+- **Answer (Thomas, 2026-10-26):** the file was copied to `.claude/settings.json` on `main` (`7dd8488`), at Thomas's request. The permissions themselves are to be discussed again. *Open.*
 
 ### #5 · Clean git history before the repository is shared
 
@@ -51,12 +52,13 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
 
 ### #6 · Nextflow ingestion: keep the Tower protocol, or only Spectio's own plugin?
 
-- **Context.** `docs/research/adoption-and-positioning-2026-10-26.md` §2 and `synthesis.md` §2. Accepting Nextflow's built-in Tower protocol gives zero-install monitoring, as nf-shard does, but the protocol is undocumented and positions Spectio closer to Seqera.
+- **Context.** `docs/research/adoption-and-positioning-2026-10-26.md` §2 and `synthesis.md` §1 and §2bis. Accepting Nextflow's built-in Tower protocol gives zero-install monitoring, as nf-shard does, but the protocol is undocumented and positions Spectio closer to Seqera.
 - **Options:**
   - (a) keep both, with the Tower route labelled unofficial and best effort;
   - (b) `nf-spectio` only.
 - **Recommendation:** (a) for the alpha, revisited before the public beta. **Assumed:** (a).
 - **Answer (Thomas, 2026-10-26):** to discuss, choosing the best balance of sustainability, features, access to information and ease of connection. Proposal sent in the session: `nf-spectio` as the main route, set up once by `spectio login`; the Tower protocol kept as a best-effort fallback for monitoring only. *Open.*
+- **Answer (Thomas, 2026-10-26, later):** (b) `nf-spectio` only, for Nextflow and from the MVP on. The Tower protocol is not implemented. The reason is coexistence rather than replacement: a run can report to Seqera Platform and to Spectio at the same time, so users can move between the two. See [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md). *Handled.*
 
 ### #7 · Licence and the date the repository goes public
 
@@ -65,6 +67,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - (a) MIT, public at the start of the private alpha (0.2);
   - (b) MIT, public at the beta.
 - **Recommendation:** (a). **Assumed:** none. This needs your decision before the repository becomes public.
+- **Answer (Thomas, 2026-10-26):** MIT. The date the repository goes public is not set; it depends on progress. *Licence handled; date open.*
 
 ### #8 · Do not set branch protection yet (R8b blockers)
 
@@ -97,3 +100,4 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   4. In GitHub, go to *Settings → Environments → New environment* `previews`, and add the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
   5. Optional: in *Zero Trust → Access*, restrict `*.spectio.pages.dev` previews to your email.
 - **Answer with:** `done`. Step D5 then checks everything end to end.
+- **Answer (Thomas, 2026-10-26):** done, the secrets are set in the repository. *Handled.*

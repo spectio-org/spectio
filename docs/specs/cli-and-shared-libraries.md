@@ -51,7 +51,7 @@ Help panels follow depictio's scheme. Every command accepts `--server`, `--json`
 | | `project` | `list`, `create`, `use`, `share --user\|--group … --role owner\|editor\|viewer [--launcher] [--reviewer]`, `export`, `import` |
 | **Data and integrations** | `export` | `rocrate <run> --out crate.zip`, `report <run>` |
 | | `handoff` | `depictio <run>` (runs `depictio-cli ingest` as the sink plugin would), `labid <run>` |
-| | `engine` | `nextflow config` (prints the `tower`/plugin config for observed runs, like depictio's `config nextflow --install`), `snakemake profile` |
+| | `engine` | `nextflow config` (prints the `nf-spectio` plugin config for observed runs, like depictio's `config nextflow --install`), `snakemake profile` |
 | | `events` | `tail --type spectio.gate.*`, `replay` |
 | **Administration** | `user` | `list`, `create`, `deactivate`, `set-admin` |
 | | `group` | `list`, `create`, `add`, `remove`, `set-admin`, `set-pi` |

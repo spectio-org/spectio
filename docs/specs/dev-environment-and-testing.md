@@ -138,7 +138,7 @@ Whether kind runs inside a Claude Code cloud session (kind needs privileged node
 | Tier | What | Runs on | Gates |
 |---|---|---|---|
 | 0 · static | ruff, ty or mypy, import-linter (dependency rules), eslint, OpenAPI diff, docs build, Mermaid | every push | PR |
-| 1 · unit and contract | pure logic; plugin conformance suites (`spectio_sdk.testing`); golden fixtures for the Tower protocol, Snakemake logger events, `squeue` / `sacct` JSON and Kubernetes objects | every push, seconds | PR |
+| 1 · unit and contract | pure logic; plugin conformance suites (`spectio_sdk.testing`); golden fixtures for `nf-spectio` events, Snakemake logger events, `squeue` / `sacct` JSON and Kubernetes objects | every push, seconds | PR |
 | 2 · component | server with SQLite, fake runner, recorded engine event streams replayed; API tests with RFC 9457 errors, `If-Match`, idempotency | every push, < 2 min | PR |
 | 3 · integration | real engines on `slurm-mini` and `k8s-mini`; backup → restore → migrate; bundle → Compose hand-over | PR (smoke subset), < 15 min | PR |
 | 4 · end-to-end | Playwright against the bundle and Compose: launch, watch, review a gate, relaunch, admin pages, phone viewport | PR (smoke), nightly (full) | PR (smoke) |
@@ -238,7 +238,7 @@ The front-end has a build flag that replaces the API with fixtures generated fro
    - which domains Nextflow, nf-core and the registries need;
    - can the setup script stay under 5 minutes?
 3. **D3:** write `dev/versions.env`, `dev/bootstrap.sh` and `dev/doctor.sh`, and run them green in a cloud session, in CI and locally.
-4. **D4:** build the fixture workflows and record the first golden fixtures (Tower protocol payloads, Snakemake logger events, `squeue` / `sacct` JSON from sind).
+4. **D4:** build the fixture workflows and record the first golden fixtures (`nf-spectio` events, Snakemake logger events, `squeue` / `sacct` JSON from sind).
 5. **D5:** dev previews: the Cloudflare Pages deploy with the `/versions` page, and the Codespaces dev container (§7).
 
 ## 10. Pipeline test corpus
@@ -418,7 +418,7 @@ Spectio stays in 0.x until it has been checked, in a fairly robust way, against 
 | Stage | Versions | Who uses it | Entry condition |
 |---|---|---|---|
 | **Design** | none | Thomas and the agents | — |
-| **Walking skeleton** | 0.1.x | Thomas, on the synthetic pipelines | `GO` gate passed (pipeline W4); one run crosses every layer once (launch, observe, gate, resume, hand-off) |
+| **Walking skeleton** | 0.1.x | Thomas, on the synthetic pipelines | `GO` gate passed (pipeline W4); one Nextflow run (`nf-spectio`) and one Snakemake run cross every layer once (launch, observe, check, gate, resume); the depictio hand-off comes later |
 | **Private alpha** | 0.2 – 0.4 | 3 to 5 design-partner groups at EMBL (`docs/research/adoption-and-positioning-2026-10-26.md`) | install in under 30 min from the docs alone; real corpus green nightly; backup and restore tested; R5 security findings closed |
 | **Public beta** | 0.5 – 0.9 | anyone, with a public demo instance | 2 weeks without a P0/P1 bug at the partners; upgrade tested across 3 consecutive minors; every guide has a cast or screenshots |
 | **1.0** | 1.0.0 | stable for institutional installs | the **1.0 gate** below, checked by a review step (`R-v1`, added to the pipeline when the beta starts) and decided by Thomas |
