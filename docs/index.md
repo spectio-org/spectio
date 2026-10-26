@@ -14,10 +14,10 @@ hide: [navigation, toc]
 [Read the design](map.md){ .md-button .md-button--primary } [See progress](progress/index.md){ .md-button }
 </div>
 <figure class="sp-hero__media">
-<video autoplay muted loop playsinline poster="assets/shots/run-detail_light.webp" aria-label="A terminal runs the synthetic pipeline to the QC gate while the browser shows the gate review">
+<video autoplay muted loop playsinline poster="assets/shots/run-detail_light.webp" aria-label="A terminal runs the synthetic pipeline to its QC gate while the browser shows a gate review design board">
 <source src="assets/media/gate-review.mp4" type="video/mp4">
 </video>
-<figcaption>Terminal and browser side by side: the synthetic pipeline stops at the QC gate, a reviewer excludes S03, the run resumes from the cache (UI from the design boards).</figcaption>
+<figcaption>Terminal and browser side by side: the synthetic Snakemake pipeline stops at its QC gate and resumes from the cache, while the browser pane shows the gate review on a design board (an imaging plate QC gate). Fixture names, no real data.</figcaption>
 </figure>
 </div>
 
