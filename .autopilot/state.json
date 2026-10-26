@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": null,
+  "updated_at": "2026-10-26T21:08:59Z",
   "current_wave": "W1",
   "steps": {
     "F1": {
@@ -68,72 +68,72 @@
     },
     "R1": {
       "wave": "W1",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-26T21:08:59Z",
       "finished_at": null,
       "outputs": [],
       "notes": ""
     },
     "R2": {
       "wave": "W1",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-26T21:08:59Z",
       "finished_at": null,
       "outputs": [],
       "notes": ""
     },
     "R4": {
       "wave": "W1",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-26T21:08:59Z",
       "finished_at": null,
       "outputs": [],
       "notes": ""
     },
     "R5": {
       "wave": "W1",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-26T21:08:59Z",
       "finished_at": null,
       "outputs": [],
       "notes": ""
     },
     "R7": {
       "wave": "W1",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-26T21:08:59Z",
       "finished_at": null,
       "outputs": [],
       "notes": ""
     },
     "R8": {
       "wave": "W1",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-26T21:08:59Z",
       "finished_at": null,
       "outputs": [],
       "notes": ""
     },
     "R9": {
       "wave": "W1",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-26T21:08:59Z",
       "finished_at": null,
       "outputs": [],
       "notes": ""
     },
     "D2": {
       "wave": "W1",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-26T21:08:59Z",
       "finished_at": null,
       "outputs": [],
       "notes": ""
