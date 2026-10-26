@@ -6,7 +6,8 @@ This folder holds the scripts that produce every recording and screenshot in the
 |---|---|---|---|
 | Terminal casts (asciinema v2) | `cast.py` | `casts/*.yaml` | `docs/assets/casts/<name>.cast` |
 | Screenshots (WebP) | `shots.py` | `REGISTRY` in the script | `docs/assets/shots/<name>_<theme>.webp` |
-| Terminal and browser side by side (MP4 and GIF) | `combo.py` | `combos/*.yaml` | `docs/assets/media/<name>.{mp4,gif}` |
+| Terminal and browser side by side | `combo.py` | `combos/*.yaml` | `docs/assets/media/<name>.mp4`; the GIF preview goes to `tools/media/out/` (PR bodies, not committed) |
+| Demo-data hygiene | `fixtures.yaml`, `sanitize.py` | — | used by the three scripts above |
 | Churn guard | `check_churn.sh` | — | pre-commit or CI |
 
 **Requirements:**
@@ -48,7 +49,7 @@ python3 tools/media/shots.py run --all --theme light
 - Each shot has a name, a board, a viewport and a caption. Pages refer to a shot by name: `assets/shots/review-gate_light.webp`.
 - Today a shot renders a UI canvas board through `tools/canvas/render.js`.
 - Once the app runs, the same names will be captured from a live instance with Playwright, so pages that embed them do not change.
-- The boards have no dark variant yet, so `--theme dark` skips them. A page embeds the light file without the `#only-light` suffix until a dark file exists.
+- The boards have no dark variant yet, so `--theme dark` skips them (shots are light-only in the design phase). A page embeds the light file without the `#only-light` suffix until a dark file exists.
 - WebP is lossless, so UI text stays sharp.
 
 ## Terminal and browser side by side: `combo.py`
@@ -72,11 +73,19 @@ python3 tools/media/combo.py tools/media/combos/gate-review.yaml --html-only   #
 
 **Embedding in a page:**
 ```html
-<video controls muted playsinline preload="metadata" poster="assets/media/gate-review.gif" width="100%">
+<video controls muted playsinline preload="metadata" poster="assets/shots/run-detail_light.webp" width="100%">
   <source src="assets/media/gate-review.mp4" type="video/mp4">
 </video>
 ```
-A PR body cannot play a video, so it uses the GIF instead.
+A PR body cannot play a video, so it uses the GIF from `tools/media/out/` instead (generated on demand, never committed, so the PR stays under the 5 MB media budget). The poster is a shot, not the GIF. The video is at most 30 s: `speed` in the YAML plays the cast faster, and `combo.py` fails above 30 s.
+
+## Demo-data hygiene: `fixtures.yaml`
+
+The UI boards are design sources and contain the owner's real name and environment. They are never edited:
+- `shots.py` renders a sanitised copy of every board, in a temporary sibling directory of `design/ui-canvas` (so logos and shared components resolve), deleted afterwards;
+- the substitutions (`Thomas` to `Alice`, `TW` to `AL`, `/scratch/tw/` to `/scratch/demo/`, `EMBL` to `demo-hpc`, any real email to `alice@example.org`) live in `fixtures.yaml`;
+- after rendering, the page text and markup are checked against the `forbidden` patterns (`page_text.js` dumps them through Playwright), and the script fails if one is visible;
+- `combo.py` checks the recorded page (captions, URL bar, terminal rows) the same way, and `cast.py` checks the cast text.
 
 ## Churn guard: `check_churn.sh`
 

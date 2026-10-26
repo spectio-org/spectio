@@ -74,3 +74,30 @@ def on_page_markdown(markdown: str, page, config, files):
         page_dir = pathlib.Path(config["docs_dir"]) / "progress"
         markdown = markdown.replace("<!-- spectio:progress-table -->", _table(pipeline, steps, page_dir))
     return markdown
+
+
+def on_nav(nav, config, files):
+    """Put every docs/progress/<wave>/<step>.md page under the Progress tab, one section per wave,
+    so step pages are in the navigation without editing mkdocs.yml for each new step."""
+    from mkdocs.structure.nav import Section, _add_parent_links, _add_previous_and_next_links, _get_by_type
+    from mkdocs.structure.pages import Page
+
+    progress = next((i for i in nav.items if isinstance(i, Section) and i.title == "Progress"), None)
+    if progress is None:
+        return nav
+    pipeline, _ = _load()
+    titles = {w["id"]: w["title"] for w in pipeline["waves"]}
+    by_wave: dict[str, list] = {}
+    for f in files.documentation_pages():
+        parts = pathlib.PurePosixPath(f.src_uri).parts
+        if len(parts) == 3 and parts[0] == "progress":
+            page = f.page or Page(None, f, config)
+            by_wave.setdefault(parts[1], []).append(page)
+    order = [w["id"] for w in pipeline["waves"]]
+    for wave in sorted(by_wave, key=lambda w: order.index(w) if w in order else 99):
+        pages = sorted(by_wave[wave], key=lambda p: p.file.src_uri)
+        progress.children.append(Section(f"{wave} · {titles.get(wave, '')}".strip(" ·"), pages))
+    _add_parent_links(nav.items)
+    nav.pages = _get_by_type(nav.items, Page)
+    _add_previous_and_next_links(nav.pages)
+    return nav

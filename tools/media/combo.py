@@ -14,7 +14,7 @@ How it works
   own clock, so the panes stay in sync whatever the machine speed.
 - Playwright records the page (record_video_dir) to WebM; ffmpeg trims the
   page-load lead-in and writes an MP4 (H.264, faststart) and a GIF preview
-  (palette, 10 fps).
+  (palette, 10 fps) in tools/media/out/ (not committed).
 
     python3 tools/media/combo.py tools/media/combos/gate-review.yaml
     python3 tools/media/combo.py tools/media/combos/gate-review.yaml --html-only   # inspect the page
@@ -45,10 +45,15 @@ from pathlib import Path
 
 import yaml
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import sanitize  # noqa: E402
+
 REPO = Path(__file__).resolve().parents[2]
 PLAYER = Path(__file__).resolve().parent / "node_modules" / "asciinema-player" / "dist" / "bundle"
 SHOTS = REPO / "docs" / "assets" / "shots"
-OUT = REPO / "docs" / "assets" / "media"
+OUT = REPO / "docs" / "assets" / "media"          # the MP4 (committed)
+GIF_OUT = Path(__file__).resolve().parent / "out"  # the GIF preview: PR bodies only, generated on demand, not committed
+MAX_SECONDS = 30                                   # documentation-system.md §5.3
 
 PAGE = """<!doctype html><html><head><meta charset="utf-8">
 <link rel="stylesheet" href="{player_css}">
@@ -89,7 +94,7 @@ PAGE = """<!doctype html><html><head><meta charset="utf-8">
 <script>
   const scenes = {scenes};
   const player = AsciinemaPlayer.create({cast_src}, document.getElementById('cast'),
-    {{fit: 'width', theme: 'spectio', idleTimeLimit: {idle}, autoPlay: false, controls: false}});
+    {{fit: 'width', theme: 'spectio', idleTimeLimit: {idle}, speed: {speed}, autoPlay: false, controls: false}});
   let current = -1;
   function show(i) {{
     if (i === current) return;
@@ -135,7 +140,7 @@ def build_page(spec: dict, workdir: Path) -> Path:
         player_js=(PLAYER / "asciinema-player.min.js").as_uri(),
         # inline: fetch() of a file:// URL is refused by Chromium
         cast_src=json.dumps({"data": (REPO / spec["cast"]).read_text(encoding="utf-8")}),
-        idle=float(spec.get("idle_time_limit", 1.5)),
+        idle=float(spec.get("idle_time_limit", 1.5)), speed=float(spec.get("speed", 1.0)),
         imgs="".join(imgs), scenes=json.dumps(scenes), note=html.escape(spec.get("note", "")),
     )
     out = workdir / "combo.html"
@@ -165,6 +170,14 @@ def record(page: Path, spec: dict, video_dir: Path) -> tuple[Path, float, float]
             pg.wait_for_timeout(250)
         pg.wait_for_timeout(int(float(spec.get("tail_seconds", 2.0)) * 1000))
         length = time.monotonic() - t_play
+        # hygiene: what is visible in the recorded page (captions, URL bar, terminal rows, image alt text)
+        text = pg.evaluate("document.body.innerText + '\\n' + [...document.querySelectorAll('[alt],[title]')]"
+                           ".map(e => (e.alt || '') + ' ' + (e.title || '')).join('\\n')")
+        found = sanitize.leaks(text)
+        if found:
+            ctx.close(); browser.close()
+            sys.exit(f"forbidden term visible in the recorded page: {found}")
+        print("hygiene ok: no forbidden term in the recorded page text")
         video = pg.video.path()
         ctx.close()
         browser.close()
@@ -173,7 +186,8 @@ def record(page: Path, spec: dict, video_dir: Path) -> tuple[Path, float, float]
 
 def encode(webm: Path, name: str, lead: float, length: float, spec: dict) -> None:
     OUT.mkdir(parents=True, exist_ok=True)
-    mp4, gif = OUT / f"{name}.mp4", OUT / f"{name}.gif"
+    GIF_OUT.mkdir(parents=True, exist_ok=True)
+    mp4, gif = OUT / f"{name}.mp4", GIF_OUT / f"{name}.gif"
     ff = ["ffmpeg", "-y", "-hide_banner", "-loglevel", "error", "-ss", f"{lead:.2f}", "-t", f"{length:.2f}", "-i", str(webm)]
     subprocess.run(ff + ["-c:v", "libx264", "-preset", "slow", "-crf", str(spec.get("crf", 30)), "-pix_fmt", "yuv420p",
                          "-movflags", "+faststart", "-an", str(mp4)], check=True)
@@ -183,6 +197,10 @@ def encode(webm: Path, name: str, lead: float, length: float, spec: dict) -> Non
     subprocess.run(ff + ["-vf", vf, "-loop", "0", str(gif)], check=True)
     for f in (mp4, gif):
         print(f"-> {f.relative_to(REPO)}  ({f.stat().st_size / 1e6:.2f} MB)")
+    if gif.stat().st_size > 4e6:
+        sys.exit("GIF preview over 4 MB")
+    if mp4.stat().st_size > 3e6:
+        sys.exit("MP4 over 3 MB")
 
 
 def main() -> None:
@@ -201,6 +219,8 @@ def main() -> None:
             return
         webm, lead, length = record(page, spec, Path(tmp) / "video")
         print(f"recorded {length:.1f} s (lead-in {lead:.1f} s trimmed)")
+        if length > MAX_SECONDS:
+            sys.exit(f"video is {length:.1f} s, over the {MAX_SECONDS} s limit: raise `speed` or shorten the cast")
         encode(webm, name, lead, length, spec)
 
 

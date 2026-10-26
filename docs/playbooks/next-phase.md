@@ -92,7 +92,9 @@ with a ranked spike list."
 ```text
 /review-round R5-security "Use security-reviewer on the whole design with STRIDE per
 trust boundary (browser, embeds, service accounts, runners, engine ingest, AI agents on
-gates, event bridges, plugins, backups, depictio trust, co-hosting proxy). Check
+gates, event bridges, plugins, backups, depictio trust, co-hosting proxy, and every
+sign-in method in docs/specs/authentication-and-access.md: magic links, share links,
+provisioning, OIDC and SAML). Check
 tenancy leaks through search, SSE, webhooks, exports, logs and the task ledger. Produce
 the findings plus a draft docs/specs/security-and-threat-model.md for me to review."
 ```
@@ -220,7 +222,9 @@ realm), a tailnet policy snippet (tag:ci → tag:staging:22, funnel nodeAttr for
 tag:staging), a GitHub Actions deploy workflow using tailscale/github-action with an
 OAuth client and ephemeral tag, and a Playwright smoke test against the public URL.
 Verify current Tailscale Funnel and tailscale/github-action docs before writing. List
-the manual steps I must do on the VM and in the Tailscale admin console.
+the manual steps I must do on the VM and in the Tailscale admin console. Leave the step's
+docs with write-docs, including the figure tracked from F3: a sketch of the deploy over
+the tailnet, the Funnel check and the scoped share link posted on the PR.
 ```
 
 ### D6 · Docs pipeline in CI ∥
@@ -232,7 +236,9 @@ and pr-body; deploy the site with mike (dev from main, X.Y on release, aliases l
 and stable) to GitHub Pages, or to staging under /docs/ while the repository is
 private; deploy PR previews under /pr-<n>/docs/ with staging.yml; add hooks/progress.py
 outputs to the build check. Settle the Virgil font licence (tools/diagrams/FONT-LICENSE.md)
-or switch fonts, and make the figure scripts render the same PNGs in CI. Open a PR whose
+or switch fonts, and make the figure scripts render the same PNGs in CI. Draw the figures
+tracked from F4 and F6 (a magic-link and share-link sketch: hash at rest, atomic burn,
+scope claim; the three telemetry systems and where their data goes). Open a PR whose
 body follows the template and passes the pr-body check, with the autopilot-loop figure.
 ```
 

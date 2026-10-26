@@ -24,7 +24,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[2]
 DOCS = ROOT / "docs"
 MEDIA_DIRS = ["docs/assets/shots", "docs/assets/casts", "docs/assets/media", "docs/assets/diagrams"]
 VIDEO_MAX = 3 * 2**20
-GIF_MAX = 4 * 2**20
+VIDEO_SECONDS = 30
+PR_MEDIA_MAX = 5 * 2**20
 STATUSES = {"running", "done", "blocked"}
 REVIEWS = {None, "approve", "changes", "block"}
 TITLE_RE = re.compile(r"^(feat|fix|docs|test|ci|chore|refactor|perf|build|revert|autopilot)(\([\w./-]+\))?!?: .+")
@@ -82,6 +83,25 @@ def check_diagrams() -> None:
     print(f"diagrams: {len(scripts)} scripts re-run, {compared} SVGs compared")
 
 
+def _duration(p: pathlib.Path) -> float | None:
+    r = subprocess.run(["ffprobe", "-v", "error", "-show_entries", "format=duration", "-of", "csv=p=0", str(p)],
+                       capture_output=True, text=True)
+    try:
+        return float(r.stdout.strip())
+    except ValueError:
+        return None
+
+
+def check_media_budget(base: str) -> None:
+    """New or changed media against the base branch: at most 5 MB per PR."""
+    r = subprocess.run(["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD", "--", *MEDIA_DIRS],
+                       cwd=ROOT, capture_output=True, text=True)
+    total = sum((ROOT / f).stat().st_size for f in r.stdout.split() if (ROOT / f).exists())
+    if total > PR_MEDIA_MAX:
+        fail("media", f"this change adds {total / 2**20:.1f} MB of media (max 5 MB per PR)")
+    print(f"media budget: {total / 2**20:.2f} MB new or changed against {base}")
+
+
 def check_media() -> None:
     manifest_path = ROOT / "docs/assets/media.yaml"
     manifest = yaml.safe_load(manifest_path.read_text()) if manifest_path.exists() else {"media": []}
@@ -96,8 +116,12 @@ def check_media() -> None:
                 fail("media", "not listed in docs/assets/media.yaml (add it with its generator command)", rel)
             if p.suffix in {".mp4", ".webm"} and p.stat().st_size > VIDEO_MAX:
                 fail("media", f"video is {p.stat().st_size / 2**20:.1f} MB (max 3 MB)", rel)
-            if p.suffix == ".gif" and p.stat().st_size > GIF_MAX:
-                fail("media", f"GIF is {p.stat().st_size / 2**20:.1f} MB (max 4 MB)", rel)
+            if p.suffix in {".mp4", ".webm"}:
+                d = _duration(p)
+                if d is not None and d > VIDEO_SECONDS:
+                    fail("media", f"video is {d:.1f} s long (max {VIDEO_SECONDS} s)", rel)
+            if p.suffix == ".gif":
+                fail("media", "GIF previews are for PR bodies: generate them outside docs/assets/", rel)
     for rel, m in listed.items():
         if not (ROOT / rel).exists():
             fail("media", f"listed but missing (generator: {m.get('generator')})", rel)
@@ -154,6 +178,7 @@ def main() -> int:
     ap.add_argument("--pr-body")
     ap.add_argument("--changed")
     ap.add_argument("--labels", default="")
+    ap.add_argument("--base", help="base ref for the per-PR media budget, e.g. origin/main")
     a = ap.parse_args()
     checks = {"build": check_build, "mermaid": check_mermaid, "diagrams": check_diagrams,
               "media": check_media, "progress": check_progress}
@@ -164,6 +189,8 @@ def main() -> int:
                 check_pr_body(a.pr_title or "", a.pr_body, a.changed, a.labels)
             continue
         checks[name]()
+        if name == "media" and a.base:
+            check_media_budget(a.base)
     print(f"docs gate: {len(failures)} failure(s)")
     return 1 if failures else 0
 

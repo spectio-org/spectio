@@ -28,9 +28,17 @@ media:
       - docs/assets/shots/run-detail_light.webp
       - docs/assets/shots/review-gate_light.webp
       - docs/assets/shots/review-gate-phone_light.webp
+  - id: budget-loop
+    kind: cast
+    generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
+    outputs: [docs/assets/casts/budget-loop.cast]
+  - id: corpus-list
+    kind: cast
+    generator: python3 tools/media/cast.py tools/media/casts/corpus-list.yaml
+    outputs: [docs/assets/casts/corpus-list.cast]
   - id: gate-review
     kind: combo
+    # also writes tools/media/out/gate-review.gif (PR bodies only, not committed)
     generator: (cd tools/media && npm ci) && python3 tools/media/combo.py tools/media/combos/gate-review.yaml
     outputs:
       - docs/assets/media/gate-review.mp4
-      - docs/assets/media/gate-review.gif

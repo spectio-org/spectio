@@ -2,6 +2,8 @@
 
 Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 
+**Step page:** [F6](../progress/W0/F6.md), how this spec was written and checked.
+
 **Companion docs:**
 - [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §2: the `spectio.analytics` plugin kind.
 - [`admin-and-operations.md`](admin-and-operations.md): the Settings screens where these switches live.

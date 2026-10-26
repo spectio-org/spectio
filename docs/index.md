@@ -71,14 +71,16 @@ Pipelines on clusters are still launched by hand, followed in log files, and che
 </div>
 <div class="sp-feature" markdown>
 <span class="sp-feature__num">05</span>
-<div markdown>**Tested on real pipelines.** Every change runs twin synthetic pipelines through 11 failure and gate scenarios on two Nextflow versions and Snakemake, then nf-core and catalog workflows on their test data.</div>
+<div markdown>**Tested on real pipelines.** Twin synthetic pipelines already pass 11 failure and gate scenarios on two Nextflow versions and Snakemake, and nf-core/demo passes with its test data. The plan: every pull request runs them, then the nf-core and catalog corpus, once CI is green (step T7).</div>
 </div>
 </div>
 
 ## How a gate works { .sp-section-title }
 
-![Stop at the QC gate, drop a sample, resume](assets/diagrams/gate-resume_light.png#only-light)
-![Stop at the QC gate, drop a sample, resume](assets/diagrams/gate-resume_dark.png#only-dark)
+[![Stop at the QC gate, drop a sample, resume](assets/diagrams/gate-resume_light.png#only-light)](assets/diagrams/gate-resume_light.png)
+[![Stop at the QC gate, drop a sample, resume](assets/diagrams/gate-resume_dark.png#only-dark)](assets/diagrams/gate-resume_dark.png)
+
+<p class="sp-note">Task counts measured on the synthetic pipeline; the cluster, runner, share link and phone show the planned flow. Click for the full size.</p>
 
 <div class="asciinema-cast" data-cast="assets/casts/synthetic-gate.cast"></div>
 

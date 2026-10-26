@@ -46,4 +46,4 @@ Working notes are dated and kept as written. Specs cite them. When something cha
 - **Spec header.** Every spec starts with a status line (`draft vX.Y · date · author`) and its companion docs.
 - **Stable sections.** Section numbers are kept stable so other docs can cite `file.md §n`. A new section gets the next number; it does not renumber old ones.
 - **Facts carry their source.** A fact about another tool (Nextflow, Snakemake, SLURM, depictio…) gives its source: a link, or a file and line in a dated audit. Anything not verified is marked **[to be validated]** or *inferred*.
-- **Diagrams.** Explanatory figures are hand-drawn sketches from `tools/diagrams/` (light/dark PNG pairs, SVG committed). Small structural diagrams inside specs stay in Mermaid fenced blocks. See [documentation system §4](specs/documentation-system.md#0-decisions-in-brief).
+- **Diagrams.** Explanatory figures are hand-drawn sketches from `tools/diagrams/` (light/dark PNG pairs, SVG committed). Small structural diagrams inside specs stay in Mermaid fenced blocks. See [documentation system §0](specs/documentation-system.md#0-decisions-in-brief).

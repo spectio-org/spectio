@@ -231,3 +231,22 @@ Everything must be traced, including:
   - The shell loop enforces it before every tick and waits for 5-hour resets.
   - Details: `autopilot.md` §6.
 - **The pipeline gained steps:** a W0 wave records the foundations; R11 is the docs review, D6 the docs pipeline in CI, T7 the real corpus green in CI.
+
+## 2026-10-26 — First independent docs review (W0 pages and landing page)
+
+- **Verdicts.** `doc-reviewer` gave `changes` on 6 units and `block` on 2. Both blocks had one cause: the owner's name, initials, home path and cluster name, taken from the design boards, appeared in the screenshots and the video.
+- **Fixes:**
+  - **Media.**
+    - Shots and captures now render a copy of each board with fixture names (`tools/media/fixtures.yaml`) and fail if a forbidden term is visible.
+    - The combined video is at most 30 s, and its captions match what is on screen.
+    - GIF previews are generated outside `docs/assets/`.
+  - **New checks in the docs gate:** video length, no committed GIF, and at most 5 MB of new media per PR.
+  - **Lists.** A hook (`hooks/lists.py`) nests lists written with 2-space indentation and adds the blank line before a list. Across the site, nested lists went from 16 to 298, with no code block, admonition or table changed.
+  - **Navigation.** Step pages appear in the navigation automatically (`hooks/progress.py`), and specs link back to their step page.
+  - **Accuracy.** Swapped Nextflow columns were corrected in the synthetic-pipelines note. The Snakemake fault rate is now the observed 4 of 18 executions. The gate figure says what is measured and what is planned.
+- **Spec changes** (`documentation-system.md`):
+  - a `foundation` step kind for W0 (§3.1);
+  - landing-page key ideas are statements that are measured or marked as planned (§2);
+  - design-phase screenshots are light only (§5.1);
+  - the per-PR media budget is checked against the base branch (§3.3).
+- **Figures not made yet** are tracked in the prompts of the steps that will make them: the staging figure in D5; the share-link and telemetry figures in D6.

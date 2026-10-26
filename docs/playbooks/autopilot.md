@@ -138,7 +138,7 @@ Protect `main` with a GitHub branch rule that requires a PR and a review. The au
 
 ## 6. Budget governor: a share of the weekly window, or until the quota runs out
 
-Spectio is a side project, so the autopilot spends only what Thomas gives it. The budget is set when a run starts, at any time of the week:
+Spectio is a side project, so the autopilot spends only what Thomas gives it. How it was built and tested: [F7](../progress/W0/F7.md). The budget is set when a run starts, at any time of the week:
 
 | You say | Command | What happens |
 |---|---|---|
@@ -175,7 +175,7 @@ Spectio is a side project, so the autopilot spends only what Thomas gives it. Th
 
 ## 7. Docs in the loop
 
-Every step leaves its pages (`docs/specs/documentation-system.md` §3).
+Every step leaves its pages (`docs/specs/documentation-system.md` §3). The pages so far are under [Progress](../progress/index.md); the foundations wave W0 is [F1](../progress/W0/F1.md) to [F7](../progress/W0/F7.md).
 
 **During the step:**
 - `doc-writer` keeps the step's Progress page (`docs/progress/<wave>/<step>.md`) up to date;

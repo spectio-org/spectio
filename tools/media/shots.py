@@ -23,9 +23,13 @@ from __future__ import annotations
 import argparse
 import subprocess
 import sys
+import os
 import tempfile
 from dataclasses import dataclass
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import sanitize  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 OUT = REPO / "docs" / "assets" / "shots"
@@ -59,11 +63,17 @@ def render(shot: Shot, theme: str) -> Path | None:
         return None
     OUT.mkdir(parents=True, exist_ok=True)
     out = OUT / f"{shot.name}_{theme}.webp"
-    with tempfile.TemporaryDirectory() as tmp:
-        png = Path(tmp) / "shot.png"
-        cmd = ["node", str(REPO / "tools/canvas/render.js"), str(BOARDS / f"{shot.board}.dc.html"),
+    with tempfile.TemporaryDirectory() as tmp, sanitize.sanitised_boards(BOARDS) as boards:
+        png, text = Path(tmp) / "shot.png", Path(tmp) / "page.txt"
+        cmd = ["node", "--require", str(Path(__file__).resolve().parent / "page_text.js"),
+               str(REPO / "tools/canvas/render.js"), str(boards / f"{shot.board}.dc.html"),
                str(shot.width), str(shot.height), str(png), *shot.clicks]
-        subprocess.run(cmd, check=True, capture_output=True, cwd=REPO)
+        subprocess.run(cmd, check=True, capture_output=True, cwd=REPO,
+                       env={**os.environ, "SPECTIO_PAGE_TEXT": str(text)})
+        found = sanitize.leaks(text.read_text(encoding="utf-8"))
+        if found:
+            sys.exit(f"{shot.name}: forbidden term visible in the rendered page: {found}")
+        print(f"hygiene ok: {shot.name} (no forbidden term in the rendered page text)")
         # lossless keeps UI text crisp; method 6 = smallest file
         subprocess.run(["convert", str(png), "-define", "webp:lossless=true", "-define", "webp:method=6",
                         str(out)], check=True)

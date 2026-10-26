@@ -1,0 +1,50 @@
+# The budget governor loop (docs/playbooks/autopilot.md §6) on a throwaway copy of the repo.
+# `claude` is a stand-in (tools/media/fake_claude.py): it marks one ready step done and raises the
+# weekly reading by 1.5 points per tick. run.sh, budget.py and ready.py are the real ones.
+title: "Spectio autopilot: a share of the weekly window, enforced by the loop"
+cols: 132
+rows: 28
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.05
+workdir: tmp
+env:
+  PATH: "{workdir}/bin:$PATH"
+  SPECTIO_REAL_REPO: "{repo}"
+  SPECTIO_AUTOPILOT_ROOT: "{workdir}/spectio"
+  GIT_AUTHOR_NAME: demo
+  GIT_AUTHOR_EMAIL: alice@example.org
+  GIT_COMMITTER_NAME: demo
+  GIT_COMMITTER_EMAIL: alice@example.org
+setup:
+  - |
+    mkdir -p bin spectio
+    tar -C "{repo}" --exclude=.git --exclude=tests --exclude=design --exclude=docs/research \
+        --exclude=node_modules --exclude=__pycache__ --exclude='*.cast' --exclude=docs/assets -cf - . | tar -C spectio -xf -
+    rm -f spectio/.autopilot/budget.json spectio/.autopilot/costs.jsonl spectio/.autopilot/limit-hit.json
+    rm -rf spectio/.autopilot/runs
+    printf '#!/bin/sh\nexec python3 "{repo}/tools/media/fake_claude.py" "$@"\n' > bin/claude
+    chmod +x bin/claude
+    cd spectio
+    git init -q . && git add -A && git commit -q -m "throwaway copy"
+    python3 - <<'PY'
+    import json, time
+    t = time.time()
+    json.dump({"at": t, "seven_day": {"used_percentage": 40, "resets_at": t + 4 * 86400},
+               "five_hour": {"used_percentage": 10, "resets_at": t + 3 * 3600}}, open(".autopilot/usage.json", "w"))
+    PY
+replace:
+  "{workdir}/spectio": "~/spectio"
+steps:
+  - comment: "a throwaway copy of the repo; the live reading says 40 % of the week used"
+  - run: "cd spectio && jq -c '{seven_day: .seven_day.used_percentage, five_hour: .five_hour.used_percentage}' .autopilot/usage.json"
+  - pause: 0.8
+  - comment: "give the loop a share of the weekly window: 6 points, then it must stop"
+  - run: "cd spectio && bash tools/autopilot/run.sh --weekly 6 --max-ticks 6"
+    drop: "^$"
+    tail: 18
+    ellipsis: false
+  - pause: 1.5
+  - comment: "4.5 of 6 points used, the next tick would not fit: the loop, not the model, stopped it"
+  - run: "cd spectio && jq -c '{seven_day: .seven_day.used_percentage}' .autopilot/usage.json"
+  - pause: 2

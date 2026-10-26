@@ -16,7 +16,7 @@ Script format (tools/media/casts/*.yaml):
     line_delay: 0.03            # seconds between output lines
     prompt: "$ "
     workdir: tmp                # "tmp" = fresh temp dir, or a path relative to the repo
-    env: {WF: "{repo}/tests/..."}   # {repo} and {workdir} are substituted
+    env: {WF: "{repo}/tests/..."}   # {repo} and {workdir} are substituted, then $VARS expanded
     setup: ["cp ... ."]         # run first, not shown
     replace: {"/long/path": "~"}    # applied to every output line ({workdir} -> . by default)
     steps:
@@ -47,6 +47,9 @@ import tempfile
 from pathlib import Path
 
 import yaml
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import sanitize  # noqa: E402
 
 REPO = Path(__file__).resolve().parents[2]
 
@@ -100,7 +103,7 @@ def build(script: Path, out: Path) -> None:
     else:
         workdir = (REPO / spec["workdir"]).resolve()
     ctx = {"repo": str(REPO), "workdir": str(workdir)}
-    env = {**os.environ, **{k: _subst(str(v), ctx) for k, v in (spec.get("env") or {}).items()}}
+    env = {**os.environ, **{k: os.path.expandvars(_subst(str(v), ctx)) for k, v in (spec.get("env") or {}).items()}}
     replace = {str(workdir) + "/": "", str(workdir): ".", **(spec.get("replace") or {})}
     replace = {_subst(k, ctx): v for k, v in replace.items()}
 
@@ -153,6 +156,10 @@ def build(script: Path, out: Path) -> None:
         if tmp:
             shutil.rmtree(tmp, ignore_errors=True)
 
+    text = cast.dump()
+    found = sanitize.leaks(text)
+    if found:
+        sys.exit(f"{script.stem}: forbidden term in the cast: {found}")
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(cast.dump(), encoding="utf-8")
     print(f"-> {out}  ({cast.t:.1f} s, {len(cast.events)} events, {out.stat().st_size // 1024} KB)")

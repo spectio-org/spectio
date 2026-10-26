@@ -622,5 +622,6 @@
   <text x="906.0" y="894.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">cached, not rerun</text>
   <rect x="1170" y="880" width="16" height="18" rx="2" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.8"/>
   <text x="1196.0" y="894.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">run in run 2</text>
-  <text x="60.0" y="960.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Measured: tests/pipelines/synthetic, scenario exclude_sample_and_resume, Nextflow 26.10.3, 2026-10-26 · tools/diagrams/gate_resume.py</text>
+  <text x="60.0" y="948.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Task counts measured: tests/pipelines/synthetic, scenario exclude_sample_and_resume, Nextflow 26.10.3, local executor, 2026-10-26 · tools/diagrams/gate_resume.py</text>
+  <text x="60.0" y="970.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Cluster, runner, share link and phone show the planned flow, not yet built</text>
 </svg>

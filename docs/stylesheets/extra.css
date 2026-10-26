@@ -100,3 +100,11 @@
 /* the landing page carries its own title in the hero */
 .md-typeset h1:has(+ .sp-hero) { display: none; }
 .md-typeset .asciinema-cast { max-width: 54rem; margin: 1.2rem auto; }
+
+.md-typeset .sp-note { font-size: .7rem; color: var(--sp-text-3); margin-top: -.4rem; }
+/* outline buttons in dark mode: violet 300 on the dark page passes AA */
+[data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary) { color: #BEA4FA; border-color: #BEA4FA; }
+[data-md-color-scheme="slate"] .md-typeset .md-button:not(.md-button--primary):hover { color: #11121F; background: #BEA4FA; }
+/* footer */
+.sp-footer { display: flex; flex-wrap: wrap; gap: .4rem 1.4rem; padding: .9rem 0; font-size: .64rem; color: var(--md-footer-fg-color--light); }
+.sp-footer a { color: var(--md-footer-fg-color); }

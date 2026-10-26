@@ -254,13 +254,13 @@ Both engines produce byte-identical results (the counts matrix compared with `di
 | `fanout_medium` | 180 ALIGN tasks (PR) |
 | `fanout_stress` | about 12 000 ALIGN tasks (nightly) |
 
-**Verified runs on 2026-10-26** (this session, local executor, 2 CPUs) — see `docs/research/spike-synthetic-pipelines-2026-10-26.md`:
+**Verified runs on 2026-10-26** (this session, local executor, 2 CPUs); see `docs/research/spike-synthetic-pipelines-2026-10-26.md` and the step page [F2](../progress/W0/F2.md):
 
 | Engine | Result |
 |---|---|
 | Nextflow 26.10.3 | 11 / 11 pass |
 | Nextflow 25.10.9 | 11 / 11 pass (after retrying time-limit kills that carry no exit code) |
-| Snakemake 9.27.1 | 11 / 11 pass; about 1 run in 8 of `oom_once_retry` hits a known engine fault and is repeated once (`PASS*`) |
+| Snakemake 9.27.1 | 11 / 11 pass. `oom_once_retry` hit a known engine fault in 4 of its 18 executions; the faulty run is repeated once and reported as `PASS*` |
 
 **Known engine faults.** These are listed in `scenarios.yaml` under `engine_faults`, each with the log pattern that identifies it. A failed scenario that matches one is repeated once, from scratch, and reported as `PASS*`. Any other failure fails the build.
 

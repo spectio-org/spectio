@@ -8,7 +8,7 @@ engine_faults:
   snakemake:
     - id: lost-retry-at-checkpoint-update
       pattern: "BUG: Out of jobs ready to be started"
-      seen: "Snakemake 9.27.1, about 1 run in 8 of oom_once_retry: a retried job is dropped when a checkpoint updates the DAG at the same moment; a plain rerun completes"
+      seen: "Snakemake 9.27.1, 4 of 18 executions of oom_once_retry on 2026-10-26: a retried job is dropped when a checkpoint updates the DAG at the same moment; a plain rerun completes"
 
 scenarios:
   - id: happy

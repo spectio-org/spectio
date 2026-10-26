@@ -47,6 +47,7 @@ extra_javascript:
 
 hooks:
   - hooks/progress.py
+  - hooks/lists.py
 
 markdown_extensions:
   - tables

@@ -133,8 +133,10 @@ def build(theme: Theme) -> Sketch:
               f'stroke="{t.ink}" stroke-width="0.8"/>')
         s.text(lx + 26, ly + 14, lab, size=14, anchor="start", colour=t.dim)
 
-    s.text(60, 960, "Measured: tests/pipelines/synthetic, scenario exclude_sample_and_resume, "
-                    "Nextflow 26.10.3, 2026-10-26 · tools/diagrams/gate_resume.py",
+    s.text(60, 948, "Task counts measured: tests/pipelines/synthetic, scenario exclude_sample_and_resume, "
+                    "Nextflow 26.10.3, local executor, 2026-10-26 · tools/diagrams/gate_resume.py",
+           size=12.5, anchor="start", colour=t.dim)
+    s.text(60, 970, "Cluster, runner, share link and phone show the planned flow, not yet built",
            size=12.5, anchor="start", colour=t.dim)
     return s
 

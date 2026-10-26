@@ -2,6 +2,8 @@
 
 Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 
+**Step page:** [F5](../progress/W0/F5.md), how this spec was written and checked.
+
 **Companion docs:**
 - [`dev-environment-and-testing.md`](dev-environment-and-testing.md): CI workflows (§11), versioning and releases (§12), staging (§13).
 - [`../playbooks/autopilot.md`](../playbooks/autopilot.md): the loop that runs the steps. This spec says what each step must leave in the docs; the autopilot says when it runs.
@@ -119,7 +121,7 @@ Front matter `hide: [navigation, toc]`. The markup is HTML through `md_in_html`;
    - depictio hand-off.
 
    Each card has an icon, a name, one line, and a link to its spec, later to its guide.
-5. **Numbered key features.** "01 One place for every run", "02 Gates that stop the right stage", "03 Decide anywhere", "04 Runs where your data is", "05 Plugins for everything". Each feature shows its screenshot pair.
+5. **Numbered key ideas.** "01 Gates stop the right stage", "02 Decide anywhere", "03 Runs where the data is", "04 One Python package to start", "05 Tested on real pipelines". Each one states something measured, or says that it is planned. A screenshot pair is added to an idea once the app has a screen for it; the design boards are already shown in the hero.
 6. **Status strip.** The design phase made visible:
    - the waves of `pipeline.yaml`, with done and total step counts, read from `.autopilot/state.json` at build time by a small MkDocs hook (`hooks/progress.py`);
    - a link to the Progress tab.
@@ -149,6 +151,7 @@ Front matter `hide: [navigation, toc]`. The markup is HTML through `md_in_html`;
 | `build` (D*, T*, later code) | the guide or reference page for what was built, the owning spec if behaviour was decided, plus its Progress page | a sketch for each new mechanism; a cast for each new CLI flow; screenshots for each new screen; a combined capture for a CLI-to-UI flow |
 | `plan` | `docs/plans/<id>.md`, plus its Progress page | a sketch of the milestone's architecture slice |
 | `release` | the changelog block (§6) | the release's hero figure |
+| `foundation` (wave W0 only) | its Progress page, written after the fact from the commits and the evidence kept in the session; the owning specs it changed | as for `build`; a figure or media that is not made yet is listed as a follow-up with the step that will make it |
 
 ### 3.2 Progress pages (`docs/progress/<wave>/<step>.md`)
 
@@ -189,7 +192,7 @@ A step reaches `done` only when all of these pass:
 4. **Media manifest:** every screenshot, cast and video referenced from a page exists and is listed in `docs/assets/media.yaml` with its generator command. The churn guard (`tools/media/check_churn.sh`) rejects a mass change unless `SPECTIO_ALLOW_SCREENSHOT_UPDATE=1`.
 5. **Required pages for the step kind** (§3.1) changed, and the Progress page front matter is valid.
 6. **`doc-reviewer` verdict** ≥ `approve` (§4.2), stored in the Progress page front matter as `review: approve | changes | block`.
-7. **Size budget:** at most 5 MB of new media per PR, and videos ≤ 3 MB each.
+7. **Size budget:** at most 5 MB of new media per PR (checked against the base branch in CI), videos ≤ 3 MB and ≤ 30 s each. GIF previews for PR bodies are generated on demand outside `docs/assets/` and are not committed.
 
 If the gate fails, the step goes back to `doc-writer` with the reviewer's notes. After two failed revisions, the step is `blocked`, with an inbox entry.
 
@@ -245,7 +248,7 @@ Each criterion is scored 0–2, with a one-line justification.
 - The viewport is 1440 × 900, or 1440 × 1180 for tall pages, plus 390 × 844 for phone shots.
 
 **Sources, by phase:**
-- **Design phase:** shots are rendered from `design/ui-canvas` boards with `tools/canvas/render.js`.
+- **Design phase:** shots are rendered from `design/ui-canvas` boards with `tools/canvas/render.js`. The boards have no dark variant, so design-phase shots are **light only**. Names are substituted from `tools/media/fixtures.yaml` before rendering, so no real name, path or cluster appears (§5.5).
 - **Implementation:** the same names are taken from the running app with Playwright, against the seeded demo data.
 
 **Pairs and embedding.**
@@ -272,7 +275,7 @@ Each criterion is scored 0–2, with a one-line justification.
 ### 5.3 Browser videos
 
 Playwright `record_video` captures a scripted UI flow (open run → open gate → decide):
-- WebM from Playwright, converted to MP4 (H.264) for compatibility, plus a GIF preview of at most 4 MB at 10 fps for PR bodies;
+- WebM from Playwright, converted to MP4 (H.264) for compatibility, plus a GIF preview of at most 4 MB at 10 fps for PR bodies (generated outside `docs/assets/`, not committed);
 - at most 30 s, 1280 × 720.
 
 ### 5.4 Combined terminal and browser captures

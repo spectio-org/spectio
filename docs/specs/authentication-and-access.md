@@ -2,6 +2,8 @@
 
 Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 
+**Step page:** [F4](../progress/W0/F4.md), how this spec was written and checked.
+
 **Companion docs:**
 - [`api-and-data-model.md`](api-and-data-model.md): principals, tenancy and roles (§6), plus depictio identity (§13). This spec owns the *sign-in methods, sessions, tokens and links*; §6 owns *who may do what*.
 - [`admin-and-operations.md`](admin-and-operations.md): the Users and Settings screens.

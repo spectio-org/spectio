@@ -5,7 +5,7 @@
 **Answer.** Yes. All 11 PR scenarios pass on Nextflow 26.10.3, Nextflow 25.10.9 and Snakemake 9.27.1, with the local executor.
 
 **Engine faults found:**
-- **Snakemake:** one known engine fault, about 1 run in 8. It is handled by a targeted repeat and reported as `PASS*`.
+- **Snakemake:** one known engine fault, seen in 4 of 18 executions of one scenario. It is handled by a targeted repeat and reported as `PASS*`.
 - **Nextflow:** one version difference that changes how timeouts must be classified.
 
 ## Setup
@@ -29,17 +29,23 @@
 
 | Scenario | NF 26.10.3 | NF 25.10.9 | Snakemake 9.27.1 |
 |---|---|---|---|
-| happy (65 tasks) | PASS 15.9 s | PASS 16.0 s | PASS 4.2 s |
+| happy (65 tasks) | PASS 16.0 s | PASS 15.9 s | PASS 4.1 s |
 | gate_qc_then_resume (≥ 25 cached) | PASS | PASS | PASS |
 | gate_align_then_resume (≥ 49 cached) | PASS | PASS | PASS |
 | exclude_sample_and_resume | PASS | PASS | PASS |
 | flaky_retry | PASS | PASS | PASS |
-| oom_once_retry | PASS | PASS | PASS, or PASS* (see finding 1) |
+| oom_once_retry | PASS | PASS | PASS* (finding 1) |
 | oom_fatal | PASS | PASS | PASS |
-| timeout_fatal | PASS 35.9 s | PASS 36.8 s | PASS 25.7 s |
+| timeout_fatal | PASS 36.8 s | PASS 35.9 s | PASS 25.7 s |
 | tool_error_then_fixed_resume | PASS | PASS | PASS |
 | dynamic_fanout (45 ALIGN) | PASS | PASS | PASS |
-| fanout_medium (180 ALIGN) | PASS 45.9 s | PASS 40.7 s | PASS 12.1 s |
+| fanout_medium (180 ALIGN) | PASS 40.7 s | PASS 45.9 s | PASS 12.8 s |
+
+**Where the numbers come from.**
+- **Nextflow:** the scratchpad files `final/nf-26.10.3.txt` and `final/nf-25.10.9.txt` (one full run each).
+- **Snakemake:** `final2/smk.txt`, a full run after the known-fault rule was added. Its `oom_once_retry` hit the fault, was repeated once, and passed.
+  - An earlier full run, made before the rule existed (`final/smk.txt`), failed on that scenario: 10 / 11.
+  - A correction: the first version of this note had the two Nextflow columns swapped.
 
 The counts matrix (`quant/counts_matrix.tsv`) is byte-identical between the two engines (`diff`).
 
@@ -47,7 +53,7 @@ The counts matrix (`quant/counts_matrix.tsv`) is byte-identical between the two 
 
 1. **Snakemake 9.27.1 can lose a retried job when a checkpoint updates the DAG at the same moment.**
    - **What happens.** In `oom_once_retry`, `qc_stats` for S05 fails (137), and Snakemake logs "Trying to restart job 10". `checkpoint split` then finishes, and Snakemake logs "Updating checkpoint dependencies". The restart is never executed. The run ends with "BUG: Out of jobs ready to be started, but not all files built yet. Please check https://github.com/snakemake/snakemake/issues/823".
-   - **How often.** 1 run in 8 in a loop of 8 repeats, and once in the full suite.
+   - **How often.** 4 of the 18 executions of `oom_once_retry` observed in this session (two full suites, a loop of 8, a loop of 6, and the 2 repeats, both of which passed).
    - **Recovery.** A plain rerun in the same directory completes the run (exit 0, 3 of 3 steps).
    - **Consequences:**
      - **For the tests:** `scenarios.yaml` has an `engine_faults` list. A failed scenario whose logs contain that message is repeated once, from scratch, and reported as `PASS*` with the fault ID. Any other failure fails the build.
