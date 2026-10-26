@@ -1,0 +1,131 @@
+# Spike D2 (cloud-env): the decisive commands of the cloud-session spike, replayed.
+# The tools are NOT run again. Each of docker / nextflow / sind / npx is a stub that prints the
+# output recorded in spikes/cloud-env/LOG.md (2026-10-26), in call order, with the recorded exit
+# code. Recorded lines are cut (long proxy lines, stack traces, remedy text) and host paths are
+# replaced by demo paths; no line is invented. `cat results/all.txt` is a real command.
+title: "Spike D2: what a cloud session can run (replayed from the recorded log)"
+cols: 112
+rows: 30
+idle_time_limit: 1.5
+typing_delay: 0.012
+line_delay: 0.03
+workdir: tmp
+env:
+  PATH: "{workdir}/bin:$PATH"
+setup:
+  - |
+    mkdir -p bin rec results
+    cat > bin/replay <<'EOF'
+    #!/bin/sh
+    R="$(dirname "$0")/../rec"
+    t="$(basename "$0")"
+    n=$(( $(cat "$R/$t.cnt" 2>/dev/null || echo 0) + 1 ))
+    echo "$n" > "$R/$t.cnt"
+    cat "$R/$t.$n.out"
+    exit "$(cat "$R/$t.$n.rc" 2>/dev/null || echo 0)"
+    EOF
+    chmod +x bin/replay
+    for t in docker nextflow sind npx; do ln -s replay "bin/$t"; done
+    printf 'Bonjour world\nHello world\nHola world\n' > results/all.txt
+    # docker 1: docker info (recorded after "dockerd" start)
+    cat > rec/docker.1.out <<'EOF'
+     Server Version: 29.9.2
+     Storage Driver: overlayfs
+     Cgroup Driver: cgroupfs
+     Cgroup Version: 1
+     Runtimes: io.containerd.runc.v2 runc
+     Default Runtime: runc
+     Kernel Version: 6.18.44-fc-v153
+     CPUs: 4
+     Total Memory: 15.71GiB
+    EOF
+    # docker 2: first run of hello-world (pull, first 5 lines)
+    cat > rec/docker.2.out <<'EOF'
+    Unable to find image 'hello-world:latest' locally
+    latest: Pulling from library/hello-world
+    4f55086f7dd0: Pulling fs layer
+    d5e71e642bf5: Download complete
+    4f55086f7dd0: Download complete
+    EOF
+    # docker 3: second run, cached
+    cat > rec/docker.3.out <<'EOF'
+    Hello from Docker!
+    This message shows that your installation appears to be working correctly.
+    EOF
+    # nextflow 1: version
+    cat > rec/nextflow.1.out <<'EOF'
+          version 26.10.0 build 14055
+    EOF
+    # nextflow 2: local run (third attempt, after fixing my own script)
+    cat > rec/nextflow.2.out <<'EOF'
+    [PIPELINE] main.nf | profile=standard
+    [WORKDIR] /scratch/demo/nf-run/work
+    [PROCESS c6/807144] SAY (2)
+    [PROCESS b0/eaa453] SAY (3)
+    [PROCESS b9/8c2dc9] SAY (1)
+    [PROCESS a6/2b5ff6] COLLECT
+    [SUCCESS] completed=4 failed=0 cached=0
+    EOF
+    # sind 1: doctor (exit 1)
+    cat > rec/sind.1.out <<'EOF'
+    sind 0.13.0
+    ✓ Docker Engine: 29.9.2 (>= 28.0)
+    ✓ Docker daemon: rootful, no userns-remap
+    ✓ Docker host: this machine (unix:///var/run/docker.sock)
+    ✗ cgroupv2: Docker runs containers on cgroup v1 (sind requires cgroupv2)
+    ! inotify: max_user_instances 128 (clusters of 10 or more nodes need 1024; optional)
+    EOF
+    echo 1 > rec/sind.1.rc
+    # sind 2: create cluster (exit 1)
+    cat > rec/sind.2.out <<'EOF'
+    21:15:31.346 ERRO the Docker daemon runs containers on cgroup v1; sind requires cgroup v2
+    EOF
+    echo 1 > rec/sind.2.rc
+    # npx 1: mermaid-cli as in CLAUDE.md, run as root (exit 1)
+    cat > rec/npx.1.out <<'EOF'
+    Generating single mermaid chart
+
+    Error: Failed to launch the browser process:  Code: 1
+
+    stderr:
+    Running as root without --no-sandbox is not supported. See https://crbug.com/638180.
+    EOF
+    echo 1 > rec/npx.1.rc
+    # npx 2: with --no-sandbox through a puppeteer config
+    cat > rec/npx.2.out <<'EOF'
+    Generating single mermaid chart
+    EOF
+    # npx 3: version
+    cat > rec/npx.3.out <<'EOF'
+    11.17.0
+    EOF
+steps:
+  - comment: "replay of the D2 spike log (2026-10-26, cloud session): recorded output, tools not re-run"
+  - comment: "1. docker: dockerd started as root on cgroup v1"
+  - run: "docker info"
+  - run: "docker run --rm hello-world"
+  - run: "docker run --rm hello-world"
+  - pause: 0.6
+  - clear: true
+  - comment: "2. nextflow 26.10.0 runs locally (pinned release asset)"
+  - run: "nextflow -version"
+  - run: "nextflow run main.nf -with-trace trace.txt"
+  - run: "cat results/all.txt"
+  - pause: 0.6
+  - clear: true
+  - comment: "3. sind needs cgroup v2: it refuses to create a cluster here"
+  - run: "sind doctor"
+    expect_exit: 1
+    after: 0.5
+  - run: "sind create cluster"
+    expect_exit: 1
+    after: 0.5
+  - pause: 0.6
+  - clear: true
+  - comment: "4. mermaid-cli: fails as root, works with --no-sandbox"
+  - run: "npx -y @mermaid-js/mermaid-cli@11 -i flow.mmd -o flow.svg"
+    expect_exit: 1
+    after: 0.5
+  - run: "npx -y @mermaid-js/mermaid-cli@11 -p puppeteer-config.json -i flow.mmd -o flow.svg"
+  - run: "npx -y @mermaid-js/mermaid-cli@11 --version"
+  - pause: 1.5

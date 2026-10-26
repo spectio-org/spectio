@@ -17,6 +17,14 @@ media:
       - docs/assets/diagrams/gate-resume_dark.svg
       - docs/assets/diagrams/gate-resume_light.png
       - docs/assets/diagrams/gate-resume_dark.png
+  - id: cloud-env-sketch
+    kind: diagram
+    generator: python3 tools/diagrams/cloud_env.py
+    outputs:
+      - docs/assets/diagrams/cloud-env_light.svg
+      - docs/assets/diagrams/cloud-env_dark.svg
+      - docs/assets/diagrams/cloud-env_light.png
+      - docs/assets/diagrams/cloud-env_dark.png
   - id: synthetic-gate
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/synthetic-gate.yaml
@@ -42,6 +50,11 @@ media:
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/corpus-list.yaml
     outputs: [docs/assets/casts/corpus-list.cast]
+  - id: cloud-env
+    kind: cast
+    # replays the output recorded in spikes/cloud-env/LOG.md through stub tools; no real tool is run
+    generator: python3 tools/media/cast.py tools/media/casts/cloud-env.yaml
+    outputs: [docs/assets/casts/cloud-env.cast]
   - id: gate-review
     kind: combo
     # also writes tools/media/out/gate-review.gif (PR bodies only, not committed)
