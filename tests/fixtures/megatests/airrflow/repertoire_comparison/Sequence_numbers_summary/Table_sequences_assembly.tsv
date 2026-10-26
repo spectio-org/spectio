@@ -1,0 +1,11 @@
+sample_id	subject_id	species	pcr_target_locus	treatment	tissue	population	single_cell	sex	age	biomaterial_provider	Sequences	Filtered_quality_R1	Filtered_quality_R2	Mask_primers_R1	Mask_primers_R2	Paired	Build_consensus	Assemble_pairs	Unique	Representative_2
+SRR1383451	M4	human	IG	Lymph_node	Baseline	Bcell	False	male	80	uni_tue	1293168	1228851	1124564	1143682	1097325	1007776	499411	492430	271208	59111
+SRR1383452	M4	human	IG	Lymph_node	Baseline	Bcell	False	male	80	uni_tue	1360994	1287256	980449	1204590	958341	879930	482008	474750	272357	53851
+SRR1383453	M4	human	IG	Lymph_node	Baseline	Bcell	False	male	80	uni_tue	1059990	1012134	806828	952056	794199	734931	494069	488042	279442	51421
+SRR1383456	M4	human	IG	Brain_lesion	Baseline	Bcell	False	male	80	uni_tue	63073	58376	50989	52153	48661	43936	5481	1630	1149	508
+SRR1383463	M5	human	IG	Lymph_node	Baseline	Bcell	False	female	63	uni_tue	1852661	1684745	1430789	1563892	1395655	1290122	989816	980725	576656	103422
+SRR1383464	M5	human	IG	Lymph_node	Baseline	Bcell	False	female	63	uni_tue	1648098	1481466	980319	1379911	949025	883569	716238	711194	461504	71877
+SRR1383465	M5	human	IG	Lymph_node	Baseline	Bcell	False	female	63	uni_tue	2123400	1932626	1302618	1799856	1265261	1179417	988171	980206	598439	98677
+SRR1383466	M5	human	IG	Brain_lesion	Baseline	Bcell	False	female	63	uni_tue	264734	253430	134551	232526	127495	118390	10415	6245	4371	1456
+SRR1383467	M5	human	IG	Brain_lesion	Baseline	Bcell	False	female	63	uni_tue	265299	256106	228387	239684	221589	210703	6413	5074	3264	1256
+SRR1383468	M5	human	IG	Brain_lesion	Baseline	Bcell	False	female	63	uni_tue	461154	444242	356602	410605	345897	324819	10035	8091	4722	1739

@@ -1,0 +1,14 @@
+{
+ "pipeline": "nf-core/rnafusion",
+ "release": "4.1.3",
+ "commit": "76ad76e7c39b2ba9edc35aa3602e3dc454d842ec",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/rnafusion/results-76ad76e7c39b2ba9edc35aa3602e3dc454d842ec/",
+ "files": 61,
+ "curated": [
+  "multiqc/multiqc_data/multiqc_general_stats.txt",
+  "multiqc/multiqc_data/multiqc_star.txt",
+  "pipeline_info/execution_trace_2026-06-02_07-06-09.txt",
+  "pipeline_info/nf_core_rnafusion_software_mqc_versions.yml",
+  "pipeline_info/params_2026-06-02_07-06-48.json"
+ ]
+}

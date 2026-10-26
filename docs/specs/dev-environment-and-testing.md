@@ -314,6 +314,42 @@ Step page: [F3](../progress/W0/F3.md). Real pipelines run with their own test da
   - private-repository GitHub runners have 2 CPU / 8 GB, so nf-core runs get `process.resourceLimits` from `runner_limits.private`;
   - the heaviest entries are nightly only.
 
+### 10.3 Real outputs from the nf-core megatests (`tests/fixtures/megatests/`)
+
+Every nf-core release runs its full-size test on AWS and publishes the results in a public bucket, `s3://nf-core-awsmegatests/<pipeline>/results-<release commit>/` (listed and read over HTTPS on 2026-10-26). These are real outputs at real scale, without running anything.
+- **`tools/fixtures/megatests.py`** resolves a pipeline's newest release whose upload includes MultiQC data (`git ls-remote` for the tag → commit), lists that prefix and downloads small QC files (`fetch`). `curate` keeps, per pipeline and under 600 kB:
+  - the MultiQC general statistics (rebuilt from `multiqc_data.json` when no `.txt` was published);
+  - one execution trace (real process names, durations, peak memory, exit codes);
+  - the params file and the software versions;
+  - a few tool tables (mosdepth, STAR, Cell Ranger, airrflow sequence numbers…).
+- **Pipelines** (2026-10-26): rnaseq 3.27.0, sarek 3.10.0, scrnaseq 4.2.0, smrnaseq 2.4.1, ampliseq 3.0.0, taxprofiler 2.0.1, viralrecon 2.6.0, rnafusion 4.1.3, airrflow 5.1.0, methylseq 4.2.0, chipseq 2.1.0, mag 5.4.2. Some recent releases have partial uploads (no MultiQC data, or nothing), which is why the tool falls back to an older release. `SOURCE.json` records the release, commit and prefix.
+- **Used for:**
+  - check bindings tested against real column names (`multiqc:qualimap_rnaseq-5_3_bias`, …);
+  - the UI boards' numbers;
+  - run-detail fixtures (traces);
+  - later, the API's mock mode (§7.3).
+- **Licence of the outputs:** they are derived from nf-core/test-datasets **[to be validated]**.
+
+### 10.4 Real test images (`design/ui-canvas/images/`)
+
+Imaging review and the OME-Zarr viewer are designed on real images, not drawings.
+- **`tools/canvas/images.py`** reads public OME-Zarr from the IDR OME-NGFF samples (only the pyramid level needed is fetched over HTTPS) and the imaging branches of nf-core/test-datasets (sparse git). It writes WebP thumbnails, JSON side files with real numbers, and `SOURCES.md` (source, level, channels, licence per file).
+- **Scenarios covered:**
+
+  | Scenario | Data | Item decided on |
+  |---|---|---|
+  | HCS plate | idr0001 (96 wells, OME-Zarr plate), idr0033 Cell Painting (5 channels) | well |
+  | Whole slide, brightfield IHC | idr0073 (21115 × 16433, 8 levels) | tile |
+  | Imaging mass cytometry | nf-core/imcyto test ROI, idr0076 (50 channels, with labels), idr0054 | ROI |
+  | Spots (Molecular Cartography) | nf-core/molkart test data | sample / region |
+  | Xenium | nf-core/spatialxe test bundle (human kidney) | section |
+  | Light-sheet volume | idr0066 mesoSPIM (1937 z) | sample / region |
+  | 3D nuclei with labels | idr0062 | viewer component |
+  | Satellite scenes | nf-core/rangeland Landsat 4/5 (56 scenes, cloud from QA_PIXEL) | scene |
+
+- **The same sources** become the viewer's test fixtures: a multiscale image, a plate, labels, v0.4 and v0.5 stores.
+- **Licences:** IDR studies are CC BY 4.0 as a rule **[to be validated per study]**; Landsat is public domain.
+
 ## 11. CI workflows
 
 | Workflow | Trigger | What it runs |

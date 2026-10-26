@@ -1,0 +1,13 @@
+{
+ "pipeline": "nf-core/smrnaseq",
+ "release": "2.4.1",
+ "commit": "cb0af579b24cb8d5a3accd87b2f14ea93fe04832",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/smrnaseq/results-cb0af579b24cb8d5a3accd87b2f14ea93fe04832/",
+ "files": 4,
+ "curated": [
+  "multiqc_general_stats.txt",
+  "pipeline_info/execution_trace_2026-01-07_13-43-10.txt",
+  "pipeline_info/nf_core_smrnaseq_software_mqc_versions.yml",
+  "pipeline_info/params_2026-01-07_13-43-43.json"
+ ]
+}

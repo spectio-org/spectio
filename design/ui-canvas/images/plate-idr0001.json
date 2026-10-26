@@ -1,0 +1,398 @@
+{
+ "window": [
+  [
+   50.0,
+   119.72199999995064
+  ],
+  [
+   137.0,
+   359.0
+  ]
+ ],
+ "wells": {
+  "C/3": {
+   "gfp_mean": 55.9,
+   "blue_mean": 233.7
+  },
+  "G/12": {
+   "gfp_mean": 58.0,
+   "blue_mean": 268.6
+  },
+  "H/10": {
+   "gfp_mean": 58.2,
+   "blue_mean": 270.0
+  },
+  "G/11": {
+   "gfp_mean": 58.4,
+   "blue_mean": 257.7
+  },
+  "A/12": {
+   "gfp_mean": 59.7,
+   "blue_mean": 265.7
+  },
+  "E/11": {
+   "gfp_mean": 59.0,
+   "blue_mean": 260.2
+  },
+  "C/8": {
+   "gfp_mean": 56.3,
+   "blue_mean": 257.1
+  },
+  "B/10": {
+   "gfp_mean": 58.4,
+   "blue_mean": 243.5
+  },
+  "B/7": {
+   "gfp_mean": 58.4,
+   "blue_mean": 253.5
+  },
+  "G/10": {
+   "gfp_mean": 56.7,
+   "blue_mean": 253.4
+  },
+  "C/1": {
+   "gfp_mean": 55.2,
+   "blue_mean": 224.2
+  },
+  "E/9": {
+   "gfp_mean": 56.1,
+   "blue_mean": 257.6
+  },
+  "G/8": {
+   "gfp_mean": 55.1,
+   "blue_mean": 255.3
+  },
+  "B/12": {
+   "gfp_mean": 58.0,
+   "blue_mean": 266.2
+  },
+  "H/5": {
+   "gfp_mean": 55.8,
+   "blue_mean": 243.5
+  },
+  "D/7": {
+   "gfp_mean": 56.7,
+   "blue_mean": 251.2
+  },
+  "C/12": {
+   "gfp_mean": 58.1,
+   "blue_mean": 252.0
+  },
+  "H/4": {
+   "gfp_mean": 53.6,
+   "blue_mean": 228.5
+  },
+  "C/6": {
+   "gfp_mean": 57.1,
+   "blue_mean": 244.8
+  },
+  "E/12": {
+   "gfp_mean": 59.4,
+   "blue_mean": 262.5
+  },
+  "A/7": {
+   "gfp_mean": 58.1,
+   "blue_mean": 252.1
+  },
+  "D/2": {
+   "gfp_mean": 58.5,
+   "blue_mean": 222.5
+  },
+  "H/9": {
+   "gfp_mean": 55.7,
+   "blue_mean": 256.0
+  },
+  "B/11": {
+   "gfp_mean": 60.1,
+   "blue_mean": 248.1
+  },
+  "A/2": {
+   "gfp_mean": 54.9,
+   "blue_mean": 234.5
+  },
+  "E/7": {
+   "gfp_mean": 56.8,
+   "blue_mean": 258.2
+  },
+  "F/11": {
+   "gfp_mean": 57.9,
+   "blue_mean": 260.6
+  },
+  "B/5": {
+   "gfp_mean": 55.3,
+   "blue_mean": 240.9
+  },
+  "A/1": {
+   "gfp_mean": 55.1,
+   "blue_mean": 215.3
+  },
+  "D/5": {
+   "gfp_mean": 57.1,
+   "blue_mean": 238.0
+  },
+  "H/2": {
+   "gfp_mean": 52.9,
+   "blue_mean": 228.3
+  },
+  "C/10": {
+   "gfp_mean": 58.1,
+   "blue_mean": 258.5
+  },
+  "D/4": {
+   "gfp_mean": 56.0,
+   "blue_mean": 238.7
+  },
+  "A/11": {
+   "gfp_mean": 60.9,
+   "blue_mean": 252.1
+  },
+  "D/9": {
+   "gfp_mean": 56.7,
+   "blue_mean": 254.8
+  },
+  "F/5": {
+   "gfp_mean": 55.4,
+   "blue_mean": 244.8
+  },
+  "E/2": {
+   "gfp_mean": 56.1,
+   "blue_mean": 231.9
+  },
+  "F/10": {
+   "gfp_mean": 57.3,
+   "blue_mean": 260.8
+  },
+  "E/1": {
+   "gfp_mean": 56.1,
+   "blue_mean": 233.2
+  },
+  "F/12": {
+   "gfp_mean": 59.5,
+   "blue_mean": 263.1
+  },
+  "B/6": {
+   "gfp_mean": 56.0,
+   "blue_mean": 261.4
+  },
+  "D/11": {
+   "gfp_mean": 59.2,
+   "blue_mean": 255.6
+  },
+  "F/8": {
+   "gfp_mean": 55.8,
+   "blue_mean": 261.2
+  },
+  "E/4": {
+   "gfp_mean": 53.7,
+   "blue_mean": 246.0
+  },
+  "D/6": {
+   "gfp_mean": 56.8,
+   "blue_mean": 252.4
+  },
+  "F/4": {
+   "gfp_mean": 57.7,
+   "blue_mean": 251.8
+  },
+  "D/1": {
+   "gfp_mean": 59.4,
+   "blue_mean": 209.4
+  },
+  "H/8": {
+   "gfp_mean": 59.0,
+   "blue_mean": 245.8
+  },
+  "B/1": {
+   "gfp_mean": 59.1,
+   "blue_mean": 198.4
+  },
+  "B/4": {
+   "gfp_mean": 54.5,
+   "blue_mean": 253.0
+  },
+  "E/5": {
+   "gfp_mean": 56.0,
+   "blue_mean": 248.3
+  },
+  "C/4": {
+   "gfp_mean": 60.7,
+   "blue_mean": 230.5
+  },
+  "E/3": {
+   "gfp_mean": 55.7,
+   "blue_mean": 241.0
+  },
+  "G/4": {
+   "gfp_mean": 55.0,
+   "blue_mean": 212.7
+  },
+  "H/6": {
+   "gfp_mean": 58.8,
+   "blue_mean": 240.4
+  },
+  "G/6": {
+   "gfp_mean": 56.7,
+   "blue_mean": 249.0
+  },
+  "E/10": {
+   "gfp_mean": 58.6,
+   "blue_mean": 258.0
+  },
+  "D/12": {
+   "gfp_mean": 58.5,
+   "blue_mean": 259.8
+  },
+  "E/8": {
+   "gfp_mean": 55.3,
+   "blue_mean": 260.0
+  },
+  "B/8": {
+   "gfp_mean": 60.1,
+   "blue_mean": 257.0
+  },
+  "A/8": {
+   "gfp_mean": 61.0,
+   "blue_mean": 252.2
+  },
+  "D/10": {
+   "gfp_mean": 59.0,
+   "blue_mean": 262.7
+  },
+  "F/7": {
+   "gfp_mean": 61.7,
+   "blue_mean": 237.3
+  },
+  "B/3": {
+   "gfp_mean": 58.0,
+   "blue_mean": 238.9
+  },
+  "A/9": {
+   "gfp_mean": 58.6,
+   "blue_mean": 255.8
+  },
+  "G/2": {
+   "gfp_mean": 53.9,
+   "blue_mean": 230.8
+  },
+  "A/5": {
+   "gfp_mean": 59.5,
+   "blue_mean": 234.3
+  },
+  "H/3": {
+   "gfp_mean": 53.8,
+   "blue_mean": 240.6
+  },
+  "G/3": {
+   "gfp_mean": 61.3,
+   "blue_mean": 204.5
+  },
+  "A/6": {
+   "gfp_mean": 54.7,
+   "blue_mean": 257.4
+  },
+  "C/5": {
+   "gfp_mean": 55.6,
+   "blue_mean": 248.4
+  },
+  "B/9": {
+   "gfp_mean": 58.2,
+   "blue_mean": 246.5
+  },
+  "C/11": {
+   "gfp_mean": 58.2,
+   "blue_mean": 245.8
+  },
+  "E/6": {
+   "gfp_mean": 59.2,
+   "blue_mean": 239.1
+  },
+  "C/2": {
+   "gfp_mean": 55.5,
+   "blue_mean": 242.2
+  },
+  "F/1": {
+   "gfp_mean": 55.6,
+   "blue_mean": 216.4
+  },
+  "A/10": {
+   "gfp_mean": 57.3,
+   "blue_mean": 254.5
+  },
+  "H/1": {
+   "gfp_mean": 59.1,
+   "blue_mean": 208.1
+  },
+  "G/1": {
+   "gfp_mean": 61.6,
+   "blue_mean": 212.2
+  },
+  "C/9": {
+   "gfp_mean": 57.1,
+   "blue_mean": 247.5
+  },
+  "G/5": {
+   "gfp_mean": 59.9,
+   "blue_mean": 243.4
+  },
+  "F/6": {
+   "gfp_mean": 60.0,
+   "blue_mean": 243.6
+  },
+  "H/11": {
+   "gfp_mean": 56.8,
+   "blue_mean": 263.4
+  },
+  "D/8": {
+   "gfp_mean": 55.7,
+   "blue_mean": 257.0
+  },
+  "G/9": {
+   "gfp_mean": 57.7,
+   "blue_mean": 250.4
+  },
+  "H/12": {
+   "gfp_mean": 55.8,
+   "blue_mean": 262.0
+  },
+  "A/4": {
+   "gfp_mean": 56.7,
+   "blue_mean": 251.3
+  },
+  "F/2": {
+   "gfp_mean": 56.1,
+   "blue_mean": 240.1
+  },
+  "D/3": {
+   "gfp_mean": 54.1,
+   "blue_mean": 243.6
+  },
+  "H/7": {
+   "gfp_mean": 57.6,
+   "blue_mean": 247.5
+  },
+  "F/3": {
+   "gfp_mean": 56.2,
+   "blue_mean": 234.0
+  },
+  "A/3": {
+   "gfp_mean": 55.2,
+   "blue_mean": 246.6
+  },
+  "C/7": {
+   "gfp_mean": 56.6,
+   "blue_mean": 263.4
+  },
+  "F/9": {
+   "gfp_mean": 56.2,
+   "blue_mean": 253.2
+  },
+  "B/2": {
+   "gfp_mean": 57.1,
+   "blue_mean": 226.7
+  },
+  "G/7": {
+   "gfp_mean": 55.5,
+   "blue_mean": 260.7
+  }
+ }
+}

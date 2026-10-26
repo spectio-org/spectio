@@ -1,0 +1,2 @@
+Sample	estimated cells	reads in cells	avg reads/cell	reads	valid bc	Q30 bc	Q30 read	Q30 UMI	saturation	median umi/cell	median genes/cell	genes detected	reads mapped	confident reads	confident intergenic	confident intronic	confident exonic	confident transcriptome	reads antisense
+pbmc8k	8767.0	94.1	89434.0	784064148.0	98.5	98.2	78.9	98.2	90.8	4801.0	1853.0	22835.0	95.5	92.9	6.0	25.4	61.5	76.1	10.0

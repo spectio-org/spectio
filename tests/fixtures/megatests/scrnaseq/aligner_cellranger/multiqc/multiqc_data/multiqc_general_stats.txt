@@ -1,0 +1,6 @@
+Sample	cell_ranger_count-count_estimated_cells	cell_ranger_count-count_reads_in_cells	cell_ranger_count-count_avg_reads_cell	cell_ranger_count-count_genstats_reads	cell_ranger_count-count_valid_bc	cell_ranger_count-count_q30_bc	cell_ranger_count-count_q30_read	cell_ranger_count-count_q30_umi	fastqc-percent_duplicates	fastqc-percent_gc	fastqc-avg_sequence_length	fastqc-median_sequence_length	fastqc-percent_fails	fastqc-total_sequences
+pbmc8k	8767.0	94.1	89434.0	784.0641479999999	98.5	98.2	78.9	98.2						
+pbmc8k_1									82.7478973040283	50.0	26.0	26	9.090909090909092	392.307814
+pbmc8k_2									78.73943339440699	47.0	98.0	98	9.090909090909092	392.307814
+pbmc8k_3									81.8890652008672	50.0	26.0	26	9.090909090909092	391.756334
+pbmc8k_4									79.44792504497269	46.0	98.0	98	9.090909090909092	391.756334

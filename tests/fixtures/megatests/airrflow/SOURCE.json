@@ -1,0 +1,16 @@
+{
+ "pipeline": "nf-core/airrflow",
+ "release": "5.1.0",
+ "commit": "e69d49e3f23f11a3391755b5fb7aa4283c0a2471",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/airrflow/results-e69d49e3f23f11a3391755b5fb7aa4283c0a2471/",
+ "files": 40,
+ "curated": [
+  "multiqc/multiqc_data/multiqc_general_stats.txt",
+  "pipeline_info/execution_trace_2026-06-08_08-43-51.txt",
+  "pipeline_info/nf_core_airrflow_software_mqc_versions.yml",
+  "pipeline_info/params_2026-06-08_08-44-16.json",
+  "pipeline_info/samplesheet.valid.tsv",
+  "repertoire_comparison/Sequence_numbers_summary/Table_sequences_assembled.tsv",
+  "repertoire_comparison/Sequence_numbers_summary/Table_sequences_assembly.tsv"
+ ]
+}

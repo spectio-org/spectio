@@ -1,0 +1,15 @@
+{
+ "pipeline": "nf-core/ampliseq",
+ "release": "3.0.0",
+ "commit": "992e6df34065067185b5e34665b5861b6827981d",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/ampliseq/results-992e6df34065067185b5e34665b5861b6827981d/",
+ "files": 35,
+ "curated": [
+  "multiqc/multiqc_data/multiqc_cutadapt.txt",
+  "multiqc/multiqc_data/multiqc_general_stats.txt",
+  "overall_summary.tsv",
+  "pipeline_info/execution_trace_2026-10-09_12-48-19.txt",
+  "pipeline_info/nf_core_ampliseq_software_mqc_versions.yml",
+  "pipeline_info/params_2026-10-19_11-36-15.json"
+ ]
+}

@@ -1,0 +1,11 @@
+{
+ "pipeline": "nf-core/viralrecon",
+ "release": "2.6.0",
+ "commit": "3731dd3a32a67a2648ea22c2bd980c224abdaee2",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/viralrecon/results-3731dd3a32a67a2648ea22c2bd980c224abdaee2/",
+ "files": 205,
+ "curated": [
+  "platform_illumina/pipeline_info/software_versions.yml",
+  "platform_nanopore/nanopolish/quast/report.tsv"
+ ]
+}

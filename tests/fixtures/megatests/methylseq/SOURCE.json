@@ -1,0 +1,12 @@
+{
+ "pipeline": "nf-core/methylseq",
+ "release": "4.2.0",
+ "commit": "5aa56467a85a5e2d6795ea72dfa5a5f0c9babc23",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/methylseq/results-5aa56467a85a5e2d6795ea72dfa5a5f0c9babc23/",
+ "files": 16,
+ "curated": [
+  "pipeline_info/execution_trace_2025-12-12_10-49-48.txt",
+  "pipeline_info/nf_core_methylseq_software_mqc_versions.yml",
+  "pipeline_info/params_2025-12-12_10-50-22.json"
+ ]
+}

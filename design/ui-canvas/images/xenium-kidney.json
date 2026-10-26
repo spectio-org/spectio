@@ -1,0 +1,46 @@
+{
+ "metrics_summary": {
+  "panel_name": "Human Multi-Tissue and Cancer Panel + Custom Addon",
+  "region_area": "37560.426875",
+  "num_cells_detected": "358",
+  "total_high_quality_decoded_transcripts": "20995",
+  "fraction_transcripts_decoded_q20": "0.795476073201228",
+  "median_transcripts_per_cell": "41",
+  "median_genes_per_cell": "22",
+  "fraction_empty_cells": "0.0027932960893855",
+  "adjusted_negative_control_probe_rate": "0.00209533787323206",
+  "fraction_transcripts_assigned": "0.818718742557752"
+ },
+ "top_genes": {
+  "VIM": 2361,
+  "HLA-DRA": 1679,
+  "MS4A1": 1039,
+  "PTPRC": 695,
+  "TNC": 564,
+  "ACTA2": 559
+ },
+ "palette": [
+  "#FF5A5A",
+  "#3DDC84",
+  "#FFA53D",
+  "#3DD6F5",
+  "#FF4FA3",
+  "#FFD54F"
+ ],
+ "transcripts": 26463,
+ "qv_hist": [
+  1098,
+  4366,
+  2141,
+  266,
+  18592
+ ],
+ "transcripts_per_cell_hist": [
+  24,
+  47,
+  99,
+  139,
+  44,
+  5
+ ]
+}

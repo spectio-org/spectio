@@ -1,0 +1,15 @@
+{
+ "pipeline": "nf-core/sarek",
+ "release": "3.10.0",
+ "commit": "8ccac7ad37b05dd792447763bf9671b719824587",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/sarek/results-8ccac7ad37b05dd792447763bf9671b719824587/",
+ "files": 82,
+ "curated": [
+  "test_full_germline_aws/pipeline_info/execution_trace_2026-08-12_18-07-32.txt",
+  "test_full_germline_aws/pipeline_info/params_2026-08-12_18-09-35.json",
+  "test_full_germline_ncbench_agilent/multiqc/multiqc_data/multiqc_general_stats.txt",
+  "test_full_germline_ncbench_agilent/pipeline_info/nf_core_sarek_software_mqc_versions.yml",
+  "test_full_germline_ncbench_agilent/reports/mosdepth/NA12878_200M/NA12878_200M.recal.mosdepth.summary.txt",
+  "test_full_germline_ncbench_agilent/reports/mosdepth/NA12878_75M/NA12878_75M.recal.mosdepth.summary.txt"
+ ]
+}

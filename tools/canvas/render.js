@@ -38,6 +38,12 @@ const comps = {};
 for (const f of fs.readdirSync(dir)) if (f.endsWith('.dc.html')) comps[f.replace('.dc.html','')] = prep(fs.readFileSync(path.join(dir, f), 'utf8'));
 let main = comps[path.basename(file).replace('.dc.html','')];
 const blobMap = {}; for (const [k,v] of Object.entries(blobs)) { try { blobMap[k] = toData(v); } catch(e){} }
+// Real test images (tools/canvas/images.py) live next to the boards in images/; inline them, since the page is set from a string.
+const imgDir = path.join(dir, 'images');
+if (fs.existsSync(imgDir)) for (const f of fs.readdirSync(imgDir)) {
+  const ext = path.extname(f).slice(1); const mime = { webp: 'image/webp', png: 'image/png', jpg: 'image/jpeg', svg: 'image/svg+xml' }[ext];
+  if (mime) blobMap['images/' + f] = `data:${mime};base64,` + fs.readFileSync(path.join(imgDir, f)).toString('base64');
+}
 (async () => {
   const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: +W, height: +H } });
   await p.setContent('<!doctype html><html><head><meta charset="utf-8"></head><body style="margin:0"></body></html>');
@@ -67,7 +73,8 @@ const blobMap = {}; for (const [k,v] of Object.entries(blobs)) { try { blobMap[k
           continue;
         }
         for (const a of [...ch.attributes]) if (a.value.includes('{{')) ch.setAttribute(a.name, interp(a.value, scope));
-        if (ch.tagName === 'IMG' && blobMap[ch.getAttribute('src')]) ch.setAttribute('src', blobMap[ch.getAttribute('src')]);
+        if (ch.tagName === 'IMG' && blobMap[(ch.getAttribute('src') || '').replace(/^\.\//, '')]) ch.setAttribute('src', blobMap[ch.getAttribute('src').replace(/^\.\//, '')]);
+        if (ch.style && ch.style.backgroundImage) { const m = ch.style.backgroundImage.match(/url\(["']?(?:\.\/)?(images\/[^"')]+)["']?\)/); if (m && blobMap[m[1]]) ch.style.backgroundImage = `url("${blobMap[m[1]]}")`; }
         if (ch.tagName === 'DC-IMPORT') {
           const name = ch.getAttribute('name'); const props = {};
           for (const a of ch.attributes) if (!['name', 'hint-size', 'style'].includes(a.name)) props[a.name] = a.value;

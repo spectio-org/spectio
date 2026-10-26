@@ -1,0 +1,15 @@
+{
+ "pipeline": "nf-core/taxprofiler",
+ "release": "2.0.1",
+ "commit": "70ecc15e49b4f1fcf79d876643b5d14b65c66178",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/taxprofiler/results-70ecc15e49b4f1fcf79d876643b5d14b65c66178/",
+ "files": 102,
+ "curated": [
+  "multiqc/multiqc_data/multiqc_bracken_bracken.txt",
+  "multiqc/multiqc_data/multiqc_general_stats.txt",
+  "multiqc/multiqc_data/multiqc_kraken.txt",
+  "pipeline_info/execution_trace_2026-06-15_12-47-45.txt",
+  "pipeline_info/nf_core_taxprofiler_software_mqc_versions.yml",
+  "pipeline_info/params_2026-06-15_12-48-33.json"
+ ]
+}

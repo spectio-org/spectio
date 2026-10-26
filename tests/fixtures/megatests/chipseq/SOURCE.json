@@ -1,0 +1,12 @@
+{
+ "pipeline": "nf-core/chipseq",
+ "release": "2.1.0",
+ "commit": "76e2382b6d443db4dc2396e6831d1243256d80b0",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/chipseq/results-76e2382b6d443db4dc2396e6831d1243256d80b0/",
+ "files": 9,
+ "curated": [
+  "pipeline_info/execution_trace_2024-10-07_15-15-58.txt",
+  "pipeline_info/nf_core_chipseq_software_mqc_versions.yml",
+  "pipeline_info/params_2024-10-07_15-16-13.json"
+ ]
+}

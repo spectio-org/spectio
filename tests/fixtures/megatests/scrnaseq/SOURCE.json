@@ -1,0 +1,14 @@
+{
+ "pipeline": "nf-core/scrnaseq",
+ "release": "4.2.0",
+ "commit": "3fc17b4f971a89e47c88337de71d0e777ffad8cc",
+ "prefix": "https://nf-core-awsmegatests.s3-eu-west-1.amazonaws.com/scrnaseq/results-3fc17b4f971a89e47c88337de71d0e777ffad8cc/",
+ "files": 67,
+ "curated": [
+  "aligner_cellranger/multiqc/multiqc_data/multiqc_cellranger_count.txt",
+  "aligner_cellranger/multiqc/multiqc_data/multiqc_general_stats.txt",
+  "aligner_cellranger/pipeline_info/execution_trace_2026-07-04_07-42-26.txt",
+  "aligner_cellranger/pipeline_info/nf_core_scrnaseq_software_mqc_versions.yml",
+  "aligner_cellranger/pipeline_info/params_2026-07-04_07-42-59.json"
+ ]
+}

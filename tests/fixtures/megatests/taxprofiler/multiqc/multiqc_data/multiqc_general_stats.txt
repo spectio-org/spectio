@@ -1,0 +1,71 @@
+Sample	fastqc_falco_pre_trimming-total_sequences	fastqc_falco_pre_trimming-avg_sequence_length	fastqc_falco_pre_trimming-median_sequence_length	fastqc_falco_pre_trimming-percent_duplicates	fastqc_falco_pre_trimming-percent_gc	fastqc_falco_pre_trimming-percent_fails	fastqc_falco_post_trimming-total_sequences	fastqc_falco_post_trimming-avg_sequence_length	fastqc_falco_post_trimming-median_sequence_length	fastqc_falco_post_trimming-percent_duplicates	fastqc_falco_post_trimming-percent_gc	fastqc_falco_post_trimming-percent_fails	fastp-pct_adapter	fastp-pct_surviving	fastp-pct_duplication	fastp-after_filtering_gc_content	fastp-after_filtering_q30_rate	fastp-after_filtering_q30_bases	fastp-filtering_result_passed_filter_reads	nonpareil-nonpareil_R	nonpareil-nonpareil_LR	nonpareil-nonpareil_kappa	nonpareil-nonpareil_C	nonpareil-nonpareil_diversity	bowtie2-overall_alignment_rate	samtools_stats_stats-error_rate	samtools_stats_stats-non_primary_alignments	samtools_stats_stats-reads_mapped	samtools_stats_stats-reads_mapped_percent	samtools_stats_stats-reads_properly_paired_percent	samtools_stats_stats-reads_MQ0_percent	samtools_stats_stats-raw_total_sequences	samtools_stats_stats-insert_size_average	fastp-before_filtering_read1_mean_length	fastp-before_filtering_read2_mean_length	malt-Num_of_queries	malt-Total_reads	malt-Mappability	malt-Assig_Taxonomy	malt-Taxonomic_assignment_success	Number_of_reads	N50_read_length	Number_of_bases	Longest_read	Shortest_read	Mean_read_length	Median_read_length	Mean_read_quality	Median_read_quality	porechop_abi-Input_Reads	kraken-pct_top_one	kraken-pct_top_n	kraken-pct_unclassified	bracken-pct_top_one	bracken-pct_top_n	bracken-pct_unclassified	centrifuge-pct_top_one	centrifuge-pct_top_n	centrifuge-pct_unclassified	metaphlan-Thermotoga_neapolitana	metaphlan-Top	diamond-queries_aligned	kaiju-assigned	kaiju-Assigned	kaiju-Unclassified	motus-Total_number_of_reads	motus-Number_of_reads_after_filtering	motus-Total_number_of_inserts	motus-Unique_mappers	motus-Multiple_mappers	motus-Ignored_multiple_mapper_without_unique_hit	motus-Number_of_ref_mOTUs	motus-Number_of_meta_mOTUs	motus-Number_of_ext_mOTUs
+ERR9765780																																																		0.696944																								
+ERR9765781																																																		0.8318019999999999																								
+ERR9765782																																																		0.791715																								
+MOCK_001_Illumina_Hiseq_3000_1							0.45420099999999997	226.1924610469814	242	3.460791824442481	45.0	0.0	0.0001407936147668227	100.0	3.80763	45.7433	96.1358	98.78746	41.195049999999995	0.45420099999999997	102.75843423999999	57.02	59.84	17.8037	0.0	1.308411	0.0	3e-06	0.0006605005272995876	0.0	0.0	0.45420099999999997	0.0	149.0	148.0	0.454198	0.43850999999999996	96.54599976221824	0.43850999999999996	100.0																																		
+MOCK_001_Illumina_Hiseq_3000_1_raw_1	20.597524999999997	150.26172161461147	150	9.741333565803885	46.0	0.0																																																																				
+MOCK_001_Illumina_Hiseq_3000_1_raw_2	20.597524999999997	148.6259972739443	150	8.177201158977738	46.0	0.0																																																																				
+MOCK_001_Illumina_Hiseq_3000_bracken-db.bracken																																																						6.597343008996076	30.117261634793635	3.5288574586413857																		
+MOCK_001_Illumina_Hiseq_3000_centrifuge-db.centrifuge																																																									6.603287553005517	30.15997428434295	3.305166469249094															
+MOCK_001_Illumina_Hiseq_3000_diamond-db1																																																														411270												
+MOCK_001_Illumina_Hiseq_3000_diamond-db3																																																														411270												
+MOCK_001_Illumina_Hiseq_3000_kaiju-db1.kaiju																																																															0.38797299999999996	85.41935455462155	10.655264884477695									
+MOCK_001_Illumina_Hiseq_3000_kaiju-db3.kaiju																																																															0.38797299999999996	85.41935455462155	10.655264884477695									
+MOCK_001_Illumina_Hiseq_3000_kraken2-db																																																			6.597343008996076	30.117261634793635	3.5288574586413857																					
+MOCK_001_Illumina_Hiseq_3000_metaphlan3-db.metaphlan_profile																																																												12.06895	65.95053999999999													
+MOCK_001_Illumina_Hiseq_3000_motus-db1																																																																		0.454198	0.002822	0.002813	0.002794	1.4e-05	4.9999999999999996e-06	52	0	1
+MOCK_001_Illumina_Hiseq_3000_motus-db3																																																																		0.454198	0.002822	0.002813	0.002794	1.4e-05	4.9999999999999996e-06	52	0	1
+MOCK_001_Minion_R9_1							0.620336	4964.202304073921	4499	0.005438295961852191	47.0	30.0														0.0	0.0	0.0	0.0	0.0	0.0	0.620336	0.0								0.620336	6146.0	3070.0510019999997	45135.0	1000.0	4949.0	4639.0	10.75	11.01																									
+MOCK_001_Minion_R9_1_raw	0.696944	4474.379715586905	4499	0.00538639534079266	47.0	30.0																																																																				
+MOCK_001_Minion_R9_diamond-db2																																																														614600												
+MOCK_001_Minion_R9_diamond-db3																																																														606321												
+MOCK_001_Minion_R9_kaiju-db2.kaiju																																																															0.1388	22.374970983467023	76.62008975780867									
+MOCK_001_Minion_R9_kaiju-db3.kaiju																																																															0.555057	89.47683191044852	4.155973536921926									
+MOCK_001_Minion_R9_motus-db2																																																																		10.442079999999999	0.001253	0.00122	0.001192	2.1e-05	7e-06	39	0	1
+MOCK_001_Minion_R9_motus-db3																																																																		10.442079999999999	0.001253	0.00122	0.001192	2.1e-05	7e-06	39	0	1
+MOCK_002_Illumina_Hiseq_3000_1							0.608501	228.93941341098864	242	3.316255731970898	45.0	0.0	0.00012945562528706784	100.0	3.61538	45.6484	94.8248	132.129151	46.347927999999996	0.608501	139.34003548899997	62.7	65.27	17.8174	0.0	0.1908397	0.0	3e-06	0.0004930148019477371	0.0	0.0	0.608501	0.0	149.0	147.0	0.608498	0.5892419999999999	96.83548672304593	0.5892419999999999	100.0																																		
+MOCK_002_Illumina_Hiseq_3000_1_raw_1	23.173963999999998	150.1660866695055	150	10.478334996099704	46.0	0.0																																																																				
+MOCK_002_Illumina_Hiseq_3000_1_raw_2	23.173963999999998	148.29333464486265	150	8.715609230717263	46.0	0.0																																																																				
+MOCK_002_Illumina_Hiseq_3000_bracken-db.bracken																																																						7.020236714007277	30.556386380891965	3.2688685911868243																		
+MOCK_002_Illumina_Hiseq_3000_centrifuge-db.centrifuge																																																									7.02664593803102	30.59927888012779	3.0618013534966426															
+MOCK_002_Illumina_Hiseq_3000_diamond-db1																																																														555215												
+MOCK_002_Illumina_Hiseq_3000_diamond-db3																																																														555215												
+MOCK_002_Illumina_Hiseq_3000_kaiju-db1.kaiju																																																															0.523628	86.0525424898685	9.91079674871569									
+MOCK_002_Illumina_Hiseq_3000_kaiju-db3.kaiju																																																															0.523628	86.0525424898685	9.91079674871569									
+MOCK_002_Illumina_Hiseq_3000_kraken2-db																																																			7.020236714007277	30.556386380891965	3.2688685911868243																					
+MOCK_002_Illumina_Hiseq_3000_metaphlan3-db.metaphlan_profile																																																												12.05483	63.58147999999999													
+MOCK_002_Illumina_Hiseq_3000_motus-db1																																																																		0.608498	0.003916	0.003897	0.003861	2.9e-05	7e-06	57	0	1
+MOCK_002_Illumina_Hiseq_3000_motus-db3																																																																		0.608498	0.003916	0.003897	0.003861	2.9e-05	7e-06	57	0	1
+MOCK_002_Minion_R9_1							0.736555	4887.809000006789	4999	0.0037548743152484576	47.0	30.0														0.0	0.0	0.0	0.0	0.0	0.0	0.736555	0.0								0.736555	6122.0	3621.4549939999997	60869.0	1000.0	4916.0	4612.0	10.77	11.02																									
+MOCK_002_Minion_R9_1_raw	0.8318019999999999	4443.352546038601	4999	0.004787766402671423	47.0	20.0																																																																				
+MOCK_002_Minion_R9_diamond-db2																																																														729758												
+MOCK_002_Minion_R9_diamond-db3																																																														719785												
+MOCK_002_Minion_R9_kaiju-db2.kaiju																																																															0.16306299999999999	22.13860472062507	76.82454127661886									
+MOCK_002_Minion_R9_kaiju-db3.kaiju																																																															0.65805	89.34159702941396	4.203487859019353									
+MOCK_002_Minion_R9_motus-db2																																																																		12.318567	0.001488	0.001447	0.001431	9.999999999999999e-06	6e-06	44	0	1
+MOCK_002_Minion_R9_motus-db3																																																																		12.318567	0.001488	0.001447	0.001431	9.999999999999999e-06	6e-06	44	0	1
+MOCK_003_Illumina_Hiseq_3000																																				1.3866829999999999	1.335897	96.33759121587269	1.335897	100.0																																		
+MOCK_003_Illumina_Hiseq_3000_1							1.025304	229.2042584443248	242	3.956758025591597	45.0	9.090909090909092	0.00019679398114792377	100.0	2.85198	45.6815	95.9395	225.51325	91.466212	1.025304	235.058119128	74.86	76.75	17.4039	0.0	0.0	0.0	3e-06	0.00029259614709393507	0.0	0.0	1.025304	0.0	149.0	148.0																																							
+MOCK_003_Illumina_Hiseq_3000_1_raw_1	45.733106	150.27031739326867	150	24.756046225027788	46.0	9.090909090909092																																																																				
+MOCK_003_Illumina_Hiseq_3000_1_raw_2	45.733106	149.3445352585499	150	19.931621776686043	46.0	0.0																																																																				
+MOCK_003_Illumina_Hiseq_3000_2							0.361384	229.81051457729174	242	3.306302788600547	45.0	0.0	0.00011008645088988382	100.0	3.53513	45.448699999999995	95.9933	79.739582	32.701572	0.361384	83.06772623999998	59.230000000000004	61.95	17.389	0.0	8.0	0.0	2e-06	0.0005534279326146149	0.0	0.00027671396630730744	0.361384	0.0	149.0	148.0																																							
+MOCK_003_Illumina_Hiseq_3000_2_raw_1	16.350786	150.26179515162147	150	11.931176798353647	46.0	0.0																																																																				
+MOCK_003_Illumina_Hiseq_3000_2_raw_2	16.350786	148.67070005074984	150	10.137506161003955	46.0	0.0																																																																				
+MOCK_003_Illumina_Hiseq_3000_bracken-db.bracken																																																						13.929932075319304	36.338009480176794	3.7488019972841666																		
+MOCK_003_Illumina_Hiseq_3000_centrifuge-db.centrifuge																																																									13.949619343426004	36.401902958354576	3.5734194477036207															
+MOCK_003_Illumina_Hiseq_3000_diamond-db1																																																														1274836												
+MOCK_003_Illumina_Hiseq_3000_diamond-db3																																																														1274836												
+MOCK_003_Illumina_Hiseq_3000_kaiju-db1.kaiju																																																															1.190751	85.87045489127652	9.087657380958733									
+MOCK_003_Illumina_Hiseq_3000_kaiju-db3.kaiju																																																															1.190751	85.87045489127652	9.087657380958733									
+MOCK_003_Illumina_Hiseq_3000_kraken2-db																																																			13.929932075319304	36.338009480176794	3.7488019972841666																					
+MOCK_003_Illumina_Hiseq_3000_metaphlan3-db.metaphlan_profile																																																												22.20199	69.22178													
+MOCK_003_Illumina_Hiseq_3000_motus-db1																																																																		1.3866829999999999	0.009842	0.009795	0.009712	5.9e-05	2.4e-05	57	0	2
+MOCK_003_Illumina_Hiseq_3000_motus-db3																																																																		1.3866829999999999	0.009842	0.009795	0.009712	5.9e-05	2.4e-05	57	0	2
+MOCK_003_Minion_R9_1							0.707847	4749.988633843189	4499	0.005379983172900893	47.0	20.0														0.0	0.0	0.0	0.0	0.0	0.0	0.707847	0.0								0.707847	5845.0	3351.4644169999997	42254.0	1000.0	4734.0	4443.0	10.74	10.98																									
+MOCK_003_Minion_R9_1_raw	0.791715	4300.396317487985	4499	0.005337017565608448	47.0	20.0																																																																				
+MOCK_003_Minion_R9_diamond-db2																																																														702269												
+MOCK_003_Minion_R9_diamond-db3																																																														693541												
+MOCK_003_Minion_R9_kaiju-db2.kaiju																																																															0.145266	20.522231499179906	78.03918078341789									
+MOCK_003_Minion_R9_kaiju-db3.kaiju																																																															0.6242989999999999	88.19688435495242	3.837835012368492									
+MOCK_003_Minion_R9_motus-db2																																																																		11.409450999999999	0.0014349999999999999	0.001406	0.001364	3.7e-05	4.9999999999999996e-06	38	0	1
+MOCK_003_Minion_R9_motus-db3																																																																		11.409450999999999	0.0014349999999999999	0.001406	0.001364	3.7e-05	4.9999999999999996e-06	38	0	1
