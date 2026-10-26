@@ -260,7 +260,7 @@ The canvas covers the nf-core catalogue by class ([`checking-scenarios.md`](chec
 
 | Class (pipelines in the survey) | Scenario | Boards |
 |---|---|---|
-| Bulk sample (45) | mapping QC with groups; small RNA; amplicons through DADA2; ChIP with input controls; bisulfite conversion | ReviewReport (rnaseq), ReviewSmallRNA (smrnaseq), ReviewAmpliseq (ampliseq), ReviewChip (chipseq), ReviewMethyl (methylseq), WorkflowOverlay (atacseq) |
+| Bulk sample (45) | mapping QC with groups; small RNA; amplicons through DADA2; ChIP with input controls; bisulfite conversion; fusion candidates | ReviewReport (rnaseq), ReviewSmallRNA (smrnaseq), ReviewAmpliseq (ampliseq), ReviewChip (chipseq), ReviewMethyl (methylseq), ReviewFusions (rnafusion), WorkflowOverlay (atacseq) |
 | Sample + assembly (13) | MAG bins; SARS-CoV-2 amplicon coverage | ReviewCandidates (mag), ReviewViral (viralrecon) |
 | Grouped samples + variants (11) | tumour/normal samplesheet; trios and consistency checks | ReviewCoverage (sarek), ReviewTrio (raredisease) |
 | Predictions (8) | structures; a run-level gate waiting for a signal | ReviewStructures, ReviewSignal (proteinfold) |
@@ -269,7 +269,6 @@ The canvas covers the nf-core catalogue by class ([`checking-scenarios.md`](chec
 | Sample + cells (5) | cell thresholds; immune repertoires | ReviewCells (scrnaseq), ReviewRepertoire (airrflow) |
 | MS runs (5) | runs without MultiQC, table bindings | ReviewProteomics (diaproteomics) |
 | Sample + features (4) | contamination and negative controls | ReviewContamination (taxprofiler) |
-| Other nf-core | fusion candidates | ReviewFusions (rnafusion) |
 | No gate (most runs) | straight through, outputs, depictio; no stages declared | RunOutputs (ampliseq), RunFailed (Snakemake), LaunchGitNoSchema, LaunchReview |
 | Operations | failure and relaunch; CLI-observed run; lineage compare; batch; samplesheet from files; catalogue, import, discovered, versions; runner connect, software, single machine, quotas | RunFailed, RelaunchDialog, RunObserved, RunsCompare, LaunchBatch, LaunchSamplesheet, WorkflowsCatalog, WorkflowImport, WorkflowDiscovered, WorkflowVersions, EnvConnect, EnvSoftware, EnvLocal, EnvAccess |
 | Lists | a lab's mix, about 4 runs in 5 without a gate | ReviewQueue, RunsTable, RunsRows, Overview |
