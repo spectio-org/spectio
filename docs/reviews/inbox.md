@@ -43,7 +43,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - It also holds a 3.3 MB GIF committed in `0e5b97a` and removed later.
   - The design boards themselves (`design/ui-canvas`, current tree) still show those names. Media are now rendered with fixture names.
 - **Done (additive, nothing deleted).** A new branch `main` with one clean commit holding the current tree was pushed. The old history is kept as the local branch `archive/history-2026-10-26` and on the remote branch above.
-- **Your part.** In GitHub settings, make `main` the default branch. Then delete the old branch (`git push origin --delete claude/foundations-2026-10-26`), or tell the autopilot to do it.
+- **Your part** (the session's proxy refuses repository-settings writes and remote branch deletion). In GitHub settings, make `main` the default branch. Then delete the old branch (`git push origin --delete claude/foundations-2026-10-26`), Also delete `release-please--branches--claude/foundations-2026-10-26--components--spectio`, created by the first release-please run.
 - **Optional.** Also replace the real names in the boards with fixtures before going public.
 
 ### #6 · Nextflow ingestion: keep the Tower protocol, or only Spectio's own plugin?
@@ -92,3 +92,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   4. In GitHub, go to *Settings → Environments → New environment* `previews`, and add the secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
   5. Optional: in *Zero Trust → Access*, restrict `*.spectio.pages.dev` previews to your email.
 - **Answer with:** `done`. Step D5 then checks everything end to end.
+- **Status (2026-10-26 11:15):**
+  - Secrets set as `CLOUDFARE_API_TOKEN` / `CLOUDFARE_ACCOUND_ID`. They are spelled that way, and the workflow accepts these names for now.
+  - The first deploy succeeded: `https://spectio.pages.dev`, build `d406406`.
+  - To do: rename the secrets to `CLOUDFLARE_API_TOKEN` / `CLOUDFLARE_ACCOUNT_ID`, then remove the fallback in `previews.yml`.
