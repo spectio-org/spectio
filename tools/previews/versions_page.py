@@ -7,8 +7,8 @@
 
 Every deployment keeps its own URL, so the page lists them all, newest first, grouped by kind
 (releases, waves, main, PRs). Spec: docs/specs/dev-environment-and-testing.md §7.1.
-API: GET /accounts/{account}/pages/projects/{project}/deployments (fields read tolerantly;
-exact shape [to be validated] against a live project).
+API: GET /accounts/{account}/pages/projects/{project}/deployments. The fields read here (url, created_on,
+deployment_trigger.metadata.branch / commit_hash / commit_message) were checked against the live project on 2026-10-26.
 """
 from __future__ import annotations
 

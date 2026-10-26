@@ -181,6 +181,11 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
   - Media are rendered with fixture names (`documentation-system.md` §5.5).
 - **Limits (free plan):** 500 builds a month, 20 000 files and 25 MiB per file ([limits](https://developers.cloudflare.com/pages/platform/limits/)). Whether direct uploads count as builds is **[to be validated]**. The site is far below both limits.
 - **Without the secrets,** the workflow skips the deploy, with a notice, and still builds.
+- **Checked on 2026-10-26:**
+  - The first deploys worked: `https://spectio.pages.dev` (main) and `https://pr-1.spectio.pages.dev` (PR #1), with the PR comment posted.
+  - `/versions` reads the deployments API as expected.
+  - A new deployment's hostname took more than 60 s to answer, so the verification step waits up to 4 minutes.
+  - The production branch is served at the project root, not under a `main` alias.
 
 ### 7.2 The full stack on demand in GitHub Codespaces (from D3)
 
