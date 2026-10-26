@@ -251,3 +251,51 @@ Spectio keeps the depictio UI model so a user moving between the two apps finds 
 - Engine logos: plug in the official files already in depictio (`public/logos/workflows/`). nf-core is MIT and appears only next to genuine nf-core pipelines; Nextflow follows Seqera's brand manual (official files, never recoloured); Snakemake is MIT with no published guidelines. Mockups keep labelled placeholder tiles until this is done.
 - `@depictio/ui` extraction: agree on the package boundary with the depictio codebase before Spectio's first UI release.
 - Snakemake `ui:` block: draft its format alongside `spectio.yml`.
+
+## 10. Scenario coverage and UI patterns (2026-10-26)
+
+The canvas covers the nf-core catalogue by class ([`checking-scenarios.md`](checking-scenarios.md) §1), runs without gates, and the operational cases. Boards use real data where it exists: nf-core megatest outputs and real test images ([`dev-environment-and-testing.md`](dev-environment-and-testing.md) §10.3–10.4). The spec gaps the boards found are in [`reviews/R12-ui-scenarios.md`](../reviews/R12-ui-scenarios.md).
+
+### 10.1 Scenarios × boards
+
+| Class (pipelines in the survey) | Scenario | Boards |
+|---|---|---|
+| Bulk sample (45) | mapping QC with groups; small RNA; amplicons through DADA2; ChIP with input controls; bisulfite conversion | ReviewReport (rnaseq), ReviewSmallRNA (smrnaseq), ReviewAmpliseq (ampliseq), ReviewChip (chipseq), ReviewMethyl (methylseq), WorkflowOverlay (atacseq) |
+| Sample + assembly (13) | MAG bins; SARS-CoV-2 amplicon coverage | ReviewCandidates (mag), ReviewViral (viralrecon) |
+| Grouped samples + variants (11) | tumour/normal samplesheet; trios and consistency checks | ReviewCoverage (sarek), ReviewTrio (raredisease) |
+| Predictions (8) | structures; a run-level gate waiting for a signal | ReviewStructures, ReviewSignal (proteinfold) |
+| Run only (8) | public accessions chained into rnaseq; no review | LaunchChain (fetchngs) |
+| Image + cell / tile (7) and lab imaging | plate wells; whole-slide tiles; IMC ROIs; spots; Xenium; light-sheet volume; satellite scenes | ReviewWells, ReviewSlides, ReviewROIs (imcyto), ReviewSpots (molkart), ReviewXenium (spatialaxe), ReviewVolume (lsmquant), ReviewTiles (rangeland), Review (Snakemake plate) |
+| Sample + cells (5) | cell thresholds; immune repertoires | ReviewCells (scrnaseq), ReviewRepertoire (airrflow) |
+| MS runs (5) | runs without MultiQC, table bindings | ReviewProteomics (diaproteomics) |
+| Sample + features (4) | contamination and negative controls | ReviewContamination (taxprofiler) |
+| Other nf-core | fusion candidates | ReviewFusions (rnafusion) |
+| No gate (most runs) | straight through, outputs, depictio; no stages declared | RunOutputs (ampliseq), RunFailed (Snakemake), LaunchGitNoSchema, LaunchReview |
+| Operations | failure and relaunch; CLI-observed run; lineage compare; batch; samplesheet from files; catalogue, import, discovered, versions; runner connect, software, single machine, quotas | RunFailed, RelaunchDialog, RunObserved, RunsCompare, LaunchBatch, LaunchSamplesheet, WorkflowsCatalog, WorkflowImport, WorkflowDiscovered, WorkflowVersions, EnvConnect, EnvSoftware, EnvLocal, EnvAccess |
+| Lists | a lab's mix, about 4 runs in 5 without a gate | ReviewQueue, RunsTable, RunsRows, Overview |
+
+### 10.2 UI patterns to build once
+
+These are the component types the boards share. Each is built once, in the shared UI package, before screens multiply.
+
+| Pattern | Used by |
+|---|---|
+| Item table: worst first, lanes by group or role, passing lane collapsed, a decision per row, binding chips on check cards | every Review board |
+| Constraint warning with resolutions (accept degraded group, reassign, exclude group, flag instead) | ReviewTrio, ReviewChip, ReviewReport, ReviewAmpliseq, ReviewRepertoire |
+| Rule strip with live counts and per-item exceptions | ReviewCells, ReviewContamination, ReviewSmallRNA, ReviewTiles |
+| Distributions in HTML: histogram, strip plot, funnel, survival sparkline, knee plot, M-bias | ReviewCells, ReviewWells, ReviewAmpliseq, ReviewRepertoire, ReviewMethyl |
+| Matrix: items × sub-regions heatmap with column markers | ReviewViral, ReviewTiles |
+| Spatial grid of real thumbnails, with check badges, decision rings and hatching | ReviewWells, ReviewSlides, ReviewROIs |
+| OME-Zarr viewer: pyramid, channels and windows, labels, z, compare inset; brightfield RGB | ViewerOmeZarr, all imaging reviews |
+| Candidate list: scatter of two metrics, evidence panel, accept / reject / flag, AI proposal waiting for a person | ReviewCandidates, ReviewStructures, ReviewFusions |
+| Report reader (sandboxed) with item side panel | ReviewReport, RunOutputs |
+| Sticky changes bar, with a primary action disabled together with its reason | every Review board |
+| Stage strip and reuse bar (reused, rerun, to run) | RelaunchDialog, RunFailed, RunsCompare, ReviewMethyl |
+| Failure-class card with evidence and a suggested fix | RunFailed, RelaunchDialog |
+| Diff views: parameters, modules, software, files | RunsCompare, WorkflowVersions, ReviewROIs |
+| File browser through the runner, permission states | LaunchSamplesheet, WorkflowImport, RunOutputs |
+| Wizard with live state (heartbeat, checks with inline fix) | EnvConnect, WorkflowImport, Launch |
+| Quota and limit bars, permission matrix | EnvAccess, EnvSoftware, LaunchBatch |
+| Restricted-data banner and access log | ReviewTrio |
+
+Every pattern has the states of §3: empty, loading, error, permission (view only), plus `n/a` for a check that cannot be computed.
