@@ -28,4 +28,5 @@ Each review round writes one file here, `<round-id>.md` (e.g. `R1-consistency.md
 - `UX`: UX reviewer;
 - `DL`: depictio liaison;
 - `TA`: test architect;
-- `IE`: infra engineer.
+- `IE`: infra engineer;
+- `DEP-T`: depictio liaison, tooling and ecosystem re-audit (R8b).

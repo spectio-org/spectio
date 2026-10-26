@@ -37,8 +37,8 @@ waves:
     title: Triage and apply W1 findings, then the reviews that need cleaned specs
     depends_on: [W1]
     steps:
-      - {id: TRIAGE1, kind: triage, rounds: [R1, R2, R4, R5, R7, R8, R9, R11], writes: [docs/reviews/*.md, docs/reviews/inbox.md]}
-      - {id: APPLY1, kind: apply, depends_on: [TRIAGE1], rounds: [R1, R2, R4, R5, R7, R8, R9, R11], writes: [docs/specs/*.md, docs/decisions/log.md]}
+      - {id: TRIAGE1, kind: triage, rounds: [R1, R2, R4, R5, R7, R8, R8b, R9, R11], writes: [docs/reviews/*.md, docs/reviews/inbox.md]}
+      - {id: APPLY1, kind: apply, depends_on: [TRIAGE1], rounds: [R1, R2, R4, R5, R7, R8, R8b, R9, R11], writes: [docs/specs/*.md, docs/decisions/log.md]}
       - {id: R3, kind: review, depends_on: [APPLY1], prompt_ref: "R3", writes: [docs/reviews/R3-journeys.md]}
       - {id: R6, kind: review, depends_on: [APPLY1], prompt_ref: "R6", writes: [docs/reviews/R6-contract.md], worktree: true}
       - {id: TRIAGE2, kind: triage, depends_on: [R3, R6], rounds: [R3, R6]}

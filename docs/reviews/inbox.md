@@ -61,3 +61,23 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - (a) MIT, public at the start of the private alpha (0.2);
   - (b) MIT, public at the beta.
 - **Recommendation:** (a). **Assumed:** none. This needs your decision before the repository becomes public.
+
+### #8 · Do not set branch protection yet (R8b blockers)
+
+- **Context:** `docs/reviews/R8b-depictio-tooling.md`, findings DEP-T-001 and DEP-T-002.
+  - The required checks listed in `autopilot.md` §8 include path-filtered workflows, so docs-only PRs would wait forever.
+  - release-please with the default token can trigger neither the release builds nor the checks on its own PR.
+- **Recommendation:** run the `gh` protection commands of `autopilot.md` §8 only after APPLY1 has added:
+  - a single `ci-ok` check;
+  - a GitHub App token for release-please and the other bot PRs.
+- **Your part, meanwhile:** create a GitHub App for the repository (contents and pull requests: write), and store its ID and key as environment secrets.
+- **Assumed:** protection is not set.
+
+### #9 · GitHub organisation for packages and images (DEP-T-026)
+
+- **Context:** the names `spectio`, `spectio-server`, `spectio-sdk`, `spectio-cli` and `@spectio/client` were free on PyPI and npm on 2026-10-26. Trusted publishers and GHCR packages are bound to the owner and the repository.
+- **Options:**
+  - (a) a `spectio` organisation;
+  - (b) one organisation shared with depictio;
+  - (c) stay under `weber8thomas` until 0.1.0.
+- **Recommendation:** (a) or (b), decided before 0.1.0, with the names reserved then. **Assumed:** (c).

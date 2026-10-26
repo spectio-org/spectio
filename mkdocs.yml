@@ -100,6 +100,7 @@ nav:
   - Reviews:
       - Format: reviews/README.md
       - Inbox (questions for Thomas): reviews/inbox.md
+      - "R8b: depictio tooling re-audit": reviews/R8b-depictio-tooling.md
   - Decisions:
       - How decisions are recorded: decisions/README.md
       - Decision log: decisions/log.md
