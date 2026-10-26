@@ -1,0 +1,8 @@
+{
+  "name": "spectio-media-tools",
+  "private": true,
+  "description": "Local copy of asciinema-player for tools/media/combo.py (the docs site loads it from jsDelivr).",
+  "dependencies": {
+    "asciinema-player": "3.17.0"
+  }
+}

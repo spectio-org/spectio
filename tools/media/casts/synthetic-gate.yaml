@@ -1,0 +1,38 @@
+# Stop the synthetic Snakemake pipeline at the qc gate, drop S03, resume.
+# The commands are the ones Spectio generates (dev-environment-and-testing.md §10.1).
+title: "Spectio synthetic pipeline: stop at the QC gate, drop S03, resume"
+cols: 96
+rows: 24
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: tmp
+env:
+  WF: "{repo}/tests/pipelines/synthetic/snakemake/workflow/Snakefile"
+  SHEET: "{repo}/tests/pipelines/synthetic/data/samplesheet.csv"
+replace:
+  "{repo}/tests/pipelines/synthetic/snakemake/workflow/Snakefile": "$WF"
+steps:
+  - comment: "1. run the qc stage only: Spectio stops at the gate with --until"
+  - run: "snakemake -s $WF --cores 2 --until qc_report --quiet rules reason host"
+    keep: "steps \\(|^(job|make_reads|qc_stats|qc_report|total) "
+    tail: 3
+  - pause: 0.6
+  - comment: "the gate reads the QC table: S03 has 40 reads, the others 400"
+  - run: "head -5 results/multiqc/general_stats.tsv | expand -t 9"
+  - pause: 1.2
+  - comment: "2. the reviewer excludes S03: samplesheet v2, then resume"
+  - run: "grep -v S03 $SHEET > samplesheet_v2.csv"
+  - comment: "dry run: no make_reads, no qc_stats, they are reused"
+  - run: "snakemake -s $WF -n --config samples=samplesheet_v2.csv"
+    keep: "^(job |qc_report|split|align_done|merge|compare|final_report|total) "
+    head: 8
+    ellipsis: false
+  - pause: 1.2
+  - run: "snakemake -s $WF --cores 2 --config samples=samplesheet_v2.csv --quiet rules reason host"
+    keep: "steps \\(|^(job|qc_report|split|align|merge|compare|final_report|all|total) "
+    tail: 3
+  - pause: 0.6
+  - comment: "upstream reads and QC were reused: the matrix has 11 samples"
+  - run: "cut -f1 results/quant/counts_matrix.tsv | tail -n +2 | tr '\\n' ' '; echo"
+  - pause: 1.5

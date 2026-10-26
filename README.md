@@ -21,11 +21,15 @@ Spectio is an open-source tool for launching, monitoring and steering workflow r
 | the CLI and the libraries shared with depictio and LabID | [`docs/specs/cli-and-shared-libraries.md`](docs/specs/cli-and-shared-libraries.md) |
 | what is reused from depictio | [`docs/specs/depictio-ecosystem-reuse.md`](docs/specs/depictio-ecosystem-reuse.md) |
 | how agents check their work: toolchain, local SLURM and Kubernetes, tests, staging | [`docs/specs/dev-environment-and-testing.md`](docs/specs/dev-environment-and-testing.md) |
+| sign-in, magic links, share links, provisioning | [`docs/specs/authentication-and-access.md`](docs/specs/authentication-and-access.md) |
+| telemetry, install tracking, external analytics | [`docs/specs/telemetry-and-analytics.md`](docs/specs/telemetry-and-analytics.md) |
+| how docs are written, drawn, captured and reviewed at every step | [`docs/specs/documentation-system.md`](docs/specs/documentation-system.md) |
+| what each step has done so far | [`docs/progress/`](docs/progress/index.md) |
 | run the next phase unattended | [`docs/playbooks/autopilot.md`](docs/playbooks/autopilot.md) (`/autopilot`, driven by `/goal`) |
 | what is waiting on you | [`docs/reviews/inbox.md`](docs/reviews/inbox.md) |
 | why a choice was made, and when | [`docs/decisions/log.md`](docs/decisions/log.md) |
 
-Full map: [`docs/README.md`](docs/README.md).
+Full map: [`docs/map.md`](docs/map.md).
 
 ## Repository layout
 
@@ -40,12 +44,18 @@ design/
   tokens/       design tokens (CSS custom properties)
   ui-canvas/    source of the UI canvas: one .dc.html per board + canvas.json
   brand-canvas/ logo and colour explorations
+  progress/     one page per pipeline step, written while it runs
+  assets/       generated figures, casts, screenshots and videos (media.yaml lists their generators)
+tests/pipelines/ synthetic scenario pipelines (both engines) and the real nf-core / Snakemake corpus
 tools/canvas/   local renderer for the canvas boards (Playwright) and board generators
+tools/diagrams/ hand-drawn figure toolkit (sketch.py) and one script per figure
+tools/media/    cast generator, screenshot registry, combined terminal + browser captures
+tools/docs/     the docs gate (check.py)
 mkdocs.yml      documentation site
 CLAUDE.md       instructions for Claude Code
 .claude/        project agents, skills (incl. vendored superpowers and Karpathy guidelines), settings
 .autopilot/     pipeline state and journal (committed, so any session can resume)
-tools/autopilot/ headless runner for the autopilot
+tools/autopilot/ batch picker, budget governor, status-line tap and headless runner
 ```
 
 ## Viewing the design
@@ -65,7 +75,7 @@ uv tool install mkdocs --with mkdocs-material
 mkdocs serve      # http://127.0.0.1:8000
 ```
 
-The site builds in CI on every pull request (`mkdocs build --strict`, which also fails on broken internal links).
+Every pull request runs the docs gate, `python3 tools/docs/check.py`: strict build, Mermaid, diagram freshness, media manifest, Progress pages, and PR body.
 
 ## Licence
 

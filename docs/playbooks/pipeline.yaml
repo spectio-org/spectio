@@ -1,5 +1,7 @@
 # Spectio pre-implementation pipeline, read by the /autopilot skill.
 # Each step's full prompt is the code block under its heading in next-phase.md (prompt_ref).
+# Every step also leaves its docs (write-docs skill; docs/specs/documentation-system.md §3) before it is done.
+# W0 records the foundations built interactively; its steps are done and are never dispatched.
 # State lives in .autopilot/state.json (status per step) — never edit statuses here.
 version: 1
 defaults:
@@ -7,6 +9,17 @@ defaults:
   retries: 2                 # a failed step is retried this many times, then blocked
   integration_branch: autopilot/integration   # all work lands here; humans merge to main
 waves:
+  - id: W0
+    title: Foundations, done interactively with Thomas (2026-10-24 to 26)
+    steps:
+      - {id: F1, kind: foundation, writes: [docs/specs/*.md, .claude/agents/*.md, .claude/skills/*]}
+      - {id: F2, kind: foundation, writes: [tests/pipelines/synthetic/**, docs/research/spike-synthetic-pipelines-2026-10-26.md]}
+      - {id: F3, kind: foundation, writes: [tests/pipelines/real/**, .github/workflows/*.yml]}
+      - {id: F4, kind: foundation, writes: [docs/specs/authentication-and-access.md]}
+      - {id: F5, kind: foundation, writes: [docs/specs/documentation-system.md, tools/diagrams/**, tools/media/**, tools/docs/**, docs/index.md]}
+      - {id: F6, kind: foundation, writes: [docs/specs/telemetry-and-analytics.md]}
+      - {id: F7, kind: foundation, writes: [tools/autopilot/budget.py, tools/autopilot/statusline.py, tools/autopilot/run.sh]}
+    exit_check: "python3 tools/docs/check.py --skip mermaid"
   - id: W1
     title: Independent reviews and the first spike (read-only, parallel)
     steps:
@@ -18,18 +31,19 @@ waves:
       - {id: R8, kind: review, prompt_ref: "R8", writes: [docs/reviews/R8-depictio.md]}
       - {id: R9, kind: review, prompt_ref: "R9", writes: [docs/reviews/R9-landscape.md, docs/research/landscape-*.md]}
       - {id: D2, kind: spike,  prompt_ref: "D2", writes: [docs/research/spike-cloud-env-*.md], worktree: true}
-    exit_check: "ls docs/reviews/R1-consistency.md docs/reviews/R4-constraints.md docs/reviews/R5-security.md docs/reviews/R7-ui.md docs/reviews/R8-depictio.md docs/reviews/R9-landscape.md >/dev/null"
+      - {id: R11, kind: review, prompt_ref: "R11", writes: [docs/reviews/R11-docs.md]}
+    exit_check: "ls docs/reviews/R1-consistency.md docs/reviews/R4-constraints.md docs/reviews/R5-security.md docs/reviews/R7-ui.md docs/reviews/R8-depictio.md docs/reviews/R9-landscape.md docs/reviews/R11-docs.md >/dev/null"
   - id: W2
     title: Triage and apply W1 findings, then the reviews that need cleaned specs
     depends_on: [W1]
     steps:
-      - {id: TRIAGE1, kind: triage, rounds: [R1, R2, R4, R5, R7, R8, R9], writes: [docs/reviews/*.md, docs/reviews/inbox.md]}
-      - {id: APPLY1, kind: apply, depends_on: [TRIAGE1], rounds: [R1, R2, R4, R5, R7, R8, R9], writes: [docs/specs/*.md, docs/decisions/log.md]}
+      - {id: TRIAGE1, kind: triage, rounds: [R1, R2, R4, R5, R7, R8, R9, R11], writes: [docs/reviews/*.md, docs/reviews/inbox.md]}
+      - {id: APPLY1, kind: apply, depends_on: [TRIAGE1], rounds: [R1, R2, R4, R5, R7, R8, R9, R11], writes: [docs/specs/*.md, docs/decisions/log.md]}
       - {id: R3, kind: review, depends_on: [APPLY1], prompt_ref: "R3", writes: [docs/reviews/R3-journeys.md]}
       - {id: R6, kind: review, depends_on: [APPLY1], prompt_ref: "R6", writes: [docs/reviews/R6-contract.md], worktree: true}
       - {id: TRIAGE2, kind: triage, depends_on: [R3, R6], rounds: [R3, R6]}
       - {id: APPLY2, kind: apply, depends_on: [TRIAGE2], rounds: [R3, R6]}
-    exit_check: "uvx --with mkdocs-material mkdocs build --strict -d /tmp/spectio-site"
+    exit_check: "python3 tools/docs/check.py"
   - id: W3
     title: Development layer and test infrastructure (parallel worktrees)
     depends_on: [W2]
@@ -44,7 +58,9 @@ waves:
       - {id: T4, kind: build, prompt_ref: "T4", depends_on: [D3, T1], worktree: true}
       - {id: T5, kind: build, prompt_ref: "T5", depends_on: [T3, T4], worktree: true}
       - {id: T6, kind: build, prompt_ref: "T6", depends_on: [T5], worktree: true}
-      - {id: TRIAGE3, kind: triage, depends_on: [T2, T3, T4], rounds: [spikes]}
+      - {id: T7, kind: build, prompt_ref: "T7", depends_on: [D3], worktree: true}
+      - {id: D6, kind: build, prompt_ref: "D6", depends_on: [D3], worktree: true, exit_check: "python3 tools/docs/check.py"}
+      - {id: TRIAGE3, kind: triage, depends_on: [T2, T3, T4, T7], rounds: [spikes]}
       - {id: APPLY3, kind: apply, depends_on: [TRIAGE3], rounds: [spikes]}
   - id: W4
     title: Synthesis, plan and the one human decision

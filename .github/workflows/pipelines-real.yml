@@ -1,0 +1,90 @@
+name: pipelines · nf-core and Snakemake catalog
+
+# Real pipelines with their own test datasets (tests/pipelines/real/corpus.yaml).
+# PR tier on pull requests that touch the corpus; everything nightly. Private-repo runners have
+# 2 CPU / 8 GB, so nf-core runs get a resourceLimits override (run_corpus.py --limits private).
+on:
+  pull_request:
+    paths: ["tests/pipelines/real/**", ".github/workflows/pipelines-real.yml"]
+  schedule:
+    - cron: "37 1 * * *"
+  workflow_dispatch:
+    inputs:
+      tier: {description: "pr | nightly | manual", default: "pr"}
+
+permissions:
+  contents: read
+
+jobs:
+  matrix:
+    runs-on: ubuntu-latest
+    outputs:
+      nfcore: ${{ steps.m.outputs.nfcore }}
+      smk: ${{ steps.m.outputs.smk }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: m
+        run: |
+          TIER="${{ github.event_name == 'schedule' && 'nightly' || (inputs.tier || 'pr') }}"
+          python3 - "$TIER" >> "$GITHUB_OUTPUT" <<'PY'
+          import json, sys, yaml
+          tier = sys.argv[1]
+          c = yaml.safe_load(open("tests/pipelines/real/corpus.yaml"))
+          want = {"pr": {"pr"}, "nightly": {"pr", "nightly"}, "manual": {"pr", "nightly", "manual"}}[tier]
+          nf = [e for e in c["nfcore"] if e["tier"] in want]
+          smk = [e for e in c["snakemake_catalog"] if e["tier"] in want]
+          print("nfcore=" + json.dumps(nf))
+          print("smk=" + json.dumps(smk))
+          PY
+
+  nfcore:
+    needs: matrix
+    name: nf-core/${{ matrix.p.name }} ${{ matrix.p.version }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        p: ${{ fromJSON(needs.matrix.outputs.nfcore) }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: nf-core/setup-nextflow@v3
+        with: {version: "26.10.3"}
+      - uses: astral-sh/setup-uv@v6
+      - name: Run test profile
+        run: |
+          uv run --with pyyaml python tests/pipelines/real/run_corpus.py --engine nextflow \
+            --name ${{ matrix.p.name }} --workdir "$RUNNER_TEMP/corpus" \
+            --limits ${{ github.event.repository.private && 'private' || 'public' }}
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nfcore-${{ matrix.p.name }}
+          path: |
+            ${{ runner.temp }}/corpus/${{ matrix.p.name }}/result.json
+            ${{ runner.temp }}/corpus/${{ matrix.p.name }}/run.log
+            ${{ runner.temp }}/corpus/${{ matrix.p.name }}/results/pipeline_info/**
+            ${{ runner.temp }}/corpus/${{ matrix.p.name }}/results/multiqc/**
+
+  snakemake:
+    needs: matrix
+    name: ${{ matrix.w.repo }} ${{ matrix.w.tag }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    strategy:
+      fail-fast: false
+      matrix:
+        w: ${{ fromJSON(needs.matrix.outputs.smk) }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: ${{ matrix.w.repo }}
+          ref: ${{ matrix.w.tag }}
+          submodules: ${{ matrix.w.submodules }}
+      - name: Run .test with the workflow's own test data
+        uses: snakemake/snakemake-github-action@v2
+        with:
+          directory: ${{ matrix.w.directory }}
+          snakefile: workflow/Snakefile
+          snakemake-version: "9.27.1"
+          args: "${{ matrix.w.args }} --conda-cleanup-pkgs cache --show-failed-logs"

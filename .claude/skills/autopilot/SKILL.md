@@ -1,7 +1,7 @@
 ---
 name: autopilot
 description: Spectio's orchestrator. Runs the next ready steps of docs/playbooks/pipeline.yaml (review rounds, triage, applying findings, spikes, builds, plans) in parallel where possible, verifies each step's exit check, triages findings with docs/playbooks/triage-policy.md, commits to the integration branch and updates .autopilot/state.json. One invocation is one tick; drive it with /goal or /loop to run the whole pipeline unattended. Use when Thomas says "continue", "autopilot", "run the pipeline", or when a /goal or /loop prompt names it.
-argument-hint: "[--until <step-or-wave>] [--only <step,...>] [--dry-run] [--max-parallel N]"
+argument-hint: "[--until <step-or-wave>] [--only <step,...>] [--dry-run] [--max-parallel N] [--budget 30%w | 40%5h | until-exhausted [--deadline HH:MM]]"
 ---
 
 # Autopilot — one tick
@@ -36,6 +36,17 @@ Take ready steps in pipeline order, up to `--max-parallel` (default `defaults.ma
 
 With `--dry-run`, print the batch and stop.
 
+**Budget (always, before dispatching).**
+- If `--budget` was given, start it first:
+  - `30%w` → `python3 tools/autopilot/budget.py start --weekly 30`;
+  - `40%5h` → `--five-hour 40`;
+  - `until-exhausted` → `--until-exhausted`, plus `--deadline`.
+- Then run `python3 tools/autopilot/budget.py check --kinds <comma-separated kinds of the batch>` and act on its answer:
+  - `go` with `fits: N`: keep the first N steps of the batch;
+  - `wait`: dispatch nothing, journal "waiting for the five-hour reset at <wait_until_local>", go to §5. An interactive `/loop` resumes later; a headless `run.sh` sleeps;
+  - `stop`: dispatch nothing, journal the reason, go to §5.
+- With no budget set, `check` always answers `go`.
+
 If nothing is ready, go to §5.
 
 ## 2. Run the batch
@@ -62,8 +73,13 @@ Give every worker:
 **Verify each finished step:**
 1. Check that the expected `writes` exist and are non-empty.
 2. Run the step's `exit_check` (or the wave's, once its last step finishes) and show its output.
-3. For `build` and `spike` steps, merge the step branch into the integration branch (`git merge --no-ff`). On a conflict, set the step to `failed` and note the conflicting files; do not resolve by deleting work.
-4. Run `uvx --with mkdocs-material mkdocs build --strict -d /tmp/spectio-site` after any change to `docs/`.
+3. **Docs.** Run the `write-docs` skill for the step (Progress page, owning spec, figures, media, docs gate, independent `doc-reviewer` pass). A step is `done` only with gate `pass` and review `approve` (`docs/specs/documentation-system.md` §3.3).
+4. **Integrate.**
+   - **With a remote:** push `autopilot/<step-id>` and open a PR into the integration branch, with the body from `write-docs`. Then run `gh pr merge --auto --squash`; GitHub merges it once the required checks pass.
+   - **Without a remote:** `git merge --no-ff` locally.
+   - **On a conflict:** set the step to `failed` and note the conflicting files; do not resolve by deleting work.
+5. Record the cost of the step when known: `python3 tools/autopilot/budget.py record-cost --usd <x> --kind <kind> --step <id>`.
+6. **Interrupted by a plan limit.** A step stopped by a usage limit, a `StopFailure` with `rate_limit` or `.autopilot/limit-hit.json`, goes back to `pending` with the note `limit`. Its attempts are not incremented.
 
 **Outcome:**
 - **Passes:** status `done`, with `finished_at` and `outputs`.
@@ -77,7 +93,7 @@ Give every worker:
 
 **Commit** on the integration branch, one commit per finished step: `autopilot(<id>): <one line>`.
 
-**Push** if a remote exists and pushing is allowed. Open or update one PR `autopilot/integration → main` whose description is the latest journal entry. Never merge it.
+**Push** if a remote exists and pushing is allowed. Open or update one PR `autopilot/integration → main` whose description is the latest journal entry plus the Progress pages of the steps it carries. Enable auto-merge on it (`gh pr merge --auto --squash`) only when the repository variable `AUTOMERGE_MAIN` is `true` (`gh variable get AUTOMERGE_MAIN`). Never merge it yourself.
 
 ## 4. Journal and state
 
@@ -95,7 +111,7 @@ Then update `state.json` (`updated_at`, `current_wave`) and commit both files.
 Run `python3 tools/autopilot/ready.py` and print its two lines verbatim, so a `/goal` evaluator can judge from the conversation:
 
 ```
-AUTOPILOT  wave=W2  done=11/31  running=0  failed=0  blocked=0  waiting_human=1
+AUTOPILOT  wave=W2  done=11/31  running=0  failed=0  blocked=0  waiting_human=1  budget=12.4/30pt 7d (live, window 52%)
 next ready: R3, R6        waiting on Thomas: inbox #4 (roles default), GO
 ```
 
@@ -103,6 +119,7 @@ Then end the turn. Stop scheduling further work in this tick when:
 - the next ready step is a `human_gate`;
 - every remaining step is `waiting_human` or `blocked`;
 - `--until` is reached;
+- the budget check answered `stop` or `wait`;
 - there is nothing left to do.
 
 **Never:**

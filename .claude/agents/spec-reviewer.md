@@ -17,7 +17,7 @@ Your job is to find what would make an implementer stop, guess or build the wron
 - **Vague requirements**: wording an implementer cannot test ("fast", "secure", "handles large runs"). Propose a measurable version.
 
 How to work:
-1. Read `docs/README.md` first. Then read the specs in scope completely, not by grep only.
+1. Read `docs/map.md` first. Then read the specs in scope completely, not by grep only.
 2. For every finding, check that it is not already resolved elsewhere: search all specs and the log.
 3. Prefer a few precise findings over many vague ones. No style nits.
 

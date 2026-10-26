@@ -213,3 +213,120 @@ flowchart LR
 3. **D3:** write `dev/versions.env`, `dev/bootstrap.sh` and `dev/doctor.sh`, and run them green in a cloud session, in CI and locally.
 4. **D4:** build the fixture workflows and record the first golden fixtures (Tower protocol payloads, Snakemake logger events, `squeue` / `sacct` JSON from sind).
 5. **D5:** set up the staging VM, Funnel, and the CI deploy job with a hello-world container, before Spectio exists.
+
+## 10. Pipeline test corpus
+
+### 10.1 Synthetic scenario pipelines (`tests/pipelines/synthetic/`)
+
+**Two twin pipelines, one written for each engine:**
+- [`nextflow/main.nf`](https://github.com/weber8thomas/spectio/blob/main/tests/pipelines/synthetic/nextflow/main.nf)
+- [`snakemake/workflow/Snakefile`](https://github.com/weber8thomas/spectio/blob/main/tests/pipelines/synthetic/snakemake/workflow/Snakefile)
+
+**What they share:**
+- the same three stages (`qc` → gate → `align` → gate → `quant`);
+- the same task bodies (`bin/synth.py`, deterministic and seeded);
+- the same 12-sample samplesheet (three groups, one low-depth outlier, S03);
+- the same failure injection (`exit`, `oom`, `oom_once`, `oom_real`, `timeout`, `flaky`), targeted at one process or rule and, optionally, one sample.
+
+Both engines produce byte-identical results (the counts matrix compared with `diff`).
+
+**Gate stops** use exactly what Spectio generates:
+- Nextflow: a config setting `ext.when = false` on later stages (`conf/stop_after_qc.config`), then `-resume`.
+- Snakemake: `--until qc_report` or `--until align_done`, then a plain rerun.
+
+**Scenarios** are in `scenarios.yaml`. `run_scenarios.py` runs them and checks:
+- exit codes;
+- expected and forbidden outputs;
+- content checks;
+- per-process counts of completed and failed tasks, exit codes and attempts, read from the Nextflow trace or the Snakemake log;
+- cached tasks after `-resume`.
+
+| Scenario | What it proves |
+|---|---|
+| `happy` | 65 tasks, all outputs |
+| `gate_qc_then_resume`, `gate_align_then_resume` | stop at a gate with the generated config, resume with cached work |
+| `exclude_sample_and_resume` | samplesheet v2 without the outlier; downstream recomputed without it |
+| `flaky_retry` | failure on attempt 1, success on retry |
+| `oom_once_retry` | exit 137 once, success with more memory on attempt 2 |
+| `oom_fatal`, `timeout_fatal` | failure after 3 attempts with the right exit codes (137, 143 / 124) |
+| `tool_error_then_fixed_resume` | a non-retried tool error, then a resume after the fix |
+| `dynamic_fanout` | chunk count decided at run time (Nextflow dynamic channel, Snakemake checkpoint): 45 ALIGN tasks |
+| `fanout_medium` | 180 ALIGN tasks (PR) |
+| `fanout_stress` | about 12 000 ALIGN tasks (nightly) |
+
+**Verified runs on 2026-10-26** (this session, local executor, 2 CPUs) — see `docs/research/spike-synthetic-pipelines-2026-10-26.md`:
+
+| Engine | Result |
+|---|---|
+| Nextflow 26.10.3 | 11 / 11 pass |
+| Nextflow 25.10.9 | 11 / 11 pass (after retrying time-limit kills that carry no exit code) |
+| Snakemake 9.27.1 | 11 / 11 pass; about 1 run in 8 of `oom_once_retry` hits a known engine fault and is repeated once (`PASS*`) |
+
+**Known engine faults.** These are listed in `scenarios.yaml` under `engine_faults`, each with the log pattern that identifies it. A failed scenario that matches one is repeated once, from scratch, and reported as `PASS*`. Any other failure fails the build.
+
+**Profiles for the same pipelines on other executors:**
+- Nextflow `-profile slurm`, which includes job arrays for ALIGN;
+- Nextflow `-profile k8s`, which adds the `spectio.io/run-id` pod label;
+- Snakemake `--workflow-profile profiles/slurm`.
+
+These run against sind and kind in T3 and T4.
+
+### 10.2 Real pipelines (`tests/pipelines/real/corpus.yaml`)
+
+Real pipelines run with their own test datasets. They are chosen to cover the scenario classes of [`checking-scenarios.md`](checking-scenarios.md) §1. Sources: `docs/research/corpus-and-ci-2026-10-26.md`.
+
+| Source | PR tier | Nightly tier |
+|---|---|---|
+| nf-core (`-profile test,docker`, data from nf-core/test-datasets) | demo, rnaseq, viralrecon, methylseq, molkart | fetchngs, sarek, scrnaseq, mhcquant, differentialabundance, mag, ampliseq, taxprofiler (mcmicro: manual) |
+| Snakemake Workflow Catalog (`.test/` directory, `--sdm conda`) | rna-seq-star-deseq2, dna-seq-gatk-variant-calling, ms-proteomics (dry-run only, as upstream) | rna-seq-kallisto-sleuth, dna-seq-varlociraptor, single-cell-rna-seq, chipseq, cyrcular-calling, ONT-AmpSeq |
+
+- **`run_corpus.py`** runs one entry, a tier or everything, and writes `result.json` per pipeline.
+- **The same entries are reused later:** once the server exists, they are launched *through Spectio* (runner → engine), and the checks move from exit codes to Spectio's own run states, gates and evidence.
+- **Constraints:**
+  - mag 5.5.0 and ampliseq 3.0.0 need Nextflow ≥ 26.04, so the 25.10 leg skips them;
+  - private-repository GitHub runners have 2 CPU / 8 GB, so nf-core runs get `process.resourceLimits` from `runner_limits.private`;
+  - the heaviest entries are nightly only.
+
+## 11. CI workflows
+
+| Workflow | Trigger | What it runs |
+|---|---|---|
+| `docs.yml` | PR and push touching `docs/` | strict MkDocs build, Mermaid render |
+| `pipelines-synthetic.yml` | PR, main, nightly | synthetic scenarios × {Nextflow 26.10.3, 25.10.9, Snakemake 9.27.1}; stress scenario nightly; artifacts with reports, logs, traces |
+| `pipelines-real.yml` | PR touching the corpus, nightly, manual | matrix generated from `corpus.yaml`: nf-core with `nf-core/setup-nextflow@v3`, the catalog with `snakemake/snakemake-github-action@v2` on the workflow's own `.test` |
+| `pipelines-slurm.yml` (T3) | PR touching runner code, nightly | `GSI-HPC/sind-action@v2` cluster, synthetic scenarios with the SLURM profiles. Needs cgroup v2 Docker, which GitHub runners have; this cloud session has cgroup v1, so not here |
+| `pipelines-k8s.yml` (T4) | nightly | `helm/kind-action@v1` + Kueue, synthetic scenarios with the k8s profile, nf-core/demo |
+| `release-please.yml` | push to main | release PR with version bump and changelog (§12) |
+| `staging.yml` | push to main; PR labelled `preview` | deploy over the tailnet, verify through the public URL, post a share link (§13) |
+
+## 12. Versioning and releases
+
+- **Commit and PR titles: Conventional Commits** (`feat:`, `fix:`, `docs:`, `test:`, `ci:`, `chore:`). The PR title becomes the squash commit, so the title is what is checked.
+- **Release PR.** `release-please` keeps one open on `main`, with the next version and a concise `CHANGELOG.md` section grouped by type. Each line links the PR and its commit.
+- **Releasing.** Merging the release PR tags `vX.Y.Z`, creates the GitHub release, and triggers the image, Helm chart and PyPI builds.
+- **One version train for the core** (`spectio`, `spectio-server`, Helm `appVersion`), kept in step with the `linked-versions` plugin once the Python packages exist. `spectio-sdk` follows its own semver (`architecture-plugins-and-packaging.md` §4). For now `release-type: simple` versions the repository as a whole.
+- **Image tags** (`docker/metadata-action@v6`): `X.Y.Z` and `X.Y` on releases, `sha-<7>` on every build, `edge` on main, `pr-<n>` on previews.
+- **Versions you can see:**
+  - `GET /api/v1/version` returns `version`, `git_sha`, `build_date`, `schema_revision` and `deployment`;
+  - the UI footer shows the version and links to its changelog entry;
+  - staging shows a "deployed vX.Y.Z+sha" banner;
+  - `spectio --version` prints the client version and warns when the server differs.
+- **Pre-1.0 policy:** minor versions may break the API, and the changelog says so. From 1.0, semver applies to the public API and the plugin SDK.
+
+## 13. Instance verification and access
+
+**Verification after every deploy** (main or preview), all through the public URL, so DNS, TLS and Funnel are exercised too:
+1. `/health/ready` and `/api/v1/version`, whose `git_sha` must match the commit just deployed;
+2. a Playwright smoke test (T6) covering:
+   - sign-in by magic link (Mailpit on staging);
+   - opening a run;
+   - opening a gate and approving it on a synthetic run executed by the staging runner on its sind cluster;
+   - the phone viewport;
+3. a share-link round trip: create a link, open it in a fresh browser context, check the scope, revoke it, and check that the link now fails.
+
+**Public access, without accounts.**
+- **The URL.** Staging is reachable at its Tailscale Funnel URL (`https://<host>.<tailnet>.ts.net/spectio`, with PR previews under `/pr-<n>/`).
+- **Signing in.** Instead of shared passwords, the deploy job creates a **scoped share link** (`authentication-and-access.md` §2) and posts it on the PR: reviewer role on the demo project, 72 h, 20 uses.
+- **For a demo,** an admin creates the same kind of link from the share dialog.
+- **Guests.** The instance runs in `demo` mode, so visitors without a link only see read-only demo data.
+- **Nightly reset.** A known backup is restored every night, which also tests restore.

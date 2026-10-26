@@ -1,0 +1,20 @@
+# Terminal + browser: the synthetic pipeline stops at the qc gate (real cast,
+# docs/assets/casts/synthetic-gate.cast) while the browser pane shows what the
+# reviewer sees. Until the app exists, the browser pane shows the UI design
+# boards (tools/media/shots.py) and one diagram; the note says so on screen.
+name: gate-review
+title: "Stop at the gate, review in the browser, resume"
+cast: docs/assets/casts/synthetic-gate.cast
+size: [1280, 720]
+terminal_fraction: 0.52
+idle_time_limit: 1.5
+note: "UI design boards, not a live instance"
+gif_width: 880
+gif_fps: 8
+crf: 30
+scenes:
+  - {at: 0,    shot: run-detail,        url: "spectio.local/runs/rnaseq-2026-10-25",  caption: "1 · the qc stage runs; the run page follows it"}
+  - {at: 6.6,  shot: review-gate,       url: "spectio.local/review/298",              caption: "2 · stopped at the qc gate: the review opens"}
+  - {at: 13.0, shot: review-gate-phone, url: "spectio.local/review/298 · phone",      caption: "3 · the reviewer excludes S03 from a phone"}
+  - {at: 17.4, image: docs/assets/diagrams/gate-resume_light.png, url: "docs · stop, drop, resume", caption: "4 · resume: reads and QC of 11 samples are reused"}
+  - {at: 28.2, shot: run-detail,        url: "spectio.local/runs/rnaseq-2026-10-25",  caption: "5 · the run continues past the gate"}

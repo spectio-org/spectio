@@ -175,3 +175,59 @@ Everything must be traced, including:
 - **Large rounds** use dynamic workflows, so the fan-out and cross-checks stay out of the orchestrator's context.
 - **Human touchpoints:** the inbox, which is asynchronous (reversible doc-level questions proceed on the recommended option, marked `assumed — pending Thomas`), and the `GO` gate before product code. The autopilot never merges to `main`.
 - **Permissions:** the permission rules the autopilot needs are documented for Thomas to add (`autopilot.md` §4). Agents do not modify their own permissions.
+
+## 2026-10-26 — Real pipelines, versioning, staging access and auth parity
+
+- **Synthetic scenarios.** Twin Nextflow and Snakemake pipelines with injected failures run 11 PR scenarios on Nextflow 26.10.3 and 25.10.9 and on Snakemake 9.27.1. All pass.
+  - Known engine faults are listed with their log signature. A matching failure is repeated once and reported as `PASS*`.
+  - Timeouts are classified from the trace and error text, not the exit code alone.
+  - Details: `dev-environment-and-testing.md` §10.1, `schedulers-and-monitoring.md` §3.5, `research/spike-synthetic-pipelines-2026-10-26.md`.
+- **Real corpus.**
+  - 14 nf-core pipelines and 9 Snakemake Workflow Catalog workflows, run on their own test data in tiers.
+  - Pipelines are cloned with git at the pinned tag, not pulled through Nextflow, and resource limits are sized to the runner.
+  - nf-core/demo 1.2.0 passes in a cloud session.
+  - Details: `dev-environment-and-testing.md` §10.2.
+- **Versioning.**
+  - Conventional Commit PR titles; release-please with one version train for the core.
+  - Image tags `X.Y.Z`, `X.Y`, `sha-<7>`, `edge`, `pr-<n>`.
+  - `/api/v1/version` returns `git_sha`, also shown in the UI footer.
+  - Details: `dev-environment-and-testing.md` §12.
+- **Staging access.**
+  - Staging is reached through its Funnel URL, and is verified through that URL after every deploy.
+  - Reviewers get scoped share links (magic links bound to one project, role and expiry) instead of shared passwords.
+  - Staging runs in `demo` mode and is reset nightly from a backup.
+  - Details: `dev-environment-and-testing.md` §13.
+- **Authentication.**
+  - depictio's modes and methods are kept (single, local, public, demo, magic links, provisioning, OIDC, SAML, depictio trust), and its weak points are fixed: hashed tickets, atomic burn, refresh rotation with reuse detection, a scoped provisioning service account, HttpOnly cookies.
+  - Every method is tested in CI with Keycloak and Mailpit.
+  - Details: `authentication-and-access.md`.
+
+## 2026-10-26 — Documentation as part of done, telemetry, budget governor
+
+- **Docs are part of the definition of done.**
+  - Every step and PR leaves its pages: the Progress page, the owning spec, figures and media.
+  - It passes the docs gate (`tools/docs/check.py`: strict build, Mermaid, diagram freshness, media manifest, Progress front matter, PR-body lint).
+  - It passes an independent `doc-reviewer` verdict.
+  - Writers (`doc-writer`, `diagram-artist`, `media-capture`) and the reviewer are separate agents.
+  - Details: `documentation-system.md`.
+- **depictio's docs format, without its weak points.**
+  - Kept: the landing page structure, the curated per-version changelog, mike versions, sketch figures as light/dark PNG pairs, asciinema casts and screenshot pairs.
+  - Changed:
+    - no inline CSS on the landing page;
+    - casts generated from scripts;
+    - combined terminal and browser captures;
+    - a strict build on every PR.
+- **PR bodies carry the docs.**
+  - A PR body contains the docs links, at least one sketch figure for mechanism changes, the media and the evidence.
+  - PRs auto-merge into `autopilot/integration` once the required checks and the doc review pass.
+  - Auto-merge into `main` is off until Thomas sets `AUTOMERGE_MAIN=true`. Release PRs, workflow, auth and settings changes are never auto-merged.
+- **Telemetry.** There are three systems with separate names: install telemetry, local activity analytics, and external web analytics.
+  - Install telemetry stays off by default, with an opt-in prompt at `spectio init` and at the first admin sign-in; whether to switch is in the inbox.
+  - Web analytics are a `spectio.analytics` plugin kind (GA4, Umami, Plausible, Matomo, PostHog). They are configured at runtime, the server manages the CSP, and paths are sent as templates.
+  - Details: `telemetry-and-analytics.md`.
+- **Budget governor.**
+  - The autopilot runs on a budget set at launch: a number of points of the weekly or 5-hour window, or until the window is used up (stopping at its reset or at a deadline).
+  - Readings come from the status line. Between readings, usage is estimated from calibrated cost.
+  - The shell loop enforces it before every tick and waits for 5-hour resets.
+  - Details: `autopilot.md` §6.
+- **The pipeline gained steps:** a W0 wave records the foundations; R11 is the docs review, D6 the docs pipeline in CI, T7 the real corpus green in CI.

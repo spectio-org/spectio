@@ -17,3 +17,12 @@ docs/research/data/pipelines.json
 .DS_Store
 .idea/
 .vscode/
+
+# autopilot: per-machine run state (costs.jsonl is kept for calibration)
+.autopilot/runs/
+.autopilot/usage.json
+.autopilot/budget.json
+.autopilot/limit-hit.json
+
+# fonts with an unconfirmed licence (tools/diagrams/FONT-LICENSE.md): set SPECTIO_VIRGIL_TTF or place them locally
+docs/fonts/*.ttf

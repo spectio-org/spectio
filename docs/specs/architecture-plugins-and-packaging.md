@@ -53,6 +53,7 @@ What it changes: entry points (editable installs, several kinds per package, no 
 | Pub/sub (live events between server processes) | `spectio.pubsub` | server | in-memory, Postgres `LISTEN/NOTIFY` | Redis |
 | Event bridge (CloudEvents to and from message systems) | `spectio.bridge` | server | — | MQTT (lab instruments, robots), AMQP / RabbitMQ, Kafka, NATS |
 | Backup destination | `spectio.backup` | server | local directory | S3-compatible, SFTP |
+| Web analytics (frontend tracker chosen by the instance owner) | `spectio.analytics` | UI (+ server for CSP and public config) | none | GA4, Umami, Plausible, Matomo, PostHog, custom (`telemetry-and-analytics.md` §4) |
 | API extension | `spectio.api` | server | — | inbound routes under `/api/v1/ext/<plugin>/` (e.g. LabID callbacks) |
 | CLI extension | `spectio.cli` | server, runner | — | extra `spectio <command>` subcommands |
 

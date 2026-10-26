@@ -1,0 +1,12 @@
+# Used against sind (tests) or a real cluster: snakemake --workflow-profile profiles/slurm
+executor: slurm
+jobs: 50
+retries: 2
+rerun-incomplete: true
+default-resources:
+  slurm_partition: htc
+  mem_mb: 512
+  runtime: 5
+set-resources:
+  align:
+    slurm_partition: htc

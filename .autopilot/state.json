@@ -3,6 +3,69 @@
   "updated_at": null,
   "current_wave": "W1",
   "steps": {
+    "F1": {
+      "wave": "W0",
+      "status": "done",
+      "attempts": 0,
+      "started_at": "2026-10-24T00:00:00Z",
+      "finished_at": "2026-10-26T00:00:00Z",
+      "outputs": [],
+      "notes": "done interactively with Thomas"
+    },
+    "F2": {
+      "wave": "W0",
+      "status": "done",
+      "attempts": 0,
+      "started_at": "2026-10-26T00:00:00Z",
+      "finished_at": "2026-10-26T00:00:00Z",
+      "outputs": [],
+      "notes": "done interactively with Thomas"
+    },
+    "F3": {
+      "wave": "W0",
+      "status": "done",
+      "attempts": 0,
+      "started_at": "2026-10-26T00:00:00Z",
+      "finished_at": "2026-10-26T00:00:00Z",
+      "outputs": [],
+      "notes": "done interactively with Thomas"
+    },
+    "F4": {
+      "wave": "W0",
+      "status": "done",
+      "attempts": 0,
+      "started_at": "2026-10-26T00:00:00Z",
+      "finished_at": "2026-10-26T00:00:00Z",
+      "outputs": [],
+      "notes": "done interactively with Thomas"
+    },
+    "F5": {
+      "wave": "W0",
+      "status": "done",
+      "attempts": 0,
+      "started_at": "2026-10-26T00:00:00Z",
+      "finished_at": "2026-10-26T00:00:00Z",
+      "outputs": [],
+      "notes": "done interactively with Thomas"
+    },
+    "F6": {
+      "wave": "W0",
+      "status": "done",
+      "attempts": 0,
+      "started_at": "2026-10-26T00:00:00Z",
+      "finished_at": "2026-10-26T00:00:00Z",
+      "outputs": [],
+      "notes": "done interactively with Thomas"
+    },
+    "F7": {
+      "wave": "W0",
+      "status": "done",
+      "attempts": 0,
+      "started_at": "2026-10-26T00:00:00Z",
+      "finished_at": "2026-10-26T00:00:00Z",
+      "outputs": [],
+      "notes": "done interactively with Thomas"
+    },
     "R1": {
       "wave": "W1",
       "status": "pending",
@@ -275,6 +338,33 @@
     },
     "P3": {
       "wave": "W5",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "R11": {
+      "wave": "W1",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "T7": {
+      "wave": "W3",
+      "status": "pending",
+      "attempts": 0,
+      "started_at": null,
+      "finished_at": null,
+      "outputs": [],
+      "notes": ""
+    },
+    "D6": {
+      "wave": "W3",
       "status": "pending",
       "attempts": 0,
       "started_at": null,

@@ -1,0 +1,102 @@
+# Scenarios run by run_scenarios.py on both engines (unless `engines` restricts them).
+# Each scenario = one or more runs in the same launch directory (so -resume / incremental reruns apply).
+# expect.* is checked after the last run of the scenario, run.expect after that run.
+# Known engine faults: when a failed scenario's logs contain the pattern, the scenario is repeated once,
+# from scratch, and the report marks it (PASS*). Anything else fails the build. See
+# docs/research/spike-synthetic-pipelines-2026-10-26.md.
+engine_faults:
+  snakemake:
+    - id: lost-retry-at-checkpoint-update
+      pattern: "BUG: Out of jobs ready to be started"
+      seen: "Snakemake 9.27.1, about 1 run in 8 of oom_once_retry: a retried job is dropped when a checkpoint updates the DAG at the same moment; a plain rerun completes"
+
+scenarios:
+  - id: happy
+    title: All stages succeed
+    runs:
+      - expect: {exit: 0, present: [multiqc/general_stats.tsv, quant/counts_matrix.tsv, final_report.html]}
+    expect_tasks: {ALIGN: {completed: 24}, QC_STATS: {completed: 12}}
+
+  - id: gate_qc_then_resume
+    title: Stop at the qc gate (Spectio-generated config), then resume after approval
+    runs:
+      - stop_after: qc
+        expect: {exit: 0, present: [multiqc/general_stats.tsv], absent: [quant/counts_matrix.tsv, final_report.html]}
+      - resume: true
+        expect: {exit: 0, present: [quant/counts_matrix.tsv, final_report.html], cached_min: 25}
+
+  - id: gate_align_then_resume
+    title: Stop at the align gate, then resume
+    runs:
+      - stop_after: align
+        expect: {exit: 0, absent: [quant/counts_matrix.tsv]}
+      - resume: true
+        expect: {exit: 0, present: [final_report.html], cached_min: 49}
+
+  - id: exclude_sample_and_resume
+    title: Reviewer excludes the low-depth outlier S03 at the qc gate; resume with samplesheet v2
+    runs:
+      - stop_after: qc
+        expect: {exit: 0}
+      - resume: true
+        samplesheet_exclude: [S03]
+        expect: {exit: 0, present: [final_report.html], not_contains: {quant/counts_matrix.tsv: S03}}
+    expect_tasks: {MERGE: {completed_min: 1}}
+
+  - id: flaky_retry
+    title: ALIGN fails on attempt 1 for S07 and succeeds on retry
+    runs:
+      - params: {fail_mode: flaky, fail_process: ALIGN, fail_sample: S07}
+        expect: {exit: 0, present: [final_report.html]}
+    expect_tasks: {ALIGN: {failed: 2, max_attempt: 2}}
+
+  - id: oom_once_retry
+    title: QC_STATS for S05 is OOM-killed once (137) and succeeds with more memory
+    runs:
+      - params: {fail_mode: oom_once, fail_process: QC_STATS, fail_sample: S05}
+        expect: {exit: 0}
+    expect_tasks: {QC_STATS: {failed: 1, exit_codes: [137], max_attempt: 2}}
+
+  - id: oom_fatal
+    title: QC_STATS for S05 is always OOM-killed; the run fails after 3 attempts
+    runs:
+      - params: {fail_mode: oom, fail_process: QC_STATS, fail_sample: S05}
+        expect: {exit: nonzero, absent: [final_report.html]}
+    expect_tasks: {QC_STATS: {failed: 3, exit_codes: [137]}}
+
+  - id: timeout_fatal
+    title: QC_STATS for S05 exceeds its time limit on every attempt
+    runs:
+      - params: {fail_mode: timeout, fail_process: QC_STATS, fail_sample: S05, time_limit_s: 4}
+        expect: {exit: nonzero}
+    expect_tasks: {QC_STATS: {failed: 3}}
+
+  - id: tool_error_then_fixed_resume
+    title: COMPARE fails with a tool error (no retry); the user fixes it and resumes
+    runs:
+      - params: {fail_mode: exit, fail_process: COMPARE, fail_sample: treatA}
+        expect: {exit: nonzero, absent: [final_report.html]}
+      - resume: true
+        expect: {exit: 0, present: [final_report.html], cached_min: 50}
+
+  - id: dynamic_fanout
+    title: Chunk count decided at run time from the data (one chunk per 100 reads)
+    runs:
+      - params: {chunks: 0}
+        expect: {exit: 0, present: [final_report.html]}
+    expect_tasks: {ALIGN: {completed: 45}}
+
+  - id: fanout_medium
+    title: 36 samples x 5 chunks = 180 ALIGN tasks (PR-sized fan-out)
+    runs:
+      - params: {chunks: 5, scale: 3}
+        expect: {exit: 0, present: [final_report.html]}
+    expect_tasks: {ALIGN: {completed: 180}}
+
+  - id: fanout_stress
+    title: About 12 000 ALIGN tasks (nightly only)
+    nightly: true
+    runs:
+      - params: {chunks: 100, scale: 10}
+        expect: {exit: 0}
+    expect_tasks: {ALIGN: {completed: 12000}}

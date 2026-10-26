@@ -105,6 +105,11 @@ def main() -> int:
     line = (f"AUTOPILOT  wave={current}  done={counts['done']}/{total}  running={counts['running']}  "
             f"failed={counts['failed']}  blocked={counts['blocked']}  waiting_human={len(set(waiting))}")
     nxt = ", ".join(b["id"] for b in batch) or "none"
+    budget_file = pathlib.Path(".autopilot/budget.json")
+    if budget_file.exists():  # governor status, see tools/autopilot/budget.py
+        sys.path.insert(0, str(pathlib.Path(__file__).parent))
+        import budget
+        line += "  " + budget.status_line(budget.load(budget.BUDGET, None))
 
     if args.json:
         print(json.dumps({"status_line": line, "batch": batch, "human_gates_reached": gates,

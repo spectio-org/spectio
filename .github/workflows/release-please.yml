@@ -1,0 +1,20 @@
+name: release
+
+# Conventional Commits on main -> one release PR with version bumps and a concise CHANGELOG per version.
+# Merging that PR tags vX.Y.Z, publishes GitHub release notes, and triggers image/chart/PyPI builds.
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json

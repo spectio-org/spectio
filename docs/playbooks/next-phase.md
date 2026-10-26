@@ -18,7 +18,7 @@ Order of work: **R** review rounds → **D** development layer → **T** test in
 **Kick-off prompt** (paste once at the start of a session):
 
 ```text
-Read CLAUDE.md, docs/README.md and docs/playbooks/next-phase.md. We are in the
+Read CLAUDE.md, docs/map.md and docs/playbooks/next-phase.md. We are in the
 pre-implementation phase: no product code. Summarise in 10 lines what Spectio is,
 which specs own which topics, and which playbook step comes next given what already
 exists in docs/reviews/ and docs/research/. Then wait for my go.
@@ -141,6 +141,19 @@ reusing or integrating. Write docs/research/landscape-<date>.md and list the spe
 changes it implies as findings in docs/reviews/R9-landscape.md.
 ```
 
+### R11 · Documentation review ∥
+
+```text
+Use the doc-reviewer agent with a fresh context, plus the ux-reviewer for the landing
+page. Build the site strictly, then render docs/index.md at 1440×900 and 390×844 in
+light and dark, and look at the PNGs. Review the whole site against
+docs/specs/documentation-system.md: the landing page (§2), the Progress pages of W0
+(§3.2, rubric §4.2: re-run three commands per page), the figures and media (open every
+PNG, extract video frames), navigation and ownership (docs/map.md). Also check that the
+spec itself is implementable with the tools in tools/docs, tools/diagrams and
+tools/media. Write findings with prefix DOC- to docs/reviews/R11-docs.md. Do not edit pages.
+```
+
 ### R10 · Synthesis and go / no-go
 
 ```text
@@ -210,6 +223,19 @@ Verify current Tailscale Funnel and tailscale/github-action docs before writing.
 the manual steps I must do on the VM and in the Tailscale admin console.
 ```
 
+### D6 · Docs pipeline in CI ∥
+
+```text
+Make the documentation system run by itself, following docs/specs/documentation-system.md
+§1, §7 and §8. Wire tools/docs/check.py into docs.yml as the required checks docs-gate
+and pr-body; deploy the site with mike (dev from main, X.Y on release, aliases latest
+and stable) to GitHub Pages, or to staging under /docs/ while the repository is
+private; deploy PR previews under /pr-<n>/docs/ with staging.yml; add hooks/progress.py
+outputs to the build check. Settle the Virgil font licence (tools/diagrams/FONT-LICENSE.md)
+or switch fonts, and make the figure scripts render the same PNGs in CI. Open a PR whose
+body follows the template and passes the pr-body check, with the autopilot-loop figure.
+```
+
 ## Phase T — test infrastructure
 
 ### T1 · Fixture workflows
@@ -272,6 +298,18 @@ the base URL from scenario JSON, desktop and phone projects, screenshot naming a
 canvas boards, and a side-by-side HTML report (real page vs design/ui-canvas render via
 tools/canvas/render.js). Until the product exists, run it against the staging
 hello-world and a static page.
+```
+
+### T7 · Real pipeline corpus green in CI ∥
+
+```text
+Make pipelines-real.yml pass on GitHub runners for the PR tier and run the nightly tier
+(tests/pipelines/real/corpus.yaml). Use run_corpus.py (git clone at the pinned tag,
+--limits private on private runners). For each failure, decide: a runner limit (adjust
+resourceLimits or move the entry to nightly), an upstream issue (link it), or a corpus
+bug (fix it). Record pass/fail, duration and peak memory per entry in a dated research
+note, and update the corpus tiers. Snakemake catalog entries run on their own .test data
+with snakemake-github-action. Keep the synthetic suite green on all three engine legs.
 ```
 
 ## Phase P — decomposition and planning

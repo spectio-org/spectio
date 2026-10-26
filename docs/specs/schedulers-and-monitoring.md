@@ -128,6 +128,13 @@ One `SchedulerObserver` per runner keeps a cache of all jobs of its user. Each l
 | Cancelled by someone else | `CANCELLED by <uid>` | deleted by another principal | show who; no automatic retry |
 | Image or environment | — | `ImagePullBackOff`, `ErrImagePull`, `CreateContainerConfigError` | registry credentials or rate limit, image name |
 | Tool error | `FAILED` with an exit code | `Error` with an exit code | open the task log; no resource change |
+| Engine scheduling fault | — | — | the engine itself lost track of work (Snakemake 9.27.1: "BUG: Out of jobs ready to be started" after a retry raced a checkpoint update); a plain rerun completes |
+
+**Classify from the record, not from the exit code alone.** The synthetic scenarios showed that the same cause reaches the engine differently:
+- a time limit on the local executor ends with exit 143 on Nextflow 26.10.3, but with no exit code at all on 25.10.9 (`exitStatus` is `Integer.MAX_VALUE`; the error message is "Process exceeded running time limit");
+- an OOM kill gives 137 locally, but `OUT_OF_MEMORY` with exit code 0:125 under SLURM **[to be validated on sind]**.
+
+The engine plugin therefore combines the trace status, the error text, the scheduler record and the exit code (`docs/research/spike-synthetic-pipelines-2026-10-26.md`).
 
 **Efficiency.**
 - CPU efficiency = `TotalCPU / (Elapsed × AllocCPUS)`.

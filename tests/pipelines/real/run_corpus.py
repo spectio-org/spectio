@@ -1,0 +1,98 @@
+#!/usr/bin/env python3
+"""Run one or more real pipelines from corpus.yaml with their own test datasets.
+
+  python3 run_corpus.py --list
+  python3 run_corpus.py --engine nextflow --name demo --workdir /tmp/corpus [--limits private] [--nextflow nextflow]
+  python3 run_corpus.py --engine snakemake --name rna-seq-star-deseq2 --workdir /tmp/corpus
+  python3 run_corpus.py --tier pr --workdir /tmp/corpus           # everything in a tier
+
+Each run writes <workdir>/<name>/result.json (exit code, duration, outputs found, Nextflow trace
+summary). Later these runs are launched through Spectio instead of directly (same entries).
+"""
+from __future__ import annotations
+
+import argparse, json, os, subprocess, sys, time
+from pathlib import Path
+
+import yaml
+
+HERE = Path(__file__).resolve().parent
+CORPUS = yaml.safe_load(open(HERE / "corpus.yaml"))
+
+
+def nf_entry(e, wd: Path, nf: str, limits: str, nf_version: str | None) -> dict:
+    out = wd / "results"
+    cfg = wd / "limits.config"
+    if limits == "auto":  # this machine: all CPUs, and less than the free memory the local executor checks against
+        meminfo = dict(l.split(":", 1) for l in Path("/proc/meminfo").read_text().splitlines() if ":" in l)
+        avail_kb = int(meminfo.get("MemAvailable", meminfo["MemTotal"]).split()[0])
+        mem_gb = max(1, int(avail_kb / 2**20 * 0.8))
+        lim = {"cpus": os.cpu_count(), "memory": f"{mem_gb}.GB", "time": "6.h"}
+    else:
+        lim = CORPUS["runner_limits"][limits]
+    cfg.write_text(f"process.resourceLimits = [cpus: {lim['cpus']}, memory: {lim['memory']}, time: {lim['time']}]\n")
+    # Clone with git instead of `nextflow run nf-core/x -r v`: Nextflow reads the manifest through the
+    # GitHub API, which rate-limits anonymous calls (60/h) and is refused behind some proxies.
+    src = wd / "src"
+    if not src.exists():
+        subprocess.run(["git", "clone", "-q", "--depth", "1", "--branch", e["version"],
+                        f"https://github.com/nf-core/{e['name']}.git", str(src)], check=True)
+    cmd = [nf, "run", str(src), "-profile", "test,docker", "--outdir", str(out), "-c", str(cfg)]
+    env = dict(os.environ, **({"NXF_VER": nf_version} if nf_version else {}))
+    return {"cmd": cmd, "env": env, "cwd": wd}
+
+
+def smk_entry(e, wd: Path, smk: str) -> dict:
+    repo = wd / "repo"
+    if not repo.exists():
+        subprocess.run(["git", "clone", "--depth", "1", "--branch", e["tag"], *(["--recurse-submodules", "--shallow-submodules"] if e.get("submodules") else []),
+                        f"https://github.com/{e['repo']}.git", str(repo)], check=True)
+    cmd = [smk, "--snakefile", "workflow/Snakefile", "--directory", e["directory"], *e["args"].split()]
+    if "--sdm" not in e["args"] and "-n" not in e["args"].split():
+        cmd += ["--sdm", "conda"]
+    return {"cmd": cmd, "env": dict(os.environ), "cwd": repo}
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--list", action="store_true")
+    ap.add_argument("--engine", choices=["nextflow", "snakemake"])
+    ap.add_argument("--name")
+    ap.add_argument("--tier", choices=["pr", "nightly", "manual"])
+    ap.add_argument("--workdir", default="/tmp/spectio-corpus")
+    ap.add_argument("--limits", choices=["private", "public", "auto"], default="private")
+    ap.add_argument("--nextflow", default=os.environ.get("NXF_BIN", "nextflow"))
+    ap.add_argument("--nf-version")
+    ap.add_argument("--snakemake", default=os.environ.get("SMK_BIN", "snakemake"))
+    a = ap.parse_args()
+
+    entries = [("nextflow", e, e["name"]) for e in CORPUS["nfcore"]] + \
+              [("snakemake", e, e["repo"].split("/")[1]) for e in CORPUS["snakemake_catalog"]]
+    if a.list:
+        for eng, e, n in entries:
+            print(f"{eng:9s} {n:32s} {e.get('version') or e.get('tag'):8s} {e['tier']:8s} {e['class']}")
+        return 0
+    sel = [(eng, e, n) for eng, e, n in entries
+           if (not a.engine or eng == a.engine) and (not a.name or n == a.name) and (not a.tier or e["tier"] == a.tier)]
+    if not sel:
+        sys.exit("nothing selected")
+    failures = 0
+    for eng, e, n in sel:
+        if eng == "nextflow" and a.nf_version and tuple(map(int, a.nf_version.split("."))) < tuple(map(int, e["min_nf"].split("."))):
+            print(f"SKIP {n}: needs Nextflow >= {e['min_nf']}"); continue
+        wd = Path(a.workdir) / n; wd.mkdir(parents=True, exist_ok=True)
+        spec = nf_entry(e, wd, a.nextflow, a.limits, a.nf_version) if eng == "nextflow" else smk_entry(e, wd, a.snakemake)
+        t0 = time.time()
+        p = subprocess.run(spec["cmd"], cwd=spec["cwd"], env=spec["env"], capture_output=True, text=True)
+        (wd / "run.log").write_text(p.stdout + p.stderr)
+        res = {"engine": eng, "name": n, "exit": p.returncode, "seconds": round(time.time() - t0), "cmd": spec["cmd"]}
+        if eng == "nextflow":
+            res["outputs"] = sorted(str(x.relative_to(wd / "results")) for x in (wd / "results").glob("*")) if (wd / "results").exists() else []
+        (wd / "result.json").write_text(json.dumps(res, indent=2))
+        print(f"{'PASS' if p.returncode == 0 else 'FAIL'}  {eng:9s} {n:32s} {res['seconds']:6d}s")
+        failures += p.returncode != 0
+    return 1 if failures else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

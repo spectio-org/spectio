@@ -1,0 +1,156 @@
+"""Spectio synthetic scenario pipeline (Snakemake), twin of ../nextflow/main.nf.
+
+Stages and gate targets:
+  qc     : make_reads -> qc_stats -> qc_report          (gate: --until qc_report)
+  align  : checkpoint split (dynamic fan-out) -> align  (gate: --until align_done)
+  quant  : merge -> compare (per group vs ctrl) -> final_report
+Failure injection (config): fail_mode=exit|oom|oom_once|oom_real|timeout|flaky fail_rule=NAME fail_sample=ID
+Run with --retries 2 so OOM / flaky / timeout retries behave like the Nextflow twin.
+"""
+import csv
+from pathlib import Path
+
+SYNTH = str(Path(workflow.basedir).parents[1] / "bin" / "synth.py")
+
+config.setdefault("samples", str(Path(workflow.basedir).parents[1] / "data" / "samplesheet.csv"))
+config.setdefault("outdir", "results")
+config.setdefault("chunks", 0)          # 0 = dynamic: one chunk per 100 reads
+config.setdefault("scale", 1)
+config.setdefault("seed", 42)
+config.setdefault("fail_mode", "none")
+config.setdefault("fail_rule", config.get("fail_process", ""))   # same flag name as Nextflow accepted
+config.setdefault("fail_sample", "")
+config.setdefault("fail_gb", 2)
+config.setdefault("time_limit_s", 120)
+
+OUT = config["outdir"]
+
+wildcard_constraints:
+    sample=r"[A-Za-z0-9]+",
+    group=r"[A-Za-z0-9]+",
+    i=r"\d+",
+ROWS = list(csv.DictReader(open(config["samples"])))
+for i in range(1, (int(config["scale"]) - 1) * 12 + 1):
+    ROWS.append({"sample": f"X{i:04d}", "group": "ctrl", "replicate": str(i), "n_reads": "400"})
+SAMPLES = {r["sample"]: r for r in ROWS}
+GROUPS = {}
+for r in ROWS:
+    GROUPS.setdefault(r["group"], []).append(r["sample"])
+OTHERS = sorted(g for g in GROUPS if g != "ctrl")
+
+
+def fail_hook(rule, sample=""):
+    """Shell snippet that injects the configured failure into one rule (and optionally one sample)."""
+    m = config["fail_mode"]
+    if m == "none" or config["fail_rule"].lower() != rule or (config["fail_sample"] and config["fail_sample"] != sample):
+        return "true"
+    # $SPECTIO_ATTEMPT and $SPECTIO_TIME_LIMIT are exported by every rule's shell (see PRE below)
+    cmd = f"python3 {SYNTH} fail {m} $SPECTIO_ATTEMPT {config['fail_gb']}"
+    if m == "timeout":  # the local executor does not enforce runtime; schedulers do
+        cmd = f"timeout ${{SPECTIO_TIME_LIMIT}}s {cmd}"
+    return cmd
+
+
+PRE = "export SPECTIO_ATTEMPT={resources.attempt} SPECTIO_TIME_LIMIT={resources.time_limit_s}; "
+
+
+def res(**extra):
+    return dict(
+        mem_mb=lambda wc, attempt: 512 * attempt,
+        runtime=lambda wc, attempt: max(1, int(config["time_limit_s"]) * attempt // 60),
+        time_limit_s=lambda wc, attempt: int(config["time_limit_s"]) * attempt,
+        attempt=lambda wc, attempt: attempt,
+        **extra,
+    )
+
+
+rule all:
+    input:
+        f"{OUT}/multiqc/general_stats.tsv",
+        f"{OUT}/quant/counts_matrix.tsv",
+        f"{OUT}/final_report.html",
+
+
+rule make_reads:
+    output: temp(f"{OUT}/work/reads/{{sample}}.reads.txt")
+    params: n=lambda wc: SAMPLES[wc.sample]["n_reads"], hook=lambda wc: fail_hook("make_reads", wc.sample)
+    resources: **res()
+    shell: PRE + "{params.hook} && python3 " + SYNTH + " reads {wildcards.sample} {params.n} " + str(config["seed"]) + " {output}"
+
+
+rule qc_stats:
+    input: f"{OUT}/work/reads/{{sample}}.reads.txt"
+    output: f"{OUT}/qc/per_sample/{{sample}}.qc.json"
+    params: hook=lambda wc: fail_hook("qc_stats", wc.sample)
+    resources: **res()
+    shell: PRE + "{params.hook} && python3 " + SYNTH + " stats {input} {output}"
+
+
+rule qc_report:
+    input: expand(f"{OUT}/qc/per_sample/{{sample}}.qc.json", sample=SAMPLES)
+    output:
+        tsv=f"{OUT}/multiqc/general_stats.tsv",
+        json=f"{OUT}/multiqc/multiqc_data.json",
+        html=f"{OUT}/multiqc/multiqc_report.html",
+    params: hook=fail_hook("qc_report")
+    resources: **res()
+    shell: PRE + "{params.hook} && python3 " + SYNTH + " report {output.tsv} {output.json} {output.html} {input}"
+
+
+checkpoint split:
+    input: f"{OUT}/work/reads/{{sample}}.reads.txt"
+    output: directory(f"{OUT}/work/chunks/{{sample}}")
+    params:
+        n=lambda wc, input: config["chunks"] or (sum(1 for _ in open(input[0])) + 99) // 100,
+        hook=lambda wc: fail_hook("split", wc.sample),
+    resources: **res()
+    shell: PRE + "{params.hook} && python3 " + SYNTH + " split {input} {params.n} {output}"
+
+
+rule align:
+    input: f"{OUT}/work/chunks/{{sample}}/{{sample}}.chunk{{i}}.txt"
+    output: f"{OUT}/work/aligned/{{sample}}/{{sample}}.chunk{{i}}.counts.tsv"
+    params: hook=lambda wc: fail_hook("align", wc.sample)
+    resources: **res()
+    shell: PRE + "{params.hook} && python3 " + SYNTH + " align {input} {output}"
+
+
+def aligned_files(wc):
+    files = []
+    for s in SAMPLES:
+        d = checkpoints.split.get(sample=s).output[0]
+        idx = glob_wildcards(f"{d}/{s}.chunk{{i}}.txt").i
+        files += expand(f"{OUT}/work/aligned/{s}/{s}.chunk{{i}}.counts.tsv", i=idx)
+    return files
+
+
+rule align_done:
+    input: aligned_files
+    output: touch(f"{OUT}/work/align.done")
+
+
+rule merge:
+    input: f"{OUT}/work/align.done", counts=aligned_files
+    output: f"{OUT}/quant/counts_matrix.tsv"
+    params: hook=fail_hook("merge")
+    resources: **res()
+    shell: PRE + "{params.hook} && python3 " + SYNTH + " merge {output} {input.counts}"
+
+
+rule compare:
+    input: f"{OUT}/quant/counts_matrix.tsv"
+    output: f"{OUT}/quant/comparisons/{{group}}_vs_ctrl.tsv"
+    params:
+        a=lambda wc: ",".join(GROUPS[wc.group]),
+        b=",".join(GROUPS.get("ctrl", [])),
+        hook=lambda wc: fail_hook("compare", wc.group),
+    resources: **res()
+    shell: PRE + "{params.hook} && python3 " + SYNTH + " compare {input} {params.a} {params.b} {output}"
+
+
+rule final_report:
+    input: expand(f"{OUT}/quant/comparisons/{{group}}_vs_ctrl.tsv", group=OTHERS)
+    output: f"{OUT}/final_report.html"
+    params: hook=fail_hook("final_report")
+    resources: **res()
+    shell: PRE + "{params.hook} && {{ echo '<!doctype html><title>Final report</title><h1>Comparisons</h1><pre>'; cat {input}; echo '</pre>'; }} > {output}"

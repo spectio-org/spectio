@@ -4,7 +4,7 @@
 
 - **Status.** Spectio is in its **design phase**. The repository holds specifications, a decision log, research notes and UI design sources. There is no product code yet. The planned code layout is in `docs/specs/architecture-plugins-and-packaging.md` §6.
 - **The product.** Spectio launches, monitors and steers Nextflow and Snakemake runs, later CWL and WDL. It has QC gates, a headless API, runners on HPC and Kubernetes, and integrates with depictio.
-- **Where to look.** `docs/README.md` maps every spec and says which one owns which topic.
+- **Where to look.** `docs/map.md` maps every spec and says which one owns which topic.
 
 ## Current phase: review before implementation
 
@@ -20,7 +20,7 @@ Do not start writing product code unless the task explicitly says so. The curren
 - it triages findings with `docs/playbooks/triage-policy.md`;
 - it commits to `autopilot/integration` and appends to `.autopilot/journal.md`.
 
-To run the whole pipeline, drive it with `/goal` (see `docs/playbooks/autopilot.md`). Questions for Thomas go to `docs/reviews/inbox.md`. Never merge to `main` or edit statuses in `pipeline.yaml`.
+Budget: `/autopilot --budget 30%w` (a share of the weekly window) or `--budget until-exhausted`; headless, `tools/autopilot/run.sh --weekly 30`. See `docs/playbooks/autopilot.md` §6. To run the whole pipeline, drive it with `/goal` (see `docs/playbooks/autopilot.md`). Questions for Thomas go to `docs/reviews/inbox.md`. Never merge to `main` or edit statuses in `pipeline.yaml`.
 
 ## Rules
 
@@ -30,6 +30,7 @@ To run the whole pipeline, drive it with `/goal` (see `docs/playbooks/autopilot.
 - **Stable sections.** Keep section numbers stable. Add a new number rather than renumbering.
 - **Diagrams.** Mermaid diagrams must render: check them with `npx -y @mermaid-js/mermaid-cli@11 -i file.mmd -o out.svg`.
 - **Docs build.** It must pass: `uvx --with mkdocs-material mkdocs build --strict`.
+- **Docs are part of done.** Every step and PR leaves its docs (`write-docs` skill): a Progress page, the owning spec, figures and media. It is then checked by `python3 tools/docs/check.py` and approved by `doc-reviewer`. Rules: `docs/specs/documentation-system.md`.
 - **UI boards.** Render them with `node tools/canvas/render.js design/ui-canvas/<Board>.dc.html 1440 1180 /tmp/out.png`, then look at the PNG before claiming a UI change works. Board conventions: `main > *{flex-shrink:0}`, no `sc-for` inside `<svg>` (draw charts in HTML), shared components through `dc-import` (`AppSidebar`, `AppTopbar`, `AdminNav`, `MobileTopbar`, `MobileTabbar`).
 - **Coding behaviour.** Follow the `karpathy-guidelines` skill: think before coding, simplicity first, surgical changes, goal-driven execution with explicit verification.
 - **Engineering workflow.** Use the vendored superpowers skills: `brainstorming`, `writing-plans`, `subagent-driven-development`, `test-driven-development`, `systematic-debugging`, `verification-before-completion`, `requesting-code-review`, `using-git-worktrees`.
@@ -46,6 +47,10 @@ To run the whole pipeline, drive it with `/goal` (see `docs/playbooks/autopilot.
 | `depictio-liaison` | compatibility claims against the real depictio and LabID code |
 | `test-architect` | test strategy, fixtures, scenario matrix, local SLURM and Kubernetes clusters |
 | `infra-engineer` | dev environments, CI, staging, containers, sind / kind, Tailscale |
+| `doc-writer` | Progress pages, guides, PR bodies, changelog drafts, written from the step's real outputs |
+| `diagram-artist` | hand-drawn figures with `tools/diagrams/sketch.py` (pictograms, not boxes) |
+| `media-capture` | screenshots, generated casts, browser videos, combined terminal and browser captures (`tools/media`) |
+| `doc-reviewer` | independent docs review with a fresh context: rubric score and approve / changes / block |
 
 Reviewers are read-only and report findings. They never edit specs.
 
