@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — launch and relaunch</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}details>summary .chev{transition:transform .15s}details:not([open])>summary .chev{transform:rotate(180deg)}
+a{color:#6344B2}a:hover{color:#4D368B}
+@keyframes spectio-hatch{from{background-position:0 0}to{background-position:22.63px 0}}
+input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C4C7D4;padding:8px 10px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Launch / nf-core/rnaseq" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="launch" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <span style="width: 48px; height: 48px; border-radius: 15px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center;">
+          <img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="30" height="30" alt="nf-core" style="display: block; object-fit: contain;">
+        </span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Launch nf-core/rnaseq <span style="font-weight: 500; color: #6E7287; font-size: 20px;">3.27.0</span></h1>
+          <span style="font-size: 14px; color: #4D5065;">Form generated from nextflow_schema.json · one section per schema group · saved as a params file</span>
+        </div>
+        <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+          <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13px 'Inter', sans-serif; color: #22253A;">Expand all</button>
+          <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13px 'Inter', sans-serif; color: #22253A;">Load params file…</button>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+        <section style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <input type="search" placeholder="Search 94 parameters" aria-label="Search parameters" style="flex: 1 1 220px; width: auto;">
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #33364A;"><input type="checkbox" style="width: auto;"> Show hidden (41)</label>
+            <label style="display: flex; align-items: center; gap: 6px; font-size: 13px; color: #33364A;"><input type="checkbox" style="width: auto;"> Changed only</label>
+          </div>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="width: 100%; border: none; background: #FFFFFF; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.folder}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Input / output options</span><span style="font-size: 12px; color: #4D5065;">6 parameters · 2 required</span></span>
+              <span style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">1 issue</span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 4px 16px 16px 60px; display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;">
+                  <span style="font-size: 13px; font-weight: 600;">input <span style="color: #B02A2A;">*</span> <span style="font-weight: 400; color: #4D5065;">· samplesheet · checked against assets/schema_input.json</span></span>
+                  <span style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 12px; color: #6E7287;">Files checked by the runner · 10:12</span>
+                    <button type="button" style="height: 32px; padding: 0 10px; border-radius: 9px; border: none; background: #F6F2FE; color: #4D368B; font: 600 12.5px 'Inter', sans-serif; display: flex; align-items: center; gap: 6px; cursor: pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.refresh}}"/></svg>Recheck</button>
+                  </span>
+                </div>
+                <div style="overflow-x: auto; border-radius: 12px; box-shadow: 0 0 0 1px #E6DCFC;">
+                  <table style="width: 100%; min-width: 600px; border-collapse: collapse; font-size: 12.5px;">
+                    <thead><tr style="background: #FBF9FF; text-align: left; color: #33364A; font-size: 11.5px;">
+                      <th scope="col" style="padding: 7px 10px; font-weight: 600;">sample</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">fastq_1</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">fastq_2</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">strandedness</th><th scope="col" style="padding: 7px 10px; font-weight: 600;">check</th>
+                    </tr></thead>
+                    <tbody>
+                      <sc-for list="{{sheet}}" as="r" hint-placeholder-count="4">
+                        <tr style="border-top: 1px solid #EEEFF5;">
+                          <td style="padding: 7px 10px; font-weight: 600;">{{r.s}}</td>
+                          <td style="padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">{{r.f1}}</td>
+                          <td style="padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: {{r.f2c}};">{{r.f2}}</td>
+                          <td style="padding: 7px 10px;">{{r.str}}</td>
+                          <td style="padding: 7px 10px; color: {{r.fg}}; font-weight: 600; white-space: nowrap;">{{r.ok}}</td>
+                        </tr>
+                      </sc-for>
+                    </tbody>
+                  </table>
+                </div>
+                <span style="font-size: 12px; color: #B02A2A;">S4 · fastq_2 not found on /g/lab/fastq. Fix the path or upload, then Recheck (checks run again automatically before launch).</span>
+              </div>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px;">
+                <sc-for list="{{io}}" as="f" hint-placeholder-count="2">
+                  <label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">{{f.k}}
+                    <span style="display: flex; gap: 6px;"><input value="{{f.v}}" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;"><button type="button" style="border: none; border-radius: 10px; background: #F6F2FE; color: #4D368B; font: 600 12px 'Inter', sans-serif; padding: 0 10px;">Browse</button></span>
+                    <span style="font-weight: 400; font-size: 12px; color: #4D5065;">{{f.help}}</span>
+                  </label>
+                </sc-for>
+              </div>
+            </div>
+          </details>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="width: 100%; border: none; background: #FFFFFF; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.align}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Alignment options</span><span style="font-size: 12px; color: #4D5065;">17 parameters</span></span>
+              <span style="font-size: 12.5px; font-weight: 600; color: #8F5806;">2 changed</span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 4px 16px 16px 60px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+              <label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">aligner
+                <select><option>star_salmon</option><option>star_rsem</option><option>hisat2</option></select>
+                <span style="font-weight: 400; font-size: 12px; color: #4D5065;">enum · default star_salmon</span>
+              </label>
+              <label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">min_mapped_reads <span style="font-weight: 400; color: #8F5806; font-size: 12px;">changed · default 5 · reset</span>
+                <input type="number" value="10">
+                <span style="font-weight: 400; font-size: 12px; color: #4D5065;">Minimum % of uniquely mapped reads below which samples are removed.</span>
+              </label>
+              <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600;"><input type="checkbox" checked style="width: auto;"> skip_pseudo_alignment <span style="font-weight: 400; color: #8F5806; font-size: 12px;">changed</span></label>
+            </div>
+          </details>
+
+          <sc-for list="{{collapsed}}" as="c" hint-placeholder-count="6">
+            <details style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); background: #FFFFFF; overflow: hidden;"><summary style="width: 100%; border: none; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); background: #FFFFFF; padding: 10px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer; box-shadow: none; border-radius: 0;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg></span>
+              <span style="flex-grow: 1; font-size: 14px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12.5px;">· {{c.n}}</span></span>
+              <span style="font-size: 12.5px; color: #6E7287;">{{c.state}}</span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary><div style="padding: 2px 16px 16px 60px; display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px;"><sc-for list="{{c.fields}}" as="f" hint-placeholder-count="3"><label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">{{f.k}}<input value="{{f.v}}" placeholder="{{f.p}}"><span style="font-weight: 400; font-size: 12px; color: #4D5065;">{{f.h}}</span></label></sc-for></div></details>
+          </sc-for>
+          <span style="font-size: 12px; color: #6E7287;">Section icons come from each group's <code style="font-family: 'JetBrains Mono', monospace;">fa_icon</code> in the schema, mapped to the light line set used across Spectio and depictio.</span>
+        </section>
+
+        <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+          <sc-for list="{{side}}" as="s" hint-placeholder-count="3">
+            <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px; display: flex; align-items: center; gap: 12px;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"/></svg></span>
+              <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;"><span style="font-size: 12px; color: #6E7287;">{{s.k}}</span><span style="font-size: 13.5px; font-weight: 600;">{{s.v}}</span></span>
+              <a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Change</a>
+            </div>
+          </sc-for>
+          <section style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;">params.json preview</h2>
+            <pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.55; white-space: pre-wrap;">{
+  "input": "samplesheet.csv",
+  "outdir": "/g/lab/rnaseq/2026-10-25",
+  "min_mapped_reads": 10,
+  "skip_pseudo_alignment": true
+}</pre>
+            <span style="font-size: 11.5px; color: #A6A9BA;">Only non-default values · same payload via REST, WES or MCP</span>
+          </section>
+          <button type="button" style="height: 46px; border: none; border-radius: 12px; background: #C4C7D4; color: #FFFFFF; font: 600 14px 'Inter', sans-serif;">Launch · fix 1 issue first</button>
+        </aside>
+      </div>
+
+      <section aria-label="Relaunch dialog" style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 24px 48px -28px rgba(15,16,32,0.35); padding: 20px; display: flex; flex-direction: column; gap: 16px; background: #FFFFFF;">
+        <div style="display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline;">
+          <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Relaunch rnaseq-2026-10-24</h2>
+          <span style="font-size: 13px; color: #B02A2A; font-weight: 600;">Failed in stage 2 · STAR out of memory</span>
+        </div>
+
+        <div role="radiogroup" aria-label="Where to start" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+          <sc-for list="{{modes}}" as="m" hint-placeholder-count="3">
+            <button type="button" role="radio" aria-checked="{{m.on}}" style="border: none; border-radius: 16px; padding: 16px; background: {{m.bg}}; box-shadow: {{m.ring}}; font: inherit; color: #0F1020; display: flex; gap: 14px; align-items: flex-start; text-align: left; cursor: pointer;">
+              <span style="width: 44px; height: 44px; border-radius: 13px; background: {{m.tile}}; color: {{m.ink}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{m.icon}}"/></svg></span>
+              <span style="display: flex; flex-direction: column; gap: 4px;">
+                <span style="font-weight: 600; font-size: 15px;">{{m.label}}</span>
+                <span style="font-size: 12.5px; color: #33364A; line-height: 1.4;">{{m.desc}}</span>
+              </span>
+            </button>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <span style="font-size: 12.5px; color: #4D5065;">Start point · click a stage to rerun from it</span>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px;">
+            <sc-for list="{{strip}}" as="s" hint-placeholder-count="4">
+              <button type="button" style="border: none; border-radius: 12px; padding: 10px 12px; background: {{s.bg}}; background-size: {{s.bsz}}; animation: {{s.anim}}; box-shadow: {{s.ring}}; font: inherit; text-align: left; display: flex; flex-direction: column; gap: 3px; cursor: pointer;">
+                <span style="font-size: 12px; font-weight: 600; color: {{s.ink}};">{{s.n}} · {{s.name}}</span>
+                <span style="font-size: 12px; color: {{s.sub}};">{{s.note}}</span>
+              </button>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center; border-top: 1px solid #EEEFF5; padding-top: 14px;">
+          <a href="#" style="font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sliders}}"/></svg>Edit parameters · 1 changed</a>
+          <span style="font-size: 12.5px; color: #4D5065; flex-grow: 1;">STAR_ALIGN memory 32 → 64 GB (suggested from the failure) · 624 tasks reused · about 620 to run</span>
+          <button type="button" style="height: 42px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A;">Copy to a new launch</button>
+          <button type="button" style="height: 42px; padding: 0 18px; border-radius: 11px; border: none; background: #7750D4; font: 600 13.5px 'Inter', sans-serif; color: #FFFFFF;">Resume</button>
+        </div>
+        <span style="font-size: 12px; color: #6E7287;">On a paused run or an open gate the first choice reads “Continue”. Engine mapping: Nextflow <code style="font-family: 'JetBrains Mono', monospace;">-resume</code> (+ stage param); Snakemake reruns incomplete jobs or <code style="font-family: 'JetBrains Mono', monospace;">--forcerun</code> from the chosen stage.</span>
+      </section>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    folder: 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z',
+    dna: 'M7 3c0 6 10 12 10 18 M17 3c0 6-10 12-10 18 M8.5 7h7 M8.5 17h7',
+    scissors: 'M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M8.5 7.5L20 19 M8.5 16.5L20 5',
+    align: 'M12 3v18 M5 6h11l3 3-3 3H5z',
+    shield: 'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M9 12l2 2 4-4',
+    skip: 'M4 6l8 6-8 6z M12 6l8 6-8 6z',
+    building: 'M4 21V9l8-5 8 5v12 M9 21v-6h6v6 M3 21h18',
+    sliders: 'M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M20 18h0 M18 16v4',
+    refresh: 'M20 11a8 8 0 0 0-14.9-3 M4 4v4h4 M4 13a8 8 0 0 0 14.9 3 M20 20v-4h-4',
+    server: 'M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01',
+    box: 'M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5 M12 12v9',
+    flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5'
+  };
+  const ok = (s, f1, f2, str) => ({ s, f1, f2, str, ok: 'OK', fg: '#157A4B', f2c: '#0F1020' });
+  const sel = 'inset 0 0 0 2px #7750D4', idle = '0 0 0 1px rgba(15,16,32,0.11)';
+  return {
+    ic,
+    sheet: [
+      ok('S1', 'S1_R1.fastq.gz', 'S1_R2.fastq.gz', 'auto'),
+      ok('S2', 'S2_R1.fastq.gz', 'S2_R2.fastq.gz', 'auto'),
+      ok('S3', 'S3_R1.fastq.gz', 'S3_R2.fastq.gz', 'reverse'),
+      { s: 'S4', f1: 'S4_R1.fastq.gz', f2: 'S4_R2.fastq.gz', str: 'auto', ok: 'Missing file', fg: '#B02A2A', f2c: '#B02A2A' }
+    ],
+    io: [
+      { k: 'outdir *', v: '/g/lab/rnaseq/2026-10-25', help: 'directory-path · picker browses the environment storage' },
+      { k: 'multiqc_title', v: 'Liver time course', help: 'Optional title for the MultiQC report' }
+    ],
+    collapsed: [
+      { name: 'Reference genome options', n: '14', state: 'GRCh38 · defaults', icon: ic.dna, fields: [{ k: 'genome', v: 'GRCh38', h: 'iGenomes reference key', p: '' }, { k: 'fasta', v: '', h: 'Genome FASTA; overrides genome', p: 'path/to/genome.fa' }, { k: 'gtf', v: '', h: 'GTF annotation', p: 'path/to/genes.gtf' }] },
+      { name: 'Read trimming options', n: '7', state: 'defaults', icon: ic.scissors, fields: [{ k: 'trimmer', v: 'trimgalore', h: 'trimgalore or fastp', p: '' }, { k: 'extra_trimgalore_args', v: '', h: 'Extra arguments passed to Trim Galore', p: '--quality 20' }, { k: 'min_trimmed_reads', v: '10000', h: 'Samples with fewer reads are dropped', p: '' }] },
+      { name: 'Quality control', n: '9', state: 'defaults', icon: ic.shield, fields: [{ k: 'deseq2_vst', v: 'true', h: 'Use vst instead of rlog', p: '' }, { k: 'rseqc_modules', v: 'bam_stat,inner_distance,read_distribution', h: 'RSeQC modules to run', p: '' }, { k: 'skip_qc', v: 'false', h: 'Skip all QC steps except MultiQC', p: '' }] },
+      { name: 'Process skipping options', n: '21', state: '1 changed', icon: ic.skip, fields: [{ k: 'skip_markduplicates', v: 'false', h: 'Skip Picard MarkDuplicates', p: '' }, { k: 'skip_bigwig', v: 'false', h: 'Skip bigWig creation', p: '' }, { k: 'skip_stringtie', v: 'true', h: 'Changed · default false', p: '' }] },
+      { name: 'Institutional config', n: '6 · hidden', state: 'from environment', icon: ic.building, fields: [{ k: 'custom_config_base', v: 'https://raw.githubusercontent.com/nf-core/configs/master', h: 'Set by the environment', p: '' }, { k: 'config_profile_name', v: 'EMBL', h: 'Set by the environment', p: '' }] },
+      { name: 'Generic options', n: '23 · hidden', state: 'defaults', icon: ic.sliders, fields: [{ k: 'email', v: '', h: 'Notification email', p: 'you@lab.org' }, { k: 'publish_dir_mode', v: 'copy', h: 'How results are published', p: '' }, { k: 'monochrome_logs', v: 'false', h: 'Plain logs without colours', p: '' }] }
+    ],
+    side: [
+      { k: 'Environment', v: 'EMBL SLURM · htc', icon: ic.server },
+      { k: 'Software', v: 'Profile singularity', icon: ic.box },
+      { k: 'Gates', v: '1 gate after stage 2 (spectio.yml)', icon: ic.flag }
+    ],
+    modes: [
+      { label: 'Resume', desc: 'Pick up where it stopped. Finished work is reused.', icon: 'M8 5v14l11-7z', on: 'true', bg: '#FBF9FF', ring: sel, tile: '#7750D4', ink: '#FFFFFF' },
+      { label: 'Rerun from a stage', desc: 'Pick the stage below. Earlier stages are reused.', icon: 'M3 12a9 9 0 1 0 3-6.7 M3 4v5h5', on: 'false', bg: '#FFFFFF', ring: idle, tile: '#F6F2FE', ink: '#6344B2' },
+      { label: 'Start fresh', desc: 'New work directory, nothing reused.', icon: 'M12 4v16 M4 12h16', on: 'false', bg: '#FFFFFF', ring: idle, tile: '#F6F2FE', ink: '#6344B2' }
+    ],
+    strip: [
+      { n: '1', name: 'Preprocessing', note: 'Reused from cache · 288 tasks', bsz: '22.63px 22.63px', anim: 'spectio-hatch 1.6s linear infinite', bg: 'repeating-linear-gradient(135deg, #EEEDFA 0 8px, #E2E0F6 8px 16px)', ring: 'none', ink: '#423B97', sub: '#4D5065' },
+      { n: '2', name: 'Alignment & QC', note: 'Starts here · 336 tasks', bsz: 'auto', anim: 'none', bg: '#FBF9FF', ring: 'inset 0 0 0 2px #7750D4', ink: '#4D368B', sub: '#4D368B' },
+      { n: '3', name: 'Quantification', note: 'Will run', bsz: 'auto', anim: 'none', bg: '#F7F7FB', ring: 'none', ink: '#33364A', sub: '#6E7287' },
+      { n: '4', name: 'Reporting', note: 'Will run', bsz: 'auto', anim: 'none', bg: '#F7F7FB', ring: 'none', ink: '#33364A', sub: '#6E7287' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

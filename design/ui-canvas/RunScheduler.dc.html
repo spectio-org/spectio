@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — run detail, scheduler view</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}details>summary .chev{transition:transform .15s}details:not([open])>summary .chev{transform:rotate(180deg)}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.mono{font-family:'JetBrains Mono',monospace}
+.btn{height:36px;padding:0 12px;border-radius:10px;border:none;font:600 13px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:7px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.tbl{width:100%;border-collapse:collapse;font-size:12.5px}
+.tbl th{text-align:left;font-size:11.5px;font-weight:600;color:#33364A;background:#F7F7FB;padding:8px 10px;white-space:nowrap}
+.tbl td{padding:8px 10px;border-top:1px solid #EEEFF5;vertical-align:middle}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Runs / liver-tc-03 #301 / Scheduler" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="runs" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <section class="card" style="border-radius: 20px; overflow: hidden;">
+      <div style="height: 4px; background: #3B82F6;"></div>
+      <div style="padding: 14px 20px; display: flex; gap: 18px; align-items: center; flex-wrap: wrap;">
+        <svg width="84" height="42" viewBox="0 0 200 100" role="img" aria-label="Stage 1 completed, stage 2 running, stages 3 and 4 not started">
+          <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#C4B5FD"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/>
+        </svg>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 260px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 26px;">liver-tc-03 <span style="color: #6E7287; font-weight: 600;">#301</span></h1>
+          <span style="display: flex; align-items: center; gap: 8px; font-size: 13.5px; font-weight: 600; color: #1D5FC9;">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· stage 2 of 4 (Alignment &amp; QC) · 410 / 457 tasks done · 5 h 12 m</span>
+          </span>
+          <span style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 3px;"><span class="chip" style="background: #F7F7FB; color: #33364A; box-shadow: inset 0 0 0 1px #EEEFF5;">nf-core/rnaseq 3.27.0</span><span class="chip" style="background: #EEF6FA; color: #1F536D;">EMBL SLURM · htc</span><span class="chip" style="background: #F7F7FB; color: #33364A; box-shadow: inset 0 0 0 1px #EEEFF5;">runner login01 · tweber</span></span>
+        </div>
+                <a href="Launch.dc.html" class="btn btn-s" style="height: 40px;">Relaunch ▾</a>
+      </div>
+    </section>
+
+    <nav aria-label="Run sections" style="display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #EEEFF5;">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="10">
+        <a href="{{t.href}}" aria-current="{{t.cur}}" style="padding: 9px 12px; font-size: 13.5px; font-weight: {{t.w}}; color: {{t.c}}; text-decoration: none; box-shadow: {{t.u}};">{{t.label}}</a>
+      </sc-for>
+    </nav>
+
+    <div role="note" style="display: flex; gap: 10px; align-items: center; font-size: 12.5px; color: #33364A; background: #F7F7FB; border-radius: 12px; padding: 9px 12px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 11v5 M12 8h.01"/></svg>
+      <span>Task states come from Nextflow (Tower protocol, <span class="mono">nativeId</span>). This view adds what the engine does not send: why a job waits, when it should start, what it really used, and why it failed. Joined by Slurm job ID.</span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px;">
+      <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6E7287; font-weight: 600;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>HEAD JOB</span>
+        <span style="display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap;"><span class="mono" style="font-size: 15px; font-weight: 600;">48213351</span><span class="chip" style="background: #EAF2FE; color: #1D5FC9;"><svg width="11" height="11" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">sbatch · htc · 2 CPU · 4 GB · 72 h</span>
+        <span style="font-size: 12.5px; color: #33364A;">5 h 12 m on <span class="mono">hpc-node-114</span></span>
+        <span style="display: flex; flex-direction: column; gap: 3px;"><span style="height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: 7%; background: #3B82F6;"></span></span><span style="font-size: 12px; color: #4D5065;">Walltime left 66 h 48 m</span></span>
+      </section>
+
+      <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6E7287; font-weight: 600;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h16 M4 12h16 M4 18h10"/></svg>TASKS BY SCHEDULER STATE · 457</span>
+        <span style="display: flex; height: 10px; border-radius: 5px; overflow: hidden; gap: 2px; background: #FFFFFF;">
+          <sc-for list="{{stateBar}}" as="b" hint-placeholder-count="5"><span title="{{b.label}} {{b.n}}" style="flex: {{b.flex}} 0 0; min-width: 4px; background: {{b.c}};"></span></sc-for>
+        </span>
+        <span style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px 10px;">
+          <sc-for list="{{stateBar}}" as="b" hint-placeholder-count="5">
+            <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #33364A;"><span style="width: 8px; height: 8px; border-radius: 2px; background: {{b.c}}; flex-shrink: 0;"></span>{{b.label}}<strong style="margin-left: auto; color: {{b.fg}};">{{b.n}}</strong></span>
+          </sc-for>
+        </span>
+      </section>
+
+      <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6E7287; font-weight: 600;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 7v5l3 2"/></svg>WHY 18 TASKS ARE PENDING</span>
+        <sc-for list="{{reasons}}" as="r" hint-placeholder-count="3">
+          <span style="display: flex; flex-direction: column; gap: 3px;">
+            <span style="display: flex; justify-content: space-between; font-size: 12px;"><span class="mono" style="color: #22253A;">{{r.code}}</span><strong>{{r.n}}</strong></span>
+            <span style="height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: {{r.pct}}; background: #9A9EB0;"></span></span>
+            <span style="font-size: 11.5px; color: #4D5065; line-height: 1.35;">{{r.text}}</span>
+          </span>
+        </sc-for>
+      </section>
+
+      <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 12px; color: #6E7287; font-weight: 600;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4 M16 2v4 M3 9h18 M5 5h14v16H5z M9 14l2 2 4-4"/></svg>NEXT START</span>
+        <span style="font-family: 'Outfit', sans-serif; font-size: 26px; font-weight: 600;">~14:20</span>
+        <span style="font-size: 12.5px; color: #33364A; line-height: 1.4;">SALMON_QUANT (C4), estimated by the backfill scheduler (<span class="mono">squeue --start</span>). Estimates move as other jobs finish.</span>
+        <span style="display: flex; justify-content: space-between; font-size: 12.5px; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="color: #4D5065;">Fairshare (tweber · rnaseq-core)</span><strong>0.42 <span style="color: #8F5806;">↓</span></strong></span>
+        <a href="EnvCapacity.dc.html" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Cluster capacity &amp; limits →</a>
+      </section>
+    </div>
+
+    <section class="card" style="overflow: hidden;">
+      <div style="padding: 12px 16px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+        <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Scheduler jobs</h2><span style="font-size: 12px; color: #4D5065;">One row per attempt · problems first · 457 jobs (10 shown)</span></span>
+        <span role="radiogroup" aria-label="Filter jobs" style="display: flex; padding: 3px; border-radius: 10px; background: #EEEFF5; gap: 2px;">
+          <sc-for list="{{filters}}" as="f" hint-placeholder-count="4"><span role="radio" aria-checked="{{f.on}}" style="height: 28px; padding: 0 10px; border-radius: 8px; display: flex; align-items: center; font-size: 12.5px; font-weight: {{f.w}}; background: {{f.bg}}; color: {{f.fg}}; box-shadow: {{f.sh}};">{{f.t}}</span></sc-for>
+        </span>
+      </div>
+      <div style="overflow-x: auto;">
+        <table class="tbl" style="min-width: 1040px;">
+          <thead><tr><th>Task (process · tag)</th><th>Slurm job</th><th>Partition</th><th>State</th><th>Reason · est. start</th><th>Requested</th><th>CPU eff.</th><th style="width: 130px;">Memory used / req.</th><th>Node</th><th>Elapsed</th></tr></thead>
+          <tbody>
+            <sc-for list="{{jobs}}" as="j" hint-placeholder-count="10">
+              <tr style="background: {{j.rowBg}};">
+                <td><span style="display: flex; flex-direction: column; gap: 1px;"><span style="font-weight: 600;">{{j.proc}}</span><span style="font-size: 11.5px; color: #6E7287;">{{j.tag}} · try {{j.att}}</span></span></td>
+                <td class="mono" style="font-size: 11.5px; color: #33364A;">{{j.id}}</td>
+                <td style="color: #33364A;">{{j.part}}</td>
+                <td><span class="chip" style="background: {{j.sbg}}; color: {{j.sfg}};"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{j.sicon}}"/></svg>{{j.state}}</span></td>
+                <td style="color: #33364A; font-size: 12px; min-width: 140px; max-width: 180px;">{{j.reason}}</td>
+                <td style="font-size: 12px; color: #33364A; white-space: nowrap;">{{j.req}}</td>
+                <td style="white-space: nowrap; font-weight: 600; color: {{j.effFg}};">{{j.eff}}</td>
+                <td><span style="display: flex; flex-direction: column; gap: 3px;"><span style="height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: {{j.memPct}}; background: {{j.memBar}};"></span></span><span style="font-size: 11.5px; color: {{j.memFg}};">{{j.mem}}</span></span></td>
+                <td class="mono" style="font-size: 11px; color: #33364A; white-space: nowrap;">{{j.node}}</td>
+                <td style="white-space: nowrap; color: #33364A;">{{j.elapsed}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <div style="display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start;">
+      <section class="card" style="flex: 3 1 520px; min-width: 0; padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="display: flex; align-items: center; gap: 10px;">
+          <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18h6 M10 21h4 M12 3a6 6 0 0 0-4 10.5c.6.6 1 1.4 1 2.5h6c0-1.1.4-1.9 1-2.5A6 6 0 0 0 12 3z"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Suggestions for the relaunch</h2><span style="font-size: 12px; color: #4D5065;">From scheduler accounting of this run and its previous attempts · applied as a config overlay, never to the pipeline code</span></span>
+        </span>
+        <sc-for list="{{tips}}" as="t" hint-placeholder-count="3">
+          <div style="display: flex; gap: 12px; align-items: center; border-radius: 12px; padding: 10px 12px; background: {{t.bg}}; box-shadow: inset 4px 0 0 {{t.rail}}; flex-wrap: wrap;">
+            <span style="flex: 1 1 340px; display: flex; flex-direction: column; gap: 3px;">
+              <span style="font-size: 13.5px; font-weight: 600;">{{t.title}}</span>
+              <span style="font-size: 12.5px; color: #33364A;">{{t.why}}</span>
+              <code class="mono" style="font-size: 11.5px; color: #22253A; background: #FFFFFF; border-radius: 6px; padding: 3px 7px; align-self: flex-start; box-shadow: inset 0 0 0 1px #EEEFF5;">{{t.cfg}}</code>
+            </span>
+            <a href="Launch.dc.html" class="btn {{t.btn}}">{{t.action}}</a>
+          </div>
+        </sc-for>
+      </section>
+
+      <details class="card" open style="flex: 2 1 380px; min-width: 0; overflow: hidden;">
+        <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
+          <span style="width: 32px; height: 32px; border-radius: 10px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 9l-4 3 4 3 M16 9l4 3-4 3 M14 5l-4 14"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Raw scheduler record</span><span style="font-size: 12px; color: #4D5065;">STAR_ALIGN (T3) · job 48213977 · <span class="mono">sacct -j 48213977 --json</span></span></span>
+          <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+        </summary>
+        <pre class="mono" style="margin: 0; padding: 12px 16px; background: #0F1020; color: #DFE1EA; font-size: 11.5px; line-height: 1.55; overflow-x: auto; white-space: pre;">{{raw}}</pre>
+      </details>
+    </div>
+
+    <footer style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap; font-size: 12px; color: #4D5065; border-top: 1px solid #EEEFF5; padding-top: 10px;">
+      <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63;"></span>Last update 12 s ago</span>
+      <sc-for list="{{sources}}" as="s" hint-placeholder-count="4"><span class="chip" style="background: #F7F7FB; color: #33364A; font-weight: 500; box-shadow: inset 0 0 0 1px #EEEFF5;">{{s}}</span></sc-for>
+      <a href="EnvCapacity.dc.html" style="margin-left: auto; font-weight: 600; text-decoration: none;">Polling budget for this environment →</a>
+    </footer>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const tabNames = [['Summary', 'RunDetail.dc.html'], ['Stages & gates', 'RunDetail.dc.html'], ['Tasks', '#'], ['Scheduler', 'RunScheduler.dc.html'], ['Logs', '#'], ['Outputs & reports', '#'], ['Parameters', '#'], ['Software', '#'], ['Environment', 'Environments.dc.html'], ['Lineage', '#']];
+  const ACTIVE = 'Scheduler';
+  const ST = {
+    pending: ['Pending', '#F1F2F6', '#33364A', 'M12 7v5l3 2 M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z'],
+    running: ['Running', '#EAF2FE', '#1D5FC9', 'M8 5v14l11-7z'],
+    completing: ['Completing', '#EAF2FE', '#1D5FC9', 'M4 12h12 M12 6l6 6-6 6'],
+    done: ['Completed', '#E8F6EF', '#157A4B', 'M5 12l5 5L20 7'],
+    oom: ['OUT_OF_MEMORY', '#FCEBEB', '#B02A2A', 'M6 6l12 12 M18 6L6 18'],
+    timeout: ['TIMEOUT', '#FCEBEB', '#B02A2A', 'M12 7v5l3 2 M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z'],
+    nodefail: ['NODE_FAIL', '#FCEBEB', '#B02A2A', 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z']
+  };
+  const job = (proc, tag, att, id, part, st, reason, req, eff, used, total, memText, node, elapsed) => {
+    const s = ST[st];
+    const pct = total ? Math.min(100, Math.round(used / total * 100)) : 0;
+    const bad = ['oom', 'timeout', 'nodefail'].includes(st);
+    const effN = parseInt(eff, 10);
+    return {
+      proc, tag, att, id, part, state: s[0], sbg: s[1], sfg: s[2], sicon: s[3], reason, req, eff,
+      effFg: isNaN(effN) ? '#6E7287' : (effN >= 70 ? '#157A4B' : (effN < 40 ? '#8F5806' : '#33364A')),
+      memPct: pct + '%', memBar: pct >= 95 ? '#DC3B3B' : (pct < 25 && used ? '#E9A23B' : '#3B82F6'),
+      memFg: pct >= 95 ? '#B02A2A' : (pct < 25 && used ? '#8F5806' : '#4D5065'), mem: memText,
+      node, elapsed, rowBg: bad ? '#FFFAFA' : 'transparent'
+    };
+  };
+  const filt = (t, on) => on ? { t, on: 'true', w: 600, bg: '#FFFFFF', fg: '#0F1020', sh: '0 1px 2px rgba(15,16,32,0.12)' } : { t, on: 'false', w: 500, bg: 'transparent', fg: '#4D5065', sh: 'none' };
+  return {
+    tabs: tabNames.map(([label, href]) => { const on = label === ACTIVE; return { label, href, cur: on ? 'page' : 'false', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' }; }),
+    stateBar: [
+      { label: 'Pending', n: '18', flex: 18, c: '#9A9EB0', fg: '#33364A' },
+      { label: 'Running', n: '24', flex: 24, c: '#3B82F6', fg: '#1D5FC9' },
+      { label: 'Completing', n: '2', flex: 2, c: '#93C0FA', fg: '#1D5FC9' },
+      { label: 'Done', n: '410', flex: 410, c: '#1F9D63', fg: '#157A4B' },
+      { label: 'Failed', n: '3', flex: 3, c: '#DC3B3B', fg: '#B02A2A' }
+    ],
+    reasons: [
+      { code: 'Priority', n: '12', pct: '67%', text: 'Other jobs with a higher priority are ahead. Your fairshare is below average.' },
+      { code: 'Resources', n: '4', pct: '22%', text: 'Waiting for free nodes: bigmem (96 GB) is fully used.' },
+      { code: 'QOSMaxJobsPerUserLimit', n: '2', pct: '11%', text: 'Your QoS allows 500 running jobs; these wait for a slot.' }
+    ],
+    filters: [filt('Problems first', true), filt('Pending', false), filt('Running', false), filt('All', false)],
+    jobs: [
+      job('STAR_ALIGN', 'T3', '2 / 3', '48213977', 'htc', 'oom', 'Killed at 63.8 GB · retried with more memory', '8 cpu · 64G · 8h', '71 %', 63.8, 64, '63.8 / 64 GB', 'hpc-node-087', '1 h 42 m'),
+      job('QUALIMAP_RNASEQ', 'C1', '1 / 3', '48213412', 'htc', 'timeout', 'Hit the 4 h limit while CPU-bound', '2 cpu · 16G · 4h', '100 %', 11.2, 16, '11.2 / 16 GB', 'hpc-node-102', '4 h 00 m'),
+      job('DUPRADAR', 'C3', '1 / 3', '48213530', 'bigmem', 'nodefail', 'Node hpc-bm-04 failed · requeued by Nextflow', '4 cpu · 32G · 6h', '—', 9.4, 32, '9.4 / 32 GB at failure', 'hpc-bm-04', '38 m'),
+      job('STAR_ALIGN', 'T3', '3 / 3', '48214105', 'bigmem', 'pending', 'Resources · est. 14:05', '8 cpu · 96G · 8h', '—', 0, 96, 'not started', '—', '—'),
+      job('SALMON_QUANT', 'C4', '1 / 3', '48214011', 'htc', 'pending', 'Priority · est. 14:20', '6 cpu · 36G · 4h', '—', 0, 36, 'not started', '—', '—'),
+      job('SALMON_QUANT', 'C5', '1 / 3', '48214012', 'htc', 'pending', 'QOSMaxJobsPerUserLimit', '6 cpu · 36G · 4h', '—', 0, 36, 'not started', '—', '—'),
+      job('SALMON_QUANT', 'T2', '1 / 3', '48213990', 'htc', 'running', 'started 13:41', '6 cpu · 36G · 4h', '88 %', 7.8, 36, '7.8 / 36 GB · live', 'hpc-node-114', '22 m'),
+      job('SAMTOOLS_SORT', 'T5', '1 / 3', '48213961', 'htc', 'completing', 'writing outputs', '4 cpu · 16G · 2h', '81 %', 6.1, 16, '6.1 / 16 GB', 'hpc-node-120', '17 m'),
+      job('SUBREAD_FEATURECOUNTS', 'C2', '1 / 3', '48213702', 'htc', 'done', '—', '2 cpu · 8G · 2h', '64 %', 2.1, 8, '2.1 / 8 GB', 'hpc-node-093', '6 m'),
+      job('FASTQC', 'T1', '1 / 3', '48212988', 'htc', 'done', '—', '2 cpu · 6G · 1h', '92 %', 0.6, 6, '0.6 / 6 GB · too much', 'hpc-node-101', '3 m')
+    ],
+    tips: [
+      { title: 'STAR_ALIGN: 3 × OUT_OF_MEMORY at 64 GB', why: 'Peak RSS reached 63.8 GB on T3, C2 and C6 (previous run and this one). 96 GB fits on bigmem only.', cfg: "process { withName: 'STAR_ALIGN' { memory = 96.GB; queue = 'bigmem' } }", action: 'Apply to relaunch', btn: 'btn-p', bg: '#FFF7F7', rail: '#DC3B3B' },
+      { title: 'QUALIMAP_RNASEQ: TIMEOUT at 4 h, CPU 100 %', why: 'The job was busy until the limit, so more time (not more memory) is needed. htc allows up to 7 days.', cfg: "process { withName: 'QUALIMAP_RNASEQ' { time = 8.h } }", action: 'Apply to relaunch', btn: 'btn-s', bg: '#FFF7F7', rail: '#DC3B3B' },
+      { title: '17 tasks used < 25 % of the memory they asked for', why: 'FASTQC, TRIMGALORE and 15 others. Asking less shortens the queue wait and spends less fairshare.', cfg: "process { withName: 'FASTQC|TRIMGALORE' { memory = 2.GB } }", action: 'Review all 17', btn: 'btn-s', bg: '#FDF8EE', rail: '#E9A23B' }
+    ],
+    raw: '{\n  "job_id": 48213977,\n  "name": "nf-NFCORE_RNASEQ_RNASEQ_ALIGN_STAR_STAR_ALIGN_(T3)",\n  "partition": "htc",\n  "state": { "current": ["OUT_OF_MEMORY"], "reason": "None" },\n  "exit_code": { "status": ["SIGNALED"], "signal": { "name": "SIGKILL" } },\n  "required": { "CPUs": 8, "memory_per_node": { "number": 65536 } },\n  "time": { "elapsed": 6120, "limit": { "number": 480 } },\n  "steps": [{ "step": { "name": "batch" },\n    "tres": { "requested": { "max": [{ "type": "mem", "count": 66912829440 }] } } }],\n  "comment": { "job": "spectio:run_01JBX3…" }\n}',
+    sources: ['squeue --me --json · every 60 s', 'sacct --json for jobs that left the queue', 'sstat for live usage', 'one query for all runs of this runner', 'via CLI · slurmrestd not configured']
+  };
+}
+}
+</script>
+</body>
+</html>

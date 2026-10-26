@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — administration · health</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400;500&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.btn{height:38px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:#33364A;background:#F7F7FB;padding:9px 12px;white-space:nowrap}
+.tbl td{padding:10px 12px;border-top:1px solid #EEEFF5;vertical-align:middle}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+details > summary{list-style:none;cursor:pointer}
+details > summary::-webkit-details-marker{display:none}
+details[open] .chev{transform:rotate(90deg)}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Administration / Health" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Administration</h1>
+        <span style="font-size: 14px; color: #4D5065;">People, content, activity and the health of this instance</span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="position: sticky; top: 0; flex-shrink: 0;"><dc-import name="AdminNav" active="health" hint-size="208px,860px"></dc-import></div>
+
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap;">
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+            <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px;">Health</h2>
+            <span style="font-size: 13px; color: #4D5065;">Every check runs on the server every 30 s; runners report through their heartbeat.</span>
+          </div>
+          <span style="font-size: 12.5px; color: #6E7287;">Checked 12 s ago</span>
+          <a href="#" class="btn btn-s"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 12a8 8 0 1 1-2.3-5.7 M20 4v5h-5"/></svg>Check now</a>
+        </div>
+
+        <div role="status" style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-radius: 14px; padding: 12px 14px 12px 16px; background: #FDF3E2; box-shadow: inset 4px 0 0 #D9890B;">
+          <span style="width: 34px; height: 34px; border-radius: 10px; background: #FFFFFF; color: #B06D07; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg></span>
+          <span style="flex: 1 1 380px; display: flex; flex-direction: column; gap: 2px; font-size: 13px; color: #5C3A04;"><strong style="font-size: 14px;">Working, with 1 degraded component and 2 notices</strong><span>Runner <span class="mono">embl-slurm · login-2</span> has been offline for 14 min; its 2 runs keep going on the cluster and are picked up when it returns. Everything else is healthy.</span></span>
+          <a href="RunnerOffline.dc.html" class="btn btn-s">Open runner</a>
+        </div>
+
+        <div class="card" style="display: grid; grid-template-columns: repeat(5, minmax(0, 1fr));">
+          <sc-for list="{{versions}}" as="v" hint-placeholder-count="5">
+            <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 3px; box-shadow: inset 1px 0 0 {{v.sep}};">
+              <span style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.04em; color: #6E7287;">{{v.k}}</span>
+              <span style="font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{v.v}}</span>
+              <span style="font-size: 12px; color: #6E7287;">{{v.s}}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <section style="display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; align-items: center; gap: 10px;">
+            <h3 style="margin: 0; font-size: 15px; font-weight: 600; flex-grow: 1;">Components · 12</h3>
+            <span class="chip" style="background: #E8F6EF; color: #157A4B;">9 healthy</span>
+            <span class="chip" style="background: #FDF3E2; color: #8F5806;">2 notices</span>
+            <span class="chip" style="background: #FCEBEB; color: #B02A2A;">1 degraded</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px;">
+            <sc-for list="{{checks}}" as="c" hint-placeholder-count="12">
+              <a href="{{c.href}}" class="card" style="text-decoration: none; color: inherit; padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), inset 3px 0 0 {{c.edge}};">
+                <span style="display: flex; align-items: center; gap: 10px;">
+                  <span style="width: 32px; height: 32px; border-radius: 10px; background: {{c.tint}}; color: {{c.ic}}; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg></span>
+                  <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">{{c.name}}</span><span style="font-size: 12px; color: #6E7287; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{c.what}}</span></span>
+                  <span class="chip" style="background: {{c.sbg}}; color: {{c.sfg}};"><span style="width: 7px; height: 7px; border-radius: 4px; background: {{c.dot}};"></span>{{c.state}}</span>
+                </span>
+                <span style="display: flex; align-items: baseline; gap: 8px;"><span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 19px;">{{c.metric}}</span><span style="font-size: 12px; color: #4D5065;">{{c.unit}}</span></span>
+                <span style="font-size: 12px; color: #4D5065; line-height: 1.4;">{{c.detail}}</span>
+              </a>
+            </sc-for>
+          </div>
+        </section>
+
+        <section class="card" style="overflow: hidden;">
+          <div style="padding: 14px 16px; display: flex; align-items: center; gap: 12px;">
+            <span style="width: 32px; height: 32px; border-radius: 10px; flex-shrink: 0; background: #EEF6FA; color: #2F7FA8; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg></span>
+            <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">Runners · 3 of 4 online</h3><span style="font-size: 12.5px; color: #4D5065;">Each runner sends a heartbeat every 15 s and is marked offline after 60 s. The server never connects to a runner; it queues commands that the runner claims.</span></div>
+            <a href="#" class="btn btn-s">Run diagnostics</a>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="tbl" style="min-width: 840px;">
+              <thead><tr><th>Runner</th><th>Version</th><th>Environment</th><th>Status</th><th>Heartbeat</th><th>Runs</th><th>Last error</th></tr></thead>
+              <tbody>
+                <sc-for list="{{runners}}" as="r" hint-placeholder-count="4">
+                  <tr style="background: {{r.row}};">
+                    <td><span style="display: flex; flex-direction: column; gap: 1px;"><span class="mono" style="font-weight: 500; color: #0F1020; white-space: nowrap;">{{r.name}}</span><span style="font-size: 11.5px; color: #6E7287; white-space: nowrap;">{{r.host}} · {{r.owner}}</span></span></td>
+                    <td><span style="display: flex; align-items: center; gap: 6px;"><span class="mono">{{r.ver}}</span><sc-if value="{{r.skew}}" hint-placeholder-val="{{false}}"><span class="chip" style="background: #FDF3E2; color: #8F5806; height: 20px; font-size: 11px;">older</span></sc-if></span></td>
+                    <td style="color: #33364A; white-space: nowrap;">{{r.envs}}</td>
+                    <td><span class="chip" style="background: {{r.sbg}}; color: {{r.sfg}};"><span style="width: 7px; height: 7px; border-radius: 4px; background: {{r.dot}};"></span>{{r.state}}</span></td>
+                    <td style="color: #33364A; white-space: nowrap;">{{r.hb}}</td>
+                    <td style="color: #33364A; white-space: nowrap;">{{r.runs}}</td>
+                    <td style="color: {{r.errc}}; font-size: 12.5px;">{{r.err}}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <div class="card" style="padding: 12px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: #F7F7FB; box-shadow: none;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>
+          <span style="flex: 1 1 320px; font-size: 12.5px; color: #33364A;">For your own monitoring: <span class="mono">/health/live</span> (process up), <span class="mono">/health/ready</span> (database, file store and task backend reachable; used by Kubernetes probes) and <span class="mono">/metrics</span> (Prometheus: queue depth, task durations, runner heartbeats, outbox backlog).</span>
+          <a href="#" style="font-size: 13px; font-weight: 600;">Grafana dashboard JSON</a>
+        </div>
+
+        <details class="card" style="overflow: hidden;">
+          <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 10px;">
+            <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="transition: transform .15s;"><path d="M9 6l6 6-6 6"/></svg>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>
+            <span style="font-size: 14px; font-weight: 600; flex-grow: 1;">CLI equivalent</span>
+            <span style="font-size: 12px; color: #6E7287;">same checks, same JSON as the API</span>
+          </summary>
+          <pre style="margin: 0; padding: 14px 18px; background: #15162A; color: #D9DBE7; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.7; overflow-x: auto;"><span style="color: #8E92AB;"># summary of every component, exit code 1 if anything is degraded</span>
+<span style="color: #B9A4F2;">$</span> spectio admin health
+<span style="color: #8E92AB;"># machine-readable, for cron or CI</span>
+<span style="color: #B9A4F2;">$</span> spectio admin health --json | jq '.checks[] | select(.state != "healthy")'
+<span style="color: #B9A4F2;">$</span> spectio runner list
+<span style="color: #8E92AB;"># local checks before or after an install: SQLite version, local disk, plugins, clock skew</span>
+<span style="color: #B9A4F2;">$</span> spectio doctor</pre>
+        </details>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ST = {
+    ok: ['Healthy', '#E8F6EF', '#157A4B', '#1F9D63', '#E8F6EF', '#157A4B', 'transparent'],
+    note: ['Notice', '#FDF3E2', '#8F5806', '#D9890B', '#FDF3E2', '#B06D07', '#D9890B'],
+    bad: ['Degraded', '#FCEBEB', '#B02A2A', '#DC3B3B', '#FCEBEB', '#B02A2A', '#DC3B3B']
+  };
+  const c = (name, what, s, metric, unit, detail, icon, href) => { const t = ST[s]; return { name, what, metric, unit, detail, icon, href: href || '#', state: t[0], sbg: t[1], sfg: t[2], dot: t[3], tint: s === 'ok' ? '#F1F2F6' : t[4], ic: s === 'ok' ? '#4D5065' : t[5], edge: t[6] }; };
+  const versions = [
+    { k: 'SERVER', v: 'v0.4.0', s: 'latest release' },
+    { k: 'SCHEMA', v: 'revision 0015', s: 'head · nothing pending' },
+    { k: 'PLUGIN SDK', v: '1.2', s: 'engine 1.3 · notifier 1.2' },
+    { k: 'PYTHON', v: '3.13.5', s: 'SQLAlchemy 2.0 · FastAPI' },
+    { k: 'DEPLOYMENT', v: 'Docker Compose', s: 'team profile · 2 api, 3 workers' }
+  ].map((v, i) => ({ ...v, sep: i ? '#EEEFF5' : 'transparent' }));
+  const checks = [
+    c('Database', 'Postgres 18.1 · spectio', 'ok', '3 ms', 'p95 query latency', '14 / 100 connections · 2.4 GB · last VACUUM by autovacuum 1 h ago', 'M4 6c0-1.7 3.6-3 8-3s8 1.3 8 3-3.6 3-8 3-8-1.3-8-3z M4 6v12c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12c0 1.7 3.6 3 8 3s8-1.3 8-3'),
+    c('File store', 'SeaweedFS S3', 'ok', '182 GB', 'used of 2 TB', 'Bucket spectio: evidence, reports, RO-Crates · write test 40 ms', 'M4 5h16v4H4z M5 9v10h14V9 M10 13h4'),
+    c('Task backend', 'SQL workers', 'ok', '3 / 3', 'workers alive', '7 queued · oldest 4 s · 3 failed in the last 24 h', 'M9 6h11 M9 12h11 M9 18h11 M4 6l1 1 2-2 M4 12l1 1 2-2 M4 18l1 1 2-2', 'AdminTasks.dc.html'),
+    c('Pub/sub', 'LISTEN / NOTIFY', 'ok', '41', 'live SSE clients', 'Fan-out to 2 API processes · round trip 6 ms', 'M5 12a7 7 0 0 1 14 0 M8.5 12a3.5 3.5 0 0 1 7 0 M12 12v8'),
+    c('Identity providers', 'OIDC + SAML', 'note', '41 days', 'until SAML cert expires', 'EMBL SSO discovery OK · SAML (shared with depictio) certificate expires 05 Dec 2026', 'M12 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0'),
+    c('Plugins', '15 installed', 'note', '14', 'loaded · 1 failed', 'spectio-plugin-omero 0.3: import error (needs SDK ≥ 1.3)', 'M9 3v4 M15 3v4 M7 7h10v4a5 5 0 0 1-10 0z M12 16v5', 'AdminPlugins.dc.html'),
+    c('Runners', '4 registered', 'bad', '3 / 4', 'online', 'embl-slurm · login-2 offline for 14 min, 2 runs waiting on it', 'M4 17l6-6-6-6 M12 19h8', 'RunnerOffline.dc.html'),
+    c('Disk', '/srv/spectio', 'ok', '38 %', 'of 200 GB', 'Logs ring buffer 610 MB of 1 GB · temp 1.2 GB', 'M4 12h16 M4 12a8 8 0 0 1 16 0 M4 12v4h16v-4 M8 16h.01'),
+    c('Backups', 'nightly', 'ok', '3 h ago', 'last success · verified', 'Next at 02:00 · 31 kept (30 daily, 1 monthly) · to S3', 'M12 8v4l3 2 M4 12a8 8 0 1 0 2.3-5.7 M4 4v4h4', 'AdminBackups.dc.html'),
+    c('Migrations', 'Alembic', 'ok', '0', 'pending', 'At head (0015 · run notes) since 21 Oct', 'M5 12h14 M13 6l6 6-6 6', 'AdminMaintenance.dc.html'),
+    c('TLS certificate', 'spectio.embl.de', 'ok', '62 days', 'left', 'Caddy · Let’s Encrypt, renews at 30 days', 'M6 11V8a6 6 0 1 1 12 0v3 M5 11h14v10H5z M12 15v2'),
+    c('Outbox and bridges', '3 bridges', 'ok', '0', 'events waiting', 'Webhook p95 delivery 220 ms · MQTT connected · Kafka lag 0', 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1 M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1')
+  ];
+  const R = { on: ['Online', '#E8F6EF', '#157A4B', '#1F9D63'], off: ['Offline', '#FCEBEB', '#B02A2A', '#DC3B3B'], drain: ['Draining', '#FDF3E2', '#8F5806', '#D9890B'] };
+  const r = (name, owner, host, ver, skew, envs, s, hb, runs, err) => ({ name, owner, host, ver, skew, envs, hb, runs, err: err || '—', errc: err ? '#B02A2A' : '#6E7287', state: R[s][0], sbg: R[s][1], sfg: R[s][2], dot: R[s][3], row: s === 'off' ? '#FFF8F8' : 'transparent' });
+  return {
+    versions, checks,
+    runners: [
+      r('embl-slurm · login-1', 'rnaseq-core', 'login-1.embl.de', '0.4.0', false, 'EMBL SLURM · htc', 'on', '4 s ago', '6 active', ''),
+      r('embl-slurm · login-2', 'rnaseq-core', 'login-2.embl.de', '0.4.0', false, 'EMBL SLURM · htc', 'off', '14 min ago', '2 waiting', 'host maintenance 10:00–12:00'),
+      r('k8s · spectio-dev', 'instance', 'pod runner-7d9c4', '0.4.0', false, 'Kubernetes · dev', 'on', '2 s ago', '1 active', ''),
+      r('tw-lab', 'tweber', 'tw-lab.local', '0.3.2', true, 'Workstation · tw-lab', 'drain', '9 s ago', '1 finishing', '')
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

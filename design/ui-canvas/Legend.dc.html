@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — states and stage gauge legend</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 1440px; height: 820px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; padding: 44px 56px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 36px;">
+
+  <section style="display: flex; flex-direction: column; gap: 12px;">
+    <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Run states</h2>
+    <p style="margin: 0; font-size: 13px; color: #4D5065; line-height: 1.5;">Replaces pill badges: a coloured rail on the row edge, an icon, the state word and one line of context.</p>
+    <sc-for list="{{states}}" as="s" hint-placeholder-count="7">
+      <div style="display: flex; align-items: stretch; border: 1px solid #DFE1EA; border-radius: 12px; overflow: hidden;">
+        <div style="width: 4px; background: {{s.color}};"></div>
+        <div style="display: flex; align-items: center; gap: 10px; padding: 9px 12px; flex-grow: 1;">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{s.color}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"/></svg>
+          <div style="display: flex; flex-direction: column; gap: 1px;">
+            <span style="font-size: 13.5px; font-weight: 600; color: {{s.fg}};">{{s.name}}</span>
+            <span style="font-size: 12px; color: #4D5065;">{{s.context}}</span>
+          </div>
+        </div>
+      </div>
+    </sc-for>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 12px;">
+    <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Stage gauge</h2>
+    <p style="margin: 0; font-size: 13px; color: #4D5065; line-height: 1.5;">The emblem's half-disc: one sector per declared stage (1–8). No stages declared: four sectors = task quarters.</p>
+    <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px;">
+      <sc-for list="{{sectorKinds}}" as="k" hint-placeholder-count="6">
+        <div style="display: flex; align-items: center; gap: 10px; border: 1px solid #EEEFF5; border-radius: 12px; padding: 10px;">
+          <svg width="44" height="22" viewBox="0 0 200 100" aria-hidden="true">
+            <defs><pattern id="h{{$index}}" width="8" height="8" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="8" height="8" fill="#EEEFF5"/><rect width="3" height="8" fill="#C4C7D4"/></pattern></defs>
+            <path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="{{k.fill}}" stroke="{{k.stroke}}" stroke-width="{{k.sw}}"/>
+            <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#EEEFF5"/>
+            <path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#EEEFF5"/>
+            <path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#EEEFF5"/>
+          </svg>
+          <div style="display: flex; flex-direction: column; gap: 1px;">
+            <span style="font-size: 13px; font-weight: 600;">{{k.name}}</span>
+            <span style="font-size: 11.5px; color: #4D5065;">{{k.desc}}</span>
+          </div>
+        </div>
+      </sc-for>
+    </div>
+    <h3 style="margin: 8px 0 0; font-size: 14px; font-weight: 600;">Read at a glance</h3>
+    <sc-for list="{{examples}}" as="ex" hint-placeholder-count="4">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="{{ex.label}}">
+          <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="{{ex.f0}}" stroke="{{ex.s0}}" stroke-width="{{ex.w0}}"/>
+          <path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="{{ex.f1}}" stroke="{{ex.s1}}" stroke-width="{{ex.w1}}"/>
+          <path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="{{ex.f2}}" stroke="{{ex.s2}}" stroke-width="{{ex.w2}}"/>
+          <path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="{{ex.f3}}" stroke="{{ex.s3}}" stroke-width="{{ex.w3}}"/>
+        </svg>
+        <span style="font-size: 13px;">{{ex.label}}</span>
+      </div>
+    </sc-for>
+  </section>
+
+  <section style="display: flex; flex-direction: column; gap: 12px;">
+    <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Task states by engine</h2>
+    <div style="border: 1px solid #DFE1EA; border-radius: 12px; overflow: hidden; font-size: 12.5px;">
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); background: #F7F7FB; font-weight: 600; color: #33364A;">
+        <span style="padding: 8px 10px;">Spectio</span><span style="padding: 8px 10px;">Nextflow</span><span style="padding: 8px 10px;">Snakemake</span>
+      </div>
+      <sc-for list="{{tasks}}" as="t" hint-placeholder-count="9">
+        <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border-top: 1px solid #EEEFF5;">
+          <span style="padding: 7px 10px; font-weight: 600;">{{t.sp}}</span>
+          <span style="padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #33364A;">{{t.nf}}</span>
+          <span style="padding: 7px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #33364A;">{{t.smk}}</span>
+        </div>
+      </sc-for>
+    </div>
+    <h3 style="margin: 8px 0 0; font-size: 14px; font-weight: 600;">Engine marks</h3>
+    <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+      <sc-for list="{{engines}}" as="e" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; gap: 8px; border: 1px solid #DFE1EA; border-radius: 10px; padding: 6px 10px 6px 6px;">
+          <img src="{{e.logo}}" width="24" height="24" alt="" style="display: block; object-fit: contain;">
+          <span style="display: flex; flex-direction: column;"><span style="font-size: 13px; font-weight: 600;">{{e.name}}</span><span style="font-size: 11.5px; color: #4D5065;">{{e.when}}</span></span>
+        </div>
+      </sc-for>
+    </div>
+    <p style="margin: 0; font-size: 12px; color: #4D5065; line-height: 1.5;">Official files, as shipped in depictio (<code>public/logos/workflows/</code>), shown at 16–24 px on a white ground, never recoloured or cropped. One mark per workflow: nf-core replaces Nextflow for genuine nf-core pipelines; the tooltip names the engine. Also used as the favicon of the run tab while a run page is open.</p>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":820}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = {
+    clock: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0',
+    play: 'M8 5v14l11-7z',
+    flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5',
+    pause: 'M9 5v14 M15 5v14',
+    check: 'M5 12l5 5L20 7',
+    cross: 'M6 6l12 12 M18 6L6 18',
+    ban: 'M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M5.6 18.4L18.4 5.6'
+  };
+  const states = [
+    { name: 'Queued', icon: I.clock, color: '#6E7287', fg: '#33364A', context: 'Waiting for a runner · 2 min' },
+    { name: 'Running', icon: I.play, color: '#3B82F6', fg: '#1D5FC9', context: 'Stage 3 of 4 · 812 / 1,248 tasks' },
+    { name: 'Awaiting review', icon: I.flag, color: '#D9890B', fg: '#8F5806', context: 'Gate after stage 2 · since 12 min' },
+    { name: 'Paused', icon: I.pause, color: '#8B5CF6', fg: '#6344B2', context: 'Paused by Thomas · resumable' },
+    { name: 'Succeeded', icon: I.check, color: '#1F9D63', fg: '#157A4B', context: '3 h 12 min · reports ready' },
+    { name: 'Failed', icon: I.cross, color: '#DC3B3B', fg: '#B02A2A', context: 'bwa_mem exit 137 · resumable' },
+    { name: 'Cancelled', icon: I.ban, color: '#4D5065', fg: '#33364A', context: 'Stopped by policy (time limit)' }
+  ];
+  const sectorKinds = [
+    { name: 'Completed', desc: 'solid brand colour', fill: '#EC5F87', stroke: 'none', sw: 0 },
+    { name: 'Running', desc: 'light tint of the brand colour', fill: '#F4A5BC', stroke: 'none', sw: 0 },
+    { name: 'Awaiting review', desc: 'amber outline', fill: '#FDF3E2', stroke: '#D9890B', sw: 9 },
+    { name: 'Failed', desc: 'solid red', fill: '#DC3B3B', stroke: 'none', sw: 0 },
+    { name: 'Skipped / cached', desc: 'grey hatching', fill: 'url(#h4)', stroke: 'none', sw: 0 },
+    { name: 'Not started', desc: 'light grey', fill: '#DFE1EA', stroke: 'none', sw: 0 }
+  ];
+  const B = ['#5A4FCF','#8B5CF6','#EC5F87','#F9A947'];
+  const T = ['#A39CE4','#BEA4FA','#F4A5BC','#FCCF98'];
+  const off = '#DFE1EA';
+  const ex = (label, specs) => {
+    const o = { label };
+    specs.forEach((s, i) => {
+      let f = off, st = 'none', w = 0;
+      if (s === 'done') f = B[i];
+      if (s === 'run') f = T[i];
+      if (s === 'gate') { f = '#FDF3E2'; st = '#D9890B'; w = 9; }
+      if (s === 'fail') f = '#DC3B3B';
+      o['f' + i] = f; o['s' + i] = st; o['w' + i] = w;
+    });
+    return o;
+  };
+  const examples = [
+    ex('Running · stage 2 of 4', ['done','run','todo','todo']),
+    ex('Awaiting review after stage 2', ['done','gate','todo','todo']),
+    ex('Failed in stage 3 · resumable', ['done','done','fail','todo']),
+    ex('Succeeded · 4 of 4', ['done','done','done','done'])
+  ];
+  const tasks = [
+    { sp: 'Pending', nf: 'NEW', smk: 'job selected' },
+    { sp: 'Submitted', nf: 'SUBMITTED', smk: 'JOB_INFO' },
+    { sp: 'Running', nf: 'RUNNING', smk: 'JOB_STARTED' },
+    { sp: 'Succeeded', nf: 'COMPLETED', smk: 'JOB_FINISHED' },
+    { sp: 'Retried', nf: 'FAILED + retry', smk: 'restart job N' },
+    { sp: 'Failed', nf: 'FAILED', smk: 'JOB_ERROR' },
+    { sp: 'Failed (ignored)', nf: 'FAILED + ignore', smk: '--keep-going' },
+    { sp: 'Cached', nf: 'CACHED / storeDir', smk: 'up to date' },
+    { sp: 'Not scheduled', nf: 'when: false', smk: 'not in DAG' }
+  ];
+  const engines = [
+    { name: 'Nextflow', when: 'any Nextflow pipeline', logo: '/_blob/636203cdee0bc09b61efe0fa351e239b' },
+    { name: 'nf-core', when: 'nf-core pipelines only', logo: '/_blob/b04c0e1634ffbccff3a43d65ce1316d4' },
+    { name: 'Snakemake', when: 'any Snakemake workflow', logo: '/_blob/7a35665829f51132cb3bcb9a4c3e638c' }
+  ];
+  return { states, sectorKinds, examples, tasks, engines };
+}
+}
+</script>
+</body>
+</html>

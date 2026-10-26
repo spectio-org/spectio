@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — colour</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 1400px; height: 940px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; padding: 48px 56px; display: flex; flex-direction: column; gap: 30px;">
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Brand colours · Dawn (light)</h2>
+    <sc-for list="{{scales}}" as="sc" hint-placeholder-count="4">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="width: 92px; font-size: 13px; font-weight: 500; color: #33364A;">{{sc.name}}</span>
+        <div style="display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 6px; flex-grow: 1;">
+          <sc-for list="{{sc.steps}}" as="st" hint-placeholder-count="10">
+            <div style="height: 58px; border-radius: 8px; background: {{st.hex}}; color: {{st.ink}}; padding: 7px 9px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; outline: {{st.ring}};">
+              <span style="font-size: 11px; font-weight: 600;">{{st.step}}</span>
+              <span style="font-size: 10px; font-family: 'JetBrains Mono', monospace;">{{st.hex}}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+
+  <div style="display: flex; flex-direction: column; gap: 12px;">
+    <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Neutrals · indigo-tinted ink</h2>
+    <div style="display: grid; grid-template-columns: repeat(11, minmax(0, 1fr)); gap: 6px; margin-left: 104px;">
+      <sc-for list="{{ink}}" as="st" hint-placeholder-count="11">
+        <div style="height: 58px; border-radius: 8px; background: {{st.hex}}; color: {{st.ink}}; padding: 7px 9px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between; border: 1px solid #EEEFF5;">
+          <span style="font-size: 11px; font-weight: 600;">{{st.step}}</span>
+          <span style="font-size: 10px; font-family: 'JetBrains Mono', monospace;">{{st.hex}}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+
+  <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 48px;">
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Run states · always icon + label, never colour alone</h2>
+      <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+        <sc-for list="{{status}}" as="s" hint-placeholder-count="6">
+          <div style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 17px; background: {{s.bg}}; color: {{s.fg}}; font-size: 13px; font-weight: 600;">
+            <span style="width: 9px; height: 9px; border-radius: 5px; background: {{s.dot}};"></span>
+            <span>{{s.label}}</span>
+            <span style="font-size: 10px; font-weight: 400; font-family: 'JetBrains Mono', monospace;">{{s.dot}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #4D5065;">Green and red are reserved for states: they never appear in the brand.</p>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 12px;">
+      <h2 style="margin: 0; font-size: 18px; font-weight: 600;">Dark mode · surfaces</h2>
+      <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px;">
+        <sc-for list="{{dark}}" as="st" hint-placeholder-count="4">
+          <div style="height: 76px; border-radius: 8px; background: {{st.hex}}; color: {{st.ink}}; padding: 9px 11px; box-sizing: border-box; display: flex; flex-direction: column; justify-content: space-between;">
+            <span style="font-size: 12px; font-weight: 600;">{{st.step}}</span>
+            <span style="font-size: 10px; font-family: 'JetBrains Mono', monospace;">{{st.hex}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <p style="margin: 0; font-size: 12px; color: #4D5065;">UI accent: violet 600 #7750D4 (buttons, links, focus).</p>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":940}}'>
+class Component extends DCLogic {
+renderVals() {
+  const steps = ['50','100','200','300','400','500','600','700','800','900'];
+  const mk = (name, hexes, darkFrom) => ({
+    name,
+    steps: hexes.map((hex, i) => ({
+      step: steps[i], hex,
+      ink: i >= darkFrom ? '#FFFFFF' : '#0F1020',
+      ring: i === 5 ? '2px solid #0F1020' : 'none'
+    }))
+  });
+  const scales = [
+    mk('Indigo', ['#F2F1FB','#E5E3F7','#C7C3EF','#A39CE4','#7E76DA','#5A4FCF','#4E45B3','#423B97','#343078','#272458'], 4),
+    mk('Violet', ['#F6F2FE','#ECE5FE','#D8C8FC','#BEA4FA','#A580F8','#8B5CF6','#7750D4','#6344B2','#4D368B','#372864'], 5),
+    mk('Coral', ['#FDF2F5','#FCE5EC','#F9C9D6','#F4A5BC','#F082A1','#EC5F87','#C95277','#A54666','#7E3854','#562941'], 6),
+    mk('Amber', ['#FFF8F0','#FEF1E2','#FDE2C0','#FCCF98','#FABC6F','#F9A947','#D49141','#AE783B','#845C34','#5A412C'], 7)
+  ];
+  const inkHex = ['#F7F7FB','#EEEFF5','#DFE1EA','#C4C7D4','#9A9EB0','#6E7287','#4D5065','#33364A','#22253A','#171A2E','#0F1020'];
+  const inkSteps = ['0','50','100','200','300','400','500','600','700','800','900'];
+  const ink = inkHex.map((hex, i) => ({ hex, step: inkSteps[i], ink: i >= 5 ? '#FFFFFF' : '#0F1020' }));
+  const status = [
+    { label: 'Running', dot: '#3B82F6', bg: '#EAF2FE', fg: '#1D5FC9' },
+    { label: 'Succeeded', dot: '#1F9D63', bg: '#E8F6EF', fg: '#157A4B' },
+    { label: 'Awaiting review', dot: '#D9890B', bg: '#FDF3E2', fg: '#8F5806' },
+    { label: 'Failed', dot: '#DC3B3B', bg: '#FCEBEB', fg: '#B02A2A' },
+    { label: 'Cached', dot: '#8A8F98', bg: '#F1F2F4', fg: '#4F5462' },
+    { label: 'Paused', dot: '#8B5CF6', bg: '#F1ECFE', fg: '#6344B2' }
+  ];
+  const dark = [
+    { step: 'Background', hex: '#0F1020', ink: '#ECEDF5' },
+    { step: 'Surface', hex: '#171A2E', ink: '#ECEDF5' },
+    { step: 'Raised surface', hex: '#22253A', ink: '#ECEDF5' },
+    { step: 'Border', hex: '#33364A', ink: '#ECEDF5' }
+  ];
+  return { scales, ink, status, dark };
+}
+}
+</script>
+</body>
+</html>

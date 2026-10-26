@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Perspectio 3 — point de fuite</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#141414}a:hover{color:#444444}
+</style>
+</helmet>
+<div style="width: 520px; height: 560px; box-sizing: border-box; background: #FFFFFF; color: #141414; display: flex; flex-direction: column; font-family: system-ui, sans-serif;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="m" viewBox="0 0 200 200">
+      <g fill="currentColor">
+        <path d="M12 20.0L58 40.0L58 65.5L12 54.0Z M66 43.48L102 59.13L102 76.5L66 67.5Z M110 62.61L136 73.91L136 85.0L110 78.5Z M144 77.39L162 85.22L162 91.5L144 87.0Z"/>
+        <path d="M12 62.0L58 71.5L58 97.0L12 96.0Z M66 73.15L102 80.59L102 97.96L66 97.17Z M110 82.24L136 87.61L136 98.7L110 98.13Z"/>
+        <path d="M12 104.0L58 103.0L58 128.5L12 138.0Z M66 102.83L102 102.04L102 119.41L66 126.85Z"/>
+        <path d="M12 146.0L58 134.5L58 160.0L12 180.0Z M66 132.5L102 123.5L102 140.87L66 156.52Z M110 121.5L136 115.0L136 126.09L110 137.39Z M144 113.0L162 108.5L162 114.78L144 122.61Z"/>
+        <circle cx="186" cy="100" r="7"/>
+      </g>
+    </symbol>
+  </svg>
+  <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+    <svg width="260" height="260" role="img" aria-label="Point de fuite : quatre couloirs découpés en étapes convergent vers un point ; certains s'arrêtent avant la fin"><use href="#m"/></svg>
+  </div>
+  <div style="height: 136px; border-top: 1px solid #E6E6E6; display: flex; align-items: center; justify-content: center; gap: 32px;">
+    <svg width="48" height="48" aria-hidden="true"><use href="#m"/></svg>
+    <svg width="24" height="24" aria-hidden="true"><use href="#m"/></svg>
+    <svg width="16" height="16" aria-hidden="true"><use href="#m"/></svg>
+    <div style="width: 72px; height: 72px; border-radius: 16px; background: #141414; color: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+      <svg width="48" height="48" aria-hidden="true"><use href="#m"/></svg>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":520,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

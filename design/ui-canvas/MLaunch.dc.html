@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio mobile — launch</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}details>summary .chev{transition:transform .15s}details:not([open])>summary .chev{transform:rotate(180deg)}
+input,select{font:15px 'Inter',sans-serif;border-radius:12px;border:1px solid #C4C7D4;padding:0 12px;height:46px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%}
+.card{border-radius:16px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.07),0 1px 2px rgba(15,16,32,0.05);overflow:hidden}
+.fl{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600}
+.hp{font-weight:400;font-size:12.5px;color:#4D5065;line-height:1.4}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Launch" sub="nf-core/rnaseq · step 3 of 5" back="MOverview.dc.html" hint-size="390px,60px"></dc-import></div>
+  <main style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 172px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <ol aria-label="Launch steps" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px;">
+      <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+        <li aria-current="{{s.cur}}" style="display: flex; flex-direction: column; gap: 6px; align-items: center;">
+          <span style="width: 100%; height: 6px; border-radius: 3px; background: {{s.bar}};"></span>
+          <span style="font-size: 11.5px; font-weight: {{s.w}}; color: {{s.fg}}; white-space: nowrap;">{{s.label}}</span>
+        </li>
+      </sc-for>
+    </ol>
+
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <label style="flex-grow: 1; display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border-radius: 14px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.09); color: #6E7287;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg>
+        <input type="search" placeholder="Search 94 parameters" aria-label="Search parameters" style="border: none; height: auto; padding: 0; background: transparent; outline: none;">
+      </label>
+      <label style="height: 44px; padding: 0 12px; border-radius: 14px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.09); display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; white-space: nowrap;"><input type="checkbox" style="width: 18px; height: 18px; margin: 0;"> Changed</label>
+    </div>
+
+    <details open class="card">
+      <summary style="min-height: 60px; padding: 10px 14px; display: flex; align-items: center; gap: 12px;">
+        <span style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span>
+        <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 15px; font-weight: 600;">Input / output</span><span style="font-size: 12.5px; color: #B02A2A; font-weight: 600;">2 required · 1 issue</span></span>
+        <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+      </summary>
+      <div style="padding: 2px 14px 16px; display: flex; flex-direction: column; gap: 14px;">
+        <a href="#" style="display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 12px; border-radius: 14px; background: #FFF8F8; box-shadow: inset 0 0 0 1px #F2B8B8; text-decoration: none; color: inherit;">
+          <span style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; background: #FFFFFF; color: #B02A2A; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14.5px; font-weight: 600;">input · samplesheet.csv <span style="color: #B02A2A;">*</span></span><span style="font-size: 12.5px; color: #33364A;">4 samples · <strong style="color: #B02A2A;">1 issue</strong> · checked by the runner 10:12</span></span>
+          <span style="font-size: 13px; font-weight: 600; color: #6344B2;">Recheck</span>
+        </a>
+        <label class="fl">outdir <span style="color: #B02A2A; display: none;">*</span>
+          <input value="/g/lab/rnaseq/2026-10-25" style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+          <span class="hp">Directory on the environment storage · tap to browse</span>
+        </label>
+        <label class="fl">multiqc_title
+          <input value="Liver time course">
+          <span class="hp">Optional title for the MultiQC report</span>
+        </label>
+      </div>
+    </details>
+
+    <details open class="card">
+      <summary style="min-height: 60px; padding: 10px 14px; display: flex; align-items: center; gap: 12px;">
+        <span style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18 M5 6h11l3 3-3 3H5z"/></svg></span>
+        <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 15px; font-weight: 600;">Alignment</span><span style="font-size: 12.5px; color: #8F5806; font-weight: 600;">17 parameters · 2 changed</span></span>
+        <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+      </summary>
+      <div style="padding: 2px 14px 16px; display: flex; flex-direction: column; gap: 14px;">
+        <label class="fl">aligner
+          <select><option>star_salmon</option><option>star_rsem</option><option>hisat2</option></select>
+          <span class="hp">Default star_salmon</span>
+        </label>
+        <label class="fl"><span>min_mapped_reads <span style="font-weight: 600; font-size: 12px; color: #8F5806;">· changed · default 5</span></span>
+          <input type="number" value="10" inputmode="numeric">
+          <span class="hp">Minimum % of uniquely mapped reads below which samples are removed.</span>
+        </label>
+        <div style="display: flex; align-items: center; gap: 12px; min-height: 48px;">
+          <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">skip_pseudo_alignment</span><span style="font-size: 12px; font-weight: 600; color: #8F5806;">changed · default off</span></span>
+          <span role="switch" aria-checked="true" aria-label="skip_pseudo_alignment" style="width: 50px; height: 30px; border-radius: 15px; background: #7750D4; position: relative; flex-shrink: 0;"><span style="position: absolute; top: 3px; left: 23px; width: 24px; height: 24px; border-radius: 12px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,16,32,0.25);"></span></span>
+        </div>
+      </div>
+    </details>
+
+    <sc-for list="{{closed}}" as="c" hint-placeholder-count="4">
+      <details class="card">
+        <summary style="min-height: 60px; padding: 10px 14px; display: flex; align-items: center; gap: 12px;">
+          <span style="width: 34px; height: 34px; flex-shrink: 0; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg></span>
+          <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 15px; font-weight: 600;">{{c.name}}</span><span style="font-size: 12.5px; color: #6E7287;">{{c.sub}}</span></span>
+          <svg class="chev" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+        </summary>
+        <div style="padding: 2px 14px 16px; display: flex; flex-direction: column; gap: 14px;">
+          <sc-for list="{{c.fields}}" as="f" hint-placeholder-count="2">
+            <label class="fl">{{f.k}}<input value="{{f.v}}"><span class="hp">{{f.h}}</span></label>
+          </sc-for>
+        </div>
+      </details>
+    </sc-for>
+  </main>
+
+  <div style="position: absolute; left: 0; right: 0; bottom: 80px; z-index: 3; padding: 10px 12px; background: linear-gradient(rgba(247,247,251,0), #F7F7FB 30%); display: flex; gap: 8px;">
+    <a href="#" style="flex: 0 0 96px; height: 48px; border-radius: 14px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #C4C7D4; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: #0F1020; text-decoration: none;">Back</a>
+    <a href="#" style="flex-grow: 1; height: 48px; border-radius: 14px; background: #7750D4; display: flex; align-items: center; justify-content: center; font-size: 15px; font-weight: 600; color: #FFFFFF; text-decoration: none;">Next: Where it runs</a>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MobileTabbar" active="launch" hint-size="390px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  const st = (label, k) => k === 'done' ? { label: '✓ ' + label, cur: 'false', bar: '#7750D4', fg: '#4D368B', w: 600 } : k === 'cur' ? { label, cur: 'step', bar: 'linear-gradient(90deg, #7750D4 50%, #D8C8FC 50%)', fg: '#0F1020', w: 700 } : { label, cur: 'false', bar: '#DFE1EA', fg: '#6E7287', w: 500 };
+  return {
+    steps: [st('Workflow', 'done'), st('Inputs', 'done'), st('Params', 'cur'), st('Where', ''), st('Review', '')],
+    closed: [
+      { name: 'Reference genome', sub: '14 parameters · GRCh38', icon: 'M7 3c0 6 10 12 10 18 M17 3c0 6-10 12-10 18 M8.5 7h7 M8.5 17h7', fields: [{ k: 'genome', v: 'GRCh38', h: 'iGenomes reference key' }, { k: 'gtf', v: '', h: 'GTF annotation; overrides genome' }] },
+      { name: 'Read trimming', sub: '7 parameters · defaults', icon: 'M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M8.5 7.5L20 19 M8.5 16.5L20 5', fields: [{ k: 'trimmer', v: 'trimgalore', h: 'trimgalore or fastp' }, { k: 'min_trimmed_reads', v: '10000', h: 'Samples with fewer reads are dropped' }] },
+      { name: 'Quality control', sub: '9 parameters · defaults', icon: 'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M9 12l2 2 4-4', fields: [{ k: 'deseq2_vst', v: 'true', h: 'Use vst instead of rlog' }, { k: 'skip_qc', v: 'false', h: 'Skip all QC except MultiQC' }] },
+      { name: 'Process skipping', sub: '21 parameters · defaults', icon: 'M4 6l8 6-8 6z M12 6l8 6-8 6z', fields: [{ k: 'skip_markduplicates', v: 'false', h: 'Skip Picard MarkDuplicates' }, { k: 'skip_bigwig', v: 'false', h: 'Skip bigWig creation' }] }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

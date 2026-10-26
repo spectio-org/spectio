@@ -1,0 +1,24 @@
+# Terminal + browser: the synthetic pipeline stops at the qc gate (real cast,
+# docs/assets/casts/synthetic-gate.cast) while the browser pane shows a UI design board of a QC
+# gate review. The boards are design sources, not this run's data (an imaging plate gate, not the
+# synthetic reads), and the note on the browser bar says so. Until the app exists this is the
+# honest pairing; with a live demo instance the scenes switch to its shots, same names.
+# Times in `scenes` are cast seconds; `speed` plays the cast faster so the video stays <= 30 s.
+name: gate-review
+title: "Stop at the gate, review in the browser, resume"
+cast: docs/assets/casts/synthetic-gate.cast
+size: [1280, 720]
+terminal_fraction: 0.52
+idle_time_limit: 0.8
+speed: 1.5
+note: "design boards, not this run's data"
+gif_width: 880
+gif_fps: 8
+crf: 30
+tail_seconds: 1.5
+scenes:
+  - {at: 0,    shot: run-detail,        url: "design board · run page",                 caption: "1 · the qc stage runs in the terminal; a run page is what the browser follows"}
+  - {at: 8.5,  shot: review-gate,       url: "design board · imaging plate QC gate",     caption: "2 · the gate opens in the browser: the reviewer excludes a failing item and approves"}
+  - {at: 13.5, shot: review-gate-phone, url: "design board · the same gate, on a phone", caption: "3 · the same decision from a phone"}
+  - {at: 16.5, image: docs/assets/diagrams/gate-resume_light.png, url: "docs diagram · stop, drop, resume", caption: "4 · back in the terminal: S03 is dropped, reads and QC of the others are reused"}
+  - {at: 31.0, shot: run-detail,        url: "design board · run page",                 caption: "5 · the run continues past the gate"}

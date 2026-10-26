@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — run detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Runs / rnaseq-2026-10-25" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="runs" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+
+      <section style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+        <div style="height: 4px; background: #3B82F6;"></div>
+        <div style="padding: 18px 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+          <svg width="120" height="60" viewBox="0 0 200 100" role="img" aria-label="Stages 1 and 2 completed, stage 3 running, stage 4 not started">
+            <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#8B5CF6"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#F4A5BC"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/>
+          </svg>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 260px;">
+            <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">rnaseq-2026-10-25</h1>
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1D5FC9;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· stage 3 of 4 (Quantification) · 812 / 1,248 tasks · 1 h 05</span>
+            </span>
+          </div>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+            <button type="button" style="height: 42px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #0F1020;">Pause after stage</button>
+            <a href="Launch.dc.html" style="height: 42px; padding: 0 14px; border-radius: 11px; box-shadow: inset 0 0 0 1px #C4C7D4; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #0F1020; text-decoration: none; display: flex; align-items: center;">Relaunch ▾</a>
+            <button type="button" style="height: 42px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #B02A2A;">Cancel</button>
+          </div>
+        </div>
+        <dl style="margin: 0; padding: 12px 20px 16px; border-top: 1px solid #EEEFF5; display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 12px; font-size: 13px;">
+          <sc-for list="{{facts}}" as="f" hint-placeholder-count="6">
+            <div style="display: flex; flex-direction: column; gap: 3px;"><dt style="color: #6E7287; font-size: 12px;">{{f.k}}</dt><dd style="margin: 0; font-weight: 500;">{{f.v}}</dd></div>
+          </sc-for>
+        </dl>
+      </section>
+
+      <nav aria-label="Run sections" style="display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #EEEFF5;">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="9">
+          <a href="#" style="padding: 10px 12px; font-size: 13.5px; font-weight: {{t.w}}; color: {{t.c}}; text-decoration: none; box-shadow: {{t.u}};">{{t.label}}</a>
+        </sc-for>
+      </nav>
+
+      <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+        <section style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap;"><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Stages</h2><span style="font-size: 12.5px; color: #4D5065;">from spectio.yml · lab overlay “rnaseq-embl” v2 · <a href="#" style="font-weight: 600; text-decoration: none;">view file</a></span></div>
+          <sc-for list="{{stages}}" as="s" hint-placeholder-count="4">
+            <div style="display: flex; gap: 14px; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; align-items: flex-start;">
+              <span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px; background: {{s.tile}}; color: {{s.tileFg}}; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">{{s.n}}</span>
+              <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 6px; min-width: 0;">
+                <div style="display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap;">
+                  <span style="font-weight: 600; font-size: 14.5px;">{{s.name}}</span>
+                  <span style="font-size: 13px; font-weight: 600; color: {{s.fg}};">{{s.state}}</span>
+                </div>
+                <div style="height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><div style="height: 6px; width: {{s.pct}}; background: {{s.bar}};"></div></div>
+                <span style="font-size: 12.5px; color: #4D5065;">{{s.detail}}</span>
+                <sc-if value="{{s.hasGate}}" hint-placeholder-val="{{false}}">
+                  <span style="font-size: 12.5px; color: #33364A; background: #F7F7FB; border-radius: 8px; padding: 6px 9px;">{{s.gate}}</span>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+          <div style="font-size: 12.5px; color: #4D5065; background: #F7F7FB; border-radius: 10px; padding: 9px 12px;">Not scheduled: <strong style="color: #22253A;">SALMON_PSEUDO</strong> (when: false — <code style="font-family: 'JetBrains Mono', monospace;">--skip_pseudo_alignment true</code>) · 96 tasks shown as hatched in the task view.</div>
+
+          <h2 style="margin: 10px 0 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Busiest processes</h2>
+          <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+            <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px;">
+              <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
+                <th scope="col" style="padding: 8px 12px; font-weight: 600;">Process (module)</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Tasks</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Scheduler</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Retries</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Peak memory</th>
+              </tr></thead>
+              <tbody>
+                <sc-for list="{{procs}}" as="p" hint-placeholder-count="4">
+                  <tr style="border-top: 1px solid #EEEFF5;">
+                    <td style="padding: 8px 12px;"><span style="font-weight: 600;">{{p.name}}</span><br><span style="font-size: 11.5px; color: #6E7287;">{{p.module}}</span></td>
+                    <td style="padding: 8px 12px; white-space: nowrap;">{{p.tasks}}</td>
+                    <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #33364A;">{{p.sched}}</td>
+                    <td style="padding: 8px 12px;">{{p.retries}}</td>
+                    <td style="padding: 8px 12px;">{{p.mem}}</td>
+                  </tr>
+                </sc-for>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Parameters changed vs. previous run</h2>
+            <sc-for list="{{diff}}" as="d" hint-placeholder-count="3">
+              <div style="font-size: 12.5px; display: flex; flex-direction: column; gap: 2px;"><code style="font-family: 'JetBrains Mono', monospace; color: #22253A;">{{d.k}}</code><span><span style="color: #B02A2A; text-decoration: line-through;">{{d.old}}</span> → <span style="color: #157A4B; font-weight: 600;">{{d.new}}</span></span></div>
+            </sc-for>
+          </section>
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Software (from pipeline_info)</h2>
+            <sc-for list="{{software}}" as="sw" hint-placeholder-count="5">
+              <div style="display: flex; justify-content: space-between; font-size: 12.5px;"><span>{{sw.k}}</span><code style="font-family: 'JetBrains Mono', monospace; color: #33364A;">{{sw.v}}</code></div>
+            </sc-for>
+            <a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">All 64 tools and containers →</a>
+          </section>
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Lineage</h2>
+            <sc-for list="{{lineage}}" as="l" hint-placeholder-count="3">
+              <div style="display: flex; gap: 8px; font-size: 12.5px; line-height: 1.45;"><span style="color: #6344B2; font-weight: 600; min-width: 64px;">{{l.k}}</span><span>{{l.v}}</span></div>
+            </sc-for>
+          </section>
+        </aside>
+      </div>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const tabNames = ['Summary', 'Stages & gates', 'Tasks', 'Logs', 'Outputs & reports', 'Parameters', 'Software', 'Environment', 'Lineage'];
+  return {
+    facts: [
+      { k: 'Workflow', v: 'nf-core/rnaseq 3.27.0' },
+      { k: 'Engine', v: 'Nextflow 25.10.4 · nf-core' },
+      { k: 'Environment', v: 'EMBL SLURM · htc' },
+      { k: 'Profile', v: 'singularity' },
+      { k: 'Launched', v: 'Thomas · in UI' },
+      { k: 'Work dir', v: '/scratch/tw/rnaseq-1025' }
+    ],
+    tabs: tabNames.map((label, i) => ({ label, w: i === 0 ? 600 : 500, c: i === 0 ? '#4D368B' : '#4D5065', u: i === 0 ? 'inset 0 -2px 0 #7750D4' : 'none' })),
+    stages: [
+      { n: '1', name: 'Preprocessing', state: 'Completed', fg: '#157A4B', tile: '#5A4FCF', tileFg: '#FFFFFF', pct: '100%', bar: '#5A4FCF', detail: 'FastQC, UMI extraction, trimming · 288 tasks · 14 min', hasGate: false, gate: '' },
+      { n: '2', name: 'Alignment & QC', state: 'Completed', fg: '#157A4B', tile: '#8B5CF6', tileFg: '#FFFFFF', pct: '100%', bar: '#8B5CF6', detail: 'STAR, RSeQC, Qualimap · 336 tasks · 38 min', hasGate: true, gate: 'Gate approved automatically by QC agent (policy: auto under threshold) · mapping rate 91.4 % ≥ 80 %' },
+      { n: '3', name: 'Quantification', state: 'Running · 63 %', fg: '#1D5FC9', tile: '#F4A5BC', tileFg: '#562941', pct: '63%', bar: '#EC5F87', detail: 'Salmon quant, featureCounts · 188 / 300 tasks · SLURM job array', hasGate: false, gate: '' },
+      { n: '4', name: 'Reporting', state: 'Not started', fg: '#4D5065', tile: '#DFE1EA', tileFg: '#33364A', pct: '0%', bar: '#F9A947', detail: 'DESeq2 QC, MultiQC', hasGate: false, gate: '' }
+    ],
+    procs: [
+      { name: 'SALMON_QUANT', module: 'nf-core/salmon/quant · 2f6b4c1', tasks: '48 / 48 running', sched: 'array 8812345_[0-47]', retries: '0', mem: '7.8 GB' },
+      { name: 'SUBREAD_FEATURECOUNTS', module: 'nf-core/subread/featurecounts · 9d1e0a3', tasks: '140 / 252', sched: 'jobs 8812401–8812540', retries: '3', mem: '2.1 GB' },
+      { name: 'STAR_ALIGN', module: 'nf-core/star/align · 4c7f2aa', tasks: '48 / 48 done', sched: 'array 8811902_[0-47]', retries: '4', mem: '31.6 GB' },
+      { name: 'FASTQC', module: 'nf-core/fastqc · 08ae7b5', tasks: '96 / 96 done', sched: 'array 8811650_[0-95]', retries: '0', mem: '0.6 GB' }
+    ],
+    diff: [
+      { k: 'aligner', old: 'star_salmon', new: 'star_salmon' },
+      { k: 'min_mapped_reads', old: '5', new: '10' },
+      { k: 'skip_pseudo_alignment', old: 'false', new: 'true' }
+    ],
+    software: [
+      { k: 'Nextflow', v: '25.10.4' },
+      { k: 'nf-core/rnaseq', v: 'v3.27.0-g1b2c3d4' },
+      { k: 'STAR', v: '2.7.11b' },
+      { k: 'Salmon', v: '1.10.3' },
+      { k: 'MultiQC', v: '1.31' }
+    ],
+    lineage: [
+      { k: 'Run 1', v: 'rnaseq-2026-10-24 · failed in stage 2 (STAR out of memory)' },
+      { k: 'Run 2', v: 'this run · Resume with min_mapped_reads changed' },
+      { k: 'Next', v: 'Open in depictio when reporting completes' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

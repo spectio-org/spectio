@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Perspectio 5 — P drapeau</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#141414}a:hover{color:#444444}
+</style>
+</helmet>
+<div style="width: 520px; height: 560px; box-sizing: border-box; background: #FFFFFF; color: #141414; display: flex; flex-direction: column; font-family: system-ui, sans-serif;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <defs>
+      <mask id="pm" maskUnits="userSpaceOnUse" x="0" y="0" width="200" height="200">
+        <rect width="200" height="200" fill="#FFFFFF"/>
+        <rect x="92" y="0" width="8" height="200" fill="#000000"/>
+        <rect x="122" y="0" width="14" height="200" fill="#000000"/>
+      </mask>
+    </defs>
+    <symbol id="m" viewBox="0 0 200 200">
+      <g fill="currentColor">
+        <rect x="40" y="16" width="22" height="168" rx="4"/>
+        <path mask="url(#pm)" d="M70 16H112A46 46 0 0 1 112 108H70Z"/>
+      </g>
+    </symbol>
+  </svg>
+  <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+    <svg width="260" height="260" role="img" aria-label="Monogramme P : un mât et un drapeau de checkpoint découpé en trois segments, le dernier séparé par un arrêt"><use href="#m"/></svg>
+  </div>
+  <div style="height: 136px; border-top: 1px solid #E6E6E6; display: flex; align-items: center; justify-content: center; gap: 32px;">
+    <svg width="48" height="48" aria-hidden="true"><use href="#m"/></svg>
+    <svg width="24" height="24" aria-hidden="true"><use href="#m"/></svg>
+    <svg width="16" height="16" aria-hidden="true"><use href="#m"/></svg>
+    <div style="width: 72px; height: 72px; border-radius: 16px; background: #141414; color: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+      <svg width="48" height="48" aria-hidden="true"><use href="#m"/></svg>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":520,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

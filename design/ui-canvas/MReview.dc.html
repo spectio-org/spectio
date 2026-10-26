@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio mobile — review detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+.mr-tab{flex:1 1 0;position:relative;height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;color:#4D5065;cursor:pointer}
+.mr-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.mr-tab:has(input:checked){background:#FFFFFF;color:#0F1020;box-shadow:0 1px 2px rgba(15,16,32,0.15)}
+.mr-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:1px}
+.mr-pn{display:none}
+.mr:has(input[value="sum"]:checked) .pn-sum,
+.mr:has(input[value="items"]:checked) .pn-items,
+.mr:has(input[value="chg"]:checked) .pn-chg,
+.mr:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.dot{aspect-ratio:1;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Segmentation QC" sub="plate 07 · 3 of 12" back="MReviewQueue.dc.html" hint-size="390px,60px"></dc-import></div>
+  <main class="mr" style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 172px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; border-radius: 16px; background: #FFFFFF; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.07); padding: 12px 14px 12px 18px;">
+      <svg width="56" height="28" viewBox="0 0 200 100" role="img" aria-label="Stage 1 done, gate after stage 2 open" style="flex-shrink: 0;"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
+        <span style="font-size: 14px; font-weight: 600; color: #8F5806;">Waiting 47 min</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="13" height="13" alt="Snakemake" style="display: block;">imaging-cellpose · after stage 2 of 4</span>
+      </span>
+      <span style="display: flex; gap: 4px; flex-shrink: 0;">
+        <span title="You" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-size: 10px; font-weight: 600; display: flex; align-items: center; justify-content: center;">TW</span>
+        <span title="AI suggests" style="width: 26px; height: 26px; border-radius: 13px; background: #7750D4; color: #FFFFFF; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; padding: 4px; border-radius: 16px; background: #EEEFF5;">
+      <label class="mr-tab"><input type="radio" name="mrt" value="sum" checked>Summary</label>
+      <label class="mr-tab"><input type="radio" name="mrt" value="items">Items</label>
+      <label class="mr-tab"><input type="radio" name="mrt" value="chg">Changes</label>
+      <label class="mr-tab"><input type="radio" name="mrt" value="hist">History</label>
+    </div>
+
+    <section class="mr-pn pn-sum" style="flex-direction: column; gap: 10px;">
+      <div style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); padding: 12px 14px; display: flex; flex-direction: column;">
+        <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.05em; color: #4D5065; padding-bottom: 4px;">GATE CHECKS</span>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 10px; min-height: 48px; border-top: 1px solid #EEEFF5;">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="{{c.icon}}"/></svg>
+            <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;"><span style="font-size: 15px; font-weight: 600;">{{c.name}}</span><span style="font-size: 12px; color: #6E7287;">{{c.rule}}</span></span>
+            <span style="font-size: 14px; font-weight: 600; color: {{c.col}}; flex-shrink: 0;">{{c.value}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <sc-for list="{{health}}" as="h" hint-placeholder-count="4">
+          <div style="border-radius: 14px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); padding: 10px 12px; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 12px; color: #6E7287;">{{h.k}}</span><span style="font-size: 15px; font-weight: 600; color: {{h.fg}};">{{h.v}}</span></div>
+        </sc-for>
+      </div>
+      <div style="border-radius: 16px; box-shadow: 0 0 0 1px #E6DCFC; background: #FBF9FF; padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #4D368B;"><span style="width: 24px; height: 24px; border-radius: 7px; background: #7750D4; color: #FFFFFF; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>QC agent suggests</span>
+        <span style="font-size: 15px; line-height: 1.5;">Redo C04 and D11 with <code style="font-family: 'JetBrains Mono', monospace; font-size: 13.5px;">diameter</code> 42. Exclude F02 (debris).</span>
+        <button type="button" style="height: 44px; border: none; border-radius: 12px; box-shadow: inset 0 0 0 1.5px #A580F8; background: #FFFFFF; color: #4D368B; font: 600 15px 'Inter', sans-serif;">Apply suggestion</button>
+      </div>
+    </section>
+
+    <section class="mr-pn pn-items" style="flex-direction: column; gap: 10px;">
+      <div style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+        <span style="display: flex; justify-content: space-between; align-items: baseline;"><span style="font-size: 15px; font-weight: 600;">Plate 07 · 96 wells</span><span style="font-size: 12px; color: #6E7287;">tap a well</span></span>
+        <div style="display: grid; grid-template-columns: 12px repeat(12, minmax(0, 1fr)); gap: 4px; align-items: center;">
+          <sc-for list="{{cells}}" as="w" hint-placeholder-count="104"><span class="{{w.cls}}" title="{{w.title}}" style="background: {{w.bg}}; box-shadow: {{w.ring}}; color: {{w.fg}}; font-size: {{w.fs}};">{{w.t}}</span></sc-for>
+        </div>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; font-size: 12.5px; color: #33364A;">
+          <sc-for list="{{legend}}" as="l" hint-placeholder-count="3"><span style="display: flex; align-items: center; gap: 6px;"><span style="width: 12px; height: 12px; border-radius: 6px; background: {{l.bg}}; box-shadow: {{l.ring}};"></span>{{l.t}}</span></sc-for>
+        </div>
+      </div>
+      <span style="font-size: 12px; font-weight: 600; letter-spacing: 0.05em; color: #4D5065; margin: 4px 2px 0;">FLAGGED · 3</span>
+      <sc-for list="{{flagged}}" as="f" hint-placeholder-count="3">
+        <div style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="display: flex; justify-content: space-between; gap: 8px; align-items: baseline;"><span style="font-size: 16px; font-weight: 600;">{{f.well}}</span><span style="font-size: 12.5px; color: #B02A2A;">{{f.why}}</span></span>
+          <span role="radiogroup" aria-label="Decision for {{f.well}}" style="display: flex; padding: 3px; border-radius: 12px; background: #F1F2F6;">
+            <sc-for list="{{f.opts}}" as="o" hint-placeholder-count="3"><span role="radio" aria-checked="{{o.on}}" style="flex: 1 1 0; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 14px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for>
+          </span>
+          <span style="font-size: 12.5px; color: #4D5065;">{{f.note}}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section class="mr-pn pn-chg" style="flex-direction: column; gap: 10px;">
+      <sc-for list="{{changes}}" as="g" hint-placeholder-count="3">
+        <a href="#" style="text-decoration: none; color: inherit; min-height: 64px; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); padding: 12px 14px; display: flex; align-items: center; gap: 12px;">
+          <span style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{g.icon}}"/></svg></span>
+          <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 15px; font-weight: 600;">{{g.k}}</span><span style="font-size: 13px; color: #4D5065;">{{g.v}}</span></span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A9EB0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+      </sc-for>
+      <span style="font-size: 12.5px; line-height: 1.5; color: #4D5065; padding: 0 2px;">Excluded wells leave the next stages but stay in the run record. Redone wells are recomputed alone; the other 93 come from cache.</span>
+    </section>
+
+    <section class="mr-pn pn-hist" style="flex-direction: column; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); padding: 4px 14px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="5">
+        <div style="display: flex; gap: 10px; align-items: flex-start; padding: 10px 0; border-top: {{h.bt}};"><span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 8px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; font-size: 14px; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287; flex-shrink: 0;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+  </main>
+
+  <div style="position: absolute; left: 8px; right: 8px; bottom: 80px; z-index: 3; box-sizing: border-box; padding: 10px; border-radius: 20px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.10), 0 12px 28px -14px rgba(15,16,32,0.4); display: flex; flex-direction: column; gap: 8px;">
+    <span style="display: flex; gap: 6px; align-items: center; overflow: hidden; white-space: nowrap;"><span style="font-size: 12px; font-weight: 700; color: #4D368B; flex-shrink: 0;">4 changes</span><sc-for list="{{chips}}" as="c" hint-placeholder-count="3"><span style="flex-shrink: 0; font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 8px; background: #F6F2FE; color: #4D368B;">{{c}}</span></sc-for></span>
+    <span style="display: flex; gap: 8px;">
+      <button type="button" aria-label="More actions: discard changes, go back to a stage, stop run" style="width: 48px; height: 48px; flex-shrink: 0; border: none; border-radius: 14px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; color: #33364A; display: flex; align-items: center; justify-content: center;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M5 12h.01 M12 12h.01 M19 12h.01"/></svg></button>
+      <button type="button" style="flex-grow: 1; height: 48px; border: none; border-radius: 14px; background: #7750D4; color: #FFFFFF; font: 600 16px 'Inter', sans-serif;">Apply and continue</button>
+    </span>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MobileTabbar" active="review" hint-size="390px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z' };
+  const flaggedIdx = { C4: 'redo', D11: 'redo', F2: 'excl' };
+  const cells = [{ cls: '', t: '', title: '', bg: 'transparent', ring: 'none', fg: '#6E7287', fs: '9px' }];
+  for (let i = 1; i <= 12; i++) cells.push({ cls: '', t: String(i), title: '', bg: 'transparent', ring: 'none', fg: '#6E7287', fs: '9px' });
+  ['A','B','C','D','E','F','G','H'].forEach(r => {
+    cells.push({ cls: '', t: r, title: '', bg: 'transparent', ring: 'none', fg: '#6E7287', fs: '9px' });
+    for (let i = 1; i <= 12; i++) {
+      const id = r + i, st = flaggedIdx[id];
+      if (st === 'redo') cells.push({ cls: 'dot', t: '↻', title: id + ' · redo', bg: '#F6F2FE', ring: 'inset 0 0 0 2px #7750D4', fg: '#4D368B', fs: '9px' });
+      else if (st === 'excl') cells.push({ cls: 'dot', t: '×', title: id + ' · excluded', bg: 'repeating-linear-gradient(135deg, #F1F2F6 0 3px, #DFE1EA 3px 6px)', ring: 'inset 0 0 0 1.5px #9A9EB0', fg: '#4D5065', fs: '10px' });
+      else cells.push({ cls: 'dot', t: '', title: id + ' · passes', bg: '#C9EBD8', ring: 'none', fg: '#157A4B', fs: '9px' });
+    }
+  });
+  const opt = (on) => ['Keep', 'Redo', 'Exclude'].map(t => t === on ? { t, on: 'true', bg: '#FFFFFF', fg: '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, on: 'false', bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  const actor = { SYS: ['#EEEFF5', '#33364A'], AI: ['#7750D4', '#FFFFFF'], BOT: ['#E3F1FB', '#1D5FC9'], TW: ['#E6DCFC', '#4D368B'] };
+  const ev = (t, text, at, i) => ({ t, text, at, bg: actor[t][0], fg: actor[t][1], bt: i === 0 ? 'none' : '1px solid #EEEFF5' });
+  return {
+    checks: [
+      { name: 'Wells segmented', rule: 'all 96', value: '96 / 96', col: '#157A4B', icon: I.check },
+      { name: 'Objects per well', rule: '≥ 500 per well', value: '93 / 96', col: '#8F5806', icon: I.warn },
+      { name: 'Mean object size', rule: '± 50 % of plate median', value: '3 outliers', col: '#B02A2A', icon: I.warn }
+    ],
+    health: [
+      { k: 'Failed tasks', v: '0', fg: '#157A4B' }, { k: 'Retried', v: '2 (memory)', fg: '#8F5806' },
+      { k: 'Stage 2 time', v: '41 min', fg: '#22253A' }, { k: 'Peak memory', v: '31 / 32 GB', fg: '#8F5806' }
+    ],
+    cells,
+    legend: [
+      { t: 'Passes 93', bg: '#C9EBD8', ring: 'none' }, { t: 'Redo 2', bg: '#F6F2FE', ring: 'inset 0 0 0 2px #7750D4' },
+      { t: 'Excluded 1', bg: 'repeating-linear-gradient(135deg, #F1F2F6 0 3px, #DFE1EA 3px 6px)', ring: 'inset 0 0 0 1.5px #9A9EB0' }
+    ],
+    flagged: [
+      { well: 'C04', why: 'objects 2.4× median', opts: opt('Redo'), note: 'Redo with diameter 42 (AI suggestion)' },
+      { well: 'D11', why: 'objects 2.1× median', opts: opt('Redo'), note: 'Redo with diameter 42' },
+      { well: 'F02', why: '12 objects only', opts: opt('Exclude'), note: 'Reason: debris · kept in the run record' }
+    ],
+    changes: [
+      { k: 'Samplesheet', v: '3 rows edited · saved as v2', icon: 'M4 4h16v16H4z M4 10h16 M4 15h16 M10 4v16' },
+      { k: 'Parameters', v: 'diameter 30 → 42 for C04, D11', icon: 'M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4' },
+      { k: 'Files', v: 'objects_per_well.tsv · 1 edit + 2 AI proposals', icon: 'M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6' }
+    ],
+    history: [
+      ev('SYS', 'Gate opened; Snakemake stopped after rule segment_cells.', '09:21', 0),
+      ev('AI', 'QC agent posted checks and a suggestion.', '09:24', 1),
+      ev('BOT', 'Notified #imaging-qc.', '09:24', 2),
+      ev('TW', 'Thomas applied the suggestion; F02 marked as debris.', '10:08', 3),
+      ev('TW', 'Thomas edited objects_per_well.tsv.', '10:11', 4)
+    ],
+    chips: ['2 redo', '1 excluded', 'samplesheet v2', 'tsv v2']
+  };
+}
+}
+</script>
+</body>
+</html>

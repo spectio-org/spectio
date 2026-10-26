@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — administration · restore backup</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 8px;border-radius:7px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.btn{height:38px;padding:0 14px;border-radius:11px;border:none;font:600 13px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.tbl{width:100%;border-collapse:collapse;font-size:13px;table-layout:fixed}
+.tbl th{text-align:left;font-size:12px;font-weight:600;color:#33364A;background:#F7F7FB;padding:8px 12px;white-space:nowrap}
+.tbl td{padding:8px 12px;border-top:1px solid #EEEFF5;vertical-align:middle}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.mono{font-family:'JetBrains Mono',monospace;font-size:12px}
+.kv{display:flex;flex-direction:column;gap:2px;padding:9px 0;border-top:1px solid #EEEFF5}
+.kv:first-child{border-top:none}
+.kv > span:first-child{font-size:11.5px;color:#6E7287}
+.kv > span:last-child{font-size:13px;color:#0F1020}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Administration / Backups / Restore" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+    <div style="display: flex; align-items: center; gap: 16px;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg></span>
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Administration</h1>
+        <span style="font-size: 14px; color: #4D5065;">People, content, activity and the health of this instance</span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="position: sticky; top: 0; flex-shrink: 0;"><dc-import name="AdminNav" active="backups" hint-size="208px,860px"></dc-import></div>
+
+      <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; align-items: center; gap: 12px;">
+          <a href="AdminBackups.dc.html" aria-label="Back to backups" style="width: 34px; height: 34px; border-radius: 10px; box-shadow: inset 0 0 0 1px #DFE1EA; color: #33364A; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+          <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <h2 style="margin: 0; font-size: 20px; font-weight: 600;">Restore backup</h2>
+            <span style="font-size: 13px; color: #4D5065;">Nothing changes until you confirm. This dry run read the archive and compared it with the live instance.</span>
+          </div>
+        </div>
+
+        <ol aria-label="Restore steps" style="list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px;">
+          <sc-for list="{{steps}}" as="s" hint-placeholder-count="5">
+            <li aria-current="{{s.cur}}" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: 12px; background: {{s.bg}}; box-shadow: inset 0 0 0 1px {{s.bd}};">
+              <span style="width: 26px; height: 26px; border-radius: 13px; background: {{s.dot}}; color: {{s.dfg}}; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{s.mark}}</span>
+              <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13px; font-weight: 600; color: {{s.fg}};">{{s.label}}</span><span style="font-size: 11.5px; color: #6E7287; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{s.sub}}</span></span>
+            </li>
+          </sc-for>
+        </ol>
+
+        <div style="display: grid; grid-template-columns: 280px minmax(0, 1fr); gap: 16px; align-items: start;">
+          <aside style="display: flex; flex-direction: column; gap: 12px;">
+            <section class="card" style="padding: 12px 14px;">
+              <h3 style="margin: 0 0 4px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8z M14 3v5h5 M9 13h6 M9 17h4"/></svg>Manifest</h3>
+              <div class="kv"><span>Backup</span><span class="mono" style="word-break: break-all;">spectio-backup-embl-20261024T153112Z</span></div>
+              <div class="kv"><span>Created</span><span>24 Oct 2026, 15:31 UTC · system, before upgrade</span></div>
+              <div class="kv"><span>Instance</span><span><span class="mono">spectio-embl</span> · same instance</span></div>
+              <div class="kv"><span>Spectio</span><span style="display: flex; align-items: center; gap: 6px;"><span class="mono">0.3.2</span><span style="color: #9A9EB0;">→</span><span class="mono">0.4.0</span><span style="font-size: 12px; color: #6E7287;">current</span></span></div>
+              <div class="kv"><span>Checksums</span><span style="display: flex; align-items: center; gap: 6px;"><span class="chip" style="background: #E8F6EF; color: #157A4B;">✓ 4 of 4 parts</span><span style="font-size: 12px; color: #6E7287;">SHA-256</span></span></div>
+              <div class="kv"><span>Encrypted</span><span>No · secrets kept as references</span></div>
+              <div class="kv"><span>Parts</span><span style="font-size: 12.5px; color: #33364A; line-height: 1.6;">db/*.jsonl · 412 MB<br>files/ · 1.4 GB<br>keys/ · 4 kB<br>plugin-instances.json · 9 kB</span></div>
+            </section>
+            <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+              <h3 style="margin: 0; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14 M6 13l6 6 6-6"/></svg>Schema 0012 → 0015</h3>
+              <span style="font-size: 12px; color: #4D5065;">The backup is migrated forward after loading. Never backwards: a newer backup is refused.</span>
+              <sc-for list="{{revs}}" as="r" hint-placeholder-count="3">
+                <span style="display: flex; gap: 8px; align-items: baseline; font-size: 12.5px;"><span class="mono" style="color: #4D368B; flex-shrink: 0;">{{r.id}}</span><span style="color: #33364A;">{{r.label}}</span></span>
+              </sc-for>
+            </section>
+          </aside>
+
+          <div style="display: flex; flex-direction: column; gap: 14px; min-width: 0;">
+            <section class="card" style="overflow: hidden;">
+              <div style="padding: 12px 14px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+                <div style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 2px;"><h3 style="margin: 0; font-size: 15px; font-weight: 600;">Database · dry-run report</h3><span style="font-size: 12.5px; color: #4D5065;">Each selected table is wiped and replaced in one transaction, rolled back if it fails</span></div>
+                <span class="chip" style="background: #F6F2FE; color: #4D368B;">11 of 12 groups selected</span>
+              </div>
+              <table class="tbl">
+                <colgroup><col style="width: 34%;"><col style="width: 15%;"><col style="width: 15%;"><col style="width: 14%;"><col style="width: 22%;"></colgroup>
+                <thead><tr><th>Tables</th><th class="num">Live rows</th><th class="num">In backup</th><th class="num">Change</th><th>Action</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{tables}}" as="t" hint-placeholder-count="12">
+                    <tr style="opacity: {{t.op}};">
+                      <td><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;">{{t.name}}</span><span class="mono" style="font-size: 11px; color: #6E7287; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{t.tables}}</span></span></td>
+                      <td class="num" style="color: #33364A;">{{t.live}}</td>
+                      <td class="num" style="color: #33364A;">{{t.bak}}</td>
+                      <td class="num" style="font-weight: 600; color: {{t.dc}};">{{t.delta}}</td>
+                      <td><span class="chip" style="background: {{t.abg}}; color: {{t.afg}};">{{t.action}}</span></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </section>
+
+            <div style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px;">
+              <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+                <h3 style="margin: 0; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F7FA8" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>File store</h3>
+                <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px;">
+                  <span style="display: flex; flex-direction: column;"><span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 19px;">18 204</span><span style="font-size: 11.5px; color: #6E7287;">objects to restore</span></span>
+                  <span style="display: flex; flex-direction: column;"><span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 19px;">1.4 GB</span><span style="font-size: 11.5px; color: #6E7287;">evidence, reports, logos</span></span>
+                  <span style="display: flex; flex-direction: column;"><span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 19px; color: #157A4B;">0</span><span style="font-size: 11.5px; color: #6E7287;">missing in archive</span></span>
+                </div>
+                <span style="font-size: 12px; color: #4D5065;">312 objects created after the backup are kept aside under <span class="mono">_restored-aside/</span>, not deleted.</span>
+              </section>
+              <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+                <h3 style="margin: 0; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 7v5l3 2"/></svg>What happens next</h3>
+                <sc-for list="{{next}}" as="n" hint-placeholder-count="4">
+                  <span style="display: flex; gap: 8px; font-size: 12.5px; color: #33364A;"><span style="width: 6px; height: 6px; border-radius: 3px; background: #7750D4; margin-top: 6px; flex-shrink: 0;"></span>{{n}}</span>
+                </sc-for>
+              </section>
+            </div>
+
+            <section style="display: flex; flex-direction: column; gap: 8px;">
+              <sc-for list="{{warnings}}" as="w" hint-placeholder-count="3">
+                <div role="note" style="display: flex; align-items: flex-start; gap: 10px; border-radius: 12px; padding: 10px 14px; background: {{w.bg}}; box-shadow: inset 4px 0 0 {{w.bar}}; font-size: 13px; color: {{w.fg}};">
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{w.bar}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="{{w.icon}}"/></svg>
+                  <span><strong>{{w.title}}</strong> {{w.text}}</span>
+                </div>
+              </sc-for>
+            </section>
+
+            <section class="card" style="padding: 14px; display: flex; align-items: center; gap: 14px; background: #FBFBFD; flex-wrap: wrap;">
+              <span style="display: flex; flex-direction: column; gap: 2px; flex: 1 1 260px;"><span style="font-size: 11.5px; font-weight: 600; letter-spacing: 0.06em; color: #6E7287;">NEXT STEP · CONFIRM</span><span style="font-size: 13px; color: #33364A;">Type the instance name <span class="mono" style="font-weight: 600;">spectio-embl</span> to enable the restore.</span></span>
+              <span style="display: flex; align-items: center; gap: 8px; height: 38px; padding: 0 12px; border-radius: 10px; box-shadow: inset 0 0 0 1px #C4C7D4; background: #FFFFFF; width: 220px; box-sizing: border-box; color: #9A9EB0; font-size: 13px;" class="mono">spectio-embl</span>
+              <span class="chip" style="background: #F1F2F6; color: #6E7287;">available in step 4</span>
+            </section>
+
+            <div style="display: flex; align-items: center; gap: 10px; border-top: 1px solid #EEEFF5; padding-top: 14px;">
+              <a href="#" class="btn btn-s">Back</a>
+              <span style="flex-grow: 1;"></span>
+              <a href="#" class="btn btn-s"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v12 M7 11l5 5 5-5 M5 20h14"/></svg>Download report</a>
+              <a href="#" class="btn btn-p">Continue to confirm</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ST = [['Choose', 'Archive picked'], ['Inspect', 'Manifest and checksums'], ['Dry run', 'Compare with live data'], ['Confirm', 'Type the instance name'], ['Restore', 'Maintenance mode']];
+  const steps = ST.map(([label, sub], i) => {
+    const done = i < 2, cur = i === 2;
+    return { label, sub, cur: cur ? 'step' : 'false', mark: done ? '✓' : String(i + 1), bg: cur ? '#F6F2FE' : '#FFFFFF', bd: cur ? '#C9B8F2' : '#EEEFF5', dot: done ? '#1F9D63' : (cur ? '#7750D4' : '#EEEFF5'), dfg: done || cur ? '#FFFFFF' : '#6E7287', fg: cur || done ? '#0F1020' : '#6E7287' };
+  });
+  const A = { replace: ['Replace', '#F6F2FE', '#4D368B'], skip: ['Skip', '#F1F2F6', '#6E7287'], keep: ['Keep live', '#EEF6FA', '#1F536D'] };
+  const t = (name, tables, live, bak, a) => {
+    const d = bak - live;
+    return { name, tables, live: live.toLocaleString('en-US').replace(/,/g, ' '), bak: bak.toLocaleString('en-US').replace(/,/g, ' '), delta: a === 'replace' ? (d === 0 ? '0' : (d > 0 ? '+' : '−') + Math.abs(d).toLocaleString('en-US').replace(/,/g, ' ')) : '—', dc: a !== 'replace' || d === 0 ? '#6E7287' : (d > 0 ? '#157A4B' : '#B02A2A'), action: A[a][0], abg: A[a][1], afg: A[a][2], op: a === 'skip' ? 0.6 : 1 };
+  };
+  return {
+    steps,
+    revs: [
+      { id: '0013', label: 'tasks: add progress and queue columns' },
+      { id: '0014', label: 'plugin_instances: scope (instance / group / project)' },
+      { id: '0015', label: 'gates: decision constraints as JSON' }
+    ],
+    tables: [
+      t('Runs', 'runs · run_attempts · run_params', 1284, 1271, 'replace'),
+      t('Tasks and events', 'tasks · task_events · events_outbox', 52310, 49870, 'replace'),
+      t('Gates and decisions', 'gates · decisions · change_sets', 3402, 3389, 'replace'),
+      t('Artifacts and evidence', 'artifacts · evidence · check_results', 61220, 60904, 'replace'),
+      t('Projects and grants', 'projects · grants', 41, 41, 'replace'),
+      t('Users and groups', 'principals · groups · memberships', 118, 116, 'replace'),
+      t('Workflows', 'workflows · workflow_versions', 37, 36, 'replace'),
+      t('Environments and runners', 'environments · runners', 9, 9, 'replace'),
+      t('Plugin instances', 'plugin_instances', 14, 13, 'replace'),
+      t('Branding and settings', 'instance_settings · branding_assets', 6, 6, 'replace'),
+      t('Audit log', 'audit_log', 88412, 86230, 'replace'),
+      t('Tokens', 'tokens', 57, 61, 'keep')
+    ],
+    next: [
+      'Maintenance mode on: the API is read-only and a banner tells users',
+      'Runners finish running tasks but take no new launches',
+      'Orphan clean-up of the file store is paused until the restore ends',
+      'Restore runs as a task; “Restored from” is recorded on the instance'
+    ],
+    warnings: [
+      { title: '13 runs started after this backup will disappear.', text: 'Their results stay on the clusters; adopt them again from Runs → Adopt.', bg: '#FDF3E2', bar: '#D9890B', fg: '#5C3A06', icon: 'M12 3l9 16H3z M12 10v4 M12 17h.01' },
+      { title: '3 runs reference work directories that no longer exist on embl-slurm.', text: 'They will be shown as archived.', bg: '#FDF3E2', bar: '#D9890B', fg: '#5C3A06', icon: 'M12 3l9 16H3z M12 10v4 M12 17h.01' },
+      { title: 'Tokens are not restored.', text: 'Your session and runner links stay valid.', bg: '#EEF6FA', bar: '#2F7FA8', fg: '#173D50', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 11v5 M12 8h.01' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

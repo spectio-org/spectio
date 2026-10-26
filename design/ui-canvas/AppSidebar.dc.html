@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — sidebar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.sp-cb{position:absolute;opacity:0;width:1px;height:1px;pointer-events:none}
+.sp-rail{width:276px;transition:width .2s ease}
+.sp-root:has(.sp-cb:checked) .sp-rail{width:92px}
+.sp-root:has(.sp-cb:checked) .sp-txt{display:none !important}
+.sp-root:has(.sp-cb:checked) .sp-item{justify-content:center;padding:0 !important}
+.sp-root:has(.sp-cb:checked) .sp-head{justify-content:center !important}
+.sp-root:has(.sp-cb:checked) .sp-count{position:absolute;top:6px;right:6px;min-width:18px !important;height:18px !important;font-size:11px !important;padding:0 5px !important}
+.sp-root:has(.sp-cb:checked) .sp-close{display:none}
+.sp-open{display:none}
+.sp-root:has(.sp-cb:checked) .sp-open{display:block}
+.sp-fold{width:36px;height:36px;border-radius:11px;box-shadow:inset 0 0 0 1px #DFE1EA;color:#4D5065;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.sp-fold:hover{background:#F1F2F6;color:#0F1020}
+.sp-fold:focus-within{outline:2px solid #7750D4;outline-offset:2px}
+.sp-item:hover{background:#F7F7FB}
+</style>
+</helmet>
+<div class="sp-root" style="height: 100%; min-height: 560px; font-family: 'Inter', system-ui, sans-serif; color: #0F1020;">
+  <div class="sp-rail" style="height: 100%; box-sizing: border-box; padding: 0 10px 10px;">
+    <nav aria-label="Main" style="height: 100%; box-sizing: border-box; background: #FFFFFF; border-radius: 22px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 1px 2px rgba(15,16,32,0.05), 0 10px 28px -18px rgba(15,16,32,0.18); padding: 14px 12px 12px; display: flex; flex-direction: column; gap: 6px; overflow: hidden;">
+      <div class="sp-head" style="display: flex; align-items: center; justify-content: space-between; min-height: 36px; padding: 0 4px 0 12px; margin-bottom: 6px;">
+        <span class="sp-txt" style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: #6E7287;">WORKSPACE</span>
+        <sc-if value="{{collapsed}}" hint-placeholder-val="{{false}}">
+          <label class="sp-fold" title="Expand sidebar"><input class="sp-cb" type="checkbox" checked aria-label="Collapse sidebar">
+            <svg class="sp-close" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z M9 5v14 M16 10l-2 2 2 2"/></svg>
+            <svg class="sp-open" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z M9 5v14 M14 10l2 2-2 2"/></svg>
+          </label>
+        </sc-if>
+        <sc-if value="{{expanded}}" hint-placeholder-val="{{true}}">
+          <label class="sp-fold" title="Collapse sidebar"><input class="sp-cb" type="checkbox" aria-label="Collapse sidebar">
+            <svg class="sp-close" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z M9 5v14 M16 10l-2 2 2 2"/></svg>
+            <svg class="sp-open" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z M9 5v14 M14 10l2 2-2 2"/></svg>
+          </label>
+        </sc-if>
+      </div>
+      <sc-for list="{{items}}" as="it" hint-placeholder-count="7">
+        <a class="sp-item" href="{{it.href}}" title="{{it.label}}" aria-current="{{it.cur}}" style="position: relative; display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 0 16px; border-radius: 16px; text-decoration: none; color: {{it.fg}}; background: {{it.bg}};">
+          <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="{{it.color}}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="{{it.icon}}"/></svg>
+          <span class="sp-txt" style="flex-grow: 1; font-size: 16px; font-weight: 500; white-space: nowrap;">{{it.label}}</span>
+          <sc-if value="{{it.hasCount}}" hint-placeholder-val="{{false}}">
+            <span class="sp-count" style="min-width: 24px; height: 24px; padding: 0 7px; box-sizing: border-box; border-radius: 12px; background: #D9890B; color: #FFFFFF; font-size: 12.5px; font-weight: 600; display: flex; align-items: center; justify-content: center;">{{it.count}}</span>
+          </sc-if>
+        </a>
+      </sc-for>
+      <div style="flex-grow: 1;"></div>
+      <div style="height: 1px; background: #EEEFF5; margin: 0 4px 6px;"></div>
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 12.5px;">
+        <a href="RunnerOffline.dc.html" title="Runners 3 / 4 online" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #FCEBEB; color: #B02A2A; text-decoration: none; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #DC3B3B;"></span><span class="sp-txt">Runners 3 / 4 online</span></a>
+        <span title="Server v0.4.0 · online" style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #E8F6EF; color: #157A4B; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63;"></span><span class="sp-txt">Server v0.4.0 · online</span></span>
+      </div>
+    </nav>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["overview","runs","review","launch","workflows","environments","settings","profile"],"default":"runs"},"collapsed":{"editor":"boolean","default":false},"$preview":{"width":276,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+  const active = this.props.active ?? 'runs';
+  const collapsed = !!this.props.collapsed;
+  const defs = [
+    ['overview', 'Overview', 'Overview.dc.html', 'M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z', '#5A4FCF', '#F2F1FB'],
+    ['runs', 'Runs', 'RunsTable.dc.html', 'M5 4l14 8-14 8z', '#7750D4', '#F6F2FE'],
+    ['review', 'Review', 'ReviewQueue.dc.html', 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5', '#D9890B', '#FDF6EA'],
+    ['launch', 'Launch', 'Launch.dc.html', 'M12 3v12 M7 8l5-5 5 5 M5 21h14', '#EC5F87', '#FDF2F5'],
+    ['workflows', 'Workflows', 'Workflows.dc.html', 'M6 3v12 M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 9a9 9 0 0 1-9 9', '#A54666', '#FCE5EC'],
+    ['environments', 'Environments', 'Environments.dc.html', 'M4 5h16v6H4z M4 13h16v6H4z M8 8h.01 M8 16h.01', '#2F7FA8', '#EEF6FA'],
+    ['settings', 'Administration', 'SettingsUsers.dc.html', 'M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z', '#4D5065', '#F1F2F6']
+  ];
+  const items = defs.map(([id, label, href, icon, color, tint]) => {
+    const on = id === active;
+    return { label, href, icon, color, cur: on ? 'page' : 'false', bg: on ? tint : 'transparent', fg: on ? '#0F1020' : '#22253A', hasCount: id === 'review', count: 12 };
+  });
+  return { items, collapsed, expanded: !collapsed };
+}
+}
+</script>
+</body>
+</html>

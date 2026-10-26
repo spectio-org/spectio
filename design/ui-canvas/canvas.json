@@ -1,0 +1,633 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-25T08:40:00Z"
+  },
+  "title": "Spectio \u2014 UI",
+  "launch": {
+    "view": "canvas",
+    "page": "ia"
+  },
+  "pages": [
+    {
+      "id": "ia",
+      "name": "Structure & legend"
+    },
+    {
+      "id": "screens",
+      "name": "Screens"
+    },
+    {
+      "id": "components",
+      "name": "Shared shell"
+    },
+    {
+      "id": "mobile",
+      "name": "Mobile"
+    }
+  ],
+  "boards": {
+    "Main.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1080,
+      "title": "Information architecture",
+      "page": "ia"
+    },
+    "Legend.dc.html": {
+      "x": 0,
+      "y": 1200,
+      "w": 1440,
+      "h": 820,
+      "title": "States & stage-gauge legend",
+      "page": "ia"
+    },
+    "Manifest.dc.html": {
+      "x": 0,
+      "y": 2140,
+      "w": 1440,
+      "h": 1120,
+      "title": "Stages & spectio.yml",
+      "page": "ia"
+    },
+    "AppSidebar.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 276,
+      "h": 900,
+      "title": "Sidebar",
+      "page": "components"
+    },
+    "AppTopbar.dc.html": {
+      "x": 356,
+      "y": 0,
+      "w": 1440,
+      "h": 76,
+      "title": "Top bar",
+      "page": "components"
+    },
+    "Landing.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2280,
+      "title": "Landing page (public site)",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "Overview.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 980,
+      "title": "Overview",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "RunsTable.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 980,
+      "title": "Runs \u00b7 table mode",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "RunsRows.dc.html": {
+      "x": 4560,
+      "y": 0,
+      "w": 1440,
+      "h": 980,
+      "title": "Runs \u00b7 rows mode",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "RunDetail.dc.html": {
+      "x": 6080,
+      "y": 0,
+      "w": 1440,
+      "h": 1180,
+      "title": "Run detail",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "Review.dc.html": {
+      "x": 3040,
+      "y": 1100,
+      "w": 1440,
+      "h": 1180,
+      "title": "Review \u00b7 detail (Snakemake imaging)",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "Launch.dc.html": {
+      "x": 1520,
+      "y": 2400,
+      "w": 1440,
+      "h": 1180,
+      "title": "Launch & relaunch \u00b7 nf-core",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "Workflows.dc.html": {
+      "x": 1520,
+      "y": 3700,
+      "w": 1440,
+      "h": 1180,
+      "title": "Workflow detail \u00b7 nf-core",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "Environments.dc.html": {
+      "x": 1520,
+      "y": 5000,
+      "w": 1440,
+      "h": 1180,
+      "title": "Environments",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "EnvStorage.dc.html": {
+      "x": 3040,
+      "y": 5000,
+      "w": 1440,
+      "h": 1180,
+      "title": "Environment \u00b7 SLURM storage",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "ReviewCoverage.dc.html": {
+      "x": 4560,
+      "y": 1100,
+      "w": 1440,
+      "h": 1180,
+      "title": "Review \u00b7 detail (nf-core/sarek samplesheet)",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "LaunchSnakemake.dc.html": {
+      "x": 3040,
+      "y": 2400,
+      "w": 1440,
+      "h": 1180,
+      "title": "Launch \u00b7 Snakemake",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "WorkflowSnakemake.dc.html": {
+      "x": 3040,
+      "y": 3700,
+      "w": 1440,
+      "h": 1180,
+      "title": "Workflow detail \u00b7 Snakemake",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "EnvKubernetes.dc.html": {
+      "x": 4560,
+      "y": 5000,
+      "w": 1440,
+      "h": 1180,
+      "title": "Environment \u00b7 Kubernetes",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "RunnerOffline.dc.html": {
+      "x": 6080,
+      "y": 5000,
+      "w": 1440,
+      "h": 1180,
+      "title": "Runner offline",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "LogoMotion.dc.html": {
+      "x": 0,
+      "y": 1040,
+      "w": 1440,
+      "h": 560,
+      "title": "Logo motion",
+      "page": "components"
+    },
+    "ReviewQueue.dc.html": {
+      "x": 1520,
+      "y": 1100,
+      "w": 1440,
+      "h": 1180,
+      "title": "Review \u00b7 queue (many gates)",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "Profile.dc.html": {
+      "x": 1520,
+      "y": 6300,
+      "w": 1440,
+      "h": 1180,
+      "title": "User profile",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "MOverview.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 Home",
+      "page": "mobile"
+    },
+    "MRuns.dc.html": {
+      "x": 470,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 Runs",
+      "page": "mobile"
+    },
+    "MRunDetail.dc.html": {
+      "x": 940,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 Run detail",
+      "page": "mobile"
+    },
+    "MReviewQueue.dc.html": {
+      "x": 1410,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 Review queue",
+      "page": "mobile"
+    },
+    "MReview.dc.html": {
+      "x": 1880,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 Review detail",
+      "page": "mobile"
+    },
+    "MLaunch.dc.html": {
+      "x": 2350,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 Launch",
+      "page": "mobile"
+    },
+    "MWorkflows.dc.html": {
+      "x": 0,
+      "y": 980,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 Workflows",
+      "page": "mobile"
+    },
+    "MEnvironments.dc.html": {
+      "x": 470,
+      "y": 980,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 Environments",
+      "page": "mobile"
+    },
+    "MRunnerOffline.dc.html": {
+      "x": 940,
+      "y": 980,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 Runner offline",
+      "page": "mobile"
+    },
+    "MMore.dc.html": {
+      "x": 1410,
+      "y": 980,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 More sheet",
+      "page": "mobile"
+    },
+    "MobileTopbar.dc.html": {
+      "x": 0,
+      "y": 1700,
+      "w": 390,
+      "h": 60,
+      "title": "Mobile top bar",
+      "page": "components"
+    },
+    "MobileTabbar.dc.html": {
+      "x": 470,
+      "y": 1700,
+      "w": 390,
+      "h": 72,
+      "title": "Mobile tab bar",
+      "page": "components"
+    },
+    "ReviewViews.dc.html": {
+      "x": 0,
+      "y": 3380,
+      "w": 1440,
+      "h": 1320,
+      "title": "Reviews \u00b7 one model, five views",
+      "page": "ia"
+    },
+    "ReviewReport.dc.html": {
+      "x": 6080,
+      "y": 1100,
+      "w": 1440,
+      "h": 1180,
+      "title": "Review \u00b7 samples + MultiQC report (nf-core/rnaseq)",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "ReviewCells.dc.html": {
+      "x": 7600,
+      "y": 1100,
+      "w": 1440,
+      "h": 1180,
+      "title": "Review \u00b7 cells, thresholds (nf-core/scrnaseq)",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "ReviewCandidates.dc.html": {
+      "x": 9120,
+      "y": 1100,
+      "w": 1440,
+      "h": 1180,
+      "title": "Review \u00b7 candidates, MAG bins (nf-core/mag)",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "Projects.dc.html": {
+      "x": 6080,
+      "y": 7600,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Projects",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "ProjectDetail.dc.html": {
+      "x": 3040,
+      "y": 6300,
+      "w": 1440,
+      "h": 1180,
+      "title": "Project \u00b7 members & roles",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "ShareDialog.dc.html": {
+      "x": 4560,
+      "y": 6300,
+      "w": 1440,
+      "h": 1180,
+      "title": "Project \u00b7 share dialog",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "SettingsUsers.dc.html": {
+      "x": 1520,
+      "y": 7600,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Users",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "SettingsServiceAccounts.dc.html": {
+      "x": 4560,
+      "y": 7600,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Service accounts",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "MProjectSwitcher.dc.html": {
+      "x": 1880,
+      "y": 980,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 project switcher",
+      "page": "mobile"
+    },
+    "MReviewCells.dc.html": {
+      "x": 2350,
+      "y": 980,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 cell QC",
+      "page": "mobile"
+    },
+    "AdminGroups.dc.html": {
+      "x": 3040,
+      "y": 7600,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Groups",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "AdminTasks.dc.html": {
+      "x": 1520,
+      "y": 8900,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Tasks",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "AdminLogs.dc.html": {
+      "x": 3040,
+      "y": 8900,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Logs",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "AdminHealth.dc.html": {
+      "x": 4560,
+      "y": 8900,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Health & runners",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "AdminBranding.dc.html": {
+      "x": 1520,
+      "y": 10200,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Branding",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "AdminPlugins.dc.html": {
+      "x": 3040,
+      "y": 10200,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Plugins",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "AIAgents.dc.html": {
+      "x": 4560,
+      "y": 10200,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 AI & agents",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "AdminBackups.dc.html": {
+      "x": 6080,
+      "y": 10200,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Backups",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "AdminRestore.dc.html": {
+      "x": 7600,
+      "y": 10200,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Restore wizard (dry run)",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "AdminMaintenance.dc.html": {
+      "x": 9120,
+      "y": 10200,
+      "w": 1440,
+      "h": 1180,
+      "title": "Administration \u00b7 Maintenance & migrations",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "MAdmin.dc.html": {
+      "x": 2820,
+      "y": 980,
+      "w": 390,
+      "h": 844,
+      "title": "Phone \u00b7 Administration",
+      "page": "mobile"
+    },
+    "AdminNav.dc.html": {
+      "x": 940,
+      "y": 1700,
+      "w": 208,
+      "h": 860,
+      "title": "Administration section nav",
+      "page": "components"
+    },
+    "RunScheduler.dc.html": {
+      "x": 7600,
+      "y": 0,
+      "w": 1440,
+      "h": 1180,
+      "title": "Run detail \u00b7 scheduler view (SLURM)",
+      "page": "screens",
+      "expand": "fill"
+    },
+    "EnvCapacity.dc.html": {
+      "x": 7600,
+      "y": 5000,
+      "w": 1440,
+      "h": 1180,
+      "title": "Environment \u00b7 capacity & pre-flight (SLURM)",
+      "page": "screens",
+      "expand": "fill"
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Legend.dc.html",
+    "Manifest.dc.html",
+    "ReviewViews.dc.html",
+    "AppSidebar.dc.html",
+    "AppTopbar.dc.html",
+    "LogoMotion.dc.html",
+    "Landing.dc.html",
+    "Overview.dc.html",
+    "RunsTable.dc.html",
+    "RunsRows.dc.html",
+    "RunDetail.dc.html",
+    "Review.dc.html",
+    "ReviewCoverage.dc.html",
+    "Launch.dc.html",
+    "LaunchSnakemake.dc.html",
+    "Workflows.dc.html",
+    "WorkflowSnakemake.dc.html",
+    "Environments.dc.html",
+    "EnvStorage.dc.html",
+    "EnvKubernetes.dc.html",
+    "RunnerOffline.dc.html",
+    "AIAgents.dc.html",
+    "ReviewQueue.dc.html",
+    "Profile.dc.html",
+    "MobileTopbar.dc.html",
+    "MobileTabbar.dc.html",
+    "MOverview.dc.html",
+    "MRuns.dc.html",
+    "MRunDetail.dc.html",
+    "MReviewQueue.dc.html",
+    "MReview.dc.html",
+    "MLaunch.dc.html",
+    "MWorkflows.dc.html",
+    "MEnvironments.dc.html",
+    "MRunnerOffline.dc.html",
+    "MMore.dc.html",
+    "ReviewReport.dc.html",
+    "ReviewCells.dc.html",
+    "ReviewCandidates.dc.html",
+    "Projects.dc.html",
+    "ProjectDetail.dc.html",
+    "ShareDialog.dc.html",
+    "SettingsUsers.dc.html",
+    "SettingsServiceAccounts.dc.html",
+    "MProjectSwitcher.dc.html",
+    "MReviewCells.dc.html"
+  ],
+  "notes": {
+    "ia": {
+      "x": 0,
+      "y": -300,
+      "text": "Spectio \u2014 structure",
+      "kind": "title1",
+      "maxW": 1440,
+      "page": "ia"
+    },
+    "screens": {
+      "x": 0,
+      "y": -300,
+      "text": "Spectio \u2014 screens",
+      "kind": "title1",
+      "maxW": 10560,
+      "page": "screens"
+    },
+    "shell": {
+      "x": 0,
+      "y": -300,
+      "text": "Shared shell (depictio Glass)",
+      "kind": "title1",
+      "maxW": 1768,
+      "page": "components"
+    },
+    "mobile": {
+      "x": 0,
+      "y": -300,
+      "text": "Spectio \u2014 mobile (phone, bottom tab bar)",
+      "kind": "title1",
+      "maxW": 2740,
+      "page": "mobile"
+    }
+  },
+  "designSystems": []
+}

@@ -1,0 +1,33 @@
+/* Terminal recordings, mounted by javascripts/asciinema.js. Ported from
+   depictio-docs (MIT) docs/stylesheets/asciinema.css at 1610ed8.
+
+   The "spectio" player theme: a dark terminal in both colour schemes, on
+   Spectio's code surface (ink 900, design/tokens/spectio-tokens.css), with the
+   brand scales for the ANSI colours: green = succeeded, yellow = review,
+   blue = running, magenta = violet, cyan = sky. Two classes, because the
+   player's own stylesheet, loaded after this one, sets its default palette on
+   .ap-player. */
+.asciinema-cast {
+  margin: 1em 0 0.5em;
+}
+
+.ap-player.asciinema-player-theme-spectio {
+  --term-color-foreground: #dfe1ea;
+  --term-color-background: #0f1020;
+  --term-color-0: #22253a;
+  --term-color-1: #dc3b3b;
+  --term-color-2: #1f9d63;
+  --term-color-3: #f9a947;
+  --term-color-4: #3b82f6;
+  --term-color-5: #8b5cf6;
+  --term-color-6: #3b8fbf;
+  --term-color-7: #dfe1ea;
+  --term-color-8: #6e7287;
+  --term-color-9: #ec5f87;
+  --term-color-10: #4cc38a;
+  --term-color-11: #fcc98a;
+  --term-color-12: #7eaaf8;
+  --term-color-13: #a580f8;
+  --term-color-14: #8fc3df;
+  --term-color-15: #ffffff;
+}

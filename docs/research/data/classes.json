@@ -1,0 +1,426 @@
+{
+"airrflow": [
+"sample",
+"cell"
+],
+"ampliseq": [
+"sample",
+null
+],
+"atacseq": [
+"sample",
+null
+],
+"bacass": [
+"sample",
+"assembly"
+],
+"bacmodel": [
+"prediction",
+null
+],
+"bactmap": [
+"sample",
+null
+],
+"bamtofastq": [
+"sample",
+null
+],
+"cageseq": [
+"sample",
+null
+],
+"callingcards": [
+"sample",
+null
+],
+"chipseq": [
+"sample",
+null
+],
+"circdna": [
+"sample",
+null
+],
+"clipseq": [
+"sample",
+null
+],
+"coproid": [
+"sample",
+null
+],
+"createpanelrefs": [
+"sample-group",
+"variant"
+],
+"createtaxdb": [
+"run-only",
+null
+],
+"crisprseq": [
+"sample",
+null
+],
+"cutandrun": [
+"sample",
+null
+],
+"datasync": [
+"run-only",
+null
+],
+"demo": [
+"run-only",
+null
+],
+"demultiplex": [
+"sample",
+null
+],
+"denovotranscript": [
+"sample",
+"assembly"
+],
+"detaxizer": [
+"sample",
+null
+],
+"diaproteomics": [
+"ms-run",
+"feature"
+],
+"differentialabundance": [
+"sample",
+null
+],
+"drop": [
+"sample",
+null
+],
+"drugresponseeval": [
+"prediction",
+null
+],
+"dualrnaseq": [
+"sample",
+null
+],
+"eager": [
+"sample",
+null
+],
+"epitopeprediction": [
+"sample",
+"feature"
+],
+"fastqrepair": [
+"sample",
+null
+],
+"fastquorum": [
+"sample",
+null
+],
+"fetchngs": [
+"run-only",
+null
+],
+"funcprofiler": [
+"sample",
+"feature"
+],
+"funcscan": [
+"sample",
+"assembly"
+],
+"genomeassembler": [
+"sample",
+"assembly"
+],
+"genomeqc": [
+"sample",
+"assembly"
+],
+"hadge": [
+"sample",
+"cell"
+],
+"hgtseq": [
+"sample",
+null
+],
+"hic": [
+"sample",
+null
+],
+"hicar": [
+"sample",
+null
+],
+"hlatyping": [
+"sample",
+null
+],
+"imcyto": [
+"image",
+"cell"
+],
+"isoseq": [
+"sample",
+"assembly"
+],
+"kmermaid": [
+"sample",
+null
+],
+"longraredisease": [
+"sample-group",
+"variant"
+],
+"lsmquant": [
+"image",
+"cell"
+],
+"mag": [
+"sample",
+"assembly"
+],
+"magmap": [
+"sample",
+"assembly"
+],
+"marsseq": [
+"sample",
+null
+],
+"mcmicro": [
+"image",
+"cell"
+],
+"metaboigniter": [
+"ms-run",
+"feature"
+],
+"metapep": [
+"sample",
+"feature"
+],
+"metatdenovo": [
+"sample",
+"assembly"
+],
+"methylong": [
+"sample",
+null
+],
+"methylseq": [
+"sample",
+null
+],
+"mhcquant": [
+"ms-run",
+"feature"
+],
+"mnaseseq": [
+"sample",
+null
+],
+"molkart": [
+"image",
+"cell"
+],
+"multiplesequencealign": [
+"prediction",
+null
+],
+"nanoseq": [
+"sample",
+null
+],
+"nanostring": [
+"sample",
+null
+],
+"nascent": [
+"sample",
+null
+],
+"oncoanalyser": [
+"sample-group",
+"variant"
+],
+"pacvar": [
+"sample-group",
+"variant"
+],
+"pairgenomealign": [
+"sample",
+"assembly"
+],
+"pangenome": [
+"sample",
+"assembly"
+],
+"pathogensurveillance": [
+"sample",
+null
+],
+"phaseimpute": [
+"sample",
+null
+],
+"phyloplace": [
+"prediction",
+null
+],
+"pixelator": [
+"sample",
+"cell"
+],
+"plasmodiumdrugres": [
+"sample",
+null
+],
+"proteinannotator": [
+"prediction",
+null
+],
+"proteinfamilies": [
+"prediction",
+null
+],
+"proteinfold": [
+"prediction",
+null
+],
+"proteogenomicsdb": [
+"ms-run",
+"feature"
+],
+"provenancereport": [
+"run-only",
+null
+],
+"rangeland": [
+"image",
+"tile"
+],
+"raredisease": [
+"sample-group",
+"variant"
+],
+"readsimulator": [
+"run-only",
+null
+],
+"references": [
+"run-only",
+null
+],
+"reportho": [
+"prediction",
+null
+],
+"ribomsqc": [
+"ms-run",
+"feature"
+],
+"riboseq": [
+"sample",
+null
+],
+"rnadnavar": [
+"sample-group",
+"variant"
+],
+"rnafusion": [
+"sample",
+null
+],
+"rnaseq": [
+"sample",
+null
+],
+"rnasplice": [
+"sample",
+null
+],
+"rnastructurome": [
+"sample",
+null
+],
+"rnavar": [
+"sample-group",
+"variant"
+],
+"sarek": [
+"sample-group",
+"variant"
+],
+"scnanoseq": [
+"sample",
+"cell"
+],
+"scrnaseq": [
+"sample",
+"cell"
+],
+"seqinspector": [
+"sample",
+null
+],
+"seqsubmit": [
+"run-only",
+null
+],
+"slamseq": [
+"sample",
+null
+],
+"smrnaseq": [
+"sample",
+null
+],
+"sopa": [
+"image",
+"cell"
+],
+"spatialaxe": [
+"image",
+"cell"
+],
+"stableexpression": [
+"sample",
+null
+],
+"taxprofiler": [
+"sample",
+"feature"
+],
+"tumourevo": [
+"sample-group",
+"variant"
+],
+"variantbenchmarking": [
+"sample-group",
+"variant"
+],
+"variantprioritization": [
+"sample-group",
+"variant"
+],
+"viralintegration": [
+"sample",
+null
+],
+"viralmetagenome": [
+"sample",
+"assembly"
+],
+"viralrecon": [
+"sample",
+"assembly"
+]
+}

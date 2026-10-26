@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio mobile — run detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+.pills::-webkit-scrollbar{display:none}
+.pt{position:relative;flex-shrink:0;height:38px;padding:0 15px;border-radius:19px;display:flex;align-items:center;font-size:14px;font-weight:600;background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA;cursor:pointer}
+.pt input{position:absolute;opacity:0;width:1px;height:1px}
+.pt:has(input:checked){background:#0F1020;color:#FFFFFF;box-shadow:none}
+.pt:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:2px}
+.pn{display:none;flex-direction:column;gap:10px}
+.rd:has(input[value="sum"]:checked) .pn-sum,
+.rd:has(input[value="stages"]:checked) .pn-stages,
+.rd:has(input[value="tasks"]:checked) .pn-tasks,
+.rd:has(input[value="logs"]:checked) .pn-logs,
+.rd:has(input[value="out"]:checked) .pn-out{display:flex}
+.card{border-radius:16px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.07),0 1px 2px rgba(15,16,32,0.05)}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="rnaseq-2026-10-25" sub="#311 · nf-core/rnaseq" back="MRuns.dc.html" hint-size="390px,60px"></dc-import></div>
+  <main class="rd" style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <section class="card" style="overflow: hidden; display: flex;">
+      <span style="width: 4px; flex-shrink: 0; background: #3B82F6;"></span>
+      <div style="flex-grow: 1; padding: 14px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; align-items: center; gap: 14px;">
+          <svg width="120" height="60" viewBox="0 0 200 100" role="img" aria-label="Stages 1 and 2 done, stage 3 running, stage 4 not started" style="flex-shrink: 0;"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#8B5CF6"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#F4A5BC"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+          <div style="display: flex; flex-direction: column; gap: 4px; min-width: 0;">
+            <span style="display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 600; color: #1D5FC9;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running · stage 3 of 4</span>
+            <span style="font-size: 13.5px; color: #33364A;">812 / 1,248 tasks · 1 h 05</span>
+            <span style="font-size: 13px; color: #4D5065;">EMBL SLURM · htc</span>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px;">
+          <button type="button" style="flex-grow: 1; height: 44px; border: none; border-radius: 12px; box-shadow: inset 0 0 0 1px #C4C7D4; background: #FFFFFF; font: 600 14.5px 'Inter', sans-serif; color: #0F1020;">Pause after stage</button>
+          <button type="button" aria-label="More actions: relaunch, cancel, copy to a new launch" aria-haspopup="true" style="width: 44px; height: 44px; border: none; border-radius: 12px; box-shadow: inset 0 0 0 1px #C4C7D4; background: #FFFFFF; font: 700 18px 'Inter', sans-serif; color: #33364A;">⋯</button>
+        </div>
+      </div>
+    </section>
+
+    <div class="pills" role="tablist" aria-label="Run sections" style="display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px;">
+      <label class="pt"><input type="radio" name="rdt" value="sum" checked>Summary</label>
+      <label class="pt"><input type="radio" name="rdt" value="stages">Stages</label>
+      <label class="pt"><input type="radio" name="rdt" value="tasks">Tasks</label>
+      <label class="pt"><input type="radio" name="rdt" value="logs">Logs</label>
+      <label class="pt"><input type="radio" name="rdt" value="out">Outputs</label>
+    </div>
+
+    <section class="pn pn-sum">
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+        <sc-for list="{{facts}}" as="f" hint-placeholder-count="4">
+          <div class="card" style="padding: 12px; display: flex; flex-direction: column; gap: 3px;"><span style="font-size: 12px; color: #6E7287;">{{f.k}}</span><span style="font-size: 15px; font-weight: 600;">{{f.v}}</span></div>
+        </sc-for>
+      </div>
+      <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Changed vs previous run</h2>
+        <sc-for list="{{diff}}" as="d" hint-placeholder-count="2">
+          <div style="display: flex; flex-direction: column; gap: 2px; padding-top: 8px; border-top: 1px solid #EEEFF5;"><code style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">{{d.k}}</code><span style="font-size: 14px;"><span style="color: #B02A2A; text-decoration: line-through;">{{d.old}}</span> → <strong style="color: #157A4B;">{{d.new}}</strong></span></div>
+        </sc-for>
+      </div>
+      <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Software</h2>
+        <sc-for list="{{software}}" as="s" hint-placeholder-count="3">
+          <div style="display: flex; justify-content: space-between; gap: 10px; padding-top: 8px; border-top: 1px solid #EEEFF5; font-size: 14px;"><span>{{s.k}}</span><code style="font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #33364A;">{{s.v}}</code></div>
+        </sc-for>
+        <a href="#" style="min-height: 44px; display: flex; align-items: center; font-size: 14px; font-weight: 600; color: #6344B2; text-decoration: none; border-top: 1px solid #EEEFF5;">All 64 tools and containers →</a>
+      </div>
+    </section>
+
+    <section class="pn pn-stages">
+      <sc-for list="{{stages}}" as="s" hint-placeholder-count="4">
+        <div class="card" style="padding: 12px 14px; display: flex; gap: 12px; align-items: flex-start;">
+          <span style="width: 30px; height: 30px; flex-shrink: 0; border-radius: 9px; background: {{s.tile}}; color: {{s.tileFg}}; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">{{s.n}}</span>
+          <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px;">
+            <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-size: 15px; font-weight: 600;">{{s.name}}</span><span style="font-size: 13px; font-weight: 600; color: {{s.fg}};">{{s.state}}</span></span>
+            <span style="height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: {{s.pct}}; background: {{s.bar}};"></span></span>
+            <span style="font-size: 13px; color: #4D5065; line-height: 1.4;">{{s.detail}}</span>
+            <sc-if value="{{s.hasNote}}" hint-placeholder-val="{{false}}"><span style="font-size: 13px; color: #33364A; background: #F7F7FB; border-radius: 9px; padding: 7px 9px; line-height: 1.4;">{{s.note}}</span></sc-if>
+          </div>
+        </div>
+      </sc-for>
+      <div style="font-size: 13px; color: #4D5065; background: #FFFFFF; border-radius: 12px; padding: 10px 12px; line-height: 1.45; box-shadow: inset 0 0 0 1px #EEEFF5;">Not scheduled: <strong style="color: #22253A;">SALMON_PSEUDO</strong> (when: false · <code style="font-family: 'JetBrains Mono', monospace;">--skip_pseudo_alignment</code>)</div>
+    </section>
+
+    <section class="pn pn-tasks">
+      <sc-for list="{{procs}}" as="p" hint-placeholder-count="4">
+        <div class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="display: flex; justify-content: space-between; gap: 8px; align-items: baseline;"><span style="font-size: 15px; font-weight: 600;">{{p.name}}</span><span style="font-size: 13px; color: #4D5065;">{{p.total}}</span></span>
+          <span style="font-size: 12px; color: #6E7287; font-family: 'JetBrains Mono', monospace;">{{p.module}}</span>
+          <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{p.chips}}" as="c" hint-placeholder-count="3"><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}};">{{c.t}}</span></sc-for></span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section class="pn pn-logs">
+      <div style="border-radius: 16px; background: #0F1020; padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.65; color: #C4C7D4; overflow-x: auto;">
+        <sc-for list="{{logs}}" as="l" hint-placeholder-count="8"><div style="white-space: pre; color: {{l.c}};">{{l.t}}</div></sc-for>
+      </div>
+      <a href="#" class="card" style="min-height: 48px; display: flex; align-items: center; justify-content: center; font-size: 14.5px; font-weight: 600; color: #6344B2; text-decoration: none;">Open full log</a>
+    </section>
+
+    <section class="pn pn-out">
+      <sc-for list="{{outputs}}" as="o" hint-placeholder-count="4">
+        <a href="#" class="card" style="min-height: 60px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; text-decoration: none; color: inherit;">
+          <span style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 10px; background: {{o.tile}}; color: {{o.ink}}; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{o.icon}}"/></svg></span>
+          <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14.5px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{o.name}}</span><span style="font-size: 12.5px; color: #4D5065;">{{o.meta}}</span></span>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#9A9EB0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+        </a>
+      </sc-for>
+    </section>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MobileTabbar" active="runs" hint-size="390px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  const chip = (t, k) => ({ t, bg: { run: '#EAF2FE', done: '#E8F6EF', fail: '#FCEBEB', wait: '#F1F2F6', retry: '#FDF3E2' }[k], fg: { run: '#1D5FC9', done: '#157A4B', fail: '#B02A2A', wait: '#33364A', retry: '#8F5806' }[k] });
+  const doc = 'M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6';
+  return {
+    facts: [
+      { k: 'Workflow', v: 'nf-core/rnaseq 3.27.0' },
+      { k: 'Engine', v: 'Nextflow 25.10.4' },
+      { k: 'Profile', v: 'singularity' },
+      { k: 'Launched', v: 'Thomas · in UI' }
+    ],
+    diff: [
+      { k: 'min_mapped_reads', old: '5', new: '10' },
+      { k: 'skip_pseudo_alignment', old: 'false', new: 'true' }
+    ],
+    software: [
+      { k: 'STAR', v: '2.7.11b' },
+      { k: 'Salmon', v: '1.10.3' },
+      { k: 'MultiQC', v: '1.31' }
+    ],
+    stages: [
+      { n: '1', name: 'Preprocessing', state: 'Done', fg: '#157A4B', tile: '#5A4FCF', tileFg: '#FFFFFF', pct: '100%', bar: '#5A4FCF', detail: 'FastQC, trimming · 288 tasks · 14 min', hasNote: false, note: '' },
+      { n: '2', name: 'Alignment & QC', state: 'Done', fg: '#157A4B', tile: '#8B5CF6', tileFg: '#FFFFFF', pct: '100%', bar: '#8B5CF6', detail: 'STAR, RSeQC, Qualimap · 336 tasks · 38 min', hasNote: true, note: 'Gate approved automatically: mapping rate 91.4 % ≥ 80 %' },
+      { n: '3', name: 'Quantification', state: 'Running · 63 %', fg: '#1D5FC9', tile: '#F4A5BC', tileFg: '#562941', pct: '63%', bar: '#EC5F87', detail: 'Salmon, featureCounts · 188 / 300 tasks · SLURM job array', hasNote: false, note: '' },
+      { n: '4', name: 'Reporting', state: 'Not started', fg: '#4D5065', tile: '#DFE1EA', tileFg: '#33364A', pct: '0%', bar: '#F9A947', detail: 'DESeq2 QC, MultiQC', hasNote: false, note: '' }
+    ],
+    procs: [
+      { name: 'SALMON_QUANT', total: '48 tasks', module: 'nf-core/salmon/quant', chips: [chip('48 running', 'run')] },
+      { name: 'SUBREAD_FEATURECOUNTS', total: '252 tasks', module: 'nf-core/subread/featurecounts', chips: [chip('140 done', 'done'), chip('3 retried', 'retry'), chip('112 waiting', 'wait')] },
+      { name: 'STAR_ALIGN', total: '48 tasks', module: 'nf-core/star/align', chips: [chip('48 done', 'done'), chip('4 retried', 'retry')] },
+      { name: 'FASTQC', total: '96 tasks', module: 'nf-core/fastqc', chips: [chip('96 done', 'done')] }
+    ],
+    logs: [
+      { t: '10:41:02 executor > slurm (48)', c: '#C4C7D4' },
+      { t: '10:41:05 [2f/6b4c1] SALMON_QUANT (S12) submitted', c: '#C4C7D4' },
+      { t: '10:42:11 [9d/1e0a3] FEATURECOUNTS (S07) completed', c: '#7FD3AA' },
+      { t: '10:42:30 [9d/77c21] FEATURECOUNTS (S19) exit 137', c: '#F59A9A' },
+      { t: '10:42:31 retry 1/3 with memory 8 GB → 16 GB', c: '#F5C779' },
+      { t: '10:43:04 [9d/77c21] FEATURECOUNTS (S19) submitted', c: '#C4C7D4' },
+      { t: '10:44:18 [2f/90aa2] SALMON_QUANT (S03) completed', c: '#7FD3AA' },
+      { t: '10:45:00 progress 812 / 1,248 tasks', c: '#9CC2FB' }
+    ],
+    outputs: [
+      { name: 'multiqc_report.html', meta: 'Not ready · written in stage 4', icon: doc, tile: '#F1F2F6', ink: '#6E7287' },
+      { name: 'execution_report.html', meta: 'pipeline_info · updated live', icon: doc, tile: '#F6F2FE', ink: '#6344B2' },
+      { name: 'execution_timeline.html', meta: 'pipeline_info · updated live', icon: 'M4 6h10 M4 12h16 M4 18h7', tile: '#F6F2FE', ink: '#6344B2' },
+      { name: 'software_versions.yml', meta: 'pipeline_info · 64 tools', icon: 'M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5 M12 12v9', tile: '#F6F2FE', ink: '#6344B2' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

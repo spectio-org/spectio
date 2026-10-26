@@ -1,0 +1,30 @@
+# Demo-data substitutions for every browser-rendered medium (documentation-system.md §5.5).
+# The UI boards are design sources that contain the owner's real name and environment;
+# they are never edited. shots.py renders a sanitised temporary copy, applying
+# `substitutions` in order (Python regex -> replacement), then fails if any `forbidden`
+# pattern is still visible in the rendered page text.
+substitutions:
+  - ['Thomas Weber', 'Alice Martin']
+  - ['\bThomas\b', 'Alice']
+  - ['\bweber\b', 'martin']
+  - ['\bTW\b', 'AL']
+  - ['/scratch/tw/', '/scratch/demo/']
+  - ['/tw/', '/demo/']
+  - ['EMBL SLURM', 'demo-hpc SLURM']
+  - ['rnaseq-embl', 'rnaseq-demo']
+  - ['\bEMBL\b', 'demo-hpc']
+  - ['(?i)\bembl[\w.-]*', 'demo-hpc']
+  # any real-looking email -> the fixture user
+  - ['[\w.+-]+@(?!example\.org)[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}', 'alice@example.org']
+forbidden:
+  - '(?i)thomas'
+  - '(?i)weber'
+  - '\bTW\b'
+  - '(?i)/tw/'
+  - '(?i)\bembl'
+  - '(?i)gmail'
+  - '[\w.+-]+@(?!example\.org)[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}'
+  - '/root\b'
+  - '/home/\w+'
+  - '/tmp/claude'
+  - '(?i)tailscale|\.ts\.net'

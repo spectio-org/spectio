@@ -1,0 +1,154 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — projects</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.st-tab{height:36px;padding:0 10px;border-radius:9px;display:flex;align-items:center;gap:6px;font-size:13px;text-decoration:none;white-space:nowrap}
+.st-tab:hover{color:#0F1020}
+.chip{display:inline-flex;align-items:center;gap:5px;height:24px;padding:0 8px;border-radius:7px;font-size:12px;font-weight:600;white-space:nowrap}
+.btn{height:40px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.tbl{width:100%;border-collapse:collapse;font-size:13.5px}
+.tbl th{text-align:left;font-size:12.5px;font-weight:600;color:#33364A;background:#F7F7FB;padding:10px 14px}
+.tbl td{padding:11px 14px;border-top:1px solid #EEEFF5;vertical-align:middle}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.sel{height:34px;padding:0 30px 0 10px;border-radius:9px;border:1px solid #C4C7D4;background:#FFFFFF;font:500 13px 'Inter',sans-serif;color:#0F1020}
+
+.cli-eq{border-radius:14px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.cli-eq summary{list-style:none;cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 14px;font-size:14px;font-weight:600;color:#22253A}
+.cli-eq summary::-webkit-details-marker{display:none}
+.cli-eq .term{margin:0 12px 12px;padding:14px 16px;border-radius:11px;background:#0F1020;color:#E4E6F0;font:400 12.5px/1.7 'JetBrains Mono',ui-monospace,monospace;white-space:pre-wrap}
+.term .c{color:#8C90A6}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Administration / Projects" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>
+      </span>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Administration</h1>
+        <span style="font-size: 14px; color: #4D5065;">People, content, activity and the health of this instance</span>
+      </div>
+    </div>
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="position: sticky; top: 0; flex-shrink: 0;"><dc-import name="AdminNav" active="projects" hint-size="208px,860px"></dc-import></div>
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap;">
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px;">Projects</h2>
+        <span style="font-size: 13.5px; color: #4D5065;">A project owns runs, workflows and webhooks. It belongs to one group and is shared with people, groups or service accounts.</span>
+      </div>
+      <a href="#" class="btn btn-p"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 5v14 M5 12h14"/></svg>New project</a>
+    </div>
+
+    <div role="toolbar" aria-label="Project filters" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+      <label style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; flex: 1 1 260px; color: #6E7287;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg>
+        <input type="search" placeholder="Search projects or groups" aria-label="Search projects" style="border: none; outline: none; font: inherit; font-size: 13.5px; color: #0F1020; flex-grow: 1; min-width: 0; background: transparent;">
+      </label>
+      <div role="group" aria-label="Scope" style="display: flex; padding: 3px; border-radius: 12px; background: #EEEFF5;">
+        <sc-for list="{{scopes}}" as="sc" hint-placeholder-count="3">
+          <span style="height: 34px; padding: 0 12px; border-radius: 9px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: {{sc.w}}; background: {{sc.bg}}; box-shadow: {{sc.sh}}; color: {{sc.c}};">{{sc.t}}<span style="font-weight: 500; color: #6E7287;">{{sc.n}}</span></span>
+        </sc-for>
+      </div>
+      <a href="#" class="btn btn-s">Group: owning group ▾</a>
+    </div>
+
+    <div class="card" style="overflow-x: auto;">
+      <table class="tbl" style="min-width: 860px;">
+        <thead><tr><th>Project</th><th>Owning group</th><th>Visibility</th><th>My role</th><th>Runs</th><th>Last activity</th><th>Members</th></tr></thead>
+        <tbody>
+          <sc-for list="{{projects}}" as="p" hint-placeholder-count="6">
+            <tr>
+              <td><a href="ProjectDetail.dc.html" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{p.dot}}; flex-shrink: 0;"></span><span style="display: flex; flex-direction: column;"><span style="font-weight: 600;">{{p.name}}</span><span style="font-size: 12px; color: #6E7287;">{{p.desc}}</span></span></a></td>
+              <td><span style="display: flex; align-items: center; gap: 8px; white-space: nowrap;"><span style="width: 26px; height: 26px; flex-shrink: 0; border-radius: 8px; background: #EEF6FA; color: #1F536D; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a7 7 0 0 1 14 0 M17 11a3 3 0 1 0 0-6 M22 21a6 6 0 0 0-4-5.6"/></svg></span>{{p.group}}</span></td>
+              <td><span class="chip" style="background: {{p.vbg}}; color: {{p.vfg}};"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{p.vic}}"/></svg>{{p.vl}}</span></td>
+              <td><span class="chip" style="background: {{p.rbg}}; color: {{p.rfg}};">{{p.rl}}</span></td>
+              <td style="color: #33364A;">{{p.runs}}</td>
+              <td style="color: #33364A; white-space: nowrap;">{{p.last}}</td>
+              <td><span style="display: flex; align-items: center;"><sc-for list="{{p.members}}" as="m" hint-placeholder-count="3"><span title="{{m.name}}" style="width: 28px; height: 28px; margin-left: -6px; border-radius: 14px; box-shadow: 0 0 0 2px #FFFFFF; background: {{m.bg}}; color: #FFFFFF; font-size: 10.5px; font-weight: 600; display: flex; align-items: center; justify-content: center;">{{m.t}}</span></sc-for><span style="margin-left: 6px; font-size: 12px; color: #6E7287;">{{p.more}}</span></span></td>
+            </tr>
+          </sc-for>
+        </tbody>
+      </table>
+    </div>
+    <span style="font-size: 12.5px; color: #4D5065;">In single-user mode there is one project, “default”, and this page only shows it. Projects map one-to-one to depictio projects when both apps share a server.</span>
+          <details class="cli-eq">
+          <summary><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>CLI equivalent<span style="font-weight: 500; color: #6E7287; font-size: 12.5px;">same API, same permissions</span></summary>
+          <pre class="term"><span class="c"># every project on this instance, including ones you are not a member of</span>
+spectio project list --all --sort -last-run
+spectio project create "Liver time course" --group rnaseq-core --visibility group
+spectio project share prj_01JB4K… --group clinical-genomics --role viewer
+<span class="c"># move a project between instances (personal → team server)</span>
+spectio project export prj_01JB4K… --out liver.spectio-project
+spectio project import liver.spectio-project --server embl-prod --owner a.smith@lab.example --dry-run</pre>
+        </details>
+      </div>
+    </div>
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ACTIVE_TAB = 'Projects';
+  const tabDefs = [
+    ['General', '#', 'M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M3 12h2 M19 12h2 M12 3v2 M12 19v2', ''],
+    ['Projects', 'Projects.dc.html', 'M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z', ''],
+    ['Users & groups', 'SettingsUsers.dc.html', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a7 7 0 0 1 14 0 M17 11a3 3 0 1 0 0-6 M22 21a6 6 0 0 0-4-5.6', ''],
+    ['Service accounts', 'SettingsServiceAccounts.dc.html', 'M9 7V3 M15 7V3 M6 7h12v4a6 6 0 0 1-12 0z M12 17v4', ''],
+    ['Tokens', 'Profile.dc.html', 'M15 7a4 4 0 1 1-3.9 5H3v3h3v3h3v-3h2.1A4 4 0 0 1 15 7z', ''],
+    ['AI & agents', 'AIAgents.dc.html', 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z', ''],
+    ['Webhooks', '#', 'M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1 M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1', ''],
+    ['Notifications', '#', 'M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0', ''],
+    ['Branding', '#', 'M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-1-.8-1.3-.8-2.2 0-.8.7-1.3 1.5-1.3H17a4 4 0 0 0 4-4c0-5-4-9-9-9z', '']
+  ];
+  const tabs = tabDefs.map(([label, href, icon, tag]) => { const on = label === ACTIVE_TAB; return { label, href, icon, tag, cur: on ? 'page' : 'false', bg: on ? '#FFFFFF' : 'transparent', sh: on ? '0 1px 2px rgba(15,16,32,0.12)' : 'none', c: on ? '#0F1020' : '#4D5065', w: on ? 600 : 500 }; });
+  const P = {
+    person: (t, bg) => ({ kind: 'person', t, tbg: bg || '#8B5CF6', tfg: '#FFFFFF', rad: '50%' }),
+    group: (t) => ({ kind: 'group', t, tbg: '#EEF6FA', tfg: '#1F536D', rad: '9px' }),
+    service: (t) => ({ kind: 'service', t, tbg: '#EEEFF5', tfg: '#33364A', rad: '9px' }),
+    agent: () => ({ kind: 'agent', t: 'AI', tbg: '#7750D4', tfg: '#FFFFFF', rad: '9px' })
+  };
+  const VIS = { private: ['Private', '#F1F2F6', '#33364A', 'M6 11h12v9H6z M8 11V8a4 4 0 0 1 8 0v3'], group: ['Group', '#EEF6FA', '#1F536D', 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a7 7 0 0 1 14 0 M17 11a3 3 0 1 0 0-6 M22 21a6 6 0 0 0-4-5.6'], instance: ['Everyone', '#E8F6EF', '#157A4B', 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M3 12h18 M12 3c3 3 3 15 0 18 M12 3c-3 3-3 15 0 18'] };
+  const vis = (k) => ({ vl: VIS[k][0], vbg: VIS[k][1], vfg: VIS[k][2], vic: VIS[k][3] });
+  const ROLE = { owner: ['Owner', '#F6F2FE', '#4D368B'], editor: ['Editor', '#F2F1FB', '#423B97'], reviewer: ['Reviewer', '#FDF3E2', '#8F5806'], launcher: ['Launcher', '#FDF2F5', '#A54666'], viewer: ['Viewer', '#F1F2F6', '#33364A'] };
+  const role = (k) => ({ rl: ROLE[k][0], rbg: ROLE[k][1], rfg: ROLE[k][2] });
+  const av = (t, bg, name) => ({ t, bg, name });
+  const A = { TW: av('TW', '#8B5CF6', 'Thomas Weber'), AS: av('AS', '#2F7FA8', 'Anna Smith'), LM: av('LM', '#EC5F87', 'Luca Moretti'), KB: av('KB', '#A54666', 'Kai Berg'), NO: av('NO', '#5A4FCF', 'Nora Olsen') };
+  const proj = (name, desc, dot, group, v, r, runs, last, members, more) => ({ name, desc, dot, group, ...vis(v), ...role(r), runs, last, members, more });
+  const scope = (t, n, on) => ({ t, n, w: on ? 600 : 500, bg: on ? '#FFFFFF' : 'transparent', sh: on ? '0 1px 2px rgba(15,16,32,0.12)' : 'none', c: on ? '#0F1020' : '#4D5065' });
+  return {
+    tabs,
+    scopes: [scope('All I can see', '6', true), scope('Mine', '3'), scope('Shared with me', '3')],
+    projects: [
+      proj('Liver time course', 'bulk RNA-seq · nf-core/rnaseq', '#7750D4', 'rnaseq-core', 'group', 'owner', '41', 'today 10:12', [A.TW, A.AS, A.KB], '+2'),
+      proj('Drug screen 2026', 'Cell Painting plates · cellpose-segmentation', '#2F7FA8', 'imaging-core', 'private', 'reviewer', '96', 'today 09:21', [A.LM, A.TW, A.NO], '+4'),
+      proj('Rare disease trios', 'WGS trios · nf-core/sarek, raredisease', '#EC5F87', 'clinical-genomics', 'private', 'launcher', '18', 'yesterday', [A.KB, A.TW], ''),
+      proj('PBMC atlas', 'single-cell · nf-core/scrnaseq', '#5A4FCF', 'rnaseq-core', 'instance', 'editor', '12', '3 days ago', [A.AS, A.NO, A.TW], '+1'),
+      proj('Soil metagenomes', 'nf-core/mag, taxprofiler', '#A54666', 'microbiome-lab', 'group', 'viewer', '27', 'last week', [A.NO, A.LM], ''),
+      proj('Pipeline CI', 'test profiles for every release', '#4D5065', 'bioinfo-platform', 'private', 'owner', '210', 'today 06:00', [A.TW], '+ CI')
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

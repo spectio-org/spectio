@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — administration, AI and agents</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+summary::-webkit-details-marker{display:none}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Administration / AI &amp; agents" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>
+      </span>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Administration</h1>
+        <span style="font-size: 14px; color: #4D5065;">People, content, activity and the health of this instance</span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="position: sticky; top: 0; flex-shrink: 0;"><dc-import name="AdminNav" active="ai" hint-size="208px,860px"></dc-import></div>
+      <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 18px;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">AI &amp; agents</h2>
+          <span style="font-size: 13.5px; color: #4D5065;">Model endpoints, connected agents and what they may do · changes are logged with who made them</span>
+        </div>
+
+    <section aria-label="Where the AI runs" style="border-radius: 20px; background: #F7F7FB; padding: 18px 20px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+        <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Where the AI runs</h2>
+        <span style="font-size: 13px; color: #4D5065;">Spectio needs no model of its own. Three ways AI comes in, each with its own compute.</span>
+      </div>
+      <sc-for list="{{lanes}}" as="l" hint-placeholder-count="3">
+        <div style="display: grid; grid-template-columns: 28px minmax(0, 1.25fr) 92px minmax(0, 1.25fr) 92px minmax(0, 1fr) 108px; align-items: center; background: #FFFFFF; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.08); padding: 12px 14px;">
+          <span style="width: 24px; height: 24px; border-radius: 7px; background: {{l.ink}}; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{l.n}}</span>
+          <div style="display: flex; align-items: center; gap: 10px; border-radius: 12px; background: {{l.tint}}; padding: 9px 11px;">
+            <span style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 10px; background: #FFFFFF; color: {{l.ink}}; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{l.icon1}}"/></svg></span>
+            <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">{{l.a}}</span><span style="font-size: 12px; color: #4D5065;">{{l.asub}}</span></span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 6px;">
+            <span style="font-size: 11px; font-weight: 600; color: {{l.ink}}; text-align: center;">{{l.arrow1}}</span>
+            <svg width="100%" height="10" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><path d="M2 5H94 M90 1l6 4-6 4" stroke="{{l.ink}}" stroke-width="1.6" fill="none" vector-effect="non-scaling-stroke"/></svg>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; border-radius: 12px; box-shadow: inset 0 0 0 1px #DFE1EA; padding: 9px 11px;">
+            <span style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{l.icon2}}"/></svg></span>
+            <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">{{l.b}}</span><span style="font-size: 12px; color: #4D5065;">{{l.bsub}}</span></span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 0 6px;">
+            <span style="font-size: 11px; font-weight: 600; color: {{l.ink}}; text-align: center;">{{l.arrow2}}</span>
+            <svg width="100%" height="10" viewBox="0 0 100 10" preserveAspectRatio="none" aria-hidden="true"><path d="M2 5H94 M90 1l6 4-6 4" stroke="{{l.ink}}" stroke-width="1.6" fill="none" vector-effect="non-scaling-stroke"/></svg>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; border-radius: 12px; box-shadow: inset 0 0 0 1px #DFE1EA; padding: 9px 11px;">
+            <span style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 10px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{l.icon3}}"/></svg></span>
+            <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">{{l.c}}</span><span style="font-size: 12px; color: #4D5065;">{{l.csub}}</span></span>
+          </div>
+          <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; padding-left: 10px;">
+            <span style="font-size: 11px; color: #6E7287;">compute</span>
+            <span style="font-size: 12px; font-weight: 600; border-radius: 999px; padding: 4px 10px; background: {{l.tint}}; color: {{l.ink}}; white-space: nowrap;">{{l.compute}}</span>
+          </div>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="width: 36px; height: 36px; border-radius: 11px; background: #EEF6FA; color: #2F7FA8; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.chip}}"/></svg></span>
+        <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 15.5px; font-weight: 600;">Model endpoints</span><span style="font-size: 12.5px; color: #4D5065;">Used by the built-in assistant (lane 2) · any OpenAI-compatible server or provider API</span></span>
+        <a href="#" style="font-size: 13px; font-weight: 600; text-decoration: none;">Add endpoint</a>
+      </div>
+      <sc-for list="{{endpoints}}" as="e" hint-placeholder-count="3">
+        <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-top: 1px solid #EEEFF5; padding: 10px 0 10px 12px; box-shadow: inset 3px 0 0 {{e.rail}};">
+          <span style="flex: 1 1 210px; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">{{e.name}} <span style="font-size: 11.5px; font-weight: 600; color: #4D368B;">{{e.def}}</span></span><span style="font-size: 12px; color: #4D5065;">{{e.kind}}</span></span>
+          <span style="flex: 1 1 220px; font-size: 12.5px; color: #33364A;">{{e.where}}</span>
+          <span style="flex: 1 1 170px; font-size: 12.5px; color: #33364A;">{{e.data}}</span>
+          <span style="font-size: 12.5px; font-weight: 600; color: {{e.fg}}; min-width: 80px; text-align: right;">{{e.state}}</span>
+        </div>
+      </sc-for>
+      <div style="border-radius: 12px; background: #F7F7FB; padding: 10px 12px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+        <span style="flex: 1 1 280px; font-size: 12.5px; color: #33364A; line-height: 1.45;"><strong>Use your own GPUs.</strong> A runner starts the model server as an ordinary GPU job, registers it here, and stops it after the idle time.</span>
+        <code style="flex: 2 1 420px; font-family: 'JetBrains Mono', monospace; font-size: 12px; background: #0F1020; color: #E6E7EF; border-radius: 9px; padding: 8px 10px;">spectio ai serve --env "EMBL SLURM · gpu" --model &lt;model-id&gt; --gpus 1 --idle-stop 2h</code>
+      </div>
+    </section>
+
+    <section style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="width: 36px; height: 36px; border-radius: 11px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.plug}}"/></svg></span>
+        <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 15.5px; font-weight: 600;">Connected agents</span><span style="font-size: 12.5px; color: #4D5065;">Each has its own token and scopes · every action is logged under its name</span></span>
+        <a href="#" style="font-size: 13px; font-weight: 600; text-decoration: none;">Connect an agent</a>
+      </div>
+      <sc-for list="{{agents}}" as="a" hint-placeholder-count="4">
+        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-top: 1px solid #EEEFF5; padding-top: 10px;">
+          <span style="width: 30px; height: 30px; border-radius: 9px; background: {{a.bg}}; color: {{a.fg}}; font-size: 10px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{a.t}}</span>
+          <span style="flex: 1 1 200px; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">{{a.name}}</span><span style="font-size: 12px; color: #4D5065;">{{a.door}}</span></span>
+          <span style="flex: 2 1 280px; display: flex; gap: 5px; flex-wrap: wrap;"><sc-for list="{{a.scopes}}" as="s" hint-placeholder-count="3"><span style="font-size: 11.5px; font-weight: 600; border-radius: 6px; padding: 3px 7px; background: {{s.bg}}; color: {{s.fg}};">{{s.l}}</span></sc-for></span>
+          <span style="font-size: 12px; color: #6E7287; min-width: 160px; text-align: right;">{{a.last}}</span>
+        </div>
+      </sc-for>
+    </section>
+
+    <section style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 12px;">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <span style="width: 36px; height: 36px; border-radius: 11px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.shield}}"/></svg></span>
+        <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 15.5px; font-weight: 600;">Default limits for agents</span><span style="font-size: 12.5px; color: #4D5065;">A gate in spectio.yml can be stricter, never looser</span></span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 24px;">
+        <sc-for list="{{limits}}" as="l" hint-placeholder-count="6">
+          <div style="display: flex; align-items: center; gap: 12px; border-top: 1px solid #EEEFF5; padding: 10px 0;">
+            <span style="width: 34px; height: 20px; border-radius: 10px; background: {{l.track}}; position: relative; flex-shrink: 0;"><span style="position: absolute; top: 2px; left: {{l.knob}}; width: 16px; height: 16px; border-radius: 8px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,16,32,0.25);"></span></span>
+            <span style="display: flex; flex-direction: column;"><span style="font-size: 13.5px; font-weight: 600;">{{l.k}}</span><span style="font-size: 12px; color: #4D5065;">{{l.v}}</span></span>
+          </div>
+        </sc-for>
+      </div>
+    </section>
+        <details style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+          <summary style="cursor: pointer; padding: 12px 16px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px; list-style: none;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>CLI equivalent<span style="font-size: 12.5px; font-weight: 500; color: #6E7287;">same API, same permissions</span></summary>
+          <pre style="margin: 0; background: #0F1020; color: #E6E7EF; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto;"><span style="color: #8A8FA8;">$</span> spectio ai provider list
+<span style="color: #8A8FA8;">$</span> spectio ai agent list
+<span style="color: #8A8FA8;">$</span> spectio ai serve --env "EMBL SLURM · gpu" --model &lt;model-id&gt; --gpus 1 --idle-stop 2h</pre>
+        </details>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    spark: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z',
+    chip: 'M7 7h10v10H7z M10 10h4v4h-4z M9 3v4 M15 3v4 M9 17v4 M15 17v4 M3 9h4 M3 15h4 M17 9h4 M17 15h4',
+    plug: 'M9 7V3 M15 7V3 M6 7h12v4a6 6 0 0 1-12 0z M12 17v4',
+    shield: 'M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z',
+    server: 'M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01',
+    bot: 'M5 9h14v10H5z M12 5v4 M9 13h.01 M15 13h.01 M9 16h6',
+    flow: 'M6 3v12 M18 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 9a9 9 0 0 1-9 9',
+    flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5'
+  };
+  const chip = (l, kind) => ({ l, bg: kind === 'on' ? '#E8F6EF' : kind === 'warn' ? '#FDF3E2' : '#F1F2F6', fg: kind === 'on' ? '#157A4B' : kind === 'warn' ? '#8F5806' : '#6E7287' });
+  const tog = (k, v, yes) => ({ k, v, track: yes ? '#7750D4' : '#C4C7D4', knob: yes ? '16px' : '2px' });
+  return {
+    ic,
+    lanes: [
+      { n: '1', ink: '#7750D4', tint: '#F6F2FE', icon1: ic.bot, a: 'Your agent', asub: 'coding assistant, lab bot, script', arrow1: 'MCP / REST', icon2: ic.server, b: 'Spectio server', bsub: 'tools, evidence, limits', arrow2: 'acts within scopes', icon3: ic.flag, c: 'Runs and gates', csub: 'read, propose, launch', compute: 'agent’s own' },
+      { n: '2', ink: '#2F7FA8', tint: '#EEF6FA', icon1: ic.server, a: 'Spectio server', asub: 'built-in assistant (optional)', arrow1: 'prompt + metrics', icon2: ic.chip, b: 'Model endpoint', bsub: 'hosted API, or your GPU (vLLM job started by a runner)', arrow2: 'summary, suggestion', icon3: ic.flag, c: 'Review', csub: 'shown as a suggestion', compute: 'your choice' },
+      { n: '3', ink: '#A54666', tint: '#FFF6EC', icon1: ic.flow, a: 'Workflow task', asub: 'Cellpose, classifier, embedding', arrow1: 'runs as a job', icon2: ic.chip, b: 'Environment GPU', bsub: 'partition or node pool', arrow2: 'outputs', icon3: ic.flag, c: 'Gate checks', csub: 'metrics like any other', compute: 'the environment' }
+    ],
+    endpoints: [
+      { name: 'Lab GPU · vLLM', def: 'default', kind: 'self-hosted · OpenAI-compatible', where: 'SLURM job on the gpu partition, started by a runner', data: 'Data stays on site', state: 'Running', fg: '#157A4B', rail: '#1F9D63' },
+      { name: 'Hosted provider API', def: '', kind: 'provider key, stored encrypted', where: 'Provider cloud', data: 'Metrics and text only, no files', state: 'Disabled', fg: '#6E7287', rail: '#C4C7D4' },
+      { name: 'Workstation · Ollama', def: '', kind: 'self-hosted · local', where: 'tw-lab workstation', data: 'Data stays on site', state: 'Offline', fg: '#B02A2A', rail: '#DC3B3B' }
+    ],
+    agents: [
+      { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', name: 'QC agent (built-in)', door: 'internal · Lab GPU endpoint', scopes: [chip('read', 'on'), chip('propose', 'on'), chip('approve', 'off'), chip('launch', 'off')], last: 'proposed a change · 9 min ago' },
+      { t: 'AI', bg: '#E6DCFC', fg: '#4D368B', name: 'Thomas’s coding assistant', door: 'MCP · personal token', scopes: [chip('read', 'on'), chip('propose', 'on'), chip('launch on Kubernetes · dev', 'warn')], last: 'listed failed runs · 1 h ago' },
+      { t: 'BOT', bg: '#E3F1FB', fg: '#1D5FC9', name: 'LIMS / plate reader', door: 'Webhook · signed', scopes: [chip('signal gates', 'on'), chip('read', 'off')], last: 'plate 12 imaged · 2 h ago' },
+      { t: 'CI', bg: '#F1F2F6', fg: '#33364A', name: 'Pipeline CI', door: 'REST + WES · service token', scopes: [chip('launch test profile', 'warn'), chip('read own runs', 'on')], last: 'test run passed · yesterday' }
+    ],
+    limits: [
+      tog('Read runs, logs, metrics', 'all agents', true),
+      tog('Read evidence files', 'up to 50 MB per file', true),
+      tog('Propose parameter changes', 'shown to reviewers as suggestions', true),
+      tog('Approve gates', 'only where spectio.yml says agents: approve', false),
+      tog('Launch and relaunch', 'only on environments listed per token', false),
+      tog('Send files to hosted models', 'off: metrics and text only', false)
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

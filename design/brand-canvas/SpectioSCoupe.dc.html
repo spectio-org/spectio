@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Spectio — P normal, S coupé</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 1200px; height: 900px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: flex; flex-direction: column;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="e" viewBox="0 0 200 100">
+      <path fill="#5A4FCF" d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/>
+      <path fill="#8B5CF6" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/>
+      <path fill="#EC5F87" d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/>
+      <path fill="#F9A947" d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/>
+    </symbol>
+  </svg>
+  <sc-for list="{{rows}}" as="row" hint-placeholder-count="4">
+    <div style="height: 225px; display: flex; align-items: center; border-bottom: 1px solid #EEEFF5; box-sizing: border-box;">
+      <div style="width: 260px; padding-left: 48px; display: flex; flex-direction: column; gap: 4px;">
+        <span style="font-size: 15px; font-weight: 600;">{{row.title}}</span>
+        <span style="font-size: 12px; color: #4D5065;">{{row.sub}}</span>
+      </div>
+      <div style="flex-grow: 1; display: flex; align-items: flex-end; justify-content: center; gap: 28px;">
+        <svg width="150" height="75" aria-hidden="true" style="margin-bottom: -4px;"><use href="#e"/></svg>
+        <img src="{{row.src}}" alt="{{row.alt}}" style="height: 60px; width: auto;">
+      </div>
+    </div>
+  </sc-for>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {
+    rows: [
+      { title: 'C0 · deux boucles, sans coupe', sub: 'référence, P normal', src: '/_blob/f5170a77e696b48e7cc8021f45920024', alt: 'SPECTIO, S à deux boucles, P normal' },
+      { title: 'C1 · coupe verticale', sub: 'la barre du milieu s’interrompt', src: '/_blob/db17476db08c550a279cc0b6deddfc40', alt: 'SPECTIO, S coupé verticalement au milieu' },
+      { title: 'C2 · S rond coupé en deux', sub: 'une fente horizontale à mi-hauteur', src: '/_blob/7f25946abcc9e7087ac804bf5b00b257', alt: 'SPECTIO, S rond coupé horizontalement' },
+      { title: 'C3 · deux boucles séparées', sub: '⊂ posé sur ⊃, la barre fendue', src: '/_blob/f9589c5f2cddd3e239a34e28dc1e68af', alt: 'SPECTIO, S en deux boucles séparées par une fente' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

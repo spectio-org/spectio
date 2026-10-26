@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block extrahead %}
+  {{ super() }}
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&display=swap">
+{% endblock %}
+{% block footer %}
+<footer class="md-footer">
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="sp-footer">
+        <span>Spectio · design phase · licence to be decided before the first code release</span>
+        <span>by Thomas Weber, EMBL</span>
+        <a href="https://github.com/weber8thomas/spectio">Repository</a>
+        <a href="https://github.com/depictio/depictio">depictio</a>
+        <a href="{{ 'changelog/' | url }}">Changelog</a>
+        <a href="{{ 'map/' | url }}">Documentation map</a>
+      </div>
+    </div>
+  </div>
+</footer>
+{% endblock %}

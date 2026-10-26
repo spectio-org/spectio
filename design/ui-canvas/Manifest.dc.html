@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — stages, gates and spectio.yml</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<div style="width: 1440px; height: 1120px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; padding: 40px 56px; display: flex; flex-direction: column; gap: 26px;">
+
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 30px;">Stages and gates, in one picture</h1>
+    <p style="margin: 0; font-size: 16px; color: #33364A; max-width: 980px; line-height: 1.5;">A pipeline has dozens of steps. Spectio groups them into a few <strong>stages</strong> people can name, and can stop between two stages, at a <strong>gate</strong>, so someone checks the results before the rest runs.</p>
+  </div>
+
+  <section aria-label="Example: nf-core/rnaseq grouped into four stages" style="display: flex; gap: 24px; align-items: stretch;">
+    <div style="flex-grow: 1; display: flex; gap: 10px; align-items: stretch;">
+      <sc-for list="{{stages}}" as="s" hint-placeholder-count="4">
+        <div style="display: flex; gap: 10px; align-items: stretch; flex: {{s.flex}};">
+          <div style="flex-grow: 1; border-radius: 16px; background: {{s.tint}}; box-shadow: inset 0 4px 0 {{s.color}}; padding: 16px 14px 14px; display: flex; flex-direction: column; gap: 10px;">
+            <span style="display: flex; align-items: center; gap: 8px;"><span style="width: 24px; height: 24px; border-radius: 7px; background: {{s.color}}; color: #FFFFFF; font-size: 12px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{s.n}}</span><span style="font-size: 15px; font-weight: 600;">{{s.name}}</span></span>
+            <span style="display: flex; flex-wrap: wrap; gap: 5px;">
+              <sc-for list="{{s.steps}}" as="p" hint-placeholder-count="4"><span style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; background: #FFFFFF; border-radius: 6px; padding: 3px 6px; color: #33364A;">{{p}}</span></sc-for>
+            </span>
+            <span style="margin-top: auto; font-size: 12px; color: #4D5065;">{{s.count}}</span>
+          </div>
+          <sc-if value="{{s.gate}}" hint-placeholder-val="{{false}}">
+            <div style="width: 120px; flex-shrink: 0; border-radius: 16px; background: #FFFBF3; box-shadow: inset 0 0 0 2px #D9890B; padding: 14px 12px; display: flex; flex-direction: column; gap: 8px; align-items: center; text-align: center;">
+              <span style="width: 36px; height: 36px; border-radius: 11px; background: #D9890B; color: #FFFFFF; display: flex; align-items: center; justify-content: center;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 21V4 M5 4h12l-2.5 4 2.5 4H5"/></svg></span>
+              <span style="font-size: 13.5px; font-weight: 600; color: #6B4205;">Gate</span>
+              <span style="font-size: 12px; color: #33364A; line-height: 1.4;">Mapping QC<br>uniquely mapped ≥ 80 % per sample<br>a person decides</span>
+            </div>
+          </sc-if>
+        </div>
+      </sc-for>
+    </div>
+    <div style="width: 170px; flex-shrink: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; border-radius: 16px; background: #F7F7FB; padding: 14px;">
+      <svg width="132" height="66" viewBox="0 0 200 100" role="img" aria-label="Gauge: one sector per stage, stage 2 awaiting review">
+        <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#DFE1EA"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/>
+      </svg>
+      <span style="font-size: 12.5px; text-align: center; color: #33364A; line-height: 1.4;">The gauge has one sector per stage. Here: stage 1 done, gate after stage 2 open.</span>
+    </div>
+  </section>
+
+  <section aria-label="What happens at the gate" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+    <sc-for list="{{flow}}" as="f" hint-placeholder-count="4">
+      <div style="display: flex; gap: 12px; align-items: flex-start; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px;">
+        <span style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 10px; background: {{f.tile}}; color: {{f.ink}}; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{f.icon}}"/></svg></span>
+        <span style="display: flex; flex-direction: column; gap: 3px;"><span style="font-size: 13.5px; font-weight: 600;">{{f.k}}</span><span style="font-size: 12.5px; color: #33364A; line-height: 1.45;">{{f.v}}</span></span>
+      </div>
+    </sc-for>
+  </section>
+
+  <div style="display: flex; gap: 24px; align-items: stretch; flex-grow: 1; min-height: 0;">
+    <section style="flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 17px; font-weight: 600;">Written down once, in spectio.yml</h2>
+      <span style="font-size: 13px; color: #4D5065; line-height: 1.45;">A short file next to the workflow, or attached in Spectio for a pipeline you don't own (here, a lab overlay for nf-core/rnaseq, which ships none). Each coloured line is one block of the picture above.</span>
+      <div style="border-radius: 16px; background: #0F1020; padding: 14px 0; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; color: #E6E7EF; flex-grow: 1;">
+        <sc-for list="{{yaml}}" as="y" hint-placeholder-count="16">
+          <div style="display: flex; box-shadow: inset 4px 0 0 {{y.bar}}; padding: 0 18px; white-space: pre; color: {{y.fg}};">{{y.t}}</div>
+        </sc-for>
+      </div>
+    </section>
+    <section style="width: 470px; flex-shrink: 0; display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 0; font-size: 17px; font-weight: 600;">No spectio.yml? Still useful</h2>
+      <sc-for list="{{sources}}" as="s" hint-placeholder-count="3">
+        <div style="display: flex; gap: 12px; align-items: flex-start; border-radius: 14px; background: {{s.bg}}; padding: 12px 14px;">
+          <span style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 10px; background: #FFFFFF; color: {{s.ink}}; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"/></svg></span>
+          <span style="display: flex; flex-direction: column; gap: 3px;"><span style="font-size: 13.5px; font-weight: 600;">{{s.k}} <span style="font-size: 11.5px; color: {{s.ink}};">{{s.tag}}</span></span><span style="font-size: 12.5px; color: #33364A; line-height: 1.45;">{{s.v}}</span></span>
+        </div>
+      </sc-for>
+    </section>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1120}}'>
+class Component extends DCLogic {
+renderVals() {
+  const C = ['#5A4FCF', '#8B5CF6', '#EC5F87', '#F9A947'], Tn = ['#F2F1FB', '#F6F2FE', '#FDF2F5', '#FFF8F0'];
+  const st = (i, name, steps, count, gate, flex) => ({ n: String(i + 1), name, steps, count, gate, flex, color: C[i], tint: Tn[i] });
+  const k = '#BEA4FA', v = '#FCCF98', c = '#8E92A8', w = '#E6E7EF', none = 'transparent';
+  const line = (t, bar, fg) => ({ t, bar: bar || none, fg: fg || w });
+  return {
+    stages: [
+      st(0, 'Preprocessing', ['PREPARE_GENOME', 'FASTQC', 'UMITOOLS_EXTRACT', 'TRIMGALORE', 'SORTMERNA'], '288 tasks', false, '1 1 0'),
+      st(1, 'Alignment & QC', ['STAR_ALIGN', 'SAMTOOLS_SORT', 'PICARD_MARKDUPLICATES', 'RSEQC', 'QUALIMAP'], '336 tasks', true, '1.6 1 0'),
+      st(2, 'Quantification', ['SALMON_QUANT', 'SUBREAD_FEATURECOUNTS', 'TXIMETA_TXIMPORT'], '300 tasks', false, '1 1 0'),
+      st(3, 'Reporting', ['DESEQ2_QC', 'MULTIQC'], '2 tasks', false, '0.8 1 0')
+    ],
+    flow: [
+      { k: '1 · Stage 2 finishes', v: 'Every alignment and QC task is done.', icon: 'M5 12l5 5L20 7', tile: '#F6F2FE', ink: '#6344B2' },
+      { k: '2 · Spectio stops the run', v: 'No stage-3 task starts. Nothing keeps computing.', icon: 'M9 5v14 M15 5v14', tile: '#FDF3E2', ink: '#8F5806' },
+      { k: '3 · Someone decides', v: 'Checks and evidence in Review: approve, adjust, go back or stop.', icon: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5', tile: '#FDF3E2', ink: '#8F5806' },
+      { k: '4 · The run continues', v: 'Same run, engine cache: stages 1–2 are not recomputed.', icon: 'M8 5v14l11-7z', tile: '#ECF8F1', ink: '#157A4B' }
+    ],
+    yaml: [
+      line('# spectio.yml · lab overlay for nf-core/rnaseq', null, c),
+      line('stages:', null, k),
+      line('  - name: Preprocessing', C[0]),
+      line('    match: [PREPARE_GENOME:*, FASTQC, TRIMGALORE, ...]', C[0], v),
+      line('  - name: Alignment & QC', C[1]),
+      line('    match: [ALIGN_STAR:*, RSEQC*, QUALIMAP*]', C[1], v),
+      line('    gate: mapping_qc', '#D9890B'),
+      line('  - name: Quantification', C[2]),
+      line('    match: [QUANTIFY_*:*, SUBREAD_FEATURECOUNTS]', C[2], v),
+      line('  - name: Reporting', C[3]),
+      line('    match: [DESEQ2_QC*, MULTIQC]', C[3], v),
+      line('gates:', null, k),
+      line('  mapping_qc:', '#D9890B'),
+      line('    check: uniquely_mapped_percent >= 80   # per sample', '#D9890B', v),
+      line('    evidence: multiqc/**/multiqc_report.html', '#D9890B', v),
+      line('    decide: { humans: [group:rnaseq-core], agents: propose }', '#D9890B', v)
+    ],
+    sources: [
+      { k: 'Detected stages', tag: 'automatic · display only', v: 'Nextflow task names include the subworkflow (…:ALIGN_STAR:STAR_ALIGN), so Spectio can show named stages and progress per stage. No gates.', icon: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z', bg: '#F6F2FE', ink: '#6344B2' },
+      { k: 'Task quarters', tag: 'nothing to detect', v: 'The gauge shows 0–25–50–75–100 % of tasks. Monitoring, logs, resume and restart all work.', icon: 'M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M12 3v9h9', bg: '#F7F7FB', ink: '#4D5065' },
+      { k: 'What only spectio.yml adds', tag: '', v: 'Gates (stop, check, decide) and “rerun from stage”. How the engine is stopped is in the spec, not something users need to know.', icon: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5', bg: '#FFFBF3', ink: '#8F5806' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

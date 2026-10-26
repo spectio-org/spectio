@@ -1,0 +1,13 @@
+sample,group,replicate,n_reads
+S01,ctrl,1,400
+S02,ctrl,2,400
+S03,ctrl,3,40
+S04,ctrl,4,400
+S05,ctrl,5,400
+S06,ctrl,6,400
+S07,treatA,1,400
+S08,treatA,2,400
+S09,treatA,3,400
+S10,treatB,1,400
+S11,treatB,2,400
+S12,treatB,3,400

@@ -1,0 +1,31 @@
+# docs site
+site/
+.cache/
+
+# Python / Node tooling
+__pycache__/
+*.pyc
+.venv/
+node_modules/
+
+# local renders and research clones
+*.render.png
+docs/research/data/repos/
+docs/research/data/pipelines.json
+
+# editors / OS
+.DS_Store
+.idea/
+.vscode/
+
+# autopilot: per-machine run state (costs.jsonl is kept for calibration)
+.autopilot/runs/
+.autopilot/usage.json
+.autopilot/budget.json
+.autopilot/limit-hit.json
+
+# fonts with an unconfirmed licence (tools/diagrams/FONT-LICENSE.md): set SPECTIO_VIRGIL_TTF or place them locally
+docs/fonts/*.ttf
+
+# GIF previews for PR bodies, generated on demand (tools/media/combo.py)
+tools/media/out/

@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Test de loin — depictio et trois panoramas</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#141414}a:hover{color:#444444}
+</style>
+</helmet>
+<div style="width: 1400px; height: 720px; box-sizing: border-box; background: #FFFFFF; color: #141414; font-family: system-ui, sans-serif; padding: 40px 56px; display: flex; flex-direction: column; justify-content: space-between;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="dep" viewBox="0 0 200 200">
+      <path fill="#DD6E94" d="M83.08 92.99L58.35 92.99A42.24 42.24 0 0 1 65.59 75.5Z"/>
+      <path fill="#BD63E1" d="M92.99 83.08L56.33 46.42A69.12 69.12 0 0 1 92.99 31.24Z"/>
+      <path fill="#7E5FED" d="M107.01 83.08L107.01 4.26A96 96 0 0 1 162.75 27.34Z"/>
+      <path fill="#627AF1" d="M116.92 92.99L153.58 56.33A69.12 69.12 0 0 1 168.76 92.99Z"/>
+      <path fill="#EF9745" d="M116.92 107.01L168.76 107.01A69.12 69.12 0 0 1 153.58 143.67Z"/>
+      <path fill="#F2C547" d="M107.01 116.92L124.5 134.41A42.24 42.24 0 0 1 107.01 141.65Z"/>
+      <path fill="#A2D54E" d="M92.99 116.92L92.99 168.76A69.12 69.12 0 0 1 56.33 153.58Z"/>
+      <path fill="#59B4CB" d="M83.08 107.01L27.34 162.75A96 96 0 0 1 4.26 107.01Z"/>
+    </symbol>
+    <symbol id="r1" viewBox="0 0 200 100">
+      <path fill="#BD63E1" d="M86.09 94.24L31.12 94.24A69.12 69.12 0 0 1 47.22 55.37Z"/>
+      <path fill="#7E5FED" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/>
+      <path fill="#EF9745" d="M105.76 86.09L105.76 38.83A61.44 61.44 0 0 1 139.18 52.67Z"/>
+      <path fill="#59B4CB" d="M113.91 94.24L165.03 43.11A86.4 86.4 0 0 1 186.21 94.24Z"/>
+    </symbol>
+    <symbol id="r2" viewBox="0 0 200 106">
+      <path fill="#BD63E1" d="M86.09 94.24L31.12 94.24A69.12 69.12 0 0 1 47.22 55.37Z"/>
+      <path fill="#7E5FED" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/>
+      <path fill="#EF9745" d="M105.76 86.09L105.76 38.83A61.44 61.44 0 0 1 139.18 52.67Z"/>
+      <path fill="#59B4CB" d="M113.91 94.24L165.03 43.11A86.4 86.4 0 0 1 186.21 94.24Z"/>
+      <rect x="2" y="96" width="196" height="9" rx="4.5" fill="#141414"/>
+    </symbol>
+    <symbol id="r3" viewBox="0 0 200 100">
+      <path fill="#7E5FED" d="M89.19 93.76L4.2 93.76A96 96 0 0 1 46.7 20.16Z"/>
+      <path fill="#EF9745" d="M100.0 87.52L71.95 38.93A67.2 67.2 0 0 1 128.05 38.93Z"/>
+      <path fill="#59B4CB" d="M110.81 93.76L147.53 30.16A84.48 84.48 0 0 1 184.25 93.76Z"/>
+    </symbol>
+  </svg>
+
+  <div style="display: flex; align-items: center; gap: 48px; height: 140px; border-bottom: 1px solid #EEEEEE;">
+    <span style="width: 120px; font-size: 14px; color: #595959;">depictio</span>
+    <div style="width: 520px; display: flex; align-items: center; gap: 18px;">
+      <svg width="80" height="80" aria-hidden="true"><use href="#dep"/></svg>
+      <img src="/_blob/2666b7bca6d9d4b871bec3e57909e684" alt="DEPICTIO" style="height: 38px; width: auto;">
+    </div>
+    <div style="width: 200px; display: flex; align-items: center; gap: 6px;">
+      <svg width="22" height="22" aria-hidden="true"><use href="#dep"/></svg>
+      <img src="/_blob/2666b7bca6d9d4b871bec3e57909e684" alt="DEPICTIO en petit" style="height: 10px; width: auto;">
+    </div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <svg width="48" height="48" aria-hidden="true"><use href="#dep"/></svg>
+      <svg width="24" height="24" aria-hidden="true"><use href="#dep"/></svg>
+      <svg width="16" height="16" aria-hidden="true"><use href="#dep"/></svg>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 48px; height: 140px; border-bottom: 1px solid #EEEEEE;">
+    <span style="width: 120px; font-size: 14px; color: #595959;">A · quatre, tous visibles</span>
+    <div style="width: 520px; display: flex; align-items: flex-end; gap: 18px;">
+      <svg width="140" height="70" aria-hidden="true" style="margin-bottom: -2px;"><use href="#r1"/></svg>
+      <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO" style="height: 38px; width: auto;">
+    </div>
+    <div style="width: 200px; display: flex; align-items: flex-end; gap: 6px;">
+      <svg width="36" height="18" aria-hidden="true"><use href="#r1"/></svg>
+      <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO en petit" style="height: 10px; width: auto;">
+    </div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <svg width="48" height="24" aria-hidden="true"><use href="#r1"/></svg>
+      <svg width="24" height="12" aria-hidden="true"><use href="#r1"/></svg>
+      <svg width="16" height="8" aria-hidden="true"><use href="#r1"/></svg>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 48px; height: 140px; border-bottom: 1px solid #EEEEEE;">
+    <span style="width: 120px; font-size: 14px; color: #595959;">B · quatre + horizon</span>
+    <div style="width: 520px; display: flex; align-items: flex-end; gap: 18px;">
+      <svg width="140" height="74" aria-hidden="true" style="margin-bottom: -1px;"><use href="#r2"/></svg>
+      <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO" style="height: 38px; width: auto;">
+    </div>
+    <div style="width: 200px; display: flex; align-items: flex-end; gap: 6px;">
+      <svg width="36" height="19" aria-hidden="true"><use href="#r2"/></svg>
+      <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO en petit" style="height: 10px; width: auto;">
+    </div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <svg width="48" height="25" aria-hidden="true"><use href="#r2"/></svg>
+      <svg width="24" height="13" aria-hidden="true"><use href="#r2"/></svg>
+      <svg width="16" height="8" aria-hidden="true"><use href="#r2"/></svg>
+    </div>
+  </div>
+
+  <div style="display: flex; align-items: center; gap: 48px; height: 140px;">
+    <span style="width: 120px; font-size: 14px; color: #595959;">C · trois secteurs</span>
+    <div style="width: 520px; display: flex; align-items: flex-end; gap: 18px;">
+      <svg width="140" height="70" aria-hidden="true" style="margin-bottom: -2px;"><use href="#r3"/></svg>
+      <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO" style="height: 38px; width: auto;">
+    </div>
+    <div style="width: 200px; display: flex; align-items: flex-end; gap: 6px;">
+      <svg width="36" height="18" aria-hidden="true"><use href="#r3"/></svg>
+      <img src="/_blob/ae6b7ff119cea8c1f7c869c018445773" alt="PERSPECTIO en petit" style="height: 10px; width: auto;">
+    </div>
+    <div style="display: flex; align-items: center; gap: 20px;">
+      <svg width="48" height="24" aria-hidden="true"><use href="#r3"/></svg>
+      <svg width="24" height="12" aria-hidden="true"><use href="#r3"/></svg>
+      <svg width="16" height="8" aria-hidden="true"><use href="#r3"/></svg>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1400,"height":720}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

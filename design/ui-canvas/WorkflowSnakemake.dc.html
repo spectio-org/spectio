@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — workflow detail (Snakemake)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}details>summary .chev{transition:transform .15s}details:not([open])>summary .chev{transform:rotate(180deg)}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Workflows / dna-seq-varlociraptor" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="workflows" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+
+      <nav aria-label="Workflow sources" style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <sc-for list="{{sources}}" as="s" hint-placeholder-count="4">
+          <a href="#" style="padding: 7px 12px; border-radius: 10px; font-size: 13px; font-weight: 600; text-decoration: none; background: {{s.bg}}; color: {{s.fg}};">{{s.label}} <span style="font-weight: 500; opacity: 0.75;">{{s.n}}</span></a>
+        </sc-for>
+      </nav>
+
+      <section style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 18px 20px; display: flex; gap: 16px; align-items: center; flex-wrap: wrap;">
+        <span style="width: 56px; height: 56px; border-radius: 16px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="36" height="36" alt="Snakemake" style="display: block; object-fit: contain;"></span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 260px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">snakemake-workflows/dna-seq-varlociraptor</h1>
+          <span style="font-size: 14px; color: #4D5065;">Variant calling with Varlociraptor · Snakemake · from the Snakemake Workflow Catalog (data.json + .snakemake-workflow-catalog.yml)</span>
+        </div>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: #4D5065;">Release / tag
+          <select style="font: 600 13px 'Inter', sans-serif; border-radius: 10px; border: 1px solid #C4C7D4; padding: 8px 10px;"><option>v5.2.1 · latest</option><option>v5.1.0</option><option>main</option></select>
+        </label>
+        <a href="Launch.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center;">Launch this release</a>
+      </section>
+
+      <dl style="margin: 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px;">
+        <sc-for list="{{facts}}" as="f" hint-placeholder-count="5">
+          <div style="border-radius: 14px; background: #F7F7FB; padding: 12px 14px; display: flex; flex-direction: column; gap: 3px;"><dt style="font-size: 12px; color: #6E7287;">{{f.k}}</dt><dd style="margin: 0; font-weight: 600; font-size: 14px;">{{f.v}}</dd></div>
+        </sc-for>
+      </dl>
+
+      <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+        <section style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="width: 100%; border: none; background: #FFFFFF; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.file}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Configuration schema</span><span style="font-size: 12px; color: #4D5065;">workflow/schemas/config.schema.yaml · 8 top-level keys · drives validation of config.yaml</span></span>
+              <span style="font-size: 12.5px; font-weight: 600; color: #8F5806;">3 raw keys</span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="overflow-x: auto; border-top: 1px solid #EEEFF5;">
+              <table style="width: 100%; min-width: 620px; border-collapse: collapse; font-size: 13px;">
+                <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
+                  <th scope="col" style="padding: 8px 16px; font-weight: 600;">Key</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Type</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Required</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">UI hints</th>
+                </tr></thead>
+                <tbody>
+                  <sc-for list="{{config}}" as="c" hint-placeholder-count="8">
+                    <tr style="border-top: 1px solid #EEEFF5;">
+                      <td style="padding: 8px 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;">{{c.key}}</td>
+                      <td style="padding: 8px 12px; color: #33364A;">{{c.type}}</td>
+                      <td style="padding: 8px 12px;">{{c.req}}</td>
+                      <td style="padding: 8px 12px;"><span style="font-size: 12px; font-weight: 600; border-radius: 6px; padding: 3px 7px; background: {{c.hbg}}; color: {{c.hfg}};">{{c.hint}}</span> <span style="font-size: 12px; color: #4D5065;">{{c.hdesc}}</span></td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="width: 100%; border: none; background: #FFFFFF; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.box}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Rules and wrappers</span><span style="font-size: 12px; color: #4D5065;">42 rules · 27 use Snakemake wrappers · versions confirmed from the last run's conda envs</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="overflow-x: auto; border-top: 1px solid #EEEFF5;">
+              <table style="width: 100%; min-width: 680px; border-collapse: collapse; font-size: 13px;">
+                <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
+                  <th scope="col" style="padding: 8px 16px; font-weight: 600;">Rule</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Wrapper</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Conda env</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Tool (last run)</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Container</th>
+                </tr></thead>
+                <tbody>
+                  <sc-for list="{{rules}}" as="r" hint-placeholder-count="6">
+                    <tr style="border-top: 1px solid #EEEFF5;">
+                      <td style="padding: 8px 16px; font-weight: 600;">{{r.rule}}</td>
+                      <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">{{r.wrapper}}</td>
+                      <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #33364A;">{{r.env}}</td>
+                      <td style="padding: 8px 12px;">{{r.tool}}</td>
+                      <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #33364A;">{{r.img}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="width: 100%; border: none; background: #FFFFFF; padding: 12px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.branch}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Checkpoints</span><span style="font-size: 12px; color: #4D5065;">2 checkpoints · the DAG grows while the run goes</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 0 16px 16px 60px; display: flex; flex-direction: column; gap: 8px;">
+              <sc-for list="{{checkpoints}}" as="k" hint-placeholder-count="2">
+                <div style="border-radius: 12px; background: #F7F7FB; padding: 10px 12px; display: flex; gap: 12px; align-items: baseline; flex-wrap: wrap;">
+                  <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600;">{{k.name}}</code>
+                  <span style="font-size: 12.5px; color: #33364A; flex-grow: 1;">{{k.desc}}</span>
+                  <span style="font-size: 12px; font-weight: 600; color: #1D5FC9;">{{k.shown}}</span>
+                </div>
+              </sc-for>
+              <span style="font-size: 12px; color: #4D5065; line-height: 1.5;">Until a checkpoint finishes, the total is unknown: runs show “≥ N tasks” and the gauge falls back on completed stages rather than a task percentage.</span>
+            </div>
+          </details>
+        </section>
+
+        <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.flag}}"/></svg>Stages and gates · spectio.yml in repo</h2>
+            <sc-for list="{{stages}}" as="s" hint-placeholder-count="4">
+              <div style="display: flex; gap: 8px; align-items: flex-start; font-size: 12.5px;">
+                <span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 7px; background: {{s.bg}}; color: #FFFFFF; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{s.n}}</span>
+                <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 1px;"><span style="font-weight: 600;">{{s.name}}</span><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #6E7287;">{{s.match}}</span></span>
+                <span style="color: #8F5806; font-weight: 600; white-space: nowrap;">{{s.gate}}</span>
+              </div>
+            </sc-for>
+            <span style="font-size: 12px; color: #4D5065;">Matched by rule names and module prefixes. Gates stop with --until on the stage's last rules.</span>
+          </section>
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.clock}}"/></svg>Run history</h2>
+            <sc-for list="{{runs}}" as="r" hint-placeholder-count="4">
+              <a href="RunDetail.dc.html" style="display: flex; gap: 8px; align-items: center; font-size: 12.5px; text-decoration: none; color: #22253A; box-shadow: inset 3px 0 0 {{r.rail}}; padding: 4px 0 4px 10px;"><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-weight: 600;">{{r.name}}</span><span style="font-size: 11.5px; color: #6E7287;">{{r.ctx}}</span></span><span style="color: {{r.fg}}; font-weight: 600;">{{r.state}}</span></a>
+            </sc-for>
+          </section>
+          <section style="border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6344B2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.sliders}}"/></svg>Add UI hints</h2>
+            <p style="margin: 0; font-size: 12.5px; line-height: 1.5; color: #33364A;">Snakemake config schemas carry no labels, groups or pickers. A <code style="font-family: 'JetBrains Mono', monospace;">ui:</code> block in spectio.yml adds them; keys without hints still appear as raw fields.</p>
+            <pre style="margin: 0; border-radius: 10px; background: #0F1020; color: #E6E7EF; padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.55; white-space: pre-wrap;">ui:
+  samples:
+    label: Sample sheet
+    widget: table        # editable grid
+    format: file-path
+  ref.species:
+    group: Reference
+    enum_from: ensembl</pre>
+            <a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Edit hints in Spectio →</a>
+          </section>
+        </aside>
+      </div>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    file: 'M6 3h8l4 4v14H6z M14 3v4h4 M9 12h6 M9 16h6',
+    box: 'M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5 M12 12v9',
+    branch: 'M6 3v12 M6 15a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M18 6a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M18 6c0 6-12 3-12 9',
+    flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5',
+    clock: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0',
+    sliders: 'M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4'
+  };
+  const on = { bg: '#7750D4', fg: '#FFFFFF' }, off = { bg: '#F7F7FB', fg: '#33364A' };
+  const hinted = { hint: 'spectio.yml ui:', hbg: '#ECF8F1', hfg: '#0E5A37' }, raw = { hint: 'raw key', hbg: '#FDF3E2', hfg: '#6B4205' };
+  const st = { done: ['Succeeded', '#1F9D63', '#157A4B'], run: ['Running', '#3B82F6', '#1D5FC9'], fail: ['Failed', '#DC3B3B', '#B02A2A'] };
+  const run = (name, s, ctx) => ({ name, ctx, state: st[s][0], rail: st[s][1], fg: st[s][2] });
+  return {
+    ic,
+    sources: [
+      { label: 'Catalog', n: '18', ...off },
+      { label: 'nf-core', n: '124', ...off },
+      { label: 'Snakemake catalog', n: '2,300+', ...on },
+      { label: 'Discovered', n: '4', ...off }
+    ],
+    facts: [
+      { k: 'Stars', v: '96' },
+      { k: 'Last release', v: 'v5.2.1 · 3 weeks ago' },
+      { k: 'Snakemake required', v: '≥ 8.20' },
+      { k: 'Deployment', v: 'conda, apptainer' },
+      { k: 'Runs here', v: '9 · 78 % succeeded' }
+    ],
+    config: [
+      { key: 'samples', type: 'string (path)', req: 'yes', ...hinted, hdesc: 'Sample sheet · editable grid' },
+      { key: 'units', type: 'string (path)', req: 'yes', ...hinted, hdesc: 'Units sheet · editable grid' },
+      { key: 'ref', type: 'object', req: 'yes', ...hinted, hdesc: 'Group “Reference” · species picker' },
+      { key: 'calling', type: 'object', req: 'yes', ...hinted, hdesc: 'Group “Calling” · scenario file picker' },
+      { key: 'primers', type: 'object', req: 'no', ...raw, hdesc: 'Shown as a JSON field' },
+      { key: 'annotations', type: 'object', req: 'no', ...hinted, hdesc: 'Group “Annotation”' },
+      { key: 'params', type: 'object', req: 'no', ...raw, hdesc: 'Tool options, JSON field' },
+      { key: 'report', type: 'object', req: 'no', ...raw, hdesc: 'Shown as a JSON field' }
+    ],
+    rules: [
+      { rule: 'map_reads', wrapper: 'v5.8.0/bio/bwa/mem', env: '(wrapper env)', tool: 'bwa 0.7.18', img: '—' },
+      { rule: 'mark_duplicates', wrapper: 'v5.8.0/bio/picard/markduplicates', env: '(wrapper env)', tool: 'picard 3.3.0', img: '—' },
+      { rule: 'varlociraptor_call', wrapper: '—', env: 'envs/varlociraptor.yaml', tool: 'varlociraptor 8.7.2', img: '—' },
+      { rule: 'freebayes', wrapper: 'v5.8.0/bio/freebayes', env: '(wrapper env)', tool: 'freebayes 1.3.8', img: '—' },
+      { rule: 'annotate_variants', wrapper: 'v5.8.0/bio/vep/annotate', env: '(wrapper env)', tool: 'VEP 113.0', img: '—' },
+      { rule: 'all (deployment)', wrapper: '—', env: '—', tool: 'apptainer mode', img: 'docker://snakemake/snakemake:v8.25.5' }
+    ],
+    checkpoints: [
+      { name: 'split_call_tables', desc: 'Splits calls by chromosome group; number of downstream jobs known only after it runs.', shown: '≥ 120 tasks' },
+      { name: 'prepare_annotation_chunks', desc: 'Chunks annotation input by size.', shown: '≥ 24 tasks' }
+    ],
+    stages: [
+      { n: '1', name: 'Mapping', match: 'map_reads, mark_duplicates, recal_*', gate: '', bg: '#5A4FCF' },
+      { n: '2', name: 'Calling', match: 'freebayes, delly, varlociraptor_*', gate: 'Gate · call QC', bg: '#8B5CF6' },
+      { n: '3', name: 'Filtering & annotation', match: 'filter_*, annotate_*', gate: '', bg: '#EC5F87' },
+      { n: '4', name: 'Report', match: 'datavzrd_*, snakemake report', gate: '', bg: '#F9A947' }
+    ],
+    runs: [
+      run('variant-calling-wgs', 'fail', 'bwa_mem exit 137 · resumable · CLI, adopted by runner'),
+      run('trio-2026-10-11', 'done', '4 of 4 stages · 7 h 40'),
+      run('panel-ngs-31', 'done', '4 of 4 stages · 2 h 05'),
+      run('panel-ngs-30', 'done', 'rerun from stage 2')
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,42 @@
+# Real pipelines Spectio is tested against, with their own test datasets.
+# Sources and verification: docs/research/corpus-and-ci-2026-10-26.md
+# tier: pr = every PR (smoke subset, must fit a GitHub runner), nightly = scheduled matrix, manual = on demand.
+# gate: the review gate Spectio puts on this pipeline in tests (see docs/specs/checking-scenarios.md).
+versions:
+  nextflow: {current: "26.10.3", previous: "25.10.9"}
+  snakemake: "9.27.1"
+  snakemake_executor_plugin_slurm: "2.8.0"
+  java: "21"
+
+runner_limits:
+  # GitHub-hosted runners: public repos 4 CPU / 16 GB, private repos 2 CPU / 8 GB, 14 GB disk.
+  # memory stays under what the local executor sees as free (7 GB on an 8 GB box failed with "avail: 5.8 GB" here; T7 measures the runners)
+  private: {cpus: 2, memory: "6.GB", time: "2.h"}
+  public:  {cpus: 4, memory: "15.GB", time: "2.h"}
+
+nfcore:
+  - {name: demo,                  version: 1.2.0,  min_nf: 25.10.4, tier: pr,      class: run-only,          gate: "after MULTIQC: sample QC table"}
+  - {name: rnaseq,                version: 3.27.0, min_nf: 25.10.4, tier: pr,      class: bulk-groups,       gate: "Mapping QC after alignment; exclude a sample and resume"}
+  - {name: viralrecon,            version: 3.0.0,  min_nf: 25.04.0, tier: pr,      class: assembly,          gate: "per-sample coverage and consensus Ns"}
+  - {name: methylseq,             version: 4.2.0,  min_nf: 25.04.0, tier: pr,      class: bulk-samples,      gate: "bisulfite conversion rate"}
+  - {name: molkart,               version: 1.2.0,  min_nf: 25.04.0, tier: pr,      class: imaging-spots,     gate: "spot and segmentation counts per image"}
+  - {name: fetchngs,              version: 1.13.0, min_nf: 25.10.4, tier: nightly, class: run-only,          gate: "run-level", network: [ena, sra]}
+  - {name: sarek,                 version: 3.10.0, min_nf: 25.10.4, tier: nightly, class: variants-pairs,    gate: "coverage after mosdepth; tumour/normal pairing"}
+  - {name: scrnaseq,              version: 4.2.0,  min_nf: 25.10.4, tier: nightly, class: cells,             gate: "cell thresholds per sample"}
+  - {name: mhcquant,              version: 3.3.0,  min_nf: 25.10.4, tier: nightly, class: ms-runs,           gate: "identification rate per MS run"}
+  - {name: differentialabundance, version: 2.0.0,  min_nf: 25.10.4, tier: nightly, class: contrasts,         gate: "samples per contrast"}
+  - {name: mag,                   version: 5.5.0,  min_nf: 26.04.0, tier: nightly, class: bins,              gate: "MIMAG rule on bins"}
+  - {name: ampliseq,              version: 3.0.0,  min_nf: 26.04.0, tier: nightly, class: amplicon-taxa,     gate: "read retention after DADA2"}
+  - {name: taxprofiler,           version: 2.0.1,  min_nf: 25.10.4, tier: nightly, class: taxa,              gate: "host fraction and contaminants"}
+  - {name: mcmicro,               version: 2.0.0,  min_nf: 25.04.0, tier: manual,  class: imaging-cells,     gate: "segmentation QC per ROI"}
+
+snakemake_catalog:
+  - {repo: snakemake-workflows/rna-seq-star-deseq2,        tag: v3.1.2,  submodules: true,  directory: .test, args: "--sdm conda --cores 2 --configfile .test/config_basic/config.yaml", tier: pr,      class: bulk-groups}
+  - {repo: snakemake-workflows/dna-seq-gatk-variant-calling, tag: v2.1.1, submodules: false, directory: .test, args: "--sdm conda --cores 2",                                         tier: pr,      class: variants}
+  - {repo: snakemake-workflows/rna-seq-kallisto-sleuth,    tag: v4.1.1,  submodules: true,  directory: .test, args: "--sdm conda --cores 2 --all-temp",                              tier: nightly, class: bulk-groups}
+  - {repo: snakemake-workflows/dna-seq-varlociraptor,      tag: v6.11.3, submodules: false, directory: .test, args: "--sdm conda --cores 2 --resources mem_mb=7000",                 tier: nightly, class: variants-pairs}
+  - {repo: snakemake-workflows/single-cell-rna-seq,        tag: v1.1.0,  submodules: false, directory: .test, args: "--sdm conda --cores 2",                                         tier: nightly, class: cells}
+  - {repo: snakemake-workflows/chipseq,                    tag: main,    submodules: true,  directory: .test, args: "--configfile .test/config_single_end_reduced/config.yaml --sdm conda --cores 2", tier: nightly, class: bulk-samples}
+  - {repo: snakemake-workflows/cyrcular-calling,           tag: v2.1.1,  submodules: false, directory: .test, args: "--configfile .test/config/config.yaml --sdm conda --cores 2", tier: nightly, class: long-reads}
+  - {repo: MathiasEskildsen/ONT-AmpSeq,                    tag: v1.1.2,  submodules: false, directory: .test, args: "--sdm conda --cores 2 --all-temp",                              tier: nightly, class: amplicon-taxa}
+  - {repo: MPUSP/snakemake-ms-proteomics,                  tag: v1.1.1,  submodules: false, directory: .test, args: "--sdm conda --cores 2 -n",                                      tier: pr,      class: ms-runs, note: "upstream CI is dry-run only"}

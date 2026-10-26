@@ -1,0 +1,292 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — review detail, cell QC</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.rv-tab{position:relative;display:flex;align-items:center;gap:8px;padding:10px 12px;font-size:13.5px;font-weight:500;color:#4D5065;cursor:pointer;white-space:nowrap}
+.rv-tab input{position:absolute;opacity:0;width:1px;height:1px}
+.rv-tab:has(input:checked){color:#0F1020;font-weight:600;box-shadow:inset 0 -2px 0 #7750D4}
+.rv-tab:has(input:focus-visible){outline:2px solid #7750D4;outline-offset:-2px;border-radius:8px}
+.rv-pn{display:none}
+.rvc:has(input[value="sum"]:checked) .pn-sum,
+.rvc:has(input[value="cells"]:checked) .pn-cells,
+.rvc:has(input[value="samples"]:checked) .pn-samples,
+.rvc:has(input[value="report"]:checked) .pn-report,
+.rvc:has(input[value="hist"]:checked) .pn-hist{display:flex}
+.tsv td,.tsv th{padding:8px 12px;border-top:1px solid #EEEFF5;text-align:left;white-space:nowrap}
+.handle{cursor:ew-resize}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Review / scrna-pbmc · Cell QC" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="review" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main class="rvc" style="min-height: 0; overflow: auto; padding: 8px 24px 0 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px;">
+      <a href="ReviewQueue.dc.html" style="text-decoration: none; font-weight: 600; display: flex; align-items: center; gap: 6px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg>Review queue</a>
+      <span style="color: #6E7287;">2 of 12 assigned to you</span>
+      <span style="flex-grow: 1;"></span>
+      <a href="Review.dc.html" aria-label="Previous review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></a>
+      <a href="ReviewCoverage.dc.html" aria-label="Next review" style="width: 32px; height: 32px; border-radius: 9px; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></a>
+      <span style="font-size: 12px; color: #6E7287;">J / K</span>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap; border-radius: 16px; box-shadow: inset 4px 0 0 #D9890B, 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 16px 12px 20px;">
+      <svg width="64" height="32" viewBox="0 0 200 100" role="img" aria-label="Stages 1 and 2 done, gate after stage 3 open"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="#5A4FCF"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="#8B5CF6"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="#FDF3E2" stroke="#D9890B" stroke-width="9"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="#DFE1EA"/></svg>
+      <div style="flex-grow: 1; min-width: 260px; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Cell QC <span style="font-weight: 500; color: #6E7287; font-size: 16px;">· scrna-pbmc · #314</span></h1>
+        <span style="font-size: 13px; color: #4D5065; display: flex; align-items: center; gap: 6px;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core" style="display: block;">nf-core/scrnaseq 4.1.0 · paused after stage 3 of 4 (quantification) · 6 samples · 61,200 cells · <strong style="color: #8F5806;">waiting 22 min</strong></span>
+      </div>
+      <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; color: #4D5065;">Can decide
+        <span title="You" style="width: 26px; height: 26px; border-radius: 13px; background: #8B5CF6; color: #FFFFFF; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">TW</span>
+        <span title="single-cell-core" style="width: 26px; height: 26px; border-radius: 13px; background: #E6DCFC; color: #4D368B; font-weight: 600; font-size: 10.5px; display: flex; align-items: center; justify-content: center;">+3</span>
+        <span style="height: 26px; padding: 0 8px; border-radius: 13px; background: #F6F2FE; color: #4D368B; font-weight: 600; font-size: 11px; display: flex; align-items: center;">AI · suggests</span>
+      </span>
+    </div>
+
+    <div role="tablist" aria-label="Review sections" style="display: flex; gap: 2px; border-bottom: 1px solid #EEEFF5; overflow-x: auto;">
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+        <label class="rv-tab"><input type="radio" name="rvcell" value="{{t.v}}" aria-label="{{t.label}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"/></svg>{{t.label}}<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: {{t.bbg}}; color: {{t.bfg}};">{{t.badge}}</span></label>
+      </sc-for>
+      <label class="rv-tab"><input type="radio" name="rvcell" value="cells" checked aria-label="Cells"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10 M9 20V4 M14 20v-7 M19 20v-4 M2 20h20"/></svg>Cells<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: #F6F2FE; color: #4D368B;">3 thresholds</span></label>
+      <sc-for list="{{tabs2}}" as="t" hint-placeholder-count="3">
+        <label class="rv-tab"><input type="radio" name="rvcell" value="{{t.v}}" aria-label="{{t.label}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{t.icon}}"/></svg>{{t.label}}<span style="font-size: 11px; font-weight: 600; border-radius: 9px; padding: 1px 7px; background: {{t.bbg}}; color: {{t.bfg}};">{{t.badge}}</span></label>
+      </sc-for>
+    </div>
+
+    <!-- CELLS: distributions & thresholds -->
+    <section class="rv-pn pn-cells" style="flex-direction: column; gap: 12px;">
+      <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 13px; color: #33364A;">Thresholds apply to every cell; drag a handle or type a value. Counts update for each sample.</span>
+        <span style="font-size: 12px; color: #6E7287;">source: <code style="font-family: 'JetBrains Mono', monospace;">*_filtered_quants.h5ad · obs</code></span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px;">
+        <sc-for list="{{metrics}}" as="m" hint-placeholder-count="3">
+          <div style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;">
+              <span style="font-size: 13.5px; font-weight: 600; font-family: 'JetBrains Mono', monospace;">{{m.name}}</span>
+              <span style="font-size: 12px; color: #6E7287;">{{m.scale}}</span>
+            </div>
+            <div role="img" aria-label="{{m.aria}}" style="position: relative; height: 150px;">
+              <div style="position: absolute; top: 0; height: 128px; left: {{m.shadeL}}; width: {{m.shadeW}}; background: #F1F2F6; border-radius: 4px;"></div>
+              <div style="position: absolute; left: 0; right: 0; top: 8px; height: 120px; display: flex; align-items: flex-end; gap: 1px;">
+                <sc-for list="{{m.bars}}" as="b" hint-placeholder-count="40"><span style="flex: 1 1 0; height: {{b.h}}; background: {{b.fill}}; border-radius: 2px 2px 0 0;"></span></sc-for>
+              </div>
+              <div style="position: absolute; left: 0; right: 0; top: 128px; height: 1px; background: #C4C7D4;"></div>
+              <sc-for list="{{m.ticks}}" as="k" hint-placeholder-count="4"><span style="position: absolute; top: 134px; left: {{k.x}}; transform: translateX(-50%); white-space: nowrap; font-size: 11px; color: #6E7287;">{{k.t}}</span></sc-for>
+              <div class="handle" style="position: absolute; top: 0; height: 128px; left: {{m.tx}}; width: 0;">
+                <span style="position: absolute; top: 4px; bottom: 0; left: -1px; width: 2px; background: #7750D4;"></span>
+                <span style="position: absolute; top: 0; left: 0; transform: translateX(-50%); white-space: nowrap; padding: 3px 10px; border-radius: 11px; background: #7750D4; color: #FFFFFF; font-size: 12px; font-weight: 600;">{{m.chip}}</span>
+                <span style="position: absolute; bottom: -7px; left: -7px; width: 10px; height: 10px; border-radius: 7px; background: #FFFFFF; border: 2.5px solid #7750D4;"></span>
+              </div>
+            </div>
+            <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12.5px;">
+              <span style="display: flex; align-items: center; gap: 6px;">{{m.op}} <input value="{{m.val}}" aria-label="{{m.name}} threshold" style="width: 64px; font: 12.5px 'Inter', sans-serif; border-radius: 8px; border: 1px solid #C4C7D4; padding: 4px 6px;"> {{m.unit}}</span>
+              <span style="color: #B02A2A; font-weight: 600;">{{m.removed}}</span>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch;">
+        <div style="flex: 3 1 520px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px; padding: 12px 14px 4px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Per sample</h2><span style="font-size: 12px; color: #6E7287;">sample check: ≥ 500 cells kept</span></div>
+          <table class="tsv" style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <thead><tr style="color: #33364A; font-size: 12px;"><th>Sample</th><th>Cells before</th><th>Kept</th><th>Removed</th><th style="width: 160px;">Kept share</th><th>Sample</th></tr></thead>
+            <tbody>
+              <sc-for list="{{samples}}" as="s" hint-placeholder-count="6">
+                <tr style="box-shadow: inset 3px 0 0 {{s.rail}}; background: {{s.bg}};">
+                  <td style="font-weight: 600;">{{s.id}}</td><td>{{s.before}}</td><td style="font-weight: 600;">{{s.kept}}</td><td style="color: {{s.rfg}};">{{s.rem}}</td>
+                  <td><span style="display: block; height: 8px; border-radius: 4px; background: #F1F2F6; overflow: hidden;"><span style="display: block; height: 8px; width: {{s.pct}}; background: {{s.bar}};"></span></span></td>
+                  <td><span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 8px; background: {{s.vbg}}; color: {{s.vfg}};">{{s.verdict}}</span></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div style="flex: 2 1 320px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">UMAP preview</h2><span style="font-size: 12px; color: #6E7287;">50,000 of 61,200 cells shown</span></div>
+          <div role="img" aria-label="Downsampled UMAP, removed cells in grey" style="position: relative; width: 100%; aspect-ratio: 4 / 3; border-radius: 12px; background: #FBFBFD;">
+            <sc-for list="{{dots}}" as="d" hint-placeholder-count="400"><span style="position: absolute; left: {{d.x}}; top: {{d.y}}; width: 5px; height: 5px; margin: -2.5px 0 0 -2.5px; border-radius: 50%; background: {{d.c}}; opacity: 0.85;"></span></sc-for>
+          </div>
+          <span style="display: flex; gap: 12px; font-size: 12px; color: #33364A;"><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 5px; background: #8B5CF6;"></span>kept</span><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 5px; background: #C4C7D4;"></span>removed by thresholds</span><span style="display: flex; align-items: center; gap: 5px;"><span style="width: 9px; height: 9px; border-radius: 5px; background: #F4A5BC;"></span>PBMC_4</span></span>
+        </div>
+      </div>
+    </section>
+
+    <!-- SUMMARY -->
+    <section class="rv-pn pn-sum" style="gap: 12px; flex-wrap: wrap; align-items: stretch;">
+      <div style="flex: 3 1 440px; min-width: 0; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Gate checks</h2><span style="font-size: 12px; color: #6E7287;">from spectio.yml · after thresholds</span></div>
+        <sc-for list="{{checks}}" as="c" hint-placeholder-count="3">
+          <div style="display: flex; align-items: center; gap: 10px; padding: 6px 0; border-top: 1px solid #EEEFF5; font-size: 13px;">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="{{c.col}}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg>
+            <span style="flex: 1 1 220px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12px;">· {{c.rule}}</span></span>
+            <span style="font-weight: 600; color: {{c.col}};">{{c.value}}</span>
+            <span style="font-size: 12px; color: #4D5065; min-width: 90px; text-align: right;">{{c.where}}</span>
+          </div>
+        </sc-for>
+      </div>
+      <div style="flex: 2 1 260px; min-width: 0; border-radius: 16px; background: #F7F7FB; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display: flex; justify-content: space-between; gap: 8px;"><h2 style="margin: 0; font-size: 15px; font-weight: 600;">Run health</h2><span style="font-size: 12px; color: #6E7287;">built in</span></div>
+        <sc-for list="{{health}}" as="h" hint-placeholder-count="4"><div style="display: flex; justify-content: space-between; gap: 10px; font-size: 13px;"><span style="color: #33364A;">{{h.k}}</span><span style="font-weight: 600; color: {{h.fg}};">{{h.v}}</span></div></sc-for>
+      </div>
+      <div style="flex: 1 1 100%; border-radius: 16px; box-shadow: 0 0 0 1px #E6DCFC; background: #FBF9FF; padding: 14px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+        <span style="width: 28px; height: 28px; border-radius: 8px; background: #7750D4; color: #FFFFFF; font-size: 10.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">AI</span>
+        <span style="flex: 1 1 400px; font-size: 13px; line-height: 1.5;">QC agent suggests keeping the default thresholds and excluding PBMC_4: 74 % of its barcodes look empty or damaged (low genes, high mito), and its remaining 310 cells are too few for clustering.</span>
+        <button type="button" style="height: 34px; padding: 0 12px; border: none; border-radius: 10px; background: #7750D4; color: #FFFFFF; font: 600 12.5px 'Inter', sans-serif;">Apply suggestion</button>
+      </div>
+    </section>
+
+    <!-- SAMPLES -->
+    <section class="rv-pn pn-samples" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{samples}}" as="s" hint-placeholder-count="6">
+        <div style="display: flex; align-items: center; gap: 14px; flex-wrap: wrap; border-radius: 14px; box-shadow: inset 4px 0 0 {{s.rail}}, 0 0 0 1px rgba(15,16,32,0.11); padding: 10px 14px 10px 18px;">
+          <span style="flex: 0 0 120px; font-weight: 600; font-size: 14px;">{{s.id}}</span>
+          <span style="flex: 1 1 220px; font-size: 13px; color: #33364A;">{{s.kept}} of {{s.before}} cells kept · {{s.note}}</span>
+          <span role="radiogroup" aria-label="Decision for {{s.id}}" style="display: flex; padding: 3px; border-radius: 10px; background: #F1F2F6; font-size: 12.5px;">
+            <sc-for list="{{s.opts}}" as="o" hint-placeholder-count="2"><span style="padding: 5px 14px; border-radius: 8px; background: {{o.bg}}; color: {{o.fg}}; font-weight: {{o.w}}; box-shadow: {{o.sh}};">{{o.t}}</span></sc-for>
+          </span>
+        </div>
+      </sc-for>
+      <span style="font-size: 12px; color: #4D5065;">Excluding a sample removes its cells from the keep list; it stays in the run record with its reason.</span>
+    </section>
+
+    <!-- REPORT -->
+    <section class="rv-pn pn-report" style="flex-direction: column; gap: 8px;">
+      <div style="display: flex; gap: 6px; flex-wrap: wrap;">
+        <sc-for list="{{reports}}" as="r" hint-placeholder-count="3"><span style="font-size: 12.5px; font-weight: 600; padding: 6px 10px; border-radius: 9px; background: {{r.bg}}; color: {{r.fg}};">{{r.t}}</span></sc-for>
+      </div>
+      <div role="img" aria-label="Sandboxed HTML report placeholder" style="height: 420px; border-radius: 16px; box-shadow: inset 0 0 0 1px #DFE1EA; background: repeating-linear-gradient(135deg, #F7F7FB 0 14px, #F1F2F6 14px 28px); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; color: #4D5065; font-size: 13px;">
+        <strong style="color: #22253A;">PBMC_4_qcatch_report.html</strong>
+        <span>Sandboxed frame · separate origin · streamed by the runner</span>
+      </div>
+    </section>
+
+    <!-- HISTORY -->
+    <section class="rv-pn pn-hist" style="flex-direction: column; gap: 8px;">
+      <sc-for list="{{history}}" as="h" hint-placeholder-count="4">
+        <div style="display: flex; gap: 10px; font-size: 13px; align-items: flex-start; border-top: 1px solid #EEEFF5; padding-top: 8px;"><span style="width: 24px; height: 24px; flex-shrink: 0; border-radius: 7px; background: {{h.bg}}; color: {{h.fg}}; font-size: 9px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{h.t}}</span><span style="flex-grow: 1; line-height: 1.45;">{{h.text}}</span><span style="font-size: 12px; color: #6E7287;">{{h.at}}</span></div>
+      </sc-for>
+    </section>
+
+    <div style="flex-grow: 1;"></div>
+    <div style="position: sticky; bottom: 0; margin: 0 -24px 0 -14px; padding: 12px 24px 14px 14px; background: rgba(255,255,255,0.96); box-shadow: 0 -1px 0 #EEEFF5, 0 -12px 24px -20px rgba(15,16,32,0.35); display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+      <span style="display: flex; flex-direction: column; gap: 4px; flex: 1 1 360px; min-width: 0;">
+        <span style="font-size: 12px; font-weight: 600; color: #6E7287; letter-spacing: 0.04em;">PENDING CHANGES · 3</span>
+        <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{changes}}" as="c" hint-placeholder-count="3"><span style="font-size: 12px; font-weight: 600; padding: 4px 8px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}};">{{c.t}}</span></sc-for></span>
+        <span style="font-size: 11.5px; color: #4D5065;">Keep list passed to the next stage as <code style="font-family: 'JetBrains Mono', monospace;">--cell_filter</code> and attached to the run for depictio.</span>
+      </span>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;" title="Go back to an earlier stage · Stop the run here · Reassign">More ▾</button>
+      <button type="button" style="height: 42px; padding: 0 12px; border: none; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #33364A;">Discard changes</button>
+      <button type="button" style="height: 42px; padding: 0 18px; border: none; border-radius: 11px; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif;">Apply and continue</button>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { check: 'M5 12l5 5L20 7', warn: 'M12 9v4 M12 17h.01 M10.3 3.9L2 18a2 2 0 0 0 1.7 3h16.6a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z' };
+  const badge = (n, kind) => ({ badge: n, bbg: kind === 'violet' ? '#F6F2FE' : kind === 'amber' ? '#FDF3E2' : '#F1F2F6', bfg: kind === 'violet' ? '#4D368B' : kind === 'amber' ? '#8F5806' : '#4D5065' });
+  const tabs = [{ v: 'sum', label: 'Summary', icon: 'M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z', ...badge('1 to check', 'amber') }];
+  const tabs2 = [
+    { v: 'samples', label: 'Samples', icon: 'M4 6h16 M4 12h16 M4 18h16', ...badge('1 excluded', 'violet') },
+    { v: 'report', label: 'Report', icon: 'M6 3h9l4 4v14H6z M14 3v5h5 M9 13h6 M9 17h6', ...badge('7', 'grey') },
+    { v: 'hist', label: 'History', icon: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', ...badge('4', 'grey') }
+  ];
+  // Histogram builder: 40 bins over [0,1] in display space; density = mixture of gaussians.
+  const N = 40, H = 120;
+  const gauss = (x, m, s) => Math.exp(-0.5 * ((x - m) / s) ** 2);
+  const hist = (mix, cut, keepAbove) => {
+    const ys = Array.from({ length: N }, (_, i) => { const x = (i + 0.5) / N; return mix.reduce((a, [w, m, s]) => a + w * gauss(x, m, s), 0); });
+    const mx = Math.max(...ys);
+    return ys.map((y, i) => {
+      const h = Math.max(1.5, (y / mx) * H); const center = (i + 0.5) / N;
+      const kept = keepAbove ? center >= cut : center <= cut;
+      return { h: (h / H * 100).toFixed(1) + '%', fill: kept ? '#8B5CF6' : '#C4C7D4' };
+    });
+  };
+  const logPos = (v, lo, hi) => (Math.log10(v) - Math.log10(lo)) / (Math.log10(hi) - Math.log10(lo));
+  const mk = (name, scale, mix, cut, keepAbove, chip, op, val, unit, removed, ticks, aria) => {
+    return {
+      name, scale, aria, chip, op, val, unit, removed, ticks,
+      bars: hist(mix, cut, keepAbove), tx: (cut * 100).toFixed(1) + '%',
+      shadeL: keepAbove ? '0%' : (cut * 100).toFixed(1) + '%', shadeW: ((keepAbove ? cut : 1 - cut) * 100).toFixed(1) + '%'
+    };
+  };
+  const tk = (vals, pos) => vals.map(([t, v]) => ({ t, x: Math.min(97, Math.max(3, pos(v) * 100)).toFixed(1) + '%' }));
+  const gPos = v => logPos(v, 10, 10000), cPos = v => logPos(v, 100, 100000), mPos = v => v / 60;
+  const metrics = [
+    mk('n_genes_by_counts', 'log scale', [[0.35, gPos(90), 0.07], [1, gPos(1500), 0.11], [0.12, gPos(3800), 0.06]], gPos(200), true, '≥ 200', '≥', '200', 'genes', '1,630 cells removed',
+      tk([['10', 10], ['100', 100], ['1k', 1000], ['10k', 10000]], gPos), 'Histogram of genes per cell, threshold at 200'),
+    mk('total_counts', 'log scale', [[0.22, cPos(250), 0.06], [1, cPos(5200), 0.1], [0.1, cPos(22000), 0.06]], cPos(500), true, '≥ 500', '≥', '500', 'counts', '1,410 cells removed',
+      tk([['100', 100], ['1k', 1000], ['10k', 10000], ['100k', 100000]], cPos), 'Histogram of counts per cell, threshold at 500'),
+    mk('pct_counts_mt', 'linear', [[1, mPos(4.5), 0.05], [0.25, mPos(10), 0.08], [0.06, mPos(38), 0.12]], mPos(20), false, '≤ 20 %', '≤', '20', '%', '980 cells removed',
+      tk([['0 %', 0], ['20 %', 20], ['40 %', 40], ['60 %', 60]], mPos), 'Histogram of mitochondrial share per cell, threshold at 20 percent')
+  ];
+  const opt = (on) => ['Keep', 'Exclude'].map(t => t === on ? { t, bg: '#FFFFFF', fg: '#0F1020', w: 600, sh: '0 1px 2px rgba(15,16,32,0.15)' } : { t, bg: 'transparent', fg: '#4D5065', w: 500, sh: 'none' });
+  const fmt = n => n.toLocaleString('en-US');
+  const S = [['PBMC_1', 11200, 10890], ['PBMC_2', 10850, 10560], ['PBMC_3', 10400, 10120], ['PBMC_4', 1210, 310], ['PBMC_5', 13900, 13560], ['PBMC_6', 13640, 13500]];
+  const samples = S.map(([id, b, k]) => {
+    const bad = k < 500, rem = ((b - k) / b * 100).toFixed(1) + ' %';
+    return {
+      id, before: fmt(b), kept: fmt(k), rem, pct: (k / b * 100).toFixed(1) + '%', rfg: bad ? '#B02A2A' : '#4D5065',
+      bar: bad ? '#D9890B' : '#8B5CF6', rail: bad ? '#D9890B' : 'transparent', bg: bad ? '#FFFBF3' : 'transparent',
+      verdict: bad ? 'Exclude sample?' : 'Pass', vbg: bad ? '#FDF3E2' : '#E8F6EF', vfg: bad ? '#8F5806' : '#157A4B',
+      note: bad ? 'below 500 cells · 74 % removed (empty or damaged barcodes)' : 'passes',
+      opts: opt(bad ? 'Exclude' : 'Keep')
+    };
+  });
+  // Deterministic downsampled UMAP: clusters + scattered low-quality cells.
+  let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+  const norm = () => { let u = 0, v = 0; while (u === 0) u = rnd(); while (v === 0) v = rnd(); return Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v); };
+  const clusters = [[80, 70, 22, 18, 70], [190, 60, 26, 16, 80], [250, 140, 18, 22, 60], [110, 160, 28, 20, 90], [200, 200, 16, 12, 40], [40, 190, 14, 14, 30]];
+  const dots = [];
+  const pt = (x, y, c) => ({ x: Math.min(98, Math.max(2, x / 320 * 100)).toFixed(1) + '%', y: Math.min(97, Math.max(3, y / 240 * 100)).toFixed(1) + '%', c });
+  clusters.forEach(([cx, cy, sx, sy, n]) => { for (let i = 0; i < n; i++) dots.push(pt(cx + norm() * sx, cy + norm() * sy, '#8B5CF6')); });
+  for (let i = 0; i < 18; i++) dots.push(pt(60 + rnd() * 200, 30 + rnd() * 190, '#C4C7D4'));
+  for (let i = 0; i < 12; i++) dots.push(pt(150 + norm() * 10, 115 + norm() * 8, '#F4A5BC'));
+  return {
+    tabs, tabs2, metrics, samples, dots,
+    checks: [
+      { name: 'Cells kept per sample', rule: '≥ 500', value: '5 / 6', col: '#B02A2A', icon: I.warn, where: 'PBMC_4' },
+      { name: 'Median genes per cell', rule: '≥ 800', value: '5 / 6', col: '#8F5806', icon: I.warn, where: 'PBMC_4 · 420' },
+      { name: 'Median mitochondrial share', rule: '≤ 10 %', value: '6 / 6', col: '#157A4B', icon: I.check, where: 'median 4.1 %' }
+    ],
+    health: [
+      { k: 'Failed tasks', v: '0', fg: '#157A4B' }, { k: 'Retried tasks', v: '1 (memory)', fg: '#8F5806' },
+      { k: 'Stage 3 runtime', v: '52 min · usual 47', fg: '#22253A' }, { k: 'Peak memory', v: '58 of 64 GB', fg: '#8F5806' }
+    ],
+    reports: [
+      { t: 'MultiQC', bg: '#F1F2F6', fg: '#33364A' }, { t: 'PBMC_4 · QCatch', bg: '#7750D4', fg: '#FFFFFF' }, { t: 'PBMC_1 · QCatch', bg: '#F1F2F6', fg: '#33364A' },
+      { t: 'PBMC_2 · QCatch', bg: '#F1F2F6', fg: '#33364A' }, { t: '+ 3', bg: '#F1F2F6', fg: '#33364A' }
+    ],
+    history: [
+      { t: 'SYS', bg: '#EEEFF5', fg: '#33364A', text: 'Gate opened after quantification; 6 filtered matrices read (61,200 cells).', at: '10:04' },
+      { t: 'AI', bg: '#7750D4', fg: '#FFFFFF', text: 'QC agent suggested default thresholds and excluding PBMC_4.', at: '10:06' },
+      { t: 'TW', bg: '#E6DCFC', fg: '#4D368B', text: 'Thomas set pct_counts_mt ≤ 20 % (default 25 %).', at: '10:21' },
+      { t: 'TW', bg: '#E6DCFC', fg: '#4D368B', text: 'Thomas excluded PBMC_4 (reason: too few viable cells).', at: '10:24' }
+    ],
+    changes: [
+      { t: '3 thresholds', bg: '#F6F2FE', fg: '#4D368B' },
+      { t: 'PBMC_4 excluded', bg: '#F1F2F6', fg: '#33364A' },
+      { t: 'cells_keep.tsv · 58,630 cells', bg: '#F6F2FE', fg: '#4D368B' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

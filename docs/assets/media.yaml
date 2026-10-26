@@ -1,0 +1,44 @@
+# Every generated figure, screenshot, cast and video in the docs, with the command that regenerates it.
+# Checked by `python3 tools/docs/check.py --only media` (docs/specs/documentation-system.md §3.3).
+media:
+  - id: autopilot-loop
+    kind: diagram
+    generator: python3 tools/diagrams/autopilot_loop.py
+    outputs:
+      - docs/assets/diagrams/autopilot-loop_light.svg
+      - docs/assets/diagrams/autopilot-loop_dark.svg
+      - docs/assets/diagrams/autopilot-loop_light.png
+      - docs/assets/diagrams/autopilot-loop_dark.png
+  - id: gate-resume
+    kind: diagram
+    generator: python3 tools/diagrams/gate_resume.py
+    outputs:
+      - docs/assets/diagrams/gate-resume_light.svg
+      - docs/assets/diagrams/gate-resume_dark.svg
+      - docs/assets/diagrams/gate-resume_light.png
+      - docs/assets/diagrams/gate-resume_dark.png
+  - id: synthetic-gate
+    kind: cast
+    generator: python3 tools/media/cast.py tools/media/casts/synthetic-gate.yaml
+    outputs: [docs/assets/casts/synthetic-gate.cast]
+  - id: ui-shots
+    kind: screenshots
+    generator: python3 tools/media/shots.py run --all --theme light
+    outputs:
+      - docs/assets/shots/run-detail_light.webp
+      - docs/assets/shots/review-gate_light.webp
+      - docs/assets/shots/review-gate-phone_light.webp
+  - id: budget-loop
+    kind: cast
+    generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
+    outputs: [docs/assets/casts/budget-loop.cast]
+  - id: corpus-list
+    kind: cast
+    generator: python3 tools/media/cast.py tools/media/casts/corpus-list.yaml
+    outputs: [docs/assets/casts/corpus-list.cast]
+  - id: gate-review
+    kind: combo
+    # also writes tools/media/out/gate-review.gif (PR bodies only, not committed)
+    generator: (cd tools/media && npm ci) && python3 tools/media/combo.py tools/media/combos/gate-review.yaml
+    outputs:
+      - docs/assets/media/gate-review.mp4

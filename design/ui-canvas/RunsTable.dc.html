@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — runs, table mode</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Runs" project="rnaseq-core / Liver time course" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="runs" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <span style="width: 48px; height: 48px; border-radius: 15px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M5 4l14 8-14 8z"/></svg>
+        </span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Runs</h1>
+          <span style="font-size: 14px; color: #4D5065;">312 runs · 4 active · 3 awaiting review</span>
+        </div>
+        <a href="Launch.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center;">Launch a run</a>
+      </div>
+
+      <div role="toolbar" aria-label="Run list controls" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+        <label style="display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 12px; border-radius: 11px; box-shadow: inset 0 0 0 1px #DFE1EA; flex: 1 1 260px; color: #6E7287;">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg>
+          <input type="search" placeholder="Filter by run, workflow, tag" aria-label="Filter runs" style="border: none; outline: none; font: inherit; font-size: 13.5px; color: #0F1020; flex-grow: 1; min-width: 0; background: transparent;">
+        </label>
+        <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13.5px 'Inter', sans-serif; color: #22253A;">Group: none ▾</button>
+        <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13.5px 'Inter', sans-serif; color: #22253A;">Sort: last activity ▾</button>
+        <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #F6F2FE; font: 600 13.5px 'Inter', sans-serif; color: #4D368B;">Filters · 2</button>
+        <button type="button" style="height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13.5px 'Inter', sans-serif; color: #22253A;">Share view</button>
+        <div role="group" aria-label="View mode" style="display: flex; padding: 3px; border-radius: 12px; background: #EEEFF5;">
+          <a href="RunsTable.dc.html" aria-current="page" style="height: 34px; padding: 0 12px; border-radius: 9px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,16,32,0.12); color: #0F1020; font-size: 13px; font-weight: 600; text-decoration: none; display: flex; align-items: center;">Table</a>
+          <a href="RunsRows.dc.html" style="height: 34px; padding: 0 12px; border-radius: 9px; color: #4D5065; font-size: 13px; font-weight: 500; text-decoration: none; display: flex; align-items: center;">Rows</a>
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+        <span style="font-size: 12.5px; color: #4D5065;">Active filters</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; border-radius: 8px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #DFE1EA; padding: 5px 8px;">Last 7 days <button type="button" aria-label="Remove filter Last 7 days" style="border: none; background: transparent; color: #6E7287; padding: 0; font: inherit;">×</button></span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 500; border-radius: 8px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #DFE1EA; padding: 5px 8px;">Owner: me <button type="button" aria-label="Remove filter Owner me" style="border: none; background: transparent; color: #6E7287; padding: 0; font: inherit;">×</button></span>
+        <button type="button" style="border: none; background: transparent; font: 600 12.5px 'Inter', sans-serif; color: #6344B2;">Clear all</button>
+      </div>
+
+      <div style="overflow-x: auto; border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+        <table style="width: 100%; min-width: 1040px; border-collapse: collapse; font-size: 13.5px;">
+          <thead>
+            <tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12.5px;">
+              <th scope="col" style="padding: 10px 14px 10px 18px; font-weight: 600;">Run</th>
+              <th scope="col" style="padding: 10px 14px; font-weight: 600;">State</th>
+              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Workflow</th>
+              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Progress</th>
+              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Environment</th>
+              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Origin</th>
+              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Started</th>
+              <th scope="col" style="padding: 10px 14px; font-weight: 600;">Duration</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+              <tr style="border-top: 1px solid #EEEFF5; box-shadow: inset 4px 0 0 {{r.rail}};">
+                <td style="padding: 11px 14px 11px 18px; white-space: nowrap;"><a href="RunDetail.dc.html" style="font-weight: 600; color: #0F1020; text-decoration: none;">{{r.name}}</a><span style="display: block; font-size: 12px; color: #6E7287; font-family: 'JetBrains Mono', monospace;">{{r.id}}</span></td>
+                <td style="padding: 11px 14px; white-space: nowrap;">
+                  <span style="display: flex; align-items: center; gap: 8px; font-weight: 600; color: {{r.fg}};">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"/></svg>{{r.state}}
+                  </span>
+                  <span style="display: block; font-size: 12px; color: #4D5065; margin-left: 24px;">{{r.ctx}}</span>
+                </td>
+                <td style="padding: 11px 14px; white-space: nowrap;">
+                  <span style="display: flex; align-items: center; gap: 8px;">
+                    <img src="{{r.logo}}" width="22" height="22" alt="{{r.engine}}" title="{{r.engine}}" style="display: block; object-fit: contain;">
+                    <span>{{r.wf}} <span style="color: #6E7287;">{{r.ver}}</span></span>
+                  </span>
+                </td>
+                <td style="padding: 11px 14px; white-space: nowrap;">
+                  <span style="display: flex; align-items: center; gap: 10px;">
+                    <svg width="44" height="22" viewBox="0 0 200 100" role="img" aria-label="{{r.gaugeLabel}}">
+                      <path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="{{r.f0}}" stroke="{{r.s0}}" stroke-width="{{r.w0}}"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="{{r.f1}}" stroke="{{r.s1}}" stroke-width="{{r.w1}}"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="{{r.f2}}" stroke="{{r.s2}}" stroke-width="{{r.w2}}"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="{{r.f3}}" stroke="{{r.s3}}" stroke-width="{{r.w3}}"/>
+                    </svg>
+                    <span style="font-size: 12.5px; color: #33364A;">{{r.prog}}</span>
+                  </span>
+                </td>
+                <td style="padding: 11px 14px; white-space: nowrap; color: #33364A;">{{r.env}}</td>
+                <td style="padding: 11px 14px; white-space: nowrap;"><span style="font-size: 12px; font-weight: 500; color: #33364A; border-radius: 6px; background: #EEEFF5; padding: 3px 7px;">{{r.origin}}</span></td>
+                <td style="padding: 11px 14px; white-space: nowrap; color: #33364A;">{{r.started}}</td>
+                <td style="padding: 11px 14px; white-space: nowrap; color: #33364A;">{{r.dur}}</td>
+              </tr>
+            </sc-for>
+          </tbody>
+        </table>
+      </div>
+      <div style="display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: #4D5065; flex-wrap: wrap; gap: 8px;">
+        <span>1–8 of 312 runs</span>
+        <span style="display: flex; gap: 6px;">
+          <button type="button" style="height: 36px; padding: 0 12px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13px 'Inter', sans-serif; color: #9A9EB0;">Previous</button>
+          <button type="button" style="height: 36px; padding: 0 12px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 500 13px 'Inter', sans-serif; color: #22253A;">Next</button>
+        </span>
+      </div>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5', cross: 'M6 6l12 12 M18 6L6 18', play: 'M8 5v14l11-7z', check: 'M5 12l5 5L20 7', clock: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0', pause: 'M9 5v14 M15 5v14', ban: 'M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0 M5.6 18.4L18.4 5.6' };
+  const S = {
+    review: ['Awaiting review', '#D9890B', '#8F5806', I.flag], running: ['Running', '#3B82F6', '#1D5FC9', I.play],
+    done: ['Succeeded', '#1F9D63', '#157A4B', I.check], failed: ['Failed', '#DC3B3B', '#B02A2A', I.cross],
+    queued: ['Queued', '#6E7287', '#33364A', I.clock], paused: ['Paused', '#8B5CF6', '#6344B2', I.pause], cancelled: ['Cancelled', '#4D5065', '#33364A', I.ban]
+  };
+  const E = { nf: ['Nextflow', '/_blob/636203cdee0bc09b61efe0fa351e239b'], nfcore: ['nf-core (Nextflow)', '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'], smk: ['Snakemake', '/_blob/7a35665829f51132cb3bcb9a4c3e638c'] };
+  const B = ['#5A4FCF','#8B5CF6','#EC5F87','#F9A947'], T = ['#A39CE4','#BEA4FA','#F4A5BC','#FCCF98'], off = '#DFE1EA';
+  const gauge = (spec) => { const o = {}; spec.forEach((s, i) => { let f = off, st = 'none', w = 0; if (s === 'd') f = B[i]; if (s === 'r') f = T[i]; if (s === 'g') { f = '#FDF3E2'; st = '#D9890B'; w = 9; } if (s === 'x') f = '#DC3B3B'; o['f'+i] = f; o['s'+i] = st; o['w'+i] = w; }); return o; };
+  const row = (st, ctx, name, eng, wf, ver, spec, prog, env, origin, started, dur) => {
+    const [state, rail, fg, icon] = S[st]; const [engine, logo] = E[eng];
+    return { state, rail, fg, icon, ctx, name, engine, logo, wf, ver, prog, env, origin, started, dur, gaugeLabel: prog, ...gauge(spec) };
+  };
+  const rows = [
+    row('review', 'gate after stage 2 · 47 min', 'imaging-cellpose', 'smk', 'cellpose-segmentation', '1.4.0', ['d','g','t','t'], '2 of 4 stages', 'EMBL SLURM', 'Launched in UI', 'Today 08:12', '47 min'),
+    row('running', 'stage 3 of 4', 'rnaseq-2026-10-25', 'nfcore', 'nf-core/rnaseq', '3.27.0', ['d','d','r','t'], '812 / 1,248 tasks', 'EMBL SLURM', 'Launched in UI', 'Today 07:40', '1 h 05'),
+    row('running', 'stage 1 of 4', 'scrna-pbmc', 'nfcore', 'nf-core/scrnaseq', '4.1.0', ['r','t','t','t'], '38 / 410 tasks', 'Kubernetes · dev', 'Launched in UI', 'Today 08:51', '8 min'),
+    row('queued', 'waiting for runner', 'atac-batch-08', 'smk', 'atac-seq', '2.1.0', ['t','t','t','t'], 'not started', 'Laptop (local)', 'Launched in UI', 'Today 08:57', '—'),
+    row('failed', 'bwa_mem exit 137 · resumable', 'variant-calling-wgs', 'smk', 'dna-seq-varlociraptor', '5.2.1', ['x','t','t','t'], 'failed in stage 1', 'EMBL SLURM', 'CLI · adopted', 'Today 05:58', '2 h 14'),
+    row('done', 'reports ready', 'atac-batch-07', 'smk', 'atac-seq', '2.1.0', ['d','d','d','d'], '4 of 4 stages', 'EMBL SLURM', 'Rerun from stage 2', 'Yesterday 21:03', '3 h 12'),
+    row('paused', 'paused by Thomas · resumable', 'sarek-trio-02', 'nfcore', 'nf-core/sarek', '3.6.1', ['d','d','t','t'], '2 of 4 stages', 'EMBL SLURM', 'Launched in UI', 'Yesterday 17:20', '5 h 41'),
+    row('cancelled', 'time limit (policy)', 'methylseq-pilot', 'nf', 'methylseq-custom', 'main@a1c9f2e', ['d','t','t','t'], '1 of 4 stages', 'Laptop (local)', 'CLI · observed', 'Yesterday 11:02', '6 h 00')
+  ];
+  const ids = ['#312 · r-8f3a', '#311 · r-2c71', '#310 · r-9be0', '#309 · r-44d2', '#308 · r-a17c', '#307 · r-5e09', '#306 · r-c3b8', '#305 · r-71fa'];
+  return { rows: rows.map((r, i) => ({ ...r, id: ids[i] })) };
+}
+}
+</script>
+</body>
+</html>

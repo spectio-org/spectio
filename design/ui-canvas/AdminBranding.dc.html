@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — administration, branding</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+summary{list-style:none}
+summary::-webkit-details-marker{display:none}
+.btn{height:38px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.btn-s:hover{background:#F7F7FB}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.acc{border-top:1px solid #EEEFF5}
+.acc > summary{cursor:pointer;display:flex;align-items:center;gap:10px;padding:12px 16px;font-size:14px;font-weight:600}
+.acc > summary:hover{background:#F7F7FB}
+.acc .chev{transition:transform .15s ease}
+.acc[open] .chev{transform:rotate(90deg)}
+.cnt{font-size:11.5px;font-weight:600;border-radius:999px;padding:2px 8px;background:#F1F2F6;color:#4D5065}
+.hex{width:92px;height:32px;box-sizing:border-box;border-radius:9px;border:1px solid #C4C7D4;padding:0 9px;font:400 12.5px 'JetBrains Mono',monospace;color:#0F1020;background:#FFFFFF}
+.seg{display:inline-flex;gap:2px;padding:3px;border-radius:12px;background:#EEEFF5}
+.seg span{height:32px;padding:0 12px;border-radius:9px;display:flex;align-items:center;gap:7px;font-size:13px;white-space:nowrap}
+.menu{position:absolute;right:0;top:44px;z-index:5;width:240px;background:#FFFFFF;border-radius:14px;box-shadow:0 0 0 1px rgba(15,16,32,0.11),0 12px 30px -12px rgba(15,16,32,0.3);padding:6px}
+.menu a{display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:9px;text-decoration:none;color:#22253A;font-size:13.5px}
+.menu a:hover{background:#F7F7FB}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Administration / Branding" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="settings" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 18px;">
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #F1F2F6; color: #4D5065; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l8 3v6c0 5-3.5 8-8 9-4.5-1-8-4-8-9V6z"/></svg>
+      </span>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Administration</h1>
+        <span style="font-size: 14px; color: #4D5065;">People, content, activity and the health of this instance</span>
+      </div>
+    </div>
+
+    <div style="display: flex; gap: 28px; align-items: flex-start;">
+      <div style="position: sticky; top: 0; flex-shrink: 0;"><dc-import name="AdminNav" active="branding" hint-size="208px,860px"></dc-import></div>
+      <div style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+
+        <div style="display: flex; align-items: flex-start; gap: 12px; flex-wrap: wrap;">
+          <div style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 2px;">
+            <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Instance branding</h2>
+            <span style="font-size: 13.5px; color: #4D5065;">Rebrand this instance without touching its configuration. Cleared fields fall back to the <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">SPECTIO_BRANDING_*</code> defaults.</span>
+          </div>
+          <details style="position: relative;">
+            <summary class="btn btn-s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-1-.8-1.3-.8-2.2 0-.8.7-1.3 1.5-1.3H17a4 4 0 0 0 4-4c0-5-4-9-9-9z M7.5 11h.01 M10 7.5h.01 M14.5 7.5h.01"/></svg>Presets<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></summary>
+            <div class="menu" role="menu">
+              <span style="display: block; font-size: 11.5px; color: #6E7287; padding: 6px 10px 4px;">A preset fills the form; everything stays editable</span>
+              <sc-for list="{{presets}}" as="p" hint-placeholder-count="5">
+                <a href="#" role="menuitem"><span style="display: flex; gap: 2px;"><span style="width: 12px; height: 18px; border-radius: 4px 0 0 4px; background: {{p.a}};"></span><span style="width: 12px; height: 18px; background: {{p.b}};"></span><span style="width: 12px; height: 18px; border-radius: 0 4px 4px 0; background: {{p.c}};"></span></span><span style="flex-grow: 1;">{{p.name}}</span><span style="font-size: 11.5px; color: #6E7287;">{{p.note}}</span></a>
+              </sc-for>
+            </div>
+          </details>
+          <a href="#" class="btn btn-s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3 M7 10l5 5 5-5 M5 21h14"/></svg>Import</a>
+          <a href="#" class="btn btn-s"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12 M7 8l5-5 5 5 M5 21h14"/></svg>Export</a>
+        </div>
+
+        <section class="card" style="padding: 14px 16px; display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+          <span style="display: flex; flex-direction: column; gap: 2px; flex: 0 0 auto;"><span style="font-size: 14px; font-weight: 600;">Theme source</span><span style="font-size: 12.5px; color: #4D5065;">Where colours, fonts and logos come from</span></span>
+          <span class="seg" role="radiogroup" aria-label="Theme source">
+            <span role="radio" aria-checked="false" style="color: #4D5065; font-weight: 500;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1 M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>Shared with depictio</span>
+            <span role="radio" aria-checked="true" style="background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,16,32,0.12); color: #0F1020; font-weight: 600;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Own theme</span>
+          </span>
+          <span style="flex: 1 1 300px; font-size: 12.5px; color: #33364A; line-height: 1.45;">Shared reads depictio’s effective theme from <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">/depictio/api/v1/utils/public-config</code>, so an institute brands both apps once. When shared, only Spectio’s <strong>section colours</strong> and <strong>sign-in &amp; help</strong> stay editable here.</span>
+        </section>
+
+        <div style="display: grid; grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); gap: 16px; align-items: start;">
+
+          <div style="display: flex; flex-direction: column; gap: 16px; min-width: 0;">
+            <section class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+              <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap;"><span style="font-size: 14px; font-weight: 600;">Logos</span><span style="font-size: 12px; color: #6E7287;">PNG, JPEG or WebP · up to 2 MB · no SVG</span></div>
+              <div style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px;">
+                <sc-for list="{{logos}}" as="l" hint-placeholder-count="2">
+                  <div style="display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-size: 12.5px; font-weight: 600; color: #33364A;">{{l.label}}</span>
+                    <span style="height: 74px; border-radius: 12px; background: {{l.bg}}; box-shadow: inset 0 0 0 1px {{l.line}}; display: flex; align-items: center; justify-content: center; gap: 10px;">
+                      <span style="display: flex; gap: 3px; align-items: flex-end;"><span style="width: 8px; height: 18px; border-radius: 3px; background: #2F7FA8;"></span><span style="width: 8px; height: 26px; border-radius: 3px; background: #1F9D63;"></span><span style="width: 8px; height: 22px; border-radius: 3px; background: #7750D4;"></span></span>
+                      <span style="font-family: 'Outfit', sans-serif; font-weight: 700; font-size: 19px; color: {{l.fg}}; letter-spacing: 0.02em;">EMBL</span>
+                    </span>
+                    <span style="display: flex; align-items: center; gap: 6px;">
+                      <a href="#" class="btn btn-s" style="height: 32px; padding: 0 10px; font-size: 12.5px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3 M7 8l5-5 5 5 M5 21h14"/></svg>Upload</a>
+                      <a href="#" title="Remove the override" aria-label="Remove the override" style="width: 32px; height: 32px; border-radius: 9px; display: flex; align-items: center; justify-content: center; color: #B02A2A; box-shadow: inset 0 0 0 1px #F3D0D0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h16 M10 11v6 M14 11v6 M6 7l1 13h10l1-13 M9 7V4h6v3"/></svg></a>
+                      <span style="font-size: 11.5px; color: #6E7287;">{{l.file}}</span>
+                    </span>
+                  </div>
+                </sc-for>
+              </div>
+              <span style="font-size: 12px; color: #4D5065; display: flex; gap: 8px; align-items: center;"><span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #F6F2FE; color: #4D368B; white-space: nowrap;">Powered by Spectio</span>shows in the sidebar footer whenever a custom logo replaces the Spectio wordmark</span>
+            </section>
+
+            <section class="card" style="overflow: hidden;">
+              <div style="padding: 12px 16px; display: flex; align-items: center; justify-content: space-between; gap: 8px;"><span style="font-size: 14px; font-weight: 600;">Theme</span><span style="font-size: 12px; color: #6E7287;">9 of 41 fields set · the rest inherit</span></div>
+              <sc-for list="{{acc}}" as="a" hint-placeholder-count="8">
+                <sc-if value="{{a.open}}" hint-placeholder-val="{{true}}"><details class="acc" open>
+                  <summary>
+                    <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{a.icon}}"/></svg>
+                    <span style="flex-grow: 1;">{{a.title}} <span style="font-size: 11.5px; font-weight: 600; color: #6344B2;">{{a.tag}}</span></span>
+                    <span class="cnt" style="background: {{a.cbg}}; color: {{a.cfg}};">{{a.count}}</span>
+                  </summary>
+                  <div style="padding: 2px 16px 14px 40px; display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-size: 12px; color: #4D5065;">{{a.help}}</span>
+                    <sc-for list="{{a.rows}}" as="r" hint-placeholder-count="3">
+                      <div style="display: grid; grid-template-columns: 128px 30px 92px minmax(0, 1fr) 28px; align-items: center; gap: 10px;">
+                        <span style="font-size: 13px; color: #22253A;">{{r.k}}</span>
+                        <span style="width: 30px; height: 30px; border-radius: 9px; background: {{r.c}}; box-shadow: inset 0 0 0 1px rgba(15,16,32,0.12);"></span>
+                        <input class="hex" value="{{r.v}}" aria-label="{{r.k}}" style="color: {{r.vc}};">
+                        <span style="display: flex; gap: 1px; min-width: 0; overflow: hidden; border-radius: 6px;">
+                          <sc-for list="{{r.shades}}" as="sh" hint-placeholder-count="10"><span style="flex: 1 1 0; height: 14px; background: {{sh.c}}; box-shadow: {{sh.mark}};"></span></sc-for>
+                        </span>
+                        <a href="#" title="Clear, inherit the default" aria-label="Clear {{r.k}}" style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6E7287; visibility: {{r.clr}};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg></a>
+                      </div>
+                    </sc-for>
+                    <sc-for list="{{a.fields}}" as="f" hint-placeholder-count="2">
+                      <label style="display: grid; grid-template-columns: 128px minmax(0, 1fr); align-items: center; gap: 10px;">
+                        <span style="font-size: 13px; color: #22253A;">{{f.k}}</span>
+                        <input value="{{f.v}}" placeholder="{{f.ph}}" style="height: 34px; box-sizing: border-box; border-radius: 9px; border: 1px solid #C4C7D4; padding: 0 10px; font: 400 13px 'Inter', sans-serif; color: #0F1020; background: #FFFFFF; min-width: 0;">
+                      </label>
+                    </sc-for>
+                    <span style="font-size: 12px; color: #4D5065;">{{a.foot}}</span>
+                  </div>
+                </details></sc-if>
+                <sc-if value="{{a.closed}}" hint-placeholder-val="{{false}}"><details class="acc">
+                  <summary>
+                    <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{a.icon}}"/></svg>
+                    <span style="flex-grow: 1;">{{a.title}} <span style="font-size: 11.5px; font-weight: 600; color: #6344B2;">{{a.tag}}</span></span>
+                    <span class="cnt" style="background: {{a.cbg}}; color: {{a.cfg}};">{{a.count}}</span>
+                  </summary>
+                  <div style="padding: 2px 16px 14px 40px; display: flex; flex-direction: column; gap: 8px;">
+                    <span style="font-size: 12px; color: #4D5065;">{{a.help}}</span>
+                    <sc-for list="{{a.rows}}" as="r" hint-placeholder-count="3">
+                      <div style="display: grid; grid-template-columns: 128px 30px 92px minmax(0, 1fr) 28px; align-items: center; gap: 10px;">
+                        <span style="font-size: 13px; color: #22253A;">{{r.k}}</span>
+                        <span style="width: 30px; height: 30px; border-radius: 9px; background: {{r.c}}; box-shadow: inset 0 0 0 1px rgba(15,16,32,0.12);"></span>
+                        <input class="hex" value="{{r.v}}" aria-label="{{r.k}}" style="color: {{r.vc}};">
+                        <span style="display: flex; gap: 1px; min-width: 0; overflow: hidden; border-radius: 6px;">
+                          <sc-for list="{{r.shades}}" as="sh" hint-placeholder-count="10"><span style="flex: 1 1 0; height: 14px; background: {{sh.c}}; box-shadow: {{sh.mark}};"></span></sc-for>
+                        </span>
+                        <a href="#" title="Clear, inherit the default" aria-label="Clear {{r.k}}" style="width: 28px; height: 28px; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: #6E7287; visibility: {{r.clr}};"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg></a>
+                      </div>
+                    </sc-for>
+                    <sc-for list="{{a.fields}}" as="f" hint-placeholder-count="2">
+                      <label style="display: grid; grid-template-columns: 128px minmax(0, 1fr); align-items: center; gap: 10px;">
+                        <span style="font-size: 13px; color: #22253A;">{{f.k}}</span>
+                        <input value="{{f.v}}" placeholder="{{f.ph}}" style="height: 34px; box-sizing: border-box; border-radius: 9px; border: 1px solid #C4C7D4; padding: 0 10px; font: 400 13px 'Inter', sans-serif; color: #0F1020; background: #FFFFFF; min-width: 0;">
+                      </label>
+                    </sc-for>
+                    <span style="font-size: 12px; color: #4D5065;">{{a.foot}}</span>
+                  </div>
+                </details></sc-if>
+              </sc-for>
+            </section>
+          </div>
+
+          <aside style="position: sticky; top: 0; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+            <section class="card" style="padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+              <div style="display: flex; align-items: center; justify-content: space-between;"><span style="font-size: 14px; font-weight: 600;">Preview</span><span style="font-size: 11.5px; color: #6E7287;">updates as you type</span></div>
+              <div style="border-radius: 12px; background: #F6F6FA; box-shadow: inset 0 0 0 1px #E6E7EF; overflow: hidden; display: flex; flex-direction: column;">
+                <div style="height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 10px; background: #FFFFFF; border-bottom: 1px solid #EEEFF5;">
+                  <span style="display: flex; gap: 2px; align-items: flex-end;"><span style="width: 4px; height: 9px; border-radius: 2px; background: #2F7FA8;"></span><span style="width: 4px; height: 13px; border-radius: 2px; background: #1F9D63;"></span><span style="width: 4px; height: 11px; border-radius: 2px; background: #7750D4;"></span></span>
+                  <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 12.5px;">EMBL Spectio</span>
+                  <span style="flex-grow: 1;"></span>
+                  <span style="width: 18px; height: 18px; border-radius: 9px; background: #7750D4; color: #FFFFFF; font-size: 8px; font-weight: 700; display: flex; align-items: center; justify-content: center;">TW</span>
+                </div>
+                <div style="display: grid; grid-template-columns: 92px minmax(0, 1fr); min-height: 190px;">
+                  <div style="background: #FFFFFF; border-right: 1px solid #EEEFF5; padding: 8px 6px; display: flex; flex-direction: column; gap: 3px;">
+                    <sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+                      <span style="display: flex; align-items: center; gap: 6px; height: 22px; padding: 0 6px; border-radius: 7px; background: {{n.bg}}; font-size: 10.5px; font-weight: {{n.w}}; color: #22253A;"><span style="width: 7px; height: 7px; border-radius: 2px; background: {{n.c}}; flex-shrink: 0;"></span>{{n.l}}</span>
+                    </sc-for>
+                  </div>
+                  <div style="padding: 10px; display: flex; flex-direction: column; gap: 8px; min-width: 0;">
+                    <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 14px;">Runs</span>
+                    <div style="background: #FFFFFF; border-radius: 9px; box-shadow: 0 0 0 1px rgba(15,16,32,0.08); padding: 7px 8px; display: flex; flex-direction: column; gap: 6px;">
+                      <span style="display: flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 600;">rnaseq liver-tc-03<span style="flex-grow: 1;"></span><span style="font-family: 'JetBrains Mono', monospace; font-weight: 400; color: #6E7287;">#301</span></span>
+                      <span style="display: flex; gap: 4px; flex-wrap: wrap;"><sc-for list="{{states}}" as="s" hint-placeholder-count="4"><span style="font-size: 9.5px; font-weight: 600; border-radius: 5px; padding: 2px 6px; background: {{s.bg}}; color: {{s.fg}};">{{s.l}}</span></sc-for></span>
+                    </div>
+                    <span style="display: flex; gap: 5px; flex-wrap: wrap;">
+                      <span style="font-size: 10px; font-weight: 600; border-radius: 7px; padding: 5px 8px; background: #7750D4; color: #FFFFFF;">Filled</span>
+                      <span style="font-size: 10px; font-weight: 600; border-radius: 7px; padding: 5px 8px; background: #F0EBFC; color: #4D368B;">Light</span>
+                      <span style="font-size: 10px; font-weight: 600; border-radius: 7px; padding: 5px 8px; box-shadow: inset 0 0 0 1px #7750D4; color: #6344B2;">Outline</span>
+                      <span style="font-size: 10px; font-weight: 600; border-radius: 7px; padding: 5px 8px; color: #6344B2;">Subtle</span>
+                    </span>
+                    <span style="display: flex; gap: 6px; align-items: center; font-size: 10px; color: #4D5065;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #1F9D63;"></span>success<span style="width: 10px; height: 10px; border-radius: 3px; background: #D9890B;"></span>warning<span style="width: 10px; height: 10px; border-radius: 3px; background: #DC3B3B;"></span>danger</span>
+                  </div>
+                </div>
+              </div>
+              <span style="font-size: 11.5px; font-weight: 600; color: #4D5065;">Dark mode</span>
+              <div style="border-radius: 12px; background: #0F1020; overflow: hidden; display: grid; grid-template-columns: 70px minmax(0, 1fr); height: 96px;">
+                <div style="background: #17182B; padding: 8px 6px; display: flex; flex-direction: column; gap: 4px;">
+                  <sc-for list="{{navDark}}" as="n" hint-placeholder-count="4"><span style="display: flex; align-items: center; gap: 5px; height: 16px; padding: 0 5px; border-radius: 5px; background: {{n.bg}}; font-size: 9px; color: #E6E7EF;"><span style="width: 6px; height: 6px; border-radius: 2px; background: {{n.c}};"></span>{{n.l}}</span></sc-for>
+                </div>
+                <div style="padding: 9px; display: flex; flex-direction: column; gap: 6px;">
+                  <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 12px; color: #F2F2F7;">Runs</span>
+                  <span style="border-radius: 7px; background: #1E2036; padding: 6px 7px; display: flex; gap: 4px; align-items: center;"><span style="font-size: 9.5px; color: #E6E7EF; font-weight: 600; flex-grow: 1;">liver-tc-03</span><span style="font-size: 9px; font-weight: 600; border-radius: 4px; padding: 1px 5px; background: #33275A; color: #C8B6F5;">Running</span></span>
+                  <span style="display: flex; gap: 4px;"><span style="font-size: 9px; font-weight: 600; border-radius: 6px; padding: 4px 7px; background: #8F6AE6; color: #FFFFFF;">Filled</span><span style="font-size: 9px; font-weight: 600; border-radius: 6px; padding: 4px 7px; box-shadow: inset 0 0 0 1px #8F6AE6; color: #C8B6F5;">Outline</span></span>
+                </div>
+              </div>
+            </section>
+            <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 13px; font-weight: 600;">Where values come from</span>
+              <sc-for list="{{layers}}" as="y" hint-placeholder-count="3">
+                <span style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #33364A;"><span style="width: 20px; height: 20px; border-radius: 6px; background: {{y.bg}}; color: {{y.fg}}; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">{{y.n}}</span><span style="flex-grow: 1;">{{y.l}}</span><span style="font-size: 11.5px; color: #6E7287;">{{y.v}}</span></span>
+              </sc-for>
+            </section>
+          </aside>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap; border-radius: 14px; background: #F7F7FB; padding: 10px 12px 10px 16px;">
+          <span style="flex: 1 1 300px; font-size: 12.5px; color: #4D5065;">Settings source: deployment defaults from <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">SPECTIO_BRANDING_*</code>, overrides saved here win · last saved by Thomas Weber, today 10:12</span>
+          <a href="#" class="btn btn-s"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5"/></svg>Reset</a>
+          <a href="#" class="btn btn-p"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg>Save</a>
+        </div>
+
+        <details class="card" style="overflow: hidden;">
+          <summary style="cursor: pointer; padding: 12px 16px; font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 10px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-6-6-6 M12 19h8"/></svg>CLI equivalent<span style="font-size: 12.5px; font-weight: 500; color: #6E7287;">same JSON as Import / Export, compatible with depictio’s BrandTheme</span></summary>
+          <pre style="margin: 0; background: #0F1020; color: #E6E7EF; font-family: 'JetBrains Mono', monospace; font-size: 12.5px; line-height: 1.6; padding: 14px 16px; overflow-x: auto;"><span style="color: #8A8FA8;">$</span> spectio branding show
+<span style="color: #8A8FA8;">$</span> spectio branding export &gt; brand.json
+<span style="color: #8A8FA8;">$</span> spectio branding import brand.json
+<span style="color: #8A8FA8;">$</span> spectio branding reset</pre>
+        </details>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const hx = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const toHex = (rgb) => '#' + rgb.map((v) => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0')).join('');
+  const mix = (a, b, t) => toHex(hx(a).map((v, i) => v + (hx(b)[i] - v) * t));
+  // 10 shades, brand colour on shade 6 (index 6), like depictio / Mantine
+  const shades = (c) => [0.92, 0.8, 0.66, 0.5, 0.34, 0.17].map((t) => mix(c, '#FFFFFF', t)).concat([c], [0.18, 0.34, 0.5].map((t) => mix(c, '#0F1020', t))).slice(0, 10)
+    .map((s, i) => ({ c: s, mark: i === 6 ? 'inset 0 -3px 0 #0F1020' : 'none' }));
+  const row = (k, c, set) => ({ k, c, v: c, vc: set ? '#0F1020' : '#6E7287', shades: shades(c), clr: set ? 'visible' : 'hidden' });
+  const cnt = (n, of) => ({ count: n + ' of ' + of + ' set', cbg: n ? '#F0EBFC' : '#F1F2F6', cfg: n ? '#4D368B' : '#4D5065' });
+  const acc = [
+    { title: 'Identity', icon: 'M4 6h16v12H4z M8 10h4 M8 14h8', open: false, ...cnt(1, 1), help: 'Browser tab title and sign-in greeting.', rows: [], fields: [{ k: 'Instance name', v: 'EMBL Spectio', ph: 'Spectio' }], foot: 'Tab title: “EMBL Spectio — Runs”.' },
+    { title: 'Brand colours', icon: 'M12 3a9 9 0 1 0 0 18c1 0 1.5-.8 1.5-1.5 0-1-.8-1.3-.8-2.2 0-.8.7-1.3 1.5-1.3H17a4 4 0 0 0 4-4c0-5-4-9-9-9z', open: true, ...cnt(1, 3), help: 'A hex value or a palette name. Expanded to 10 shades; the brand colour sits on shade 6, the one filled buttons use.', rows: [row('Primary', '#7750D4', true), row('Secondary', '#2F7FA8', false), row('Tertiary', '#EC5F87', false)], fields: [], foot: 'Secondary and tertiary inherit Sky and Coral from the Spectio palette.' },
+    { title: 'Status colours', icon: 'M20 6L9 17l-5-5', open: false, ...cnt(0, 3), help: 'Success, warning and danger. Run states keep their own scale.', rows: [], fields: [], foot: '' },
+    { title: 'Surfaces', icon: 'M4 4h16v16H4z M4 9h16', open: false, ...cnt(2, 8), help: 'Page background, cards & sections, header & sidebar, titles; light and dark.', rows: [], fields: [], foot: '' },
+    { title: 'Typography & shape', icon: 'M5 7V5h14v2 M12 5v14 M9 19h6', open: false, ...cnt(1, 3), help: 'Font stack, heading font stack, corner radius (Sharp xs · Small · Medium · Large · Round xl).', rows: [], fields: [], foot: '' },
+    { title: 'Figures', icon: 'M4 20V10 M10 20V4 M16 20v-7 M22 20H2', open: false, ...cnt(0, 2), help: 'Plot template and colorway, shared by review charts and depictio dashboards.', rows: [], fields: [], foot: '' },
+    { title: 'Section colours', tag: 'Spectio', icon: 'M4 6h16 M4 12h16 M4 18h16', open: true, ...cnt(1, 6), help: 'Sidebar, page headers and section tints. Projects and Administration follow depictio when the theme is shared.', rows: [row('Overview', '#5A4FCF', false), row('Runs', '#7750D4', false), row('Review', '#D9890B', false), row('Launch', '#EC5F87', false), row('Workflows', '#A54666', true), row('Environments', '#2F7FA8', false)], fields: [], foot: 'Run-state colours (queued, running, waiting, done, failed…) are fixed so they mean the same everywhere.' },
+    { title: 'Sign-in & help', tag: 'Spectio', icon: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14 M12 17h.01', open: false, ...cnt(3, 5), help: 'Login message, SSO button label, help / docs URL, support email, footer links.', rows: [], fields: [], foot: '' }
+  ];
+  acc.forEach((x) => { x.closed = !x.open; });
+  return {
+    presets: [
+      { name: 'Spectio', note: 'default', a: '#7750D4', b: '#2F7FA8', c: '#EC5F87' },
+      { name: 'depictio', note: '', a: '#3A7BD5', b: '#26A69A', c: '#F28C28' },
+      { name: 'EMBL', note: '', a: '#007B53', b: '#0A5032', c: '#18974C' },
+      { name: 'TREC', note: '', a: '#1D3557', b: '#2A9D8F', c: '#E76F51' },
+      { name: 'Ocean', note: '', a: '#0E7490', b: '#155E75', c: '#38BDF8' }
+    ],
+    logos: [
+      { label: 'Logo', bg: '#FFFFFF', line: '#DFE1EA', fg: '#0F1020', file: 'embl-logo.png' },
+      { label: 'Logo (dark mode)', bg: '#0F1020', line: '#0F1020', fg: '#F2F2F7', file: 'falls back to Logo' }
+    ],
+    acc,
+    nav: [
+      { l: 'Overview', c: '#5A4FCF', bg: 'transparent', w: 500 },
+      { l: 'Runs', c: '#7750D4', bg: '#F6F2FE', w: 600 },
+      { l: 'Review', c: '#D9890B', bg: 'transparent', w: 500 },
+      { l: 'Launch', c: '#EC5F87', bg: 'transparent', w: 500 },
+      { l: 'Workflows', c: '#A54666', bg: 'transparent', w: 500 },
+      { l: 'Environments', c: '#2F7FA8', bg: 'transparent', w: 500 }
+    ],
+    navDark: [
+      { l: 'Runs', c: '#8F6AE6', bg: '#2A2346' },
+      { l: 'Review', c: '#E8A33A', bg: 'transparent' },
+      { l: 'Launch', c: '#F27A9C', bg: 'transparent' },
+      { l: 'Workflows', c: '#C66A88', bg: 'transparent' }
+    ],
+    states: [
+      { l: 'Running', bg: '#F0EBFC', fg: '#4D368B' },
+      { l: 'Waiting for review', bg: '#FDF3E2', fg: '#8F5806' },
+      { l: 'Done', bg: '#E8F6EF', fg: '#157A4B' },
+      { l: 'Failed', bg: '#FCEBEB', fg: '#B02A2A' }
+    ],
+    layers: [
+      { n: '1', l: 'Deployment defaults', v: 'SPECTIO_BRANDING_*', bg: '#F1F2F6', fg: '#33364A' },
+      { n: '2', l: 'Instance overrides (this page)', v: '9 fields', bg: '#F0EBFC', fg: '#4D368B' },
+      { n: '3', l: 'Per project', v: 'logo and accent only', bg: '#EEF6FA', fg: '#1F536D' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

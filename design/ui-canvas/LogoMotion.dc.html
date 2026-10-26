@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — logo motion</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.b,.s{transform-box:view-box;transform-origin:100px 100px}
+.s{opacity:0}
+.m-open .b{animation:m-fan 3.2s cubic-bezier(.22,1.2,.36,1) infinite}
+.m-scan .s{animation:m-scan 2.2s cubic-bezier(.45,0,.55,1) infinite}
+.m-radar .s{opacity:1;animation:m-radar 1.4s cubic-bezier(.45,0,.55,1) infinite alternate}
+.m-radar .b{opacity:.5}
+@keyframes m-fan{0%,8%{transform:rotate(var(--r))}38%,86%{transform:rotate(0)}100%{transform:rotate(var(--r))}}
+@keyframes m-scan{0%{transform:rotate(-95deg);opacity:0}10%{opacity:1}80%{transform:rotate(95deg);opacity:1}81%,100%{transform:rotate(95deg);opacity:0}}
+@keyframes m-radar{from{transform:rotate(-85deg)}to{transform:rotate(85deg)}}
+@media (prefers-reduced-motion: reduce){.b,.s{animation:none !important}.m-radar .b{opacity:1}}
+</style>
+</helmet>
+<div style="width: 1440px; height: 560px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; padding: 40px 56px; display: flex; flex-direction: column; gap: 22px;">
+  <div style="display: flex; flex-direction: column; gap: 6px;">
+    <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Logo motion · the panorama</h1>
+    <p style="margin: 0; font-size: 15px; color: #33364A; max-width: 1040px; line-height: 1.5;">The mark is a field of view. It opens from a single blade into the full 180° panorama, and a beam of light sweeps across it, the way you look over every run at once. Pure CSS, the same four blades as the static mark; static under reduced motion. Hover the logo in the top bar or on the landing page to see the scan in place.</p>
+  </div>
+  <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; flex-grow: 1;">
+    <sc-for list="{{modes}}" as="m" hint-placeholder-count="4">
+      <div style="border-radius: 18px; background: #F7F7FB; padding: 20px; display: flex; flex-direction: column; gap: 14px;">
+        <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center; min-height: 170px;">
+          <svg class="{{m.cls}}" width="220" height="110" viewBox="0 0 200 100" role="img" aria-label="{{m.name}}" style="overflow: visible;">
+            <defs>
+              <clipPath id="fan-{{m.k}}"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/></clipPath>
+              <linearGradient id="beam-{{m.k}}" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/><stop offset=".5" stop-color="#FFFFFF" stop-opacity=".65"/><stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/></linearGradient>
+            </defs>
+            <path class="b" style="--r: 67.5deg;" fill="#5A4FCF" d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/>
+            <path class="b" style="--r: 22.5deg;" fill="#8B5CF6" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/>
+            <path class="b" style="--r: -22.5deg;" fill="#EC5F87" d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/>
+            <path class="b" style="--r: -67.5deg;" fill="#F9A947" d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/>
+            <g clip-path="url(#fan-{{m.k}})"><path class="s" fill="url(#beam-{{m.k}})" d="M100 100 L74.12 3.41 A100 100 0 0 1 125.88 3.41 Z"/></g>
+          </svg>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 4px;">
+          <span style="font-size: 15px; font-weight: 600;">{{m.name}} <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400; color: #6344B2;">{{m.k}}</code></span>
+          <span style="font-size: 13px; line-height: 1.5; color: #33364A;">{{m.use}}</span>
+        </div>
+      </div>
+    </sc-for>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+  return { modes: [
+    { k: 'open', cls: 'm-open', name: 'Opening', use: 'Once when the app loads: the blades start stacked as one narrow view and fan out into the panorama. Looped here for review.' },
+    { k: 'scan', cls: 'm-scan', name: 'Scan', use: 'On hover of the logo (top bar, landing): a beam sweeps from left to right across the panorama.' },
+    { k: 'radar', cls: 'm-radar', name: 'Radar', use: 'Boot splash and long waits: the beam goes back and forth over a dimmed panorama.' },
+    { k: 'still', cls: 'm-still', name: 'Static', use: 'Favicons, print, exports and prefers-reduced-motion: the plain mark.' }
+  ] };
+}
+}
+</script>
+</body>
+</html>

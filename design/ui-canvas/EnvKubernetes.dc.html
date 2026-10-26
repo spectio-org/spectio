@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — Kubernetes environment</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}details>summary .chev{transition:transform .15s}details:not([open])>summary .chev{transform:rotate(180deg)}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Environments / Kubernetes · dev" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="environments" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <span style="width: 48px; height: 48px; border-radius: 15px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.wheel}}"/></svg>
+        </span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Kubernetes · dev</h1>
+          <span style="font-size: 14px; color: #4D5065;">Cloud-native environment: every task is a pod in namespace spectio-dev, work and results live in object storage.</span>
+        </div>
+        <span style="font-size: 13px; font-weight: 600; color: #157A4B; display: flex; align-items: center; gap: 6px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63;"></span>Runner online</span>
+      </div>
+
+      <nav aria-label="Environment sections" style="display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #EEEFF5;">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="6">
+          <a href="#" style="padding: 9px 12px; font-size: 13.5px; font-weight: {{t.w}}; color: {{t.c}}; text-decoration: none; box-shadow: {{t.u}};">{{t.label}}</a>
+        </sc-for>
+      </nav>
+
+      <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+        <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.wheel}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Cluster &amp; namespace</span><span style="font-size: 12px; color: #4D5065;">Kubernetes 1.33 · namespace spectio-dev · service account spectio-runner</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 0 16px 16px 60px; display: flex; flex-direction: column; gap: 14px;">
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px;">
+                <sc-for list="{{quota}}" as="q" hint-placeholder-count="3">
+                  <div style="border-radius: 12px; background: #F7F7FB; padding: 10px 12px; display: flex; flex-direction: column; gap: 6px;">
+                    <span style="display: flex; justify-content: space-between; font-size: 12.5px;"><span style="color: #4D5065;">{{q.k}} quota</span><span style="font-weight: 600;">{{q.v}}</span></span>
+                    <span style="height: 6px; border-radius: 3px; background: #E6E7EF; overflow: hidden;"><span style="display: block; height: 6px; width: {{q.pct}}; background: {{q.bar}};"></span></span>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="overflow-x: auto; border-radius: 12px; box-shadow: 0 0 0 1px #EEEFF5;">
+                <table style="width: 100%; min-width: 560px; border-collapse: collapse; font-size: 13px;">
+                  <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
+                    <th scope="col" style="padding: 8px 12px; font-weight: 600;">Node pool</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Machine</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Nodes</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Selector used by Spectio</th>
+                  </tr></thead>
+                  <tbody>
+                    <sc-for list="{{pools}}" as="p" hint-placeholder-count="3">
+                      <tr style="border-top: 1px solid #EEEFF5;">
+                        <td style="padding: 8px 12px; font-weight: 600;">{{p.name}}</td>
+                        <td style="padding: 8px 12px; color: #33364A;">{{p.machine}}</td>
+                        <td style="padding: 8px 12px; color: #33364A;">{{p.nodes}}</td>
+                        <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #33364A;">{{p.sel}}</td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </details>
+
+          <sc-for list="{{panels}}" as="s" hint-placeholder-count="3">
+            <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+              <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+                <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{s.icon}}"/></svg></span>
+                <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">{{s.title}}</span><span style="font-size: 12px; color: #4D5065;">{{s.sub}}</span></span>
+                <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+              </summary>
+              <div style="padding: 0 16px 14px 60px; display: flex; flex-direction: column;">
+                <sc-for list="{{s.items}}" as="it" hint-placeholder-count="3">
+                  <div style="display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; padding: 9px 0; border-top: 1px solid #EEEFF5;">
+                    <span style="flex: 0 0 240px; display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 600;">{{it.k}}<span style="font-size: 11.5px; font-weight: 600; color: {{it.tagc}};">{{it.tag}}</span></span>
+                    <span style="flex: 1 1 260px; min-width: 0; font-size: 12.5px; line-height: 1.45; color: #4D5065;">{{it.v}}</span>
+                  </div>
+                </sc-for>
+              </div>
+            </details>
+          </sc-for>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.pulse}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Live pods</span><span style="font-size: 12px; color: #4D5065;">6 pods · 1 run (scrna-pbmc) · refreshed by the runner every 10 s</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="overflow-x: auto;">
+              <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px;">
+                <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
+                  <th scope="col" style="padding: 8px 16px; font-weight: 600;">Pod</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Run</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Process / rule</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">State</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">CPU / memory</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Age</th>
+                </tr></thead>
+                <tbody>
+                  <sc-for list="{{pods}}" as="p" hint-placeholder-count="6">
+                    <tr style="border-top: 1px solid #EEEFF5; box-shadow: inset 4px 0 0 {{p.rail}};">
+                      <td style="padding: 8px 16px 8px 20px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">{{p.pod}}</td>
+                      <td style="padding: 8px 12px; font-weight: 600;">{{p.run}}</td>
+                      <td style="padding: 8px 12px; color: #33364A;">{{p.proc}}</td>
+                      <td style="padding: 8px 12px; font-weight: 600; color: {{p.fg}}; white-space: nowrap;">{{p.state}}</td>
+                      <td style="padding: 8px 12px; color: #33364A; white-space: nowrap;">{{p.res}}</td>
+                      <td style="padding: 8px 12px; color: #33364A;">{{p.age}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </details>
+
+          <sc-for list="{{collapsed}}" as="c" hint-placeholder-count="2">
+            <details style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); background: #FFFFFF; overflow: hidden;"><summary style="width: 100%; border: none; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); background: #FFFFFF; padding: 10px 16px; display: flex; align-items: center; gap: 12px; font: inherit; color: inherit; text-align: left; cursor: pointer; box-shadow: none; border-radius: 0;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">{{c.name}}</span><span style="font-size: 12px; color: #6E7287;">{{c.sub}}</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary><div style="padding: 0 16px 14px 60px; display: flex; flex-direction: column; gap: 6px;"><sc-for list="{{c.rows}}" as="r" hint-placeholder-count="3"><div style="display: flex; justify-content: space-between; gap: 12px; font-size: 12.5px; border-top: 1px solid #EEEFF5; padding-top: 6px;"><span style="color: #4D5065;">{{r.k}}</span><span style="font-weight: 600; text-align: right;">{{r.v}}</span></div></sc-for></div></details>
+          </sc-for>
+        </div>
+
+        <aside style="flex: 1 1 300px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63;"></span>Runner</h2>
+            <sc-for list="{{runner}}" as="r" hint-placeholder-count="5">
+              <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px;"><span style="color: #4D5065;">{{r.k}}</span><span style="text-align: right; font-weight: 500;">{{r.v}}</span></div>
+            </sc-for>
+            <span style="font-size: 12px; line-height: 1.45; color: #6E7287;">The runner is the Spectio process inside the namespace. It opens an outbound connection to the server; no ingress, no open port.</span>
+          </section>
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600;">Engine mapping</h2>
+            <sc-for list="{{mapping}}" as="m" hint-placeholder-count="2">
+              <div style="display: flex; flex-direction: column; gap: 4px;">
+                <span style="display: flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 600;"><img src="{{m.logo}}" width="16" height="16" alt="" style="display: block; object-fit: contain;">{{m.name}}</span>
+                <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; color: #33364A; background: #F7F7FB; border-radius: 8px; padding: 7px 9px; white-space: pre-wrap;">{{m.cfg}}</code>
+              </div>
+            </sc-for>
+          </section>
+          <section style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;">Install the runner</h2>
+            <pre style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap;">helm install spectio-runner spectio/runner \
+  --namespace spectio-dev \
+  --set server=https://spectio.embl.de \
+  --set token=••••••••</pre>
+            <span style="font-size: 11.5px; color: #A6A9BA;">Token created in Settings › Tokens, scoped to this environment</span>
+          </section>
+        </aside>
+      </div>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    wheel: 'M12 3a9 9 0 1 0 0 18 9 9 0 0 0 0-18z M12 9a3 3 0 1 0 0 6 3 3 0 0 0 0-6z M12 3v6 M12 15v6 M3.5 7.5l5 3 M15.5 13.5l5 3 M3.5 16.5l5-3 M15.5 10.5l5-3',
+    cpu: 'M7 7h10v10H7z M10 10h4v4h-4z M9 3v4 M15 3v4 M9 17v4 M15 17v4 M3 9h4 M3 15h4 M17 9h4 M17 15h4',
+    db: 'M12 3c4.4 0 8 1.3 8 3s-3.6 3-8 3-8-1.3-8-3 3.6-3 8-3z M4 6v6c0 1.7 3.6 3 8 3s8-1.3 8-3V6 M4 12v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6',
+    box: 'M12 3l8 4.5v9L12 21l-8-4.5v-9z M4 7.5l8 4.5 8-4.5 M12 12v9',
+    pulse: 'M3 12h4l3-7 4 14 3-7h4',
+    lock: 'M6 11h12v9H6z M8 11V8a4 4 0 0 1 8 0v3',
+    gauge: 'M4 18a8 8 0 1 1 16 0 M12 18l4-6'
+  };
+  const tabNames = ['Compute', 'Storage', 'Software', 'Credentials', 'Limits', 'Activity'];
+  const tag = (t, c) => ({ tag: t, tagc: c });
+  const green = '#157A4B', amber = '#8F5806', grey = '#6E7287';
+  const S = { run: ['Running', '#3B82F6', '#1D5FC9'], pend: ['Pending', '#6E7287', '#33364A'], done: ['Succeeded', '#1F9D63', '#157A4B'], retry: ['Retrying', '#D9890B', '#8F5806'] };
+  const pod = (p, run, proc, st, res, age) => ({ pod: p, run, proc, state: S[st][0], rail: S[st][1], fg: S[st][2], res, age });
+  return {
+    ic,
+    tabs: tabNames.map((label, i) => ({ label, w: i === 0 ? 600 : 500, c: i === 0 ? '#4D368B' : '#4D5065', u: i === 0 ? 'inset 0 -2px 0 #7750D4' : 'none' })),
+    quota: [
+      { k: 'vCPU', v: '22 of 64', pct: '34%', bar: '#8B5CF6' },
+      { k: 'Memory', v: '96 of 256 GiB', pct: '38%', bar: '#8B5CF6' },
+      { k: 'GPU', v: '2 of 2', pct: '100%', bar: '#D9890B' }
+    ],
+    pools: [
+      { name: 'general', machine: '8 vCPU · 32 GiB', nodes: '3–8 (autoscaling)', sel: 'pool=general' },
+      { name: 'highmem', machine: '16 vCPU · 128 GiB', nodes: '0–2', sel: 'pool=highmem' },
+      { name: 'gpu', machine: '8 vCPU · 64 GiB · 1× L4', nodes: '0–2', sel: 'pool=gpu, nvidia.com/gpu' }
+    ],
+    panels: [
+      { title: 'Executors', sub: 'One pod per task; pod template applied to every task', icon: ic.cpu, items: [
+        { k: 'Nextflow', v: 'executor = k8s · k8s.namespace = spectio-dev · k8s.serviceAccount = spectio-runner', ...tag('active', green) },
+        { k: 'Snakemake', v: 'executor plugin snakemake-executor-plugin-kubernetes · --executor kubernetes', ...tag('active', green) },
+        { k: 'Pod template', v: 'Labels spectio/run and spectio/task, tolerations for the gpu pool, ephemeral storage 20 GiB', ...tag('', grey) },
+        { k: 'Default resources', v: '1 vCPU · 2 GiB · 1 h; overridden by process labels or rule resources', ...tag('', grey) }
+      ] },
+      { title: 'Storage', sub: 'Object storage for work and results; a volume for scratch', icon: ic.db, items: [
+        { k: 'Work', v: 's3://lab-dev/work/<run> · purged 14 days after success', ...tag('S3', green) },
+        { k: 'Results', v: 's3://lab-dev/results/<run> · kept 1 year', ...tag('S3', green) },
+        { k: 'Scratch', v: 'PVC spectio-scratch · 2 TiB · ReadWriteMany (CephFS)', ...tag('PVC', green) },
+        { k: 'Fusion file system', v: 'Lets tasks read S3 as a local path without staging', ...tag('phase 2', amber) }
+      ] },
+      { title: 'Software', sub: 'Containers only on this environment', icon: ic.box, items: [
+        { k: 'Docker images', v: 'Pulled from quay.io, ghcr.io and registry.embl.de · imagePullSecret regcred', ...tag('active', green) },
+        { k: 'Wave', v: 'Builds containers on the fly from conda specs for modules without an image', ...tag('phase 2', amber) },
+        { k: 'Conda', v: 'Not available: pods run read-only images', ...tag('off', grey) }
+      ] }
+    ],
+    pods: [
+      pod('nf-3f9c1a2b', 'scrna-pbmc', 'STARSOLO (sample P3)', 'run', '7.6 / 8 vCPU · 41 GiB', '12 min'),
+      pod('nf-8a21d4e0', 'scrna-pbmc', 'STARSOLO (sample P4)', 'run', '7.9 / 8 vCPU · 39 GiB', '11 min'),
+      pod('nf-c40b77f1', 'scrna-pbmc', 'CELLBENDER (sample P1)', 'run', '1 GPU · 18 GiB', '6 min'),
+      pod('nf-1e5d93aa', 'scrna-pbmc', 'CELLBENDER (sample P2)', 'pend', 'waiting for GPU', '4 min'),
+      pod('nf-77ab0c19', 'scrna-pbmc', 'FASTQC (sample P5)', 'retry', 'attempt 2 · OOMKilled', '2 min'),
+      pod('nf-0b2e6f58', 'scrna-pbmc', 'MTX_CONVERSION', 'done', '0.4 vCPU · 1 GiB', '1 min')
+    ],
+    collapsed: [
+      { name: 'Credentials', sub: 'Kubeconfig with a namespace-scoped token · S3 access key AKIA••••7Q2F · next rotation 2026-12-01', icon: ic.lock, rows: [{ k: 'Kubeconfig', v: 'namespace-scoped token · spectio-runner' }, { k: 'S3 access key', v: 'AKIA••••7Q2F' }, { k: 'Next rotation', v: '2026-12-01' }] },
+      { name: 'Limits & policies', sub: 'Max 3 concurrent runs · max pod 16 vCPU / 128 GiB · runner scales to zero after 30 min idle', icon: ic.gauge, rows: [{ k: 'Concurrent runs', v: 'max 3' }, { k: 'Largest pod', v: '16 vCPU / 128 GiB' }, { k: 'Runner idle', v: 'scales to zero after 30 min' }] }
+    ],
+    runner: [
+      { k: 'Kind', v: 'Deployment spectio-runner' },
+      { k: 'Namespace', v: 'spectio-dev' },
+      { k: 'Version', v: '0.1.0' },
+      { k: 'Heartbeat', v: '4 s ago' },
+      { k: 'Connection', v: 'outbound only (wss)' }
+    ],
+    mapping: [
+      { name: 'Nextflow', logo: '/_blob/636203cdee0bc09b61efe0fa351e239b', cfg: 'process.executor = "k8s"\nk8s.namespace = "spectio-dev"\nk8s.serviceAccount = "spectio-runner"\nworkDir = "s3://lab-dev/work/<run>"' },
+      { name: 'Snakemake', logo: '/_blob/7a35665829f51132cb3bcb9a4c3e638c', cfg: '--executor kubernetes\n--kubernetes-namespace spectio-dev\n--default-storage-provider s3\n--default-storage-prefix s3://lab-dev/work/<run>' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

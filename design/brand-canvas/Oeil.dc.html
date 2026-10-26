@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Perspectio 6 — œil segmenté</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<style>
+body{margin:0}
+a{color:#141414}a:hover{color:#444444}
+</style>
+</helmet>
+<div style="width: 520px; height: 560px; box-sizing: border-box; background: #FFFFFF; color: #141414; display: flex; flex-direction: column; font-family: system-ui, sans-serif;">
+  <svg width="0" height="0" style="position: absolute;" aria-hidden="true">
+    <symbol id="m" viewBox="0 0 200 200">
+      <path d="M14 100Q100 22 186 100Q100 178 14 100Z" fill="none" stroke="currentColor" stroke-width="12" stroke-linejoin="round"/>
+      <path fill="currentColor" d="M102.61 70.11A30 30 0 0 1 124.57 82.79L104.91 96.56A6 6 0 0 0 100.52 94.02Z M127.19 87.32A30 30 0 0 1 127.19 112.68L105.44 102.54A6 6 0 0 0 105.44 97.46Z M124.57 117.21A30 30 0 0 1 102.61 129.89L100.52 105.98A6 6 0 0 0 104.91 103.44Z M97.39 129.89A30 30 0 0 1 75.43 117.21L95.09 103.44A6 6 0 0 0 99.48 105.98Z M72.81 112.68A30 30 0 0 1 72.81 87.32L94.56 97.46A6 6 0 0 0 94.56 102.54Z M75.43 82.79A30 30 0 0 1 97.39 70.11L99.48 94.02A6 6 0 0 0 95.09 96.56Z"/>
+    </symbol>
+  </svg>
+  <div style="flex-grow: 1; display: flex; align-items: center; justify-content: center;">
+    <svg width="260" height="260" role="img" aria-label="Œil en amande dont l'iris est une petite rosace de six secteurs"><use href="#m"/></svg>
+  </div>
+  <div style="height: 136px; border-top: 1px solid #E6E6E6; display: flex; align-items: center; justify-content: center; gap: 32px;">
+    <svg width="48" height="48" aria-hidden="true"><use href="#m"/></svg>
+    <svg width="24" height="24" aria-hidden="true"><use href="#m"/></svg>
+    <svg width="16" height="16" aria-hidden="true"><use href="#m"/></svg>
+    <div style="width: 72px; height: 72px; border-radius: 16px; background: #141414; color: #FFFFFF; display: flex; align-items: center; justify-content: center;">
+      <svg width="48" height="48" aria-hidden="true"><use href="#m"/></svg>
+    </div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":520,"height":560}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

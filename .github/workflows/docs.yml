@@ -1,0 +1,57 @@
+name: docs
+
+# The docs gate (docs/specs/documentation-system.md §3.3, §7.3). Required checks: docs-gate, pr-body.
+on:
+  pull_request:
+    types: [opened, edited, synchronize, reopened, labeled, unlabeled]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  docs-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-node@v4
+        with: {node-version: 22}
+      - name: Python tools for the figure scripts
+        run: |
+          pip install --break-system-packages pyyaml playwright
+          python3 -m playwright install --with-deps chromium
+      - name: Strict build, Mermaid, diagram freshness, media manifest and budget, Progress pages
+        run: |
+          if [ -n "${{ github.base_ref }}" ]; then git fetch --depth=50 origin "${{ github.base_ref }}"; BASE="--base origin/${{ github.base_ref }}"; fi
+          python3 tools/docs/check.py ${BASE:-}
+      - name: Screenshot churn guard
+        if: github.event_name == 'pull_request'
+        env:
+          SPECTIO_ALLOW_SCREENSHOT_UPDATE: ${{ contains(github.event.pull_request.labels.*.name, 'screenshots') && '1' || '' }}
+        run: |
+          git fetch --depth=1 origin "${{ github.base_ref }}"
+          bash tools/media/check_churn.sh "origin/${{ github.base_ref }}"
+      - name: Build the site for the artifact
+        run: uvx --with mkdocs-material mkdocs build --strict -d site
+      - uses: actions/upload-artifact@v4
+        with: {name: site, path: site/}
+
+  pr-body:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+      - name: PR title, required sections, figure for mechanism changes
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          BODY: ${{ github.event.pull_request.body }}
+          LABELS: ${{ join(github.event.pull_request.labels.*.name, ',') }}
+        run: |
+          pip install --break-system-packages pyyaml
+          printf '%s' "$BODY" > /tmp/body.md
+          git diff --name-only "origin/${{ github.base_ref }}...HEAD" > /tmp/changed.txt
+          python3 tools/docs/check.py --only pr-body --pr-title "$TITLE" --pr-body /tmp/body.md --changed /tmp/changed.txt --labels "$LABELS"

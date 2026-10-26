@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — profile</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}details>summary .chev{transition:transform .15s}details:not([open])>summary .chev{transform:rotate(180deg)}
+a{color:#6344B2}a:hover{color:#4D368B}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Profile" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="profile" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+      <section style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 18px 20px; display: flex; align-items: center; gap: 18px; flex-wrap: wrap;">
+        <span style="width: 64px; height: 64px; border-radius: 32px; background: #8B5CF6; color: #FFFFFF; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px; display: flex; align-items: center; justify-content: center;">TW</span>
+        <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 3px; min-width: 240px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Thomas Weber</h1>
+          <span style="font-size: 14px; color: #4D5065;">t.weber@lab.example · Administrator · member since 3 Oct 2026</span>
+        </div>
+        <div style="display: flex; gap: 22px;">
+          <sc-for list="{{stats}}" as="s" hint-placeholder-count="3">
+            <div style="display: flex; flex-direction: column; align-items: flex-end;"><span style="font-family: 'Outfit', sans-serif; font-size: 24px; font-weight: 600;">{{s.v}}</span><span style="font-size: 12px; color: #6E7287;">{{s.k}}</span></div>
+          </sc-for>
+        </div>
+        <button type="button" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A;">Change picture</button>
+      </section>
+
+      <div style="display: flex; gap: 16px; flex-wrap: wrap; align-items: flex-start;">
+        <div style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.key}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">CLI &amp; API tokens</span><span style="font-size: 12px; color: #4D5065;">Created here, shown once. Used by the CLI, engines, scripts and AI agents.</span></span>
+              <span style="height: 34px; padding: 0 12px; border-radius: 10px; background: #7750D4; color: #FFFFFF; font-size: 13px; font-weight: 600; display: flex; align-items: center;">New token</span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 0 16px 16px 60px; display: flex; flex-direction: column; gap: 12px;">
+              <div style="overflow-x: auto; border-radius: 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.08);">
+                <table style="width: 100%; min-width: 720px; border-collapse: collapse; font-size: 13px;">
+                  <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
+                    <th scope="col" style="padding: 8px 12px; font-weight: 600;">Name</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Scopes</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Created</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Last used</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Expires</th><th scope="col" style="padding: 8px 12px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Actions</span></th>
+                  </tr></thead>
+                  <tbody>
+                    <sc-for list="{{tokens}}" as="t" hint-placeholder-count="4">
+                      <tr style="border-top: 1px solid #EEEFF5;">
+                        <td style="padding: 9px 12px;"><span style="font-weight: 600;">{{t.name}}</span><br><span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #6E7287;">{{t.prefix}}</span></td>
+                        <td style="padding: 9px 12px;"><span style="display: flex; gap: 4px; flex-wrap: wrap;"><sc-for list="{{t.scopes}}" as="sc" hint-placeholder-count="2"><span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; border-radius: 6px; padding: 2px 6px; background: {{sc.bg}}; color: {{sc.fg}};">{{sc.l}}</span></sc-for></span></td>
+                        <td style="padding: 9px 12px; white-space: nowrap; color: #33364A;">{{t.created}}</td>
+                        <td style="padding: 9px 12px; white-space: nowrap; color: #33364A;">{{t.used}}</td>
+                        <td style="padding: 9px 12px; white-space: nowrap; color: {{t.expfg}}; font-weight: {{t.expw}};">{{t.expires}}</td>
+                        <td style="padding: 9px 12px; text-align: right; white-space: nowrap;"><a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none; color: #B02A2A;">Revoke</a></td>
+                      </tr>
+                    </sc-for>
+                  </tbody>
+                </table>
+              </div>
+              <div style="display: flex; flex-direction: column; gap: 6px;">
+                <span style="font-size: 12.5px; font-weight: 600; color: #33364A;">Use it</span>
+                <pre style="margin: 0; border-radius: 12px; background: #0F1020; color: #E6E7EF; padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.65; white-space: pre-wrap;"><span style="color: #8E92A8;"># once per machine: stores the server and token in ~/.spectio</span>
+spectio login --server https://spectio.lab.example --token ••••••••
+<span style="color: #8E92A8;"># or for scripts and CI</span>
+export SPECTIO_TOKEN=••••••••
+<span style="color: #8E92A8;"># runs started from a terminal then show up in Spectio</span>
+nextflow run nf-core/rnaseq -profile singularity -with-tower https://spectio.lab.example/api
+snakemake --logger spectio --executor slurm</pre>
+              </div>
+            </div>
+          </details>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.user}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Account</span><span style="font-size: 12px; color: #4D5065;">Identity and defaults used when you launch</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 0 16px 14px 60px; display: flex; flex-direction: column;">
+              <sc-for list="{{account}}" as="a" hint-placeholder-count="6">
+                <div style="display: flex; align-items: center; gap: 16px; padding: 9px 0; border-top: 1px solid #EEEFF5; flex-wrap: wrap;">
+                  <span style="flex: 0 0 190px; font-size: 13px; color: #4D5065;">{{a.k}}</span>
+                  <span style="flex: 1 1 220px; font-size: 13.5px; font-weight: 600;">{{a.v}} <span style="font-size: 11.5px; font-weight: 600; color: {{a.tagc}};">{{a.tag}}</span></span>
+                  <a href="#" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">{{a.action}}</a>
+                </div>
+              </sc-for>
+            </div>
+          </details>
+
+          <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+            <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
+              <span style="width: 32px; height: 32px; border-radius: 10px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.bell}}"/></svg></span>
+              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Notifications</span><span style="font-size: 12px; color: #4D5065;">What reaches you, and where</span></span>
+              <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
+            </summary>
+            <div style="padding: 0 16px 14px 60px;">
+              <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+                <thead><tr style="text-align: left; color: #6E7287; font-size: 12px;"><th scope="col" style="padding: 6px 0; font-weight: 600;">Event</th><th scope="col" style="padding: 6px 8px; font-weight: 600; width: 90px; text-align: center;">In app</th><th scope="col" style="padding: 6px 8px; font-weight: 600; width: 90px; text-align: center;">Email</th><th scope="col" style="padding: 6px 8px; font-weight: 600; width: 90px; text-align: center;">Slack</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{notif}}" as="n" hint-placeholder-count="4">
+                    <tr style="border-top: 1px solid #EEEFF5;">
+                      <td style="padding: 9px 0;"><span style="display: flex; align-items: center; gap: 8px; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 4px; background: {{n.dot}};"></span>{{n.k}}</span></td>
+                      <sc-for list="{{n.ch}}" as="c" hint-placeholder-count="3">
+                        <td style="padding: 9px 8px; text-align: center;"><span role="switch" aria-checked="{{c.on}}" aria-label="{{c.label}}" style="display: inline-block; width: 34px; height: 20px; border-radius: 10px; background: {{c.track}}; position: relative; vertical-align: middle;"><span style="position: absolute; top: 2px; left: {{c.knob}}; width: 16px; height: 16px; border-radius: 8px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(15,16,32,0.25);"></span></span></td>
+                      </sc-for>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </details>
+        </div>
+
+        <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px;"><span style="width: 28px; height: 28px; border-radius: 8px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.spark}}"/></svg></span>My agents</h2>
+            <sc-for list="{{agents}}" as="a" hint-placeholder-count="2">
+              <div style="display: flex; align-items: center; gap: 10px; border-top: 1px solid #EEEFF5; padding-top: 9px;">
+                <span style="width: 26px; height: 26px; border-radius: 8px; background: {{a.bg}}; color: {{a.fg}}; font-size: 9.5px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{a.t}}</span>
+                <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 13px; font-weight: 600;">{{a.name}}</span><span style="font-size: 12px; color: #4D5065;">{{a.sub}}</span></span>
+              </div>
+            </sc-for>
+            <a href="AIAgents.dc.html" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Limits in Settings › AI &amp; agents →</a>
+          </section>
+
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px;"><span style="width: 28px; height: 28px; border-radius: 8px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.users}}"/></svg></span>Groups &amp; projects <span style="font-size: 11px; font-weight: 600; color: #6E7287;">PHASE 2</span></h2>
+            <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{groups}}" as="g" hint-placeholder-count="4"><span style="font-size: 12.5px; font-weight: 500; border-radius: 8px; padding: 4px 9px; background: {{g.bg}}; color: {{g.fg}};">{{g.l}}</span></sc-for></span>
+            <span style="font-size: 12px; color: #6E7287; line-height: 1.45;">Shared with depictio: the same groups decide who sees runs, reviews and dashboards.</span>
+          </section>
+
+          <section style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
+            <h2 style="margin: 0; font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 10px;"><span style="width: 28px; height: 28px; border-radius: 8px; background: #F6F2FE; color: #6344B2; display: flex; align-items: center; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{ic.clock}}"/></svg></span>My recent activity</h2>
+            <sc-for list="{{activity}}" as="a" hint-placeholder-count="5">
+              <div style="display: flex; gap: 10px; font-size: 12.5px; border-top: 1px solid #EEEFF5; padding-top: 8px; box-shadow: inset 3px 0 0 {{a.rail}}; padding-left: 10px;">
+                <span style="flex-grow: 1; line-height: 1.45;">{{a.text}}</span><span style="color: #6E7287; white-space: nowrap;">{{a.at}}</span>
+              </div>
+            </sc-for>
+          </section>
+        </aside>
+      </div>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const ic = {
+    key: 'M15 7a4 4 0 1 1-3.9 5H3v3h3v3h3v-3h2.1A4 4 0 0 1 15 7z M16 10h.01',
+    user: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0',
+    bell: 'M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0',
+    spark: 'M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z',
+    users: 'M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M2 21a7 7 0 0 1 14 0 M16 3.5a4 4 0 0 1 0 7 M22 21a7 7 0 0 0-4-6.3',
+    clock: 'M12 7v5l3 2 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0'
+  };
+  const sc = (l) => {
+    const k = l.split(':')[0];
+    const m = { runs: ['#F6F2FE', '#4D368B'], review: ['#FDF3E2', '#6B4205'], mcp: ['#E3F1FB', '#1D5FC9'], workflows: ['#FFF6EC', '#845C34'] }[k] || ['#F1F2F6', '#33364A'];
+    return { l, bg: m[0], fg: m[1] };
+  };
+  const tok = (name, prefix, scopes, created, used, expires, soon) => ({ name, prefix, scopes: scopes.map(sc), created, used, expires, expfg: soon ? '#8F5806' : '#33364A', expw: soon ? 600 : 400 });
+  const sw = (on, label) => ({ on: on ? 'true' : 'false', label, track: on ? '#7750D4' : '#C4C7D4', knob: on ? '16px' : '2px' });
+  const n = (k, dot, a, b, c) => ({ k, dot, ch: [sw(a, k + ' in app'), sw(b, k + ' by email'), sw(c, k + ' on Slack')] });
+  return {
+    ic,
+    stats: [ { v: '41', k: 'runs launched · 30 d' }, { v: '27', k: 'reviews decided' }, { v: '18 min', k: 'median time to decide' } ],
+    tokens: [
+      tok('Laptop CLI', 'sp_live_7f3a…', ['runs:read', 'runs:launch', 'review:decide'], '3 Oct', 'today 08:12', '3 Jan 2027', false),
+      tok('Coding assistant (MCP)', 'sp_live_c21e…', ['mcp', 'runs:read', 'review:propose'], '12 Oct', '1 h ago', '12 Nov 2026', true),
+      tok('Login node, terminal runs', 'sp_live_9be0…', ['runs:report'], '3 Oct', '4 min ago', 'never', false),
+      tok('Pipeline CI', 'sp_live_44d2…', ['workflows:read', 'runs:launch'], '20 Oct', 'yesterday', '20 Apr 2027', false)
+    ],
+    account: [
+      { k: 'Name', v: 'Thomas Weber', tag: '', tagc: '#6E7287', action: 'Edit' },
+      { k: 'Email', v: 't.weber@lab.example', tag: '', tagc: '#6E7287', action: 'Edit' },
+      { k: 'Sign-in', v: 'Single user, no login', tag: 'MVP · SSO via OIDC in phase 2', tagc: '#8F5806', action: '' },
+      { k: 'Time zone', v: 'Europe/Paris', tag: '', tagc: '#6E7287', action: 'Change' },
+      { k: 'Default environment', v: 'EMBL SLURM · htc', tag: '', tagc: '#6E7287', action: 'Change' },
+      { k: 'Start page', v: 'Overview', tag: '', tagc: '#6E7287', action: 'Change' }
+    ],
+    notif: [
+      n('Review assigned to me', '#D9890B', true, true, true),
+      n('Run failed', '#DC3B3B', true, true, false),
+      n('Run finished', '#1F9D63', true, false, false),
+      n('Runner offline', '#6E7287', true, true, true)
+    ],
+    agents: [
+      { t: 'AI', bg: '#E6DCFC', fg: '#4D368B', name: 'Coding assistant', sub: 'MCP · token “Coding assistant” · may propose, not approve' },
+      { t: 'CI', bg: '#F1F2F6', fg: '#33364A', name: 'Pipeline CI', sub: 'REST · launches the test profile on Kubernetes · dev' }
+    ],
+    groups: [
+      { l: 'imaging-core', bg: '#F6F2FE', fg: '#4D368B' }, { l: 'rnaseq-core', bg: '#F6F2FE', fg: '#4D368B' },
+      { l: 'project: liver-timecourse', bg: '#F1F2F6', fg: '#33364A' }, { l: 'project: organoid-screen', bg: '#F1F2F6', fg: '#33364A' }
+    ],
+    activity: [
+      { text: 'Redid stage 2 of imaging-cellpose with diameter 42', at: '10:12', rail: '#D9890B' },
+      { text: 'Launched rnaseq-2026-10-25 on EMBL SLURM', at: '07:40', rail: '#3B82F6' },
+      { text: 'Resumed variant-calling-wgs after out-of-memory', at: 'yesterday', rail: '#DC3B3B' },
+      { text: 'Created token “Pipeline CI”', at: '20 Oct', rail: '#7750D4' },
+      { text: 'Promoted lab/organoid-qc to the catalog', at: '19 Oct', rail: '#A54666' }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

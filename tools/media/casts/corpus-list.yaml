@@ -1,0 +1,13 @@
+# The real-pipeline corpus (tests/pipelines/real/corpus.yaml), listed by its runner.
+title: "Spectio real-pipeline corpus: nf-core and snakemake-workflows entries"
+cols: 100
+rows: 28
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.05
+workdir: .
+steps:
+  - comment: "the corpus: engine, pipeline, version, tier (pr / nightly / manual), data shape"
+  - run: "python3 tests/pipelines/real/run_corpus.py --list | head -25"
+    head: 25
+  - pause: 2

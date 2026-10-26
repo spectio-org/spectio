@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio mobile — home</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+.chips::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MobileTopbar" title="Hello, Thomas" sub="12 reviews · 4 runs active" hint-size="390px,60px"></dc-import></div>
+  <main style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+
+    <h2 style="margin: 6px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">NEEDS ATTENTION</h2>
+    <div class="chips" style="display: flex; gap: 10px; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px 2px;">
+      <sc-for list="{{attention}}" as="a" hint-placeholder-count="3">
+        <a href="{{a.href}}" style="flex: 0 0 150px; text-decoration: none; color: inherit; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden; display: flex; flex-direction: column;">
+          <span style="height: 4px; background: {{a.rail}};"></span>
+          <span style="padding: 12px 14px; display: flex; flex-direction: column; gap: 4px;">
+            <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: {{a.fg}};"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{a.icon}}"/></svg>{{a.kind}}</span>
+            <span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 30px; line-height: 1.1;">{{a.n}}</span>
+            <span style="font-size: 12.5px; color: #4D5065;">{{a.line}}</span>
+          </span>
+        </a>
+      </sc-for>
+    </div>
+
+    <div style="display: flex; justify-content: space-between; align-items: baseline; margin: 6px 2px 0;">
+      <h2 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">ACTIVE RUNS</h2>
+      <a href="MRuns.dc.html" style="font-size: 13px; font-weight: 600; color: #6344B2; text-decoration: none; padding: 6px 0;">All runs</a>
+    </div>
+    <div style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07); overflow: hidden;">
+      <sc-for list="{{runs}}" as="r" hint-placeholder-count="3">
+        <a href="MRunDetail.dc.html" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 14px; box-sizing: border-box; border-top: {{r.bt}}; box-shadow: inset 4px 0 0 {{r.rail}};">
+          <svg width="44" height="22" viewBox="0 0 200 100" role="img" aria-label="{{r.prog}}" style="flex-shrink: 0;"><path d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z" fill="{{r.f0}}" stroke="{{r.s0}}" stroke-width="{{r.w0}}"/><path d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z" fill="{{r.f1}}" stroke="{{r.s1}}" stroke-width="{{r.w1}}"/><path d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z" fill="{{r.f2}}" stroke="{{r.s2}}" stroke-width="{{r.w2}}"/><path d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z" fill="{{r.f3}}" stroke="{{r.s3}}" stroke-width="{{r.w3}}"/></svg>
+          <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+            <span style="font-size: 15px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{r.name}}</span>
+            <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="{{r.logo}}" width="14" height="14" alt="{{r.engine}}" style="display: block; flex-shrink: 0;">{{r.wf}}</span>
+          </span>
+          <span style="font-size: 12.5px; font-weight: 600; color: {{r.fg}}; white-space: nowrap;">{{r.state}}</span>
+        </a>
+      </sc-for>
+    </div>
+
+    <h2 style="margin: 6px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">QUICK LAUNCH</h2>
+    <div class="chips" style="display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -12px; padding: 0 12px;">
+      <sc-for list="{{quick}}" as="q" hint-placeholder-count="3">
+        <a href="MLaunch.dc.html" style="flex-shrink: 0; height: 44px; padding: 0 14px; border-radius: 22px; display: flex; align-items: center; gap: 8px; text-decoration: none; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; color: #22253A; font-size: 14px; font-weight: 600;"><img src="{{q.logo}}" width="16" height="16" alt="" style="display: block;">{{q.name}}</a>
+      </sc-for>
+    </div>
+
+    <h2 style="margin: 6px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">RUNNERS</h2>
+    <a href="MEnvironments.dc.html" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px; min-height: 60px; padding: 10px 14px; box-sizing: border-box; border-radius: 16px; background: #FFFFFF; box-shadow: inset 4px 0 0 #DC3B3B, 0 0 0 1px rgba(15,16,32,0.07);">
+      <span style="width: 36px; height: 36px; flex-shrink: 0; border-radius: 11px; background: #EEF6FA; color: #2F7FA8; display: flex; align-items: center; justify-content: center;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v6H4z M4 13h16v6H4z M8 8h.01 M8 16h.01"/></svg></span>
+      <span style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+        <span style="font-size: 15px; font-weight: 600;">3 of 4 online</span>
+        <span style="font-size: 12.5px; color: #B02A2A;">hpc-login-2 offline 18 min</span>
+      </span>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg>
+    </a>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MobileTabbar" active="home" hint-size="390px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  const I = { flag: 'M5 21V4 M5 4h12l-2.5 4 2.5 4H5', cross: 'M6 6l12 12 M18 6L6 18', play: 'M8 5v14l11-7z', plug: 'M9 7V3 M15 7V3 M6 7h12v4a6 6 0 0 1-12 0z M12 17v4' };
+  const L = { nfcore: '/_blob/b04c0e1634ffbccff3a43d65ce1316d4', smk: '/_blob/7a35665829f51132cb3bcb9a4c3e638c' };
+  const B = ['#5A4FCF','#8B5CF6','#EC5F87','#F9A947'], T = ['#A39CE4','#BEA4FA','#F4A5BC','#FCCF98'], off = '#DFE1EA';
+  const gauge = (spec) => { const o = {}; spec.forEach((s, i) => { let f = off, st = 'none', w = 0; if (s === 'd') f = B[i]; if (s === 'r') f = T[i]; if (s === 'g') { f = '#FDF3E2'; st = '#D9890B'; w = 9; } o['f'+i] = f; o['s'+i] = st; o['w'+i] = w; }); return o; };
+  const run = (i, name, eng, engine, wf, state, rail, fg, spec, prog) => ({ name, logo: L[eng], engine, wf, state, rail, fg, prog, bt: i ? '1px solid #EEEFF5' : 'none', ...gauge(spec) });
+  return {
+    attention: [
+      { kind: 'Awaiting review', n: '12', line: '5 assigned to you', href: 'MReviewQueue.dc.html', rail: '#D9890B', fg: '#8F5806', icon: I.flag },
+      { kind: 'Failed · 24 h', n: '2', line: 'Both resumable', href: 'MRuns.dc.html', rail: '#DC3B3B', fg: '#B02A2A', icon: I.cross },
+      { kind: 'Runner offline', n: '1', line: 'hpc-login-2 · 18 min', href: 'MRunnerOffline.dc.html', rail: '#6E7287', fg: '#33364A', icon: I.plug }
+    ],
+    runs: [
+      run(0, 'imaging-cellpose · plate 07', 'smk', 'Snakemake', 'cellpose-segmentation 1.4.0', 'Review', '#D9890B', '#8F5806', ['d','g','t','t'], 'Gate after stage 2 of 4'),
+      run(1, 'rnaseq-2026-10-25', 'nfcore', 'nf-core', 'nf-core/rnaseq 3.27.0', 'Running', '#3B82F6', '#1D5FC9', ['d','d','r','t'], 'Stage 3 of 4 running'),
+      run(2, 'scrna-pbmc', 'nfcore', 'nf-core', 'nf-core/scrnaseq 4.1.0', 'Running', '#3B82F6', '#1D5FC9', ['r','t','t','t'], 'Task quarter 1 of 4')
+    ],
+    quick: [
+      { name: 'nf-core/rnaseq', logo: L.nfcore },
+      { name: 'cellpose-segmentation', logo: L.smk },
+      { name: 'nf-core/sarek', logo: L.nfcore }
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

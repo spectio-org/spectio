@@ -1,0 +1,7 @@
+# Progress
+
+Every step of the [pre-implementation pipeline](../playbooks/autopilot.md) writes its own page here while it runs: what changed, why, the evidence, figures and media, and the findings it filed. A step is `done` only once its page has passed the docs gate ([documentation system §3.3](../specs/documentation-system.md#33-the-docs-gate-run-by-autopilot-after-every-step-and-by-ci-on-every-pr)).
+
+This page is generated at build time from `docs/playbooks/pipeline.yaml` and `.autopilot/state.json`.
+
+<!-- spectio:progress-table -->
