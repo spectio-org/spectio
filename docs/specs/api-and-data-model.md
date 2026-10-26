@@ -195,6 +195,7 @@ erDiagram
   runs ||--o{ artifacts : produces
   runs ||--o{ events : "append-only log"
   runs ||--o{ gates : pauses_at
+  runs ||--o{ check_results : "live checks"
   gates ||--o{ check_results : evidence
   gates ||--o{ gate_items : items
   gates ||--o{ change_sets : drafts
@@ -224,7 +225,7 @@ erDiagram
 | `artifacts` | run_id, task_id, uri, mime, size, checksum, role (output, report, evidence) |
 | `events` | run_id, seq, event_id, type, payload (JSON); unique (run_id, event_id) |
 | `gates` | run_id, stage, state, policy (JSON), opened_at, etag |
-| `check_results` | gate_id, check_key, item_key (nullable), value, verdict |
+| `check_results` | run_id, stage, gate_id (nullable: live checks have none), watch_id (nullable), check_key, item_key (nullable), value, verdict (`ok`, `warn`, `fail`, `provisional`, `too_large`, `error`), file_uri, file_hash, evaluated_at; a gate reuses a live result whose file_hash is unchanged ([`checking-scenarios.md`](checking-scenarios.md) §11.4) |
 | `gate_items` | gate_id, item_key, kind (sample, cell-set, well, region…), attributes (JSON), verdict |
 | `change_sets`, `change_items` | gate_id, state (draft, applied, discarded), etag · change_set_id, target (item, samplesheet, param, file), before, after, author |
 | `decisions` | gate_id, principal_id, actor_kind, model, action, justification, evidence (JSON), change_set_id, idempotency_key |
@@ -244,6 +245,7 @@ CloudEvents 1.0 envelope (`id`, `source`, `type`, `time`, `subject`, `data`), pl
 | `spectio.stage.started`, `.completed` | stage boundaries |
 | `spectio.task.failed`, `.retried` | noteworthy task events (full task stream via SSE only) |
 | `spectio.gate.opened`, `.proposal_added`, `.signal_received`, `.decided` | reviews |
+| `spectio.check.failed` | a live check on a watched file failed (`warn` or `block`), with run, stage, item, check, value; every evaluation, passed or not, goes to SSE only as `check.evaluated` ([`checking-scenarios.md`](checking-scenarios.md) §11) |
 | `spectio.artifact.published` | reports and outputs |
 | `spectio.runner.offline`, `.online` | environment health |
 
@@ -333,3 +335,25 @@ depictio:
 - Settings follow depictio's Administration grouping: **People** (Users, Groups, Service accounts) · **Content** (Projects, Workflows, Environments) · **Activity** (Runs, Events, Logs, Health) · **Instance** (Branding, AI & agents, Webhooks, Settings).
 - Section colours: Projects and Administration/Settings use depictio's roles (secondary teal, primary blue) when co-deployed. Spectio's own menus keep their colours, except Workflows, which moves from orange to coral 700 (`#A54666`) so it is not mistaken for depictio's Dashboards orange.
 - An **app switcher** in both top bars and deep links both ways: run → dashboard, dashboard → producing run and gate decisions.
+
+### 13.6 QC rendering: one catalogue, two renderers
+
+Spectio's review screens and depictio's dashboards show the same QC. They must give the same numbers and look like one product. Facts and file references: [research note](../research/depictio-qc-integration-2026-10-26.md) §1.
+
+| Layer | Owner | Spectio uses it for | depictio uses it for |
+|---|---|---|---|
+| **Catalogue**: `find` glob → recipe (`OUTPUT_SCHEMA`) → columns | depictio (`depictio/catalog/`) | the source of gate checks: `depictio:<module>/<output>#<column>`, beside the bindings of [`checking-scenarios.md`](checking-scenarios.md) §7 | building data collections from a run |
+| **Tables** computed by the recipes | computed once, by the runner at gate time, then ingested | evaluating checks, the review views | dashboards |
+| **Decision tables** `spectio_checks` (item, check, value, threshold, verdict) and `spectio_decisions` (item, decision, reason, actor, gate, time) | Spectio writes them at each decision | the gate history | data collections joined to the catalogue tables on the item key (depictio `joins`), so a dashboard can colour, filter or hide by decision |
+| **Renderers**: figure, table, MultiQC, image, map, `advanced_viz` | depictio (`depictio-react-core`) | the review views, with a thin decision layer on top: selection, keep / exclude / flag, threshold handles, the changes bar | dashboards |
+| **Theme**: `BrandTheme`, chart palette, check-state colours | shared (§13.5) | everything | everything |
+
+Rules:
+1. **Same computation.** A check that has a catalogue binding uses it. The runner runs the recipe on the partial outputs at gate time, and the hand-off of §13.3 ingests the same tables. Spectio never re-implements a recipe that the catalogue has.
+2. **Same item key.** Items are keyed as the catalogue keys them (`sample`, `cell_id`, `well`…), so `spectio_decisions` joins without a mapping table.
+3. **A preliminary dashboard at gate time.** With `depictio: {on: gate:<id>}` (§13.3), the gate's review gets a **Dashboard** tab that embeds the depictio dashboard of the partial results. Selections are kept in step both ways by messages between the two frames (request in [`depictio-ecosystem-reuse.md`](depictio-ecosystem-reuse.md) §3).
+4. **Back-links.** A dashboard built after a gate shows a Spectio gate tile (decision, who, when, excluded items) that links to the decision.
+5. **Live checks** ([`checking-scenarios.md`](checking-scenarios.md) §11) cannot use catalogue outputs that read the final `multiqc.parquet`; they use per-file bindings until depictio has per-file recipes.
+6. **Without depictio**, Spectio's own bindings (§7 of checking-scenarios) and its built-in renderers do the same job. The decision tables are still written, as files in the RO-Crate.
+
+Open points: the recipe runtime on the runner (polars, a depictio-cli install or a small shared runtime), and the size of per-cell tables at gate time (aggregates first, per-cell on demand). Both are in the research note, §4.

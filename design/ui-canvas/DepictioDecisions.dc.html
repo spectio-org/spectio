@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>depictio — dashboard with Spectio decisions joined</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#1971C2}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-ligatures:none}
+.pp{border-radius:8px;border:1px solid #E9ECEF;background:#FFFFFF}
+.lab{font-size:11px;font-weight:700;letter-spacing:.05em;color:#868E96}
+.tbl td,.tbl th{padding:6px 10px;border-top:1px solid #F1F3F5;text-align:left;white-space:nowrap;font-size:12px}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #F8F9FA; color: #212529; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: 56px minmax(0, 1fr); grid-template-columns: 220px minmax(0, 1fr);">
+
+  <header style="grid-column: 1 / 3; display: flex; align-items: center; gap: 14px; padding: 0 16px; background: #FFFFFF; border-bottom: 1px solid #E9ECEF;">
+    <span style="display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 16px; width: 190px;"><span style="width: 26px; height: 26px; border-radius: 7px; background: #228BE6; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 13px;">d</span>depictio</span>
+    <span style="font-size: 13px; color: #495057;">Dashboards / <strong style="color: #212529;">nf-core/rnaseq · rnaseq-full-a1fcddd</strong></span>
+    <span style="flex-grow: 1;"></span>
+    <span role="group" aria-label="App switcher" style="display: flex; padding: 3px; border-radius: 9px; background: #F1F3F5; gap: 2px; font-size: 12.5px;">
+      <span style="height: 26px; padding: 0 10px; border-radius: 7px; display: flex; align-items: center; background: #FFFFFF; font-weight: 600; box-shadow: 0 1px 2px rgba(0,0,0,.1);">depictio</span>
+      <a href="RunOutputs.dc.html" style="height: 26px; padding: 0 10px; border-radius: 7px; display: flex; align-items: center; color: #495057; text-decoration: none; font-weight: 500;">Spectio</a>
+    </span>
+    <span style="width: 30px; height: 30px; border-radius: 15px; background: #8B5CF6; color: #FFFFFF; font-size: 11.5px; font-weight: 600; display: flex; align-items: center; justify-content: center;">AM</span>
+  </header>
+
+  <nav aria-label="depictio" style="background: #FFFFFF; border-right: 1px solid #E9ECEF; padding: 12px 10px; display: flex; flex-direction: column; gap: 4px;">
+    <sc-for list="{{nav}}" as="n" hint-placeholder-count="4">
+      <span style="display: flex; align-items: center; gap: 10px; height: 38px; padding: 0 10px; border-radius: 8px; background: {{n.bg}}; color: {{n.fg}}; font-size: 13.5px; font-weight: {{n.w}};"><span style="width: 10px; height: 10px; border-radius: 3px; background: {{n.dot}};"></span>{{n.t}}</span>
+    </sc-for>
+    <span style="margin-top: auto; font-size: 11px; color: #868E96; line-height: 1.4; padding: 0 6px;">Same accounts and project as Spectio: demo-lab · Cell lines. Alice Martin owner; reviewers are viewers here.</span>
+  </nav>
+
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 14px 18px 28px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+    <div style="display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap;">
+      <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-size: 22px; font-weight: 700;">nf-core/rnaseq</h1>
+        <span style="font-size: 13px; color: #495057;">Bulk RNA-seq · run rnaseq-full-a1fcddd (#301, completed) · template nf-core/rnaseq/3.26.0 · built by Spectio's hand-off</span>
+      </span>
+      <span style="display: flex; gap: 2px; border-bottom: 1px solid #E9ECEF;">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="5">
+          <span style="padding: 7px 11px; font-size: 13px; font-weight: {{t.w}}; color: {{t.c}}; box-shadow: {{t.u}};">{{t.t}}</span>
+        </sc-for>
+      </span>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 220px minmax(0, 1fr); gap: 12px; align-items: start;">
+      <aside class="pp" style="padding: 12px; display: flex; flex-direction: column; gap: 12px;">
+        <span class="lab">SAMPLE FILTERS · ALL TABS</span>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600;">Condition<span style="height: 30px; border-radius: 6px; border: 1px solid #CED4DA; display: flex; align-items: center; padding: 0 8px; font-weight: 400; color: #868E96;">All 4</span></label>
+        <label style="display: flex; flex-direction: column; gap: 4px; font-size: 12px; font-weight: 600;">Sample ID<span style="height: 30px; border-radius: 6px; border: 1px solid #CED4DA; display: flex; align-items: center; padding: 0 8px; font-weight: 400; color: #868E96;">All 8</span></label>
+        <div style="display: flex; flex-direction: column; gap: 6px; border-radius: 8px; background: #F8F5FF; box-shadow: inset 0 0 0 1px #E6DCFC; padding: 9px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; color: #4D368B;"><svg width="14" height="14" viewBox="0 0 200 100" aria-hidden="true"><path d="M86 94L4 94A96 96 0 0 1 28 36Z" fill="#5A4FCF"/><path d="M94 86L36 28A96 96 0 0 1 94 4Z" fill="#8B5CF6"/><path d="M106 86L106 4A96 96 0 0 1 164 28Z" fill="#EC5F87"/><path d="M114 94L172 36A96 96 0 0 1 196 94Z" fill="#F9A947"/></svg>Spectio decision</span>
+          <sc-for list="{{decf}}" as="d" hint-placeholder-count="3">
+            <span style="display: flex; align-items: center; gap: 7px; font-size: 12px; color: {{d.fg}};"><span role="checkbox" aria-checked="{{d.on}}" style="width: 14px; height: 14px; border-radius: 4px; background: {{d.cb}}; box-shadow: inset 0 0 0 1.5px {{d.cbr}};"></span>{{d.t}}<span style="margin-left: auto; color: #868E96;">{{d.n}}</span></span>
+          </sc-for>
+          <span style="font-size: 10.5px; color: #6E7287; line-height: 1.35;">from the <span class="mono">spectio_decisions</span> data collection, joined on <span class="mono">sample</span></span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px; border-top: 1px solid #F1F3F5; padding-top: 10px;">
+          <span class="lab">DATA COLLECTIONS</span>
+          <sc-for list="{{dcs}}" as="c" hint-placeholder-count="5">
+            <span style="display: flex; flex-direction: column; gap: 1px; font-size: 11.5px;"><span class="mono" style="font-weight: 600; color: {{c.fg}};">{{c.n}}</span><span style="color: #868E96; font-size: 10.5px;">{{c.s}}</span></span>
+          </sc-for>
+        </div>
+      </aside>
+
+      <div style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+        <section class="pp" style="padding: 12px 14px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap; border-left: 4px solid #8B5CF6;">
+          <span style="flex: 1 1 380px; display: flex; flex-direction: column; gap: 3px; min-width: 0;">
+            <span style="font-size: 11px; font-weight: 700; letter-spacing: .05em; color: #6344B2;">SPECTIO GATE · MAPPING QC</span>
+            <span style="font-size: 14px; font-weight: 600;">Approved by Alice Martin, 26 Oct 09:14 · 8 of 8 samples kept, 1 flagged</span>
+            <span style="font-size: 12px; color: #495057; line-height: 1.4;">K562_REP1 flagged: 0.53 point under the 85 % mapping threshold, kept to preserve the replicate pair. 3 warnings acknowledged (duplication K562, 5'–3' bias H1, Mt rRNA MCF7). AI suggestion accepted.</span>
+          </span>
+          <a href="ReviewReport.dc.html" style="height: 34px; padding: 0 12px; border-radius: 8px; border: 1px solid #CED4DA; color: #212529; text-decoration: none; font-size: 13px; font-weight: 600; display: flex; align-items: center;">Open the decision in Spectio →</a>
+        </section>
+
+        <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 10px;">
+          <sc-for list="{{cards}}" as="k" hint-placeholder-count="4">
+            <div class="pp" style="padding: 10px 12px; display: flex; flex-direction: column; gap: 2px;">
+              <span style="font-size: 11.5px; color: #868E96; font-weight: 600;">{{k.k}}</span>
+              <span style="font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; color: {{k.fg}};">{{k.v}}</span>
+              <span style="font-size: 11px; color: #868E96;">{{k.s}}</span>
+            </div>
+          </sc-for>
+        </div>
+
+        <div style="display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; align-items: start;">
+          <figure class="pp" style="margin: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 7px;">
+            <figcaption style="display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px;"><strong>Uniquely mapped, by Spectio decision</strong><span style="color: #868E96;">multiqc/star × spectio_decisions</span></figcaption>
+            <span style="display: flex; gap: 12px; font-size: 11px; color: #495057;"><span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #228BE6;"></span>Kept</span><span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 10px; height: 10px; border-radius: 3px; background: #FD7E14;"></span>Kept · flagged</span><span style="display: inline-flex; align-items: center; gap: 5px;"><span style="width: 0; height: 10px; border-left: 1.5px dashed #495057;"></span>Spectio check 85 %</span></span>
+            <div role="img" aria-label="Uniquely mapped percent per sample: K562_REP1 84.47 flagged, all others kept between 85.31 and 88.51" style="display: flex; flex-direction: column; gap: 5px;">
+              <sc-for list="{{bars}}" as="b" hint-placeholder-count="8">
+                <span style="display: grid; grid-template-columns: 96px minmax(0, 1fr) 52px; gap: 6px; align-items: center;">
+                  <span class="mono" style="font-size: 10.5px; color: #495057;">{{b.s}}</span>
+                  <span style="position: relative; height: 15px; background: #F1F3F5; border-radius: 0 4px 4px 0;"><span style="position: absolute; left: 0; top: 0; bottom: 0; width: {{b.w}}; background: {{b.fill}}; border-radius: 0 4px 4px 0;"></span><span style="position: absolute; top: -3px; bottom: -3px; left: 85%; border-left: 1.5px dashed #495057;"></span></span>
+                  <span style="font-size: 11px; text-align: right; font-variant-numeric: tabular-nums;">{{b.v}}</span>
+                </span>
+              </sc-for>
+            </div>
+          </figure>
+
+          <section class="pp" style="overflow: hidden;">
+            <div style="padding: 10px 12px; display: flex; justify-content: space-between; gap: 8px; font-size: 12.5px;"><strong>Samples with their checks and decisions</strong><span style="color: #868E96;">table · 3 data collections joined</span></div>
+            <div style="overflow-x: auto;">
+              <table class="tbl" style="width: 100%; border-collapse: collapse;">
+                <thead><tr style="background: #F8F9FA; color: #495057;"><th scope="col">sample</th><th scope="col">unique %</th><th scope="col">dup. %</th><th scope="col">checks</th><th scope="col">decision</th><th scope="col">reason</th></tr></thead>
+                <tbody>
+                  <sc-for list="{{rows}}" as="r" hint-placeholder-count="8">
+                    <tr style="background: {{r.bg}};">
+                      <td class="mono" style="font-size: 11px; font-weight: 600;">{{r.s}}</td>
+                      <td style="font-variant-numeric: tabular-nums; color: {{r.uFg}}; font-weight: {{r.uW}};">{{r.u}}</td>
+                      <td style="font-variant-numeric: tabular-nums; color: {{r.dFg}};">{{r.d}}</td>
+                      <td><span style="font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: {{r.cBg}}; color: {{r.cFg}};">{{r.c}}</span></td>
+                      <td><span style="font-size: 11px; font-weight: 600; padding: 2px 6px; border-radius: 5px; background: {{r.xBg}}; color: {{r.xFg}};">{{r.x}}</span></td>
+                      <td style="color: #495057;">{{r.why}}</td>
+                    </tr>
+                  </sc-for>
+                </tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+        <span style="font-size: 11px; color: #868E96; line-height: 1.4;">The numbers come from the same catalogue recipes Spectio used at the gate, so they match the review exactly. Values: nf-core/rnaseq 3.27.0 AWS megatest (a1fcddd), STAR + RSEM route.</span>
+      </div>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  // [sample, STAR uniquely_mapped_percent, Picard PERCENT_DUPLICATION, checks summary, decision, reason]
+  const R = [
+    ['K562_REP1', 84.47, 86.26, '1 block, 1 warn', 'Flag', '0.53 point under 85 %; replicate pair kept'],
+    ['K562_REP2', 85.31, 83.08, '1 warn', 'Keep', 'duplication shared with REP1, acknowledged'],
+    ['GM12878_REP2', 85.60, 76.80, 'pass', 'Keep', ''],
+    ['H1_REP2', 86.27, 53.06, '1 warn', 'Keep', "5'–3' bias on both H1, acknowledged"],
+    ['MCF7_REP2', 87.05, 43.70, '1 warn', 'Keep', 'Mt rRNA on both MCF7, acknowledged'],
+    ['GM12878_REP1', 87.46, 76.40, 'pass', 'Keep', ''],
+    ['MCF7_REP1', 88.21, 37.37, '1 warn', 'Keep', 'Mt rRNA on both MCF7, acknowledged'],
+    ['H1_REP1', 88.51, 50.93, '1 warn', 'Keep', "5'–3' bias on both H1, acknowledged"]
+  ];
+  return {
+    nav: [['Dashboards', true, '#FD7E14'], ['Projects', false, '#12B886'], ['Administration', false, '#228BE6'], ['About', false, '#ADB5BD']].map(([t, on, dot]) => ({ t, dot, bg: on ? '#FFF4E6' : 'transparent', fg: on ? '#D9480F' : '#495057', w: on ? 600 : 500 })),
+    tabs: [['Overview', true], ['MultiQC', false], ['Library QC', false]].map(([t, on]) => ({ t, w: on ? 600 : 500, c: on ? '#1971C2' : '#495057', u: on ? 'inset 0 -2px 0 #228BE6' : 'none' })),
+    decf: [['Keep', '7', true, '#212529'], ['Flag', '1', true, '#212529'], ['Exclude', '0', false, '#ADB5BD']].map(([t, n, on, fg]) => ({ t, n, on: String(on), fg, cb: on ? '#7750D4' : '#FFFFFF', cbr: on ? '#7750D4' : '#CED4DA' })),
+    dcs: [
+      { n: 'multiqc', s: 'catalog · multiqc.parquet', fg: '#212529' },
+      { n: 'samplesheet', s: 'input/samplesheet.csv', fg: '#212529' },
+      { n: 'general_stats', s: 'catalog recipe · per sample', fg: '#212529' },
+      { n: 'spectio_checks', s: 'from Spectio · 48 rows (8 × 6 checks)', fg: '#4D368B' },
+      { n: 'spectio_decisions', s: 'from Spectio · 8 rows · gate mapping_qc', fg: '#4D368B' }
+    ],
+    cards: [
+      { k: 'Samples kept', v: '8 / 8', s: '1 flagged by the Spectio gate', fg: '#212529' },
+      { k: 'Reads (STAR input)', v: '872 M', s: '91–128 M per sample', fg: '#212529' },
+      { k: 'Uniquely mapped', v: '86.7 %', s: 'median · range 84.5–88.5 %', fg: '#212529' },
+      { k: 'Flagged', v: '1', s: 'K562_REP1 · opens the decision', fg: '#D9480F' }
+    ],
+    bars: R.map(([s, u, , , x]) => ({ s, v: u.toFixed(2) + ' %', w: u + '%', fill: x === 'Flag' ? '#FD7E14' : '#228BE6' })),
+    rows: R.map(([s, u, d, c, x, why]) => ({ s, u: u.toFixed(2), d: d.toFixed(1), c, x, why: why || '—',
+      uFg: u < 85 ? '#C92A2A' : '#212529', uW: u < 85 ? 700 : 400, dFg: d > 80 ? '#E67700' : '#212529',
+      cBg: c === 'pass' ? '#EBFBEE' : c.includes('block') ? '#FFF5F5' : '#FFF9DB', cFg: c === 'pass' ? '#2B8A3E' : c.includes('block') ? '#C92A2A' : '#E67700',
+      xBg: x === 'Flag' ? '#FFF4E6' : '#F1F3F5', xFg: x === 'Flag' ? '#D9480F' : '#495057', bg: x === 'Flag' ? '#FFFAF3' : 'transparent' }))
+  };
+}
+}
+</script>
+</body>
+</html>

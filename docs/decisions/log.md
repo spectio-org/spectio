@@ -290,3 +290,14 @@ Everything must be traced, including:
   - A paid VPS: not needed for one developer.
   - Cloud Run: only useful for a public demo, which will be on EMBL instead.
 - **Not tested here.** Running the dev container setup in this session was refused (it downloads and runs install scripts). Step D5 checks it in a real codespace.
+
+## 2026-10-26 — Live checks, important stages, one QC for Spectio and depictio
+
+- **Context.** Thomas asked how I/O works and how a lab marks the stages that matter and the files to check while a workflow runs; and how Spectio's QC screens and depictio's dashboards can render the same results in one consistent way.
+- **Decision: live checks** ([`checking-scenarios.md`](../specs/checking-scenarios.md) §11):
+  - stages get two optional keys, `important` (attention and notifications only) and `watch` (file globs, when to read them, checks, `on_fail`);
+  - engines report which file was written (Nextflow `onFilePublish` / `onTaskComplete` in `nf-spectio`, Snakemake `JOB_INFO` + `JOB_FINISHED`); only the runner reads files, and only values travel;
+  - `on_fail` is `notify`, `flag`, `open_gate` or `pause_after_stage`; the last two need a conditional stage boundary (an `ext.when` closure on a stop file for Nextflow, **[to be validated]**);
+  - results go to `check_results` (now per run, `gate_id` nullable) and the gate reuses them when the file hash is unchanged ([`api-and-data-model.md`](../specs/api-and-data-model.md) §7–8).
+- **Decision: one catalogue, two renderers** ([`api-and-data-model.md`](../specs/api-and-data-model.md) §13.6): gate checks bind to depictio catalogue outputs where they exist; the runner computes the same tables at gate time; Spectio writes `spectio_checks` and `spectio_decisions`, joined on the item key in depictio; review views reuse depictio's renderers with a decision layer on top. Five requests added to [`depictio-ecosystem-reuse.md`](../specs/depictio-ecosystem-reuse.md) §3 (items 7–11).
+- **Boards.** RunLiveChecks, WorkflowWatches, ReviewDashboard, DepictioDecisions, on nf-core/rnaseq megatest data (canvas v52).

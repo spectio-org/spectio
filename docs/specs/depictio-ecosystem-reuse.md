@@ -150,3 +150,10 @@ Status: draft v0.1 · 2026-10-25 · author: Thomas Weber (with Claude)
 4. Add an OpenAPI-generated TypeScript client.
 5. Let `/auth/me` be called with a token issued for Spectio once trust is configured, or expose the JWKS public key for RS256 verification.
 6. Accept a `--provenance-file` in Workflow Run RO-Crate format, so Spectio can pass its crate directly.
+7. Add `checks_as` beside `renders_as` in catalogue output YAMLs: check presets such as `{kind: outlier, column: pct_mito, by: sample, k: 3}`, validated against `OUTPUT_SCHEMA` like `renders_as`. Spectio reads them as its presets ([`checking-scenarios.md`](checking-scenarios.md) §4).
+8. A runnable recipe entry point without a server, for example `depictio catalog run <module>/<output> <results dir> --out <parquet>`, so the runner computes the same tables at gate time ([`api-and-data-model.md`](api-and-data-model.md) §13.6).
+9. Selection and filter messages for embedded dashboards, next to `depictio:set-color-scheme`: for example `depictio:set-filter {column, values}` and `depictio:selection {key, values}` **[to be validated]** with depictio's maintainers.
+10. Per-file recipes for the tools labs watch during a run (STAR `Log.final.out`, Trim Galore and fastp reports, Salmon `meta_info.json`, mosdepth summaries), with the column names of the MultiQC route ([`checking-scenarios.md`](checking-scenarios.md) §11.6).
+11. One shared nf-core megatest fetcher instead of `scripts/nfcore_megatest.py` and Spectio's `tools/fixtures/megatests.py`, pinning the same release per pipeline.
+
+Details and file references for 7–11: [research note, 2026-10-26](../research/depictio-qc-integration-2026-10-26.md).

@@ -184,7 +184,7 @@ A separate, simpler layout below 768 px (depictio's phone model), not a squeezed
 ### 5.1 Stages, gates and `spectio.yml`
 Where stages come from, in order: (1) declared in `spectio.yml`, in the workflow repository or attached in Spectio as a **lab overlay** for a pipeline you do not own (nf-core/rnaseq declares none; the rnaseq stages in the mockups come from such an overlay); (2) detected from structure, display only, no gates: Nextflow top-level subworkflows from the fully qualified task name (`NFCORE_RNASEQ:RNASEQ:ALIGN_STAR:STAR_ALIGN`), Snakemake module prefixes and checkpoints; (3) none: the gauge shows task quarters; resume and restart still work, rerun-from-stage does not.
 
-`spectio.yml` keys: `workflow` (name, engine, version range), `stages` (id, name, `match` globs on process / rule names, optional `gate`), `gates` (title, `evidence` globs for the viewers, `checks` (metric, min/max, per item), `items` (what one item is: samplesheet rows, wells…), `editable` (intermediate files a reviewer may change, with how they are fed back: in place for Snakemake, through a named parameter for Nextflow), `decide` (auto_approve, humans, agents: propose | approve | none, timeout)), `reports`, `launch` (profiles, hidden params), and for Snakemake `ui` (labels, groups, file pickers for config keys).
+`spectio.yml` keys: `workflow` (name, engine, version range), `stages` (id, name, `match` globs on process / rule names, optional `gate`, `important`, `watch` for live per-file checks: [`checking-scenarios.md`](checking-scenarios.md) §11), `gates` (title, `evidence` globs for the viewers, `checks` (metric, min/max, per item), `items` (what one item is: samplesheet rows, wells…), `editable` (intermediate files a reviewer may change, with how they are fed back: in place for Snakemake, through a named parameter for Nextflow), `decide` (auto_approve, humans, agents: propose | approve | none, timeout)), `reports`, `launch` (profiles, hidden params), and for Snakemake `ui` (labels, groups, file pickers for config keys).
 
 How a gate stops the engine without forking: Nextflow — a generated config sets `ext.when = false` on the processes of later stages (nf-core modules honour `task.ext.when`), so the run ends after the gated stage; Continue relaunches with `-resume` and without the override. Snakemake — `--until` the last rules of the stage; Continue drops `--until`; rerun from a stage uses `--forcerun`.
 
@@ -272,6 +272,7 @@ The canvas covers the nf-core catalogue by class ([`checking-scenarios.md`](chec
 | No gate (most runs) | straight through, outputs, depictio; no stages declared | RunOutputs (ampliseq), RunFailed (Snakemake), LaunchGitNoSchema, LaunchReview |
 | Operations | failure and relaunch; CLI-observed run; lineage compare; batch; samplesheet from files; catalogue, import, discovered, versions; runner connect, software, single machine, quotas | RunFailed, RelaunchDialog, RunObserved, RunsCompare, LaunchBatch, LaunchSamplesheet, WorkflowsCatalog, WorkflowImport, WorkflowDiscovered, WorkflowVersions, EnvConnect, EnvSoftware, EnvLocal, EnvAccess |
 | Lists | a lab's mix, about 4 runs in 5 without a gate | ReviewQueue, RunsTable, RunsRows, Overview |
+| Live checks and depictio | important stages and per-file checks during a run, no gate; editing watches in a lab overlay; a gate with an embedded preliminary depictio dashboard; the depictio dashboard with Spectio decisions joined ([`checking-scenarios.md`](checking-scenarios.md) §11, [`api-and-data-model.md`](api-and-data-model.md) §13.6) | RunLiveChecks (rnaseq), WorkflowWatches (rnaseq), ReviewDashboard (rnaseq), DepictioDecisions (rnaseq) |
 
 ### 10.2 UI patterns to build once
 
@@ -296,5 +297,7 @@ These are the component types the boards share. Each is built once, in the share
 | Wizard with live state (heartbeat, checks with inline fix) | EnvConnect, WorkflowImport, Launch |
 | Quota and limit bars, permission matrix | EnvAccess, EnvSoftware, LaunchBatch |
 | Restricted-data banner and access log | ReviewTrio |
+| Live check grid: items × watched checks, cells filled as tasks finish (pass, warn, running), with a check feed | RunLiveChecks |
+| Embedded depictio frame with selection sync and a decision layer beside it | ReviewDashboard |
 
 Every pattern has the states of §3: empty, loading, error, permission (view only), plus `n/a` for a check that cannot be computed.

@@ -902,6 +902,42 @@
    "h": 1320,
    "title": "Scenarios × screens",
    "page": "ia"
+  },
+  "RunLiveChecks.dc.html": {
+   "x": 1520,
+   "y": 20700,
+   "w": 1440,
+   "h": 1180,
+   "title": "Run detail · important stages and live checks, no gate (nf-core/rnaseq, real megatest)",
+   "page": "screens",
+   "expand": "fill"
+  },
+  "WorkflowWatches.dc.html": {
+   "x": 3040,
+   "y": 20700,
+   "w": 1440,
+   "h": 1180,
+   "title": "Workflow · lab overlay: important stages and watched files (nf-core/rnaseq)",
+   "page": "screens",
+   "expand": "fill"
+  },
+  "ReviewDashboard.dc.html": {
+   "x": 4560,
+   "y": 20700,
+   "w": 1440,
+   "h": 1180,
+   "title": "Review · gate with the preliminary depictio dashboard, selection in sync (nf-core/rnaseq)",
+   "page": "screens",
+   "expand": "fill"
+  },
+  "DepictioDecisions.dc.html": {
+   "x": 6080,
+   "y": 20700,
+   "w": 1440,
+   "h": 1180,
+   "title": "depictio · dashboard with Spectio checks and decisions joined (nf-core/rnaseq)",
+   "page": "screens",
+   "expand": "fill"
   }
  },
  "order": [
@@ -991,7 +1027,11 @@
   "EnvLocal.dc.html",
   "EnvAccess.dc.html",
   "ViewerOmeZarr.dc.html",
-  "Coverage.dc.html"
+  "Coverage.dc.html",
+  "RunLiveChecks.dc.html",
+  "WorkflowWatches.dc.html",
+  "ReviewDashboard.dc.html",
+  "DepictioDecisions.dc.html"
  ],
  "notes": {
   "ia": {
@@ -1070,6 +1110,14 @@
    "x": 1520,
    "y": 18900,
    "text": "Environments — connect, software, single machine, quotas",
+   "kind": "title1",
+   "maxW": 6000,
+   "page": "screens"
+  },
+  "live": {
+   "x": 1520,
+   "y": 20400,
+   "text": "Live checks and depictio — watched stages during a run, one QC for both apps",
    "kind": "title1",
    "maxW": 6000,
    "page": "screens"

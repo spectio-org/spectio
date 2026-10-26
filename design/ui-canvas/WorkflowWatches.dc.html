@@ -1,0 +1,210 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio — workflow overlay, important stages and watched files</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chip{display:inline-flex;align-items:center;gap:5px;height:22px;padding:0 7px;border-radius:6px;font-size:11.5px;font-weight:600;white-space:nowrap}
+.btn{height:40px;padding:0 14px;border-radius:11px;border:none;font:600 13.5px 'Inter',sans-serif;display:inline-flex;align-items:center;gap:8px;cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn-p{background:#7750D4;color:#FFFFFF}
+.btn-s{background:#FFFFFF;color:#22253A;box-shadow:inset 0 0 0 1px #DFE1EA}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-ligatures:none}
+.ell{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lbl{font-size:11.5px;font-weight:600;letter-spacing:.05em;color:#6E7287}
+.card{border-radius:16px;box-shadow:0 0 0 1px rgba(15,16,32,0.11);background:#FFFFFF}
+.sw{width:36px;height:20px;border-radius:10px;position:relative;flex-shrink:0}
+.sw::after{content:'';position:absolute;top:2px;width:16px;height:16px;border-radius:8px;background:#FFFFFF;box-shadow:0 1px 2px rgba(15,16,32,.25)}
+.sw.on{background:#D9890B}.sw.on::after{right:2px}
+.sw.off{background:#C4C7D4}.sw.off::after{left:2px}
+.field{display:flex;align-items:center;gap:6px;height:34px;padding:0 10px;border-radius:9px;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF;font-size:12.5px;color:#0F1020;min-width:0}
+.seg{display:flex;padding:3px;border-radius:10px;background:#EEEFF5;gap:2px}
+.seg > span{height:28px;padding:0 10px;border-radius:8px;display:flex;align-items:center;font-size:12px;font-weight:500;color:#4D5065;white-space:nowrap}
+.seg > span[aria-checked="true"]{background:#FFFFFF;font-weight:600;color:#0F1020;box-shadow:0 1px 2px rgba(15,16,32,0.12)}
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="AppTopbar" crumbs="Workflows / nf-core/rnaseq / Lab overlay / Watches" project="demo-lab / Cell lines" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="AppSidebar" active="workflows" hint-size="276px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+  <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 14px;">
+
+    <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #FCE5EC; color: #A54666; display: flex; align-items: center; justify-content: center;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z M3 13l9 5 9-5"/></svg>
+      </span>
+      <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px; min-width: 0;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px; display: flex; align-items: center; gap: 10px;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="24" height="24" alt="nf-core" style="display: block;">nf-core/rnaseq · lab overlay</h1>
+        <span style="font-size: 14px; color: #4D5065;">rnaseq-demo-lab v3 (draft) · applies to 3.26–3.27</span>
+      </div>
+      <span class="chip" style="height: 28px; padding: 0 10px; background: #FDF2F5; color: #A54666;">Draft · 2 changes</span>
+      <a href="WorkflowOverlay.dc.html" class="btn btn-s">Discard</a>
+      <a href="RunLiveChecks.dc.html" class="btn btn-p" style="height: 44px; padding: 0 18px; border-radius: 12px; font-size: 14px;">Save overlay</a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 272px minmax(0, 1fr) 330px; gap: 14px; align-items: start;">
+
+      <section class="card" aria-label="Stages" style="padding: 12px 0 10px; display: flex; flex-direction: column; gap: 4px;">
+        <div style="padding: 0 14px 4px; display: flex; flex-direction: column; gap: 3px;">
+          <span style="font-size: 14.5px; font-weight: 600;">Stages</span>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.4;">Mark the stages you care about. Important changes what people see and get notified about, never how the run goes.</span>
+        </div>
+        <sc-for list="{{stages}}" as="s" hint-placeholder-count="4">
+          <div style="display: flex; flex-direction: column; gap: 4px; padding: 9px 14px; background: {{s.bg}}; box-shadow: inset 3px 0 0 {{s.edge}};">
+            <span style="display: flex; align-items: center; gap: 8px;">
+              <span style="width: 22px; height: 22px; flex-shrink: 0; border-radius: 7px; background: {{s.tile}}; color: {{s.tfg}}; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center;">{{s.n}}</span>
+              <span style="flex-grow: 1; font-size: 13.5px; font-weight: 600;">{{s.name}}</span>
+              <span class="sw {{s.sw}}" role="switch" aria-checked="{{s.imp}}" aria-label="Important: {{s.name}}"></span>
+            </span>
+            <span style="font-size: 11.5px; color: #6E7287; padding-left: 30px;">{{s.sub}}</span>
+          </div>
+        </sc-for>
+        <div style="margin: 6px 14px 0; border-top: 1px solid #EEEFF5; padding-top: 10px; display: flex; flex-direction: column; gap: 6px;">
+          <span class="lbl">AN IMPORTANT STAGE</span>
+          <ul style="margin: 0; padding-left: 16px; font-size: 12px; color: #33364A; line-height: 1.5;">
+            <li>comes first in the run gauge, the run summary and the phone card;</li>
+            <li>notifies the run's watchers when it starts, ends or fails, and on every failed check;</li>
+            <li>does not pause the run and needs no gate.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+        <div class="card" style="padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
+          <span style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+            <span style="font-size: 16px; font-weight: 600; flex-grow: 1;">Stage 2 · Align <span class="chip" style="background: #FEF3E2; color: #8F5806; margin-left: 4px;">★ Important</span></span>
+            <span style="font-size: 12px; color: #4D5065;">matches <span class="mono" style="font-size: 11px;">*:ALIGN_STAR:*</span> · 6 processes</span>
+          </span>
+
+          <div style="border-radius: 12px; box-shadow: inset 0 0 0 1px #DFE1EA; padding: 12px; display: flex; flex-direction: column; gap: 10px;">
+            <span style="display: flex; align-items: center; gap: 8px;"><span class="lbl" style="flex-grow: 1;">WATCH 1 · STAR LOG PER SAMPLE</span><a href="#" style="font-size: 12px; font-weight: 600; text-decoration: none; color: #B02A2A;">Remove</a></span>
+            <div style="display: grid; grid-template-columns: 90px minmax(0, 1fr); gap: 8px 12px; align-items: center; font-size: 12.5px;">
+              <span style="color: #4D5065;">Files</span>
+              <span class="field mono" style="font-size: 12px;">star_rsem/log/<span style="background: #EEEDFA; color: #4D368B; border-radius: 4px; padding: 0 3px;">{sample}</span>.Log.final.out</span>
+              <span style="color: #4D5065;">Read when</span>
+              <span class="seg" role="radiogroup" aria-label="Read when" style="justify-self: start;"><span role="radio" aria-checked="true">Task ends</span><span role="radio" aria-checked="false">File published</span><span role="radio" aria-checked="false">Stage ends</span></span>
+              <span style="color: #4D5065;">Size cap</span>
+              <span style="display: flex; align-items: center; gap: 10px;"><span class="field" style="width: 90px;">5 MB</span><span style="font-size: 12px; color: #6E7287;">last run: 1.9–2.1 KB per file</span></span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 0; border-radius: 10px; box-shadow: inset 0 0 0 1px #EEEFF5; overflow: hidden;">
+              <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) 92px 90px 92px 30px; gap: 8px; padding: 6px 10px; background: #F7F7FB; font-size: 11.5px; font-weight: 600; color: #33364A;"><span>Check</span><span>Rule</span><span>Threshold</span><span>Severity</span><span></span></div>
+              <sc-for list="{{checks}}" as="c" hint-placeholder-count="2">
+                <div style="display: grid; grid-template-columns: minmax(0, 1.4fr) 92px 90px 92px 30px; gap: 8px; padding: 7px 10px; align-items: center; border-top: 1px solid #EEEFF5; font-size: 12.5px;">
+                  <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-weight: 600;">{{c.name}}</span><span class="mono ell" style="font-size: 10.5px; color: #6E7287;">{{c.from}}</span></span>
+                  <span class="field" style="height: 30px;">{{c.rule}} ▾</span>
+                  <span class="field" style="height: 30px;">{{c.thr}}</span>
+                  <span class="field" style="height: 30px; color: {{c.sevFg}};">{{c.sev}} ▾</span>
+                  <span style="color: #6E7287; text-align: center;">⋯</span>
+                </div>
+              </sc-for>
+              <span style="padding: 7px 10px; border-top: 1px solid #EEEFF5; font-size: 12px; font-weight: 600; color: #6344B2;">+ Add a check · 23 STAR columns available</span>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 6px;">
+              <span style="font-size: 12.5px; color: #4D5065;">When a check fails</span>
+              <div role="radiogroup" aria-label="When a check fails" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px;">
+                <sc-for list="{{onfail}}" as="o" hint-placeholder-count="4">
+                  <span role="radio" aria-checked="{{o.on}}" style="border-radius: 10px; padding: 8px 10px; box-shadow: {{o.ring}}; background: {{o.bg}}; display: flex; flex-direction: column; gap: 3px;">
+                    <span style="font-size: 12.5px; font-weight: 600; color: #0F1020;">{{o.name}}</span>
+                    <span style="font-size: 11.5px; color: #4D5065; line-height: 1.35;">{{o.desc}}</span>
+                    <span style="font-size: 11px; color: {{o.noteFg}}; line-height: 1.35;">{{o.note}}</span>
+                  </span>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+
+          <span style="display: flex; gap: 8px;"><button type="button" class="btn btn-s" style="height: 34px;">+ Watch another file</button><span style="font-size: 12px; color: #6E7287; align-self: center;">Per-sample files only: a watch matching more than 2,000 files per run is refused.</span></span>
+        </div>
+
+        <div class="card" style="overflow: hidden;">
+          <div style="padding: 11px 16px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid #EEEFF5; flex-wrap: wrap;">
+            <span style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14.5px; font-weight: 600;">Try it on a past run</span><span style="font-size: 12px; color: #4D5065;">rnaseq-encode-lines #317 (3.27.0, succeeded) · the runner read 8 files, 16 KB</span></span>
+            <span class="chip" style="background: #E7F6EE; color: #14613C;">8 files matched</span>
+            <span class="chip" style="background: #FEF3E2; color: #7A4A05;">1 would be flagged</span>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0;">
+            <sc-for list="{{trial}}" as="t" hint-placeholder-count="8">
+              <span style="display: flex; flex-direction: column; gap: 2px; padding: 8px 14px; border-top: {{t.bt}}; border-left: {{t.bl}}; background: {{t.bg}};">
+                <span class="mono" style="font-size: 11.5px; font-weight: 600;">{{t.name}}</span>
+                <span style="font-size: 12px; color: #33364A; font-variant-numeric: tabular-nums;">unique {{t.u}} · multi <strong style="color: {{t.mFg}};">{{t.m}}</strong></span>
+              </span>
+            </sc-for>
+          </div>
+        </div>
+      </section>
+
+      <aside style="display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+        <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+          <span style="display: flex; align-items: baseline; justify-content: space-between;"><span style="font-size: 14.5px; font-weight: 600;">Overlay file</span><span style="font-size: 11.5px; color: #6E7287;">same keys as spectio.yml</span></span>
+          <pre class="mono" style="margin: 0; font-size: 11px; line-height: 1.55; color: #22253A; background: #F7F7FB; border-radius: 10px; padding: 10px; overflow: auto; white-space: pre;"><span style="color: #6E7287;"># rnaseq-demo-lab v3 (draft)</span>
+stages:
+  - id: align
+    match: ["*:ALIGN_STAR:*"]
+<span style="background: #FEF3E2;">    important: true</span>
+<span style="background: #EEF8F1;">    watch:
+      - id: star_log
+        files: "star_rsem/log/{sample}.Log.final.out"
+        when: task_done
+        max_size: 5MB
+        checks:
+          - id: unique
+            from: "multiqc:star.uniquely_mapped_percent"
+            min: 70
+            severity: warn
+          - id: multi
+            from: "multiqc:star.multimapped_percent"
+            max: 8
+            severity: warn
+        on_fail: flag</span>
+  - id: quantify
+    match: ["*:QUANTIFY_*:*"]
+    watch: [ … ]</pre>
+        </section>
+        <section class="card" style="padding: 12px 14px; display: flex; flex-direction: column; gap: 7px;">
+          <span style="font-size: 14.5px; font-weight: 600;">Who reads the file</span>
+          <span style="font-size: 12px; color: #33364A; line-height: 1.5;">The <strong>runner</strong> of the run's environment, on the cluster, as the run's owner. The engine only says which file was written. The value is parsed by MultiQC's STAR module, so it matches the final report.</span>
+          <span style="font-size: 11.5px; color: #4D5065; background: #F7F7FB; border-radius: 8px; padding: 6px 9px; line-height: 1.4;">Runs started from a terminal get these checks too, if a runner can read their directory.</span>
+        </section>
+      </aside>
+    </div>
+  </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const S = [
+    [1, 'Prepare & trim', false, '1 watch · Trim Galore report', '#EEEDFA', '#4D368B'],
+    [2, 'Align', true, '1 watch, 2 checks · selected', '#FEF3E2', '#8F5806'],
+    [3, 'Quantify', false, '1 watch · Salmon meta_info.json', '#FDEEF3', '#A23A5E'],
+    [4, 'BAM QC & report', false, '1 watch at stage end · MultiQC', '#F1F2F6', '#4D5065']
+  ];
+  const trial = [['GM12878_REP1', '87.46 %', '5.98 %'], ['GM12878_REP2', '85.60 %', '5.68 %'], ['H1_REP1', '88.51 %', '8.09 %'], ['H1_REP2', '86.27 %', '7.07 %'], ['K562_REP1', '84.47 %', '5.72 %'], ['K562_REP2', '85.31 %', '5.92 %'], ['MCF7_REP1', '88.21 %', '6.23 %'], ['MCF7_REP2', '87.05 %', '6.05 %']];
+  const OF = [
+    ['notify', 'Notify', 'Tell the watchers; the sample turns red in the run.', 'Always available', false],
+    ['flag', 'Flag', 'Notify, and carry a flag into later gates, the RO-Crate and depictio.', 'Always available', true],
+    ['open_gate', 'Open a gate', 'Ask for a decision at the end of the stage, failed samples preselected.', 'Later stages skip their new tasks until decided', false],
+    ['pause', 'Pause after stage', 'Stop cleanly at the end of the stage and wait.', 'Later stages skip their new tasks until resumed', false]
+  ];
+  return {
+    stages: S.map(([n, name, imp, sub, tile, tfg]) => { const sel = n === 2; return { n, name, imp: String(imp), sw: imp ? 'on' : 'off', sub, tile, tfg, bg: sel ? '#FFFBF4' : 'transparent', edge: sel ? '#D9890B' : 'transparent' }; }),
+    checks: [
+      { name: 'Uniquely mapped', from: 'multiqc:star.uniquely_mapped_percent', rule: 'min', thr: '70 %', sev: 'warn', sevFg: '#7A4A05' },
+      { name: 'Multi-mapped', from: 'multiqc:star.multimapped_percent', rule: 'max', thr: '8 %', sev: 'warn', sevFg: '#7A4A05' }
+    ],
+    onfail: OF.map(([id, name, desc, note, on]) => ({ name, desc, note, on: String(on), ring: on ? 'inset 0 0 0 2px #7750D4' : 'inset 0 0 0 1px #DFE1EA', bg: on ? '#F8F5FF' : '#FFFFFF', noteFg: id.startsWith('o') || id === 'pause' ? '#8F5806' : '#6E7287' })),
+    trial: trial.map(([name, u, m], i) => { const bad = parseFloat(m) > 8; return { name, u, m, mFg: bad ? '#7A4A05' : '#22253A', bg: bad ? '#FFFBF4' : 'transparent', bt: i < 4 ? 'none' : '1px solid #EEEFF5', bl: i % 4 === 0 ? 'none' : '1px solid #EEEFF5' }; })
+  };
+}
+}
+</script>
+</body>
+</html>

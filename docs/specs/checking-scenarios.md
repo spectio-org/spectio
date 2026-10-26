@@ -31,6 +31,7 @@ Companion docs: [`ui-spec.md`](ui-spec.md) §4.5 (Review), [`synthesis.md`](synt
   - report reader.
 
   All 98 pipelines that have something to review (the other 8 are utilities) fit at least one view. 88 of them get per-sample checks with no extra code, from MultiQC.
+- **Stages can be marked important and watched file by file during the run** (§11), without a gate.
 - **The main limit is not the UI but the engines.** Redoing *some* items with *different* parameters needs the pipeline to read that parameter per item; otherwise a parameter change applies to all items. §6.3 gives the options.
 
 ## 1. Inventory: what a reviewer decides on
@@ -235,3 +236,114 @@ On 25/10/2026, `https://nf-co.re/pipelines.json` listed 159 repositories, of whi
 - the item class of each pipeline was assigned by hand from its description, samplesheet and outputs.
 
 The classification is in the working files (`classes.json`, `analysis.json`) and can be regenerated.
+
+## 11. Watched stages and live checks
+
+Gates (§7) are evaluated once, at the end of a stage. This section adds checks that run **while the run is going**, file by file, and a way to mark the stages a lab cares about. Neither needs a gate, and neither stops the run unless asked.
+
+### 11.1 How files reach a check
+
+Three parts, each with one job:
+
+1. **Engines send events, never files.** The events say *which* file has just been written. Spectio never scans the disk to find out.
+
+   | Engine | Event | What it carries | Source |
+   |---|---|---|---|
+   | Nextflow, plugin `nf-spectio` | `onFilePublish(FilePublishEvent)` | `source` (work dir) and `target` (published) paths, `labels`; one event per file, for `publishDir` and workflow outputs | nextflow `dfa5c1c` (2026-10-22), `TraceObserverV2.groovy:140`, `trace/event/FilePublishEvent.groovy:32-48` |
+   | Nextflow, plugin `nf-spectio` | `onTaskComplete(TaskEvent)` | the task handler and trace record (work dir, exit status) | `TraceObserverV2.groovy:99`, `trace/event/TaskEvent.groovy:31-40`; reading the declared outputs through the handler is **[to be validated]** |
+   | Nextflow, plugin `nf-spectio` | `onWorkflowOutput(WorkflowOutputEvent)` | output name, value, index file; emitted when the output is complete, so too late for live checks | `TraceObserverV2.groovy:132`, `trace/event/WorkflowOutputEvent.groovy:32-59` |
+   | Nextflow, Tower protocol only | task records in `/trace/progress` | process, tag, `workdir`, status; **no file names** | [`synthesis.md`](synthesis.md) §2bis |
+   | Snakemake, `--logger spectio` | `JOB_INFO` | `jobid`, `rule_name`, `input`, `output`, `log`, `wildcards`; emitted when the job is scheduled | snakemake `1c67a66` (2026-10-19), `src/snakemake/jobs.py:1028-1045` |
+   | Snakemake, `--logger spectio` | `JOB_FINISHED` | `job_id` only; Spectio joins it to the `JOB_INFO` of the same job. Not emitted under `--quiet progress` or in a dry run | `src/snakemake/scheduling/job_scheduler.py:90-92, 474-484` |
+
+   Without the Nextflow plugin, Spectio only knows the task's work directory. The runner then lists that directory to match the watched globs: one listing per finished task of a watched stage.
+
+2. **The runner is the only component that reads files.** It runs on the cluster under the user's account ([`synthesis.md`](synthesis.md) §7quater). The server never mounts storage. For a watched file the runner:
+   - checks the size cap (default 50 MB per file, set per watch);
+   - reads the file, or only the byte range it needs;
+   - runs the check's source binding (§7);
+   - sends back the values only, over its outbound connection, as a `check.evaluated` event.
+
+   Files on object storage (Snakemake storage plugins, Nextflow on cloud executors) are read through the same storage credentials the run uses **[to be validated]** per provider.
+
+3. **`spectio.yml`, or a lab overlay, says what to read.** A pipeline author writes it next to the pipeline. A lab that does not own the pipeline (most nf-core users) writes an overlay in Spectio (`WorkflowOverlay` board), merged over the author's file. An overlay can add watches, never remove an author's `block` check.
+
+```mermaid
+sequenceDiagram
+  participant E as Engine (Nextflow / Snakemake)
+  participant S as Spectio server
+  participant R as Runner (cluster, user account)
+  E->>S: file published / job finished (paths only)
+  S->>S: match against watched globs of the stage
+  S->>R: evaluate check(s) on path
+  R->>R: size cap, read file, source binding
+  R->>S: check.evaluated (item, values, state)
+  S-->>S: run detail, notifications, on_fail
+```
+
+### 11.2 Declaring it
+
+```yaml
+stages:
+  - id: align
+    match: ["*:ALIGN_STAR:*"]              # processes or rules of the stage
+    important: true
+    watch:
+      - id: star_log
+        files: "star_salmon/log/{sample}.Log.final.out"   # {key} binds the item, as in §7
+        when: task_done                    # task_done | published | stage_done
+        checks:
+          - { id: unique, from: "multiqc:star.uniquely_mapped_percent", min: 70, severity: warn }
+          - { id: multi,  from: "multiqc:star.multimapped_percent", max: 8, severity: warn }
+        on_fail: flag                      # notify | flag | open_gate | pause_after_stage
+        max_size: 5MB
+    gate: false                            # a gate stays optional (§7)
+```
+
+| Key | Meaning |
+|---|---|
+| `important` | The stage is shown first in the run gauge, the run summary and the phone run card. Its start, end, failures and failed live checks are notified to the run's watchers. It changes no behaviour of the run. |
+| `watch[].files` | A glob relative to the results directory (published files) or to the task work directory. `{key}` captures the item key so results land on the right sample. |
+| `watch[].when` | `task_done`: as soon as the task that writes the file finishes. `published`: on the publish event (Nextflow plugin) or job end (Snakemake). `stage_done`: once, at the end of the stage, for aggregate files such as MultiQC. |
+| `watch[].checks` | The check vocabulary of §4 and the source bindings of §7. On a watched file, `multiqc:<module>.<column>` means "run that MultiQC module on this one file", so the live value has the same name and the same parser as the final report **[to be validated]**: start-up time per call, and that `multiqc -m <module> <file>` parses a single file. A `depictio:<module>/<output>#<column>` binding is possible once depictio has per-file recipes (§11.6). |
+| `watch[].on_fail` | What to do when a `warn` or `block` check fails. See §11.3. |
+| `watch[].max_size` | Files above it are not read; the check shows "too large" instead of a value. |
+
+Checks that compare items with each other (`outlier`, `relative` to the batch) need the whole batch, so they are evaluated per file **as a provisional value** and confirmed at `stage_done`. The run detail labels them "provisional" until then.
+
+### 11.3 What a failed live check does
+
+| `on_fail` | Effect | Needs |
+|---|---|---|
+| `notify` (default) | A notification to the run's watchers, the item marked red in the run detail. | nothing |
+| `flag` | As `notify`, and the item carries a flag into any later gate, the RO-Crate and the depictio hand-off (`spectio_checks`). | nothing |
+| `open_gate` | A gate is opened at the end of the stage, even if the stage declares none, with the failed items preselected. | a stage boundary (below) |
+| `pause_after_stage` | The run stops cleanly at the end of the stage and waits for a decision. | a stage boundary |
+
+A **stage boundary** is a planned stop, fixed at launch: Snakemake `--until`, or for Nextflow a generated config that sets `ext.when = false` on the processes of later stages ([`ui-spec.md`](ui-spec.md) §5.1, [`synthesis.md`](synthesis.md) §5ter). A live check decides *during* the run, so the boundary must be conditional:
+- **Nextflow**: the generated config sets `ext.when` on later stages to a closure that tests a stop file the runner writes (`{ !file("<launch dir>/.spectio/stop-after-align").exists() }`). Tasks created after the file appears are skipped; tasks already running finish. That nf-core modules evaluate such a closure per task, at task creation, is **[to be validated]** on `nf-toy` ([`dev-environment-and-testing.md`](dev-environment-and-testing.md)).
+- **Snakemake**: no conditional `--until` exists **[to be validated]**, so Spectio stops the run (SIGINT) once the last job of the stage has finished; running jobs of later stages are lost and rerun on resume.
+
+Spectio says which of the two applies in the overlay editor before the watch is saved.
+
+Live checks never kill a running task and never stop the run in the middle of a stage.
+
+### 11.4 Results, and how the gate reuses them
+
+- Each evaluation is stored as a check result: run, stage, item, check, value, state (`ok`, `warn`, `fail`, `provisional`, `too_large`, `error`), file path and hash, time. Table `check_results` and event `spectio.check.failed` in [`api-and-data-model.md`](api-and-data-model.md) §7–8.
+- A gate at the end of the same stage reuses a result when the file hash has not changed, so the numbers seen during the run and at the gate are the same.
+- The run detail shows a **Live checks** panel: one row per item, one column per watched check, filled as tasks finish. Boards: `RunLiveChecks` (the panel, nf-core/rnaseq megatest replayed at minute 56) and `WorkflowWatches` (editing `important` and `watch` in a lab overlay).
+
+### 11.5 Limits
+
+- **Cost.** One file read per watched file. A watch on 10,000 per-cell files is refused at save time; watch the per-sample summary instead.
+- **Order.** Nextflow runs stages as dataflow, so `align` may still run for one sample while a later stage has started for another. "End of stage" means all tasks matching the stage's `match` globs have finished, which is only known once the upstream channel is closed **[to be validated]**.
+- **Observed runs** (started from a terminal, [`ui-spec.md`](ui-spec.md) §6) get live checks only if a runner is registered for the environment that can read the run's directories.
+- **Snakemake `temp()` files** may be deleted before the runner reads them; watch a kept output instead.
+
+### 11.6 depictio catalogue and live checks
+
+The depictio catalogue reads STAR and Salmon alignment QC through the run's `multiqc.parquet` (depictio `0d1aa0a`: `depictio/catalog/multiqc/star.yaml` and `multiqc/salmon.yaml`, `find.path_glob: "**/multiqc/multiqc_data/multiqc.parquet"`). MultiQC runs once, at the end of nf-core/rnaseq (in the 3.27.0 megatest, at minute 2,038 of 2,040; `tests/fixtures/megatests/rnaseq/`). Live checks therefore cannot use those catalogue outputs. Two ways out:
+- run the MultiQC module on the single file (§11.2), which needs nothing from depictio;
+- ask depictio for **per-file recipes** for the tools people watch (STAR `Log.final.out`, Trim Galore and fastp reports, Salmon `meta_info.json`, mosdepth summaries), with the same column names as the MultiQC route. This joins the requests in the [research note](../research/depictio-qc-integration-2026-10-26.md) §3.
+
