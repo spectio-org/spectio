@@ -26,7 +26,11 @@ DIRS=(docs/assets/shots docs/assets/media)
 THRESHOLD="${SPECTIO_SCREENSHOT_CHURN_THRESHOLD:-3}"
 
 if [ $# -ge 1 ]; then
-    changed=$(git diff --name-only --diff-filter=M "$1"...HEAD -- "${DIRS[@]}")
+    if git merge-base "$1" HEAD >/dev/null 2>&1; then
+        changed=$(git diff --name-only --diff-filter=M "$1"...HEAD -- "${DIRS[@]}")
+    else  # shallow or unrelated histories: compare the trees directly
+        changed=$(git diff --name-only --diff-filter=M "$1" HEAD -- "${DIRS[@]}")
+    fi
 else
     changed=$(git diff --cached --name-only --diff-filter=M -- "${DIRS[@]}")
 fi
