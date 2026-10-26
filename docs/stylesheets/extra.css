@@ -124,17 +124,26 @@
 .md-typeset .sp-h2 { text-align: center; font-size: 1.5rem; font-weight: 600; margin: 3.4rem 0 1.4rem; }
 .md-typeset .sp-h2 .headerlink { display: none; }
 
-.sp-logos { display: grid; grid-template-columns: repeat(auto-fit, minmax(7.2rem, 1fr)); gap: .8rem; max-width: 60rem; margin: 0 auto; }
-.md-typeset a.sp-logo { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: .55rem; padding: 1rem .6rem; min-height: 7rem; text-align: center; border: 1px solid var(--sp-line); border-radius: .6rem; background: var(--sp-surface); color: var(--sp-text); font-size: .72rem; font-weight: 600; line-height: 1.3; box-shadow: 0 1px 2px rgba(15, 16, 32, .05); transition: transform .15s, border-color .15s; }
-.md-typeset a.sp-logo:hover { transform: translateY(-2px); border-color: var(--sp-violet-500); }
-.md-typeset .sp-logo img { width: 2.6rem; height: 2.6rem; object-fit: contain; }
-.md-typeset .sp-logo__icon .twemoji, .md-typeset .sp-logo__icon svg { width: 2.4rem; height: 2.4rem; }
-.md-typeset .sp-logo__icon { color: var(--sp-ink-500); line-height: 0; }
 .md-typeset .sp-k8s { color: #326CE5; }
+/* "Works with": one card per role (engines, catalogs, compute, results), never mixed */
+.sp-works { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; max-width: 62rem; margin: 0 auto; }
+@media (max-width: 60em) { .sp-works { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 30em) { .sp-works { grid-template-columns: 1fr; } }
+.md-typeset .sp-works__group { display: flex; flex-direction: column; gap: .45rem; padding: .9rem .9rem .8rem; border: 1px solid var(--sp-line); border-radius: .6rem; background: var(--sp-surface); }
+.md-typeset .sp-works__label { margin: 0 0 .2rem; font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--sp-text-3); }
+.md-typeset a.sp-work { display: flex; align-items: center; gap: .6rem; padding: .35rem .4rem; border-radius: .4rem; color: var(--sp-text); font-size: .74rem; font-weight: 600; line-height: 1.25; }
+.md-typeset a.sp-work:hover { background: var(--sp-line); }
+.md-typeset .sp-work img { width: 1.6rem; height: 1.6rem; object-fit: contain; flex-shrink: 0; }
+.md-typeset .sp-work__icon { line-height: 0; color: var(--sp-ink-500); flex-shrink: 0; }
+.md-typeset .sp-work__icon.sp-k8s { color: #326CE5; }
+.md-typeset .sp-work__icon .twemoji, .md-typeset .sp-work__icon svg { width: 1.6rem; height: 1.6rem; }
+.md-typeset .sp-works__later { margin: auto 0 0; padding-top: .2rem; font-size: .64rem; color: var(--sp-text-3); }
+.sp-works__group > p:not([class]) { display: contents; }
 .md-typeset .sp-fine { text-align: center; font-size: .62rem; color: var(--sp-text-3); margin-top: .6rem; }
 
 .sp-steps { display: grid; gap: 2.6rem; max-width: 62rem; margin: 0 auto; }
 .sp-step { display: grid; grid-template-columns: minmax(0, .8fr) minmax(0, 1.2fr); gap: 2rem; align-items: center; }
+.sp-step--flip { grid-template-columns: minmax(0, 1.2fr) minmax(0, .8fr); }
 .sp-step--flip .sp-step__text { order: 2; }
 .md-typeset .sp-step img { width: 100%; border-radius: .6rem; border: 1px solid var(--sp-line); box-shadow: 0 10px 28px rgba(15, 16, 32, .10); }
 .md-typeset .sp-step h3 { margin: .4rem 0 .4rem; font-size: 1.2rem; }
@@ -180,5 +189,6 @@
 .sp-optional { display: flex; gap: 1rem; align-items: flex-start; max-width: 52rem; margin: 2.6rem auto 0; padding: 1rem 1.2rem; border: 1px dashed var(--sp-line); border-radius: .6rem; background: var(--sp-surface-subtle); font-size: .82rem; line-height: 1.6; }
 .sp-optional .sp-ic { flex: none; margin: 0; }
 
-.sp-logos > p, .sp-cards2 > p { display: contents; }
-.md-typeset .sp-step img { max-height: 26rem; object-fit: cover; object-position: top left; }
+.sp-cards2 > p { display: contents; }
+/* every step screenshot has the same frame, whatever side it sits on */
+.md-typeset .sp-step img { aspect-ratio: 4 / 3; height: auto; object-fit: cover; object-position: top left; }

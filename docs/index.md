@@ -20,14 +20,30 @@ hide: [navigation, toc]
 
 ## Works with { .sp-h2 }
 
-<div class="sp-logos" markdown>
-<a class="sp-logo" href="https://www.nextflow.io/" markdown><img src="assets/logos/logo-nextflow.png" alt=""><span>Nextflow</span></a>
-<a class="sp-logo" href="https://snakemake.github.io/" markdown><img src="assets/logos/logo-snakemake.png" alt=""><span>Snakemake</span></a>
-<a class="sp-logo" href="https://nf-co.re/" markdown><img src="assets/logos/logo-nf-core.png" alt=""><span>nf-core pipelines</span></a>
-<a class="sp-logo" href="https://snakemake.github.io/snakemake-workflow-catalog/" markdown><img src="assets/logos/logo-snakemake.png" alt=""><span>Snakemake Workflow Catalog</span></a>
-<a class="sp-logo" href="https://slurm.schedmd.com/" markdown><span class="sp-logo__icon">:material-server-network:</span><span>SLURM and other HPC schedulers</span></a>
-<a class="sp-logo" href="https://kubernetes.io/" markdown><span class="sp-logo__icon sp-k8s">:simple-kubernetes:</span><span>Kubernetes</span></a>
-<a class="sp-logo" href="https://github.com/depictio/depictio" markdown><img src="assets/logos/logo-depictio.png" alt=""><span>depictio dashboards</span></a>
+<div class="sp-works" markdown>
+<div class="sp-works__group" markdown>
+<p class="sp-works__label">Workflow engines</p>
+<a class="sp-work" href="https://www.nextflow.io/"><img src="assets/logos/logo-nextflow.png" alt=""><span>Nextflow</span></a>
+<a class="sp-work" href="https://snakemake.github.io/"><img src="assets/logos/logo-snakemake.png" alt=""><span>Snakemake</span></a>
+<p class="sp-works__later">CWL and WDL later</p>
+</div>
+<div class="sp-works__group" markdown>
+<p class="sp-works__label">Pipeline catalogs</p>
+<a class="sp-work" href="https://nf-co.re/"><img src="assets/logos/logo-nf-core.png" alt=""><span>nf-core</span></a>
+<a class="sp-work" href="https://snakemake.github.io/snakemake-workflow-catalog/"><img src="assets/logos/logo-snakemake.png" alt=""><span>Snakemake Workflow Catalog</span></a>
+<p class="sp-works__later">or your own Git repository</p>
+</div>
+<div class="sp-works__group" markdown>
+<p class="sp-works__label">Where runs execute</p>
+<a class="sp-work" href="https://slurm.schedmd.com/" markdown><span class="sp-work__icon">:material-server-network:</span><span>SLURM (HPC)</span></a>
+<a class="sp-work" href="https://kubernetes.io/" markdown><span class="sp-work__icon sp-k8s">:simple-kubernetes:</span><span>Kubernetes</span></a>
+<p class="sp-works__later">or a single machine</p>
+</div>
+<div class="sp-works__group" markdown>
+<p class="sp-works__label">Where results go</p>
+<a class="sp-work" href="https://github.com/depictio/depictio"><img src="assets/logos/logo-depictio.png" alt=""><span>depictio dashboards</span></a>
+<p class="sp-works__later">optional</p>
+</div>
 </div>
 <p class="sp-fine">Logos are trademarks of their owners and show compatibility only.</p>
 
