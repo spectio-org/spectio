@@ -2,7 +2,7 @@
 
 **Step page:** [R2](../progress/W1/R2.md)
 
-**Round:** R2 · Fact verification · **Date:** 2026-10-26 · **Found by:** fact-checker (three runs) · **Status of the round:** waiting for triage (TRIAGE1)
+**Round:** R2 · Fact verification · **Date:** 2026-10-26 · **Found by:** fact-checker (three runs) · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 33 accepted, 0 rejected, 4 inbox (2 assumed)
 
 **Scope.** Eight specs, checked in three parallel `/verify-claims` runs:
 - **Run 1:** [schedulers-and-monitoring.md](../specs/schedulers-and-monitoring.md) and [synthesis.md](../specs/synthesis.md).
@@ -165,7 +165,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - **checking §11.3 Snakemake bullet:** "**Snakemake**: there is no conditional `--until` (`cli.py:893-915`). Once the last job of the stage has finished, the runner sends **SIGTERM** to the Snakemake process. Snakemake then schedules no new jobs and exits after the running ones finish (`job_scheduler.py:171, 241-245, 574-577`; Snakemake `1c67a66`). Jobs of later stages that were already running complete and are reused on resume."
   - **Tests:** add one sind test per engine (spike T3): the head job is drained by signal, then cancelled after the grace period.
 - **Found by:** fact-checker (run 1, run 3)
-- **Status:** open
+- **Status:** inbox, assumed: apply FC-001 as proposed (SIGTERM drain for Snakemake, `scancel --signal=TERM --full` then `scancel` after a grace period), written for the CLI head job of SR-008 — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### FC-002 · major · The generated `ext.when` overrides a pipeline's own `ext.when` (nf-core/rnaseq 3.27.0 already sets one)
 
@@ -185,7 +185,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - Replace the last sentence of the bullet with: "Nextflow evaluates `when` once per task, before submission (`TaskProcessor.groovy:692-694`, nextflow `114f1fe`). Because pipelines set `ext.when` themselves (nf-core/rnaseq 3.27.0 `conf/modules/markduplicates.config:30`), the generated config must wrap the resolved original value (`{ (<original>) && !file(…).exists() }`), never replace it. That this works at runtime under the v2 config parser is **[to be validated]** on `nf-toy` and on rnaseq MARKDUPLICATES."
   - Say where the runner reads the original value from: `nextflow config -flat` on the launch config.
 - **Found by:** fact-checker (run 3)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — complementary to SR-011 (R1); apply both
 
 ### FC-003 · major · `depictio-cli ingest --user` needs depictio's instance provisioning key, not a short-lived credential
 
@@ -204,7 +204,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - In [depictio-ecosystem-reuse.md](../specs/depictio-ecosystem-reuse.md) §3, add a request for run-scoped, short-lived depictio tokens, as [depictio-auth-2026-10-26.md](../research/depictio-auth-2026-10-26.md) §5 already suggests.
   - The hand-off is post-0.1 ([decision log](../decisions/log.md), 2026-10-26, "MVP scope"), so triage may lower the urgency.
 - **Found by:** fact-checker (run 3)
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### FC-004 · major · `uv tool install` does not guarantee a uv-managed Python, so the SQLite floor is not guaranteed either
 
@@ -221,7 +221,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - The version check itself is FC-010.
   - The SQLite pin in D §1 l.43 is true for current builds and needs no change.
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-005 · major · Snakemake's Kubernetes executor requires remote storage; the RWX option does not apply to it
 
@@ -242,7 +242,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - Replace l.373 with: "Snakemake's Kubernetes executor assumes no shared file system (`implies_no_shared_fs=True`, snakemake-executor-plugin-kubernetes `d5f720e`): every run needs `--default-storage-provider` and `--default-storage-prefix` (e.g. `s3` and a bucket prefix), which the runner sub-chart provides. An RWX volume serves Nextflow only."
   - Add an S3-backed Snakemake scenario (SeaweedFS in kind) to the `k8s-mini` profile in dev-environment-and-testing.md §4.2.
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-006 · major · `squeue --name` does not take wildcards, so runner-restart reconciliation finds no head jobs
 
@@ -257,7 +257,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - The prefix is `spectio-head-` rather than `spectio-` because of FC-007.
   - Add one sind conformance test that restarts a runner while a head job runs (spike T3).
 - **Found by:** fact-checker (run 1)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — same fix as SR-037 (R1), citing R2's sources
 
 ### FC-007 · major · The Snakemake job-name lookup cannot work as written, and it collides with the head-job names
 
@@ -280,7 +280,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - Replace the §3.4 Snakemake key cell with: "job name = `<prefix>_<run UUID>`. Spectio sets `--slurm-jobname-prefix spectio-<run_id>` (plugin ≥ 2.2.0) and reads the full name from the `SLURM run ID: …` line the logger receives, then queries `sacct --name <full name>` / `squeue --name <full name>` (exact match). The comment `rule_<rule>_wildcards_<…>` maps a job to the rule."
   - In §3.1, name head jobs `spectio-head-<run_id>` (43 characters with a `run_` ULID) and filter on `spectio-head-`, so task jobs never match.
 - **Found by:** fact-checker (run 1)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — same fix as SR-037 (R1), citing R2's sources
 
 ### FC-008 · major · A pre-install migrate hook runs before the chart's ConfigMap and Secrets exist
 
@@ -298,7 +298,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - Replace l.365 with: "migrate Job as a Helm pre-install / pre-upgrade hook. The ConfigMap and Secret it reads are rendered as hooks with a lower `helm.sh/hook-weight` (or the Job reads only an existing Secret named in values), because pre-install hooks run before the chart's other resources are created."
   - Add a first-install case to the chart CI that DEP-T-010 asks for.
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-009 · major · `snakemake-executor-plugin-kueue` is an unmaintained 0.1.0 prototype
 
@@ -316,7 +316,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - Replace the row with: "Snakemake | 9.x + `snakemake-executor-plugin-slurm`, `-kubernetes`, plus `snakemake-logger-plugin-spectio` (ours); `-kueue` (0.1.0, unmaintained since 2024-03) only if spike D2 shows it runs on Snakemake 9 **[to be validated]**".
   - Until then, mark "snakemake × k8s-kueue" in §5 as pending a spike.
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### Minors
 
@@ -338,7 +338,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - State the rule once, in the owning spec, and link to it from the others. The owner is api-and-data-model.md §7 (storage), unless triage picks synthesis §7.
   - The rule: "SQLite with the WAL-reset fix: ≥ 3.51.3, or ≥ 3.50.7 / ≥ 3.44.6 in those series (https://www.sqlite.org/wal.html §11), checked on `sqlite3.sqlite_version` at start."
 - **Found by:** fact-checker (run 1, run 2, run 3)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-011 · minor · Counts and versions that do not match their sources
 
@@ -355,7 +355,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - **checking §0:** append "(counts from hand classification; data in `docs/research/data/`)".
   - **admin header:** "depictio `main` at `0d1aa0a` (2026-10-23), one commit after tag v1.19.2 (`e40ca79`)". The citation policy is DEP-T-031; this finding only corrects the text.
 - **Found by:** fact-checker (run 3)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-012 · minor · Version floors are missing for five external features
 
@@ -375,7 +375,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - **synthesis §2ter:** "(`--persistence-backend db`, Snakemake ≥ 9.17)".
   - Have the runner's capability probe record these versions.
 - **Found by:** fact-checker (run 1)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-013 · minor · Python and Node version facts went stale this month
 
@@ -394,7 +394,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - **A §4:** "(Python 3.11–3.15 × supported SDK majors)".
   - **D §1:** "Node.js | 24 LTS (maintenance until 2028-04-30); move to 26 once it is Active LTS (2026-10-28)".
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-014 · minor · The `keyring:` token source breaks the "pure-Python base install" claim
 
@@ -409,7 +409,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - HPC login nodes usually have no D-Bus Secret Service, so the keyring backend fails there anyway **[to be validated on EMBL login nodes]**.
 - **Proposal:** "The base install depends on httpx, pydantic, typer and rich. The OS keyring is an optional extra (`spectio[keyring]`), because `keyring` on Linux pulls `SecretStorage` and `cryptography` and needs a D-Bus Secret Service; without it, tokens come from `file:` or `env:`."
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — apply together with SR-027 (R1) allow-list, with FC-014's dependency evidence
 
 ### FC-015 · minor · The Snakemake SLURM plugin's default status command is not driven by `MinJobAge`
 
@@ -420,7 +420,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** the spec suggests that squeue is the usual default. Spectio's load model then assumes the wrong command on most clusters.
 - **Proposal:** "`--slurm-status-command`, `sacct` or `squeue` (default `sacct` whenever it is installed, else `squeue`; the plugin only warns when `MinJobAge` is below 3× the first-check interval)".
 - **Found by:** fact-checker (run 1)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-016 · minor · Slurm JSON field names: `state_reason`, and usage is per step
 
@@ -437,7 +437,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - **§2 L3:** "`sacct --json -j <ids>` (job: `state.current`, `state.reason`, `exit_code`, `time.elapsed`, `time.total`, `tres.requested` / `tres.allocated`; per step: `tres.requested.max` for max RSS, `statistics.energy.consumed` when energy accounting is on)".
   - **§5:** use the same names.
 - **Found by:** fact-checker (run 1)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-017 · minor · `AssocGrpCPULimit` is not a Slurm reason; the string is `AssocGrpCpuLimit`
 
@@ -448,7 +448,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** an exact-match mapping table would never match this reason.
 - **Proposal:** "`QOSMaxJobsPerUserLimit`, `AssocGrpCpuLimit`, `AssocGrpMemLimit`, … (exact strings from `job_state_reason.c`; match them case-sensitively and fall back to the raw reason)".
 - **Found by:** fact-checker (run 1)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-018 · minor · Kubernetes failure reasons for Nextflow tasks are in `state`, not `lastState`, and the Job reason is always `BackoffLimitExceeded`
 
@@ -465,7 +465,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - Every failed Job reports `BackoffLimitExceeded`, so the timeout class would never come from the Job.
 - **Proposal:** "container `state.terminated.reason` (`OOMKilled`, `Error`) and exit code; pod `status.reason` `DeadlineExceeded` for Nextflow time limits (set as pod `activeDeadlineSeconds`); the Job's `Failed` condition (`BackoffLimitExceeded`, since Nextflow sets `backoffLimit: 0`) only says that the task failed". Spike T4 captures the real objects.
 - **Found by:** fact-checker (run 1)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-019 · minor · The `-with-weblog` marker can be resolved
 
@@ -478,7 +478,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - **§2:** "`-with-weblog` is deprecated in 26.10 and no longer supported; use the `nf-weblog` plugin (Nextflow `docs/reference/cli/run.mdx:226-230`, read 2026-10-26)".
   - **§10.4:** link to §2.
 - **Found by:** fact-checker (run 1)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-020 · minor · Cache-breaking upgrades affect some processes in 25.10, 26.04 and 26.10, not everything in 26.04
 
@@ -494,7 +494,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - **§2:** "a Nextflow upgrade can break the cache for some processes: `eval` outputs in 25.10 and 26.10, map inputs in 26.04 (see each release's 'Cache-breaking changes' migration note)".
   - **§5ter.5:** "same Nextflow version across stages (25.10, 26.04 and 26.10 each changed task hashes)".
 - **Found by:** fact-checker (run 1)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-021 · minor · The "server outage aborts the run" risk is about `nf-tower`, not Spectio
 
@@ -506,7 +506,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** the risk register states this as a property of Spectio. `nf-spectio`'s behaviour is Spectio's own design choice (synthesis §8: "never block the workflow if the server is unreachable").
 - **Proposal:** "On the Nextflow side, `nf-spectio` must not abort the run when the server is unreachable (unlike `nf-tower`, which aborts on errors from `create`, `begin` or `progress`, `TowerClient.groovy:145-180`); it buffers to disk."
 - **Found by:** fact-checker (run 1)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — same sentence as SR-017 (R1) risk 2; apply once with SR-017, or alone if SR-017 waits
 
 ### FC-022 · minor · The `[saml]` system dependency depends on a library that is not chosen yet
 
@@ -519,7 +519,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** the statement holds for pysaml2 only. With python3-saml, the dependency is a compiler and libxml2-dev for lxml, not `xmlsec1`. The container recipe and the docs differ between the two.
 - **Proposal:** "`[saml]` needs a system dependency whichever library is chosen: pysaml2 calls the `xmlsec1` binary, and python3-saml needs `lxml` built from source against the same libxml2 as `xmlsec` **[library to be chosen]**. The docs say so, and the container image includes it."
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-023 · minor · Snakemake also has a scheduler plugin interface
 
@@ -531,7 +531,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** the comparison that justifies "per-kind API versions inside one SDK" understates how many interfaces Snakemake splits out.
 - **Proposal:** "…`-report-`, `-logger-`, `-software-deployment-` and `-scheduler-plugins`, plus `snakemake-interface-common` for the shared registry."
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-024 · minor · respx mocks HTTP; it does not record it
 
@@ -542,7 +542,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** plugin authors would expect a record-and-replay workflow (cassettes) that respx does not provide.
 - **Proposal:** "It also provides a `FakeContext` and HTTP mocking with respx; recorded cassettes, if wanted, need a recorder such as vcrpy or pytest-recording **[to be validated]**."
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-025 · minor · "Mantine 7" is two majors behind, and the import map makes the major part of the plugin contract
 
@@ -558,7 +558,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - Record the choice explicitly: "Mantine 7 (depictio's major; upstream is at 9.x) **[decision: align with depictio or start on 9]**" (question 2).
   - In §4, add that the shared-module versions in the import map are part of the `viewer` API version.
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** inbox, assumed: keep Mantine 7 aligned with depictio (log, "Name and branding": reuse `depictio-react-core`), record it in §6, and make the import-map versions part of the `viewer` API version — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### FC-026 · minor · depictio retries five specific 5xx codes, not every 5xx
 
@@ -569,7 +569,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** Spectio adopts "depictio's policy". Copying "5xx" would also retry 501 and 505, which are not transient.
 - **Proposal:** "hand-rolled retries on 408/425/429/500/502/503/504".
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-027 · minor · sind ships slurmrestd only in its 26.05 images
 
@@ -582,7 +582,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - **§0.2:** "Slurm 25.11 and 26.05 images; slurmdbd; slurmrestd with JWT on the 26.05 images only".
   - **§4.1:** state that the 25.11 leg covers the CLI transport only.
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-028 · minor · Megatest outputs come from full-size public data, not from nf-core/test-datasets
 
@@ -595,7 +595,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** the marker points at the wrong source. Only the samplesheets are in test-datasets; the data are public archive runs and iGenomes references, each with its own terms.
 - **Proposal:** "Licence of the outputs: they are derived from full-size public datasets (e.g. SRA runs mirrored under `s3://ngi-igenomes/test-data/`, AWS iGenomes references), listed in samplesheets from nf-core/test-datasets (MIT); each source's terms apply **[to be validated per pipeline]**."
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### FC-029 · minor · Current Kueue recommends Kubernetes ≥ 1.34; Spectio targets ≥ 1.33
 
@@ -607,7 +607,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** the pinned Kueue may not be supported on the lowest Kubernetes that Spectio claims. The kind node image and the Kueue version must be pinned as a pair.
 - **Proposal:** "Kueue | pinned manifest version, chosen to support the lowest targeted Kubernetes (1.33), with the kind node image pinned to match **[to be validated: Kueue release supporting 1.33]**".
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-030 · minor · Nextflow install: the real asset names and hosts
 
@@ -622,7 +622,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** the launcher fetches its jar from `www.nextflow.io`, not from GitHub. For an offline or allowlisted pin, the right asset is `-dist`.
 - **Proposal:** "Nextflow | 26.10.x and 25.10.x | the self-contained `nextflow-<ver>-dist` from GitHub releases (offline-capable), or the `get.nextflow.io` launcher with `NXF_VER` pinned, which downloads `nextflow-<ver>-one.jar` from `www.nextflow.io/releases`; plugins come from `registry.nextflow.io`. All reachable from a cloud session (checked 2026-10-26)."
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-031 · minor · Cloudflare's preview access policy does not cover the production URL
 
@@ -633,7 +633,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** `https://spectio.pages.dev` (main) stays public even with the preview policy on, and its `/versions` page lists every preview URL.
 - **Proposal:** "Previews are public by default. Cloudflare Pages' access policy restricts preview deployments to members of the Cloudflare account; the production URL (`spectio.pages.dev`) needs a separate Cloudflare Access application."
 - **Found by:** fact-checker (run 2)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-032 · minor · `--quiet` also hides `JOB_INFO` from logger plugins, and plain `-q` suppresses `JOB_FINISHED`
 
@@ -649,7 +649,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - Change the cell to: "`job_id` only … Not emitted under `--quiet progress` or plain `-q`, or in a dry run (`job_scheduler.py:90-92`)".
   - Add: "The `spectio` logger plugin sets `has_filter = True`, so the default quiet filter does not drop `JOB_INFO` (`logging.py:691`). The runner refuses or strips `-q` and `--quiet progress` on watched runs."
 - **Found by:** fact-checker (run 3)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-033 · minor · MultiQC on a single file works; start-up dominates, so batch the files
 
@@ -664,7 +664,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** the marker can be resolved. One process per file costs about 2.5 s of start-up each time, which adds up when many items are watched.
 - **Proposal:** replace the marker with "Verified with MultiQC 1.35 (2026-10-26): `multiqc -m <module> <file>` parses a single file and names the item from the file name. Each call costs about 2.5 s of start-up, so the runner batches the files that finish within a short window into one call." Column naming stays with UX-101.
 - **Found by:** fact-checker (run 3)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-034 · minor · Two Nextflow `[to be validated]` markers can be resolved from the source
 
@@ -681,7 +681,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - **§11.5:** "'End of stage' means every process matching the stage's `match` globs has fired `onProcessTerminate` (`TraceObserverV2.groovy:63-69`)."
   - Spike T2 records both in golden fixtures.
 - **Found by:** fact-checker (run 3)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — apply before SR-017 (R1), which then needs no workaround wording
 
 ### FC-035 · minor · The CloudEvents envelope omits the required `specversion`
 
@@ -692,7 +692,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
 - **Problem:** events built from this list are not valid CloudEvents, so generic consumers and SDKs reject them.
 - **Proposal:** "CloudEvents 1.0.2 envelope (`specversion: "1.0"`, `id`, `source`, `type`, `time`, `subject`, `datacontenttype: application/json`, `data`), plus the `spectioproject` extension and a per-run sequence (`spectiosequence`, or the documented `sequence` extension)."
 - **Found by:** fact-checker (run 3)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-036 · minor · Wording of HTTP and GA4GH standards: `RateLimit-*` and WES `workflow_type`
 
@@ -712,7 +712,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   - **§4:** "per-token rate limits announced with the `RateLimit-Policy` and `RateLimit` fields of draft-ietf-httpapi-ratelimit-headers-11 (an Internet-Draft; re-check at implementation) **[to be validated]**".
   - **§2B:** "…with `workflow_type: NFL` or `SMK` (TRS descriptor types, which WES 1.1 accepts as instance-specific values; listed in `service-info.workflow_type_versions`)".
 - **Found by:** fact-checker (run 3)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-037 · minor · Table corrections with no finding of their own (batch)
 
@@ -729,7 +729,7 @@ All ten majors reproduced, so **none was dropped**. Two details were added durin
   7. **dev-environment-and-testing.md §12 l.388 (row D-27):** "A commit in a visible changelog section is releasable: release-please skips a release only when the generated changelog is empty (release-please `c589293`, `src/strategies/base.ts:331-337`)." This closes the marker.
   8. **api-and-data-model.md §4 (row api-and-data-model-2):** "…`Deprecation` (RFC 9745) and `Sunset` (RFC 8594) headers."
 - **Found by:** fact-checker (runs 1, 2 and 3; collected by the merge)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27); items 1-5, 7 and 8. Item 6 (IDR study licences) is a reserved licence topic and goes to the inbox with FC-028
 
 ---
 

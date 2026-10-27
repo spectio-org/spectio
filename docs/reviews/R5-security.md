@@ -2,7 +2,7 @@
 
 **Step page:** [R5](../progress/W1/R5.md)
 
-**Round:** R5 (security) · **Date:** 2026-10-26 · **Found by:** security-reviewer · **Status of the round:** waiting for triage (TRIAGE1)
+**Round:** R5 (security) · **Date:** 2026-10-26 · **Found by:** security-reviewer · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 4 accepted, 0 rejected, 26 inbox (6 assumed)
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l.") and `§n:line` references refer to that commit.
@@ -123,7 +123,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **Test:** principal B with `launcher` on A's environment gets 403 unless A has delegated to B.
 - **Related:** R1 SR-014 covers the same gap as a consistency problem. It proposes `execution_identity` (`per_user` or `shared`) and `runners.principal_id`. This finding adds the threat, delegation, the runner-move rule and the `script:` control. Triage them together; SR-014's `shared` option would need the explicit delegation above.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-102 · blocker · `single` mode trusts loopback, but loopback is shared by every user of a login node
 
@@ -152,7 +152,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - a cross-site POST without the CSRF token is refused.
 - **Related:** R1 SR-031 reports the same core problem as a major and asks for a cross-check with R5. This finding adds the browser path (rebinding, CSRF) and rates it a blocker, because the MVP would otherwise build tokenless loopback trust. SR-031's alternative, limiting the mode to laptops, is a question for Thomas below.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ---
 
@@ -180,7 +180,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - The site prerequisite is documented: `PrivateData=jobs` is recommended.
   - **Test:** a synthetic pipeline that dumps `env` finds no long-lived secret.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: per-run credentials delivered as 0600 files in the run directory, never through `sbatch --export`; head jobs use `--export=NONE`; derived short-lived credentials where the secret backend supports them; job names and comments carry no project or sample names; `PrivateData=jobs` documented as a recommended site prerequisite (owner architecture §3.2, linked from schedulers) — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### SEC-104 · major · No endpoint → action → scope → role matrix, so "every endpoint has a principal and a `can()`" cannot be checked
 
@@ -209,7 +209,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - a two-tenant fixture calls every route with a foreign ID and expects 404.
 - **Related:** R1 SR-024 (one scope registry, owned by auth §3) and SR-012 (`interventions:resolve` → `gates:decide`). The matrix is new; its scope column uses SR-024's registry.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-105 · major · Runner file access is not confined: event paths, globs and symlinks can make the runner read any file of its Unix user
 
@@ -237,7 +237,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Credentials and Spectio's own files are always denied.
   - **Tests:** the glob `../../.ssh/*`, a symlink to `$HOME` and an absolute path in a forged event are all refused.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: runner reads confined to per-run roots (realpath, symlinks followed only inside a root or the run's engine work directory), server sends (run, root, relative path) only; owner checking §11.1, linked from schedulers §6; compatibility with symlink publishDir checked in spike `sec-runner-confinement` — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### SEC-106 · major · The runner credential has no route allow-list, and it can forge the check values that drive auto-approval
 
@@ -265,7 +265,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **Tests:** a runner token calling `/gates/*/decisions` gets 403; posting for a run of another environment gets 403.
 - **Related:** R1 SR-002 and SR-024 already report that auth §3 ("until revoked") and api §6 ("rotating") contradict each other. That sub-point was removed here; this finding keeps the allow-list, the run binding and forged values.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-107 · major · Secrets can reach parameters, logs, the task ledger, audit diffs and RO-Crate exports
 
@@ -292,7 +292,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Register the `spk_` prefix with GitHub secret scanning **[to be validated: partner programme terms]**.
   - **Test:** seed a canary secret in params, env, a webhook URL and a backup passphrase. Then grep every sink, the crate and the DB dump for it.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: one redaction function owned by admin §3.4, applied to event ingest, logs, task arguments and results, audit diffs, crate export and telemetry; `SecretRef` task arguments; GitHub secret-scanning registration left to Thomas — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### SEC-108 · major · Ingest credentials for observed runs are undefined, and tokens may land on command lines, in configs and in captured run metadata
 
@@ -323,7 +323,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **Tests:** `ps` shows no token; the captured config shows `[secret]`.
 - **Related:** R1 SR-001 (ingest contract undefined) and SR-024 (no ingest scope). This finding defines the credential.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-109 · major · Co-hosting on one origin merges depictio's and Spectio's trust; the reports' "separate origin" is undefined
 
@@ -349,7 +349,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **Proxies:** trusted proxies are configured explicitly. With no proxy configured, the peer address is used.
   - **Tests:** the report iframe's origin differs from the app origin; the rate limiter ignores a spoofed `X-Forwarded-For` from an untrusted peer.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-110 · major · RO-Crate, project and workflow imports are unvalidated paths for code, paths and forged history
 
@@ -384,7 +384,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - A prefilled launch shows every non-default param and flags the params that load code.
   - **Tests:** a zip-slip crate, an `ext::` URL and an import with a foreign run ID are all refused.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: imports treated as untrusted input: IDs re-minted, `--overwrite` only inside the target project, imported decisions as `imported_from` provenance, no webhooks, plugin instances, service accounts or tokens imported, imported manifests inert, safe crate extraction with JSON-LD remote loading off, git URLs https or ssh only, code-loading params flagged (api §5, admin §4.3) — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### SEC-111 · major · Agent decisions on gates are not bounded or reversible, and they record a self-reported identity
 
@@ -417,7 +417,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - No MCP tool mints tokens or edits policy.
   - **Tests:** an agent approval cancelled inside the hold does not continue the run; an agent excluding 50 % of items produces a proposal only.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-112 · major · SSE, the event log and search have no stated tenancy filter, revocation behaviour or rule for events with no project
 
@@ -444,7 +444,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - Embeds stream with `fetch()` and a header, or with a single-use stream ticket valid for 60 s.
   - **Tests:** two-tenant search and SSE fixtures; revoking a grant during a stream closes it; no `token=` appears in access logs.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: every event carries `project_id` or `environment_id`; SSE fan-out filtered per event against an authorization cache invalidated on grant changes; search built from per-type list queries joined on `visible_projects`; embeds stream with `fetch()` and a header or a single-use 60 s ticket (owner api §8) — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### SEC-113 · major · Identities are linked by email across IdPs, and group sync is not namespaced or kept away from protected groups
 
@@ -472,7 +472,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - A failed sync denies elevated groups for that session.
   - **Tests:** a Keycloak group named `admin` gives no admin rights; a second IdP asserting an existing email is not linked automatically.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-114 · major · `spectio.yml` from a workflow repository can widen gate policy, add code and add editable paths with each new version
 
@@ -499,7 +499,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **Test:** a new version that adds `agents: approve` leaves the effective policy unchanged until it is approved.
 - **Related:** R1 SR-004 (`spectio.yml` has four shapes and no schema owner). The merge rule belongs in the schema that SR-004 asks for.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-115 · major · A server compromise is code execution on every runner's Unix account; runners hold no local policy
 
@@ -521,7 +521,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **Test:** a server command outside `runner.toml` is refused and reported in Health.
 - **Related:** the reviewer also noted that the channel transport differs between api §5 (WebSocket) and architecture §7.6 (long poll or SSE). That is R1 SR-002 and was removed here.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-116 · major · Event bridges hand authentication to broker ACLs, share one principal across all devices, and send every project to one topic
 
@@ -547,7 +547,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - Spectio keeps only the `jobcomp` records of jobs whose native ID it submitted.
   - **Tests:** an MQTT launch request is refused by default; a replayed signal does nothing; another user's `jobcomp` record is dropped.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-117 · major · Share links contradict the guest, grant and gate-policy rules, and work as forwardable bearer invitations
 
@@ -577,7 +577,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **Tests:** deciding through a link on a gate whose policy names a group gets 403; after a revoke, the live session gets 401; a link forwarded to a second browser asks for the verification code.
 - **Related:** R1 SR-019 (guests are outside the `principals.kind` enum). The `link` kind would be added to that enum.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-118 · major · Outbound HTTP from webhooks, plugins, WES and imports has no SSRF policy
 
@@ -601,7 +601,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - The WES facade accepts registered workflow versions only.
   - **Tests:** a webhook to `169.254.169.254` is refused; a hostname that rebinds to `127.0.0.1` is refused.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-119 · major · Backups put signing and secret-store keys in an archive whose encryption is optional, and restore accepts uploaded archives
 
@@ -628,7 +628,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **Tests:** an unsigned upload is refused; a backup to S3 without a recipient is refused; the archive holds no plaintext key bytes.
 - **Related:** R1 SR-030 (restore and token handling) and SR-050 (backup contract differs between cli and admin).
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-120 · major · depictio JWT trust accepts tokens Spectio cannot audience-check or revoke, and maps depictio admin to Spectio admin
 
@@ -657,7 +657,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Drop "audience" from the auth §6 test row, or ask depictio to add `aud` (ecosystem-reuse §3, item 5).
   - **Tests:** a revoked depictio token gets 401; a long-lived token is refused at the exchange; a depictio admin is not a Spectio admin by default.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-121 · major · `instance` visibility means "everyone", so on a public or demo instance internal projects are readable by anonymous guests
 
@@ -677,7 +677,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **Test:** when a guest lists projects, the `instance` projects are absent.
 - **Related:** R1 SR-029 proposes the opposite move: two values only (`private`, `instance`), as depictio does. The two proposals must be reconciled; see the questions for Thomas.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-122 · major · Gate decisions through embed tokens are attributed to the host's service account, which bypasses human policies
 
@@ -704,7 +704,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - `postMessage` uses an explicit `targetOrigin` from the allow-list, and checks `event.origin` on receipt.
   - **Tests:** a `decide` token without `act` gets 403; a message from an origin not on the allow-list is ignored.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-123 · major · Provisioning returns a full sign-in link for the provisioned email to the calling service account
 
@@ -724,7 +724,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Linking an SSO identity to an `unverified` principal ends all of its sessions and asks for confirmation (SEC-113).
   - **Tests:** provisioning an existing user with wider grants puts only a scoped link in the result JSON; the first SSO login on a provisioned principal revokes earlier sessions.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### SEC-124 · major · Plugins run in-process with full trust; "plugins never touch the database" is a convention, not a boundary
 
@@ -751,7 +751,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - Extension routes are mounted behind the same auth dependency. Unauthenticated callbacks must be declared, are HMAC-verified, and are listed in Settings → Plugins.
   - **Tests:** an extension route called without a token gets 401 unless it is declared; a sink triggered by project A cannot read project B.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-125 · major · Idempotency keys are not scoped to the caller: a replayed key returns another tenant's run
 
@@ -770,7 +770,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - A replay must still pass `can(read)` on the stored result.
   - **Test:** tenant B reuses tenant A's key and gets a new run, or 422, never A's run.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ---
 
@@ -800,7 +800,7 @@ Minor findings were checked for their quotes but less deeply than blockers and m
     - no analytics on `/admin/*` or on gate decision routes.
   - **Test:** a README containing `<img onerror>` does not execute.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: baseline browser hardening written in auth §3 (CSP baseline except embed routes, Trusted Types, sanitised Markdown with no raw HTML, session ID rotated on login and privilege change) and no analytics on `/admin/*` or gate decision routes (telemetry §4.2); the `__Host-` cookie waits for the co-hosting answer (SEC-109) — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### SEC-127 · minor · Admins can sign in as any user without that being recorded, and sensitive admin actions have no step-up
 
@@ -821,7 +821,7 @@ Minor findings were checked for their quotes but less deeply than blockers and m
   - **Test:** a decision made in an admin-minted session shows the admin as the actor.
 - **Related:** R1 SR-020 (the admin flag is missing from the schema).
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-128 · minor · Revocation latency, deactivation, and abuse limits on ingest and SSE
 
@@ -845,7 +845,7 @@ Minor findings were checked for their quotes but less deeply than blockers and m
     - `/version` details shown to authenticated users only.
   - **Test:** after deactivation, the next request gets 401.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### SEC-129 · minor · OIDC device flow and IdP-initiated SAML need explicit safeguards
 
@@ -865,7 +865,7 @@ Minor findings were checked for their quotes but less deeply than blockers and m
     - IdP-initiated SAML keeps an assertion-ID cache until `NotOnOrAfter`, and requires a matching `Audience`.
   - **Test:** replaying the same IdP-initiated assertion is refused.
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### SEC-130 · minor · `webhooks.secret_hash` cannot produce HMAC signatures
 
@@ -880,7 +880,7 @@ Minor findings were checked for their quotes but less deeply than blockers and m
   - **Test:** the DB dump does not contain the webhook secret.
 - **Related:** R1 SR-026 (webhooks are both a project table and a notifier plugin instance).
 - **Found by:** security-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ---
 

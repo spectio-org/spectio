@@ -2,7 +2,7 @@
 
 **Step page:** [R4](../progress/W1/R4.md)
 
-**Round:** R4 (constraints) · **Date:** 2026-10-26 · **Found by:** constraints-hunter, two instances in parallel · **Status of the round:** waiting for triage (TRIAGE1)
+**Round:** R4 (constraints) · **Date:** 2026-10-26 · **Found by:** constraints-hunter, two instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 21 accepted, 0 rejected, 19 inbox (16 assumed)
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l.") refer to that commit.
@@ -147,7 +147,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test:** one hour at EMBL. A one-minute `sbatch` job runs `curl` to an external endpoint, `registry.nextflow.io`, `quay.io` and `github.com`, with and without `$https_proxy`. On sind, put the compute nodes on a Docker network without egress and run nf-toy offline with a pre-filled `NXF_PLUGINS_DIR`.
 - **Related:** SR-017 (R1) on the spool fallback.
 - **Found by:** constraints-hunter (b) as CH-201
-- **Status:** open
+- **Status:** inbox, assumed: the bridge spool in the launch directory, forwarded by the runner, is the default event path (direct POST as an optimisation, the server-side forwarder removed); the runner prepares everything network-dependent on the login node and the head runs with `NXF_OFFLINE=true`; the EMBL probe itself stays with Thomas — pending Thomas (TRIAGE1, 2026-10-27)
 
 ---
 
@@ -172,7 +172,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test:** after T2, replay the golden fixtures against a schema with one field renamed (2 h). Define the contract test now; it costs nothing until there is code.
 - **Related:** SR-022 (R1) owns the overall compatibility table; this finding adds the bridge-specific window and the refusal type.
 - **Found by:** constraints-hunter (a) as CH-115, constraints-hunter (b) as CH-216
-- **Status:** open
+- **Status:** inbox, assumed: the ingest schema is versioned on its own; the bridge window lives in architecture §12 (SR-022), unknown fields are ignored, refusals use `ingest-version-unsupported`, bridge versions are recorded per run and shown in Health — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-003 · major · Continue or relaunch can start while the previous head is still finishing
 
@@ -196,7 +196,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high with automation · high (double runs, failed resumes).
 - **Cheapest test** (half a day, sind, nf-toy and smk-toy from T1): resume 0 s, 1 s and 5 s after the last event; `kill -9` the head, then `-resume`; nf-toy with its launch directory on an NFS export mounted `nolock`.
 - **Found by:** constraints-hunter (a) as CH-109, constraints-hunter (b) as CH-209 (relaunch and lock parts)
-- **Status:** open
+- **Status:** inbox, assumed: a `launches` table in api §7, a `CONTINUE_REQUESTED` state released only once the previous head is gone and its lock is free, and a runner mutex per launch directory — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-004 · major · No scale model and no performance budgets in any spec
 
@@ -220,7 +220,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high · high (rework of the schema and the projections).
 - **Cheapest test:** spike S1 (seed generator plus a 300-line FastAPI prototype; see [§ Proposed spikes](#proposed-spikes)).
 - **Found by:** constraints-hunter (a) as CH-101; the high scenario comes from constraints-hunter (b) CH-203
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### CH-005 · major · No traffic budget for the engine bridges: batching, back-pressure and spool limits
 
@@ -240,7 +240,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test:** from the T2 golden stream, measure bytes per event. Run `fanout_stress` (about 12 000 tasks) against a capture server and count events and the peak rate.
 - **Related:** SR-017 (R1) sets the bounds for an unreachable server; this finding sets the volume budget.
 - **Found by:** constraints-hunter (b) as CH-203; the back-pressure part also in constraints-hunter (a) CH-103 and CH-121
-- **Status:** open
+- **Status:** inbox, assumed: the bridge traffic budget in architecture §13 (batches of at most 500 events or 1 s, gzip, full trace on terminal events only, `429`/`503` honoured with `Retry-After`, the run never fails on ingest errors, terminal events never dropped, a dropped-event counter), with the spool cap reconciled with SR-017's bounds — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-006 · major · `nf-spectio` failure semantics are unspecified, and a break in the `@Beta` interface would be silent
 
@@ -265,7 +265,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test:** extend T2 by half a day: a hook that throws and a hook that sleeps 30 s; the server down for 10 minutes; the plugin built against 25.10 run on 26.10 and on 25.04; a `requires` mismatch. Record whether the run aborts, stalls or goes silent.
 - **Related:** SR-017 (R1).
 - **Found by:** constraints-hunter (b) as CH-202
-- **Status:** open
+- **Status:** inbox, assumed: hooks only enqueue and never throw, heartbeats carry versions and error counters (architecture §13); documented floor Nextflow ≥ 25.04 with `requires` equal to the tested range; a weekly `edge` job; the `nf-tower` abort sentence removed from synthesis §10 — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-007 · major · Runner commands have no table, three transports and no idempotent launch
 
@@ -285,7 +285,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test** (half a day, sind `slurm-mini`): `kill -9` the runner right after `sbatch`, restart it, and count head jobs.
 - **Related:** SR-002 (R1) owns the protocol (catalogue, ack, replay); this finding adds the table, the lease and the duplicate-launch mechanics.
 - **Found by:** constraints-hunter (a) as CH-108, constraints-hunter (b) as CH-209 (exactly-once launch part)
-- **Status:** open
+- **Status:** inbox, assumed: a `runner_commands` table with a lease, written in the same transaction as the decision or relaunch; one transport (SR-002); idempotent launch through the head-job name `spectio-<run>-<launch>` and adoption of an existing job — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-008 · major · SSE fan-out: no coalescing, a 6-connection limit per browser, the full task stream to every tab
 
@@ -307,7 +307,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high · high (the UI is unusable on big runs).
 - **Cheapest test** (2 h, spike S5): seven tabs on a local uvicorn; replay a 100 000-event burst into a Vite and TanStack prototype; record dropped frames.
 - **Found by:** constraints-hunter (a) as CH-106
-- **Status:** open
+- **Status:** inbox, assumed: one coalesced delta per run at most once per second, raw task events only to a client that has that task open; one `EventSource` per browser; HTTP/2 documented for team servers; a per-process SSE cap and jittered reconnects — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-009 · major · Snakemake: the logger interface keeps moving, only Snakemake ≥ 9 works, and `SnakemakeApi` cannot run from the runner's environment
 
@@ -331,7 +331,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test** (half a day): a runner environment without Snakemake launches smk-toy in a pixi environment pinned to 9.27.1, and in a read-only environment with the plugin on `PYTHONPATH`; repeat with interface 1.2.5 and 2.1.0.
 - **Related:** SR-008 (R1) asks Thomas to choose API worker or CLI head job; this finding adds the version facts that argue for the CLI.
 - **Found by:** constraints-hunter (b) as CH-204
-- **Status:** open
+- **Status:** inbox, assumed: Snakemake runs as a CLI subprocess in a per-workflow environment (same direction as SR-008); supported floor Snakemake ≥ 9.0 with logger interface 1.x and 2.x; the logger plugin on `PYTHONPATH` for read-only environments — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-010 · major · Gate waits run against the scratch purge, and Nextflow cannot estimate cache hits beforehand
 
@@ -348,7 +348,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** medium · medium–high (lost compute, wrong estimates).
 - **Cheapest test** (1 h): delete half the work directories of nf-toy stage A after a gate stop, `-resume`, and compare the cached count with a work-directory scan.
 - **Found by:** constraints-hunter (b) as CH-212
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-011 · major · The event log grows without bound, and raw Nextflow trace records carry `script` and `env`
 
@@ -371,7 +371,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high · high.
 - **Cheapest test:** in S1, with real T2 payloads, compare bytes per event with and without `script` and `env`.
 - **Found by:** constraints-hunter (a) as CH-102; the terminal-payload rule from constraints-hunter (b) CH-203
-- **Status:** open
+- **Status:** inbox, assumed: raw payloads archived to the file store once a run is terminal (plus N days), the terminal raw payload kept per task, `script` and `env` sent at most once per task with a payload cap; synthesis §2ter item 4 amended — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-012 · major · Projection in the ingest transaction, in one process and one event loop, stalls the UI and SSE during bursts
 
@@ -395,7 +395,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high in personal mode · medium to high.
 - **Cheapest test:** S1/S2: UI p95 during a 100 000-event burst, with and without a separate writer.
 - **Found by:** constraints-hunter (a) as CH-103
-- **Status:** open
+- **Status:** inbox, assumed: api §8.1 event pipeline (append and acknowledge, one projector on a dedicated writer, SSE reads the projections), heavy tasks in a subprocess pool, `429` with `Retry-After` under back-pressure; synthesis §4 amended — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-013 · major · SQLite lock discipline: `SQLITE_BUSY` on lock upgrade, long write locks, checkpoint starvation
 
@@ -415,7 +415,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high · medium (stalls, disk full).
 - **Cheapest test** (2 h, spike S3): one writer at 5 k events/s plus a 10-minute reader, plotting WAL size; then a naive threadpool, counting `SQLITE_BUSY`.
 - **Found by:** constraints-hunter (a) as CH-104
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-014 · major · Gate concurrency beyond `If-Match`: quorum, bulk decisions, whole change-set replacement, timeout races
 
@@ -438,7 +438,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test** (2 h): a property-based test with two concurrent clients against the S1 prototype.
 - **Related:** SR-012 (R1) on decision verbs and resource names.
 - **Found by:** constraints-hunter (a) as CH-110
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-015 · major · Personal mode "on a login node" conflicts with the local-disk rule
 
@@ -454,7 +454,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test** (30 min with EMBL IT, spike S12): `stat -f -c %T` on `$HOME`, `/scratch`, `/tmp` and `$TMPDIR` on each login node; record the purge policies and how the alias rotates.
 - **Related:** SR-031 (R1) on loopback trust on a shared login node.
 - **Found by:** constraints-hunter (a) as CH-117
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-016 · major · Stopping at a gate through `ext.when` is proven only on synthetic pipelines
 
@@ -471,7 +471,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test** (half a day, local Docker): rnaseq `-profile test,docker` with a generated config that stops after alignment, then `-resume` without it; count cached tasks and check the exit code. Repeat on sarek.
 - **Related:** SR-011 (R1) on `--stage` against `ext.when`.
 - **Found by:** constraints-hunter (b) as CH-211
-- **Status:** open
+- **Status:** inbox, assumed: a local-executor stop-and-resume check on rnaseq and sarek test profiles moves into T1/T2; ui-spec §5.1 lists the pipeline requirements and shows "gates unavailable" when they fail — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-017 · major · Live checks on the runner: one MultiQC call per file on login nodes
 
@@ -490,7 +490,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test** (1 h): time `multiqc -m star` on one `Log.final.out` from `tests/fixtures/megatests/rnaseq`, then on 100 files in one call; record RSS.
 - **Related:** SR-003 (R1) owns the server-or-runner contradiction (api §3 against checking §11.1); this finding adds the cost on the runner.
 - **Found by:** constraints-hunter (b) as CH-214
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-018 · major · Resumable streams have no sound cursor
 
@@ -512,7 +512,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** certain on Postgres with more than one writer · high.
 - **Cheapest test** (2 h, spike S4): two writers on Postgres 18 with `bigserial` and random commit delays, one poller on `id > last`; count missed rows.
 - **Found by:** constraints-hunter (a) as CH-105
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-019 · major · Event order: `seq` is the server's arrival order, with no source sequence and no merge rule
 
@@ -528,7 +528,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high · medium (wrong states, wrong gate triggers).
 - **Cheapest test** (half a day, after T2): a property-based test that replays the golden streams shuffled and duplicated into a prototype reducer and asserts the final projection.
 - **Found by:** constraints-hunter (b) as CH-210
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-020 · major · Postgres `LISTEN/NOTIFY` as the cross-process bus: payload cap, commit-time lock, poolers
 
@@ -547,7 +547,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test** (half a day, spike S6): 50 concurrent ingest writers on Postgres 18, NOTIFY in and out of the transaction, then through PgBouncer in transaction mode.
 - **Related:** SR-015 (R1) on the two locking designs for schedules; DEP-T-012.
 - **Found by:** constraints-hunter (a) as CH-107
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-021 · major · Restore failure modes while runs and engines are still live
 
@@ -574,7 +574,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test** (1 day, spike S9): a seeded 5 GB database; `kill -9` at each restore step; check the server restarts consistent. A `restore-during-run` scenario (dev-env §5 has only `restore-during-idle`) once the walking skeleton exists.
 - **Related:** SR-030 and SR-038 (R1) cover the token contradiction and the maintenance write table; journey (4) of round R3 (not run yet) will walk the same user story; DEP-T-011 and DEP-T-012 the test scope. This finding is about the mechanics.
 - **Found by:** constraints-hunter (a) as CH-112, constraints-hunter (b) as CH-217
-- **Status:** open
+- **Status:** inbox, assumed: restore into a new database and switch atomically, a restore journal and the maintenance state outside the restored tables, ingest `503` during a restore, a full runner inventory after the switch; tokens and runner credentials follow SR-030 — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-022 · major · Logical JSON Lines backups do not scale, need one snapshot, and have no RPO or RTO
 
@@ -594,7 +594,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test** (half a day, spike S10): export a seeded 10 GB database both ways while S1 ingest runs; measure time and WAL growth.
 - **Related:** SR-050 (R1) on the CLI and admin backup contracts.
 - **Found by:** constraints-hunter (a) as CH-113
-- **Status:** open
+- **Status:** inbox, assumed: native same-engine backups by default (SQLite online backup API, `pg_dump -Fd -j`), JSON Lines kept for cross-engine migration and project export, an RPO and RTO per deployment, the pre-upgrade backup skipped when a recent verified backup exists — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-023 · major · Schema migrations with live traffic: Helm hook against old pods, readiness "at head", SQLite table copies
 
@@ -612,7 +612,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high · high.
 - **Cheapest test** (1 day, spike S11): an Alembic migration adding a column and an index on a 10 GB `events` table (SQLite batch, Postgres); `helm upgrade` on kind while old pods serve.
 - **Found by:** constraints-hunter (a) as CH-114
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-024 · major · Kubernetes: Kueue API versions, the one-hour lifetime of Events, the head pod's RBAC, Kueue and Nextflow Pods
 
@@ -638,7 +638,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test** (1 day, folded into T4): kind with Kueue v0.20 and an older minor; `--event-ttl=5m`; nf-toy on 26.10 and 25.10 with the queue label; the runner offline for 10 minutes.
 - **Related:** SR-051 (R1) owns the head pod's RBAC, which reviewer (b) also raised.
 - **Found by:** constraints-hunter (b) as CH-215
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-025 · major · Apptainer, the usual HPC container runtime, is untested; the whole matrix uses Docker
 
@@ -654,7 +654,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high · medium.
 - **Cheapest test** (half a day): Apptainer inside the sind submitter node, running nf-toy `-profile singularity`. Whether this works in nested containers is itself **[to be validated]**.
 - **Found by:** constraints-hunter (b) as CH-218
-- **Status:** open
+- **Status:** inbox, assumed: Apptainer added to the toolchain and an `engine × runtime {docker, apptainer}` axis on `slurm-site` nightly; Apptainer failure classes in schedulers §3.5 — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-026 · major · 50 concurrent runs under one account break SLURM per-user limits; the §0.2 sentence overstates
 
@@ -673,7 +673,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high at 50 runs · high.
 - **Cheapest test** (half a day, sind `slurm-site`): `MaxSubmitJobs=50` on the association and `rl_enable`; 5 nf-toy `fanout=200` and 5 smk-toy runs at once; record rejections and engine behaviour.
 - **Found by:** constraints-hunter (b) as CH-206
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-027 · major · `squeue` and `sacct --json` are heavy, and their schema changes with each Slurm version on the CLI path too
 
@@ -690,7 +690,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high · medium.
 - **Cheapest test** (2 h, sind): 5 000 held jobs, bytes and time of `squeue --me --json` against the text format; `sacct --json -j <1000-element array>` with steps; diff the JSON keys between 25.11 and 26.05.
 - **Found by:** constraints-hunter (b) as CH-207
-- **Status:** open
+- **Status:** inbox, assumed: the 60 s poll uses the `squeue` text format, JSON only for detail views with the data_parser chosen by `--json=list` and pinned, `raw_ref` kept only for failed jobs — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-028 · major · Hosting the runner on login nodes: `scrontab` does not run there, systemd kills supervised heads, duplicate runners
 
@@ -707,7 +707,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** high · high.
 - **Cheapest test** (2 h, container with systemd): a `systemd --user` unit supervising `sleep 600` as a "head", then `systemctl --user restart`; then two runner stubs against one lease.
 - **Found by:** constraints-hunter (b) as CH-208
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-029 · major · Head job sizing and the walltime limit
 
@@ -723,7 +723,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** medium · high.
 - **Cheapest test** (2 h): `fanout_stress` head RSS and heap; `snakemake -n` on a generated 100 000-job DAG (RSS, DAG-build time); `scancel` time for 1 000 running jobs on sind.
 - **Found by:** constraints-hunter (b) as CH-213
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-030 · major · Moving a run between projects rewrites millions of rows, and contradicts the append-only log
 
@@ -740,7 +740,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Likelihood · impact:** medium (moves are rare) · high (a stall or a tenancy leak).
 - **Cheapest test** (1 h): already measured on SQLite; repeat on Postgres with 10 M rows.
 - **Found by:** constraints-hunter (a) as CH-111
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ---
 
@@ -754,7 +754,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Proposal:** in api §8: store `engine_time` and `received_at`; order only by `seq` (CH-018, CH-019); compute durations from one clock source; freshness and timeouts always use server receive time. The runner sends its clock with each heartbeat; the server records the offset and warns above 5 s (Health → Runners, and `spectio doctor`).
 - **Cheapest test:** unit tests only.
 - **Found by:** constraints-hunter (a) as CH-120, constraints-hunter (b) as CH-223
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-032 · minor · Runner channel in practice: proxies, idle timeouts, the JVM and internal CAs
 
@@ -765,7 +765,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Cheapest test:** squid with a 60 s idle timeout in front of a stub server.
 - **Related:** SR-002 (R1).
 - **Found by:** constraints-hunter (b) as CH-219
-- **Status:** open
+- **Status:** inbox, assumed: HTTPS long poll (≤ 55 s) with heartbeats, settled together with SR-002; the bridges and the runner read the proxy variables and a configurable CA bundle; `spectio doctor` checks both — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### CH-033 · minor · Restart storms: false "offline" runners and simultaneous replays
 
@@ -775,7 +775,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Proposal:** in admin §3.2: no offline transitions until 3 heartbeat intervals after the server boots; reconnects with jitter; admission control per runner (`429`, `Retry-After`) and a rate cap on replays.
 - **Cheapest test:** in the S2 harness, stop the server for 5 minutes with 50 simulated runs; measure catch-up time and spurious events.
 - **Found by:** constraints-hunter (a) as CH-121
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-034 · minor · Licences of server dependencies, scheduler integrations and copied code are not tracked
 
@@ -793,7 +793,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
   - depictio-ecosystem-reuse §1: record depictio's licence and the attribution for copied code.
 - **Cheapest test:** a 15-minute `pip-licenses` run over the planned dependency set.
 - **Found by:** constraints-hunter (a) as CH-123, constraints-hunter (b) as CH-225
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### CH-035 · minor · A Provenance Run Crate of 100 000 tasks has no size budget
 
@@ -803,7 +803,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Proposal:** in api §10 (owner), linked from synthesis §7quinquies: step level up to N tasks, aggregated per process above that; a streaming writer and a stated size budget.
 - **Cheapest test** (2 h): generate a crate for 100 000 synthetic tasks with ro-crate-py; measure size, memory and time **[to be validated]**.
 - **Found by:** constraints-hunter (a) as CH-124
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-036 · minor · Outbox: ordering against 24 h retries, one queue for every subscriber, storms of task events
 
@@ -813,7 +813,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Proposal:** in api §8: each subscriber has its own cursor over the event log; ordered subscribers block only per (subscriber, run); a subscriber pauses after N consecutive failures; delivery rows only for failed attempts; noteworthy task events coalesced per run per minute.
 - **Cheapest test:** in the S1 harness, a failing endpoint plus 10 000 failures; measure table growth and lag.
 - **Found by:** constraints-hunter (a) as CH-119
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-037 · minor · A Lustre stall blocks the runner's event loop, and the server marks it offline
 
@@ -822,7 +822,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Proposal:** all file-system work in a bounded thread pool with timeouts; heartbeats from a dedicated thread.
 - **Cheapest test:** a FUSE file system that sleeps 120 s on `stat`.
 - **Found by:** constraints-hunter (b) as CH-224
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-038 · minor · Engine head logs will flood the log ring buffer, which shares the database
 
@@ -832,7 +832,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Proposal:** in admin §3.4: engine head logs stay on the runner and are fetched with range requests, like task logs; only WARN and above are streamed. The ring buffer keeps `api`, `worker`, `runner` and `plugin` logs with a cap per source, in a separate SQLite file (`ATTACH`), written in batches off the request path, with a drop counter.
 - **Cheapest test:** in S1, write 1 GB of logs during ingest and compare ingest p99; measure `.nextflow.log` after `fanout_stress`.
 - **Found by:** constraints-hunter (a) as CH-118, constraints-hunter (b) as CH-221
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-039 · minor · Search across runs, tasks and samples has no portable implementation
 
@@ -842,7 +842,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Proposal:** in api §5 and §7: exact and prefix matches on indexed keys only (IDs, external refs, names, tags); task search scoped to one run; an optional FTS adapter per engine allowed by name.
 - **Cheapest test:** in S1, prefix search over 10 M seeded task rows on both engines.
 - **Found by:** constraints-hunter (a) as CH-122
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### CH-040 · minor · Idempotency keys have no storage, scope, retention or race rule
 
@@ -852,7 +852,7 @@ No spec has a scale model (CH-004), so the reviewers used these assumptions. "Me
 - **Proposal:** api §7: `idempotency_keys(principal_id, key, request_hash, response_ref, expires_at)` with `unique (principal_id, key)`; insert first and return the stored response; `422` on a body mismatch (the CLI already maps this conflict to exit code 5, cli l.79); 24 h retention.
 - **Cheapest test:** a unit test with two concurrent requests.
 - **Found by:** constraints-hunter (a) as CH-125
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ---
 
