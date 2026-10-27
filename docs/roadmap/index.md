@@ -8,7 +8,7 @@ Three questions: what is done, what is being worked on, and what comes next. Spe
 
 <div class="sp-timeline">
 <div class="sp-tl sp-tl--now"><span class="sp-tl__dot"></span><b>Design</b><span class="sp-tl__when">now</span><p>Specifications, screen designs, test pipelines on both engines, reviews before any code.</p></div>
-<div class="sp-tl"><span class="sp-tl__dot"></span><b>0.1 · Walking skeleton</b><span class="sp-tl__when">after the go decision</span><p>One run crosses every part once: launch, watch, stop at a gate, resume, hand off to depictio.</p></div>
+<div class="sp-tl"><span class="sp-tl__dot"></span><b>0.1 · Walking skeleton</b><span class="sp-tl__when">after the go decision</span><p>A Nextflow run and a Snakemake run each cross every part once: launch, watch, check the results, stop at a gate, resume. Sending results to depictio comes later.</p></div>
 <div class="sp-tl"><span class="sp-tl__dot"></span><b>0.2 – 0.4 · Private alpha</b><span class="sp-tl__when">with 3 to 5 EMBL groups</span><p>Installed from the docs in under 30 minutes, real pipelines every night, backups tested.</p></div>
 <div class="sp-tl"><span class="sp-tl__dot"></span><b>0.5 – 0.9 · Public beta</b><span class="sp-tl__when">with a demo instance</span><p>Open to everyone, demo instance on EMBL's Kubernetes, upgrades tested release after release.</p></div>
 <div class="sp-tl"><span class="sp-tl__dot"></span><b>1.0 · Stable</b><span class="sp-tl__when">when the 1.0 conditions are met</span><p>Several groups using it daily, both engines on SLURM and Kubernetes, frozen API.</p></div>

@@ -308,3 +308,23 @@ Everything must be traced, including:
 - **Claude may merge into `main` for now** (inbox #3): the autopilot merges the promotion PR with a merge commit once every check passed and doc-reviewer approved. Force-push, branch deletion and edits to `pipeline.yaml` statuses stay forbidden.
 - **Packages stay under `weber8thomas`** until Thomas moves them (inbox #9).
 - **Nextflow ingestion** (inbox #6) stays open for discussion.
+
+## 2026-10-26 — MVP scope, Nextflow through nf-spectio, licence
+
+- **Nextflow ingestion** (inbox #6, closed): Nextflow reports to Spectio only through the `nf-spectio` plugin, from the MVP on. The Tower protocol routes are not implemented. The goal is to sit next to Seqera Platform, not to replace it: a run can report to both at once (**[to be validated]** in spike T2). Record: [0001](0001-nextflow-through-nf-spectio.md).
+- **MVP scope** (Thomas):
+  - Snakemake and Nextflow from the start;
+  - the focus is on checks and quality control: the checks of a stage, their evidence, and the gate;
+  - automatic hand-off to depictio comes later, not in 0.1.
+
+  Applied in [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §14 (0.1 entry condition), [`synthesis.md`](../specs/synthesis.md) §9, the roadmap page and the P1 prompt in [`next-phase.md`](../playbooks/next-phase.md).
+- **GA4GH: no change.** The core keeps its own model (events, stages, gates). GA4GH stays at the edges, as already specified ([`api-and-data-model.md`](../specs/api-and-data-model.md) §10, [`synthesis.md`](../specs/synthesis.md) §3):
+  - WES 1.1 as a facade;
+  - TES as a possible later execution target;
+  - TRS and DRS later.
+
+  When the WES facade ships is inconsistent across docs (synthesis §7quinquies and §9, the roadmap page). That is left to review R1.
+- **Licence: MIT.** The date the repository goes public is not set (inbox #7).
+- **Cloudflare secrets set** (inbox #10).
+- **Autopilot permissions** (inbox #4): `tools/autopilot/claude-settings.json` was copied to `.claude/settings.json` on `main` at Thomas's request. The permissions are to be discussed again.
+- **Postponed:** the GitHub organisation (#9, unchanged) and the questions for EMBL IT.

@@ -118,9 +118,19 @@ nav:
           - Inbox (questions for Thomas): reviews/inbox.md
           - "R8b: depictio tooling re-audit": reviews/R8b-depictio-tooling.md
           - "R12: UI scenarios": reviews/R12-ui-scenarios.md
+          - "R1: consistency": reviews/R1-consistency.md
+          - "R2: open validations": reviews/R2-open-validations.md
+          - "R2: verification table": reviews/verification-2026-10-26.md
+          - "R4: constraints": reviews/R4-constraints.md
+          - "R5: security": reviews/R5-security.md
+          - "R7: UI": reviews/R7-ui.md
+          - "R8: depictio drift": reviews/R8-depictio.md
+          - "R9: landscape": reviews/R9-landscape.md
+          - "R11: documentation": reviews/R11-docs.md
       - Decisions:
           - How decisions are recorded: decisions/README.md
           - Decision log: decisions/log.md
+          - "0001: Nextflow through nf-spectio": decisions/0001-nextflow-through-nf-spectio.md
       - Research:
           - depictio harmonisation: research/depictio-harmonization.md
           - depictio administration and operations: research/depictio-admin-ops.md
@@ -134,5 +144,7 @@ nav:
           - "Spike: synthetic pipelines": research/spike-synthetic-pipelines-2026-10-26.md
           - "Spike: docs media tooling": research/spike-docs-media-tooling-2026-10-26.md
           - Adoption and positioning: research/adoption-and-positioning-2026-10-26.md
+          - Landscape: research/landscape-2026-10-26.md
+          - "Spike: cloud environment": research/spike-cloud-env-2026-10-26.md
   - Roadmap: roadmap/index.md
   - Changelog: changelog/index.md

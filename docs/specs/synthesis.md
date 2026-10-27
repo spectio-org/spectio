@@ -10,6 +10,7 @@ Three decisions shape everything else:
 
 1. **An in-house, engine-independent event log** as the source of truth (append-only). Each engine has its own small agent that writes to it.
 2. **Implement the 5 ingestion routes of the Tower protocol on the server side** (revised on 23/10 after reading the code, see section 2bis). The `nf-tower` plugin ships with Nextflow: you just point `tower.endpoint` at our server, with nothing to install, as nf-shard does. The protocol remains undocumented and accepts no commands from the server, so steering goes through our launcher, not through this protocol.
+   **Revised on 26/10/2026 ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)):** Nextflow reports only through Spectio's own plugin `nf-spectio`. The Tower routes are not implemented, so a run can report to Seqera Platform (`nf-tower`) and to Spectio at the same time (**[to be validated]** in spike T2).
 3. **The QC gate is modelled in our application, not in the engine.** Neither engine has a native pause: the reliable pattern is "stop cleanly after step N, then relaunch with resume".
 
 ## 2. Integration per engine (without log parsing)
@@ -66,6 +67,8 @@ Two ingestion gateways that write to the same event log:
 1. **`/api/tower/*`**: Tower compatibility for Nextflow, with no installation, storing the raw JSON and reading fields tolerantly.
 2. **`/api/v1/ingest/events`**: our native format, for the Snakemake plugin (and possibly an in-house Nextflow plugin later, if the Tower protocol changes or if extra hooks such as `onWorkflowOutput` are needed).
 
+**Revised on 26/10/2026 ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)):** only the second gateway is built. `nf-spectio` and the Snakemake logger both post to `/api/v1/ingest/events`.
+
 ## 2ter. Advanced scenarios: what each engine exposes (code read on 23/10/2026)
 
 Versions read: Snakemake 9.27 (main), Snakemake SLURM plugin (main), Nextflow 26.10.3 (main).
@@ -88,6 +91,7 @@ Versions read: Snakemake 9.27 (main), Snakemake SLURM plugin (main), Nextflow 26
 ### Consequences
 
 1. **Nextflow: hybrid approach.** The Tower protocol covers basic tracking with no installation. A `TraceObserverV2` **companion plugin** is still needed for modules and versions, published files, conda/spack, `storeDir` and tasks filtered out by `when:`. It pushes to an extension route.
+   **Revised on 26/10/2026 ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)):** the companion plugin `nf-spectio` becomes the only Nextflow route. The Tower column of the matrix above still shows what the `TowerObserver` sends; it is itself a `TraceObserverV2`, so `nf-spectio` sees the same hooks and more.
 2. **Snakemake: three sources.** The logger plugin (with `has_filter = True`), a few text messages turned into typed events (versioned regexes, raw message kept), and a collector that reads `.snakemake` (or the `--persistence-backend db` database) and `sacct`.
 3. **Never assume every transition is seen**: Nextflow only sends the latest state per task every second. Upsert per `(run, task_id)`.
 4. **Keep the raw JSON** of each event alongside the normalised columns.
@@ -228,7 +232,7 @@ For an unplanned pause ("Pause" button): `PAUSING → PAUSED`, then `resume`.
 - **Unplanned**: SIGINT to Snakemake (which cancels cluster jobs via `cancel_jobs`), SIGTERM to Nextflow (or `scancel` of the head job). Running tasks are lost; finished ones remain in the cache. No native "finish running tasks without submitting new ones" mode **[to be validated]**.
 
 ### 4. Check
-At the end of a stage (last Snakemake `PROGRESS`, Nextflow `/trace/complete`), the platform:
+At the end of a stage (last Snakemake `PROGRESS`, Nextflow `onFlowComplete` reported by `nf-spectio`, [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)), the platform:
 1. collects the declared evidence (globs) and the QC metrics in JSON;
 2. creates the `Intervention`, notifies the UI, the MCP server and the webhooks;
 3. applies the policy (auto-approval under threshold, timeout, escalation).
@@ -245,7 +249,7 @@ Settings to fix:
 - Nextflow: `cleanup = false`; same Nextflow version across stages (the hash changes in 26.04); control parameters such as `stage` must not enter the task hash; `cache 'lenient'` on NFS.
 
 ### 6. Launcher
-- One supervisor per run, persisted in the database. Snakemake: a Python worker process that calls the API. Nextflow: `nextflow run` (JVM) launched as a process or as an `sbatch` head job, with `TOWER_WORKFLOW_ID` set by us. Tracking is always done through events, never by reading the process output.
+- One supervisor per run, persisted in the database. Snakemake: a Python worker process that calls the API. Nextflow: `nextflow run` (JVM) launched as a process or as an `sbatch` head job, with the Spectio run ID passed to `nf-spectio` by us (was `TOWER_WORKFLOW_ID`, see [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)). Tracking is always done through events, never by reading the process output.
 - On server restart: reconciliation with the database, PIDs and `sacct`.
 - Short wait (minutes): option of a local wait task that polls the API (section 5bis).
 
@@ -332,7 +336,7 @@ Goal: the end user no longer touches the terminal. They register a workflow, lau
    - Snakemake: `config/config.yaml` + `workflow/schemas/config.schema.yaml` (Snakemake workflow catalogue convention) → generated form;
    - optional: `spectio.yml` (stages, interventions, QC evidence, parameter presets).
    Can later be exposed as GA4GH **TRS**, the registry standard (WES has no registry).
-2. **Execution environments + runner.** A Spectio **runner** (`spectio runner`, same pip package, a single logical binary) runs on the login node, under the user's account. It opens an **outgoing** connection to the server, so no inbound port on the cluster. It receives orders (launch, cancel, resume, read a log, browse a directory), submits the head job to the scheduler and configures the plugins automatically (`tower.endpoint`, `--logger`). This is the same principle as Seqera's Tower Agent (outgoing WebSocket, user's account, Slurm/LSF/PBS/SGE). Locally, server and agent run in the same process (`perspectio serve`).
+2. **Execution environments + runner.** A Spectio **runner** (`spectio runner`, same pip package, a single logical binary) runs on the login node, under the user's account. It opens an **outgoing** connection to the server, so no inbound port on the cluster. It receives orders (launch, cancel, resume, read a log, browse a directory), submits the head job to the scheduler and configures the plugins automatically (`nf-spectio` config, `--logger`; [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)). This is the same principle as Seqera's Tower Agent (outgoing WebSocket, user's account, Slurm/LSF/PBS/SGE). Locally, server and agent run in the same process (`perspectio serve`).
 3. **Launching from the interface.** Choose the workflow → the environment → fill in the form (sample sheet uploaded or selected via the agent) → Launch. Then: tracking, per-task debugging page (command, stdout/stderr, exit code, working directory files read on demand via the agent), relaunch with a prefilled form, resume, interventions.
 
 ### Comparison
@@ -378,6 +382,12 @@ Install the runner on the cluster: `pip install spectio`, then `spectio runner c
 
 Durations come from an agent report and should be taken as orders of magnitude.
 
+**Revised on 26/10/2026 (Thomas):**
+- The MVP covers **both engines from the start**: Snakemake through the logger plugin, and Nextflow through `nf-spectio` ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)).
+- It focuses on checks and QC: the checks of a stage, the evidence, and the gate (phase 1c above).
+- Sending results to depictio comes later.
+- The release stages are owned by [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §14.
+
 I propose to **start with read-only tracking of both engines**, then add steering (phase 1c). QC gates are what sets the project apart, but they rely on a reliable event log.
 
 ## 10. Main risks
@@ -395,7 +405,7 @@ I propose to **start with read-only tracking of both engines**, then add steerin
 1. Target cluster: SLURM, SGE, Kubernetes? Login node or dedicated machine?
 2. Launching: does the interface submit runs, or does it only track those launched from the CLI with the plugin?
 3. Imaging: formats (OME-Zarr, OME-TIFF…) and typical sizes?
-4. Project name and licence (MIT, Apache, AGPL)?
+4. Project name and licence (MIT, Apache, AGPL)? *Answered 26/10/2026: MIT; the public date is not set yet.*
 5. Is a WES facade needed from the MVP, or later?
 
 ## 12. Main sources

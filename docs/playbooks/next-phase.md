@@ -81,8 +81,8 @@ constraints-hunter for (3)(4), ux-reviewer for (5) and to render every board tou
 /review-round R4-constraints "Use constraints-hunter twice in parallel: (a) server,
 data model, events, SQLite/Postgres, SSE, outbox, tasks, backups — with numbers for a
 run of 100 000 tasks and 50 concurrent runs; (b) runner, engines, schedulers,
-Kubernetes, HPC site policies, third-party API stability (TraceObserverV2 @Beta, Tower
-protocol undocumented, Snakemake logger interface, Kueue v1beta2, slurmrestd
+Kubernetes, HPC site policies, third-party API stability (TraceObserverV2 @Beta,
+nf-spectio next to nf-tower, Snakemake logger interface, Kueue v1beta2, slurmrestd
 data_parser). Each risk needs the cheapest spike that would confirm or kill it. Finish
 with a ranked spike list."
 ```
@@ -265,9 +265,12 @@ fixtures named with the tool version.
 ### T2 · Engine event capture (golden fixtures) ∥
 
 ```text
-/spike engine-events "Run nf-toy with -with-tower pointed at a tiny capture server
-(write it under spikes/engine-events/, ~50 lines, logs every request body), on
-Nextflow 25.10 and 26.10, including a failed task, a retry and -resume. Do the same for
+/spike engine-events "Run nf-toy with a minimal TraceObserverV2 plugin (a first
+nf-spectio) that posts every event to a tiny capture server (write both under
+spikes/engine-events/, the server ~50 lines, logs every request body), on
+Nextflow 25.10 and 26.10, including a failed task, a retry and -resume. Run it once
+more with -with-tower pointed at a second capture endpoint, and check that both
+observers report the same run (docs/decisions/0001). Do the same for
 smk-toy with a minimal Snakemake logger plugin that writes every event as JSON,
 including a checkpoint. Save every payload as a golden fixture. Compare what arrives
 with synthesis.md §2bis/§2ter and report every difference."
@@ -334,9 +337,10 @@ with snakemake-github-action. Keep the synthetic suite green on all three engine
 ```text
 Use the brainstorming skill, then the writing-plans skill. Goal: the thinnest
 end-to-end slice. `spectio serve` (SQLite, single-user) receives a Nextflow run of nf-toy
-through the Tower protocol from a runner on slurm-mini, shows it in the Runs table and
-Run detail, stops at a gate, and resumes after an approve from the UI. Everything else
-is out of scope. The plan must list files, tests first (TDD), and the verification
+through the nf-spectio plugin and a Snakemake run of smk-toy through the Spectio
+logger plugin, from a runner on slurm-mini. It shows them in the Runs table and Run
+detail, runs the checks of one stage, stops at a gate, and resumes after an approve
+from the UI. The depictio hand-off and everything else are out of scope. The plan must list files, tests first (TDD), and the verification
 command for every task. Write docs/plans/P1-walking-skeleton.md.
 ```
 
