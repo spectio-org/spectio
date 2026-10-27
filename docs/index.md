@@ -4,7 +4,7 @@ hide: [navigation, toc]
 ---
 
 <div class="sp-hero2">
-<div class="sp-hero2__brand"><img src="assets/brand/emblem.svg" alt="" class="sp-hero2__emblem"><span class="sp-hero2__name">Spectio</span></div>
+<div class="sp-hero2__brand"><img src="assets/brand/emblem.svg" alt="" class="sp-hero2__emblem"><h1 class="sp-hero2__name">Spectio</h1></div>
 <p class="sp-hero2__tagline">Launch, monitor and relaunch your Nextflow and Snakemake runs, on your own cluster.</p>
 <p class="sp-hero2__sub">Open-source run manager for HPC and Kubernetes. Add quality checks between stages only where you want them. Part of the depictio platform.</p>
 <p class="sp-hero2__actions"><a class="md-button md-button--primary" href="usage/">How it works</a> <a class="md-button" href="roadmap/">Roadmap</a></p>
@@ -12,7 +12,7 @@ hide: [navigation, toc]
 </div>
 
 <figure class="sp-hero2__media">
-<video autoplay muted loop playsinline poster="assets/shots/run-detail_light.webp" aria-label="A terminal runs the synthetic pipeline to its QC gate while the browser shows a gate review design board">
+<video controls muted loop playsinline preload="metadata" poster="assets/shots/run-detail_light.webp" aria-label="A terminal runs the synthetic pipeline to its QC gate while the browser shows a gate review design board">
 <source src="assets/media/gate-review.mp4" type="video/mp4">
 </video>
 <figcaption>A run with an optional QC gate: it stops, someone reviews it, it resumes from the cache. The screens are the current design.</figcaption>
@@ -92,6 +92,7 @@ hide: [navigation, toc]
 <div class="sp-optional" markdown>
 <span class="sp-ic sp-ic--amber">:material-gate:</span>
 <div markdown>**Optional: quality checks between stages.** For pipelines where a bad sample should not reach the expensive stage, add a gate: the run stops after a stage, someone looks at the QC evidence, from a desk or a phone, and the run resumes from the cache. Pipelines without gates run straight through. [How gates work](features/gates.md)</div>
+<img class="sp-optional__phone" src="assets/shots/review-gate-phone_light.webp" alt="A gate review on a phone: the QC evidence and the decision">
 </div>
 
 ## What is inside { .sp-h2 }
