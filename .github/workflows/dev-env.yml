@@ -1,0 +1,52 @@
+name: dev · bootstrap and doctor
+
+# Installs the pinned toolchain (dev/bootstrap.sh --ci) and proves every layer works
+# (dev/doctor.sh), on a runner with cgroup v2, so sind and kind run here even though they
+# cannot run in a Claude Code cloud session. Spec: docs/specs/dev-environment-and-testing.md §1, §11.
+on:
+  push:                    # any branch, so autopilot branches are checked before their PR
+    paths: ["dev/**", "tests/pipelines/synthetic/**", ".github/workflows/dev-env.yml"]
+  schedule:
+    - cron: "41 3 * * 1"   # weekly: catches pins whose downloads or images disappear upstream
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: dev-env-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  doctor:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Bootstrap (timed)
+        run: |
+          start=$SECONDS
+          bash dev/bootstrap.sh --ci
+          echo "BOOTSTRAP_SECONDS=$((SECONDS - start))" >> "$GITHUB_ENV"
+      - name: Doctor (every layer must run)
+        env:
+          SPECTIO_DOCTOR_STRICT: "1"
+        run: |
+          set -o pipefail
+          bash dev/doctor.sh | tee doctor.txt
+      - name: Summary
+        if: always()
+        run: |
+          {
+            echo "### dev/doctor.sh on ${{ runner.os }} (bootstrap --ci: ${BOOTSTRAP_SECONDS:-?} s)"
+            echo '```text'
+            cat doctor.txt 2>/dev/null || echo "doctor did not run"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"

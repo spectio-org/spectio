@@ -1,0 +1,27 @@
+# Step D3: dev/bootstrap.sh and dev/doctor.sh, run for real in a Claude Code cloud session.
+# Needs the toolchain already installed (bash dev/bootstrap.sh --ci); the first command shows
+# that a second bootstrap run is a no-op. sind and kind are skipped here (cgroup v1); the CI run
+# that proves them is linked from docs/progress/W3/D3.md.
+title: "D3: bootstrap and doctor in a cloud session (sind and kind skipped: cgroup v1)"
+cols: 104
+rows: 32
+idle_time_limit: 1.5
+typing_delay: 0.02
+line_delay: 0.04
+workdir: .
+replace:
+  "/root/": "~/"
+steps:
+  - comment: "1. bootstrap is idempotent: every tool is already at its pin"
+  - run: "bash dev/bootstrap.sh --ci"
+  - pause: 0.8
+  - clear: true
+  - comment: "2. doctor: versions against dev/versions.env, then one smoke test per layer"
+  - run: "bash dev/doctor.sh"
+  - pause: 1.2
+  - clear: true
+  - comment: "3. a broken layer: no Chromium for Playwright. Exit 1, naming the tool"
+  - run: "PLAYWRIGHT_BROWSERS_PATH=/nonexistent bash dev/doctor.sh"
+    keep: "^(FAIL|doctor:)"
+    expect_exit: 1
+  - pause: 2
