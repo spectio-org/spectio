@@ -3,7 +3,9 @@ icon: material/api
 ---
 # API and CLI
 
-!!! note "Designed, planned from 0.1"
+!!! note "Designed; WES, MCP and embedded elements come after 0.0.1"
+
+    What ships in which version: [development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version).
 
 Everything the web interface does can be done from a script, a LIMS such as LabID, a CI job or an AI agent.
 

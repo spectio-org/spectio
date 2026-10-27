@@ -1,6 +1,8 @@
 # depictio
 
-!!! note "Designed, planned for the private alpha"
+!!! note "Designed; not in 0.0.1, version not set yet"
+
+    What ships in which version: [development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version).
 
 Spectio and [depictio](https://github.com/depictio/depictio) form one platform:
 

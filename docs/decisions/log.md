@@ -328,3 +328,34 @@ Everything must be traced, including:
 - **Cloudflare secrets set** (inbox #10).
 - **Autopilot permissions** (inbox #4): `tools/autopilot/claude-settings.json` was copied to `.claude/settings.json` on `main` at Thomas's request. The permissions are to be discussed again.
 - **Postponed:** the GitHub organisation (#9, unchanged) and the questions for EMBL IT.
+
+## 2026-10-27 — First version is 0.0.1: a basic local MVP
+
+- **Context.** The review rounds proposed a 0.1 cut with SLURM, a remote runner and many security prerequisites (inbox #11–#16). Thomas found it far too heavy for a first version.
+- **Decision (Thomas, by voice).** The first version is **0.0.1**, and it is basic:
+  - one user, no authentication, no roles;
+  - the engines run on the same machine as Spectio, with their local executor. Spectio manages no SLURM or Kubernetes, and there is no remote runner.
+- **In 0.0.1:**
+  - launch a run from the UI;
+  - monitor it: run state, number of jobs / tasks, stages;
+  - relaunch it, including with changed parameters;
+  - track parameters across runs: which parameters each run used, and what changed;
+  - a simple QC check and gate on one stage, then resume or relaunch, in its simplest form. Thomas said "maybe"; it stays in because the 2026-10-26 decision keeps checks and gates in focus;
+  - both engines: Snakemake through the logger plugin, Nextflow through `nf-spectio` ([0001](0001-nextflow-through-nf-spectio.md)).
+- **Not in 0.0.1:**
+  - multi-user, authentication, roles, OIDC / SAML, share links;
+  - SLURM and Kubernetes launchers, scheduler monitoring;
+  - Postgres, Docker Compose, Helm;
+  - the depictio hand-off;
+  - WES, MCP, embedded elements;
+  - LabID.
+- **Stays open.** What comes after 0.0.x, and in which order, is not decided and nothing is assumed (inbox #16, *partly handled*). Inbox #11, #12, #14 and #15 are not needed for 0.0.1 and stay open for later versions. The private alpha, public beta and 1.0 stages keep their entry conditions; the stage between 0.0.x and the private alpha is not defined yet.
+- **First tag.** The first release commit carries `Release-As: 0.0.1`. Without it, release-please would propose 1.0.0 from the `0.0.0` manifest, which the release guard blocks ([`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §15.2, sourced from release-please's code).
+- **Autopilot budget** (inbox #31): Thomas read 57 % on 2026-10-27, so 7 of the 15 points are spent; APPLY1 continues with an 8-point budget.
+- **Specs and pages changed:**
+  - [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md): new §15 (single owner of version contents, and how the first tag is made); §14 first row is now "0.0.x · Local MVP"; §12 no longer plans the first release as 0.1.0;
+  - new page [`mvp-0.0.1.md`](../specs/mvp-0.0.1.md): each 0.0.1 feature with its owning spec sections and UI boards; added to the nav and to the documentation map;
+  - [`synthesis.md`](../specs/synthesis.md) §9 (dated revision note), [`documentation-system.md`](../specs/documentation-system.md) §1 (Installation and Changelog rows);
+  - the landing page, the roadmap, the installation, changelog, API and feature pages;
+  - the P1 and R10 prompts in [`next-phase.md`](../playbooks/next-phase.md);
+  - inbox #11, #12, #14, #15, #16 and #31.

@@ -388,6 +388,8 @@ Durations come from an agent report and should be taken as orders of magnitude.
 - Sending results to depictio comes later.
 - The release stages are owned by [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §14.
 
+**Revised on 27/10/2026 (Thomas):** the first version is **0.0.1**, a basic local MVP: one user without sign-in, the engines on the same machine as Spectio (local executor), no SLURM or Kubernetes. It launches, monitors and relaunches runs with changed parameters, keeps the parameter history, and has one simple QC gate. What ships in which version is owned by [`dev-environment-and-testing.md`](dev-environment-and-testing.md#15-what-ships-in-which-version) §15; the phase table above is historical. Summary: [`mvp-0.0.1.md`](mvp-0.0.1.md).
+
 I propose to **start with read-only tracking of both engines**, then add steering (phase 1c). QC gates are what sets the project apart, but they rely on a reliable event log.
 
 ## 10. Main risks

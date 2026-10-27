@@ -164,8 +164,9 @@ tools/media. Write findings with prefix DOC- to docs/reviews/R11-docs.md. Do not
 ```text
 Read every docs/reviews/R*.md. Make one table of open findings by severity and spec,
 and confirm that all blockers are applied or explicitly deferred with a reason. Then
-propose: (1) the MVP cut (what is in the first usable release, what is not), as a
-walking skeleton that crosses every layer once; (2) the list of open questions for EMBL
+propose: (1) the MVP cut: the first usable release is 0.0.1, decided by Thomas
+(docs/specs/dev-environment-and-testing.md §15); check that cut against the open
+findings and list which blockers it defers; (2) the list of open questions for EMBL
 IT (cluster, Kubernetes, storage, auth); (3) a go / no-go with the conditions. Write
 docs/reviews/R10-synthesis.md and stop for my decision.
 ```
@@ -332,16 +333,20 @@ with snakemake-github-action. Keep the synthetic suite green on all three engine
 
 ## Phase P — decomposition and planning
 
-### P1 · Walking skeleton plan
+### P1 · Walking skeleton plan (0.0.1, local MVP)
 
 ```text
-Use the brainstorming skill, then the writing-plans skill. Goal: the thinnest
-end-to-end slice. `spectio serve` (SQLite, single-user) receives a Nextflow run of nf-toy
-through the nf-spectio plugin and a Snakemake run of smk-toy through the Spectio
-logger plugin, from a runner on slurm-mini. It shows them in the Runs table and Run
-detail, runs the checks of one stage, stops at a gate, and resumes after an approve
-from the UI. The depictio hand-off and everything else are out of scope. The plan must list files, tests first (TDD), and the verification
-command for every task. Write docs/plans/P1-walking-skeleton.md.
+Use the brainstorming skill, then the writing-plans skill. Goal: the 0.0.1 cut of
+docs/specs/dev-environment-and-testing.md §15 (summary: docs/specs/mvp-0.0.1.md).
+`spectio serve` (SQLite, single-user, no sign-in) launches nf-toy through the
+nf-spectio plugin and smk-toy through the Spectio logger plugin, both on the local
+executor of the same machine. It shows them in the Runs table and Run detail with their
+state, tasks and stages, runs the checks of one stage, stops at a gate, and resumes or
+relaunches with changed parameters after an approve from the UI. The parameter history
+(what each run used, what changed) is shown. Out of scope: slurm-mini and any remote
+runner, authentication, the depictio hand-off, and everything else §15 defers. The plan
+must list files, tests first (TDD), and the verification command for every task. Write
+docs/plans/P1-walking-skeleton.md.
 ```
 
 ### P2 · Milestone plans ∥

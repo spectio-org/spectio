@@ -384,9 +384,9 @@ Imaging review and the OME-Zarr viewer are designed on real images, not drawings
   | at least one `feat` | minor: 0.3.1 → 0.4.0 |
   | a breaking change (`feat!:` or a `BREAKING CHANGE:` footer) | minor too (`bump-minor-pre-major`), never 1.0.0 |
 
-  - **Design phase:** `feat` and `fix` are kept for product code. Tooling (`tools/`, `tests/`, workflows) uses `chore`, `test` or `ci`. Docs, specs and research use `docs`. So no release is cut before the walking skeleton, which is planned as `0.1.0`.
+  - **Design phase:** `feat` and `fix` are kept for product code. Tooling (`tools/`, `tests/`, workflows) uses `chore`, `test` or `ci`. Docs, specs and research use `docs`. So no release is cut before the first version, `0.0.1` ([§15](#15-what-ships-in-which-version); how its tag is made: §15.2).
   - **Docs and tests do not cut releases.** They are hidden from the generated `CHANGELOG.md`, because the curated changelog (`documentation-system.md` §6) covers docs. Whether a visible changelog section alone makes a commit releasable is **[to be validated]** with a dry run (`release-please release-pr --dry-run`).
-  - **1.0.0 is never automatic.** release-please only reaches it when `release-as: 1.0.0` is set in the config (release-please manifest docs). A guard (`release-guard.yml`) also fails any release PR at ≥ 1.0.0 unless the repository variable `ALLOW_V1` is `true`. Thomas sets that variable once the 1.0 gate (§14) is met.
+  - **1.0.0 is never automatic.** release-please only reaches it when `release-as: 1.0.0` is set in the config (release-please manifest docs). Exception: the very first release, whose default is 1.0.0; §15.2 says how 0.0.1 is forced instead. A guard (`release-guard.yml`) also fails any release PR at ≥ 1.0.0 unless the repository variable `ALLOW_V1` is `true`. Thomas sets that variable once the 1.0 gate (§14) is met.
 
 ## 13. Instance verification and access
 
@@ -418,10 +418,12 @@ Spectio stays in 0.x until it has been checked, in a fairly robust way, against 
 | Stage | Versions | Who uses it | Entry condition |
 |---|---|---|---|
 | **Design** | none | Thomas and the agents | — |
-| **Walking skeleton** | 0.1.x | Thomas, on the synthetic pipelines | `GO` gate passed (pipeline W4); one Nextflow run (`nf-spectio`) and one Snakemake run cross every layer once (launch, observe, check, gate, resume); the depictio hand-off comes later |
+| **0.0.x · Local MVP** | 0.0.x | Thomas, on the synthetic pipelines | `GO` gate passed; the 0.0.1 cut of §15 |
 | **Private alpha** | 0.2 – 0.4 | 3 to 5 design-partner groups at EMBL (`docs/research/adoption-and-positioning-2026-10-26.md`) | install in under 30 min from the docs alone; real corpus green nightly; backup and restore tested; R5 security findings closed |
 | **Public beta** | 0.5 – 0.9 | anyone, with a public demo instance | 2 weeks without a P0/P1 bug at the partners; upgrade tested across 3 consecutive minors; every guide has a cast or screenshots |
 | **1.0** | 1.0.0 | stable for institutional installs | the **1.0 gate** below, checked by a review step (`R-v1`, added to the pipeline when the beta starts) and decided by Thomas |
+
+The stage between 0.0.x and the private alpha is not defined yet (inbox #16). Revised 2026-10-27: the first stage was a 0.1.x walking skeleton with SLURM; Thomas cut it down to the local 0.0.x MVP of §15.
 
 **The 1.0 gate** (all of them):
 1. **Use cases.** At least one real pipeline from each scenario class of `checking-scenarios.md` §1 runs through Spectio, with a gate decided by a person other than its author.
@@ -431,3 +433,48 @@ Spectio stays in 0.x until it has been checked, in a fairly robust way, against 
 5. **Operations.** An upgrade path is tested across at least 3 minors with backup, restore and migration. No open P0 or P1 bug. A documented support channel answers within a week.
 6. **Contracts.** The OpenAPI and the plugin SDK are frozen, with a deprecation policy. The data model has a migration test for every revision.
 7. **Docs.** Install, user, admin and operator guides, the reference (API, CLI, configuration), and a curated changelog for every 0.x version.
+
+## 15. What ships in which version
+
+Added 2026-10-27 ([decision log](../decisions/log.md), inbox #16). **This section is the single owner of what each version contains.** Other docs (the roadmap, the landing page, [`mvp-0.0.1.md`](mvp-0.0.1.md), the phase tables of other specs) link here and do not repeat the lists. The old phase tables (`synthesis.md` §9, `architecture-plugins-and-packaging.md` §9, `schedulers-and-monitoring.md` §11) are historical where they disagree with this section.
+
+### 15.1 Capabilities by version
+
+The first version is **0.0.1**, a basic local MVP (Thomas, 2026-10-27):
+- one user, no sign-in, no roles;
+- the engines run on the same machine as Spectio, with their local executor. Spectio manages no SLURM or Kubernetes, and there is no remote runner.
+
+Everything after 0.0.x is **open**: "later (open)" means no version is assigned yet, and no assumption is made about the order (inbox #16). "Not planned" means a recorded decision rules it out.
+
+| Capability | 0.0.1 | Later (open) | Not planned | Owning spec |
+|---|---|---|---|---|
+| Snakemake engine, through the Spectio logger plugin (`--logger spectio`) | yes, local executor | other executors | | [`synthesis.md`](synthesis.md) §2, [`ui-spec.md`](ui-spec.md) §5 |
+| Nextflow engine, through `nf-spectio` | yes, local executor | other executors | the Tower protocol routes ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)) | [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md), [`synthesis.md`](synthesis.md) §2 |
+| Launch a run from the UI (form from the parameter schema) | yes | | | [`ui-spec.md`](ui-spec.md) §4.6, [`api-and-data-model.md`](api-and-data-model.md) §5 |
+| Monitoring: run state, number of jobs / tasks, stages | yes | | | [`ui-spec.md`](ui-spec.md) §3, §4.3, §4.4 |
+| Relaunch, including with changed parameters | yes | | | [`ui-spec.md`](ui-spec.md) §4.6 (relaunch dialog), [`api-and-data-model.md`](api-and-data-model.md) §5 (`:relaunch`) |
+| Parameter history: which parameters each run used, and what changed | yes | | | [`ui-spec.md`](ui-spec.md) §4.4 (Parameters, Lineage tabs), [`api-and-data-model.md`](api-and-data-model.md) §7 (`run_inputs`) |
+| QC check and gate on one stage, then resume or relaunch | yes, simplest form: the checks of one stage, one gate, approve then continue, or relaunch with changed parameters | item decisions, samplesheet and file edits, AI proposals, review queue, live checks | | [`checking-scenarios.md`](checking-scenarios.md) §4, §7, [`ui-spec.md`](ui-spec.md) §5.1, [`synthesis.md`](synthesis.md) §5ter |
+| Runs started from a terminal (observed, adopted) | no | yes (inbox #11) | | [`ui-spec.md`](ui-spec.md) §6 |
+| Users, sign-in, roles, OIDC / SAML, share links | no: one user, no sign-in | yes (inbox #11–#15, #18–#20) | | [`authentication-and-access.md`](authentication-and-access.md), [`api-and-data-model.md`](api-and-data-model.md) §6 |
+| SLURM launcher | no | yes | | [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) |
+| Kubernetes launcher | no | yes | | [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §4 |
+| Scheduler monitoring (pending reasons, accounting, capacity) | no | yes | | [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3 |
+| Database | SQLite, single process | Postgres | | [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.2 |
+| Deployment | Python bundle (`spectio serve`) | Docker Compose, Helm | | [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.3–§7.5 |
+| depictio hand-off | no | yes | | [`api-and-data-model.md`](api-and-data-model.md) §13.3 |
+| WES facade, MCP server | no | yes (inbox #17) | | [`api-and-data-model.md`](api-and-data-model.md) §5, §10 |
+| Embedded elements in other web apps | no | yes | | [`api-and-data-model.md`](api-and-data-model.md) §9 |
+| LabID integration | no | yes | | [`api-and-data-model.md`](api-and-data-model.md) §2 A |
+
+The 0.0.1 cut, with the screens that show each feature: [`mvp-0.0.1.md`](mvp-0.0.1.md).
+
+### 15.2 How the first tag is made
+
+- **State today.** `.release-please-manifest.json` holds `{".": "0.0.0"}`, and `release-please-config.json` sets `bump-minor-pre-major: true` and `bump-patch-for-minor-pre-major: false`. `release-please.yml` runs only when the repository variable `RELEASE_PLEASE_ENABLED` is `true`.
+- **Without an override, the first release would not be 0.0.1.**
+  - With the manifest at `0.0.0` and no earlier release tag, release-please does not bump `0.0.0`. It falls back to its initial version, `1.0.0` unless `initial-version` is set. Source, release-please `c589293` (main on 2026-10-27): `src/manifest.ts:709-735` skips the manifest backfill for `0.0.0`, and `src/strategies/base.ts:543-573` and `:756-762` return the initial version, `1.0.0` by default.
+  - `release-guard.yml` would then fail that release PR (§12).
+  - After a first release, a `feat` while < 1.0 gives the next minor (`src/versioning-strategies/default.ts:97-102`), as in the §12 table.
+- **So the first release commit carries the footer `Release-As: 0.0.1`** in its commit body, for example `git commit --allow-empty -m "chore: release 0.0.1" -m "Release-As: 0.0.1"`. release-please then opens a release PR for exactly that version: the README section ["How do I change the version number?"](https://github.com/googleapis/release-please#how-do-i-change-the-version-number), and `src/strategies/base.ts:554-564`, where a `Release-As` note takes precedence over the initial version and over bumps.
+- **Later 0.0.x patches** follow the §12 table from `0.0.1`: a `fix` gives `0.0.2`. A `feat` would give `0.1.0`, so every `feat` merged during 0.0.x also needs a `Release-As: 0.0.N` footer, until a version after 0.0.x is decided (inbox #16). Dry-run the first release PR before merging it (`release-please release-pr --dry-run`) **[to be validated]**.

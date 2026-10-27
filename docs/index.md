@@ -8,7 +8,7 @@ hide: [navigation, toc]
 <p class="sp-hero2__tagline">Launch, monitor and relaunch your Nextflow and Snakemake runs, on your own cluster.</p>
 <p class="sp-hero2__sub">Open-source run manager for HPC and Kubernetes. Add quality checks between stages only where you want them. Part of the depictio platform.</p>
 <p class="sp-hero2__actions"><a class="md-button md-button--primary" href="usage/">How it works</a> <a class="md-button" href="roadmap/">Roadmap</a></p>
-<p class="sp-badge">Design phase · nothing to install yet · first release planned as 0.1</p>
+<p class="sp-badge">Design phase · nothing to install yet · first release planned as <a href="specs/dev-environment-and-testing/#15-what-ships-in-which-version">0.0.1</a></p>
 </div>
 
 <figure class="sp-hero2__media">

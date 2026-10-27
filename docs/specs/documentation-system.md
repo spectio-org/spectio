@@ -62,13 +62,13 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 | Tab | Content | Phase |
 |---|---|---|
 | Home | landing page (§2) | now |
-| Installation | the three ways to run Spectio; "nothing to install yet" until 0.1 | now (short), full from 0.1 |
+| Installation | the three ways to run Spectio; "nothing to install yet" until 0.0.1 | now (short); the Python bundle from 0.0.1, the other ways with the versions that add them ([dev-env §15](dev-environment-and-testing.md#15-what-ships-in-which-version)) |
 | Usage | how Spectio works: the five words, a run without gates, a run with an optional gate; later the guides | now (short), guides from M1 |
 | Features | one short page per area (runs, runners, optional QC gates, administration, depictio), each with its screen designs, its status and a link to the owning spec | now |
 | API | the headless API and the CLI in plain words; later the generated reference (§9) | now (short) |
 | Developer | documentation map, Progress (§3.2), specifications, playbooks, reviews, decisions, research | now |
 | Roadmap | done, now, next, ideas, with the release stages as a timeline | now |
-| Changelog | curated, one block per version (§6) | now (empty until 0.1.0) |
+| Changelog | curated, one block per version (§6) | now (empty until 0.0.1, [dev-env §15](dev-environment-and-testing.md#15-what-ships-in-which-version)) |
 
 **Writing for users.** User-facing pages are short, use plain words, and say plainly what is designed and what is built. Gates are presented as optional: most pipelines run straight through.
 

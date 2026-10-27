@@ -2,19 +2,20 @@
 
 ## Reading order
 
-1. [Synthesis](specs/synthesis.md): feasibility, engines, existing tools, the recommended stack, risks and phasing.
-2. [UI spec](specs/ui-spec.md): navigation, status system, every screen, phone and tablet.
-3. [Checking scenarios](specs/checking-scenarios.md): the review model (items × checks × evidence × decisions) across the nf-core pipelines, and the five review views.
-4. [API and data model](specs/api-and-data-model.md): headless use, endpoints, identity and tenancy, database schema, events, RO-Crate, depictio compatibility (§13).
-5. [Plugin architecture and packaging](specs/architecture-plugins-and-packaging.md): plugin kinds and contract; Python bundle, Docker Compose and Kubernetes; tasks and message brokers (§7.6).
-6. [Schedulers and monitoring](specs/schedulers-and-monitoring.md): SLURM and other HPC schedulers, Kubernetes, pending reasons, accounting, capacity and pre-flight checks.
-7. [Administration and operations](specs/admin-and-operations.md): users and groups, branding, tasks, logs, health, backups, restore, migrations, maintenance.
-8. [CLI and shared libraries](specs/cli-and-shared-libraries.md): the `spectio` command tree, server profiles, and the libraries shared with depictio and LabID.
-9. [depictio ecosystem reuse](specs/depictio-ecosystem-reuse.md): what Spectio depends on, shares, copies, calls or leaves.
-10. [Dev environment and testing](specs/dev-environment-and-testing.md): toolchain, local SLURM (sind) and Kubernetes (kind with Kueue), isolated scenarios, test tiers, staging behind Tailscale Funnel, Claude in the development loop.
-11. [Authentication and access](specs/authentication-and-access.md): instance modes, sign-in methods (password, magic links, share links, OIDC, SAML, depictio trust), sessions and tokens, pipeline provisioning, the auth test matrix.
-12. [Telemetry and analytics](specs/telemetry-and-analytics.md): anonymous install telemetry, local activity analytics, and the web-analytics plugin kind (GA4, Umami, Plausible, Matomo, PostHog).
-13. [Documentation system](specs/documentation-system.md): the docs site and landing page, docs written and reviewed at every step, sketch diagrams, screenshots, casts and combined captures, changelog, PR bodies, auto-merge.
+1. [MVP 0.0.1](specs/mvp-0.0.1.md): what the first version does, with the spec sections and UI boards for each feature; version contents are owned by [dev environment §15](specs/dev-environment-and-testing.md#15-what-ships-in-which-version).
+2. [Synthesis](specs/synthesis.md): feasibility, engines, existing tools, the recommended stack, risks and phasing.
+3. [UI spec](specs/ui-spec.md): navigation, status system, every screen, phone and tablet.
+4. [Checking scenarios](specs/checking-scenarios.md): the review model (items × checks × evidence × decisions) across the nf-core pipelines, and the five review views.
+5. [API and data model](specs/api-and-data-model.md): headless use, endpoints, identity and tenancy, database schema, events, RO-Crate, depictio compatibility (§13).
+6. [Plugin architecture and packaging](specs/architecture-plugins-and-packaging.md): plugin kinds and contract; Python bundle, Docker Compose and Kubernetes; tasks and message brokers (§7.6).
+7. [Schedulers and monitoring](specs/schedulers-and-monitoring.md): SLURM and other HPC schedulers, Kubernetes, pending reasons, accounting, capacity and pre-flight checks.
+8. [Administration and operations](specs/admin-and-operations.md): users and groups, branding, tasks, logs, health, backups, restore, migrations, maintenance.
+9. [CLI and shared libraries](specs/cli-and-shared-libraries.md): the `spectio` command tree, server profiles, and the libraries shared with depictio and LabID.
+10. [depictio ecosystem reuse](specs/depictio-ecosystem-reuse.md): what Spectio depends on, shares, copies, calls or leaves.
+11. [Dev environment and testing](specs/dev-environment-and-testing.md): toolchain, local SLURM (sind) and Kubernetes (kind with Kueue), isolated scenarios, test tiers, staging behind Tailscale Funnel, Claude in the development loop.
+12. [Authentication and access](specs/authentication-and-access.md): instance modes, sign-in methods (password, magic links, share links, OIDC, SAML, depictio trust), sessions and tokens, pipeline provisioning, the auth test matrix.
+13. [Telemetry and analytics](specs/telemetry-and-analytics.md): anonymous install telemetry, local activity analytics, and the web-analytics plugin kind (GA4, Umami, Plausible, Matomo, PostHog).
+14. [Documentation system](specs/documentation-system.md): the docs site and landing page, docs written and reviewed at every step, sketch diagrams, screenshots, casts and combined captures, changelog, PR bodies, auto-merge.
 
 ## Playbooks and reviews
 

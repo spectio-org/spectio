@@ -123,6 +123,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a), with the scope registered once in auth §3 (see #13).
 - **Assumed:** none.
 - **Blocked:** APPLY1 for api §14 and the auth §3 ingest-token row; nf-spectio and the Snakemake logger credential handling (spike T2 envelope); the walking skeleton. Related assumptions that already proceed: [SR-006](../reviews/R1-consistency.md#sr-006-major-the-cli-command-tree-lacks-commands-that-other-specs-cite) (no wrapper, setup by `spectio login`, see #28) and [CH-002](../reviews/R4-constraints.md#ch-002-major-no-compatibility-window-for-the-ingest-and-runner-protocols-across-bridge-runner-and-server-versions) (separate ingest version, see #28).
+- **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 
 ### #12 · Runner ↔ server transport and runner credential lifetime
 
@@ -140,6 +141,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a). Checking EMBL proxies needs EMBL IT and waits until access exists.
 - **Assumed:** CH-032 and CH-007 proceed on their option A; the credential lifetime and who mints registration tokens are not assumed.
 - **Blocked:** APPLY1 for architecture §7.7 and the auth §3 runner row; every launch, cancel, file view and stop file; the walking skeleton. UX-124 blocks the EnvConnect values (later apply).
+- **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 
 ### #13 · Token registry, authorisation matrix and which column authorises reads
 
@@ -176,6 +178,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a), never an undeclared shared account. The EMBL acceptable-use policy and slurmrestd availability are **[to be validated at EMBL]** and need EMBL IT.
 - **Assumed:** SEC-103 A proceeds; the identity model is not assumed.
 - **Blocked:** APPLY1 for api §6, schedulers §6, the environments/runners schema and the gate assignment fields (api §5/§7, checking); spike sec-slurm-identity; runner protocol design and P1 planning.
+- **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 
 ### #15 · `single` mode on shared login nodes
 
@@ -188,6 +191,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a): never trust the network peer, and keep the no-setup HPC story. Validate in spike sec-single-mode.
 - **Assumed:** none.
 - **Blocked:** APPLY1 for auth §1/§6 and api §1/§6; spike sec-single-mode; the walking-skeleton auth design.
+- **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 
 ### #16 · What ships in 0.1 (MVP cut)
 
@@ -205,6 +209,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a). The old phase tables are marked historical with a link to dev-env §15. OIDC phasing is asked in #20 (UX-202).
 - **Assumed:** none.
 - **Blocked:** APPLY1 for dev-env §15, api §5 run verbs and state machine, api §13.6 rule 1, checking §7, reuse §0, api §15 (scale), the stage tags of SR-010, SR-035, SR-042 and SR-043; P1 walking-skeleton cut and P2 milestones; the MVP RunScheduler variant.
+- **Answer (Thomas, 2026-10-27):** the reviewers' 0.1 cut is too heavy. The first version is **0.0.1**, a basic local MVP: one user with no sign-in and no roles; the engines run on the same machine as Spectio (local executor), with no SLURM, no Kubernetes and no remote runner; in it: launch a run from the UI, monitor it (state, tasks, stages), relaunch it with changed parameters, track parameters across runs, a simple QC check and gate on one stage, Snakemake (logger plugin) and Nextflow (`nf-spectio`). Out of it: multi-user, auth, roles, OIDC/SAML, share links, SLURM and Kubernetes launchers, scheduler monitoring, Postgres, Compose, Helm, the depictio hand-off, WES, MCP, embedded elements, LabID. The single owner of version contents is now [dev-env §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version); summary page [MVP 0.0.1](../specs/mvp-0.0.1.md); log entry [2026-10-27](../decisions/log.md#2026-10-27-first-version-is-001-a-basic-local-mvp). What later versions contain stays open, with no assumption: SR-007's stage split, SR-018 (pause and stop), SR-023 + DL-104, CH-004, UX-227 and UX-115 still wait for an answer. *Partly handled.*
 
 ### #17 · Features after 0.1: WES, TRS, Seqera API, Galaxy, batches, chaining
 
@@ -444,3 +449,4 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a), after answering at least #16 (MVP cut), #11 and #12. Those carry blockers that APPLY1 must otherwise leave untouched.
 - **Assumed:** none. The autopilot stopped before APPLY1 (journal, tick 2).
 - **Blocked:** APPLY1, then R3, R6, TRIAGE2 and APPLY2.
+- **Reading (Thomas, 2026-10-27):** 57 %, so 7 of the 15 points are spent; the autopilot continues APPLY1 with an 8-point budget.
