@@ -732,3 +732,35 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a), applied to §12.3 through `/apply-findings`; ui-spec and synthesis then link to §12.3 instead of restating it.
 - **Assumed:** none. §12.3 is unchanged until then.
 - **Blocked:** nothing.
+
+## D6 (2026-10-27)
+
+### #49 · Virgil licence: the excalidraw/virgil font file contradicts its repository's licence (revisits #1)
+
+- **Covers:** [#1](#1-virgil-font-licence-blocks-publishing-the-hand-drawn-figures-font), `tools/diagrams/FONT-LICENSE.md`, [D6 Progress page](../progress/W3/D6.md)
+- **Context:**
+  - `excalidraw/virgil` `LICENSE.md` declares OFL-1.1: "Copyright (c) 2021 - Present, Ellinor Rapp, with Reserved Font Name Virgil." (read 2026-10-27).
+  - The same repository's `Virgil.woff2` (fetched through `cdn.jsdelivr.net/gh/excalidraw/virgil@main`, 2026-10-27) carries other metadata in its name table: "Virgil 3 YOFF", "Copyright (c) 2011 by Your Own Font Foundry. All rights reserved.", "Freeware for personal use! For commercial license please go to https://www.yourownfont.com/ …".
+  - The local copy taken from depictio is a third build ("Virgil GS", Jason Smith 2002, "All rights reserved").
+  - The repository is public now. No font file is committed; `mkdocs.yml` excludes `fonts/*.ttf` so a local copy never reaches the site. `docs/fonts/OFL.txt` is committed, scoped to the release as `excalidraw/virgil` declares it. PNGs are still rendered locally, so byte-identical PNG rendering in CI stays blocked.
+- **Options:**
+  - (a) ask Excalidraw (issue on `excalidraw/virgil`) which licence covers `Virgil.woff2`, and commit it only on a clear OFL answer;
+  - (b) switch to a font whose file and licence agree (Excalifont, or an OFL handwriting font from Google Fonts) **[to be validated]**, re-render every figure, then commit it with its licence;
+  - (c) keep (c) of #1: font local only, SVGs checked in CI, PNGs rendered locally.
+- **Recommendation:** (b), since it unblocks CI rendering without waiting on a third party; (c) until then. Nothing is sent to Excalidraw without Thomas.
+- **Assumed:** (c), unchanged from #1.
+- **Blocked:** byte-identical PNG rendering in CI (a deferred part of D6).
+
+### #50 · D6 was built in a minimal version: the rest needs a follow-up step
+
+- **Covers:** [D6 Progress page](../progress/W3/D6.md), [documentation system §1, §3.3, §7, §8](../specs/documentation-system.md)
+- **Context:**
+  - On Thomas's request (budget, tick 9), D6 did only: the build check now fails when `hooks/progress.py` output is missing; the docs-gate unit tests run in CI; the Virgil licence record (#49); and its review fixes.
+  - Deferred: mike versioning on the Cloudflare previews (`dev` from `main`, `X.Y` on release, `latest` / `stable`, `/versions` page); the Zensical evaluation; `hooks/shared_images.py` (not due: no mike version, `docs/assets` about 11 MB < 50 MB); byte-identical PNGs in CI (#49); the F4 and F6 figures.
+  - Two spec gaps seen on the way, not fixed: documentation system §3.3 item 3 names a `--allow-fallback-font` flag that `sketch.py` does not have (it falls back to a system font silently); §2 item 6 says the landing strip shows each wave's `public_title`, but `hooks/progress.py` renders `title`.
+- **Options:**
+  - (a) Thomas adds a step `D6b` to `pipeline.yaml` (after D6, before W4) with the deferred parts and the two gaps;
+  - (b) fold the deferred parts into the release work (mike only matters once there is a release) and the two gaps into the next `/apply-findings`.
+- **Recommendation:** (b): nothing deferred blocks W3 or W4; mike and `shared_images.py` are due at the first versioned docs.
+- **Assumed:** none. The autopilot does not edit `pipeline.yaml`.
+- **Blocked:** nothing.
