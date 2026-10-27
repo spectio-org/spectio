@@ -1,6 +1,6 @@
 # Real pipelines Spectio is tested against, with their own test datasets.
 # Sources and verification: docs/research/corpus-and-ci-2026-10-26.md; CI results and tier moves: docs/research/corpus-ci-2026-10-27.md
-# tier: pr = every PR (smoke subset, must fit a GitHub runner), nightly = scheduled matrix, manual = on demand.
+# tier: pr = every PR that touches the corpus (two light smoke entries, about 5 min on the small private runners), nightly = scheduled matrix, manual = on demand.
 # gate: the review gate Spectio puts on this pipeline in tests (see docs/specs/checking-scenarios.md).
 # Optional keys: env (nf-core: extra environment), args (extra command-line arguments), snakefile (catalog; default
 # workflow/Snakefile), network (external services the test data needs), note (why an entry is where it is).
@@ -19,12 +19,12 @@ runner_limits:
 
 nfcore:
   - {name: demo,                  version: 1.2.0,  min_nf: 25.10.4, tier: pr,      class: run-only,          gate: "after MULTIQC: sample QC table"}
-  - {name: rnaseq,                version: 3.27.0, min_nf: 25.10.4, tier: pr,      class: bulk-groups,       gate: "Mapping QC after alignment; exclude a sample and resume"}
+  - {name: rnaseq,                version: 3.27.0, min_nf: 25.10.4, tier: nightly, class: bulk-groups,       gate: "Mapping QC after alignment; exclude a sample and resume"}
   # viralrecon 3.0.0 and methylseq 4.2.0 include config files that are absent from their tags. The strict config parser,
   # the default since Nextflow 26.04, rejects that; the v1 parser does not (nf-core/viralrecon#606, nf-core/methylseq#607).
-  - {name: viralrecon,            version: 3.0.0,  min_nf: 25.04.0, tier: pr,      class: assembly,          gate: "per-sample coverage and consensus Ns", env: {NXF_SYNTAX_PARSER: v1}}
-  - {name: methylseq,             version: 4.2.0,  min_nf: 25.04.0, tier: pr,      class: bulk-samples,      gate: "bisulfite conversion rate", env: {NXF_SYNTAX_PARSER: v1}}
-  - {name: molkart,               version: 1.2.0,  min_nf: 25.04.0, tier: pr,      class: imaging-spots,     gate: "spot and segmentation counts per image"}
+  - {name: viralrecon,            version: 3.0.0,  min_nf: 25.04.0, tier: nightly, class: assembly,          gate: "per-sample coverage and consensus Ns", env: {NXF_SYNTAX_PARSER: v1}}
+  - {name: methylseq,             version: 4.2.0,  min_nf: 25.04.0, tier: nightly, class: bulk-samples,      gate: "bisulfite conversion rate", env: {NXF_SYNTAX_PARSER: v1}}
+  - {name: molkart,               version: 1.2.0,  min_nf: 25.04.0, tier: nightly, class: imaging-spots,     gate: "spot and segmentation counts per image"}
   - {name: fetchngs,              version: 1.13.0, min_nf: 25.10.4, tier: nightly, class: run-only,          gate: "run-level", network: [ena, sra]}
   - {name: sarek,                 version: 3.10.0, min_nf: 25.10.4, tier: nightly, class: variants-pairs,    gate: "coverage after mosdepth; tumour/normal pairing"}
   - {name: scrnaseq,              version: 4.2.0,  min_nf: 25.10.4, tier: nightly, class: cells,             gate: "cell thresholds per sample"}
@@ -37,7 +37,7 @@ nfcore:
 
 snakemake_catalog:
   # The two RNA-seq workflows query the Ensembl archive through biomaRt; --retries rides out short timeouts.
-  - {repo: snakemake-workflows/rna-seq-star-deseq2,        tag: v3.1.2,  submodules: true,  directory: .test, args: "--sdm conda --cores 2 --retries 2 --configfile .test/config_basic/config.yaml", tier: pr, class: bulk-groups, network: [ensembl]}
+  - {repo: snakemake-workflows/rna-seq-star-deseq2,        tag: v3.1.2,  submodules: true,  directory: .test, args: "--sdm conda --cores 2 --retries 2 --configfile .test/config_basic/config.yaml", tier: nightly, class: bulk-groups, network: [ensembl]}
   - {repo: snakemake-workflows/dna-seq-gatk-variant-calling, tag: v2.1.1, submodules: false, directory: .test, args: "--sdm conda --cores 2",                                         tier: manual,  class: variants, note: "latest tag; its samtools/faidx wrapper (0.74.0) pins samtools 1.10, which conda can no longer solve"}
   - {repo: snakemake-workflows/rna-seq-kallisto-sleuth,    tag: v4.1.1,  submodules: true,  directory: .test, args: "--sdm conda --cores 2 --retries 2 --all-temp",                   tier: manual,  class: bulk-groups, network: [ensembl], note: "get_transcript_info times out on the Ensembl archive in every CI run so far"}
   - {repo: snakemake-workflows/dna-seq-varlociraptor,      tag: v6.11.3, submodules: false, directory: .test, args: "--configfile .test/config-simple/config.yaml --sdm conda --cores 2 --resources mem_mb=7000", tier: nightly, class: variants-pairs}

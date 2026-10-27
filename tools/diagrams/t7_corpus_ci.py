@@ -10,7 +10,8 @@ from .github/workflows/ci.yml:
   (drawn as 46); molkart dropped to 16.1 GB free and viralrecon to 12.3 GB, so each used about 30-34 GB;
 - runner memory: MemTotal 7.75 GB, MemAvailable 6.84-6.96 GB before a run (drawn as 6.9),
   runner_limits.private 6 GB per task; FREYJA_BOOT peak RSS 6.7 GB;
-- corpus.yaml tiers: pr 7, nightly 9, manual 7 (23 entries: 14 nf-core, 9 Snakemake catalog);
+- corpus.yaml tiers: pr 2, nightly 14, manual 7 (23 entries: 14 nf-core, 9 Snakemake catalog); the four heavy nf-core
+  PR entries and rna-seq-star-deseq2 moved to nightly after the runs (inbox #45, Thomas, 2026-10-27);
 - ci.yml: ci-ok needs [changes, security, pipelines-synthetic, pipelines-real].
 """
 
@@ -134,13 +135,13 @@ def build(theme: Theme) -> Sketch:
     s.text(rx + 60, 188, "14 nf-core, 9 Snakemake catalog", size=13.5, anchor="start", colour=t.dim)
     cell, gap = 18.0, 3.0
     sx0 = rx + 70
-    s.task_strip(sx0, 222, ((7, "neutral", ""), (9, "neutral", ""), (7, "neutral", "")), cell=cell, gap=gap, h=22)
+    s.task_strip(sx0, 222, ((2, "neutral", ""), (14, "neutral", ""), (7, "neutral", "")), cell=cell, gap=gap, h=22)
     pitch = cell + gap
-    starts = (sx0, sx0 + 7 * pitch + 4 * gap, sx0 + 16 * pitch + 8 * gap)
-    centres = [st + n * pitch / 2 for st, n in zip(starts, (7, 9, 7))]
+    starts = (sx0, sx0 + 2 * pitch + 4 * gap, sx0 + 16 * pitch + 8 * gap)
+    centres = [st + n * pitch / 2 for st, n in zip(starts, (2, 14, 7))]
 
     cols = (rx + 10, rx + 250, rx + 490)
-    tiers = (("pr", 7, "every PR that touches it"), ("nightly", 9, "scheduled, every night"),
+    tiers = (("pr", 2, "every PR that touches it"), ("nightly", 14, "scheduled, every night"),
              ("manual", 7, "on demand only"))
     ty = 330
     for (name, n, when), col, c in zip(tiers, cols, centres):
@@ -149,14 +150,16 @@ def build(theme: Theme) -> Sketch:
         s.text(col, ty + 22, when, size=13, anchor="start", colour=t.dim)
 
     sy = ty + 40
-    s.task_strip(cols[0], sy, ((7, "bar_green", ""),), cell=cell, gap=gap, h=24)
-    s.tick(cols[0] + 7 * pitch + 14, sy + 10)
-    s.text(cols[0], sy + 50, "7 of 7 green", size=15, anchor="start")
-    s.text(cols[0], sy + 70, "5 nf-core, 2 catalog", size=13, anchor="start", colour=t.dim)
-    s.task_strip(cols[1], sy, ((9, "bar_green", ""),), cell=cell, gap=gap, h=24)
-    s.tick(cols[1] + 9 * pitch + 14, sy + 10)
-    s.text(cols[1], sy + 50, "9 of 9 passed", size=15, anchor="start")
-    s.text(cols[1], sy + 70, "8 nf-core, 1 catalog", size=13, anchor="start", colour=t.dim)
+    s.task_strip(cols[0], sy, ((2, "bar_green", ""),), cell=cell, gap=gap, h=24)
+    s.tick(cols[0] + 2 * pitch + 14, sy + 10)
+    s.text(cols[0], sy + 50, "2 of 2 green", size=15, anchor="start")
+    s.text(cols[0], sy + 70, "demo, a catalog dry run", size=13, anchor="start", colour=t.dim)
+    # nightly: two rows of seven, the one red cell is rna-seq-star-deseq2
+    s.task_strip(cols[1], sy, ((7, "bar_green", ""),), cell=cell, gap=gap, h=22)
+    s.task_strip(cols[1], sy + 27, ((6, "bar_green", ""), (1, "problem", "")), cell=cell, gap=gap, h=22)
+    s.text(cols[1], sy + 78, "13 of 14 passed", size=15, anchor="start")
+    s.text(cols[1], sy + 98, "12 nf-core, 2 catalog", size=13, anchor="start", colour=t.dim)
+    s.text(cols[1], sy + 116, "deseq2: conda-forge 502", size=13, anchor="start", colour=t.accent)
 
     # manual: one cell per entry, a leader line to its cause
     causes = ((2, "problem", "conda pins no longer solve"), (1, "problem", "dead URL, 404"),

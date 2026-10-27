@@ -688,3 +688,9 @@ Step page: [APPLY2](../progress/W2/APPLY2.md).
 - **The doctor never goes green by skipping in CI:** sind and kind are skipped, with the reason, only where Docker runs on cgroup v1 (cloud sessions); `dev-env.yml` sets `SPECTIO_DOCTOR_STRICT=1`, so a skip fails there.
 - **No SessionStart hook:** bootstrap `--ci` and the doctor start `dockerd` when it is missing, which covers the daemon that the environment cache does not keep.
 - **Specs changed:** [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §1 (table, new "Bootstrap" paragraph, "Checks"), §2 (cloud sessions row and the cloud environment settings: network list with `nodejs.org` and `get.helm.sh` added to D2's, environment variables, setup script), §4.2 (answered: kind and sind do not run in cloud sessions), §11 (`dev-env.yml` row). Progress page: [D3](../progress/W3/D3.md).
+
+## 2026-10-27 — A light PR tier for the real-pipeline corpus (inbox #45)
+
+- **Decision (Thomas, session, 2026-10-27).** The PR tier of `tests/pipelines/real/corpus.yaml` keeps only nf-core/demo and the ms-proteomics dry run, about 5 min. rnaseq, viralrecon, methylseq, molkart and rna-seq-star-deseq2 move to `nightly`. `pipelines-real` stays in `ci-ok`'s `needs`, as decided in T7.
+- **Why.** The private runners are small (2 CPU, 7.75 GB). The 7-entry tier took about 40 min, and its heavy entries failed for reasons outside the PR: an Ensembl timeout, a conda-forge 502, and a Docker registry reset on rnaseq (run 40578574693).
+- **Specs changed:** [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §10.2 (table, re-run rule) and §11 (`ci.yml` row). Evidence: [corpus-ci-2026-10-27](../research/corpus-ci-2026-10-27.md) §2–§3. Progress page: [T7](../progress/W3/T7.md).

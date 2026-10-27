@@ -45,7 +45,7 @@ class ValidateTest(unittest.TestCase):
     def test_matrix_names_catalog_entries(self):
         nf, smk = run_corpus.matrix(run_corpus.CORPUS, "pr")
         self.assertIn("demo", [e["name"] for e in nf])
-        self.assertIn("rna-seq-star-deseq2", [e["name"] for e in smk])
+        self.assertIn("snakemake-ms-proteomics", [e["name"] for e in smk])
         self.assertTrue(all(e["tier"] == "pr" for e in nf + smk))
 
 

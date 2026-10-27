@@ -678,6 +678,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
   - (c) also move viralrecon to `nightly`, which cuts the PR tier to about 20 min.
 - **Recommendation:** (a). The PR tier is the only place where a real Snakemake run gates a merge, and the re-run rule costs one click.
 - **Assumed:** (a).
+- **Answer (Thomas, 2026-10-27, session):** a light PR tier, beyond (c): only nf-core/demo and the ms-proteomics dry run stay in `pr`; rnaseq, viralrecon, methylseq, molkart and rna-seq-star-deseq2 move to `nightly`. The private runners are small, and a heavy PR tier breaks on them for reasons outside the PR (rnaseq lost a Docker pull to a registry reset in run 40578574693). Applied in T7: `corpus.yaml`, [dev environment §10.2](../specs/dev-environment-and-testing.md#102-real-pipelines-testspipelinesrealcorpusyaml). *Decided.*
 - **Blocked:** nothing.
 
 ### #46 · Follow-up: pin the corpus by commit and replace the Snakemake composite action
