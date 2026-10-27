@@ -117,3 +117,11 @@ media:
       - docs/assets/diagrams/apply2_relaunch_dark.svg
       - docs/assets/diagrams/apply2_relaunch_light.png
       - docs/assets/diagrams/apply2_relaunch_dark.png
+  - id: d1-claude-config
+    kind: diagram
+    generator: python3 tools/diagrams/d1_claude_config.py
+    outputs:
+      - docs/assets/diagrams/d1_claude_config_light.svg
+      - docs/assets/diagrams/d1_claude_config_dark.svg
+      - docs/assets/diagrams/d1_claude_config_light.png
+      - docs/assets/diagrams/d1_claude_config_dark.png
