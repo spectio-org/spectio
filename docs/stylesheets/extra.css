@@ -2,7 +2,7 @@
    All landing-page styles live here: index.md carries no inline CSS (documentation-system.md §2). */
 
 :root {
-  --sp-indigo-500: #5A4FCF; --sp-violet-50: #F6F2FE; --sp-violet-500: #8B5CF6; --sp-violet-600: #7750D4;
+  --sp-indigo-500: #5A4FCF; --sp-violet-50: #F6F2FE; --sp-violet-200: #D8C8FC; --sp-violet-500: #8B5CF6; --sp-violet-600: #7750D4;
   --sp-violet-700: #6344B2; --sp-coral-500: #EC5F87; --sp-amber-500: #F9A947;
   --sp-ink-0: #F7F7FB; --sp-ink-50: #EEEFF5; --sp-ink-100: #DFE1EA; --sp-ink-400: #6E7287;
   --sp-ink-500: #4D5065; --sp-ink-600: #33364A; --sp-ink-900: #0F1020;
@@ -46,7 +46,7 @@
   .md-nav__source { background-color: var(--sp-surface-subtle); color: var(--sp-text); border-bottom: 1px solid var(--sp-line); }
 }
 .md-tabs__link--active, .md-tabs__item--active .md-tabs__link { color: var(--sp-violet-700); }
-[data-md-color-scheme="slate"] .md-tabs__item--active .md-tabs__link { color: #CDB9FB; }
+[data-md-color-scheme="slate"] .md-tabs__item--active .md-tabs__link { color: var(--sp-violet-200); }
 .md-header__button.md-logo img { height: 1.2rem; width: auto; }
 @media screen and (min-width: 60em) {
   .md-header .md-search__input { background-color: var(--sp-surface-subtle); color: var(--sp-text); box-shadow: inset 0 0 0 1px var(--sp-line); }
@@ -143,13 +143,12 @@
 /* lockup: the fan sits on the wordmark's baseline */
 .sp-hero2__brand { display: inline-flex; align-items: flex-end; gap: 1.1rem; margin: 1.6rem 0 1.4rem; }
 .sp-emblem { width: 7rem; height: auto; overflow: visible; }
-.sp-emblem path { transform-origin: 100px 98px; transform-box: view-box; animation: sp-fan .9s cubic-bezier(.2, .8, .2, 1) both; }
+.sp-emblem path { transform-origin: 100px 98px; transform-box: view-box; animation: sp-fan .9s cubic-bezier(.2, .8, .2, 1) backwards; transition: transform .3s; }
 .sp-emblem path:nth-child(1) { animation-delay: .05s; --r: -50deg; }
 .sp-emblem path:nth-child(2) { animation-delay: .15s; --r: -25deg; }
 .sp-emblem path:nth-child(3) { animation-delay: .25s; --r: 25deg; }
 .sp-emblem path:nth-child(4) { animation-delay: .35s; --r: 50deg; }
 @keyframes sp-fan { from { opacity: 0; transform: rotate(var(--r)) scale(.6); } to { opacity: 1; transform: none; } }
-.sp-hero2__brand:hover .sp-emblem path { transition: transform .3s; }
 .sp-hero2__brand:hover .sp-emblem path:nth-child(1) { transform: translate(-3px, 0); }
 .sp-hero2__brand:hover .sp-emblem path:nth-child(2) { transform: translate(-2px, -2px); }
 .sp-hero2__brand:hover .sp-emblem path:nth-child(3) { transform: translate(2px, -2px); }
@@ -157,14 +156,14 @@
 .sp-wordmark { font-family: "Outfit", "Inter", sans-serif; font-size: 4.2rem; font-weight: 600; line-height: .74; letter-spacing: -.035em; color: var(--sp-text);
   animation: sp-rise .8s .3s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes sp-rise { from { opacity: 0; transform: translateY(.4rem); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .sp-emblem path, .sp-wordmark { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .sp-emblem path, .sp-wordmark { animation: none; } .sp-hero2__brand:hover .sp-emblem path { transform: none; } }
 /* status line above the lockup: replaces the old "design phase" badge */
 .md-typeset a.sp-status { display: inline-flex; align-items: center; gap: .55rem; max-width: 100%; padding: .3rem .8rem .3rem .45rem; border-radius: 2rem; font-size: .68rem; color: var(--sp-text-2);
   background: linear-gradient(var(--sp-surface), var(--sp-surface)) padding-box, linear-gradient(90deg, var(--sp-indigo-500), var(--sp-violet-500), var(--sp-coral-500), var(--sp-amber-500)) border-box;
   border: 1px solid transparent; box-shadow: 0 1px 2px rgba(15, 16, 32, .05); transition: transform .15s; }
 .md-typeset a.sp-status:hover { transform: translateY(-1px); color: var(--sp-text); }
 .md-typeset a.sp-status b { display: inline-flex; align-items: center; gap: .4rem; padding: .1rem .55rem; border-radius: 2rem; background: var(--sp-violet-50); color: var(--sp-violet-700); font-weight: 600; white-space: nowrap; flex-shrink: 0; }
-[data-md-color-scheme="slate"] .md-typeset a.sp-status b { background: rgba(139, 92, 246, .18); color: #CDB9FB; }
+[data-md-color-scheme="slate"] .md-typeset a.sp-status b { background: rgba(139, 92, 246, .18); color: var(--sp-violet-200); }
 .sp-status__go { color: var(--sp-text-3); }
 @media (max-width: 30em) { .md-typeset a.sp-status { font-size: .62rem; text-align: left; } }
 .md-typeset .sp-hero2__tagline { font-family: "Outfit", "Inter", sans-serif; font-size: 1.55rem; line-height: 1.3; font-weight: 600; color: var(--sp-text); margin: 0 0 .8rem; }
