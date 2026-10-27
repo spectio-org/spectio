@@ -3,7 +3,8 @@ name: previews
 # Static dev previews on Cloudflare Pages (docs/specs/dev-environment-and-testing.md §7.1).
 # One branch alias per PR (pr-<n>), approved wave (wave-w<n>), release (v0-3-0) and main.
 # Every deployment keeps its own hash URL; /versions lists them all. Without the secrets, it builds and skips the deploy.
-# Wave approval: label a wave-review PR (title names one wave, e.g. "... (W3 complete)") with `wave-approved`.
+# Wave approval: Thomas labels the promotion PR into main (title names one wave, e.g. "... (W3 complete)") `wave-approved`.
+# Only the repository owner's label counts; agents never add it (§7.1). Manual runs cannot take a reserved alias.
 # The CLOUDFARE_* names are the ones set on 2026-10-26 (typo); rename them to CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
 # and drop the fallbacks.
 on:
@@ -15,7 +16,7 @@ on:
   workflow_dispatch:
     inputs:
       alias:
-        description: "Branch alias for this preview, e.g. wave-w2"
+        description: "Branch alias for an ad hoc preview, e.g. demo-gates (main, production, pr-*, wave-* and v<digit>* are reserved)"
         required: true
 
 permissions: {}
@@ -32,10 +33,12 @@ env:
 
 jobs:
   preview:
-    # PRs from forks cannot read the environment secrets; skip them. Of the label events, only wave-approved deploys.
+    # PRs from forks cannot read the environment secrets; skip them. Of the label events, only wave-approved deploys,
+    # and only when the repository owner adds it on a PR into main (the wave-review promotion PR).
     if: >-
       (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
-      && (github.event.action != 'labeled' || github.event.label.name == 'wave-approved')
+      && (github.event.action != 'labeled' || (github.event.label.name == 'wave-approved'
+          && github.event.sender.login == github.repository_owner && github.event.pull_request.base.ref == 'main'))
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: previews
@@ -48,13 +51,10 @@ jobs:
         env:
           T: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN }}
           A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFARE_ACCOUND_ID }}
-          T_NEW: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
-          A_NEW: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
         run: |
           missing=""
           [ -n "$T" ] || missing="$missing CLOUDFLARE_API_TOKEN"
           [ -n "$A" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
-          echo "Secret names set: CLOUDFLARE_API_TOKEN=$T_NEW CLOUDFLARE_ACCOUNT_ID=$A_NEW (false means the CLOUDFARE_* fallback or nothing)"
           if [ -z "$missing" ]; then echo "has=true" >> "$GITHUB_OUTPUT"; echo "Cloudflare secrets: both present";
           else echo "has=false" >> "$GITHUB_OUTPUT"; echo "::notice::Missing in environment 'previews' (or repository secrets):$missing"; fi
 
@@ -81,7 +81,11 @@ jobs:
               [ "$(grep -c . <<<"$waves")" = 1 ] || { echo "::error::wave-approved needs exactly one wave id (W<n>) in the PR title, found: ${waves//$'\n'/ }"; exit 1; }
               a="wave-$waves" ;;
             pull_request/*)    a="pr-$PR" ;;
-            workflow_dispatch/*) a="$INPUT" ;;
+            workflow_dispatch/*)
+              a="$INPUT"
+              if [[ ! "$a" =~ ^[A-Za-z0-9][A-Za-z0-9-]*$ || "${a,,}" =~ ^(main$|production$|pr-|wave-|v[0-9]) ]]; then
+                echo "::error::a manual alias is letters, digits and dashes, and not main, production, pr-*, wave-* or v<digit>*"; exit 1
+              fi ;;
             *) if [[ "$GITHUB_REF" == refs/tags/* ]]; then a="${GITHUB_REF_NAME//./-}"; else a="main"; fi ;;
           esac
           a=$(echo "$a" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9-\n' '-')
@@ -171,6 +175,6 @@ jobs:
             [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/${context.repo.owner}/${context.repo.repo}/tree/${BRANCH}?quickstart=1)
             Full stack on demand: the codespace serves the docs on port 8000 (and Spectio on 8080 once it exists).`;
             const comments = await github.paginate(github.rest.issues.listComments, { ...context.repo, issue_number: context.issue.number });
-            const old = comments.find(c => c.body && c.body.startsWith(marker));
+            const old = comments.find(c => c.user?.login === 'github-actions[bot]' && c.body?.startsWith(marker));
             if (old) await github.rest.issues.updateComment({ ...context.repo, comment_id: old.id, body });
             else await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });

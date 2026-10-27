@@ -1,4 +1,4 @@
-"""Tests for versions_page.py. Run: python3 -m unittest tools/previews/test_versions_page.py
+"""Tests for versions_page.py. Run: python3 -m unittest discover -s tools/previews -p 'test_*.py'
 
 The deployment objects follow the shape the live Cloudflare Pages deployments API returned on 2026-10-27
 (key names printed by fetch() in the previews.yml log of PR #13); ids, hashes and dates are made up.
@@ -52,10 +52,11 @@ class Rows(unittest.TestCase):
 
 
 class Fetch(unittest.TestCase):
-    def pages(self, *batches):
+    def pages(self, *batches, info=True):
         total = len(batches)
-        bodies = [json.dumps({"result": b, "result_info": {"page": i + 1, "per_page": 25, "count": len(b),
-                                                           "total_count": sum(map(len, batches)), "total_pages": total}})
+        bodies = [json.dumps({"result": b, **({"result_info": {"page": i + 1, "per_page": 25, "count": len(b),
+                                                              "total_count": sum(map(len, batches)), "total_pages": total}}
+                                              if info else {})})
                   for i, b in enumerate(batches)]
         calls = []
 
@@ -64,8 +65,8 @@ class Fetch(unittest.TestCase):
             return io.BytesIO(bodies[len(calls) - 1].encode())
         return calls, urlopen
 
-    def run_fetch(self, *batches):
-        calls, fake = self.pages(*batches)
+    def run_fetch(self, *batches, info=True):
+        calls, fake = self.pages(*batches, info=info)
         env = {"CLOUDFLARE_API_TOKEN": "t", "CLOUDFLARE_ACCOUNT_ID": "a"}
         with mock.patch.dict(os.environ, env), mock.patch.object(vp.urllib.request, "urlopen", fake), \
                 mock.patch("sys.stdout", new_callable=io.StringIO) as out:
@@ -81,6 +82,11 @@ class Fetch(unittest.TestCase):
     def test_full_last_page_stops(self):
         got, calls, _ = self.run_fetch([dep("pr-1", "a" * 7, n=i) for i in range(25)])
         self.assertEqual((len(got), len(calls)), (25, 1))
+
+    def test_without_result_info_a_short_page_stops(self):
+        got, calls, _ = self.run_fetch([dep("pr-1", "a" * 7, n=i) for i in range(25)], [dep("main", "b" * 7)] * 3,
+                                       info=False)
+        self.assertEqual((len(got), len(calls)), (28, 2))
 
 
 class Page(unittest.TestCase):
