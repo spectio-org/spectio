@@ -20,7 +20,7 @@ python3 gate_resume.py --no-png     # SVG only, no browser needed
 - Python 3.11+ with `playwright` and its Chromium, for the PNGs;
 - ImageMagick (optional): it reduces the PNGs to 256 colours, which makes them about 3 times smaller.
 
-**Font:** `SPECTIO_VIRGIL_TTF` points to the font. The default is `docs/fonts/Virgil.ttf`. Its licence is not settled yet, see [`FONT-LICENSE.md`](FONT-LICENSE.md).
+**Font:** `SPECTIO_VIRGIL_TTF` points to the font. The default is `docs/fonts/Virgil.ttf`. The `excalidraw/virgil` repository declares OFL-1.1, but the metadata in its own font file says "freeware for personal use". The local depictio copy is a different build again. The licence is unconfirmed, see [`FONT-LICENSE.md`](FONT-LICENSE.md).
 
 ## Rules
 
