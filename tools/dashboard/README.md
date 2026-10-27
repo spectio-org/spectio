@@ -16,7 +16,7 @@ python3 tools/dashboard/gen.py . "$OUT/data.json"   # steps, inbox, rounds, git;
 python3 tools/dashboard/build.py "$OUT"             # writes $OUT/spectio-board.html
 ```
 
-Then publish `$OUT/spectio-board.html` to the existing artifact URL with the Artifact tool, so the link stays the same.
+Then publish `$OUT/spectio-board.html` with the Artifact tool, passing `url` = https://claude.ai/artifact/VrNreQfsQvF6GBK3LUGW9C, so the link stays the same. The autopilot does this at the end of every tick (`.claude/skills/autopilot/SKILL.md` §5).
 
 | File | Role |
 |---|---|
