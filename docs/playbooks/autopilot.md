@@ -216,3 +216,13 @@ JSON
 done
 gh variable set AUTOMERGE_MAIN --body false   # set to true to let CI merge into main
 ```
+
+## 9. Code review in the loop
+
+Every step that changes code, a `build` step or a spike whose code a later step reuses, goes through the `review-code` (`.claude/skills/review-code/SKILL.md`) skill. It runs after the exit check and before the docs (§7).
+
+1. **`code-reviewer`** reads only the step's prompt, the owning spec, the diff `base..HEAD` and the worker's report. It checks requirement fit, correctness, tests, and the Karpathy guidelines: simplicity first, surgical changes. It returns `approve`, `changes` or `block`.
+2. **Fix loop.** On `changes`, the worker that built the step fixes the blockers and majors in its worktree. After two rounds the step is `blocked`, with an inbox entry.
+3. **`code-simplifier`** then shrinks the step's own diff without changing behaviour, re-running the step's tests. A failed simplification is reverted and never blocks the step.
+
+The step's `base` commit is recorded in `state.json` when it starts. Findings go to `docs/reviews/code/<step>.md` (prefix `CR-`), and the `CODE` report line goes into the Progress page. In W5, subagent-driven-development already reviews each task. The task reviewer gets the Karpathy guidelines as global constraints, and `review-code` runs once on the whole branch before it is finished (P3 in [`next-phase.md`](next-phase.md)).

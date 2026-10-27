@@ -328,3 +328,13 @@ Everything must be traced, including:
 - **Cloudflare secrets set** (inbox #10).
 - **Autopilot permissions** (inbox #4): `tools/autopilot/claude-settings.json` was copied to `.claude/settings.json` on `main` at Thomas's request. The permissions are to be discussed again.
 - **Postponed:** the GitHub organisation (#9, unchanged) and the questions for EMBL IT.
+
+## 2026-10-27 — Code review and simplification after every build step
+
+- **Gap found:** the `build` steps of W3 had no code review. Only P3 asked for one, through subagent-driven-development. The Karpathy guidelines were a rule in `CLAUDE.md`, not a check.
+- **Decision (Thomas):** add two agents and one skill.
+  - `code-reviewer`: read-only, fresh context; returns approve / changes / block.
+  - `code-simplifier`: behaviour-preserving, on the step's own diff only.
+  - `review-code`: chains them, with at most two fix rounds by the worker and the tests re-run after each change.
+- **Where it runs:** step 3 of the autopilot verification, before the docs ([`autopilot.md`](../playbooks/autopilot.md) §9). In P3, the task reviewer of subagent-driven-development gets Karpathy §2–3 as global constraints, and `review-code` runs once on the whole branch. The vendored superpowers skills stay unchanged (`.claude/skills/THIRD_PARTY.md`).
+- **Docs:** a `build` Progress page carries the `CODE` line and links `docs/reviews/code/<step>.md` ([`documentation-system.md`](../specs/documentation-system.md) §3.1).
