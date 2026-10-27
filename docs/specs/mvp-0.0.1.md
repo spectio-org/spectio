@@ -31,3 +31,9 @@ For the gate, 0.0.1 keeps the simplest form: the checks of one stage, one gate, 
 ## 3. Deferred
 
 Not in 0.0.1, version not set: runs started from a terminal, users and sign-in, SLURM and Kubernetes, scheduler monitoring, Postgres, Compose and Helm, the depictio hand-off, WES, MCP, embedded elements, LabID. The full list, with owners, is in [`dev-environment-and-testing.md`](dev-environment-and-testing.md#15-what-ships-in-which-version) §15.
+
+## 4. Cheap extras that keep the way open
+
+Thomas, 2026-10-27: 0.0.1 stays small so that it can be checked by hand, and bugs, defects and visual problems are fixed from the start. Two choices cost almost nothing now and avoid rework later. Neither one is a promise for 0.0.1.
+- **The data model stays multi-user ready.** It keeps the existing rule "single-user first, multi-user ready" ([decision log](../decisions/log.md), 2026-10-25): every tenant row carries its `project_id`, and `spectio init` creates the one user, group and project. 0.0.1 builds no sign-in and no roles on top.
+- **A run that the engine sends to a cluster is still monitored.** Spectio itself submits nothing to SLURM in 0.0.1. But when the engine uses its own executor (Snakemake `--executor slurm`, Nextflow `executor = 'slurm'`) from the same machine, its events still reach Spectio through the logger plugin or `nf-spectio`, because only the engine's main process talks to Spectio ([`synthesis.md`](synthesis.md) §10, risk 2). This is a bonus to try on a real cluster, not a tested feature **[to be validated]**.

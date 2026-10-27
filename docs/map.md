@@ -12,7 +12,7 @@
 8. [Administration and operations](specs/admin-and-operations.md): users and groups, branding, tasks, logs, health, backups, restore, migrations, maintenance.
 9. [CLI and shared libraries](specs/cli-and-shared-libraries.md): the `spectio` command tree, server profiles, and the libraries shared with depictio and LabID.
 10. [depictio ecosystem reuse](specs/depictio-ecosystem-reuse.md): what Spectio depends on, shares, copies, calls or leaves.
-11. [Dev environment and testing](specs/dev-environment-and-testing.md): toolchain, local SLURM (sind) and Kubernetes (kind with Kueue), isolated scenarios, test tiers, staging behind Tailscale Funnel, Claude in the development loop.
+11. [Dev environment and testing](specs/dev-environment-and-testing.md): toolchain, local SLURM (sind) and Kubernetes (kind with Kueue), isolated scenarios, test tiers, staging behind Tailscale Funnel, Claude in the development loop, release stages (§14) and what ships in which version (§15).
 12. [Authentication and access](specs/authentication-and-access.md): instance modes, sign-in methods (password, magic links, share links, OIDC, SAML, depictio trust), sessions and tokens, pipeline provisioning, the auth test matrix.
 13. [Telemetry and analytics](specs/telemetry-and-analytics.md): anonymous install telemetry, local activity analytics, and the web-analytics plugin kind (GA4, Umami, Plausible, Matomo, PostHog).
 14. [Documentation system](specs/documentation-system.md): the docs site and landing page, docs written and reviewed at every step, sketch diagrams, screenshots, casts and combined captures, changelog, PR bodies, auto-merge.

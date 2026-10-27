@@ -63,16 +63,19 @@ propose which ones become spikes in phase D/T.
 ### R3 · End-to-end journeys (finding gaps)
 
 ```text
-/review-round R3-journeys "Walk these journeys step by step through the specs and the
-UI boards, and report every step that is not specified (screen, endpoint, event,
-permission, state, error): (1) a single researcher installs the Python bundle on a
-laptop, connects a runner on the EMBL login node, launches nf-core/rnaseq with a gate,
-excludes two samples and resumes; (2) a core facility with OIDC, three groups, a
-reviewer who is not the launcher, a depictio hand-off at the end; (3) LabID launches
-headless with labid:// inputs, a robot signals a gate over MQTT, results come back as
-RO-Crate; (4) an admin restores last night's backup after a bad upgrade while two runs
-are active; (5) a phone-only reviewer approves a gate. Use spec-reviewer for (1)(2),
-constraints-hunter for (3)(4), ux-reviewer for (5) and to render every board touched."
+/review-round R3-journeys "Scope: version 0.0.1 only (docs/specs/mvp-0.0.1.md and
+dev-environment-and-testing.md §15): one user, no sign-in, engines on the same machine.
+Walk these journeys step by step through the specs and the UI boards, and report every
+step that is not specified (screen, endpoint, event, state, error): (1) a researcher
+installs the Python bundle on a laptop, registers nf-core/rnaseq, launches it with a QC
+gate after the first stage, reads the checks, approves and the run continues; (2) the
+same with a Snakemake workflow, where the gate fails, the researcher changes two
+parameters and relaunches, then compares the two runs' parameters; (3) a run fails on
+one task: the researcher finds the failing task, reads its log and relaunches from the
+cache; (4) the server restarts while a run is active, and the run's state, tasks and
+stages are still right afterwards. Use spec-reviewer for (1)(2), constraints-hunter for
+(3)(4), and ux-reviewer to render every board touched. Out of scope: users, roles,
+SLURM, Kubernetes, depictio, LabID, phones."
 ```
 
 ### R4 · Implementation constraints and risks
@@ -102,11 +105,13 @@ the findings plus a draft docs/specs/security-and-threat-model.md for me to revi
 ### R6 · API contract against the UI
 
 ```text
-/review-round R6-contract "Draft an OpenAPI 3.1 skeleton (paths, schemas, no
-implementation) from api-and-data-model.md, admin-and-operations.md §5 and
-schedulers-and-monitoring.md §8 into spikes/openapi-draft/openapi.yaml on a spike
-branch. Then use ux-reviewer to check that every number, list and action on every
-board in design/ui-canvas can be served by that contract, and spec-reviewer to find
+/review-round R6-contract "Scope: version 0.0.1 only (docs/specs/mvp-0.0.1.md and
+dev-environment-and-testing.md §15). Draft an OpenAPI 3.1 skeleton (paths, schemas, no
+implementation) for the 0.0.1 features only (workflows, launch, runs, tasks, stages,
+events/SSE, relaunch with parameters, parameter history, checks and gates) from
+api-and-data-model.md into spikes/openapi-draft/openapi.yaml on a spike branch. Then use
+ux-reviewer to check that every number, list and action on the boards listed in
+mvp-0.0.1.md §2 can be served by that contract, and spec-reviewer to find 0.0.1
 endpoints the spec mentions but the draft cannot express. Report missing or
 inconsistent fields as findings."
 ```
