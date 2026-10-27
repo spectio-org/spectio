@@ -4,10 +4,11 @@
 Usage: python3 tools/claude/check_frontmatter.py [ROOT]   (ROOT defaults to .claude)
 
 Rules (docs/specs/dev-environment-and-testing.md §11):
-- agents/*.md and skills/<name>/SKILL.md start with a YAML frontmatter block on line 1, closed by `---`;
+- agents/**/*.md and skills/<name>/SKILL.md start with a YAML frontmatter block on line 1, closed by `---`;
 - the block parses as a YAML mapping;
 - agents have a `name` (no leading `-`, no `:`, at most 256 characters), unique across agents, and a `description`;
-- skills have a `description`; every directory under skills/ has a SKILL.md;
+- skills have a `description` (a repository rule: Claude Code would fall back to the first body line);
+- every directory under skills/ has a SKILL.md;
 - every field is one Claude Code documents (it ignores unknown fields silently, so a typo would go unnoticed).
 Sources: https://code.claude.com/docs/en/sub-agents.md and https://code.claude.com/docs/en/skills.md (2026-10-27).
 """
@@ -56,7 +57,7 @@ def problems(data, known):
 
 def check(root):
     errors, names = [], {}
-    agents = sorted((root / "agents").glob("*.md"))
+    agents = sorted((root / "agents").rglob("*.md"))  # Claude Code scans agents/ recursively
     for path in agents:
         rel = path.relative_to(root)
         data, err = frontmatter(path)

@@ -23,8 +23,9 @@ class CheckFrontmatter(unittest.TestCase):
         self.tmp.cleanup()
 
     def agent(self, filename, text):
-        (self.root / "agents").mkdir(exist_ok=True)
-        (self.root / "agents" / filename).write_text(text)
+        path = self.root / "agents" / filename
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text)
 
     def skill(self, dirname, text):
         (self.root / "skills" / dirname).mkdir(parents=True, exist_ok=True)
@@ -87,6 +88,10 @@ class CheckFrontmatter(unittest.TestCase):
     def test_agent_unknown_field(self):
         self.agent("typo.md", "---\nname: typo\ndescription: x\nallowedTools: Read\n---\n")
         self.assert_fails("typo.md: unknown field `allowedTools`")
+
+    def test_agent_in_subfolder(self):
+        self.agent("sub/deep.md", "---\ndescription: x\n---\n")
+        self.assert_fails("sub/deep.md: `name` is missing")
 
     def test_duplicate_agent_names(self):
         self.agent("twin.md", GOOD_AGENT)
