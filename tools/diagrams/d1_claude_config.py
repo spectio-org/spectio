@@ -68,7 +68,8 @@ def build(theme: Theme) -> Sketch:
         "$ python3 tools/claude/check_frontmatter.py",
         f"{AGENTS} agent(s), {SKILLS} skill(s) checked",
         "in .claude: 0 problem(s)",
-        "$ echo $?   # 1 on a broken fixture",
+        "$ echo $?",
+        "0             (1 on a broken fixture)",
     ), size=12.5)
     s.step(815, 690, 2, "CI: claude-config on every PR")
 
