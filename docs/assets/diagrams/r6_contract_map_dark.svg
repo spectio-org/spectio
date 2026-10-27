@@ -2203,12 +2203,12 @@
   <rect x="768.0" y="1116.0" width="14" height="18" rx="2" fill="#69db7c" stroke="#e3e3e3" stroke-width="0.9"/>
   <rect x="785.0" y="1116.0" width="14" height="18" rx="2" fill="#69db7c" stroke="#e3e3e3" stroke-width="0.9"/>
   <rect x="802.0" y="1116.0" width="14" height="18" rx="2" fill="#69db7c" stroke="#e3e3e3" stroke-width="0.9"/>
-  <rect x="819.0" y="1116.0" width="14" height="18" rx="2" fill="#3a3e48" stroke="#e3e3e3" stroke-width="0.9"/>
-  <rect x="836.0" y="1116.0" width="14" height="18" rx="2" fill="#3a3e48" stroke="#e3e3e3" stroke-width="0.9"/>
-  <rect x="853.0" y="1116.0" width="14" height="18" rx="2" fill="#3a3e48" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="819.0" y="1116.0" width="14" height="18" rx="2" fill="#69db7c" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="836.0" y="1116.0" width="14" height="18" rx="2" fill="#69db7c" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="853.0" y="1116.0" width="14" height="18" rx="2" fill="#69db7c" stroke="#e3e3e3" stroke-width="0.9"/>
   <rect x="870.0" y="1116.0" width="14" height="18" rx="2" fill="#3a3e48" stroke="#e3e3e3" stroke-width="0.9"/>
   <rect x="887.0" y="1116.0" width="14" height="18" rx="2" fill="#3a3e48" stroke="#e3e3e3" stroke-width="0.9"/>
   <rect x="904.0" y="1116.0" width="14" height="18" rx="2" fill="#3a3e48" stroke="#e3e3e3" stroke-width="0.9"/>
-  <text x="931.0" y="1130.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">all placed: 37 in R6 findings, 6 already in R3 findings</text>
+  <text x="931.0" y="1130.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">all placed: 40 in R6 findings, 3 only in R3 findings</text>
   <text x="40.0" y="1178.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Source: R6-contract reviewer reports, 2026-10-27 · spec-reviewer SR-080 to SR-091, ux-reviewer UX-270 to UX-291 and its coverage table · tools/diagrams/r6_contract_map.py</text>
 </svg>

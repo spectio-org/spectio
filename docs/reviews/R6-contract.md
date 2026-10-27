@@ -1,5 +1,7 @@
 # R6 · API contract review (2026-10-27)
 
+**Step page:** [R6](../progress/W2/R6.md)
+
 **Round:** R6 (API contract) · **Date:** 2026-10-27 · **Found by:** spec-reviewer, ux-reviewer · **Status of the round:** open, waiting for triage
 
 **Sources.**
@@ -27,8 +29,8 @@ Format: [`README.md`](README.md). Prefixes `SR`, `UX`. Specs were not edited in 
 
 ## Summary
 
-![R6 round map: the 0.0.1 API draft against the eleven boards, each gap pinned with its finding ID](../assets/diagrams/r6_contract_map_light.png#only-light)
-![R6 round map: the 0.0.1 API draft against the eleven boards, each gap pinned with its finding ID](../assets/diagrams/r6_contract_map_dark.png#only-dark)
+![R6 round map: the 0.0.1 API draft against five 0.0.1 screens, each gap pinned with its finding ID](../assets/diagrams/r6_contract_map_light.png#only-light)
+![R6 round map: the 0.0.1 API draft against five 0.0.1 screens, each gap pinned with its finding ID](../assets/diagrams/r6_contract_map_dark.png#only-dark)
 
 | Severity | spec-reviewer | ux-reviewer | Total |
 |---|---|---|---|

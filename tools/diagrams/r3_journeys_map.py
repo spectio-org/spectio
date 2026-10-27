@@ -7,15 +7,15 @@ Scope and findings come from the round's findings table (R3-journeys,
 2026-10-27): each journey is walked step by step; a step is either specified
 (tick) or a gap pinned with the finding that hits it. Red pin = blocker,
 amber pin = major, grey pin = minor. The headline counts (7 blockers,
-18 majors, 2 minors) are the round's totals; the map pins the findings that land on a
-journey step, the rest are in the table.
+18 majors, 2 minors) are the round's totals; every blocker and major is pinned
+on the step it hits, minor UX-249 is in the table.
 """
 
 from __future__ import annotations
 
 from sketch import Box, Sketch, Theme, main_for
 
-W, H = 1600, 960
+W, H = 1600, 990
 X0, X1 = 250, 1575  # step columns span
 STRIP_TOP, STRIP_H, STRIP_GAP = 122, 190, 10
 
@@ -24,19 +24,19 @@ B, M, N = "blocker", "major", "minor"
 # (title, subtitle, steps); a step is (caption, note, pictogram, pins)
 JOURNEYS = (
     ("Nextflow", "gate passes", (
-        ("install bundle", "local env, runner", "laptop", (("SR-055", B),)),
+        ("install bundle", "local env, runner", "laptop", (("SR-055", B), ("SR-067", M))),
         ("register repo", "nf-core/rnaseq", "repo", (("SR-056", M),)),
         ("gate after stage 1", "stage, gate config", "stages", (("SR-057", B),)),
-        ("launch, events", "ingest contract", "runner", (("SR-054", B),)),
+        ("launch, events", "ingest contract", "runner", (("SR-054", B), ("SR-061", M))),
         ("stage ends", "run state", "state", (("CH-042", B),)),
         ("checks read", "MultiQC report", "report", (("SR-058", B),)),
-        ("approve, continue", "specified", "gate_ok", ()),
+        ("approve, continue", "gap at the gate", "gate_open_q", (("SR-062", B), ("SR-059", M), ("CH-043", M))),
     )),
     ("Snakemake", "gate fails", (
         ("launch form", "built from config", "form", (("SR-065", M),)),
         ("until targets", "partial runs", "until", (("SR-066", M),)),
         ("gate fails", "specified", "gate_fail", ()),
-        ("edit 2 params", "and relaunch", "relaunch", (("SR-062", B),)),
+        ("edit 2 params", "and relaunch", "relaunch", (("SR-062", B), ("UX-243", M))),
         ("relaunch contract", "what run 2 reuses", "runs", (("SR-063", M),)),
         ("compare params", "run 1 against run 2", "compare", (("SR-064", M), ("UX-250", M))),
     )),
@@ -44,7 +44,7 @@ JOURNEYS = (
         ("run fails", "failed, yet resumable", "failed", (("CH-042", B),)),
         ("find failing task", "which task, which sample", "find", (("CH-047", M),)),
         ("read its log", "where the log lives", "log", (("CH-048", M),)),
-        ("resume from cache", "what is reused", "resume", (("CH-043", M),)),
+        ("resume from cache", "what is reused", "resume", (("CH-043", M), ("CH-050", M))),
     )),
     ("Server restarts", "mid-run", (
         ("server stops", "engine head fate", "server", (("CH-041", B),)),
@@ -84,12 +84,14 @@ def build(theme: Theme) -> Sketch:
             s.circle(cx, y + 2, 13, fill="done", colour=t.good, width=1.6)
             s.tick(cx, y + 2, size=7)
             return
-        tag_w = 92
-        start = cx - tag_w * len(items) / 2
-        for i, (fid, sev) in enumerate(items):
-            px = start + i * tag_w + 12
-            pin(px, y - 2, sev)
-            tag(px + 15, y + 4, fid, sev)
+        tag_w, per_row = 92, 2  # two tags fit the narrowest column; more wrap to a second row
+        for r in range(0, len(items), per_row):
+            row = items[r:r + per_row]
+            start = cx - tag_w * len(row) / 2
+            for i, (fid, sev) in enumerate(row):
+                px = start + i * tag_w + 12
+                pin(px, y - 2 + r // per_row * 28, sev)
+                tag(px + 15, y + 4 + r // per_row * 28, fid, sev)
 
     def tag(x: float, y: float, fid: str, sev: str) -> None:
         """The finding ID; a blocker's sits in a red-edged pill so it does not rely on hue alone."""
@@ -121,8 +123,10 @@ def build(theme: Theme) -> Sketch:
         elif kind == "report":
             s.page(cx - 42, my - 36, 56, 72, fill="docs", lines=3)
             s.magnifier(cx + 18, my + 2, 15)
-        elif kind == "gate_ok":
-            s.gate(cx - 6, my + 38, 60, 50, state="passed")
+        elif kind == "gate_open_q":
+            s.gate(cx - 14, my + 38, 56, 46, state="closed")
+            s.circle(cx + 36, my + 8, 13, fill="gate")
+            s.text(cx + 36, my + 14, "?", size=17, weight="bold")
         elif kind == "gate_fail":
             s.gate(cx, my + 34, 72, 66, state="closed")
         elif kind == "form":
@@ -234,8 +238,15 @@ def build(theme: Theme) -> Sketch:
             if i:
                 s.arrow(centres[i - 1] + 76, my, cx - 76, my, colour=t.muted, width=1.4)
 
-    s.text(40, H - 22, "Source: the R3-journeys findings table, 2026-10-27 · the map pins the findings that hit "
-                       "a journey step, the others are in the table · tools/diagrams/r3_journeys_map.py",
+    # severity key in the pin colours (glossary §2.2)
+    for x, sev, label_w, meaning in ((52, B, 90, "implementation cannot start, or would build the wrong thing"),
+                                     (600, M, 52, "a real problem that will cost rework"),
+                                     (990, N, 48, "worth fixing, low risk")):
+        pin(x, H - 54, sev)
+        tag(x + 15, H - 47, sev, sev)
+        s.text(x + 15 + label_w, H - 47, meaning, size=14, anchor="start", colour=t.ink)
+    s.text(40, H - 20, "Source: the R3-journeys findings table, 2026-10-27 · every blocker and major is pinned "
+                       "on the step it hits, minor UX-249 is in the table · tools/diagrams/r3_journeys_map.py",
            size=12.5, anchor="start", colour=t.dim)
     return s
 

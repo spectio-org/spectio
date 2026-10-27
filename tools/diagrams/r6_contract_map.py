@@ -13,7 +13,7 @@ socket with no resource. Dashed sockets below the panel are endpoints that
 api §5 lists but the draft cut dropped. Every one of the 34 findings is pinned
 once; SR-054 and SR-062 are R3 blockers the round extends, drawn as held.
 The bars at the bottom are to scale: 34 findings, and the 43 `x-spec-gap`
-entries of the draft (37 placed in R6 findings, 6 covered by R3 findings).
+entries of the draft (40 placed in R6 findings, 3 only in R3 findings).
 """
 
 from __future__ import annotations
@@ -322,8 +322,8 @@ def build(theme: Theme) -> Sketch:
     s.text(x + 34 * 17 + 10, cy0 + 14, "29 majors, 5 minors, 0 blockers", size=14, anchor="start", colour=t.dim)
     s.text(40, cy0 + 50, "43 draft gaps", size=16, anchor="start")
     for k in range(43):
-        cell(x + k * 17, cy0 + 36, t.good if k < 37 else "cached")
-    s.text(x + 43 * 17 + 10, cy0 + 50, "all placed: 37 in R6 findings, 6 already in R3 findings",
+        cell(x + k * 17, cy0 + 36, t.good if k < 40 else "cached")
+    s.text(x + 43 * 17 + 10, cy0 + 50, "all placed: 40 in R6 findings, 3 only in R3 findings",
            size=14, anchor="start", colour=t.dim)
 
     s.text(40, H - 22, "Source: R6-contract reviewer reports, 2026-10-27 · spec-reviewer SR-080 to SR-091, "
