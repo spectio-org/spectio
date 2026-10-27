@@ -26,6 +26,8 @@ case "${1:-}" in
     ;;
   summary)
     name=${2:?usage: runner_probe.sh summary NAME}
+    # The job stopped before sampling started (cancelled or failed early): nothing to summarise.
+    [ -s "$RUNNER_TEMP/samples.txt" ] || { echo "no samples for $name"; exit 0; }
     mkdir -p "$RUNNER_TEMP/res"
     total=$(awk '/^MemTotal/ {print $2}' /proc/meminfo)
     awk -v total="$total" -v name="$name" 'NR == 1 {a0 = $2; d0 = $3; amin = $2; dmin = $3; t0 = $1}
