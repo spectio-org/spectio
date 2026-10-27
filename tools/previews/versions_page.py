@@ -8,7 +8,8 @@
 Every deployment keeps its own URL, so the page lists them all, newest first, grouped by kind
 (releases, waves, main, PRs). Spec: docs/specs/dev-environment-and-testing.md §7.1.
 API: GET /accounts/{account}/pages/projects/{project}/deployments. The fields read here (url, created_on,
-deployment_trigger.metadata.branch / commit_hash / commit_message) were checked against the live project on 2026-10-26.
+deployment_trigger.metadata.branch / commit_hash / commit_message, latest_stage.status, result_info.total_pages)
+were checked against the live project on 2026-10-26 and 2026-10-27 (step D5); fetch() prints the key names to the CI log.
 """
 from __future__ import annotations
 
@@ -24,7 +25,7 @@ import urllib.request
 API = "https://api.cloudflare.com/client/v4"
 
 
-def fetch(project: str, max_pages: int = 10) -> list[dict]:
+def fetch(project: str, max_pages: int = 40) -> list[dict]:
     token, account = os.environ["CLOUDFLARE_API_TOKEN"], os.environ["CLOUDFLARE_ACCOUNT_ID"]
     out: list[dict] = []
     for page in range(1, max_pages + 1):
@@ -37,11 +38,23 @@ def fetch(project: str, max_pages: int = 10) -> list[dict]:
             if e.code == 404:  # project not created yet: first deploy
                 return out
             raise
-        batch = data.get("result") or []
+        batch, info = data.get("result") or [], data.get("result_info") or {}
+        if page == 1:
+            print(shape(batch, info))
         out += batch
-        if len(batch) < 25:
+        total = info.get("total_pages")
+        if not batch or (page >= total if total else len(batch) < 25):
             break
     return out
+
+
+def shape(batch: list[dict], info: dict) -> str:
+    """Key names only (never values, except the paging counts), to check the API shape in the CI log."""
+    d = batch[0] if batch else {}
+    trig = d.get("deployment_trigger") or {}
+    return (f"deployments API shape: result_info={info} deployment keys={sorted(d)} "
+            f"deployment_trigger keys={sorted(trig)} metadata keys={sorted(trig.get('metadata') or {})} "
+            f"latest_stage keys={sorted(d.get('latest_stage') or {})}")
 
 
 def kind(alias: str) -> str:
@@ -57,6 +70,8 @@ def kind(alias: str) -> str:
 def rows(deployments: list[dict]) -> list[dict]:
     out = []
     for d in deployments:
+        if ((d.get("latest_stage") or {}).get("status") or "success") != "success":
+            continue  # failed, cancelled or still running: its URL serves nothing useful
         meta = (d.get("deployment_trigger") or {}).get("metadata") or {}
         alias = meta.get("branch") or ("main" if d.get("environment") == "production" else "?")
         out.append({

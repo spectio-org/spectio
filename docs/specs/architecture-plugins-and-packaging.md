@@ -78,7 +78,7 @@ The `spectio.engine` plugin for each engine wires them in: it generates the conf
 
 ### 2.1 Secrets on runners and in jobs
 
-The secret backend runs on the server and on runners (table above). Credentials a run needs (resolvers, sinks, registries, LabID) reach it as follows *(decided — Thomas, 2026-10-27, inbox #14)*:
+The secret backend runs on the server and on runners (table above). Credentials a run needs (resolvers, sinks, registries, LabID) reach it as follows *(assumed — pending Thomas, inbox #14)*:
 - **Per-run credentials.** The runner receives credentials for one run only. Where the secret backend supports it they are derived and short-lived, with the run's lifetime (for example an S3 STS session with a prefix policy, or a Vault dynamic secret **[to be validated per backend]**).
 - **Files, never environment exports.** Credentials are written as 0600 files in the run directory and referenced by path. They are never passed through `sbatch --export` or on a command line.
 - **Head jobs** are submitted with `--export=NONE` and read a 0600 env file from the run directory ([sbatch](https://slurm.schedmd.com/sbatch.html) **[to be validated]**).
@@ -384,7 +384,7 @@ spectio plugin install spectio-plugin-slack   # wraps `uv pip install` after a c
 - **Operator commands.**
   - `spectio config show --effective` prints every value with its source, secrets masked.
   - `spectio doctor` checks the SQLite version and local disk, the data directory's file-system type (statfs) and the host pin, plugin compatibility, runner reachability, proxy variables and CA bundle for the runner and the engine bridges (§13.6, *assumed — pending Thomas, inbox #12*), and clock skew (warning above 5 s).
-- **0.0.1 prerequisites.** The user installs the engines (Java and Nextflow, Snakemake with its SLURM executor plugin) on the login node, for example from the site's modules or a conda environment; Spectio does not install them, and `spectio doctor` reports each one with its version, or names the one that is missing. nf-spectio ships as a jar inside the `spectio` wheel and is passed to Nextflow from there, so it works offline and matches the server version **[to be validated: how a local plugin jar is loaded, in spike T2]**; the Snakemake logger plugin is a dependency of the wheel. *(decided — Thomas, 2026-10-27, inbox #35)*
+- **0.0.1 prerequisites.** The user installs the engines (Java and Nextflow, Snakemake with its SLURM executor plugin) on the login node, for example from the site's modules or a conda environment; Spectio does not install them, and `spectio doctor` reports each one with its version, or names the one that is missing. nf-spectio ships as a jar inside the `spectio` wheel and is passed to Nextflow from there, so it works offline and matches the server version **[to be validated: how a local plugin jar is loaded, in spike T2]**; how the Snakemake logger plugin reaches the user's Snakemake environment (Snakemake finds logger plugins installed in its own environment, while `spectio` lives in its own tool environment) is settled in spike T2 **[to be validated]**. *(decided — Thomas, 2026-10-27, inbox #35)*
 
 ### 7.4 Docker Compose
 

@@ -220,7 +220,7 @@ Prior art: Temporal (approval pattern: structured signal, timeout, escalation, i
 
 ## 5ter. Implementing pause, check and resume
 
-Principle: **an engine is never frozen mid-run.** A pause is a clean stop at a stage boundary. Each relaunch, including a Resume after a failure, is a new `Run` in the same lineage that reuses the engine's cache; each Continue after a gate is a new launch of the same `Run` ([`api-and-data-model.md`](api-and-data-model.md) §5.1, §7 `launches`). *(decided — Thomas, 2026-10-27, inbox #32)*
+Principle: **an engine is never frozen mid-run.** A pause is a clean stop at a stage boundary. Each relaunch, including a Resume after a failure, is a new `Run` in the same lineage that reuses the engine's cache; each Continue after a gate is a new launch of the same `Run` ([`api-and-data-model.md`](api-and-data-model.md) §5.1, §7 `launches`). *(assumed — pending Thomas, inbox #32)*
 
 ### 1. Declare the stages: a manifest next to the pipeline (`spectio.yml`, modelled on `tower.yml`)
 ```yaml
@@ -253,7 +253,7 @@ For an unplanned pause ("Pause" button): `PAUSING → PAUSED`, then `resume`.
 
 **Superseded (27/10/2026):** Intervention = Gate. Decisions are `approve`, `apply`, `go_back`, `stop` ([`api-and-data-model.md`](api-and-data-model.md) §7, `decisions`); external signals go to `POST /gates/{id}/signals` (api §5). States superseded by api §7.1 (27/10/2026): the state names above are historical. *(assumed — pending Thomas, inbox #29)*
 
-Leaving a gate to change parameters is a new child run (`stop` with reason `relaunched`, then `:relaunch`); contract in [`api-and-data-model.md`](api-and-data-model.md) §5 and §7.1. *(decided — Thomas, 2026-10-27, inbox #32)*
+Leaving a gate to change parameters is a new child run (`stop` with reason `relaunched`, then `:relaunch`); contract in [`api-and-data-model.md`](api-and-data-model.md) §5 and §7.1. *(assumed — pending Thomas, inbox #32)*
 
 ### 3. Pause
 - **Planned (stage boundary)**:
@@ -264,7 +264,7 @@ Leaving a gate to change parameters is a new child run (`stop` with reason `rela
 ### 4. Check
 At the end of a stage (last Snakemake `PROGRESS`, Nextflow `onFlowComplete` reported by `nf-spectio`, [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)), the platform:
 1. collects the declared evidence (globs) and the QC metrics in JSON;
-2. creates the gate ([`api-and-data-model.md`](api-and-data-model.md) §7.1), notifies the UI, the MCP server and the webhooks; *(decided — Thomas, 2026-10-27, inbox #32)*
+2. creates the gate ([`api-and-data-model.md`](api-and-data-model.md) §7.1), notifies the UI, the MCP server and the webhooks; *(assumed — pending Thomas, inbox #32)*
 3. applies the policy (auto-approval under threshold, timeout, escalation).
 
 ### 5. Resume
