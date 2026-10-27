@@ -2,7 +2,7 @@
 
 **Step page:** [R8](../progress/W1/R8.md)
 
-**Round:** R8 (depictio and LabID drift) · **Date:** 2026-10-26 · **Found by:** depictio-liaison · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 7 accepted, 0 rejected, 8 inbox (4 assumed)
+**Round:** R8 (depictio and LabID drift) · **Date:** 2026-10-26 · **Found by:** depictio-liaison · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 7 accepted, 0 rejected, 8 inbox (4 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Scope.** [`api-and-data-model.md`](../specs/api-and-data-model.md) §13, [`depictio-ecosystem-reuse.md`](../specs/depictio-ecosystem-reuse.md), and the `docs/research/depictio-*.md` notes, checked against the current depictio and LabID code.
 

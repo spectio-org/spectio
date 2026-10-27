@@ -2,7 +2,7 @@
 
 **Step page:** [R1](../progress/W1/R1.md)
 
-**Round:** R1 (consistency) · **Date:** 2026-10-26 · **Found by:** spec-reviewer, four instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 13 accepted, 0 rejected, 40 inbox (25 assumed)
+**Round:** R1 (consistency) · **Date:** 2026-10-26 · **Found by:** spec-reviewer, four instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 13 accepted, 0 rejected, 40 inbox (25 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l.") refer to that commit.

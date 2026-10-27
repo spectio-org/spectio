@@ -2,7 +2,7 @@
 
 **Step page:** [R4](../progress/W1/R4.md)
 
-**Round:** R4 (constraints) · **Date:** 2026-10-26 · **Found by:** constraints-hunter, two instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 21 accepted, 0 rejected, 19 inbox (16 assumed)
+**Round:** R4 (constraints) · **Date:** 2026-10-26 · **Found by:** constraints-hunter, two instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 21 accepted, 0 rejected, 19 inbox (16 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l.") refer to that commit.

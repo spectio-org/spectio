@@ -2,7 +2,7 @@
 
 **Step page:** [R5](../progress/W1/R5.md)
 
-**Round:** R5 (security) · **Date:** 2026-10-26 · **Found by:** security-reviewer · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 4 accepted, 0 rejected, 26 inbox (6 assumed)
+**Round:** R5 (security) · **Date:** 2026-10-26 · **Found by:** security-reviewer · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 4 accepted, 0 rejected, 26 inbox (6 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l.") and `§n:line` references refer to that commit.

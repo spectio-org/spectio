@@ -104,6 +104,8 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
 
 ## TRIAGE1 (2026-10-27)
 
+**Step page:** [TRIAGE1](../progress/W2/TRIAGE1.md)
+
 - **Triaged:** 320 findings from R1, R2, R4, R5, R7, R8, R8b, R9, R11 and R12. 163 accepted, 4 rejected, 153 sent here.
 - **Assumed:** 88 of the 153 already proceed on the recommended option, marked `assumed — pending Thomas`. The other 65 wait for your answer.
 - **How to answer:** the 153 are grouped by decision into #11 to #30. #11 to #27 hold the reserved questions: #11 to #26 block parts of APPLY1 and come first; #27 only holds messages to other teams and blocks nothing. #28 to #30 only list assumptions to confirm. One `Answer:` line per entry is enough; name a finding ID to make an exception.

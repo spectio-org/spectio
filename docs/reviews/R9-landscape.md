@@ -2,7 +2,7 @@
 
 **Step page:** [R9](../progress/W1/R9.md)
 
-**Round:** R9 (prior art and landscape, again) · **Date:** 2026-10-26 · **Found by:** fact-checker and constraints-hunter, in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 9 accepted, 0 rejected, 8 inbox (6 assumed)
+**Round:** R9 (prior art and landscape, again) · **Date:** 2026-10-26 · **Found by:** fact-checker and constraints-hunter, in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 9 accepted, 0 rejected, 8 inbox (6 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l.") refer to that commit.

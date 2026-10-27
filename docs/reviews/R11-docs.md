@@ -14,7 +14,7 @@ Round: R11 (2026-10-27). Branch `autopilot/integration`.
 - **What the merge checked:** every major finding was reproduced in the repository at merge time (commit ancestry, `check.py` source, front matter, journal, `docs/index.md`, `extra.css`, `docs/assets/shots/`, a dark render crop). None was dropped.
 - **Scope rule:** these are findings, not changes. Pages, specs and `mkdocs.yml` are untouched; triage and `/apply-findings` decide.
 
-**Status of the round: triaged (TRIAGE1, 2026-10-27): 22 accepted, 0 rejected, 5 inbox (5 assumed)**
+**Status of the round: triaged (TRIAGE1, 2026-10-27): 22 accepted, 0 rejected, 5 inbox (5 assumed)** · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Step page:** [R11](../progress/W1/R11.md)
 

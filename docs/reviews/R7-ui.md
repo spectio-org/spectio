@@ -2,7 +2,7 @@
 
 **Step page:** [R7](../progress/W1/R7.md)
 
-**Round:** R7 (UI review) · **Date:** 2026-10-26 · **Found by:** ux-reviewer, three instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 26 accepted, 0 rejected, 14 inbox (7 assumed)
+**Round:** R7 (UI review) · **Date:** 2026-10-26 · **Found by:** ux-reviewer, three instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 26 accepted, 0 rejected, 14 inbox (7 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l." or `file:line`) refer to that commit.

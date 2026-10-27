@@ -1,6 +1,6 @@
 # R8b · depictio engineering tooling and ecosystem: what Spectio is missing
 
-**Round:** R8b (tooling re-audit) · **Date:** 2026-10-26 · **Found by:** depictio-liaison · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 19 accepted, 3 rejected, 10 inbox (7 assumed)
+**Round:** R8b (tooling re-audit) · **Date:** 2026-10-26 · **Found by:** depictio-liaison · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 19 accepted, 3 rejected, 10 inbox (7 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Sources.**
 - **depictio** at `0d1aa0a` (2026-10-23 13:40 UTC, tag `v1.19.2`). `git fetch --all` showed that `origin/HEAD` has not moved since the earlier audits.

@@ -5,7 +5,7 @@ Round: R12 (2026-10-26). Method: about 50 new or upgraded UI boards were built t
   - nf-core megatest outputs ([`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §10.3);
   - real test images, read from public OME-Zarr and nf-core/test-datasets (§10.4).
 - **Recording:** each board agent recorded every piece of data or behaviour the board needs that no spec or API defines.
-- **Status:** triaged (TRIAGE1, 2026-10-27): 9 accepted, 1 rejected, 19 inbox (10 assumed)
+- **Status:** triaged (TRIAGE1, 2026-10-27): 9 accepted, 1 rejected, 19 inbox (10 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 - **Where the boards are:** the canvas and `design/ui-canvas/`; the scenario map is ui-spec §10.
 
 Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of this round).

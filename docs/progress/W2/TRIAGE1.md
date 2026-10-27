@@ -3,7 +3,7 @@ step: TRIAGE1
 wave: W2
 status: done
 pr: null
-review: null
+review: approve
 ---
 # TRIAGE1 · Sort the findings of ten review rounds
 
@@ -38,7 +38,7 @@ Step definition: `TRIAGE1` in `docs/playbooks/pipeline.yaml` (wave W2, `kind: tr
 
 ## Evidence
 
-**How the step ran** (from the workflow summary in `/tmp/triage1-evidence.json`, the commits and the journal):
+**How the step ran** (from the workflow summary in `/tmp/triage1-evidence.json`, an uncommitted workflow result, the commits and the journal):
 
 | Item | Value |
 |---|---|
@@ -163,7 +163,7 @@ None (triage step, `documentation-system.md` §3.1).
     - Five of them hold a finding rated blocker that is not assumed: SR-001, SR-002, SEC-101, SEC-102 and DL-101.
     - #16 holds no finding rated blocker, but it decides the MVP cut that P1 plans from.
 
-**R12 was included.** `pipeline.yaml` lists only R1 R2 R4 R5 R7 R8 R8b R9 R11 for TRIAGE1 and APPLY1. The workflow triaged R12 as well, so that its questions sit in the same inbox entries as the related findings. The inbox block states that R12 findings block a later apply step, not APPLY1. According to the consolidator, R12 findings appear in #12, #13, #16, #17, #19, #20, #25 and #30.
+**R12 was included.** `pipeline.yaml` lists only R1 R2 R4 R5 R7 R8 R8b R9 R11 for TRIAGE1 and APPLY1. The workflow triaged R12 as well, so that its questions sit in the same inbox entries as the related findings. The inbox block states that R12 findings block a later apply step, not APPLY1. According to the consolidator, R12 findings appear in #12, #13, #16, #17, #19, #25 and #30 (checked against the Covers lines; the consolidator's summary also named #20, which holds only R7 findings).
 
 **Two inconsistencies flagged by the consolidator:**
 

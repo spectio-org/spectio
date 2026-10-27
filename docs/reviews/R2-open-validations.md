@@ -2,7 +2,7 @@
 
 **Step page:** [R2](../progress/W1/R2.md)
 
-**Round:** R2 · Fact verification · **Date:** 2026-10-26 · **Found by:** fact-checker (three runs) · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 33 accepted, 0 rejected, 4 inbox (2 assumed)
+**Round:** R2 · Fact verification · **Date:** 2026-10-26 · **Found by:** fact-checker (three runs) · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 33 accepted, 0 rejected, 4 inbox (2 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Scope.** Eight specs, checked in three parallel `/verify-claims` runs:
 - **Run 1:** [schedulers-and-monitoring.md](../specs/schedulers-and-monitoring.md) and [synthesis.md](../specs/synthesis.md).
