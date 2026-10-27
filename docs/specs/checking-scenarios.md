@@ -90,7 +90,7 @@ HTML reports run in a sandboxed iframe from a separate origin, with no access to
 
 Each check has:
 - a **scope**: item, group or run;
-- a **severity**: `block` (opens the gate), `warn` (shown, does not open it) or `info`;
+- a **severity**: `block` (a failure prevents auto-approval), `warn` (shown, never prevents it) or `info`. A gated stage always opens its gate; whether it then waits for a person is set by `decide.auto_approve` (§12.4) *(assumed — pending Thomas, inbox #33)*;
 - a **source binding** that tells Spectio where the value comes from (§7).
 
 Built-in presets for frequent pipelines can ship with Spectio as overlays:
@@ -406,12 +406,16 @@ A gate is attached to a stage only by `stages[].gate: <gate_id>`. `after_stage` 
 
 Stages are defined by `match` globs only; pipelines never cooperate. The boundary is generated at launch.
 - **Nextflow:** a generated config sets `ext.when = false` on the processes of later stages (unconditional, for gates), or a closure that tests a stop file (conditional, for live checks, §11.3). The `--stage` / `params.stage` mechanism of [`synthesis.md`](synthesis.md) §5ter is dropped. nf-core modules declare `when: task.ext.when == null || task.ext.when` (nf-core/tools `0af7543`, `nf_core/module-template/main.nf:75-76`; for example nf-core/modules `381b86e`, `modules/nf-core/fastqc/main.nf:18-19`; read 2026-10-27); local processes without that `when:` are not stopped **[to be validated]** in spike T2.
-- **Snakemake:** `--until` the last rules of the stage; Continue drops `--until`; rerun from a stage uses `--forcerun`.
+- **Snakemake:** before launch, a dry run (`snakemake -n --rulegraph` or equivalent, **[to be validated]** in spike T1/T2) gives the rule graph. Targets of stage k = the rules of stage k that no other rule of stage k consumes; `--until` those targets; Continue drops `--until`. A checkpoint inside a gated stage makes gates unavailable, with the reason. Rerun from a stage uses `--forcerun` with the stage's rules that have no producer inside the stage.
 - **Rerun from a stage, Nextflow:** a generated per-process `ext` key that enters the task hash of the stage's processes, then `-resume` **[to be validated]** in spike T2.
+
+A task whose process or rule matches no `stages[].match` glob has no stage (`tasks.stage_id` null, [`api-and-data-model.md`](api-and-data-model.md) §7). Globs that overlap (a process or rule matched by two stages) are refused by `spectio workflow validate`, so a task belongs to at most one stage. *(assumed — pending Thomas, inbox #40)*
 
 ### 12.4 Policy block
 
 One block, `decide`: `humans`, `agents` (`propose` | `approve` | `none`), `auto_approve`, `timeout`, `on_timeout`, plus `item_actions`, `per_item`, `rules`, `constraints` (§7). The `intervention.policy.mode` form of [`synthesis.md`](synthesis.md) §5ter.1 and the key list of [`ui-spec.md`](ui-spec.md) §5.1 are superseded. Who may decide, and how agents are bounded, is owned by [`api-and-data-model.md`](api-and-data-model.md) §6 and pending inbox #19.
+
+A gate row is always created at the stage boundary. With `decide.auto_approve: when_checks_pass` and every `block` check passing, Spectio records `approve` with `actor_kind = service` ([`api-and-data-model.md`](api-and-data-model.md) §7.1); otherwise the gate stays open. A failed `warn` never prevents auto-approval. When `auto_approve` is absent the gate waits for a person. *(assumed — pending Thomas, inbox #33)*
 
 ### 12.5 Evidence
 

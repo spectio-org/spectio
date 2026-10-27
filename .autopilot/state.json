@@ -1,7 +1,7 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T11:18:06Z",
-  "current_wave": "W2",
+  "updated_at": "2026-10-27T12:06:00Z",
+  "current_wave": "W3",
   "steps": {
     "F1": {
       "wave": "W0",
@@ -235,12 +235,20 @@
     },
     "APPLY2": {
       "wave": "W2",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T11:18:06Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "",
+      "finished_at": "2026-10-27T12:06:00Z",
+      "outputs": [
+        "docs/specs (10 specs)",
+        "docs/decisions/log.md",
+        "docs/reviews/R3-journeys.md",
+        "docs/reviews/R6-contract.md",
+        "docs/progress/W2/APPLY2.md",
+        "docs/assets/diagrams/apply2_specs_*",
+        "docs/assets/diagrams/apply2_relaunch_*"
+      ],
+      "notes": "54/61 findings applied (7 full, 47 partly), 7 waiting; doc-review approve 13/14",
       "base": "8e655ea7c0e1001c771680c50765b5cee791305b"
     },
     "D1": {

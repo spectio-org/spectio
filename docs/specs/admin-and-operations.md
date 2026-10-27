@@ -132,9 +132,11 @@ This section owns the ledger's columns and its screen; [`architecture-plugins-an
 | Identity | `id` (`btask_…`), `kind`, `queue`, `priority` |
 | Ownership | `project_id`, `created_by` (principal: user, service, system) |
 | State | `queued`, `running`, `succeeded`, `failed`, `retrying`, `cancelled`; `attempts` / `max_attempts`; `run_after` |
-| Execution | `worker_id`, `started_at`, `finished_at`, `duration_ms` |
+| Execution | `worker_id`, `lease_until`, `started_at`, `finished_at`, `duration_ms` |
 | Outcome | `progress {done, total, message}`, `result_ref`, `error {type, message}`, `traceback_ref`, `logs` (capped, flushed at the end, as depictio does with its 500-line buffer) |
 | Retention | `expires_at`: 14 days by default; failures 30 days |
+
+- **Restart recovery.** On boot, `running` rows held by this worker go back to `queued` with `attempts + 1`, so a task interrupted by a crash (for example a `check.dispatch` waiting for its verdict) runs again instead of staying `running` forever. Claiming and lease renewal are mechanism, owned by [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.6.
 
 - **Kinds:** `check.dispatch`, `webhook.deliver`, `sink.depictio`, `sink.labid`, `rocrate.export`, `backup.create`, `backup.restore`, `workdir.cleanup`, `catalogue.import`, `bridge.publish`.
   - `check.dispatch` sends the evaluation of a check's source binding to the runner (runner protocol: [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.7, pending inbox #12) and waits for `spectio.check.evaluated`; the server then computes the verdict ([`checking-scenarios.md`](checking-scenarios.md) §11.1). *(assumed — pending Thomas, inbox #28)*

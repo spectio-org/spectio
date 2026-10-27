@@ -10,6 +10,7 @@ Companion docs:
 
 - **One user, no sign-in, no roles.** `spectio serve` in personal mode, auth mode `single`, bound to 127.0.0.1: [`api-and-data-model.md`](api-and-data-model.md) §1, [`authentication-and-access.md`](authentication-and-access.md) §1. Shared login nodes are not covered (inbox #15, open).
 - **Everything on one machine.** One process with the local runner (`spectio serve --with-runner`), SQLite, Python bundle: [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.1–§7.3. The engines use their local executor.
+  - When the server receives SIGTERM in personal mode, running heads keep running and are re-adopted at the next start ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1.1). *(assumed — pending Thomas, inbox #35)*
 - **Board:** EnvLocal (single machine).
 
 The boards were drawn for the full product. They also show things 0.0.1 does not have: projects, who may decide, SLURM environments, review queues. Marking them is UX-227 (inbox #16, open).
@@ -21,7 +22,7 @@ The boards were drawn for the full product. They also show things 0.0.1 does not
 | **Snakemake**, through the Spectio logger plugin (`--logger spectio`) | [`synthesis.md`](synthesis.md) §2, §2bis; [`ui-spec.md`](ui-spec.md) §5, §5.1 (how a gate stops Snakemake: `--until`) | LaunchSnakemake |
 | **Nextflow**, through `nf-spectio` | [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md); [`synthesis.md`](synthesis.md) §2bis; [`ui-spec.md`](ui-spec.md) §5, §5.1 (how a gate stops Nextflow: `ext.when`) | Launch |
 | **Launch a run from the UI** | [`ui-spec.md`](ui-spec.md) §4.6 (launch form); [`api-and-data-model.md`](api-and-data-model.md) §5 (`POST /runs`, workflow schema) | Launch, LaunchSnakemake |
-| **Monitor it**: run state, number of jobs / tasks, stages | [`ui-spec.md`](ui-spec.md) §3.1, §3.2, §4.3, §4.4 (Summary, Stages & gates, Tasks); [`api-and-data-model.md`](api-and-data-model.md) §5, §8 | RunsTable, RunsRows, RunDetail, Legend |
+| **Monitor it**: run state, number of jobs / tasks, stages | [`ui-spec.md`](ui-spec.md) §3.1, §3.2, §4.3, §4.4 (Summary, Stages & gates, Tasks); [`api-and-data-model.md`](api-and-data-model.md) §5, §8 | RunsTable, RunsRows, RunDetail, Legend, RunFailed *(assumed — pending Thomas, inbox #40)*, RunTasks and RunLogs (to be drawn; log sources: [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.7) *(assumed — pending Thomas, inbox #40)* |
 | **Relaunch**, including with changed parameters | [`ui-spec.md`](ui-spec.md) §4.6 (relaunch dialog); [`api-and-data-model.md`](api-and-data-model.md) §5 (`:relaunch` with parameter overrides); [`synthesis.md`](synthesis.md) §5ter | RelaunchDialog |
 | **Parameter history**: which parameters each run used, what changed | [`ui-spec.md`](ui-spec.md) §4.4 (Parameters and Lineage tabs); [`api-and-data-model.md`](api-and-data-model.md) §5 (`/params`, `/lineage`), §7 (`run_inputs`) | RunDetail (parameters changed vs. the previous run, lineage), RunsCompare |
 | **A simple QC check and gate on one stage**, then resume or relaunch | [`checking-scenarios.md`](checking-scenarios.md) §4, §5, §7; [`ui-spec.md`](ui-spec.md) §5.1; [`synthesis.md`](synthesis.md) §5ter; [`api-and-data-model.md`](api-and-data-model.md) §5 (gates) | Manifest, RunDetail, ReviewReport |

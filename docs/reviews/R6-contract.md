@@ -2,7 +2,7 @@
 
 **Step page:** [R6](../progress/W2/R6.md)
 
-**Round:** R6 (API contract) · **Date:** 2026-10-27 · **Found by:** spec-reviewer, ux-reviewer · **Status of the round:** triaged (TRIAGE2, 2026-10-27): 15 accepted, 0 rejected, 19 inbox (17 assumed) · triage: [TRIAGE2](../progress/W2/TRIAGE2.md)
+**Round:** R6 (API contract) · **Date:** 2026-10-27 · **Found by:** spec-reviewer, ux-reviewer · **Status of the round:** triaged (TRIAGE2, 2026-10-27): 15 accepted, 0 rejected, 19 inbox (17 assumed) · triage: [TRIAGE2](../progress/W2/TRIAGE2.md) · [APPLY2](../progress/W2/APPLY2.md) (2026-10-27): 0 applied, 32 partly applied, 0 not applied
 
 **Sources.**
 - **Scope.** The 0.0.1 API contract only ([`mvp-0.0.1.md`](../specs/mvp-0.0.1.md), [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §15.1): the OpenAPI draft written by the R6 spike, checked against [`api-and-data-model.md`](../specs/api-and-data-model.md), the other specs it depends on, and the ten 0.0.1 boards.
@@ -63,39 +63,39 @@ Merged as duplicates: 0. Dropped as not reproducible: 0. Questions for Thomas: 5
 | ID | Sev. | Title | Related | Status |
 |---|---|---|---|---|
 | SR-080 | major | Ingest §14: the wire items the draft had to invent, beyond SR-054's subset | UX-272, UX-288 | inbox (#36) |
-| SR-081 | major | Run actions and relaunch: source states, responses, the dialog's three meanings of "Resume", lineage, and a fourth mode vocabulary | UX-280, UX-281, UX-282, UX-289 | inbox, assumed (#32) |
-| SR-082 | major | Stages have no API contract: no resource, no state enum, no single identifier | UX-271, UX-273, UX-278, UX-290 | inbox, assumed (#40) |
-| SR-083 | major | Task and attempt states: no owner, no stored enum, display labels used as values | UX-290 | accepted |
-| SR-084 | major | Events and SSE: frames outside the "complete" catalogue, no sequence for SSE-only frames, no data schemas | UX-271, UX-283 | inbox, assumed (#38) |
-| SR-085 | major | The 0.0.1 gate: no run filter, untyped check values without thresholds, unclear If-Match, no response body, label-only actor kinds, verbs still split | UX-271, UX-283, UX-284, UX-285 | inbox, assumed (#32) |
-| SR-086 | major | Workflow resource: `local` is missing from the source enum, and there is no name, no location and no way to resolve a key | UX-270 | accepted |
-| SR-087 | major | Launch body: `gates` has one example value, the effective manifest is not frozen, and `links` is unnamed | UX-277, UX-278, UX-279 | accepted |
-| SR-088 | major | Run resource: name, tags, task counts and the "% tasks" denominator have no fields | UX-271, UX-272, UX-287, UX-288 | inbox, assumed (#38) |
-| SR-089 | major | Log endpoints: which file, which launch, which attempt, content type, follow, and the error when a log is gone | UX-273 | accepted |
-| SR-090 | major | Conventions: list member, default limit, sortable fields, Idempotency-Key rules, ID prefixes, field errors and the problem-type catalogue | UX-274, UX-276, UX-287 | accepted |
+| SR-081 | major | Run actions and relaunch: source states, responses, the dialog's three meanings of "Resume", lineage, and a fourth mode vocabulary | UX-280, UX-281, UX-282, UX-289 | assumed, partly (#32) |
+| SR-082 | major | Stages have no API contract: no resource, no state enum, no single identifier | UX-271, UX-273, UX-278, UX-290 | assumed, partly (#40) |
+| SR-083 | major | Task and attempt states: no owner, no stored enum, display labels used as values | UX-290 | partly |
+| SR-084 | major | Events and SSE: frames outside the "complete" catalogue, no sequence for SSE-only frames, no data schemas | UX-271, UX-283 | assumed, partly (#38) |
+| SR-085 | major | The 0.0.1 gate: no run filter, untyped check values without thresholds, unclear If-Match, no response body, label-only actor kinds, verbs still split | UX-271, UX-283, UX-284, UX-285 | assumed, partly (#32) |
+| SR-086 | major | Workflow resource: `local` is missing from the source enum, and there is no name, no location and no way to resolve a key | UX-270 | partly |
+| SR-087 | major | Launch body: `gates` has one example value, the effective manifest is not frozen, and `links` is unnamed | UX-277, UX-278, UX-279 | partly |
+| SR-088 | major | Run resource: name, tags, task counts and the "% tasks" denominator have no fields | UX-271, UX-272, UX-287, UX-288 | assumed, partly (#38) |
+| SR-089 | major | Log endpoints: which file, which launch, which attempt, content type, follow, and the error when a log is gone | UX-273 | partly |
+| SR-090 | major | Conventions: list member, default limit, sortable fields, Idempotency-Key rules, ID prefixes, field errors and the problem-type catalogue | UX-274, UX-276, UX-287 | partly |
 | SR-091 | major | Token-less loopback: the browser threat (DNS rebinding, CSRF) was parked with the login-node question, but it applies to every 0.0.1 laptop | — | inbox (#37) |
-| UX-270 | major | A run cannot be turned into "workflow name + version + engine logo" without scanning every workflow | SR-086 | accepted |
-| UX-271 | major | List rows need a run "progress and context" summary; today that is 3–5 calls per row | SR-082, SR-084, SR-085, SR-088 | accepted |
-| UX-272 | major | Task-progress denominators ("1,248 tasks", "68 % tasks", task quarters) have no source | SR-088, SR-080 | inbox, assumed (#38) |
-| UX-273 | major | No run, stage or state timestamps: Started, Duration, "waiting 6 h 20" and "2 h ago" cannot be computed | SR-082, SR-089 | accepted |
-| UX-274 | major | Runs list: free-text, tag, date and multi-state filters, totals, "Previous" and "Needs attention" are not in `listRuns` | SR-090 | inbox, assumed (#39) |
-| UX-275 | major | App chrome on every 0.0.1 board has no operation: runner and server status, Review badge, search, bell | — | inbox, assumed (#39) |
-| UX-276 | major | Launch: runner file checks, "Recheck", "Browse" and the disabled "Launch · fix 1 issue first" have no endpoint | SR-090 | accepted |
-| UX-277 | major | Snakemake launch: `RunCreate` carries one samplesheet and a Nextflow `profile`, but the board sends two TSVs, a config file and a deployment method | SR-087 | accepted |
-| UX-278 | major | No manifest read: the gate list before launch, stage sources and names, overlay versions and gate names cannot be shown | SR-087, SR-082 | inbox, assumed (#39) |
-| UX-279 | major | "Copy to a new launch" cannot rebuild a `RunCreate`: samplesheet, profile and gates are not readable from a run | SR-087 | inbox, assumed (#39) |
-| UX-280 | major | Relaunch overrides are parameters only; the dialog's main example is a process resource override ("extra config") | SR-081 | inbox, assumed (#32) |
-| UX-281 | major | The relaunch preview (reused / to run per stage, estimate, suggested mode, suggestions, pre-flight) has no operation | SR-081 | inbox, assumed (#30) |
-| UX-282 | major | Lineage and compare: entries lack name, from-stage, actor, failure summary and old → new values | SR-081 | inbox, assumed (#32) |
-| UX-283 | major | A decided gate's outcome cannot be read: who, when, which action, why | SR-085, SR-084 | accepted |
-| UX-284 | major | ReviewReport's action bar maps to `apply` + change set (outside 0.0.1); the 0.0.1 gate actions are not drawn | SR-085 | inbox, assumed (#32) |
-| UX-285 | major | Gate check results cannot be pivoted into the item table or the per-check cards without reading every row | SR-085 | inbox, assumed (#39) |
-| UX-286 | major | Tabs and row actions that 0.0.1 boards show have no draft operation: Outputs & reports, Software, Environment, evidence report | — | inbox, assumed (#39) |
-| UX-287 | minor | Process summary lacks failures by class, module ID and not-scheduled reason | SR-088, SR-090 | accepted |
-| UX-288 | minor | Run detail meta strip: work dir, engine version, run number and launched-by have no field | SR-088, SR-080 | accepted |
-| UX-289 | minor | "Pause after stage" is the Running header action, but `:pause` and `:resume` are not in the draft | SR-081 | accepted |
-| UX-290 | minor | Legend and the draft enums disagree: no Cancelling or Pausing chip, `stored` vs "Cached / storeDir", stage states free text | SR-082, SR-083 | accepted |
-| UX-291 | minor | RunsCompare "Outcome" and "CPU-hours" rows need per-run check and accounting data that 0.0.1 does not have | — | inbox, assumed (#39) |
+| UX-270 | major | A run cannot be turned into "workflow name + version + engine logo" without scanning every workflow | SR-086 | partly |
+| UX-271 | major | List rows need a run "progress and context" summary; today that is 3–5 calls per row | SR-082, SR-084, SR-085, SR-088 | partly |
+| UX-272 | major | Task-progress denominators ("1,248 tasks", "68 % tasks", task quarters) have no source | SR-088, SR-080 | assumed, partly (#38) |
+| UX-273 | major | No run, stage or state timestamps: Started, Duration, "waiting 6 h 20" and "2 h ago" cannot be computed | SR-082, SR-089 | partly |
+| UX-274 | major | Runs list: free-text, tag, date and multi-state filters, totals, "Previous" and "Needs attention" are not in `listRuns` | SR-090 | assumed, partly (#39) |
+| UX-275 | major | App chrome on every 0.0.1 board has no operation: runner and server status, Review badge, search, bell | — | assumed, partly (#39) |
+| UX-276 | major | Launch: runner file checks, "Recheck", "Browse" and the disabled "Launch · fix 1 issue first" have no endpoint | SR-090 | partly |
+| UX-277 | major | Snakemake launch: `RunCreate` carries one samplesheet and a Nextflow `profile`, but the board sends two TSVs, a config file and a deployment method | SR-087 | partly |
+| UX-278 | major | No manifest read: the gate list before launch, stage sources and names, overlay versions and gate names cannot be shown | SR-087, SR-082 | assumed, partly (#39) |
+| UX-279 | major | "Copy to a new launch" cannot rebuild a `RunCreate`: samplesheet, profile and gates are not readable from a run | SR-087 | assumed, partly (#39) |
+| UX-280 | major | Relaunch overrides are parameters only; the dialog's main example is a process resource override ("extra config") | SR-081 | assumed, partly (#32) |
+| UX-281 | major | The relaunch preview (reused / to run per stage, estimate, suggested mode, suggestions, pre-flight) has no operation | SR-081 | assumed, partly (#32) |
+| UX-282 | major | Lineage and compare: entries lack name, from-stage, actor, failure summary and old → new values | SR-081 | assumed, partly (#32) |
+| UX-283 | major | A decided gate's outcome cannot be read: who, when, which action, why | SR-085, SR-084 | partly |
+| UX-284 | major | ReviewReport's action bar maps to `apply` + change set (outside 0.0.1); the 0.0.1 gate actions are not drawn | SR-085 | assumed, partly (#32) |
+| UX-285 | major | Gate check results cannot be pivoted into the item table or the per-check cards without reading every row | SR-085 | assumed, partly (#39) |
+| UX-286 | major | Tabs and row actions that 0.0.1 boards show have no draft operation: Outputs & reports, Software, Environment, evidence report | — | assumed, partly (#39) |
+| UX-287 | minor | Process summary lacks failures by class, module ID and not-scheduled reason | SR-088, SR-090 | partly |
+| UX-288 | minor | Run detail meta strip: work dir, engine version, run number and launched-by have no field | SR-088, SR-080 | partly |
+| UX-289 | minor | "Pause after stage" is the Running header action, but `:pause` and `:resume` are not in the draft | SR-081 | partly |
+| UX-290 | minor | Legend and the draft enums disagree: no Cancelling or Pausing chip, `stored` vs "Cached / storeDir", stage states free text | SR-082, SR-083 | partly |
+| UX-291 | minor | RunsCompare "Outcome" and "CPU-hours" rows need per-run check and accounting data that 0.0.1 does not have | — | assumed, partly (#39) |
 
 ## Questions for Thomas
 
@@ -195,7 +195,7 @@ Questions 1 to 4 come from the spec-reviewer. The ux-reviewer raised no separate
   - The draft adopts SR-063's enum. cli §2 gains `--fresh` and `--from-stage <id>`.
 - **Related:** UX-282 (lineage entries: the boards need old → new values, name, actor and failure summary, beyond SR-081's `params_changed`), UX-280 (resource overrides in the relaunch body), UX-281 (relaunch preview), UX-289 (`:pause` / `:resume` not in the draft).
 - **Found by:** spec-reviewer
-- **Status:** inbox, assumed: run actions and relaunch follow path B of inbox #32; Resume means a child run — pending Thomas (TRIAGE2, 2026-10-27), inbox #32
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §5.1 (new); cli §2; synthesis §5ter; ui-spec §4.6 (assumed — pending Thomas, inbox #32); pending: `:pause` / `:resume` source-state rows and the §7.1 pause verbs (inbox #16); spike: openapi draft (relaunch enum, lineage schema); boards RelaunchDialog and RunDetail (Resume label on terminal runs)
 
 ### SR-082 · major · Stages have no API contract: no resource, no state enum, no single identifier
 
@@ -225,7 +225,7 @@ Questions 1 to 4 come from the spec-reviewer. The ux-reviewer raised no separate
   - cli `--from-stage <id>`.
 - **Related:** UX-290 (the Legend's six gauge looks as the stage-state enum), UX-278 (`Stage.source`, `description`, `match[]` for the Manifest board), UX-271 (`stage_mode` including quarters, in the run summary), UX-273 (stage start and end times).
 - **Found by:** spec-reviewer
-- **Status:** inbox, assumed: apply the proposal as written — pending Thomas (TRIAGE2, 2026-10-27), inbox #40
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7 (`run_stages`, erDiagram), §8; checking-scenarios §12.3; cli §2; ui-spec §3.2 (assumed — pending Thomas, inbox #40); pending: spike: openapi draft (`run_stages` schema); boards RunDetail, RunsRows and Legend (stage looks)
 
 ### SR-083 · major · Task and attempt states: no owner, no stored enum, display labels used as values
 
@@ -250,7 +250,7 @@ Questions 1 to 4 come from the spec-reviewer. The ux-reviewer raised no separate
   - ui §3.1 maps the labels to these values. §8.2 uses lower case.
 - **Related:** UX-290 (the Legend board merges `stored` into "Cached / storeDir", unlike the draft's enum).
 - **Found by:** spec-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §7, §7.2 (new), §8.2; ui-spec §3.1; pending: spike: openapi draft (task and attempt enums); engine mapping checked in spike T2
 
 ### SR-084 · major · Events and SSE: frames outside the "complete" catalogue, no sequence for SSE-only frames, no data schemas
 
@@ -285,7 +285,7 @@ Questions 1 to 4 come from the spec-reviewer. The ux-reviewer raised no separate
   - State that `.completed` / `.failed` are emitted after `state_changed`.
 - **Related:** UX-271 (the run summary is updated on the same path as the delta), UX-283 (today a decided gate can only be read by replaying `spectio.gate.decided`). Question 2.
 - **Found by:** spec-reviewer
-- **Status:** inbox, assumed: (a) one `events` log, engine-native types under `spectio.engine.*`, internal, with a `seq`; heartbeats kept out — pending Thomas (TRIAGE2, 2026-10-27), inbox #38
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §8, §8.5 (new) (assumed — pending Thomas, inbox #38); pending: api §14 ingest wording (inbox #36); spike: openapi draft (event schemas); tool: `spectio-sdk` JSON Schemas
 
 ### SR-085 · major · The 0.0.1 gate: no run filter, untyped check values without thresholds, unclear If-Match, no response body, label-only actor kinds, verbs still split
 
@@ -309,7 +309,7 @@ Questions 1 to 4 come from the spec-reviewer. The ux-reviewer raised no separate
   - checking §5 is aligned under SR-012.
 - **Related:** UX-284 (the 0.0.1 gate actions and the 428 from the board side), UX-285 (per-check aggregates, item table, `/gates/{id}/items`, beyond the checks shape), UX-283 (reading a decided gate: `GET /gates/{id}/decisions`, `Gate.resolution`), UX-271 (`open_gate` summary on the run, a superset of `open_gate_id`). Question 4.
 - **Found by:** spec-reviewer
-- **Status:** inbox, assumed: (a) `approve` and `stop` only in 0.0.1, `apply` and `go_back` return 422 `not-in-this-version`; the other gate items are applied with it — pending Thomas (TRIAGE2, 2026-10-27), inbox #32
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7; cli §2 (assumed — pending Thomas, inbox #32); pending: checking-scenarios §5 gate verbs (inbox #19); spike: openapi draft (decision schema); board ReviewReport
 
 ### SR-086 · major · Workflow resource: `local` is missing from the source enum, and there is no name, no location and no way to resolve a key
 
@@ -332,7 +332,7 @@ Questions 1 to 4 come from the spec-reviewer. The ux-reviewer raised no separate
   - The import body stays with SR-056.
 - **Related:** UX-270 (`GET /workflow-versions/{id}` and a workflow summary embedded in `Run`, which needs the `name` column added here).
 - **Found by:** spec-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7; pending: `POST /workflows` import body (SR-056, inbox #34); spike: openapi draft
 
 ### SR-087 · major · Launch body: `gates` has one example value, the effective manifest is not frozen, and `links` is unnamed
 
@@ -354,7 +354,7 @@ Questions 1 to 4 come from the spec-reviewer. The ux-reviewer raised no separate
   - cli `--gates FILE` sends the inline object.
 - **Related:** UX-278 (a manifest read and `runs.manifest_ref`; the same "which manifest did this run use" gap from the board side), UX-279 (echo the launch request on the run so it can be copied), UX-277 (several sample tables and a software choice in the launch body).
 - **Found by:** spec-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27); the inline-object value of `gates` waits for inbox #34 (how rnaseq gets its gate)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §5.2 (new), §7 (`run_inputs`); pending: the inline-object `gates` value and cli `--gates FILE` (inbox #34); boards Launch and LaunchSnakemake
 
 ### SR-088 · major · Run resource: name, tags, task counts and the "% tasks" denominator have no fields
 
@@ -379,7 +379,7 @@ Questions 1 to 4 come from the spec-reviewer. The ux-reviewer raised no separate
   - State that a CLI launch has origin `api` (the actor shows CLI through `actor_kind`).
 - **Related:** UX-272 (same denominator gap; proposes `tasks_expected` plus `tasks_expected_source`), UX-271 (the run summary's `tasks` counters), UX-287 (missing content in `/processes`), UX-288 (more meta fields on `runs`). Question 3.
 - **Found by:** spec-reviewer
-- **Status:** inbox, assumed: (a) "% tasks" only when the engine gives a total, otherwise "N done · M running" — pending Thomas (TRIAGE2, 2026-10-27), inbox #38
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7; ui-spec §4.3 (assumed — pending Thomas, inbox #38); pending: boards RunsTable and RunsRows (progress label)
 
 ### SR-089 · major · Log endpoints: which file, which launch, which attempt, content type, follow, and the error when a log is gone
 
@@ -403,7 +403,7 @@ Questions 1 to 4 come from the spec-reviewer. The ux-reviewer raised no separate
   - Which file each source names comes from CH-048.
 - **Related:** UX-273 (`GET /runs/{id}/launches`, which also gives the launch numbers the run log needs).
 - **Found by:** spec-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5; pending: spike: openapi draft (log routes)
 
 ### SR-090 · major · Conventions: list member, default limit, sortable fields, Idempotency-Key rules, ID prefixes, field errors and the problem-type catalogue
 
@@ -432,7 +432,7 @@ Questions 1 to 4 come from the spec-reviewer. The ux-reviewer raised no separate
   - A catalogue with HTTP status and CLI exit code for each type: `validation-failed`, `idempotency-key-reused`, `not-found`, `run-state-conflict`, `etag-mismatch`, `if-match-required`, `not-in-this-version`, `rate-limited`, `ingest-version-unsupported`, `log-cleaned`.
 - **Related:** UX-274 (sortable fields including `last_activity`, multi-value `state`, `since` and `q` filters on runs), UX-276 (field errors and per-row file checks before launch), UX-287 (`sort` on `/processes`).
 - **Found by:** spec-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §4, §4.1 (new); cli §2; ui-spec §11; pending: api §4 limits (inbox #13); spike: openapi draft (problem schema)
 
 ### SR-091 · major · Token-less loopback: the browser threat (DNS rebinding, CSRF) was parked with the login-node question, but it applies to every 0.0.1 laptop
 
@@ -479,7 +479,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   Record the summary in §7 as a denormalised read field.
 - **Related:** SR-086 (adds the `name` and `location` columns and the lookup filters this summary needs).
 - **Found by:** ux-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7; pending: boards RunDetail and RunsTable (workflow header)
 
 ### UX-271 · major · List rows need a run "progress and context" summary; today that is 3–5 calls per row
 
@@ -511,7 +511,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   The server updates it on the same path as the §8.3 RunDelta.
 - **Related:** SR-088 (`task_counts`, `expected_tasks`), SR-085 (`open_gate_id` and the `run` filter on gates), SR-082 (stage `source` and `current_stage_id`), SR-084 (the delta that keeps the summary fresh). Failure cause on a local run: [CH-047](R3-journeys.md) (R3).
 - **Found by:** ux-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7; pending: boards RunsRows and RunDetail
 
 ### UX-272 · major · Task-progress denominators ("1,248 tasks", "68 % tasks", task quarters) have no source
 
@@ -535,7 +535,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - The boards should show "n known tasks" when `tasks_expected` is null.
 - **Related:** SR-088 (same denominator gap; proposes `expected_tasks` and "N done · M running"), SR-080 (the ingest contract that would carry a planned count). Question 3.
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: (a) of question 3, with `tasks_expected_source` ∈ {`engine_plan`, `none`} — pending Thomas (TRIAGE2, 2026-10-27), inbox #38
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7 (with SR-088); ui-spec §3.2 (assumed — pending Thomas, inbox #38); pending: how ingest obtains the planned count (api §14, inbox #36); boards RunsRows and RunDetail
 
 ### UX-273 · major · No run, stage or state timestamps: Started, Duration, "waiting 6 h 20" and "2 h ago" cannot be computed
 
@@ -564,7 +564,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   §5: add `GET /runs/{id}/launches`, or embed `launches[]`. This also helps gap #9 (l.383).
 - **Related:** SR-082 (the `run_stages` projection that would carry the stage times), SR-089 (the run log is chosen per launch).
 - **Found by:** ux-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7; pending: board RunDetail (timing)
 
 ### UX-274 · major · Runs list: free-text, tag, date and multi-state filters, totals, "Previous" and "Needs attention" are not in `listRuns`
 
@@ -588,7 +588,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - On the boards: drop "of 214" and "Previous", and use "Load more".
 - **Related:** SR-090 (sortable fields and list conventions). Question 5.
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: (b) of question 5, the 0.0.1 contract keeps the reads this board needs and the boards hide the rest — pending Thomas (TRIAGE2, 2026-10-27), inbox #39
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5; ui-spec §4.3 (assumed — pending Thomas, inbox #39); pending: boards RunsTable and RunsRows ("of 214" total, "Previous" button)
 
 ### UX-275 · major · App chrome on every 0.0.1 board has no operation: runner and server status, Review badge, search, bell
 
@@ -604,7 +604,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - ui-spec.md §2 / §11, under UX-227: hide in 0.0.1 the bell, avatar menu, project switcher and the "n / m runners" form. Hide search too, unless `GET /search` is kept.
 - **Related:** the in-process runner record is [SR-055](R3-journeys.md) (R3, absorbs UX-247 on EnvLocal). Question 5.
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: (b) of question 5, the 0.0.1 contract keeps the reads this board needs and the boards hide the rest — pending Thomas (TRIAGE2, 2026-10-27), inbox #39
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5; ui-spec §2 (assumed — pending Thomas, inbox #39); pending: shared components AppSidebar and AppTopbar
 
 ### UX-276 · major · Launch: runner file checks, "Recheck", "Browse" and the disabled "Launch · fix 1 issue first" have no endpoint
 
@@ -625,7 +625,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   In 0.0.1 the local runner answers both.
 - **Related:** SR-090 (the field-error member these checks would return).
 - **Found by:** ux-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5 (`POST /runs:validate`); ui-spec §4.6; pending: `GET /environments/{id}/files` and the Storage row (environments API, inbox #20); boards Launch and LaunchSnakemake
 
 ### UX-277 · major · Snakemake launch: `RunCreate` carries one samplesheet and a Nextflow `profile`, but the board sends two TSVs, a config file and a deployment method
 
@@ -645,7 +645,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - expose the choices on `GET /workflow-versions/{id}` (UX-270) as `profiles[]` and `sample_tables[]`.
 - **Related:** SR-087 (the normative launch-body table where these fields would go). Snakemake form and parameter delivery: [SR-065](R3-journeys.md) (R3).
 - **Found by:** ux-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §5.2; pending: boards Launch and LaunchSnakemake
 
 ### UX-278 · major · No manifest read: the gate list before launch, stage sources and names, overlay versions and gate names cannot be shown
 
@@ -668,7 +668,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - Gap #31 (l.1053) then becomes "gates: from-manifest | none".
 - **Related:** SR-087 (store the merged manifest per run as `run_inputs.kind = manifest`; `gates` values), SR-082 (stage `source`). How rnaseq gets its stages and overlay: [SR-057](R3-journeys.md) (R3). Question 5.
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: (b) of question 5, the 0.0.1 contract keeps the reads this board needs and the boards hide the rest — pending Thomas (TRIAGE2, 2026-10-27), inbox #39
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7 (assumed — pending Thomas, inbox #39); pending: checking-scenarios §12.7 overlays (inbox #34); board Manifest
 
 ### UX-279 · major · "Copy to a new launch" cannot rebuild a `RunCreate`: samplesheet, profile and gates are not readable from a run
 
@@ -685,7 +685,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - optionally add `GET /runs/{id}:launch-template`, which returns a ready `RunCreate` (also usable as "Copy" in CLI and MCP).
 - **Related:** SR-087 (the launch-body table and the stored manifest). Parameter history shape: [SR-064](R3-journeys.md) (R3). Question 5.
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: (b) of question 5, the 0.0.1 contract keeps the reads this board needs and the boards hide the rest — pending Thomas (TRIAGE2, 2026-10-27), inbox #39
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7 (assumed — pending Thomas, inbox #39); pending: boards RunDetail and Launch (Copy to a new launch)
 
 ### UX-280 · major · Relaunch overrides are parameters only; the dialog's main example is a process resource override ("extra config")
 
@@ -702,7 +702,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   Gap #33 (l.1070, merge or replace) applies to both.
 - **Related:** SR-081 (the run-actions table and the relaunch body), [SR-063](R3-journeys.md) (R3, `:relaunch` contract), [UX-113](R12-ui-scenarios.md) (resource overrides, inbox).
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: relaunch overrides of the child run include an extra config file, not only parameters — pending Thomas (TRIAGE2, 2026-10-27), inbox #32
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5.1, §5.2, §7 (`run_inputs`) (assumed — pending Thomas, inbox #32); pending: board RelaunchDialog
 
 ### UX-281 · major · The relaunch preview (reused / to run per stage, estimate, suggested mode, suggestions, pre-flight) has no operation
 
@@ -718,7 +718,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - Label the board's source line by origin ("from the task's peak memory" when local).
 - **Related:** SR-081 (relaunch source states and modes). Reuse estimate: [CH-010](R4-constraints.md).
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: the relaunch preview is the `dry_run` of the relaunch body (as assumed for UX-113 in inbox #30) — pending Thomas (TRIAGE2, 2026-10-27), inbox #32
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5.1 (assumed — pending Thomas, inbox #32); pending: board RelaunchDialog
 
 ### UX-282 · major · Lineage and compare: entries lack name, from-stage, actor, failure summary and old → new values
 
@@ -744,7 +744,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   §5: the server computes the diff against the parent, which answers gap #7's (l.311) "server or client". Expose `created_by` on `RunInput`.
 - **Related:** SR-081 (proposes `{root_run_id, runs:[… from_stage …, params_changed:[key]]}`; UX-282 asks for values and actor on top). Parameter history: [SR-064](R3-journeys.md); RunsCompare reachability: [UX-250](R3-journeys.md) (both R3).
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: lineage entries of path B carry name, from-stage, actor, failure summary and old → new values — pending Thomas (TRIAGE2, 2026-10-27), inbox #32
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5.1, §7 (assumed — pending Thomas, inbox #32); pending: board RunDetail (Lineage tab)
 
 ### UX-283 · major · A decided gate's outcome cannot be read: who, when, which action, why
 
@@ -761,7 +761,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - include `resolution` in `Stage` (or `Stage.gate`) of `/graph`, so Run detail needs one call.
 - **Related:** SR-085 (decision response body, `actor_kind` wire values), SR-084 (event data schemas).
 - **Found by:** ux-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5; pending: boards RunDetail and ReviewReport
 
 ### UX-284 · major · ReviewReport's action bar maps to `apply` + change set (outside 0.0.1); the 0.0.1 gate actions are not drawn
 
@@ -778,7 +778,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - api-and-data-model.md §5: confirm `approve` with an optional `justification` is the whole 0.0.1 body, and specify the 428 for a missing If-Match (gap #13(2)).
 - **Related:** SR-085 (proposes 428 `if-match-required` and `apply` → 422 `not-in-this-version` in 0.0.1). Question 4.
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: ReviewReport's 0.0.1 bar is Approve and continue, Stop run, Relaunch with changes… (question 4 (a)) — pending Thomas (TRIAGE2, 2026-10-27), inbox #32
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5 (with SR-085); ui-spec §4.5 (assumed — pending Thomas, inbox #32); pending: board ReviewReport
 
 ### UX-285 · major · Gate check results cannot be pivoted into the item table or the per-check cards without reading every row
 
@@ -803,7 +803,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   §7: say that "info" metrics are checks with `severity: info`, or `gate_items.attributes`.
 - **Related:** SR-085 (checks shape, frozen check definitions with thresholds, `value` type). Question 5.
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: (b) of question 5, the 0.0.1 contract keeps the reads this board needs and the boards hide the rest — pending Thomas (TRIAGE2, 2026-10-27), inbox #39
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7 (assumed — pending Thomas, inbox #39); pending: board ReviewReport
 
 ### UX-286 · major · Tabs and row actions that 0.0.1 boards show have no draft operation: Outputs & reports, Software, Environment, evidence report
 
@@ -825,7 +825,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - Hide Batch and Adopt in 0.0.1. Adopt is CLI, see §15.1.
 - **Related:** MultiQC data at gate time: [SR-058](R3-journeys.md) (R3). Question 5.
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: (b) of question 5, the 0.0.1 contract keeps the reads this board needs and the boards hide the rest — pending Thomas (TRIAGE2, 2026-10-27), inbox #39
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5, §7; ui-spec §4.4 (assumed — pending Thomas, inbox #39); pending: board RunDetail
 
 ### UX-287 · minor · Process summary lacks failures by class, module ID and not-scheduled reason
 
@@ -842,7 +842,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
 - **Proposal:** api-and-data-model.md §5 `/processes`: add `failures_by_class` {class: count}, `module` {path, commit}, `not_scheduled` {reason, count | null}, `sort=-tasks_running|-peak_rss`.
 - **Related:** SR-088 (`/processes` field names), SR-090 (sortable fields).
 - **Found by:** ux-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §5; pending: board RunDetail (processes table)
 
 ### UX-288 · minor · Run detail meta strip: work dir, engine version, run number and launched-by have no field
 
@@ -865,7 +865,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   §5: keep `GET /me` in 0.0.1 so `created_by` resolves to a display name.
 - **Related:** SR-088 (run `name` with a default built from the last 6 ID characters), SR-080 (the ingest batch that carries the engine version). Resume inputs including the engine version: [CH-043](R3-journeys.md) (R3).
 - **Found by:** ux-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): api §7; ui-spec §4.4; pending: board RunDetail
 
 ### UX-289 · minor · "Pause after stage" is the Running header action, but `:pause` and `:resume` are not in the draft
 
@@ -880,7 +880,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - api-and-data-model.md §7.1: note that `pausing` and `paused` are reachable only once `:pause` ships, or add `:pause` / `:resume` to the 0.0.1 cut.
 - **Related:** SR-081 (the run-actions table lists `:resume` and `paused` as a source state). State machine: [CH-042](R3-journeys.md) (R3).
 - **Found by:** ux-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27), first option: the 0.0.1 Running row shows Cancel only, and `pausing` / `paused` are reachable once `:pause` ships
+- **Status:** partly applied (APPLY2, 2026-10-27): ui-spec §4.4 (first option: the Running row shows Cancel only); pending: §7.1 pause and resume verbs note (inbox #16); board RunDetail
 
 ### UX-290 · minor · Legend and the draft enums disagree: no Cancelling or Pausing chip, `stored` vs "Cached / storeDir", stage states free text
 
@@ -899,7 +899,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - api-and-data-model.md §7: take the Legend's six gauge looks as the `Stage.state` enum (`completed|running|awaiting_review|failed|skipped|not_started`), and decide `stored` vs `cached` once.
 - **Related:** SR-082 (proposes the same six stage states), SR-083 (keeps `stored` separate from `cached` in `attempts.state`; the two proposals must agree). The missing Pausing and Cancelling chips were already noted in R1 (pending), as listed in R3's "Cited, not repeated".
 - **Found by:** ux-reviewer
-- **Status:** accepted (TRIAGE2, 2026-10-27)
+- **Status:** partly applied (APPLY2, 2026-10-27): ui-spec §3.1, §3.2; pending: board Legend
 
 ### UX-291 · minor · RunsCompare "Outcome" and "CPU-hours" rows need per-run check and accounting data that 0.0.1 does not have
 
@@ -919,7 +919,7 @@ Board coordinates (x, y) are pixels on the 1440×1180 render. Features that 0.0.
   - Later, api-and-data-model.md §5: add `GET /runs/{id}/checks?check_key=&aggregate=median` and a `resources_total` {cpu_seconds, saved_cpu_seconds} on `Run`, computed from `attempts.resources` for local runs.
 - **Related:** question 5.
 - **Found by:** ux-reviewer
-- **Status:** inbox, assumed: (b) of question 5, the 0.0.1 contract keeps the reads this board needs and the boards hide the rest — pending Thomas (TRIAGE2, 2026-10-27), inbox #39
+- **Status:** partly applied (APPLY2, 2026-10-27): ui-spec §4.3 (assumed — pending Thomas, inbox #39); pending: later api compare endpoints; board RunsCompare
 
 ## Appendix A · x-spec-gap to finding map
 

@@ -29,6 +29,8 @@ Shell (depictio Glass model): a grid filling the viewport.
 - **Sidebar** below it, full remaining height: head with "WORKSPACE" and the **fold button** (PanelLeftClose / PanelLeftOpen, as in depictio); one 56 px item per menu with a 25 px line icon in the menu's colour; active item tinted; Review shows its count; footer with runners status and server status. Folds to a 92 px icon rail (labels hidden, counts become badges).
 - **Content** scrolls on its own; the shell never scrolls.
 
+The chrome shows the bell, avatar menu, project switcher, "n / m runners" and search only when the server offers them (capabilities by version: [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §15.1). *(assumed — pending Thomas, inbox #39)*
+
 **Logo motion (the panorama):** on load the four blades start stacked as one narrow view and fan out into the 180° panorama; on hover a beam of light sweeps across it; boot splash and long waits use a back-and-forth "radar" beam; static for favicons, print and reduced motion. Pure CSS.
 
 ## 3. Status system
@@ -43,7 +45,7 @@ Shell (depictio Glass model): a grid filling the viewport.
 | `pausing` | Pausing | pause, animated ring | violet `#8B5CF6` | Stopping as requested; becomes Paused |
 | `paused` | Paused | pause | violet `#8B5CF6` | Stopped on request, resumable |
 | `succeeded` | Succeeded | check | green `#1F9D63` | Completed |
-| `failed` | Failed | cross | red `#DC3B3B` | Engine or task failure; resumable |
+| `failed` | Failed | cross | red `#DC3B3B` | Engine or task failure; Resume creates a new run *(assumed — pending Thomas, inbox #32)*. With failure class `head_lost`: "Engine stopped while Spectio was down · Resume" *(assumed — pending Thomas, inbox #40)* |
 | `cancelling` | Cancelling | slash, animated ring | ink 500 | Cancel requested; the head process is stopping |
 | `cancelled` | Cancelled | slash | ink 500 | Stopped by a user or a policy |
 
@@ -53,20 +55,22 @@ Rendering rules (replaces the current pill badges):
 - In tables: a 4 px **state rail** on the left edge of the row, plus icon + state word in the State column, plus a context line ("stage 2 of 4 · 12 min ago").
 - In cards: the state rail runs along the top edge of the card; icon + word in the header.
 - Hover / focus on any state shows a tooltip with the last event and timestamp.
-- Task states (Nextflow / Snakemake) map to: pending, submitted, running, succeeded, retried, failed, failed (ignored), cached, stored, not scheduled.
+- Task labels come from the states of [`api-and-data-model.md`](api-and-data-model.md) §7.2: pending, submitted, running, succeeded, failed, cached, stored, not scheduled; "failed (ignored)" is `failed` with `ignored`; "retried" is shown on a task whose last attempt has n > 1. Cached and Stored are distinct looks, for `cached` and `stored`.
 
 ### 3.2 Stage gauge (the emblem as a progress indicator)
 
-The emblem's half-disc is reused as a compact **stage gauge**: one sector per declared stage (1 to 8). Workflows without declared stages get 4 sectors = quarters of task progress.
+The emblem's half-disc is reused as a compact **stage gauge**: one sector per declared stage (1 to 8). Workflows without declared stages get 4 sectors = quarters of task progress, measured against `tasks_expected` when `tasks_expected_source` is `engine_plan` and against the known tasks otherwise ([`api-and-data-model.md`](api-and-data-model.md) §7 `runs`). *(assumed — pending Thomas, inbox #38)*
 
-| Sector look | Meaning |
-|---|---|
-| Solid brand colour (indigo → violet → coral → amber, in order) | Stage completed |
-| Brand colour, light tint (300) | Stage running |
-| Amber outline + notch | Stage finished, gate awaiting review |
-| Solid red | Stage failed |
-| Grey hatched (ink 200) | Stage skipped / fully cached |
-| Light grey (ink 100) | Stage not started |
+| Sector look | Meaning | `run_stages.state` |
+|---|---|---|
+| Solid brand colour (indigo → violet → coral → amber, in order) | Stage completed | `completed` |
+| Brand colour, light tint (300) | Stage running | `running` |
+| Amber outline + notch | Stage finished, gate awaiting review | `awaiting_review` |
+| Solid red | Stage failed | `failed` |
+| Grey hatched (ink 200) | Stage skipped / fully cached | `skipped` |
+| Light grey (ink 100) | Stage not started | `not_started` |
+
+Each look maps to one value of the stage-state enum ([`api-and-data-model.md`](api-and-data-model.md) §7 `run_stages`). *(assumed — pending Thomas, inbox #40)*
 
 A legend is available from any gauge (hover / tap) and in Help. In the relaunch stage strip, stages reused from cache use animated hatching.
 
@@ -102,38 +106,46 @@ The public landing page is owned by [documentation-system §2](documentation-sys
 - Recent activity feed (launches, decisions, failures).
 
 ### 4.3 Runs — table and rows
-Columns: Run (name + ID, first) · State (rail + icon + word + context) · Workflow (official engine logo, name, version) · Progress (stage gauge + "2 of 4 stages · 63 % tasks") · Environment · Origin · Started · Duration. Toggle **Table / Rows**. Rows mode = full-width "paper" rows grouped into "Needs attention" and "Active and recent": state rail, gauge, name, workflow line, state with context, time, one contextual action (Review, Resume, Continue, Reports). The card grid is dropped. Paging: Next / Load more on cursor pages, with no numbered pages and no "of N" total until the API offers one ([`api-and-data-model.md`](api-and-data-model.md) §4); headline counts come from `GET /runs:summary`. *(assumed — pending Thomas, inbox #30)*
+Columns: Run (name + ID, first) · State (rail + icon + word + context) · Workflow (official engine logo, name, version) · Progress (stage gauge + "2 of 4 stages · 63 % tasks" when the run has `tasks_expected`, otherwise "2 of 4 stages · N done · M running"; [`api-and-data-model.md`](api-and-data-model.md) §7 `runs`) *(assumed — pending Thomas, inbox #38)* · Environment · Origin · Started · Duration. Toggle **Table / Rows**. Rows mode = full-width "paper" rows grouped into "Needs attention" (runs in `awaiting_review`, and `failed` runs with no child run) *(assumed — pending Thomas, inbox #39)* and "Active and recent": state rail, gauge, name, workflow line, state with context, time, one contextual action (Review, Resume, Continue, Reports). The card grid is dropped. Paging: Next / Load more on cursor pages, with no numbered pages and no "of N" total until the API offers one ([`api-and-data-model.md`](api-and-data-model.md) §4); headline counts come from `GET /runs:summary` ([`api-and-data-model.md`](api-and-data-model.md) §5). *(assumed — pending Thomas, inbox #30)*
+
+**Compare.** Selecting 2–4 rows shows a "Compare" bar that opens RunsCompare; the Parameters and Lineage tabs of Run detail open it too (§4.4). RunsCompare shows no depictio link when the hand-off is off. *(assumed — pending Thomas, inbox #40)* In Compare, Outcome and CPU-hours are shown only when per-run checks and scheduler accounting exist (capabilities by version: [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §15.1). *(assumed — pending Thomas, inbox #39)*
 
 Engine marks: the official files (as shipped in depictio `public/logos/workflows/`), 16–24 px on white, never recoloured; one mark per workflow, nf-core replacing Nextflow for genuine nf-core pipelines.
 
 ### 4.4 Run detail
-Header: run name, state line, gauge, actions by state (table below). When the runner is offline or live data is stale, the header shows that state and its actions follow §11 (for example "Queue pause · applies on reconnect").
+Header: run name, state line, gauge, actions by state (table below). When the runner is offline or live data is stale, the header shows that state and its actions follow §11 (for example "Queue pause · applies on reconnect"). The short run id shown is the last 6 characters of the ULID; `created_by` resolves through `GET /me` and user reads.
 
 | State | Header actions |
 |---|---|
 | Queued | Cancel · Copy to a new launch |
-| Running | Pause after stage · Cancel |
-| Awaiting review | Review (opens the gate) · Cancel |
+| Running | Cancel (Pause after stage is shown only once `:pause` exists, inbox #16) |
+| Awaiting review | Review (opens the gate) · Relaunch… · Cancel |
 | Paused | Continue · Relaunch… · Cancel |
-| Failed | Resume · Relaunch… |
+| Failed | Resume as new run · Relaunch… |
 | Succeeded | Relaunch… |
 | Cancelled | Relaunch… |
 | Observed (CLI) | None besides Copy to a new launch, with the adopt banner of §6 (no relaunch); an Adopted run follows its state's row |
 
 Copy to a new launch is under More in every state. Pause and an immediate stop follow the open question of inbox #16 (SR-018).
 
+Relaunch… at a gate records the decision `stop` with reason `relaunched` (the run becomes `cancelled`, `cancel_reason = relaunched`), then calls `POST /runs/{id}:relaunch` with mode `rerun_from` (the gated stage by default) and the parameter overrides from the dialog (§4.6); see [`api-and-data-model.md`](api-and-data-model.md) §5 and §7. Resume on a failed run creates a child run; the failed run stays terminal. *(assumed — pending Thomas, inbox #32)*
+
+The Failed header shows `runs.failure.message` and its class, and links to the failing task (`runs.failure.task_id`, [`api-and-data-model.md`](api-and-data-model.md) §7). *(assumed — pending Thomas, inbox #40)*
+
 Tabs:
 1. **Summary** — stages timeline, key numbers, last events.
 2. **Stages & gates** — each stage with its tasks, gate, evidence, decision.
-3. **Tasks** — table (process/rule, tag/wildcards, state, attempts, executor, native job id, CPU/memory, duration), filter by state.
-4. **Logs** — run log and per-task stdout/stderr (fetched on demand through the runner).
+3. **Tasks** — table (process/rule, tag/wildcards, state, attempts, executor, native job id, CPU/memory, duration), filter by state; on a failed run the filter defaults to "failed, final attempt". Where each task log comes from: [architecture §13.7](architecture-plugins-and-packaging.md). *(assumed — pending Thomas, inbox #40)*
+4. **Logs** — run log and per-task stdout/stderr (fetched on demand through the runner); sources per engine in [architecture §13.7](architecture-plugins-and-packaging.md). *(assumed — pending Thomas, inbox #40)*
 5. **Outputs & reports** — published files, MultiQC / HTML reports (sandboxed), images, PDF, OME-Zarr viewer.
-6. **Parameters** — resolved params, diff against the previous run of the lineage.
+6. **Parameters** — resolved params; diff against the lineage parent, labelled "vs. run #N (resumed from)", listing only changed keys plus "N unchanged hidden · Show all". The Run detail aside shows the same short diff, with links to this tab and to RunsCompare. "Compare with previous" opens RunsCompare (§4.3) *(assumed — pending Thomas, inbox #40)*.
 7. **Software** — software versions, containers, conda envs, modules (nf-core `modules.json`).
 8. **Environment** — compute environment, executor, queue/partition, storage, work dir.
-9. **Lineage** — previous and next runs (resume / rerun / restart), with what changed.
+9. **Lineage** — previous and next runs (resume / rerun / restart), with what changed; "Compare with previous" opens RunsCompare (§4.3) *(assumed — pending Thomas, inbox #40)*.
 10. **Scheduler** — head job, tasks by scheduler state, why pending, requested vs used, relaunch suggestions; shown when the environment has a scheduler observer ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §10). *(assumed — pending Thomas, inbox #29)*
 11. **Live checks** — one row per item, one column per watched check, filled as tasks finish; shown when the run has watched stages ([`checking-scenarios.md`](checking-scenarios.md) §11.4). *(assumed — pending Thomas, inbox #29)*
+
+The Software and Environment tabs, Batch and Adopt are shown only when the server offers them (capabilities by version: [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §15.1). *(assumed — pending Thomas, inbox #39)*
 
 ### 4.5 Review
 **Review views.** Every gate is items × checks × evidence × decisions ([`checking-scenarios.md`](checking-scenarios.md)). The detail page opens on Summary, then the view that fits the item kind and scale: **item table** (a few items: samples, MS runs, predictions, grouped samples), **distributions & thresholds** (massive: cells, spots, features), **spatial grid** (wells, slides, tiles), **candidate list** (many: bins, candidate variants, structures), **report reader** (MultiQC and any HTML report, sandboxed). Examples on the canvas: Review (plate, spatial grid), ReviewCoverage (grouped samples), ReviewReport (item table + report reader), ReviewCells (distributions), ReviewCandidates (MAG bins).
@@ -152,18 +164,22 @@ Tabs:
 | Dashboard (only with `depictio: {on: gate:<id>}`) | Look at the preliminary depictio dashboard of the partial results, with selections kept in step ([`api-and-data-model.md`](api-and-data-model.md) §13.6, rule 3) *(assumed — pending Thomas, inbox #29)* |
 All changes pile up in a **sticky bar** at the bottom (chips + a flow bar showing which stages rerun for how many items). One primary action follows from them: "Approve and continue" when nothing changed, "Apply and continue" otherwise; "Discard changes"; More: go back to an earlier stage, stop the run here, reassign.
 
+On a server without change sets the bar is "Approve and continue" (decision `approve` with an optional justification), "Stop run" (decision `stop`) and "Relaunch with changes…" (stop with reason `relaunched`, then the relaunch dialog of §4.6); item toggles and "Apply and continue" are hidden (capabilities by version: [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §15.1). *(assumed — pending Thomas, inbox #32)*
+
 How edited files reach the engine: Snakemake — the edited file replaces the output, and its consumers rerun (modification-time trigger). Nextflow — the file is passed on Continue through the parameter named in `spectio.yml` (the pipeline must read it), since files inside the work directory must not be edited.
 
 ### 4.6 Launch and relaunch
-Launch is one parameters page; a stepper across the top shows progress, and "Review and launch" is its final step *(assumed — pending Thomas, inbox #30)*. The form is generated from `nextflow_schema.json` (or the Snakemake config schema plus the `ui:` block of `spectio.yml`). One **collapsible section per schema group**, each with a light line icon mapped from the group's `fa_icon`, a summary on the right ("2 required", "1 issue", "2 changed") and a chevron; sections with issues or changes open by default. Search, "Show hidden", "Changed only", "Expand all", "Load params file…". File checks (samplesheet rows, paths with `exists: true`) run through the runner, show when they last ran, and have a **Recheck** button; they run again automatically before launch. Aside: project (first row; hidden while there is a single project, as in single-user mode, [`api-and-data-model.md`](api-and-data-model.md) §6, §11), environment, software, gates (each with "Change"), params file preview, and a "Review and launch" button, disabled while issues remain, with the reason shown beside it rather than inside it. Each gate names its source and overlay version ("1 gate after stage 2 · lab overlay rnaseq-demo-lab vN"); Launch, the review step and Run detail show the same overlay version (§5.1). *(assumed — pending Thomas, inbox #30)* On the phone wizard (§4.11), Next follows the same rule: disabled while the current step has an issue, with its reason beside it ("Fix 1 issue in Input / output") *(assumed — pending Thomas, inbox #30)*. A launch pre-filled from an imported crate shows every non-default parameter, hidden ones included, and marks the parameters that load code or config from elsewhere ([`api-and-data-model.md`](api-and-data-model.md) §5) *(assumed — pending Thomas, inbox #25)*.
+Launch is one parameters page; a stepper across the top shows progress, and "Review and launch" is its final step *(assumed — pending Thomas, inbox #30)*. The form is generated from `nextflow_schema.json`. For Snakemake, the form comes from `config.schema.yaml` when present, otherwise it is inferred from the value types in `config/config.yaml` (nested maps become sections); the `ui:` block of `spectio.yml` refines it when present *(assumed — pending Thomas, inbox #40)*. One **collapsible section per schema group**, each with a light line icon mapped from the group's `fa_icon`, a summary on the right ("2 required", "1 issue", "2 changed") and a chevron; sections with issues or changes open by default. Search, "Show hidden", "Changed only", "Expand all", "Load params file…". File checks (samplesheet rows, paths with `exists: true`) run through the runner, show when they last ran, and have a **Recheck** button; they run again automatically before launch. Validation calls `POST /runs:validate` ([`api-and-data-model.md`](api-and-data-model.md) §5). Aside: project (first row; hidden while there is a single project, as in single-user mode, [`api-and-data-model.md`](api-and-data-model.md) §6, §11), environment, software, gates (each with "Change"), params file preview, and a "Review and launch" button, disabled while issues remain, with the reason shown beside it rather than inside it. When only one environment exists, the environment picker is hidden; Launch preselects the local environment with a software profile valid on the host *(assumed — pending Thomas, inbox #35)*. Each gate names its source and overlay version ("1 gate after stage 2 · lab overlay rnaseq-demo-lab vN"); Launch, the review step and Run detail show the same overlay version (§5.1). *(assumed — pending Thomas, inbox #30)* On the phone wizard (§4.11), Next follows the same rule: disabled while the current step has an issue, with its reason beside it ("Fix 1 issue in Input / output") *(assumed — pending Thomas, inbox #30)*. A launch pre-filled from an imported crate shows every non-default parameter, hidden ones included, and marks the parameters that load code or config from elsewhere ([`api-and-data-model.md`](api-and-data-model.md) §5) *(assumed — pending Thomas, inbox #25)*.
 
 Relaunch dialog, three choices instead of five:
 | Choice | What happens |
 |---|---|
-| **Resume** (labelled **Continue** on a paused run or an open gate) | Pick up where it stopped; finished work reused (`-resume`; Snakemake reruns incomplete jobs) |
+| **Resume** (labelled **Continue** on a paused run, which calls `:resume`; on a failed or cancelled run it calls `:relaunch` with `mode: resume` and creates a child run; on an open gate this dialog is not offered and the gate path follows the Awaiting review row of §4.4; [`api-and-data-model.md`](api-and-data-model.md) §5.1) *(assumed — pending Thomas, inbox #32)* | Pick up where it stopped; finished work reused (`-resume`; Snakemake reruns incomplete jobs) |
 | **Rerun from a stage** | Click a stage on the strip; earlier stages reused, later ones recomputed (Nextflow: a generated per-process `ext` key that enters the task hash, then `-resume`, **[to be validated]** in spike T2; Snakemake `--forcerun`) |
 | **Start fresh** | New work directory, nothing reused |
-Under the choices: a clickable stage strip (reused · starts here · will run), "Edit parameters · N changed" (with suggestions from the failure, e.g. more memory for the task that ran out), an estimate of reused vs to-run tasks (for Nextflow, from a work-directory scan, labelled "estimate"; [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.5), and the primary button. "Duplicate" becomes the secondary "Copy to a new launch".
+Under the choices: a clickable stage strip (reused · starts here · will run), "Edit parameters · N changed" (with suggestions from the failure, e.g. more memory for the task that ran out), an estimate of reused vs to-run tasks, shown only when available (for Nextflow, from a work-directory scan, labelled "estimate"; [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.5), and the primary button. "Duplicate" becomes the secondary "Copy to a new launch".
+
+The **Edit parameters** panel reuses the Launch form sections: schema groups, search, the "Changed only" toggle, validation with the disabled reason beside the submit button, and a diff line "N changed vs. run #N". Snakemake variant: config keys (the inferred form above, SR-065) with "`--forcerun` from stage" or Continue. After submit, the new run's Run detail opens. *(assumed — pending Thomas, inbox #32)*
 
 ### 4.7 Workflows catalog and workflow detail
 Catalog cards/table: name, source (nf-core / Snakemake catalog / git / local), engine, latest version, stars/topics when available, last run. Detail: one tab set for every workflow: Overview (required inputs, profiles) · README (sanitised Markdown, no raw HTML: [`authentication-and-access.md`](authentication-and-access.md) §3.1) *(assumed — pending Thomas, inbox #23)* · Versions (versions / tags) · Parameters (schema, browsable) · Stages & gates, with sub-tabs Stages · Watches (the `spectio.yml` manifest or lab overlay, edited under one header with one draft state) · Software (versions from the last successful run) · Runs. Browsing the nf-core and Snakemake catalogues happens only in Import. When `https://nf-co.re/pipelines.json` or the Snakemake catalogue cannot be reached, import falls back to a Git URL or a path, with skeleton cards while loading. Whether HPC login nodes can reach these catalogues is site-dependent **[to be validated]**.
@@ -300,7 +316,7 @@ Spectio keeps the depictio UI model so a user moving between the two apps finds 
 | nf-core catalog | `https://nf-co.re/pipelines.json` (`remote_workflows`, `releases[].has_schema`, topics, stars) | Catalog browsing, release picker, "has schema" hint |
 | Parameter schema | `nextflow_schema.json` (draft 2020-12 `$defs`; legacy draft-07 `definitions`); nf-schema 3.x | Launch form groups (`fa_icon`, `description`, `help_text`), `hidden`, `enum`, defaults, `format` (file-path, directory-path, path, file-path-pattern), `exists`, `mimetype` |
 | Samplesheet schema | `schema` key → `assets/schema_input.json` | Editable samplesheet grid with per-cell validation and file existence checks through the runner |
-| Params file | `-params-file` (JSON/YAML) | What a launch, relaunch and API call actually send; only non-default values stored. Prior art: `nf-core pipelines launch` |
+| Params file | `-params-file` (JSON/YAML) | What a launch, relaunch and API call actually send; submitted non-default values stored; resolved values stored separately ([`api-and-data-model.md`](api-and-data-model.md) §7). Prior art: `nf-core pipelines launch` |
 | Modules | `modules.json` in the repository root | Module list and `git_sha` per release |
 | Software versions | `pipeline_info/*software*versions.yml` (topic channels) | Software tab of a run; "last seen" versions on the workflow page |
 | Run reports | `pipeline_info/execution_report*.html`, `execution_timeline*.html`, `execution_trace*.txt`, `params_*.json`; `**/multiqc_report.html` | Outputs & reports tab, viewers |
@@ -371,7 +387,7 @@ Every pattern of §10.2 has these states. *(assumed — pending Thomas, inbox #2
 |---|---|
 | Empty | Nothing to show; says why and the next step |
 | Loading | A skeleton of the final layout: skeleton rows for tables and skeleton cards (header kept, grey gauges); never a bare "0" |
-| Error | What failed, Retry, and the request ID: an error panel that maps the RFC 9457 problem `type` ([`api-and-data-model.md`](api-and-data-model.md) §4) to a sentence; an API-error toast for a failed action; a full-page "Spectio is unreachable" |
+| Error | What failed, Retry, and the request ID: an error panel that maps the RFC 9457 problem `type` (catalogue: [`api-and-data-model.md`](api-and-data-model.md) §4.1) to a sentence; an API-error toast for a failed action; a full-page "Spectio is unreachable" |
 | Permission | View only; the action is disabled with its reason |
 | n/a | A value that cannot be computed, such as a check whose file is missing; shown as "n/a" with the reason |
 
@@ -381,6 +397,9 @@ Every pattern of §10.2 has these states. *(assumed — pending Thomas, inbox #2
 - *Stale*: an observer layer timed out or was switched off ("squeue timed out · next try in 4 min", "`sinfo` stale since 13:40, back-off 10 min", `observer.capacity: off` shown as "disabled by site policy"; [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.2).
 - *Head silent*: "No event from nf-spectio for 6 min · head job 48213351 still RUNNING · checking the head log" (schedulers §7).
 - *Runner offline*: run actions become "Queue pause · applies on reconnect" with the reason and a link to Runner offline (§4.8); storage and capacity show "last measured 14:02 · on hold".
+- *Catching up after restart*: a banner on a run while the API marks it `recovering: true`; its state-changing actions are disabled with that reason (boot order: [architecture §7.2](architecture-plugins-and-packaging.md)). *(assumed — pending Thomas, inbox #40)*
+
+Live / Reconnecting in the footer is computed by the client from its SSE connection, not reported by the server (a stopped server cannot report itself). *(assumed — pending Thomas, inbox #35)*
 
 Actions that cannot take effect now are relabelled or disabled with their reason, and decision screens show the age of their data, so nobody pauses, cancels or approves on stale numbers without seeing it.
 

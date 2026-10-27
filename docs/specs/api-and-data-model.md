@@ -64,11 +64,40 @@ Python entry points, one group per kind (`spectio.engine`, `spectio.notifier`, �
 - **Ownership is data, not path**: no `/users/{id}/runs` paths, so moving a run between projects or adding users never changes URLs.
 - **Lists**: cursor pagination (`?cursor=`, `limit` ≤ 200, `next` in the response), filters (`?state=running&workflow=wf_…&external_ref=labid:sample/123`), sort (`?sort=-created_at`), sparse fields (`?fields=`). Lists return no total. Whether an optional `total` (`?count=exact|estimate|none`) is affordable is decided by spike S-R7-4 ([R7](../reviews/R7-ui.md#proposed-spikes)); until then clients page with Next / Load more, never numbered pages or "of N". Headline counts and breakdowns come from the summary endpoints (§5). *(assumed — pending Thomas, inbox #30)*
 - **Writes**: `Idempotency-Key` on every POST that creates or triggers something, kept 24 h: the server inserts the key first (`idempotency_keys`, §7), so two concurrent requests cannot both pass, and returns the stored response on a retry (scope and replay rules: next bullet); `ETag` / `If-Match` on gates, change sets, settings and the work-directory clean of a resumable run *(assumed — pending Thomas, inbox #30)* to prevent lost updates when two reviewers act at once; on a gate with a quorum each decision is a vote and does not compare-and-swap on the gate ETag, and change-set items carry their own version (§5, §7).
-- **Idempotency keys are scoped to the caller.** A key is unique per (principal, or the owning group for a service account; HTTP method; route). The same key from another caller is a new request, never a replay. Replaying a key with a different body returns `422` (`problem+json`; exit code 5 in the CLI, [`cli-and-shared-libraries.md`](cli-and-shared-libraries.md) §2). A replay returns the stored result only if the caller still passes `can(read)` on it (§6). **Test:** tenant B reusing tenant A's key gets a new run or `422`, never A's run.
+- **Idempotency keys are scoped to the caller.** A key is unique per (principal, or the owning group for a service account; HTTP method; route). The same key from another caller is a new request, never a replay. Replaying a key with a different body returns `409` (problem `idempotency-key-reused`, §4.1; exit code 5 in the CLI, [`cli-and-shared-libraries.md`](cli-and-shared-libraries.md) §2). A replay returns the stored result only if the caller still passes `can(read)` on it (§6). **Test:** tenant B reusing tenant A's key gets a new run or `409`, never A's run.
 - **Long operations** (catalogue import, RO-Crate export, cleanup) return `202 Accepted` with an `Operation` resource (`/operations/{id}`). An `Operation` is the caller's view of a background task ([`admin-and-operations.md`](admin-and-operations.md) §3.1). *(assumed — pending Thomas, inbox #29)*
 - **Errors**: RFC 9457 `application/problem+json` with a stable `type` URI and, for validation, a list of field errors.
 - **Versioning**: during 0.x, `/api/v1` may break in a minor release, announced in the changelog ([`dev-environment-and-testing.md`](dev-environment-and-testing.md) §12); from 1.0.0, only additive changes within API v1, and breaking changes go to API v2; deprecations announced with `Deprecation` (RFC 9745) and `Sunset` (RFC 8594) headers.
 - **Limits**: per-token rate limits with `RateLimit-*` headers; request size limits; files go through artefact endpoints, never in JSON bodies.
+
+### 4.1 Wire conventions
+
+This section owns the list envelope, the ID prefixes and the problem catalogue; §4 keeps the rules behind them.
+
+| Convention | Rule |
+|---|---|
+| Lists | `{items, next}`; `limit` default 50, max 200; `sort` takes the fields named in each §5 row, `-` prefix for descending |
+| Idempotency-Key | optional on every `POST` that creates, 1–255 printable ASCII characters; scope and retention as in §4 |
+| ID prefixes | `wf_` workflow, `wfv_` workflow version, `run_`, `lch_` launch, `tsk_` task, `att_` attempt, `gate_`, `chk_` check result, `dec_` decision, `evt_` event, `prj_`, `usr_`, `grp_`, `env_`, `rnr_` runner, `whk_` webhook, `op_` operation |
+| Problems | `type` = `/problems/<slug>` (catalogue below); validation adds `errors: [{pointer, code, detail}]`, where `pointer` is a JSON Pointer ([RFC 6901](https://www.rfc-editor.org/rfc/rfc6901)) |
+
+The mapping from a problem to a CLI exit code is owned here; what each exit code means stays in the exit-code table of [`cli-and-shared-libraries.md`](cli-and-shared-libraries.md) §2.
+
+| Problem slug | HTTP status | CLI exit code |
+|---|---|---|
+| `validation-failed` | 422 | 1 |
+| `not-found` | 404 | 4 |
+| `run-state-conflict` | 409 | 5 |
+| `etag-mismatch` | 412 | 5 |
+| `if-match-required` | 428 | 5 |
+| `idempotency-key-reused` | 409 | 5 |
+| `not-in-this-version` | 422 | 1 |
+| `log-not-found` | 404 | 4 |
+| `log-cleaned` | 410 | 4 |
+| `runner-offline` | 503 | 1 |
+| `rate-limited` | 429 | 1 |
+| `forbidden` | 403 | 3 |
+| `unauthenticated` | 401 | 3 |
 
 ## 5. Endpoint catalogue (API v1)
 
@@ -82,19 +111,19 @@ Paths under `/admin/*` are for system admins only and are specified in [`admin-a
 | Users & groups | `GET /users`, `GET /users/{id}` (read only), `GET /groups`, `GET /groups/{id}`, `GET/POST/DELETE /groups/{id}/members` (group admins and system admins). Creating users, changing a user's state or admin flag, creating or deleting groups and setting the P.I. are under `/admin/*` (admin §5) *(assumed — pending Thomas, inbox #29)* |
 | Projects | `GET/POST /projects`, `GET/PATCH /projects/{id}`, `GET/PUT/DELETE /projects/{id}/grants`, `GET /projects/{id}/audit-log` (project owners: the audit entries of that project) *(assumed — pending Thomas, inbox #29)* |
 | Service accounts & tokens | `GET/POST /service-accounts`, `GET/POST /tokens`, `DELETE /tokens/{id}` (personal and service tokens, scopes, expiry, optional project restriction) |
-| Workflows | `GET/POST /workflows`, `GET /workflows/{id}`, `GET /workflows/{id}/versions`, `GET /workflow-versions/{id}/schema` (params JSON Schema), `POST /workflows:import` (git, nf-core, Snakemake catalog, **RO-Crate**), `GET/PUT /workflows/{id}/manifest` (spectio.yml overlay) |
+| Workflows | `GET /workflows` (`?name=&source=`), `POST /workflows`, `GET /workflows/{id}`, `GET /workflows/{id}/versions`, `GET /workflow-versions` (`?key=`, exact canonical key, §7), `GET /workflow-versions/{id}` (revision, commit, key, and `profiles[]` and `sample_tables[]` from the workflow's config and schema), `GET /workflow-versions/{id}/schema` (params JSON Schema; returns `inferred: true` when the schema was inferred from the config values) *(assumed — pending Thomas, inbox #40)*, `GET /workflow-versions/{id}/manifest` (read-only effective manifest: parts `{kind, name, version}`, parsed stages `{id, name, source, description, match[]}` and gates `{key, name, stage_id}`) *(assumed — pending Thomas, inbox #39)*, `POST /workflows:import` (git, nf-core, Snakemake catalog, **RO-Crate**), `GET/PUT /workflows/{id}/manifest` (spectio.yml overlay) |
 | Environments & runners | `GET/POST /environments`, `GET/PATCH /environments/{id}`, `GET/PUT /environments/{id}/grants`, `POST /runners:register` (one-time token → runner credential), `GET /runners`, `GET /runners/{id}`, runner channel `WS /runners/{id}/channel` (commands, heartbeats, file streaming) |
 | Storage and work directories | `GET/PUT /environments/{id}/storage` (locations: role, path, type, quota source, access, retention), `GET/PUT /environments/{id}/lifecycle` (work-directory rules per run state), `GET /environments/{id}/workdirs?sort=size`, `POST /runs/{id}/workdir:keep`, `POST /runs/{id}/workdir:clean` (on a resumable run, `:clean` requires `If-Match` with the run's current ETag, so a clean never breaks a resumable run, [`ui-spec.md`](ui-spec.md) §4.8) *(assumed — pending Thomas, inbox #30)* |
-| Runs | `POST /runs`, `GET /runs`, `GET /runs:summary` (`?project=&since=&group_by=state|workflow`; counts for headline numbers) *(assumed — pending Thomas, inbox #30)*, `GET /runs/{id}`, `POST /runs/{id}:cancel`, `:pause` (after current stage), `:resume`, `POST /runs/{id}:relaunch` (mode, from stage, param overrides), `GET /runs/{id}/graph`, `GET /runs/{id}/processes` (per process: tasks by state, retries, peak RSS, native ID range) *(assumed — pending Thomas, inbox #30)*, `GET /runs/{id}/scheduler` (scheduler jobs, summary, relaunch suggestions; [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §8) *(assumed — pending Thomas, inbox #29)*, `GET /runs/{id}/params`, `GET /runs/{id}/samplesheets` (versions), `GET /runs/{id}/lineage`, `PATCH /runs/{id}` (name, tags, external_refs, project move) |
-| Tasks & logs | `GET /runs/{id}/tasks`, `GET /tasks/{id}`, `GET /tasks/{id}/attempts`, `GET /tasks/{id}/logs/{stdout|stderr}` (range requests), `GET /runs/{id}/logs` |
-| Artefacts | `GET /runs/{id}/artifacts`, `GET /artifacts/{id}`, `GET /artifacts/{id}/content` (streamed through the runner or presigned URL), `GET /artifacts/{id}/preview` |
-| Gates (reviews) | `GET /gates` (queue: `?assigned_to=me&state=open`), `GET /gates:summary` (`?project=&since=&group_by=state|item_kind|workflow`) *(assumed — pending Thomas, inbox #30)*, `GET /gates/{id}`, `GET /gates/{id}/checks`, `GET /gates/{id}/items` (paged, filterable), `GET/PUT /gates/{id}/change-set` (draft edits: item decisions, samplesheet, params, editable files), `PATCH /gates/{id}/change-set/items/{item}` (one item, with its own version, so two reviewers editing different items never conflict), `POST /gates/{id}/proposals` (AI or robot suggestion), `POST /gates/{id}/signals` (external systems), `POST /gates/{id}/decisions` (`approve`, `apply`, `go_back` with a stage, `stop`; §7 — with If-Match) *(assumed — pending Thomas, inbox #29)*, `POST /gates:bulk-decide` (one result per gate; atomic within each gate, not across gates) |
-| Events | `GET /events?run=…&after=seq`, `GET /events?project=&type=` (instance activity feed, filtered to the caller's visible projects) *(assumed — pending Thomas, inbox #30)*, `GET /events/stream` (SSE; a single-run stream resumes with `Last-Event-ID`, a multi-run stream by snapshot then tail, §8.2) |
+| Runs | `POST /runs` (body, defaults and validation: §5.2), `POST /runs:validate` (launch body of §5.2; returns field errors, per-row file checks and `checked_at`; `POST /runs` runs the same checks), `GET /runs` (`?state=` repeated or comma-separated, `since=`, `q=` name prefix, `workflow=`, `project=`; sort `created_at`, `last_activity`, `name`) *(assumed — pending Thomas, inbox #39)*, `GET /runs:summary` (`?project=&since=&group_by=state|workflow`; counts for headline numbers) *(assumed — pending Thomas, inbox #30)*, `GET /runs:compare?ids=` (parameters and inputs side by side, with the `changes` of §5.1), `GET /runs/{id}` (with `summary`, §7), `POST /runs/{id}:cancel` (source states of every action: §5.1), `:pause` (after current stage), `:resume` (does not apply to `failed` runs: resuming a failed run is `POST /runs/{id}:relaunch` with mode `resume`, which creates a child run) *(assumed — pending Thomas, inbox #32)*, `POST /runs/{id}:relaunch` (body, source states and responses: §5.1), `GET /runs/{id}:launch-template` (a §5.2 body prefilled from this run, for Copy to a new launch) *(assumed — pending Thomas, inbox #39)*, `GET /runs/{id}/graph`, `GET /runs/{id}/stages` (`run_stages` rows in position order, §7) *(assumed — pending Thomas, inbox #40)*, `GET /runs/{id}/launches` (`launches` rows, §7), `GET /runs/{id}/processes` (items `{process, stage_id, counts: {<state>: n}, retries, peak_rss_bytes, native_id_min, native_id_max, tasks_expected, tasks_expected_source, failures_by_class: {<failure_class>: n}, module: {path, commit} | null, not_scheduled: {reason, count} | null}`; sort `-tasks_running`, `-peak_rss`; whether nf-spectio can report never-created tasks is **[to be validated]**) *(assumed — pending Thomas, inbox #30, #38)*, `GET /runs/{id}/scheduler` (scheduler jobs, summary, relaunch suggestions; [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §8) *(assumed — pending Thomas, inbox #29)*, `GET /runs/{id}/params` (`?version=&resolved=`; returns `{version, values, changed_vs_parent: [{key, before, after}]}`, with `parent_run_id` as the baseline), `GET /runs/{id}/samplesheets` (versions), `GET /runs/{id}/lineage` (shape: §5.1), `PATCH /runs/{id}` (name, tags, external_refs, project move). State-changing verbs return `409 run-state-conflict` while the run is `recovering` (§8.1) *(assumed — pending Thomas, inbox #40)* |
+| Tasks & logs | `GET /runs/{id}/tasks`, `GET /tasks/{id}`, `GET /tasks/{id}/attempts`, `GET /tasks/{id}/logs/{stdout|stderr}` (last attempt), `GET /tasks/{id}/attempts/{n}/logs/{stdout|stderr}`, `GET /runs/{id}/logs` (`?launch=<n>&source=engine|head`; sources: [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.7). Logs are `text/plain; charset=utf-8`, support `Range` (`206`, `416`) and `?follow=true`; problems `404 log-not-found`, `410 log-cleaned` (work directory cleaned), `503 runner-offline` (§4.1) |
+| Artefacts | `GET /runs/{id}/artifacts` (`?role=output|report|evidence`) *(assumed — pending Thomas, inbox #39)*, `GET /artifacts/{id}`, `GET /artifacts/{id}/content` (streamed through the runner or presigned URL), `GET /artifacts/{id}/preview` |
+| Gates (reviews) | `GET /gates` (queue: `?assigned_to=me&state=open`, or `?run=<id>`) *(assumed — pending Thomas, inbox #32)*, `GET /gates:summary` (`?project=&since=&group_by=state|item_kind|workflow`) *(assumed — pending Thomas, inbox #30)*; `GET /gates:summary?state=open` feeds the review badge *(assumed — pending Thomas, inbox #39)*, `GET /gates/{id}` (with `resolution: {action, decided_at, principal_id, actor_kind, justification} | null`, also shown on its stage in `/graph` and `/stages`; with `summary: {items_total, items_failing, checks: []}` and `run: {id, name, state}` *(assumed — pending Thomas, inbox #39)*), `GET /gates/{id}/checks` (items `{check_key, kind, scope, severity, threshold: {min, max}, item_key, value: number | string | boolean | null, verdict, file_uri, evaluated_at}`) *(assumed — pending Thomas, inbox #32)*, `GET /gates/{id}/items` (paged; `?verdict=&sort=worst`; each item inline with its check results and attributes) *(assumed — pending Thomas, inbox #39)*, `GET /gates/{id}/decisions`, `GET/PUT /gates/{id}/change-set` (draft edits: item decisions, samplesheet, params, editable files), `PATCH /gates/{id}/change-set/items/{item}` (one item, with its own version, so two reviewers editing different items never conflict), `POST /gates/{id}/proposals` (AI or robot suggestion), `POST /gates/{id}/signals` (external systems), `POST /gates/{id}/decisions` (body `{action, justification?, stage_id?, change_set_id?}`, actions in §7; `If-Match` with the gate etag, `412 etag-mismatch` when stale, `428 if-match-required` when absent, except on quorum gates; returns `201 {decision, gate}`) *(assumed — pending Thomas, inbox #29)*; a decision verb the instance does not offer (`apply`, `go_back`, which need change sets) returns `422 not-in-this-version`, and which verbs ship in which version is set in [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §15.1 *(assumed — pending Thomas, inbox #32)*, `POST /gates:bulk-decide` (one result per gate; atomic within each gate, not across gates) |
+| Events | `GET /events?run=…&after=seq` (returns CloudEvents envelopes; with `run`, paging uses `after=<seq>` and `next` is the last seq, the one exception to the cursor rule of §4) *(assumed — pending Thomas, inbox #38)*, `GET /events?project=&type=` (instance activity feed, filtered to the caller's visible projects) *(assumed — pending Thomas, inbox #30)*, `GET /events/stream` (SSE; frames: §8.5; a single-run stream resumes with `Last-Event-ID`, a multi-run stream by snapshot then tail, §8.2) |
 | Webhooks | `GET/POST /webhooks`, `GET/PATCH/DELETE /webhooks/{id}`, `GET /webhooks/{id}/deliveries`, `POST /deliveries/{id}:redeliver` |
 | Provenance | `GET /runs/{id}/ro-crate` (JSON-LD or zip, profile: workflow-run or provenance-run), `POST /runs:import-crate` (prefill a relaunch) |
 | Search | `GET /search?q=` (exact and prefix matches on indexed keys: IDs, external refs, names, tags; task search scoped to one run, §7) |
 | Admin | everything under `/admin/*`, for system admins only: users, groups, background tasks, logs, health, branding, plugins and plugin instances, AI & agents, backups and restores, migrations, maintenance, settings, audit log ([`admin-and-operations.md`](admin-and-operations.md) §5) *(assumed — pending Thomas, inbox #29)* |
-| Public (no token) | `GET /public-config` (one document with sections `auth`, `branding` and `analytics`; [`telemetry-and-analytics.md`](telemetry-and-analytics.md) §4.2), `GET /version`; `/health/live`, `/health/ready` and `/metrics` are outside the API prefix (admin §3.5) *(assumed — pending Thomas, inbox #29)* |
+| Public (no token) | `GET /public-config` (one document with sections `auth`, `branding` and `analytics`; [`telemetry-and-analytics.md`](telemetry-and-analytics.md) §4.2), `GET /version` (also the embedded runner's status and last heartbeat) *(assumed — pending Thomas, inbox #39)*; `/health/live`, `/health/ready` and `/metrics` are outside the API prefix (admin §3.5) *(assumed — pending Thomas, inbox #29)* |
 | Plugins (UI) | `GET /plugins/ui-manifest` (any signed-in user; viewer modules, [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §5) *(assumed — pending Thomas, inbox #29)* |
 | Ingest (engines) | `POST /ingest/events` (Nextflow plugin `nf-spectio`, Snakemake logger). The Tower protocol routes `/trace/*` are not implemented ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)) |
 | Facades | `/ga4gh/wes/v1/*` (WES 1.1 + `x-spectio` extensions), `/mcp` (MCP server) |
@@ -110,21 +139,21 @@ Content-Type: application/json
   "project_id": "prj_01JB…",
   "workflow_version_id": "wfv_01JB…",       # nf-core/rnaseq 3.27.0
   "environment_id": "env_01JB…",            # EMBL SLURM · htc
-  "profile": "singularity",
+  "software": { "profiles": ["singularity"] },
   "params": { "aligner": "star_salmon", "outdir": "spectio://results" },
-  "samplesheet": {
-    "param": "input",
-    "rows": [
-      { "sample": "S1", "fastq_1": "labid://dataset/456/R1", "fastq_2": "labid://dataset/456/R2",
-        "strandedness": "auto", "external_refs": ["labid:sample/123"] }
-    ]
-  },
+  "samplesheets": [
+    { "target": "input", "format": "csv",
+      "rows": [
+        { "sample": "S1", "fastq_1": "labid://dataset/456/R1", "fastq_2": "labid://dataset/456/R2",
+          "strandedness": "auto", "external_refs": ["labid:sample/123"] }
+      ] }
+  ],
   "gates": "from-manifest",
   "external_refs": ["labid:order/8812", "labid:project/77"],
   "notify": { "webhook_ids": ["whk_01JB…"] }
 }
 ```
-Response `201` with the run, its `id`, `state: queued` and links. Retrying with the same `Idempotency-Key` from the same caller returns the same run (§4).
+Response `201` with the run, its `id`, `state: queued` and `links: {self, events, stream, ui}` (body fields and defaults: §5.2). `spectio://results` resolves to the run's `results_dir` (§7) *(assumed — pending Thomas, inbox #40)*. Retrying with the same `Idempotency-Key` from the same caller returns the same run (§4).
 
 ### Imports are untrusted input
 
@@ -135,6 +164,46 @@ Response `201` with the run, its `id`, `state: queued` and links. Retrying with 
 - **never pre-fill a launch silently.** A launch pre-filled from a crate shows every non-default parameter, hidden ones included, and flags parameters that load code or config from elsewhere. Example: nf-core/rnaseq sets `custom_config_base` to a remote URL and calls `includeConfig "${params.custom_config_base}/nfcore_custom.config"` (`95dbcd9`, `nextflow.config:154,331`); `config_profile_url` is also listed by R5 **[to be validated]**.
 
 Project imports between instances follow [`admin-and-operations.md`](admin-and-operations.md) §4.3. **Tests:** a zip-slip crate, an `ext::` git URL and a crate that names a remote JSON-LD context are refused or processed offline.
+
+### 5.1 Run actions
+
+This section owns the source states, results and responses of the run actions. *(assumed — pending Thomas, inbox #32)*
+
+| Action | From `runs.state` | Result | Response | Otherwise |
+|---|---|---|---|---|
+| `POST /runs/{id}:cancel` | `queued`, `running`, `awaiting_review`, `paused` | `cancelling` (§7.1) | `202` with the run | `200` with the run when already `cancelling` or terminal (idempotent) |
+| `POST /runs/{id}:relaunch` | `failed`, `succeeded`, `cancelled` | a new child run in `queued` with `parent_run_id` = this run; the parent stays terminal | `201` with the child run and a `Location` header | `409 run-state-conflict` (§4.1) |
+| `POST /runs/{id}:relaunch` with `mode: resume` | `failed`, `cancelled` | a child run that reuses the parent's launch directory and engine cache (`runs.launch_dir`, `work_dir`) | `201` | `409 run-state-conflict` |
+
+Body of `:relaunch`: `{mode, from_stage?, params_patch?, samplesheets?, resources?, gates, dry_run?}`.
+- `mode` ∈ {`resume`, `rerun_from`, `fresh`}. `resume` and `rerun_from` reuse the parent's `launch_dir` and `launches.engine_session_id`, and return `409 run-state-conflict` while the parent's head is alive; `fresh` gets a new directory.
+- `from_stage` is a stage id from `run_stages` (§7), required for `rerun_from`.
+- `params_patch` is a JSON Merge Patch ([RFC 7396](https://www.rfc-editor.org/rfc/rfc7396)) over the parent's non-default params; `samplesheets` takes the §5.2 shape.
+- `resources`: `[{process_or_rule, cpus?, memory?, time?}]`, rendered by the runner as an extra engine config file and stored as `run_inputs.kind = resources` (§7).
+- `gates` ∈ {`inherit`, `none`}.
+- `dry_run: true` creates nothing and returns `200 {stages: [{stage_id, reused, to_run, estimate}], suggested_mode, suggestions: [{process_or_rule, field, value, source: attempts | scheduler}], estimated_duration, workdir_growth_bytes, preflight}`; suggestions on a local environment come from `attempts.resources` and `failure_class` (§7).
+
+The parent never changes state: Resume after a failure is a child run, and Continue after a gate is a new launch of the same run (§7 `launches`). At a gate, "Relaunch…" records the decision `stop` with reason `relaunched` (§7 `decisions`), then calls `:relaunch`. The source states of `:pause` and `:resume` follow inbox #16 (§7.1).
+
+`GET /runs/{id}/lineage` returns `{root_run_id, runs: [{id, name, parent_run_id, relaunch_mode, from_stage, state, created_at, created_by, summary.last_failure, changes[]}]}`, ordered by `created_at`. `changes` is `[{kind: params | samplesheet | resources, key, before, after}]`, computed by the server against the parent, as `changed_vs_parent` in `/params` (§5).
+
+### 5.2 Launch body
+
+Body of `POST /runs` and `POST /runs:validate` (example above).
+
+| Field | Rule |
+|---|---|
+| `project_id` | optional, defaults to the caller's default project (`GET /me`) |
+| `environment_id` | optional when exactly one environment is granted to the caller (by default the built-in local environment) *(assumed — pending Thomas, inbox #35)*; it then defaults to that environment; otherwise `422 validation-failed` with a field error |
+| `workflow_version_id` or `workflow` key | required (canonical key, §7) |
+| `params` | validated against the version's params JSON Schema |
+| `samplesheets` | `[{target, format, rows}]`: `target` is a param name (Nextflow) or a Snakemake config key, `format` ∈ {`csv`, `tsv`}; stored as `run_inputs.kind = samplesheet` |
+| `software` | `{profiles: []}` (Nextflow) or `{deployment_methods: []}` (Snakemake) |
+| `resources` | as in §5.1, stored as `run_inputs.kind = resources` *(assumed — pending Thomas, inbox #32)* |
+| `idempotency_key` | header `Idempotency-Key` (§4.1) |
+| `notify` | `{webhook_ids: []}`; `422 not-in-this-version` when the server has no webhooks |
+
+The server stores the merged manifest of each launch as `run_inputs.kind = manifest` (§7); the accepted values of the inline `gates` field wait for inbox #34. Synchronous validation failures (input file checks, gates unavailable for this workflow) return `422` with the reason, and no run is created *(assumed — pending Thomas, inbox #40)*. Response: `201` with the run (`state: queued`), a `Location` header and `links: {self, events, stream, ui}`, all root-relative paths.
 
 ## 6. Identity, tenancy and permissions
 
@@ -199,6 +268,8 @@ erDiagram
   environments ||--o{ runs : executes
   runs ||--o{ run_inputs : "samplesheet + params versions"
   runs ||--o{ launches : "head processes"
+  runs ||--o{ run_stages : has
+  run_stages |o--o| gates : closes
   runners ||--o{ runner_commands : claims
   runs ||--o{ runner_commands : "commands for"
   runs ||--o{ tasks : has
@@ -233,18 +304,19 @@ erDiagram
 | `runners` | environment_id, principal_id, version, last_heartbeat_at, status |
 | `runner_commands` | runner_id, run_id, launch_id, kind (launch, cancel, resume, …), payload (JSON), idempotency_key, state (`pending`, `leased`, `acked`, `done`, `failed`), lease_until, attempts; written in the same transaction as the decision or relaunch that causes it *(assumed — pending Thomas, inbox #12)* |
 | `environment_snapshots` | environment_id, taken_at, capacity (JSON: partitions, limits, quotas, reservations); kept 30 days *(assumed — pending Thomas, inbox #29)* |
-| `workflows`, `workflow_versions`, `manifests` | project_id, source (git, nf-core, catalog, crate), engine · revision, commit, key (canonical `<org>/<name>/<version>`, unique per project: nf-core and catalog `<org>/<name>/<tag>`; git `<owner>/<repo>/<tag or short commit>`; local `local/<directory name>/<short content hash>`) *(assumed — pending Thomas, inbox #29)*, params_schema (JSON) · kind (repo, overlay), content |
-| `runs` | project_id, workflow_version_id, environment_id, state (§7.1), flags (JSON: `head_silent`, `runner_offline`) *(assumed — pending Thomas, inbox #29)*, stage_index, origin (ui, api, wes, cli-observed, cli-adopted), parent_run_id, relaunch_mode, idempotency_key, last_seq (per-run event sequence, §8.2), bridge_versions (JSON: bridge name → version, as reported by the bridges; [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §12) *(assumed — pending Thomas, inbox #28)*, external refs via table |
-| `launches` | run_id, n, head_native_id, head_state, started_at, exited_at, exit_code; one row per head process of a run (first launch, each Continue, resume or relaunch); unique (run_id, n) *(assumed — pending Thomas, inbox #28)* |
-| `run_inputs` | run_id, version, kind (params, samplesheet), content (JSON), checksum |
-| `tasks`, `attempts`, `scheduler_jobs`, `attempt_jobs` | run_id, process_or_rule, stage, tag · task_id, n, state, exit, resources (JSON) · environment_id, native_id, array_index |
+| `workflows`, `workflow_versions`, `manifests` | project_id, name, location (git URL, catalog reference or local directory), source (git, nf-core, catalog, crate, local), engine; unique (project_id, source, location) · revision, commit, key (canonical `<org>/<name>/<version>`, unique per project: nf-core and catalog `<org>/<name>/<tag>`; git `<owner>/<repo>/<tag or short commit>`; local `local/<directory name>/<short content hash>`) *(assumed — pending Thomas, inbox #29)*, params_schema (JSON) · kind (repo, overlay), version *(assumed — pending Thomas, inbox #39)*, content |
+| `runs` | project_id, workflow_version_id, environment_id, name (default `<workflow name>-<last 6 characters of id>`), tags (JSON) *(assumed — pending Thomas, inbox #38)*, state (§7.1), state_changed_at, started_at (first `queued` → `running`), ended_at (entry into a terminal state), flags (JSON: `head_silent`, `runner_offline`) *(assumed — pending Thomas, inbox #29)* and `evaluating_gate` (§7.1) *(assumed — pending Thomas, inbox #32)*, failure (JSON: `class`, `task_id`, `attempt_n`, `message`; set by the projector from the Nextflow `onFlowError` event or the Snakemake logger `ERROR` / `JOB_ERROR` records **[to be validated]**) *(assumed — pending Thomas, inbox #40)*, cancel_reason (e.g. `user`, `relaunched`; set when the run becomes `cancelled`) *(assumed — pending Thomas, inbox #32)*, current_stage_id (a `run_stages.stage_id`) *(assumed — pending Thomas, inbox #40)*, open_gate_id (nullable) *(assumed — pending Thomas, inbox #32)*, task_counts (JSON: state → n, §7.2), tasks_expected (nullable: set only when the engine reports a planned total), tasks_expected_source ∈ {`engine_plan`, `none`} *(assumed — pending Thomas, inbox #38)*, origin (ui, api, wes, cli-observed, cli-adopted; a run launched with `spectio run launch` has origin `api`) *(assumed — pending Thomas, inbox #38)*, parent_run_id, lineage_id (id of the root run), relaunch_mode ∈ {`resume`, `rerun_from`, `fresh`}, from_stage (stage id, for `rerun_from`) *(assumed — pending Thomas, inbox #32)*, launch_dir, work_dir, results_dir, engine_version (pinned at the first launch) *(assumed — pending Thomas, inbox #40)*, queue_position (nullable, while `queued`), manifest_ref (the `run_inputs` manifest version used) *(assumed — pending Thomas, inbox #39)*, idempotency_key, last_seq (per-run event sequence, §8.2), projected_seq (§8.1), bridge_versions (JSON: bridge name → version, as reported by the bridges; [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §12) *(assumed — pending Thomas, inbox #28)*, external refs via table |
+| `launches` | run_id, n, until_stage (the last stage this launch runs to) *(assumed — pending Thomas, inbox #32)*, launch_dir, pid, pid_start_time, host_boot_id (used for adoption, [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1) *(assumed — pending Thomas, inbox #35)*, engine_session_id (Nextflow sessionId from `onFlowCreate`; Snakemake run UUID **[to be validated]**) *(assumed — pending Thomas, inbox #40)*, head_native_id, head_state, started_at, exited_at, exit_code; one row per head process of a run (first launch, each Continue or resume; a relaunch is a new run, §5.1) *(assumed — pending Thomas, inbox #32)*; unique (run_id, n) *(assumed — pending Thomas, inbox #28)* |
+| `run_stages` | run_id, stage_id (`stages[].id` from `spectio.yml`, or `detected:<n>` when stages are detected), position, name, source ∈ {`declared`, `detected`}, state ∈ {`not_started`, `running`, `awaiting_review`, `completed`, `failed`, `skipped`}, gate_id (nullable), task_counts (JSON: state → n), started_at, ended_at; frozen at each launch, a launch stopping at `launches.until_stage`; unique (run_id, stage_id) *(assumed — pending Thomas, inbox #40)* |
+| `run_inputs` | run_id, version, kind (`params`: the submitted non-default values; `params_resolved`: the resolved values reported by the engine, nf-spectio from `session.params`, the Snakemake logger from the workflow config, **[to be validated]** in spike T2; `samplesheet`; `manifest`: the merged manifest of the launch, §5.2; `resources`: per-process overrides, §5.1 *(assumed — pending Thomas, inbox #32)*), content (JSON), checksum |
+| `tasks`, `attempts`, `scheduler_jobs`, `attempt_jobs` | run_id, process_or_rule, stage_id (nullable: a task matching no stage glob) *(assumed — pending Thomas, inbox #40)*, tag, state (§7.2) · task_id, n, launch_n, state (§7.2), ignored, exit, resources (JSON) · environment_id, native_id, array_index; a task is identified by its logical task key per engine ([`synthesis.md`](synthesis.md) §2ter), so a task cached in one launch and run in a later one keeps one row, and its state follows its last attempt (`failed` → `running` is legal across launches) *(assumed — pending Thomas, inbox #40)* |
 | `artifacts` | run_id, task_id, uri, mime, size, checksum, role (output, report, evidence) |
-| `events` | run_id, seq, event_id, type, source, source_seq, engine_time, received_at (§8.2), actor_principal_id, actor_kind (same vocabulary as `decisions.actor_kind`: person, AI agent, service / API, CLI, so the activity feed can say who acted without parsing payloads) *(assumed — pending Thomas, inbox #30)*, payload (JSON; the raw part moves to the file store once the run is terminal, §8.4) *(assumed — pending Thomas, inbox #28)*; unique (run_id, event_id) |
-| `gates` | run_id, stage, state (§7.1), item_kind (the gate's item kind, from `spectio.yml` `items`; `gate_items.kind` stays per item) *(assumed — pending Thomas, inbox #30)*, policy (JSON), opened_at, etag |
-| `check_results` | run_id, stage, gate_id (nullable: live checks have none), watch_id (nullable), check_key, item_key (nullable), value, verdict (`pass`, `fail`, `provisional`, `too_large`, `error`), severity (`block`, `warn`, `info`, copied from the check; the UI shows warn or fail from verdict × severity) *(assumed — pending Thomas, inbox #29)*, file_uri, file_hash, evaluated_at; a gate reuses a live result whose file_hash is unchanged ([`checking-scenarios.md`](checking-scenarios.md) §11.4) |
+| `events` | run_id, seq, event_id, type, source, source_seq, engine_time, received_at (§8.2), actor_principal_id, actor_kind (same vocabulary as `decisions.actor_kind`: `person`, `agent`, `service`, `cli` *(assumed — pending Thomas, inbox #32)*, so the activity feed can say who acted without parsing payloads) *(assumed — pending Thomas, inbox #30)*, payload (JSON; the raw part moves to the file store once the run is terminal, §8.4) *(assumed — pending Thomas, inbox #28)*; unique (run_id, event_id) |
+| `gates` | run_id, stage_id *(assumed — pending Thomas, inbox #40)*, state (§7.1), item_kind (the gate's item kind, from `spectio.yml` `items`; `gate_items.kind` stays per item) *(assumed — pending Thomas, inbox #30)*, policy (JSON), checks (JSON: copy of the gate's checks when it opens) *(assumed — pending Thomas, inbox #32)*, opened_at, timeout_at (computed from the policy when the gate opens), etag |
+| `check_results` | run_id, stage_id *(assumed — pending Thomas, inbox #40)*, gate_id (nullable: live checks have none), watch_id (nullable), check_key, item_key (nullable), value, verdict (`pass`, `fail`, `provisional`, `too_large`, `error`), severity (`block`, `warn`, `info`, copied from the check; the UI shows warn or fail from verdict × severity) *(assumed — pending Thomas, inbox #29)*, file_uri, file_hash, artifact_id (nullable) *(assumed — pending Thomas, inbox #39)*, evaluated_at; a gate reuses a live result whose file_hash is unchanged ([`checking-scenarios.md`](checking-scenarios.md) §11.4) |
 | `gate_items` | gate_id, item_key, kind (sample, cell-set, well, region…), attributes (JSON), verdict |
 | `change_sets`, `change_items` | gate_id, state (draft, applied, discarded), etag · change_set_id, target (item, samplesheet, param, file), before, after, author, version (one version per item) |
-| `decisions` | gate_id, principal_id, actor_kind, model, action ∈ {`approve` (continue unchanged), `apply` (continue with the change set), `go_back` (rerun from an earlier stage), `stop` (end the run; it becomes `cancelled`, §7.1)} *(assumed — pending Thomas, inbox #29)*, stage (for `go_back`), justification, evidence (JSON), change_set_id, idempotency_key; a decision is a vote: the gate's policy resolves the gate state in one conditional update (`UPDATE gates … WHERE id=? AND state='open' AND etag=?`), and the timeout uses the same compare-and-swap, so a timeout and a human decision cannot both win |
+| `decisions` | gate_id, principal_id, actor_kind ∈ {`person`, `agent`, `service`, `cli`} *(assumed — pending Thomas, inbox #32)*, model, action ∈ {`approve` (continue unchanged), `apply` (continue with the change set), `go_back` (rerun from an earlier stage), `stop` (end the run; it becomes `cancelled`, §7.1)} *(assumed — pending Thomas, inbox #29)*, reason (optional, for `stop`: `relaunched` is recorded when the gate is left through Relaunch… and copied to `runs.cancel_reason`) *(assumed — pending Thomas, inbox #32)*, stage_id (for `go_back`) *(assumed — pending Thomas, inbox #40)*, justification, evidence (JSON), change_set_id, idempotency_key; a decision is a vote: the gate's policy resolves the gate state in one conditional update (`UPDATE gates … WHERE id=? AND state='open' AND etag=?`), and the timeout uses the same compare-and-swap, so a timeout and a human decision cannot both win |
 | `webhooks`, `deliveries` | project_id, url, secret_ref (reference through the secret backend, encrypted at rest; [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §3.2), event_types (JSON) · webhook_id, event_id, status, attempts, next_attempt_at; `deliveries` rows only for failed attempts, progress kept as a per-subscriber cursor over `events` (§8) |
 | `external_refs` | project_id, object_type, object_id, ref (e.g. `labid:sample/123`); index on ref |
 | `audit_log` | principal_id, action, object_type, object_id, diff (JSON, redacted as in [`admin-and-operations.md`](admin-and-operations.md) §3.4) *(assumed — pending Thomas, inbox #27)*, ip |
@@ -253,7 +325,15 @@ erDiagram
 
 Reassigning a gate and waiting for an external signal are gate operations, not decisions (signals: `POST /gates/{id}/signals`). *(assumed — pending Thomas, inbox #29)*
 
-`failure_class` (on `attempts` and `scheduler_jobs`) ∈ {`oom`, `timeout`, `preempted`, `node_failure`, `cancelled_external`, `image`, `tool_error`, `engine_fault`} (meanings: [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.5). Scheduler jobs link to engine attempts only through `attempt_jobs` (n:m). *(assumed — pending Thomas, inbox #29)*
+`failure_class` (on `attempts` and `scheduler_jobs`) ∈ {`oom`, `timeout`, `preempted`, `node_failure`, `cancelled_external`, `image`, `tool_error`, `engine_fault`} (meanings: [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.5). Scheduler jobs link to engine attempts only through `attempt_jobs` (n:m). *(assumed — pending Thomas, inbox #29)* The enum also takes `head_lost` (the head exited without an engine terminal event) and `launch_error`, `engine_missing`, `engine_version`, `input_check` (the launch failed before the engine ran), which also appear in `runs.failure.class` (§7.1) *(assumed — pending Thomas, inbox #40)*
+
+Computed run fields, returned by `GET /runs` and `GET /runs/{id}` and never stored by clients:
+- `workflow`: a read-only summary `{workflow_id, name, engine, source, version_key, revision, commit}`, denormalised from `workflows` and `workflow_versions` at launch so lists need no join.
+- `summary`: `{stages_total, stage_name, stage_mode: declared | detected | quarters, tasks: {done, total, failed, cached}, open_gate: {id, name, opened_at, first_failing_check} | null, last_failure: runs.failure | null, state_actor, state_reason, resumable}`; `tasks.total` is `tasks_expected` when set; it changes with each `spectio.run.delta` (§8.3, §8.5).
+- `launch_request`: a read-only echo of software (profiles or deployment methods), gates, and references to its samplesheet versions (`GET /runs/{id}/samplesheets`) *(assumed — pending Thomas, inbox #39)*.
+- duration: `ended_at − started_at` (or now − started_at while active), across all launches; stage times are on `run_stages`.
+
+Informational metrics on a review are checks with severity `info` *(assumed — pending Thomas, inbox #39)*.
 
 Indexes on `(project_id, created_at)` for every list, `(run_id, seq)` for events, `(state, project_id)` for runs and gates, and `ref` for external references. Every `idempotency_key` column (`runs`, `decisions`) is unique per caller scope, method and route (§4), never across the instance.
 
@@ -264,15 +344,20 @@ This section owns the run and gate state enums and their WES mapping. *(assumed 
 1. **Run states.** `runs.state` ∈ {`queued`, `running`, `pausing`, `paused`, `awaiting_review`, `cancelling`, `succeeded`, `failed`, `cancelled`}, lower snake case, enforced by a `CHECK` constraint.
 2. **Run transitions** and their trigger:
     - `queued` → `running`: the runner reports the head process started, or the first engine event arrives;
+    - `queued` → `failed`: the runner reports that the launch could not start; `runs.failure = {class, message}` *(assumed — pending Thomas, inbox #40)*;
     - `running` → `awaiting_review`: a gate opens at the end of a stage (`spectio.gate.opened`);
     - `awaiting_review` → `running`: decision `approve`, `apply` or `go_back` starts the next launch (`spectio.gate.decided`);
     - `awaiting_review` → `cancelled`: decision `stop`;
-    - `running` → `succeeded` / `failed`: the engine reports completion or failure (`spectio.run.completed` / `.failed`);
+    - `running` → `succeeded` / `failed`, by a server rule *(assumed — pending Thomas, inbox #32)*. Engine completion and failure events move `launches.head_state` only; the server moves `runs.state` using the stage plan:
+        - when the last planned launch succeeds, `running` → `succeeded`; `spectio.run.completed` is emitted only then;
+        - at a stage boundary the run stays `running` with flag `evaluating_gate` until the gate row is written, then becomes `awaiting_review` (or is auto-approved and the next launch is queued, [`checking-scenarios.md`](checking-scenarios.md) §12.4); an error while evaluating checks opens the gate with verdict `error`;
+        - an engine failure in any launch gives `failed`. `failed` is terminal: Resume and Relaunch create a child run (`parent_run_id`), and modes `resume` and `rerun_from` reuse the parent's `launch_dir` (§5.1);
+    - `running` → `failed`: the runner reports the head exited (`launches.exited_at` set) and no engine terminal event arrives within a configured delay after spool replay; `failure_class` is `engine_fault` (non-zero exit) or `head_lost`, and in-flight tasks get a `failed` attempt of class `head_lost` *(assumed — pending Thomas, inbox #40)*;
     - `queued`, `running`, `awaiting_review` or `paused` → `cancelling`: a cancel request; `cancelling` → `cancelled`: the runner reports the head process ended;
     - `running` → `pausing` → `paused`, and `paused` → `running`: pause and resume (which verbs lead there is open, inbox #16).
 
     Every transition emits `spectio.run.state_changed` with the new value.
-3. **Gate states.** `gates.state` ∈ {`open`, `decided`, `expired`, `superseded`}: `open` → `decided` (a decision is recorded); `open` → `expired` (the policy timeout passes and `on_timeout` applies); `open` → `superseded` (the run is cancelled, or a relaunch from an earlier stage replaces the gate).
+3. **Gate states.** `gates.state` ∈ {`open`, `decided`, `expired`, `superseded`}: `open` → `decided` (a decision is recorded); `open` → `expired` (the policy timeout passes and `on_timeout` applies); `open` → `superseded` (the run is cancelled, or a relaunch from an earlier stage replaces the gate). Timeouts are persisted (`gates.timeout_at`) and evaluated by a sweep. A gate whose `timeout_at` passed while the server was down gets a grace period after boot of three heartbeat intervals (as in [`admin-and-operations.md`](admin-and-operations.md) §3.2) before `on_timeout` applies; the decision records `applied after restart`. An automatic approval is recorded as a decision with `decisions.actor_kind = service` ([`checking-scenarios.md`](checking-scenarios.md) §12.4) *(assumed — pending Thomas, inbox #33)*.
 4. **Not states.** "Head silent" and "runner offline" are flags on the run (`runs.flags`); waiting for an external signal is a condition of an open gate.
 5. **WES 1.1.0 mapping.**
 
@@ -282,33 +367,44 @@ This section owns the run and gate state enums and their WES mapping. *(assumed 
 | `running` | `RUNNING` |
 | `pausing`, `paused`, `awaiting_review` | `PAUSED` |
 | `succeeded` | `COMPLETE` |
-| `failed` | `EXECUTOR_ERROR` when the failure class is a task failure (`tool_error`, `oom`, `timeout`), `SYSTEM_ERROR` otherwise ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.5) |
+| `failed` | `EXECUTOR_ERROR` when the failure class is a task failure (`tool_error`, `oom`, `timeout`), `SYSTEM_ERROR` otherwise ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.5), including `head_lost`, `launch_error`, `engine_missing`, `engine_version` and `input_check` (§7) *(assumed — pending Thomas, inbox #40)* |
 | `cancelling` | `CANCELING` |
 | `cancelled` | `CANCELED` |
 
 WES states source: `openapi/workflow_execution_service.openapi.yaml:659-673`, tag `1.1.0` of ga4gh/workflow-execution-service-schemas (fetched 2026-10-26, review R1).
 
+### 7.2 Task and attempt states
+
+This section owns the task and attempt state enums.
+- `attempts.state` ∈ {`pending`, `submitted`, `running`, `succeeded`, `failed`, `cached`, `stored`}, plus `attempts.ignored` (boolean: a failure the engine ignored, Nextflow `errorStrategy 'ignore'`).
+- `tasks.state` is the state of its last attempt, or `not_scheduled` when the engine planned the task but never created an attempt. "Retried" is not a state: the UI shows it for a task whose last attempt has n > 1.
+- States only move forward: `pending` < `submitted` < `running` < {`succeeded`, `failed`, `cached`, `stored`}; a late event of a lower rank is kept in the log but does not change the state (§8.2).
+- Engine mapping: Nextflow trace status `NEW` / `SUBMITTED` / `RUNNING` / `COMPLETED` / `FAILED` / `CACHED` / `ABORTED` and Snakemake job events map to these values **[to be validated]** (spike T2).
+- Scheduler job states (SLURM, Kubernetes) are a separate vocabulary on `scheduler_jobs` ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md)).
+
 ## 8. Events and webhooks
 
-CloudEvents 1.0.2 envelope (`specversion: "1.0"`, `id`, `source`, `type`, `time`, `subject`, `datacontenttype: application/json`, `data`; `id`, `source`, `specversion` and `type` are required, CloudEvents `v1.0.2` `spec.md:248-315`), plus the `spectioproject` and `spectioenvironment` (runner and environment events) *(assumed — pending Thomas, inbox #13)* extensions and a per-run sequence (`spectiosequence`, or the documented `sequence` extension, `extensions/sequence.md`).
+CloudEvents 1.0.2 envelope (`specversion: "1.0"`, `id`, `source`, `type`, `time`, `subject`, `datacontenttype: application/json`, `data`; `id`, `source`, `specversion` and `type` are required, CloudEvents `v1.0.2` `spec.md:248-315`), plus the `spectioproject` and `spectioenvironment` (runner and environment events) *(assumed — pending Thomas, inbox #13)* extensions and a per-run sequence `spectiosequence` (integer, equal to `events.seq`; the CloudEvents `sequence` extension, `extensions/sequence.md`, is a string, so Spectio uses its own name **[to be validated]**) *(assumed — pending Thomas, inbox #38)*.
 
-| Type | When |
-|---|---|
-| `spectio.run.created`, `.state_changed`, `.completed`, `.failed` | run lifecycle |
-| `spectio.run.dashboard_ready` | depictio project and dashboard links stored on the run (§13.3); emitted only when the depictio hand-off is enabled (version: [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §15) |
-| `spectio.run.workdir_cleaned` | a run's work directory was cleaned, by a person or by the lifecycle cleanup job ([`admin-and-operations.md`](admin-and-operations.md) §4.4) *(assumed — pending Thomas, inbox #30)* |
-| `spectio.stage.started`, `.completed` | stage boundaries |
-| `spectio.task.failed`, `.retried` | noteworthy task events (the task stream reaches SSE as coalesced deltas, or raw for an open task, §8.3) *(assumed — pending Thomas, inbox #28)*; `.failed` carries `failure_class` (§7) *(assumed — pending Thomas, inbox #29)*; coalesced per run per minute for subscribers (with `errorStrategy 'ignore'`, 10 000 failed tasks would otherwise make 10 000 deliveries per subscriber) |
-| `spectio.task.waiting_changed` | a task's pending reason or estimated start changed; coalesced, only on change *(assumed — pending Thomas, inbox #29)* |
-| `spectio.gate.opened`, `.proposal_added`, `.signal_received`, `.decided` | reviews |
-| `spectio.check.failed` | a live check on a watched file failed (verdict `fail` with severity `warn` or `block`) *(assumed — pending Thomas, inbox #29)*, with run, stage, item, check, value; every evaluation, passed or not, goes to SSE only as `spectio.check.evaluated` ([`checking-scenarios.md`](checking-scenarios.md) §11) |
-| `spectio.check.evaluated` (SSE only) | every evaluation of a watched or gate check: run, stage, item, check, values, verdict, file hash ([`checking-scenarios.md`](checking-scenarios.md) §11) |
-| `spectio.artifact.published` | reports and outputs |
-| `spectio.runner.offline`, `.online` | environment health |
-| `spectio.environment.capacity_low` | an environment's quota is above 90 %, or maintenance starts within 24 h *(assumed — pending Thomas, inbox #29)* |
-| `spectio.ext.<plugin>.*` | a plugin's own events ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §3.4); the plugin declares their `data` schema, exported with its settings schema in `spectio-plugin.json` (architecture §4) |
+The Data column names the JSON Schema of each type's `data`, published in `spectio-sdk` under `schemas/events/` (for example `schemas/events/spectio.run.state_changed.json`) *(assumed — pending Thomas, inbox #38)*.
 
-This table is the complete catalogue. Every type goes to webhooks and SSE unless marked SSE only.
+| Type | When | Data |
+|---|---|---|
+| `spectio.run.created`, `.state_changed`, `.completed`, `.failed` | run lifecycle | `spectio.run.<type>.json` |
+| `spectio.run.dashboard_ready` | depictio project and dashboard links stored on the run (§13.3); emitted only when the depictio hand-off is enabled (version: [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §15) | `spectio.run.dashboard_ready.json` |
+| `spectio.run.workdir_cleaned` | a run's work directory was cleaned, by a person or by the lifecycle cleanup job ([`admin-and-operations.md`](admin-and-operations.md) §4.4) *(assumed — pending Thomas, inbox #30)* | `spectio.run.workdir_cleaned.json` |
+| `spectio.stage.started`, `.completed` | stage boundaries | `spectio.stage.<type>.json`: `{stage_id, position, launch}` (§7 `run_stages`, `launches.n`) *(assumed — pending Thomas, inbox #40)* |
+| `spectio.task.failed`, `.retried` | noteworthy task events (the task stream reaches SSE as coalesced deltas, or raw for an open task, §8.3) *(assumed — pending Thomas, inbox #28)*; `.failed` carries `failure_class` (§7) *(assumed — pending Thomas, inbox #29)*; coalesced per run per minute for subscribers (with `errorStrategy 'ignore'`, 10 000 failed tasks would otherwise make 10 000 deliveries per subscriber) | `spectio.task.<type>.json` |
+| `spectio.task.waiting_changed` | a task's pending reason or estimated start changed; coalesced, only on change *(assumed — pending Thomas, inbox #29)* | `spectio.task.waiting_changed.json` |
+| `spectio.gate.opened`, `.proposal_added`, `.signal_received`, `.decided` | reviews | `spectio.gate.<type>.json` |
+| `spectio.check.failed` | a live check on a watched file failed (verdict `fail` with severity `warn` or `block`) *(assumed — pending Thomas, inbox #29)*, with run, stage, item, check, value; every evaluation, passed or not, goes to SSE only as `spectio.check.evaluated` ([`checking-scenarios.md`](checking-scenarios.md) §11) | `spectio.check.failed.json` |
+| `spectio.check.evaluated` (logged; SSE only for delivery) | every evaluation of a watched or gate check: run, stage, item, check, values, verdict, file hash ([`checking-scenarios.md`](checking-scenarios.md) §11) | `spectio.check.evaluated.json` |
+| `spectio.artifact.published` | reports and outputs | `spectio.artifact.published.json` |
+| `spectio.runner.offline`, `.online` | environment health | `spectio.runner.<type>.json` |
+| `spectio.environment.capacity_low` | an environment's quota is above 90 %, or maintenance starts within 24 h *(assumed — pending Thomas, inbox #29)* | `spectio.environment.capacity_low.json` |
+| `spectio.ext.<plugin>.*` | a plugin's own events ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §3.4); the plugin declares their `data` schema, exported with its settings schema in `spectio-plugin.json` (architecture §4) | declared by the plugin in `spectio-plugin.json` |
+
+This table is the complete catalogue. Every type goes to webhooks and SSE unless marked SSE only. Engine-native events are logged in the same `events` table under `spectio.engine.*` with a `seq`; they are internal, read through `GET /events?run=`, and never delivered to webhooks. Heartbeats are not logged. `spectio.run.completed` and `.failed` are emitted after the `spectio.run.state_changed` they follow. *(assumed — pending Thomas, inbox #38)*
 
 Delivery: at least once, from the event log written in the same transaction as the change. Each subscriber (webhook, notifier, sink, bridge) has its own cursor over the log, so a slow subscriber (such as the depictio hand-off) never delays another. An ordered subscriber is delivered in `spectiosequence` order and blocks only per (subscriber, run); a subscriber pauses after N consecutive failures until an admin resumes it ([`admin-and-operations.md`](admin-and-operations.md) §3.3). Delivery rows are written only for failed attempts. HMAC-SHA256 signature in `Spectio-Signature` with a timestamp; the signing secret is generated by Spectio, shown once at creation and stored through the secret backend (`webhooks.secret_ref`, §7), never as a hash, because an HMAC needs the plaintext; rotation keeps the old secret for 24 h and sends both signatures during the overlap; exponential retry for 24 h; redelivery from the API. **Test:** a database dump contains no webhook secret.
 
@@ -330,12 +426,14 @@ Heavy background tasks (RO-Crate export, backup, check evaluation) run in a subp
 
 Why: `sqlite3` calls are synchronous; measured in R4, 200 000 events take 7.2 s of CPU with Pydantic plus SQLAlchemy Core, so a 100 000-event burst on the request path stalls the loop for seconds, and slower acknowledgements make the bridges time out and retry. Every new projection would otherwise add cost to the ingest hot path.
 
+**Projection checkpoint and recovery.** The projector stores `runs.projected_seq`, updated in the same transaction as the projection rows. On boot it projects every run with `projected_seq < last_seq` before serving it as fresh (boot order: [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.2). Until it has caught up, the run is returned with `recovering: true`, and state-changing verbs on it return `409 run-state-conflict` (§5) *(assumed — pending Thomas, inbox #40)*. Side effects use deterministic IDs, for example a gate keyed on (run_id, stage_id, launch n), so re-projection is a no-op.
+
 ### 8.2 Ordering, cursors and clocks
 
 - **Per-run sequence.** `seq` is allocated under the run row lock (`UPDATE runs SET last_seq = last_seq + n RETURNING last_seq`), so within a run commit order equals `seq` order, without gaps or duplicates.
 - **Resuming streams.** A single-run stream resumes with `Last-Event-ID` = the run's `seq`. A stream that covers many runs (Overview, Review queue, `/events` without `run=`) resumes by snapshot then tail: on reconnect the client refetches the runs it shows through REST, then subscribes from now. There is no global cursor: on Postgres, concurrent writers commit a `bigserial` out of order, and a reader resuming from `id > N` would silently skip rows with lower IDs that commit later.
 - **Producers and source order.** Every event carries `source` (engine bridge, scheduler observer, live check) and `source_seq`, monotonic per producer and run.
-- **State lattice.** Projections never move a terminal state back; a retry creates a new attempt; only the engine sets task success, while the scheduler observer adds `failure_class` and usage. Retried batches arrive out of order and spooled events arrive minutes late ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.1), so arrival order alone would let a task go back from `SUCCEEDED` to `RUNNING`, or let `sacct` mark a task `COMPLETED` before the engine has decided on a retry.
+- **State lattice.** Projections never move a terminal state back. The run lattice applies per run; launch outcomes live on `launches`; a child run never reopens its parent *(assumed — pending Thomas, inbox #32)*. For tasks the lattice applies per attempt, in the rank order of §7.2; a retry creates a new attempt *(assumed — pending Thomas, inbox #40)*. Only the engine sets task success, while the scheduler observer adds `failure_class` and usage. Retried batches arrive out of order and spooled events arrive minutes late ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.1), so arrival order alone would let an attempt go back from `succeeded` to `running`, or let a scheduler job state (`sacct` `COMPLETED`) mark a task done before the engine has decided on a retry. Engine status values (Nextflow `COMPLETED`) are engine vocabulary mapped through §7.2, distinct from scheduler job states.
 - The arrival `seq` stays the SSE cursor only.
 - **Clocks.** Events store `engine_time` (the producer's clock) and `received_at` (the server's). Order only by `seq` and `source_seq`, never by ULID or `time` across hosts (ULIDs embed the clock of the host that mints them, §4); compute durations from one clock source; freshness checks ('head silent', 'runner offline') and gate timeouts always use server receive time.
 
@@ -354,6 +452,10 @@ Why: at 1–10 k events/s for one run, applying every event in every watching ta
 While a run is active, every event keeps its full raw payload next to the normalised columns. Once the run is terminal and a configurable number of days has passed, a cleanup job moves the raw payloads into one compressed file per run (`events-<run>.jsonl.zst`) in the file store and keeps only the normalised rows. The raw payload kept per task is the terminal one. Backups copy these archives as files, not rows ([`admin-and-operations.md`](admin-and-operations.md) §4.3). *(assumed — pending Thomas, inbox #28)*
 
 Why: about 0.7–0.9 GB per 100 000-task run (measured in R4: 733 MB per 500 000 events) and about 1 TB a year on a team server unpruned (estimate); Nextflow `TraceRecord.FIELDS` has 45 fields, including `script`, `env` and `workdir` (`modules/nextflow/src/main/groovy/nextflow/trace/TraceRecord.groovy:69-112`, `114f1fe`), repeated on every lifecycle event, and `env` may contain secrets.
+
+### 8.5 Stream frames
+
+`GET /events/stream` sends SSE frames whose `event:` is the CloudEvents type and whose `data:` is the envelope. `id:` is the run `seq` and is set only on logged events. With `Last-Event-ID` the server replays logged events after that seq, then sends a fresh `spectio.run.delta`. `spectio.run.delta` (coalesced, §8.3): `{run_id, seq_through, counts: {<process>: {<state>: n}}, changed: {tasks: [], stages: [], gates: []}}`. Raw task events go to `GET /events/stream?run=<id>&task=<id>`. Filters: `run`, `project`, `type`. *(assumed — pending Thomas, inbox #38)*
 
 ## 9. Embedded elements
 

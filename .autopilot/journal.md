@@ -98,3 +98,12 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Exit checks:** no finding left `open` (grep above); W2 check `tools/docs/check.py` 0 failures; `mkdocs build --strict` exit 0.
 - **DOC-REVIEW** TRIAGE2 verdict=approve score=12/14 (accuracy 1, completeness 1; the two required changes, the condition 3 explanation and the counts, are applied).
 - **Gate weakness noted:** `tools/docs/check.py` accepts `review_score: null` on a done Progress page. Not changed here (tools are out of this step's writes); to fix in a later docs-tooling step.
+
+## 2026-10-27 11:18 → 12:06 UTC — tick 6 (APPLY2, W2 complete)
+
+- **Budget:** limit 70 % (Thomas's reading 62 % at tick 5). Manual readings only.
+- **Finished:** APPLY2, claimed from base `8e655ea`; specs in `cf5357b`, docs fixes in `8eef7ac` and `97944c4`.
+- **Result:** 54 of 61 R3 and R6 findings reached the specs (7 applied in full, 47 partly), 7 untouched waiting for Thomas, 10 specs changed, 33 fixes assumed pending inbox #32–#40. No new inbox entry.
+- **Exit checks:** W2 check `tools/docs/check.py` 0 failures (8 scripts, 16 SVGs, 50 outputs, 22 pages); `mkdocs build --strict` exit 0.
+- **DOC-REVIEW** APPLY2 verdict=approve score=13/14 (second pass; first pass changes 10/14: wrong §13.7 link, missing back-links, unverified configfile order, no before/after; all fixed, plus the gate-verb owner now dev-environment §15.1).
+- **W2 complete.** Waiting on Thomas: inbox #32–#40 (assumed answers to confirm), #34, #36, #37, and the older open entries.

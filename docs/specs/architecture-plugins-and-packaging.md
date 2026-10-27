@@ -329,6 +329,8 @@ The server has two roles, `api` and `worker`.
 - `spectio serve` runs both in one process.
 - `spectio serve --role api` and `spectio serve --role worker` split them.
 - `spectio serve --with-runner` also starts a local runner in the same process, which is the default in personal mode.
+  - It is one built-in environment of kind `local` with its `runners` row ([`api-and-data-model.md`](api-and-data-model.md) §7), and that environment is the default `environment_id`. The in-process runner consumes the same `runner_commands` rows (api-and-data-model §7), read in-process instead of over the network, so the runner transport decided later (inbox #12) replaces only the transport, not the command contract. *(assumed — pending Thomas, inbox #35)*
+  - Local heads outlive the server process and are re-adopted at the next start ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1.1). *(assumed — pending Thomas, inbox #35)*
 - The runner is always its own program on remote machines.
 
 ### 7.2 Infrastructure per deployment
@@ -348,6 +350,8 @@ The server has two roles, `api` and `worker`.
 
 - **SQLite runs in one process only.** With SQLite, the server refuses to start a split role or a second replica. It also refuses to start if the database file is on a network file system; the refusal message names the file-system type and the alternatives (a node-local `--data-dir`, a laptop, a VM or a service node, §7.3) (risk register item 1 in [`synthesis.md`](synthesis.md)).
 - **One writer, short transactions.** One process is not one connection. All writes go through one writer connection (or queue) that opens `BEGIN IMMEDIATE`, with `busy_timeout` set; every maintenance write is chunked (at most about 50 ms per transaction); a scheduled `wal_checkpoint(TRUNCATE)` runs in reader gaps; `auto_vacuum=INCREMENTAL` is set when the database is created. Why: SQLite allows one writer at a time ([wal.html](https://www.sqlite.org/wal.html) §2.2); upgrading a read transaction to a write one fails with `SQLITE_BUSY` when another connection is writing ([lang_transaction.html](https://www.sqlite.org/lang_transaction.html) §2.1); with always at least one active reader the WAL file grows without bound (wal.html §6). Long writers (a run move, a restore, a migration, log pruning) and long readers (a logical backup, `VACUUM INTO`, SSE replay) would otherwise stall ingest or let the WAL grow by a day's ingest.
+- **Run directories.** The default layout is `<data-dir>/runs/<run id>/{launch,work,results}`; the paths are stored on the run ([`api-and-data-model.md`](api-and-data-model.md) §7). *(assumed — pending Thomas, inbox #40)*
+- **Boot order.** Open the database; adopt the heads ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1.1); catch up the projector ([`api-and-data-model.md`](api-and-data-model.md) §8.1); replay the spool with a rate cap (§13.1); run the sweep (gate timeouts, leases). Why: these steps share the one writer connection, and state served before the catch-up shows runs that ended during the downtime as running. *(assumed — pending Thomas, inbox #40)*
 - **Redis is optional.** No deployment needs it, so Compose has one service fewer than a typical stack.
 - **SSE needs HTTP/2 on team servers.** When not used over HTTP/2, a browser opens at most 6 SSE connections, a limit marked 'Won't fix' ([MDN EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)). The Caddy profile and the Ingress serve HTTP/2. Browsers use HTTP/2 only over TLS, so `http://127.0.0.1` and SSH tunnels stay on HTTP/1.1 **[to be validated in S5]**; one stream per browser ([`api-and-data-model.md`](api-and-data-model.md) §8.3) keeps them under the limit. *(assumed — pending Thomas, inbox #28)*
 - **`LISTEN/NOTIFY` is a wake-up, not a bus.** One notifier sends a coalesced wake-up (run ID and max `seq`) at most every 100 ms, outside the ingest transaction; consumers read the tables. Listeners and advisory locks use a direct session connection, never a pooler in transaction mode (Helm value `database.directUrl`, §7.5). Why: a NOTIFY payload must be shorter than 8000 bytes in the default configuration, and when the queue is full, transactions calling `NOTIFY` fail at commit ([NOTIFY, PG 18](https://www.postgresql.org/docs/18/sql-notify.html)); PgBouncer in transaction pooling supports neither LISTEN nor session-level advisory locks ([PgBouncer features](https://www.pgbouncer.org/features.html)); a global lock at commit when NOTIFY runs inside a transaction is reported by [Recall.ai](https://recall.ai/blog/postgres-listen-notify-does-not-scale) and disputed by [DBOS](https://dbos.dev/blog/postgres-listen-notify-scalability), **[to be validated]** on Postgres 18.
@@ -521,6 +525,8 @@ Each bridge appends its events to a spool in the launch directory (`.spectio/eve
 
 Why: in the recommended head-job mode the engine runs on a compute node ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1), and many HPC sites filter egress from compute nodes **[to be validated at EMBL]** ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §12).
 
+The forwarder keeps `.spectio/events/.cursor` (file, byte offset, last `source_seq`). On boot it asks the server for the highest stored `source_seq` per (run, producer) ([`api-and-data-model.md`](api-and-data-model.md) §8.2) and forwards from there. Rotation never deletes a file beyond the cursor. The numbers (batch size, replay rate cap, drop counters) belong to the ingest contract (api §14).
+
 ### 13.2 Traffic budget
 
 *(assumed — pending Thomas, inbox #28)*
@@ -559,6 +565,18 @@ Why: Nextflow calls observers synchronously in a loop, and any `Throwable` other
 *(assumed — pending Thomas, inbox #12)*
 
 The bridges and the runner read the proxy variables (`https_proxy`, `HTTPS_PROXY`, `no_proxy`) and a configurable CA bundle. `nf-spectio` maps the proxy variables into its HTTP client, because the JVM ignores `https_proxy` unless the plugin maps it **[to be validated]**. An institute CA is often missing from Java's trust store and from certifi. `spectio doctor` checks both (§7.3).
+
+### 13.7 Log sources per engine
+
+*(assumed — pending Thomas, inbox #40)*
+
+The runner reads these files on demand; the UI's Tasks and Logs tabs ([`ui-spec.md`](ui-spec.md) §4.4) show them. Each source is **[to be validated]** until spike T1.
+
+| Log | Nextflow | Snakemake |
+|---|---|---|
+| Task log | work-directory files `.command.out`, `.command.err`, `.command.log` | the rule's `log:` files, or "no per-task log, see the run log at line N" |
+| Run log | `.nextflow.log` | `.snakemake/log/*.log` |
+| Head stdout / stderr | `.spectio/head.out`, `.spectio/head.err` ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1.1) | same |
 
 ## Sources
 

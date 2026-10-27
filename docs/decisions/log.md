@@ -556,3 +556,70 @@ Step page: [APPLY1](../progress/W2/APPLY1.md).
 - **Rule:** every step leaves at least one sketch pair, placed first on its Progress page. This includes review, triage and apply steps, which needed none before. A review round also puts its map at the top of the review file ([`documentation-system.md`](../specs/documentation-system.md) §3.4; minimum per step kind in §3.1).
 - **Checked:** `check_progress` in `tools/docs/check.py` fails a `done` Progress page that has no light/dark pair. The 13 pages finished before the rule are listed in `FIGURE_EXEMPT` until they get their figure.
 - **Who:** `diagram-artist` draws the figures. `write-docs`, `review-round`, `doc-writer` and `doc-reviewer` were updated to match.
+
+## 2026-10-27 — APPLY2: review findings applied (R3 R6)
+
+Step page: [APPLY2](../progress/W2/APPLY2.md).
+
+- **Context.** APPLY2 applies the findings that TRIAGE2 accepted or assumed in rounds R3 and R6. It changes the owning specs only, adds no 0.0.1 feature and no version claims outside [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §15. Each finding's **Status** line in its review file says what was applied and what is pending. Findings that wait for Thomas (SR-054, SR-056, SR-057, SR-058, SR-067, SR-080, SR-091) were not touched. Overlapping findings were applied once: UX-291 over UX-250 (CPU-hours copy), CH-042 over CH-050 (the run lattice applies per run, inbox #32), SR-081 with SR-063 (cli `relaunch`), SR-066 inside the SR-082 paragraph (checking §12.3), UX-272 through SR-088, UX-284 through SR-085, and CH-043 with UX-288. Total: 7 applied, 47 partly applied, 0 not applied. "Partly" means that the doc edits are done and a board, spike, tool or blocked part remains.
+- **Per round** (applied / partly / not applied):
+  - **R3** ([R3-journeys](../reviews/R3-journeys.md)), 7 / 15 / 0. Applied: CH-043, SR-064, CH-046, SR-059, SR-065, CH-045, SR-066. Partly: SR-062, SR-055, CH-041, CH-042, SR-061, CH-047, SR-063, CH-044, CH-048, CH-049, CH-050, UX-243, UX-250, CH-051, UX-249.
+  - **R6** ([R6-contract](../reviews/R6-contract.md)), 0 / 32 / 0. Partly: SR-081–SR-090, UX-270–UX-291.
+- **Specs changed** (new sections take new numbers; nothing was renumbered):
+  - [`admin-and-operations.md`](../specs/admin-and-operations.md): §3.1;
+  - [`api-and-data-model.md`](../specs/api-and-data-model.md): §4, new §4.1 (wire conventions), §5 (Public, Workflows, Runs, Tasks & logs, Gates, Artefacts, Events rows), new §5.1 (run actions), new §5.2 (launch body), §7 (tables, new `run_stages` with `stage_id` replacing `stage_index`, erDiagram, computed run fields), §7.1, new §7.2 (task and attempt states), §8 (envelope and catalogue), §8.1, §8.2, new §8.5 (stream frames);
+  - [`architecture-plugins-and-packaging.md`](../specs/architecture-plugins-and-packaging.md): §7.1, §7.2, §13.1, new §13.7 (log sources per engine);
+  - [`checking-scenarios.md`](../specs/checking-scenarios.md): §4, §12.3, §12.4;
+  - [`cli-and-shared-libraries.md`](../specs/cli-and-shared-libraries.md): §2;
+  - [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md): §15.1;
+  - [`mvp-0.0.1.md`](../specs/mvp-0.0.1.md): §1, §2;
+  - [`schedulers-and-monitoring.md`](../specs/schedulers-and-monitoring.md): new §3.1.1 (local launcher: detach, adopt, exit), §3.5;
+  - [`synthesis.md`](../specs/synthesis.md): §2ter, §5ter intro, §5ter.2, §5ter.4, §5ter.5, §5ter.6 (dated "superseded" notes where a newer spec owns the topic);
+  - [`ui-spec.md`](../specs/ui-spec.md): §2, §3.1, §3.2, §4.3, §4.4, §4.5, §4.6, §8, §11.
+- **Revisions of earlier decisions:**
+  - **Relaunch model** (SR-081, CH-042, inbox #32, path B): every relaunch, including Resume after a failure, is a new child run, and the parent stays terminal. `:resume` applies only to a paused run (synthesis §5ter, api §5.1) *(assumed — pending Thomas, inbox #32)*.
+  - **0.0.1 gate verbs** (SR-062, SR-085): `approve` and `stop`; `apply` and `go_back` return 422 not-in-this-version (api §5, synthesis §5ter.2) *(assumed — pending Thomas, inbox #32)*.
+  - **Idempotency replay** (SR-090): a reused Idempotency-Key with a different body returns 409 `idempotency-key-reused`, not 422 (api §4.1).
+  - **Snakemake config** (SR-065): the run config goes through `--configfile`, never `--config` (synthesis §5ter.5, api §5) *(assumed — pending Thomas, inbox #40)*.
+  - **Task states** (SR-083): api §7.2 owns the task and attempt state enums, in lower case; the upper-case list in synthesis §2ter is superseded.
+  - **dev-env §15.1** (SR-062): the 0.0.1 gate row names the gate verbs `approve` and `stop`, a parameter change at a gate is Relaunch… (a child run), and `apply` and `go_back` move to the later column. This is a change of wording inside §15, not a new feature *(assumed — pending Thomas, inbox #32)*.
+- **Assumed decisions.** Each is marked in the text "*(assumed — pending Thomas, inbox #n)*" and can be reverted by removing what that marker covers. 33 findings in all:
+  - #32 (relaunch at a gate, resume, 0.0.1 gate verbs): SR-062, CH-042, SR-063, UX-243, SR-081, SR-085, UX-280, UX-281, UX-282, UX-284;
+  - #33 (default when every check passes): SR-059;
+  - #35 (engines and the in-process runner): SR-055, CH-041;
+  - #38 (engine events and the progress denominator): SR-084, SR-088, UX-272;
+  - #39 (the reads that 0.0.1 boards need): UX-274, UX-275, UX-278, UX-279, UX-285, UX-286, UX-291;
+  - #40 (fixes that are right but not local): SR-061, CH-047, CH-043, CH-046, CH-048, CH-050, SR-065, UX-250, CH-051, SR-082.
+- **Stale references fixed in this step:** synthesis §2ter, the upper-case "Normalised statuses" list now carries a dated superseded note that points to api §7.2 (SR-083). Left in place: `stage_index` and `expected_tasks` survive only as quotes in the review files; ui-spec §4.11 (phone Run detail) still names "Pause after stage", outside UX-289's scope since phones are not in 0.0.1.
+- **Deferred: UI boards** (by board):
+  - ReviewReport: SR-062 (GateSimple variant), SR-085, UX-283, UX-284, UX-285;
+  - RunDetail: SR-062 (awaiting-review and after-decision frames), SR-061 ("Starting" and "Engine did not start" frames), UX-249 (aside), UX-250 (Lineage aside), SR-081 (Resume label), SR-082, UX-270, UX-271, UX-272, UX-273, UX-279, UX-282 (Lineage tab), UX-283, UX-286, UX-287 (processes table), UX-288, UX-289;
+  - RunDetailReconnect: CH-041, CH-051;
+  - RunFailed (local variant): CH-047;
+  - RunTasks and RunLogs (to be drawn): CH-048;
+  - RelaunchDialog: UX-243, SR-081, UX-280, UX-281;
+  - Launch: SR-061 (button states), SR-087, UX-276, UX-277, UX-279;
+  - LaunchSnakemake: SR-087, UX-276, UX-277;
+  - RunsTable: UX-250 (selection), SR-088, UX-270, UX-274;
+  - RunsRows: SR-082, SR-088, UX-271, UX-272, UX-274;
+  - RunsCompare: UX-250 (0.0.1 variant), UX-291;
+  - Legend: SR-082, UX-290;
+  - Manifest: UX-278;
+  - EnvLocal (0.0.1 variant) and the first-run Overview link (UX-211): SR-055;
+  - shared components AppSidebar (footer live state: CH-041) and AppTopbar: UX-275.
+- **Deferred: tools and spikes:**
+  - spike openapi draft: SR-081, SR-082, SR-083, SR-084, SR-085, SR-086, SR-089, SR-090;
+  - engine mapping checked in spike T2: SR-083;
+  - `spectio-sdk` JSON Schemas: SR-084;
+  - later api compare endpoints: UX-291.
+- **Deferred: blocked by inbox** (sections not edited):
+  - #34, inline `gates` value, cli `--gates FILE`, `POST /workflows` import body and checking §12.7 overlays: SR-063, SR-086 (with SR-056), SR-087, UX-278;
+  - #35: no blocked doc part; architecture §7.3 "0.0.1 prerequisites" (SR-067) was left for Thomas;
+  - #36, api §14 and architecture §13.2 (ingest numbers and wording, workdir in the first task delta, nf-spectio aggregated cached events, planned count): CH-044, CH-048, CH-050, SR-084, UX-272;
+  - #37 (with #13–#15), api §6 built-in local environment: SR-055;
+  - #13, api §4 limits: SR-090;
+  - #16, pause and stop transitions, `:pause` verb, `CONTINUE_REQUESTED` lock wait: CH-042, SR-063, SR-081, UX-289;
+  - #19, checking §5 gate verbs: SR-085;
+  - #20, `GET /environments/{id}/files`: UX-276;
+  - #25, architecture §7.6 claiming and lease renewal: CH-049.
+- **Gate.** `mkdocs build --strict` passes; `python3 tools/docs/check.py` reports 0 failures.

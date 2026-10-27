@@ -87,6 +87,7 @@ Versions read: Snakemake 9.27 (main), Snakemake SLURM plugin (main), Nextflow 26
 | **Software environment** | Absent from events; present in `.snakemake` metadata after execution (`software[]`, hash) | `containers[]` (rich with Wave, otherwise only the image); conda and spack absent; no digest | Snakemake: metadata. Nextflow: companion plugin |
 | **Job groups** | `GROUP_INFO` + instance UUID in `JOB_STARTED`: 1 group = 1 scheduler job | Not applicable | n:m model between attempts and scheduler jobs |
 | **Measured resources** | Absent; TSV from the `benchmark` directive | `%cpu`, `rss`, durations, etc. in each task | Read the benchmark TSV; `sacct` for efficiency |
+| **Logical task key** | rule + wildcards **[to be validated]** | process + tag **[to be validated]** | One `Task` per key; retries are `Attempt`s under it *(assumed — pending Thomas, inbox #40)* |
 
 ### Consequences
 
@@ -111,6 +112,8 @@ Versions read: Snakemake 9.27 (main), Snakemake SLURM plugin (main), Nextflow 26
 - **Event**: append-only log, raw + normalised payload.
 
 Normalised statuses: `QUEUED`, `SUBMITTED`, `RUNNING`, `SUCCEEDED`, `RETRIED`, `FAILED`, `FAILED_IGNORED`, `CANCELLED`, `SKIPPED_CACHED`, `STORED`, `NOT_SCHEDULED`.
+
+**Superseded (27/10/2026).** The task and attempt state enums are owned by [`api-and-data-model.md`](api-and-data-model.md) §7.2 (lower case; "retried" and "failed (ignored)" are display flags, not states).
 
 ## 3. Standards and existing projects
 
@@ -217,7 +220,7 @@ Prior art: Temporal (approval pattern: structured signal, timeout, escalation, i
 
 ## 5ter. Implementing pause, check and resume
 
-Principle: **an engine is never frozen mid-run.** A pause is a clean stop at a stage boundary. Resuming is a new launch that reuses the engine's cache. Each launch is a `Run` within the same `Lineage`.
+Principle: **an engine is never frozen mid-run.** A pause is a clean stop at a stage boundary. Each relaunch, including a Resume after a failure, is a new `Run` in the same lineage that reuses the engine's cache; each Continue after a gate is a new launch of the same `Run` ([`api-and-data-model.md`](api-and-data-model.md) §5.1, §7 `launches`). *(assumed — pending Thomas, inbox #32)*
 
 ### 1. Declare the stages: a manifest next to the pipeline (`spectio.yml`, modelled on `tower.yml`)
 ```yaml
@@ -250,6 +253,8 @@ For an unplanned pause ("Pause" button): `PAUSING → PAUSED`, then `resume`.
 
 **Superseded (27/10/2026):** Intervention = Gate. Decisions are `approve`, `apply`, `go_back`, `stop` ([`api-and-data-model.md`](api-and-data-model.md) §7, `decisions`); external signals go to `POST /gates/{id}/signals` (api §5). States superseded by api §7.1 (27/10/2026): the state names above are historical. *(assumed — pending Thomas, inbox #29)*
 
+Leaving a gate to change parameters is a new child run (`stop` with reason `relaunched`, then `:relaunch`); contract in [`api-and-data-model.md`](api-and-data-model.md) §5 and §7.1. *(assumed — pending Thomas, inbox #32)*
+
 ### 3. Pause
 - **Planned (stage boundary)**:
   - Snakemake launches the stage with `--until …` on the CLI (§2). *(assumed — pending Thomas, inbox #28)*
@@ -259,15 +264,16 @@ For an unplanned pause ("Pause" button): `PAUSING → PAUSED`, then `resume`.
 ### 4. Check
 At the end of a stage (last Snakemake `PROGRESS`, Nextflow `onFlowComplete` reported by `nf-spectio`, [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)), the platform:
 1. collects the declared evidence (globs) and the QC metrics in JSON;
-2. creates the `Intervention`, notifies the UI, the MCP server and the webhooks;
+2. creates the gate ([`api-and-data-model.md`](api-and-data-model.md) §7.1), notifies the UI, the MCP server and the webhooks; *(assumed — pending Thomas, inbox #32)*
 3. applies the policy (auto-approval under threshold, timeout, escalation).
 
 ### 5. Resume
 | Decision | Snakemake | Nextflow |
 |---|---|---|
 | Continue | same directory, next stage; `.snakemake` avoids redoing finished jobs | same launch directory, `-resume <sessionId>`, without the `ext.when` override |
-| Change the parameters and restart from stage X | new config (`--configfile` / `--config`) + `--forcerun <rule X>`; downstream is invalidated automatically | new `-params-file` + `-resume`; only tasks whose hash changes are relaunched. Rerun from a stage uses a generated per-process `ext` key that enters the task hash (checking-scenarios §12) **[to be validated]** in spike T2 |
+| Change the parameters and restart from stage X | the runner writes the non-default values to `<launch_dir>/.spectio/config.<n>.yaml` and passes it with `--configfile` after the workflow's own configfile (the later file wins on conflicting keys **[to be validated]**), never `--config`, plus `--forcerun <rule X>`; downstream is invalidated automatically *(assumed — pending Thomas, inbox #40)* | new `-params-file` + `-resume`; only tasks whose hash changes are relaunched. Rerun from a stage uses a generated per-process `ext` key that enters the task hash (checking-scenarios §12) **[to be validated]** in spike T2 |
 | Relaunch everything | `forceall` or new directory | without `-resume`, or new directory |
+| Resume after failure | `--unlock` only after the "head gone" check (§5ter.2), then `--rerun-incomplete` with the run's `rerun_triggers` *(assumed — pending Thomas, inbox #40)* | `-resume <stored engine_session_id>` with `NXF_VER` set to the stored `engine_version`; refused with a reason if that version is unavailable *(assumed — pending Thomas, inbox #40)* |
 
 Snakemake column revised 27/10/2026: command-line flags, not the Python API (§2) *(assumed — pending Thomas, inbox #28)*. Nextflow column revised 25/10/2026 (log).
 
@@ -278,7 +284,7 @@ Settings to fix:
 ### 6. Launcher
 - One supervisor per run, persisted in the database. Snakemake: the `snakemake` command line in the workflow's own environment, launched as a process or as an `sbatch` head job (revised 27/10/2026, §2) *(assumed — pending Thomas, inbox #28)*. Nextflow: `nextflow run` (JVM) launched as a process or as an `sbatch` head job, with the Spectio run ID passed to `nf-spectio` by us (was `TOWER_WORKFLOW_ID`, see [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)). Tracking is always done through events, never by reading the process output.
 - The runner holds a mutex per launch directory and never starts a second engine in a directory whose head is still alive (table `launches`, [`api-and-data-model.md`](api-and-data-model.md) §7). *(assumed — pending Thomas, inbox #28)*
-- On server restart: reconciliation with the database, PIDs and `sacct`.
+- On server restart: heads are adopted or their exit read as in [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1.1 (local) and §3.1 (SLURM, `sacct`). *(assumed — pending Thomas, inbox #35)*
 - Short wait (minutes): option of a local wait task that polls the API (section 5bis).
 
 ## 6. Results visualisation
