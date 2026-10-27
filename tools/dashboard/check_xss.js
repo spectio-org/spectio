@@ -1,8 +1,10 @@
 #!/usr/bin/env node
 // Builds the dashboard with a hostile Markdown file added and fails if any payload runs, if the page requests anything
 // from another site, if the Markdown leaves a script, handler, form control, style, unsafe link or remote media in the
-// page, paints outside its own box, or can write an answer. It runs twice: with the page's Content-Security-Policy and
-// without it, since the claude.ai host may not apply a <meta> CSP, so the sanitiser alone must hold.
+// page, paints outside its own box, or can write an answer. It runs twice. The pass with the page's
+// Content-Security-Policy proves the CSP does not break the page; Playwright logs a request even when the CSP blocks it,
+// so it is the pass without the CSP that proves the sanitiser alone stops every remote request (the claude.ai host may
+// not apply a <meta> CSP at all).
 // node tools/dashboard/check_xss.js OUTDIR    (OUTDIR: gen.py's data.json, docs.json, imgs.json; left unchanged)
 // The page loads marked, DOMPurify and mermaid from cdnjs with their integrity hashes, so a wrong hash fails here too.
 const fs = require("fs"), os = require("os"), path = require("path"), {execFileSync} = require("child_process");
@@ -50,6 +52,8 @@ const FIXTURE = `# XSS fixture
 
 <svg width="20" height="20"><image href="https://example.org/i.png" width="10" height="10"/><image xlink:href="https://example.org/i2.png" width="10" height="10"/><filter><feImage href="https://example.org/fe.png"/></filter></svg> <math><mglyph src="https://example.org/g.png"></mglyph></math>
 
+<svg width="20" height="20"><rect width="9" height="9" mask="url(https://example.org/m.svg#m)" filter="url(https://example.org/f.svg#f)" clip-path="url(https://example.org/c.svg#c)" fill="url(https://example.org/p.svg#p)"/><line x2="9" y2="9" stroke="red" marker-start="url(https://example.org/mk.svg#k)"/></svg>
+
 <div class="lb">borrowed overlay class</div> <div class="docscrim">borrowed scrim class</div>
 
 !!! note "<img src=x onerror=alert(8)>"
@@ -61,6 +65,12 @@ graph TD
   B["<img src='https://example.org/m.png'>"] --> C
   C["<div class='act' data-act='4'><button data-ans-rec='4'>label button</button></div>"]
   click A call alert(12)
+\`\`\`
+
+\`\`\`mermaid
+%%{init: {"themeCSS": ".node rect{fill:url(https://example.org/fill.svg#p)} foreignObject div{background-image:url(https://example.org/themecss.png)} .label{cursor:url(https://example.org/cur.png),auto}"}}%%
+graph TD
+  T1 --> T2
 \`\`\`
 `;
 
@@ -103,7 +113,7 @@ async function check(browser, pass, file) {
     await page.goto("file://" + file);
     await page.waitForFunction(() => DB && OWNER);
     await page.evaluate(fx => openDoc(fx), FX);
-    await page.waitForSelector("#doc-md .mermaid svg", {timeout: 30000});
+    await page.waitForFunction(() => document.querySelectorAll("#doc-md .mermaid svg").length === 2, null, {timeout: 30000});
     // anything in the Markdown that looks like an answer control is clicked in the DOM (an overlay cannot block it), links by the mouse
     await page.$$eval("#doc-md button, #doc-md [class~='act'] *, #doc-md [data-ans-rec], #doc-md [data-ans-own], #doc-md [data-ans-del], #doc-md [data-ans-edit]", els => els.forEach(e => e.click()));
     for (const a of await page.$$("#doc-md a, #doc-md area")) await a.click({timeout: 2000}).catch(() => {});
@@ -115,7 +125,7 @@ async function check(browser, pass, file) {
         script: q("script, iframe, object, embed, base, meta"),
         handlers: [...el.querySelectorAll("*")].filter(n => [...n.attributes].some(a => /^on/i.test(a.name))).length,
         controls: [...el.querySelectorAll("[data-ans-rec], [data-ans-own], [data-ans-del], [data-ans-edit], [data-ans-text], [data-act], form, input, textarea, button:not([data-lb]), select")].length
-          + [...el.querySelectorAll("style")].filter(n => !n.closest(".mermaid svg")).length,  // mermaid's own SVG carries its <style>
+          + [...el.querySelectorAll("style")].filter(n => !n.parentElement?.matches(".mermaid > svg")).length,  // mermaid's own SVG carries one <style>
         styled: [...el.querySelectorAll("[style]")].filter(n => !n.closest(".mermaid")).length,
         ids: [...el.querySelectorAll("[id], [name]")].filter(n => !/^(d-|mermaid)/.test(n.id) && !n.closest(".mermaid")).length,
         comments: (() => { const w = document.createTreeWalker(el, NodeFilter.SHOW_COMMENT); let n = 0; while (w.nextNode()) if (!/^cls:[\w-]+$/.test(w.currentNode.data)) n++; return n; })(),
@@ -131,7 +141,7 @@ async function check(browser, pass, file) {
     const fail = [];
     if (fired.length) fail.push("payload ran: " + fired.join(", "));
     if (errors.length) fail.push("page errors: " + errors.join(" | "));
-    if (remote.length) fail.push("remote media fetched: " + remote.join(", "));
+    if (remote.length) fail.push("remote request: " + remote.join(", "));
     const bad = ["script", "handlers", "controls", "styled", "ids", "comments", "badHref", "remoteMedia", "outside", "writes"].filter(k => dom[k]);
     if (bad.length) fail.push("left in the DOM or done: " + bad.map(k => `${k}=${dom[k]}`).join(" "));
     if (!dom.kept || !dom.admonition) fail.push("sanitising removed too much: " + JSON.stringify(dom));
