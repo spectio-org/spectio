@@ -6,8 +6,8 @@ Writes docs/assets/diagrams/r3_journeys_map_{light,dark}.{svg,png}.
 Scope and findings come from the round's findings table (R3-journeys,
 2026-10-27): each journey is walked step by step; a step is either specified
 (tick) or a gap pinned with the finding that hits it. Red pin = blocker,
-amber pin = major, grey pin = minor. The headline counts (9 blockers,
-25 majors) are the round's totals; the map pins the findings that land on a
+amber pin = major, grey pin = minor. The headline counts (7 blockers,
+18 majors, 2 minors) are the round's totals; the map pins the findings that land on a
 journey step, the rest are in the table.
 """
 
@@ -25,10 +25,10 @@ B, M, N = "blocker", "major", "minor"
 JOURNEYS = (
     ("Nextflow", "gate passes", (
         ("install bundle", "local env, runner", "laptop", (("SR-055", B),)),
-        ("register repo", "nf-core/rnaseq", "repo", (("UX-241", B), ("SR-056", M))),
+        ("register repo", "nf-core/rnaseq", "repo", (("SR-056", M),)),
         ("gate after stage 1", "stage, gate config", "stages", (("SR-057", B),)),
         ("launch, events", "ingest contract", "runner", (("SR-054", B),)),
-        ("stage ends", "run state", "state", (("SR-060", M),)),
+        ("stage ends", "run state", "state", (("CH-042", B),)),
         ("checks read", "MultiQC report", "report", (("SR-058", B),)),
         ("approve, continue", "specified", "gate_ok", ()),
     )),
@@ -43,7 +43,7 @@ JOURNEYS = (
     ("A task fails", "find it, fix, resume", (
         ("run fails", "failed, yet resumable", "failed", (("CH-042", B),)),
         ("find failing task", "which task, which sample", "find", (("CH-047", M),)),
-        ("read its log", "where the log lives", "log", (("CH-048", M), ("UX-244", M))),
+        ("read its log", "where the log lives", "log", (("CH-048", M),)),
         ("resume from cache", "what is reused", "resume", (("CH-043", M),)),
     )),
     ("Server restarts", "mid-run", (
@@ -197,7 +197,7 @@ def build(theme: Theme) -> Sketch:
 
     # -- header ------------------------------------------------------------------
     s.heading(40, 54, "R3 · four 0.0.1 journeys, where they break",
-              "9 blockers, 25 majors before merging; see the findings table")
+              "27 findings: 7 blockers, 18 majors, 2 minors; see the findings table")
 
     lx, ly = 1010, 50
     s.circle(lx, ly, 11, fill="done", colour=t.good, width=1.5)
@@ -210,6 +210,8 @@ def build(theme: Theme) -> Sketch:
             tag(px + 15, ly + 5, lab, sev)
         else:
             s.text(px + 15, ly + 5, lab, size=15, anchor="start", colour=t.dim)
+
+    s.prefix_key(lx - 11, ly + 38, ("SR", "CH", "UX"))
 
     # -- the four strips ---------------------------------------------------------------
     for j, (title, sub, steps) in enumerate(JOURNEYS):

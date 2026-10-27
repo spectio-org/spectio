@@ -16,7 +16,7 @@ Read `tools/diagrams/README.md` first. Then:
 4. Open both PNGs with Read. Fix collisions, overflow, illegible small text, and anything that reads as a flowchart of boxes. Iterate until it reads well in both themes.
 5. Re-run the script and check the SVG is byte-identical (the docs gate checks freshness).
 
-Every pipeline step gets a figure (documentation-system.md §3.4), not only mechanisms. For a review round, draw the scope walked (journeys as numbered steps, specs or boards as pictograms) and pin each blocker and major where it hits, labelled by finding ID; for triage, bars to scale from the real counts; for apply, before and after side by side. The figure must let a reviewer grasp the step without reading the page.
+Every pipeline step gets a figure (documentation-system.md §3.4), not only mechanisms. For a review round, draw the scope walked (journeys as numbered steps, specs or boards as pictograms) and pin each blocker and major where it hits, labelled by finding ID, and name the prefixes used with `s.prefix_key(x, y, ("SR", "CH", …))` so the reader knows which reviewer each ID comes from; for triage, bars to scale from the real counts; for apply, before and after side by side. The figure must let a reviewer grasp the step without reading the page.
 
 Mermaid stays for small structural diagrams inside specs (sequence, state, ER). Anything explanatory for a reader goes here.
 

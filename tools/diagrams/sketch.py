@@ -202,6 +202,16 @@ class Box:
 # -- the sketch ---------------------------------------------------------------
 
 
+
+# Finding prefix -> reviewer, as in docs/glossary.md §2.1 (owner: docs/reviews/README.md).
+FINDING_PREFIXES = {
+    "SR": "spec-reviewer", "FC": "fact-checker", "CH": "constraints-hunter",
+    "SEC": "security-reviewer", "UX": "ux-reviewer", "DL": "depictio-liaison",
+    "DEP-T": "depictio-liaison (tooling)", "DOC": "doc-reviewer", "TA": "test-architect",
+    "IE": "infra-engineer", "CR": "code-reviewer",
+}
+
+
 class Sketch:
     """Accumulates SVG fragments drawn with a hand-drawn wobble."""
 
@@ -393,6 +403,11 @@ class Sketch:
         self.text(x, y, title, size=27, anchor="start")
         if subtitle:
             self.text(x, y + 28, subtitle, size=15.5, colour=self.t.dim, anchor="start")
+
+    def prefix_key(self, x: float, y: float, prefixes: tuple[str, ...], *, size: float = 13.5) -> None:
+        """One line naming the reviewer behind each finding prefix used in the figure (glossary §2.1)."""
+        parts = " · ".join(f"{p} {FINDING_PREFIXES[p]}" for p in prefixes)
+        self.text(x, y, f"IDs: {parts}", size=size, anchor="start", colour=self.t.dim)
 
     def step(self, cx: float, y: float, n: int, label: str, *, size: float = 19) -> None:
         """A numbered caption under a pictogram: ``1 · label``."""
