@@ -150,6 +150,14 @@ media:
       - docs/assets/diagrams/d5-previews_dark.svg
       - docs/assets/diagrams/d5-previews_light.png
       - docs/assets/diagrams/d5-previews_dark.png
+  - id: t7-corpus-ci
+    kind: diagram
+    generator: python3 tools/diagrams/t7_corpus_ci.py
+    outputs:
+      - docs/assets/diagrams/t7-corpus-ci_light.svg
+      - docs/assets/diagrams/t7-corpus-ci_dark.svg
+      - docs/assets/diagrams/t7-corpus-ci_light.png
+      - docs/assets/diagrams/t7-corpus-ci_dark.png
   - id: dev-toolchain
     kind: diagram
     # PNGs need the local Virgil font (SPECTIO_VIRGIL_TTF), not committed (inbox #1)
