@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T10:06:17Z",
+  "updated_at": "2026-10-27T10:49:11Z",
   "current_wave": "W2",
   "steps": {
     "F1": {
@@ -194,21 +194,27 @@
     },
     "R3": {
       "wave": "W2",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T10:06:17Z",
-      "finished_at": null,
-      "outputs": [],
+      "finished_at": "2026-10-27T10:49:11Z",
+      "outputs": [
+        "docs/reviews/R3-journeys.md",
+        "docs/progress/W2/R3.md"
+      ],
       "notes": "",
       "base": "0e5c85d"
     },
     "R6": {
       "wave": "W2",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T10:06:17Z",
-      "finished_at": null,
-      "outputs": [],
+      "finished_at": "2026-10-27T10:49:11Z",
+      "outputs": [
+        "docs/reviews/R6-contract.md",
+        "docs/progress/W2/R6.md"
+      ],
       "notes": "",
       "base": "0e5c85d"
     },

@@ -65,3 +65,19 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Gate:** `mkdocs build --strict` exit 0; `tools/docs/check.py` 0 failures.
 - **Docs:** `docs/progress/W2/APPLY1.md`. doc-reviewer: approve 11/14; its four text changes applied (workflow figures cited from this tick, five "not applied" cases, budget wording, follow-up figure due in T2), log section links back to the step page.
 - **Stopped before R3 and R6 (budget).** Thomas asked for a fresh usage reading before the next reviews.
+
+## 2026-10-27 08:00 → 10:50 UTC — tick 4 (R3 and R6 reviews, then stop)
+
+- **Budget:** Thomas's reading 60 % at the start; limit 65 %. Manual readings only.
+- **Finished:** R3 (journeys review) and R6 (API contract against the screens), claimed in `70e1501`, both read-only on specs.
+
+  | Round | findings | blocker | major | minor | inbox questions |
+  |---|---|---|---|---|---|
+  | R3 journeys | 27 | 7 | 18 | 2 | — |
+  | R6 contract | 34 | 0 | 29 | 5 | 5 |
+
+- **Exit checks:** `docs/reviews/R3-journeys.md` and `docs/reviews/R6-contract.md` exist with findings tables in the README format.
+- **Docs:** `docs/progress/W2/R3.md` (doc-reviewer approve 14/14 after the map was redrawn: every blocker and major pinned on its step, severity key in the pin colours) and `docs/progress/W2/R6.md` (approve 13/14, caption and step link fixed). Figures `tools/diagrams/r3_journeys_map.py` and `r6_contract_map.py`.
+- **Gate:** `tools/docs/check.py` 0 failures; `mkdocs build --strict` exit 0.
+- **Not triaged yet:** the 61 findings wait for TRIAGE2, then APPLY2.
+- **Stopped before TRIAGE2 (budget).** Thomas is asked for a fresh `/usage` reading.
