@@ -54,7 +54,7 @@
     "email_on_fail": null,
     "plaintext_email": false,
     "monochrome_logs": false,
-    "hook_url": "https://hooks.slack.com/services/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",
+    "hook_url": "REDACTED",
     "help": false,
     "version": false,
     "pipelines_testdata_base_path": "https://raw.githubusercontent.com/nf-core/test-datasets/",

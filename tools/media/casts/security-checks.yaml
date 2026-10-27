@@ -1,0 +1,25 @@
+# Step D4: the security checks of every PR (dev-environment-and-testing.md §11), run for real on the repository
+# with tools/ci/security.sh, the same script security.yml runs. zizmor runs offline here (no token).
+title: "Spectio security checks on every PR: tools/ci/security.sh"
+cols: 100
+rows: 24
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.05
+workdir: .
+env:
+  ZIZMOR_OFFLINE: "true"
+steps:
+  - comment: "secret scanning: gitleaks over the whole history (CI scans only the PR's commits)"
+  - run: "bash tools/ci/security.sh secrets"
+    keep: "commits scanned|leaks found"
+    expect_exit: 0
+  - comment: "dependency audit: osv-scanner on every lockfile"
+  - run: "bash tools/ci/security.sh deps"
+    keep: "Scanned|No issues|vulnerabilit"
+    expect_exit: 0
+  - comment: "workflow linters: actionlint (silent when clean), then zizmor"
+  - run: "bash tools/ci/security.sh workflows"
+    keep: "[Ff]indings|error"
+    expect_exit: 0
+  - pause: 2

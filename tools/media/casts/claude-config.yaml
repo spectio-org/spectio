@@ -1,0 +1,25 @@
+# The agent and skill frontmatter check (tools/claude/check_frontmatter.py, step D1), in a temp dir holding
+# a copy of the repository's .claude: it passes there, then fails on a second copy where one agent has
+# lost its `name` line.
+title: "Spectio claude-config: agent and skill frontmatter check"
+cols: 110
+rows: 20
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.05
+workdir: tmp
+setup:
+  - |
+    ln -s "{repo}/tools" tools
+    cp -r "{repo}/.claude" .claude
+    cp -r .claude broken
+    sed -i '/^name: spec-reviewer$/d' broken/agents/spec-reviewer.md
+steps:
+  - comment: "a copy of the repository's agents and skills: every file loads as intended"
+  - run: "python3 tools/claude/check_frontmatter.py .claude"
+  - pause: 1.2
+  - comment: "a second copy where spec-reviewer has lost its name: Claude Code would skip it silently"
+  - run: "head -3 broken/agents/spec-reviewer.md | cut -c1-90"
+  - run: "python3 tools/claude/check_frontmatter.py broken"
+    expect_exit: 1
+  - pause: 2

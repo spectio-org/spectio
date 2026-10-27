@@ -118,7 +118,8 @@ def curate(pipe: str, corpus: pathlib.Path) -> None:
             continue
         out = dst / rel
         out.parent.mkdir(parents=True, exist_ok=True)
-        out.write_bytes(f.read_bytes())
+        # nf-core's params files carry their Slack webhook URL (hook_url); never commit it (security.sh secrets).
+        out.write_bytes(re.sub(rb'("hook_url": ")[^"]*"', rb'\1REDACTED"', f.read_bytes()))
         total += f.stat().st_size
     meta["curated"] = sorted(str(p.relative_to(dst)) for p in dst.rglob("*") if p.is_file())
     (dst / "SOURCE.json").write_text(json.dumps(meta, indent=1) + "\n")

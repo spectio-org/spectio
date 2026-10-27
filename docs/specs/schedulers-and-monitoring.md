@@ -73,7 +73,7 @@ Job names and comments carry the run ID only, never project, sample or workflow 
 
 #### 3.1.1 Local launcher: detach, adopt, exit
 
-*(assumed — pending Thomas, inbox #35)* On the local executor (the in-process runner of `spectio serve`) the engine heads keep running detached when the server stops, and the next start re-adopts them.
+*(decided — Thomas, 2026-10-27, inbox #35)* On the local executor (the in-process runner of `spectio serve`) the engine heads keep running detached when the server stops, and the next start re-adopts them.
 - **Detach.** The local launcher starts each head in its own session (`setsid` / `start_new_session=True`) and outside the server's cgroup with `systemd-run --user --scope` where available, because systemd's default `KillMode=control-group` kills every process of the unit ([R4 CH-028](../reviews/R4-constraints.md#ch-028-major-hosting-the-runner-on-login-nodes-scrontab-does-not-run-there-systemd-kills-supervised-heads-duplicate-runners)). stdin is `/dev/null`; stdout and stderr go to `<launch_dir>/.spectio/head.out` and `.spectio/head.err`, never to pipes.
 - **PID and exit files.** A wrapper, `spectio-head-wrap`, writes `.spectio/head.pid` (PID, process start time, host boot ID) before it execs the head, and `.spectio/head.exit` (exit code, time) when the head ends, so the exit code survives the server. The values are stored on the `launches` row ([`api-and-data-model.md`](api-and-data-model.md) §7).
 - **Adopt on boot.** For every `launches` row not in a terminal state, Spectio checks PID + start time + boot ID: if they match, it adopts the running process; otherwise it reads `head.exit`. The same check makes a re-delivered `launch` command idempotent, as the `squeue` name match does on SLURM (§3.1).

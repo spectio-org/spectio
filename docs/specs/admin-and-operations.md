@@ -121,7 +121,7 @@ Non-human principals: LIMS, CI, robots, event bridges.
 - **Task ledger (admin).** The `background_tasks` table is the source of truth whatever the backend. It also stores logs, error, traceback, worker and attempts. *(assumed — pending Thomas, inbox #29)*
 - **Jobs (users)** are the api §4 `Operation` (`/operations/{id}`): a projection of the ledger restricted to rows the caller created (`created_by` = caller), with no table of its own. They carry the owner, the idempotency key, a structured result and the task's terminal state. *(assumed — pending Thomas, inbox #29)*
 - There is **no generic "enqueue any task" endpoint**. Task kinds are fixed by the code, exactly as depictio does (`JobKind`), because a generic enqueue would be a privilege-escalation surface.
-- **Secrets in tasks.** Task arguments that carry a secret (a webhook URL with a token, a backup passphrase) use a `SecretRef` type, resolved by the worker and never stored in clear. Tracebacks are stored without local variables. Arguments, results and logs pass through the redaction of §3.4. *(assumed — pending Thomas, inbox #27)*
+- **Secrets in tasks.** Task arguments that carry a secret (a webhook URL with a token, a backup passphrase) use a `SecretRef` type, resolved by the worker and never stored in clear. Tracebacks are stored without local variables. Arguments, results and logs pass through the redaction of §3.4. *(decided — Thomas, 2026-10-27, inbox #27)*
 
 A run's engine tasks are a different table, `tasks` / `attempts`, with the prefix `task_` ([`api-and-data-model.md`](api-and-data-model.md) §7). *(assumed — pending Thomas, inbox #29)*
 
@@ -175,7 +175,7 @@ This section owns the ledger's columns and its screen; [`architecture-plugins-an
 - **Capture floor.** It defaults to WARNING and can be changed in the UI. Unlike depictio, the change is persisted in `instance_settings` and broadcast to every process through pub/sub, so it survives a restart.
 - **Live tail** over SSE. Correlation chips open the run, task or request.
 - **External stacks.** When one is configured (Loki / Grafana, ELK), the page links to it with the same filters. Containers always log JSON to stdout as well, so the ring buffer is a convenience, never the only copy.
-- **Redaction.** One redaction function, owned here, is applied before anything is written to or sent from these sinks: event ingest (`POST /ingest/events`), `log_records`, task arguments, results and logs (§3.1), audit-log diffs ([`api-and-data-model.md`](api-and-data-model.md) §7), RO-Crate export ([`synthesis.md`](synthesis.md) §7quinquies) and telemetry. *(assumed — pending Thomas, inbox #27)* Spectio cannot rely on the engine: `config show` masks secret keys (`ConfigCmdAdapter.groovy:650-651`), but `params` are not masked, and `nf-tower` sends them as is (`TowerObserver.groovy:383`, `session.getParams().toPlainMap()`). The function replaces with `[redacted]`:
+- **Redaction.** One redaction function, owned here, is applied before anything is written to or sent from these sinks: event ingest (`POST /ingest/events`), `log_records`, task arguments, results and logs (§3.1), audit-log diffs ([`api-and-data-model.md`](api-and-data-model.md) §7), RO-Crate export ([`synthesis.md`](synthesis.md) §7quinquies) and telemetry. *(decided — Thomas, 2026-10-27, inbox #27)* Spectio cannot rely on the engine: `config show` masks secret keys (`ConfigCmdAdapter.groovy:650-651`), but `params` are not masked, and `nf-tower` sends them as is (`TowerObserver.groovy:383`, `session.getParams().toPlainMap()`). The function replaces with `[redacted]`:
   - known secret values: resolved secret references and live tokens;
   - any string with the `spk_` token prefix;
   - values whose key matches Nextflow's sensitive-name pattern: `SECRET_KEYS = ~/(?im)^AWS.+|.*TOKEN.*|.*PASSWORD.*|.*SECRET.*|.*accessKey.*|.*api_?key.*/` (nextflow `114f1fe`, `SecretHelper.groovy:35`), deprecated in favour of `StringUtils.isSensitiveName` (nf-commons `StringUtils.groovy:80`), whose pattern was not compared **[to be validated]**;
@@ -207,8 +207,8 @@ This section owns the ledger's columns and its screen; [`architecture-plugins-an
   - `/health/live`: the process is up;
   - `/health/ready`: database reachable and its schema revision within the range this release supports (not "at head": during a Helm pre-upgrade hook the old pods see a newer revision and would all turn unready at once, §4.3);
   - `/metrics`: Prometheus format.
-- **Metrics** (`/metrics`, Prometheus format): runs by state; gate wait time; background task queue depth and age of the oldest queued task; outbox lag; runner heartbeats (age of the last one per runner); request latency per route template, not per raw path, so label cardinality stays bounded. The Helm chart has an optional `ServiceMonitor`. depictio has no Prometheus, OpenTelemetry or Sentry code and no ServiceMonitor (R8b DEP-T-029). *(assumed — pending Thomas, inbox #26)*
-- **Tracing.** The server propagates W3C `traceparent` and its `request_id` on runner commands, and runners log them, so one request can be followed from the API to the runner. *(assumed — pending Thomas, inbox #26)*
+- **Metrics** (`/metrics`, Prometheus format): runs by state; gate wait time; background task queue depth and age of the oldest queued task; outbox lag; runner heartbeats (age of the last one per runner); request latency per route template, not per raw path, so label cardinality stays bounded. The Helm chart has an optional `ServiceMonitor`. depictio has no Prometheus, OpenTelemetry or Sentry code and no ServiceMonitor (R8b DEP-T-029). *(decided — Thomas, 2026-10-27, inbox #26)*
+- **Tracing.** The server propagates W3C `traceparent` and its `request_id` on runner commands, and runners log them, so one request can be followed from the API to the runner. *(decided — Thomas, 2026-10-27, inbox #26)*
 - **What depictio checks.** Its Health pane only checks Celery workers and the broker.
 
 ## 4. Instance
@@ -256,8 +256,8 @@ This section owns the ledger's columns and its screen; [`architecture-plugins-an
 ### 4.3 Backups, restore and migration
 
 **What a backup is.** One archive, `spectio-backup-<instance>-<UTC timestamp>.tar.zst`, containing:
-- `manifest.json`: Spectio version, schema revision (Alembic), instance ID, creator, kind, the parts with SHA-256 and size, and encryption information; `signature`: an Ed25519 signature of the manifest by the instance key; the instance's public key is kept outside the archive, so verification never trusts the archive's own `keys/` *(assumed — pending Thomas, inbox #24)*;
-- `db/`: by default a **native same-engine backup**: the SQLite online backup API run in steps (or `VACUUM INTO` in a quiet window), or `pg_dump -Fd -j` (CloudNativePG / barman on Kubernetes). A **portable logical export**, one JSON Lines file per table in foreign-key order, is made only for cross-engine migration (SQLite → Postgres) and project export. Why: at 2–4 GB of new data a day (estimate), a nightly Python export of every table takes hours and must read from one snapshot, which starves SQLite checkpoints and holds back Postgres `xmin`. *(assumed — pending Thomas, inbox #24)*
+- `manifest.json`: Spectio version, schema revision (Alembic), instance ID, creator, kind, the parts with SHA-256 and size, and encryption information; `signature`: an Ed25519 signature of the manifest by the instance key; the instance's public key is kept outside the archive, so verification never trusts the archive's own `keys/` *(decided — Thomas, 2026-10-27, inbox #24)*;
+- `db/`: by default a **native same-engine backup**: the SQLite online backup API run in steps (or `VACUUM INTO` in a quiet window), or `pg_dump -Fd -j` (CloudNativePG / barman on Kubernetes). A **portable logical export**, one JSON Lines file per table in foreign-key order, is made only for cross-engine migration (SQLite → Postgres) and project export. Why: at 2–4 GB of new data a day (estimate), a nightly Python export of every table takes hours and must read from one snapshot, which starves SQLite checkpoints and holds back Postgres `xmin`. *(decided — Thomas, 2026-10-27, inbox #24)*
 - `files/`: the file store (evidence copies, cached reports, branding assets, avatars, exported crates, archived raw event payloads ([`api-and-data-model.md`](api-and-data-model.md) §8.4), copied as files, not rows);
 - `keys/`: token signing keys and the secret-store key. Without the keys, stored secrets cannot be decrypted. The same holds for depictio's Fernet-encrypted storage configs.
 - `plugins/`: plugin instance settings. Secrets are stored as references by default. With "Include encrypted secrets", they are sealed with a passphrase or an age recipient.
@@ -278,9 +278,9 @@ This section owns the ledger's columns and its screen; [`architecture-plugins-an
 | Pre-upgrade | full, taken automatically before `spectio db upgrade` (switch on by default); skipped when a verified backup is younger than N hours (setting) | rollback point |
 | Project export | one project with its workflows, runs, gates, decisions, change sets, artifacts' metadata and files | move a project between instances (personal → team server). Mirrors depictio's `migrate --project` |
 
-A restore always restores the whole archive; there is no partial restore by table (the project export covers one project). *(assumed — pending Thomas, inbox #24)*
+A restore always restores the whole archive; there is no partial restore by table (the project export covers one project). *(decided — Thomas, 2026-10-27, inbox #24)*
 
-**Recovery objectives.** Each deployment states its recovery point objective (RPO) and recovery time objective (RTO); Health → Backups compares the age of the last verified backup with the RPO. *(assumed — pending Thomas, inbox #24)*
+**Recovery objectives.** Each deployment states its recovery point objective (RPO) and recovery time objective (RTO); Health → Backups compares the age of the last verified backup with the RPO. *(decided — Thomas, 2026-10-27, inbox #24)*
 
 **Destinations** are `spectio.backup` plugins: a local directory (built in), any S3-compatible store (SeaweedFS, as in depictio), or SFTP.
 
@@ -304,7 +304,7 @@ A restore always restores the whole archive; there is no partial restore by tabl
    - "restored from `<backup id>`" is recorded;
    - maintenance mode turns off.
 
-**Restore mechanics.** The restore step runs as follows, so a crash or live traffic cannot leave a mixed state; this supersedes the "each table is wiped and replaced" wording of step 5. *(assumed — pending Thomas, inbox #24)*
+**Restore mechanics.** The restore step runs as follows, so a crash or live traffic cannot leave a mixed state; this supersedes the "each table is wiped and replaced" wording of step 5. *(decided — Thomas, 2026-10-27, inbox #24)*
 - The backup is restored into a **new** database (a new SQLite file, or a new Postgres database or schema), verified and migrated there, then switched in atomically (a rename, or the `DATABASE_URL` pointer).
 - A restore journal file in the data directory records each step, so a restart resumes or rolls back; the maintenance state lives in that journal, outside the restored tables.
 - Ingest answers `503` with `Retry-After` while the restore runs, and the bridges keep their events in the spool ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13).
@@ -321,7 +321,7 @@ Why: restoring `instance_settings` in place would switch maintenance off mid-res
 | Local file store → S3 | `spectio migrate storage --to s3://…` | copy + verify (key count and sizes, like depictio's MinIO → SeaweedFS script), orphan cleanup paused, then switch |
 | One project → another instance | `spectio migrate project <name> --to-server <profile>` | project export + import, as untrusted input (below); `--overwrite` matches only rows of the target project; owner remap; `--dry-run`; target S3 endpoints allow-listed (depictio's exfiltration guard) |
 
-**Project imports are untrusted input.** An export may come from another instance or by email. *(assumed — pending Thomas, inbox #25)*
+**Project imports are untrusted input.** An export may come from another instance or by email. *(decided — Thomas, 2026-10-27, inbox #25)*
 - Every ID is re-minted on import. `--overwrite` matches only rows that already belong to the target project, never an ID from another project.
 - Imported decisions and audit entries become provenance (`imported_from`: source instance, original principal name and ID), never live principals of this instance.
 - Webhooks, plugin instances, service accounts and tokens are never imported.
@@ -332,7 +332,7 @@ Why: restoring `instance_settings` in place would switch maintenance off mid-res
 
 **Schema migrations.**
 - One Alembic tree for both SQLite and Postgres, with `render_as_batch` for SQLite. A revision branches on the dialect inside itself only where it must. Reason: one revision ID per schema state, which the backup manifest and the compatibility guard rely on. Prefect chose the other way, one tree per dialect (`src/prefect/server/database/_migrations/versions/sqlite/`, 115 entries, next to `…/postgresql/`, 120 entries, at `21a1f02`). Revisited after R9 spike 7 (three representative revisions, a JSON column, a partial index and an `ALTER` of a constraint, on SQLite and Postgres 18). *(assumed — pending Thomas, inbox #28)*
-- In the bundle, migrations run automatically at start, after the pre-upgrade backup (skipped when a recent verified backup exists, see Kinds of backup). *(assumed — pending Thomas, inbox #24)*
+- In the bundle, migrations run automatically at start, after the pre-upgrade backup (skipped when a recent verified backup exists, see Kinds of backup). *(decided — Thomas, 2026-10-27, inbox #24)*
 - In Compose and Kubernetes they run explicitly: a `migrate` one-shot service or a Helm hook Job.
 - Commands: `spectio db status | upgrade | history`. There are no down-migrations in production; a restore is the rollback.
 - Data migrations live in Alembic too, so a backup's revision says exactly what its data looks like. depictio has no migration framework and relies on Pydantic defaults instead.
@@ -349,13 +349,13 @@ Why: restoring `instance_settings` in place would switch maintenance off mid-res
 - **Maintenance mode.**
   - Modes: `normal`, `no-launch` (no new launches or gate decisions), `read-only` (the API refuses writes) and `restoring` (set automatically by restore and migrations). Runners keep executing running jobs in every mode.
   - A banner message with a preview, and an optional end time.
-  - Used automatically by restore and migrations; during a restore its state is kept in the restore journal, outside the restored tables (§4.3). *(assumed — pending Thomas, inbox #24)*
+  - Used automatically by restore and migrations; during a restore its state is kept in the restore journal, outside the restored tables (§4.3). *(decided — Thomas, 2026-10-27, inbox #24)*
   - No option stops runners or clusters. The page header shows the maintenance state read-only; "Turn on now" and "Schedule" are the only actions.
   - **Everyone sees it.** One shared banner, below the top bar on desktop and below the phone top bar, shows the maintenance or announcement message, its style (info or warning) and its end time; announcements can be dismissed per user. While maintenance is on, the primary actions it blocks are disabled with the reason. On a phone it is never a one-tap switch ([`ui-spec.md`](ui-spec.md) §4.11).
   - What still works in each mode is in the table at the end of this section.
 - **Announcement banner.** Info or warning style, dates, dismissible per user.
 - **Database:** schema revision and history, pre-upgrade backup switch, ANALYZE / VACUUM (SQLite), integrity check.
-- **Migrate this instance:** the four migrations in §4.3 (bundle → Compose, SQLite → Postgres, file store → S3, project → another instance). *(assumed — pending Thomas, inbox #24)*
+- **Migrate this instance:** the four migrations in §4.3 (bundle → Compose, SQLite → Postgres, file store → S3, project → another instance). *(decided — Thomas, 2026-10-27, inbox #24)*
 - **Cleanup jobs:**
   - work directories, following each environment's lifecycle policy (rules: `GET/PUT /environments/{id}/lifecycle`, [`api-and-data-model.md`](api-and-data-model.md) §5; each clean emits `spectio.run.workdir_cleaned`) *(assumed — pending Thomas, inbox #30)*;
   - orphaned blobs, paused during restores;

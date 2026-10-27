@@ -1,0 +1,9 @@
+# gitleaks configuration (tools/ci/security.sh secrets; docs/specs/dev-environment-and-testing.md §11).
+# The default rules, plus reviewed exceptions. Each exception says why.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Image manifest: MD5 checksums of design/ui-canvas/images, not keys (reviewed 2026-10-27, D4)"
+targetRules = ["generic-api-key"]
+paths = ['''^design/ui-canvas/images/blobs\.json$''']

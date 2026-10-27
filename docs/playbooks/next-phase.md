@@ -275,6 +275,10 @@ engine outputs (Nextflow trace, Snakemake log) as golden fixtures named with the
 version. Also run the gate stop-and-resume check on the nf-core/rnaseq and nf-core/sarek
 test profiles with the local executor (dev-environment-and-testing.md §3) and record
 cached-task counts and exit codes.
+Also record, for inbox #32, what each engine does on a resume: whether `nextflow run
+-resume` gets a new run name and session ID or reuses them, and in which launch
+directory; whether a Snakemake rerun in the same directory has any run identity of its
+own. Cite the engine docs or source next to each observation.
 ```
 
 The synthetic pipelines of `dev-environment-and-testing.md` §10.1 replace the separate `nf-toy` and `smk-toy` fixtures in T1–T4 and P1 *(assumed — pending Thomas, inbox #28)*. The rnaseq and sarek stop-and-resume check runs here, on the local executor; `ui-spec.md` §5.1 owns the pipeline requirements and the "gates unavailable" state *(assumed — pending Thomas, inbox #28)*.

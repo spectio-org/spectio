@@ -32,6 +32,6 @@ There will be three ways to run Spectio, from the smallest to the largest. All o
 
 **The runner on your cluster** is a small program on the login node or in the cluster. It only makes outgoing HTTPS calls to the server, so no port needs to be opened on the HPC side.
 
-**Checking what you install.** Every published image and chart will carry a signature, an SBOM and a provenance attestation that `gh attestation verify` checks; see [versioning and releases](../specs/dev-environment-and-testing.md#12-versioning-and-releases). *(assumed — pending Thomas, inbox #26)*
+**Checking what you install.** Every published image and chart will carry a signature, an SBOM and a provenance attestation that `gh attestation verify` checks; see [versioning and releases](../specs/dev-environment-and-testing.md#12-versioning-and-releases). *(decided — Thomas, 2026-10-27, inbox #26)*
 
 Design details: [packaging](../specs/architecture-plugins-and-packaging.md#7-packaging-and-the-three-deployments) and [schedulers](../specs/schedulers-and-monitoring.md#6-running-the-runner-on-hpc).

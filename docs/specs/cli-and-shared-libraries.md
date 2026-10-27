@@ -61,7 +61,7 @@ Help panels follow depictio's scheme. Every command accepts `--server`, `--json`
 | | `token` | `create --name --expires`, `list`, `revoke` |
 | | `auth` | `method list`, `method enable oidc --issuer … --client-id …`, `method enable saml …`, `method disable <method>`, `method test <method>` ([`authentication-and-access.md`](authentication-and-access.md) §1, §5) *(assumed — pending Thomas, inbox #28)* |
 | | `admin` | `background-tasks list\|show\|retry\|cancel` (the background-task ledger; `run tasks` lists engine tasks) *(assumed — pending Thomas, inbox #29)*, `logs (--level --source --run --follow)`, `logs capture-level <LEVEL>` ([`admin-and-operations.md`](admin-and-operations.md) §3.4, `PUT /logs/capture-level`), `health`, `maintenance on\|off\|status`, `announcements show\|set\|clear` (admin §4.4) *(assumed — pending Thomas, inbox #28)*, `cleanup run <job>`, `settings get\|set` |
-| | `backup` | `create (--include db,files,keys,secrets --destination --encrypt)`, `list`, `verify`, `download`, `restore (--dry-run default, --force)` *(assumed — pending Thomas, inbox #24)*, `prune`, `schedule show\|set` (verbs aligned with depictio's `backup`) |
+| | `backup` | `create (--include db,files,keys,secrets --destination --encrypt)`, `list`, `verify`, `download`, `restore (--dry-run default, --force)` *(decided — Thomas, 2026-10-27, inbox #24)*, `prune`, `schedule show\|set` (verbs aligned with depictio's `backup`) |
 | | `migrate` | `project <name> --to-server <profile> (--mode all\|metadata\|files, --overwrite, --dry-run)` (as depictio's `migrate --project`), `database --to postgresql://…`, `storage --to s3://…` |
 | | `db` | `status`, `upgrade`, `history` |
 | | `branding` | `show`, `export`, `import`, `reset` |
@@ -182,7 +182,7 @@ run.wait(until="gate")                          # or "end"
 
 - **The runner ships in the base package**, with the built-in engines and launchers as modules ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §6) *(assumed — pending Thomas, inbox #29)*. Its dependencies are the CLI's, so a login node needs one `uv tool install spectio`, and the server extras never land on a cluster.
 - **CI checks, borrowed from depictio:**
-  - a base-install job that runs the CLI tests without server extras, so a server-only import in client code fails, on every supported Python and Linux architecture ([`dev-environment-and-testing.md`](dev-environment-and-testing.md) §11) *(assumed — pending Thomas, inbox #26)*;
+  - a base-install job that runs the CLI tests without server extras, so a server-only import in client code fails, on every supported Python and Linux architecture ([`dev-environment-and-testing.md`](dev-environment-and-testing.md) §11) *(decided — Thomas, 2026-10-27, inbox #26)*;
   - a wheel size and contents check;
   - the local → Compose hand-over test;
   - a test that every `/admin/*` operation of the OpenAPI document maps to a CLI command ([`admin-and-operations.md`](admin-and-operations.md) §0, item 2) *(assumed — pending Thomas, inbox #28)*.

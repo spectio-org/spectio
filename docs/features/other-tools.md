@@ -20,6 +20,6 @@ A neutral, factual comparison, with no pricing. Spectio is meant to sit next to 
 | Flyte 2 | Python; Nextflow through `flyteplugins-nextflow` and `nf-flyte` (since 2026-10) | Kubernetes; Slurm over SSH with a configured key; on a cluster the Nextflow work directory must be on an object store | yes | yes | yes (conditions and signals, typed value) | — | Apache-2.0 | [2026-10-26](../research/landscape-2026-10-26.md#flyte-2-and-nf-flyte) |
 | Prefect 3 | Python | self-hosted or cloud; community Slurm worker | yes | yes | yes (pause or suspend, with typed input) | — | Apache-2.0 | [2026-10-26](../research/landscape-2026-10-26.md#prefect-3) |
 
-For Snakemake, the panoptes and FlowO rows carry the corrections of 2026-10-26: monitoring tools exist, but there is no gate-and-steer tool for Snakemake. *(assumed — pending Thomas, inbox #27)*
+For Snakemake, the panoptes and FlowO rows carry the corrections of 2026-10-26: monitoring tools exist, but there is no gate-and-steer tool for Snakemake. *(decided — Thomas, 2026-10-27, inbox #27)*
 
 Where Spectio differs: shared POSIX file systems, the user's own account, Snakemake as well as Nextflow, and item-level QC gates with evidence ([synthesis §1](../specs/synthesis.md#1-verdict)).

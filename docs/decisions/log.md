@@ -658,3 +658,33 @@ Step page: [APPLY2](../progress/W2/APPLY2.md).
   - `.claude/skills/review-code/SKILL.md`, `.claude/skills/autopilot/SKILL.md`, `.claude/agents/code-reviewer.md` and `.claude/agents/security-reviewer.md`;
   - inbox #11, #12, #14, #15, #16, #32, #33, #34, #35, #36, #37 and #39 (dated notes).
 - **Open points** (written as **[to be validated]** in §15.3): site prerequisites for a long-running process and node-local disk on login nodes; whether a Snakemake head may run inside a SLURM job, which the Snakemake SLURM executor plugin advises against ([`schedulers-and-monitoring.md`](../specs/schedulers-and-monitoring.md) §3.1, spike T3; fallback: the head on the login node, tasks still through the SLURM executor); browser behaviour of `SameSite=Strict` cookies and SSE.
+
+## 2026-10-27 — Inbox answers #5 to #37 (dashboard)
+
+- **Context.** Thomas answered 24 inbox entries from the progress dashboard (14:03–14:20 UTC). Each answer is recorded on its entry in [`inbox.md`](../reviews/inbox.md). Where an answer confirms an assumed option, the specs' markers now read *decided — Thomas, 2026-10-27*.
+- **Decided, as recommended:** #11 (a), #19 (a), #20 (b), #21 (a), #22 (a), #23 (c), #24 (a), #25 (a), #26 (a), #27 (a), #33 (c), #35 (a), #36 (a), #37 (a).
+- **Decided, with a change:**
+  - #13: (a), but kept lightweight. 0.0.1 and single mode have only the token link; the token registry and the authorisation matrix start with the first multi-user version.
+  - #34: no gates in 0.0.1, as in the cut above; SR-056 (workflow registration) stays open for 0.0.1.
+- **Leaning, not decided:**
+  - #32: "B, but to be discussed". Thomas is not sure the engines themselves create a new run on resume; spike T1 checks it (its prompt now asks for it), and the B text stays *assumed*.
+  - #14: "skip k8s for now; focus on local and SLURM launch". The autopilot reads it as (a) restricted to local and SLURM, with the Kubernetes identity model deferred; Thomas confirms or corrects this reading, and the SEC-103 text stays *assumed*.
+- **Deferred:** #17 (rediscuss separately), #18 (too complex for the MVP).
+- **Still open:** #5 (deleting the old branch needs Thomas's go), #8 (waiting for the GitHub App), #12 (pros and cons now in the entry) and #15 (re-explained in the entry and the session).
+- **Applied now:**
+  - [`architecture-plugins-and-packaging.md`](../specs/architecture-plugins-and-packaging.md) §7.3, "0.0.1 prerequisites" (#35, SR-067);
+  - [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §15.3, security requirement 7, "Writes" (#37), and requirement 6 pointing to #36;
+  - `CLAUDE.md` board conventions: the UX-219 keyboard rule (#26);
+  - [`next-phase.md`](../playbooks/next-phase.md) T1 prompt (#32);
+  - *assumed* → *decided* markers for #13, #22–#27, #33 and #35 in the specs, features and installation pages; dated research notes keep their markers.
+- **Applied later:** the spec text of the later-version decisions (#11, #13, #19–#27, #33, and #36 for api §14) goes into one apply pass of the inbox answers after W3, as Thomas chose in the session on 2026-10-27, so the W3 budget goes to the build steps. The autopilot proposes its slot when W3 ends. Review files keep their statuses until that pass.
+
+## 2026-10-27 — D3: pinned toolchain, bootstrap and doctor
+
+- **Context.** Step D3 wrote `dev/versions.env`, `dev/bootstrap.sh` and `dev/doctor.sh` from the [D2 spike](../research/spike-cloud-env-2026-10-26.md) and ran them in a cloud session and in `dev-env.yml`. These are the choices the step made; Thomas reviews them in the step's PR.
+- **Pins follow the cloud image where a re-download would cost or be blocked:** uv 0.11.32 and Playwright 1.63.0 are the pre-installed versions, so the cloud setup reuses them and no browser is fetched from a host off the allowlist. Node is the exception: §1 asks for 24 LTS and the image ships 22, so bootstrap installs 24.
+- **Downloads are checked:** each binary and tarball has its sha256 in `versions.env`, from the project's published checksum where one exists (Nextflow publishes none, so its sha256 is the one computed at download). Snakemake's and Playwright's dependency trees are hash-locked (`dev/snakemake.lock.txt`, `dev/npm/package-lock.json`), after the security review found them unlocked (SEC-D3-01). The uv-managed CPython and Playwright's Chromium are the two downloads not hashed by us. Every image the doctor runs is pinned by digest, and Docker Hub images are pulled from `mirror.gcr.io` first.
+- **Linux x86_64 only** for now: the checksums are for linux/amd64.
+- **The doctor never goes green by skipping in CI:** sind and kind are skipped, with the reason, only where Docker runs on cgroup v1 (cloud sessions); `dev-env.yml` sets `SPECTIO_DOCTOR_STRICT=1`, so a skip fails there.
+- **No SessionStart hook:** bootstrap `--ci` and the doctor start `dockerd` when it is missing, which covers the daemon that the environment cache does not keep.
+- **Specs changed:** [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §1 (table, new "Bootstrap" paragraph, "Checks"), §2 (cloud sessions row and the cloud environment settings: network list with `nodejs.org` and `get.helm.sh` added to D2's, environment variables, setup script), §4.2 (answered: kind and sind do not run in cloud sessions), §11 (`dev-env.yml` row). Progress page: [D3](../progress/W3/D3.md).
