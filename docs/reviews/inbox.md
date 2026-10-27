@@ -624,6 +624,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a), in a small follow-up step that also opens a codespace to check it. One install path is the §1 rule.
 - **Assumed:** none. Nothing changes until you answer.
 - **Blocked:** nothing.
+- **Answer (Thomas, 2026-10-27 18:23 UTC, dashboard; confirmed in session):** (a), as recommended: `setup.sh` calls `bash dev/bootstrap.sh` and keeps only the mkdocs install, with the dev-container image and features pinned in `versions.env`, in a small follow-up step that opens a codespace to check it. *Decided.*
 
 ### #42 · Align the synthetic matrix and the required check names with Nextflow 26.10.4
 
@@ -635,6 +636,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a), done by the step that next edits `pipelines-synthetic.yml`, with you updating the branch protection.
 - **Assumed:** none.
 - **Blocked:** nothing.
+- **Answer (Thomas, 2026-10-27 18:23 UTC, dashboard; confirmed in session):** (a), as recommended: the step that next edits `pipelines-synthetic.yml` moves the matrix to 26.10.4 and renames the required check, and Thomas updates the branch protection in the same change. *Decided.*
 
 ### #43 · Set up the cloud environment from dev-env §2
 
@@ -647,6 +649,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b). Bootstrap and the doctor need none of the wildcard hosts; the container pulls that would are not run in cloud sessions yet.
 - **Assumed:** none.
 - **Blocked:** a cached setup in cloud sessions. Until then each session runs `bash dev/bootstrap.sh --ci` itself (about 25 s cold).
+- **Answer (Thomas, 2026-10-27 18:23 UTC, dashboard; confirmed in session):** (b), as recommended: the §2 network list without the wildcard hosts (`*.quay.io`, `*.pkg.dev`, `*.prefix.dev`) until the D2 re-probe narrows them. The environment currently has Full network; switching it to Custom with that list is Thomas's change in the environment settings. *Decided.*
 - **Update (2026-10-27, tick 8):** the environment now has Full network, the two variables and the setup script, and they reach the session (`BASH_DEFAULT_TIMEOUT_MS=600000` is set). But the script ran in `/home/user`, the clone's parent, so `[ -f dev/bootstrap.sh ]` was false and bootstrap was skipped; `dev/doctor.sh` failed on Python until `bash dev/bootstrap.sh --ci` was run by hand (19 s, then doctor: all layers passed, 2 skipped). **To do:** replace the setup script with the new one in [dev-env §2](../specs/dev-environment-and-testing.md#2-where-agents-work), which starts with `cd /home/user/spectio`. *Open.*
 
 ### #44 · Assumed: Linux x86_64 only, and Node 24 ahead of the system Node
