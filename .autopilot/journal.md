@@ -39,3 +39,29 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Borderline triage call to confirm:** SEC-129 (device-code expiry, CLI-only scopes, SAML replay) was accepted as hardening of decided auth modes, not as a new security default.
 - **Stopped before APPLY1 (budget).** The governor cannot measure use in this session: no status line, a manual reading only, 0 points counted, `go` every time. Subagent tokens so far: about 8.6 M (tick 1: about 5.9 M; TRIAGE1: about 1.1 M, docs about 0.3 M, plus the restart). APPLY1, which edits the specs from about 250 findings, is not started on a blind governor. Inbox #31 asks Thomas for a fresh `/usage` reading or another budget.
 - **Waiting on Thomas:** #11–#26 (reserved or blocking), #31 (budget); the confirmations in #27–#30.
+
+## 2026-10-27 06:30 → 10:30 UTC — tick 3 (0.0.1 decision, APPLY1, then stop)
+
+- **Budget:** Thomas's readings 57 % (before) and 59 % (APPLY1 start); limit 65 %. The governor still runs on manual readings only.
+- **Decision recorded first:** the first version is **0.0.1, a basic local MVP** (one user, no sign-in, engines on the same machine; launch, monitor, relaunch with changed parameters, parameter history, one simple QC check and gate; Snakemake and Nextflow through nf-spectio). Log entry "2026-10-27 — First version is 0.0.1", `docs/specs/mvp-0.0.1.md`, `dev-environment-and-testing.md` §15 as the single owner of version contents, inbox #16 answered.
+- **Finished:** APPLY1. One agent per target file (43 agents, 0 errors, about 4.9 M subagent tokens, 717 tool calls, 79 min), then a close agent wrote the statuses and one log section "2026-10-27 — APPLY1: review findings applied (R1 R2 R4 R5 R7 R8 R8b R9 R11)".
+
+  | Round | applied | partly | not applied |
+  |---|---|---|---|
+  | R1 | 11 | 26 | 1 |
+  | R2 | 25 | 8 | 2 |
+  | R4 | 8 | 28 | 1 |
+  | R5 | 2 | 7 | 1 |
+  | R7 | 0 | 27 | 6 |
+  | R8 | 1 | 8 | 2 |
+  | R8b | 1 | 22 | 3 |
+  | R9 | 5 | 9 | 1 |
+  | R11 | 7 | 13 | 7 |
+  | **Total** | **60** | **148** | **24** |
+
+  "Partly" mostly means the spec text is done and a board, tool, CI or inbox-blocked part remains. Not applied: blocked by an open inbox entry, or a board- or tool-only fix.
+- **Commits:** `ea6a9c9`, `7bf310d`, `50f0baa`, `c5fa121`, `da129ee`, `1d3a61a`, `f8e011d`, `fb8e167` (8 WIP saves while the workflow ran), `d287a85` (log). `727bb44` merged `origin/main` (PRs #4, #5, #7) into integration; the only conflict was the log, both sides kept.
+- **Deferred** (full list in the log section): about 70 boards, CI workflows, tools, site CSS and nav, skills, CLAUDE.md wording, and sections blocked by inbox #11–#26.
+- **Gate:** `mkdocs build --strict` exit 0; `tools/docs/check.py` 0 failures.
+- **Docs:** `docs/progress/W2/APPLY1.md`. doc-reviewer: approve 11/14; its four text changes applied (workflow figures cited from this tick, five "not applied" cases, budget wording, follow-up figure due in T2), log section links back to the step page.
+- **Stopped before R3 and R6 (budget).** Thomas asked for a fresh usage reading before the next reviews.

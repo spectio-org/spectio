@@ -96,6 +96,7 @@ nav:
       - Progress:
           - progress/index.md
       - Specifications:
+          - "MVP 0.0.1": specs/mvp-0.0.1.md
           - Synthesis: specs/synthesis.md
           - UI spec: specs/ui-spec.md
           - Checking scenarios: specs/checking-scenarios.md

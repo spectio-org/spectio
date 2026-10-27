@@ -104,6 +104,17 @@ It never returns secrets.
 | **Run token** | the run's life + 24 h | as above | Issued to a provisioned run (§4) or an engine plugin; ingest only, for that run |
 | **Embed token** | ≤ 1 h | JWT bound to one resource and origin | `api-and-data-model.md` §9 |
 
+### 3.1 Browser hardening
+
+*(assumed — pending Thomas, inbox #23)*
+
+Defaults for every browser page, whatever the mode:
+- **Content Security Policy baseline:** `default-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`. Embed routes replace `frame-ancestors` with the allowed host origins ([`api-and-data-model.md`](api-and-data-model.md) §9). Analytics providers add their origins through the server ([`telemetry-and-analytics.md`](telemetry-and-analytics.md) §4.2).
+- **Trusted Types** required for script sinks (`require-trusted-types-for 'script'`) where the browser supports it **[to be validated: browser support]**.
+- **Markdown** (workflow READMEs from git, descriptions, comments) is rendered sanitised, with no raw HTML. Workflow, sample, process and run names are always rendered as text.
+- **Session fixation.** The session ID is rotated at sign-in (also after a share link or a magic link) and on every privilege change.
+- **Test:** a README containing `<img src=x onerror=…>` does not execute.
+
 ## 4. Pipeline provisioning (passwordless users from a pipeline or LIMS)
 
 depictio's flow (provisioning key → passwordless user → long-lived token → login link at the end) is kept for the user, with tighter mechanics:
@@ -114,7 +125,8 @@ depictio's flow (provisioning key → passwordless user → long-lived token →
    - it **never** returns credentials for an existing admin or for any principal with more rights than the grant;
    - it is rate-limited, compared in constant time and audited.
 3. **The run executes with a run token,** scoped to that run and expiring with it, instead of a one-year token.
-4. **At the end of the run,** Spectio sends a sign-in magic link to the user, by email and in the run's `--result-json`. The link opens the run, or the gate waiting for them.
+4. **At the end of the run,** Spectio sends a sign-in magic link to the user **by email only**. The run's `--result-json`, which the calling service account reads, carries only a **scoped share link** (§2, §2.1): the run or the gate waiting for the user as its resource, the role granted in step 2, and the provisioned email bound to it. It opens that resource with that role, never a full session. A service account therefore cannot sign in as a user who has wider rights than the grant.
+5. **Provisioned principals stay `unverified`** until the emailed sign-in link is used. The first SSO sign-in on an `unverified` principal ends all of its earlier sessions and asks the user to confirm before the identity is linked. This blocks pre-account hijacking, where an attacker provisions an address before its owner signs in ([Sudhodanan & Paverd, USENIX Security 2022](https://www.usenix.org/conference/usenixsecurity22/presentation/sudhodanan)). How SSO identities are matched to principals is owned by §2.
 
 The same flow serves `depictio-cli ingest --user` when Spectio hands a run to depictio: the sink plugin calls depictio's `POST /auth/provision_user` with depictio's key (`api-and-data-model.md` §13.3).
 
@@ -125,11 +137,26 @@ The same flow serves `depictio-cli ingest --user` when Spectio hands a run to de
 - the access-code gate for `public` instances;
 - "Starting your session" in `single` mode.
 
-This is the same order and wording as depictio (`SignInProviders.tsx`, `PublicAccessGate.tsx`).
+This is the same order and wording as depictio (`SignInProviders.tsx`, `PublicAccessGate.tsx`). The depictio audit covers the public-mode splash "Starting a guest session" (`AuthApp.tsx:131,139`, research note `depictio-auth-2026-10-26.md` l.71-72), not a `single`-mode "Starting your session", so wording parity for `single` is **[to be validated]**.
+
+Screens (each drawn at 1440x1180 and 390x844, with no app shell, branded from Administration → Instance → Branding; they are the screens the Playwright cases of §6 target):
+1. **SignIn**, drawn from `GET /auth/config` (§1):
+   - SSO buttons (SAML label from `saml_login_label`), OIDC providers, "Email me a sign-in link", password;
+   - password login disabled shows "This instance signs in with SSO" (depictio says "This instance signs in with Google.", `LoginForm.tsx:224-245`, research note l.174-176);
+   - "Create account" only when `registration_open`;
+   - the `public` access-code gate, then "Continue as guest · read-only";
+   - the `single` "Starting your session" splash, plus the non-loopback case that asks for a token or a `spectio login --print-link` link (§1);
+   - lockout or rate limit with the retry time and a generic error.
+2. **MagicLinkSent:** the neutral "If the address exists, a link is on its way" (§2), resend with a rate-limit countdown, a note when browser binding is on (§2.1).
+3. **MagicLinkConfirm** (`/auth/magic#t=…`): "Continue as `<email>`" with one button (§2.1). States: expired (15 min, "Send a new link"), already used, other browser ("check your email on this device"), rate-limited, rejected `next`. Then a redirect to `next`.
+4. **MustChangePassword** and the password-reset landing.
+5. An **OIDC / SAML callback error** page.
+
+Accessibility: focus starts on the first provider; errors are announced in an `aria-live` region; touch targets are 44 px on the phone ([`ui-spec.md`](ui-spec.md) §4.11).
 
 **Share dialog:** besides users and groups, a "Create link" tab (role, expiry, maximum uses, optional email), with a list of active links and their uses, and a Revoke button.
 
-**Administration → Settings → Sign-in:**
+**Administration → Instance → Settings → Sign-in:**
 - the methods with their status, and test buttons (for example "Send me a test link", "Test SAML metadata");
 - token lifetimes;
 - rate limits;

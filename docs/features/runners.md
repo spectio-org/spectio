@@ -1,6 +1,8 @@
 # Runners
 
-!!! note "Designed: SLURM and the laptop first, Kubernetes next"
+!!! note "Designed; 0.0.1 runs the engines on the same machine only, SLURM and Kubernetes later"
+
+    What ships in which version: [development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version).
 
 A runner is a small program that runs next to the compute. It starts the engine, watches the scheduler, and reports to the server.
 

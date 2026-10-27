@@ -125,35 +125,47 @@ Status: draft v0.1 · 2026-10-25 · author: Thomas Weber (with Claude)
 ## 2. Migration paths between the two tools
 
 1. **Identity, once co-hosted.**
-   - `spectio user import --from depictio` reads depictio's users and groups (`GET /auth/list`, `/groups/list`) with an admin token.
-   - It creates Spectio principals linked as `depictio:user/<id>`, and groups with members, admins, P.I. and `sso_managed`.
+   - `spectio user import --from depictio` reads depictio's users and groups with an admin token: `GET /auth/list` (admin-only), then `GET /groups/list`, then `GET /groups/{id}` for each group. `/groups/list` returns only summaries (`id`, `name`, `description`, `member_count`, `sso_managed`; "no member identities leaked"); members, `admin_ids`, `pi_id` and `pending_pi_email` come only from `GET /groups/{id}`, for sysadmins or members (depictio `0d1aa0a`: `api/v1/endpoints/groups_endpoints/models.py:14-21,39-49`, `groups_endpoints/routes.py:192-198,220-230`; `user_endpoints/routes.py:1462-1477`).
+   - It creates Spectio principals linked as `depictio:user/<id>`, and groups with members, admins, P.I., pending P.I. (`pending_pi_email`) and `sso_managed`.
    - SSO groups match by name and need no import once both use the same identity provider.
 2. **Branding.** Export JSON in depictio, import in Spectio: it is the same model. Or select "Shared with depictio".
 3. **Run history.**
    - depictio's registered `WorkflowRun`s (results directories) can be adopted in Spectio as read-only historical runs.
    - Adoption reads each `run_location` with the shared run-directory readers.
-   - The adopted runs are linked both ways (`depictio:run/<id>` ↔ `spectio:run/<id>`).
-4. **Pipeline identifiers.** depictio template IDs and Spectio workflow version keys are the same string, `<org>/<name>/<version>`, so nothing needs mapping.
+   - Each adopted run stores a `depictio:run/<id>` link on the Spectio side. depictio has no field for the back-reference until request 18 (§3; [`api-and-data-model.md`](api-and-data-model.md) §13.6 rule 4).
+4. **Pipeline identifiers.** depictio template IDs and Spectio workflow version keys use the same string format, `<org>/<name>/<version>`, but the version set is sparse: 41 templates for 32 pipelines, and nf-core/rnaseq has only 3.26.0 (depictio `0d1aa0a`). Spectio maps a workflow version to the closest shipped template not newer than the run, and never passes an unshipped version as `--pipeline-id`, which exits 1 ([`api-and-data-model.md`](api-and-data-model.md) §13.3).
 5. **Ingestion triggers.**
    - For runs launched by Spectio, the hand-off replaces both the `onComplete` hook and `depictio watch`.
    - The hook and watchers stay for folders Spectio does not manage.
-6. **Storage.** One SeaweedFS with buckets `depictio` and `spectio`, each with its own credentials.
+6. **Storage.** One SeaweedFS with depictio's bucket `depictio-bucket` (depictio `docker-compose.yaml:62`, `v1.19.2`) and Spectio's own bucket `spectio`, each with its own credentials; Spectio never holds depictio's root keys. The buckets are never shared: depictio's orphan cleanup deletes every unregistered top-level prefix of its bucket (`api/v1/endpoints/utils_endpoints/core_functions.py:179-189`). How Spectio's credentials are scoped: [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.4. *(assumed — pending Thomas, inbox #22)*
 7. **Deployment.**
    - `compose.depictio.yaml` joins both stacks behind one proxy (`/depictio`, `/spectio`).
    - An umbrella Helm chart later does the same on Kubernetes.
 
 ## 3. Requests to make to depictio (small, reversible)
 
-1. Publish `plotly-upset` and `plotly-complexheatmap` (already planned).
-2. Extract the branding model and theme engine into a small shared package.
-3. Make `API_BASE` configurable in the React client.
-4. Add an OpenAPI-generated TypeScript client.
-5. Let `/auth/me` be called with a token issued for Spectio once trust is configured, or expose the JWKS public key for RS256 verification.
-6. Accept a `--provenance-file` in Workflow Run RO-Crate format, so Spectio can pass its crate directly.
-7. Add `checks_as` beside `renders_as` in catalogue output YAMLs: check presets such as `{kind: outlier, column: pct_mito, by: sample, k: 3}`, validated against `OUTPUT_SCHEMA` like `renders_as`. Spectio reads them as its presets ([`checking-scenarios.md`](checking-scenarios.md) §4).
-8. A runnable recipe entry point without a server, for example `depictio catalog run <module>/<output> <results dir> --out <parquet>`, so the runner computes the same tables at gate time ([`api-and-data-model.md`](api-and-data-model.md) §13.6).
-9. Selection and filter messages for embedded dashboards, next to `depictio:set-color-scheme`: for example `depictio:set-filter {column, values}` and `depictio:selection {key, values}` **[to be validated]** with depictio's maintainers.
-10. Per-file recipes for the tools labs watch during a run (STAR `Log.final.out`, Trim Galore and fastp reports, Salmon `meta_info.json`, mosdepth summaries), with the column names of the MultiQC route ([`checking-scenarios.md`](checking-scenarios.md) §11.6).
-11. One shared nf-core megatest fetcher instead of `scripts/nfcore_megatest.py` and Spectio's `tools/fixtures/megatests.py`, pinning the same release per pipeline.
+Status on 2026-10-26 (depictio `0d1aa0a`; [re-audit](../research/depictio-audit-2026-10-26.md)). Rows marked *assumed* follow a triage assumption that Thomas has not confirmed yet.
 
-Details and file references for 7–11: [research note, 2026-10-26](../research/depictio-qc-integration-2026-10-26.md).
+| # | Request | Status | Evidence / next step |
+|---|---|---|---|
+| 1 | Publish `plotly-upset` and `plotly-complexheatmap` | **Done** | 0.1.0 on PyPI since 2026-10-05 (pypi.org JSON API, upload time 2026-10-05T17:37) |
+| 2 | Extract the branding model and theme engine into a small shared package | Open | `depictio-react-core` is private, `main: src/index.ts` |
+| 3 | Make `API_BASE` configurable in the React client | Open | `packages/depictio-react-core/src/api.ts:22` |
+| 4 | Add an OpenAPI-generated TypeScript client | Open | no generator in any `package.json` |
+| 5 | Let `/auth/me` be called with a token issued for Spectio once trust is configured, or expose the JWKS public key for RS256 verification | Open | no JWKS endpoint (no match for `jwks` under `depictio/api`) |
+| 6 | Per-run provenance, and accept a Workflow Run RO-Crate (WRROC) as `--provenance-file` | Open, reworded | today a flat key/value list, 500 characters per value, stored once per project ([`api-and-data-model.md`](api-and-data-model.md) §13.3 step 5) |
+| 7 | Add `checks_as` beside `renders_as` in catalogue output YAMLs: check presets in the format of [`checking-scenarios.md`](checking-scenarios.md) §4.1, without `from` (it comes from the catalogue output the preset is attached to), for example `{kind: outlier, by: sample, k: 3}` on the `pct_mito` output, validated against `OUTPUT_SCHEMA` like `renders_as`. Spectio reads them as its presets. Sending this request stays with Thomas (inbox #27). *(assumed — pending Thomas, inbox #27)* | Open | no match in `depictio/catalog/` |
+| 8 | A runnable recipe entry point without a server, for example `depictio catalog run <module>/<output> <results dir> --out <parquet>`, so the runner computes the same tables at gate time ([`api-and-data-model.md`](api-and-data-model.md) §13.6) | **Partly done** | a maintainer command exists, `depictio dev recipe run <module>/<name>.py --data-dir --version --output <parquet>` (`depictio/cli/cli/commands/dev.py:17-21`, `commands/recipe.py:17-40`); it skips `dc_ref` sources and exits 0 with no output (`recipe.py:64-74`) |
+| 9 | Extend the existing `depictio-embed` protocol for full dashboards: an inbound `set-filter` and an outbound `selection`; make `frame-ancestors` for `/dashboard/` configurable *(assumed — pending Thomas, inbox #23)* | **Partly done**, reworded (*assumed*) | embeds already post `{source: "depictio-embed", type: "filter" or "ready"}` to the parent (`depictio/viewer/src/embed/EmbedApp.tsx:12-33,69-104`); the only inbound message is `depictio:set-color-scheme` (`viewer/src/lib/embedColorScheme.ts:14,27`); same origin only today ([`api-and-data-model.md`](api-and-data-model.md) §13.6 rule 3) |
+| 10 | Per-file recipes for the tools labs watch during a run (STAR `Log.final.out`, Trim Galore and fastp reports, Salmon `meta_info.json`, mosdepth summaries), with the column names of the MultiQC route ([`checking-scenarios.md`](checking-scenarios.md) §11.6) | **Partly done** | a mosdepth summary recipe exists (`catalog/mosdepth/summary.yaml:14-16`, `**/*.mosdepth.summary.txt`) but depends on `dc_ref` sources; STAR, Trim Galore, fastp and Salmon are open |
+| 11 | One shared nf-core megatest fetcher instead of `scripts/nfcore_megatest.py` and Spectio's `tools/fixtures/megatests.py`, pinning the same release per pipeline | Open | `scripts/nfcore_megatest.py` unchanged |
+| QC-4 | Publish the renderers: a built `@bioplatform/viz` package with a configurable `apiBase` (extends request 2) | Open, restored | [QC research note](../research/depictio-qc-integration-2026-10-26.md) §3 item 4, not carried here before |
+| 14 | `--pipeline-id` falls back to the closest shipped template not newer than the run, the way auto-detection does | New | `run.py:1384-1400`, `templates.py:214-257,291-313` ([`api-and-data-model.md`](api-and-data-model.md) §13.3) |
+| 15 | A `--run-tag` option, `run{id,tag}` in `--result-json`, and project lookup by ID *(assumed — pending Thomas, inbox #22)* | New (*assumed*) | a flat run is named after its directory (`depictio/cli/cli/utils/scan.py:798-825`); `--result-json` has no run ID (`run.py:157-177`); `--project` is a name (`run.py:2918-2925`) |
+| 16 | Recipe-computed collections built from every attached run *(assumed — pending Thomas, inbox #22)* | New (*assumed*) | `--attach-run` recipe collections read the first run only (`run.py:2928-2939`) |
+| 17 | `GET /auth/me` returns `UserBaseUI`, not the full `User` model *(assumed — pending Thomas, inbox #27)* | New (*assumed*) | `user_endpoints/routes.py:600-616` returns `User`, which has a `password` field (`users.py:321-322`) **[to be validated: inference, not executed]** |
+| 18 | `external_refs` on `Project` and `WorkflowRun`, plus `--external-ref` | New | `external_ref` appears nowhere in depictio ([`api-and-data-model.md`](api-and-data-model.md) §13.6 rule 4) |
+
+Request numbers stay stable; 12 and 13 are unused for now.
+
+Details and file references for 7–11: [research note, 2026-10-26](../research/depictio-qc-integration-2026-10-26.md); status evidence: [re-audit, 2026-10-26](../research/depictio-audit-2026-10-26.md).

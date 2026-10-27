@@ -37,6 +37,12 @@ Every feature below is **designed, not built yet**. Each page says what you will
 
     Finished runs become dashboards, with the same accounts.
 
+-   :material-compare-horizontal:{ .lg .sp-c-sky } **[Spectio and other tools](other-tools.md)**
+
+    ---
+
+    A neutral comparison with Seqera Platform, panoptes, FlowO, Galaxy, Flyte and others.
+
 -   :material-api:{ .lg .sp-c-indigo } **[API and CLI](../api/index.md)**
 
     ---

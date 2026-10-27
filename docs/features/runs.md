@@ -1,6 +1,8 @@
 # Runs
 
-!!! note "Designed, planned from 0.1"
+!!! note "Designed; launch, monitoring and relaunch are planned for 0.0.1"
+
+    Runs started from a terminal come later. What ships in which version: [development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version).
 
 - **Launch from a form.** The form is built from the pipeline's own parameter schema (nf-core `nextflow_schema.json`, Snakemake config schemas). The samplesheet is checked before anything starts.
 - **Follow every run** in one table: its stage, its gates, its failures and how long it has been running.

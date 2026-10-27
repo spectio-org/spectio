@@ -37,7 +37,7 @@ This has been tested on a small test pipeline with both engines: after the QC ga
 
 ## What it looks like in a terminal
 
-The same stop and resume, with Snakemake, recorded from a real run:
+The stop Spectio will generate, shown with plain Snakemake (`snakemake --until`), recorded from a real run. Spectio itself is not built yet:
 
 <div class="asciinema-cast" data-cast="assets/casts/synthetic-gate.cast"></div>
 

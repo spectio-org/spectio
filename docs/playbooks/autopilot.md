@@ -194,7 +194,8 @@ Every step leaves its pages (`docs/specs/documentation-system.md` §3). The page
 
 **Outcome:**
 - `changes` sends the step back to `doc-writer`, at most twice, then the step is `blocked`;
-- `approve` lets the step reach `done`, and its PR body is generated from the Progress page.
+- `approve` lets the step reach `done`, and its PR body is generated from the Progress page;
+- the tick appends the `doc-reviewer` verdict line, with its score out of 14, to `.autopilot/journal.md`, and the Progress page records `review_score` and `review_ref` ([documentation-system §3.3](../specs/documentation-system.md#33-the-docs-gate-run-by-autopilot-after-every-step-and-by-ci-on-every-pr) item 6). *(assumed — pending Thomas, inbox #30)*
 
 ## 8. Pull requests and auto-merge
 

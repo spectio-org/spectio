@@ -31,7 +31,7 @@ Source: a shallow clone of `github.com/depictio/depictio` at commit `0d1aa0a` (2
 
 ### 1.2 Templates validated on the same megatests
 - 41 versioned nf-core templates live under `depictio/projects/nf-core/<pipeline>/<version>/`, each with its `template.yaml` and `dashboards/` (`find … -name template.yaml`).
-- Each template has a `megatest.yaml`. It records the AWS megatest run it was validated against, and the tables-only subset fetched by `scripts/nfcore_megatest.py`.
+- 35 of the 38 version templates have a `megatest.yaml`; ampliseq 2.14.0 and 2.16.0 and viralrecon 3.0.0 have none, and the other 3 of the 41 `template.yaml` files are variantbenchmarking category sub-templates (corrected by the [2026-10-26 re-audit](depictio-audit-2026-10-26.md)). It records the AWS megatest run it was validated against, and the tables-only subset fetched by `scripts/nfcore_megatest.py`.
 - Example: `scrnaseq/4.2.0/megatest.yaml` is pbmc8k, 8,767 cells on the Cell Ranger route. That is the same run as Spectio's `tests/fixtures/megatests/scrnaseq/` and the ReviewCells board.
 - **Consequence:** depictio and Spectio fetch the same public data with two tools (`scripts/nfcore_megatest.py` there, `tools/fixtures/megatests.py` here). The two should merge (§3).
 
@@ -44,7 +44,7 @@ Source: a shallow clone of `github.com/depictio/depictio` at commit `0d1aa0a` (2
 
 ### 1.4 Embedding
 - The viewer accepts a colour scheme from a parent frame: `postMessage({type: 'depictio:set-color-scheme', scheme})` (`depictio/viewer/src/lib/embedColorScheme.ts:14`, `viewer/src/main.tsx:159-165`). It is used by the docs embeds today.
-- There is no message for a selection or a filter yet **[to be validated]** (none found by grep on `postMessage`).
+- The embed shell already posts filter selections to its parent: `{source: "depictio-embed", type: "filter", componentId, dcId, filter: {interactive_component_type, column_name, value}}` and `type: "ready"` (`depictio/viewer/src/embed/EmbedApp.tsx:12-33,69-104`). The only inbound message is `depictio:set-color-scheme` (`viewer/src/lib/embedColorScheme.ts:14,27`). Corrected by the [2026-10-26 re-audit](depictio-audit-2026-10-26.md); the first grep missed it.
 
 ### 1.5 Renderers
 - `packages/depictio-react-core` holds `FigureRenderer`, `TableRenderer`, `MultiQCRenderer`, `ImageRenderer`, `JBrowseRenderer`, `MapRenderer` and the `advanced_viz` renderers (research note depictio-frontend-admin).
@@ -67,7 +67,7 @@ Source: a shallow clone of `github.com/depictio/depictio` at commit `0d1aa0a` (2
    - Spectio's review views are depictio renderers plus a thin decision layer: selection, keep / exclude / flag, threshold handles and the sticky changes bar.
    - They share one `BrandTheme`, one chart palette and one set of check-state colours.
 5. **Two-way navigation.**
-   - **A preliminary dashboard at gate time.** `depictio: on: gate:<id>` already exists in §13.3. It is embedded in the review's Dashboard tab.
+   - **A preliminary dashboard at gate time.** `depictio: on: gate:<id>` already exists in §13.3. It is embedded in the review's Dashboard tab. (Corrected by the 2026-10-26 re-audit: embedded only when Spectio is served from depictio's origin, otherwise a deep link; see [`api-and-data-model.md`](../specs/api-and-data-model.md) §13.6 rule 3.) *(assumed — pending Thomas, inbox #23)*
    - **Selection sync** between the two frames, by message. This is new and needs a request to depictio.
    - **Back-links:** a Spectio gate tile on the depictio side links back to the decision.
 
@@ -77,9 +77,9 @@ Source: a shallow clone of `github.com/depictio/depictio` at commit `0d1aa0a` (2
    - Presets such as `{kind: outlier, column: pct_mito, by: sample, k: 3}` or `{kind: min, column: frip, value: 0.2}`, validated against `OUTPUT_SCHEMA` like `renders_as`.
    - Spectio reads them as its check presets ([`checking-scenarios.md`](../specs/checking-scenarios.md) §4).
 2. **A runnable recipe entry point.** Something like `depictio catalog run <module>/<output> <results dir> --out <parquet>`, without a server. The runner then computes the same tables at gate time.
-3. **Selection and filter messages for embeds.** For example `depictio:set-filter {column, values}` and `depictio:selection {key, values}`, next to `depictio:set-color-scheme`.
-4. **Publish the renderers.** A built `@bioplatform/viz` package with a configurable `apiBase` (extends the existing theme-extraction request).
-5. **Per-file recipes for live checks.** STAR `Log.final.out`, Trim Galore and fastp reports, Salmon `meta_info.json`, mosdepth summaries, with the same column names as the MultiQC route. Today STAR and Salmon QC are read only from `multiqc.parquet` (`multiqc/star.yaml`, `multiqc/salmon.yaml`), which exists only at the end of a run ([`checking-scenarios.md`](../specs/checking-scenarios.md) §11.6).
+3. **Selection and filter messages for embeds.** For example `depictio:set-filter {column, values}` and `depictio:selection {key, values}`, next to `depictio:set-color-scheme`. Reworded in [`depictio-ecosystem-reuse.md`](../specs/depictio-ecosystem-reuse.md) §3 request 9: extend the existing `depictio-embed` protocol (§1.4).
+4. **Publish the renderers.** A built `@bioplatform/viz` package with a configurable `apiBase` (extends the existing theme-extraction request). Not carried into ecosystem §3 at first; restored there as QC-4.
+5. **Per-file recipes for live checks.** STAR `Log.final.out`, Trim Galore and fastp reports, Salmon `meta_info.json`, mosdepth summaries, with the same column names as the MultiQC route. Today STAR and Salmon QC are read only from `multiqc.parquet` (`multiqc/star.yaml`, `multiqc/salmon.yaml`), which exists only at the end of a run ([`checking-scenarios.md`](../specs/checking-scenarios.md) §11.6). A mosdepth per-file recipe already exists (`catalog/mosdepth/summary.yaml:14-16`), but it depends on `dc_ref` sources.
 6. **One megatest fetcher.** Merge `scripts/nfcore_megatest.py` and Spectio's `tools/fixtures/megatests.py` into one shared tool. The two sides then pin the same release per pipeline.
 
 ## 4. Open points

@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T06:20:36Z",
+  "updated_at": "2026-10-27T08:12:26Z",
   "current_wave": "W2",
   "steps": {
     "F1": {
@@ -180,12 +180,17 @@
     },
     "APPLY1": {
       "wave": "W2",
-      "status": "pending",
+      "status": "done",
       "attempts": 0,
-      "started_at": null,
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "started_at": "2026-10-27T08:12:26Z",
+      "finished_at": "2026-10-27T09:32:00Z",
+      "outputs": [
+        "docs/specs/*.md (13 specs)",
+        "docs/decisions/log.md",
+        "docs/reviews/*.md (APPLY1 statuses)",
+        "docs/progress/W2/APPLY1.md"
+      ],
+      "notes": "232 findings in 9 rounds: 60 applied, 148 partly, 24 not applied; 43 agents, 0 errors; docs gate pass; doc-reviewer approve 11/14"
     },
     "R3": {
       "wave": "W2",

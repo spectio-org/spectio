@@ -18,9 +18,9 @@ Companion docs:
    - what it really used;
    - why it died;
    - what the cluster can take right now.
-2. **One batched query per runner, not per run.** A runner asks the scheduler once per interval about all jobs of its user and shares the answer across every run. The load on `slurmctld` and `slurmdbd` therefore does not grow with the number of runs, and each layer has a budget an admin can change.
+2. **One batched query per runner, not per run.** A runner asks the scheduler once per interval about all jobs of its user and shares the answer across every run. Spectio's own load on `slurmctld` and `slurmdbd` therefore does not grow with the number of runs. The engines' load does (each Nextflow head runs `squeue` every minute, each Snakemake head `sacct`), so Spectio also budgets the engines per environment and account (§3.2). Each layer has a budget an admin can change.
 3. **Three transports, tried in this order:**
-   - **CLI with JSON output** (`squeue/sacct/sinfo --json`): works everywhere, runs as the user.
+   - **CLI** (`squeue` text format for the periodic poll; `sacct` and `sinfo` `--json` with a pinned data_parser, §3.3): works everywhere, runs as the user. *(assumed — pending Thomas, inbox #28)*
    - **slurmrestd**, when the site offers it.
    - **Push**, when the site enables it: Slurm's `jobcomp/kafka` read through Spectio's Kafka bridge, or HTCondor and Flux event logs.
    
@@ -39,21 +39,21 @@ Companion docs:
 
 | Engine · scheduler | How it tracks jobs | What it does not give Spectio |
 |---|---|---|
-| **Nextflow · SLURM** | `squeue --noheader -o '%i %t' -t all -u $USER` (optionally `-p <queue>`), or `--only-job-state` (SLURM ≥ 24.05, lighter on the controller) when `executor.onlyJobState`; every `executor.queueStatInterval` (default 1 min) (`SlurmExecutor.groovy`, Nextflow docs) | pending reason, estimated start, accounting beyond `trace` (`%cpu`, `peak_rss`), failure class from the scheduler, cluster capacity |
+| **Nextflow · SLURM** | `squeue --noheader -o '%i %t' -t all -u $USER` (optionally `-p <queue>`), or `--only-job-state` without `-u`/`-p` (Nextflow ≥ 26.04, SLURM ≥ 24.05, lighter on the controller) when `executor.onlyJobState` (Nextflow `114f1fe` `docs/reference/config/executor.mdx:76-84`, `SlurmExecutor.groovy:163-166`); every `executor.queueStatInterval` (default 1 min) (`SlurmExecutor.groovy`, Nextflow docs) | pending reason, estimated start, accounting beyond `trace` (`%cpu`, `peak_rss`), failure class from the scheduler, cluster capacity |
 | **Nextflow · Kubernetes** | creates one Kubernetes `Job` per task (default since 26.10; `Pod` before) with labels `nextflow.io/app=nextflow`, `runName`, `taskName`, `processName`, `sessionId`, `queue`; successful pods are deleted (`k8s.cleanup`, default true) | scheduling reasons, image-pull errors, evictions, OOMKilled before the trace is written, quotas, Kueue queue position |
-| **Snakemake · SLURM plugin** | `--slurm-status-command sacct\|squeue` (sacct by default when `MinJobAge` is too low for squeue); first check after 40 s, then +10 s per round without finished jobs up to 180 s; job name = run UUID (`SLURM run ID: …` in the log, optional `jobname_prefix`); comment `rule_<name>_wildcards_<…>`; optional efficiency report | pending reasons, capacity, efficiency during the run (the report comes only at the end) |
+| **Snakemake · SLURM plugin** | `--slurm-status-command`, `sacct` or `squeue` (default `sacct` whenever it is installed, else `squeue`; the plugin only warns when `MinJobAge` is below 3× the first-check interval; plugin `__init__.py:77-97`, `validation.py:157-168`); first check after 40 s, then +10 s per round without finished jobs up to 180 s; job name = `<jobname_prefix>_<run UUID>` (`SLURM run ID: …` in the log; §3.4); comment `rule_<name>_wildcards_<…>`; optional efficiency report; job-name prefix needs plugin ≥ 2.2.0, job arrays ≥ 2.6.0 (plugin CHANGELOG l.133-138, l.45-50) | pending reasons, capacity, efficiency during the run (the report comes only at the end) |
 | **Snakemake · Kubernetes / Kueue plugins** | executor plugins `kubernetes` and `kueue` in the catalogue | to check: pod labels and how status is read |
 | **Head process** | neither engine watches its own head job | Spectio's launcher does (§3.1) |
 
-Nextflow's grid executors also cover LSF, SGE, PBS Pro and others. Snakemake's catalogue lists 28 executor plugins, including `lsf`, `sge`, `htcondor`, `flux`, `kubernetes`, `kueue`, `tes`, `googlebatch`, `aws-batch` and `azure-batch`. Spectio's scheduler plugins sit next to these, not in place of them: the engine still submits the tasks.
+Nextflow's grid executors also cover LSF, SGE, PBS Pro and others. Snakemake's catalogue lists 28 executor plugins, including `lsf`, `sge`, `htcondor`, `flux`, `kubernetes`, `kueue`, `tes`, `googlebatch`, `aws-batch` and `azure-batch`. Spectio's scheduler plugins sit next to these, not in place of them: the engine still submits the tasks. The runner records the engine and plugin versions it finds and turns off a feature whose version floor is not met, with the reason shown in the UI.
 
 ## 2. Five things Spectio asks a scheduler
 
 | Layer | Question | SLURM | Kubernetes | Used in |
 |---|---|---|---|---|
-| **L1 · Head job** | is the engine's head process alive, and where? | `sbatch --parsable` (head job), `squeue -j`, `sacct -j`, `scancel` | head pod or Job: watch, logs, delete | launch, cancel, relaunch, runner restart |
-| **L2 · Waiting** | why is it pending, and until when? | `squeue --me --json` (state, `reason`, `start_time` estimated by the backfill scheduler), `sprio` (priority factors), `sshare -U` (fairshare) | pod condition `PodScheduled=False` (reason, message), events `FailedScheduling`, Kueue `Workload` conditions and visibility positions | task rows, Run detail → Scheduler |
-| **L3 · Outcome** | what did it use, and why did it end? | `sacct --json -j <ids>` (state, exit code, reason, elapsed, `TotalCPU`, TRES requested and used: `mem` max RSS, `gres/gpu`, energy when accounting is enabled) | container `lastState.terminated.reason` (`OOMKilled`, `Error`), Job `BackoffLimitExceeded` / `DeadlineExceeded`, eviction and preemption events, `metrics.k8s.io` usage while running | failure classes, relaunch suggestions, efficiency |
+| **L1 · Head job** | is the engine's head process alive, and where? | `sbatch --parsable` (head job), `squeue -j`, `sacct -j`, `scancel --signal=TERM --full`, then `scancel` after a grace period (synthesis §5ter.3) *(assumed — pending Thomas, inbox #28)* | head pod or Job: watch, logs, delete | launch, cancel, relaunch, runner restart |
+| **L2 · Waiting** | why is it pending, and until when? | `squeue --me` text poll (state, `reason`, `start_time`, §3.2; `--json` for details: `job_state`, `state_reason`, `start_time`, which is the backfill estimate while pending; Slurm `data_parser` v0.0.45 `parsers.c:10066-10069`) *(assumed — pending Thomas, inbox #28)*, `sprio` (priority factors), `sshare -U` (fairshare) | pod condition `PodScheduled=False` (reason, message), events `FailedScheduling`, Kueue `Workload` conditions and visibility positions | task rows, Run detail → Scheduler |
+| **L3 · Outcome** | what did it use, and why did it end? | `sacct --json -j <ids>` (job: `state.current`, `state.reason`, `exit_code`, `time.elapsed`, `time.total`, `tres.requested` / `tres.allocated`; per step: `tres.requested.max` for max RSS, `statistics.energy.consumed` when energy accounting is on; `parsers.c:9050-9063, 9417, 9437-9444`) | container `state.terminated.reason` (`OOMKilled`, `Error`) and exit code; pod `status.reason` `DeadlineExceeded` for Nextflow time limits (set as pod `activeDeadlineSeconds`); the Job's `Failed` condition (`BackoffLimitExceeded`, since Nextflow sets `backoffLimit: 0`) only says that the task failed (Nextflow `114f1fe` `PodSpecBuilder.groovy:415, 493-494, 600`, `K8sTaskHandler.groovy:263`; [PodStatus](https://kubernetes.io/docs/reference/kubernetes-api/workload-resources/pod-v1/#PodStatus): `lastState` is only set after a restart); eviction and preemption events, `metrics.k8s.io` usage while running | failure classes, relaunch suggestions, efficiency |
 | **L4 · Capacity** | can this environment take the launch? | `sinfo --json` (partitions, node states, free CPUs/GPUs, `MaxTime`), `scontrol show reservation`, association and QoS limits (`sacctmgr show assoc where user=$USER`), storage quotas | `ResourceQuota` status (used / hard), `LimitRange`, node pools and allocatable GPUs (needs cluster read), Kueue `ClusterQueue` quota and usage, PVC capacity | Environments, launch pre-flight |
 | **L5 · Reachability** | can the runner talk to the scheduler, and how fast? | command latency and errors, `slurmctld` timeouts | API latency, watch reconnects | Health → Runners |
 
@@ -61,10 +61,15 @@ Nextflow's grid executors also cover LSF, SGE, PBS Pro and others. Snakemake's c
 
 ### 3.1 Head job
 
-On HPC the engine's head process is run as a **head job**: `sbatch` with few resources (e.g. 2 CPUs, 4 GB) and a long walltime, named `spectio-<run_id>`, with `--comment=spectio:<run_id>`. This is the recommended mode because login nodes usually kill long processes.
+On HPC the engine's head process is run as a **head job**: `sbatch` sized from the expected task count (a workflow profile; 2 CPUs and 4 GB for small runs), with `NXF_OPTS -Xmx` at about 75 % of the head's memory, and a long walltime, named `spectio-head-<run_id>-<launch>` (launch = `launches.n`, [`api-and-data-model.md`](api-and-data-model.md) §7) *(assumed — pending Thomas, inbox #12)*, with `--comment=spectio:<run_id>`. The `spectio-head-` prefix (43 characters up to the end of a `run_` ULID) means Snakemake task jobs (named `spectio-<run_id>_<uuid>`, §3.4) never match the head-job prefix. This is the recommended mode because login nodes usually kill long processes. A JVM tracking 100 000 tasks, or a Snakemake DAG of 100 000 jobs, plus the bridge buffers, likely needs more than 4 GB **[to be validated]**; an OOM-killed head ends without `onFlowComplete`.
+
+Job names and comments carry the run ID only, never project, sample or workflow names. Head jobs are submitted with `--export=NONE`, and credentials reach the job as 0600 files in the run directory ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §2.1). *(assumed — pending Thomas, inbox #14)*
+- **Offline head.** Before `sbatch`, the runner does every network-dependent step on the login node: git clone at a pinned commit; Nextflow plugins into `NXF_PLUGINS_DIR` at pinned versions; the `NXF_VER` distribution; container image pre-pull; Snakemake `--conda-create-envs-only`. The head job then runs with `NXF_OFFLINE=true`, and its events leave through the launch-directory spool forwarded by the runner ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.1). Nextflow downloads plugins into `$NXF_HOME/plugins` at start, and "plugin versions MUST be specified in offline mode" (`nf-commons/.../PluginUpdater.groovy:54, 477-478`, Nextflow `114f1fe`). The head also pulls images, builds conda environments and reads the pipeline manifest through the GitHub API, which was rate-limited in the synthetic-pipelines spike. *(assumed — pending Thomas, inbox #28)*
+- **Snakemake heads.** The Snakemake SLURM executor warns against running Snakemake inside a SLURM job ("You are running snakemake in a SLURM job context. This is not recommended … please run Snakemake directly on the login node", `snakemake_executor_plugin_slurm/__init__.py:459-467`, `8c2af56`); whether Snakemake heads use a head job or the service-node alternative is **[to be validated]** in T3. *(assumed — pending Thomas, inbox #28)*
 - **Alternative:** head on a service node allowed by the site, as a plain process supervised by the runner.
-- **Walltime.** The launcher watches the head job's walltime. Twelve hours before the limit it warns, so the user can let it end and resume. Resuming is safe because the engine caches the completed work.
-- **Runner restart.** When a runner restarts, it reconciles: running head jobs from `squeue --me --name 'spectio-*'`, finished ones from `sacct`. No run is lost (synthesis §7 risk register).
+- **Idempotent launch.** Before `sbatch`, the runner looks for the head job's name in its `squeue --me` / `sacct` snapshot (client-side name match, as in Runner restart below) and adopts the job if it exists. A runner that crashed between `sbatch` and its acknowledgement therefore never submits a second head job into the same launch directory. *(assumed — pending Thomas, inbox #12)*
+- **Walltime.** The runner performs a controlled stop well before the head job's limit and, if the policy allows, resubmits the head with `-resume`; a warning alone does not stop a run from being killed overnight. At the limit Slurm waits only `KillWait` between SIGTERM and SIGKILL (default 30 s, `slurm.conf`, Slurm 26.05), which may not be enough to cancel thousands of tasks, leaving orphan jobs **[to be validated]**. Resuming is safe because the engine caches the completed work.
+- **Runner restart.** When a runner restarts, it reconciles: it lists the user's jobs with `squeue --me --json` and keeps those whose name starts with `spectio-head-` and whose comment is `spectio:<run_id>` (filtered client-side, since `--name` only matches exact names: Slurm 26.05.5 `squeue.1:1423-1425`, `src/squeue/print.c:3263-3275`; `sacct --name` too, slurmdbd `as_mysql_jobacct_process.c:1608`), then reads finished head jobs with `sacct --json -j <ids>` for the IDs stored in `scheduler_jobs`. No run is lost ([`synthesis.md`](synthesis.md) §10, main risks) *(assumed — pending Thomas, inbox #29)*.
 
 ### 3.2 Batched observation and budgets
 
@@ -72,23 +77,25 @@ One `SchedulerObserver` per runner keeps a cache of all jobs of its user. Each l
 
 | Query (SLURM) | Default interval | Scope |
 |---|---|---|
-| `squeue --me --json` | 60 s, only while the runner has active runs | every pending and running job of the user, all runs at once |
+| `squeue --me -h -o '%i\|%T\|%r\|%S\|%P\|%N\|%j'` (text, about 100 B per job; `--json` only for detail views) | 60 s, only while the runner has active runs | every pending and running job of the user, all runs at once |
 | `sacct --json -j <ids>` | when jobs leave `squeue`, batched by 200; once more when a run ends | finished jobs only |
 | `sinfo --json`, partitions | 5 min | partitions used by this environment |
 | `scontrol show reservation` | 15 min | maintenance windows |
 | `sshare -U`, `sacctmgr show assoc` | 30 min | fairshare and limits of the user |
 | Storage quotas (`lfs quota -u`, `mmlsquota`, `beegfs-ctl --getquota`, `df` / `df -i`) | 15 min | work and results directories |
 
-- **Back-off.** On a timeout the interval doubles, up to 10 min, and the layer shows as stale in the UI.
+- **Why text for the poll.** `squeue --json` dumps all information ('All information is dumped, even if it would normally not be … most filtering arguments are still used', `squeue` man page, Slurm 26.05): at about 5 KB per job record (estimate), 5 000 active jobs give 25 MB per 60 s poll on a login node. Pending arrays appear as one `123_[5-1000]` record, which the runner expands. The job name (`%j`, last because it may contain the separator) serves the head-job match of §3.1. *(assumed — pending Thomas, inbox #28)*
+- **Back-off.** On a timeout the interval doubles, up to 10 min, and the layer shows as stale in the UI ([`ui-spec.md`](ui-spec.md) §11).
 - **Site policy.** Some sites rate-limit controller RPCs (`SlurmctldParameters=rl_enable`). The admin lowers or switches off any layer in the environment settings, e.g. `observer.squeue_interval: 120s`, `observer.capacity: off`.
-- **One extra call, not one per run.** Spectio's `squeue` adds one call per minute per user on top of the engine's, whatever the number of runs. For L1 and L2 it can replace a Nextflow run's own polling only if a future companion plugin feeds states back; that is not planned.
+- **One extra call, not one per run.** Spectio's `squeue` adds one call per minute per user on top of the engine's, whatever the number of runs. For L1 and L2 it can replace a Nextflow run's own polling only if `nf-spectio` fed scheduler states back into Nextflow; that is not planned. *(assumed — pending Thomas, inbox #28)*
+- **Engine budget per (environment, account).** Spectio enforces: an admission limit on concurrent runs; generated `executor.queueSize`, `submitRateLimit`, `queueStatInterval` and `onlyJobState`, apportioned across the active runs; job arrays where the workflow allows. Why: 50 runs × the default `queueSize` 100 (`AbstractGridExecutor.groovy:68`, Nextflow `114f1fe`) is 5 000 queued jobs for one user, above common `MaxSubmitJobs` association limits **[site-dependent]** and half the default `MaxJobCount` of 10 000; with `rl_enable` (per-user RPC rate limiting: `rl_bucket_size` 30, `rl_refill_rate` 2 per `rl_refill_period` of 1 s; `slurm.conf`, Slurm 26.05), 100 000 non-array `sbatch` calls take about 14 h and share one token bucket with every head's `squeue`. Nextflow treats a polling failure only as a warning (`AbstractGridExecutor.groovy:323-337`); how it treats a rejected `sbatch` (e.g. `QOSMaxSubmitJobPerUserLimit`) is **[to be validated]**.
 
 ### 3.3 Transports
 
 | Transport | When | Notes |
 |---|---|---|
-| **CLI with `--json`** (default) | always on a login node | runs as the user, so it sees exactly what the user is allowed to see; JSON avoids parsing fragile text formats |
-| **slurmrestd** | the site runs it with JWT auth | the OpenAPI plugin versions in use on Slurm 26.05 are `data_parser` v0.0.42 to v0.0.45. The runner reads `GET /openapi/v3` at start and picks the newest version both sides know ([Slurm REST release notes](https://slurm.schedmd.com/rest_release_notes.html)). Lets a runner live off the login node |
+| **CLI** (default) | always on a login node | runs as the user, so it sees exactly what the user is allowed to see; the periodic poll uses a fixed text format (§3.2); JSON for details, with the data_parser chosen by `--json=list` and pinned with `--json=<data_parser>`, because the data_parser plugins also generate the CLI's JSON output and Slurm 26.05 carries v0.0.42–v0.0.45 ([Slurm REST release notes](https://slurm.schedmd.com/rest_release_notes.html)); golden fixtures per parser version (`slurm-versions` profile). slurmrestd incremental queries where available **[to be validated]** *(assumed — pending Thomas, inbox #28)* |
+| **slurmrestd** | the site runs it with JWT auth | the OpenAPI plugin versions in use on Slurm 26.05 are `data_parser` v0.0.42 to v0.0.45. Slurm 25.11 ships `data_parser` v0.0.41 to v0.0.44 (Slurm tag `slurm-25-11-8-1`), so the range shared with 26.05 is v0.0.42 to v0.0.44; the runner negotiates within it. The runner reads `GET /openapi/v3` at start and picks the newest version both sides know ([Slurm REST release notes](https://slurm.schedmd.com/rest_release_notes.html)). Lets a runner live off the login node |
 | **jobcomp/kafka** (push, site-installed) | the site publishes job records to Kafka | `JobCompType=jobcomp/kafka`; JSON job records at completion and, since Slurm 25.05, optionally at start; topic defaults to the cluster name ([jobcomp/kafka guide](https://slurm.schedmd.com/jobcomp_kafka.html)). Spectio's Kafka bridge consumes it, so terminal states and accounting arrive within seconds and `sacct` calls drop |
 | **HTCondor job event logs** | HTCondor | the job event log file can be followed instead of querying the schedd, as `condor_watch_q` does ([man page](https://www.mankier.com/1/condor_watch_q)) |
 | **Flux event logs** | Flux | job event logs can be watched through the Python bindings (`flux.job` watchers) ([Flux docs](https://flux-framework.readthedocs.io/projects/flux-core/en/stable/python/job_submission.html)) |
@@ -99,7 +106,7 @@ One `SchedulerObserver` per runner keeps a cache of all jobs of its user. Each l
 | Engine | Key | Fallback |
 |---|---|---|
 | Nextflow on a grid | task `nativeId` (trace `native_id`, reported by `nf-spectio`) = scheduler job ID | job name `nf-<PROCESS>_(<tag>)` + submit time |
-| Snakemake SLURM | job name = run UUID; Spectio sets `--slurm-jobname-prefix spectio-<run_id>`, then `sacct --name` / `squeue --name`; comment `rule_<rule>_wildcards_<…>` maps a job to the rule | the logger's job submission events |
+| Snakemake SLURM | job name = `<prefix>_<run UUID>`. Spectio sets `--slurm-jobname-prefix spectio-<run_id>` (plugin ≥ 2.2.0) and reads the full name from the `SLURM run ID: …` line the logger receives, then queries `sacct --name <full name>` / `squeue --name <full name>` (exact match). The comment `rule_<rule>_wildcards_<…>` maps a job to the rule (snakemake-executor-plugin-slurm v2.8.0 `__init__.py:473, 483-496`; the UUID is random per invocation, the prefix must match `^[A-Za-z0-9_-]{1,50}$`) | the logger's job submission events |
 | Nextflow on Kubernetes | labels `nextflow.io/runName` + `taskName`; Spectio adds `spectio.io/run-id` through the generated `k8s.pod` label option | — |
 | Job arrays | the parent job ID plus each array element (`<id>_<n>`) are stored n:m with engine attempts (synthesis §2ter) | — |
 
@@ -111,28 +118,31 @@ One `SchedulerObserver` per runner keeps a cache of all jobs of its user. Each l
 |---|---|---|
 | `Priority` | waiting for higher-priority jobs | estimated start (backfill), your fairshare |
 | `Resources` | waiting for free nodes | partition load |
-| `QOSMaxJobsPerUserLimit`, `AssocGrpCPULimit`, `AssocGrpMemLimit`, … | at your group's or QoS limit | which limit, how much is used |
+| `QOSMaxJobsPerUserLimit`, `AssocGrpCpuLimit`, `AssocGrpMemLimit`, … (exact strings from `src/common/job_state_reason.c`, e.g. l.254; match them case-sensitively and fall back to the raw reason) | at your group's or QoS limit | which limit, how much is used |
 | `ReqNodeNotAvail, Reserved for maintenance` | blocked by a maintenance window | reservation start and end |
 | `PartitionTimeLimit` | will never start: walltime above the partition maximum | suggest the right partition or time (pre-flight catches this) |
 | `Dependency`, `DependencyNeverSatisfied` | waiting for another job / will never start | link to that job |
 | `JobHeldUser`, `JobHeldAdmin` | held | who can release it |
 
-**Failure classes** come from the `sacct` state, exit code and reason, or from the Kubernetes container state and events:
+**Failure classes** come from the `sacct` state, exit code and reason, or from the Kubernetes container state and events. The `failure_class` values are owned by [`api-and-data-model.md`](api-and-data-model.md) §7 *(assumed — pending Thomas, inbox #29)*:
 
-| Class | SLURM | Kubernetes | Relaunch suggestion |
-|---|---|---|---|
-| Out of memory | `OUT_OF_MEMORY` | `OOMKilled` | raise memory for this process, sized from max RSS and the attempts so far |
-| Timeout | `TIMEOUT` | `DeadlineExceeded` | raise time; use a longer partition if the limit is reached |
-| Preempted / evicted | `PREEMPTED` | eviction, preemption event | retry is usually enough; avoid preemptible queues or spot nodes for long tasks |
-| Node failure | `NODE_FAIL`, `BOOT_FAIL` | node lost, pod deleted | retry; exclude the node (Snakemake has `exclude_failed_nodes`) |
-| Cancelled by someone else | `CANCELLED by <uid>` | deleted by another principal | show who; no automatic retry |
-| Image or environment | — | `ImagePullBackOff`, `ErrImagePull`, `CreateContainerConfigError` | registry credentials or rate limit, image name |
-| Tool error | `FAILED` with an exit code | `Error` with an exit code | open the task log; no resource change |
-| Engine scheduling fault | — | — | the engine itself lost track of work (Snakemake 9.27.1: "BUG: Out of jobs ready to be started" after a retry raced a checkpoint update); a plain rerun completes |
+| Class | Value | SLURM | Kubernetes | Relaunch suggestion |
+|---|---|---|---|---|
+| Out of memory | `oom` | `OUT_OF_MEMORY` | container `state.terminated.reason` `OOMKilled` | raise memory for this process, sized from max RSS and the attempts so far |
+| Timeout | `timeout` | `TIMEOUT` | pod `status.reason` `DeadlineExceeded` (Nextflow's `activeDeadlineSeconds`), not the Job reason | raise time; use a longer partition if the limit is reached |
+| Preempted / evicted | `preempted` | `PREEMPTED` | eviction, preemption event | retry is usually enough; avoid preemptible queues or spot nodes for long tasks |
+| Node failure | `node_failure` | `NODE_FAIL`, `BOOT_FAIL` | node lost, pod deleted | retry; exclude the node (Snakemake has `exclude_failed_nodes`) |
+| Cancelled by someone else | `cancelled_external` | `CANCELLED by <uid>` | deleted by another principal | show who; no automatic retry |
+| Image or environment | `image` | — | `ImagePullBackOff`, `ErrImagePull`, `CreateContainerConfigError` | registry credentials or rate limit, image name |
+| Tool error | `tool_error` | `FAILED` with an exit code | `Error` with an exit code | open the task log; no resource change |
+| Engine scheduling fault | `engine_fault` | — | — | the engine itself lost track of work (Snakemake 9.27.1: "BUG: Out of jobs ready to be started" after a retry raced a checkpoint update); a plain rerun completes |
+| Container runtime (Apptainer / Singularity) | `image` | — (task log) | — | image pull or conversion failed, `NXF_SINGULARITY_CACHEDIR` missing or over quota, user namespaces unavailable ([`synthesis.md`](synthesis.md) §8): fix the cache directory or pre-pull the image on the login node (§3.1); ask the site about user namespaces. Exact error texts **[to be validated on sind]** *(assumed — pending Thomas, inbox #28)* |
+| Head out of memory | `oom` | head job `OUT_OF_MEMORY` | head pod `OOMKilled` | size the head from the task count; raise its memory and `-Xmx` (§3.1) |
+| Head walltime | `timeout` | head job `TIMEOUT` | head Job `DeadlineExceeded` | controlled stop and resume before the limit (§3.1); a longer partition |
 
 **Classify from the record, not from the exit code alone.** The synthetic scenarios showed that the same cause reaches the engine differently:
 - a time limit on the local executor ends with exit 143 on Nextflow 26.10.3, but with no exit code at all on 25.10.9 (`exitStatus` is `Integer.MAX_VALUE`; the error message is "Process exceeded running time limit");
-- an OOM kill gives 137 locally, but `OUT_OF_MEMORY` with exit code 0:125 under SLURM **[to be validated on sind]**.
+- an OOM kill gives 137 locally, but `OUT_OF_MEMORY` with exit code 0:125 under SLURM **[to be validated on sind]** (consistent with `SIG_OOM 253` in `src/common/slurm_protocol_defs.h:875`, 253 & 0x7f = 125, Slurm 26.05.5).
 
 The engine plugin therefore combines the trace status, the error text, the scheduler record and the exit code (`docs/research/spike-synthetic-pipelines-2026-10-26.md`).
 
@@ -150,17 +160,20 @@ Spectio reports the waste too: for example "17 tasks used under 25 % of their me
 - maintenance reservations that start before the estimated run time ends;
 - storage quota and inode headroom against the estimated output;
 - work directories that the scratch purge policy will delete before a `-resume` (e.g. "files untouched for 30 days are deleted");
+- file-lock support in the launch directory: on file systems without locks Nextflow fails with 'Can't open cache DB … common for network file systems (NFS, Lustre, GPFS, …)' (`cache/DefaultCacheStore.groovy:80-94`, Nextflow `114f1fe`), so such a site cannot resume; fallback `NXF_CACHE_DIR` on a locking file system **[to be validated]** *(assumed — pending Thomas, inbox #28)*;
 - container cache presence.
 
 Each check gives ✓ / ⚠ / ✗, and ✗ blocks the launch unless overridden.
+
+**Purge during a gate.** The purge check does not stop at launch. When a gate opens, the runner records the stage's cached outputs and the purge deadline of their work directories, and the gate shows 'work directory purged in N days'. At Continue, the runner checks a sample of those outputs before resuming, because a partial purge makes `-resume` silently recompute upstream stages or removes a gated stage's outputs. Snakemake counts the jobs to run with `--dry-run`; Nextflow has no command that predicts cache hits **[to be validated]**, so its reused-vs-to-run figure comes from inspecting work directories and the UI labels it an estimate. Spectio never touches files to dodge the purge, which breaks many sites' policies **[site-dependent]**.
 
 ## 4. Kubernetes in detail
 
 - **What the runner watches.**
   - Pods and Jobs in the work namespace with `labelSelector=spectio.io/run-id=<run>` or `nextflow.io/runName=<name>`.
-  - Events for those objects.
+  - Events, watched namespace-wide and filtered by `involvedObject` (Events cannot be selected by the object's labels **[to be validated]**). Events live one hour by default (kube-apiserver `--event-ttl`, 'Default: 1h0m0s', [reference](https://kubernetes.io/docs/reference/command-line-tools-reference/kube-apiserver/)), and `k8s.cleanup` deletes successful pods, so the runner keeps the last terminal state of each pod itself; otherwise a runner offline for more than an hour loses `FailedScheduling` and OOM reasons.
   - The `ResourceQuota` objects of the namespace.
-  - When Kueue is installed: `Workload` objects (conditions `QuotaReserved`, `Admitted`, `Evicted`, `Preempted`) and the visibility API, which gives each pending workload's `positionInLocalQueue` and `positionInClusterQueue`. That API is `/apis/visibility.kueue.x-k8s.io/v1beta2/namespaces/<ns>/localqueues/<q>/pendingworkloads`, behind the `VisibilityOnDemand` feature gate, which is beta and on by default since Kueue v0.9 ([Kueue docs](https://kueue.sigs.k8s.io/docs/tasks/manage/monitor_pending_workloads/pending_workloads_on_demand)).
+  - When Kueue is installed: `Workload` objects (conditions `QuotaReserved`, `Admitted`, `Evicted`, `Preempted`) and the visibility API, which gives each pending workload's `positionInLocalQueue` and `positionInClusterQueue`. The runner discovers the served API versions through `/apis` before use and never hard-codes one: Kueue v0.20.0 no longer serves `kueue.x-k8s.io/v1beta1` ([release mirror](https://newreleases.io/project/github/kubernetes-sigs/kueue/release/v0.20.0)), and the visibility API is `v1beta2` on Kueue ≥ v0.15, `v1beta1` on v0.9 to v0.14 (Kueue `apis/visibility/` at tags v0.13.0 to v0.20.0 and `main` `c331366`). The path is `/apis/visibility.kueue.x-k8s.io/<version>/namespaces/<ns>/localqueues/<q>/pendingworkloads`, behind the `VisibilityOnDemand` feature gate, beta and on by default since Kueue v0.9; pending workloads are returned with a default `limit` of 1 000 ([Kueue docs](https://kueue.sigs.k8s.io/docs/tasks/manage/monitor_pending_workloads/pending_workloads_on_demand)).
   - Volcano and YuniKorn queues can be added as plugins later.
 - **Logs.**
   - The head pod's log is streamed by the runner.
@@ -172,18 +185,23 @@ Each check gives ✓ / ⚠ / ✗, and ✗ blocks the launch unless overridden.
   - Nextflow's trace still gives per-task `peak_rss` and `%cpu`.
 - **Storage.**
   - The work PVC's capacity and usage come from kubelet volume stats, or from `df` in the head pod.
-  - Nextflow on Kubernetes needs a shared (RWX) work directory or Fusion ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.5).
-- **Minimal RBAC for the runner** (namespaced Role):
-  - `pods`, `pods/log`, `events`: get, list, watch;
-  - `jobs`: create, get, list, watch, delete;
-  - `resourcequotas`, `limitranges`: get, list;
-  - `persistentvolumeclaims`: get.
+  - Nextflow on Kubernetes needs a shared (RWX) work directory or Fusion; Snakemake on Kubernetes needs object storage (S3) instead ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.5).
+- **RBAC: two ServiceAccounts.** This section owns them; architecture §7.5 links here.
+  - **Runner** (namespaced Role; creates the engine's head Job and watches):
+    - `pods`, `pods/log`, `events`: get, list, watch;
+    - `jobs`: create, get, list, watch, delete;
+    - `resourcequotas`, `limitranges`: get, list;
+    - `persistentvolumeclaims`: get.
+  - **Engine head** (the head pod's ServiceAccount, namespaced Role), by Nextflow version:
+    - 26.10 creates one `Job` per task (§1): `jobs`: create, delete, get, list, watch; `pods`: get, list, watch; `pods/log`: get;
+    - 25.10 creates `Pod`s: `pods`: create, delete, get, list, watch; `pods/log`: get.
   
-  Optional, each enabling one more piece of information:
+  Optional for the runner, each enabling one more piece of information:
   - a ClusterRole for `nodes` (get, list) to show node pools and GPUs;
   - `visibility.kueue.x-k8s.io` `localqueues/pendingworkloads` (get, list, watch) for queue positions.
   
-  Without them the UI says "not visible with the runner's permissions" rather than showing zeros.
+  Without them the UI says "not visible with the runner's permissions" rather than showing zeros. Nextflow's required permissions are **[to be validated]** ([Nextflow on Kubernetes](https://docs.seqera.io/nextflow/kubernetes)); 25.10 needing `pods: create` is **[to be validated on k8s-mini]**; both are checked in T4.
+- **Kueue and Nextflow.** Nextflow builds Kubernetes Jobs from the pod metadata (`buildAsJob`, `nf-k8s/.../PodSpecBuilder.groovy:597-616`) and uses Jobs by default (`K8sConfig.groovy:224`, Nextflow `114f1fe`). Spectio writes the Kueue queue-name label through the `k8s.pod` labels it generates. On Nextflow 25.10, which creates Pods, Kueue sees tasks only through its opt-in pod integration **[to be validated]**.
 
 ## 5. Other schedulers
 
@@ -215,7 +233,7 @@ Command names and flags for LSF, PBS, Grid Engine and HTCondor are to be checked
 
 ## 7. Monitoring beyond the scheduler
 
-- **Engine liveness.** The `nf-spectio` heartbeat and the logger's events. When they stop while the head job is still `RUNNING`, the run shows as "head silent" and the runner checks the head's log.
+- **Engine liveness.** When no event arrives from the engine plugin for 5 min (idle heartbeats included; the heartbeat is part of the ingest contract, api §14, proposed every 60 s as `nf-tower` sends its heartbeat every minute, synthesis §2bis; pending inbox #11) while the last `squeue` snapshot shows the head job `RUNNING`, the run carries the flag "head silent" ([`ui-spec.md`](ui-spec.md) §11; a flag, not a state, api §7.1) and the runner checks the head's log. *(assumed — pending Thomas, inbox #28)* When heartbeats still arrive but report internal errors or stalled hook counters, the run shows 'bridge degraded' instead ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.3). *(assumed — pending Thomas, inbox #28)*
 - **Storage.** Quotas and inodes (Lustre, GPFS, BeeGFS, NFS), free space on the work directory, and scratch purge policies with the work directories at risk. Quotas are the most common cause of failed nf-core runs that a scheduler does not explain.
 - **Software.**
   - Apptainer / Singularity cache size and `NXF_SINGULARITY_CACHEDIR` presence.
@@ -226,13 +244,15 @@ Command names and flags for LSF, PBS, Grid Engine and HTCondor are to be checked
 
 ## 8. Data model and events
 
+The contracts (tables, events, endpoints) are owned by [`api-and-data-model.md`](api-and-data-model.md) §5, §7 and §8; this section explains them. *(assumed — pending Thomas, inbox #29)*
+
 - **`scheduler_jobs`.** Columns:
   - identity: `id`, `environment_id`, `runner_id`, `native_id`, `array_parent_id`, `kind` (head / task);
-  - links: `run_id`, `task_attempt_id`;
+  - links: `run_id`; engine attempts through the n:m `attempt_jobs` table (api §7) *(assumed — pending Thomas, inbox #29)*;
   - queue state: `state`, `reason`, `queue` (partition), `nodes`;
   - timing: `submit_at`, `est_start_at`, `start_at`, `end_at`;
   - resources: `requested` {cpus, mem, gpus, time}, `used` {cpu_time, max_rss, gpu, energy};
-  - outcome: `exit_code`, `failure_class`, `raw_ref` (the last raw record, in the file store);
+  - outcome: `exit_code`, `failure_class`, `raw_ref` (the last raw record, in the file store, kept only for failed jobs) *(assumed — pending Thomas, inbox #28)*;
   - project ownership: `project_id`, as on every tenant table.
 - **`environment_snapshots`.** `environment_id`, `taken_at`, `capacity` JSON (partitions, limits, quotas, reservations). Kept 30 days for "usual wait at this time" hints.
 - **Events.**
@@ -275,7 +295,7 @@ The observer's settings follow the common model ([`architecture-plugins-and-pack
   - relaunch suggestions with "Apply to relaunch";
   - the raw record of a job;
   - a data source footer (which queries, how often, last update).
-- **Environment → Capacity** (board `EnvCapacity`):
+- **Environment → Capacity** (board `EnvCapacity`, a tab of the environment page ([`ui-spec.md`](ui-spec.md) §4.8)):
   - partitions (node states, free CPUs and GPUs, maximum walltime, your jobs, estimated wait);
   - your limits and fairshare;
   - storage quotas and the purge risk;
@@ -289,7 +309,7 @@ The observer's settings follow the common model ([`architecture-plugins-and-pack
 
 | Phase | SLURM | Kubernetes | Others |
 |---|---|---|---|
-| MVP | head job (L1), `squeue --me --json` (L2), `sacct` for outcomes (L3), failure classes | head Job, watch, pod reasons and OOMKilled | — |
+| MVP | head job (L1), `squeue --me` poll (L2), `sacct` for outcomes (L3), failure classes | head Job, watch, pod reasons and OOMKilled | — |
 | 1b | capacity (L4), quotas, reservations, pre-flight, relaunch suggestions | ResourceQuota, PVC usage, pre-flight | — |
 | 2 | slurmrestd transport, `jobcomp/kafka` via the Kafka bridge | Kueue visibility, metrics-server, Prometheus plugin | LSF, PBS Pro / OpenPBS, HTCondor, Flux plugins |
 | 3 | energy and carbon | OpenCost | Grid Engine, cloud batch |
@@ -301,6 +321,8 @@ The observer's settings follow the common model ([`architecture-plugins-and-pack
 3. Does the site rate-limit `squeue` and `sacct`, and is `jobcomp/kafka` an option?
 4. What are the scratch file system, quota command and purge policy?
 5. Is Kueue (or another batch queue) installed on EMBL's Kubernetes, and can runners read node pools?
+6. Is outbound HTTPS allowed from compute nodes, and through which proxy? (decides whether the bridges' direct post works; [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.1) *(assumed — pending Thomas, inbox #28)*
+7. Does the site set `PrivateData=jobs`, and is `AccountingStoreFlags=job_env` enabled in slurmdbd? ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §2.1) *(assumed — pending Thomas, inbox #14)*
 
 ## Sources
 

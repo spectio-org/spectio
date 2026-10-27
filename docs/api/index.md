@@ -3,7 +3,9 @@ icon: material/api
 ---
 # API and CLI
 
-!!! note "Designed, planned from 0.1"
+!!! note "Designed; WES, MCP and embedded elements come after 0.0.1"
+
+    What ships in which version: [development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version).
 
 Everything the web interface does can be done from a script, a LIMS such as LabID, a CI job or an AI agent.
 
@@ -14,14 +16,17 @@ Everything the web interface does can be done from a script, a LIMS such as LabI
 
 ```bash
 # launch, wait, keep the IDs
-spectio run launch nf-core/rnaseq@3.27.0 --env demo-hpc --project liver-tc \
+spectio run launch nf-core/rnaseq/3.27.0 --env demo-hpc --project liver-tc \
   --params params.yaml --samplesheet samples.csv --wait --result-json run.json
 
 # what is waiting for me, then decide
 spectio gate list --assigned-to me
-spectio gate decide gate_01JB… --approve --exclude S03 --comment "S03: 40 reads"
+spectio gate decide gate_01JB… apply --exclude S03 --comment "S03: 40 reads"
 ```
 
 The commands above show the planned CLI; they do not exist yet.
+
+- Pipelines are named `<org>/<name>/<version>`; `<org>/<name>@<version>` is accepted as CLI input only. *(assumed — pending Thomas, inbox #29)*
+- A gate decision is one of `approve | apply | go_back | stop`; reassigning and waiting are gate operations, not decisions. *(assumed — pending Thomas, inbox #29)*
 
 Design details: [API and data model](../specs/api-and-data-model.md), [CLI and shared libraries](../specs/cli-and-shared-libraries.md).

@@ -63,16 +63,19 @@ propose which ones become spikes in phase D/T.
 ### R3 · End-to-end journeys (finding gaps)
 
 ```text
-/review-round R3-journeys "Walk these journeys step by step through the specs and the
-UI boards, and report every step that is not specified (screen, endpoint, event,
-permission, state, error): (1) a single researcher installs the Python bundle on a
-laptop, connects a runner on the EMBL login node, launches nf-core/rnaseq with a gate,
-excludes two samples and resumes; (2) a core facility with OIDC, three groups, a
-reviewer who is not the launcher, a depictio hand-off at the end; (3) LabID launches
-headless with labid:// inputs, a robot signals a gate over MQTT, results come back as
-RO-Crate; (4) an admin restores last night's backup after a bad upgrade while two runs
-are active; (5) a phone-only reviewer approves a gate. Use spec-reviewer for (1)(2),
-constraints-hunter for (3)(4), ux-reviewer for (5) and to render every board touched."
+/review-round R3-journeys "Scope: version 0.0.1 only (docs/specs/mvp-0.0.1.md and
+dev-environment-and-testing.md §15): one user, no sign-in, engines on the same machine.
+Walk these journeys step by step through the specs and the UI boards, and report every
+step that is not specified (screen, endpoint, event, state, error): (1) a researcher
+installs the Python bundle on a laptop, registers nf-core/rnaseq, launches it with a QC
+gate after the first stage, reads the checks, approves and the run continues; (2) the
+same with a Snakemake workflow, where the gate fails, the researcher changes two
+parameters and relaunches, then compares the two runs' parameters; (3) a run fails on
+one task: the researcher finds the failing task, reads its log and relaunches from the
+cache; (4) the server restarts while a run is active, and the run's state, tasks and
+stages are still right afterwards. Use spec-reviewer for (1)(2), constraints-hunter for
+(3)(4), and ux-reviewer to render every board touched. Out of scope: users, roles,
+SLURM, Kubernetes, depictio, LabID, phones."
 ```
 
 ### R4 · Implementation constraints and risks
@@ -102,11 +105,13 @@ the findings plus a draft docs/specs/security-and-threat-model.md for me to revi
 ### R6 · API contract against the UI
 
 ```text
-/review-round R6-contract "Draft an OpenAPI 3.1 skeleton (paths, schemas, no
-implementation) from api-and-data-model.md, admin-and-operations.md §5 and
-schedulers-and-monitoring.md §8 into spikes/openapi-draft/openapi.yaml on a spike
-branch. Then use ux-reviewer to check that every number, list and action on every
-board in design/ui-canvas can be served by that contract, and spec-reviewer to find
+/review-round R6-contract "Scope: version 0.0.1 only (docs/specs/mvp-0.0.1.md and
+dev-environment-and-testing.md §15). Draft an OpenAPI 3.1 skeleton (paths, schemas, no
+implementation) for the 0.0.1 features only (workflows, launch, runs, tasks, stages,
+events/SSE, relaunch with parameters, parameter history, checks and gates) from
+api-and-data-model.md into spikes/openapi-draft/openapi.yaml on a spike branch. Then use
+ux-reviewer to check that every number, list and action on the boards listed in
+mvp-0.0.1.md §2 can be served by that contract, and spec-reviewer to find 0.0.1
 endpoints the spec mentions but the draft cannot express. Report missing or
 inconsistent fields as findings."
 ```
@@ -164,8 +169,9 @@ tools/media. Write findings with prefix DOC- to docs/reviews/R11-docs.md. Do not
 ```text
 Read every docs/reviews/R*.md. Make one table of open findings by severity and spec,
 and confirm that all blockers are applied or explicitly deferred with a reason. Then
-propose: (1) the MVP cut (what is in the first usable release, what is not), as a
-walking skeleton that crosses every layer once; (2) the list of open questions for EMBL
+propose: (1) the MVP cut: the first usable release is 0.0.1, decided by Thomas
+(docs/specs/dev-environment-and-testing.md §15); check that cut against the open
+findings and list which blockers it defers; (2) the list of open questions for EMBL
 IT (cluster, Kubernetes, storage, auth); (3) a go / no-go with the conditions. Write
 docs/reviews/R10-synthesis.md and stop for my decision.
 ```
@@ -242,7 +248,9 @@ Make the documentation system run by itself, following docs/specs/documentation-
 §1, §7 and §8. Wire tools/docs/check.py into docs.yml as the required checks docs-gate
 and pr-body; deploy the site with mike (dev from main, X.Y on release, aliases latest
 and stable) on the Cloudflare previews of D5 (versions side by side, /versions page);
-evaluate Zensical against this site; add hooks/progress.py
+evaluate Zensical against this site; adopt depictio's size hook hooks/shared_images.py
+before the first mike version or when docs/assets passes 50 MB
+(documentation-system.md §1); add hooks/progress.py
 outputs to the build check. Settle the Virgil font licence (tools/diagrams/FONT-LICENSE.md)
 or switch fonts, and make the figure scripts render the same PNGs in CI. Draw the figures
 tracked from F4 and F6 (a magic-link and share-link sketch: hash at rest, atomic burn,
@@ -250,52 +258,71 @@ scope claim; the three telemetry systems and where their data goes). Open a PR w
 body follows the template and passes the pr-body check, with the autopilot-loop figure.
 ```
 
+`hooks/shared_images.py` is a D6 deliverable with a 50 MB threshold *(assumed — pending Thomas, inbox #30)*.
+
 ## Phase T — test infrastructure
 
 ### T1 · Fixture workflows
 
 ```text
-Use test-architect. Create tests/fixtures/workflows/nf-toy and smk-toy as specified in
-dev-environment-and-testing.md §3 (stages, gate points, failure injection params,
-fan-out, job array, Snakemake checkpoint). Prove each failure mode locally with the
-local executor and record the engine outputs (Nextflow trace, Snakemake log) as golden
-fixtures named with the tool version.
+Use test-architect. The fixture workflows are the synthetic pipelines in
+tests/pipelines/synthetic (dev-environment-and-testing.md §3 and §10.1: stages, gate
+points, failure injection, fan-out, job arrays in the slurm profile, the Snakemake
+checkpoint). Prove each failure mode locally with the local executor and record the
+engine outputs (Nextflow trace, Snakemake log) as golden fixtures named with the tool
+version. Also run the gate stop-and-resume check on the nf-core/rnaseq and nf-core/sarek
+test profiles with the local executor (dev-environment-and-testing.md §3) and record
+cached-task counts and exit codes.
 ```
+
+The synthetic pipelines of `dev-environment-and-testing.md` §10.1 replace the separate `nf-toy` and `smk-toy` fixtures in T1–T4 and P1 *(assumed — pending Thomas, inbox #28)*. The rnaseq and sarek stop-and-resume check runs here, on the local executor; `ui-spec.md` §5.1 owns the pipeline requirements and the "gates unavailable" state *(assumed — pending Thomas, inbox #28)*.
 
 ### T2 · Engine event capture (golden fixtures) ∥
 
 ```text
-/spike engine-events "Run nf-toy with a minimal TraceObserverV2 plugin (a first
+/spike engine-events "Run the synthetic Nextflow pipeline
+(tests/pipelines/synthetic/nextflow) with a minimal TraceObserverV2 plugin (a first
 nf-spectio) that posts every event to a tiny capture server (write both under
 spikes/engine-events/, the server ~50 lines, logs every request body), on
 Nextflow 25.10 and 26.10, including a failed task, a retry and -resume. Run it once
 more with -with-tower pointed at a second capture endpoint, and check that both
-observers report the same run (docs/decisions/0001). Do the same for
-smk-toy with a minimal Snakemake logger plugin that writes every event as JSON,
-including a checkpoint. Save every payload as a golden fixture. Compare what arrives
-with synthesis.md §2bis/§2ter and report every difference."
+observers report the same run (docs/decisions/0001). Do the same for the synthetic
+Snakemake pipeline (tests/pipelines/synthetic/snakemake) with a minimal Snakemake logger
+plugin that writes every event as JSON, including a checkpoint. Save every payload as a
+golden fixture. Also record `event.handler.task.outputs` in `onTaskComplete` and the
+order of `onProcessTerminate` events in the golden fixtures (checking-scenarios.md
+§11.1, §11.5). Compare what arrives with synthesis.md §2bis/§2ter and report every
+difference."
 ```
+
+Fixtures: the synthetic pipelines (see T1) *(assumed — pending Thomas, inbox #28)*.
 
 ### T3 · Mini SLURM with sind ∥
 
 ```text
 Use test-architect and infra-engineer. Create the sind profiles slurm-mini, slurm-site
 and slurm-rest from dev-environment-and-testing.md §4.1 (partitions, slurmdbd,
-association limits, a maintenance reservation, slurmrestd with JWT). Run nf-toy and
-smk-toy on slurm-site with each failure mode; record squeue --json, sacct --json,
+association limits, a maintenance reservation, slurmrestd with JWT). Run the synthetic
+pipelines (Nextflow -profile slurm, Snakemake --workflow-profile profiles/slurm) on
+slurm-site with each failure mode; record squeue --json, sacct --json,
 sinfo --json and slurmrestd responses as golden fixtures; check each pending reason and
 failure class in schedulers-and-monitoring.md §3.5 actually appears, and power-cycle a
 node to get NODE_FAIL. Report what the spec gets wrong.
 ```
 
+Fixtures: the synthetic pipelines (see T1) *(assumed — pending Thomas, inbox #28)*.
+
 ### T4 · kind and Kueue ∥
 
 ```text
 Use test-architect. Create k8s-mini and k8s-kueue (§4.2). Run nf-core/demo -profile
-test,docker and nf-toy with the k8s executor; capture pod and Job objects, events,
-OOMKilled, and Kueue Workload conditions and visibility positions as fixtures. Verify
-the RBAC in schedulers-and-monitoring.md §4 is sufficient and minimal.
+test,docker and the synthetic Nextflow pipeline with -profile k8s; capture pod and Job
+objects, events, OOMKilled, and Kueue Workload conditions and visibility positions as
+fixtures. Verify that both ServiceAccounts in schedulers-and-monitoring.md §4 (runner,
+and engine head for Nextflow 25.10 and 26.10) are sufficient and minimal.
 ```
+
+Fixtures: the synthetic pipelines (see T1) *(assumed — pending Thomas, inbox #28)*.
 
 ### T5 · Scenario runner and isolation
 
@@ -332,17 +359,24 @@ with snakemake-github-action. Keep the synthetic suite green on all three engine
 
 ## Phase P — decomposition and planning
 
-### P1 · Walking skeleton plan
+### P1 · Walking skeleton plan (0.0.1, local MVP)
 
 ```text
-Use the brainstorming skill, then the writing-plans skill. Goal: the thinnest
-end-to-end slice. `spectio serve` (SQLite, single-user) receives a Nextflow run of nf-toy
-through the nf-spectio plugin and a Snakemake run of smk-toy through the Spectio
-logger plugin, from a runner on slurm-mini. It shows them in the Runs table and Run
-detail, runs the checks of one stage, stops at a gate, and resumes after an approve
-from the UI. The depictio hand-off and everything else are out of scope. The plan must list files, tests first (TDD), and the verification
-command for every task. Write docs/plans/P1-walking-skeleton.md.
+Use the brainstorming skill, then the writing-plans skill. Goal: the 0.0.1 cut of
+docs/specs/dev-environment-and-testing.md §15 (summary: docs/specs/mvp-0.0.1.md).
+`spectio serve` (SQLite, single-user, no sign-in) launches the synthetic Nextflow
+pipeline through the nf-spectio plugin and the synthetic Snakemake pipeline through the
+Spectio logger plugin, both on the local executor of the same machine. It shows them in
+the Runs table and Run detail with their state, tasks and stages, runs the checks of one
+stage, stops at a gate, and resumes or relaunches with changed parameters after an
+approve from the UI. The parameter history
+(what each run used, what changed) is shown. Out of scope: slurm-mini and any remote
+runner, authentication, the depictio hand-off, and everything else §15 defers. The plan
+must list files, tests first (TDD), and the verification command for every task. Write
+docs/plans/P1-walking-skeleton.md.
 ```
+
+Fixtures: the synthetic pipelines (see T1) *(assumed — pending Thomas, inbox #28)*.
 
 ### P2 · Milestone plans ∥
 
