@@ -2,7 +2,7 @@
 
 **Step page:** [R9](../progress/W1/R9.md)
 
-**Round:** R9 (prior art and landscape, again) · **Date:** 2026-10-26 · **Found by:** fact-checker and constraints-hunter, in parallel · **Status of the round:** waiting for triage (TRIAGE1)
+**Round:** R9 (prior art and landscape, again) · **Date:** 2026-10-26 · **Found by:** fact-checker and constraints-hunter, in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 9 accepted, 0 rejected, 8 inbox (6 assumed)
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l.") refer to that commit.
@@ -108,7 +108,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
   - Add a Snakemake run-crate sniffer to `bioplatform-runinfo` (cli-and-shared-libraries.md) and to depictio-ecosystem-reuse.md.
 - **Related:** FC-041 (versions to pin when merging), CH-035 (R4, crate size), SEC-110 (R5, validating imported crates).
 - **Found by:** fact-checker (FC-101)
-- **Status:** open
+- **Status:** inbox, assumed: name `snakemake-report-plugin-rocrate` in synthesis §7quinquies as the Snakemake counterpart of nf-prov (unreleased 0.1.0, [to be validated]); Spectio's event-store builder stays the primary path, the plugin is an optional input once it is on PyPI; add a Snakemake run-crate sniffer to the `bioplatform-runinfo` row and to depictio-ecosystem-reuse — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### FC-039 · major · The Snakemake adapter must add `spectio` to the user's loggers, not replace them
 
@@ -128,7 +128,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
 - **Cheapest test** (15 min, R9 spike 1): on `smk-toy`, use a profile with `logger: [snkmt]` and run `--logger spectio`; then `--logger snkmt --logger spectio`; then the API path with one handler. Check whether the snkmt database receives rows each time.
 - **Related:** CH-009 (R4) on CLI vs API process model; SR-006 (R1) on the enabling commands.
 - **Found by:** constraints-hunter (FC-203)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-040 · major · Spectio cannot pin Snakemake: a supported version range and a contract test are needed
 
@@ -150,7 +150,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
 - **Cheapest test** (half a day, R9 spike 2): a `uv` matrix that installs Snakemake 9.2, 9.10, 9.23 and 9.27.1, loads a stub logger with `has_filter=True`, and runs `smk-toy`. Merge it with CH-009's test.
 - **Related:** CH-009 (R4) proposes "Snakemake ≥ 9.0 and logger interface 1.x and 2.x, tested in CI". This finding proposes one interface major. Thomas picks one (Questions, item 5); triage both together.
 - **Found by:** constraints-hunter (FC-204)
-- **Status:** open
+- **Status:** inbox, assumed: same range as CH-009: Snakemake ≥ 9.0 and logger interface 1.x and 2.x (`>=1.2,<3`), plus two tested Snakemake versions (minimum and latest) in dev-env §1, the interface test suite and the event replay on both (dev-env §6), and a runner warning outside the range; spike 2 confirms — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### FC-041 · major · RO-Crate and WRROC versions are not pinned, and WRROC 0.6 breaks compatibility
 
@@ -170,7 +170,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
   - The Provenance profile is claimed only when per-step `HowToStep` / `ControlAction` entities are present. Sapporo's `docs/ro-crate.md` explains why it does not claim that profile.
 - **Related:** CH-035 (R4, crate size), DL-107 (R8, depictio's provenance file and WRROC).
 - **Found by:** fact-checker (FC-102)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-042 · major · The Snakemake monitoring landscape has moved: logger plugins, an active panoptes, and FlowO
 
@@ -191,7 +191,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
 - **Likelihood · impact:** certain that it is stale · medium (messaging, and which features feel new).
 - **Cheapest test:** install FlowO from its Compose file for 30 minutes to confirm it has no steering, since only the sdist and docs were read.
 - **Found by:** fact-checker (FC-104), constraints-hunter (FC-202)
-- **Status:** open
+- **Status:** inbox, assumed: update the Snakemake tool list in synthesis §2 and the corrected rows (FlowO, panoptes) on the comparison page of FC-047, and say "no gate-and-steer tool for Snakemake" instead of "no incumbent"; no contact with the FlowO maintainers and no upstream docs PR until Thomas answers — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### FC-043 · major · Flyte 2 now runs nf-core pipelines with pause-until-signal; the "niche is open" verdict needs a precise boundary
 
@@ -219,7 +219,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
 - **Likelihood · impact:** high that a reviewer or design partner raises it · medium on positioning, none on the architecture.
 - **Cheapest test** (1 h of code reading, R9 spike 4): can `flyteplugins-nextflow` use a POSIX `work_dir` on a cluster with the Slurm connector? If yes, the differentiators narrow to Snakemake, the user's identity and item-level review.
 - **Found by:** constraints-hunter (FC-201)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-044 · minor · The WES facade does not say which dialect it speaks
 
@@ -237,7 +237,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
   - When the facade ships stays with SR-010. The landing strip shows WES only once it ships (as SR-010 already proposes).
 - **Related:** SR-010 (stage and under-specification), SR-016 (state mapping) in R1.
 - **Found by:** fact-checker (FC-108); constraints-hunter (WES part of FC-208)
-- **Status:** open
+- **Status:** inbox, assumed: api §10 declares strict WES 1.1.0 (`NFL` / `SMK`, `/tasks` from the task table, bearer tokens); Sapporo 2.x compatibility is a non-goal and "Sapporo-style" / "a Sapporo … client" are dropped from synthesis §7quinquies and §7quater; when the facade ships stays with SR-010 — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### FC-045 · minor · nf-prov must be pinned per Nextflow version; Nextflow's lineage store is not considered
 
@@ -250,7 +250,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
   - synthesis §7quinquies: the generated config pins nf-prov by Nextflow version (1.7.x on 25.10, 1.8.x on 26.10), and the CI matrix (dev-env §11) covers both.
   - architecture §3.6: Nextflow lineage as an optional, experimental input to the post-hoc collector, **[to be validated]** in a spike.
 - **Found by:** fact-checker (FC-103)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-046 · minor · Synthesis §3 "Standards and existing projects" is out of date; Galaxy is more than "a minimal WES"
 
@@ -266,7 +266,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
   - Update the rows and link to the [research note](../research/landscape-2026-10-26.md). Add: "Galaxy WES (MIT): reference for the facade's pydantic models"; "Sapporo `ro_crate.py` and compatibility matrix: reference"; "nf-shard: unmaintained since 2024"; a Flyte 2 row.
   - Record a later `spectio.engine` "galaxy" adapter, mapping `PauseModule` onto Spectio gates, under the roadmap's ideas. It stays out of the MVP.
 - **Found by:** fact-checker (FC-107), constraints-hunter (FC-208)
-- **Status:** open
+- **Status:** inbox, assumed: refresh the synthesis §3 rows (Galaxy WES MIT as a model reference, nf-shard unmaintained since 2024, Funnel and TESK, Sapporo, a Flyte 2 row) with a link to the landscape note; the Galaxy engine adapter is not added to the roadmap until Thomas answers — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### FC-047 · minor · No spec owns the "Spectio and other tools" page, and synthesis §7quater's comparison is out of date
 
@@ -280,7 +280,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
   - Re-check the page at each release stage (dev-env §14) and every quarter.
   - synthesis §7quater keeps only Spectio's own modes and links to that page.
 - **Found by:** fact-checker (FC-105), constraints-hunter (FC-210)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-048 · minor · TRS: be a client before being a server
 
@@ -293,7 +293,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
 - **Proposal:** api §10 adds "TRS client: register a workflow from a TRS URL (NFL/SMK)" next to the RO-Crate import. The TRS server stays for later. Whether WorkflowHub's TRS endpoint serves Nextflow and Snakemake entries is **[to be validated]**.
 - **Related:** SEC-110, SEC-118 (R5): imports and outbound HTTP need validation and an SSRF policy.
 - **Found by:** fact-checker (FC-109)
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### FC-049 · minor · `drs://` can be passed through to Nextflow; the resolver is mainly for Snakemake
 
@@ -305,7 +305,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
 - **Problem:** staging DRS objects through Spectio's resolver duplicates engine-native resolution for Nextflow and wastes storage. It is still needed for Snakemake.
 - **Proposal:** the resolver section (architecture §2, api §3) says that for Nextflow runs `drs://` is passed through to `nf-ga4gh`, with the resolver used only for pre-flight checks and checksums. For Snakemake, the resolver stages the object.
 - **Found by:** fact-checker (FC-110)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-050 · minor · The roadmap promises "TES interfaces", but TES is reached only through the engines
 
@@ -321,7 +321,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
   - schedulers §5: a later "TES environment" entry (executor config, plus task state through TES `GET /tasks`), with the Snakemake plugin's staleness as a risk.
 - **Related:** SR-010 (R1) also moves the roadmap's WES item to a stage; apply both in one edit.
 - **Found by:** fact-checker (FC-111)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-051 · minor · "Partial compatibility with the Seqera API" contradicts decision 0001
 
@@ -334,7 +334,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
 - **Problem:** emulating the Seqera API so that Seqera's own clients drive Spectio is the replacement positioning that decision 0001 rejected. The older log entry still lists it as planned.
 - **Proposal:** mark §7bis item 6 "not planned (decision 0001)", and record that in a new dated log entry (the old entry is not edited). Thomas confirms (Questions, item 6).
 - **Found by:** fact-checker (FC-112)
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### FC-052 · minor · "Prefect makes the same choice" hides that Prefect keeps one migration tree per dialect
 
@@ -348,7 +348,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
 - **Cheapest test** (2 h, R9 spike 7): write the first three revisions of the planned schema (a JSON column, a partial index, an `ALTER` of a constraint) in one tree and run them on SQLite and Postgres 18.
 - **Related:** DEP-T-012 (R8b), CH-023 (R4, migration time).
 - **Found by:** constraints-hunter (FC-206)
-- **Status:** open
+- **Status:** inbox, assumed: admin §4.3 states one Alembic tree, with dialect branches inside a revision only where needed (the current `render_as_batch` direction), revisited after spike 7; architecture §2 says what Airflow, Prefect and MLflow actually share (one URL, a closed list of backends) — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### FC-053 · minor · The prior art for gates is stale, misses the two closest designs and mixes two Prefect mechanisms
 
@@ -366,7 +366,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
   - Compare Flyte's callback-URI pattern with `POST /api/v1/gates/{id}/signals` (api §5). The signal semantics themselves are open as UX-110 (R12) and are not repeated here; Prefect's fail-after-timeout default is evidence for its `timeout` and `action` vocabulary.
 - **Related:** UX-110, UX-103 (R12).
 - **Found by:** fact-checker (FC-113), constraints-hunter (FC-209)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### FC-054 · minor · How Seqera Platform reaches a cluster is misdescribed
 
@@ -375,7 +375,7 @@ Format: [`README.md`](README.md). Specs were not edited in this round.
 - **Problem:** this misstates a competitor in a document that feeds the public comparison.
 - **Proposal:** write "SSH by default, Tower Agent where SSH is not allowed; Slurm, LSF, PBS Pro, Grid Engine, Moab". Mark "outgoing WebSocket" **[to be validated]**. If FC-047 is accepted, the comparison row moves to the docs page.
 - **Found by:** fact-checker (FC-106)
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ## Cited, not repeated
 

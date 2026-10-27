@@ -2,7 +2,7 @@
 
 **Step page:** [R8](../progress/W1/R8.md)
 
-**Round:** R8 (depictio and LabID drift) · **Date:** 2026-10-26 · **Found by:** depictio-liaison · **Status of the round:** waiting for triage (TRIAGE1)
+**Round:** R8 (depictio and LabID drift) · **Date:** 2026-10-26 · **Found by:** depictio-liaison · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 7 accepted, 0 rejected, 8 inbox (4 assumed)
 
 **Scope.** [`api-and-data-model.md`](../specs/api-and-data-model.md) §13, [`depictio-ecosystem-reuse.md`](../specs/depictio-ecosystem-reuse.md), and the `docs/research/depictio-*.md` notes, checked against the current depictio and LabID code.
 
@@ -114,7 +114,7 @@ Spec abbreviations: **api** = [`api-and-data-model.md`](../specs/api-and-data-mo
     - (13) ingestion without client-side S3 credentials (an upload through the API, or a server-side ingest of a new location).
   - Triage together with FC-003; this finding supersedes FC-003's proposal.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ---
 
@@ -142,7 +142,7 @@ Spec abbreviations: **api** = [`api-and-data-model.md`](../specs/api-and-data-mo
     - Fold in SEC-120's exchange-endpoint design.
   - Reword **request 5**: add `iss`, `aud`, `email` and `jti` claims and a JWKS, plus a token-exchange or redirect endpoint.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### DL-103 · major · A depictio dashboard can be embedded only from the same origin; a filter-message protocol already exists in another shape
 
@@ -171,7 +171,7 @@ Spec abbreviations: **api** = [`api-and-data-model.md`](../specs/api-and-data-mo
     - make `frame-ancestors` for `/dashboard/` configurable.
   - Report the `/dashboard/` header inheritance to depictio once the spike confirms it.
 - **Found by:** depictio-liaison (merge corrected the nginx evidence)
-- **Status:** open
+- **Status:** inbox, assumed: api §13.6 rule 3, the Dashboard tab exists only when Spectio is served from depictio's origin and is a deep link otherwise (filter-state preset **[to be validated]**); request 9 reworded to extend `depictio-embed`; the co-hosting default stays with SEC-109, and reporting the `/dashboard/` headers to depictio stays with Thomas — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DL-104 · major · The catalogue as a gate-check source: MultiQC outputs have no columns, and half of the recipes cannot run standalone
 
@@ -193,7 +193,7 @@ Spec abbreviations: **api** = [`api-and-data-model.md`](../specs/api-and-data-mo
     - a non-zero exit when it cannot;
     - a documented parquet contract.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### DL-105 · major · `run_tag = Spectio run ID` cannot be set, and `--attach-run` does not give one complete run per Spectio run
 
@@ -218,7 +218,7 @@ Spec abbreviations: **api** = [`api-and-data-model.md`](../specs/api-and-data-mo
     - (16) recipe-computed collections built from every attached run;
     - project lookup by ID.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox, assumed: one depictio project per Spectio run for QC dashboards (`attach_run` for file-based collections only); the runner ingests a `<run-id>` path and passes `--project` resolved from the stored link; requests 15 and 16 listed; the symlink behaviour is checked in spike `depictio-handoff` — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DL-106 · major · `--pipeline-id` needs an exact shipped template; "nothing needs mapping" is wrong
 
@@ -238,7 +238,7 @@ Spec abbreviations: **api** = [`api-and-data-model.md`](../specs/api-and-data-mo
   - In **ecosystem §2 item 4**: the string format is the same but the version set is sparse, so map to the closest shipped template not newer than the run.
   - Request (14): `--pipeline-id` falls back the way detection does.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — the count fix is the same as R2 FC-011
 
 ### DL-107 · major · `--provenance-file` is a display-only key/value list; it cannot carry gate filters or an RO-Crate
 
@@ -259,7 +259,7 @@ Spec abbreviations: **api** = [`api-and-data-model.md`](../specs/api-and-data-mo
   - `--provenance-file` carries only short scalars: the Spectio run URL, gate IDs, decision counts.
   - Keep request 6 and reword it: "per-run provenance; accept a WRROC crate".
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ---
 
@@ -281,7 +281,7 @@ These were spot-checked during the merge (`/auth/me` return type, `GroupSummary`
   - Leave `data_management_platform_project_url` to the LabID plugin.
   - Request (18): `external_refs` on `Project` and `WorkflowRun`, plus `--external-ref`.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DL-109 · minor · LabID facts are now checkable in `labid-server` and differ from §1.6
 
@@ -298,7 +298,7 @@ These were spot-checked during the merge (`/auth/me` return type, `GroupSummary`
   - Update **ecosystem §1.6**: `spectio-plugin-labid` uses a client generated from `/api/schema/` and header credentials only, never `?jwt=` or `?key=`. The sink targets `workflows/workflowruns`.
   - In **api §13.1**: depictio is SAML-only (besides Google), while LabID can do OIDC or SAML. Recommend SAML for all three, or Keycloak as a broker.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DL-110 · minor · `/groups/list` returns summaries; the identity migration needs per-group detail
 
@@ -311,7 +311,7 @@ These were spot-checked during the merge (`/auth/me` return type, `GroupSummary`
   - In ecosystem §2 item 1, call `GET /auth/list`, then `GET /groups/list`, then `GET /groups/{id}` for each group, with an admin token.
   - Import `pending_pi_email` too. It is also missing from api §13.2 l.304; R1 notes it is absent from the schema.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DL-111 · minor · Corrections to the research notes and to the request list
 
@@ -325,7 +325,7 @@ These were spot-checked during the merge (`/auth/me` return type, `GroupSummary`
   - **mosdepth.** The per-file recipe already exists (`catalog/mosdepth/summary.yaml:14-16`, `**/*.mosdepth.summary.txt`), although it depends on `dc_ref` (DL-104).
 - **Proposal:** write the dated research note drafted in Appendix A, and replace ecosystem §3 with the status table of Appendix B.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — Appendix B rows that come from findings still in the inbox (rewordings of 5 and 8, new 12 and 13) wait for those answers; rows from assumed findings (9, 15, 16, 17) are marked assumed
 
 ### DL-112 · minor · `instance ↔ is_public` over-exposes data on public-mode depictio or when embedding is on
 
@@ -340,7 +340,7 @@ These were spot-checked during the merge (`/auth/me` return type, `GroupSummary`
   - Otherwise, grant viewer to an instance-wide group (**[to be validated]**: whether depictio's protected `users` group, `groups_endpoints/routes.py:49-53`, holds every user).
   - Apply after the SEC-121 / SR-029 decision.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### DL-113 · minor · `GET /auth/me` returns the full `User` model, password hash included [inference, not executed]
 
@@ -355,7 +355,7 @@ These were spot-checked during the merge (`/auth/me` return type, `GroupSummary`
   - The depictio adapter parses only whitelisted fields and never logs response bodies.
   - Report it to depictio as request (17): return `UserBaseUI`.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox, assumed: the depictio adapter parses only whitelisted `/auth/me` fields and never logs response bodies (api §13.1); request 17 listed; reporting the password-hash exposure to depictio's maintainers stays with Thomas — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DL-114 · minor · Server-side ingestion already exists, for a refresh only
 
@@ -371,7 +371,7 @@ These were spot-checked during the merge (`/auth/me` return type, `GroupSummary`
   - Use it to refresh a gate-time project at completion when depictio reads the same storage.
   - Keep request (13) for new locations (DL-101).
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DL-115 · minor · "Same SeaweedFS image and version" ties Spectio's storage patches to depictio's bump cadence
 
@@ -384,7 +384,7 @@ These were spot-checked during the merge (`/auth/me` return type, `GroupSummary`
   - Spectio keeps its own pin, bumped by the dependency bot (DEP-T-009).
   - When co-hosted, the shared instance follows whichever pin is newer.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox, assumed: the same SeaweedFS image family with depictio's pin as the floor; Spectio keeps its own pin, bumped by the dependency bot (DEP-T-009); a shared instance follows the newer pin; the 2026-10-25 log entry is amended — pending Thomas (TRIAGE1, 2026-10-27)
 
 ---
 

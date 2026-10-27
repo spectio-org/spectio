@@ -101,3 +101,329 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   5. Optional: in *Zero Trust → Access*, restrict `*.spectio.pages.dev` previews to your email.
 - **Answer with:** `done`. Step D5 then checks everything end to end.
 - **Answer (Thomas, 2026-10-26):** done, the secrets are set in the repository. *Handled.*
+
+## TRIAGE1 (2026-10-27)
+
+- **Triaged:** 320 findings from R1, R2, R4, R5, R7, R8, R8b, R9, R11 and R12. 163 accepted, 4 rejected, 153 sent here.
+- **Assumed:** 88 of the 153 already proceed on the recommended option, marked `assumed — pending Thomas`. The other 65 wait for your answer.
+- **How to answer:** the 153 are grouped by decision into #11 to #30. #11 to #27 hold the reserved questions, those that block APPLY1 first. #28 to #30 only list assumptions to confirm. One `Answer:` line per entry is enough; name a finding ID to make an exception.
+
+APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sections named under **Blocked** untouched until you answer. R12 findings are outside APPLY1's rounds, so they block a later apply step, not APPLY1.
+
+### #11 · Ingest credential for observed runs, and are observed runs in 0.1?
+
+- **Covers:** [SR-001](../reviews/R1-consistency.md#sr-001-blocker-the-engine-server-ingest-contract-is-undefined) (blocker), [SEC-108](../reviews/R5-security.md#sec-108-major-ingest-credentials-for-observed-runs-are-undefined-and-tokens-may-land-on-command-lines-in-configs-and-in-captured-run-metadata).
+- **Context:** api §14 (the engine → server ingest contract: envelope, run handshake, driven-run variables, batching, logs) cannot be written until we know how a run started in a terminal gets a credential. SEC-108 proposes a dedicated ingest token: scope `ingest:write`, one project, may only create observed runs and post their events, 30 days, rotatable, a 0600 file written by `spectio login`, never on a command line.
+- **Options:**
+  - (a) api §14 as proposed; observed runs use the SEC-108 ingest token, written once by `spectio login` / `engine … --install`;
+  - (b) api §14 as proposed; observed runs only through a wrapper (`spectio run nextflow …`) that gets a per-run token;
+  - (c) driven runs only in 0.1; observed runs from the alpha.
+- **Recommendation:** (a), with the scope registered once in auth §3 (see #13).
+- **Assumed:** none.
+- **Blocked:** APPLY1 for api §14 and the auth §3 ingest-token row; nf-spectio and the Snakemake logger credential handling (spike T2 envelope); the walking skeleton. Related assumptions that already proceed: [SR-006](../reviews/R1-consistency.md#sr-006-major-the-cli-command-tree-lacks-commands-that-other-specs-cite) (no wrapper, setup by `spectio login`, see #28) and [CH-002](../reviews/R4-constraints.md#ch-002-major-no-compatibility-window-for-the-ingest-and-runner-protocols-across-bridge-runner-and-server-versions) (separate ingest version, see #28).
+
+### #12 · Runner ↔ server transport and runner credential lifetime
+
+- **Covers:** [SR-002](../reviews/R1-consistency.md#sr-002-blocker-runner-server-protocol-no-owner-two-transports-two-credential-lifetimes) (blocker), [SEC-106](../reviews/R5-security.md#sec-106-major-the-runner-credential-has-no-route-allow-list-and-it-can-forge-the-check-values-that-drive-auto-approval), [CH-032](../reviews/R4-constraints.md#ch-032-minor-runner-channel-in-practice-proxies-idle-timeouts-the-jvm-and-internal-cas), [CH-007](../reviews/R4-constraints.md#ch-007-major-runner-commands-have-no-table-three-transports-and-no-idempotent-launch), [UX-124](../reviews/R12-ui-scenarios.md#ux-124-minor-connecting-and-checking-a-runner) (R12).
+- **Context:** two transports and two credential lifetimes coexist; architecture §7.7 becomes the owner either way.
+  - SR-002: one primary transport, and does the runner credential rotate or live until revoked?
+  - SEC-106: runner credential rotated every 24 h (registration until revoked), stored 0600 or in a keyring, accepted only on `/runners/{id}/*`, events bound to the environment and assigned runner, a gate policy may disable auto-approval from runner values, only owning-group admins mint registration tokens.
+  - CH-032 (assumed): HTTPS long poll of at most 55 s, proxy variables and a CA bundle read by bridges and runner, checked by `spectio doctor`.
+  - CH-007 (assumed): a `runner_commands` table with leases, written in the decision's transaction; idempotent launch through the head-job name `spectio-<run>-<launch>`.
+  - UX-124 (R12): EnvConnect shows a 15 min single-use registration token and a 24 h rotation that no spec sets; also a `runner.self_check` event and module loading.
+- **Options:**
+  - (a) HTTPS long poll (as admin §3.2 and the 2026-10-25 log say), chunked upload for files, WebSocket route removed; SEC-106 in full, with the UX-124 values (15 min registration, 24 h rotation with overlap);
+  - (b) as (a), but the runner credential lives until revoked (SEC-106 allow-list and run binding only);
+  - (c) runner-initiated WebSocket over 443 with long-poll fallback.
+- **Recommendation:** (a). Checking EMBL proxies needs EMBL IT and waits until access exists.
+- **Assumed:** CH-032 and CH-007 proceed on their option A; the credential lifetime and who mints registration tokens are not assumed.
+- **Blocked:** APPLY1 for architecture §7.7 and the auth §3 runner row; every launch, cancel, file view and stop file; the walking skeleton. UX-124 blocks the EnvConnect values (later apply).
+
+### #13 · Token registry, authorisation matrix and which column authorises reads
+
+- **Covers:** [SR-024](../reviews/R1-consistency.md#sr-024-major-tokens-are-specified-twice-differently), [SEC-104](../reviews/R5-security.md#sec-104-major-no-endpoint-action-scope-role-matrix-so-every-endpoint-has-a-principal-and-a-can-cannot-be-checked), [SEC-128](../reviews/R5-security.md#sec-128-minor-revocation-latency-deactivation-and-abuse-limits-on-ingest-and-sse), [SEC-122](../reviews/R5-security.md#sec-122-major-gate-decisions-through-embed-tokens-are-attributed-to-the-hosts-service-account-which-bypasses-human-policies), [CH-030](../reviews/R4-constraints.md#ch-030-major-moving-a-run-between-projects-rewrites-millions-of-rows-and-contradicts-the-append-only-log), [UX-201](../reviews/R7-ui.md#ux-201-major-role-dependent-states-are-not-drawn-and-the-api-does-not-say-which-actions-are-allowed), [SEC-112](../reviews/R5-security.md#sec-112-major-sse-the-event-log-and-search-have-no-stated-tenancy-filter-revocation-behaviour-or-rule-for-events-with-no-project), [UX-111](../reviews/R12-ui-scenarios.md#ux-111-minor-where-each-gate-comes-from-and-lab-wide-figures) (R12).
+- **Context:**
+  - SR-024: auth §3 owns token kinds, formats, lifetimes and one scope registry. JWT access plus rotated refresh, opaque `spk_` for personal and service tokens?
+  - SEC-104: an endpoint → action → scope → role matrix in api §6; effective rights = role ∩ token scopes ∩ project restriction ∩ gate policy; new tokens restricted to one project unless "all my projects" is ticked.
+  - SEC-128: revocation checked per request (cache ≤ 30 s), per-run-token ingest limit with 429, SSE connections capped per principal. The `/version` part conflicts with the 2026-10-26 decision (git_sha in the footer).
+  - SEC-122: `decide` embed tokens carry an `act` claim naming the end user, signed by the host's service account, 5 min TTL, unknown users refused; postMessage with explicit `targetOrigin` and `event.origin` checks. This commits LabID and other host apps to sign `act`.
+  - CH-030: `project_id` authorises only root objects (runs, workflows, environments, webhooks); child tables resolve through `run_id`; moving a run is a chunked 202 Operation.
+  - UX-201: the UI hides what a role can never do and disables with a reason what a grant would allow; the API returns `allowed_actions` computed from the SEC-104 matrix.
+  - SEC-112 (assumed): every event carries `project_id` or `environment_id`, a per-event fan-out filter, streams end within 30 s of revocation.
+  - UX-111 (assumed, R12): `can_decide` replaced by UX-201's `allowed_actions` once answered.
+- **Options:**
+  - (a) all recommendations: SR-024 (a), SEC-104 A, SEC-128 B (keep `/version` public), SEC-122 A, CH-030 A, UX-201 (a);
+  - (b) as (a), but tokens stay unrestricted by default (SEC-104 B);
+  - (c) one opaque `spk_` format for every token (SR-024 b), the rest as (a).
+- **Recommendation:** (a). The SEC-122 postMessage origin checks apply whatever the answer.
+- **Assumed:** SEC-112 A and UX-111 A proceed; the rest is not assumed.
+- **Blocked:** APPLY1 for auth §3 (token catalogue, scope list, revocation), api §6 (matrix, role rows), api §4 limits, api §9 embeds and the LabID integration contract, api §5 `allowed_actions`, api §5/§7/§8 tenancy and run move; the role-variant boards of R7; spike sec-authz-matrix exit criteria.
+
+### #14 · Which Unix identity a launch runs as, and who may move a run to another runner
+
+- **Covers:** [SR-014](../reviews/R1-consistency.md#sr-014-major-which-unix-account-runs-a-launch-on-a-group-owned-environment-is-undefined), [SEC-101](../reviews/R5-security.md#sec-101-blocker-a-runners-unix-account-is-not-tied-to-the-principals-who-launch-on-it) (blocker), [UX-206](../reviews/R7-ui.md#ux-206-major-review-queue-scopes-bulk-actions-and-move-to-another-runner-have-no-endpoint), [SEC-103](../reviews/R5-security.md#sec-103-major-group-credentials-reach-runners-and-jobs-where-any-pipeline-or-scheduler-user-can-read-them).
+- **Context:** on a group-owned environment, the runner's Unix (or Kubernetes) account is not tied to the people who launch on it.
+  - SR-014: `execution_identity: per_user` only, or `per_user` and `shared` (a service account with explicit delegation)?
+  - SEC-101: an environment records `run_as`; a launch needs a grant plus a link or a revocable delegation from that user; a runner moves only between runners with the same `run_as`.
+  - UX-206: gate assignment (assignee, `snoozed_until`, `deciders[]`, advisory only) and who may `:reassign` a queued run (owner and editors, same `run_as` only).
+  - SEC-103 (assumed): per-run credentials as 0600 files, `--export=NONE` for head jobs, neutral job names, `PrivateData=jobs` recommended to sites.
+- **Options:**
+  - (a) one runner per user by default (SEC-101 A); a service-node runner submitting per user through slurmrestd with per-user JWTs where it exists (SEC-101 B); a declared `shared` account only with listed delegation; UX-206 (a);
+  - (b) `per_user` only (SR-014 a), no shared accounts; UX-206 (a);
+  - (c) as (a), but drop assign, snooze and "Move to another runner" from the boards for 0.1 (UX-206 c).
+- **Recommendation:** (a), never an undeclared shared account. The EMBL acceptable-use policy and slurmrestd availability are **[to be validated at EMBL]** and need EMBL IT.
+- **Assumed:** SEC-103 A proceeds; the identity model is not assumed.
+- **Blocked:** APPLY1 for api §6, schedulers §6, the environments/runners schema and the gate assignment fields (api §5/§7, checking); spike sec-slurm-identity; runner protocol design and P1 planning.
+
+### #15 · `single` mode on shared login nodes
+
+- **Covers:** [SR-031](../reviews/R1-consistency.md#sr-031-major-single-user-mode-trusts-loopback-but-loopback-is-shared-on-a-login-node), [SEC-102](../reviews/R5-security.md#sec-102-blocker-single-mode-trusts-loopback-but-loopback-is-shared-by-every-user-of-a-login-node) (blocker).
+- **Context:** `single` mode trusts tokenless 127.0.0.1, which every user of a login node shares. Both reviews ask whether that deployment is supported, and how.
+- **Options:**
+  - (a) supported, hardened: tokenless only on a 0700 Unix socket with SO_PEERCRED, or a 0600 local token; TCP loopback needs a cookie from a one-time URL; Host allow-list and CSRF on every write;
+  - (b) `single` mode only on laptops and service nodes;
+  - (c) (a), and also refuse to start tokenless when other users are logged in.
+- **Recommendation:** (a): never trust the network peer, and keep the no-setup HPC story. Validate in spike sec-single-mode.
+- **Assumed:** none.
+- **Blocked:** APPLY1 for auth §1/§6 and api §1/§6; spike sec-single-mode; the walking-skeleton auth design.
+
+### #16 · What ships in 0.1 (MVP cut)
+
+- **Covers:** [SR-007](../reviews/R1-consistency.md#sr-007-major-phase-labels-do-not-map-to-release-stages-and-the-phase-tables-contradict-each-other), [SR-018](../reviews/R1-consistency.md#sr-018-major-pause-immediate-stop-or-after-the-current-stage), [SR-023](../reviews/R1-consistency.md#sr-023-major-gate-checks-depend-on-the-depictio-catalogue-but-01-has-no-depictio), [DL-104](../reviews/R8-depictio.md#dl-104-major-the-catalogue-as-a-gate-check-source-multiqc-outputs-have-no-columns-and-half-of-the-recipes-cannot-run-standalone), [CH-004](../reviews/R4-constraints.md#ch-004-major-no-scale-model-and-no-performance-budgets-in-any-spec), [UX-227](../reviews/R7-ui.md#ux-227-minor-boards-show-features-outside-the-mvp-without-marking-them), [UX-115](../reviews/R12-ui-scenarios.md#ux-115-minor-outputs-retention-and-the-depictio-hand-off) (R12).
+- **Context:** one owner for "what ships in which stage" (new dev-env §15), then the scope questions that depend on it:
+  - SR-007: local + SLURM in 0.1; Kubernetes launcher, Postgres, Compose and OIDC in the alpha; Helm in the beta; depictio sink after 0.1; Kafka unscheduled.
+  - SR-018: both `:pause` (after a stage) and `:stop` (immediate, keep the cache)? Needed in 0.1?
+  - SR-023 and DL-104: 0.1 gate checks bind only to Spectio's own bindings and `multiqc.parquet`; catalogue recipes wait for a public `depictio recipe run` that resolves `dc_ref` (61 MultiQC outputs have no columns; 186 of 339 recipes have `dc_ref` sources). This narrows the 2026-10-26 "one catalogue, two renderers" decision.
+  - CH-004: are "100 000 tasks in one run" and "50 concurrent runs" targets for the 0.2 alpha or for 1.0?
+  - UX-227 and UX-115: no manual "Send to depictio" in 0.1; a phase chip on boards for 1b features; RunOutputs directory listing and per-run retention now, report sandbox rules decided with #23.
+- **Options:**
+  - (a) all recommendations: SR-007 (a), SR-018 (a), SR-023 (a) + DL-104 (a), CH-004 A (targets for 1.0, measured by spike S1 in the alpha), UX-227 (a), UX-115 A;
+  - (b) as (a), but the Kubernetes launcher is already in 0.1 (SR-007 b);
+  - (c) as (a), but pause and stop are both left out of 0.1 (SR-018 c).
+- **Recommendation:** (a). The old phase tables are marked historical with a link to dev-env §15. OIDC phasing is asked in #20 (UX-202).
+- **Assumed:** none.
+- **Blocked:** APPLY1 for dev-env §15, api §5 run verbs and state machine, api §13.6 rule 1, checking §7, reuse §0, api §15 (scale), the stage tags of SR-010, SR-035, SR-042 and SR-043; P1 walking-skeleton cut and P2 milestones; the MVP RunScheduler variant.
+
+### #17 · Features after 0.1: WES, TRS, Seqera API, Galaxy, batches, chaining
+
+- **Covers:** [SR-010](../reviews/R1-consistency.md#sr-010-major-the-wes-facade-has-four-release-dates-and-is-under-specified), [FC-044](../reviews/R9-landscape.md#fc-044-minor-the-wes-facade-does-not-say-which-dialect-it-speaks), [FC-046](../reviews/R9-landscape.md#fc-046-minor-synthesis-3-standards-and-existing-projects-is-out-of-date-galaxy-is-more-than-a-minimal-wes), [FC-048](../reviews/R9-landscape.md#fc-048-minor-trs-be-a-client-before-being-a-server), [FC-051](../reviews/R9-landscape.md#fc-051-minor-partial-compatibility-with-the-seqera-api-contradicts-decision-0001), [UX-120](../reviews/R12-ui-scenarios.md#ux-120-major-batch-launches-and-spectios-own-queue) (R12), [UX-121](../reviews/R12-ui-scenarios.md#ux-121-minor-scheduled-start-notifications-pre-flight) (R12), [UX-122](../reviews/R12-ui-scenarios.md#ux-122-major-chaining-runs) (R12), [DEP-T-028](../reviews/R8b-depictio-tooling.md#dep-t-028-minor-a-try-spectio-codespace-for-design-partners), [UX-210](../reviews/R7-ui.md#ux-210-major-the-notification-bell-and-notify-me-when-it-is-back-have-no-endpoint-and-no-board).
+- **Context:** each item adds, drops or schedules a feature.
+  - SR-010: the GA4GH WES facade ships in the public beta (0.5–0.9), before it, or when a design partner needs it? FC-044 (assumed): strict WES 1.1.0, Sapporo 2.x a non-goal.
+  - FC-048: a TRS client (register from a WorkflowHub or Dockstore TRS URL) next to RO-Crate import, under the #25 outbound policy; the TRS server stays later.
+  - FC-051: mark synthesis §7bis item 6 (partial Seqera API compatibility) "not planned (decision 0001)", with a new dated log entry.
+  - FC-046: refresh synthesis §3 (assumed); the Galaxy `spectio.engine` adapter under roadmap ideas is not assumed.
+  - UX-120, UX-122: batch launches with a Spectio-side queue, and run chaining (fetchngs → rnaseq), both after 0.1. UX-121: no `start_at` for now.
+  - DEP-T-028: a "try Spectio" Codespaces image for design partners (costs Codespaces quota).
+  - UX-210 (assumed): in-app notifications now; Web Push decided after spike S-R7-3.
+- **Options:**
+  - (a) all recommendations: WES in the public beta, TRS client later, Seqera API not planned, no Galaxy adapter, batches and chaining after 0.1, no `start_at`, Try Codespace at the public beta, Web Push after S-R7-3;
+  - (b) as (a), plus the Galaxy adapter under roadmap ideas (FC-046 B);
+  - (c) as (a), but keep the Seqera API item "to be studied after a legal check" (FC-051 B).
+- **Recommendation:** (a).
+- **Assumed:** FC-044 A, the FC-046 table refresh and UX-210 (a) proceed.
+- **Blocked:** APPLY1 for api §0/§1/§5/§10 labels (WES, TRS), synthesis §7bis item 6 and its log entry, the roadmap ideas, dev-env §14 private-alpha list, the WES item on the landing page (DOC-001); the LaunchBatch, LaunchChain and LaunchReview boards (later apply).
+
+### #18 · Who can read a project: visibility values and share links
+
+- **Covers:** [SR-029](../reviews/R1-consistency.md#sr-029-major-project-visibility-has-three-values-in-the-model-and-two-in-the-ui), [SEC-121](../reviews/R5-security.md#sec-121-major-instance-visibility-means-everyone-so-on-a-public-or-demo-instance-internal-projects-are-readable-by-anonymous-guests), [DL-112](../reviews/R8-depictio.md#dl-112-minor-instance-is_public-over-exposes-data-on-public-mode-depictio-or-when-embedding-is-on), [SEC-117](../reviews/R5-security.md#sec-117-major-share-links-contradict-the-guest-grant-and-gate-policy-rules-and-work-as-forwardable-bearer-invitations), [UX-204](../reviews/R7-ui.md#ux-204-major-no-share-link-landing-no-create-link-tab-and-no-endpoint-to-list-or-revoke-links), [SR-019](../reviews/R1-consistency.md#sr-019-major-principal-kinds-guests-plugin-and-bridge-principals-are-outside-the-enum).
+- **Context:**
+  - SR-029 proposes two values like depictio (`private` / `instance`, default viewer grant to the owning group); SEC-121 proposes three (`private` / `instance` for signed-in users / `public` for guests and anonymous, gated by `allow_public_projects`, depictio `is_public` → `public`).
+  - DL-112: mirroring `instance` to depictio's `is_public` exposes projects to anonymous users in public, single-user or embed mode; mirror only in standard mode with embedding off, otherwise grant viewer to an instance-wide group.
+  - SEC-117 and UX-204: share links contradict the guest rules. Proposal: a separate `link` principal kind; owner and editor create viewer links, only owners create reviewer links (email, one gate, single use, one-time code); a link guest decides only the gates the link names. Check against the 2026-10-26 staging decision (reviewer links bound to one project, role and expiry).
+  - SR-019 (assumed): `guest` principal kind with `expires_at` and `share_link_id`; SEC-117 may rename it `link`.
+- **Options:**
+  - (a) three values (SEC-121 A), DL-112 (a), SEC-117 A / UX-204 (a), the principal kind reconciled with SR-019;
+  - (b) two values with `instance` hidden from guests (SEC-121 B), the rest as (a);
+  - (c) two values, `instance` readable by guests (current), editors keep minting any link (UX-204 b).
+- **Recommendation:** (a).
+- **Assumed:** SR-019 (a) proceeds; the kind may be renamed by your answer.
+- **Blocked:** APPLY1 for api §6/§12/§13.2 visibility and mapping, auth §2/§2.1 share links, the `principals.kind` enum, the sharing UI (ShareDialog, ShareLanding), the share-link endpoints and the staging reviewer flow (dev-env §13).
+
+### #19 · Project roles and who may decide a gate (people and agents)
+
+- **Covers:** [SR-025](../reviews/R1-consistency.md#sr-025-major-launcher-and-reviewer-rungs-on-a-ladder-or-capability-flags), [SR-033](../reviews/R1-consistency.md#sr-033-major-on_fail-open_gate-creates-a-gate-with-no-items-policy-or-deciders), [SEC-114](../reviews/R5-security.md#sec-114-major-spectioyml-from-a-workflow-repository-can-widen-gate-policy-add-code-and-add-editable-paths-with-each-new-version), [UX-217](../reviews/R7-ui.md#ux-217-major-workflow-visibility-per-group-is-drawn-but-the-data-model-has-no-workflow-grants), [SEC-111](../reviews/R5-security.md#sec-111-major-agent-decisions-on-gates-are-not-bounded-or-reversible-and-they-record-a-self-reported-identity), [UX-106](../reviews/R12-ui-scenarios.md#ux-106-major-the-meaning-of-flag-undecided-items-and-reviewer-added-flags) (R12), [UX-126](../reviews/R12-ui-scenarios.md#ux-126-major-quotas-limits-and-who-may-launch-where) (R12).
+- **Context:**
+  - SR-025: base role viewer / editor / owner plus `launch` and `review` capabilities, or a five-step ladder?
+  - SR-033: a gate opened by `on_fail: open_gate` is decided by project reviewers and above, `agents: none`, unless the overlay's run-level `decide` says otherwise.
+  - SEC-114: policy keys in a repository `spectio.yml` stay inert until a project editor approves them per workflow version; strictest of instance, project, overlay and author wins.
+  - UX-217: the workflow catalogue is per project (no `workflow_grants`) for the MVP.
+  - SEC-111: agent approvals take effect after a 15 min hold with notification, at most 10 % excluded items, per-agent rate limits, no bulk-decide for agents, `claimed_model`, MCP tokens with `aud=<instance>/mcp`.
+  - UX-106 (R12): anyone allowed to decide may Flag an item below a `block` threshold, with a recorded reason; Apply stays disabled until each block-failing item is decided.
+  - UX-126 (R12): per-agent environment grants and partition allow-lists now; Spectio quotas after 0.1.
+- **Options:**
+  - (a) all recommendations: capabilities (SR-025 a), SR-033 (a), SEC-114 A, per-project catalogue, SEC-111 A, UX-106 A, UX-126 A;
+  - (b) as (a), with your own SEC-111 hold time and exclusion cap;
+  - (c) as (a), but a five-step role ladder (SR-025 b) and Flag below `block` needs an override permission (UX-106 B).
+- **Recommendation:** (a).
+- **Assumed:** none.
+- **Blocked:** APPLY1 for `project_grants`, CLI `project share`, bioplatform-models Role, checking §5 decisions, checking §7 and §11.3, api §6 agent rules, the MCP tool catalogue, admin §1 Content → Workflows; the Review sticky bar and EnvAccess board (later apply).
+
+### #20 · Admin rights, sign-in administration and new users
+
+- **Covers:** [SR-020](../reviews/R1-consistency.md#sr-020-major-the-system-admin-flag-protected-groups-and-pi-fields-are-missing-from-the-schema), [SR-021](../reviews/R1-consistency.md#sr-021-major-launcher-instances-and-environments-are-two-models-of-the-same-cluster), [SEC-127](../reviews/R5-security.md#sec-127-minor-admins-can-sign-in-as-any-user-without-that-being-recorded-and-sensitive-admin-actions-have-no-step-up), [UX-202](../reviews/R7-ui.md#ux-202-major-administration-settings-sign-in-active-sessions-and-sign-out-have-no-board-and-no-endpoint), [UX-240](../reviews/R7-ui.md#ux-240-minor-creating-a-user-shows-a-plaintext-password-instead-of-offering-a-sign-in-link).
+- **Context:**
+  - SR-020: `users.is_admin` is the only source of admin rights; the `admin` group is mirrored for depictio; single-user mode sets `is_admin` and creates the protected groups.
+  - SR-021: an Environment is the launcher's instance; scoped plugin instances are added by their owner or a group admin.
+  - SEC-127: admin-minted sign-in links only in demo mode or when enabled, sessions carry `act=<admin>`; step-up re-authentication (≤ 5 min) for backups, restore, keys and admin tokens; hash-chained audit rows.
+  - UX-202: logout endpoint, session list and revoke, "sign out everywhere", sign-in method tests, an AdminSignIn board. Is OIDC in 0.1? (Profile says "phase 2", auth §0 has no phasing.)
+  - UX-240: new users get a single-use sign-in link that forces a new password by default, not a plaintext initial password.
+- **Options:**
+  - (a) all recommendations: SR-020 (a), SR-021 (a), SEC-127 A, UX-202 (a) with OIDC in 0.1, UX-240 (a);
+  - (b) as (a), but OIDC moves to phase 2 with a phase column in auth §0 (UX-202 b), matching SR-007's cut in #16;
+  - (c) as (a), but keep admin sign-in links unrestricted and only record `act=<admin>` (SEC-127 B).
+- **Recommendation:** (b). R7 recommended (a), but SR-007's recommended cut in #16 puts OIDC in the alpha; (b) keeps the two answers consistent. Pick (a) if you put OIDC in 0.1 in #16.
+- **Assumed:** none.
+- **Blocked:** APPLY1 for the users/groups schema, environments and plugin-instance API, auth §0/§2, admin §3.4 audit log, the logout and session endpoints (api §5, admin §5); the AdminSignIn, Profile and SettingsUsers boards.
+
+### #21 · How Spectio trusts depictio identities
+
+- **Covers:** [SEC-120](../reviews/R5-security.md#sec-120-major-depictio-jwt-trust-accepts-tokens-spectio-cannot-audience-check-or-revoke-and-maps-depictio-admin-to-spectio-admin), [DL-102](../reviews/R8-depictio.md#dl-102-major-trusting-depictio-jwts-no-iss-aud-or-email-claims-revocation-lives-only-in-depictios-database-and-there-is-no-browser-hand-over), [DEP-T-015](../reviews/R8b-depictio-tooling.md#dep-t-015-major-how-spectio-gets-depictios-jwt-public-key-on-kubernetes-is-undefined), [SEC-113](../reviews/R5-security.md#sec-113-major-identities-are-linked-by-email-across-idps-and-group-sync-is-not-namespaced-or-kept-away-from-protected-groups).
+- **Context:**
+  - SEC-120, DL-102, DEP-T-015: accept depictio tokens only at an exchange endpoint, verified online through `GET /auth/me` (cache ≤ 60 s, field whitelist), never with the public key alone and never by mounting depictio's keys volume on Kubernetes; do not mirror depictio's `is_admin` unless `depictio.trust_admin=true`. Before SSO, "one login for both" then exists only in the CLI (`--with-depictio`).
+  - SEC-113: link identities only by (provider, subject); email linking only for `trusted_email` providers (depictio never); synced groups namespaced per provider; `admin` and `users` never synced. This changes the depictio "same email, one login" parity.
+- **Options:**
+  - (a) introspection-only trust, no admin mirroring by default, SEC-113 A; asking depictio for `aud`, JWKS and token exchange is decided in #27;
+  - (b) keep public-key verification with a revocation check, and design a browser hand-over (DL-102 b);
+  - (c) keep email linking for depictio co-hosting but namespace groups (SEC-113 B), the rest as (a).
+- **Recommendation:** (a).
+- **Assumed:** none.
+- **Blocked:** APPLY1 for auth §1/§2 (depictio trust, linking, group sync), api §13.1/§13.2, auth §6 test row, cli §2 `--with-depictio`, architecture §7.5 Helm co-hosting (phase 2); spike depictio-introspection.
+
+### #22 · depictio hand-off: credentials and storage
+
+- **Covers:** [FC-003](../reviews/R2-open-validations.md#fc-003-major-depictio-cli-ingest-user-needs-depictios-instance-provisioning-key-not-a-short-lived-credential), [DL-101](../reviews/R8-depictio.md#dl-101-blocker-runner-side-depictio-cli-ingest-needs-two-instance-wide-secrets-that-131-forbids-on-runners) (blocker), [DEP-T-014](../reviews/R8b-depictio-tooling.md#dep-t-014-major-sharing-depictios-seaweedfs-needs-per-bucket-identities-that-depictios-compose-does-not-configure), [DL-105](../reviews/R8-depictio.md#dl-105-major-run_tag-spectio-run-id-cannot-be-set-and-attach-run-does-not-give-one-complete-run-per-spectio-run), [DL-115](../reviews/R8-depictio.md#dl-115-minor-same-seaweedfs-image-and-version-ties-spectios-storage-patches-to-depictios-bump-cadence), [DEP-T-017](../reviews/R8b-depictio-tooling.md#dep-t-017-major-depictio-is-not-pinned-anywhere-in-spectios-toolchain-or-ci).
+- **Context:** runner-side `depictio-cli ingest` needs depictio's instance provisioning key and its S3 write secret, which api §13.1 forbids on runners. The hand-off is post-0.1.
+  - FC-003 and DL-101: the server holds the provisioning key and passes only a per-user token (`DEPICTIO_CLI_TOKEN`), never `--user` or `--provisioning-key`; the S3 route follows spike depictio-handoff, an ingest relay next to depictio as fallback. DL-101 replaces FC-003's proposal and drops to major.
+  - DEP-T-014 (assumed): Spectio's own bucket `spectio` with a bucket-scoped identity **[to be validated: weed mini identities]**, otherwise its own SeaweedFS; never depictio's root keys.
+  - DL-105, DL-115, DEP-T-017 (assumed): one depictio project per Spectio run for QC dashboards; Spectio keeps its own SeaweedFS pin with depictio's as the floor (amends the 2026-10-25 log); `DEPICTIO_VERSION` pinned in `dev/versions.env`.
+- **Options:**
+  - (a) DL-101 (a) replacing FC-003, severity major, the depictio request handled in #27;
+  - (b) an ingest relay host next to depictio from the start (DL-101 b);
+  - (c) wait for depictio to accept ingestion without client S3 credentials (DL-101 c).
+- **Recommendation:** (a).
+- **Assumed:** DEP-T-014 (a) without the request to depictio, DL-105 (a), DL-115 (a), DEP-T-017 (a).
+- **Blocked:** APPLY1 for api §13.3 step 1 and cli §2 hand-off text, the scope of spike depictio-handoff. Not 0.1.
+
+### #23 · Co-hosting with depictio and browser hardening
+
+- **Covers:** [SEC-109](../reviews/R5-security.md#sec-109-major-co-hosting-on-one-origin-merges-depictios-and-spectios-trust-the-reports-separate-origin-is-undefined), [DL-103](../reviews/R8-depictio.md#dl-103-major-a-depictio-dashboard-can-be-embedded-only-from-the-same-origin-a-filter-message-protocol-already-exists-in-another-shape), [SEC-126](../reviews/R5-security.md#sec-126-minor-browser-hardening-defaults-are-not-written-down).
+- **Context:** path co-hosting on one domain merges the two trust domains. SEC-109 proposes separate hosts (`spectio.<site>`, `depictio.<site>`) with IdP SSO, a mandatory user-content origin for reports, no shared Redis without per-app ACL users, and explicit trusted proxies. DL-103 (assumed): a depictio dashboard can only be framed from the same origin, so the gate-time Dashboard tab exists only when co-hosted on depictio's origin and is a deep link otherwise. SEC-126 (assumed): CSP baseline, Trusted Types, sanitised Markdown, no analytics on admin and gate pages; `__Host-` cookies wait for this answer.
+- **Options:**
+  - (a) separate hosts by default (SEC-109 A);
+  - (b) path co-hosting kept, documented as one trust domain, CSP and Trusted Types required in both apps;
+  - (c) (a) by default, (b) as a documented opt-in.
+- **Recommendation:** (c). It affects the depictio team (shared cookie, SSO, shared Redis).
+- **Assumed:** DL-103 (a) and SEC-126 A proceed; the co-hosting default is not assumed.
+- **Blocked:** APPLY1 for api §13.4, architecture §8 Redis sharing, the report sandbox origin, the SEC-126 `__Host-` cookie, DEP-T-013; the RunOutputs sandbox rules (UX-115).
+
+### #24 · Backup and restore under live runs
+
+- **Covers:** [SR-030](../reviews/R1-consistency.md#sr-030-major-a-restore-rewinds-the-database-under-runs-still-executing-token-handling-is-contradictory), [SEC-119](../reviews/R5-security.md#sec-119-major-backups-put-signing-and-secret-store-keys-in-an-archive-whose-encryption-is-optional-and-restore-accepts-uploaded-archives), [CH-021](../reviews/R4-constraints.md#ch-021-major-restore-failure-modes-while-runs-and-engines-are-still-live), [CH-022](../reviews/R4-constraints.md#ch-022-major-logical-json-lines-backups-do-not-scale-need-one-snapshot-and-have-no-rpo-or-rto), [SR-050](../reviews/R1-consistency.md#sr-050-minor-the-backup-and-restore-contract-differs-between-the-cli-and-admin-specs).
+- **Context:**
+  - SR-030: keep `tokens`, `sessions` and `runners` on restore and revoke orphans; runs launched after the backup are adopted as "orphaned after restore" (or cancelled by default?).
+  - SEC-119: keys and sealed secrets always encrypted to an off-instance age recipient; remote backups without a recipient refused; signed manifests; foreign archives need explicit key trust; fresh re-auth for download and restore. This reverses the 2026-10-25 "optional encryption" decision.
+  - CH-021, CH-022, SR-050 (assumed): restore into a new database then switch atomically, 503 on ingest during restore, runner inventory after; native backups by default (JSON Lines for migration and export only, departs from the 2026-10-25 decision); Ed25519 manifest signature, no partial restore by table.
+- **Options:**
+  - (a) SR-030 (a) and SEC-119 A;
+  - (b) SR-030 (b) (cancel unknown runs by default) and SEC-119 A;
+  - (c) SR-030 (a) and SEC-119 B (encryption optional for local destinations).
+- **Recommendation:** (a).
+- **Assumed:** CH-021 A, CH-022 A, SR-050 (a) proceed.
+- **Blocked:** APPLY1 for the admin §4.3 restore wizard and encryption rules, cli §2 backup example, ingest 409 behaviour.
+
+### #25 · Trust boundaries: plugins, outbound calls, event bridges, runner policy, restricted data
+
+- **Covers:** [SEC-124](../reviews/R5-security.md#sec-124-major-plugins-run-in-process-with-full-trust-plugins-never-touch-the-database-is-a-convention-not-a-boundary), [SEC-118](../reviews/R5-security.md#sec-118-major-outbound-http-from-webhooks-plugins-wes-and-imports-has-no-ssrf-policy), [SEC-116](../reviews/R5-security.md#sec-116-major-event-bridges-hand-authentication-to-broker-acls-share-one-principal-across-all-devices-and-send-every-project-to-one-topic), [SEC-115](../reviews/R5-security.md#sec-115-major-a-server-compromise-is-code-execution-on-every-runners-unix-account-runners-hold-no-local-policy), [SEC-105](../reviews/R5-security.md#sec-105-major-runner-file-access-is-not-confined-event-paths-globs-and-symlinks-can-make-the-runner-read-any-file-of-its-unix-user), [SEC-110](../reviews/R5-security.md#sec-110-major-ro-crate-project-and-workflow-imports-are-unvalidated-paths-for-code-paths-and-forged-history), [UX-117](../reviews/R12-ui-scenarios.md#ux-117-major-listing-files-through-the-runner) (R12), [UX-123](../reviews/R12-ui-scenarios.md#ux-123-minor-overlays-versions-and-the-catalogue) (R12), [UX-129](../reviews/R12-ui-scenarios.md#ux-129-major-gates-on-clinical-data) (R12).
+- **Context:** security posture defaults, one per finding.
+  - SEC-124: installed server plugins are as trusted as admins (reword architecture §10 risk 2, which contradicts the 2026-10-25 "no DB session so tenancy stays enforced"); refuse `SPECTIO_EXTRA_PLUGINS` in production unless allowed; pin distribution, version and wheel hash.
+  - SEC-118: one egress policy for server-side HTTP; loopback, link-local, RFC 1918 and ULA denied unless allow-listed (LabID pre-filled at install).
+  - SEC-116: event bridges signals-only inbound by default, per-device credentials, ±5 min replay window, outbound opt-in per project, per-project Kafka topics.
+  - SEC-115: runners enforce a local `runner.toml` (sources, roots, `script:` bindings off by default, resource caps, TLS pinning).
+  - UX-123 (R12): scope of a Git credential and whether the server or a runner clones, sent to the security review (SEC-103).
+  - UX-129 (R12): a "restricted data" project policy (pseudonyms only, downloads off, per-view audit, agents off).
+  - SEC-105, SEC-110, UX-117 (assumed): runner reads confined to per-run roots; imports treated as untrusted; `list_dir` confined to storage roots.
+- **Options:**
+  - (a) all recommendations: SEC-124 A, SEC-118 A with a pre-filled allow-list, SEC-116 A, SEC-115 A, UX-123 A, UX-129 A;
+  - (b) as (a), but private ranges allowed by default on `local` and `single` instances (SEC-118 B);
+  - (c) as (a), but `runner.toml` optional and everything allowed when absent (SEC-115 B).
+- **Recommendation:** (a).
+- **Assumed:** SEC-105 A, SEC-110 A, UX-117 A proceed.
+- **Blocked:** APPLY1 for architecture §3, §3.4 (`ctx.http`), §7.6 and §10, admin §2.3, schedulers §6 and jobcomp/kafka handling, checking §7 `script:` binding, the webhook and WES facade specs; the Workflow boards and ReviewTrio (later apply).
+
+### #26 · Licences, repository governance and CI costs
+
+- **Covers:** [FC-028](../reviews/R2-open-validations.md#fc-028-minor-megatest-outputs-come-from-full-size-public-data-not-from-nf-coretest-datasets) and [FC-037](../reviews/R2-open-validations.md#fc-037-minor-table-corrections-with-no-finding-of-their-own-batch) item 6, [CH-034](../reviews/R4-constraints.md#ch-034-minor-licences-of-server-dependencies-scheduler-integrations-and-copied-code-are-not-tracked), [DEP-T-002](../reviews/R8b-depictio-tooling.md#dep-t-002-blocker-release-please-with-github_token-cannot-trigger-release-builds-or-run-checks-on-its-own-pr), [DEP-T-008](../reviews/R8b-depictio-tooling.md#dep-t-008-major-never-auto-merged-paths-are-a-convention-not-an-enforced-rule), [DEP-T-018](../reviews/R8b-depictio-tooling.md#dep-t-018-major-no-python-or-osarchitecture-matrix-for-the-base-install-and-the-runner), [DEP-T-029](../reviews/R8b-depictio-tooling.md#dep-t-029-minor-metrics-is-a-line-not-a-contract), [DEP-T-001](../reviews/R8b-depictio-tooling.md#dep-t-001-blocker-path-filtered-workflows-used-as-required-checks-block-every-pr-they-skip), [DEP-T-005](../reviews/R8b-depictio-tooling.md#dep-t-005-major-supply-chain-evidence-sbom-provenance-signatures-scanning-is-deferred-to-phase-3), [UX-219](../reviews/R7-ui.md#ux-219-major-custom-switches-checkboxes-tabs-radios-and-sliders-cannot-be-reached-by-keyboard).
+- **Context:**
+  - FC-028 / FC-037: megatest outputs come from full-size public data (SRA under s3://ngi-igenomes, AWS iGenomes), not from nf-core/test-datasets (MIT); IDR idr0033, idr0062, idr0066 and idr0076 are CC BY 4.0, idr0001, idr0054 and idr0073 still to be validated.
+  - CH-034: licence allow-list scan, `THIRD_PARTY_NOTICES` in wheel and image, psycopg (LGPL) as an optional extra or asyncpg, never bundle Redis 8, never link pyslurm (GPL), record depictio's licence for copied code.
+  - DEP-T-002: release PRs never auto-merged (Thomas merges, publishing is irreversible) or 0.x auto-merge once `AUTOMERGE_MAIN=true`? The GitHub App token part is assumed; release-please stays off until the App exists (#8).
+  - DEP-T-008: `.github/CODEOWNERS` with required code-owner review on `main` and `autopilot/integration` for `.github/**`, `.claude/**`, `pipeline.yaml`, auth and secrets code. Whether a bot approval counts when the same identity opens the PR is **[to be validated]**.
+  - DEP-T-018: macOS-arm64 in CI costs 10× minutes on a private repository **[to be validated]**; Linux grid assumed.
+  - DEP-T-029: who may scrape `/metrics` (scrape token by default, separate unauthenticated port opt-in)?
+  - DEP-T-001, DEP-T-005, UX-219 (assumed): one `ci-ok` required check; SBOM, provenance and signing from the first image; keyboard rules added to the board conventions in CLAUDE.md.
+- **Options:**
+  - (a) all recommendations: licence statements as corrected with per-source terms **[to be validated]**; CH-034 A; release PRs never auto-merged; CODEOWNERS on both branches; macOS later; scrape token;
+  - (b) as (a), plus no megatest-derived media until each source's terms are checked (FC-028 B), and asyncpg instead of psycopg (CH-034 B);
+  - (c) as (a), but 0.x release PRs auto-merge (DEP-T-002 b) and CODEOWNERS on `main` only (DEP-T-008 b).
+- **Recommendation:** (a).
+- **Assumed:** DEP-T-001 (a), DEP-T-002 docs part, DEP-T-005 (a), DEP-T-018 Linux part, DEP-T-029 docs part, UX-219 (a). The CLAUDE.md edit for UX-219 is only made once you confirm.
+- **Blocked:** APPLY1 for dev-env §10.3/§10.4, architecture §7.4, schedulers §5, depictio-ecosystem-reuse §1, the release-PR rule in autopilot.md §8 and documentation-system §8, the branch-protection payload (#8), admin §3.5 metrics access; RELEASE_PLEASE_ENABLED and 0.1.0; spike 8 licence scan.
+
+### #27 · Messages to other teams (nothing is sent without you)
+
+- **Covers:** [DL-113](../reviews/R8-depictio.md#dl-113-minor-get-authme-returns-the-full-user-model-password-hash-included-inference-not-executed), [FC-042](../reviews/R9-landscape.md#fc-042-major-the-snakemake-monitoring-landscape-has-moved-logger-plugins-an-active-panoptes-and-flowo), [SR-036](../reviews/R1-consistency.md#sr-036-major-the-checks_as-preset-shape-requested-from-depictio-does-not-match-spectios-check-syntax), [SEC-107](../reviews/R5-security.md#sec-107-major-secrets-can-reach-parameters-logs-the-task-ledger-audit-diffs-and-ro-crate-exports).
+- **Context:** the doc changes are assumed; only the outreach waits.
+  - To depictio, privately: `GET /auth/me` probably returns the password hash (DL-113, an inference not yet executed). Then the request list (18 items), as one tracking issue or one per request; it includes the `checks_as` shape (SR-036), run-scoped short-lived tokens (FC-003), an identities file for SeaweedFS (DEP-T-014), `aud` / JWKS / token exchange (SEC-120, DL-102, DEP-T-015) and framing headers (DL-103).
+  - To the FlowO maintainers (logger-event conventions) and an upstream Snakemake docs PR for the stale `--wms-monitor` page (FC-042).
+  - Registering the `spk_` prefix with GitHub secret scanning (SEC-107 B) **[partner programme terms to be validated]**.
+- **Options:**
+  - (a) confirm DL-113 in spike depictio-introspection first, then report privately and file one tracking issue; FlowO, Snakemake and GitHub outreach at the public beta;
+  - (b) report DL-113 now, and file one issue per request;
+  - (c) no outreach before the public beta.
+- **Recommendation:** (a).
+- **Assumed:** the doc parts of DL-113 (api §13.1 whitelist), FC-042 (synthesis §2 and the comparison page), SR-036 (keys in checking §4/§7) and SEC-107 (one redaction function in admin §3.4).
+- **Blocked:** only the messages themselves; no spec section waits.
+
+### #28 · Assumed: engine bridges, runner and scheduler
+
+- **Covers:** [SR-003](../reviews/R1-consistency.md#sr-003-blocker-check-providers-run-on-the-server-in-three-specs-on-the-runner-in-three-others), [SR-006](../reviews/R1-consistency.md#sr-006-major-the-cli-command-tree-lacks-commands-that-other-specs-cite), [SR-008](../reviews/R1-consistency.md#sr-008-major-how-spectio-drives-snakemake-python-api-worker-or-command-line-head-job), [SR-017](../reviews/R1-consistency.md#sr-017-major-engine-bridge-behaviour-when-the-server-is-unreachable-tower-era-text-and-no-testable-bound), [SR-022](../reviews/R1-consistency.md#sr-022-major-no-compatibility-window-between-cli-runners-engine-bridges-plugins-and-server), [SR-035](../reviews/R1-consistency.md#sr-035-major-push-transport-needs-an-inbound-kafka-consumer-the-architecture-does-not-have), [SR-047](../reviews/R1-consistency.md#sr-047-minor-fixture-workflows-and-step-numbers-in-dev-env-disagree-with-the-playbook-and-with-101), [SR-048](../reviews/R1-consistency.md#sr-048-minor-untestable-thresholds-head-silent-and-the-10000-file-watch-limit), [FC-001](../reviews/R2-open-validations.md#fc-001-major-snakemake-drains-on-sigterm-sigint-and-a-plain-scancel-lose-running-work), [FC-038](../reviews/R9-landscape.md#fc-038-major-a-snakemake-ro-crate-exporter-exists-the-synthesis-says-none-was-found), [FC-040](../reviews/R9-landscape.md#fc-040-major-spectio-cannot-pin-snakemake-a-supported-version-range-and-a-contract-test-are-needed), [FC-052](../reviews/R9-landscape.md#fc-052-minor-prefect-makes-the-same-choice-hides-that-prefect-keeps-one-migration-tree-per-dialect), [CH-001](../reviews/R4-constraints.md#ch-001-blocker-the-recommended-head-job-puts-the-engine-and-its-event-bridge-on-a-compute-node-where-outbound-network-is-often-blocked), [CH-002](../reviews/R4-constraints.md#ch-002-major-no-compatibility-window-for-the-ingest-and-runner-protocols-across-bridge-runner-and-server-versions), [CH-003](../reviews/R4-constraints.md#ch-003-major-continue-or-relaunch-can-start-while-the-previous-head-is-still-finishing), [CH-005](../reviews/R4-constraints.md#ch-005-major-no-traffic-budget-for-the-engine-bridges-batching-back-pressure-and-spool-limits), [CH-006](../reviews/R4-constraints.md#ch-006-major-nf-spectio-failure-semantics-are-unspecified-and-a-break-in-the-beta-interface-would-be-silent), [CH-008](../reviews/R4-constraints.md#ch-008-major-sse-fan-out-no-coalescing-a-6-connection-limit-per-browser-the-full-task-stream-to-every-tab), [CH-009](../reviews/R4-constraints.md#ch-009-major-snakemake-the-logger-interface-keeps-moving-only-snakemake-9-works-and-snakemakeapi-cannot-run-from-the-runners-environment), [CH-011](../reviews/R4-constraints.md#ch-011-major-the-event-log-grows-without-bound-and-raw-nextflow-trace-records-carry-script-and-env), [CH-012](../reviews/R4-constraints.md#ch-012-major-projection-in-the-ingest-transaction-in-one-process-and-one-event-loop-stalls-the-ui-and-sse-during-bursts), [CH-016](../reviews/R4-constraints.md#ch-016-major-stopping-at-a-gate-through-extwhen-is-proven-only-on-synthetic-pipelines), [CH-025](../reviews/R4-constraints.md#ch-025-major-apptainer-the-usual-hpc-container-runtime-is-untested-the-whole-matrix-uses-docker), [CH-027](../reviews/R4-constraints.md#ch-027-major-squeue-and-sacct-json-are-heavy-and-their-schema-changes-with-each-slurm-version-on-the-cli-path-too).
+- **Context:** all reversible and docs-only, so they proceed. The ones that revise a logged decision are marked †.
+  - Process model: check binding on the runner, verdict on the server (SR-003); Snakemake as a CLI head job in a per-workflow environment, Snakemake ≥ 9.0, logger interface 1.x and 2.x (SR-008, CH-009, FC-040) †"no Python subprocess"; SIGTERM drain and `scancel --signal=TERM --full` (FC-001); setup by `spectio login`, no wrapper (SR-006).
+  - Bridges: spool in the launch directory forwarded by the runner, prep on the login node, `NXF_OFFLINE=true` (CH-001); hooks ≤ 50 ms, buffer ≥ 24 h / 200 MB, never fail a run (SR-017), with CH-005's batching aligned to that cap; Nextflow ≥ 25.04 floor and enqueue-only hooks (CH-006); separate ingest version (CH-002); 60 s heartbeat, head silent after 5 min (SR-048).
+  - Server: append-and-ack ingest with one projector (CH-012) †synthesis §4; raw payloads archived after terminal (CH-011) †synthesis §2ter; coalesced SSE deltas (CH-008); launches table and runner mutex for Continue (CH-003).
+  - Scheduler and tests: text-format `squeue` poll, pinned JSON parser for details (CH-027) †2026-10-25 log; Kafka as a runner observer transport (SR-035); Apptainer in the nightly matrix (CH-025); gate stop on nf-core in T1/T2 (CH-016); synthetic pipelines as fixtures (SR-047); CLI and runners match the server minor before 1.0 (SR-022); RO-Crate plugin as optional input (FC-038); one Alembic tree (FC-052).
+- **Options:**
+  - (a) confirm all;
+  - (b) confirm all except the IDs you name;
+  - (c) revisit the bridge numbers after T2 measurements (SR-017 b, CH-005 C).
+- **Recommendation:** (a). The EMBL egress probe (CH-001 round question 4) needs EMBL IT and is not assumed.
+- **Assumed:** each finding's recommended option, as listed.
+- **Blocked:** nothing; a different answer reverts the assumed spec text.
+
+### #29 · Assumed: data model, API vocabulary and spec owners
+
+- **Covers:** [SR-004](../reviews/R1-consistency.md#sr-004-blocker-spectioyml-has-four-shapes-and-no-owner-of-its-schema), [SR-005](../reviews/R1-consistency.md#sr-005-blocker-tasks-names-two-different-tables-id-spaces-and-endpoint-families), [SR-012](../reviews/R1-consistency.md#sr-012-major-gate-decisions-five-verb-sets-two-resource-names-stale-mcp-tools-and-scopes), [SR-013](../reviews/R1-consistency.md#sr-013-major-endpoint-catalogues-duplicated-between-api-5-and-admin-5-three-public-config-endpoints), [SR-015](../reviews/R1-consistency.md#sr-015-major-background-task-ledger-and-schedules-two-schemas-two-locking-designs-no-jobs-object), [SR-016](../reviews/R1-consistency.md#sr-016-major-run-and-gate-states-five-vocabularies-no-enum-a-2-of-11-wes-mapping), [SR-026](../reviews/R1-consistency.md#sr-026-major-webhooks-are-both-a-project-table-and-a-notifier-plugin-instance), [SR-032](../reviews/R1-consistency.md#sr-032-major-built-in-plugins-are-separate-distributions-yet-one-uv-tool-install-spectio-is-said-to-be-enough), [SR-034](../reviews/R1-consistency.md#sr-034-major-schedulers-8-defines-tables-events-and-endpoints-the-api-spec-does-not-have), [SR-041](../reviews/R1-consistency.md#sr-041-minor-run-and-review-screens-are-specified-outside-ui-spec-two-cross-references-are-broken), [SR-042](../reviews/R1-consistency.md#sr-042-minor-the-built-in-ai-assistant-has-ui-and-a-runner-command-but-no-api-data-model-or-cli-entry), [SR-046](../reviews/R1-consistency.md#sr-046-minor-pipeline-identifier-and-workflow-version-key-vs-no-column), [SR-052](../reviews/R1-consistency.md#sr-052-minor-check-result-vocabulary-state-vs-verdict-and-how-severity-maps-to-them), [SR-053](../reviews/R1-consistency.md#sr-053-minor-ui-spec-contradicts-the-logged-shell-and-list-decisions-without-a-new-log-entry), [FC-025](../reviews/R2-open-validations.md#fc-025-minor-mantine-7-is-two-majors-behind-and-the-import-map-makes-the-major-part-of-the-plugin-contract).
+- **Context:** all reversible and docs-only.
+  - Schema: checking §12 owns `spectio.yml`, `stages[].gate` (SR-004); engine tasks keep `tasks`, the ledger becomes `background_tasks` (SR-005); admin §3.1 owns ledger columns, schedule locking by unique insert (SR-015); webhooks as a project table (SR-026); scheduler contracts move to api (SR-034); `<org>/<name>/<version>` identifiers (SR-046); check outcome and severity stored apart, event `spectio.check.evaluated` (SR-052).
+  - Vocabulary: `approve | apply | go_back | stop`, `gates:decide` (SR-012); run and gate enums of api §7.1 (SR-016); `/api/v1/admin/*` for system admins only (SR-013).
+  - Packaging and UI: built-ins as modules of one wheel, `spectio[server]` (SR-032); Mantine 7 aligned with depictio (FC-025); assistant endpoints specified, stage per #16 (SR-042); run and review tabs in ui-spec (SR-041); a log entry ratifying the full-width top bar (SR-053) †revises the logged shell.
+- **Options:**
+  - (a) confirm all;
+  - (b) confirm all except the IDs you name.
+- **Recommendation:** (a).
+- **Assumed:** each finding's recommended option, as listed.
+- **Blocked:** nothing; a different answer reverts the assumed spec text.
+
+### #30 · Assumed: UI boards, review screens and the documentation system
+
+- **Covers:** [UX-207](../reviews/R7-ui.md#ux-207-major-headline-counts-breakdowns-and-the-activity-feed-cannot-be-served-by-the-list-api), [UX-209](../reviews/R7-ui.md#ux-209-major-envstorage-cannot-be-fed-no-api-or-table-for-locations-lifecycle-rules-or-work-directory-actions), [UX-216](../reviews/R7-ui.md#ux-216-major-the-launch-flow-is-drawn-two-ways-launch-has-no-project-picker-and-boards-disagree-on-gates), [UX-226](../reviews/R7-ui.md#ux-226-minor-branding-lets-admins-recolour-status-colours-with-no-rule-linking-them-to-run-states), [UX-234](../reviews/R7-ui.md#ux-234-minor-phone-pinned-bars-content-shows-through-chips-are-clipped-next-stays-enabled-with-an-open-issue), [UX-105](../reviews/R12-ui-scenarios.md#ux-105-major-sub-items-and-a-sixth-view-items-sub-regions) (R12), [UX-108](../reviews/R12-ui-scenarios.md#ux-108-major-decisions-that-the-pipeline-cannot-read) (R12), [UX-109](../reviews/R12-ui-scenarios.md#ux-109-major-which-stages-a-parameter-change-reruns-and-at-what-cost) (R12), [UX-110](../reviews/R12-ui-scenarios.md#ux-110-major-gates-that-wait-for-a-signal) (R12), [UX-112](../reviews/R12-ui-scenarios.md#ux-112-minor-adding-a-gate-at-launch) (R12), [UX-113](../reviews/R12-ui-scenarios.md#ux-113-major-relaunch-with-resource-changes-and-a-dry-run-estimate) (R12), [UX-125](../reviews/R12-ui-scenarios.md#ux-125-minor-software-inventory-and-pre-pulled-images) (R12), [UX-128](../reviews/R12-ui-scenarios.md#ux-128-major-thumbnails-crops-and-the-viewer-contract) (R12), [DOC-001](../reviews/R11-docs.md#doc-001-major-two-owners-describe-two-different-public-landing-pages), [DOC-003](../reviews/R11-docs.md#doc-003-major-review-approve-is-self-declared-and-leaves-no-record), [DOC-004](../reviews/R11-docs.md#doc-004-major-w0-progress-pages-cite-commits-outside-the-branch-history), [DOC-005](../reviews/R11-docs.md#doc-005-major-dark-theme-shows-light-only-screens-on-the-landing), [DOC-007](../reviews/R11-docs.md#doc-007-minor-documentation-systemmd-specifies-tools-and-settings-that-do-not-exist).
+- **Context:** all reversible and docs-only.
+  - R7 boards: summary endpoints and Load more instead of numbered pages (UX-207); EnvStorage endpoints and `workdir_usage` (UX-209); Launch as one page with a progress stepper (UX-216); brand status colours for alerts only (UX-226); Next disabled with its reason on MLaunch (UX-234).
+  - R12 review screens: a sixth "matrix" view with `children` (UX-105); filter artifacts targeting a declared parameter (UX-108); "Apply and rerun from stage N" with an estimated cost (UX-109); a signal-gate contract (UX-110); per-run gates when the overlay allows (UX-112); relaunch overrides and `dry_run` (UX-113); a read-only software inventory (UX-125); an OME-Zarr viewer contract (UX-128).
+  - Docs: documentation-system §2 owns the landing, Landing.dc.html kept as a post-0.1 draft (DOC-001; its WES item follows #17); verdicts recorded as `review_score` with 15 pages grandfathered (DOC-003); W0 pages note the squash into 9185808 without linking the old branch (DOC-004, independent of #5); dark-mode screenshots dimmed by CSS for now (DOC-005); documentation-system §1/§3 aligned to the real tools (DOC-007).
+- **Options:**
+  - (a) confirm all;
+  - (b) confirm all except the IDs you name.
+- **Recommendation:** (a).
+- **Assumed:** each finding's recommended option, as listed.
+- **Blocked:** nothing; a different answer reverts the assumed spec text and boards.
