@@ -1,13 +1,15 @@
 """Token and agent usage of the current Claude Code session, from its transcripts.
 
 usage.py <outdir>     e.g. usage.py .autopilot/usage
-The current session is the newest top-level transcript under ~/.claude/projects/; its numbers, with
+The current session's top-level transcript under ~/.claude/projects/ is the one named after
+$CLAUDE_CODE_SESSION_ID when that is set, otherwise the one whose records carry the repository root
+(git rev-parse --show-toplevel) as "cwd"; with none or several, the script fails. Its numbers, with
 its subagents and workflows, go to <outdir>/<transcript stem>.json. Each cloud session has its own
 container, so a session snapshots itself before it ends and commits the file; build.py merges them all.
 Each API response is counted once (deduplicated by message id). Tokens: input (uncached),
 cache_write, cache_read, output.
 """
-import json, pathlib, sys, collections
+import json, os, pathlib, subprocess, sys, collections
 
 KEYS = ("input_tokens", "cache_creation_input_tokens", "cache_read_input_tokens", "output_tokens")
 NAMES = ("input", "cache_write", "cache_read", "output")
@@ -29,11 +31,26 @@ def scan(path):
         model[m.get("model", "?")] += 1
     return {"tokens": tok, "calls": calls, "model": model.most_common(1)[0][0] if model else None, "start": first, "end": last}
 
+def first_cwd(path):
+    for line in path.open():
+        try: cwd = json.loads(line).get("cwd")
+        except (ValueError, AttributeError): continue
+        if cwd: return cwd
+
+def transcript():
+    projects = pathlib.Path.home() / ".claude" / "projects"
+    sid = os.environ.get("CLAUDE_CODE_SESSION_ID")
+    if sid:
+        found, how = list(projects.glob(f"*/{sid}.jsonl")), f"named {sid}.jsonl"
+    else:
+        root = subprocess.run(["git", "rev-parse", "--show-toplevel"], capture_output=True, text=True, check=True).stdout.strip()
+        found, how = [t for t in projects.glob("*/*.jsonl") if first_cwd(t) == root], f"started in {root}"
+    if len(found) != 1:
+        sys.exit(f"usage.py: {len(found)} transcripts {how} under {projects}, expected one; set CLAUDE_CODE_SESSION_ID")
+    return found[0]
+
 def main(outdir):
-    found = list((pathlib.Path.home() / ".claude" / "projects").glob("*/*.jsonl"))
-    if not found:
-        sys.exit("usage.py: no transcript under ~/.claude/projects/")
-    main_t = max(found, key=lambda p: p.stat().st_mtime)  # the running session writes its transcript as it goes
+    main_t = transcript()
     rows, wfs = [], []
     r = scan(main_t); r.update(id=main_t.stem, kind="main", type="session", label="main session " + main_t.stem[:8]); rows.append(r)
     sdir = main_t.with_suffix("")

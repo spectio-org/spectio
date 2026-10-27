@@ -575,9 +575,9 @@ function decisions() {
   const counts = {}; D.inbox.forEach(i => counts[i.status] = (counts[i.status] || 0) + 1);
   const list = D.inbox.filter(i => ifilter === "all" || i.status === ifilter);
   const f = [["open", "Open"], ["assumed", "Assumed"], ["partial", "Partial"], ["deferred", "Deferred"], ["answered", "Answered"], ["all", "All"]];
-  return `<p class="lede">The questions the autopilot does not settle alone. Click an entry to read it in full, then, if you own this page, accept the recommendation or write your answer: it is saved here, and the next autopilot tick copies it into <code class="mono">inbox.md</code> as an answer to that entry only. A go / no-go, a merge or a permission change still needs the chat or a commit. Source: ${dl("docs/reviews/inbox.md", "docs/reviews/inbox.md")}. “Assumed”: the autopilot already goes ahead with the recommended option and waits for Thomas to confirm.</p>
+  return `<p class="lede">The questions the autopilot does not settle alone. Click an entry to read it in full, then, if you own this page, accept the recommendation or write your answer: it is saved here, and the next autopilot tick copies it into <code class="mono">inbox.md</code> as an answer to that entry only, to confirm in the chat or a commit. A go / no-go, a merge or a permission change still needs the chat or a commit. Source: ${dl("docs/reviews/inbox.md", "docs/reviews/inbox.md")}. “Assumed”: the autopilot already goes ahead with the recommended option and waits for Thomas to confirm.</p>
   <div class="filters" role="group" aria-label="Filter">${f.map(([k, l]) => `<button class="chip" data-if="${k}" aria-pressed="${ifilter === k}">${l} <span class="num">${k === "all" ? D.inbox.length : counts[k] || 0}</span></button>`).join("")}</div>
-  <div class="ibox">${list.map(i => `<details class="icard ${i.status}" data-inbox="${i.n}"><summary class="hd"><span class="n">#${i.n}</span><span class="tt">${md(i.title)}</span>${pill(i.status, ITL[i.status])}${i.not001 ? `<span class="tag">after 0.0.1</span>` : ""}${i.covers ? `<span class="tag">${i.covers} findings</span>` : ""}<span class="tag ansd" data-ansd="${i.n}"${ANS[i.n] ? "" : " hidden"}>answered here</span><span class="tag">${i.n >= 41 ? "D3" : i.n >= 32 ? "TRIAGE2" : i.n >= 11 ? "TRIAGE1" : "before W1"}</span></summary>
+  <div class="ibox">${list.map(i => `<details class="icard ${i.status}" data-inbox="${i.n}"><summary class="hd"><span class="n">#${i.n}</span><span class="tt">${md(i.title)}</span>${pill(i.status, ITL[i.status])}${i.not001 ? `<span class="tag">after 0.0.1</span>` : ""}${i.covers ? `<span class="tag">${i.covers} findings</span>` : ""}<span class="tag ansd" data-ansd="${i.n}"${ANS[i.n] ? "" : " hidden"}>answered here</span><span class="tag">${esc(i.batch)}</span></summary>
     ${i.answer ? `<p><b>Answer:</b> ${md(i.answer)}</p>` : ""}${!i.answer && i.rec ? `<p><b>Recommended:</b> ${md(i.rec)}</p>` : ""}${i.blocked && i.status !== "answered" ? `<p><b>Blocks:</b> ${md(i.blocked)}</p>` : ""}<div class="ib" hidden></div></details>`).join("") || `<p class="empty">No entry with this status.</p>`}</div>`;
 }
 
@@ -664,25 +664,39 @@ function asDocLink(a, p, frag) {
   a.removeAttribute("href"); a.removeAttribute("target"); a.classList.add("dl"); a.setAttribute("role", "link"); a.tabIndex = 0;
   if (p) a.dataset.doc = p; if (frag) a.dataset.anchor = frag;
 }
+// Markdown is untrusted: no data-* attributes (the page adds data-doc, data-anchor, data-lb itself), no style or form controls,
+// no ids (they could shadow the page's own) or inline styles (overlays), and no comment but the <!--cls:…--> image markers
+const PURIFY = {ADD_TAGS: ["#comment"], ALLOW_DATA_ATTR: false, SAFE_FOR_XML: true, FORBID_TAGS: ["style", "form", "input", "textarea", "button", "select"], FORBID_ATTR: ["id", "name", "style"]};
+// media URLs wait in data-src / data-poster until renderMd has resolved them, so the browser never fetches one by itself
+DOMPurify.addHook("afterSanitizeAttributes", n => {
+  if (/^(IMG|VIDEO|SOURCE)$/.test(n.nodeName)) for (const at of ["src", "poster"]) if (n.hasAttribute(at)) { n.setAttribute("data-" + at, n.getAttribute(at)); n.removeAttribute(at); }
+});
 function renderMd(path, text, el = $("#doc-md")) {
   const {meta, src} = prep(text);
   // attribute lists ({ .class }, { #id }) after images and headings: keep the class on images, drop the rest
   const html = marked.parse(src.replace(/(!\[[^\]]*\]\([^)]*\))\{\s*\.([\w-]+)[^}]*\}/g, "$1<!--cls:$2-->").replace(/ ?\{\s*[#.:][^}\n]*\}/g, "").replace(/:(material|simple|octicons|fontawesome)-[\w-]+:/g, ""), {gfm: true});
-  el.innerHTML = (meta ? `<div class="meta">${meta}</div>` : "") + DOMPurify.sanitize(html, {ADD_TAGS: ["#comment"]});  // comments kept for the <!--cls:…--> image markers
+  el.innerHTML = (meta ? `<div class="meta">${meta}</div>` : "") + DOMPurify.sanitize(html, PURIFY);
+  const cm = document.createTreeWalker(el, NodeFilter.SHOW_COMMENT), drop = [];
+  while (cm.nextNode()) if (!/^cls:[\w-]+$/.test(cm.currentNode.data)) drop.push(cm.currentNode);
+  drop.forEach(c => c.remove());
   const seen = {};
   el.querySelectorAll("h1,h2,h3,h4,h5,h6").forEach(h => { let id = slugify(h.textContent); if (seen[id]) id += "-" + seen[id]++; else seen[id] = 1; h.id = "d-" + id; });
   el.querySelectorAll("table").forEach(tb => { const w = document.createElement("div"); w.className = "tw"; tb.replaceWith(w); w.appendChild(tb); });
-  // videos (raw HTML): map src and poster to embedded data
+  // videos (raw HTML): map src and poster to embedded data; anything else is dropped, so the page fetches no media
   el.querySelectorAll("video, video source").forEach(v => {
-    for (const at of ["src", "poster"]) { const f = media(path, v.getAttribute(at)); if (f) v.setAttribute(at, IMGS[f]); }
+    for (const at of ["src", "poster"]) { const f = media(path, v.dataset[at]); v.removeAttribute("data-" + at); if (f) v.setAttribute(at, IMGS[f]); }
   });
   el.querySelectorAll("video").forEach(v => { v.controls = true; v.preload = "metadata"; v.load(); });
   el.querySelectorAll("img").forEach(im => {
-    const raw = im.getAttribute("src") || "", frag = raw.split("#")[1];
+    const raw = im.dataset.src || "", frag = raw.split("#")[1]; im.removeAttribute("data-src");
     const full = media(path, raw);
-    if (full === undefined) { const a = document.createElement("a"); a.className = "fig-miss"; a.href = GHP + normPath(dirOf(path) + raw.split("#")[0]); a.target = "_blank"; a.rel = "noopener"; a.textContent = "Image: " + (im.alt || raw.split("/").pop()); im.replaceWith(a); return; }
+    const remote = full === null && !/^data:image\//.test(raw);  // an image from another site becomes a link to it, never a request from this page
+    if (full === undefined || remote) { const a = document.createElement("a"); a.className = "fig-miss"; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Image: " + (im.alt || raw.split("/").pop());
+      if (!remote) a.href = GHP + normPath(dirOf(path) + raw.split("#")[0]); else if (/^https?:/i.test(raw)) a.href = raw;
+      im.replaceWith(a); return; }
+    im.src = full ? IMGS[full] : raw;  // embedded, or an inline data:image
     if (/badge|shields\.io/.test(raw)) return;
-    if (full) im.src = IMGS[full]; im.loading = "lazy"; im.decoding = "async";
+    im.loading = "lazy"; im.decoding = "async";
     if (im.closest("a, figure, video") || im.hasAttribute("class")) return;
     const cls = im.nextSibling?.nodeType === 8 && /^cls:/.test(im.nextSibling.data) ? im.nextSibling.data.slice(4) : "";
     const fig = document.createElement("figure");
@@ -770,7 +784,7 @@ function paintAct(el) {
   if (!DB || !OWNER || !ANSWERABLE.includes(i.status)) { el.hidden = true; return; }
   el.hidden = false; el.dataset.state = a ? a.at : ""; delete el.dataset.editing;
   el.innerHTML = a ? `<div class="mine"><b>Your answer</b> (${fmt(a.at)}): ${a.choice === "recommended" ? "accept the recommendation." : ""} ${esc(a.text || "")}</div>
-      <div class="row"><button class="dbtn" data-ans-edit="${n}">Change</button><button class="dbtn" data-ans-del="${n}">Withdraw</button><span class="msg">Copied into the inbox at the next tick.</span></div>`
+      <div class="row"><button class="dbtn" data-ans-edit="${n}">Change</button><button class="dbtn" data-ans-del="${n}">Withdraw</button><span class="msg">Copied into the inbox at the next tick; confirm it in the chat or a commit.</span></div>`
     : `<div class="row">${i.rec ? `<button class="pbtn" data-ans-rec="${n}">Accept the recommendation</button>` : ""}</div>
       <textarea data-ans-text="${n}" placeholder="Or write your answer (an option letter, a choice, a condition)…" aria-label="Your answer to #${n}"></textarea>
       <div class="row"><button class="dbtn" data-ans-own="${n}">Save my answer</button><span class="msg" data-ans-msg="${n}"></span></div>`;
@@ -785,10 +799,11 @@ async function saveAns(n, body) {
   catch (e) { if (msg) msg.textContent = e.code === "invalid_argument" ? "Only the owner of this page can answer." : "Not saved, try again."; }
 }
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-ans-rec],[data-ans-own],[data-ans-del],[data-ans-edit]"); if (!t || !DB) return;
-  const d = t.dataset, at = new Date().toISOString();
+  const t = e.target.closest("[data-ans-rec],[data-ans-own],[data-ans-del],[data-ans-edit]"); if (!t || !DB || !OWNER) return;
+  const d = t.dataset, at = new Date().toISOString(), act = t.closest(".act[data-act]");
+  if (!act || act.closest(".mdv") || act.dataset.act !== (d.ansRec || d.ansOwn || d.ansDel || d.ansEdit)) return;
   if (d.ansRec) saveAns(d.ansRec, {choice: "recommended", text: "", at});
-  else if (d.ansOwn) { const v = document.querySelector(`[data-ans-text="${d.ansOwn}"]`).value.trim(); if (v) saveAns(d.ansOwn, {choice: "own", text: v.slice(0, 4000), at}); }
+  else if (d.ansOwn) { const v = act.querySelector("textarea[data-ans-text]").value.trim(); if (v) saveAns(d.ansOwn, {choice: "own", text: v.slice(0, 4000), at}); }
   else if (d.ansDel) saveAns(d.ansDel, null);
   else if (d.ansEdit) { const a = ANS[d.ansEdit]; delete ANS[d.ansEdit]; const el = t.closest(".act"); paintAct(el); ANS[d.ansEdit] = a; el.dataset.editing = a.at; const ta = el.querySelector("textarea"); ta.value = a.text || ""; ta.focus(); }
 });
@@ -828,9 +843,9 @@ function openStep(id, tab, push = true) {
   showDoc(`${s.id} · ${file}`, GHP + file + (cur?.anchor ? "#" + cur.anchor : ""), null, push);
 }
 const isDark = () => document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-function jump(anchor) {
+function jump(anchor, root = $("#doc-md")) {
   if (!anchor) return;
-  const t = document.getElementById("d-" + slugify(decodeURIComponent(anchor)));
+  const t = root.querySelector("#" + CSS.escape("d-" + slugify(decodeURIComponent(anchor))));
   if (t) { t.scrollIntoView({block: "start"}); t.classList.remove("flash"); void t.offsetWidth; t.classList.add("flash"); }
 }
 function closeDoc() { $("#doc").hidden = true; $("#docscrim").hidden = true; docHist = []; docCur = null; $("#doc-step").innerHTML = ""; }
@@ -963,7 +978,7 @@ function route() {
 document.addEventListener("click", e => {
   const lb = e.target.closest("[data-lb]"); if (lb) { e.preventDefault(); openLb(lb.querySelector("img")); return; }
   const d = e.target.closest("[data-doc]:not([href])"); if (d) { e.preventDefault(); openDoc(d.dataset.doc, d.dataset.anchor); return; }
-  const an = e.target.closest("a.dl[data-anchor]:not([data-doc])"); if (an) { e.preventDefault(); jump(an.dataset.anchor); return; }
+  const an = e.target.closest("a.dl[data-anchor]:not([data-doc])"); if (an) { e.preventDefault(); jump(an.dataset.anchor, an.closest(".mdv") || $("#doc-md")); return; }
   const st = e.target.closest("[data-step]"); if (st) { openStep(st.dataset.step); return; }
   const tb = e.target.closest("[data-stab]"); if (tb && docCur?.step) { openStep(docCur.step, tb.dataset.stab, false); return; }
   const f = e.target.closest("[data-if]"); if (f) { ifilter = f.dataset.if; route(); return; }

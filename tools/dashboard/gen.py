@@ -63,7 +63,10 @@ for s in steps:
 # inbox
 inbox = []
 txt = open("docs/reviews/inbox.md").read()
-for part in re.split(r"\n### ", txt)[1:]:
+parts, batch = re.split(r"\n### ", txt), "before W1"
+for prev, part in zip(parts, parts[1:]):
+    # the batch is the last "## <NAME> (date)" heading above the entry, e.g. "## TRIAGE1 (2026-10-27)"
+    batch = ([batch] + re.findall(r"^## (\S+) \(", prev, re.M))[-1]
     head = part.split("\n")[0]
     m = re.match(r"#(\d+) · (.+)", head)
     if not m:
@@ -96,7 +99,7 @@ for part in re.split(r"\n### ", txt)[1:]:
         "answer": (ans.group(1)[:420] if ans else None),
         "blocked": blocked.group(1)[:200] if blocked else None,
         "rec": rec.group(1)[:300] if rec else None,
-        "covers": covers,
+        "batch": batch, "covers": covers,
         "not001": bool(re.search(r"[Nn]ot needed for 0\.0\.1", part)),
     })
 
