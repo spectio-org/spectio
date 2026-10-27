@@ -59,7 +59,12 @@ deps() {
 sast() {
   # --severity accepts INFO, WARNING or ERROR (`semgrep scan --help`, 1.182.1; docs.semgrep.dev/cli-reference,
   # read 2026-10-27). ERROR, the highest, stands for the "high or critical" bar of §11.
-  # --disable-nosem: an inline `nosemgrep` comment does not hide a finding.
+  # --disable-nosem: an inline `nosemgrep` comment does not hide a finding. semgrep also reads a .semgrepignore in
+  # any directory (`semgrep scan --help`); only the root one is allowed.
+  if git ls-files -- '*.semgrepignore' | grep -vx '.semgrepignore'; then
+    echo "a .semgrepignore outside the repository root hides code from SAST; move its entries to /.semgrepignore" >&2
+    return 1
+  fi
   uvx --from "semgrep==$SEMGREP_VERSION" semgrep scan --metrics off --error --severity ERROR --disable-nosem \
     --config p/python --config p/javascript
 }

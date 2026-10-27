@@ -14,7 +14,7 @@
 # Security exceptions are reviewed entries in each scanner's ignore file (dev-environment-and-testing.md §11).
 /.gitleaks.toml                 @weber8thomas
 /.gitleaksignore                @weber8thomas
-/.semgrepignore                 @weber8thomas
+**/.semgrepignore               @weber8thomas
 **/osv-scanner.toml             @weber8thomas
 # Auth and secrets code, once it exists (architecture-plugins-and-packaging.md §6).
 /plugins/auth-*/                @weber8thomas
