@@ -546,6 +546,9 @@ flowchart LR
   S -->|"reads the spool"| R
 ```
 
+![0.0.1 on the cluster: the laptop opens a token link through an SSH tunnel to spectio serve on the login node, the built-in runner submits the engine head with sbatch, the head sends tasks through SLURM, and events come back through a spool file on the shared file system](../assets/diagrams/mvp001_cluster_light.png#only-light)
+![0.0.1 on the cluster: the laptop opens a token link through an SSH tunnel to spectio serve on the login node, the built-in runner submits the engine head with sbatch, the head sends tasks through SLURM, and events come back through a spool file on the shared file system](../assets/diagrams/mvp001_cluster_dark.png#only-dark)
+
 **Architecture.**
 - **One server per user.** Each user runs `spectio serve` under their own Unix account on the cluster login node: one process holding the UI, the API, the built-in runner and SQLite ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.1, §7.3). Users do not share a server, so the Unix account is the only identity; there are no Spectio accounts.
 - **Launch.** The built-in runner submits each engine head with `sbatch` (built-in SLURM launcher, CLI transport; head job, naming and restart reconciliation: [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1, §3.3). The head runs the engine with its Spectio plugin, always; its tasks go to SLURM through the engine's own SLURM executor. Where compute nodes have no egress, the network steps of the offline head (§3.1 there) run on the login node before `sbatch` **[to be validated per site]**. The Snakemake SLURM executor plugin warns against running Snakemake inside a SLURM job (quoted in [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1); whether the Snakemake head is a head job in 0.0.1 is **[to be validated]** in spike T3.
