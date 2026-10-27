@@ -34,7 +34,32 @@
 }
 
 .md-typeset h1, .md-typeset h2, .md-typeset h3, .sp-hero__name, .sp-feature__num { font-family: "Outfit", "Inter", sans-serif; }
-.md-header__button.md-logo img { height: 1rem; width: auto; }
+/* Header and tabs sit on the page surface, not the violet primary, so the four-colour emblem keeps its contrast */
+.md-header, .md-tabs {
+  background-color: var(--sp-surface); color: var(--sp-text);
+  --md-primary-bg-color: var(--sp-text); --md-primary-bg-color--light: var(--sp-text-3);
+}
+.md-tabs { border-bottom: 1px solid var(--sp-line); }
+@media screen and (max-width: 76.234375em) {
+  .md-nav--primary .md-nav__title[for="__drawer"] { background-color: var(--sp-surface); color: var(--sp-text); border-bottom: 1px solid var(--sp-line); }
+  .md-nav--primary .md-nav__title .md-nav__button.md-logo img { height: 1.6rem; width: auto; }
+  .md-nav__source { background-color: var(--sp-surface-subtle); color: var(--sp-text); border-bottom: 1px solid var(--sp-line); }
+}
+.md-tabs__link--active, .md-tabs__item--active .md-tabs__link { color: var(--sp-violet-700); }
+[data-md-color-scheme="slate"] .md-tabs__item--active .md-tabs__link { color: #CDB9FB; }
+.md-header__button.md-logo img { height: 1.2rem; width: auto; }
+@media screen and (min-width: 60em) {
+  .md-header .md-search__input { background-color: var(--sp-surface-subtle); color: var(--sp-text); box-shadow: inset 0 0 0 1px var(--sp-line); }
+  .md-header .md-search__input::placeholder, .md-header .md-search__icon { color: var(--sp-text-3); }
+}
+/* Material hides the header logo below 76.25em; keep it, after the menu button, on tablets and phones */
+@media screen and (max-width: 76.234375em) {
+  .md-header { box-shadow: 0 1px 0 var(--sp-line); }
+  .md-header__button.md-logo { display: inline-block; order: 1; margin: 0 0 0 .2rem; padding: 0; }
+  .md-header__inner > label.md-header__button[for="__drawer"] { order: 0; }
+  .md-header__title { order: 2; margin-left: .5rem; }
+  .md-header__inner > :not(.md-header__button.md-logo):not(label[for="__drawer"]):not(.md-header__title) { order: 3; }
+}
 
 /* Status icons used by hooks/progress.py */
 .sp-ok { color: var(--sp-ok); } .sp-run { color: var(--sp-run); } .sp-wait { color: var(--sp-wait); }
@@ -110,14 +135,41 @@
 .sp-footer a { color: var(--md-footer-fg-color); }
 
 /* ---------- Landing page v2 (depictio-docs layout: centred hero, logo cards, illustrated steps) ---------- */
-.sp-hero2 { text-align: center; max-width: 46rem; margin: 2.4rem auto 1.6rem; }
-.sp-hero2__brand { display: inline-flex; align-items: flex-end; gap: 1rem; margin-bottom: 1.4rem; }
-.md-typeset .sp-hero2__emblem { width: 6.4rem; height: auto; margin-bottom: -.3rem; }
-.sp-hero2__name { font-family: "Outfit", "Inter", sans-serif; font-size: 3.6rem; font-weight: 600; line-height: 1; letter-spacing: -.02em; color: var(--sp-text); }
+.sp-hero2 { position: relative; text-align: center; max-width: 46rem; margin: 2rem auto 1.6rem; }
+/* soft brand glow behind the lockup */
+.sp-hero2::before { content: ""; position: absolute; z-index: -1; left: 50%; top: 1.5rem; width: 34rem; max-width: 100%; height: 14rem; transform: translateX(-50%);
+  background: radial-gradient(closest-side, rgba(139, 92, 246, .18), transparent), radial-gradient(closest-side at 70% 60%, rgba(236, 95, 135, .14), transparent), radial-gradient(closest-side at 30% 70%, rgba(249, 169, 71, .12), transparent);
+  filter: blur(18px); pointer-events: none; }
+/* lockup: the fan sits on the wordmark's baseline */
+.sp-hero2__brand { display: inline-flex; align-items: flex-end; gap: 1.1rem; margin: 1.6rem 0 1.4rem; }
+.sp-emblem { width: 7rem; height: auto; overflow: visible; }
+.sp-emblem path { transform-origin: 100px 98px; transform-box: view-box; animation: sp-fan .9s cubic-bezier(.2, .8, .2, 1) both; }
+.sp-emblem path:nth-child(1) { animation-delay: .05s; --r: -50deg; }
+.sp-emblem path:nth-child(2) { animation-delay: .15s; --r: -25deg; }
+.sp-emblem path:nth-child(3) { animation-delay: .25s; --r: 25deg; }
+.sp-emblem path:nth-child(4) { animation-delay: .35s; --r: 50deg; }
+@keyframes sp-fan { from { opacity: 0; transform: rotate(var(--r)) scale(.6); } to { opacity: 1; transform: none; } }
+.sp-hero2__brand:hover .sp-emblem path { transition: transform .3s; }
+.sp-hero2__brand:hover .sp-emblem path:nth-child(1) { transform: translate(-3px, 0); }
+.sp-hero2__brand:hover .sp-emblem path:nth-child(2) { transform: translate(-2px, -2px); }
+.sp-hero2__brand:hover .sp-emblem path:nth-child(3) { transform: translate(2px, -2px); }
+.sp-hero2__brand:hover .sp-emblem path:nth-child(4) { transform: translate(3px, 0); }
+.sp-wordmark { font-family: "Outfit", "Inter", sans-serif; font-size: 4.2rem; font-weight: 600; line-height: .74; letter-spacing: -.035em; color: var(--sp-text);
+  animation: sp-rise .8s .3s cubic-bezier(.2, .8, .2, 1) both; }
+@keyframes sp-rise { from { opacity: 0; transform: translateY(.4rem); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sp-emblem path, .sp-wordmark { animation: none; } }
+/* status line above the lockup: replaces the old "design phase" badge */
+.md-typeset a.sp-status { display: inline-flex; align-items: center; gap: .55rem; max-width: 100%; padding: .3rem .8rem .3rem .45rem; border-radius: 2rem; font-size: .68rem; color: var(--sp-text-2);
+  background: linear-gradient(var(--sp-surface), var(--sp-surface)) padding-box, linear-gradient(90deg, var(--sp-indigo-500), var(--sp-violet-500), var(--sp-coral-500), var(--sp-amber-500)) border-box;
+  border: 1px solid transparent; box-shadow: 0 1px 2px rgba(15, 16, 32, .05); transition: transform .15s; }
+.md-typeset a.sp-status:hover { transform: translateY(-1px); color: var(--sp-text); }
+.md-typeset a.sp-status b { display: inline-flex; align-items: center; gap: .4rem; padding: .1rem .55rem; border-radius: 2rem; background: var(--sp-violet-50); color: var(--sp-violet-700); font-weight: 600; white-space: nowrap; flex-shrink: 0; }
+[data-md-color-scheme="slate"] .md-typeset a.sp-status b { background: rgba(139, 92, 246, .18); color: #CDB9FB; }
+.sp-status__go { color: var(--sp-text-3); }
+@media (max-width: 30em) { .md-typeset a.sp-status { font-size: .62rem; text-align: left; } }
 .md-typeset .sp-hero2__tagline { font-family: "Outfit", "Inter", sans-serif; font-size: 1.55rem; line-height: 1.3; font-weight: 600; color: var(--sp-text); margin: 0 0 .8rem; }
 .md-typeset .sp-hero2__sub { font-size: .9rem; color: var(--sp-text-2); margin: 0 0 1.4rem; }
 .md-typeset .sp-hero2__actions .md-button { margin: 0 .3rem .5rem; border-radius: .4rem; }
-.md-typeset .sp-badge { display: inline-block; font-size: .68rem; color: var(--sp-text-3); border: 1px solid var(--sp-line); border-radius: 1rem; padding: .15rem .7rem; margin-top: .4rem; }
 .md-typeset .sp-hero2__media { max-width: 64rem; margin: 0 auto 1rem; }
 .md-typeset .sp-hero2__media video { width: 100%; display: block; border-radius: .7rem; border: 1px solid var(--sp-line); box-shadow: 0 16px 40px rgba(15, 16, 32, .14); }
 .md-typeset .sp-hero2__media figcaption { font-size: .68rem; color: var(--sp-text-3); }
@@ -129,15 +181,18 @@
 .sp-works { display: grid; grid-template-columns: repeat(4, 1fr); gap: .8rem; max-width: 62rem; margin: 0 auto; }
 @media (max-width: 60em) { .sp-works { grid-template-columns: repeat(2, 1fr); } }
 @media (max-width: 30em) { .sp-works { grid-template-columns: 1fr; } }
-.md-typeset .sp-works__group { display: flex; flex-direction: column; gap: .45rem; padding: .9rem .9rem .8rem; border: 1px solid var(--sp-line); border-radius: .6rem; background: var(--sp-surface); }
-.md-typeset .sp-works__label { margin: 0 0 .2rem; font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--sp-text-3); }
-.md-typeset a.sp-work { display: flex; align-items: center; gap: .6rem; padding: .35rem .4rem; border-radius: .4rem; color: var(--sp-text); font-size: .74rem; font-weight: 600; line-height: 1.25; }
+.md-typeset .sp-works__group { display: flex; flex-direction: column; gap: .15rem; min-width: 0; padding: .9rem .9rem .8rem; border: 1px solid var(--sp-line); border-radius: .6rem; background: var(--sp-surface); }
+.md-typeset .sp-works__label { display: flex; align-items: center; gap: .5rem; margin: 0 0 .5rem; padding-bottom: .6rem; border-bottom: 1px solid var(--sp-line); font-size: .62rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--sp-text-2); }
+.md-typeset .sp-ic--sm { width: 1.5rem; height: 1.5rem; border-radius: .4rem; margin: 0; flex: none; }
+.md-typeset .sp-ic--sm svg { width: .95rem; height: .95rem; }
+.md-typeset a.sp-work { display: flex; align-items: center; gap: .65rem; min-height: 2.4rem; padding: .3rem .4rem; margin: 0 -.4rem; border-radius: .4rem; color: var(--sp-text); font-size: .74rem; font-weight: 600; line-height: 1.25; white-space: nowrap; }
 .md-typeset a.sp-work:hover { background: var(--sp-line); }
 .md-typeset .sp-work img { width: 1.6rem; height: 1.6rem; object-fit: contain; flex-shrink: 0; }
+.md-typeset .sp-work > span:last-child { overflow: hidden; text-overflow: ellipsis; }
 .md-typeset .sp-work__icon { line-height: 0; color: var(--sp-ink-500); flex-shrink: 0; }
 .md-typeset .sp-work__icon.sp-k8s { color: #326CE5; }
 .md-typeset .sp-work__icon .twemoji, .md-typeset .sp-work__icon svg { width: 1.6rem; height: 1.6rem; }
-.md-typeset .sp-works__later { margin: auto 0 0; padding-top: .2rem; font-size: .64rem; color: var(--sp-text-3); }
+.md-typeset .sp-works__later { margin: auto 0 0; padding-top: .6rem; font-size: .64rem; color: var(--sp-text-3); }
 .sp-works__group > p:not([class]) { display: contents; }
 .md-typeset .sp-fine { text-align: center; font-size: .62rem; color: var(--sp-text-3); margin-top: .6rem; }
 
@@ -180,7 +235,8 @@
   .sp-step, .sp-step--flip { grid-template-columns: minmax(0, 1fr); }
   .sp-step--flip .sp-step__text { order: 0; }
   .sp-cards2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .sp-hero2__name { font-size: 2.6rem; }
+  .sp-wordmark { font-size: 3rem; }
+  .sp-emblem { width: 5rem; }
   .md-typeset .sp-hero2__tagline { font-size: 1.2rem; }
   .sp-pair { grid-template-columns: minmax(0, 1fr); }
 }
