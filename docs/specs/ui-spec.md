@@ -241,18 +241,22 @@ A separate, simpler layout below 768 px (depictio's phone model), not a squeezed
 ### 5.1 Stages, gates and `spectio.yml`
 Where stages come from, in order: (1) declared in `spectio.yml`, in the workflow repository or attached in Spectio as a **lab overlay** for a pipeline you do not own (nf-core/rnaseq declares none; the rnaseq stages in the mockups come from such an overlay); (2) detected from structure, display only, no gates: Nextflow top-level subworkflows from the fully qualified task name (`NFCORE_RNASEQ:RNASEQ:ALIGN_STAR:STAR_ALIGN`), Snakemake module prefixes and checkpoints; (3) none: the gauge shows task quarters; resume and restart still work, rerun-from-stage does not.
 
-`spectio.yml` keys: `workflow` (name, engine, version range), `stages` (id, name, `match` globs on process / rule names, optional `gate`, `important`, `watch` for live per-file checks: [`checking-scenarios.md`](checking-scenarios.md) §11), `gates` (title, `evidence` globs for the viewers, `checks` (metric, min/max, per item), `items` (what one item is: samplesheet rows, wells…), `editable` (intermediate files a reviewer may change, with how they are fed back: in place for Snakemake, through a named parameter for Nextflow), `decide` (auto_approve, humans, agents: propose | approve | none, timeout)), `reports`, `launch` (profiles, hidden params), and for Snakemake `ui` (labels, groups, file pickers for config keys).
+The `spectio.yml` keys (`workflow`, `stages`, `gates`, `reports`, `launch`, `ui`, `depictio`) are specified in [`checking-scenarios.md`](checking-scenarios.md) §12. *(assumed — pending Thomas, inbox #29)*
 
-How a gate stops the engine without forking: Nextflow — a generated config sets `ext.when = false` on the processes of later stages (nf-core modules honour `task.ext.when`), so the run ends after the gated stage; Continue relaunches with `-resume` and without the override. Snakemake — `--until` the last rules of the stage; Continue drops `--until`; rerun from a stage uses `--forcerun`.
+How a gate stops the engine without forking:
+- Nextflow — a generated config sets `ext.when = false` on the processes of later stages (nf-core modules declare `when: task.ext.when == null || task.ext.when`: nf-core/tools `0af7543`, `nf_core/module-template/main.nf:75-76`; local processes without it are not stopped **[to be validated]** in spike T2), so the run ends after the gated stage; Continue relaunches with `-resume` and without the override. This is proven only on synthetic pipelines so far ([spike note](../research/spike-synthetic-pipelines-2026-10-26.md), finding 7); real pipelines are checked on nf-core/rnaseq and sarek ([`dev-environment-and-testing.md`](dev-environment-and-testing.md) §3). **Pipeline requirements** for a Nextflow gate: every process of a later stage honours `ext.when` (nf-core modules do; local or non-nf-core processes need a `when:` that reads it); no downstream `collect`, `join`, `ifEmpty` or `mix` fails or keeps the run going when the skipped processes emit nothing; completion hooks and summaries tolerate the missing outputs. When the requirements check fails, the launch form shows "gates unavailable" with the reason. *(assumed — pending Thomas, inbox #28)*
+- Snakemake — `--until` the last rules of the stage; Continue drops `--until`; rerun from a stage uses `--forcerun`.
+
+The mechanism is owned by [`checking-scenarios.md`](checking-scenarios.md) §12.
 
 ## 6. Runs launched from the command line
 
 How a run started in a terminal with Spectio enabled is handled.
 
 Enabling it:
-- Nextflow: the plugin `nf-spectio` (`-plugins nf-spectio`, or a `spectio` config profile/env set once by `spectio login`). It runs next to `-with-tower`, so the same run can also report to Seqera Platform (**[to be validated]** in spike T2; [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)). Nextflow plugins cannot add new `run` flags, so there is no literal `--spectio`.
-- Snakemake: `--logger spectio`.
-- Convenience wrapper: `spectio run nextflow …` / `spectio run snakemake …` injects the above and registers the launch directory.
+- Nextflow: the plugin `nf-spectio` (`-plugins nf-spectio`, or a `spectio` config profile/env set once by `spectio login` ([`cli-and-shared-libraries.md`](cli-and-shared-libraries.md) §2: `login` runs `engine nextflow config --install`) *(assumed — pending Thomas, inbox #28)*). It runs next to `-with-tower`, so the same run can also report to Seqera Platform (**[to be validated]** in spike T2; [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)). Nextflow plugins cannot add new `run` flags, so there is no literal `--spectio`.
+- Snakemake: `--logger <existing> spectio`, set once by `spectio login` (`engine snakemake profile --install`) *(assumed — pending Thomas, inbox #28)*: Spectio appends itself to the loggers already set on the command line or in a profile, so panoptes, snkmt or FlowO keep working ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §2).
+- There is no `spectio run nextflow|snakemake` wrapper: `spectio login` is the one-time engine setup. *(assumed — pending Thomas, inbox #28)*
 
 Three levels, decided automatically and shown on the run:
 
@@ -262,7 +266,7 @@ Three levels, decided automatically and shown on the run:
 | **Adopted** | A runner running as the same user on that host can read the launch directory | Everything an UI-launched run has: resume, rerun from stage, cancel, review gates |
 | **Registered workflow** | Any CLI run | The workflow is auto-added to **Workflows → Discovered** (not the curated catalog), keyed by repository + revision (Nextflow manifest / `commitId`; Snakemake git remote + Snakefile hash). One click **Promote to catalog** adds stages manifest, defaults and permissions |
 
-Defaults: auto-registration as *Discovered* is on; an admin can switch it off (pure monitor-only). Parameters, command line, config and software versions captured from the run are kept, so a later "Duplicate" can pre-fill the launch form.
+Defaults: auto-registration as *Discovered* is on; an admin can switch it off (pure monitor-only). Parameters, command line, config and software versions captured from the run are kept, so a later "Copy to a new launch" can pre-fill the launch form.
 
 ## 7. Consistency with depictio (reuse plan)
 
@@ -274,12 +278,12 @@ Spectio keeps the depictio UI model so a user moving between the two apps finds 
 - Mantine 7 and the depictio theme setup (`brandTheme.ts`), with Spectio's palette ("Dawn (light)") swapped in through tokens.
 - The "glass" shell: floating top bar with breadcrumbs, search (⌘K), notifications, theme toggle and avatar; foldable sidebar with a "Workspace" eyebrow and server status in its foot; bottom tab bar on phones.
 - Page head: tinted 48 px icon tile, Outfit h1, one-line description, primary action on the right.
-- List pattern: card/table toggle (`ViewPicker`), toolbar with search, group, sort, `FilterPopover` with removable chips, view state in the URL ("Share view").
+- List pattern: table / rows toggle (`ViewPicker`) *(assumed — pending Thomas, inbox #29)*, toolbar with search, group, sort, `FilterPopover` with removable chips, view state in the URL ("Share view").
 - Iconify + lucide icon set; Mantine Table for lists; AG Grid only for large data (tasks, samplesheets).
 
 **Changed for Spectio**
 - Router: TanStack Router (depictio uses a pathname switch). Deep links matter here: runs, tasks and review gates are shared in chat and by webhooks.
-- Data: TanStack Query + SSE for live runs.
+- Data: TanStack Query + SSE for live runs, with one `EventSource` per browser shared by its tabs (SharedWorker, or BroadcastChannel with leader election) and coalesced deltas per run ([`api-and-data-model.md`](api-and-data-model.md) §8.3) *(assumed — pending Thomas, inbox #28)*.
 - Pagination on Runs and Tasks (depictio lists have none; Spectio lists grow without bound).
 - JSON-schema forms (new): the launch form is generated from `nextflow_schema.json`, with a Spectio `ui:` block for Snakemake.
 - Status rail + icon + word instead of pill badges (section 3).
@@ -307,7 +311,7 @@ Spectio keeps the depictio UI model so a user moving between the two apps finds 
 ## 9. Open items
 - Engine logos: plug in the official files already in depictio (`public/logos/workflows/`). nf-core is MIT and appears only next to genuine nf-core pipelines; Nextflow follows Seqera's brand manual (official files, never recoloured); Snakemake is MIT with no published guidelines. Mockups keep labelled placeholder tiles until this is done.
 - `@depictio/ui` extraction: agree on the package boundary with the depictio codebase before Spectio's first UI release.
-- Snakemake `ui:` block: draft its format alongside `spectio.yml`.
+- Snakemake `ui:` block: draft its format in [`checking-scenarios.md`](checking-scenarios.md) §12. *(assumed — pending Thomas, inbox #29)*
 
 ## 10. Scenario coverage and UI patterns (2026-10-26)
 
@@ -329,7 +333,7 @@ The canvas covers the nf-core catalogue by class ([`checking-scenarios.md`](chec
 | No gate (most runs) | straight through, outputs, depictio; no stages declared | RunOutputs (ampliseq), RunFailed (Snakemake), LaunchGitNoSchema, LaunchReview |
 | Operations | failure and relaunch; CLI-observed run; lineage compare; batch; samplesheet from files; catalogue, import, discovered, versions; runner connect, software, single machine, quotas | RunFailed, RelaunchDialog, RunObserved, RunsCompare, LaunchBatch, LaunchSamplesheet, WorkflowsCatalog, WorkflowImport, WorkflowDiscovered, WorkflowVersions, EnvConnect, EnvSoftware, EnvLocal, EnvAccess |
 | Lists | a lab's mix, about 4 runs in 5 without a gate | ReviewQueue, RunsTable, RunsRows, Overview |
-| Live checks and depictio | important stages and per-file checks during a run, no gate; editing watches in a lab overlay; a gate with an embedded preliminary depictio dashboard; the depictio dashboard with Spectio decisions joined ([`checking-scenarios.md`](checking-scenarios.md) §11, [`api-and-data-model.md`](api-and-data-model.md) §13.6) | RunLiveChecks (rnaseq), WorkflowWatches (rnaseq), ReviewDashboard (rnaseq), DepictioDecisions (rnaseq) |
+| Live checks and depictio | important stages and per-file checks during a run, no gate; editing watches in a lab overlay; a gate with an embedded preliminary depictio dashboard (embedded when co-hosted on depictio's origin, otherwise a deep link) *(assumed — pending Thomas, inbox #23)*; the depictio dashboard with Spectio decisions joined ([`checking-scenarios.md`](checking-scenarios.md) §11, [`api-and-data-model.md`](api-and-data-model.md) §13.6) | RunLiveChecks (rnaseq), WorkflowWatches (rnaseq), ReviewDashboard (rnaseq), DepictioDecisions (rnaseq) |
 
 ### 10.2 UI patterns to build once
 
@@ -355,6 +359,31 @@ These are the component types the boards share. Each is built once, in the share
 | Quota and limit bars, permission matrix | EnvAccess, EnvSoftware, LaunchBatch |
 | Restricted-data banner and access log | ReviewTrio |
 | Live check grid: items × watched checks, cells filled as tasks finish (pass, warn, running), with a check feed | RunLiveChecks |
-| Embedded depictio frame with selection sync and a decision layer beside it | ReviewDashboard |
+| Embedded depictio frame with selection sync and a decision layer beside it (only when co-hosted on depictio's origin; otherwise a deep link, [`api-and-data-model.md`](api-and-data-model.md) §13.6 rule 3) *(assumed — pending Thomas, inbox #23)* | ReviewDashboard |
 
-Every pattern has the states of §3: empty, loading, error, permission (view only), plus `n/a` for a check that cannot be computed.
+Every pattern has the component states of §11.
+
+## 11. Component states
+
+Every pattern of §10.2 has these states. *(assumed — pending Thomas, inbox #29)*
+
+| State | What it shows |
+|---|---|
+| Empty | Nothing to show; says why and the next step |
+| Loading | A skeleton of the final layout: skeleton rows for tables and skeleton cards (header kept, grey gauges); never a bare "0" |
+| Error | What failed, Retry, and the request ID: an error panel that maps the RFC 9457 problem `type` ([`api-and-data-model.md`](api-and-data-model.md) §4) to a sentence; an API-error toast for a failed action; a full-page "Spectio is unreachable" |
+| Permission | View only; the action is disabled with its reason |
+| n/a | A value that cannot be computed, such as a check whose file is missing; shown as "n/a" with the reason |
+
+**Live data.** Each state is shown with an icon and a word, never colour alone:
+- *Live*.
+- *Reconnecting*: "Reconnecting… data as of 10:41:08", Retry; SSE resumes with `Last-Event-ID` (api §5).
+- *Stale*: an observer layer timed out or was switched off ("squeue timed out · next try in 4 min", "`sinfo` stale since 13:40, back-off 10 min", `observer.capacity: off` shown as "disabled by site policy"; [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.2).
+- *Head silent*: "No event from nf-spectio for 6 min · head job 48213351 still RUNNING · checking the head log" (schedulers §7).
+- *Runner offline*: run actions become "Queue pause · applies on reconnect" with the reason and a link to Runner offline (§4.8); storage and capacity show "last measured 14:02 · on hold".
+
+Actions that cannot take effect now are relabelled or disabled with their reason, and decision screens show the age of their data, so nobody pauses, cancels or approves on stale numbers without seeing it.
+
+**Phone.** A status strip under the top bar with Live / "Reconnecting… last update 10:42" / Offline (actions disabled with the reason), on Run detail and Review detail.
+
+The Legend board carries a "Live data" row (live, stale, reconnecting, head silent).
