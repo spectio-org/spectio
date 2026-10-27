@@ -3,6 +3,7 @@ name: spec-reviewer
 description: Reviews Spectio specifications for contradictions, gaps, undefined contracts and unclear ownership between docs. Use for review rounds on docs/specs/*.md. Read-only; reports findings, never edits specs.
 tools: Read, Glob, Grep, Bash
 model: opus
+autoCompactWindow: 600000
 effort: high
 color: purple
 ---

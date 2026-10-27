@@ -329,6 +329,14 @@ Everything must be traced, including:
 - **Autopilot permissions** (inbox #4): `tools/autopilot/claude-settings.json` was copied to `.claude/settings.json` on `main` at Thomas's request. The permissions are to be discussed again.
 - **Postponed:** the GitHub organisation (#9, unchanged) and the questions for EMBL IT.
 
+## 2026-10-27 — Context compaction thresholds per agent
+
+- **Decision (Thomas):** the session-wide auto-compact window is 400k tokens (`autoCompactWindow` in `.claude/settings.json` and in `tools/autopilot/claude-settings.json`).
+- **Per agent** (frontmatter `autoCompactWindow`):
+  - 600k for the reviewers that read whole specs or many sources;
+  - 200k for `doc-reviewer`, and for the code agents once they are merged.
+- Why the values and the remaining checks: [`autopilot.md`](../playbooks/autopilot.md) §4. Sources: [model config](https://code.claude.com/docs/en/model-config), [subagents](https://code.claude.com/docs/en/sub-agents).
+
 ## 2026-10-27 — Code review and simplification after every build step
 
 - **Gap found:** the `build` steps of W3 had no code review. Only P3 asked for one, through subagent-driven-development. The Karpathy guidelines were a rule in `CLAUDE.md`, not a check.
