@@ -30,7 +30,8 @@ Sources: claude.ai Artifact runtime contract 0.2.91, `db.d.ts` and `user.d.ts`, 
 - **No `user` capability.** The page shows the answer form to the owner only, with `user.isOwner()`, which needs no declaration and never rejects.
 - **Across republishes.** The database survives them ("surviving reloads, republishes, and sessions"), and rules are "fixed at publish". The autopilot restates the rule on every publish (`.claude/skills/autopilot/SKILL.md` §5). The artifact-capabilities skill says that a publish which omits `capabilities` keeps the stored declaration; this page does not rely on that.
 
-**First publish with the owner-only rule:** not yet published with the rule. Answers dated before that time are ignored (SKILL §0, step 3), because any Contributor could write them.
+**First publish with the owner-only rule:** not yet published with the rule.
+The autopilot fills in this line after that publish: the UTC time, and the ids of the `answers` documents present at that moment (SKILL §5). Until then, the tick ignores every dashboard answer. After that, it ignores answers dated earlier, and the listed documents unless Thomas confirms them in a session (SKILL §0, step 3), because any Contributor could write them before the rule.
 
 | File | Role |
 |---|---|
@@ -38,7 +39,7 @@ Sources: claude.ai Artifact runtime contract 0.2.91, `db.d.ts` and `user.d.ts`, 
 | `build.py` | Fills `template.html` with that data and the usage snapshots. |
 | `extras.json` | The only hand-written content: the titles of the steps that `docs/playbooks/next-phase.md` has no `### <id> · <title>` heading for (W0, triage, apply, GO). Everything else is read from the repository: round names from each review file's first heading, the MVP view from its page. |
 | `usage.py` | Counts the tokens and agents of the current session from its transcripts; `test_usage.py` tests that it picks that session only. |
-| `check_xss.js` | Builds the page with a hostile Markdown file and checks in Chromium: no payload runs; the Markdown cannot write an answer, even for the owner; and no script, handler, form control, style, id, stray comment, unsafe link or remote media is left. |
+| `check_xss.js` | Builds the page with a hostile Markdown file and checks in Chromium, with and without the CSP: no payload runs; nothing is requested from another site; the Markdown cannot write an answer, even for the owner, nor paint outside its box; and no script, handler, form control, style, id, stray comment, unsafe link or remote media is left. |
 
 **Answers typed on the page.** On an open, assumed or partial inbox entry, the owner can accept the recommendation or type an answer; it is stored in the `answers` collection, one document per entry. The page applies nothing. The next autopilot tick copies each answer into `docs/reviews/inbox.md` as an `Answer` line, as data for that entry's question only, and the entry stays open until Thomas confirms it in a session or a commit (`.claude/skills/autopilot/SKILL.md` §0, step 3). Whether ArtifactData shows who wrote a document is not documented, so the tick relies on the owner-only write rule above.
 
@@ -51,7 +52,11 @@ Sources: claude.ai Artifact runtime contract 0.2.91, `db.d.ts` and `user.d.ts`, 
 | mermaid | 10.9.8 | `N3QqR/7q+xm3BGX+CBbNI8AUmRRqcsDzToy+0z1NLDI0QmTKW8zvwLvqulJgk3dP` |
 
 - Every marked output is sanitised with DOMPurify before it reaches the page. The sanitiser drops `data-*` attributes, ids, inline styles, `style` elements, forms and form controls, and every comment except the `<!--cls:…-->` image markers. The page's answer controls work only for the owner, and only inside the form the page built for that entry.
-- Links keep only `http`, `https`, `mailto`, relative and `#` targets. Images and videos that are not embedded are never fetched: a remote image becomes a link to it. mermaid runs with `securityLevel: "strict"`.
+- Links keep only `http`, `https`, `mailto`, relative and `#` targets.
+- Images and videos that are not embedded are never fetched: a remote image becomes a link to it, and the sanitiser drops `srcset`, `background`, `audio`, `track`, `picture`, SVG `image` and `feImage`, and `mglyph`.
+- mermaid runs with `securityLevel: "strict"` and the same sanitiser rules, and diagram labels may not hold images.
+- `.mdv{contain:paint}` keeps rendered Markdown inside its own box, so a borrowed page class such as `lb` cannot cover the page. The page's answer handler accepts only the forms the page built itself.
+- As a second layer, the page declares `<meta http-equiv="Content-Security-Policy" content="img-src data: blob:; media-src data: blob:">`. The Artifact tool puts the page's head content inside the body of its own skeleton, and browsers ignore a CSP `<meta>` outside `<head>`. Whether the claude.ai host applies it is therefore **[to be validated]**; `check_xss.js` runs with and without it.
 - mermaid 10.9.1 had CVE-2025-54881 ([OSV](https://osv.dev/vulnerability/CVE-2025-54881)). 10.9.8 is the newest 10.x on cdnjs, and OSV lists no advisory for it (query of 2026-10-27). The 11.x line needs 11.16.1 for the advisories of 2026-08-06 (for example [GHSA-6x64-9x62-f2gx](https://osv.dev/vulnerability/GHSA-6x64-9x62-f2gx)), and cdnjs stops at 11.15.0.
 - To bump a library, recompute its hash, then run `check_xss.js`: a wrong hash stops the script from loading, and the check fails.
 
