@@ -1,7 +1,6 @@
 <title>Spectio Dashboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&family=JetBrains+Mono:wght@400;600&display=swap">
+<meta http-equiv="Content-Security-Policy" content="img-src data: blob:; media-src data: blob:">
 <style>
 :root{
   --bg:#F7F7FB; --surface:#FFFFFF; --sunk:#EEEFF5; --ink:#0F1020; --muted:#4D5065; --line:#DFE1EA; --hair:rgba(15,16,32,.11); --muted2:#6E7287;
@@ -9,9 +8,9 @@
   --done:#157A4B; --run:#1D5FC9; --ready:#8F5806; --wait:#6E7287; --thomas:#C95277; --assumed:#6344B2; --reject:#B02A2A;
   --done-soft:#E8F6EF; --run-soft:#EAF2FE; --ready-soft:#FDF3E2; --wait-soft:#F1F2F6; --thomas-soft:#FDF2F5; --assumed-soft:#F1ECFE; --reject-soft:#FCEBEB;
   --b1:#5A4FCF; --b2:#8B5CF6; --b3:#EC5F87; --b4:#F9A947;
-  --display:"Outfit", "Inter", system-ui, sans-serif;
-  --body:"Inter", system-ui, sans-serif;
-  --mono:"JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+  --display:system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --body:system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --mono:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
   --bg:#0F1020; --surface:#171A2E; --sunk:#0B0C18; --ink:#ECEDF5; --muted:#9A9EB0; --line:#33364A; --hair:rgba(236,237,245,.12); --muted2:#8A8EA3;
@@ -260,7 +259,7 @@ aside.doc::before{content:"";height:3px;flex-shrink:0;background:linear-gradient
 .dbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .dbtn[disabled]{opacity:.4;pointer-events:none}
 .doc .dbody{overflow-y:auto;padding:4px max(28px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 56px) 28px;flex:1;overscroll-behavior:contain}
-.mdv{max-width:78ch;font-size:14.5px;line-height:1.68;overflow-wrap:anywhere;color:var(--ink)}
+.mdv{contain:paint;padding-inline:6px;margin-inline:-6px;max-width:calc(78ch + 12px);font-size:14.5px;line-height:1.68;overflow-wrap:anywhere;color:var(--ink)}
 .mdv h1,.mdv h2,.mdv h3,.mdv h4,.mdv h5{font-family:var(--display);font-variation-settings:normal;font-weight:600;color:var(--ink);text-transform:none;letter-spacing:-.01em;line-height:1.25;scroll-margin-top:12px;text-wrap:balance}
 .mdv h1{font-size:28px;margin:22px 0 12px}
 .mdv h2{font-size:20px;margin:30px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
@@ -397,10 +396,10 @@ aside.doc::before{content:"";height:3px;flex-shrink:0;background:linear-gradient
   <div class="lbar"><span class="cap" id="lb-cap"></span><button class="dbtn" id="lb-zoom">Actual size</button><button class="dbtn" id="lb-fs">Fullscreen</button><button class="dbtn" id="lb-close">Close</button></div>
   <div class="stage" id="lb-stage"><img id="lb-img" alt=""></div>
 </div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/marked/12.0.2/marked.min.js" integrity="sha384-/TQbtLCAerC3jgaim+N78RZSDYV7ryeoBCVqTuzRrFec2akfBkHS7ACQ3PQhvMVi" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.4.17/purify.min.js" integrity="sha384-P0JNneQf81HOl9VwNXK76cQ9VMD6Nfsnepxb0cCOg8+UzEdzgPHAPV4wVQrvYQSx" crossorigin="anonymous"></script>
 <script>
 const D = /*DATA*/null;
-const X = /*EXTRAS*/null;
 const U = /*USAGE*/null;
 const DOCS = /*DOCS*/null;
 const IMGS = /*IMGS*/null;
@@ -512,8 +511,9 @@ function overview() {
 
 // ---- timeline
 let zoom = "all";
+const T0 = new Date(Math.min(...D.steps.filter(s => s.start).map(s => +new Date(s.start)), +NOW)); T0.setUTCHours(0, 0, 0, 0);
 function timeline() {
-  const t0 = zoom === "all" ? new Date("2026-10-24T00:00:00Z") : new Date(NOW - 16 * 3600e3);
+  const t0 = zoom === "all" ? T0 : new Date(NOW - 16 * 3600e3);
   // fit the view's width: future slots take about a third (32-80 px each), the dated part the rest; below that, phones scroll
   const LW = 260, avail = ($("#v-timeline").clientWidth || 0) - LW - 2;
   const SLOT = Math.max(32, Math.min(80, Math.floor(avail * 0.35 / maxLvl)));
@@ -547,7 +547,7 @@ function timeline() {
   return `
   <p class="lede">Left of the “now” line: real dates, start and end from <code class="mono">.autopilot/state.json</code>. Right of it: the steps still to run, ordered by dependencies, one column per rank and no dates, because no duration is estimated. W0 dates are approximate (interactive work).</p>
   <div class="gtools">
-    <div class="seg" role="group" aria-label="Scale"><button id="z-all" aria-pressed="${zoom === "all"}">Since 24 Oct</button><button id="z-24" aria-pressed="${zoom === "24"}">Last 16 h</button></div>
+    <div class="seg" role="group" aria-label="Scale"><button id="z-all" aria-pressed="${zoom === "all"}">Since ${T0.toLocaleDateString("en-GB", {day: "numeric", month: "short", timeZone: "UTC"})}</button><button id="z-24" aria-pressed="${zoom === "24"}">Last 16 h</button></div>
     <div class="legend"><span><i style="background:var(--done)"></i>done</span><span><i style="background:var(--run)"></i>running</span><span><i style="border:1.5px solid var(--ready)"></i>ready</span><span><i style="border:1.5px dashed var(--wait)"></i>waiting</span><span><i style="border:1.5px solid var(--thomas)"></i>Thomas decides</span></div>
   </div>
   <div class="gscroll"><div class="gantt">
@@ -576,9 +576,9 @@ function decisions() {
   const counts = {}; D.inbox.forEach(i => counts[i.status] = (counts[i.status] || 0) + 1);
   const list = D.inbox.filter(i => ifilter === "all" || i.status === ifilter);
   const f = [["open", "Open"], ["assumed", "Assumed"], ["partial", "Partial"], ["deferred", "Deferred"], ["answered", "Answered"], ["all", "All"]];
-  return `<p class="lede">The questions the autopilot does not settle alone. Click an entry to read it in full, then accept the recommendation or write your answer: it is saved here, and the autopilot applies it to <code class="mono">inbox.md</code> at its next tick. You can still answer in the chat. Source: ${dl("docs/reviews/inbox.md", "docs/reviews/inbox.md")}. “Assumed”: the autopilot already goes ahead with the recommended option and waits for Thomas to confirm.</p>
+  return `<p class="lede">The questions the autopilot does not settle alone. Click an entry to read it in full, then, if you own this page, accept the recommendation or write your answer: it is saved here, and the next autopilot tick copies it into <code class="mono">inbox.md</code> as an answer to that entry only, to confirm in the chat or a commit. A go / no-go, a merge or a permission change still needs the chat or a commit. Source: ${dl("docs/reviews/inbox.md", "docs/reviews/inbox.md")}. “Assumed”: the autopilot already goes ahead with the recommended option and waits for Thomas to confirm.</p>
   <div class="filters" role="group" aria-label="Filter">${f.map(([k, l]) => `<button class="chip" data-if="${k}" aria-pressed="${ifilter === k}">${l} <span class="num">${k === "all" ? D.inbox.length : counts[k] || 0}</span></button>`).join("")}</div>
-  <div class="ibox">${list.map(i => `<details class="icard ${i.status}" data-inbox="${i.n}"><summary class="hd"><span class="n">#${i.n}</span><span class="tt">${md(i.title)}</span>${pill(i.status, ITL[i.status])}${i.not001 ? `<span class="tag">after 0.0.1</span>` : ""}${i.covers ? `<span class="tag">${i.covers} findings</span>` : ""}<span class="tag ansd" data-ansd="${i.n}"${ANS[i.n] ? "" : " hidden"}>answered here</span><span class="tag">${i.n >= 41 ? "D3" : i.n >= 32 ? "TRIAGE2" : i.n >= 11 ? "TRIAGE1" : "before W1"}</span></summary>
+  <div class="ibox">${list.map(i => `<details class="icard ${i.status}" data-inbox="${i.n}"><summary class="hd"><span class="n">#${i.n}</span><span class="tt">${md(i.title)}</span>${pill(i.status, ITL[i.status])}${i.not001 ? `<span class="tag">after 0.0.1</span>` : ""}${i.covers ? `<span class="tag">${i.covers} findings</span>` : ""}<span class="tag ansd" data-ansd="${i.n}"${ANS[i.n] ? "" : " hidden"}>answered here</span><span class="tag">${esc(i.batch)}</span></summary>
     ${i.answer ? `<p><b>Answer:</b> ${md(i.answer)}</p>` : ""}${!i.answer && i.rec ? `<p><b>Recommended:</b> ${md(i.rec)}</p>` : ""}${i.blocked && i.status !== "answered" ? `<p><b>Blocks:</b> ${md(i.blocked)}</p>` : ""}<div class="ib" hidden></div></details>`).join("") || `<p class="empty">No entry with this status.</p>`}</div>`;
 }
 
@@ -595,21 +595,18 @@ function findings() {
     ${D.rounds.map(r => `<div class="frow">${dl(r.file, r.id)}<div class="fbar" style="width:${r.total / max * 100}%">${present.map(([k, l, c]) => r.counts[k] ? `<i title="${r.id} · ${l}: ${r.counts[k]}" style="width:${r.counts[k] / r.total * 100}%;background:var(${c})"></i>` : "").join("")}</div><span class="mono num" style="text-align:right">${r.total}</span></div>`).join("")}
   </div>
   <div class="panel"><h3>The rounds</h3><div class="tscroll"><table><thead><tr><th>Round</th><th>Topic</th></tr></thead><tbody>
-    ${D.rounds.map(r => `<tr><td class="mono">${dl(r.file, r.id)}</td><td>${esc(X.roundNames[r.id] || r.file.split("/").pop())}</td></tr>`).join("")}
+    ${D.rounds.map(r => `<tr><td class="mono">${dl(r.file, r.id)}</td><td>${esc(r.title)}</td></tr>`).join("")}
   </tbody></table></div></div>
   </div>`;
 }
 
 // ---- mvp
+const MVP = "docs/specs/mvp-0.0.1.md";
 function mvp() {
-  return `<p class="lede">${md(X.mvp.frame)} Source page: ${dl("docs/specs/mvp-0.0.1.md", "docs/specs/mvp-0.0.1.md")} · contents per version: ${dl("docs/specs/dev-environment-and-testing.md", "dev-environment §15", "15-what-ships-in-which-version")}.</p>
-  <div class="grid g3">
-  <div class="panel" style="grid-column:span 2;min-width:0"><h3>What 0.0.1 does</h3><div class="tscroll"><table><thead><tr><th>Feature</th><th>Specs</th><th>Boards</th></tr></thead><tbody>
-    ${X.mvp.features.map(f => `<tr><td><b>${esc(f.name)}</b></td><td>${f.specs.map(([p, l]) => dl(p, esc(l))).join(", ")}</td><td class="mono">${f.boards.map(b => ext(gh("design/ui-canvas/" + b + ".dc.html"), b)).join(" ")}</td></tr>`).join("")}
-  </tbody></table></div></div>
-  <div class="panel"><h3>Not in 0.0.1</h3><ul class="clean">${X.mvp.deferred.map(d => `<li class="item">${pill("pending", "later")}<div class="t">${esc(d)}</div></li>`).join("")}</ul>
-    <h3 style="margin-top:16px">Path to code</h3><ul class="clean">${X.mvp.path.map(p => `<li class="item"><button class="stepbtn" data-step="${p[0]}">${p[0]}</button><div class="t">${esc(p[1])}</div></li>`).join("")}</ul></div>
-  </div>`;
+  if (!(MVP in DOCS)) return `<p class="empty">${MVP} is not embedded in this build.</p>`;
+  queueMicrotask(() => renderMd(MVP, DOCS[MVP], $("#mvp-md")));  // after route() has inserted the view
+  return `<p class="lede">The page ${dl(MVP, `<code class="mono">${MVP}</code>`)}, as committed; what each version contains: ${dl("docs/specs/dev-environment-and-testing.md", "dev-environment §15", "15-what-ships-in-which-version")}.</p>
+  <div class="panel"><article class="mdv" id="mvp-md"></article></div>`;
 }
 
 // ---- docs: every embedded file, searchable, grouped by folder; documents with figures first
@@ -668,25 +665,42 @@ function asDocLink(a, p, frag) {
   a.removeAttribute("href"); a.removeAttribute("target"); a.classList.add("dl"); a.setAttribute("role", "link"); a.tabIndex = 0;
   if (p) a.dataset.doc = p; if (frag) a.dataset.anchor = frag;
 }
+// Markdown is untrusted: no data-* attributes (the page adds data-doc, data-anchor, data-lb itself), no style or form controls,
+// no ids (they could shadow the page's own) or inline styles (overlays), and no comment but the <!--cls:…--> image markers
+const PURIFY = {ADD_TAGS: ["#comment"], ALLOW_DATA_ATTR: false, SAFE_FOR_XML: true, FORBID_TAGS: ["style", "form", "input", "textarea", "button", "select", "audio", "track", "picture", "image", "feimage", "mglyph"],
+  FORBID_ATTR: ["id", "name", "style", "srcset", "background"]};
+// media URLs wait in data-src / data-poster until renderMd has resolved them, so the browser never fetches one by itself;
+// SVG presentation attributes (mask, filter, fill…) lose any url() that is not a local #id
+DOMPurify.addHook("afterSanitizeAttributes", n => {
+  if (/^(IMG|VIDEO|SOURCE)$/.test(n.nodeName)) for (const at of ["src", "poster"]) if (n.hasAttribute(at)) { n.setAttribute("data-" + at, n.getAttribute(at)); n.removeAttribute(at); }
+  for (const a of [...n.attributes]) if (/url\s*\(\s*['"]?\s*(?!#)/i.test(a.value)) n.removeAttribute(a.name);
+});
 function renderMd(path, text, el = $("#doc-md")) {
   const {meta, src} = prep(text);
   // attribute lists ({ .class }, { #id }) after images and headings: keep the class on images, drop the rest
   const html = marked.parse(src.replace(/(!\[[^\]]*\]\([^)]*\))\{\s*\.([\w-]+)[^}]*\}/g, "$1<!--cls:$2-->").replace(/ ?\{\s*[#.:][^}\n]*\}/g, "").replace(/:(material|simple|octicons|fontawesome)-[\w-]+:/g, ""), {gfm: true});
-  el.innerHTML = (meta ? `<div class="meta">${meta}</div>` : "") + html;
+  el.innerHTML = (meta ? `<div class="meta">${meta}</div>` : "") + DOMPurify.sanitize(html, PURIFY);
+  const cm = document.createTreeWalker(el, NodeFilter.SHOW_COMMENT), drop = [];
+  while (cm.nextNode()) if (!/^cls:[\w-]+$/.test(cm.currentNode.data)) drop.push(cm.currentNode);
+  drop.forEach(c => c.remove());
   const seen = {};
   el.querySelectorAll("h1,h2,h3,h4,h5,h6").forEach(h => { let id = slugify(h.textContent); if (seen[id]) id += "-" + seen[id]++; else seen[id] = 1; h.id = "d-" + id; });
   el.querySelectorAll("table").forEach(tb => { const w = document.createElement("div"); w.className = "tw"; tb.replaceWith(w); w.appendChild(tb); });
-  // videos (raw HTML): map src and poster to embedded data
+  // videos (raw HTML): map src and poster to embedded data; anything else is dropped, so the page fetches no media
   el.querySelectorAll("video, video source").forEach(v => {
-    for (const at of ["src", "poster"]) { const f = media(path, v.getAttribute(at)); if (f) v.setAttribute(at, IMGS[f]); }
+    for (const at of ["src", "poster"]) { const f = media(path, v.dataset[at]); v.removeAttribute("data-" + at); if (f) v.setAttribute(at, IMGS[f]); }
   });
   el.querySelectorAll("video").forEach(v => { v.controls = true; v.preload = "metadata"; v.load(); });
   el.querySelectorAll("img").forEach(im => {
-    const raw = im.getAttribute("src") || "", frag = raw.split("#")[1];
+    const raw = im.dataset.src || "", frag = raw.split("#")[1]; im.removeAttribute("data-src");
     const full = media(path, raw);
-    if (full === undefined) { const a = document.createElement("a"); a.className = "fig-miss"; a.href = GHP + normPath(dirOf(path) + raw.split("#")[0]); a.target = "_blank"; a.rel = "noopener"; a.textContent = "Image: " + (im.alt || raw.split("/").pop()); im.replaceWith(a); return; }
+    const remote = full === null && !/^data:image\//.test(raw);  // an image from another site becomes a link to it, never a request from this page
+    if (full === undefined || remote) { const a = document.createElement("a"); a.className = "fig-miss"; a.target = "_blank"; a.rel = "noopener"; a.textContent = "Image: " + (im.alt || raw.split("/").pop());
+      if (!remote) a.href = GHP + normPath(dirOf(path) + raw.split("#")[0]); else if (/^https?:/i.test(raw)) a.href = raw;
+      im.replaceWith(a); return; }
+    im.src = full ? IMGS[full] : raw;  // embedded, or an inline data:image
     if (/badge|shields\.io/.test(raw)) return;
-    if (full) im.src = IMGS[full]; im.loading = "lazy"; im.decoding = "async";
+    im.loading = "lazy"; im.decoding = "async";
     if (im.closest("a, figure, video") || im.hasAttribute("class")) return;
     const cls = im.nextSibling?.nodeType === 8 && /^cls:/.test(im.nextSibling.data) ? im.nextSibling.data.slice(4) : "";
     const fig = document.createElement("figure");
@@ -702,7 +716,7 @@ function renderMd(path, text, el = $("#doc-md")) {
     const h = a.getAttribute("href");
     if (h.startsWith("#")) { asDocLink(a, null, h.slice(1)); return; }
     if (h.startsWith(D.repo + "/blob/")) { const [p, frag] = h.slice(D.repo.length + 6).replace(/^[^/]+\//, "").split("#"); if (p in DOCS) asDocLink(a, p, frag); else { a.target = "_blank"; a.rel = "noopener"; } return; }
-    if (/^[a-z][a-z0-9+.-]*:/i.test(h)) { a.target = "_blank"; a.rel = "noopener"; return; }
+    if (/^[a-z][a-z0-9+.-]*:/i.test(h)) { if (/^(https?|mailto):/i.test(h)) { a.target = "_blank"; a.rel = "noopener"; } else a.removeAttribute("href"); return; }
     const [p, frag] = h.split("#"); let full = normPath(dirOf(path) + p);
     if (!(full in DOCS) && (full + "/index.md") in DOCS) full += "/index.md";
     if (!(full in DOCS) && (full + ".md") in DOCS) full += ".md";
@@ -712,8 +726,11 @@ function renderMd(path, text, el = $("#doc-md")) {
   const mm = el.querySelectorAll("code.language-mermaid");
   if (mm.length) {
     mm.forEach(c => { const d = document.createElement("div"); d.className = "mermaid"; d.textContent = c.textContent; c.parentElement.replaceWith(d); });
-    mermaidP ||= new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.1/mermaid.min.js"; sc.onload = ok; sc.onerror = ko; document.head.appendChild(sc); });
-    mermaidP.then(() => { mermaid.initialize({startOnLoad: false, theme: isDark() ? "dark" : "neutral", fontFamily: "Inter"}); return mermaid.run({nodes: el.querySelectorAll(".mermaid")}); }).catch(() => {});
+    mermaidP ||= new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.8/mermaid.min.js"; sc.integrity = "sha384-N3QqR/7q+xm3BGX+CBbNI8AUmRRqcsDzToy+0z1NLDI0QmTKW8zvwLvqulJgk3dP"; sc.crossOrigin = "anonymous"; sc.onload = ok; sc.onerror = ko; document.head.appendChild(sc); });
+    mermaidP.then(() => { mermaid.initialize({startOnLoad: false, securityLevel: "strict",
+      // a diagram's %%{init}%% directive cannot change these keys (themeCSS could fetch url()s)
+      secure: ["secure", "securityLevel", "startOnLoad", "maxTextSize", "themeCSS", "themeVariables", "fontFamily", "dompurifyConfig"],
+      dompurifyConfig: {ALLOW_DATA_ATTR: false, FORBID_TAGS: [...PURIFY.FORBID_TAGS, "img"], FORBID_ATTR: PURIFY.FORBID_ATTR}, theme: isDark() ? "dark" : "neutral", fontFamily: "system-ui, sans-serif"}); return mermaid.run({nodes: el.querySelectorAll(".mermaid")}); }).catch(() => {});
   }
 }
 // one panel for files and steps; docCur is {path} or {step, tab}, docHist the views Back returns to
@@ -761,25 +778,29 @@ document.addEventListener("toggle", e => {
   const i = D.inbox.find(x => String(x.n) === c.dataset.inbox);
   const body = section(INB, new RegExp(`^### #${i.n} · `))?.replace(/^.*\n/, "");
   ib.innerHTML = `<div class="mdv"></div><div class="act" data-act="${i.n}" hidden></div>${ext(gh(INB) + "#" + i.anchor, "Open on GitHub ↗")}`;
+  ACTS.add(ib.querySelector(".act"));
   if (body != null) renderMd(INB, body, ib.firstChild); else ib.firstChild.textContent = "Entry not found in inbox.md.";
   ib.hidden = false; paintAct(ib.querySelector(".act"));
 }, true);
 
-// answers: one db doc per entry, answers/<n> = {choice: "recommended" | "own", text, at}; only the owner writes (rules at publish)
-let DB = null, ANS = {};
+// answers: one db doc per entry, answers/<n> = {choice: "recommended" | "own", text, at}; only the owner writes (db rules at publish,
+// tools/dashboard/README.md), and only the owner sees the form. The next autopilot tick copies them into inbox.md (autopilot skill §0).
+const ANSWERABLE = ["open", "assumed", "partial"];
+const ACTS = new WeakSet();  // the answer forms this page built; nothing rendered from Markdown or a diagram is one
+let DB = null, OWNER = false, ANS = {};
 function paintAct(el) {
   const n = el.dataset.act, i = D.inbox.find(x => String(x.n) === n), a = ANS[n];
-  if (!DB || i.status === "answered") { el.hidden = true; return; }
+  if (!DB || !OWNER || !ANSWERABLE.includes(i.status)) { el.hidden = true; return; }
   el.hidden = false; el.dataset.state = a ? a.at : ""; delete el.dataset.editing;
   el.innerHTML = a ? `<div class="mine"><b>Your answer</b> (${fmt(a.at)}): ${a.choice === "recommended" ? "accept the recommendation." : ""} ${esc(a.text || "")}</div>
-      <div class="row"><button class="dbtn" data-ans-edit="${n}">Change</button><button class="dbtn" data-ans-del="${n}">Withdraw</button><span class="msg">Applied at the next autopilot tick.</span></div>`
+      <div class="row"><button class="dbtn" data-ans-edit="${n}">Change</button><button class="dbtn" data-ans-del="${n}">Withdraw</button><span class="msg">Copied into the inbox at the next tick; confirm it in the chat or a commit. Withdraw works until then; after, tell the session.</span></div>`
     : `<div class="row">${i.rec ? `<button class="pbtn" data-ans-rec="${n}">Accept the recommendation</button>` : ""}</div>
       <textarea data-ans-text="${n}" placeholder="Or write your answer (an option letter, a choice, a condition)…" aria-label="Your answer to #${n}"></textarea>
       <div class="row"><button class="dbtn" data-ans-own="${n}">Save my answer</button><span class="msg" data-ans-msg="${n}"></span></div>`;
 }
 function paintAnswers() {
   document.querySelectorAll("[data-ansd]").forEach(t => t.hidden = !ANS[t.dataset.ansd]);
-  document.querySelectorAll(".act[data-act]").forEach(el => { const a = ANS[el.dataset.act]; if (!el.dataset.editing || a?.at !== el.dataset.editing) paintAct(el); });
+  document.querySelectorAll(".act[data-act]").forEach(el => { if (!ACTS.has(el)) return; const a = ANS[el.dataset.act]; if (!el.dataset.editing || a?.at !== el.dataset.editing) paintAct(el); });
 }
 async function saveAns(n, body) {
   const msg = document.querySelector(`[data-ans-msg="${n}"]`);
@@ -787,15 +808,16 @@ async function saveAns(n, body) {
   catch (e) { if (msg) msg.textContent = e.code === "invalid_argument" ? "Only the owner of this page can answer." : "Not saved, try again."; }
 }
 document.addEventListener("click", e => {
-  const t = e.target.closest("[data-ans-rec],[data-ans-own],[data-ans-del],[data-ans-edit]"); if (!t || !DB) return;
-  const d = t.dataset, at = new Date().toISOString();
+  const t = e.target.closest("[data-ans-rec],[data-ans-own],[data-ans-del],[data-ans-edit]"); if (!t || !DB || !OWNER) return;
+  const d = t.dataset, at = new Date().toISOString(), act = t.closest(".act[data-act]");
+  if (!act || !ACTS.has(act) || act.dataset.act !== (d.ansRec || d.ansOwn || d.ansDel || d.ansEdit)) return;
   if (d.ansRec) saveAns(d.ansRec, {choice: "recommended", text: "", at});
-  else if (d.ansOwn) { const v = document.querySelector(`[data-ans-text="${d.ansOwn}"]`).value.trim(); if (v) saveAns(d.ansOwn, {choice: "own", text: v.slice(0, 4000), at}); }
+  else if (d.ansOwn) { const v = act.querySelector("textarea[data-ans-text]").value.trim(); if (v) saveAns(d.ansOwn, {choice: "own", text: v.slice(0, 4000), at}); }
   else if (d.ansDel) saveAns(d.ansDel, null);
   else if (d.ansEdit) { const a = ANS[d.ansEdit]; delete ANS[d.ansEdit]; const el = t.closest(".act"); paintAct(el); ANS[d.ansEdit] = a; el.dataset.editing = a.at; const ta = el.querySelector("textarea"); ta.value = a.text || ""; ta.focus(); }
 });
 (async () => {
-  try { DB = await window.claude?.use?.("db"); } catch { DB = null; }
+  try { DB = await window.claude?.use?.("db"); OWNER = (await (await window.claude?.use?.("user"))?.isOwner()) ?? false; } catch { DB = null; }
   if (!DB) return;
   DB.collection("answers").onSnapshot(snap => {
     ANS = {}; snap.docs.forEach(d => { if (d.exists) ANS[d.id] = d.data(); });
@@ -830,9 +852,9 @@ function openStep(id, tab, push = true) {
   showDoc(`${s.id} · ${file}`, GHP + file + (cur?.anchor ? "#" + cur.anchor : ""), null, push);
 }
 const isDark = () => document.documentElement.dataset.theme === "dark" || (document.documentElement.dataset.theme !== "light" && matchMedia("(prefers-color-scheme: dark)").matches);
-function jump(anchor) {
+function jump(anchor, root = $("#doc-md")) {
   if (!anchor) return;
-  const t = document.getElementById("d-" + slugify(decodeURIComponent(anchor)));
+  const t = root.querySelector("#" + CSS.escape("d-" + slugify(decodeURIComponent(anchor))));
   if (t) { t.scrollIntoView({block: "start"}); t.classList.remove("flash"); void t.offsetWidth; t.classList.add("flash"); }
 }
 function closeDoc() { $("#doc").hidden = true; $("#docscrim").hidden = true; docHist = []; docCur = null; $("#doc-step").innerHTML = ""; }
@@ -965,7 +987,7 @@ function route() {
 document.addEventListener("click", e => {
   const lb = e.target.closest("[data-lb]"); if (lb) { e.preventDefault(); openLb(lb.querySelector("img")); return; }
   const d = e.target.closest("[data-doc]:not([href])"); if (d) { e.preventDefault(); openDoc(d.dataset.doc, d.dataset.anchor); return; }
-  const an = e.target.closest("a.dl[data-anchor]:not([data-doc])"); if (an) { e.preventDefault(); jump(an.dataset.anchor); return; }
+  const an = e.target.closest("a.dl[data-anchor]:not([data-doc])"); if (an) { e.preventDefault(); jump(an.dataset.anchor, an.closest(".mdv") || $("#doc-md")); return; }
   const st = e.target.closest("[data-step]"); if (st) { openStep(st.dataset.step); return; }
   const tb = e.target.closest("[data-stab]"); if (tb && docCur?.step) { openStep(docCur.step, tb.dataset.stab, false); return; }
   const f = e.target.closest("[data-if]"); if (f) { ifilter = f.dataset.if; route(); return; }

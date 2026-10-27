@@ -2537,7 +2537,6 @@
   {
    "runId": "wf_3dab872b-d5c",
    "workflowName": "autopilot-apply2",
-   "summary": "Spectio APPLY2: apply accepted and assumed findings of R3 and R6 to the docs, files grouped per agent, then close statuses and log",
    "agentCount": 9,
    "totalTokens": 933866,
    "totalToolCalls": 229,
@@ -2548,7 +2547,6 @@
   {
    "runId": "wf_51655e33-ac2",
    "workflowName": "autopilot-triage1",
-   "summary": "Spectio TRIAGE1: apply triage-policy.md to every finding of R1 R2 R4 R5 R7 R8 R8b R9 R11 R12, then consolidate inbox entries",
    "agentCount": 11,
    "totalTokens": 1032248,
    "totalToolCalls": 171,
@@ -2559,7 +2557,6 @@
   {
    "runId": "wf_839a7809-2f8",
    "workflowName": "autopilot-w1-reviews",
-   "summary": "Spectio W1: review rounds R1 R2 R4 R5 R7 R8 R9 (parallel reviewers + merge) and spike D2",
    "agentCount": 24,
    "totalTokens": 4388264,
    "totalToolCalls": 1401,
@@ -2570,7 +2567,6 @@
   {
    "runId": "wf_ac77eca8-327",
    "workflowName": "autopilot-r11-docs-review",
-   "summary": "Spectio R11: documentation review (doc-reviewer + ux-reviewer on the landing page), merged into docs/reviews/R11-docs.md",
    "agentCount": 3,
    "totalTokens": 381617,
    "totalToolCalls": 140,
@@ -2581,7 +2577,6 @@
   {
    "runId": "wf_b7e8a832-5b7",
    "workflowName": "autopilot-w1-docs",
-   "summary": "Spectio W1: Progress pages (doc-writer), D2 sketch and cast, independent doc-reviewer with up to two revisions",
    "agentCount": 18,
    "totalTokens": 1034641,
    "totalToolCalls": 299,
@@ -2592,7 +2587,6 @@
   {
    "runId": "wf_dc6eeb2e-ca8",
    "workflowName": "autopilot-apply1",
-   "summary": "Spectio APPLY1: apply accepted and assumed findings of R1 R2 R4 R5 R7 R8 R8b R9 R11 to the docs, one agent per file, then close statuses and log",
    "agentCount": 43,
    "totalTokens": 4915905,
    "totalToolCalls": 717,
