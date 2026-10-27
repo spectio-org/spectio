@@ -12,7 +12,6 @@ SPECTIO_HOME=${SPECTIO_HOME:-${XDG_DATA_HOME:-$HOME/.local/share}/spectio}
 SPECTIO_BIN=${SPECTIO_BIN:-$HOME/.local/bin}
 NPM_PREFIX=$SPECTIO_HOME/npm
 export PATH="$SPECTIO_BIN:$PATH"
-export UV_TOOL_BIN_DIR=$SPECTIO_BIN
 export NODE_PATH=$NPM_PREFIX/node_modules
 
 docker_up() { docker info >/dev/null 2>&1; }
