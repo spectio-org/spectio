@@ -106,7 +106,7 @@ Append to `.autopilot/journal.md`:
 - triage counts (accepted / rejected / inbox / assumed);
 - what is now waiting on Thomas.
 
-Then update `state.json` (`updated_at`, `current_wave`) and commit both files.
+Snapshot this session's token usage: `python3 tools/dashboard/usage.py ~/.claude/projects/<project-slug> .autopilot/usage/<session-id>.json` (`tools/dashboard/README.md`). Then update `state.json` (`updated_at`, `current_wave`) and commit the three files.
 
 ## 5. Report (always, last)
 

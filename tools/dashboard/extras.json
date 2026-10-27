@@ -1,0 +1,168 @@
+{
+ "roundNames": {
+  "R1": "Consistency across specs",
+  "R2": "Fact-checking",
+  "R4": "Implementation constraints and risks",
+  "R5": "Security and threat model",
+  "R7": "UI board review",
+  "R8": "depictio and LabID drift",
+  "R8b": "depictio tooling (CI, branches)",
+  "R9": "Landscape",
+  "R11": "Documentation",
+  "R12": "UI scenarios"
+ },
+ "mvp": {
+  "frame": "One user, no sign-in; everything on one machine (server, SQLite, the engines' local executor); Snakemake through the logger plugin and Nextflow through nf-spectio.",
+  "features": [
+   {
+    "name": "Snakemake (logger plugin)",
+    "specs": [
+     [
+      "docs/specs/synthesis.md",
+      "synthesis §2"
+     ],
+     [
+      "docs/specs/ui-spec.md",
+      "ui-spec §5.1"
+     ]
+    ],
+    "boards": [
+     "LaunchSnakemake"
+    ]
+   },
+   {
+    "name": "Nextflow (nf-spectio)",
+    "specs": [
+     [
+      "docs/decisions/0001-nextflow-through-nf-spectio.md",
+      "decision 0001"
+     ],
+     [
+      "docs/specs/synthesis.md",
+      "synthesis §2bis"
+     ]
+    ],
+    "boards": [
+     "Launch"
+    ]
+   },
+   {
+    "name": "Launch a run",
+    "specs": [
+     [
+      "docs/specs/ui-spec.md",
+      "ui-spec §4.6"
+     ],
+     [
+      "docs/specs/api-and-data-model.md",
+      "api §5"
+     ]
+    ],
+    "boards": [
+     "Launch",
+     "LaunchSnakemake"
+    ]
+   },
+   {
+    "name": "Monitor: state, jobs, stages",
+    "specs": [
+     [
+      "docs/specs/ui-spec.md",
+      "ui-spec §3, §4.3, §4.4"
+     ],
+     [
+      "docs/specs/api-and-data-model.md",
+      "api §5, §8"
+     ]
+    ],
+    "boards": [
+     "RunsTable",
+     "RunsRows",
+     "RunDetail",
+     "Legend"
+    ]
+   },
+   {
+    "name": "Relaunch with changed parameters",
+    "specs": [
+     [
+      "docs/specs/ui-spec.md",
+      "ui-spec §4.6"
+     ],
+     [
+      "docs/specs/synthesis.md",
+      "synthesis §5ter"
+     ]
+    ],
+    "boards": [
+     "RelaunchDialog"
+    ]
+   },
+   {
+    "name": "Parameter history",
+    "specs": [
+     [
+      "docs/specs/ui-spec.md",
+      "ui-spec §4.4"
+     ],
+     [
+      "docs/specs/api-and-data-model.md",
+      "api §5, §7"
+     ]
+    ],
+    "boards": [
+     "RunDetail",
+     "RunsCompare"
+    ]
+   },
+   {
+    "name": "One QC check and gate",
+    "specs": [
+     [
+      "docs/specs/checking-scenarios.md",
+      "checking §4, §5, §7"
+     ],
+     [
+      "docs/specs/ui-spec.md",
+      "ui-spec §5.1"
+     ]
+    ],
+    "boards": [
+     "Manifest",
+     "RunDetail",
+     "ReviewReport"
+    ]
+   }
+  ],
+  "deferred": [
+   "Users, sign-in, roles",
+   "SLURM and Kubernetes driven by Spectio",
+   "Runs started from a terminal",
+   "Postgres, Compose, Helm",
+   "Hand-off to depictio",
+   "WES, MCP, LabID"
+  ],
+  "path": [
+   [
+    "R3",
+    "0.0.1 user journeys"
+   ],
+   [
+    "R6",
+    "0.0.1 API contract"
+   ],
+   [
+    "P1",
+    "0.0.1 walking-skeleton plan"
+   ],
+   [
+    "GO",
+    "Thomas's go / no-go"
+   ],
+   [
+    "P3",
+    "the code"
+   ]
+  ]
+ }
+}

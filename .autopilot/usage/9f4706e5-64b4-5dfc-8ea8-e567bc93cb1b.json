@@ -1,0 +1,2604 @@
+{
+ "agents": [
+  {
+   "tokens": {
+    "input": 2855,
+    "cache_write": 5248682,
+    "cache_read": 253443623,
+    "output": 797935
+   },
+   "calls": 1304,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T20:20:33.816Z",
+   "end": "2026-10-27T17:20:56.865Z",
+   "id": "9f4706e5-64b4-5dfc-8ea8-e567bc93cb1b",
+   "kind": "main",
+   "type": "session",
+   "label": "main session 9f4706e5"
+  },
+  {
+   "tokens": {
+    "input": 46,
+    "cache_write": 127866,
+    "cache_read": 1871558,
+    "output": 20967
+   },
+   "calls": 22,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:38:54.561Z",
+   "end": "2026-10-27T10:47:13.010Z",
+   "id": "a094449e12ea0fe31",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc-review R3 step",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 24,
+    "cache_write": 60455,
+    "cache_read": 494852,
+    "output": 10491
+   },
+   "calls": 12,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:17:52.048Z",
+   "end": "2026-10-27T00:19:48.167Z",
+   "id": "a09d20bc2c7177937",
+   "kind": "subagent",
+   "type": "doc-writer",
+   "label": "Write R11 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 86,
+    "cache_write": 279411,
+    "cache_read": 3357528,
+    "output": 44752
+   },
+   "calls": 43,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:06:55.941Z",
+   "end": "2026-10-27T10:17:10.344Z",
+   "id": "a0e62844afd9c010b",
+   "kind": "subagent",
+   "type": "spec-reviewer",
+   "label": "R3 journeys 1-2 spec review",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 40,
+    "cache_write": 80461,
+    "cache_read": 995352,
+    "output": 12670
+   },
+   "calls": 20,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T13:20:26.158Z",
+   "end": "2026-10-27T13:23:34.807Z",
+   "id": "a102703e7988a0f46",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Second doc review of PR 12",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 22,
+    "cache_write": 153649,
+    "cache_read": 1006696,
+    "output": 53497
+   },
+   "calls": 11,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:29:56.579Z",
+   "end": "2026-10-27T10:38:14.040Z",
+   "id": "a12cda9106775fe31",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "Merge R6 findings into review file",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 50,
+    "cache_write": 192391,
+    "cache_read": 2205145,
+    "output": 44005
+   },
+   "calls": 25,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:06:56.013Z",
+   "end": "2026-10-27T10:15:10.996Z",
+   "id": "a14e84c041934c39e",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "R6 draft OpenAPI 0.0.1 skeleton",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 88,
+    "cache_write": 142885,
+    "cache_read": 3623181,
+    "output": 38338
+   },
+   "calls": 44,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:06:55.992Z",
+   "end": "2026-10-27T10:14:59.175Z",
+   "id": "a16342d0ff46a9548",
+   "kind": "subagent",
+   "type": "ux-reviewer",
+   "label": "R3 journeys board review",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 94,
+    "cache_write": 168288,
+    "cache_read": 5789134,
+    "output": 34515
+   },
+   "calls": 47,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:02:41.795Z",
+   "end": "2026-10-27T08:11:20.120Z",
+   "id": "a16d2c0b1efb0cbe5",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "Record the 0.0.1 MVP decision",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 102,
+    "cache_write": 270205,
+    "cache_read": 5734737,
+    "output": 67901
+   },
+   "calls": 51,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:18:21.891Z",
+   "end": "2026-10-27T10:31:55.151Z",
+   "id": "a1c6b272dfdd64e72",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "Merge R3 findings into review file",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 44,
+    "cache_write": 63087,
+    "cache_read": 854499,
+    "output": 9530
+   },
+   "calls": 22,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:08:02.344Z",
+   "end": "2026-10-27T11:10:35.314Z",
+   "id": "a1fb7097202fe8eb6",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Review TRIAGE2 docs",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 66,
+    "cache_write": 83862,
+    "cache_read": 1621663,
+    "output": 18139
+   },
+   "calls": 33,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T16:32:26.229Z",
+   "end": "2026-10-27T16:36:53.033Z",
+   "id": "a2d9145f0bfd64cbe",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Review W3 promotion PR body and journal",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 440,
+    "cache_write": 446168,
+    "cache_read": 33028875,
+    "output": 173908
+   },
+   "calls": 220,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T14:28:07.847Z",
+   "end": "2026-10-27T15:13:48.482Z",
+   "id": "a33083167cb6781e7",
+   "kind": "subagent",
+   "type": "infra-engineer",
+   "label": "W3 D3: bootstrap and doctor",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 58,
+    "cache_write": 74431,
+    "cache_read": 1506011,
+    "output": 19311
+   },
+   "calls": 29,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:32:58.509Z",
+   "end": "2026-10-27T10:36:41.153Z",
+   "id": "a417c126282be0cb3",
+   "kind": "subagent",
+   "type": "doc-writer",
+   "label": "Write R3 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 62,
+    "cache_write": 82136,
+    "cache_read": 1533155,
+    "output": 16699
+   },
+   "calls": 31,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:53:00.794Z",
+   "end": "2026-10-27T11:56:59.153Z",
+   "id": "a41dff5ed814095e7",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "doc-reviewer for APPLY2",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 70,
+    "cache_write": 131236,
+    "cache_read": 3303240,
+    "output": 27324
+   },
+   "calls": 35,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T13:09:05.670Z",
+   "end": "2026-10-27T13:15:56.758Z",
+   "id": "a4ecba694e08309ab",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Review 0.0.1 decision and landing docs",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 150,
+    "cache_write": 418286,
+    "cache_read": 11583671,
+    "output": 62538
+   },
+   "calls": 74,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T12:51:38.241Z",
+   "end": "2026-10-27T13:19:31.478Z",
+   "id": "a5470d96a564fdb31",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "Record revised 0.0.1 cut in specs",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 70,
+    "cache_write": 178296,
+    "cache_read": 2058387,
+    "output": 23988
+   },
+   "calls": 34,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T13:09:23.007Z",
+   "end": "2026-10-27T13:24:58.407Z",
+   "id": "a57ce7de7d42b793d",
+   "kind": "subagent",
+   "type": "diagram-artist",
+   "label": "Draw 0.0.1 cluster architecture sketch",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 44,
+    "cache_write": 56893,
+    "cache_read": 806259,
+    "output": 13873
+   },
+   "calls": 22,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:38:34.359Z",
+   "end": "2026-10-27T09:41:52.631Z",
+   "id": "a5a451f6a0f09dec4",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Review APPLY1 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 272,
+    "cache_write": 267664,
+    "cache_read": 21681816,
+    "output": 90541
+   },
+   "calls": 136,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T14:28:07.831Z",
+   "end": "2026-10-27T14:55:22.524Z",
+   "id": "a5b356b30e5bd0261",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "W3 D1: validate Claude setup",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 30,
+    "cache_write": 58488,
+    "cache_read": 597735,
+    "output": 12794
+   },
+   "calls": 15,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T20:35:23.173Z",
+   "end": "2026-10-26T20:37:44.512Z",
+   "id": "a5f23be554a0773d1",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Review decision-recording docs commit",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 38,
+    "cache_write": 74753,
+    "cache_read": 920616,
+    "output": 18701
+   },
+   "calls": 19,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:18:21.908Z",
+   "end": "2026-10-27T10:22:37.146Z",
+   "id": "a6af467441261a087",
+   "kind": "subagent",
+   "type": "diagram-artist",
+   "label": "Draw R3 round map sketch",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 44,
+    "cache_write": 112127,
+    "cache_read": 1510748,
+    "output": 45816
+   },
+   "calls": 22,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:15:42.306Z",
+   "end": "2026-10-27T10:24:01.211Z",
+   "id": "a72755132aaf852f2",
+   "kind": "subagent",
+   "type": "ux-reviewer",
+   "label": "R6 boards vs OpenAPI draft",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 32,
+    "cache_write": 106755,
+    "cache_read": 1042658,
+    "output": 31913
+   },
+   "calls": 16,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:29:56.593Z",
+   "end": "2026-10-27T10:36:03.922Z",
+   "id": "a76f934d8b32eca20",
+   "kind": "subagent",
+   "type": "diagram-artist",
+   "label": "Draw R6 round map sketch",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 78,
+    "cache_write": 87810,
+    "cache_read": 2059927,
+    "output": 19972
+   },
+   "calls": 39,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:57:02.834Z",
+   "end": "2026-10-27T00:01:36.106Z",
+   "id": "a7982dadd43c36d9c",
+   "kind": "subagent",
+   "type": "doc-writer",
+   "label": "Apply W1 doc-review fixes",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 290,
+    "cache_write": 239046,
+    "cache_read": 18993233,
+    "output": 109269
+   },
+   "calls": 145,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T14:28:07.866Z",
+   "end": "2026-10-27T14:55:04.616Z",
+   "id": "a7cb7b0e65e945bfd",
+   "kind": "subagent",
+   "type": "infra-engineer",
+   "label": "W3 D5: dev previews end to end",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 60,
+    "cache_write": 86557,
+    "cache_read": 1626237,
+    "output": 27610
+   },
+   "calls": 30,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T06:10:16.269Z",
+   "end": "2026-10-27T06:15:18.991Z",
+   "id": "a875e9169d209350c",
+   "kind": "subagent",
+   "type": "doc-writer",
+   "label": "Write TRIAGE1 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 102,
+    "cache_write": 244618,
+    "cache_read": 4005888,
+    "output": 49127
+   },
+   "calls": 51,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:15:42.325Z",
+   "end": "2026-10-27T10:29:07.647Z",
+   "id": "a91ce118181a56faa",
+   "kind": "subagent",
+   "type": "spec-reviewer",
+   "label": "R6 spec vs OpenAPI draft",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 54,
+    "cache_write": 89654,
+    "cache_read": 1462491,
+    "output": 20215
+   },
+   "calls": 27,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T06:15:29.593Z",
+   "end": "2026-10-27T06:19:22.661Z",
+   "id": "ab28761903ba97eb0",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Review TRIAGE1 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 56,
+    "cache_write": 73911,
+    "cache_read": 1419879,
+    "output": 18569
+   },
+   "calls": 28,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:34:02.658Z",
+   "end": "2026-10-27T09:38:18.136Z",
+   "id": "ac104dcaaacd625f3",
+   "kind": "subagent",
+   "type": "doc-writer",
+   "label": "Write APPLY1 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 36,
+    "cache_write": 61753,
+    "cache_read": 709431,
+    "output": 8817
+   },
+   "calls": 18,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T12:02:03.788Z",
+   "end": "2026-10-27T12:04:11.011Z",
+   "id": "ad0d0acf73c2b0470",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Re-review APPLY2 docs",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 56,
+    "cache_write": 211627,
+    "cache_read": 1629324,
+    "output": 28387
+   },
+   "calls": 28,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:06:55.969Z",
+   "end": "2026-10-27T10:13:32.893Z",
+   "id": "ad4a6c695de0c26c4",
+   "kind": "subagent",
+   "type": "constraints-hunter",
+   "label": "R3 journeys 3-4 constraints",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 28,
+    "cache_write": 54933,
+    "cache_read": 519734,
+    "output": 11410
+   },
+   "calls": 14,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:19:55.325Z",
+   "end": "2026-10-27T00:22:06.005Z",
+   "id": "adfbb0fa27449813a",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Review R11 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 670,
+    "cache_write": 1900877,
+    "cache_read": 52604897,
+    "output": 224892
+   },
+   "calls": 335,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T14:28:07.859Z",
+   "end": "2026-10-27T16:29:06.335Z",
+   "id": "ae1996dacbf0543a8",
+   "kind": "subagent",
+   "type": "infra-engineer",
+   "label": "W3 D4: CI and Claude review",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 64,
+    "cache_write": 107386,
+    "cache_read": 2027011,
+    "output": 22432
+   },
+   "calls": 31,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T14:28:07.872Z",
+   "end": "2026-10-27T14:34:34.304Z",
+   "id": "ae6c62caddbd30960",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review of inbox answers",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 22,
+    "cache_write": 67969,
+    "cache_read": 535096,
+    "output": 9769
+   },
+   "calls": 11,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:42:29.958Z",
+   "end": "2026-10-27T10:44:36.393Z",
+   "id": "ae8689ce734bf6425",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc-review R6 step",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 30,
+    "cache_write": 59865,
+    "cache_read": 631209,
+    "output": 17004
+   },
+   "calls": 15,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T10:38:45.607Z",
+   "end": "2026-10-27T10:41:49.356Z",
+   "id": "af6e0ecc10da5e257",
+   "kind": "subagent",
+   "type": "doc-writer",
+   "label": "Write R6 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 54,
+    "cache_write": 343092,
+    "cache_read": 2578361,
+    "output": 25971
+   },
+   "calls": 27,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:19:41.997Z",
+   "end": "2026-10-27T11:28:41.721Z",
+   "id": "a2f4df646fd93d3e0",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R6",
+   "workflow": "autopilot-apply2"
+  },
+  {
+   "tokens": {
+    "input": 30,
+    "cache_write": 80150,
+    "cache_read": 1409276,
+    "output": 8674
+   },
+   "calls": 15,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:37:53.369Z",
+   "end": "2026-10-27T11:39:50.629Z",
+   "id": "a36e0a007b77c6b96",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:g6",
+   "workflow": "autopilot-apply2"
+  },
+  {
+   "tokens": {
+    "input": 70,
+    "cache_write": 331056,
+    "cache_read": 3613681,
+    "output": 55461
+   },
+   "calls": 35,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:28:50.126Z",
+   "end": "2026-10-27T11:40:13.960Z",
+   "id": "a5eeab27c7de57929",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:g1",
+   "workflow": "autopilot-apply2"
+  },
+  {
+   "tokens": {
+    "input": 48,
+    "cache_write": 186964,
+    "cache_read": 2485050,
+    "output": 27076
+   },
+   "calls": 24,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:40:16.351Z",
+   "end": "2026-10-27T11:46:17.905Z",
+   "id": "a6a78b209fd964426",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "close",
+   "workflow": "autopilot-apply2"
+  },
+  {
+   "tokens": {
+    "input": 26,
+    "cache_write": 63909,
+    "cache_read": 1096939,
+    "output": 8499
+   },
+   "calls": 13,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:34:01.430Z",
+   "end": "2026-10-27T11:35:52.111Z",
+   "id": "a894df36350b0c956",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:g4",
+   "workflow": "autopilot-apply2"
+  },
+  {
+   "tokens": {
+    "input": 32,
+    "cache_write": 72837,
+    "cache_read": 1499113,
+    "output": 9286
+   },
+   "calls": 16,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:35:54.383Z",
+   "end": "2026-10-27T11:37:51.381Z",
+   "id": "acd580102edc7a651",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:g5",
+   "workflow": "autopilot-apply2"
+  },
+  {
+   "tokens": {
+    "input": 40,
+    "cache_write": 85489,
+    "cache_read": 2103881,
+    "output": 19494
+   },
+   "calls": 20,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:28:53.962Z",
+   "end": "2026-10-27T11:32:05.896Z",
+   "id": "ad6b8cc254ab6c1d3",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:g2",
+   "workflow": "autopilot-apply2"
+  },
+  {
+   "tokens": {
+    "input": 24,
+    "cache_write": 58106,
+    "cache_read": 941280,
+    "output": 8301
+   },
+   "calls": 12,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:32:07.961Z",
+   "end": "2026-10-27T11:33:59.455Z",
+   "id": "ae14245f63161e038",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:g3",
+   "workflow": "autopilot-apply2"
+  },
+  {
+   "tokens": {
+    "input": 76,
+    "cache_write": 275399,
+    "cache_read": 3720022,
+    "output": 27112
+   },
+   "calls": 38,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T11:19:39.373Z",
+   "end": "2026-10-27T11:27:46.584Z",
+   "id": "aff3002fd638f9a41",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R3",
+   "workflow": "autopilot-apply2"
+  },
+  {
+   "tokens": {
+    "input": 52,
+    "cache_write": 112312,
+    "cache_read": 3039432,
+    "output": 20656
+   },
+   "calls": 26,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:24:48.181Z",
+   "end": "2026-10-27T00:28:55.369Z",
+   "id": "a0dea5bc4c8915992",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R2",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 30,
+    "cache_write": 91400,
+    "cache_read": 1515662,
+    "output": 25113
+   },
+   "calls": 15,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:31:00.535Z",
+   "end": "2026-10-27T00:35:19.956Z",
+   "id": "a17b14cbae07228f9",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R5",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 16,
+    "cache_write": 70213,
+    "cache_read": 657804,
+    "output": 2130
+   },
+   "calls": 8,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:34:30.788Z",
+   "end": "2026-10-27T00:35:07.612Z",
+   "id": "a25b538ba23255abc",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R7",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 36,
+    "cache_write": 82973,
+    "cache_read": 1634926,
+    "output": 21171
+   },
+   "calls": 18,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T05:45:50.635Z",
+   "end": "2026-10-27T05:50:04.812Z",
+   "id": "a29a836ef2b34e303",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R8",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 36,
+    "cache_write": 175960,
+    "cache_read": 2179585,
+    "output": 37497
+   },
+   "calls": 18,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:24:45.479Z",
+   "end": "2026-10-27T00:30:58.694Z",
+   "id": "a47854e87c50b150d",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R1",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 60,
+    "cache_write": 138934,
+    "cache_read": 3433881,
+    "output": 33606
+   },
+   "calls": 30,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T05:57:34.361Z",
+   "end": "2026-10-27T06:04:04.501Z",
+   "id": "a6b31ebcc8ab9f6cf",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R12",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 68,
+    "cache_write": 143179,
+    "cache_read": 4126663,
+    "output": 36771
+   },
+   "calls": 34,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T05:50:08.129Z",
+   "end": "2026-10-27T05:57:32.479Z",
+   "id": "a70849d42461fbef5",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R8b",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 20,
+    "cache_write": 77106,
+    "cache_read": 901954,
+    "output": 18063
+   },
+   "calls": 10,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T05:51:35.421Z",
+   "end": "2026-10-27T05:54:44.741Z",
+   "id": "a898178f7019b8cf2",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R9",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 66,
+    "cache_write": 156271,
+    "cache_read": 4094834,
+    "output": 29044
+   },
+   "calls": 33,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T05:45:47.413Z",
+   "end": "2026-10-27T05:51:31.896Z",
+   "id": "a93574676fb555fe8",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R7",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 38,
+    "cache_write": 106932,
+    "cache_read": 2185073,
+    "output": 32416
+   },
+   "calls": 19,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:28:57.309Z",
+   "end": "2026-10-27T00:34:28.041Z",
+   "id": "a9c982bcce370fcf1",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R4",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 28,
+    "cache_write": 147202,
+    "cache_read": 1656755,
+    "output": 33577
+   },
+   "calls": 14,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T06:04:07.318Z",
+   "end": "2026-10-27T06:09:32.119Z",
+   "id": "a9d0900f3e069df3b",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inbox:consolidate",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 42,
+    "cache_write": 77859,
+    "cache_read": 1907118,
+    "output": 14591
+   },
+   "calls": 21,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T05:54:47.586Z",
+   "end": "2026-10-27T05:57:56.626Z",
+   "id": "ac3d35b8b0ee05fae",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R11",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 14,
+    "cache_write": 57528,
+    "cache_read": 504832,
+    "output": 1767
+   },
+   "calls": 7,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:35:21.867Z",
+   "end": "2026-10-27T00:35:50.956Z",
+   "id": "ac97e2405340e7624",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "triage:R8",
+   "workflow": "autopilot-triage1"
+  },
+  {
+   "tokens": {
+    "input": 68,
+    "cache_write": 164507,
+    "cache_read": 3778829,
+    "output": 40331
+   },
+   "calls": 34,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T21:10:16.061Z",
+   "end": "2026-10-26T21:16:51.933Z",
+   "id": "a1ccc3111fef25468",
+   "kind": "workflow",
+   "type": "spec-reviewer",
+   "label": "R1:spec-reviewer#1",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 208,
+    "cache_write": 144502,
+    "cache_read": 10920664,
+    "output": 68369
+   },
+   "calls": 104,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T21:49:39.851Z",
+   "end": "2026-10-26T22:06:07.709Z",
+   "id": "a1ff469ead46dbc3f",
+   "kind": "workflow",
+   "type": "fact-checker",
+   "label": "R2:fact-checker#3",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 54,
+    "cache_write": 174107,
+    "cache_read": 3816191,
+    "output": 81624
+   },
+   "calls": 27,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T22:55:23.693Z",
+   "end": "2026-10-26T23:07:01.693Z",
+   "id": "a295968902c974c72",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "R2:merge",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 44,
+    "cache_write": 170096,
+    "cache_read": 2617702,
+    "output": 48196
+   },
+   "calls": 22,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T21:32:37.665Z",
+   "end": "2026-10-26T21:40:08.343Z",
+   "id": "a3b991b11cd9a6742",
+   "kind": "workflow",
+   "type": "spec-reviewer",
+   "label": "R1:spec-reviewer#4",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 72,
+    "cache_write": 167180,
+    "cache_read": 4835298,
+    "output": 62374
+   },
+   "calls": 36,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:11:36.780Z",
+   "end": "2026-10-26T23:21:33.056Z",
+   "id": "a5f94b99a95b92d6e",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "R7:merge",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 50,
+    "cache_write": 148084,
+    "cache_read": 3320899,
+    "output": 58285
+   },
+   "calls": 25,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:07:04.113Z",
+   "end": "2026-10-26T23:16:08.581Z",
+   "id": "a68621e5c6ca8670a",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "R4:merge",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 110,
+    "cache_write": 202000,
+    "cache_read": 8172073,
+    "output": 67261
+   },
+   "calls": 55,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T22:06:08.789Z",
+   "end": "2026-10-26T22:20:28.183Z",
+   "id": "a6b930d0d8b1fee43",
+   "kind": "workflow",
+   "type": "constraints-hunter",
+   "label": "R4:constraints-hunter#2",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 34,
+    "cache_write": 178377,
+    "cache_read": 2016523,
+    "output": 51718
+   },
+   "calls": 17,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T21:24:39.855Z",
+   "end": "2026-10-26T21:32:35.714Z",
+   "id": "a6e99ac55734a0d49",
+   "kind": "workflow",
+   "type": "spec-reviewer",
+   "label": "R1:spec-reviewer#3",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 130,
+    "cache_write": 139943,
+    "cache_read": 5558200,
+    "output": 44310
+   },
+   "calls": 65,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T22:45:09.786Z",
+   "end": "2026-10-26T22:55:21.624Z",
+   "id": "a83b6e3e2cffb7b9a",
+   "kind": "workflow",
+   "type": "constraints-hunter",
+   "label": "R9:constraints-hunter#2",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 114,
+    "cache_write": 165817,
+    "cache_read": 5486080,
+    "output": 51247
+   },
+   "calls": 57,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T22:19:11.479Z",
+   "end": "2026-10-26T22:30:39.376Z",
+   "id": "a85402771978c8b86",
+   "kind": "workflow",
+   "type": "ux-reviewer",
+   "label": "R7:ux-reviewer#1",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 60,
+    "cache_write": 156069,
+    "cache_read": 3202844,
+    "output": 53918
+   },
+   "calls": 30,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T21:55:46.492Z",
+   "end": "2026-10-26T22:06:06.441Z",
+   "id": "a8ad2505995ce6601",
+   "kind": "workflow",
+   "type": "constraints-hunter",
+   "label": "R4:constraints-hunter#1",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 136,
+    "cache_write": 179797,
+    "cache_read": 7175248,
+    "output": 49215
+   },
+   "calls": 68,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T22:20:30.337Z",
+   "end": "2026-10-26T22:30:59.928Z",
+   "id": "a98d8a9902b728c42",
+   "kind": "workflow",
+   "type": "ux-reviewer",
+   "label": "R7:ux-reviewer#2",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 76,
+    "cache_write": 156204,
+    "cache_read": 5065786,
+    "output": 57665
+   },
+   "calls": 38,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:21:35.137Z",
+   "end": "2026-10-26T23:31:06.236Z",
+   "id": "aa32c1fcff73e0194",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "R9:merge",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 50,
+    "cache_write": 373071,
+    "cache_read": 3987878,
+    "output": 76948
+   },
+   "calls": 25,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T22:53:11.809Z",
+   "end": "2026-10-26T23:04:06.400Z",
+   "id": "aa3ccf66672fb3292",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "R1:merge",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 180,
+    "cache_write": 134172,
+    "cache_read": 7973338,
+    "output": 59035
+   },
+   "calls": 90,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T21:39:01.733Z",
+   "end": "2026-10-26T21:49:37.882Z",
+   "id": "aaa0d55fe8eb26989",
+   "kind": "workflow",
+   "type": "fact-checker",
+   "label": "R2:fact-checker#1",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 46,
+    "cache_write": 148690,
+    "cache_read": 2966954,
+    "output": 49136
+   },
+   "calls": 23,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:04:08.700Z",
+   "end": "2026-10-26T23:11:34.653Z",
+   "id": "aaadbc03fdecf9102",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "R5:merge",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 74,
+    "cache_write": 231936,
+    "cache_read": 6409686,
+    "output": 68479
+   },
+   "calls": 37,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T22:06:09.692Z",
+   "end": "2026-10-26T22:19:09.043Z",
+   "id": "ac04c25ae0d0a4d5c",
+   "kind": "workflow",
+   "type": "security-reviewer",
+   "label": "R5:security-reviewer#1",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 38,
+    "cache_write": 177016,
+    "cache_read": 2097353,
+    "output": 49516
+   },
+   "calls": 19,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T21:16:54.229Z",
+   "end": "2026-10-26T21:24:37.782Z",
+   "id": "acc59ce7982c2e625",
+   "kind": "workflow",
+   "type": "spec-reviewer",
+   "label": "R1:spec-reviewer#2",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 70,
+    "cache_write": 110333,
+    "cache_read": 3654007,
+    "output": 35993
+   },
+   "calls": 35,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:16:10.733Z",
+   "end": "2026-10-26T23:22:27.859Z",
+   "id": "ad772ef5757ee08e6",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "R8:merge",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 180,
+    "cache_write": 146255,
+    "cache_read": 9053534,
+    "output": 67430
+   },
+   "calls": 90,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T21:40:10.180Z",
+   "end": "2026-10-26T21:55:41.155Z",
+   "id": "ad7b460662fb51cb4",
+   "kind": "workflow",
+   "type": "fact-checker",
+   "label": "R2:fact-checker#2",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 88,
+    "cache_write": 170085,
+    "cache_read": 4230346,
+    "output": 42126
+   },
+   "calls": 44,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T22:30:41.384Z",
+   "end": "2026-10-26T22:38:53.616Z",
+   "id": "ae1bcc037aa86965e",
+   "kind": "workflow",
+   "type": "ux-reviewer",
+   "label": "R7:ux-reviewer#3",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 222,
+    "cache_write": 211878,
+    "cache_read": 14148522,
+    "output": 61291
+   },
+   "calls": 111,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T22:31:01.937Z",
+   "end": "2026-10-26T22:45:07.756Z",
+   "id": "af63f19672969b488",
+   "kind": "workflow",
+   "type": "depictio-liaison",
+   "label": "R8:depictio-liaison#1",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 154,
+    "cache_write": 151254,
+    "cache_read": 8120758,
+    "output": 57016
+   },
+   "calls": 77,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T22:38:56.385Z",
+   "end": "2026-10-26T22:53:09.417Z",
+   "id": "af780d1ac207caa58",
+   "kind": "workflow",
+   "type": "fact-checker",
+   "label": "R9:fact-checker#1",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 276,
+    "cache_write": 214327,
+    "cache_read": 18105683,
+    "output": 78362
+   },
+   "calls": 138,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T21:10:16.767Z",
+   "end": "2026-10-26T21:38:59.659Z",
+   "id": "afa914a5a4c45189e",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "D2:spike",
+   "workflow": "autopilot-w1-reviews"
+  },
+  {
+   "tokens": {
+    "input": 56,
+    "cache_write": 105597,
+    "cache_read": 1664463,
+    "output": 25854
+   },
+   "calls": 28,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:02:29.079Z",
+   "end": "2026-10-27T00:07:54.980Z",
+   "id": "a1e1e1189d91d44b5",
+   "kind": "workflow",
+   "type": "ux-reviewer",
+   "label": "R11:ux-reviewer",
+   "workflow": "autopilot-r11-docs-review"
+  },
+  {
+   "tokens": {
+    "input": 144,
+    "cache_write": 163367,
+    "cache_read": 7356392,
+    "output": 38818
+   },
+   "calls": 72,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:02:29.077Z",
+   "end": "2026-10-27T00:14:00.827Z",
+   "id": "a1e71f63902fc9b95",
+   "kind": "workflow",
+   "type": "doc-reviewer",
+   "label": "R11:doc-reviewer",
+   "workflow": "autopilot-r11-docs-review"
+  },
+  {
+   "tokens": {
+    "input": 30,
+    "cache_write": 111814,
+    "cache_read": 1181319,
+    "output": 23265
+   },
+   "calls": 15,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T00:14:03.666Z",
+   "end": "2026-10-27T00:17:32.702Z",
+   "id": "aa55e035515ee774c",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "R11:merge",
+   "workflow": "autopilot-r11-docs-review"
+  },
+  {
+   "tokens": {
+    "input": 4,
+    "cache_write": 38337,
+    "cache_read": 9578,
+    "output": 244
+   },
+   "calls": 2,
+   "model": "claude-sonnet-5-5",
+   "start": "2026-10-26T23:33:15.391Z",
+   "end": "2026-10-26T23:33:25.821Z",
+   "id": "a068430192f918dbd",
+   "kind": "workflow",
+   "type": "media-capture",
+   "label": "D2:cast",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 16,
+    "cache_write": 52274,
+    "cache_read": 249612,
+    "output": 6725
+   },
+   "calls": 8,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:51:23.291Z",
+   "end": "2026-10-26T23:52:42.494Z",
+   "id": "a1beedd2573ab207a",
+   "kind": "workflow",
+   "type": "doc-reviewer",
+   "label": "R9:review#1",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 32,
+    "cache_write": 51779,
+    "cache_read": 550576,
+    "output": 8745
+   },
+   "calls": 16,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:48:00.726Z",
+   "end": "2026-10-26T23:49:56.332Z",
+   "id": "a2879aeea5144dae8",
+   "kind": "workflow",
+   "type": "doc-reviewer",
+   "label": "R2:review#1",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 14,
+    "cache_write": 31178,
+    "cache_read": 145014,
+    "output": 4933
+   },
+   "calls": 7,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:49:58.107Z",
+   "end": "2026-10-26T23:50:58.457Z",
+   "id": "a2dd5a9fb34345722",
+   "kind": "workflow",
+   "type": "doc-reviewer",
+   "label": "R5:review#1",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 26,
+    "cache_write": 42093,
+    "cache_read": 419186,
+    "output": 9968
+   },
+   "calls": 13,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:41:00.948Z",
+   "end": "2026-10-26T23:42:53.536Z",
+   "id": "a3d08ff1281db1b90",
+   "kind": "workflow",
+   "type": "doc-writer",
+   "label": "R5:write",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 42,
+    "cache_write": 89086,
+    "cache_read": 1391175,
+    "output": 18604
+   },
+   "calls": 21,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:44:56.953Z",
+   "end": "2026-10-26T23:48:21.646Z",
+   "id": "a4ef3af7b8307cc58",
+   "kind": "workflow",
+   "type": "doc-writer",
+   "label": "D2:write",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 18,
+    "cache_write": 40538,
+    "cache_read": 224343,
+    "output": 6285
+   },
+   "calls": 9,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:46:45.095Z",
+   "end": "2026-10-26T23:47:58.866Z",
+   "id": "a52acf31b40cae2fd",
+   "kind": "workflow",
+   "type": "doc-reviewer",
+   "label": "R1:review#1",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 20,
+    "cache_write": 21767,
+    "cache_read": 454832,
+    "output": 9415
+   },
+   "calls": 10,
+   "model": "claude-sonnet-5-5",
+   "start": "2026-10-26T23:33:37.406Z",
+   "end": "2026-10-26T23:34:55.381Z",
+   "id": "a649c7131990049db",
+   "kind": "workflow",
+   "type": "media-capture",
+   "label": "D2:cast",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 20,
+    "cache_write": 37052,
+    "cache_read": 285154,
+    "output": 9474
+   },
+   "calls": 10,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:42:26.448Z",
+   "end": "2026-10-26T23:44:07.405Z",
+   "id": "a7223c62cf1fec35d",
+   "kind": "workflow",
+   "type": "doc-writer",
+   "label": "R7:write",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 4,
+    "cache_write": 46570,
+    "cache_read": 9717,
+    "output": 511
+   },
+   "calls": 2,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:33:15.389Z",
+   "end": "2026-10-26T23:33:25.813Z",
+   "id": "a7277673662302a55",
+   "kind": "workflow",
+   "type": "diagram-artist",
+   "label": "D2:sketch",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 28,
+    "cache_write": 55673,
+    "cache_read": 567953,
+    "output": 11213
+   },
+   "calls": 14,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:42:55.617Z",
+   "end": "2026-10-26T23:44:55.046Z",
+   "id": "a74a87bd06c369517",
+   "kind": "workflow",
+   "type": "doc-writer",
+   "label": "R8:write",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 26,
+    "cache_write": 59004,
+    "cache_read": 552358,
+    "output": 11381
+   },
+   "calls": 13,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:40:23.078Z",
+   "end": "2026-10-26T23:42:23.821Z",
+   "id": "a83e5b6b2e454b374",
+   "kind": "workflow",
+   "type": "doc-writer",
+   "label": "R4:write",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 24,
+    "cache_write": 45019,
+    "cache_read": 339583,
+    "output": 11548
+   },
+   "calls": 12,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:38:20.580Z",
+   "end": "2026-10-26T23:40:21.228Z",
+   "id": "a95d0b4225e9cbe76",
+   "kind": "workflow",
+   "type": "doc-writer",
+   "label": "R1:write",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 34,
+    "cache_write": 52857,
+    "cache_read": 679865,
+    "output": 13966
+   },
+   "calls": 17,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:38:22.643Z",
+   "end": "2026-10-26T23:40:58.684Z",
+   "id": "a9a4dd141aecb7b94",
+   "kind": "workflow",
+   "type": "doc-writer",
+   "label": "R2:write",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 32,
+    "cache_write": 41308,
+    "cache_read": 469527,
+    "output": 6390
+   },
+   "calls": 16,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:51:00.944Z",
+   "end": "2026-10-26T23:52:29.800Z",
+   "id": "aa6d476e7ebe51ff3",
+   "kind": "workflow",
+   "type": "doc-reviewer",
+   "label": "R8:review#1",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 26,
+    "cache_write": 34014,
+    "cache_read": 335473,
+    "output": 4289
+   },
+   "calls": 13,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:50:13.614Z",
+   "end": "2026-10-26T23:51:20.954Z",
+   "id": "aab22b25084cdb918",
+   "kind": "workflow",
+   "type": "doc-reviewer",
+   "label": "R7:review#1",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 34,
+    "cache_write": 94600,
+    "cache_read": 1198922,
+    "output": 22020
+   },
+   "calls": 17,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:33:37.405Z",
+   "end": "2026-10-26T23:38:18.628Z",
+   "id": "acdbc6a7a6ea4d337",
+   "kind": "workflow",
+   "type": "diagram-artist",
+   "label": "D2:sketch",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 26,
+    "cache_write": 42731,
+    "cache_read": 371325,
+    "output": 8809
+   },
+   "calls": 13,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:48:23.478Z",
+   "end": "2026-10-26T23:50:10.726Z",
+   "id": "acea70b4ef0fd37c7",
+   "kind": "workflow",
+   "type": "doc-reviewer",
+   "label": "R4:review#1",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 44,
+    "cache_write": 57194,
+    "cache_read": 907678,
+    "output": 10538
+   },
+   "calls": 22,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:52:31.554Z",
+   "end": "2026-10-26T23:55:15.053Z",
+   "id": "ad4a011abd71ad0f8",
+   "kind": "workflow",
+   "type": "doc-reviewer",
+   "label": "D2:review#1",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 32,
+    "cache_write": 59297,
+    "cache_read": 674958,
+    "output": 13782
+   },
+   "calls": 16,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-26T23:44:09.213Z",
+   "end": "2026-10-26T23:46:43.191Z",
+   "id": "aee7e65c22635b26f",
+   "kind": "workflow",
+   "type": "doc-writer",
+   "label": "R9:write",
+   "workflow": "autopilot-w1-docs"
+  },
+  {
+   "tokens": {
+    "input": 90,
+    "cache_write": 163137,
+    "cache_read": 6734734,
+    "output": 46259
+   },
+   "calls": 45,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:13:11.051Z",
+   "end": "2026-10-27T08:21:04.128Z",
+   "id": "a0958e605d981af70",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R2",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 24119,
+    "cache_read": 224815,
+    "output": 2434
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:56:09.874Z",
+   "end": "2026-10-27T08:56:38.856Z",
+   "id": "a151084047530bc8e",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:index.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 18,
+    "cache_write": 34303,
+    "cache_read": 577610,
+    "output": 6912
+   },
+   "calls": 9,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:57:34.291Z",
+   "end": "2026-10-27T08:58:49.732Z",
+   "id": "a1547512e295f7c1d",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:next-phase.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 23463,
+    "cache_read": 225092,
+    "output": 2189
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:00:32.564Z",
+   "end": "2026-10-27T09:00:56.664Z",
+   "id": "a1948f9a186b49aad",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:depictio-qc-integration-2026-10-26.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 38,
+    "cache_write": 86698,
+    "cache_read": 1941321,
+    "output": 33919
+   },
+   "calls": 19,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:12:32.185Z",
+   "end": "2026-10-27T09:17:43.285Z",
+   "id": "a1bbf9949886f9e9c",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:schedulers-and-monitoring.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 72,
+    "cache_write": 163139,
+    "cache_read": 5235007,
+    "output": 47335
+   },
+   "calls": 36,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:43:07.763Z",
+   "end": "2026-10-27T08:50:59.617Z",
+   "id": "a23c009a2a396796f",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R9",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 20636,
+    "cache_read": 218254,
+    "output": 1139
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:57:17.205Z",
+   "end": "2026-10-27T08:57:32.065Z",
+   "id": "a2eff7e4035773121",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:autopilot.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 10,
+    "cache_write": 25170,
+    "cache_read": 287856,
+    "output": 2393
+   },
+   "calls": 5,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:57:05.947Z",
+   "end": "2026-10-27T08:57:36.857Z",
+   "id": "a2f69b8979c007cb6",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:map.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 20430,
+    "cache_read": 219571,
+    "output": 1771
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:57:38.768Z",
+   "end": "2026-10-27T08:57:59.113Z",
+   "id": "a435ea9d925483c0b",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:F1.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 12,
+    "cache_write": 26995,
+    "cache_read": 357758,
+    "output": 2431
+   },
+   "calls": 6,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:17:46.267Z",
+   "end": "2026-10-27T09:18:09.758Z",
+   "id": "a5390d03a3e9c712a",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:telemetry-and-analytics.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 22,
+    "cache_write": 72658,
+    "cache_read": 998284,
+    "output": 21402
+   },
+   "calls": 11,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:00:33.197Z",
+   "end": "2026-10-27T09:03:34.463Z",
+   "id": "a53dc6dfff47a40e2",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:admin-and-operations.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 18,
+    "cache_write": 37158,
+    "cache_read": 620255,
+    "output": 5541
+   },
+   "calls": 9,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:56:07.486Z",
+   "end": "2026-10-27T08:57:15.337Z",
+   "id": "a56383a5b9bd92ab6",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:other-tools.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 22522,
+    "cache_read": 221436,
+    "output": 1404
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:56:41.263Z",
+   "end": "2026-10-27T08:57:04.065Z",
+   "id": "a6db29c4a0f97721a",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:index.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 10,
+    "cache_write": 22540,
+    "cache_read": 283438,
+    "output": 1430
+   },
+   "calls": 5,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:58:22.321Z",
+   "end": "2026-10-27T08:58:43.697Z",
+   "id": "a6f81357e383f2b4d",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:F2.md, F3.md, F4.md, F6.md, F7.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 22782,
+    "cache_read": 222834,
+    "output": 2399
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:58:45.617Z",
+   "end": "2026-10-27T08:59:12.135Z",
+   "id": "a7099d962341f3a67",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:F3.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 30,
+    "cache_write": 117715,
+    "cache_read": 1748836,
+    "output": 34027
+   },
+   "calls": 15,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:37:53.872Z",
+   "end": "2026-10-27T08:43:05.799Z",
+   "id": "a77db127c8d45bf9d",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R8",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 22,
+    "cache_write": 57663,
+    "cache_read": 853810,
+    "output": 11404
+   },
+   "calls": 11,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:09:07.367Z",
+   "end": "2026-10-27T09:10:43.832Z",
+   "id": "a7baec485c702c2d9",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:cli-and-shared-libraries.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 17766,
+    "cache_read": 215174,
+    "output": 835
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:18:46.121Z",
+   "end": "2026-10-27T09:18:59.701Z",
+   "id": "a80c206ba3570d943",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:index.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 32,
+    "cache_write": 137154,
+    "cache_read": 2047206,
+    "output": 42361
+   },
+   "calls": 16,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:42:06.711Z",
+   "end": "2026-10-27T08:48:19.646Z",
+   "id": "a80cb6ac1a41d6d04",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R8b",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 12,
+    "cache_write": 21594,
+    "cache_read": 341462,
+    "output": 1362
+   },
+   "calls": 6,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:59:58.809Z",
+   "end": "2026-10-27T09:00:30.619Z",
+   "id": "a84591614da09eece",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:depictio-harmonization.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 60,
+    "cache_write": 340753,
+    "cache_read": 7008274,
+    "output": 123990
+   },
+   "calls": 30,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:13:08.300Z",
+   "end": "2026-10-27T08:31:15.709Z",
+   "id": "a84c207f200ada3d4",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R1",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 22504,
+    "cache_read": 221355,
+    "output": 1537
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:58:51.663Z",
+   "end": "2026-10-27T08:59:11.194Z",
+   "id": "a88a0a04b67cd2d99",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:F5.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 46,
+    "cache_write": 90475,
+    "cache_read": 2485338,
+    "output": 27627
+   },
+   "calls": 23,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:18:11.106Z",
+   "end": "2026-10-27T09:22:36.119Z",
+   "id": "a8ccac3dca5aa6864",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:ui-spec.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 34,
+    "cache_write": 86890,
+    "cache_read": 1769090,
+    "output": 27731
+   },
+   "calls": 17,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:10:45.900Z",
+   "end": "2026-10-27T09:14:33.932Z",
+   "id": "a9fede72fd02a77da",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:dev-environment-and-testing.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 18,
+    "cache_write": 33109,
+    "cache_read": 586605,
+    "output": 4868
+   },
+   "calls": 9,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:06:10.654Z",
+   "end": "2026-10-27T09:06:55.485Z",
+   "id": "aa0124bc55d2f5c07",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:authentication-and-access.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 10,
+    "cache_write": 61857,
+    "cache_read": 236610,
+    "output": 1410
+   },
+   "calls": 5,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:55:44.067Z",
+   "end": "2026-10-27T08:56:07.088Z",
+   "id": "aa0e8337b4c28bbd2",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:index.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 18,
+    "cache_write": 51972,
+    "cache_read": 692678,
+    "output": 11888
+   },
+   "calls": 9,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:10:48.087Z",
+   "end": "2026-10-27T09:12:28.167Z",
+   "id": "aa1fed7e004651759",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:documentation-system.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 30,
+    "cache_write": 101541,
+    "cache_read": 1738665,
+    "output": 37122
+   },
+   "calls": 15,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:00:58.761Z",
+   "end": "2026-10-27T09:06:08.448Z",
+   "id": "aa296cad4d8a04cc4",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:api-and-data-model.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 56,
+    "cache_write": 135095,
+    "cache_read": 3446983,
+    "output": 39228
+   },
+   "calls": 28,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:31:18.461Z",
+   "end": "2026-10-27T08:37:51.702Z",
+   "id": "aab3783e14cf622ce",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R5",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 19057,
+    "cache_read": 215659,
+    "output": 1154
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:58:01.149Z",
+   "end": "2026-10-27T08:58:20.301Z",
+   "id": "aab43f9c99f7a2fb2",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:F1.md, F2.md, F3.md, F4.md, F5.md, F6.md, F7.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 58,
+    "cache_write": 117512,
+    "cache_read": 3416695,
+    "output": 36150
+   },
+   "calls": 29,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:48:22.662Z",
+   "end": "2026-10-27T08:55:41.833Z",
+   "id": "ab4a9cb01f4559018",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R11",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 19739,
+    "cache_read": 218089,
+    "output": 1293
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:59:38.515Z",
+   "end": "2026-10-27T08:59:56.888Z",
+   "id": "abd7fa25651adbf16",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:TRIAGE1.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 48,
+    "cache_write": 96098,
+    "cache_read": 2682692,
+    "output": 28388
+   },
+   "calls": 24,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:14:35.965Z",
+   "end": "2026-10-27T09:18:43.986Z",
+   "id": "ac45942bcbfd0795c",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:synthesis.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 12,
+    "cache_write": 40165,
+    "cache_read": 399240,
+    "output": 7506
+   },
+   "calls": 6,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:09:42.615Z",
+   "end": "2026-10-27T09:10:46.097Z",
+   "id": "ac6bcb9280d5d67ea",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:depictio-ecosystem-reuse.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 44,
+    "cache_write": 186509,
+    "cache_read": 3385956,
+    "output": 55380
+   },
+   "calls": 22,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:33:30.035Z",
+   "end": "2026-10-27T08:42:04.609Z",
+   "id": "acb95d0fc4d848f18",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R7",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 10,
+    "cache_write": 24887,
+    "cache_read": 293417,
+    "output": 1366
+   },
+   "calls": 5,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:59:13.090Z",
+   "end": "2026-10-27T08:59:36.379Z",
+   "id": "ace8629dee396fc5f",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:D2.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 48,
+    "cache_write": 111503,
+    "cache_read": 2906640,
+    "output": 37162
+   },
+   "calls": 24,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:03:36.513Z",
+   "end": "2026-10-27T09:09:05.207Z",
+   "id": "ad621c1f94c159d1c",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:architecture-plugins-and-packaging.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 40,
+    "cache_write": 63072,
+    "cache_read": 1727351,
+    "output": 16278
+   },
+   "calls": 20,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:06:57.398Z",
+   "end": "2026-10-27T09:09:40.025Z",
+   "id": "adcbc45ca3410fc64",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:checking-scenarios.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 56,
+    "cache_write": 234252,
+    "cache_read": 5310227,
+    "output": 83575
+   },
+   "calls": 28,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:21:06.302Z",
+   "end": "2026-10-27T08:33:26.799Z",
+   "id": "ade99a2e46d9a9178",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "inv:R4",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 10,
+    "cache_write": 25709,
+    "cache_read": 293663,
+    "output": 1603
+   },
+   "calls": 5,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:59:14.324Z",
+   "end": "2026-10-27T08:59:51.559Z",
+   "id": "ae6743e7e25ec4748",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:R1.md, R2.md, R4.md, R5.md, R7.md, R8.md, R9.md, D2.md, R11.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 56,
+    "cache_write": 227776,
+    "cache_read": 5169529,
+    "output": 56561
+   },
+   "calls": 28,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T09:22:38.430Z",
+   "end": "2026-10-27T09:31:56.313Z",
+   "id": "aee7bb2364b869294",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "close",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 10,
+    "cache_write": 20016,
+    "cache_read": 277562,
+    "output": 955
+   },
+   "calls": 5,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:55:47.408Z",
+   "end": "2026-10-27T08:56:04.437Z",
+   "id": "af4123832f0c8f660",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:index.md",
+   "workflow": "autopilot-apply1"
+  },
+  {
+   "tokens": {
+    "input": 12,
+    "cache_write": 24302,
+    "cache_read": 349138,
+    "output": 2572
+   },
+   "calls": 6,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T08:59:53.555Z",
+   "end": "2026-10-27T09:00:31.218Z",
+   "id": "afa907497e4e4c1ba",
+   "kind": "workflow",
+   "type": "general-purpose",
+   "label": "apply:depictio-audit-2026-10-26.md",
+   "workflow": "autopilot-apply1"
+  }
+ ],
+ "workflows": [
+  {
+   "runId": "wf_3dab872b-d5c",
+   "workflowName": "autopilot-apply2",
+   "summary": "Spectio APPLY2: apply accepted and assumed findings of R3 and R6 to the docs, files grouped per agent, then close statuses and log",
+   "agentCount": 9,
+   "totalTokens": 933866,
+   "totalToolCalls": 229,
+   "durationMs": 1600701,
+   "status": "completed",
+   "timestamp": "2026-10-27T11:46:19.989Z"
+  },
+  {
+   "runId": "wf_51655e33-ac2",
+   "workflowName": "autopilot-triage1",
+   "summary": "Spectio TRIAGE1: apply triage-policy.md to every finding of R1 R2 R4 R5 R7 R8 R8b R9 R11 R12, then consolidate inbox entries",
+   "agentCount": 11,
+   "totalTokens": 1032248,
+   "totalToolCalls": 171,
+   "durationMs": 1427716,
+   "status": "completed",
+   "timestamp": "2026-10-27T06:09:35.046Z"
+  },
+  {
+   "runId": "wf_839a7809-2f8",
+   "workflowName": "autopilot-w1-reviews",
+   "summary": "Spectio W1: review rounds R1 R2 R4 R5 R7 R8 R9 (parallel reviewers + merge) and spike D2",
+   "agentCount": 24,
+   "totalTokens": 4388264,
+   "totalToolCalls": 1401,
+   "durationMs": 8452736,
+   "status": "completed",
+   "timestamp": "2026-10-26T23:31:08.756Z"
+  },
+  {
+   "runId": "wf_ac77eca8-327",
+   "workflowName": "autopilot-r11-docs-review",
+   "summary": "Spectio R11: documentation review (doc-reviewer + ux-reviewer on the landing page), merged into docs/reviews/R11-docs.md",
+   "agentCount": 3,
+   "totalTokens": 381617,
+   "totalToolCalls": 140,
+   "durationMs": 905768,
+   "status": "completed",
+   "timestamp": "2026-10-27T00:17:34.834Z"
+  },
+  {
+   "runId": "wf_b7e8a832-5b7",
+   "workflowName": "autopilot-w1-docs",
+   "summary": "Spectio W1: Progress pages (doc-writer), D2 sketch and cast, independent doc-reviewer with up to two revisions",
+   "agentCount": 18,
+   "totalTokens": 1034641,
+   "totalToolCalls": 299,
+   "durationMs": 1299615,
+   "status": "completed",
+   "timestamp": "2026-10-26T23:55:16.980Z"
+  },
+  {
+   "runId": "wf_dc6eeb2e-ca8",
+   "workflowName": "autopilot-apply1",
+   "summary": "Spectio APPLY1: apply accepted and assumed findings of R1 R2 R4 R5 R7 R8 R8b R9 R11 to the docs, one agent per file, then close statuses and log",
+   "agentCount": 43,
+   "totalTokens": 4915905,
+   "totalToolCalls": 717,
+   "durationMs": 4731737,
+   "status": "completed",
+   "timestamp": "2026-10-27T09:31:59.953Z"
+  }
+ ]
+}
