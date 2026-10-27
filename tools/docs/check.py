@@ -5,7 +5,8 @@
   python3 tools/docs/check.py --skip build,mermaid # e.g. when CI runs those as separate steps
   python3 tools/docs/check.py --only pr-body --pr-title "feat(x): y" --pr-body body.md --changed changed.txt
 
-Checks: build, mermaid, diagrams (freshness), media (manifest, sizes), progress (front matter), pr-body.
+Checks: build (with the hooks/progress.py output), mermaid, diagrams (freshness), media (manifest, sizes),
+progress (front matter), pr-body.
 Exit 1 if any check fails; every failure is printed as a GitHub annotation.
 """
 from __future__ import annotations
@@ -35,6 +36,9 @@ TITLE_RE = re.compile(r"^(feat|fix|docs|test|ci|chore|refactor|perf|build|revert
 PR_SECTIONS = ["## Summary", "## Docs", "## Evidence", "## Checks"]
 FIGURE_LIGHT = re.compile(r"assets/diagrams/[\w.-]+_light\.png#only-light")
 FIGURE_DARK = re.compile(r"assets/diagrams/[\w.-]+_dark\.png#only-dark")
+# hooks/progress.py: each placeholder, and a marker its rendered output always contains.
+PROGRESS_HOOK = {"<!-- spectio:progress-strip -->": ("progress strip", 'class="sp-waves"'),
+                 "<!-- spectio:progress-table -->": ("progress table", "<th>Kind</th>")}
 # Progress pages finished before the sketch-per-step rule (documentation-system.md §3.4, 2026-10-27).
 # A page leaves this list when it gets its figure.
 FIGURE_EXEMPT = {"W0/F3", "W0/F4", "W0/F6", "W1/R1", "W1/R11", "W1/R2", "W1/R4", "W1/R5", "W1/R7", "W1/R8", "W1/R9", "W2/APPLY1", "W2/TRIAGE1"}
@@ -52,8 +56,42 @@ def check_build() -> None:
     with tempfile.TemporaryDirectory() as site:
         r = subprocess.run(["uvx", "--with", "mkdocs-material", "mkdocs", "build", "--strict", "-q", "-d", site],
                            cwd=ROOT, capture_output=True, text=True)
-    if r.returncode:
-        fail("build", "mkdocs build --strict failed:\n" + (r.stderr or r.stdout)[-3000:])
+        if r.returncode:
+            fail("build", "mkdocs build --strict failed:\n" + (r.stderr or r.stdout)[-3000:])
+        else:
+            check_progress_hook(pathlib.Path(site))
+
+
+def built_page(src: pathlib.PurePosixPath) -> str:
+    """The HTML file MkDocs writes for a page, with use_directory_urls (the default)."""
+    if src.name == "index.md":
+        return str(src.with_suffix(".html"))
+    return str(src.with_suffix("") / "index.html")
+
+
+def check_progress_hook(site: pathlib.Path, docs: pathlib.Path = DOCS) -> None:
+    """hooks/progress.py ran: no built page keeps a placeholder, and each page that had one shows its output."""
+    for html in sorted(site.rglob("*.html")):
+        if "<!-- spectio:progress-" in html.read_text(errors="replace"):
+            fail("build", f"unrendered progress placeholder in {html.relative_to(site)} (hooks/progress.py did not run)")
+    pages = 0
+    for md in sorted(docs.rglob("*.md")):
+        text = md.read_text()
+        wanted = [(name, marker) for ph, (name, marker) in PROGRESS_HOOK.items() if ph in text]
+        if not wanted:
+            continue
+        pages += 1
+        src = md.relative_to(docs).as_posix()
+        out = built_page(pathlib.PurePosixPath(src))
+        html = site / out
+        if not html.exists():
+            fail("build", f"{out} not built from {src}")
+            continue
+        built = html.read_text(errors="replace")
+        for name, marker in wanted:
+            if marker not in built:
+                fail("build", f"{out} has no rendered {name} (hooks/progress.py), source {src}")
+    print(f"build: progress hook output checked on {pages} pages")
 
 
 def check_mermaid() -> None:
