@@ -173,7 +173,10 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
 - **How.**
   - `previews.yml` builds the site in GitHub Actions, then uploads it with `wrangler pages deploy` (direct upload).
   - Cloudflare never reads the repository, so a private repository is not an issue.
-  - The secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` live in the GitHub environment `previews`, which only `previews.yml` uses.
+  - The secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` live in the GitHub environment `previews`, which only `previews.yml` uses. The token has the single permission *Account · Cloudflare Pages · Edit*, on Thomas's account only (inbox #10).
+  - On 2026-10-27 the deploys still used the misspelt names set on 2026-10-26 (`CLOUDFARE_API_TOKEN`, `CLOUDFARE_ACCOUND_ID`), through fallbacks in `previews.yml`: a one-off check in run 40522381183 found neither correct name set. Once Thomas renames them, the fallbacks are removed.
+  - `wrangler` is pinned (4.153.0), but `npx` resolves its dependencies at run time, with no lockfile. A committed lockfile installed with `npm ci` is left to Renovate (§1).
+  - The fork guard is the security boundary. With the `pull_request` event, the workflow file itself comes from the PR, so anyone who can push a branch controls every step that holds the token. Forks never get it.
 - **Versions side by side, nothing overwritten** ([Cloudflare docs](https://developers.cloudflare.com/pages/configuration/preview-deployments/)):
   - each deployment gets its own hash URL (`<hash>.spectio.pages.dev`), which stays reachable;
   - each branch gets an alias that follows its latest deployment (`<branch>.spectio.pages.dev`).
@@ -182,21 +185,47 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
   | Event | Branch |
   |---|---|
   | a PR | `pr-<n>` |
-  | a validated wave | `wave-<id>`, for example `wave-w2` |
+  | a validated wave | `wave-w<n>`, for example `wave-w2` (see **Wave approval** below) |
   | a release | `v<X-Y-Z>` |
   | `main` | the production URL |
+  | a manual run (`workflow_dispatch`) | any other alias of letters, digits and dashes; `main`, `production`, `pr-*`, `wave-*` and `v<digit>*` are refused |
 
-- **The `/versions` page.** It is generated at every deploy from the Cloudflare deployments API (`tools/previews/versions_page.py`) and lists every preview with its date, branch, commit, PR and link. It is the "versions step by step" view.
+- **Wave approval.**
+  - Thomas validates a wave by adding the label `wave-approved` to its wave-review PR, which is the promotion PR into `main`.
+  - The wave comes from the PR title, which must name exactly one wave (`W<n>`, for example "… (W3 complete)"). Otherwise the run fails with an error.
+  - The job deploys the PR head under `wave-w<n>` and posts a separate PR comment with its URL.
+  - It runs only when the label is `wave-approved`, the sender is the repository owner and the PR's base is `main`. Other labels, other senders and other bases skip the job.
+  - **Only Thomas adds this label; agents never do.** The rule is procedural, so it is a residual risk: the autopilot acts with Thomas's credentials, and the webhook gives the same sender for its labels. On PR #13 the issues events API recorded an agent's label as actor `weber8thomas` with `performed_via_github_app: claude`.
+  - Optional hardening for Thomas: a separate environment with Thomas as required reviewer. Its availability for a private repository on GitHub Free is **[to be validated]**.
+- **The `/versions` page.**
+  - It is generated at every deploy from the Cloudflare deployments API (`tools/previews/versions_page.py`). It is the "versions step by step" view.
+  - It lists every successful deployment, grouped as releases, waves, `main` and PRs, each with its date, branch alias (`pr-<n>` names the PR), commit, message and link. Deployments whose `latest_stage.status` is not `success` are left out.
+  - It pages through the API with `result_info.total_pages`.
+  - The fields it reads were checked against the live API on 2026-10-27; the script prints their names, never their values, to the CI log. They are `url`, `created_on`, `environment`, `latest_stage.status`, `deployment_trigger.metadata.{branch, commit_hash, commit_message}` and `result_info.total_pages`.
 - **Privacy.**
   - Previews are public by default. Cloudflare Pages' access policy restricts preview deployments to members of the Cloudflare account; the production URL (`spectio.pages.dev`), whose `/versions` page lists every preview, needs a separate Cloudflare Access application ([preview deployments](https://developers.cloudflare.com/pages/configuration/preview-deployments/)).
   - Media are rendered with fixture names (`documentation-system.md` §5.5).
-- **Limits (free plan):** 500 builds a month, 20 000 files and 25 MiB per file ([limits](https://developers.cloudflare.com/pages/platform/limits/)). Whether direct uploads count as builds is **[to be validated]**. The site is far below both limits.
+- **Limits (free plan):** 500 builds a month, 20 000 files and 25 MiB per file ([limits](https://developers.cloudflare.com/pages/platform/limits/)). The site is far below both limits.
+  - **Do direct uploads count as builds?** The Cloudflare docs do not say (checked 2026-10-27).
+    - The [limits page](https://developers.cloudflare.com/pages/platform/limits/) ties builds to Git: "Each time you push new code to your Git repository, Pages will build and deploy your site". It does not mention Direct Upload.
+    - The [Direct Upload page](https://developers.cloudflare.com/pages/get-started/direct-upload/) says you build the project yourself before deploying. It gives Wrangler's own limits (20 000 files, 25 MiB each) and no build quota.
+    - The limits page also says "You can have an unlimited number of preview deployments active on your project at a time".
+    - Reading: direct uploads probably do not use the build quota. This stays **[to be validated]** on the dashboard's build count. It is free either way: at about 50 deployments in two days, the month stays far below 500.
 - **Without the secrets,** the workflow skips the deploy, with a notice, and still builds.
 - **Checked on 2026-10-26:**
   - The first deploys worked: `https://spectio.pages.dev` (main) and `https://pr-1.spectio.pages.dev` (PR #1), with the PR comment posted.
   - `/versions` reads the deployments API as expected.
   - A new deployment's hostname took more than 60 s to answer, so the verification step waits up to 4 minutes.
   - The production branch is served at the project root, not under a `main` alias.
+- **Checked end to end on 2026-10-27 (step D5, PR #13; [Progress page](../progress/W3/D5.md)):**
+  - Each kind of URL answered 200: the hash URL, the `pr-13` alias, `/versions/` and `/progress/`.
+  - The footer showed the head SHA (`build 950e1de · preview pr-13`). The workflow now builds the PR head, not GitHub's merge commit, so the SHA names exactly what is served.
+  - After a second push, the first deployment (`4367baf3…`, build `950e1de`) still answered 200. The new one (`8c909d6d…`, build `086a84b`) did too, and the alias had moved to it. The new build's `/versions` listed `pr-13 950e1de` in its table and named `086a84b` as "This build": the page is written before its own deploy. The PR comment was updated in place.
+  - The verification step now also waits until the branch alias shows the new SHA.
+  - Wave path, live:
+    - `wave-approved` on a PR whose title names no wave failed with the expected error (run 40522735039, job log);
+    - the same label from the owner on a PR into `autopilot/integration` skipped the job (run 40524120754, conclusion `skipped` in the Actions runs API; a skipped job has no log);
+    - the positive path was not run live, so that no unapproved wave preview gets published. `tools/previews/test_alias.py` covers the alias it would choose.
 
 ### 7.2 The full stack on demand in GitHub Codespaces (from D3)
 
@@ -206,6 +235,18 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
 - **Lifetime.** The codespace stops when idle, and nothing runs when nobody looks.
 - **Cost:** GitHub Free includes 120 hours and 15 GB a month, and 2-core machines count double ([billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces)). Without a payment method, usage stops at the quota instead of being billed.
 - **Showing it to someone.** A forwarded port can be made public (`https://<codespace>-<port>.app.github.dev`), with no sign-in ([ports](https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace)). Use this only for short demos, with demo mode on.
+- **Prebuilds.** None is configured. GitHub's [billing page](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces) says prebuilds incur storage charges and are generated using Actions minutes. It does not say whether they draw on the free Codespaces quota. Whether a prebuild for `main` fits the free quota is **[to be validated]** by Thomas, in *Settings → Codespaces → Prebuild configuration* and the billing usage page.
+- **Static check, 2026-10-27 (step D5).** No codespace can be opened from an agent session, so the files were read rather than run:
+  - `devcontainer.json` forwards 8000, labelled "Docs (mkdocs serve)";
+  - `postStartCommand` runs `start.sh`, which starts `mkdocs serve -a 0.0.0.0:8000` with `~/.local/bin` on `PATH`;
+  - `setup.sh` installs `mkdocs` with `mkdocs-material` there through `uv tool install`, the same pair CI builds with. The MkDocs hooks import only the standard library and `yaml`, which MkDocs depends on;
+  - `setup.sh` reads `dev/versions.env` when it exists. It does not exist yet (D3 writes it), so the defaults apply: Nextflow 26.10.3 and Snakemake 9.27.1, as in §1 and §10;
+  - Python 3.13 and Java 21 match §1. Node was 22 and is now 24, to match §1.
+  - Still unpinned until D3: the image tag `1-3.13-bookworm`, the features (by major), uv, mkdocs, mkdocs-material and Playwright.
+- **To be validated live by Thomas:**
+  - that `setup.sh` finishes;
+  - the time from the badge to the docs on port 8000 (codespace start time);
+  - that `mkdocs serve`, started in the background by `postStartCommand`, keeps running after the command returns.
 
 ### 7.3 The UI in mock mode (from the first UI milestone)
 
@@ -372,7 +413,7 @@ Imaging review and the OME-Zarr viewer are designed on real images, not drawings
 | `security.yml` | called by `ci.yml` on every PR, with no path filter; push to main; weekly | the four checks of "Security checks on every PR" below (secret scanning, dependency audit, SAST, workflow linter); Trivy or Grype on every built image, failing on fixable critical vulnerabilities *(decided — Thomas, 2026-10-27, inbox #26)* |
 | `chart.yml` | PR touching `deploy/helm/`, release | `helm lint --strict`; `values.schema.json` generated from the Pydantic settings and checked for drift; `kubeconform` against the supported Kubernetes minors; `ct install` and `ct upgrade` on kind in a namespace labelled `pod-security.kubernetes.io/enforce=restricted`; `helm test` hooks that call `/health/ready`. It verifies the chart claims of [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.5 (PodSecurity `restricted`, NetworkPolicies, the migrate hook, probes). depictio's chart has no values schema, no `templates/tests/`, no `ct` and no upgrade test (`test-and-package-helm-chart.yaml`, `v1.19.2`) |
 | `upgrade.yml` | weekly, release PRs | in-place upgrade from the previous release (N-1 → N) and from three releases back (N-3 → N) on the bundle, Compose and Helm (`ct upgrade`): seed with synthetic runs, upgrade (pre-upgrade backup, then migrations), then assert that the schema is at head, the pre-upgrade backup exists, runs and gates are intact, and tokens behave as specified; results go on the 1.0-gate checklist (§14 item 5). depictio tests restore across versions and package upgrades, never an in-place stack upgrade (`backup-compat-cross-version.yaml:45-60`, `publish-pypi.yaml:92-138`) |
-| `base-install.yml` | PR (subset), nightly (full grid) | the base install (`uv tool install spectio`, no server extras) and the runner tests on every supported Python (3.11–3.14, [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.3) × {Linux x86_64, Linux aarch64}: the full grid nightly; on PRs the lowest and highest supported Python on x86_64. It asserts that server dependencies are absent, as depictio's `cli-base-install.yaml:38-56` does. macOS arm64 waits for Thomas (inbox #26: Actions minutes) *(decided — Thomas, 2026-10-27, inbox #26)* |
+| `base-install.yml` | PR (subset), nightly (full grid) | the base install (`uv tool install spectio`, no server extras) and the runner tests on every supported Python (3.11–3.14, [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.3) × {Linux x86_64, Linux aarch64}: the full grid nightly; on PRs the lowest and highest supported Python on x86_64. It asserts that server dependencies are absent, as depictio's `cli-base-install.yaml:38-56` does. macOS arm64 later (inbox #26) *(decided — Thomas, 2026-10-27, inbox #26)* |
 | `deploy-audit.yml` | PR touching `deploy/`, nightly | the static checks of Spectio's copies of depictio's `scripts/security_audit_compose.sh` and `security_audit_helm.sh` on PRs; the live audit nightly against a running Compose stack and a kind install. depictio runs neither script in any workflow, and its static check 1.10 already fails on its own Compose (`security_audit_compose.sh:188-196` expects `DEPICTIO_S3_ROOT_PASSWORD:?`, `docker-compose.yaml:59-60` uses `:-minio123`, `v1.19.2`) |
 
 **Required checks.** Branch protection requires only `ci-ok`, `docs-gate` and `pr-body`, never a path-filtered workflow or a matrix leg. A check that a PR skips never reports, so the PR would wait forever ("Expected — waiting"), and a matrix job skipped before it expands never reports under its leg names (R8b DEP-T-001; depictio's comment at `depictio-ci.yaml:3144-3174`). The pipeline workflows (`pipelines-synthetic.yml`, `pipelines-real.yml`, `pipelines-slurm.yml`, `pipelines-k8s.yml`) are reusable workflows (`on: workflow_call`, plus their own schedule) that `ci.yml` calls. Branch protection stays unset until `ci.yml` exists (inbox #8). No merge queue for now. *(decided — Thomas, 2026-10-27, inbox #26)*
@@ -490,7 +531,7 @@ Everything after 0.0.x is **open**: "later (open)" means no version is assigned 
 | Nextflow engine, through `nf-spectio`; a run is always launched with the plugin | yes: head submitted with `sbatch`, tasks through Nextflow's `slurm` executor. The local executor is for tests and development only (§15.3) | other executors | the Tower protocol routes ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)) | [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md), [`synthesis.md`](synthesis.md) §2 |
 | Launch a run from the UI (form from the parameter schema) | yes | | | [`ui-spec.md`](ui-spec.md) §4.6, [`api-and-data-model.md`](api-and-data-model.md) §5 |
 | Monitoring: run state, number of jobs / tasks, stages | yes | | | [`ui-spec.md`](ui-spec.md) §3, §4.3, §4.4 |
-| Relaunch, including with changed parameters | yes; every relaunch, Resume after a failure included, is a new child run ([`api-and-data-model.md`](api-and-data-model.md) §5.1) *(decided — Thomas, 2026-10-27, inbox #32)* | | | [`ui-spec.md`](ui-spec.md) §4.6 (relaunch dialog), [`api-and-data-model.md`](api-and-data-model.md) §5 (`:relaunch`) |
+| Relaunch, including with changed parameters | yes; every relaunch, Resume after a failure included, is a new child run ([`api-and-data-model.md`](api-and-data-model.md) §5.1) *(assumed — pending Thomas, inbox #32)* | | | [`ui-spec.md`](ui-spec.md) §4.6 (relaunch dialog), [`api-and-data-model.md`](api-and-data-model.md) §5 (`:relaunch`) |
 | Parameter history: which parameters each run used, and what changed | yes | | | [`ui-spec.md`](ui-spec.md) §4.4 (Parameters, Lineage tabs), [`api-and-data-model.md`](api-and-data-model.md) §7 (`run_inputs`) |
 | QC checks and gates: the checks of a stage, a gate, then resume or relaunch | no (Thomas, 2026-10-27: removed from 0.0.1; checks and QC stay the product direction of 2026-10-26) | yes, every part: the checks of a stage, gates and their verbs (`approve`, `stop`, `apply`, `go_back`), item decisions, samplesheet and file edits, AI proposals, review queue, live checks | | [`checking-scenarios.md`](checking-scenarios.md) §4, §7, [`ui-spec.md`](ui-spec.md) §5.1, [`synthesis.md`](synthesis.md) §5ter |
 | Runs started from a terminal (observed, adopted) | no | yes (inbox #11) | | [`ui-spec.md`](ui-spec.md) §6 |
@@ -574,5 +615,5 @@ This differs from Jupyter Server, whose token is reusable and whose login cookie
 3. **Cookie.** The session cookie is `HttpOnly` and `SameSite=Strict`, and its name includes the `Host` port. Browser behaviour that this relies on is **[to be validated]** in the spike sec-single-mode: that `EventSource` requests carry the cookie, and that a `SameSite=Strict` cookie set by the exchange is sent on the next requests when the link was opened from another site.
 4. **Host allow-list.** Requests are accepted only when the `Host` header names a loopback host, `127.0.0.1`, `localhost` or `[::1]`, on any port; every other host name is refused, against DNS rebinding. Any port is needed because the tunnel's local port, which the browser puts in `Host`, can differ from the server port. It stays safe: a rebinding attack makes the browser reach the server under the attacker's own host name, which the browser sends in `Host` whatever the port, so the name check alone refuses it.
 5. **File modes.** The data directory is 0700; the server key file and the database files are 0600; the run directories are 0700.
-6. **Spool events are untrusted input.** Each event read from a spool file is validated against the event schema ([`api-and-data-model.md`](api-and-data-model.md) §8) and size-capped (per line and per file; for 0.0.1 the spool format and its caps are the driven-run part of the ingest contract, api §14, decided in inbox #36 and written in the next apply pass). It is never executed, and an invalid or oversized event is dropped and counted.
-7. **Writes.** Every request that changes state must carry an `Origin` header naming the same loopback host and port as `Host`, and a body of type `application/json`; anything else is refused with 403 or 415. Together with the token, this blocks cross-site form posts. *(decided — Thomas, 2026-10-27, inbox #37)*
+6. **Spool events are untrusted input.** Each event read from a spool file is validated against the event schema ([`api-and-data-model.md`](api-and-data-model.md) §8) and size-capped (per line and per file; the spool format and its caps are owned by the ingest contract, api §14, whose driven-run part is decided in inbox #36 and written in the next apply pass). It is never executed, and an invalid or oversized event is dropped and counted.
+7. **Writes.** Every request that changes state (any method other than `GET` and `HEAD`) must carry an `Origin` header naming the same loopback host and port as `Host`, or it is refused with 403. A request with a body must also have the type `application/json`, or it is refused with 415; a request with no body, such as `:cancel`, needs only the `Origin` check. Together with the token, this blocks cross-site form posts. It relies on two browser behaviours, **[to be validated]** in the spike sec-single-mode: browsers send `Origin` on every request other than `GET` and `HEAD` ([Fetch standard, `Origin` header](https://fetch.spec.whatwg.org/#origin-header)), and a cross-site request with the type `application/json` needs a CORS preflight, which the server never grants ([Fetch standard, CORS-safelisted request headers](https://fetch.spec.whatwg.org/#cors-safelisted-request-header)). *(decided — Thomas, 2026-10-27, inbox #37)*
