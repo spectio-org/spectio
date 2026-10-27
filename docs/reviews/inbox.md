@@ -611,3 +611,53 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** (a).
 - **Blocked:** nothing.
 
+
+## D3 (2026-10-27)
+
+### #41 · Codespaces: install with `dev/bootstrap.sh`
+
+- **Covers:** [dev-env §7.2](../specs/dev-environment-and-testing.md#72-the-full-stack-on-demand-in-github-codespaces-from-d3), [D3](../progress/W3/D3.md)
+- **Context:** D5's `.devcontainer/setup.sh` installs uv, Snakemake, Nextflow and Playwright with its own commands (`curl … | sh`, `uv tool install`, `pip install`). It now reads the versions from `dev/versions.env`, but none of its downloads is hash-checked, and its Snakemake has no lock. `dev/bootstrap.sh` does the same installs, checked.
+- **Options:**
+  - (a) `setup.sh` calls `bash dev/bootstrap.sh` and keeps only the mkdocs install; the dev-container image and its features get pins in `versions.env` at the same time (D5 asked for them; D3 pinned only the tools);
+  - (b) keep `setup.sh` as it is.
+- **Recommendation:** (a), in a small follow-up step that also opens a codespace to check it. One install path is the §1 rule.
+- **Assumed:** none. Nothing changes until you answer.
+- **Blocked:** nothing.
+
+### #42 · Align the synthetic matrix and the required check names with Nextflow 26.10.4
+
+- **Covers:** [CR-01](code/D3.md#cr-01-minor-the-11-nextflow-version-and-the-required-check-names-disagree-with-the-new-pin)
+- **Context:** `dev/versions.env` pins Nextflow 26.10.4, the 26.10 patch release current on 2026-10-27. The `pipelines-synthetic.yml` matrix (dev-env §11) and the required status check names in [`autopilot.md`](../playbooks/autopilot.md) still say 26.10.3. Renaming a required check needs the branch protection updated at the same time, or PRs wait for a check that never reports.
+- **Options:**
+  - (a) move the matrix to 26.10.4 and rename the required check in the same change;
+  - (b) keep 26.10.3 in the matrix until the next minor release.
+- **Recommendation:** (a), done by the step that next edits `pipelines-synthetic.yml`, with you updating the branch protection.
+- **Assumed:** none.
+- **Blocked:** nothing.
+
+### #43 · Set up the cloud environment from dev-env §2
+
+- **Covers:** [dev-env §2, cloud environment settings](../specs/dev-environment-and-testing.md#2-where-agents-work)
+- **Context:** only you can edit the Claude Code cloud environment. §2 now lists what to enter: the Custom network list (D2's list plus `nodejs.org` and `get.helm.sh`), two environment variables (no secrets) and the setup script `bash dev/bootstrap.sh --ci || true`.
+- **Options:**
+  - (a) apply §2 as written;
+  - (b) apply it without the wildcard hosts (`*.quay.io`, `*.pkg.dev`, `*.prefix.dev`) until the D2 re-probe narrows them (SEC-D3-04);
+  - (c) keep the default Trusted network for now. Bootstrap then fails on Node and helm, and the setup script still exits 0.
+- **Recommendation:** (b). Bootstrap and the doctor need none of the wildcard hosts; the container pulls that would are not run in cloud sessions yet.
+- **Assumed:** none.
+- **Blocked:** a cached setup in cloud sessions. Until then each session runs `bash dev/bootstrap.sh --ci` itself (about 25 s cold).
+
+### #44 · Assumed: Linux x86_64 only, and Node 24 ahead of the system Node
+
+- **Covers:** [dev-env §1](../specs/dev-environment-and-testing.md#1-toolchain-pinned-in-devversionsenv), [D3](../progress/W3/D3.md)
+- **Context:**
+  - The checksums in `versions.env` are for linux/amd64, so bootstrap refuses any other platform. A laptop on macOS or arm64 would need a second set of checksums.
+  - Bootstrap links Node 24.22.1 into `~/.local/bin`, which comes first on `PATH`, so in a cloud session it shadows the image's Node 22. Node 24 entered Maintenance LTS on 2026-10-20 and Node 26 becomes Active LTS on 2026-10-28 ([`schedule.json`](https://github.com/nodejs/Release/blob/main/schedule.json), read 2026-10-27); §1 asks for 24 LTS, which stays supported until 2028-04-30.
+- **Options:**
+  - (a) keep Linux x86_64 and Node 24 for now; add a platform when someone needs it; move to Node 26 with the first UI build;
+  - (b) add macOS arm64 checksums now;
+  - (c) move to Node 26 now.
+- **Recommendation:** (a).
+- **Assumed:** (a).
+- **Blocked:** nothing.
