@@ -11,8 +11,9 @@ versions:
   java: "21"
 
 runner_limits:
-  # GitHub-hosted runners: public repos 4 CPU / 16 GB, private repos 2 CPU / 8 GB, 14 GB disk.
-  # memory stays under what the local executor sees as free (7 GB on an 8 GB box failed with "avail: 5.8 GB" here; T7 measures the runners)
+  # Measured on the private-repo ubuntu-latest runner (ubuntu-26.04 image, T7, 2026-10-27): 2 CPU, MemTotal 7.75 GB,
+  # 6.9 GB available before a run, 3 GB swap; Nextflow's local executor sees 7.7 GB. 6 GB leaves room for the Nextflow
+  # JVM and Docker, and two 6 GB tasks never run together. Public runners (4 CPU / 16 GB) are not measured yet.
   private: {cpus: 2, memory: "6.GB", time: "2.h"}
   public:  {cpus: 4, memory: "15.GB", time: "2.h"}
 
@@ -35,14 +36,14 @@ nfcore:
   - {name: mcmicro,               version: 2.0.0,  min_nf: 25.04.0, tier: manual,  class: imaging-cells,     gate: "segmentation QC per ROI"}
 
 snakemake_catalog:
-  # The two RNA-seq workflows query the Ensembl archive through biomaRt; --retries rides out its timeouts.
+  # The two RNA-seq workflows query the Ensembl archive through biomaRt; --retries rides out short timeouts.
   - {repo: snakemake-workflows/rna-seq-star-deseq2,        tag: v3.1.2,  submodules: true,  directory: .test, args: "--sdm conda --cores 2 --retries 2 --configfile .test/config_basic/config.yaml", tier: pr, class: bulk-groups, network: [ensembl]}
   - {repo: snakemake-workflows/dna-seq-gatk-variant-calling, tag: v2.1.1, submodules: false, directory: .test, args: "--sdm conda --cores 2",                                         tier: manual,  class: variants, note: "latest tag; its samtools/faidx wrapper (0.74.0) pins samtools 1.10, which conda can no longer solve"}
-  - {repo: snakemake-workflows/rna-seq-kallisto-sleuth,    tag: v4.1.1,  submodules: true,  directory: .test, args: "--sdm conda --cores 2 --retries 2 --all-temp",                   tier: nightly, class: bulk-groups, network: [ensembl]}
+  - {repo: snakemake-workflows/rna-seq-kallisto-sleuth,    tag: v4.1.1,  submodules: true,  directory: .test, args: "--sdm conda --cores 2 --retries 2 --all-temp",                   tier: manual,  class: bulk-groups, network: [ensembl], note: "get_transcript_info times out on the Ensembl archive in every CI run so far"}
   - {repo: snakemake-workflows/dna-seq-varlociraptor,      tag: v6.11.3, submodules: false, directory: .test, args: "--configfile .test/config-simple/config.yaml --sdm conda --cores 2 --resources mem_mb=7000", tier: nightly, class: variants-pairs}
   - {repo: snakemake-workflows/single-cell-rna-seq,        tag: v1.1.0,  submodules: false, directory: .test, snakefile: Snakefile, args: "--sdm conda --cores 2",                    tier: manual,  class: cells, note: "unmaintained since 2019 (Travis CI, tensorflow 1.10 pins); nf-core/scrnaseq covers the class"}
   # chipseq has no release tag: pinned to a commit of its default branch, master.
-  - {repo: snakemake-workflows/chipseq,                    tag: 1345df8a53e59772486dcd9a6dde4437a97ae6ed, submodules: true, directory: .test, args: "--configfile .test/config_single_end_reduced/config.yaml --sdm conda --cores 2", tier: nightly, class: bulk-samples}
+  - {repo: snakemake-workflows/chipseq,                    tag: 1345df8a53e59772486dcd9a6dde4437a97ae6ed, submodules: true, directory: .test, args: "--configfile .test/config_single_end_reduced/config.yaml --sdm conda --cores 2", tier: manual, class: bulk-samples, note: "its cutadapt wrapper (0.64.0) pins cutadapt 2.10, which conda can no longer solve"}
   - {repo: snakemake-workflows/cyrcular-calling,           tag: v2.1.1,  submodules: false, directory: .test, args: "--configfile .test/config/config.yaml --sdm conda --cores 2", tier: manual,  class: long-reads, note: "the RepeatMasker hg38 download its .test config names answers 404"}
   - {repo: MathiasEskildsen/ONT-AmpSeq,                    tag: v1.1.2,  submodules: false, directory: .test, args: "--sdm conda --cores 2 --all-temp",                              tier: manual,  class: amplicon-taxa, note: "fix_tax_blast imports pandas, absent from its conda env (MathiasEskildsen/ONT-AmpSeq#20)"}
   - {repo: MPUSP/snakemake-ms-proteomics,                  tag: v1.1.1,  submodules: false, directory: .test, args: "--sdm conda --cores 2 -n",                                      tier: pr,      class: ms-runs, note: "upstream CI is dry-run only"}
