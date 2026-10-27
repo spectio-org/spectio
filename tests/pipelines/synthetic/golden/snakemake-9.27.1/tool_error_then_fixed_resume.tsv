@@ -1,0 +1,8 @@
+# snakemake 9.27.1 · tool_error_then_fixed_resume
+# run 1: exit 1
+# run 2: exit 0
+run	process	status	exit	attempt	tag	count
+1	COMPARE	FAILED	1	1	group=treatA	1
+1	COMPARE	FAILED	1	2	group=treatA	1
+1	COMPARE	FAILED	1	3	group=treatA	1
+2	COMPARE	COMPLETED	0	1	*	1

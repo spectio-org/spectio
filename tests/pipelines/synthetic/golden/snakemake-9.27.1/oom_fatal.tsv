@@ -1,0 +1,6 @@
+# snakemake 9.27.1 · oom_fatal
+# run 1: exit 1
+run	process	status	exit	attempt	tag	count
+1	QC_STATS	FAILED	137	1	sample=S05	1
+1	QC_STATS	FAILED	137	2	sample=S05	1
+1	QC_STATS	FAILED	137	3	sample=S05	1

@@ -158,6 +158,14 @@ media:
       - docs/assets/diagrams/t7-corpus-ci_dark.svg
       - docs/assets/diagrams/t7-corpus-ci_light.png
       - docs/assets/diagrams/t7-corpus-ci_dark.png
+  - id: t1-golden-fixtures
+    kind: diagram
+    generator: python3 tools/diagrams/t1_golden_fixtures.py
+    outputs:
+      - docs/assets/diagrams/t1-golden-fixtures_light.svg
+      - docs/assets/diagrams/t1-golden-fixtures_dark.svg
+      - docs/assets/diagrams/t1-golden-fixtures_light.png
+      - docs/assets/diagrams/t1-golden-fixtures_dark.png
   - id: dev-toolchain
     kind: diagram
     # PNGs need the local Virgil font (SPECTIO_VIRGIL_TTF), not committed (inbox #1)

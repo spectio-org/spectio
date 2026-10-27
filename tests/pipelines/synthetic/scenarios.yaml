@@ -29,7 +29,7 @@ scenarios:
     title: Stop at the align gate, then resume
     runs:
       - stop_after: align
-        expect: {exit: 0, absent: [quant/counts_matrix.tsv]}
+        expect: {exit: 0, present: [multiqc/general_stats.tsv], absent: [quant/counts_matrix.tsv]}
       - resume: true
         expect: {exit: 0, present: [final_report.html], cached_min: 49}
 
@@ -72,7 +72,7 @@ scenarios:
     expect_tasks: {QC_STATS: {failed: 3}}
 
   - id: tool_error_then_fixed_resume
-    title: COMPARE fails with a tool error (no retry); the user fixes it and resumes
+    title: COMPARE fails with a tool error (not retried by Nextflow; Snakemake --retries restarts it); the user fixes it and resumes
     runs:
       - params: {fail_mode: exit, fail_process: COMPARE, fail_sample: treatA}
         expect: {exit: nonzero, absent: [final_report.html]}
