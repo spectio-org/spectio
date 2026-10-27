@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T00:24:17Z",
+  "updated_at": "2026-10-27T06:20:36Z",
   "current_wave": "W2",
   "steps": {
     "F1": {
@@ -167,12 +167,16 @@
     },
     "TRIAGE1": {
       "wave": "W2",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T00:24:17Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "finished_at": "2026-10-27T06:20:36Z",
+      "outputs": [
+        "docs/reviews/*.md (statuses)",
+        "docs/reviews/inbox.md #11-#31",
+        "docs/progress/W2/TRIAGE1.md"
+      ],
+      "notes": "320 findings: 163 accepted, 4 rejected, 153 inbox (88 assumed); R12 included; docs gate pass; doc-reviewer approve 12/14"
     },
     "APPLY1": {
       "wave": "W2",
