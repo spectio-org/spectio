@@ -86,8 +86,8 @@ def build(theme: Theme) -> Sketch:
     s.poly([(lx - 12, py + 74), (lx + 116, py + 74), (lx + 124, py + 86), (lx - 20, py + 86)], fill="neutral")
     for cx in (505, 684, 870):
         s.arrow(580, 232, cx, py - 6 if cx != 505 else py - 28, dashed=True)
-    for cx, name, note in ((505, "cloud session", "Claude Code cloud VM"),
-                           (684, "CI runner", "GitHub Actions ubuntu-24.04"),
+    for cx, name, note in ((505, "cloud session", "Claude Code"),
+                           (684, "CI runner", "ubuntu-24.04"),
                            (870, "laptop", "same script")):
         s.text(cx, py + 112, name, size=15)
         s.text(cx, py + 132, note, size=12.5, colour=t.dim)
@@ -160,7 +160,7 @@ def build(theme: Theme) -> Sketch:
         s.text(ci + 4, cy + 6, f"{ci_s} s", size=14, anchor="start", weight="bold")
     s.line(1088, top + 6 * rh, 1666, top + 6 * rh, colour=t.muted, width=1, amount=0.4, passes=1)
     ny = top + 6 * rh + 28
-    s.text(cc, ny, "only the cluster layers skip", size=12.5, colour=t.dim)
+    s.text(cc, ny, "clusters skip", size=12.5, colour=t.dim)
     s.text(ci, ny, "strict: a skip fails", size=12.5, colour=t.dim)
     s.cross(1104, ny + 40, size=8)
     s.text(1124, ny + 46, "first failure: exit 1, names the tool", size=15, anchor="start")

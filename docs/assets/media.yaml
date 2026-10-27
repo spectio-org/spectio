@@ -139,7 +139,7 @@ media:
       - docs/assets/diagrams/d5-previews_dark.png
   - id: dev-toolchain
     kind: diagram
-    # PNGs need the local Virgil font (SPECTIO_VIRGIL_TTF); it was missing in the D3 session, so these PNGs use a fallback font
+    # PNGs need the local Virgil font (SPECTIO_VIRGIL_TTF), not committed (inbox #1)
     generator: python3 tools/diagrams/dev_toolchain.py
     outputs:
       - docs/assets/diagrams/dev_toolchain_light.svg
