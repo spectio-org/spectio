@@ -392,8 +392,11 @@ spec section, tests, and the scenario from tests/scenarios that proves it done.
 Execute docs/plans/P1-walking-skeleton.md with the subagent-driven-development skill:
 one fresh implementer subagent per task in its own worktree, then spec-compliance
 review and code-quality review (requesting-code-review), test-driven-development
-throughout, verification-before-completion before marking a task done. Stop and ask me
-at any spec ambiguity instead of guessing.
+throughout, verification-before-completion before marking a task done. Pass sections 2
+and 3 of karpathy-guidelines (simplicity first, surgical changes) to every task reviewer
+as global constraints. After the last task, run the review-code skill on the whole
+branch (code-reviewer, then code-simplifier) before finishing-a-development-branch.
+Stop and ask me at any spec ambiguity instead of guessing.
 ```
 
 ## Recurring routines (once the skeleton exists)

@@ -529,3 +529,21 @@ Everything must be traced, including:
   - #25, architecture §3 and §7.6, schedulers §0, §3.3 and §6: SR-003, SR-009, SR-015, SR-022, SR-035, CH-009, CH-012, CH-020, CH-028, CH-036, SEC-103, SEC-105, FC-045, UX-221;
   - #26, depictio-ecosystem-reuse §1, architecture §7.4, schedulers §5 and autopilot.md §8: SR-005, SR-028, SR-036, SR-039, FC-001, FC-016, FC-037, CH-008, DL-103, DL-109, DL-111, DL-115, DEP-T-001–DEP-T-005, DEP-T-014, DEP-T-018, DEP-T-020, DEP-T-029, FC-038, FC-050.
 - **Gate.** `mkdocs build --strict` passes; `python3 tools/docs/check.py` reports 0 failures; the four Mermaid blocks in the changed files render with mermaid-cli 11.
+
+## 2026-10-27 — Context compaction thresholds per agent
+
+- **Decision (Thomas):** the session-wide auto-compact window is 400k tokens (`autoCompactWindow` in `.claude/settings.json` and in `tools/autopilot/claude-settings.json`).
+- **Per agent** (frontmatter `autoCompactWindow`):
+  - 600k for the reviewers that read whole specs or many sources;
+  - 200k for `doc-reviewer`, and for the code agents once they are merged.
+- Why the values and the remaining checks: [`autopilot.md`](../playbooks/autopilot.md) §4. Sources: [model config](https://code.claude.com/docs/en/model-config), [subagents](https://code.claude.com/docs/en/sub-agents).
+
+## 2026-10-27 — Code review and simplification after every build step
+
+- **Gap found:** the `build` steps of W3 had no code review. Only P3 asked for one, through subagent-driven-development. The Karpathy guidelines were a rule in `CLAUDE.md`, not a check.
+- **Decision (Thomas):** add two agents and one skill.
+  - `code-reviewer`: read-only, fresh context; returns approve / changes / block.
+  - `code-simplifier`: behaviour-preserving, on the step's own diff only.
+  - `review-code`: chains them, with at most two fix rounds by the worker and the tests re-run after each change.
+- **Where it runs:** step 3 of the autopilot verification, before the docs ([`autopilot.md`](../playbooks/autopilot.md) §9). In P3, the task reviewer of subagent-driven-development gets Karpathy §2–3 as global constraints, and `review-code` runs once on the whole branch. The vendored superpowers skills stay unchanged (`.claude/skills/THIRD_PARTY.md`).
+- **Docs:** a `build` Progress page carries the `CODE` line and links `docs/reviews/code/<step>.md` ([`documentation-system.md`](../specs/documentation-system.md) §3.1).

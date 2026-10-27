@@ -127,6 +127,13 @@ For the budget governor (§6), also add the status-line tap and the limit hook:
 
 `Workflow` lets dynamic workflows start without a prompt in `-p` and in scheduled runs ([workflows: approve the plan](https://code.claude.com/docs/en/workflows.md)).
 
+**Context compaction.** Thresholds are in tokens ([model config](https://code.claude.com/docs/en/model-config), [subagents](https://code.claude.com/docs/en/sub-agents)):
+- the orchestrator and every agent without its own value compact at **400k** (`autoCompactWindow` in `.claude/settings.json`). Its state lives in git, so a compaction loses only reasoning;
+- the reviewers that read whole specs or many sources (`spec-reviewer`, `fact-checker`, `constraints-hunter`, `security-reviewer`, `depictio-liaison`) get **600k** (`autoCompactWindow` in their frontmatter), so their evidence is not summarised away mid-round;
+- the reviewers that read one diff or a few pages (`doc-reviewer`, and `code-reviewer` and `code-simplifier` once added) get **200k**.
+
+Do not set `CLAUDE_CODE_AUTO_COMPACT_WINDOW` for autopilot runs: it overrides the agents' own values. Two points are **[to be validated]**: the frontmatter field needs Claude Code v2.1.296 or later, and a value above the model's context window should mean compaction at that window.
+
 Protect `main` with a GitHub branch rule that requires a PR and a review. The autopilot only pushes `autopilot/*` branches and opens PRs.
 
 ## 5. Budget and safety
@@ -217,3 +224,13 @@ JSON
 done
 gh variable set AUTOMERGE_MAIN --body false   # set to true to let CI merge into main
 ```
+
+## 9. Code review in the loop
+
+Every step that changes code, a `build` step or a spike whose code a later step reuses, goes through the `review-code` (`.claude/skills/review-code/SKILL.md`) skill. It runs after the exit check and before the docs (§7).
+
+1. **`code-reviewer`** reads only the step's prompt, the owning spec, the diff `base..HEAD` and the worker's report. It checks requirement fit, correctness, tests, and the Karpathy guidelines: simplicity first, surgical changes. It returns `approve`, `changes` or `block`.
+2. **Fix loop.** On `changes`, the worker that built the step fixes the blockers and majors in its worktree. After two rounds the step is `blocked`, with an inbox entry.
+3. **`code-simplifier`** then shrinks the step's own diff without changing behaviour, re-running the step's tests. A failed simplification is reverted and never blocks the step.
+
+The step's `base` commit is recorded in `state.json` when it starts. Findings go to `docs/reviews/code/<step>.md` (prefix `CR-`), and the `CODE` report line goes into the Progress page. In W5, subagent-driven-development already reviews each task. The task reviewer gets the Karpathy guidelines as global constraints, and `review-code` runs once on the whole branch before it is finished (P3 in [`next-phase.md`](next-phase.md)).

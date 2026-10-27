@@ -3,6 +3,7 @@ name: security-reviewer
 description: Threat-models the Spectio design (runners, tokens, embed tokens, plugins, AI agents deciding gates, webhooks and event bridges, backups, multi-tenancy, depictio trust, supply chain) and reviews auth and secrets handling. Use in review rounds and on any PR touching auth, tokens, plugins or runners. Read-only.
 tools: Read, Glob, Grep, Bash, WebFetch, WebSearch
 model: opus
+autoCompactWindow: 600000
 effort: high
 color: red
 ---

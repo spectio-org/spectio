@@ -133,7 +133,7 @@ Front matter `hide: [navigation, toc]`. The markup is HTML through `md_in_html`;
 | `triage` | inbox and review files (status fields), plus its Progress page | none |
 | `apply` | the owning specs, `decisions/log.md`, plus its Progress page with a before/after summary per finding | a sketch when a mechanism changed |
 | `spike` | `docs/research/spike-<name>-<date>.md`, plus its Progress page | a cast of the commands that proved it; a sketch of the setup |
-| `build` (D*, T*, later code) | the guide or reference page for what was built, the owning spec if behaviour was decided, plus its Progress page | a sketch for each new mechanism; a cast for each new CLI flow; screenshots for each new screen; a combined capture for a CLI-to-UI flow |
+| `build` (D*, T*, later code) | the guide or reference page for what was built, the owning spec if behaviour was decided, plus its Progress page with the `CODE` report line of the `review-code` skill and a link to `docs/reviews/code/<step>.md` | a sketch for each new mechanism; a cast for each new CLI flow; screenshots for each new screen; a combined capture for a CLI-to-UI flow |
 | `plan` | `docs/plans/<id>.md`, plus its Progress page | a sketch of the milestone's architecture slice |
 | `release` | the changelog block (§6) | the release's hero figure |
 | `foundation` (wave W0 only) | its Progress page, written after the fact from the commits and the evidence kept in the session; the owning specs it changed | as for `build`; a figure or media that is not made yet is listed as a follow-up with the step that will make it |

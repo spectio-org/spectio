@@ -3,6 +3,7 @@ name: doc-reviewer
 description: Reviews Spectio documentation with a fresh context — Progress pages, guides, PR bodies, changelog blocks, figures and media — against the rubric in docs/specs/documentation-system.md §4.2, re-runs sampled commands, opens every figure and screenshot, and returns approve / changes / block. Use after doc-writer on every step and PR. Read-only on docs.
 tools: Read, Glob, Grep, Bash
 model: opus
+autoCompactWindow: 200000
 effort: high
 color: orange
 ---

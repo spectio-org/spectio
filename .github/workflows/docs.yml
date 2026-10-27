@@ -26,14 +26,14 @@ jobs:
           python3 -m playwright install --with-deps chromium
       - name: Strict build, Mermaid, diagram freshness, media manifest and budget, Progress pages
         run: |
-          if [ -n "${{ github.base_ref }}" ]; then git fetch --depth=50 origin "${{ github.base_ref }}"; BASE="--base origin/${{ github.base_ref }}"; fi
+          if [ -n "${{ github.base_ref }}" ]; then git fetch origin "${{ github.base_ref }}"; BASE="--base origin/${{ github.base_ref }}"; fi
           python3 tools/docs/check.py ${BASE:-}
       - name: Screenshot churn guard
         if: github.event_name == 'pull_request'
         env:
           SPECTIO_ALLOW_SCREENSHOT_UPDATE: ${{ contains(github.event.pull_request.labels.*.name, 'screenshots') && '1' || '' }}
         run: |
-          git fetch --depth=1 origin "${{ github.base_ref }}"
+          git fetch origin "${{ github.base_ref }}"
           bash tools/media/check_churn.sh "origin/${{ github.base_ref }}"
       - name: Build the site for the artifact
         run: uvx --with mkdocs-material mkdocs build --strict -d site

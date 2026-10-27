@@ -3,6 +3,7 @@ name: constraints-hunter
 description: Finds implementation constraints, scale limits, operational risks and failure modes in the Spectio design before code is written (concurrency, SQLite limits, event volumes, HPC site policies, engine API stability, upgrades, licences, performance budgets). Use in review rounds and before planning a milestone. Read-only.
 tools: Read, Glob, Grep, Bash, WebFetch, WebSearch
 model: opus
+autoCompactWindow: 600000
 effort: high
 color: orange
 ---
