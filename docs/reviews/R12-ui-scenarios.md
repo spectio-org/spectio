@@ -5,7 +5,7 @@ Round: R12 (2026-10-26). Method: about 50 new or upgraded UI boards were built t
   - nf-core megatest outputs ([`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §10.3);
   - real test images, read from public OME-Zarr and nf-core/test-datasets (§10.4).
 - **Recording:** each board agent recorded every piece of data or behaviour the board needs that no spec or API defines.
-- **Status:** these are findings, not changes. The specs are untouched; triage and `/apply-findings` decide.
+- **Status:** triaged (TRIAGE1, 2026-10-27): 9 accepted, 1 rejected, 19 inbox (10 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 - **Where the boards are:** the canvas and `design/ui-canvas/`; the scenario map is ui-spec §10.
 
 Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of this round).
@@ -22,7 +22,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
 - **Proposal:**
   - Define `multiqc:<general-stats column>` exactly as MultiQC writes it, and `multiqc-table:<table file>#<key>:<column>` for the other tables.
   - Test bindings against `tests/fixtures/megatests/`.
-- **Found by:** ReviewReport, ReviewSmallRNA, ReviewAmpliseq agents · **Status:** open
+- **Found by:** ReviewReport, ReviewSmallRNA, ReviewAmpliseq agents · **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### UX-102 · major · The binding vocabulary is too small for real checks
 - **Where:** checking-scenarios.md §7.
@@ -39,7 +39,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - Add `expr:` over bound values, `pair:`, `pivot:`, `metadata:` and `relative:` bindings.
   - Add an image-metric check provider.
   - Keep `script:` as the escape hatch.
-- **Found by:** 9 board agents · **Status:** open
+- **Found by:** 9 board agents · **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### UX-103 · minor · Check states beyond pass / warn / fail
 - **Where:** checking-scenarios.md §4.
@@ -49,7 +49,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - "computing n of m" (ReviewQueue);
   - "muted by the overlay" (ReviewCells).
 - **Proposal:** define `n/a`, `suspect`, `computing` and `muted`, and how each one counts towards the gate.
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### UX-104 · major · Item roles and the constraint kinds real samplesheets need
 - **Where:** checking-scenarios.md §5 and §7 (`constraints` has only `pair` and `min_per_group`).
@@ -65,7 +65,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - Constraint kinds `requires_role`, `group_complete` and `pipeline_rule`.
   - A consequence text for each constraint, with its source.
   - `group_by` on a derived value.
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### UX-105 · major · Sub-items and a sixth view: items × sub-regions
 - **Where:** checking-scenarios.md §7 (`children`) and §8 (five views).
@@ -76,7 +76,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
 - **Proposal:**
   - Allow `children` with their own checks.
   - Add a "matrix" view (items × sub-regions heatmap) and a column-scope check.
-- **Status:** open
+- **Status:** inbox, assumed: matrix (items × sub-regions) becomes a sixth view in checking §8, `children` carry their own checks and a column-scope check is added (§4, §7); the §0 and §9 counts are updated and ui-spec §4.5 links to it — pending Thomas (TRIAGE1, 2026-10-27)
 
 ## Decisions
 
@@ -91,7 +91,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - Define Flag (who may use it below a block threshold, and that it is recorded).
   - Define the default for undecided items under `block` checks.
   - Define "added by a reviewer" as a decision source.
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### UX-107 · minor · Missing verbs
 - **Evidence:** the boards needed verbs that do not exist yet:
@@ -100,7 +100,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - protect a feature from a rule (ReviewContamination, E. coli);
   - pin a run-wide parameter that the pipeline estimates from the items (airrflow `clonal_threshold`, ReviewRepertoire).
 - **Proposal:** add the four verbs to §5, with how each reaches the engine (§6).
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### UX-108 · major · Decisions that the pipeline cannot read
 - **Where:** checking-scenarios.md §6.3 and §6.4.
@@ -117,7 +117,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - §6.4 lets an artifact target a declared parameter of a linked run.
   - The UI says "attached only" when nothing reads the artifact.
   - Estimated parameters get "pin or reopen" semantics.
-- **Status:** open
+- **Status:** inbox, assumed: §6.4 lets a filter artifact target a declared parameter of a §6.3 linked run; the UI says "attached only" when no parameter reads it (ui-spec §4.5); estimated run-wide parameters get the pin verb of UX-107, with "pin or reopen" — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### UX-109 · major · Which stages a parameter change reruns, and at what cost
 - **Where:** api-and-data-model.md (relaunch), ui-spec.md §4.5 / §4.6.
@@ -129,7 +129,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - Map each parameter to the processes it reaches, from the process inputs or the overlay.
   - Add an "Apply and rerun from stage N" primary action.
   - Base cost estimates on per-task history.
-- **Status:** open
+- **Status:** inbox, assumed: a parameter → process map derived from process inputs or declared in the overlay; an "Apply and rerun from stage N" primary action in ui-spec §4.5; cost from per-task history, labelled an estimate as in CH-010 — pending Thomas (TRIAGE1, 2026-10-27)
 
 ## Gates
 
@@ -140,7 +140,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - a signal schema: name, payload, validation, the target run or gate, and the service account it is bound to;
   - a vocabulary for `timeout`, `remind` and `action`;
   - "approve without the signal" recorded as an override.
-- **Status:** open
+- **Status:** inbox, assumed: a signal schema (name, payload schema, target gate, bound service account) in api §5 and §7; `decide.systems` and `kind: signal` in checking §7; a `timeout` / `remind` / `action` vocabulary; approving without the signal recorded as an override — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### UX-111 · minor · Where each gate comes from, and lab-wide figures
 - **Where:** api-and-data-model.md (run and gate resources).
@@ -150,12 +150,12 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - The queue shows the worst item, the checks still computing, and whether you may decide or only view.
   - The Overview shows runs per item kind, split into gated and not gated (ReviewQueue, RunsTable, Overview).
 - **Proposal:** add `gate_source`, `stage_source`, `worst_item`, `can_decide` and an aggregates endpoint.
-- **Status:** open
+- **Status:** inbox, assumed: `gate_source`, `stage_source` and `worst_item` on run and gate resources (api §5, §7); aggregates through UX-207's summary endpoints; `can_decide` waits for UX-201's `allowed_actions` — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### UX-112 · minor · Adding a gate at launch
 - **Evidence:** LaunchReview offers "+ gate here" between stages. `POST /runs` accepts only `gates: "from-manifest"`.
 - **Proposal:** allow per-run gates when the overlay permits them. Gates stay off by default.
-- **Status:** open
+- **Status:** inbox, assumed: `POST /runs` accepts per-run gates besides `from-manifest` when the overlay allows them, through an overlay key that is off by default — pending Thomas (TRIAGE1, 2026-10-27)
 
 ## Runs, relaunch, outputs
 
@@ -169,14 +169,14 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - Give suggestions ids.
   - Add `POST /runs/{id}:relaunch?dry_run=true`, which runs `snakemake -n` or the Nextflow cache check through the runner.
   - Whether a memory change invalidates the Nextflow cache is **[to be validated]**.
-- **Status:** open
+- **Status:** inbox, assumed: `resource_overrides` and `config_overrides` on relaunch, suggestion ids from the schedulers relaunch suggestions, and `dry_run=true` returning Snakemake `-n` counts and a Nextflow work-directory estimate labelled as such (CH-010); the cache effect of a memory change stays [to be validated] — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### UX-114 · minor · Comparing runs
 - **Evidence:** RunsCompare needs three things:
   - a compare endpoint;
   - versioned config overlays in `run_inputs`;
   - `/runs/{id}/software`, plus a link from each cached task to the attempt that computed it (to count "CPU-hours saved").
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### UX-115 · minor · Outputs, retention and the depictio hand-off
 - **Evidence:** RunOutputs needs:
@@ -184,7 +184,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - a per-run retention date and "keep 30 more days";
   - a manual depictio trigger and the hand-off status;
   - written sandbox rules for HTML reports (CSP, no network).
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### UX-116 · minor · Runs launched from the terminal
 - **Evidence:** RunObserved needs:
@@ -193,38 +193,38 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - an "is this run adoptable" check;
   - the rule that groups processes into detected stages;
   - the runner start command.
-- **Status:** open
+- **Status:** rejected (TRIAGE1, 2026-10-27): not reproducible — the Tower-payload items rest on the dropped Tower route (decision 0001; `nf-spectio` streams logs, ui-spec §6), the adoptable condition is defined in ui-spec §6 and stage detection in ui-spec §5.1
 
 ## Launch
 
 ### UX-117 · major · Listing files through the runner
 - **Evidence:** LaunchSamplesheet, WorkflowImport (path on a cluster) and RunOutputs all browse folders on the cluster: paging, a glob, and "permission denied" on a folder the user cannot read. Synthesis mentions a "browse a directory" order but gives no shape for it.
 - **Proposal:** a runner order `list_dir` with paging, glob and typed errors, exposed as `GET /environments/{id}/files`.
-- **Status:** open
+- **Status:** inbox, assumed: a `list_dir` runner order (paging, glob, typed errors) in CH-007's command table, exposed as `GET /environments/{id}/files` and confined to the environment's storage roots as in SEC-105 — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### UX-118 · minor · Building a samplesheet from files
 - **Evidence:** pairing R1 and R2, deriving names, and handling rows that share a sample (nf-core/rnaseq concatenates them **[to be validated]**).
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### UX-119 · minor · Workflows without a parameter schema, and Git refs
 - **Evidence:** LaunchGitNoSchema guesses parameter types from `nextflow.config` and needs a list of Git refs reached through a runner credential. `GET /workflow-versions/{id}/schema` is undefined for a workflow with no schema.
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### UX-120 · major · Batch launches and Spectio's own queue
 - **Evidence:** LaunchBatch starts one run per plate. It needs name templates, a concurrency limit and a "queued because of quota / slot" reason, and can hold runs for a storage quota. No batch resource and no reason field exist.
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### UX-121 · minor · Scheduled start, notifications, pre-flight
 - **Evidence:** LaunchReview needs:
   - `start_at`;
   - notifications per event, where only `notify.webhook_ids` exists;
   - a pre-flight endpoint.
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### UX-122 · major · Chaining runs
 - **Evidence:** LaunchChain feeds the fetchngs `samplesheet/samplesheet.csv` into nf-core/rnaseq `--input`, mapping columns and starting on success. The spec has lineage (resume, rerun) but no chaining.
 - **Proposal:** a `chain` resource on runs: source output, target workflow, column mapping, and a trigger (on success, or ask first).
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ## Workflows
 
@@ -240,17 +240,17 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - Discovered workflows: a dirty tree, no Git remote, recognising a genuine nf-core release, an Ignored state, and how many runs must agree on a captured default.
   - The scope of a Git credential, and whether the server or a runner clones.
   - Catalogue fields: lab default, update status, overlay compatibility per release.
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ## Environments
 
 ### UX-124 · minor · Connecting and checking a runner
 - **Evidence:** EnvConnect shows a registration token valid for 15 min, a runner credential rotated every 24 h and a heartbeat every 30 s. None of these values is in a spec. It also needs a self-check report event and a way to load environment modules into the runner.
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### UX-125 · minor · Software inventory and pre-pulled images
 - **Evidence:** EnvSoftware shows the Apptainer cache with "Clean" actions, and pre-pulls the images of a pipeline release. The list comes from the release's containers (`nextflow inspect` **[to be validated]**). There is no API for either.
-- **Status:** open
+- **Status:** inbox, assumed: a read-only software inventory endpoint in api §5; pre-pull and cache Clean as runner orders in CH-007's command table, marked phase 2; `nextflow inspect` stays [to be validated] — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### UX-126 · major · Quotas, limits and who may launch where
 - **Evidence:** EnvAccess shows several things the API does not have:
@@ -261,11 +261,11 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - credential types (registry tokens, S3 keys, Git tokens) with rotation reminders.
 
   Environment grants cover projects and groups only.
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### UX-127 · minor · A single machine
 - **Evidence:** the rule "memory limit = 80 % of MemAvailable" exists only in the spike note and the test runner. EnvLocal also needs a local queue length (with "queue full"), and a rule for a laptop that goes to sleep.
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ## Imaging
 
@@ -276,7 +276,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
   - Reviews need per-channel colour and contrast, plus an RGB brightfield mode (idr0073).
   - The api names "an OME-Zarr viewer" and nothing more.
 - **Proposal:** a viewer contract: multiscale metadata, a tile endpoint with range requests, a thumbnail endpoint (level, crop), labels, the omero channel windows as defaults, and v0.4 and v0.5 stores. Test it on the images of dev-environment-and-testing.md §10.4.
-- **Status:** open
+- **Status:** inbox, assumed: a viewer contract in api (multiscale metadata, a tile endpoint with range requests, a thumbnail endpoint with level and crop, labels, omero windows as defaults, OME-Zarr v0.4 and v0.5), tested on the images of dev-environment-and-testing §10.4 — pending Thomas (TRIAGE1, 2026-10-27)
 
 ## Clinical data
 
@@ -289,7 +289,7 @@ Format: [`README.md`](README.md). Prefix `UX` (board agents and the UX review of
 
   checking-scenarios.md §9 says only that "roles apply strictly".
 - **Proposal:** a "restricted data" project policy covering pseudonymisation, downloads, a per-view audit and agent access. Route it to the security review.
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ## Facts found while building (to validate or already corrected)
 

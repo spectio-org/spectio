@@ -14,7 +14,7 @@ Round: R11 (2026-10-27). Branch `autopilot/integration`.
 - **What the merge checked:** every major finding was reproduced in the repository at merge time (commit ancestry, `check.py` source, front matter, journal, `docs/index.md`, `extra.css`, `docs/assets/shots/`, a dark render crop). None was dropped.
 - **Scope rule:** these are findings, not changes. Pages, specs and `mkdocs.yml` are untouched; triage and `/apply-findings` decide.
 
-**Status of the round: waiting for triage (TRIAGE1)**
+**Status of the round: triaged (TRIAGE1, 2026-10-27): 22 accepted, 0 rejected, 5 inbox (5 assumed)** · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Step page:** [R11](../progress/W1/R11.md)
 
@@ -91,7 +91,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - ui-spec §4.1 is reduced to one line that links to it.
   - `Landing.dc.html` is either retired, or marked "post-0.1 marketing draft" with the install line, WES and MCP removed until they ship.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: documentation-system §2 owns the public landing; ui-spec §4.1 becomes a one-line link to it; `Landing.dc.html` is kept, marked "post-0.1 marketing draft", with the install line removed, and its WES and MCP items follow the answer to SR-010 — pending Thomas (TRIAGE1, 2026-10-27)
 
 ## The docs gate and its records
 
@@ -111,7 +111,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Add a `required-pages` check driven by `pipeline.yaml` kinds and the step's `outputs` in `state.json`.
   - Check all five §3.2 headings and the `!!!` line.
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-003 · major · `review: approve` is self-declared and leaves no record
 
@@ -131,7 +131,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Make `check_progress` require both when `status: done`.
   - Have autopilot append the verdict line to `journal.md`.
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: the verdict is stored as a `.autopilot/journal.md` line; front matter gets `review_score: n/14` and `review_ref`, required by `check_progress` for new `status: done` pages; the 15 existing pages are grandfathered as `review_score: unrecorded` until next edited — pending Thomas (TRIAGE1, 2026-10-27)
 
 ## Progress pages
 
@@ -148,7 +148,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
 - **Problem:** a newcomer cannot follow or repeat the evidence. The one command F1 shows no longer gives its printed output.
 - **Proposal:** add one line to each W0 page: "History was squashed into `9185808`; the SHAs below are on `claude/foundations-2026-10-26`." Link the SHAs to that branch. Re-run F1's `git log` and update the expected output.
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: each W0 page notes that history was squashed into `9185808` and keeps the old SHAs as plain text marked pre-squash (no link to the branch inbox #5 may delete); F1's `git log` is re-run and its output updated — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DOC-014 · minor · F3 and F1 describe replaced infrastructure as current
 
@@ -162,7 +162,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
 - **Problem:** a reader looks for files and limits that are gone.
 - **Proposal:** add a dated "Superseded" admonition to F3 that links [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §7 and the log entry. Strike the push and bundle notes in F1. (The map and spec side is already SR-044.)
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-015 · minor · F5 describes the landing page as it was before add6838
 
@@ -172,7 +172,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
 - **Evidence:** F5 says "a new landing page (hero video, ecosystem and component cards, numbered ideas, the gate figure, a cast, the progress strip)". `docs/index.md` today has no figure and no `asciinema-cast`. Its sections follow §2: hero, Works with, How it works, optional gate box, What is inside, Where it stands.
 - **Proposal:** describe the current landing sections, or say "first version; revised in add6838 (§2, revised 2026-10-26)".
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-016 · minor · D2 says its figure and cast are not committed and its spike branch is not pushed
 
@@ -182,7 +182,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
 - **Evidence:** `cloud_env.py`, the cloud-env SVG/PNG files, `cloud-env.yaml`/`.cast` and the `media.yaml` entry are all in 5d8ef54 on `autopilot/integration`. `git branch -r --contains 217a92c` → `origin/spike/cloud-env`.
 - **Proposal:** say they are committed in 5d8ef54. Say the evidence (`LOG.md`, fixtures) is on `origin/spike/cloud-env` at 217a92c, with a link.
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ## Landing page: media and accessibility
 
@@ -202,7 +202,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Proper fix: give the boards a dark variant through `:root[data-theme="dark"]` in `spectio-tokens.css` plus a theme switch in `render.js`, then embed `…_light.webp#only-light` / `…_dark.webp#only-dark` pairs. Material hides these by `src` suffix, which also works on raw `<img>` **[to be validated]**.
   - `tools/docs/check.py` flags any landing shot that has no dark twin.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: short-term dimming in `extra.css`; documentation-system §0.2 and §5 point to the logged light-only rule of §5.1 instead of promising pairs; no dark-twin check yet; dark boards left to the proposed `spikes/dark-boards/` — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DOC-006 · major · The hero video autoplays and loops with no pause and ignores reduced motion
 
@@ -220,7 +220,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Use `<video controls muted loop playsinline preload="metadata" poster=…>` with no autoplay. The poster is the first impression and play is opt-in.
   - If autoplay is wanted, documentation-system §1 must allow a tiny `media.js` that pauses the video under `prefers-reduced-motion` and adds a visible pause button.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-008 · minor · The hero video is stale, tells three unrelated stories, and its narration presents Spectio as running
 
@@ -237,7 +237,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Re-capture the combo (`python3 tools/media/combo.py tools/media/combos/gate-review.yaml`) with boards seeded with the synthetic run's name, so terminal and browser show the same run.
   - Reword the comment to "the stop Spectio will generate: snakemake --until".
 - **Found by:** doc-reviewer, ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-018 · minor · Steps 3 and 4 are illustrated by screens that do not show what the text says
 
@@ -253,7 +253,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Step 4: RunOutputs, alt "Reports and outputs attached to a run".
   - Shoot them with `tools/media/shots.py`.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-019 · minor · Screen designs on the landing are unreadable on phone
 
@@ -266,7 +266,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Add 2× cropped shots of the relevant region (about 720×540 CSS px), served through `<picture><source media="(max-width:50em)" srcset="…_crop.webp">`.
   - In the optional-gates box on phone, use the existing `review-gate-phone_light.webp`.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-020 · minor · No accessible h1, and a doubled document title
 
@@ -279,7 +279,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Make the hero name `<h1 class="sp-hero2__name">Spectio</h1>`. Keep Material's own h1 hidden, or hide it with a visually-hidden (clip) rule rather than `display:none`.
   - Override `block htmltitle` in `overrides/main.html` for the home page so the title reads "Spectio, a run manager for Nextflow and Snakemake".
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-021 · minor · Progress strip links have no meaningful name on phone; bars have no text alternative
 
@@ -291,7 +291,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - The hook emits `aria-label="Wave W1, Independent reviews: 8 of 9 steps done"`, and `role="img" aria-label` on the bar (or `aria-hidden` on the bar once the link label carries the count).
   - On phone, wrap the title onto a second grid row instead of hiding it.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-022 · minor · "Where it stands" breaks the layout and uses internal jargon
 
@@ -306,7 +306,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Add `.sp-waves{max-width:56rem;margin:0 auto}`.
   - The strip reads a user-facing `public_title` per wave, or shows the release stages (design → 0.1 → beta) from the roadmap timeline and links to Progress for the wave detail.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-023 · minor · Low-contrast icons: the dark SLURM mark and the amber tiles
 
@@ -319,7 +319,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - `#D9890B` is the run-state token `--sp-state-review`, reused here as decoration.
 - **Proposal:** `.sp-work__icon{color:var(--sp-text-3)}` (6.45:1 on the dark card); amber-700 `#AE783B` for the tile (about 3.8:1), which also keeps the state colour for states only.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-024 · minor · The keyboard focus ring is barely visible on cards
 
@@ -329,7 +329,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
 - **Evidence:** focus shows Material's `outline: auto 1px #EC5F87` on a white card: faint and pink. The palette toggle reports `outline: none` when focused. Tab order is logical.
 - **Proposal:** add `:focus-visible{outline:2px solid var(--sp-line-focus);outline-offset:2px}` for these links (violet-600 light, violet-400 dark), and check the toggle's focus style.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-025 · minor · Phone footer has 4 px gutters and 20 px link targets
 
@@ -339,7 +339,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
 - **Evidence:** the rule is `.sp-footer { padding-left: .8rem; padding-right: .8rem; … padding: .9rem 0; … }`; the later shorthand zeroes the side padding (confirmed at merge time). Measured gutters at 390 px: 4/4, against 16/16 for the body. Footer links are 20 px tall.
 - **Proposal:** `padding:.9rem .8rem`; add `.sp-footer a{display:inline-block;padding:.35rem 0}` so targets reach at least 24 px (WCAG 2.5.8). Below 30em, stack them at 44 px.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-026 · minor · "What is inside" makes a 1 000 px single column on phone
 
@@ -349,7 +349,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
 - **Evidence:** six 358×163 cards, each holding three words.
 - **Proposal:** keep two columns down to 340 px and cut card padding to .9rem; or, on phone, render compact rows (icon, title and line, 56 px each).
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ## Theme and site chrome
 
@@ -368,7 +368,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Map `--md-default-fg-color`, `--md-typeset-color`, `--md-default-bg-color`, `--md-footer-bg-color` and the dark primary/accent to the token names in both schemes.
   - Generate the `:root` block from `design/tokens/spectio-tokens.css`, or `@import` it, and let `tools/docs/check.py` diff the two.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-013 · minor · Header source widget and footer links point to resources that 404
 
@@ -383,7 +383,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - Render the versions link only when `config.extra.preview != 'local'`.
   - Hide the "Repository" link until the repository is public.
 - **Found by:** ux-reviewer, doc-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-027 · minor · Map navigation gaps
 
@@ -395,7 +395,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - The build prints an INFO line listing the 15 step pages as not in the nav, although the `on_nav` hook adds them. Cosmetic.
 - **Proposal:** add the two entries to the map.
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ## The spec against the tools
 
@@ -412,7 +412,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - §3.2 says the index is "generated from the front matter". `hooks/progress.py` reads `pipeline.yaml` and `state.json`, and `progress/index.md` says so.
 - **Proposal:** update the spec to match `check.py`, inbox #1 and the hook. Either add snippets or drop it. Make `shared_images.py` a D6 deliverable with a size threshold.
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: documentation-system §1, §3.2 and §3.3.2 are rewritten to match `check.py`, inbox #1 (no Virgil preload) and `hooks/progress.py`; `.snippets` is dropped from the list; `shared_images.py` becomes a D6 deliverable with a size threshold — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DOC-009 · minor · The cloud-env cast is a stub replay, which the spec does not allow for
 
@@ -423,7 +423,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
 - **Problem:** a replay is a reasonable way to show a spike, but no rule covers it, and the CI check for "casts that no longer replay" cannot detect drift.
 - **Proposal:** add a §5.2 subsection for "replayed casts": a recorded-log source is required, titles say "replayed", and the `media.yaml` entry gets `kind: cast-replay`. Update the README.
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-010 · minor · PNG figures escape the freshness check and depend on an uncommitted font
 
@@ -433,7 +433,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
 - **Evidence:** freshness runs with `--no-png`. `sketch.py` adds the Virgil `@font-face` only if `SPECTIO_VIRGIL_TTF` (default `docs/fonts/Virgil.ttf`, which does not exist) is present, and otherwise falls back silently to Comic Sans or cursive. Running `gate_resume.py` wrote the SVG, then failed on the Python `playwright` import.
 - **Proposal:** record in `media.yaml` that the generators need `SPECTIO_VIRGIL_TTF` and Python playwright. Make `sketch.py` warn, or fail unless `--allow-fallback-font`, when the font is missing.
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-011 · minor · The §2 landing render check has no script
 
@@ -443,7 +443,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
 - **Evidence:** no tool renders the landing at 1440×900 and 390×844 in light and dark; F5 says it was done by hand. Run by hand with Playwright against the built site: scrollWidth 1440 and 390 (pass); nothing failed except two `api.github.com` 404s (DOC-013).
 - **Proposal:** add `tools/docs/render_landing.js`, which writes 4 PNGs and fails if scrollWidth > viewport, and call it from `check.py`.
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DOC-017 · minor · Figure defects: label collision, low-contrast dark legend, outdated merge step
 
@@ -456,7 +456,7 @@ Reviewers reported 27 findings (doc-reviewer 3 majors and 10 minors, ux-reviewer
   - autopilot-loop: `autopilot_loop.py` l.127 draws "Thomas merges to `main`". Inbox #3 (2026-10-26) lets Claude merge the promotion PR, and documentation-system §8 describes `AUTOMERGE_MAIN`.
 - **Proposal:** move the ✗ to the arrow's end, give the qc_report cell a distinct dark-theme hue, and relabel step 9 "promotion PR to main (§8)". Then re-run the three scripts.
 - **Found by:** doc-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ## Checks that passed
 

@@ -1,6 +1,6 @@
 # R8b · depictio engineering tooling and ecosystem: what Spectio is missing
 
-**Round:** R8b (tooling re-audit) · **Date:** 2026-10-26 · **Found by:** depictio-liaison · **Status of the round:** waiting for triage (TRIAGE1)
+**Round:** R8b (tooling re-audit) · **Date:** 2026-10-26 · **Found by:** depictio-liaison · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 19 accepted, 3 rejected, 10 inbox (7 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
 
 **Sources.**
 - **depictio** at `0d1aa0a` (2026-10-23 13:40 UTC, tag `v1.19.2`). `git fetch --all` showed that `origin/HEAD` has not moved since the earlier audits.
@@ -54,7 +54,7 @@ Both repositories were only read.
   - In **autopilot.md §8 / documentation-system §8**, require only `ci-ok`, `docs-gate` and `pr-body`.
   - Consider a merge queue for parallel step PRs **[to be validated: availability on this plan]**.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox, assumed: dev-env §11 gains one `ci.yml` with change detection and a final `ci-ok` job that `needs:` every job (skipped counts as passing; failure or cancelled fails); the pipeline workflows become reusable (`workflow_call`); autopilot.md §8 and documentation-system §8 require only `ci-ok`, `docs-gate` and `pr-body`; branch protection stays unset until then (inbox #8); no merge queue for now — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DEP-T-002 · blocker · release-please with `GITHUB_TOKEN` cannot trigger release builds or run checks on its own PR
 
@@ -73,7 +73,7 @@ Both repositories were only read.
   - Use the same App token for every bot PR.
   - Settle the release-PR rule once, in documentation-system §8, and link to it from autopilot.md.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox, assumed: dev-env §12 runs release-please with a GitHub App installation token (`actions/create-github-app-token`, contents and pull-requests), and every bot PR uses that token; release-please stays off until the App exists (inbox #8); the release-PR merge rule (autopilot.md §8 vs documentation-system §8) stays with Thomas — pending Thomas (TRIAGE1, 2026-10-27)
 
 ---
 
@@ -100,7 +100,7 @@ Both repositories were only read.
   5. No unlocked fallback.
   6. `pixi.lock` is committed for the `-engines` image.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-004 · major · Image architectures are not specified
 
@@ -113,7 +113,7 @@ Both repositories were only read.
   - In **architecture §7.4**, publish multi-arch images for `spectio`, `spectio-runner` and `-engines` on releases, and amd64 on PRs.
   - In **dev-environment §11**, add a quick-start smoke test per architecture (DEP-T-021).
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-005 · major · Supply-chain evidence (SBOM, provenance, signatures, scanning) is deferred to phase 3
 
@@ -136,7 +136,7 @@ Both repositories were only read.
     - `gh attestation verify` in the install docs.
   - Move this row out of phase 3.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox, assumed: dev-env §11 gains `security.yml` (Trivy or Grype on images, failing on fixable critical issues; `zizmor` on workflows; CodeQL and dependency review once the repository's plan provides them **[to be validated]**); every published image and chart, from the first one, carries SBOM and provenance attestations and a keyless cosign signature, with `gh attestation verify` in the install docs; the phase-3 row of architecture §9 is moved — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DEP-T-006 · major · Publishing about 30 artifacts per release has no specified order, publishers or upgrade test
 
@@ -156,7 +156,7 @@ Both repositories were only read.
   - the `nf-spectio` release steps **[to be validated]**;
   - npm provenance.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-007 · major · Repository secrets are readable from any branch an agent pushes
 
@@ -170,7 +170,7 @@ Both repositories were only read.
   - keep no repository-level secrets other than read-only ones;
   - add a `zizmor` check against `pull_request_target` and secrets in untrusted contexts.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** rejected (TRIAGE1, 2026-10-27): not reproducible: `staging.yml`, its tailnet secrets and the tailnet VM no longer exist (decision log 2026-10-26, dev previews); dev-env §8 already keeps deploy credentials in GitHub environments (citing DEP-T-007), and `previews.yml` reads its secrets from the `previews` environment
 
 ### DEP-T-008 · major · "Never auto-merged" paths are a convention, not an enforced rule
 
@@ -184,7 +184,7 @@ Both repositories were only read.
   - Set `"require_code_owner_reviews": true`.
   - Check whether a bot approval counts when the same identity opens the PRs **[to be validated]**.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### DEP-T-009 · major · No dependency bot, and Spectio's workflows still use v4 actions
 
@@ -199,7 +199,7 @@ Both repositories were only read.
   - grouped monthly PRs, plus security updates as they come;
   - everything through the `ci-ok` gate.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-010 · major · The Helm chart has no CI, no values schema and no immutability rule
 
@@ -228,7 +228,7 @@ Both repositories were only read.
     - `existingSecret` for every Secret, and no `lookup`;
     - the depictio dependency pinned by digest.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-011 · major · In-place upgrades are tested only through restore
 
@@ -242,7 +242,7 @@ Both repositories were only read.
   - seed with synthetic runs, then assert the schema is at head, the backup exists, runs and gates are intact, and tokens behave as specified;
   - report the results on the 1.0-gate checklist.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-012 · major · Component tests run on SQLite only; the Postgres-only code paths go untested
 
@@ -255,7 +255,7 @@ Both repositories were only read.
   - add a migration test from empty and from each frozen fixture on both dialects;
   - run the two-replica tests on Postgres in tier 3.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-013 · major · Co-hosting assumes depictio lives under `/depictio`, but depictio's UI owns the root
 
@@ -271,7 +271,7 @@ Both repositories were only read.
   - Ask depictio for a configurable base path only if ever needed.
   - Point dev-environment §7 and architecture §8 to §13.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — the co-hosting default (separate hosts or one origin) stays with R5 SEC-109
 
 ### DEP-T-014 · major · Sharing depictio's SeaweedFS needs per-bucket identities that depictio's Compose does not configure
 
@@ -289,7 +289,7 @@ Both repositories were only read.
     - fix the bucket name;
     - request that depictio's Compose accept an identities file.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox, assumed: architecture §7.4: when co-hosted, Spectio uses its own bucket `spectio` with an S3 identity limited to it **[to be validated: `weed mini` identities]**, otherwise its own SeaweedFS, and never holds depictio's root keys; ecosystem §2 item 6 names depictio's bucket `depictio-bucket`; the identities-file request to depictio stays with Thomas — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DEP-T-015 · major · How Spectio gets depictio's JWT public key on Kubernetes is undefined
 
@@ -305,7 +305,7 @@ Both repositories were only read.
   - on a signature failure, refetch at most once a minute, and raise a Health warning on key rotation;
   - keep the JWKS request in ecosystem-reuse §3, needed for Helm.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### DEP-T-016 · major · How `depictio-cli` gets onto runners, and at which version, is unspecified
 
@@ -321,7 +321,7 @@ Both repositories were only read.
 
   The choice is recorded in the hand-off record, and a `spectio doctor` check is added.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — applies wherever R8 DL-101 places the ingestion
 
 ### DEP-T-017 · major · depictio is not pinned anywhere in Spectio's toolchain or CI
 
@@ -336,7 +336,7 @@ Both repositories were only read.
   - Declare `depictio >=X,<2` in `spectio-plugin-depictio`.
   - The weekly `depictio-liaison` routine opens the bump PRs.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox, assumed: `DEPICTIO_VERSION` in `dev/versions.env` (dev-env §1); tier 5 runs against the minimum supported and the latest stable depictio (§6); `spectio-plugin-depictio` declares the supported depictio server range as metadata checked at runtime against `utils/status`, not as a Python dependency; the weekly depictio-liaison routine opens the bump PRs (§8) — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DEP-T-018 · major · No Python or OS/architecture matrix for the base install and the runner
 
@@ -349,7 +349,7 @@ Both repositories were only read.
   - Test the server on 3.13.
   - Declare the supported Python range once, in architecture §7.3.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox, assumed: architecture §7.3 declares the supported Python range once (3.11–3.14; the server is tested on 3.13); base-install and runner tests run on every supported Python on Linux x86_64 and aarch64, the full grid nightly and a subset on PRs (dev-env §11); macOS-arm64 waits for Thomas because of the Actions minutes — pending Thomas (TRIAGE1, 2026-10-27)
 
 ---
 
@@ -372,7 +372,7 @@ Both repositories were only read.
   - `permissions:` per job;
   - actions pinned by SHA.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27) — `staging.yml` is now `previews.yml`, which already has concurrency, a timeout and a fork guard; the other workflows do not
 
 ### DEP-T-020 · minor · depictio's security audit scripts are manual and have already drifted
 
@@ -384,7 +384,7 @@ Both repositories were only read.
   - In ecosystem-reuse §1.5, change "copy" to "copy and run in CI".
   - In dev-environment §11, run the static audit on PRs and the live audit nightly.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-021 · minor · Make release notes and the quick start provably true
 
@@ -396,7 +396,7 @@ Both repositories were only read.
   - Generate the release-note artifact list from `docker/metadata-action` output, and verify each entry with `docker manifest inspect`.
   - Add a quick-start job per architecture, run from the docs' `compose.yaml` alone.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-022 · minor · Pick the type checker now, and keep one source for tool versions
 
@@ -410,7 +410,7 @@ Both repositories were only read.
   - Use `language: system` pre-commit hooks through `uv run`.
   - Run pre-commit in tier 0.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-023 · minor · Test-suite safety nets: collection guard, coverage, flaky tests, destructive e2e
 
@@ -425,7 +425,7 @@ Both repositories were only read.
   - Quarantine flaky tests, mirroring `engine_faults`: a marker, an issue, removal within 2 weeks.
   - Run destructive e2e specs last, in an isolated Playwright project.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-024 · minor · Generate the telemetry field docs, and snapshot GitHub traffic weekly
 
@@ -437,7 +437,7 @@ Both repositories were only read.
   - Generate the field page from the Pydantic schema, with `--check` in CI.
   - Snapshot traffic weekly, with a token kept in an environment.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-025 · minor · SECURITY.md, issue templates and a support channel
 
@@ -451,7 +451,7 @@ Both repositories were only read.
   - issue forms (a bug with `spectio doctor` output, gate feedback, a plugin request);
   - Discussions.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-026 · minor · Decide the GitHub organisation and reserve names before the first publish
 
@@ -463,7 +463,7 @@ Both repositories were only read.
   - Add an inbox item: create the organisation before 0.1.0.
   - Register PyPI pending publishers and the npm scope **[to be validated: what breaks on a transfer]**.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** rejected (TRIAGE1, 2026-10-27): already handled: inbox #9 was opened from this finding and answered (Thomas, 2026-10-26: stay under `weber8thomas` for now, move later); reserving the names goes with that move
 
 ### DEP-T-027 · minor · release-please settings cannot hold a separately versioned SDK
 
@@ -473,7 +473,7 @@ Both repositories were only read.
   - Use component tags for `spectio-sdk` (`spectio-sdk-v1.2.0`), and keep `vX.Y.Z` for the core.
   - The chart `version` equals the app version, with no date versions.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-028 · minor · A "Try Spectio" Codespace for design partners
 
@@ -485,7 +485,7 @@ Both repositories were only read.
   - Build a try image: `spectio[server]`, a local runner and the synthetic pipelines.
   - Open it with one Codespaces link from the landing page.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox (TRIAGE1, 2026-10-27)
 
 ### DEP-T-029 · minor · `/metrics` is a line, not a contract
 
@@ -497,14 +497,14 @@ Both repositories were only read.
   - Add an optional ServiceMonitor.
   - Propagate `traceparent` and `request_id` to runners.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** inbox, assumed: admin §3.5 names the metrics (runs by state, gate wait time, task queue depth and age, outbox lag, runner heartbeats, request latency per route template), adds an optional ServiceMonitor and propagates `traceparent` and `request_id` to runners; who may scrape `/metrics` (a separate port or a token) stays with Thomas — pending Thomas (TRIAGE1, 2026-10-27)
 
 ### DEP-T-030 · minor · The depictio plugin is one package in §8 but two directories in §6
 
 - **Where:** architecture §6 (`auth-depictio/`, `sink-depictio/`) vs §8 ("two plugins in one package, `spectio-plugin-depictio`").
 - **Proposal:** use one directory, `plugins/depictio/`.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-031 · minor · depictio rewrites history, so audits should cite tags, not only SHAs
 
@@ -515,7 +515,7 @@ Both repositories were only read.
   - Record `git archive <sha> | sha256sum` in each audit note.
   - Add this to documentation-system §10.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** accepted (TRIAGE1, 2026-10-27)
 
 ### DEP-T-032 · minor · Two demo targets that the specs never reconcile
 
@@ -525,7 +525,7 @@ Both repositories were only read.
   - Staging and previews run on the tailnet VM; the public beta demo runs on the EMBL target.
   - The EMBL deploy is `workflow_dispatch`-only, with an environment and a reviewer, and without `--insecure-skip-tls-verify`.
 - **Found by:** depictio-liaison
-- **Status:** open
+- **Status:** rejected (TRIAGE1, 2026-10-27): not reproducible: the 2026-10-26 dev-previews decision dropped the tailnet VM; dev-env §7.4 now puts the public instance on EMBL Kubernetes, `workflow_dispatch` only, behind an environment with a reviewer and without `--insecure-skip-tls-verify` (citing DEP-T-032), which matches ecosystem §1.5
 
 ---
 
