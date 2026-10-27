@@ -29,7 +29,7 @@ review_ref: ".autopilot/journal.md, tick 6"
     - [`mvp-0.0.1.md`](../../specs/mvp-0.0.1.md) §1 and §2, and the gate row of [`dev-environment-and-testing.md` §15.1](../../specs/dev-environment-and-testing.md) (wording only: the 0.0.1 gate verbs are `approve` and `stop`, no feature added).
 - **Status lines in two review files.** Every applied finding's **Status** line now says what was applied, where, and what is pending: `applied` or `partly applied`, dated `(APPLY2, 2026-10-27)`. Each file's header gets an APPLY2 count. The seven findings that wait for Thomas keep their TRIAGE2 status.
 - **One decision-log section** for the whole step: [2026-10-27 — APPLY2](../../decisions/log.md#2026-10-27-apply2-review-findings-applied-r3-r6).
-- **Commit** on `autopilot/integration`: `autopilot(APPLY2): apply R3 and R6 findings (7 applied, 47 partly, 33 assumed)` (the specs, the two review files, the decision log, this page and the figure with its script).
+- **Commit** `cf5357b` on `autopilot/integration`: `autopilot(APPLY2): apply R3 and R6 findings (7 applied, 47 partly, 33 assumed)` (the specs, the two review files, the decision log, this page and the figure with its script).
 
 ## Why
 
@@ -43,6 +43,31 @@ A finding is only useful once the spec that owns its topic says the right thing.
 Most of R3 and R6 is about the 0.0.1 journey: launch, monitor, gate, relaunch. Writing the API contract now (wire conventions, run actions, launch body, task states, stream frames) is what lets P1 plan 0.0.1 against one contract instead of three partial ones.
 
 Step definition: `APPLY2` in `docs/playbooks/pipeline.yaml` (wave W2, `kind: apply`, `depends_on: [TRIAGE2]`, rounds R3 and R6; wave exit check `python3 tools/docs/check.py`).
+
+## Before and after
+
+**Per finding.** The **Status** line of each finding in [R3](../../reviews/R3-journeys.md) and [R6](../../reviews/R6-contract.md) is the record: it names the spec and § that changed and what is still pending. For example:
+
+```console
+$ grep -A20 "^### SR-065" docs/reviews/R3-journeys.md | grep "Status:"
+- **Status:** applied (APPLY2, 2026-10-27): api §5; synthesis §5ter.5; ui-spec §4.6 (assumed — pending Thomas, inbox #40)
+```
+
+**The mechanisms that changed.** Each row was read in `git diff cf5357b~1 cf5357b -- docs/specs`:
+
+| Topic | Before | After | Owner now |
+|---|---|---|---|
+| Relaunch and Resume | `:resume` listed with no source state; no transition out of `failed` | `failed` is terminal; Resume and Relaunch create a child run with `parent_run_id`, and the parent stays terminal *(assumed, inbox #32)* | [api §5.1](../../specs/api-and-data-model.md#51-run-actions), §7.1 |
+| 0.0.1 gate verbs | `approve`, `apply`, `go_back`, `stop` | `approve`, `stop`; Relaunch… at a gate is `stop` with reason `relaunched`, then `:relaunch` *(assumed, inbox #32)* | [`mvp-0.0.1.md`](../../specs/mvp-0.0.1.md) §2, api §5.1 |
+| Idempotency key replayed with a different body | `422` | `409 idempotency-key-reused` | [api §4.1](../../specs/api-and-data-model.md#41-wire-conventions) |
+| Snakemake changed parameters | `--configfile` or `--config` | `--configfile` only, written to `<launch_dir>/.spectio/config.<n>.yaml` *(assumed, inbox #40)* | [`synthesis.md`](../../specs/synthesis.md) §5ter |
+| Task and attempt states | upper case, in synthesis §2ter | lower case, one list | [api §7.2](../../specs/api-and-data-model.md#72-task-and-attempt-states) |
+| Current stage of a run | `runs.stage_index` | `runs.current_stage_id`, a `run_stages.stage_id` *(assumed, inbox #40)* | api §7 |
+
+![Before and after APPLY2: before, a failed run was resumed in place and a gate had four verbs; after, the failed parent stays terminal, Resume creates child run B that reuses its cache, and the 0.0.1 gate has approve and stop, with Relaunch… recorded as stop then a child run](../../assets/diagrams/apply2_relaunch_light.png#only-light)
+![Before and after APPLY2: before, a failed run was resumed in place and a gate had four verbs; after, the failed parent stays terminal, Resume creates child run B that reuses its cache, and the 0.0.1 gate has approve and stop, with Relaunch… recorded as stop then a child run](../../assets/diagrams/apply2_relaunch_dark.png#only-dark)
+
+*The relaunch model, the most visible change: the two R3 blockers SR-062 and CH-042.*
 
 ## Evidence
 
@@ -69,10 +94,10 @@ R6-contract      0   32    2
 
 "Partly" means that the spec text is done and a board, a spike, a tool or a blocked section remains. All of R6 is partly applied because each R6 finding also asks for a board change or for the openapi draft.
 
-**Specs changed**, from `git diff --numstat docs/specs` before the commit (lines added, removed):
+**Specs changed**, lines added and removed by the commit:
 
 ```console
-$ git diff --numstat docs/specs
+$ git diff --numstat cf5357b~1 cf5357b -- docs/specs
 3	1	docs/specs/admin-and-operations.md
 151	49	docs/specs/api-and-data-model.md
 18	0	docs/specs/architecture-plugins-and-packaging.md
@@ -85,31 +110,32 @@ $ git diff --numstat docs/specs
 44	25	docs/specs/ui-spec.md
 ```
 
-**Assumed fixes.** 33 findings rest on an assumed inbox answer: #32 (10), #33 (1), #35 (2), #38 (3), #39 (7) and #40 (10). Their text carries 84 added or changed lines with an *(assumed — pending Thomas, inbox #n)* marker (`git diff docs/specs | grep "^+" | grep -c "assumed — pending Thomas"`).
+**Assumed fixes.** 33 findings rest on an assumed inbox answer: #32 (10), #33 (1), #35 (2), #38 (3), #39 (7) and #40 (10). Their text carries 84 added or changed lines with an *(assumed — pending Thomas, inbox #n)* marker (`git diff cf5357b~1 cf5357b -- docs/specs | grep "^+" | grep -c "assumed — pending Thomas"`).
 
 **Exit criterion.** The wave W2 check passes, and so does the strict build:
 
 ```console
 $ python3 tools/docs/check.py
 ...
-diagrams: 7 scripts re-run, 14 SVGs compared
-media: 46 outputs in the manifest
+diagrams: 8 scripts re-run, 16 SVGs compared
+media: 50 outputs in the manifest
 progress: 22 pages checked
 docs gate: 0 failure(s)
 $ uvx --with mkdocs-material mkdocs build --strict
-INFO    -  Documentation built in 6.80 seconds
+INFO    -  Documentation built in 5.80 seconds
 ```
 
 ## Figures and media
 
 - **Step figure** at the top of this page (to scale: one cell per finding, bar lengths in lines and in findings). Script: `tools/diagrams/apply2_specs.py`; outputs `docs/assets/diagrams/apply2_specs_{light,dark}.{svg,png}`; manifest entry `apply2-specs` in `docs/assets/media.yaml`.
+- **Relaunch figure** under "Before and after" (the run model before and after the step). Script: `tools/diagrams/apply2_relaunch.py`; outputs `docs/assets/diagrams/apply2_relaunch_{light,dark}.{svg,png}`; manifest entry `apply2-relaunch`.
 
 ## Findings and open questions
 
 **No new inbox entry.** What remains is listed by kind in the [decision-log section](../../decisions/log.md#2026-10-27-apply2-review-findings-applied-r3-r6):
 
 - **UI boards (15 boards).** RunDetail carries 17 findings; ReviewReport, Launch and RunsRows 5 each; RelaunchDialog and RunsTable 4. Two boards are new: RunTasks and RunLogs (log sources: architecture §13.7). No board step exists yet in `pipeline.yaml`.
-- **Tools and spikes.** The openapi draft spike carries 8 R6 findings; spike T2 checks the engine-to-task-state mapping (SR-083); `spectio-sdk` JSON Schemas (SR-084).
+- **Tools and spikes.** The openapi draft spike carries 8 R6 findings; spike T2 checks the engine-to-task-state mapping (SR-083); `spectio-sdk` JSON Schemas (SR-084); later api compare endpoints (UX-291).
 - **Blocked by an open inbox entry** (sections not edited): [#36](../../reviews/inbox.md#36-the-ingest-contract-for-001-split-inbox-11) ingest contract (5 findings), [#34](../../reviews/inbox.md#34-001-scope-how-nf-corernaseq-gets-its-stages-and-gate-workflow-registration-multiqc-in-the-install) rnaseq stages and the gates file (4), #16 pause and stop (4), [#37](../../reviews/inbox.md#37-browser-protection-for-the-token-less-loopback-api), #13, #19, #20 and #25 (1 each).
 - **Waiting for Thomas, untouched:** SR-054, SR-056, SR-057, SR-058, SR-067 (R3) and SR-080, SR-091 (R6).
 - **One stale reference left on purpose:** `ui-spec.md` §4.11 (phone Run detail) still names "Pause after stage". Phones are not in 0.0.1, and UX-289 does not cover that section.

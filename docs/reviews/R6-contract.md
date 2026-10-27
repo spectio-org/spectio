@@ -2,7 +2,7 @@
 
 **Step page:** [R6](../progress/W2/R6.md)
 
-**Round:** R6 (API contract) · **Date:** 2026-10-27 · **Found by:** spec-reviewer, ux-reviewer · **Status of the round:** triaged (TRIAGE2, 2026-10-27): 15 accepted, 0 rejected, 19 inbox (17 assumed) · triage: [TRIAGE2](../progress/W2/TRIAGE2.md) · APPLY2 (2026-10-27): 0 applied, 32 partly applied, 0 not applied
+**Round:** R6 (API contract) · **Date:** 2026-10-27 · **Found by:** spec-reviewer, ux-reviewer · **Status of the round:** triaged (TRIAGE2, 2026-10-27): 15 accepted, 0 rejected, 19 inbox (17 assumed) · triage: [TRIAGE2](../progress/W2/TRIAGE2.md) · [APPLY2](../progress/W2/APPLY2.md) (2026-10-27): 0 applied, 32 partly applied, 0 not applied
 
 **Sources.**
 - **Scope.** The 0.0.1 API contract only ([`mvp-0.0.1.md`](../specs/mvp-0.0.1.md), [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §15.1): the OpenAPI draft written by the R6 spike, checked against [`api-and-data-model.md`](../specs/api-and-data-model.md), the other specs it depends on, and the ten 0.0.1 boards.

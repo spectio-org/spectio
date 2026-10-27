@@ -143,7 +143,6 @@ def build(theme: Theme) -> Sketch:
     s.arrow(mx + 640, 330, rx - 6, 330, colour=t.muted, width=1.4)
 
     # -- keys --------------------------------------------------------------------------------------
-    s.prefix_key(40, H - 70, ("SR", "CH", "UX"))
     s.text(40, H - 26, "Sources: Status lines of docs/reviews/R3-journeys.md and R6-contract.md, "
                        "the APPLY2 entry of docs/decisions/log.md, git diff --numstat docs/specs (2026-10-27) "
                        "· tools/diagrams/apply2_specs.py", size=12.5, anchor="start", colour=t.dim)

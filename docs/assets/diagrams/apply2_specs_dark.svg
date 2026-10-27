@@ -270,6 +270,5 @@
   <path d="M1050.0,329.3 C1058.5,331.1 1067.1,328.0 1074.6,330.2" fill="none" stroke="#585e6b" stroke-width="1.4" stroke-linecap="round"/>
   <path d="M1074.4,329.6 C1069.8,328.0 1065.8,325.0 1061.2,323.2" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1074.5,329.8 C1069.2,331.9 1066.0,334.2 1062.1,337.1" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="40.0" y="800.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">IDs: SR spec-reviewer · CH constraints-hunter · UX ux-reviewer</text>
   <text x="40.0" y="844.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Sources: Status lines of docs/reviews/R3-journeys.md and R6-contract.md, the APPLY2 entry of docs/decisions/log.md, git diff --numstat docs/specs (2026-10-27) · tools/diagrams/apply2_specs.py</text>
 </svg>

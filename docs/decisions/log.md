@@ -559,6 +559,8 @@ Step page: [APPLY1](../progress/W2/APPLY1.md).
 
 ## 2026-10-27 — APPLY2: review findings applied (R3 R6)
 
+Step page: [APPLY2](../progress/W2/APPLY2.md).
+
 - **Context.** APPLY2 applies the findings that TRIAGE2 accepted or assumed in rounds R3 and R6. It changes the owning specs only, adds no 0.0.1 feature and no version claims outside [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §15. Each finding's **Status** line in its review file says what was applied and what is pending. Findings that wait for Thomas (SR-054, SR-056, SR-057, SR-058, SR-067, SR-080, SR-091) were not touched. Overlapping findings were applied once: UX-291 over UX-250 (CPU-hours copy), CH-042 over CH-050 (the run lattice applies per run, inbox #32), SR-081 with SR-063 (cli `relaunch`), SR-066 inside the SR-082 paragraph (checking §12.3), UX-272 through SR-088, UX-284 through SR-085, and CH-043 with UX-288. Total: 7 applied, 47 partly applied, 0 not applied. "Partly" means that the doc edits are done and a board, spike, tool or blocked part remains.
 - **Per round** (applied / partly / not applied):
   - **R3** ([R3-journeys](../reviews/R3-journeys.md)), 7 / 15 / 0. Applied: CH-043, SR-064, CH-046, SR-059, SR-065, CH-045, SR-066. Partly: SR-062, SR-055, CH-041, CH-042, SR-061, CH-047, SR-063, CH-044, CH-048, CH-049, CH-050, UX-243, UX-250, CH-051, UX-249.

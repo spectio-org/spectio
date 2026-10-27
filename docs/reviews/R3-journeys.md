@@ -2,7 +2,7 @@
 
 **Step page:** [R3](../progress/W2/R3.md)
 
-**Round:** R3 (journeys) · **Date:** 2026-10-27 · **Found by:** spec-reviewer (journeys 1–2), constraints-hunter (journeys 3–4), ux-reviewer (all four journeys, boards rendered) · **Status of the round:** triaged (TRIAGE2, 2026-10-27): 6 accepted, 0 rejected, 21 inbox (16 assumed) · triage: [TRIAGE2](../progress/W2/TRIAGE2.md) · APPLY2 (2026-10-27): 7 applied, 15 partly applied, 0 not applied
+**Round:** R3 (journeys) · **Date:** 2026-10-27 · **Found by:** spec-reviewer (journeys 1–2), constraints-hunter (journeys 3–4), ux-reviewer (all four journeys, boards rendered) · **Status of the round:** triaged (TRIAGE2, 2026-10-27): 6 accepted, 0 rejected, 21 inbox (16 assumed) · triage: [TRIAGE2](../progress/W2/TRIAGE2.md) · [APPLY2](../progress/W2/APPLY2.md) (2026-10-27): 7 applied, 15 partly applied, 0 not applied
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `e22e376`. Line numbers ("l.") refer to that commit.
