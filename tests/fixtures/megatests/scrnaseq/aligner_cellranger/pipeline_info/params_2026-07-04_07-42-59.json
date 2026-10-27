@@ -53,7 +53,7 @@
     "config_profile_name": "Full Test profile",
     "config_profile_description": "Full test dataset to check pipeline function",
     "custom_config_version": "master",
-    "hook_url": "https://hooks.slack.com/services/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",
+    "hook_url": "REDACTED",
     "custom_config_base": "https://raw.githubusercontent.com/nf-core/configs/master",
     "config_profile_contact": null,
     "config_profile_url": null,

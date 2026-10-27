@@ -1,0 +1,12 @@
+# Reviewed gitleaks exceptions (docs/specs/dev-environment-and-testing.md §11). One fingerprint per line.
+#
+# Commit b3c49ea1 copied nf-core's public megatest params files, which carry the Slack webhook URL
+# (hook_url) of nf-core's AWS megatest runs. They are nf-core's, published in their public S3 bucket,
+# not Spectio's. Redacted at HEAD in step D4 (2026-10-27); the history keeps them until it is
+# rewritten (inbox #5).
+b3c49ea193732fe40e304b381ba6f35fb8514317:tests/fixtures/megatests/chipseq/pipeline_info/params_2024-10-07_15-16-13.json:slack-webhook-url:57
+b3c49ea193732fe40e304b381ba6f35fb8514317:tests/fixtures/megatests/scrnaseq/aligner_cellranger/pipeline_info/params_2026-07-04_07-42-59.json:slack-webhook-url:56
+b3c49ea193732fe40e304b381ba6f35fb8514317:tests/fixtures/megatests/mag/pipeline_info/params_2026-03-31_09-00-28.json:slack-webhook-url:161
+b3c49ea193732fe40e304b381ba6f35fb8514317:tests/fixtures/megatests/rnafusion/pipeline_info/params_2026-06-02_07-06-48.json:slack-webhook-url:62
+b3c49ea193732fe40e304b381ba6f35fb8514317:tests/fixtures/megatests/methylseq/pipeline_info/params_2025-12-12_10-50-22.json:slack-webhook-url:71
+b3c49ea193732fe40e304b381ba6f35fb8514317:tests/fixtures/megatests/smrnaseq/pipeline_info/params_2026-01-07_13-43-43.json:slack-webhook-url:57

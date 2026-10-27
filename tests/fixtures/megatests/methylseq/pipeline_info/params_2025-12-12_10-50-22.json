@@ -68,7 +68,7 @@
     "email_on_fail": null,
     "plaintext_email": false,
     "monochrome_logs": false,
-    "hook_url": "https://hooks.slack.com/services/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",
+    "hook_url": "REDACTED",
     "help": false,
     "help_full": false,
     "show_hidden": false,
