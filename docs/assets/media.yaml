@@ -117,6 +117,18 @@ media:
       - docs/assets/diagrams/apply2_relaunch_dark.svg
       - docs/assets/diagrams/apply2_relaunch_light.png
       - docs/assets/diagrams/apply2_relaunch_dark.png
+  - id: d1-claude-config
+    kind: diagram
+    generator: python3 tools/diagrams/d1_claude_config.py
+    outputs:
+      - docs/assets/diagrams/d1_claude_config_light.svg
+      - docs/assets/diagrams/d1_claude_config_dark.svg
+      - docs/assets/diagrams/d1_claude_config_light.png
+      - docs/assets/diagrams/d1_claude_config_dark.png
+  - id: claude-config
+    kind: cast
+    generator: python3 tools/media/cast.py tools/media/casts/claude-config.yaml
+    outputs: [docs/assets/casts/claude-config.cast]
   - id: d5-previews
     kind: diagram
     generator: python3 tools/diagrams/d5_previews.py
