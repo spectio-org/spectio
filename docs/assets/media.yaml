@@ -150,6 +150,14 @@ media:
       - docs/assets/diagrams/d5-previews_dark.svg
       - docs/assets/diagrams/d5-previews_light.png
       - docs/assets/diagrams/d5-previews_dark.png
+  - id: d6-progress-hook-check
+    kind: diagram
+    generator: python3 tools/diagrams/d6_progress_hook_check.py
+    outputs:
+      - docs/assets/diagrams/d6-progress-hook-check_light.svg
+      - docs/assets/diagrams/d6-progress-hook-check_dark.svg
+      - docs/assets/diagrams/d6-progress-hook-check_light.png
+      - docs/assets/diagrams/d6-progress-hook-check_dark.png
   - id: t7-corpus-ci
     kind: diagram
     generator: python3 tools/diagrams/t7_corpus_ci.py

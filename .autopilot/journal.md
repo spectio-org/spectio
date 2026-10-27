@@ -203,3 +203,26 @@ One entry per tick: time, steps started and finished, verification results, tria
   - the items still open from tick 7.
 - **Follow-ups:** SEC-T1-06 (shared `/tmp` workdir) before T3; the Snakemake fault rate (repeat more than once, or move off the checkpoint).
 - **End of tick:** usage snapshot refreshed (`.autopilot/usage/744d3a04-….json`: 24 subagents, 1246 API calls); dashboard republished as version 17 at the same link, private, `answers` write rule owner-only, `check_xss.js` ok with and without the CSP.
+
+## 2026-10-27 23:10 → 23:45 UTC — tick 9 (promotion of T1, D6 minimal)
+
+- **Inbox:** the dashboard `answers` collection holds the same 27 documents recorded at the first owner-only publish (same `at`); nothing new to copy. No unhandled `Answer:` line.
+- **Promotion:** weber8thomas/spectio#22 (T1 and the tick-8 records) merged into `main` as a merge commit (`62a4c88`), every check green; `pipelines-synthetic / snakemake 9.27.1` passed first time (no `lost-retry-at-checkpoint-update` this run).
+- **Budget:** `--budget 10%w --now 75`, stop at 85 % (Thomas). One build step only (`ready.py --only D6`); `check` answered go, fits 1. No live usage reading in this cloud session (`manual-stale`); step cost not recorded.
+- **Finished: D6**, docs pipeline in CI, **minimal version** on Thomas's request. PR weber8thomas/spectio#23, squash `b67ace9`.
+  - `check.py` build check now fails when the `hooks/progress.py` output is missing (unrendered placeholder, or a page without the rendered strip or table); `tools/docs/test_check.py` (7 tests) runs in `docs-gate`; `fail()` escapes workflow-command characters; `mkdocs.yml` excludes `fonts/*.ttf`.
+  - Virgil licence: `excalidraw/virgil` `LICENSE.md` declares OFL-1.1, but its own `Virgil.woff2` name table says "Your Own Font Foundry … Freeware for personal use"; the depictio copy is a third build. Recorded as unconfirmed in `FONT-LICENSE.md`; no font committed; inbox #49.
+  - Deferred (inbox #50): mike on the previews and `/versions`; Zensical evaluation; `hooks/shared_images.py` (not due: no mike version, `docs/assets` about 11 MB); byte-identical PNGs in CI (#49); the F4 and F6 figures.
+  - code / security review approve / approve (0/0/4, 0/0/2), one fix round applying all minors except CR-4 (kept); simplifier no change; doc-review changes 10/14, then approve 14/14 (a fresh reviewer after a container restart lost the first re-review).
+  - CI: one `ci-ok` failure on `343ab71` was the concurrency cancel caused by the next push (`results: success cancelled …`); green on `154a2f2`.
+- **Exit checks:** D6 step test `python3 -m unittest tools/docs/test_check.py && python3 tools/docs/check.py --only build` (7 OK, 0 failures); `python3 tools/docs/check.py` on integration after the merge: 0 failures.
+- **Triage:** none (build step). New inbox entries #49 (Virgil licence conflict, revisits #1) and #50 (the D6 follow-up).
+- **Environment:** auto-merge is not enabled on the repository, so step PRs are merged by hand once green; the container restarted once mid-step (worktree commits survived; `autopilot/D6` pushed right after).
+- **Waiting on Thomas:**
+  - #49 (font) and #50 (where the rest of D6 goes);
+  - the 9 stale branches carrying the webhook URL, and #5 (history rewrite);
+  - GitHub settings: fork PR workflow approval, secret scanning and push protection; allow auto-merge if wanted;
+  - answer #44, #46, #47, #48 and #32;
+  - replace the cloud setup script (#43); network to Custom without wildcards;
+  - a fresh `/usage` reading before the next build step.
+- **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (6 subagents, 202 API calls at snapshot time); dashboard rebuilt (41 steps, 50 inbox entries; `check_xss.js` ok with and without the CSP) and republished as version 18 at the same link, private, `answers` write rule owner-only. The first two publishes were refused (not read; then identical content); the third went through after checking the saved live copy is the tick-8 build (no tick-9 content), so nothing was lost.
