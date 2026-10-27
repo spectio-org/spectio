@@ -7,12 +7,15 @@ Drawn only from what the owner says, no measurements involved:
 - docs/specs/dev-environment-and-testing.md §15.3 (architecture, access, security
   requirements) and §15.1 (what is not in 0.0.1);
 - docs/decisions/log.md, "2026-10-27 — 0.0.1 revised: on the cluster, no gates, a token link".
-Facts drawn: the laptop opens a one-time token link through `ssh -L` to the login node;
+Facts drawn: the laptop opens a token link through `ssh -L` to the login node (printed by
+`spectio serve` or `spectio login --print-link`, a single-use 15-minute link ticket swapped
+for a session cookie);
 one `spectio serve` per user under their own Unix account, bound to 127.0.0.1, holding
 UI + API + built-in runner, SQLite on node-local disk (0600); the runner submits the
 engine head with `sbatch` and watches only the head (`squeue --me`, `sacct -j`); the
 head (Nextflow with nf-spectio, or Snakemake with the Spectio logger plugin) sends its
-tasks through the engine's own SLURM executor; the plugin appends events to the spool
+tasks through the engine's own SLURM executor (the Snakemake head as a SLURM job is to be
+validated in spike T3, fallback: the head on the login node); the plugin appends events to the spool
 `.spectio/events/*.jsonl` in the run directory (0700) on the shared file system, the
 runner reads it with a cursor; no network from compute nodes to the server; not in
 0.0.1: QC checks and gates, accounts and sign-in, Kubernetes.
@@ -58,8 +61,9 @@ def build(theme: Theme) -> Sketch:
     s.poly([(80, 360), (344, 360), (366, 388), (58, 388)], fill="neutral", width=1.8)
     s.line(176, 375, 248, 375, width=1.2, amount=0.3, passes=1, colour=t.dim)
     s.step(212, 432, 1, "open the token link")
-    s.text(212, 456, "printed once by `spectio serve`", size=13.5, colour=t.dim)
-    s.text(212, 476, "it sets a cookie, needed on every request", size=13.5, colour=t.dim)
+    s.text(212, 456, "printed by `spectio serve`", size=13.5, colour=t.dim)
+    s.text(212, 476, "or `spectio login --print-link`", size=13.5, colour=t.dim)
+    s.text(212, 496, "single use, 15 min, then a session cookie", size=13.5, colour=t.dim)
 
     # the SSH tunnel: a pipe from the laptop to the login node
     ty0, ty1 = 262, 294
@@ -104,6 +108,11 @@ def build(theme: Theme) -> Sketch:
     s.chip(1168, 206, 196, "Nextflow + `nf-spectio`", fill="work", h=40)
     s.text(1266, 268, "or", size=13.5, colour=t.dim)
     s.chip(1168, 280, 196, "Snakemake + logger plugin", fill="work", h=40)
+    # not settled: the Snakemake SLURM executor plugin advises against Snakemake inside a SLURM job
+    s.shade(1382, 268, 266, 64, fill="gate", opacity=0.9, colour=t.warn, dashed=True)
+    s.warning(1402, 292, size=10)
+    s.text(1420, 296, "to be validated in spike T3", size=13.5, anchor="start", colour=t.warn)
+    s.text(1394, 320, "fallback: head on the login node", size=13.5, anchor="start")
     # sbatch from the runner to the head
     s.arrow(916, 366, 1072, 262)
     s.text(978, 290, "`sbatch`", size=15, anchor="middle")
