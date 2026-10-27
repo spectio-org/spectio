@@ -1,0 +1,293 @@
+{
+ "agents": [
+  {
+   "tokens": {
+    "input": 638,
+    "cache_write": 735879,
+    "cache_read": 56165754,
+    "output": 155271
+   },
+   "calls": 279,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T17:44:27.693Z",
+   "end": "2026-10-27T21:28:30.450Z",
+   "id": "744d3a04-4881-50b1-9824-3a8e1763b1cf",
+   "kind": "main",
+   "type": "session",
+   "label": "main session 744d3a04"
+  },
+  {
+   "tokens": {
+    "input": 14,
+    "cache_write": 29513,
+    "cache_read": 130046,
+    "output": 3947
+   },
+   "calls": 7,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T20:11:32.743Z",
+   "end": "2026-10-27T20:12:17.855Z",
+   "id": "a0c6e5aee811a0d2b",
+   "kind": "subagent",
+   "type": "code-simplifier",
+   "label": "Simplify T7 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 46,
+    "cache_write": 82311,
+    "cache_read": 1283095,
+    "output": 25846
+   },
+   "calls": 23,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T18:21:18.898Z",
+   "end": "2026-10-27T18:26:23.479Z",
+   "id": "a12c8a055b54018f3",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Final security review dashboard",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 58,
+    "cache_write": 195085,
+    "cache_read": 1955186,
+    "output": 25297
+   },
+   "calls": 28,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T20:00:01.265Z",
+   "end": "2026-10-27T20:23:13.259Z",
+   "id": "a14480c7d88ced7af",
+   "kind": "subagent",
+   "type": "doc-writer",
+   "label": "Write T7 docs",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 40,
+    "cache_write": 59332,
+    "cache_read": 784066,
+    "output": 18032
+   },
+   "calls": 20,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T17:48:29.078Z",
+   "end": "2026-10-27T17:51:45.716Z",
+   "id": "a19c5cc50ee434cd3",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code review of dashboard",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 346,
+    "cache_write": 1695357,
+    "cache_read": 29081417,
+    "output": 105319
+   },
+   "calls": 172,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T17:48:29.070Z",
+   "end": "2026-10-27T20:07:45.569Z",
+   "id": "a35574a97c107f6a5",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "T7 build: real corpus green",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 60,
+    "cache_write": 172260,
+    "cache_read": 1912691,
+    "output": 30237
+   },
+   "calls": 30,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T20:09:00.094Z",
+   "end": "2026-10-27T20:20:42.875Z",
+   "id": "a71f6a47df0d73b0b",
+   "kind": "subagent",
+   "type": "diagram-artist",
+   "label": "Draw T7 sketch figure",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 34,
+    "cache_write": 72919,
+    "cache_read": 851385,
+    "output": 21068
+   },
+   "calls": 17,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T19:59:07.998Z",
+   "end": "2026-10-27T20:02:56.564Z",
+   "id": "a76f5f67452720362",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review of T7 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 328,
+    "cache_write": 863650,
+    "cache_read": 29097601,
+    "output": 135153
+   },
+   "calls": 161,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T17:52:33.373Z",
+   "end": "2026-10-27T18:58:49.983Z",
+   "id": "a880dfd5111a6e794",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "Fix dashboard review findings",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 28,
+    "cache_write": 54354,
+    "cache_read": 521078,
+    "output": 20829
+   },
+   "calls": 14,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T18:40:34.239Z",
+   "end": "2026-10-27T18:49:22.620Z",
+   "id": "a905e4c07bf4b975a",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code review round 4 dashboard",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 32,
+    "cache_write": 54072,
+    "cache_read": 581702,
+    "output": 19956
+   },
+   "calls": 16,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T18:40:34.253Z",
+   "end": "2026-10-27T18:49:38.471Z",
+   "id": "a9a8443ab331312db",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review round 4 dashboard",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 56,
+    "cache_write": 84084,
+    "cache_read": 1653142,
+    "output": 20440
+   },
+   "calls": 28,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T18:06:02.209Z",
+   "end": "2026-10-27T18:10:11.466Z",
+   "id": "a9da0004d6106c344",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code review round 2 dashboard",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 36,
+    "cache_write": 71326,
+    "cache_read": 895009,
+    "output": 20341
+   },
+   "calls": 18,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T18:06:02.221Z",
+   "end": "2026-10-27T18:09:58.450Z",
+   "id": "aaaecd06d33e1dd28",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review round 2 dashboard",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 30,
+    "cache_write": 62720,
+    "cache_read": 566366,
+    "output": 16448
+   },
+   "calls": 15,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T17:48:29.097Z",
+   "end": "2026-10-27T17:51:39.389Z",
+   "id": "ad4ea90bbf3a8238a",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review of dashboard",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 38,
+    "cache_write": 143448,
+    "cache_read": 1046394,
+    "output": 21607
+   },
+   "calls": 19,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T19:59:07.984Z",
+   "end": "2026-10-27T20:11:07.906Z",
+   "id": "ae08d25af63551290",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code review of T7 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 32,
+    "cache_write": 70883,
+    "cache_read": 694086,
+    "output": 14205
+   },
+   "calls": 16,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T18:21:18.884Z",
+   "end": "2026-10-27T18:24:18.508Z",
+   "id": "aeba87ee6caf09b6c",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Final code review dashboard",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 34,
+    "cache_write": 94826,
+    "cache_read": 949533,
+    "output": 19685
+   },
+   "calls": 17,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T20:23:26.006Z",
+   "end": "2026-10-27T20:27:31.866Z",
+   "id": "affc4b4bf0ce46164",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review of T7",
+   "workflow": null
+  }
+ ],
+ "workflows": []
+}

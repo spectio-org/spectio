@@ -1,0 +1,18 @@
+{
+ "stepTitles": {
+  "F1": "Specs, agents and skills",
+  "F2": "Synthetic test pipelines",
+  "F3": "Real pipeline corpus and CI",
+  "F4": "Authentication spec",
+  "F5": "Documentation system and tools",
+  "F6": "Telemetry spec",
+  "F7": "Autopilot budget and status line",
+  "TRIAGE1": "Triage W1 findings",
+  "APPLY1": "Apply W1 findings to the specs",
+  "TRIAGE2": "Triage R3 and R6",
+  "APPLY2": "Apply R3 and R6",
+  "TRIAGE3": "Triage spike findings",
+  "APPLY3": "Apply spike findings",
+  "GO": "Go / no-go for implementation"
+ }
+}
