@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 638,
-    "cache_write": 735879,
-    "cache_read": 56165754,
-    "output": 155271
+    "input": 908,
+    "cache_write": 1034615,
+    "cache_read": 79417607,
+    "output": 212818
    },
-   "calls": 279,
+   "calls": 394,
    "model": "claude-opus-5-5",
    "start": "2026-10-27T17:44:27.693Z",
-   "end": "2026-10-27T21:28:30.450Z",
+   "end": "2026-10-27T23:02:09.641Z",
    "id": "744d3a04-4881-50b1-9824-3a8e1763b1cf",
    "kind": "main",
    "type": "session",
@@ -69,6 +69,40 @@
   },
   {
    "tokens": {
+    "input": 36,
+    "cache_write": 154753,
+    "cache_read": 788119,
+    "output": 18684
+   },
+   "calls": 17,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T22:22:25.502Z",
+   "end": "2026-10-27T22:33:36.081Z",
+   "id": "a14a2254298662f3f",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review of T1",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 86,
+    "cache_write": 126864,
+    "cache_read": 3816465,
+    "output": 32754
+   },
+   "calls": 42,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T22:39:50.416Z",
+   "end": "2026-10-27T22:50:21.320Z",
+   "id": "a16a13e8de6609fe9",
+   "kind": "subagent",
+   "type": "doc-writer",
+   "label": "Write T1 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 40,
     "cache_write": 59332,
     "cache_read": 784066,
@@ -99,6 +133,40 @@
    "kind": "subagent",
    "type": "general-purpose",
    "label": "T7 build: real corpus green",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 28,
+    "cache_write": 81171,
+    "cache_read": 723380,
+    "output": 17106
+   },
+   "calls": 14,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T22:39:50.402Z",
+   "end": "2026-10-27T22:43:04.004Z",
+   "id": "a425c736f8939ebe3",
+   "kind": "subagent",
+   "type": "diagram-artist",
+   "label": "Draw T1 figure",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 206,
+    "cache_write": 465756,
+    "cache_read": 12164728,
+    "output": 94037
+   },
+   "calls": 102,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T21:41:24.498Z",
+   "end": "2026-10-27T22:33:04.375Z",
+   "id": "a536177551f648497",
+   "kind": "subagent",
+   "type": "test-architect",
+   "label": "Build T1 fixture workflows",
    "workflow": null
   },
   {
@@ -154,6 +222,23 @@
   },
   {
    "tokens": {
+    "input": 44,
+    "cache_write": 151333,
+    "cache_read": 933446,
+    "output": 22254
+   },
+   "calls": 21,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T22:22:25.479Z",
+   "end": "2026-10-27T22:33:38.910Z",
+   "id": "a8ce24dd2ecdec366",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code review of T1",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 28,
     "cache_write": 54354,
     "cache_read": 521078,
@@ -205,6 +290,23 @@
   },
   {
    "tokens": {
+    "input": 10,
+    "cache_write": 30272,
+    "cache_read": 79882,
+    "output": 3102
+   },
+   "calls": 5,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T22:33:52.829Z",
+   "end": "2026-10-27T22:39:03.508Z",
+   "id": "a9eda9fe29da15380",
+   "kind": "subagent",
+   "type": "code-simplifier",
+   "label": "Simplify T1 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 36,
     "cache_write": 71326,
     "cache_read": 895009,
@@ -218,6 +320,40 @@
    "kind": "subagent",
    "type": "security-reviewer",
    "label": "Security review round 2 dashboard",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 52,
+    "cache_write": 45711,
+    "cache_read": 666159,
+    "output": 10837
+   },
+   "calls": 26,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T21:40:14.470Z",
+   "end": "2026-10-27T21:42:50.223Z",
+   "id": "aad26bfa507676b5d",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Full-history secret scan",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 50,
+    "cache_write": 103242,
+    "cache_read": 1332371,
+    "output": 18636
+   },
+   "calls": 24,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T22:45:07.080Z",
+   "end": "2026-10-27T22:51:11.084Z",
+   "id": "ad07caaf347595a29",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review of T1",
    "workflow": null
   },
   {

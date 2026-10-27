@@ -202,3 +202,4 @@ One entry per tick: time, steps started and finished, verification results, tria
   - a fresh `/usage` reading before D6;
   - the items still open from tick 7.
 - **Follow-ups:** SEC-T1-06 (shared `/tmp` workdir) before T3; the Snakemake fault rate (repeat more than once, or move off the checkpoint).
+- **End of tick:** usage snapshot refreshed (`.autopilot/usage/744d3a04-….json`: 24 subagents, 1246 API calls); dashboard republished as version 17 at the same link, private, `answers` write rule owner-only, `check_xss.js` ok with and without the CSP.
