@@ -218,15 +218,24 @@ A separate, simpler layout below 768 px (depictio's phone model), not a squeezed
 | Screen | What changes from desktop |
 |---|---|
 | Home | Needs-attention cards in a horizontal row, active runs, quick launch, runners |
-| Runs | Search, filter pills, one card per run (state, name, workflow, gauge, context), grouped Needs attention / Active and recent |
-| Run detail | Header card with gauge and actions (Pause after stage, ⋯ for Relaunch / Cancel / Copy); pill tabs Summary · Stages · Tasks · Logs · Outputs |
+| Runs | Search, filter pills, one card per run (state, name, workflow, gauge, context), grouped Needs attention / Active and recent; runs started from a terminal carry a "CLI · observed" or "CLI · adopted" chip (§6) |
+| Run detail | Header card with gauge and actions (Pause after stage, ⋯ for Relaunch / Cancel / Copy); pill tabs Summary · Stages · Tasks · Logs · Outputs; for a terminal run the facts say "Launched · alice@hpc-login-1 · terminal (nf-spectio)", and an observed run shows the adopt banner of §6 with ⋯ limited to that level's actions |
 | Review queue | Mine / My groups / All; one card per gate with checks bar, suggestion and inline Approve when everything passes; pinned "Approve 3" bar |
-| Review detail | Pill tabs Summary · Items (plate map + keep / redo / exclude) · Changes (samplesheet, parameters, files) · History; pinned "Apply and continue" bar |
+| Review detail | Pill tabs Summary · Items (plate map + keep / redo / exclude) · Changes (samplesheet, parameters, files) · History; pinned "Apply and continue" bar; the plate map is an overview: tapping a row opens a zoomed strip of 12 wells with 44 px hit areas, or the reviewer decides from the flagged list; threshold sliders have −/+ steppers |
 | Launch | Step wizard (Workflow · Inputs · Parameters · Where · Review), one collapsible section per schema group, Back / Next bar |
 | Workflows, Environments, Runner offline | Reached from More; lists of cards with the same content as desktop, fewer columns |
+| Profile | From the avatar: identity, CLI & API tokens (list, create, revoke), notification settings |
+| Search | A sheet over `GET /search` (runs, workflows, tasks, samples) |
+| Workflow detail | The §4.7 tabs as pill tabs |
+| Environment detail | The §4.8 tabs as pill tabs, read-only |
+| Administration sections | One generic read-only screen per section (Branding, Plugins, Backups… open read-only on a phone) |
+
+**Maintenance on a phone.** The phone Administration screen never turns maintenance on with one tap: the row opens a bottom sheet (mode, message, end time, preview, a pinned "Turn on maintenance" with typed confirmation), or shows the state read-only. When maintenance is on it shows the banner text and "End now". The maintenance and announcement banner shows below the top bar on every phone screen ([`admin-and-operations.md`](admin-and-operations.md) §4.4).
+
+**Gate decisions on a phone.** "Approve n" and inline Approve open a bottom sheet listing the gates and their checks; after confirming, a 5-second undo snackbar. A 412 from `If-Match` ([`api-and-data-model.md`](api-and-data-model.md) §4) opens "Gate changed since you opened it", showing the other decision, with "Reload" or "Review again". A bulk decision ends on a result sheet: "2 approved · 1 already decided by Bob".
 
 ## 5. Engine specifics surfaced in the UI
-- Nextflow: stages through a `stage` parameter; tasks filtered by `when:` shown as "not scheduled" (companion plugin); job arrays grouped under their parent job; published files and workflow outputs.
+- Nextflow: stages from `match` globs, stopped by a generated `ext.when` config (§5.1); tasks filtered by `when:` shown as "not scheduled" (`nf-spectio`); job arrays grouped under their parent job; published files and workflow outputs.
 - Snakemake: checkpoints shown as "DAG grows — at least N tasks"; temporary files with lifecycle (created → removed); group jobs; benchmark-based resource usage.
 
 ### 5.1 Stages, gates and `spectio.yml`
