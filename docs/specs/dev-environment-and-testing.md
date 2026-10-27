@@ -134,13 +134,15 @@ Companion docs:
   #!/bin/bash
   # Spectio: pinned toolchain and pre-pulled images (docs/specs/dev-environment-and-testing.md §1).
   # Exits 0 even on failure: a failing setup script stops the session from starting.
+  # It starts in /home/user, the parent of the clone, so it moves into the clone first.
+  cd /home/user/spectio 2>/dev/null || true
   if [ -f dev/bootstrap.sh ]; then bash dev/bootstrap.sh --ci || true; fi
   ```
 
   - **Exit zero:** a setup script that exits non-zero stops the session from starting ([script requirements](https://code.claude.com/docs/en/cloud-environments.md#script-requirements)). If bootstrap fails, run `bash dev/bootstrap.sh --ci` in the session; its log names the failed job.
   - **Cached:** it took 25 s cold in a cloud session (§1 "Bootstrap"), far under the five minutes beyond which the environment is not cached. The cache keeps files and pulled images, and is rebuilt when the script or the network list changes, or after about seven days ([environment caching](https://code.claude.com/docs/en/cloud-environments.md#environment-caching)).
   - **Which pins:** the cache holds the pins of the branch the setup script ran on. A branch with other pins runs `bash dev/bootstrap.sh` itself (about 1 s when nothing changed).
-  - Whether the repository is already cloned in the working directory when the setup script runs is **[to be validated]**; the `if` keeps the script harmless when it is not.
+  - **Where it runs:** the repository is already cloned, but the script starts in `/home/user`, the clone's parent, not in `/home/user/spectio`. Measured in the session of 2026-10-27 17:44 UTC from `/tmp/env-manager.log`: "Repository cloned successfully", then "Setting working directory" `/home/user`, then the 265-byte script of the first version of this section (without the `cd`) ran in 7 ms, so its `if` skipped bootstrap and the doctor failed on Python. The `cd` fixes that; the `if` keeps the script harmless if the clone is elsewhere.
 - **Docker daemon:** not running at session start, and not kept by the cache. `dev/bootstrap.sh --ci` and `dev/doctor.sh` start it when it is missing, so no SessionStart hook is needed for it.
 - **SessionStart hook:** none for now. Scenarios start their own clusters.
 

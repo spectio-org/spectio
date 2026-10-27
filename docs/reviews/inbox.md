@@ -647,6 +647,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b). Bootstrap and the doctor need none of the wildcard hosts; the container pulls that would are not run in cloud sessions yet.
 - **Assumed:** none.
 - **Blocked:** a cached setup in cloud sessions. Until then each session runs `bash dev/bootstrap.sh --ci` itself (about 25 s cold).
+- **Update (2026-10-27, tick 8):** the environment now has Full network, the two variables and the setup script, and they reach the session (`BASH_DEFAULT_TIMEOUT_MS=600000` is set). But the script ran in `/home/user`, the clone's parent, so `[ -f dev/bootstrap.sh ]` was false and bootstrap was skipped; `dev/doctor.sh` failed on Python until `bash dev/bootstrap.sh --ci` was run by hand (19 s, then doctor: all layers passed, 2 skipped). **To do:** replace the setup script with the new one in [dev-env §2](../specs/dev-environment-and-testing.md#2-where-agents-work), which starts with `cd /home/user/spectio`. *Open.*
 
 ### #44 · Assumed: Linux x86_64 only, and Node 24 ahead of the system Node
 
