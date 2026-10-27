@@ -93,6 +93,7 @@ nav:
   - Developer:
       - developer/index.md
       - Documentation map: map.md
+      - Glossary: glossary.md
       - Progress:
           - progress/index.md
       - Specifications:

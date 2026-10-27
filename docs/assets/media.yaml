@@ -69,3 +69,11 @@ media:
       - docs/assets/logos/logo-nf-core.png
       - docs/assets/logos/logo-snakemake.png
       - docs/assets/logos/logo-depictio.png
+  - id: r3-journeys-map
+    kind: diagram
+    generator: python3 tools/diagrams/r3_journeys_map.py
+    outputs:
+      - docs/assets/diagrams/r3_journeys_map_light.svg
+      - docs/assets/diagrams/r3_journeys_map_dark.svg
+      - docs/assets/diagrams/r3_journeys_map_light.png
+      - docs/assets/diagrams/r3_journeys_map_dark.png
