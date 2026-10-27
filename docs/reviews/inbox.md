@@ -124,6 +124,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Assumed:** none.
 - **Blocked:** APPLY1 for api §14 and the auth §3 ingest-token row; nf-spectio and the Snakemake logger credential handling (spike T2 envelope); the walking skeleton. Related assumptions that already proceed: [SR-006](../reviews/R1-consistency.md#sr-006-major-the-cli-command-tree-lacks-commands-that-other-specs-cite) (no wrapper, setup by `spectio login`, see #28) and [CH-002](../reviews/R4-constraints.md#ch-002-major-no-compatibility-window-for-the-ingest-and-runner-protocols-across-bridge-runner-and-server-versions) (separate ingest version, see #28).
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
+- **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: observed runs are out of it, and the plugins only write to the spool.
 
 ### #12 · Runner ↔ server transport and runner credential lifetime
 
@@ -142,6 +143,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Assumed:** CH-032 and CH-007 proceed on their option A; the credential lifetime and who mints registration tokens are not assumed.
 - **Blocked:** APPLY1 for architecture §7.7 and the auth §3 runner row; every launch, cancel, file view and stop file; the walking skeleton. UX-124 blocks the EnvConnect values (later apply).
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
+- **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: the runner is built into the server process; a shared server with remote runners stays later.
 
 ### #13 · Token registry, authorisation matrix and which column authorises reads
 
@@ -179,6 +181,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Assumed:** SEC-103 A proceeds; the identity model is not assumed.
 - **Blocked:** APPLY1 for api §6, schedulers §6, the environments/runners schema and the gate assignment fields (api §5/§7, checking); spike sec-slurm-identity; runner protocol design and P1 planning.
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
+- **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: every launch runs as the Unix account that started `spectio serve`.
 
 ### #15 · `single` mode on shared login nodes
 
@@ -487,6 +490,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (c), with "wait for a person" as the 0.0.1 default, because journey 1 needs a gate to approve.
 - **Assumed:** (c).
 - **Blocked:** nothing.
+- **Note (2026-10-27, cut revised):** gates and QC checks are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so the "wait for a person" 0.0.1 default is moot; the question stays open for the version that brings gates.
 
 ### #34 · 0.0.1 scope: how nf-core/rnaseq gets its stages and gate, workflow registration, MultiQC in the install
 
@@ -565,6 +569,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b).
 - **Assumed:** (b).
 - **Blocked:** nothing.
+- **Note (2026-10-27, cut revised):** gates are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so `gates:summary`, `/gates/{id}/items`, the manifest read and the evidence artefacts are no longer 0.0.1 reads; the run reads (`runs:summary`, `/version`, `/runs/{id}/samplesheets`) still are.
 
 ### #40 · Assumed: fixes that are right but not local
 

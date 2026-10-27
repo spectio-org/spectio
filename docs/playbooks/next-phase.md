@@ -309,7 +309,10 @@ pipelines (Nextflow -profile slurm, Snakemake --workflow-profile profiles/slurm)
 slurm-site with each failure mode; record squeue --json, sacct --json,
 sinfo --json and slurmrestd responses as golden fixtures; check each pending reason and
 failure class in schedulers-and-monitoring.md §3.5 actually appears, and power-cycle a
-node to get NODE_FAIL. Report what the spec gets wrong.
+node to get NODE_FAIL. Check whether a Snakemake head submitted with sbatch works with
+snakemake-executor-plugin-slurm (the plugin warns against running inside a SLURM job;
+dev-environment-and-testing.md §15.1, §15.3) and record the outcome for the 0.0.1
+fallback. Report what the spec gets wrong.
 ```
 
 Fixtures: the synthetic pipelines (see T1) *(assumed — pending Thomas, inbox #28)*.
@@ -361,7 +364,7 @@ with snakemake-github-action. Keep the synthetic suite green on all three engine
 
 ## Phase P — decomposition and planning
 
-### P1 · Walking skeleton plan (0.0.1, local MVP)
+### P1 · Walking skeleton plan (0.0.1, on a cluster)
 
 ```text
 Use the brainstorming skill, then the writing-plans skill. Goal: the 0.0.1 cut of
@@ -371,8 +374,9 @@ accounts) under their own account on a SLURM login node and opens it through an 
 tunnel with a one-time token link; every request needs the token, and §15.3's security
 requirements are tasks with their own tests. From the UI it launches the synthetic
 Nextflow pipeline through nf-spectio and the synthetic Snakemake pipeline through the
-Spectio logger plugin: the built-in runner submits each head with sbatch and the engine
-sends its tasks through its own SLURM executor. The plugins write events to the spool in
+Spectio logger plugin: the built-in runner submits each Nextflow head with sbatch, and
+the Snakemake head too unless spike T3 rules it out (then it runs on the login node, per
+§15.1); each engine sends its tasks through its own SLURM executor. The plugins write events to the spool in
 the run directory and the built-in runner reads it; nothing posts over the network. It
 shows the runs in the Runs table and Run detail with their state, tasks, stages and head
 job state, relaunches with changed parameters (a child run), and shows the parameter
