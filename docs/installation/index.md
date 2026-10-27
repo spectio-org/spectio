@@ -14,7 +14,7 @@ There will be three ways to run Spectio, from the smallest to the largest. All o
 
     ---
 
-    `pip install spectio` on a laptop or a login node. It has the CLI and the runner; add the server with `spectio[server]`. Data stays in SQLite.
+    `pip install spectio` on a laptop or a login node. It has the CLI and the runner; add the server with `spectio[server]`. Data stays in SQLite. On an HPC login node, the server needs a node-local, non-purged data directory ([details](../specs/architecture-plugins-and-packaging.md#73-python-bundle)).
 
 -   :material-docker:{ .lg } **Docker Compose**
 
@@ -31,5 +31,7 @@ There will be three ways to run Spectio, from the smallest to the largest. All o
 </div>
 
 **The runner on your cluster** is a small program on the login node or in the cluster. It only makes outgoing HTTPS calls to the server, so no port needs to be opened on the HPC side.
+
+**Checking what you install.** Every published image and chart will carry a signature, an SBOM and a provenance attestation that `gh attestation verify` checks; see [versioning and releases](../specs/dev-environment-and-testing.md#12-versioning-and-releases). *(assumed — pending Thomas, inbox #26)*
 
 Design details: [packaging](../specs/architecture-plugins-and-packaging.md#7-packaging-and-the-three-deployments) and [schedulers](../specs/schedulers-and-monitoring.md#6-running-the-runner-on-hpc).
