@@ -623,3 +623,38 @@ Step page: [APPLY2](../progress/W2/APPLY2.md).
   - #20, `GET /environments/{id}/files`: UX-276;
   - #25, architecture §7.6 claiming and lease renewal: CH-049.
 - **Gate.** `mkdocs build --strict` passes; `python3 tools/docs/check.py` reports 0 failures.
+
+## 2026-10-27 — 0.0.1 revised: on the cluster, no gates, a token link
+
+- **Context.** Later the same day, Thomas revised the cut of [2026-10-27 — First version is 0.0.1](#2026-10-27-first-version-is-001-a-basic-local-mvp): 0.0.1 must be "the simplest possible to start, easily shareable with users to test, without the complexity of the full product". This entry replaces that cut where they differ; the rest of it (one user, the first tag with `Release-As: 0.0.1`, what stays open after 0.0.x) stands.
+- **In 0.0.1:**
+  - launch a Nextflow or Snakemake workflow from the Spectio UI, monitor it from the UI, relaunch it from the UI with changed parameters, and keep the parameter history across runs;
+  - both engines, each run always launched with the Spectio plugin of its engine: Snakemake through the logger plugin, Nextflow through `nf-spectio` ([0001](0001-nextflow-through-nf-spectio.md)).
+- **Changed from the earlier cut:**
+  - **runs go to SLURM, not to the local executor.** The engine head is submitted with `sbatch`, and its tasks go to SLURM through the engine's own SLURM executor. The SLURM launcher is in 0.0.1 (built in, CLI transport); scheduler monitoring is limited to what the engines report plus the head job's state;
+  - **no QC checks and no gates in 0.0.1.** This reverses the "QC check and gate on one stage" row; checks and gates move to "later (open)". The 2026-10-26 decision "checks and QC first" stays the product direction, but not for 0.0.1.
+- **Unchanged:** no authentication, no accounts, no roles.
+- **Architecture (Thomas chose "everything on the cluster"):**
+  - each user runs `spectio serve` under their own Unix account on the cluster login node: one process with UI + API, the built-in runner and SQLite;
+  - the user opens it through an SSH tunnel with a token link, like Jupyter ([Jupyter Server security](https://jupyter-server.readthedocs.io/en/latest/operators/security.html)). No accounts, but every request needs a secret: the link's single-use ticket is exchanged for a session secret in a cookie (definition: [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)); the server binds to 127.0.0.1 only. This answers the 0.0.1 part of inbox #15 (SEC-102): the login node's loopback is shared by all its users, so tokenless loopback is not acceptable;
+  - the built-in runner submits the heads with `sbatch`;
+  - the plugins write their events to the existing spool in the launch directory ([`architecture-plugins-and-packaging.md`](../specs/architecture-plugins-and-packaging.md) §13.1), on the shared file system, and the built-in runner reads it. No network from compute nodes to the server;
+  - SQLite stays on node-local disk of the login node, because the server refuses a database on a network file system (architecture §7.2). Whether login nodes have persistent node-local disk, and whether sites allow a long-running user process there, is **[to be validated per site]**;
+  - Kubernetes: nothing in 0.0.1. A shared server (on Kubernetes or a service node) with remote runners needs runner credentials and user identity (inbox #12–#14) and stays later (open).
+- **Security requirements that make "no auth" safe:** a token of at least 256 bits from a CSPRNG, compared in constant time, on every HTTP request including SSE; an `HttpOnly`, `SameSite=Strict` cookie; a `Host` allow-list of loopback names against DNS rebinding; data directory 0700, server key and database files 0600, run directories 0700; spool events treated as untrusted input (schema-validated, size-capped, never executed).
+- **Security in code review (Thomas: "il faut être béton"):**
+  - every build step's code review now runs `security-reviewer` on the diff, not only for auth, tokens, runners or plugins; a step is done only when `code-reviewer` and `security-reviewer` both approve, and security blockers and majors must be fixed;
+  - CI gains security checks on every PR: secret scanning, a dependency vulnerability audit for Python and JavaScript, static analysis (SAST) and a GitHub Actions workflow linter. Step D4 builds them.
+- **Specs and pages changed:**
+  - [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md): §15.1 (intro and rows), new §15.3 (architecture and security requirements on a cluster), §11 (security checks on every PR), §8 (Claude PR review row), §14 (first stage row and note);
+  - [`mvp-0.0.1.md`](../specs/mvp-0.0.1.md) rewritten to match;
+  - the docs site: the landing page `docs/index.md` (hero, status pill, Works-with icons), `docs/stylesheets/extra.css` (header and tabs on the page surface, emblem motion after depictio's logo) and `overrides/partials/logo.html` (inline header mark); the §15.3 sketch `tools/diagrams/mvp001_cluster.py`, registered in `docs/assets/media.yaml`;
+  - [`authentication-and-access.md`](../specs/authentication-and-access.md) §1 and [`api-and-data-model.md`](../specs/api-and-data-model.md) §6 (single-user mode): dated notes that link to dev-env §15.3;
+  - [`synthesis.md`](../specs/synthesis.md) §9, the roadmap, the installation, changelog and glossary pages, and the runners and gates feature pages: they now link to §15 instead of restating the old cut;
+  - the P1 prompt and its heading, and the D4, P3 and T3 prompts in [`next-phase.md`](../playbooks/next-phase.md), and [`autopilot.md`](../playbooks/autopilot.md) §9;
+  - [`architecture-plugins-and-packaging.md`](../specs/architecture-plugins-and-packaging.md) §7.2 (runs root on the shared file system) and §13.1 (the server process reads the spool in 0.0.1): dated notes;
+  - [`documentation-system.md`](../specs/documentation-system.md) §1 (Theme) and §2 (landing page), to match the new landing page;
+  - the §15.3 sketch, `docs/assets/diagrams/mvp001_cluster_*`;
+  - `.claude/skills/review-code/SKILL.md`, `.claude/skills/autopilot/SKILL.md`, `.claude/agents/code-reviewer.md` and `.claude/agents/security-reviewer.md`;
+  - inbox #11, #12, #14, #15, #16, #32, #33, #34, #35, #36, #37 and #39 (dated notes).
+- **Open points** (written as **[to be validated]** in §15.3): site prerequisites for a long-running process and node-local disk on login nodes; whether a Snakemake head may run inside a SLURM job, which the Snakemake SLURM executor plugin advises against ([`schedulers-and-monitoring.md`](../specs/schedulers-and-monitoring.md) §3.1, spike T3; fallback: the head on the login node, tasks still through the SLURM executor); browser behaviour of `SameSite=Strict` cookies and SSE.

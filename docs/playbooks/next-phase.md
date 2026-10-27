@@ -216,8 +216,10 @@ Paste the doctor output in the PR. Then write the cloud environment instructions
 Use infra-engineer. Add GitHub Actions: tier 0 checks for docs (already: docs.yml),
 plus a Claude PR review workflow following https://code.claude.com/docs/en/github-actions.md
 that runs the spec-reviewer agent on PRs touching docs/** and the security-reviewer
-agent on PRs touching auth, tokens, plugins or runner paths, posting findings as review
-comments. Verify the action's current inputs from its README before writing YAML.
+agent on every PR that changes code, posting findings as review comments. Add the
+security checks on every PR of dev-environment-and-testing.md §11 (secret scanning,
+dependency audit for Python and JS, SAST, workflow linter), verifying each tool from its
+own docs first. Verify the action's current inputs from its README before writing YAML.
 Document required secrets in the PR description; do not add any secret yourself.
 ```
 
@@ -307,7 +309,10 @@ pipelines (Nextflow -profile slurm, Snakemake --workflow-profile profiles/slurm)
 slurm-site with each failure mode; record squeue --json, sacct --json,
 sinfo --json and slurmrestd responses as golden fixtures; check each pending reason and
 failure class in schedulers-and-monitoring.md §3.5 actually appears, and power-cycle a
-node to get NODE_FAIL. Report what the spec gets wrong.
+node to get NODE_FAIL. Check whether a Snakemake head submitted with sbatch works with
+snakemake-executor-plugin-slurm (the plugin warns against running inside a SLURM job;
+dev-environment-and-testing.md §15.1, §15.3) and record the outcome for the 0.0.1
+fallback. Report what the spec gets wrong.
 ```
 
 Fixtures: the synthetic pipelines (see T1) *(assumed — pending Thomas, inbox #28)*.
@@ -359,20 +364,28 @@ with snakemake-github-action. Keep the synthetic suite green on all three engine
 
 ## Phase P — decomposition and planning
 
-### P1 · Walking skeleton plan (0.0.1, local MVP)
+### P1 · Walking skeleton plan (0.0.1, on a cluster)
 
 ```text
 Use the brainstorming skill, then the writing-plans skill. Goal: the 0.0.1 cut of
-docs/specs/dev-environment-and-testing.md §15 (summary: docs/specs/mvp-0.0.1.md).
-`spectio serve` (SQLite, single-user, no sign-in) launches the synthetic Nextflow
-pipeline through the nf-spectio plugin and the synthetic Snakemake pipeline through the
-Spectio logger plugin, both on the local executor of the same machine. It shows them in
-the Runs table and Run detail with their state, tasks and stages, runs the checks of one
-stage, stops at a gate, and resumes or relaunches with changed parameters after an
-approve from the UI. The parameter history
-(what each run used, what changed) is shown. Out of scope: slurm-mini and any remote
-runner, authentication, the depictio hand-off, and everything else §15 defers. The plan
-must list files, tests first (TDD), and the verification command for every task. Write
+docs/specs/dev-environment-and-testing.md §15.1, deployed as §15.3 says (summary:
+docs/specs/mvp-0.0.1.md). One user runs `spectio serve` (SQLite on node-local disk, no
+accounts) under their own account on a SLURM login node and opens it through an SSH
+tunnel with a one-time token link; every request needs the token, and §15.3's security
+requirements are tasks with their own tests. From the UI it launches the synthetic
+Nextflow pipeline through nf-spectio and the synthetic Snakemake pipeline through the
+Spectio logger plugin: the built-in runner submits each Nextflow head with sbatch, and
+the Snakemake head too unless spike T3 rules it out (then it runs on the login node, per
+§15.1); each engine sends its tasks through its own SLURM executor. The plugins write events to the spool in
+the run directory and the built-in runner reads it; nothing posts over the network. It
+shows the runs in the Runs table and Run detail with their state, tasks, stages and head
+job state, relaunches with changed parameters (a child run), and shows the parameter
+history (what each run used, what changed). Tests: the local executor for unit and API
+tests; the mini SLURM cluster (sind, slurm-mini, dev-environment-and-testing.md §4.1,
+built by step T3) for the end-to-end launch, spool and restart tests. Out of scope: QC
+checks and gates, Kubernetes, a shared server or remote runner, sign-in, the depictio
+hand-off, and everything else §15 defers. The plan must list files, tests first (TDD),
+and the verification command for every task. Write
 docs/plans/P1-walking-skeleton.md.
 ```
 
@@ -395,7 +408,8 @@ review and code-quality review (requesting-code-review), test-driven-development
 throughout, verification-before-completion before marking a task done. Pass sections 2
 and 3 of karpathy-guidelines (simplicity first, surgical changes) to every task reviewer
 as global constraints. After the last task, run the review-code skill on the whole
-branch (code-reviewer, then code-simplifier) before finishing-a-development-branch.
+branch (code-reviewer and security-reviewer, then code-simplifier) before
+finishing-a-development-branch.
 Stop and ask me at any spec ambiguity instead of guessing.
 ```
 

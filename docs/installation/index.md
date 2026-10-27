@@ -4,7 +4,7 @@ icon: material/download
 # Installation
 
 !!! info "Nothing to install yet"
-    Spectio is in its design phase. The first release, `0.0.1`, will be a basic local version: one user, on one machine, installed as the Python package. See [what ships in which version](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version) and the [roadmap](../roadmap/index.md).
+    Spectio is in its design phase. The first release, `0.0.1`, will be a basic version, installed as the Python package. See [what ships in which version](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version) and the [roadmap](../roadmap/index.md).
 
 There will be three ways to run Spectio, from the smallest to the largest. All of them run the same code.
 

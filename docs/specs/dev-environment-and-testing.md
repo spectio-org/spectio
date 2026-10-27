@@ -227,7 +227,7 @@ The front-end has a build flag that replaces the API with fixtures generated fro
 | Worktrees | one agent and scenario per worktree (`isolation: worktree` for implementer agents later) | sub-agents docs |
 | Cloud sessions in parallel | independent spikes and review rounds, each on its own branch | [cloud sessions](https://code.claude.com/docs/en/claude-code-on-the-web.md) |
 | Auto-fix pull requests | Claude watches CI and review comments on a PR and pushes fixes (needs the Claude GitHub App) | same page, "Auto-fix" |
-| GitHub Actions with Claude | PR review by `spec-reviewer` on `docs/**`, `security-reviewer` on auth, tokens, plugins and runner paths | [GitHub Actions](https://code.claude.com/docs/en/github-actions.md) |
+| GitHub Actions with Claude | PR review by `spec-reviewer` on `docs/**`, `security-reviewer` on every PR that changes code (revised 2026-10-27; it was auth, tokens, plugins and runner paths only) | [GitHub Actions](https://code.claude.com/docs/en/github-actions.md) |
 | Routines | weekly `depictio-liaison` drift check, which also opens the `DEPICTIO_VERSION` bump PR when depictio has a new stable release *(assumed — pending Thomas, inbox #22)*; weekly nf-core release check against templates and `checking-scenarios.md`; nightly `verify-claims` on specs whose upstream released | [routines](https://code.claude.com/docs/en/routines.md) |
 | Agent teams (experimental) | large review rounds where reviewers discuss findings | [agent teams](https://code.claude.com/docs/en/agent-teams.md) |
 | sind's MCP server | agents create and break SLURM clusters through tools instead of shell | sind README |
@@ -368,7 +368,7 @@ Imaging review and the OME-Zarr viewer are designed on real images, not drawings
 | `release-please.yml` | push to main | release PR with version bump and changelog (§12), opened with the GitHub App token (§12); runs only when `RELEASE_PLEASE_ENABLED` is `true` *(assumed — pending Thomas, inbox #26)* |
 | `previews.yml` | PR, push to main, `v*` tags, wave approvals, manual | build the docs site, deploy it to Cloudflare Pages under its own branch alias, regenerate `/versions`, comment the preview and Codespaces links on the PR (§7) |
 | `quick-start.yml` | PR (amd64), release (every published image architecture) | boots the docs' `compose.yaml` alone, with no `.env`, once per image architecture on native runners (`ubuntu-24.04`, `ubuntu-24.04-arm`, no QEMU), and asserts the version (`/api/v1/version`), `/api/v1/openapi.json` and first-boot seeding. depictio runs a smoke test per architecture and boots its Compose quick start with no `.env` (`build-images.yaml:296-312`, `:335-467` at `v1.19.2`) |
-| `security.yml` | PR, push to main, weekly | Trivy or Grype on every built image, failing on fixable critical vulnerabilities; `zizmor` on `.github/workflows/`; CodeQL (Python, JavaScript) and dependency review once the repository's plan provides them **[to be validated: availability for a private repository on this plan]** *(assumed — pending Thomas, inbox #26)* |
+| `security.yml` | called by `ci.yml` on every PR, with no path filter; push to main; weekly | the four checks of "Security checks on every PR" below (secret scanning, dependency audit, SAST, workflow linter); Trivy or Grype on every built image, failing on fixable critical vulnerabilities *(assumed — pending Thomas, inbox #26)* |
 | `chart.yml` | PR touching `deploy/helm/`, release | `helm lint --strict`; `values.schema.json` generated from the Pydantic settings and checked for drift; `kubeconform` against the supported Kubernetes minors; `ct install` and `ct upgrade` on kind in a namespace labelled `pod-security.kubernetes.io/enforce=restricted`; `helm test` hooks that call `/health/ready`. It verifies the chart claims of [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.5 (PodSecurity `restricted`, NetworkPolicies, the migrate hook, probes). depictio's chart has no values schema, no `templates/tests/`, no `ct` and no upgrade test (`test-and-package-helm-chart.yaml`, `v1.19.2`) |
 | `upgrade.yml` | weekly, release PRs | in-place upgrade from the previous release (N-1 → N) and from three releases back (N-3 → N) on the bundle, Compose and Helm (`ct upgrade`): seed with synthetic runs, upgrade (pre-upgrade backup, then migrations), then assert that the schema is at head, the pre-upgrade backup exists, runs and gates are intact, and tokens behave as specified; results go on the 1.0-gate checklist (§14 item 5). depictio tests restore across versions and package upgrades, never an in-place stack upgrade (`backup-compat-cross-version.yaml:45-60`, `publish-pypi.yaml:92-138`) |
 | `base-install.yml` | PR (subset), nightly (full grid) | the base install (`uv tool install spectio`, no server extras) and the runner tests on every supported Python (3.11–3.14, [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.3) × {Linux x86_64, Linux aarch64}: the full grid nightly; on PRs the lowest and highest supported Python on x86_64. It asserts that server dependencies are absent, as depictio's `cli-base-install.yaml:38-56` does. macOS arm64 waits for Thomas (inbox #26: Actions minutes) *(assumed — pending Thomas, inbox #26)* |
@@ -377,6 +377,14 @@ Imaging review and the OME-Zarr viewer are designed on real images, not drawings
 **Required checks.** Branch protection requires only `ci-ok`, `docs-gate` and `pr-body`, never a path-filtered workflow or a matrix leg. A check that a PR skips never reports, so the PR would wait forever ("Expected — waiting"), and a matrix job skipped before it expands never reports under its leg names (R8b DEP-T-001; depictio's comment at `depictio-ci.yaml:3144-3174`). The pipeline workflows (`pipelines-synthetic.yml`, `pipelines-real.yml`, `pipelines-slurm.yml`, `pipelines-k8s.yml`) are reusable workflows (`on: workflow_call`, plus their own schedule) that `ci.yml` calls. Branch protection stays unset until `ci.yml` exists (inbox #8). No merge queue for now. *(assumed — pending Thomas, inbox #26)*
 
 **Workflow conventions** (every workflow): `concurrency` per workflow and PR or ref, cancelling superseded PR runs; `timeout-minutes` on every job; a fork guard on jobs that use secrets or push; docs-only detection through the change-detection job of `ci.yml`; `permissions:` set per job, read-only by default; actions pinned by full commit SHA. depictio does each of these (`depictio-ci.yaml:20-28`, `:437-439`, `:412-416`, `:116-121` at `v1.19.2`). Today only `previews.yml` has all three of concurrency, a timeout and a fork guard (`pipelines-real.yml` has a timeout only; checked 2026-10-27).
+
+**Security checks on every PR** (Thomas, 2026-10-27: "il faut être béton"). This paragraph owns the security checks of `security.yml`. Every PR runs four checks, with no path filter: `ci.yml` calls `security.yml` as a reusable workflow, so `ci-ok` covers it and the required checks stay the three of **Required checks** above. Step D4 builds them; the tools are candidates, each **[to be validated]** against its own documentation before use:
+- **secret scanning** of the PR's commits (gitleaks);
+- **dependency vulnerability audit** for Python and for JavaScript (pip-audit or osv-scanner for the uv lock; npm audit or osv-scanner for the npm lock; GitHub dependency review where the plan provides it);
+- **static analysis (SAST)** of Python and JavaScript (semgrep, or CodeQL where the plan provides it **[to be validated: availability for a private repository on this plan]**);
+- **a GitHub Actions workflow linter** (zizmor; actionlint).
+
+A check fails on any detected secret, on a known vulnerability that has a fixed version, and on a high or critical SAST finding. An exception is a reviewed entry in the tool's ignore file, with a reason. This complements the `security-reviewer` pass on every build step's diff (`.claude/skills/review-code/SKILL.md`).
 
 ## 12. Versioning and releases
 
@@ -445,12 +453,12 @@ Spectio stays in 0.x until it has been checked, in a fairly robust way, against 
 | Stage | Versions | Who uses it | Entry condition |
 |---|---|---|---|
 | **Design** | none | Thomas and the agents | — |
-| **0.0.x · Local MVP** | 0.0.x | Thomas, on the synthetic pipelines | `GO` gate passed; the 0.0.1 cut of §15 |
+| **0.0.x · First MVP** | 0.0.x | Thomas, on the synthetic pipelines, then first test users on their cluster | `GO` gate passed; the 0.0.1 cut of §15 |
 | **Private alpha** | 0.2 – 0.4 | 3 to 5 design-partner groups at EMBL (`docs/research/adoption-and-positioning-2026-10-26.md`) | install in under 30 min from the docs alone; real corpus green nightly; backup and restore tested; R5 security findings closed |
 | **Public beta** | 0.5 – 0.9 | anyone, with a public demo instance | 2 weeks without a P0/P1 bug at the partners; upgrade tested across 3 consecutive minors; every guide has a cast or screenshots |
 | **1.0** | 1.0.0 | stable for institutional installs | the **1.0 gate** below, checked by a review step (`R-v1`, added to the pipeline when the beta starts) and decided by Thomas |
 
-The stage between 0.0.x and the private alpha is not defined yet (inbox #16). Revised 2026-10-27: the first stage was a 0.1.x walking skeleton with SLURM; Thomas cut it down to the local 0.0.x MVP of §15.
+The stage between 0.0.x and the private alpha is not defined yet (inbox #16). Revised 2026-10-27: the first stage was a 0.1.x walking skeleton with SLURM; Thomas cut it down to the 0.0.x MVP of §15, then revised that cut the same day (§15.1).
 
 **The 1.0 gate** (all of them):
 1. **Use cases.** At least one real pipeline from each scenario class of `checking-scenarios.md` §1 runs through Spectio, with a gate decided by a person other than its author.
@@ -467,28 +475,32 @@ Added 2026-10-27 ([decision log](../decisions/log.md), inbox #16). **This sectio
 
 ### 15.1 Capabilities by version
 
-The first version is **0.0.1**, a basic local MVP (Thomas, 2026-10-27):
-- one user, no sign-in, no roles;
-- the engines run on the same machine as Spectio, with their local executor. Spectio manages no SLURM or Kubernetes, and there is no remote runner.
+The first version is **0.0.1**, the simplest version that test users can install and try (Thomas, 2026-10-27, revised the same day: [decision log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)):
+- one user, no sign-in, no accounts, no roles. A one-time token link guards the server instead (§15.3);
+- runs go to SLURM: each user runs `spectio serve` under their own Unix account on the cluster login node, and its built-in runner submits each engine head with `sbatch`; the engine sends its tasks to SLURM through its own SLURM executor (§15.3);
+- no QC checks and no gates;
+- no Kubernetes, no shared server, no remote runner.
 
 Everything after 0.0.x is **open**: "later (open)" means no version is assigned yet, and no assumption is made about the order (inbox #16). "Not planned" means a recorded decision rules it out.
 
 | Capability | 0.0.1 | Later (open) | Not planned | Owning spec |
 |---|---|---|---|---|
-| Snakemake engine, through the Spectio logger plugin (`--logger spectio`) | yes, local executor | other executors | | [`synthesis.md`](synthesis.md) §2, [`ui-spec.md`](ui-spec.md) §5 |
-| Nextflow engine, through `nf-spectio` | yes, local executor | other executors | the Tower protocol routes ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)) | [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md), [`synthesis.md`](synthesis.md) §2 |
+| Snakemake engine, through the Spectio logger plugin (`--logger spectio`); a run is always launched with the plugin | yes: tasks through `snakemake-executor-plugin-slurm`; the head submitted with `sbatch` **[to be validated]** in spike T3, because that plugin advises against running Snakemake inside a SLURM job (§15.3). Fallback: the Snakemake head runs on the login node, started by the built-in runner, and its tasks still go through the SLURM executor. The local executor is for tests and development only (§15.3) | other executors | | [`synthesis.md`](synthesis.md) §2, [`ui-spec.md`](ui-spec.md) §5 |
+| Nextflow engine, through `nf-spectio`; a run is always launched with the plugin | yes: head submitted with `sbatch`, tasks through Nextflow's `slurm` executor. The local executor is for tests and development only (§15.3) | other executors | the Tower protocol routes ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)) | [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md), [`synthesis.md`](synthesis.md) §2 |
 | Launch a run from the UI (form from the parameter schema) | yes | | | [`ui-spec.md`](ui-spec.md) §4.6, [`api-and-data-model.md`](api-and-data-model.md) §5 |
 | Monitoring: run state, number of jobs / tasks, stages | yes | | | [`ui-spec.md`](ui-spec.md) §3, §4.3, §4.4 |
-| Relaunch, including with changed parameters | yes | | | [`ui-spec.md`](ui-spec.md) §4.6 (relaunch dialog), [`api-and-data-model.md`](api-and-data-model.md) §5 (`:relaunch`) |
+| Relaunch, including with changed parameters | yes; every relaunch, Resume after a failure included, is a new child run ([`api-and-data-model.md`](api-and-data-model.md) §5.1) *(assumed — pending Thomas, inbox #32)* | | | [`ui-spec.md`](ui-spec.md) §4.6 (relaunch dialog), [`api-and-data-model.md`](api-and-data-model.md) §5 (`:relaunch`) |
 | Parameter history: which parameters each run used, and what changed | yes | | | [`ui-spec.md`](ui-spec.md) §4.4 (Parameters, Lineage tabs), [`api-and-data-model.md`](api-and-data-model.md) §7 (`run_inputs`) |
-| QC check and gate on one stage, then resume or relaunch | yes, simplest form: the checks of one stage, one gate, approve then continue, or relaunch with changed parameters. The gate verbs are `approve` and `stop`; leaving a gate to change parameters is Relaunch… (`stop` with reason `relaunched` plus a child run, [`api-and-data-model.md`](api-and-data-model.md) §5) *(assumed — pending Thomas, inbox #32)* | item decisions, samplesheet and file edits, AI proposals, review queue, live checks, gate decisions `apply` (parameter, item or file edits at the gate) and `go_back` *(assumed — pending Thomas, inbox #32)* | | [`checking-scenarios.md`](checking-scenarios.md) §4, §7, [`ui-spec.md`](ui-spec.md) §5.1, [`synthesis.md`](synthesis.md) §5ter |
+| QC checks and gates: the checks of a stage, a gate, then resume or relaunch | no (Thomas, 2026-10-27: removed from 0.0.1; checks and QC stay the product direction of 2026-10-26) | yes, every part: the checks of a stage, gates and their verbs (`approve`, `stop`, `apply`, `go_back`), item decisions, samplesheet and file edits, AI proposals, review queue, live checks | | [`checking-scenarios.md`](checking-scenarios.md) §4, §7, [`ui-spec.md`](ui-spec.md) §5.1, [`synthesis.md`](synthesis.md) §5ter |
 | Runs started from a terminal (observed, adopted) | no | yes (inbox #11) | | [`ui-spec.md`](ui-spec.md) §6 |
 | Users, sign-in, roles, OIDC / SAML, share links | no: one user, no sign-in | yes (inbox #11–#15, #18–#20) | | [`authentication-and-access.md`](authentication-and-access.md), [`api-and-data-model.md`](api-and-data-model.md) §6 |
-| SLURM launcher | no | yes | | [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) |
+| Access to the server: one-time token link, through an SSH tunnel; server bound to 127.0.0.1 | yes (§15.3) | replaced by sign-in on a shared server | | §15.3 |
+| SLURM launcher | yes, built in: the engine head through `sbatch`, CLI transport | slurmrestd transport | | [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1, §3.3 |
 | Kubernetes launcher | no | yes | | [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §4 |
-| Scheduler monitoring (pending reasons, accounting, capacity) | no | yes | | [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3 |
-| Database | SQLite, single process | Postgres | | [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.2 |
-| Deployment | Python bundle (`spectio serve`) | Docker Compose, Helm | | [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.3–§7.5 |
+| Shared server (on Kubernetes or a service node) with remote runners | no | yes (runner credentials and user identity: inbox #12–#14) | | [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.1, [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §6 |
+| Scheduler monitoring (pending reasons, accounting, capacity) | minimal: what the engines report, plus the state of the head job only (`squeue --me` and `sacct -j <head>`) | yes: task jobs, pending reasons, accounting, capacity, quotas | | [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3 |
+| Database | SQLite, single process, on node-local disk of the login node (§15.3) | Postgres | | [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.2 |
+| Deployment | Python bundle (`spectio serve`) on the cluster login node, opened through an SSH tunnel (§15.3) | Docker Compose, Helm | | [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.3–§7.5 |
 | depictio hand-off | no | yes | | [`api-and-data-model.md`](api-and-data-model.md) §13.3 |
 | WES facade, MCP server | no | yes (inbox #17) | | [`api-and-data-model.md`](api-and-data-model.md) §5, §10 |
 | Embedded elements in other web apps | no | yes | | [`api-and-data-model.md`](api-and-data-model.md) §9 |
@@ -505,3 +517,60 @@ The 0.0.1 cut, with the screens that show each feature: [`mvp-0.0.1.md`](mvp-0.0
   - After a first release, a `feat` while < 1.0 gives the next minor (`src/versioning-strategies/default.ts:97-102`), as in the §12 table.
 - **So the first release commit carries the footer `Release-As: 0.0.1`** in its commit body, for example `git commit --allow-empty -m "chore: release 0.0.1" -m "Release-As: 0.0.1"`. release-please then opens a release PR for exactly that version: the README section ["How do I change the version number?"](https://github.com/googleapis/release-please#how-do-i-change-the-version-number), and `src/strategies/base.ts:554-564`, where a `Release-As` note takes precedence over the initial version and over bumps.
 - **Later 0.0.x patches** follow the §12 table from `0.0.1`: a `fix` gives `0.0.2`. A `feat` would give `0.1.0`, so every `feat` merged during 0.0.x also needs a `Release-As: 0.0.N` footer, until a version after 0.0.x is decided (inbox #16). Dry-run the first release PR before merging it (`release-please release-pr --dry-run`) **[to be validated]**.
+
+### 15.3 0.0.1 on a cluster: architecture and safety without accounts
+
+Added 2026-10-27 (Thomas, option "everything on the cluster"; [decision log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)). This subsection owns how 0.0.1 is deployed on a cluster and the rules that make "no accounts" safe there. The general designs it reuses stay with their owners, linked below.
+
+```mermaid
+flowchart LR
+  subgraph laptop["User's laptop"]
+    B["Browser<br/>one-time token link"]
+  end
+  subgraph login["Login node, the user's own Unix account"]
+    S["spectio serve<br/>UI + API + built-in runner<br/>bound to 127.0.0.1"]
+    DB[("SQLite<br/>node-local disk")]
+  end
+  subgraph shared["Shared file system"]
+    R["run directory, 0700<br/>event spool"]
+  end
+  subgraph compute["Compute nodes"]
+    H["engine head<br/>+ Spectio plugin"]
+    T["engine tasks"]
+  end
+  B -->|"ssh -L tunnel"| S
+  S --- DB
+  S -->|"sbatch; squeue and sacct, head only"| H
+  H -->|"engine's own SLURM executor"| T
+  H -->|"appends events"| R
+  S -->|"reads the spool"| R
+```
+
+![0.0.1 on the cluster: the laptop opens a token link through an SSH tunnel to spectio serve on the login node, the built-in runner submits the engine head with sbatch, the head sends tasks through SLURM, and events come back through a spool file on the shared file system](../assets/diagrams/mvp001_cluster_light.png#only-light)
+![0.0.1 on the cluster: the laptop opens a token link through an SSH tunnel to spectio serve on the login node, the built-in runner submits the engine head with sbatch, the head sends tasks through SLURM, and events come back through a spool file on the shared file system](../assets/diagrams/mvp001_cluster_dark.png#only-dark)
+
+**Architecture.**
+- **One server per user.** Each user runs `spectio serve` under their own Unix account on the cluster login node: one process holding the UI, the API, the built-in runner and SQLite ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.1, §7.3). Users do not share a server, so the Unix account is the only identity; there are no Spectio accounts.
+- **Launch.** The built-in runner submits each engine head with `sbatch` (built-in SLURM launcher, CLI transport; head job, naming and restart reconciliation: [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1, §3.3). The head runs the engine with its Spectio plugin, always; its tasks go to SLURM through the engine's own SLURM executor. Where compute nodes have no egress, the network steps of the offline head (§3.1 there) run on the login node before `sbatch` **[to be validated per site]**. The Snakemake SLURM executor plugin warns against running Snakemake inside a SLURM job (quoted in [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1); whether the Snakemake head is a head job in 0.0.1 is **[to be validated]** in spike T3. If it is not, the fallback is the head on the login node, started and adopted by the built-in runner like a local head ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1.1), with its tasks still sent through the SLURM executor.
+- **Events through the spool, no network from compute nodes.** The plugins append their events to the spool in the launch directory (`.spectio/events/*.jsonl`, [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.1), on the shared file system. The built-in runner, inside the server process, reads it with the cursor of §13.1 there; this is the one case where the server process reads a spool (dated note in §13.1). The plugins' direct post to the server is not used in 0.0.1: the server listens on the login node's loopback only, which compute nodes cannot reach.
+- **Monitoring** shows what the engines report, plus the head job's state from `squeue --me` and `sacct -j <head>` (§15.1, scheduler monitoring row).
+- **Where data lives.** The data directory, with SQLite, is on node-local disk of the login node, because the server refuses a database on a network file system ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.2, §7.3). The run directories cannot live there, since compute nodes must write them: they go under a runs root on the shared file system, set at `spectio init`, instead of the default `<data-dir>/runs/` (dated note in §7.2 there).
+- **Site prerequisites, [to be validated per site].** That the login node has persistent node-local disk that is not purged, that the site allows a long-running user process on a login node, and how that process is kept up ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §6 lists the options). The server is pinned to one login node, and the SSH tunnel must reach that node ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.3).
+- **Server restart.** The heads are SLURM jobs and keep running; at the next start the built-in runner adopts them by name ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1, runner restart) and reads the spool from its cursor.
+- **Local executor.** The local launcher ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1.1) stays for unit and API tests and for development without a cluster. It is not a user-facing option in 0.0.1.
+- **Not in 0.0.1.** Kubernetes, and a shared server (on Kubernetes or a service node) with remote runners: that needs runner credentials and user identity (inbox #12–#14) and stays later (open), §15.1.
+
+**Access.** The user opens the server through an SSH tunnel (`ssh -L <local port>:127.0.0.1:<server port> <login node>`), with a token link. This answers the 0.0.1 part of inbox #15 (SEC-102): the login node's loopback is shared by every user of that node, so tokenless loopback is not accepted. Three secrets are involved:
+- **Server key.** Generated at each start of `spectio serve` and written to a 0600 file in the data directory; it never appears in a URL. It lets `spectio login --print-link`, run under the same Unix account, ask the running server for a new link. A restart replaces it.
+- **Link ticket.** Each link carries a fresh ticket. `spectio serve` prints a link at start; `spectio login --print-link` prints another one at any time. The ticket follows the hand-over magic link of [`authentication-and-access.md`](authentication-and-access.md) §2 and §2.1: 256 bits, stored as a hash, delivered in the URL fragment, exchanged by a POST, burned on first use, valid 15 minutes. The difference: no email is involved and there is no "Continue as" screen, since the link is only ever printed on the user's own terminal.
+- **Session secret.** The exchange returns a separate secret (at least 256 bits) in a cookie, and every later request needs it. Sessions are kept in memory, so a server restart ends them and the user opens the new link that `spectio serve` prints.
+
+This differs from Jupyter Server, whose token is reusable and whose login cookie persists, but the cookie name follows Jupyter's rule: Jupyter names its login cookie `username-<Host>`, so two servers on one host name with different ports do not collide (`get_cookie_name` in [`jupyter_server/auth/identity.py`](https://github.com/jupyter-server/jupyter_server/blob/main/jupyter_server/auth/identity.py), read 2026-10-27; token printed at start and cookie set on visit: [Jupyter Server security](https://jupyter-server.readthedocs.io/en/latest/operators/security.html)). Spectio's cookie name likewise includes the port of the `Host` header, so two tunnelled servers on different local ports do not overwrite each other's cookie.
+
+**Security requirements** (they make "no accounts" safe; [`authentication-and-access.md`](authentication-and-access.md) §1 `single` mode links here for 0.0.1):
+1. **Bind.** The server binds to `127.0.0.1` only; 0.0.1 accepts no other bind address.
+2. **Secrets.** The server key, each link ticket and each session secret are at least 256 bits from a CSPRNG (Python [`secrets`](https://docs.python.org/3/library/secrets.html)) and compared in constant time ([`hmac.compare_digest`](https://docs.python.org/3/library/hmac.html#hmac.compare_digest)). A valid session secret is required on every HTTP request, SSE streams included; a request without one gets 401 and no data. Only the link exchange accepts a ticket instead, and only `spectio login --print-link` the server key.
+3. **Cookie.** The session cookie is `HttpOnly` and `SameSite=Strict`, and its name includes the `Host` port. Browser behaviour that this relies on is **[to be validated]** in the spike sec-single-mode: that `EventSource` requests carry the cookie, and that a `SameSite=Strict` cookie set by the exchange is sent on the next requests when the link was opened from another site.
+4. **Host allow-list.** Requests are accepted only when the `Host` header names a loopback host, `127.0.0.1`, `localhost` or `[::1]`, on any port; every other host name is refused, against DNS rebinding. Any port is needed because the tunnel's local port, which the browser puts in `Host`, can differ from the server port. It stays safe: a rebinding attack makes the browser reach the server under the attacker's own host name, which the browser sends in `Host` whatever the port, so the name check alone refuses it.
+5. **File modes.** The data directory is 0700; the server key file and the database files are 0600; the run directories are 0700.
+6. **Spool events are untrusted input.** Each event read from a spool file is validated against the event schema ([`api-and-data-model.md`](api-and-data-model.md) §8) and size-capped (per line and per file; the numbers belong to the ingest contract, api §14, not written yet; inbox #36). It is never executed, and an invalid or oversized event is dropped and counted.

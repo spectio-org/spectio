@@ -4,11 +4,14 @@ hide: [navigation, toc]
 ---
 
 <div class="sp-hero2">
-<div class="sp-hero2__brand"><img src="assets/brand/emblem.svg" alt="" class="sp-hero2__emblem"><h1 class="sp-hero2__name">Spectio</h1></div>
+<a class="sp-status" href="roadmap/"><b>In design</b> First release, 0.0.1: launch, monitor and relaunch from the browser<span class="sp-status__go">→</span></a>
+<div class="sp-hero2__brand">
+<svg class="sp-emblem" viewBox="0 0 200 100" role="img" aria-label="Spectio emblem"><path fill="#5A4FCF" d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/><path fill="#8B5CF6" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/><path fill="#EC5F87" d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/><path fill="#F9A947" d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/></svg>
+<span class="sp-wordmark">Spectio</span>
+</div>
 <p class="sp-hero2__tagline">Launch, monitor and relaunch your Nextflow and Snakemake runs, on your own cluster.</p>
 <p class="sp-hero2__sub">Open-source run manager for HPC and Kubernetes. Add quality checks between stages only where you want them. Part of the depictio platform.</p>
 <p class="sp-hero2__actions"><a class="md-button md-button--primary" href="usage/">How it works</a> <a class="md-button" href="roadmap/">Roadmap</a></p>
-<p class="sp-badge">Design phase · nothing to install yet · first release planned as <a href="specs/dev-environment-and-testing/#15-what-ships-in-which-version">0.0.1</a></p>
 </div>
 
 <figure class="sp-hero2__media">
@@ -22,25 +25,25 @@ hide: [navigation, toc]
 
 <div class="sp-works" markdown>
 <div class="sp-works__group" markdown>
-<p class="sp-works__label">Workflow engines</p>
+<p class="sp-works__label" markdown><span class="sp-ic sp-ic--sm sp-ic--indigo">:material-sitemap:</span>Workflow engines</p>
 <a class="sp-work" href="https://www.nextflow.io/"><img src="assets/logos/logo-nextflow.png" alt=""><span>Nextflow</span></a>
 <a class="sp-work" href="https://snakemake.github.io/"><img src="assets/logos/logo-snakemake.png" alt=""><span>Snakemake</span></a>
 <p class="sp-works__later">CWL and WDL later</p>
 </div>
 <div class="sp-works__group" markdown>
-<p class="sp-works__label">Pipeline catalogs</p>
+<p class="sp-works__label" markdown><span class="sp-ic sp-ic--sm sp-ic--violet">:material-bookshelf:</span>Pipeline catalogs</p>
 <a class="sp-work" href="https://nf-co.re/"><img src="assets/logos/logo-nf-core.png" alt=""><span>nf-core</span></a>
-<a class="sp-work" href="https://snakemake.github.io/snakemake-workflow-catalog/"><img src="assets/logos/logo-snakemake.png" alt=""><span>Snakemake Workflow Catalog</span></a>
+<a class="sp-work" href="https://snakemake.github.io/snakemake-workflow-catalog/"><img src="assets/logos/logo-snakemake.png" alt=""><span>Snakemake catalog</span></a>
 <p class="sp-works__later">or your own Git repository</p>
 </div>
 <div class="sp-works__group" markdown>
-<p class="sp-works__label">Where runs execute</p>
+<p class="sp-works__label" markdown><span class="sp-ic sp-ic--sm sp-ic--coral">:material-server:</span>Where runs execute</p>
 <a class="sp-work" href="https://slurm.schedmd.com/" markdown><span class="sp-work__icon">:material-server-network:</span><span>SLURM (HPC)</span></a>
 <a class="sp-work" href="https://kubernetes.io/" markdown><span class="sp-work__icon sp-k8s">:simple-kubernetes:</span><span>Kubernetes</span></a>
 <p class="sp-works__later">or a single machine</p>
 </div>
 <div class="sp-works__group" markdown>
-<p class="sp-works__label">Where results go</p>
+<p class="sp-works__label" markdown><span class="sp-ic sp-ic--sm sp-ic--amber">:material-chart-box:</span>Where results go</p>
 <a class="sp-work" href="https://github.com/depictio/depictio"><img src="assets/logos/logo-depictio.png" alt=""><span>depictio dashboards</span></a>
 <p class="sp-works__later">optional</p>
 </div>

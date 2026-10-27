@@ -25,6 +25,14 @@ media:
       - docs/assets/diagrams/cloud-env_dark.svg
       - docs/assets/diagrams/cloud-env_light.png
       - docs/assets/diagrams/cloud-env_dark.png
+  - id: mvp001-cluster-sketch
+    kind: diagram
+    generator: python3 tools/diagrams/mvp001_cluster.py
+    outputs:
+      - docs/assets/diagrams/mvp001_cluster_light.svg
+      - docs/assets/diagrams/mvp001_cluster_dark.svg
+      - docs/assets/diagrams/mvp001_cluster_light.png
+      - docs/assets/diagrams/mvp001_cluster_dark.png
   - id: synthetic-gate
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/synthetic-gate.yaml

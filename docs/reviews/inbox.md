@@ -124,6 +124,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Assumed:** none.
 - **Blocked:** APPLY1 for api §14 and the auth §3 ingest-token row; nf-spectio and the Snakemake logger credential handling (spike T2 envelope); the walking skeleton. Related assumptions that already proceed: [SR-006](../reviews/R1-consistency.md#sr-006-major-the-cli-command-tree-lacks-commands-that-other-specs-cite) (no wrapper, setup by `spectio login`, see #28) and [CH-002](../reviews/R4-constraints.md#ch-002-major-no-compatibility-window-for-the-ingest-and-runner-protocols-across-bridge-runner-and-server-versions) (separate ingest version, see #28).
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
+- **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: observed runs are out of it, and the plugins only write to the spool.
 
 ### #12 · Runner ↔ server transport and runner credential lifetime
 
@@ -142,6 +143,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Assumed:** CH-032 and CH-007 proceed on their option A; the credential lifetime and who mints registration tokens are not assumed.
 - **Blocked:** APPLY1 for architecture §7.7 and the auth §3 runner row; every launch, cancel, file view and stop file; the walking skeleton. UX-124 blocks the EnvConnect values (later apply).
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
+- **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: the runner is built into the server process; a shared server with remote runners stays later.
 
 ### #13 · Token registry, authorisation matrix and which column authorises reads
 
@@ -179,6 +181,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Assumed:** SEC-103 A proceeds; the identity model is not assumed.
 - **Blocked:** APPLY1 for api §6, schedulers §6, the environments/runners schema and the gate assignment fields (api §5/§7, checking); spike sec-slurm-identity; runner protocol design and P1 planning.
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
+- **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: every launch runs as the Unix account that started `spectio serve`.
 
 ### #15 · `single` mode on shared login nodes
 
@@ -192,6 +195,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Assumed:** none.
 - **Blocked:** APPLY1 for auth §1/§6 and api §1/§6; spike sec-single-mode; the walking-skeleton auth design.
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
+- **Note (2026-10-27, cut revised):** the 0.0.1 part is answered ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)): 0.0.1 now runs on the login node, so tokenless loopback is not accepted. The server binds to 127.0.0.1 only, the user opens it through an SSH tunnel, and every request needs the token set as a cookie from a one-time link ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). The rest stays open for later versions: a Unix socket with SO_PEERCRED, refusing to start when other users are logged in, `single` mode on a shared server.
 
 ### #16 · What ships in 0.1 (MVP cut)
 
@@ -210,6 +214,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Assumed:** none.
 - **Blocked:** APPLY1 for dev-env §15, api §5 run verbs and state machine, api §13.6 rule 1, checking §7, reuse §0, api §15 (scale), the stage tags of SR-010, SR-035, SR-042 and SR-043; P1 walking-skeleton cut and P2 milestones; the MVP RunScheduler variant.
 - **Answer (Thomas, 2026-10-27):** the reviewers' 0.1 cut is too heavy. The first version is **0.0.1**, a basic local MVP: one user with no sign-in and no roles; the engines run on the same machine as Spectio (local executor), with no SLURM, no Kubernetes and no remote runner; in it: launch a run from the UI, monitor it (state, tasks, stages), relaunch it with changed parameters, track parameters across runs, a simple QC check and gate on one stage, Snakemake (logger plugin) and Nextflow (`nf-spectio`). Out of it: multi-user, auth, roles, OIDC/SAML, share links, SLURM and Kubernetes launchers, scheduler monitoring, Postgres, Compose, Helm, the depictio hand-off, WES, MCP, embedded elements, LabID. The single owner of version contents is now [dev-env §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version); summary page [MVP 0.0.1](../specs/mvp-0.0.1.md); log entry [2026-10-27](../decisions/log.md#2026-10-27-first-version-is-001-a-basic-local-mvp). What later versions contain stays open, with no assumption: SR-007's stage split, SR-018 (pause and stop), SR-023 + DL-104, CH-004, UX-227 and UX-115 still wait for an answer. *Partly handled.*
+- **Note (2026-10-27, cut revised again):** Thomas revised the 0.0.1 cut later the same day ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)): runs go to SLURM (head through `sbatch`) from a per-user server on the login node, opened with a token link through an SSH tunnel; no QC checks and no gates in 0.0.1. [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) is updated; the open scope questions above are unchanged.
 
 ### #17 · Features after 0.1: WES, TRS, Seqera API, Galaxy, batches, chaining
 
@@ -472,6 +477,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (B). It keeps the run lattice intact, it is what journey 2's "compare the two runs" needs, and it reuses one verb.
 - **Assumed:** (B), for all ten findings. The relaunch preview is the `dry_run` of the relaunch body, as already assumed for UX-113 in #30.
 - **Blocked:** nothing; a different answer reverts the assumed text in api §5, §7, §7.1, synthesis §5ter and ui-spec §4.4–§4.6.
+- **Note (2026-10-27, cut revised):** gates are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so the 0.0.1 gate verbs (`approve`, `stop`) are moot for 0.0.1; all gate verbs are now "later (open)". The relaunch part still applies to 0.0.1: every relaunch, Resume after a failure included, is a new child run, and the parent stays terminal.
 
 ### #33 · When every check passes, does the gate wait for a person?
 
@@ -484,6 +490,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (c), with "wait for a person" as the 0.0.1 default, because journey 1 needs a gate to approve.
 - **Assumed:** (c).
 - **Blocked:** nothing.
+- **Note (2026-10-27, cut revised):** gates and QC checks are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so the "wait for a person" 0.0.1 default is moot; the question stays open for the version that brings gates.
 
 ### #34 · 0.0.1 scope: how nf-core/rnaseq gets its stages and gate, workflow registration, MultiQC in the install
 
@@ -496,6 +503,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** none (reserved).
 - **Blocked:** checking §12.7 (overlays), api §5 `POST /workflows` and the inline `gates` value of SR-087, architecture §7.3 extras, the install line in `mvp-0.0.1.md`.
+- **Note (2026-10-27, cut revised):** gates and QC checks are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so the overlay, the `--gates FILE` and the MultiQC install questions (SR-057, SR-058) no longer block 0.0.1. How a workflow is registered for launch from the UI (SR-056) still applies to 0.0.1.
 
 ### #35 · Engines and the in-process runner on a laptop
 
@@ -508,6 +516,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a). A restart or upgrade should not fail a multi-hour run, and a pinned plugin works offline.
 - **Assumed:** the local environment and runner record (SR-055) and detached heads (CH-041). Not assumed: who installs the engines and how nf-spectio ships (SR-067), because they change the 0.0.1 install and what Spectio publishes.
 - **Blocked:** architecture §7.3 "0.0.1 prerequisites" (SR-067).
+- **Note (2026-10-27, cut revised):** 0.0.1 heads are SLURM jobs submitted from the login node, adopted after a server restart by the head-job name match ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)). The detached local heads of SR-055 and CH-041 now concern only the local executor, kept for tests and development. SR-067 (who installs the engines and how nf-spectio ships) still applies, now on a login node.
 
 ### #36 · The ingest contract for 0.0.1 (split inbox #11?)
 
@@ -520,6 +529,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** none (auth is reserved).
 - **Blocked:** api §14 and the bridge-facing parts of architecture §13.
+- **Note (2026-10-27, cut revised):** in 0.0.1 the plugins write only to the spool in the run directory, and the built-in runner reads it; nothing posts over the network ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). The 0.0.1 part of the contract is therefore the spool's event format and its size caps; the question itself stays open.
 
 ### #37 · Browser protection for the token-less loopback API
 
@@ -532,6 +542,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a). It costs little and keeps the "no setup" story.
 - **Assumed:** none (reserved).
 - **Blocked:** api §6 (single-user mode) and auth-and-roles for 0.0.1.
+- **Note (2026-10-27, cut revised):** answered for 0.0.1 by the token link ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)): no request is accepted without the token, the cookie is `SameSite=Strict`, and a `Host` allow-list refuses DNS rebinding. Whether to add an Origin check on writes and JSON-only writes (option a) stays open.
 
 ### #38 · Assumed: engine events and the progress denominator
 
@@ -558,6 +569,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b).
 - **Assumed:** (b).
 - **Blocked:** nothing.
+- **Note (2026-10-27, cut revised):** gates are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so `gates:summary`, `/gates/{id}/items`, the manifest read and the evidence artefacts are no longer 0.0.1 reads; the run reads (`runs:summary`, `/version`, `/runs/{id}/samplesheets`) still are.
 
 ### #40 · Assumed: fixes that are right but not local
 

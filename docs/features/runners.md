@@ -1,6 +1,6 @@
 # Runners
 
-!!! note "Designed; 0.0.1 runs the engines on the same machine only, SLURM and Kubernetes later"
+!!! note "Designed; 0.0.1 has only a built-in SLURM launcher, Kubernetes and remote runners later"
 
     What ships in which version: [development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version).
 

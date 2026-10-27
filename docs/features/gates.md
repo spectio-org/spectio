@@ -1,8 +1,8 @@
 # QC gates and review
 
-!!! note "Designed; one simple gate on one stage is planned for 0.0.1"
+!!! note "Designed; not in 0.0.1, version not set yet"
 
-    The review queue, item decisions and share links come later. What ships in which version: [development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version).
+    Checks and gates remain the product direction. What ships in which version: [development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version).
 
 Gates are **optional**. A pipeline without gates runs from start to end as usual. A gate stops a run between two stages so that someone can check the results before the next, often expensive, stage starts. Any pipeline can get one without being changed: Spectio uses the engine's own way to stop and resume.
 
