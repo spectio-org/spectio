@@ -126,6 +126,7 @@ nav:
           - "R7: UI": reviews/R7-ui.md
           - "R8: depictio drift": reviews/R8-depictio.md
           - "R9: landscape": reviews/R9-landscape.md
+          - "R11: documentation": reviews/R11-docs.md
       - Decisions:
           - How decisions are recorded: decisions/README.md
           - Decision log: decisions/log.md
