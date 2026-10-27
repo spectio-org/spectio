@@ -473,6 +473,6 @@
   <text x="1598.0" y="878.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="bold">Spectio records</text>
   <text x="1598.0" y="898.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="bold">the parent link</text>
   <text x="1598.0" y="918.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="bold">itself</text>
-  <text x="1290.0" y="985.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">3 · a resume is a new run, the engine keeps no lineage</text>
+  <text x="1290.0" y="985.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">3 · a resume is a new run; only Nextflow's session ID links them</text>
   <text x="1730.0" y="1040.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="end" font-weight="normal">source: docs/research/spike-t1-fixture-workflows-2026-10-27.md · tests/pipelines/synthetic/golden/ · scenarios.yaml</text>
 </svg>

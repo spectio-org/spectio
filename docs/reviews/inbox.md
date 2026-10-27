@@ -637,7 +637,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** none.
 - **Blocked:** nothing.
 - **Answer (Thomas, 2026-10-27 18:23 UTC, dashboard; confirmed in session):** (a), as recommended: the step that next edits `pipelines-synthetic.yml` moves the matrix to 26.10.4 and renames the required check, and Thomas updates the branch protection in the same change. *Decided.*
-- **Update (T1, 2026-10-27):** matrix moved to 26.10.4 in `pipelines-synthetic.yml`. No branch-protection change is needed: the pipeline legs are no longer required checks, only `ci-ok` is ([`autopilot.md`](../playbooks/autopilot.md)).
+- **Update (T1, 2026-10-27):** matrix moved to 26.10.4 in `pipelines-synthetic.yml`. No branch-protection change is needed: of the pipeline checks, only the aggregate `ci-ok` is required; the required checks are `ci-ok`, `docs-gate` and `pr-body` ([`autopilot.md` §8](../playbooks/autopilot.md#8-pull-requests-and-auto-merge)).
 
 ### #43 · Set up the cloud environment from dev-env §2
 

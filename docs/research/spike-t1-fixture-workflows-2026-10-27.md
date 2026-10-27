@@ -25,7 +25,7 @@
   python3 run_scenarios.py --engine nextflow  --nextflow nextflow-25.04.8 --workdir $W/nf2504 --golden record
   python3 run_scenarios.py --engine snakemake                             --workdir $W/smk    --golden record
   # then the same four with --golden check in a fresh workdir: all exit 0
-  python3 -m unittest tests/pipelines/synthetic/test_golden.py      # 5 tests, OK
+  python3 -m unittest tests/pipelines/synthetic/test_golden.py      # 8 tests, OK (5 at e2064ff; 3 added by the review fixes, 7202d9f)
   ```
 
 ## Golden fixtures
@@ -81,12 +81,12 @@ The `--memory 512m` flag is visible in the task's `.command.run`.
 1. **The Snakemake align gate skipped the qc stage.**
    - **Cause.** `--until align_done` "only runs jobs that are dependencies of the specified rule or files, does not run sibling DAGs" ([`cli.py` L892–L902 at v9.27.1](https://github.com/snakemake/snakemake/blob/v9.27.1/src/snakemake/cli.py#L892-L902)).
    - **Effect.** `qc_stats` and `qc_report` never ran before the gate. On the rerun, the `temp()` reads had already been deleted, so 12 `make_reads` and 2 `split` jobs ran again.
-   - **Fix.** The harness now stops at that gate with `--until qc_report align_done`. The rerun then runs only the 5 quant jobs, and the first run must now produce `multiqc/general_stats.tsv` (a new `scenarios.yaml` expectation).
+   - **Fix.** The harness now stops at that gate with `--until qc_report align_done`. The rerun then runs only 5 jobs (`all`, `merge`, two `compare` and `final_report`), and the first run must now produce `multiqc/general_stats.tsv` (a new `scenarios.yaml` expectation).
    - **For Spectio.** A Snakemake gate after stage N must name the last target of every stage up to N, not only stage N's.
    - **Spec.** §10.1 now records the harness fact. The generation rule belongs to `checking-scenarios.md` §12.3, which needs a change: [inbox #48](../reviews/inbox.md#48-gate-targets-must-include-every-earlier-stages-last-targets-until-runs-only-the-targets-own-dependencies).
 2. **Snakemake retries tool errors; Nextflow does not.**
    - `--retries` is the "Number of times to restart failing jobs" ([`cli.py` L1508–L1513 at v9.27.1](https://github.com/snakemake/snakemake/blob/v9.27.1/src/snakemake/cli.py#L1508-L1513)), whatever the exit code. So `tool_error_then_fixed_resume` runs 3 attempts on Snakemake.
-   - On Nextflow, the `errorStrategy` closure in `nextflow.config` retries only 137, 140, 143 and `Integer.MAX_VALUE`.
+   - On Nextflow, the `errorStrategy` closure in `nextflow.config` (line 17) retries exit codes 137, 140, 143 and `Integer.MAX_VALUE`, and any failure when `params.fail_mode == 'flaky'`. That is why `flaky_retry` (exit 1) is retried on Nextflow while the exit-1 tool error is not.
    - **Spec.** §10.1 said "a non-retried tool error"; that row is now corrected, and so is the `scenarios.yaml` title.
    - **For Spectio.** On Snakemake, failures are retried by count, not by class, unless the workflow's `retries` or resources logic says otherwise **[to be validated: per-rule retry conditions in Snakemake 9]**.
 3. **The `docker` profile of the Nextflow twin could not run any task.** Two causes:

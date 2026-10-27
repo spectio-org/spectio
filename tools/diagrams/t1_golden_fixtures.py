@@ -180,7 +180,7 @@ def build(theme: Theme) -> Sketch:
     s.text(px, py + 92, "Spectio records", size=14.5, anchor="start", weight="bold")
     s.text(px, py + 112, "the parent link", size=14.5, anchor="start", weight="bold")
     s.text(px, py + 132, "itself", size=14.5, anchor="start", weight="bold")
-    s.step(1290, 985, 3, "a resume is a new run, the engine keeps no lineage")
+    s.step(1290, 985, 3, "a resume is a new run; only Nextflow's session ID links them")
 
     s.text(W - 50, H - 20, "source: docs/research/spike-t1-fixture-workflows-2026-10-27.md · "
            "tests/pipelines/synthetic/golden/ · scenarios.yaml", size=12.5, anchor="end", colour=t.dim)
