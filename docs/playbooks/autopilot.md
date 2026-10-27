@@ -127,6 +127,13 @@ For the budget governor (§6), also add the status-line tap and the limit hook:
 
 `Workflow` lets dynamic workflows start without a prompt in `-p` and in scheduled runs ([workflows: approve the plan](https://code.claude.com/docs/en/workflows.md)).
 
+**Context compaction.** Thresholds are in tokens ([model config](https://code.claude.com/docs/en/model-config), [subagents](https://code.claude.com/docs/en/sub-agents)):
+- the orchestrator and every agent without its own value compact at **400k** (`autoCompactWindow` in `.claude/settings.json`). Its state lives in git, so a compaction loses only reasoning;
+- the reviewers that read whole specs or many sources (`spec-reviewer`, `fact-checker`, `constraints-hunter`, `security-reviewer`, `depictio-liaison`) get **600k** (`autoCompactWindow` in their frontmatter), so their evidence is not summarised away mid-round;
+- the reviewers that read one diff or a few pages (`doc-reviewer`, and `code-reviewer` and `code-simplifier` once added) get **200k**.
+
+Do not set `CLAUDE_CODE_AUTO_COMPACT_WINDOW` for autopilot runs: it overrides the agents' own values. Two points are **[to be validated]**: the frontmatter field needs Claude Code v2.1.296 or later, and a value above the model's context window should mean compaction at that window.
+
 Protect `main` with a GitHub branch rule that requires a PR and a review. The autopilot only pushes `autopilot/*` branches and opens PRs.
 
 ## 5. Budget and safety
