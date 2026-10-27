@@ -5,13 +5,16 @@
   python3 run_corpus.py --engine nextflow --name demo --workdir /tmp/corpus [--limits private] [--nextflow nextflow]
   python3 run_corpus.py --engine snakemake --name rna-seq-star-deseq2 --workdir /tmp/corpus
   python3 run_corpus.py --tier pr --workdir /tmp/corpus           # everything in a tier
+  python3 run_corpus.py --matrix nightly                          # CI matrix (pipelines-real.yml)
+
+Every invocation first validates corpus.yaml (pinned refs, plain-token paths and args) and exits on an error.
 
 Each run writes <workdir>/<name>/result.json (exit code, duration, outputs found, Nextflow trace
 summary). Later these runs are launched through Spectio instead of directly (same entries).
 """
 from __future__ import annotations
 
-import argparse, json, os, re, subprocess, sys, time
+import argparse, json, os, re, shutil, subprocess, sys, time
 from pathlib import Path
 
 import yaml
@@ -20,14 +23,51 @@ HERE = Path(__file__).resolve().parent
 CORPUS = yaml.safe_load(open(HERE / "corpus.yaml"))
 
 
+# Entries are pinned (a release tag or a commit SHA, never a branch), and every value that reaches a command line
+# is a plain token: the CI matrix passes repo, directory, snakefile and args into workflow inputs.
+PINNED = re.compile(r"v?\d+(\.\d+)*|[0-9a-f]{40}")
+PATH = re.compile(r"[A-Za-z0-9._/-]+")
+ARG = re.compile(r"[A-Za-z0-9._/=:,-]+")
+
+
+def validate(corpus: dict) -> list[str]:
+    """Return one message per invalid field; an empty list means the corpus is valid."""
+    errs = []
+    for section, ref_key, name_of in (("nfcore", "version", lambda e: e["name"]),
+                                      ("snakemake_catalog", "tag", lambda e: e["repo"])):
+        for e in corpus[section]:
+            n = f"{section} entry {name_of(e)}"
+            if not PINNED.fullmatch(str(e.get(ref_key, ""))):
+                errs.append(f"{n}: {ref_key} {e.get(ref_key)!r} is neither a release tag nor a 40-hex commit SHA")
+            for key in ("repo", "directory", "snakefile"):
+                if key in e and not PATH.fullmatch(str(e[key])):
+                    errs.append(f"{n}: {key} {e[key]!r} has characters outside [A-Za-z0-9._/-]")
+            bad = [t for t in str(e.get("args", "")).split() if not ARG.fullmatch(t)]
+            if bad:
+                errs.append(f"{n}: args tokens {bad} have characters outside [A-Za-z0-9._/=:,-]")
+    return errs
+
+
+def matrix(corpus: dict, tier: str) -> tuple[list, list]:
+    """The CI matrix for a tier: nightly includes pr, manual includes everything."""
+    want = {"pr": {"pr"}, "nightly": {"pr", "nightly"}, "manual": {"pr", "nightly", "manual"}}[tier]
+    nf = [e for e in corpus["nfcore"] if e["tier"] in want]
+    smk = [dict(e, name=e["repo"].split("/")[1]) for e in corpus["snakemake_catalog"] if e["tier"] in want]
+    return nf, smk
+
+
 def clone(url: str, ref: str, dest: Path, submodules: bool = False) -> None:
     """Shallow clone at a tag or branch, or at a full commit SHA (for repositories with no release tag)."""
     if re.fullmatch(r"[0-9a-f]{40}", ref):
-        subprocess.run(["git", "init", "-q", str(dest)], check=True)
-        subprocess.run(["git", "-C", str(dest), "fetch", "-q", "--depth", "1", url, ref], check=True)
-        subprocess.run(["git", "-C", str(dest), "checkout", "-q", "FETCH_HEAD"], check=True)
-        if submodules:
-            subprocess.run(["git", "-C", str(dest), "submodule", "update", "-q", "--init", "--recursive", "--depth", "1"], check=True)
+        try:
+            subprocess.run(["git", "init", "-q", str(dest)], check=True)
+            subprocess.run(["git", "-C", str(dest), "fetch", "-q", "--depth", "1", url, ref], check=True)
+            subprocess.run(["git", "-C", str(dest), "checkout", "-q", "FETCH_HEAD"], check=True)
+            if submodules:
+                subprocess.run(["git", "-C", str(dest), "submodule", "update", "-q", "--init", "--recursive", "--depth", "1"], check=True)
+        except subprocess.CalledProcessError:
+            shutil.rmtree(dest, ignore_errors=True)  # a half-made checkout would be reused by the next run
+            raise
     else:
         subprocess.run(["git", "clone", "-q", "--depth", "1", "--branch", ref,
                         *(["--recurse-submodules", "--shallow-submodules"] if submodules else []), url, str(dest)], check=True)
@@ -68,6 +108,7 @@ def smk_entry(e, wd: Path, smk: str) -> dict:
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--list", action="store_true")
+    ap.add_argument("--matrix", choices=["pr", "nightly", "manual"], help="print the CI matrix (GITHUB_OUTPUT lines) for a tier")
     ap.add_argument("--engine", choices=["nextflow", "snakemake"])
     ap.add_argument("--name")
     ap.add_argument("--tier", choices=["pr", "nightly", "manual"])
@@ -78,6 +119,14 @@ def main() -> int:
     ap.add_argument("--snakemake", default=os.environ.get("SMK_BIN", "snakemake"))
     a = ap.parse_args()
 
+    errs = validate(CORPUS)
+    if errs:
+        sys.exit("corpus.yaml is invalid:\n  " + "\n  ".join(errs))
+    if a.matrix:
+        nf, smk = matrix(CORPUS, a.matrix)
+        print("nfcore=" + json.dumps(nf))
+        print("smk=" + json.dumps(smk))
+        return 0
     entries = [("nextflow", e, e["name"]) for e in CORPUS["nfcore"]] + \
               [("snakemake", e, e["repo"].split("/")[1]) for e in CORPUS["snakemake_catalog"]]
     if a.list:

@@ -4,8 +4,8 @@ name: pipelines · nf-core and Snakemake catalog
 # PR tier: called by ci.yml on pull requests that touch the corpus; everything nightly. Private-repo runners have
 # 2 CPU, so nf-core runs get a resourceLimits override (run_corpus.py --limits private).
 # Each job first frees runner disk (the test profiles pull several GB of containers or conda packages) and samples
-# free memory and disk every 5 s; the job summary and the resources.json artifact give the start and minimum values
-# (results: docs/research/corpus-ci-2026-10-27.md).
+# free memory and disk every 5 s; the job summary and the resources.json artifact give the start and minimum values.
+# Both jobs use tests/pipelines/real/runner_probe.sh (results: docs/research/corpus-ci-2026-10-27.md).
 on:
   workflow_call:
   schedule:
@@ -30,17 +30,8 @@ jobs:
       - id: m
         env:
           TIER: ${{ github.event_name == 'schedule' && 'nightly' || (inputs.tier || 'pr') }}
-        run: |
-          python3 - "$TIER" >> "$GITHUB_OUTPUT" <<'PY'
-          import json, sys, yaml
-          tier = sys.argv[1]
-          c = yaml.safe_load(open("tests/pipelines/real/corpus.yaml"))
-          want = {"pr": {"pr"}, "nightly": {"pr", "nightly"}, "manual": {"pr", "nightly", "manual"}}[tier]
-          nf = [e for e in c["nfcore"] if e["tier"] in want]
-          smk = [dict(e, name=e["repo"].split("/")[1]) for e in c["snakemake_catalog"] if e["tier"] in want]
-          print("nfcore=" + json.dumps(nf))
-          print("smk=" + json.dumps(smk))
-          PY
+        # Validates corpus.yaml first (pinned refs, plain-token paths and args) and fails naming the entry.
+        run: python3 tests/pipelines/real/run_corpus.py --matrix "$TIER" >> "$GITHUB_OUTPUT"
 
   nfcore:
     needs: matrix
@@ -54,49 +45,29 @@ jobs:
     env:
       NAME: ${{ matrix.p.name }}
     steps:
-      - name: Free runner disk
-        run: |
-          df -h /
-          # Toolchains these jobs never use, and the preloaded Docker images.
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
-            /usr/share/swift /usr/local/share/boost /usr/local/share/powershell /usr/local/julia* /opt/az /opt/microsoft
-          docker image prune -af > /dev/null
-          df -h /
-      - name: Sample free memory and disk every 5 s
-        run: |
-          grep -E 'MemTotal|MemAvailable|SwapTotal' /proc/meminfo; nproc
-          (while :; do
-             echo "$(date +%s) $(awk '/^MemAvailable/ {print $2}' /proc/meminfo) $(df -k --output=avail / | tail -1)"
-             sleep 5
-           done) > "$RUNNER_TEMP/samples.txt" 2>&1 &
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: {persist-credentials: false}
+      - name: Free runner disk
+        if: runner.environment == 'github-hosted'
+        run: bash tests/pipelines/real/runner_probe.sh free
+      - name: Sample free memory and disk every 5 s
+        run: bash tests/pipelines/real/runner_probe.sh sample
       - uses: nf-core/setup-nextflow@893c28b667aedeba26e37f296d260ccc5bc4d914 # v3.0.1
         with: {version: "26.10.3"}
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with: {enable-cache: false}  # no shared cache (zizmor cache-poisoning)
       - name: Run test profile
         env:
           LIMITS: ${{ github.event.repository.private && 'private' || 'public' }}
         run: |
           uv run --with pyyaml python tests/pipelines/real/run_corpus.py --engine nextflow \
             --name "$NAME" --workdir "$RUNNER_TEMP/corpus" --limits "$LIMITS"
-      - if: failure()
+      - if: failure() || cancelled()
         name: Tail of the run log
-        run: tail -n 80 "$RUNNER_TEMP/corpus/$NAME/run.log"
+        run: tail -n 80 "$RUNNER_TEMP/corpus/$NAME/run.log" || true
       - if: always()
         name: Memory and disk summary
-        run: |
-          mkdir -p "$RUNNER_TEMP/res"
-          total=$(awk '/^MemTotal/ {print $2}' /proc/meminfo)
-          awk -v total="$total" -v name="$NAME" 'NR == 1 {a0 = $2; d0 = $3; amin = $2; dmin = $3; t0 = $1}
-            {if ($2 < amin) amin = $2; if ($3 < dmin) dmin = $3; t1 = $1}
-            END {g = 1048576; printf "{\"name\": \"%s\", \"mem_total_gb\": %.2f, \"mem_avail_start_gb\": %.2f, \"mem_avail_min_gb\": %.2f, \"run_peak_gb\": %.2f, \"disk_free_start_gb\": %.1f, \"disk_free_min_gb\": %.1f, \"sampled_s\": %d}\n",
-                 name, total / g, a0 / g, amin / g, (a0 - amin) / g, d0 / g, dmin / g, t1 - t0}' \
-            "$RUNNER_TEMP/samples.txt" > "$RUNNER_TEMP/res/resources.json"
-          # Nextflow's local executor caps tasks at the memory it reads from the OS (LocalPollingMonitor).
-          grep -h -m1 'local task monitor' "$RUNNER_TEMP"/corpus/*/.nextflow.log >> "$RUNNER_TEMP/res/resources.txt" 2>/dev/null || true
-          { echo '```'; cat "$RUNNER_TEMP/res/resources.json" "$RUNNER_TEMP/res/resources.txt" 2>/dev/null; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-          cat "$RUNNER_TEMP/res/resources.json"
+        run: bash tests/pipelines/real/runner_probe.sh summary "$NAME"
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
@@ -120,21 +91,19 @@ jobs:
     env:
       NAME: ${{ matrix.w.name }}
     steps:
+      # The workflow's own checkout below replaces the workspace, so the probe is copied out of it first.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          sparse-checkout: tests/pipelines/real/runner_probe.sh
+          sparse-checkout-cone-mode: false
+      - name: Copy the runner probe out of the workspace
+        run: cp tests/pipelines/real/runner_probe.sh "$RUNNER_TEMP/runner_probe.sh"
       - name: Free runner disk
-        run: |
-          df -h /
-          # Toolchains these jobs never use, and the preloaded Docker images.
-          sudo rm -rf /usr/local/lib/android /usr/share/dotnet /opt/ghc /usr/local/.ghcup /opt/hostedtoolcache/CodeQL \
-            /usr/share/swift /usr/local/share/boost /usr/local/share/powershell /usr/local/julia* /opt/az /opt/microsoft
-          docker image prune -af > /dev/null
-          df -h /
+        if: runner.environment == 'github-hosted'
+        run: bash "$RUNNER_TEMP/runner_probe.sh" free
       - name: Sample free memory and disk every 5 s
-        run: |
-          grep -E 'MemTotal|MemAvailable|SwapTotal' /proc/meminfo; nproc
-          (while :; do
-             echo "$(date +%s) $(awk '/^MemAvailable/ {print $2}' /proc/meminfo) $(df -k --output=avail / | tail -1)"
-             sleep 5
-           done) > "$RUNNER_TEMP/samples.txt" 2>&1 &
+        run: bash "$RUNNER_TEMP/runner_probe.sh" sample
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ matrix.w.repo }}
@@ -150,16 +119,7 @@ jobs:
           args: "${{ matrix.w.args }} --conda-cleanup-pkgs cache --show-failed-logs"
       - if: always()
         name: Memory and disk summary
-        run: |
-          mkdir -p "$RUNNER_TEMP/res"
-          total=$(awk '/^MemTotal/ {print $2}' /proc/meminfo)
-          awk -v total="$total" -v name="$NAME" 'NR == 1 {a0 = $2; d0 = $3; amin = $2; dmin = $3; t0 = $1}
-            {if ($2 < amin) amin = $2; if ($3 < dmin) dmin = $3; t1 = $1}
-            END {g = 1048576; printf "{\"name\": \"%s\", \"mem_total_gb\": %.2f, \"mem_avail_start_gb\": %.2f, \"mem_avail_min_gb\": %.2f, \"run_peak_gb\": %.2f, \"disk_free_start_gb\": %.1f, \"disk_free_min_gb\": %.1f, \"sampled_s\": %d}\n",
-                 name, total / g, a0 / g, amin / g, (a0 - amin) / g, d0 / g, dmin / g, t1 - t0}' \
-            "$RUNNER_TEMP/samples.txt" > "$RUNNER_TEMP/res/resources.json"
-          { echo '```'; cat "$RUNNER_TEMP/res/resources.json"; echo '```'; } >> "$GITHUB_STEP_SUMMARY"
-          cat "$RUNNER_TEMP/res/resources.json"
+        run: bash "$RUNNER_TEMP/runner_probe.sh" summary "$NAME"
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
