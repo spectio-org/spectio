@@ -217,13 +217,19 @@ Every step leaves its pages (`docs/specs/documentation-system.md` §3). The page
 gh repo edit weber8thomas/spectio --enable-auto-merge --delete-branch-on-merge
 for b in main autopilot/integration; do
   gh api -X PUT "repos/weber8thomas/spectio/branches/$b/protection" --input - <<'JSON'
-{"required_status_checks": {"strict": true, "contexts": ["docs-gate", "pr-body", "nextflow 26.10.3", "nextflow 25.10.9", "snakemake 9.27.1"]},
- "enforce_admins": false, "required_pull_request_reviews": {"required_approving_review_count": 1},
+{"required_status_checks": {"strict": true, "contexts": ["ci-ok", "docs-gate", "pr-body"]},
+ "enforce_admins": false,
+ "required_pull_request_reviews": {"required_approving_review_count": 1, "require_code_owner_reviews": true},
  "restrictions": null, "allow_force_pushes": false, "allow_deletions": false}
 JSON
 done
 gh variable set AUTOMERGE_MAIN --body false   # set to true to let CI merge into main
 ```
+
+**Required checks and code owners** (D4, decided by Thomas in inbox #26, 2026-10-27).
+- **Three required checks:** `ci-ok`, `docs-gate` and `pr-body`. `ci-ok` is the aggregate job of `ci.yml` and stands for the security checks and the pipeline matrix ([`dev-environment-and-testing.md` §11](../specs/dev-environment-and-testing.md#11-ci-workflows)). The pipeline legs are no longer listed: they run only when their paths changed, and a required check that never reports blocks the PR for ever.
+- **`require_code_owner_reviews`** makes `.github/CODEOWNERS` binding. A PR that touches workflows, `.claude/`, `pipeline.yaml`, the autopilot, the scanners' exception files or auth code needs Thomas's approval. Without it, a PR could switch off its own security gate, for example by editing `tools/ci/security.sh`.
+- **Open point.** GitHub does not let an author approve their own PR. If the autopilot opens PRs under Thomas's account, those PRs can merge only through an admin bypass, which `"enforce_admins": false` keeps possible. A separate identity for the autopilot would allow `"enforce_admins": true` **[to be validated: which identity the autopilot pushes with]**.
 
 ## 9. Code review in the loop
 

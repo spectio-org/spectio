@@ -59,7 +59,7 @@
     "species": "homo_sapiens",
     "dfam_version": 3.8,
     "pfam_version": 37.4,
-    "hook_url": "https://hooks.slack.com/services/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",
+    "hook_url": "REDACTED",
     "dfam_hmm": "https://www.dfam.org/releases/Dfam_3.8/infrastructure/dfamscan/homo_sapiens_dfam.hmm",
     "dfam_h3f": "https://www.dfam.org/releases/Dfam_3.8/infrastructure/dfamscan/homo_sapiens_dfam.hmm.h3f",
     "dfam_h3i": "https://www.dfam.org/releases/Dfam_3.8/infrastructure/dfamscan/homo_sapiens_dfam.hmm.h3i",

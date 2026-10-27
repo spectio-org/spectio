@@ -1,0 +1,8 @@
+# zizmor configuration (tools/ci/security.sh workflows; docs/specs/dev-environment-and-testing.md §11).
+# Each exception is reviewed and says why.
+rules:
+  self-repository:
+    ignore:
+      # ci.yml calls its reusable workflows as ./.github/workflows/*.yml. The self-repository form ($/...),
+      # GitHub 2026-07-30, is rejected by actionlint 1.7.12; switch once actionlint accepts it (reviewed 2026-10-27, D4).
+      - ci.yml

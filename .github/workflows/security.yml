@@ -1,0 +1,71 @@
+name: security
+
+# The four security checks on every PR (docs/specs/dev-environment-and-testing.md §11): secret scanning,
+# dependency audit, SAST and the workflow linters. ci.yml calls this workflow on every PR and push with no path
+# filter, so the required check ci-ok covers it; it also runs weekly on the whole history.
+# The tools and their pins live in tools/ci/security.sh, which runs the same checks on a laptop.
+on:
+  workflow_call:
+  schedule:
+    - cron: "23 4 * * 1"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    name: secret scanning (gitleaks)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: {fetch-depth: 0, persist-credentials: false}
+      - name: Scan the PR's or the push's commits; the whole history otherwise
+        env:
+          EVENT: ${{ github.event_name }}
+          PR_BASE: ${{ github.event.pull_request.base.sha }}
+          PR_HEAD: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+          AFTER: ${{ github.sha }}
+        run: |
+          case "$EVENT" in
+            pull_request) export SECRETS_LOG_OPTS="$PR_BASE..$PR_HEAD" ;;
+            push) if [ -n "$BEFORE" ] && [ "$BEFORE" != 0000000000000000000000000000000000000000 ]; then export SECRETS_LOG_OPTS="$BEFORE..$AFTER"; fi ;;
+          esac
+          echo "range: ${SECRETS_LOG_OPTS:-whole history}"
+          bash tools/ci/security.sh secrets
+
+  dependencies:
+    name: dependency audit (osv-scanner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: {persist-credentials: false}
+      - run: bash tools/ci/security.sh deps
+
+  sast:
+    name: SAST (semgrep)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with: {enable-cache: false}
+      - run: bash tools/ci/security.sh sast
+
+  workflows:
+    name: workflow linters (actionlint, zizmor)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with: {enable-cache: false}
+      - name: actionlint and zizmor (online audits with the read-only job token)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash tools/ci/security.sh workflows

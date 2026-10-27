@@ -117,6 +117,19 @@ media:
       - docs/assets/diagrams/apply2_relaunch_dark.svg
       - docs/assets/diagrams/apply2_relaunch_light.png
       - docs/assets/diagrams/apply2_relaunch_dark.png
+  - id: d4-pr-checks
+    kind: diagram
+    generator: python3 tools/diagrams/d4_pr_checks.py
+    outputs:
+      - docs/assets/diagrams/d4_pr_checks_light.svg
+      - docs/assets/diagrams/d4_pr_checks_dark.svg
+      - docs/assets/diagrams/d4_pr_checks_light.png
+      - docs/assets/diagrams/d4_pr_checks_dark.png
+  - id: security-checks
+    kind: cast
+    # runs tools/ci/security.sh secrets, deps and workflows for real on the repository (zizmor offline)
+    generator: python3 tools/media/cast.py tools/media/casts/security-checks.yaml
+    outputs: [docs/assets/casts/security-checks.cast]
   - id: d1-claude-config
     kind: diagram
     generator: python3 tools/diagrams/d1_claude_config.py
