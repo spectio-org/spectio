@@ -173,7 +173,10 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
 - **How.**
   - `previews.yml` builds the site in GitHub Actions, then uploads it with `wrangler pages deploy` (direct upload).
   - Cloudflare never reads the repository, so a private repository is not an issue.
-  - The secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` live in the GitHub environment `previews`, which only `previews.yml` uses.
+  - The secrets `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID` live in the GitHub environment `previews`, which only `previews.yml` uses. The token has the single permission *Account · Cloudflare Pages · Edit*, on Thomas's account only (inbox #10).
+  - On 2026-10-27 the deploys still used the misspelt names set on 2026-10-26 (`CLOUDFARE_API_TOKEN`, `CLOUDFARE_ACCOUND_ID`), through fallbacks in `previews.yml`: a one-off check in run 40522381183 found neither correct name set. Once Thomas renames them, the fallbacks are removed.
+  - `wrangler` is pinned (4.153.0), but `npx` resolves its dependencies at run time, with no lockfile. A committed lockfile installed with `npm ci` is left to Renovate (§1).
+  - The fork guard is the security boundary. With the `pull_request` event, the workflow file itself comes from the PR, so anyone who can push a branch controls every step that holds the token. Forks never get it.
 - **Versions side by side, nothing overwritten** ([Cloudflare docs](https://developers.cloudflare.com/pages/configuration/preview-deployments/)):
   - each deployment gets its own hash URL (`<hash>.spectio.pages.dev`), which stays reachable;
   - each branch gets an alias that follows its latest deployment (`<branch>.spectio.pages.dev`).
@@ -182,21 +185,47 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
   | Event | Branch |
   |---|---|
   | a PR | `pr-<n>` |
-  | a validated wave | `wave-<id>`, for example `wave-w2` |
+  | a validated wave | `wave-w<n>`, for example `wave-w2` (see **Wave approval** below) |
   | a release | `v<X-Y-Z>` |
   | `main` | the production URL |
+  | a manual run (`workflow_dispatch`) | any other alias of letters, digits and dashes; `main`, `production`, `pr-*`, `wave-*` and `v<digit>*` are refused |
 
-- **The `/versions` page.** It is generated at every deploy from the Cloudflare deployments API (`tools/previews/versions_page.py`) and lists every preview with its date, branch, commit, PR and link. It is the "versions step by step" view.
+- **Wave approval.**
+  - Thomas validates a wave by adding the label `wave-approved` to its wave-review PR, which is the promotion PR into `main`.
+  - The wave comes from the PR title, which must name exactly one wave (`W<n>`, for example "… (W3 complete)"). Otherwise the run fails with an error.
+  - The job deploys the PR head under `wave-w<n>` and posts a separate PR comment with its URL.
+  - It runs only when the label is `wave-approved`, the sender is the repository owner and the PR's base is `main`. Other labels, other senders and other bases skip the job.
+  - **Only Thomas adds this label; agents never do.** The rule is procedural, so it is a residual risk: the autopilot acts with Thomas's credentials, and the webhook gives the same sender for its labels. On PR #13 the issues events API recorded an agent's label as actor `weber8thomas` with `performed_via_github_app: claude`.
+  - Optional hardening for Thomas: a separate environment with Thomas as required reviewer. Its availability for a private repository on GitHub Free is **[to be validated]**.
+- **The `/versions` page.**
+  - It is generated at every deploy from the Cloudflare deployments API (`tools/previews/versions_page.py`). It is the "versions step by step" view.
+  - It lists every successful deployment, grouped as releases, waves, `main` and PRs, each with its date, branch alias (`pr-<n>` names the PR), commit, message and link. Deployments whose `latest_stage.status` is not `success` are left out.
+  - It pages through the API with `result_info.total_pages`.
+  - The fields it reads were checked against the live API on 2026-10-27; the script prints their names, never their values, to the CI log. They are `url`, `created_on`, `environment`, `latest_stage.status`, `deployment_trigger.metadata.{branch, commit_hash, commit_message}` and `result_info.total_pages`.
 - **Privacy.**
   - Previews are public by default. Cloudflare Pages' access policy restricts preview deployments to members of the Cloudflare account; the production URL (`spectio.pages.dev`), whose `/versions` page lists every preview, needs a separate Cloudflare Access application ([preview deployments](https://developers.cloudflare.com/pages/configuration/preview-deployments/)).
   - Media are rendered with fixture names (`documentation-system.md` §5.5).
-- **Limits (free plan):** 500 builds a month, 20 000 files and 25 MiB per file ([limits](https://developers.cloudflare.com/pages/platform/limits/)). Whether direct uploads count as builds is **[to be validated]**. The site is far below both limits.
+- **Limits (free plan):** 500 builds a month, 20 000 files and 25 MiB per file ([limits](https://developers.cloudflare.com/pages/platform/limits/)). The site is far below both limits.
+  - **Do direct uploads count as builds?** The Cloudflare docs do not say (checked 2026-10-27).
+    - The [limits page](https://developers.cloudflare.com/pages/platform/limits/) ties builds to Git: "Each time you push new code to your Git repository, Pages will build and deploy your site". It does not mention Direct Upload.
+    - The [Direct Upload page](https://developers.cloudflare.com/pages/get-started/direct-upload/) says you build the project yourself before deploying. It gives Wrangler's own limits (20 000 files, 25 MiB each) and no build quota.
+    - The limits page also says "You can have an unlimited number of preview deployments active on your project at a time".
+    - Reading: direct uploads probably do not use the build quota. This stays **[to be validated]** on the dashboard's build count. It is free either way: at about 50 deployments in two days, the month stays far below 500.
 - **Without the secrets,** the workflow skips the deploy, with a notice, and still builds.
 - **Checked on 2026-10-26:**
   - The first deploys worked: `https://spectio.pages.dev` (main) and `https://pr-1.spectio.pages.dev` (PR #1), with the PR comment posted.
   - `/versions` reads the deployments API as expected.
   - A new deployment's hostname took more than 60 s to answer, so the verification step waits up to 4 minutes.
   - The production branch is served at the project root, not under a `main` alias.
+- **Checked end to end on 2026-10-27 (step D5, PR #13; [Progress page](../progress/W3/D5.md)):**
+  - Each kind of URL answered 200: the hash URL, the `pr-13` alias, `/versions/` and `/progress/`.
+  - The footer showed the head SHA (`build 950e1de · preview pr-13`). The workflow now builds the PR head, not GitHub's merge commit, so the SHA names exactly what is served.
+  - After a second push, the first deployment (`4367baf3…`, build `950e1de`) still answered 200. The new one (`8c909d6d…`, build `086a84b`) did too, the alias had moved to it, and `/versions` listed both. The PR comment was updated in place.
+  - The verification step now also waits until the branch alias shows the new SHA.
+  - Wave path, live:
+    - `wave-approved` on a PR whose title names no wave failed with the expected error (run 40522735039);
+    - the same label from the owner on a PR into `autopilot/integration` skipped the job (run 40524120754);
+    - the positive path was not run live, so that no unapproved wave preview gets published. `tools/previews/test_alias.py` covers the alias it would choose.
 
 ### 7.2 The full stack on demand in GitHub Codespaces (from D3)
 
@@ -206,6 +235,18 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
 - **Lifetime.** The codespace stops when idle, and nothing runs when nobody looks.
 - **Cost:** GitHub Free includes 120 hours and 15 GB a month, and 2-core machines count double ([billing](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces)). Without a payment method, usage stops at the quota instead of being billed.
 - **Showing it to someone.** A forwarded port can be made public (`https://<codespace>-<port>.app.github.dev`), with no sign-in ([ports](https://docs.github.com/en/codespaces/developing-in-a-codespace/forwarding-ports-in-your-codespace)). Use this only for short demos, with demo mode on.
+- **Prebuilds.** None is configured. GitHub's [billing page](https://docs.github.com/en/billing/concepts/product-billing/github-codespaces) says prebuilds incur storage charges and are generated using Actions minutes. It does not say whether they draw on the free Codespaces quota. Whether a prebuild for `main` fits the free quota is **[to be validated]** by Thomas, in *Settings → Codespaces → Prebuild configuration* and the billing usage page.
+- **Static check, 2026-10-27 (step D5).** No codespace can be opened from an agent session, so the files were read rather than run:
+  - `devcontainer.json` forwards 8000, labelled "Docs (mkdocs serve)";
+  - `postStartCommand` runs `start.sh`, which starts `mkdocs serve -a 0.0.0.0:8000` with `~/.local/bin` on `PATH`;
+  - `setup.sh` installs `mkdocs` with `mkdocs-material` there through `uv tool install`, the same pair CI builds with. The MkDocs hooks import only the standard library and `yaml`, which MkDocs depends on;
+  - `setup.sh` reads `dev/versions.env` when it exists. It does not exist yet (D3 writes it), so the defaults apply: Nextflow 26.10.3 and Snakemake 9.27.1, as in §1 and §10;
+  - Python 3.13 and Java 21 match §1. Node was 22 and is now 24, to match §1.
+  - Still unpinned until D3: the image tag `1-3.13-bookworm`, the features (by major), uv, mkdocs, mkdocs-material and Playwright.
+- **To be validated live by Thomas:**
+  - that `setup.sh` finishes;
+  - the time from the badge to the docs on port 8000 (codespace start time);
+  - that `mkdocs serve`, started in the background by `postStartCommand`, keeps running after the command returns.
 
 ### 7.3 The UI in mock mode (from the first UI milestone)
 
