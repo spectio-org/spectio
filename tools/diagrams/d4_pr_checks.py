@@ -68,8 +68,9 @@ def build(theme: Theme) -> Sketch:
     s.arrow(330, 420, 410, 508, colour=t.muted, width=1.3)
     s.button(970, 548, 160, "ci-ok", fill="done")
     s.arrow(1000, 400, 1030, 542, colour=t.muted, width=1.3)
-    s.arrow(722, 532, 964, 560, colour=t.muted, width=1.3)
+    s.arrow(520, 536, 964, 562, colour=t.muted, width=1.3)  # synthetic gates ci-ok; the corpus does not (until T7)
     s.text(560, 572, "`ci-ok` fails only on failure or cancelled", size=13.5, anchor="start", colour=t.dim)
+    s.text(420, 592, "corpus: reports, does not gate `ci-ok` until T7", size=12.5, anchor="start", colour=t.dim)
 
     # -- claude-review.yml -------------------------------------------------------------------------
     s.shade(250, 630, 900, 180, fill="yellow", opacity=0.45)
