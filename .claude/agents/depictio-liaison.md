@@ -3,6 +3,7 @@ name: depictio-liaison
 description: Checks every claim and integration in Spectio's specs that involves depictio or LabID against their current code and docs (identity, roles, groups, branding model, CLI flags, ingest hand-off, APIs, storage, deployment). Use when depictio or LabID changed, and in review rounds. Read-only.
 tools: Read, Glob, Grep, Bash, WebFetch, WebSearch
 model: opus
+autoCompactWindow: 600000
 effort: high
 color: green
 ---

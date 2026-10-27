@@ -3,6 +3,7 @@ name: fact-checker
 description: Verifies factual claims about external tools (Nextflow, Snakemake, SLURM, Kubernetes, Kueue, depictio, LabID, MinIO/SeaweedFS, standards like RO-Crate, WES, CloudEvents) against primary sources. Use for every "[to be validated]" item and before a spec is marked stable. Read-only.
 tools: Read, Glob, Grep, Bash, WebFetch, WebSearch
 model: opus
+autoCompactWindow: 600000
 effort: high
 color: cyan
 ---
