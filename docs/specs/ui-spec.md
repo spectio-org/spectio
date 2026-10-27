@@ -45,7 +45,7 @@ The chrome shows the bell, avatar menu, project switcher, "n / m runners" and se
 | `pausing` | Pausing | pause, animated ring | violet `#8B5CF6` | Stopping as requested; becomes Paused |
 | `paused` | Paused | pause | violet `#8B5CF6` | Stopped on request, resumable |
 | `succeeded` | Succeeded | check | green `#1F9D63` | Completed |
-| `failed` | Failed | cross | red `#DC3B3B` | Engine or task failure; Resume creates a new run *(decided — Thomas, 2026-10-27, inbox #32)*. With failure class `head_lost`: "Engine stopped while Spectio was down · Resume" *(assumed — pending Thomas, inbox #40)* |
+| `failed` | Failed | cross | red `#DC3B3B` | Engine or task failure; Resume creates a new run *(assumed — pending Thomas, inbox #32)*. With failure class `head_lost`: "Engine stopped while Spectio was down · Resume" *(assumed — pending Thomas, inbox #40)* |
 | `cancelling` | Cancelling | slash, animated ring | ink 500 | Cancel requested; the head process is stopping |
 | `cancelled` | Cancelled | slash | ink 500 | Stopped by a user or a policy |
 
@@ -128,7 +128,7 @@ Header: run name, state line, gauge, actions by state (table below). When the ru
 
 Copy to a new launch is under More in every state. Pause and an immediate stop follow the open question of inbox #16 (SR-018).
 
-Relaunch… at a gate records the decision `stop` with reason `relaunched` (the run becomes `cancelled`, `cancel_reason = relaunched`), then calls `POST /runs/{id}:relaunch` with mode `rerun_from` (the gated stage by default) and the parameter overrides from the dialog (§4.6); see [`api-and-data-model.md`](api-and-data-model.md) §5 and §7. Resume on a failed run creates a child run; the failed run stays terminal. *(decided — Thomas, 2026-10-27, inbox #32)*
+Relaunch… at a gate records the decision `stop` with reason `relaunched` (the run becomes `cancelled`, `cancel_reason = relaunched`), then calls `POST /runs/{id}:relaunch` with mode `rerun_from` (the gated stage by default) and the parameter overrides from the dialog (§4.6); see [`api-and-data-model.md`](api-and-data-model.md) §5 and §7. Resume on a failed run creates a child run; the failed run stays terminal. *(assumed — pending Thomas, inbox #32)*
 
 The Failed header shows `runs.failure.message` and its class, and links to the failing task (`runs.failure.task_id`, [`api-and-data-model.md`](api-and-data-model.md) §7). *(assumed — pending Thomas, inbox #40)*
 
@@ -164,7 +164,7 @@ The Software and Environment tabs, Batch and Adopt are shown only when the serve
 | Dashboard (only with `depictio: {on: gate:<id>}`) | Look at the preliminary depictio dashboard of the partial results, with selections kept in step ([`api-and-data-model.md`](api-and-data-model.md) §13.6, rule 3) *(assumed — pending Thomas, inbox #29)* |
 All changes pile up in a **sticky bar** at the bottom (chips + a flow bar showing which stages rerun for how many items). One primary action follows from them: "Approve and continue" when nothing changed, "Apply and continue" otherwise; "Discard changes"; More: go back to an earlier stage, stop the run here, reassign.
 
-On a server without change sets the bar is "Approve and continue" (decision `approve` with an optional justification), "Stop run" (decision `stop`) and "Relaunch with changes…" (stop with reason `relaunched`, then the relaunch dialog of §4.6); item toggles and "Apply and continue" are hidden (capabilities by version: [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §15.1). *(decided — Thomas, 2026-10-27, inbox #32)*
+On a server without change sets the bar is "Approve and continue" (decision `approve` with an optional justification), "Stop run" (decision `stop`) and "Relaunch with changes…" (stop with reason `relaunched`, then the relaunch dialog of §4.6); item toggles and "Apply and continue" are hidden (capabilities by version: [`dev-environment-and-testing.md`](dev-environment-and-testing.md) §15.1). *(assumed — pending Thomas, inbox #32)*
 
 How edited files reach the engine: Snakemake — the edited file replaces the output, and its consumers rerun (modification-time trigger). Nextflow — the file is passed on Continue through the parameter named in `spectio.yml` (the pipeline must read it), since files inside the work directory must not be edited.
 
@@ -174,12 +174,12 @@ Launch is one parameters page; a stepper across the top shows progress, and "Rev
 Relaunch dialog, three choices instead of five:
 | Choice | What happens |
 |---|---|
-| **Resume** (labelled **Continue** on a paused run, which calls `:resume`; on a failed or cancelled run it calls `:relaunch` with `mode: resume` and creates a child run; on an open gate this dialog is not offered and the gate path follows the Awaiting review row of §4.4; [`api-and-data-model.md`](api-and-data-model.md) §5.1) *(decided — Thomas, 2026-10-27, inbox #32)* | Pick up where it stopped; finished work reused (`-resume`; Snakemake reruns incomplete jobs) |
+| **Resume** (labelled **Continue** on a paused run, which calls `:resume`; on a failed or cancelled run it calls `:relaunch` with `mode: resume` and creates a child run; on an open gate this dialog is not offered and the gate path follows the Awaiting review row of §4.4; [`api-and-data-model.md`](api-and-data-model.md) §5.1) *(assumed — pending Thomas, inbox #32)* | Pick up where it stopped; finished work reused (`-resume`; Snakemake reruns incomplete jobs) |
 | **Rerun from a stage** | Click a stage on the strip; earlier stages reused, later ones recomputed (Nextflow: a generated per-process `ext` key that enters the task hash, then `-resume`, **[to be validated]** in spike T2; Snakemake `--forcerun`) |
 | **Start fresh** | New work directory, nothing reused |
 Under the choices: a clickable stage strip (reused · starts here · will run), "Edit parameters · N changed" (with suggestions from the failure, e.g. more memory for the task that ran out), an estimate of reused vs to-run tasks, shown only when available (for Nextflow, from a work-directory scan, labelled "estimate"; [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.5), and the primary button. "Duplicate" becomes the secondary "Copy to a new launch".
 
-The **Edit parameters** panel reuses the Launch form sections: schema groups, search, the "Changed only" toggle, validation with the disabled reason beside the submit button, and a diff line "N changed vs. run #N". Snakemake variant: config keys (the inferred form above, SR-065) with "`--forcerun` from stage" or Continue. After submit, the new run's Run detail opens. *(decided — Thomas, 2026-10-27, inbox #32)*
+The **Edit parameters** panel reuses the Launch form sections: schema groups, search, the "Changed only" toggle, validation with the disabled reason beside the submit button, and a diff line "N changed vs. run #N". Snakemake variant: config keys (the inferred form above, SR-065) with "`--forcerun` from stage" or Continue. After submit, the new run's Run detail opens. *(assumed — pending Thomas, inbox #32)*
 
 ### 4.7 Workflows catalog and workflow detail
 Catalog cards/table: name, source (nf-core / Snakemake catalog / git / local), engine, latest version, stars/topics when available, last run. Detail: one tab set for every workflow: Overview (required inputs, profiles) · README (sanitised Markdown, no raw HTML: [`authentication-and-access.md`](authentication-and-access.md) §3.1) *(decided — Thomas, 2026-10-27, inbox #23)* · Versions (versions / tags) · Parameters (schema, browsable) · Stages & gates, with sub-tabs Stages · Watches (the `spectio.yml` manifest or lab overlay, edited under one header with one draft state) · Software (versions from the last successful run) · Runs. Browsing the nf-core and Snakemake catalogues happens only in Import. When `https://nf-co.re/pipelines.json` or the Snakemake catalogue cannot be reached, import falls back to a Git URL or a path, with skeleton cards while loading. Whether HPC login nodes can reach these catalogues is site-dependent **[to be validated]**.
