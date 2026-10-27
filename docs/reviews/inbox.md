@@ -427,3 +427,18 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** each finding's recommended option, as listed.
 - **Blocked:** nothing; a different answer reverts the assumed spec text and boards.
+
+### #31 · Autopilot budget: a fresh reading before APPLY1
+
+- **Context.**
+  - The run was started with `/autopilot --until W2 --budget 15%w --now 50`.
+  - In this cloud session the status line does not feed `.autopilot/usage.json`, so the governor cannot measure use: it stays on the manual reading (50 %, "manual-stale"), counts 0 points and always answers `go` (journal, tick 1). This settles the [to be validated] item in `autopilot.md` §6: the status line does not run in cloud sessions.
+  - W1 and TRIAGE1 used about 8.5 M subagent tokens, which cannot be converted into weekly-window points here.
+  - APPLY1 is the heaviest step so far: it edits specs from 163 accepted and 88 assumed findings.
+- **Options:**
+  - (a) read `/usage` and restart with the new reading: `/autopilot --until W2 --budget 15%w --now <pct>`;
+  - (b) give a five-hour budget instead (`--budget 40%5h --now <pct>`), so a limit hit pauses rather than stops;
+  - (c) stop the autopilot here and run APPLY1 interactively.
+- **Recommendation:** (a), after answering at least #16 (MVP cut), #11 and #12. Those carry blockers that APPLY1 must otherwise leave untouched.
+- **Assumed:** none. The autopilot stopped before APPLY1 (journal, tick 2).
+- **Blocked:** APPLY1, then R3, R6, TRIAGE2 and APPLY2.
