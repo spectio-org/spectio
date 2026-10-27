@@ -84,14 +84,15 @@ def build(theme: Theme) -> Sketch:
             s.circle(cx, y + 2, 13, fill="done", colour=t.good, width=1.6)
             s.tick(cx, y + 2, size=7)
             return
-        tag_w, per_row = 92, 2  # two tags fit the narrowest column; more wrap to a second row
+        per_row = 2  # two tags fit the narrowest column; more wrap to a second row
         for r in range(0, len(items), per_row):
             row = items[r:r + per_row]
-            start = cx - tag_w * len(row) / 2
-            for i, (fid, sev) in enumerate(row):
-                px = start + i * tag_w + 12
+            widths = [106 if sev == B else 94 for _, sev in row]  # a blocker's pill needs room
+            px = cx - sum(widths) / 2 + 12
+            for (fid, sev), w in zip(row, widths):
                 pin(px, y - 2 + r // per_row * 28, sev)
                 tag(px + 15, y + 4 + r // per_row * 28, fid, sev)
+                px += w
 
     def tag(x: float, y: float, fid: str, sev: str) -> None:
         """The finding ID; a blocker's sits in a red-edged pill so it does not rely on hue alone."""
@@ -207,14 +208,7 @@ def build(theme: Theme) -> Sketch:
     s.circle(lx, ly, 11, fill="done", colour=t.good, width=1.5)
     s.tick(lx, ly, size=6)
     s.text(lx + 20, ly + 5, "specified", size=15, anchor="start", colour=t.dim)
-    for i, (sev, lab) in enumerate(((B, "blocker"), (M, "major"), (N, "minor"))):
-        px = lx + 140 + i * 140
-        pin(px, ly - 4, sev)
-        if sev == B:
-            tag(px + 15, ly + 5, lab, sev)
-        else:
-            s.text(px + 15, ly + 5, lab, size=15, anchor="start", colour=t.dim)
-
+    s.text(lx + 130, ly + 5, "severity key at the bottom", size=15, anchor="start", colour=t.dim)
     s.prefix_key(lx - 11, ly + 38, ("SR", "CH", "UX"))
 
     # -- the four strips ---------------------------------------------------------------
