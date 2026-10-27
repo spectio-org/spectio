@@ -6,6 +6,11 @@
 /CLAUDE.md                      @weber8thomas
 /docs/playbooks/pipeline.yaml   @weber8thomas
 /tools/ci/                      @weber8thomas
+# What steers the agents and the releases.
+/tools/autopilot/               @weber8thomas
+/docs/playbooks/triage-policy.md @weber8thomas
+/release-please-config.json     @weber8thomas
+/.release-please-manifest.json  @weber8thomas
 # Security exceptions are reviewed entries in each scanner's ignore file (dev-environment-and-testing.md §11).
 /.gitleaks.toml                 @weber8thomas
 /.gitleaksignore                @weber8thomas

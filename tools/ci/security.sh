@@ -8,7 +8,7 @@
 #
 # Each check exits non-zero on a finding. Exceptions are reviewed entries, with a reason, in the
 # tool's own ignore file: .gitleaksignore / .gitleaks.toml, osv-scanner.toml, .semgrepignore,
-# .github/zizmor.yml.
+# .github/zizmor.yml. Inline suppression comments do not count.
 set -euo pipefail
 
 # Pinned tools. Release binaries are checked against the SHA-256 of their release's checksums file.
@@ -24,44 +24,51 @@ SEMGREP_VERSION=1.182.1  # PyPI, run with uvx
 BIN="${SPECTIO_TOOLS_DIR:-${XDG_CACHE_HOME:-$HOME/.cache}/spectio/tools}"
 mkdir -p "$BIN"
 
-# fetch NAME URL SHA256 [TAR_MEMBER]: download once into $BIN, verify, unpack.
+# fetch URL SHA256 [TAR_MEMBER]: download once into $BIN under its checksum (so a version bump never
+# reuses an old binary), re-verify it on every run, unpack, and set TOOL to the binary's path.
 fetch() {
-  local name=$1 url=$2 sum=$3 member=${4:-} tmp
-  [ -x "$BIN/$name" ] && return 0
-  tmp=$(mktemp)
-  curl -fsSL --retry 3 -o "$tmp" "$url"
-  echo "$sum  $tmp" | sha256sum -c --quiet - || { echo "checksum mismatch for $url" >&2; rm -f "$tmp"; exit 2; }
-  if [ -n "$member" ]; then tar -xzf "$tmp" -C "$BIN" "$member"; else mv "$tmp" "$BIN/$name"; fi
-  chmod +x "$BIN/$name"
-  rm -f "$tmp"
+  local url=$1 sum=$2 member=${3:-} file="$BIN/$2"
+  if [ ! -f "$file" ]; then curl -fsSL --retry 3 -o "$file.part" "$url"; mv "$file.part" "$file"; fi
+  echo "$sum  $file" | sha256sum -c --quiet - || { echo "checksum mismatch for $url" >&2; rm -f "$file"; exit 2; }
+  if [ -n "$member" ]; then
+    mkdir -p "$file.d"; tar -xzf "$file" -C "$file.d" "$member"; TOOL="$file.d/$member"
+  else
+    chmod +x "$file"; TOOL=$file
+  fi
 }
 
 secrets() {
-  fetch gitleaks "https://github.com/gitleaks/gitleaks/releases/download/v$GITLEAKS_VERSION/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" "$GITLEAKS_SHA256" gitleaks
+  fetch "https://github.com/gitleaks/gitleaks/releases/download/v$GITLEAKS_VERSION/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz" "$GITLEAKS_SHA256" gitleaks
   # Without SECRETS_LOG_OPTS: the whole history (weekly, and locally).
-  "$BIN/gitleaks" git --no-banner --redact --verbose ${SECRETS_LOG_OPTS:+--log-opts="$SECRETS_LOG_OPTS"} .
+  # --ignore-gitleaks-allow: an inline `gitleaks:allow` comment does not hide a finding.
+  "$TOOL" git --no-banner --redact --verbose --ignore-gitleaks-allow ${SECRETS_LOG_OPTS:+--log-opts="$SECRETS_LOG_OPTS"} .
 }
 
 deps() {
-  fetch osv-scanner "https://github.com/google/osv-scanner/releases/download/v$OSV_SCANNER_VERSION/osv-scanner_linux_amd64" "$OSV_SCANNER_SHA256"
+  fetch "https://github.com/google/osv-scanner/releases/download/v$OSV_SCANNER_VERSION/osv-scanner_linux_amd64" "$OSV_SCANNER_SHA256"
   # Every lockfile in the tree: package-lock.json today, uv.lock once the Python packages exist.
   local rc=0
-  "$BIN/osv-scanner" scan source --recursive . || rc=$?
-  if [ "$rc" -eq 128 ]; then echo "osv-scanner: no lockfile found, nothing to audit"; rc=0; fi
+  "$TOOL" scan source --recursive . || rc=$?
+  # 128 means "no packages found": a pass only while no lockfile is tracked.
+  if [ "$rc" -eq 128 ] && [ -z "$(git ls-files -- '*package-lock.json' '*uv.lock')" ]; then
+    echo "osv-scanner: no lockfile found, nothing to audit"; rc=0
+  fi
   return "$rc"
 }
 
 sast() {
-  # ERROR is Semgrep's highest rule severity (INFO, WARNING, ERROR): the "high or critical" bar of §11.
-  uvx --from "semgrep==$SEMGREP_VERSION" semgrep scan --metrics off --error --severity ERROR \
+  # --severity accepts INFO, WARNING or ERROR (`semgrep scan --help`, 1.182.1; docs.semgrep.dev/cli-reference,
+  # read 2026-10-27). ERROR, the highest, stands for the "high or critical" bar of §11.
+  # --disable-nosem: an inline `nosemgrep` comment does not hide a finding.
+  uvx --from "semgrep==$SEMGREP_VERSION" semgrep scan --metrics off --error --severity ERROR --disable-nosem \
     --config p/python --config p/javascript
 }
 
 workflows() {
-  fetch actionlint "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" "$ACTIONLINT_SHA256" actionlint
+  fetch "https://github.com/rhysd/actionlint/releases/download/v$ACTIONLINT_VERSION/actionlint_${ACTIONLINT_VERSION}_linux_amd64.tar.gz" "$ACTIONLINT_SHA256" actionlint
   command -v shellcheck >/dev/null || echo "note: shellcheck not found, actionlint skips the shell checks of run: blocks"
   local rc=0
-  "$BIN/actionlint" || rc=1
+  "$TOOL" || rc=1
   # Online audits when GH_TOKEN or GITHUB_TOKEN is set (CI), offline otherwise. Fails on low severity and above.
   uvx "zizmor==$ZIZMOR_VERSION" --min-severity low . || rc=1
   return "$rc"

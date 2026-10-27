@@ -17,6 +17,7 @@ permissions:
 jobs:
   matrix:
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     outputs:
       nfcore: ${{ steps.m.outputs.nfcore }}
       smk: ${{ steps.m.outputs.smk }}
