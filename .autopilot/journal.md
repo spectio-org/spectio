@@ -166,11 +166,11 @@ One entry per tick: time, steps started and finished, verification results, tria
   - Runner measured: 2 CPU, 7.75 GB, 6.9 GB available; the 6 GB per-task cap stays.
 - **Light PR tier (Thomas, inbox #45).** A PR-tier run on `7a3fe4f` lost rnaseq to a Docker registry reset (run 40578574693). Thomas: the CI runners are small, so do not spend time there. Only nf-core/demo and the ms-proteomics dry run stay in `pr`, about 5 min. rnaseq, viralrecon, methylseq, molkart and rna-seq-star-deseq2 now run nightly. Recorded in a decision-log entry, dev-env §10.2 and the figure (`7d73267`). No `review-code` pass for this commit: it changes corpus data, one test assertion and the figure, with no new logic.
 - **Runner outage, then public repository.** At 21:10 every job on `7d73267` failed within 2–3 s with no runner assigned (`runner_id: 0`, no steps, no log). The likely cause is the private-repository Actions minutes or the spending limit **[to be validated]**. Thomas made the repository public; the failed jobs were re-run once and passed. Public runners are 4 CPU / 16 GB **[to be validated]**, and `--limits public` now applies. Those limits are not measured yet: the next corpus run measures them, and the docs that say "private repository" are updated then.
+- **End of tick:** usage snapshot `.autopilot/usage/744d3a04-….json` (16 subagents, 880 API calls); dashboard rebuilt (41 steps, 46 inbox entries; `check_xss.js` ok with and without the CSP) and republished as version 16 at the same link. The artifact reads as private (owner only).
 - **Exit checks:** T7's step test `python3 -m unittest tests/pipelines/real/test_run_corpus.py` (5 OK); `python3 tools/docs/check.py`: 0 failures.
 - **Triage:** none (build step). New inbox entries #45 (answered the same day: light PR tier) and #46 (follow-up: pin the corpus by SHA, replace the Snakemake composite action).
 - **Waiting on Thomas:**
   - replace the cloud setup script with the dev-env §2 version (#43); switch the network to Custom without wildcards;
-  - set the dashboard artifact's sharing to private;
   - answer #46 and #44;
   - with the repository now public: a full-history secret scan (gitleaks scans only PR diffs) **[to be validated]**;
   - a fresh `/usage` reading before D6 or T1;
