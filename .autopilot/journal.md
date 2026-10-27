@@ -175,3 +175,31 @@ One entry per tick: time, steps started and finished, verification results, tria
   - with the repository now public: a full-history secret scan (gitleaks scans only PR diffs) **[to be validated]**;
   - a fresh `/usage` reading before D6 or T1;
   - the items still open from tick 7 (D5 secrets, D1, D4 secrets and protection, #5, #8, #14, #32).
+
+## 2026-10-27 21:40 → 23:05 UTC — tick 8, continued (promotion, repo scan, T1)
+
+- **Promotion:** weber8thomas/spectio#20 merged into `main` as a merge commit (`cc00b25`), all checks green.
+- **Budget:** Thomas's reading 73 % at 21:40; limit 80 %. Only T1 dispatched (D6 left for the next tick). Step costs not recorded.
+- **Public-repository scan** (security-reviewer, read-only; gitleaks v8.21.2 on all history and branches, plus grep):
+  - no tokens, keys or passwords;
+  - the nf-core megatest Slack webhook URL (third-party, already public in nf-core's S3) is removed from `main` and integration but still at the tip of 9 stale remote branches (`autopilot/D1`, `D3`, `D5`, `R6`, `claude/ci-docs-fetch-base`, `claude/code-review-agents`, `claude/compact-thresholds`, `feat/loving-noether-8xnb4j`, `spike/cloud-env`);
+  - workflows clean (no `pull_request_target`, fork PRs get no secrets, actions pinned by SHA).
+  Thomas decides on deleting those branches and on the history rewrite (#5).
+- **Finished: T1**, golden fixtures for the synthetic pipelines. PR weber8thomas/spectio#21, squash `4cb00c1`.
+  - 44 fixtures (Nextflow 26.10.4, 25.10.9, 25.04.8; Snakemake 9.27.1), each 11/11 on record and check; `--golden check` in `pipelines-synthetic.yml`, which moved to 26.10.4 (#42 done).
+  - Fixed on the way: the Snakemake align gate skipped qc (`--until` runs only the target's dependencies); the `docker` profile could not run a task; spec §10.1 corrected (Snakemake retries tool errors; time-limit exit code 143 / none / 124 by version).
+  - Resume identity for #32: Nextflow `-resume` gets a new run name and keeps the session ID, same launch directory only; Snakemake draws a new `workflow_id` each run. Both fit option B.
+  - Not run: the rnaseq/sarek gate stop-and-resume (inbox #47, assumed: a `gate` key in the nightly corpus).
+  - code / security review approve / approve after one fix round (1 blocker, 2 majors fixed); simplifier no change; doc-review changes 10/14, then approve 14/14.
+  - CI: `oom_fatal` hit the known Snakemake fault `lost-retry-at-checkpoint-update` twice in a row on `712c3bc`; commented on the PR, one re-run green. A single repeat leaves a few percent of runs red.
+- **Exit checks:** T1 step test `python3 -m unittest tests/pipelines/synthetic/test_golden.py && run_scenarios.py --engine snakemake --golden check` (8 OK, 11/11, exit 0); `python3 tools/docs/check.py`: 0 failures.
+- **Triage:** none (build step). New inbox entries #47 (assumed) and #48 (checking-scenarios §12.3 gate targets, for `/apply-findings`).
+- **Waiting on Thomas:**
+  - the 9 stale branches carrying the webhook URL, and #5 (history rewrite);
+  - GitHub settings: approval for fork PR workflows, secret scanning and push protection;
+  - answer #44, #46, #47, #48 and #32 (option B now has the engine evidence);
+  - replace the cloud setup script (#43); network to Custom without wildcards;
+  - a fresh `/usage` reading before D6;
+  - the items still open from tick 7.
+- **Follow-ups:** SEC-T1-06 (shared `/tmp` workdir) before T3; the Snakemake fault rate (repeat more than once, or move off the checkpoint).
+- **End of tick:** usage snapshot refreshed (`.autopilot/usage/744d3a04-….json`: 24 subagents, 1246 API calls); dashboard republished as version 17 at the same link, private, `answers` write rule owner-only, `check_xss.js` ok with and without the CSP.

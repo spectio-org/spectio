@@ -1,0 +1,6 @@
+# snakemake 9.27.1 · timeout_fatal
+# run 1: exit 1
+run	process	status	exit	attempt	tag	count
+1	QC_STATS	FAILED	124	1	sample=S05	1
+1	QC_STATS	FAILED	124	2	sample=S05	1
+1	QC_STATS	FAILED	124	3	sample=S05	1

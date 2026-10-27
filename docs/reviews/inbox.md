@@ -637,6 +637,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** none.
 - **Blocked:** nothing.
 - **Answer (Thomas, 2026-10-27 18:23 UTC, dashboard; confirmed in session):** (a), as recommended: the step that next edits `pipelines-synthetic.yml` moves the matrix to 26.10.4 and renames the required check, and Thomas updates the branch protection in the same change. *Decided.*
+- **Update (T1, 2026-10-27):** matrix moved to 26.10.4 in `pipelines-synthetic.yml`. No branch-protection change is needed: of the pipeline checks, only the aggregate `ci-ok` is required; the required checks are `ci-ok`, `docs-gate` and `pr-body` ([`autopilot.md` §8](../playbooks/autopilot.md#8-pull-requests-and-auto-merge)).
 
 ### #43 · Set up the cloud environment from dev-env §2
 
@@ -697,4 +698,37 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
   - (c) leave it as is.
 - **Recommendation:** (a), as a small W3 step after T7.
 - **Assumed:** none. Nothing changes until you answer.
+- **Blocked:** nothing.
+
+## T1 (2026-10-27)
+
+### #47 · Assumed: the rnaseq and sarek gate stop-and-resume check moves to the nightly corpus
+
+- **Covers:** [dev environment §3](../specs/dev-environment-and-testing.md#3-fixture-workflows-see-101), [CH-016](../reviews/R4-constraints.md#ch-016-major-stopping-at-a-gate-through-extwhen-is-proven-only-on-synthetic-pipelines) ([#28](#28-assumed-engine-bridges-runner-and-scheduler)), [T1 note](../research/spike-t1-fixture-workflows-2026-10-27.md#nf-corernaseq-and-nf-coresarek-not-run)
+- **Context:**
+  - The T1 prompt asks for the gate stop-and-resume check on the nf-core/rnaseq and nf-core/sarek test profiles. T1 did not run it.
+  - Docker works in the session. The blocker is cost: rnaseq used about 23 GB of disk and 18–23 min per full run on CI, against 26 GB free in the session ([corpus note](../research/corpus-ci-2026-10-27.md)).
+  - `run_corpus.py` cannot stop at a gate or resume yet.
+  - Both pipelines already run nightly in `pipelines-real.yml`.
+- **Options:**
+  - (a) a per-entry `gate` key in `run_corpus.py`, used by the nightly rnaseq and sarek entries. It writes a generated `ext.when = false` config for the processes after alignment, then runs `-resume` without it, and records the cached-task count and the exit code of each run. The cost is about one full run each, and no new job is needed;
+  - (b) run it by hand once, in a session.
+- **Recommendation:** (a).
+- **Owner:** a follow-up of T7 and T3 (the corpus runner and the nightly tier), not a new pipeline step.
+- **Assumed:** (a) *(assumed — pending Thomas)*. Dev environment §3 marks the check as pending.
+- **Blocked:** nothing. CH-016 stays open until the first nightly run of (a).
+
+### #48 · Gate targets must include every earlier stage's last targets (`--until` runs only the target's own dependencies)
+
+- **Covers:** [checking-scenarios §12.3](../specs/checking-scenarios.md#123-stage-boundaries), `ui-spec.md:264`, `synthesis.md:29`, [T1 note, finding 1](../research/spike-t1-fixture-workflows-2026-10-27.md#findings-and-fixes)
+- **Context:**
+  - Snakemake's `--until` "Runs the pipeline until it reaches the specified rules or files. Only runs jobs that are dependencies of the specified rule or files, does not run sibling DAGs" ([`cli.py` L892–L902 at v9.27.1](https://github.com/snakemake/snakemake/blob/v9.27.1/src/snakemake/cli.py#L892-L902)).
+  - In T1, the synthetic pipeline stopped with `--until align_done` never ran its qc stage. The rerun then rebuilt 12 `temp()` read files.
+  - The harness now stops with `--until qc_report align_done`.
+  - §12.3 says "`--until` the last rules of the stage", and `ui-spec.md:264` and `synthesis.md:29` say the same: only the stage that ends at the gate.
+- **Options:**
+  - (a) change §12.3: a gate after stage N passes `--until` with the last targets of every stage up to N; ui-spec and synthesis link to it;
+  - (b) keep the rule and require stages to form one chain, so that each stage depends on the one before it.
+- **Recommendation:** (a), applied to §12.3 through `/apply-findings`; ui-spec and synthesis then link to §12.3 instead of restating it.
+- **Assumed:** none. §12.3 is unchanged until then.
 - **Blocked:** nothing.

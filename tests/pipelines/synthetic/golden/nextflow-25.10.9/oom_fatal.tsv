@@ -1,0 +1,6 @@
+# nextflow 25.10.9 · oom_fatal
+# run 1: exit 1
+run	process	status	exit	attempt	tag	count
+1	QC_STATS	FAILED	137	1	S05	1
+1	QC_STATS	FAILED	137	2	S05	1
+1	QC_STATS	FAILED	137	3	S05	1

@@ -1,0 +1,6 @@
+# nextflow 26.10.4 · tool_error_then_fixed_resume
+# run 1: exit 1
+# run 2: exit 0
+run	process	status	exit	attempt	tag	count
+1	COMPARE	FAILED	1	1	treatA_vs_ctrl	1
+2	COMPARE	COMPLETED	0	1	*	1

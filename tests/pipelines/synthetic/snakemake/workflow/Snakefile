@@ -2,7 +2,7 @@
 
 Stages and gate targets:
   qc     : make_reads -> qc_stats -> qc_report          (gate: --until qc_report)
-  align  : checkpoint split (dynamic fan-out) -> align  (gate: --until align_done)
+  align  : checkpoint split (dynamic fan-out) -> align  (gate: --until qc_report align_done)
   quant  : merge -> compare (per group vs ctrl) -> final_report
 Failure injection (config): fail_mode=exit|oom|oom_once|oom_real|timeout|flaky fail_rule=NAME fail_sample=ID
 Run with --retries 2 so OOM / flaky / timeout retries behave like the Nextflow twin.

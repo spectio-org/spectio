@@ -21,7 +21,7 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {engine: nextflow, version: "26.10.3"}
+          - {engine: nextflow, version: "26.10.4"}   # = NEXTFLOW_VERSION in dev/versions.env
           - {engine: nextflow, version: "25.10.9"}
           - {engine: snakemake, version: "9.27.1"}
     steps:
@@ -36,10 +36,14 @@ jobs:
       - name: Set up Snakemake
         if: matrix.engine == 'snakemake'
         run: uv tool install "snakemake==${{ matrix.version }}" --with "snakemake-executor-plugin-slurm==2.8.0"
+      - name: Unit tests (golden fixtures)
+        run: uv run --with pyyaml python -m unittest tests/pipelines/synthetic/test_golden.py
       - name: Run scenarios
+        # --golden check: task outcomes must match golden/<engine>-<version>/. A missing directory, an unreadable
+        # engine version or a missing fixture for a PR scenario fails the job; only nightly scenarios may have none.
         run: |
           uv run --with pyyaml python tests/pipelines/synthetic/run_scenarios.py \
-            --engine ${{ matrix.engine }} --workdir "$RUNNER_TEMP/scenarios" \
+            --engine ${{ matrix.engine }} --workdir "$RUNNER_TEMP/scenarios" --golden check \
             ${{ github.event_name == 'schedule' && '--nightly' || '' }}
       - name: Upload report and logs
         if: always()
@@ -49,4 +53,5 @@ jobs:
           path: |
             ${{ runner.temp }}/scenarios/**/report.json
             ${{ runner.temp }}/scenarios/**/run*.log
+            ${{ runner.temp }}/scenarios/**/golden.actual.tsv
             ${{ runner.temp }}/scenarios/**/results/pipeline_info/**

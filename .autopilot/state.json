@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T21:30:00Z",
+  "updated_at": "2026-10-27T23:01:36Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -325,12 +325,21 @@
     },
     "T1": {
       "wave": "W3",
-      "status": "pending",
+      "status": "done",
       "attempts": 0,
-      "started_at": null,
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "started_at": "2026-10-27T21:41:03Z",
+      "finished_at": "2026-10-27T23:01:36Z",
+      "outputs": [
+        "tests/pipelines/synthetic/golden/ (44 fixtures: nextflow-26.10.4, 25.10.9, 25.04.8, snakemake-9.27.1)",
+        "tests/pipelines/synthetic/run_scenarios.py (--golden record|check)",
+        "tests/pipelines/synthetic/test_golden.py",
+        "docs/research/spike-t1-fixture-workflows-2026-10-27.md",
+        "docs/progress/W3/T1.md",
+        "docs/reviews/code/T1.md",
+        "weber8thomas/spectio#21 (squash 4cb00c1)"
+      ],
+      "notes": "rnaseq/sarek gate stop-and-resume not run: deferred to the nightly corpus, inbox #47 (assumed). Gate-target rule vs checking-scenarios \u00a712.3: inbox #48. Open: CR-07, CR-08, SEC-T1-01/02/03/06/07 (06 before T3). CI: Snakemake engine fault lost-retry-at-checkpoint-update hit twice in a row in oom_fatal on 712c3bc; one re-run green.",
+      "base": "cc00b25fb782251b4f2ba4326a5d64395df61181"
     },
     "T2": {
       "wave": "W3",
