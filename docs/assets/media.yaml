@@ -117,3 +117,11 @@ media:
       - docs/assets/diagrams/apply2_relaunch_dark.svg
       - docs/assets/diagrams/apply2_relaunch_light.png
       - docs/assets/diagrams/apply2_relaunch_dark.png
+  - id: d5-previews
+    kind: diagram
+    generator: python3 tools/diagrams/d5_previews.py
+    outputs:
+      - docs/assets/diagrams/d5-previews_light.svg
+      - docs/assets/diagrams/d5-previews_dark.svg
+      - docs/assets/diagrams/d5-previews_light.png
+      - docs/assets/diagrams/d5-previews_dark.png
