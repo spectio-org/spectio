@@ -60,7 +60,8 @@ One entry per tick: time, steps started and finished, verification results, tria
   | **Total** | **60** | **148** | **24** |
 
   "Partly" mostly means the spec text is done and a board, tool, CI or inbox-blocked part remains. Not applied: blocked by an open inbox entry, or a board- or tool-only fix.
-- **Commits:** `ea6a9c9`, `da129ee`, `1d3a61a`, `f8e011d`, `fb8e167` (WIP saves while the workflow ran), `d287a85` (log). `727bb44` merged `origin/main` (PRs #4, #5, #7) into integration; the only conflict was the log, both sides kept.
+- **Commits:** `ea6a9c9`, `7bf310d`, `50f0baa`, `c5fa121`, `da129ee`, `1d3a61a`, `f8e011d`, `fb8e167` (8 WIP saves while the workflow ran), `d287a85` (log). `727bb44` merged `origin/main` (PRs #4, #5, #7) into integration; the only conflict was the log, both sides kept.
 - **Deferred** (full list in the log section): about 70 boards, CI workflows, tools, site CSS and nav, skills, CLAUDE.md wording, and sections blocked by inbox #11–#26.
 - **Gate:** `mkdocs build --strict` exit 0; `tools/docs/check.py` 0 failures.
+- **Docs:** `docs/progress/W2/APPLY1.md`. doc-reviewer: approve 11/14; its four text changes applied (workflow figures cited from this tick, five "not applied" cases, budget wording, follow-up figure due in T2), log section links back to the step page.
 - **Stopped before R3 and R6 (budget).** Thomas asked for a fresh usage reading before the next reviews.

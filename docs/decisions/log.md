@@ -362,6 +362,8 @@ Everything must be traced, including:
 
 ## 2026-10-27 — APPLY1: review findings applied (R1 R2 R4 R5 R7 R8 R8b R9 R11)
 
+Step page: [APPLY1](../progress/W2/APPLY1.md).
+
 - **Context.** APPLY1 applies the findings that TRIAGE1 accepted or assumed, in the nine rounds listed. It changes the owning specs only, and adds no version claims outside [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §15. Each finding's **Status** line in its review file says what was applied and what is pending. Overlapping findings were applied once, in the wording of the most recent round (for example CH-001 over SR-017, FC-007 over SR-037, FC-040 over CH-009, DEP-T-018 over FC-013). Total: 60 applied, 148 partly applied, 24 not applied. "Partly" mostly means that the doc edits are done and a board, tool, CI or blocked part remains.
 - **Per round** (applied / partly / not applied):
   - **R1** ([R1-consistency](../reviews/R1-consistency.md)), 11 / 26 / 1. Applied: SR-008, SR-011, SR-026, SR-032, SR-042, SR-045, SR-046, SR-049, SR-051, SR-052, SR-053. Partly: SR-003, SR-004, SR-005, SR-006, SR-009, SR-012, SR-013, SR-015, SR-016, SR-017, SR-019, SR-022, SR-027, SR-028, SR-034, SR-036, SR-037, SR-038, SR-039, SR-040, SR-041, SR-043, SR-044, SR-047, SR-048, SR-050. Not applied: SR-035 (blocked, inbox #25).
