@@ -40,7 +40,7 @@ Working notes are dated and kept as written. Specs cite them. When something cha
 - [depictio CLI, models and packaging; LabID CLI](research/depictio-cli-packaging.md).
 - [depictio frontend, branding, users and groups](research/depictio-frontend-admin.md).
 - [depictio and LabID re-audit](research/depictio-audit-2026-10-26.md) (2026-10-26): what the earlier depictio notes got wrong, LabID server facts, and the request status.
-- [depictio authentication](research/depictio-auth-2026-10-26.md), [depictio docs system](research/depictio-docs-system-2026-10-26.md), [test corpus and CI](research/corpus-and-ci-2026-10-26.md), [budget governor and telemetry](research/budget-and-telemetry-2026-10-26.md).
+- [depictio authentication](research/depictio-auth-2026-10-26.md), [depictio docs system](research/depictio-docs-system-2026-10-26.md), [test corpus and CI](research/corpus-and-ci-2026-10-26.md), [real corpus on CI runners](research/corpus-ci-2026-10-27.md) (T7: runner measurements, failure causes, tier moves), [budget governor and telemetry](research/budget-and-telemetry-2026-10-26.md).
 - [One QC pipeline for Spectio gates and depictio dashboards](research/depictio-qc-integration-2026-10-26.md): how both apps render the same QC results; the proposal is in [api §13.6](specs/api-and-data-model.md).
 - [Adoption and positioning](research/adoption-and-positioning-2026-10-26.md): who the first users are, where to find them, and how not to fight Seqera.
 - Spikes: [synthetic pipelines](research/spike-synthetic-pipelines-2026-10-26.md), [docs media tooling](research/spike-docs-media-tooling-2026-10-26.md), [cloud environment](research/spike-cloud-env-2026-10-26.md).

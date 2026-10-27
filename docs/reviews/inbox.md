@@ -665,3 +665,36 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** (a).
 - **Blocked:** nothing.
+
+## T7 (2026-10-27)
+
+### #45 · Assumed: rna-seq-star-deseq2 and viralrecon stay in the PR tier
+
+- **Covers:** [dev environment §10.2](../specs/dev-environment-and-testing.md#102-real-pipelines-testspipelinesrealcorpusyaml), [T7](../progress/W3/T7.md), [corpus note §2](../research/corpus-ci-2026-10-27.md)
+- **Context:**
+  - `pipelines-real` gates `ci-ok` again, on PRs that touch the corpus.
+  - rna-seq-star-deseq2 is the only Snakemake entry in the PR tier that really runs. It failed 2 of its 4 runs on 2026-10-27, both on external errors: a biomaRt timeout on the Ensembl archive, and a conda-forge 502.
+  - viralrecon (about 40 min) sets the PR tier's wall time.
+- **Options:**
+  - (a) keep both in `pr`. A red job from an entry tagged `network:` that failed on an external error is re-run once before anyone investigates, as §10.2 now says.
+  - (b) move rna-seq-star-deseq2 to `nightly`. The PR tier then covers Snakemake only through the ms-proteomics dry run.
+  - (c) also move viralrecon to `nightly`, which cuts the PR tier to about 20 min.
+- **Recommendation:** (a). The PR tier is the only place where a real Snakemake run gates a merge, and the re-run rule costs one click.
+- **Assumed:** (a).
+- **Answer (Thomas, 2026-10-27, session):** a light PR tier, beyond (c): only nf-core/demo and the ms-proteomics dry run stay in `pr`; rnaseq, viralrecon, methylseq, molkart and rna-seq-star-deseq2 move to `nightly`. The private runners are small, and a heavy PR tier breaks on them for reasons outside the PR (rnaseq lost a Docker pull to a registry reset in run 40578574693). Applied in T7: `corpus.yaml`, [dev environment §10.2](../specs/dev-environment-and-testing.md#102-real-pipelines-testspipelinesrealcorpusyaml). *Decided.*
+- **Blocked:** nothing.
+
+### #46 · Follow-up: pin the corpus by commit and replace the Snakemake composite action
+
+- **Covers:** [corpus note, follow-ups](../research/corpus-ci-2026-10-27.md), `docs/reviews/code/T7.md` (SEC-T7-01, SEC-T7-04)
+- **Context:**
+  - Every corpus entry except chipseq is cloned by a release tag, and an upstream maintainer can move a tag. Since T7, that code runs inside the required check whenever a PR touches the corpus, on a runner that holds the private repo's read token.
+  - `snakemake/snakemake-github-action` is pinned by SHA, but it runs `conda-incubator/setup-miniconda@v3` and Miniforge `latest` unpinned.
+  - Both risks predate T7, and both are rated low likelihood.
+- **Options:**
+  - (a) add a step that does both: a `sha` next to each `tag` or `version`, bumped together by Renovate, and explicit pinned conda setup steps plus `run_corpus.py --engine snakemake` in place of the composite action;
+  - (b) pin by commit only;
+  - (c) leave it as is.
+- **Recommendation:** (a), as a small W3 step after T7.
+- **Assumed:** none. Nothing changes until you answer.
+- **Blocked:** nothing.

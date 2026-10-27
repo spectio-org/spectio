@@ -2,7 +2,10 @@ name: pipelines · nf-core and Snakemake catalog
 
 # Real pipelines with their own test datasets (tests/pipelines/real/corpus.yaml).
 # PR tier: called by ci.yml on pull requests that touch the corpus; everything nightly. Private-repo runners have
-# 2 CPU / 8 GB, so nf-core runs get a resourceLimits override (run_corpus.py --limits private).
+# 2 CPU, so nf-core runs get a resourceLimits override (run_corpus.py --limits private).
+# Each job first frees runner disk (the test profiles pull several GB of containers or conda packages) and samples
+# free memory and disk every 5 s; the job summary and the resources.json artifact give the start and minimum values.
+# Both jobs use tests/pipelines/real/runner_probe.sh (results: docs/research/corpus-ci-2026-10-27.md).
 on:
   workflow_call:
   schedule:
@@ -24,20 +27,13 @@ jobs:
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: {persist-credentials: false}
+      - name: Unit tests of run_corpus.py
+        run: python3 -m unittest tests/pipelines/real/test_run_corpus.py
       - id: m
         env:
           TIER: ${{ github.event_name == 'schedule' && 'nightly' || (inputs.tier || 'pr') }}
-        run: |
-          python3 - "$TIER" >> "$GITHUB_OUTPUT" <<'PY'
-          import json, sys, yaml
-          tier = sys.argv[1]
-          c = yaml.safe_load(open("tests/pipelines/real/corpus.yaml"))
-          want = {"pr": {"pr"}, "nightly": {"pr", "nightly"}, "manual": {"pr", "nightly", "manual"}}[tier]
-          nf = [e for e in c["nfcore"] if e["tier"] in want]
-          smk = [e for e in c["snakemake_catalog"] if e["tier"] in want]
-          print("nfcore=" + json.dumps(nf))
-          print("smk=" + json.dumps(smk))
-          PY
+        # Validates corpus.yaml first (pinned refs, plain-token paths and args) and fails naming the entry.
+        run: python3 tests/pipelines/real/run_corpus.py --matrix "$TIER" >> "$GITHUB_OUTPUT"
 
   nfcore:
     needs: matrix
@@ -48,22 +44,38 @@ jobs:
       fail-fast: false
       matrix:
         p: ${{ fromJSON(needs.matrix.outputs.nfcore) }}
+    env:
+      NAME: ${{ matrix.p.name }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: {persist-credentials: false}
+      - name: Free runner disk
+        if: runner.environment == 'github-hosted'
+        run: bash tests/pipelines/real/runner_probe.sh free
+      - name: Sample free memory and disk every 5 s
+        run: bash tests/pipelines/real/runner_probe.sh sample
       - uses: nf-core/setup-nextflow@893c28b667aedeba26e37f296d260ccc5bc4d914 # v3.0.1
         with: {version: "26.10.3"}
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with: {enable-cache: false}  # no shared cache (zizmor cache-poisoning)
       - name: Run test profile
+        env:
+          LIMITS: ${{ github.event.repository.private && 'private' || 'public' }}
         run: |
           uv run --with pyyaml python tests/pipelines/real/run_corpus.py --engine nextflow \
-            --name ${{ matrix.p.name }} --workdir "$RUNNER_TEMP/corpus" \
-            --limits ${{ github.event.repository.private && 'private' || 'public' }}
+            --name "$NAME" --workdir "$RUNNER_TEMP/corpus" --limits "$LIMITS"
+      - if: failure() || cancelled()
+        name: Tail of the run log
+        run: tail -n 80 "$RUNNER_TEMP/corpus/$NAME/run.log" || true
+      - if: always()
+        name: Memory and disk summary
+        run: bash tests/pipelines/real/runner_probe.sh summary "$NAME"
       - if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: nfcore-${{ matrix.p.name }}
           path: |
+            ${{ runner.temp }}/res/**
             ${{ runner.temp }}/corpus/${{ matrix.p.name }}/result.json
             ${{ runner.temp }}/corpus/${{ matrix.p.name }}/run.log
             ${{ runner.temp }}/corpus/${{ matrix.p.name }}/results/pipeline_info/**
@@ -78,7 +90,22 @@ jobs:
       fail-fast: false
       matrix:
         w: ${{ fromJSON(needs.matrix.outputs.smk) }}
+    env:
+      NAME: ${{ matrix.w.name }}
     steps:
+      # The workflow's own checkout below replaces the workspace, so the probe is copied out of it first.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+          sparse-checkout: tests/pipelines/real/runner_probe.sh
+          sparse-checkout-cone-mode: false
+      - name: Copy the runner probe out of the workspace
+        run: cp tests/pipelines/real/runner_probe.sh "$RUNNER_TEMP/runner_probe.sh"
+      - name: Free runner disk
+        if: runner.environment == 'github-hosted'
+        run: bash "$RUNNER_TEMP/runner_probe.sh" free
+      - name: Sample free memory and disk every 5 s
+        run: bash "$RUNNER_TEMP/runner_probe.sh" sample
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with:
           repository: ${{ matrix.w.repo }}
@@ -89,6 +116,14 @@ jobs:
         uses: snakemake/snakemake-github-action@6fe563b0130fe20e371f61262320e21224e78a58 # v2.1.2
         with:
           directory: ${{ matrix.w.directory }}
-          snakefile: workflow/Snakefile
+          snakefile: ${{ matrix.w.snakefile || 'workflow/Snakefile' }}
           snakemake-version: "9.27.1"
           args: "${{ matrix.w.args }} --conda-cleanup-pkgs cache --show-failed-logs"
+      - if: always()
+        name: Memory and disk summary
+        run: bash "$RUNNER_TEMP/runner_probe.sh" summary "$NAME"
+      - if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: smk-${{ matrix.w.name }}
+          path: ${{ runner.temp }}/res/**
