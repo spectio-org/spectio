@@ -11,13 +11,26 @@ summary). Later these runs are launched through Spectio instead of directly (sam
 """
 from __future__ import annotations
 
-import argparse, json, os, subprocess, sys, time
+import argparse, json, os, re, subprocess, sys, time
 from pathlib import Path
 
 import yaml
 
 HERE = Path(__file__).resolve().parent
 CORPUS = yaml.safe_load(open(HERE / "corpus.yaml"))
+
+
+def clone(url: str, ref: str, dest: Path, submodules: bool = False) -> None:
+    """Shallow clone at a tag or branch, or at a full commit SHA (for repositories with no release tag)."""
+    if re.fullmatch(r"[0-9a-f]{40}", ref):
+        subprocess.run(["git", "init", "-q", str(dest)], check=True)
+        subprocess.run(["git", "-C", str(dest), "fetch", "-q", "--depth", "1", url, ref], check=True)
+        subprocess.run(["git", "-C", str(dest), "checkout", "-q", "FETCH_HEAD"], check=True)
+        if submodules:
+            subprocess.run(["git", "-C", str(dest), "submodule", "update", "-q", "--init", "--recursive", "--depth", "1"], check=True)
+    else:
+        subprocess.run(["git", "clone", "-q", "--depth", "1", "--branch", ref,
+                        *(["--recurse-submodules", "--shallow-submodules"] if submodules else []), url, str(dest)], check=True)
 
 
 def nf_entry(e, wd: Path, nf: str, limits: str, nf_version: str | None) -> dict:
@@ -35,19 +48,18 @@ def nf_entry(e, wd: Path, nf: str, limits: str, nf_version: str | None) -> dict:
     # GitHub API, which rate-limits anonymous calls (60/h) and is refused behind some proxies.
     src = wd / "src"
     if not src.exists():
-        subprocess.run(["git", "clone", "-q", "--depth", "1", "--branch", e["version"],
-                        f"https://github.com/nf-core/{e['name']}.git", str(src)], check=True)
-    cmd = [nf, "run", str(src), "-profile", "test,docker", "--outdir", str(out), "-c", str(cfg)]
-    env = dict(os.environ, **({"NXF_VER": nf_version} if nf_version else {}))
+        clone(f"https://github.com/nf-core/{e['name']}.git", e["version"], src)
+    cmd = [nf, "run", str(src), "-profile", "test,docker", "--outdir", str(out), "-c", str(cfg), *e.get("args", "").split()]
+    # Per-entry environment from corpus.yaml, e.g. NXF_SYNTAX_PARSER=v1 for releases the strict parser rejects.
+    env = dict(os.environ, **e.get("env", {}), **({"NXF_VER": nf_version} if nf_version else {}))
     return {"cmd": cmd, "env": env, "cwd": wd}
 
 
 def smk_entry(e, wd: Path, smk: str) -> dict:
     repo = wd / "repo"
     if not repo.exists():
-        subprocess.run(["git", "clone", "--depth", "1", "--branch", e["tag"], *(["--recurse-submodules", "--shallow-submodules"] if e.get("submodules") else []),
-                        f"https://github.com/{e['repo']}.git", str(repo)], check=True)
-    cmd = [smk, "--snakefile", "workflow/Snakefile", "--directory", e["directory"], *e["args"].split()]
+        clone(f"https://github.com/{e['repo']}.git", e["tag"], repo, e.get("submodules", False))
+    cmd = [smk, "--snakefile", e.get("snakefile", "workflow/Snakefile"), "--directory", e["directory"], *e["args"].split()]
     if "--sdm" not in e["args"] and "-n" not in e["args"].split():
         cmd += ["--sdm", "conda"]
     return {"cmd": cmd, "env": dict(os.environ), "cwd": repo}
@@ -70,7 +82,7 @@ def main() -> int:
               [("snakemake", e, e["repo"].split("/")[1]) for e in CORPUS["snakemake_catalog"]]
     if a.list:
         for eng, e, n in entries:
-            print(f"{eng:9s} {n:32s} {e.get('version') or e.get('tag'):8s} {e['tier']:8s} {e['class']}")
+            print(f"{eng:9s} {n:32s} {(e.get('version') or e.get('tag'))[:8]:8s} {e['tier']:8s} {e['class']}")
         return 0
     sel = [(eng, e, n) for eng, e, n in entries
            if (not a.engine or eng == a.engine) and (not a.name or n == a.name) and (not a.tier or e["tier"] == a.tier)]
@@ -83,8 +95,9 @@ def main() -> int:
         wd = Path(a.workdir) / n; wd.mkdir(parents=True, exist_ok=True)
         spec = nf_entry(e, wd, a.nextflow, a.limits, a.nf_version) if eng == "nextflow" else smk_entry(e, wd, a.snakemake)
         t0 = time.time()
-        p = subprocess.run(spec["cmd"], cwd=spec["cwd"], env=spec["env"], capture_output=True, text=True)
-        (wd / "run.log").write_text(p.stdout + p.stderr)
+        # Stream to run.log, so a run killed by a full disk or the job timeout still leaves its log.
+        with open(wd / "run.log", "w") as log:
+            p = subprocess.run(spec["cmd"], cwd=spec["cwd"], env=spec["env"], stdout=log, stderr=subprocess.STDOUT)
         res = {"engine": eng, "name": n, "exit": p.returncode, "seconds": round(time.time() - t0), "cmd": spec["cmd"]}
         if eng == "nextflow":
             res["outputs"] = sorted(str(x.relative_to(wd / "results")) for x in (wd / "results").glob("*")) if (wd / "results").exists() else []
