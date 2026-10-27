@@ -1,7 +1,7 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T00:02:11Z",
-  "current_wave": "W1",
+  "updated_at": "2026-10-27T00:23:15Z",
+  "current_wave": "W2",
   "steps": {
     "F1": {
       "wave": "W0",
@@ -76,7 +76,7 @@
         "docs/reviews/R1-consistency.md",
         "docs/progress/W1/R1.md"
       ],
-      "notes": "docs gate pass; doc-reviewer approve"
+      "notes": "docs gate pass; doc-reviewer approve 14/14"
     },
     "R2": {
       "wave": "W1",
@@ -89,7 +89,7 @@
         "docs/reviews/R2-open-validations.md",
         "docs/progress/W1/R2.md"
       ],
-      "notes": "docs gate pass; doc-reviewer approve"
+      "notes": "docs gate pass; doc-reviewer approve 12/14"
     },
     "R4": {
       "wave": "W1",
@@ -101,7 +101,7 @@
         "docs/reviews/R4-constraints.md",
         "docs/progress/W1/R4.md"
       ],
-      "notes": "docs gate pass; doc-reviewer approve"
+      "notes": "docs gate pass; doc-reviewer approve 13/14"
     },
     "R5": {
       "wave": "W1",
@@ -113,7 +113,7 @@
         "docs/reviews/R5-security.md",
         "docs/progress/W1/R5.md"
       ],
-      "notes": "docs gate pass; doc-reviewer approve"
+      "notes": "docs gate pass; doc-reviewer approve 13/14"
     },
     "R7": {
       "wave": "W1",
@@ -125,7 +125,7 @@
         "docs/reviews/R7-ui.md",
         "docs/progress/W1/R7.md"
       ],
-      "notes": "docs gate pass; doc-reviewer approve"
+      "notes": "docs gate pass; doc-reviewer approve 14/14"
     },
     "R8": {
       "wave": "W1",
@@ -137,7 +137,7 @@
         "docs/reviews/R8-depictio.md",
         "docs/progress/W1/R8.md"
       ],
-      "notes": "docs gate pass; doc-reviewer approve"
+      "notes": "docs gate pass; doc-reviewer approve 13/14"
     },
     "R9": {
       "wave": "W1",
@@ -150,7 +150,7 @@
         "docs/research/landscape-2026-10-26.md",
         "docs/progress/W1/R9.md"
       ],
-      "notes": "docs gate pass; doc-reviewer approve"
+      "notes": "docs gate pass; doc-reviewer approve 13/14"
     },
     "D2": {
       "wave": "W1",
@@ -163,7 +163,7 @@
         "branch spike/cloud-env @217a92c",
         "docs/progress/W1/D2.md"
       ],
-      "notes": "docs gate pass; doc-reviewer approve"
+      "notes": "docs gate pass; doc-reviewer approve 12/14"
     },
     "TRIAGE1": {
       "wave": "W2",
@@ -374,12 +374,15 @@
     },
     "R11": {
       "wave": "W1",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T00:02:11Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "finished_at": "2026-10-27T00:23:15Z",
+      "outputs": [
+        "docs/reviews/R11-docs.md",
+        "docs/progress/W1/R11.md"
+      ],
+      "notes": "docs gate pass; doc-reviewer approve 13/14"
     },
     "T7": {
       "wave": "W3",
