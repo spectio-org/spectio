@@ -29,4 +29,5 @@ Each review round writes one file here, `<round-id>.md` (e.g. `R1-consistency.md
 - `DL`: depictio liaison;
 - `TA`: test architect;
 - `IE`: infra engineer;
-- `DEP-T`: depictio liaison, tooling and ecosystem re-audit (R8b).
+- `DEP-T`: depictio liaison, tooling and ecosystem re-audit (R8b);
+- `CR`: code reviewer, one file per build step in `code/<step-id>.md` (`review-code` skill).

@@ -52,13 +52,13 @@ If nothing is ready, go to §5.
 
 ## 2. Run the batch
 
-Set each step's status to `running` with `started_at`, then commit the state (`chore(autopilot): start <ids>`) so a parallel or later session sees the claim. Then dispatch every step of the batch **in one message**:
+Set each step's status to `running` with `started_at` and `base` (the integration branch tip, `git rev-parse HEAD`; `review-code` diffs from it), then commit the state (`chore(autopilot): start <ids>`) so a parallel or later session sees the claim. Then dispatch every step of the batch **in one message**:
 
 | kind | How to run it |
 |---|---|
 | `review` | Run the `review-round` skill procedure for the step. Its prompt is the code block under the heading `### <prompt_ref>` in `docs/playbooks/next-phase.md`. When the round needs more than 8 agents, or asks for adversarial cross-checking, ask for a **dynamic workflow** ("use a workflow…"), so the fan-out and cross-check run in a script rather than in your context. Otherwise dispatch the named project agents as parallel subagents. |
 | `spike` | Run the `spike` skill procedure in a worktree (`isolation: worktree` subagent, or `using-git-worktrees`). |
-| `build` | One `general-purpose` subagent in its own worktree. Its prompt is the step's prompt from next-phase.md, plus: "Use test-driven-development and verification-before-completion. Commit on branch `autopilot/<step-id>`. Report the commands you ran and their output." |
+| `build` | One `general-purpose` subagent in its own worktree. Its prompt is the step's prompt from next-phase.md, plus: "Follow karpathy-guidelines (simplicity first, surgical changes). Use test-driven-development and verification-before-completion. Commit on branch `autopilot/<step-id>`. Report the commands you ran and their output, and the one command that tests the step." Keep the worker available: `review-code` sends its findings back to it (§3). |
 | `plan` | One subagent using the `writing-plans` skill with the step's prompt. |
 | `triage` | You do this yourself (§3), not a subagent. |
 | `apply` | Run the `apply-findings` skill for each listed round, sequentially, on the integration branch. |
@@ -74,13 +74,14 @@ Give every worker:
 **Verify each finished step:**
 1. Check that the expected `writes` exist and are non-empty.
 2. Run the step's `exit_check` (or the wave's, once its last step finishes) and show its output.
-3. **Docs.** Run the `write-docs` skill for the step (Progress page, owning spec, figures, media, docs gate, independent `doc-reviewer` pass). A step is `done` only with gate `pass` and review `approve` (`docs/specs/documentation-system.md` §3.3).
-4. **Integrate.**
+3. **Code.** For a step whose diff changes code (every `build`, and a `spike` whose code is reused), run the `review-code` skill: independent `code-reviewer`, at most two fix rounds with the worker, then a behaviour-preserving `code-simplifier` pass, with the tests re-run each time. A step is `done` only with review `approve` and tests passing; two failed rounds make it `blocked` with an inbox entry. Then re-run the `exit_check`. Steps that change only docs, specs or boards skip this.
+4. **Docs.** Run the `write-docs` skill for the step (Progress page, owning spec, figures, media, docs gate, independent `doc-reviewer` pass). A step is `done` only with gate `pass` and review `approve` (`docs/specs/documentation-system.md` §3.3).
+5. **Integrate.**
    - **With a remote:** push `autopilot/<step-id>` and open a PR into the integration branch, with the body from `write-docs`. Then run `gh pr merge --auto --squash`; GitHub merges it once the required checks pass.
    - **Without a remote:** `git merge --no-ff` locally.
    - **On a conflict:** set the step to `failed` and note the conflicting files; do not resolve by deleting work.
-5. Record the cost of the step when known: `python3 tools/autopilot/budget.py record-cost --usd <x> --kind <kind> --step <id>`.
-6. **Interrupted by a plan limit.** A step stopped by a usage limit, a `StopFailure` with `rate_limit` or `.autopilot/limit-hit.json`, goes back to `pending` with the note `limit`. Its attempts are not incremented.
+6. Record the cost of the step when known: `python3 tools/autopilot/budget.py record-cost --usd <x> --kind <kind> --step <id>`.
+7. **Interrupted by a plan limit.** A step stopped by a usage limit, a `StopFailure` with `rate_limit` or `.autopilot/limit-hit.json`, goes back to `pending` with the note `limit`. Its attempts are not incremented.
 
 **Outcome:**
 - **Passes:** status `done`, with `finished_at` and `outputs`.

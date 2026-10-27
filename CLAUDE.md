@@ -32,7 +32,7 @@ Budget: `/autopilot --budget 30%w` (a share of the weekly window) or `--budget u
 - **Docs build.** It must pass: `uvx --with mkdocs-material mkdocs build --strict`.
 - **Docs are part of done.** Every step and PR leaves its docs (`write-docs` skill): a Progress page, the owning spec, figures and media. It is then checked by `python3 tools/docs/check.py` and approved by `doc-reviewer`. Rules: `docs/specs/documentation-system.md`.
 - **UI boards.** Render them with `node tools/canvas/render.js design/ui-canvas/<Board>.dc.html 1440 1180 /tmp/out.png`, then look at the PNG before claiming a UI change works. Board conventions: `main > *{flex-shrink:0}`, no `sc-for` inside `<svg>` (draw charts in HTML), shared components through `dc-import` (`AppSidebar`, `AppTopbar`, `AdminNav`, `MobileTopbar`, `MobileTabbar`).
-- **Coding behaviour.** Follow the `karpathy-guidelines` skill: think before coding, simplicity first, surgical changes, goal-driven execution with explicit verification.
+- **Coding behaviour.** Follow the `karpathy-guidelines` skill: think before coding, simplicity first, surgical changes, goal-driven execution with explicit verification. Every change to code goes through the `review-code` skill (code-reviewer, then code-simplifier) before its docs and its PR.
 - **Engineering workflow.** Use the vendored superpowers skills: `brainstorming`, `writing-plans`, `subagent-driven-development`, `test-driven-development`, `systematic-debugging`, `verification-before-completion`, `requesting-code-review`, `using-git-worktrees`.
 
 ## Agents in `.claude/agents/`
@@ -51,8 +51,10 @@ Budget: `/autopilot --budget 30%w` (a share of the weekly window) or `--budget u
 | `diagram-artist` | hand-drawn figures with `tools/diagrams/sketch.py` (pictograms, not boxes) |
 | `media-capture` | screenshots, generated casts, browser videos, combined terminal and browser captures (`tools/media`) |
 | `doc-reviewer` | independent docs review with a fresh context: rubric score and approve / changes / block |
+| `code-reviewer` | independent review of a build step's diff: requirement fit, correctness, tests, Karpathy simplicity and surgical changes; approve / changes / block |
+| `code-simplifier` | behaviour-preserving simplification of the step's own diff after an approved review, tests re-run |
 
-Reviewers are read-only and report findings. They never edit specs.
+Reviewers are read-only and report findings. They never edit specs. `code-simplifier` is the one exception that edits code, and only on the step's branch; the `review-code` skill chains it after `code-reviewer`.
 
 ## Useful commands
 
