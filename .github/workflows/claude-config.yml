@@ -1,0 +1,29 @@
+name: claude-config
+
+# Fails when an agent or skill under .claude has frontmatter Claude Code would not load as intended
+# (docs/specs/dev-environment-and-testing.md §11).
+on:
+  pull_request:
+  push:
+    branches: [main, autopilot/integration]
+
+permissions: {}
+
+concurrency:
+  group: claude-config-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontmatter:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+      - name: PyYAML
+        run: pip install --break-system-packages pyyaml==6.0.3
+      - name: Self-test on broken fixtures
+        run: python3 -m unittest tools/claude/test_check_frontmatter.py
+      - name: Agent and skill frontmatter
+        run: python3 tools/claude/check_frontmatter.py .claude
