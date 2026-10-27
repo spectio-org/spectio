@@ -42,7 +42,7 @@
   - **Why:** after a fatal failure, which other tasks finished, were aborted or were cached depends on timing.
   - **Example:** in `tool_error_then_fixed_resume` the resume run had 62 cached tasks in one execution and 63 in the next, on each of the three Nextflow versions.
 - **Checks:**
-  - `run_scenarios.py --golden check` fails a scenario whose outcomes differ from its fixture, and writes `golden.actual.tsv` next to the run. A version without fixtures is skipped with a note.
+  - `run_scenarios.py --golden check` fails a scenario whose outcomes differ from its fixture, and writes `golden.actual.tsv` next to the run. Three cases fail the run: a missing fixture directory for the engine version, a version that does not read as `X.Y.Z`, and a missing file for a PR scenario. Only nightly scenarios may have no fixture.
   - A deliberately altered fixture (`happy`, ALIGN 24 → 23) failed the check, and the restored one passed.
   - `test_golden.py` unit-tests the normaliser on sample trace and log text, and checks that every engine version has exactly one fixture per PR scenario.
 - **CI.** `pipelines-synthetic.yml` now runs the unit test and `--golden check`. Its Nextflow 26.10 pin moves from 26.10.3 to 26.10.4, so that it matches `NEXTFLOW_VERSION` in `dev/versions.env` and has fixtures. Nextflow 25.04.8 has fixtures but no CI leg (open item 4).
@@ -83,7 +83,7 @@ The `--memory 512m` flag is visible in the task's `.command.run`.
    - **Effect.** `qc_stats` and `qc_report` never ran before the gate. On the rerun, the `temp()` reads had already been deleted, so 12 `make_reads` and 2 `split` jobs ran again.
    - **Fix.** The harness now stops at that gate with `--until qc_report align_done`. The rerun then runs only the 5 quant jobs, and the first run must now produce `multiqc/general_stats.tsv` (a new `scenarios.yaml` expectation).
    - **For Spectio.** A Snakemake gate after stage N must name the last target of every stage up to N, not only stage N's.
-   - **Spec.** §10.1 changed.
+   - **Spec.** §10.1 now records the harness fact. The generation rule belongs to `checking-scenarios.md` §12.3, which needs a change: [inbox #48](../reviews/inbox.md#48-gate-targets-must-include-every-earlier-stages-last-targets-until-runs-only-the-targets-own-dependencies).
 2. **Snakemake retries tool errors; Nextflow does not.**
    - `--retries` is the "Number of times to restart failing jobs" ([`cli.py` L1508–L1513 at v9.27.1](https://github.com/snakemake/snakemake/blob/v9.27.1/src/snakemake/cli.py#L1508-L1513)), whatever the exit code. So `tool_error_then_fixed_resume` runs 3 attempts on Snakemake.
    - On Nextflow, the `errorStrategy` closure in `nextflow.config` retries only 137, 140, 143 and `Integer.MAX_VALUE`.
@@ -152,9 +152,9 @@ Observed on 9.27.1, with `gate_qc_then_resume` (`--until qc_report`, then a plai
 
 ## Open items
 
-1. **Gate stop-and-resume on rnaseq and sarek.** Add `gate` support to `run_corpus.py` and use it in their nightly entries (above). This closes CH-016 ([inbox #28](../reviews/inbox.md#28-assumed-engine-bridges-runner-and-scheduler)).
+1. **Gate stop-and-resume on rnaseq and sarek.** Add `gate` support to `run_corpus.py` and use it in their nightly entries (above). This closes CH-016 ([inbox #28](../reviews/inbox.md#28-assumed-engine-bridges-runner-and-scheduler)). Tracked as [inbox #47](../reviews/inbox.md#47-assumed-the-rnaseq-and-sarek-gate-stop-and-resume-check-moves-to-the-nightly-corpus).
 2. **Job arrays in the `slurm` profile** (`array = 20` on ALIGN): not provable with the local executor. To be proven in T3 on sind.
-3. **`fanout_stress`** (about 12 000 ALIGN tasks, nightly): not run here. It has no golden fixture; `--golden check` skips it.
+3. **`fanout_stress`** (about 12 000 ALIGN tasks, nightly): not run here. It has no golden fixture, which `--golden check` allows for nightly scenarios.
 4. **Nextflow 25.04.8**, the supported floor (§1), passes and has fixtures, but has no CI leg in `pipelines-synthetic.yml`. Adding one costs about 5 min per run.
 5. **`oom_real` on Snakemake**, and `oom_real` as a scenario: needs a memory limit that is actually enforced (Docker, SLURM or Kubernetes). To be proven in T3 (`OUT_OF_MEMORY`) and T4 (`OOMKilled`).
 6. **The `k8s` profile** needs the shared `bin/` inside the pod (finding 3). T4 must solve it.

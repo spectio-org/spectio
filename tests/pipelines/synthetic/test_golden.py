@@ -4,7 +4,7 @@
 
 A fresh run is compared with the fixtures by `run_scenarios.py --golden check`.
 """
-import sys, unittest
+import sys, tempfile, unittest
 from pathlib import Path
 
 import yaml
@@ -78,12 +78,33 @@ class NormaliseTest(unittest.TestCase):
         rows = [l for l in text.splitlines() if not l.startswith("#")][1:]
         self.assertEqual(rows, ["1\tQC_STATS\tCOMPLETED\t0\t2\tS05\t1", "1\tQC_STATS\tFAILED\t137\t1\tS05\t1"])
 
+    def test_sample_matches_a_whole_tag_token(self):
+        rows = [("ALIGN", "S1.chunk0000", "FAILED", "1", "1"), ("ALIGN", "S10.chunk0000", "FAILED", "1", "1"),
+                ("ALIGN", "sample=S10, i=0000", "FAILED", "1", "1"), ("ALIGN", "sample=S1, i=0000", "FAILED", "1", "1")]
+        text = rs.golden_text("nextflow", "0.0", "x", [(1, rows)], ("ALIGN", "S1"))
+        self.assertIn("S1.chunk0000", text)
+        self.assertIn("sample=S1, i=0000", text)
+        self.assertNotIn("S10", text)
+
+
+class GoldenDirTest(unittest.TestCase):
+    def test_check_fails_when_the_version_has_no_fixtures(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            with self.assertRaises(ValueError):
+                rs.golden_dir_for("nextflow", "99.1.0", "check", Path(tmp))
+            self.assertEqual(rs.golden_dir_for("nextflow", "99.1.0", "record", Path(tmp)), Path(tmp) / "nextflow-99.1.0")
+
+    def test_an_unreadable_version_is_rejected(self):
+        for v in ("unknown", "../x", "26.10", ""):
+            with self.assertRaises(ValueError):
+                rs.golden_dir_for("nextflow", v, "record")
+
 
 class FixturesTest(unittest.TestCase):
     """The recorded fixtures parse and cover every PR scenario that runs on their engine."""
 
     def test_fixtures_cover_every_pr_scenario(self):
-        scenarios = yaml.safe_load(open(HERE / "scenarios.yaml"))["scenarios"]
+        scenarios = yaml.safe_load((HERE / "scenarios.yaml").read_text())["scenarios"]
         dirs = sorted(p for p in (HERE / "golden").iterdir() if p.is_dir())
         self.assertTrue(dirs, "no golden fixtures recorded")
         for d in dirs:

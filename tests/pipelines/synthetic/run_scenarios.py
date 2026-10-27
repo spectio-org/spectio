@@ -7,7 +7,8 @@
 Writes <workdir>/<engine>/report.json and exits non-zero if any scenario fails.
 Golden fixtures (golden/<engine>-<version>/<scenario>.tsv, local executor only):
   --golden record   writes them from this run
-  --golden check    compares this run with them (a version without fixtures is skipped)
+  --golden check    compares this run with them; a missing directory, or a missing file for a PR
+                    scenario, is an error (nightly scenarios may have none)
 Extra executor arguments (e.g. a SLURM profile) go after `--`:
   python3 run_scenarios.py --engine nextflow -- -profile test,slurm
 """
@@ -158,7 +159,7 @@ def golden_text(engine: str, version: str, scenario: str, runs: list[tuple[int, 
     counts = Counter()
     for i, (_, rows) in enumerate(runs, 1):
         for proc, tag, status, code, attempt in rows:
-            if target and (proc != target[0] or target[1] not in tag):
+            if target and (proc != target[0] or (target[1] and target[1] not in re.split(r"[^A-Za-z0-9]+", tag))):
                 continue
             plain = status in ("COMPLETED", "CACHED") and attempt == "1"
             counts[(str(i), proc, status, code, attempt, "*" if plain else tag)] += 1
@@ -175,6 +176,17 @@ def golden_target(sc: dict) -> tuple[str, str] | None:
         if p.get("fail_process"):
             return p["fail_process"].upper(), str(p.get("fail_sample", ""))
     return None
+
+
+def golden_dir_for(engine: str, version: str, mode: str, root: Path = GOLDEN) -> Path:
+    """The fixture directory of an engine version. ValueError on an unreadable version, or in check mode
+    on a missing directory, so that a check can never pass by finding nothing to compare."""
+    if not re.fullmatch(r"\d+\.\d+\.\d+", version):
+        raise ValueError(f"cannot read the {engine} version (got {version!r})")
+    d = root / f"{engine}-{version}"
+    if mode == "check" and not d.is_dir():
+        raise ValueError(f"no golden fixtures for {engine} {version} ({d}); record them with --golden record")
+    return d
 
 
 def engine_version(engine: str, binary: str) -> str:
@@ -228,17 +240,20 @@ def main() -> int:
     a = ap.parse_args()
     if a.golden and a.extra:
         ap.error("golden fixtures are recorded with the local executor only (no extra arguments)")
-    version = engine_version(a.engine, a.nextflow if a.engine == "nextflow" else a.snakemake) if a.golden else ""
-    golden_dir = GOLDEN / f"{a.engine}-{version}"
-    if a.golden == "check" and not golden_dir.is_dir():
-        print(f"note: no golden fixtures for {a.engine} {version}; golden check skipped", flush=True)
+    if a.golden:
+        version = engine_version(a.engine, a.nextflow if a.engine == "nextflow" else a.snakemake)
+        try:
+            golden_dir = golden_dir_for(a.engine, version, a.golden)
+        except ValueError as e:
+            ap.error(str(e))
 
-    scenarios = yaml.safe_load(open(HERE / "scenarios.yaml"))["scenarios"]
+    spec = yaml.safe_load((HERE / "scenarios.yaml").read_text())
+    scenarios = spec["scenarios"]
     if a.only: scenarios = [s for s in scenarios if s["id"] in a.only.split(",")]
     elif not a.nightly: scenarios = [s for s in scenarios if not s.get("nightly")]
     base = Path(a.workdir) / a.engine
     base.mkdir(parents=True, exist_ok=True)
-    faults = yaml.safe_load(open(HERE / "scenarios.yaml")).get("engine_faults", {}).get(a.engine, [])
+    faults = spec.get("engine_faults", {}).get(a.engine, [])
     results = []
     for sc in scenarios:
         if sc.get("engines") and a.engine not in sc["engines"]:
@@ -266,13 +281,18 @@ def main() -> int:
                 break
             seen += hit
             (launch.parent / f"{sc['id']}.fault-{hit[0]}.log").write_text("\n".join(logs))
-        gold = golden_dir / f"{sc['id']}.tsv"
-        text = golden_text(a.engine, version, sc["id"], outcomes, golden_target(sc))
-        if a.golden == "record" and not errs:
-            golden_dir.mkdir(parents=True, exist_ok=True); gold.write_text(text)
-        elif a.golden == "check" and gold.exists() and gold.read_text() != text:
-            (launch / "golden.actual.tsv").write_text(text)
-            errs.append(f"differs from {gold.relative_to(HERE)} (see {launch / 'golden.actual.tsv'})")
+        if a.golden:
+            gold = golden_dir / f"{sc['id']}.tsv"
+            text = golden_text(a.engine, version, sc["id"], outcomes, golden_target(sc))
+            if a.golden == "record":
+                if not errs:
+                    golden_dir.mkdir(parents=True, exist_ok=True); gold.write_text(text)
+            elif not gold.exists():
+                if not sc.get("nightly"):
+                    errs.append(f"missing golden fixture {gold.relative_to(HERE)}")
+            elif gold.read_text() != text:
+                (launch / "golden.actual.tsv").write_text(text)
+                errs.append(f"differs from {gold.relative_to(HERE)} (see {launch / 'golden.actual.tsv'})")
         ok = not errs
         results.append({"id": sc["id"], "ok": ok, "seconds": round(time.time() - t0, 1), "errors": errs,
                         "engine_faults": seen,
