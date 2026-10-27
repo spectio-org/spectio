@@ -22,6 +22,7 @@ def alias(event, action="", pr="", title="", inp="", ref="refs/heads/main"):
         out.touch()
         env = {"PATH": os.environ["PATH"], "GITHUB_OUTPUT": str(out), "EVENT": event, "ACTION": action, "PR": pr,
                "TITLE": title, "INPUT": inp, "GITHUB_REF": ref, "GITHUB_REF_NAME": ref.split("/", 2)[-1], "HOME": tmp}
+        # The step has no `shell:`, so GitHub runs it as `bash -e {0}` (no pipefail; seen in the run logs).
         r = subprocess.run(["bash", "-e", "-c", STEP["run"]], env=env, capture_output=True, text=True, cwd=tmp)
         got = out.read_text().strip().removeprefix("alias=") if r.returncode == 0 else None
         return got, r.stdout
