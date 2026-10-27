@@ -46,10 +46,15 @@ FIGURE_EXEMPT = {"W0/F3", "W0/F4", "W0/F6", "W1/R1", "W1/R11", "W1/R2", "W1/R4",
 failures: list[str] = []
 
 
+def _escape(text: str) -> str:
+    """Workflow-command escaping, so a multi-line message stays one annotation."""
+    return text.replace("%", "%25").replace("\r", "%0D").replace("\n", "%0A")
+
+
 def fail(check: str, msg: str, file: str | None = None) -> None:
     failures.append(f"{check}: {msg}")
-    loc = f" file={file}" if file else ""
-    print(f"::error{loc}::[{check}] {msg}")
+    loc = f" file={_escape(file)}" if file else ""
+    print(f"::error{loc}::[{check}] {_escape(msg)}")
 
 
 def check_build() -> None:
@@ -70,7 +75,11 @@ def built_page(src: pathlib.PurePosixPath) -> str:
 
 
 def check_progress_hook(site: pathlib.Path, docs: pathlib.Path = DOCS) -> None:
-    """hooks/progress.py ran: no built page keeps a placeholder, and each page that had one shows its output."""
+    """hooks/progress.py ran: no built page keeps a placeholder, and each page that had one shows its output.
+
+    Write a full placeholder comment only where it should render: the hook replaces it in any page, code spans included.
+    Elsewhere, quote it without the comment delimiters (spectio:progress-strip).
+    """
     for html in sorted(site.rglob("*.html")):
         if "<!-- spectio:progress-" in html.read_text(errors="replace"):
             fail("build", f"unrendered progress placeholder in {html.relative_to(site)} (hooks/progress.py did not run)")

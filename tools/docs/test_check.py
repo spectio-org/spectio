@@ -1,5 +1,8 @@
-"""Tests for the progress-hook part of the build check. Run: python3 -m unittest tools/docs/test_check.py"""
+"""Tests for tools/docs/check.py: the progress-hook part of the build check, and the annotation format.
+Run: python3 -m unittest tools/docs/test_check.py"""
+import contextlib
 import importlib.util
+import io
 import pathlib
 import tempfile
 import unittest
@@ -34,7 +37,8 @@ class ProgressHookOutput(unittest.TestCase):
             path.write_text(text)
 
     def run_check(self):
-        check.check_progress_hook(self.site, self.docs)
+        with contextlib.redirect_stdout(io.StringIO()):
+            check.check_progress_hook(self.site, self.docs)
         return check.failures
 
     def test_rendered_pages_pass(self):
@@ -60,6 +64,18 @@ class ProgressHookOutput(unittest.TestCase):
         self.assertEqual(check.built_page(pathlib.PurePosixPath("roadmap/index.md")), "roadmap/index.html")
         self.assertEqual(check.built_page(pathlib.PurePosixPath("roadmap/plan.md")), "roadmap/plan/index.html")
         self.assertEqual(check.built_page(pathlib.PurePosixPath("index.md")), "index.html")
+
+
+class Annotation(unittest.TestCase):
+    def tearDown(self):
+        check.failures.clear()
+
+    def test_newlines_and_percent_are_escaped_in_the_error_command(self):
+        out = io.StringIO()
+        with contextlib.redirect_stdout(out):
+            check.fail("build", "50% done\nnext\rline", "a%b\nc")
+        self.assertEqual(out.getvalue(), "::error file=a%25b%0Ac::[build] 50%25 done%0Anext%0Dline\n")
+        self.assertEqual(check.failures, ["build: 50% done\nnext\rline"])
 
 
 if __name__ == "__main__":
