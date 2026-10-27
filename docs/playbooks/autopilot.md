@@ -63,7 +63,7 @@ Use auto mode (Shift+Tab until "auto"), or answer prompts as they come. `/goal` 
 3. Paste the same `/goal` line.
 4. Check it from your phone. Answers go in `docs/reviews/inbox.md`, in a commit, by telling the session, or on the dashboard (below).
 
-**Answering on the dashboard.** In the dashboard's Decisions view, the owner can answer an open, assumed or partial entry: accept the recommendation, or type an answer. The page applies nothing. The next interactive or cloud tick copies the answer into the entry as `Answer (Thomas, <time>, dashboard)` and handles it like any other answer. An answer typed there only chooses among the entry's options. A human gate (`GO`), a merge, a permission or configuration change, or an edit to `CLAUDE.md`, a skill or a `pipeline.yaml` status still needs a session message or a commit (skill §0, step 3).
+**Answering on the dashboard.** In the dashboard's Decisions view, the owner can answer an open, assumed or partial entry: accept the recommendation, or type an answer. The page applies nothing. The next interactive or cloud tick copies the answer into the entry as `Answer (Thomas, <time>, dashboard)`, and the entry stays open. Until you confirm it in a session message or a commit, the answer counts as an assumed default: the autopilot may go ahead with it only when it picks one of the entry's own options. An answer typed there only chooses among the entry's options. A human gate (`GO`), a merge, a permission or configuration change, or an edit to `CLAUDE.md`, a skill or a `pipeline.yaml` status still needs a session message or a commit (skill §0, step 3).
 
 **C. Headless, on any machine with Claude Code signed in (a laptop, or a codespace).**
 
