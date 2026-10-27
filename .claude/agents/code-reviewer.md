@@ -3,6 +3,7 @@ name: code-reviewer
 description: Reviews the code of one Spectio build step or branch with a fresh context — correctness against the step's prompt or plan task, tests that prove behaviour, error handling, security-sensitive paths, and the Karpathy guidelines (simplicity first, surgical changes). Returns approve / changes / block. Use after every build step (W3 onwards), before code-simplifier, and for the whole-branch review at the end of a plan. Read-only.
 tools: Read, Glob, Grep, Bash
 model: opus
+autoCompactWindow: 200000
 effort: high
 color: red
 ---

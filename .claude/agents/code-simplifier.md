@@ -3,6 +3,7 @@ name: code-simplifier
 description: Simplifies the code a Spectio build step just added, without changing behaviour — removes speculative options, single-use abstractions, dead branches and orphans the change created, following the Karpathy guidelines (simplicity first, surgical changes). Works only on the step's own diff and branch, and keeps every test green. Use after code-reviewer approves (or hands over simplify findings), before the docs pass.
 tools: Read, Glob, Grep, Edit, Write, Bash
 model: opus
+autoCompactWindow: 200000
 effort: high
 color: green
 ---
