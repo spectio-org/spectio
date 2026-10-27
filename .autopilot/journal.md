@@ -81,3 +81,20 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Gate:** `tools/docs/check.py` 0 failures; `mkdocs build --strict` exit 0.
 - **Not triaged yet:** the 61 findings wait for TRIAGE2, then APPLY2.
 - **Stopped before TRIAGE2 (budget).** Thomas is asked for a fresh `/usage` reading.
+
+## 2026-10-27 10:59 → 11:16 UTC — tick 5 (TRIAGE2)
+
+- **Budget:** Thomas's reading 62 %, new limit 70 % (`budget.py start --weekly 8 --now 62`).
+- **Finished:** TRIAGE2, claimed in `4bf83e7`, committed in `b573cf1`. Triage done by the orchestrator, no subagent.
+
+  | Round | findings | accepted | rejected | inbox | of which assumed | waiting |
+  |---|---|---|---|---|---|---|
+  | R3 journeys | 27 | 6 | 0 | 21 | 16 | 5 |
+  | R6 contract | 34 | 15 | 0 | 19 | 17 | 2 |
+  | **Total** | **61** | **21** | **0** | **40** | **33** | **7** |
+
+- **Condition 3 re-check.** doc-reviewer asked how "local fix" was checked. Read strictly (at most two content sections in total; other specs get links or a one-line mirror only), 10 of the first 31 accepts were not local: SR-061, CH-043, CH-046, CH-047, CH-048, CH-050, CH-051, SR-065, UX-250, SR-082. They moved to inbox #40 as assumed (apply as written). Condition 4: no logged decision reversed.
+- **Inbox:** entries #32–#40. Waiting on Thomas: #34 (rnaseq stages and gate, MultiQC), #35 SR-067 part (who installs the engines), #36 (ingest contract, split of #11), #37 (browser protection of the loopback API).
+- **Exit checks:** no finding left `open` (grep above); W2 check `tools/docs/check.py` 0 failures; `mkdocs build --strict` exit 0.
+- **DOC-REVIEW** TRIAGE2 verdict=approve score=12/14 (accuracy 1, completeness 1; the two required changes, the condition 3 explanation and the counts, are applied).
+- **Gate weakness noted:** `tools/docs/check.py` accepts `review_score: null` on a done Progress page. Not changed here (tools are out of this step's writes); to fix in a later docs-tooling step.

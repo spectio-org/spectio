@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T10:59:18Z",
+  "updated_at": "2026-10-27T11:16:29Z",
   "current_wave": "W2",
   "steps": {
     "F1": {
@@ -220,12 +220,17 @@
     },
     "TRIAGE2": {
       "wave": "W2",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T10:59:18Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "",
+      "finished_at": "2026-10-27T11:16:29Z",
+      "outputs": [
+        "docs/reviews/R3-journeys.md (statuses)",
+        "docs/reviews/R6-contract.md (statuses)",
+        "docs/reviews/inbox.md #32-#40",
+        "docs/progress/W2/TRIAGE2.md"
+      ],
+      "notes": "61 findings: 21 accepted, 0 rejected, 40 inbox (33 assumed); docs gate pass; doc-reviewer approve 12/14",
       "base": "050a5c5c848679f8618c25c7dddf5c6b5d1afe3d"
     },
     "APPLY2": {
