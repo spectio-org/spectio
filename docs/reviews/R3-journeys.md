@@ -2,7 +2,7 @@
 
 **Step page:** [R3](../progress/W2/R3.md)
 
-**Round:** R3 (journeys) · **Date:** 2026-10-27 · **Found by:** spec-reviewer (journeys 1–2), constraints-hunter (journeys 3–4), ux-reviewer (all four journeys, boards rendered) · **Status of the round:** open, waiting for triage
+**Round:** R3 (journeys) · **Date:** 2026-10-27 · **Found by:** spec-reviewer (journeys 1–2), constraints-hunter (journeys 3–4), ux-reviewer (all four journeys, boards rendered) · **Status of the round:** triaged (TRIAGE2, 2026-10-27): 6 accepted, 0 rejected, 21 inbox (16 assumed) · triage: [TRIAGE2](../progress/W2/TRIAGE2.md)
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `e22e376`. Line numbers ("l.") refer to that commit.
@@ -159,33 +159,33 @@ Each step ends with the spec section that covers it, or with the primary finding
 
 | ID | Severity | Title | Documents touched | Status |
 |---|---|---|---|---|
-| SR-062 | blocker | "Relaunch with changed parameters" from a failed gate is two incompatible flows, and neither is drawn | 7 | open |
-| SR-055 | blocker | No local environment, runner record or in-process runner interface in 0.0.1 | 7 | open |
-| SR-057 | blocker | nf-core/rnaseq cannot be registered, get a stage and get a gate in 0.0.1 through any specified path | 7 | open |
-| CH-041 | blocker | In-process runner: the engine head's fate on server stop, re-adoption and exit code are unspecified | 7 | open |
-| CH-042 | blocker | Run state machine: `failed` is terminal yet "resumable", and launch outcomes are mapped onto the run state | 5 | open |
-| SR-058 | blocker | At gate time after stage 1, `multiqc:` bindings find no MultiQC data, and 0.0.1 installs no MultiQC | 4 | open |
-| SR-054 | blocker | 0.0.1 needs the ingest contract, but the log parks it as "not needed for 0.0.1" | 5 | open |
-| SR-061 | major | Failures before the engine starts have no state transition, reason or screen | 5 | open |
-| CH-047 | major | "Why did it fail": no run-level failure cause, no pointer to the failing task, and no local failure classes | 6 | open |
-| SR-056 | major | Registering a workflow is outside the 0.0.1 cut, and its contract is undefined | 6 | open |
-| CH-043 | major | Resume inputs are not stored: launch directory, engine session ID, engine version, Snakemake unlock and rerun flags | 5 | open |
-| SR-063 | major | The `POST /runs/{id}:relaunch` contract is undefined | 4 | open |
-| SR-064 | major | Parameter history: stored vs resolved values, Snakemake config, response shape | 4 | open |
-| SR-067 | major | Engine prerequisites on a laptop: who provides Java and Nextflow, the Snakemake environment and the bridges | 4 | open |
-| CH-044 | major | The spool forward cursor, replay order and drop policy after a restart are unspecified | 3 | open |
-| CH-046 | major | A head that ends with no terminal event leaves the run and its tasks `running` forever on the local launcher | 3 | open |
-| CH-048 | major | Task and run logs on the local executor: sources unspecified, Tasks and Logs tabs never drawn | 5 | open |
-| CH-049 | major | An open gate across a restart: expired timeouts, interrupted check evaluation, stuck background tasks | 4 | open |
-| CH-050 | major | Task identity across launches of one run: cached tasks reported by Nextflow and silent in Snakemake | 3 | open |
-| SR-059 | major | When every check passes, does the planned stop open a gate or continue automatically? | 3 | open |
-| SR-065 | major | The Snakemake launch form and parameter delivery are not specified for 0.0.1 | 3 | open |
-| UX-243 | major | Relaunch with changed parameters has no parameter editor and no Snakemake variant | 3 | open |
-| UX-250 | major | RunsCompare cannot be reached from a 0.0.1 run screen, and draws data a local run does not have | 5 | open |
-| CH-045 | major | The projector has no checkpoint: events acknowledged but not projected at a crash, re-projection and catch-up order | 2 | open |
-| SR-066 | major | How the runner computes the Snakemake `--until` targets from `match` globs is unspecified | 2 | open |
-| CH-051 | minor | Boot recovery has no defined order and no "catching up" signal in the UI | 4 | open |
-| UX-249 | minor | RunDetail's "Parameters changed vs. previous run" lists a parameter that did not change | 2 | open |
+| SR-062 | blocker | "Relaunch with changed parameters" from a failed gate is two incompatible flows, and neither is drawn | 7 | inbox, assumed (#32) |
+| SR-055 | blocker | No local environment, runner record or in-process runner interface in 0.0.1 | 7 | inbox, assumed (#35) |
+| SR-057 | blocker | nf-core/rnaseq cannot be registered, get a stage and get a gate in 0.0.1 through any specified path | 7 | inbox (#34) |
+| CH-041 | blocker | In-process runner: the engine head's fate on server stop, re-adoption and exit code are unspecified | 7 | inbox, assumed (#35) |
+| CH-042 | blocker | Run state machine: `failed` is terminal yet "resumable", and launch outcomes are mapped onto the run state | 5 | inbox, assumed (#32) |
+| SR-058 | blocker | At gate time after stage 1, `multiqc:` bindings find no MultiQC data, and 0.0.1 installs no MultiQC | 4 | inbox (#34) |
+| SR-054 | blocker | 0.0.1 needs the ingest contract, but the log parks it as "not needed for 0.0.1" | 5 | inbox (#36) |
+| SR-061 | major | Failures before the engine starts have no state transition, reason or screen | 5 | inbox, assumed (#40) |
+| CH-047 | major | "Why did it fail": no run-level failure cause, no pointer to the failing task, and no local failure classes | 6 | inbox, assumed (#40) |
+| SR-056 | major | Registering a workflow is outside the 0.0.1 cut, and its contract is undefined | 6 | inbox (#34) |
+| CH-043 | major | Resume inputs are not stored: launch directory, engine session ID, engine version, Snakemake unlock and rerun flags | 5 | inbox, assumed (#40) |
+| SR-063 | major | The `POST /runs/{id}:relaunch` contract is undefined | 4 | inbox, assumed (#32) |
+| SR-064 | major | Parameter history: stored vs resolved values, Snakemake config, response shape | 4 | accepted |
+| SR-067 | major | Engine prerequisites on a laptop: who provides Java and Nextflow, the Snakemake environment and the bridges | 4 | inbox (#35) |
+| CH-044 | major | The spool forward cursor, replay order and drop policy after a restart are unspecified | 3 | accepted |
+| CH-046 | major | A head that ends with no terminal event leaves the run and its tasks `running` forever on the local launcher | 3 | inbox, assumed (#40) |
+| CH-048 | major | Task and run logs on the local executor: sources unspecified, Tasks and Logs tabs never drawn | 5 | inbox, assumed (#40) |
+| CH-049 | major | An open gate across a restart: expired timeouts, interrupted check evaluation, stuck background tasks | 4 | accepted |
+| CH-050 | major | Task identity across launches of one run: cached tasks reported by Nextflow and silent in Snakemake | 3 | inbox, assumed (#40) |
+| SR-059 | major | When every check passes, does the planned stop open a gate or continue automatically? | 3 | inbox, assumed (#33) |
+| SR-065 | major | The Snakemake launch form and parameter delivery are not specified for 0.0.1 | 3 | inbox, assumed (#40) |
+| UX-243 | major | Relaunch with changed parameters has no parameter editor and no Snakemake variant | 3 | inbox, assumed (#32) |
+| UX-250 | major | RunsCompare cannot be reached from a 0.0.1 run screen, and draws data a local run does not have | 5 | inbox, assumed (#40) |
+| CH-045 | major | The projector has no checkpoint: events acknowledged but not projected at a crash, re-projection and catch-up order | 2 | accepted |
+| SR-066 | major | How the runner computes the Snakemake `--until` targets from `match` globs is unspecified | 2 | accepted |
+| CH-051 | minor | Boot recovery has no defined order and no "catching up" signal in the UI | 4 | inbox, assumed (#40) |
+| UX-249 | minor | RunDetail's "Parameters changed vs. previous run" lists a parameter that did not change | 2 | accepted |
 | SR-060 | major | The end of a gated launch has no defined mapping to run states | — | merged into CH-042 |
 | SR-068 | minor | Run directories, the engine session ID and `spectio://results` are undefined for local runs | — | merged into CH-043 |
 | UX-241 | blocker | The 0.0.1 map has no screen to register a workflow or attach the overlay that defines its gate | — | merged into SR-057 |
@@ -227,7 +227,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Absorbs:** UX-242 (the same contradiction seen from the boards; its evidence and board proposals are folded in above).
 - **Related:** UX-243 (the dialog's parameter editor), SR-063 (`:relaunch` body), CH-042 (state machine), UX-109 (R12, which stages a change reruns).
 - **Found by:** spec-reviewer as SR-062; ux-reviewer as UX-242
-- **Status:** open
+- **Status:** inbox, assumed: path B: relaunching at a failed gate or after a failure creates a child run through `POST /runs/{id}:relaunch`, the parent stays terminal; the 0.0.1 gate verbs are `approve` and `stop` — pending Thomas (TRIAGE2, 2026-10-27), inbox #32
 
 ### SR-055 · blocker · No local environment, runner record or in-process runner interface in 0.0.1
 
@@ -254,7 +254,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Absorbs:** UX-247 (EnvLocal draws the separate runner, not the 0.0.1 single process; its engine-readiness half is linked from SR-067).
 - **Related:** SR-067 (engine prerequisites), CH-041 (the sidebar footer during a restart).
 - **Found by:** spec-reviewer as SR-055; ux-reviewer as UX-247
-- **Status:** open
+- **Status:** inbox, assumed: one built-in local environment and runner record, with an in-process runner interface, as the default `environment_id` — pending Thomas (TRIAGE2, 2026-10-27), inbox #35
 
 ### SR-057 · blocker · nf-core/rnaseq cannot be registered, get a stage and get a gate in 0.0.1 through any specified path
 
@@ -275,7 +275,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Absorbs:** UX-241 (no 0.0.1 screen to register a workflow or attach an overlay; its board evidence and variants are folded in above).
 - **Related:** SR-056 (the registration API contract), FC-002 (the generated `ext.when` must wrap rnaseq's own), UX-216 (gate label at launch), UX-112 (adding a gate at launch).
 - **Found by:** spec-reviewer as SR-057; ux-reviewer as UX-241
-- **Status:** open
+- **Status:** inbox (TRIAGE2, 2026-10-27), inbox #34 (0.0.1 scope, reserved)
 
 ### CH-041 · blocker · In-process runner: the engine head's fate on server stop, re-adoption and exit code are unspecified
 
@@ -310,7 +310,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Absorbs:** UX-246 (server restart with no screen during or after the outage, and no state for an engine lost while down).
 - **Related:** CH-028 (R4, systemd and supervised heads, separate-runner case), CH-007 (durable runner commands), CH-046 (no terminal event), CH-051 (boot order and catching-up banner), UX-205 (R7, loading, error and stale states).
 - **Found by:** constraints-hunter as CH-041; ux-reviewer as UX-246
-- **Status:** open
+- **Status:** inbox, assumed: on server stop the engine heads keep running detached and are re-adopted at the next start — pending Thomas (TRIAGE2, 2026-10-27), inbox #35
 
 ### CH-042 · blocker · Run state machine: `failed` is terminal yet "resumable", and launch outcomes are mapped onto the run state
 
@@ -339,7 +339,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Absorbs:** SR-060 (the end of a gated launch has no defined mapping to run states; its proposal is folded into the first bullet).
 - **Related:** SR-062, SR-063, CH-003 (R4, partly applied), CH-046.
 - **Found by:** constraints-hunter as CH-042; spec-reviewer as SR-060
-- **Status:** open
+- **Status:** inbox, assumed: `failed` stays terminal; Resume and Relaunch create a child run (path B), and launch outcomes live on `launches`, not on the run state — pending Thomas (TRIAGE2, 2026-10-27), inbox #32
 
 ### SR-058 · blocker · At gate time after stage 1, `multiqc:` bindings find no MultiQC data, and 0.0.1 installs no MultiQC
 
@@ -361,7 +361,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Absorbs:** UX-251 (with the default install the checks have no reader, and the `n/a` state is not drawn).
 - **Related:** UX-101 (R12, MultiQC column names), UX-103 (R12, `n/a` check state), CH-016 and CH-017 (R4, gate stop on real nf-core pipelines; MultiQC cost).
 - **Found by:** spec-reviewer as SR-058; ux-reviewer as UX-251
-- **Status:** open
+- **Status:** inbox (TRIAGE2, 2026-10-27), inbox #34 (0.0.1 scope, reserved)
 
 ### SR-054 · blocker · 0.0.1 needs the ingest contract, but the log parks it as "not needed for 0.0.1"
 
@@ -384,7 +384,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - Amend the 2026-10-27 log line.
 - **Related:** SR-001 (R1, owner of api §14), CH-002 (R4, ingest version header), CH-044 (spool cursor numbers that §14 will own).
 - **Found by:** spec-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE2, 2026-10-27), inbox #36 (ingest credential and the split of inbox #11, reserved)
 
 ---
 
@@ -409,7 +409,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Absorbs:** UX-248 (no submitting, starting or "engine did not start" state).
 - **Related:** SR-067 (prerequisites), CH-047 (`runs.failure`).
 - **Found by:** spec-reviewer as SR-061; ux-reviewer as UX-248
-- **Status:** open
+- **Status:** inbox, assumed: apply the proposal as written — pending Thomas (TRIAGE2, 2026-10-27), inbox #40
 
 ### CH-047 · major · "Why did it fail": no run-level failure cause, no pointer to the failing task, and no local failure classes
 
@@ -435,7 +435,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Absorbs:** UX-245 (a failed run's explanation depends on `sacct`, and RunFailed is off the 0.0.1 map).
 - **Related:** SR-061 (failures before any task), CH-048, CH-050, UX-113 (R12, suggested resource changes).
 - **Found by:** constraints-hunter as CH-047; ux-reviewer as UX-245
-- **Status:** open
+- **Status:** inbox, assumed: apply the proposal as written — pending Thomas (TRIAGE2, 2026-10-27), inbox #40
 
 ### SR-056 · major · Registering a workflow is outside the 0.0.1 cut, and its contract is undefined
 
@@ -456,7 +456,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - UX-123 keeps the multi-runner question.
 - **Related:** SR-057 (screens and the overlay), UX-123 (inbox).
 - **Found by:** spec-reviewer
-- **Status:** open
+- **Status:** inbox (TRIAGE2, 2026-10-27), inbox #34 (0.0.1 scope, reserved)
 
 ### CH-043 · major · Resume inputs are not stored: launch directory, engine session ID, engine version, Snakemake unlock and rerun flags
 
@@ -486,7 +486,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Absorbs:** SR-068 (run directories, the engine session ID and `spectio://results` are undefined for local runs).
 - **Related:** CH-041 (`launches.launch_dir`, the same column seen from adoption), SR-063, FC-020 (R2).
 - **Found by:** constraints-hunter as CH-043; spec-reviewer as SR-068
-- **Status:** open
+- **Status:** inbox, assumed: apply the proposal as written — pending Thomas (TRIAGE2, 2026-10-27), inbox #40
 
 ### SR-063 · major · The `POST /runs/{id}:relaunch` contract is undefined
 
@@ -505,7 +505,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - Add `--fresh` to cli §2, and drop "relaunch" from the `launches` comment.
 - **Related:** CH-042, SR-062, UX-113 (R12), CH-003 (R4).
 - **Found by:** spec-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: the `:relaunch` contract follows path B (child run, parent terminal) — pending Thomas (TRIAGE2, 2026-10-27), inbox #32
 
 ### SR-064 · major · Parameter history: stored vs resolved values, Snakemake config, response shape
 
@@ -524,7 +524,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - cli §2: `run params <id> [--diff <other>]`.
 - **Related:** UX-114 (R12, accepted, compare endpoint), UX-249, UX-250.
 - **Found by:** spec-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE2, 2026-10-27)
 
 ### SR-067 · major · Engine prerequisites on a laptop: who provides Java and Nextflow, the Snakemake environment and the bridges
 
@@ -545,7 +545,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - EnvLocal 0.0.1 variant: an "Engines ready" list with Nextflow + Java, nf-spectio, Snakemake and the logger plugin, each with icon, word, version and a fix command when missing (like `spectio doctor`).
 - **Related:** SR-055 (absorbs UX-247, the rest of the EnvLocal variant), SR-061, CH-009 (R4, partly applied), CH-001 (R4, assumed).
 - **Found by:** spec-reviewer; ux-reviewer (engines card, as part of UX-247)
-- **Status:** open
+- **Status:** inbox (TRIAGE2, 2026-10-27), inbox #35 (who provides the engines and how nf-spectio ships, reserved)
 
 ### CH-044 · major · The spool forward cursor, replay order and drop policy after a restart are unspecified
 
@@ -567,7 +567,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Cheapest test:** R9 spike 3, extended (spike 4 here). Stop `spectio serve` for 2 and 30 minutes during a 500-job smk-toy run, restart it, and compare the per-task states with `.snakemake` and the Nextflow `execution_trace.txt` (the source the spike note's finding 3 uses).
 - **Related:** SR-001 (R1), SR-054, CH-012, CH-033 (R4).
 - **Found by:** constraints-hunter
-- **Status:** open
+- **Status:** accepted (TRIAGE2, 2026-10-27)
 
 ### CH-046 · major · A head that ends with no terminal event leaves the run and its tasks `running` forever on the local launcher
 
@@ -590,7 +590,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Cheapest test:** 30 minutes. Run nf-toy and smk-toy, `kill -9` the head mid-run, and check the projected run and task states with the stub projector (part of spike 1).
 - **Related:** CH-041, CH-042.
 - **Found by:** constraints-hunter
-- **Status:** open
+- **Status:** inbox, assumed: apply the proposal as written — pending Thomas (TRIAGE2, 2026-10-27), inbox #40
 
 ### CH-048 · major · Task and run logs on the local executor: sources unspecified, Tasks and Logs tabs never drawn
 
@@ -618,7 +618,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Absorbs:** UX-244 (the Tasks and Logs tabs are never drawn).
 - **Related:** CH-041, CH-047.
 - **Found by:** constraints-hunter as CH-048; ux-reviewer as UX-244
-- **Status:** open
+- **Status:** inbox, assumed: apply the proposal as written — pending Thomas (TRIAGE2, 2026-10-27), inbox #40
 
 ### CH-049 · major · An open gate across a restart: expired timeouts, interrupted check evaluation, stuck background tasks
 
@@ -639,7 +639,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Cheapest test:** one hour with a stub (spike 6). Open a gate with `timeout: 2m`, stop the server for 5 minutes, restart, and observe. Then kill the server during a check evaluation and check that the verdict arrives.
 - **Related:** CH-041, CH-045, CH-014 (R4, gate timeout races).
 - **Found by:** constraints-hunter
-- **Status:** open
+- **Status:** accepted (TRIAGE2, 2026-10-27)
 
 ### CH-050 · major · Task identity across launches of one run: cached tasks reported by Nextflow and silent in Snakemake
 
@@ -662,7 +662,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Cheapest test:** one hour. From the spike's `gate_qc_then_resume`, capture nf-spectio's and the logger's events for launch 2, and check the task IDs and counts of cached tasks against launch 1 (spike 2).
 - **Related:** CH-042, CH-047, CH-005 (R4).
 - **Found by:** constraints-hunter
-- **Status:** open
+- **Status:** inbox, assumed: apply the proposal as written — pending Thomas (TRIAGE2, 2026-10-27), inbox #40
 
 ### SR-059 · major · When every check passes, does the planned stop open a gate or continue automatically?
 
@@ -679,7 +679,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - The default for 0.0.1 is a question for Thomas (question 2).
   - api §7.1 records the automatic decision.
 - **Found by:** spec-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: (c) a gate row is always created; `auto_approve: when_checks_pass` is opt-in and the 0.0.1 default waits for a person — pending Thomas (TRIAGE2, 2026-10-27), inbox #33
 
 ### SR-065 · major · The Snakemake launch form and parameter delivery are not specified for 0.0.1
 
@@ -697,7 +697,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - The schema endpoint returns the inferred schema with `inferred: true`.
 - **Related:** UX-119 (R12, accepted), UX-243 (Snakemake relaunch variant).
 - **Found by:** spec-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: apply the proposal as written — pending Thomas (TRIAGE2, 2026-10-27), inbox #40
 
 ### UX-243 · major · Relaunch with changed parameters has no parameter editor and no Snakemake variant
 
@@ -714,7 +714,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - After submitting, open the new or continued run's RunDetail.
 - **Related:** SR-062 (which path the dialog serves at a gate), SR-063, SR-065, UX-109 and UX-113 (R12).
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: the relaunch dialog edits parameters for the child run of path B, with a Snakemake variant — pending Thomas (TRIAGE2, 2026-10-27), inbox #32
 
 ### UX-250 · major · RunsCompare cannot be reached from a 0.0.1 run screen, and draws data a local run does not have
 
@@ -730,7 +730,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - A 0.0.1 variant of RunsCompare: Stages, Tasks reused or computed, Parameters (differences or all), Software. CPU-hours shown as "n/a · no scheduler accounting on a local run" (ui §11); no depictio link.
 - **Related:** SR-064, UX-114 (R12), UX-227 (R7, boards show features 0.0.1 lacks).
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** inbox, assumed: apply the proposal as written — pending Thomas (TRIAGE2, 2026-10-27), inbox #40
 
 ### CH-045 · major · The projector has no checkpoint: events acknowledged but not projected at a crash, re-projection and catch-up order
 
@@ -750,7 +750,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Cheapest test:** a one-hour unit test. Kill the projector thread between two batches, restart, and compare the projections with a full rebuild from `events` (part of spike 4).
 - **Related:** CH-012, CH-004 (R4), CH-049, CH-051.
 - **Found by:** constraints-hunter
-- **Status:** open
+- **Status:** accepted (TRIAGE2, 2026-10-27)
 
 ### SR-066 · major · How the runner computes the Snakemake `--until` targets from `match` globs is unspecified
 
@@ -767,7 +767,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - A checkpoint inside a gated stage → "gates unavailable", with the reason.
   - `--forcerun` = the stage's rules that have no producer inside the stage.
 - **Found by:** spec-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE2, 2026-10-27)
 
 ---
 
@@ -790,7 +790,7 @@ Each step ends with the spec section that covers it, or with the primary finding
 - **Cheapest test:** with the CH-044 setup, time from boot to correct states, and count user-visible wrong states (spike 4).
 - **Related:** CH-041 (absorbs UX-246's UI frames), CH-013 (R4).
 - **Found by:** constraints-hunter
-- **Status:** open
+- **Status:** inbox, assumed: apply the proposal as written — pending Thomas (TRIAGE2, 2026-10-27), inbox #40
 
 ### UX-249 · minor · RunDetail's "Parameters changed vs. previous run" lists a parameter that did not change
 
@@ -803,7 +803,7 @@ Each step ends with the spec section that covers it, or with the primary finding
   - Link to the Parameters tab and to RunsCompare (UX-250).
 - **Related:** SR-064 (`changed_vs_parent` with `parent_run_id` as the baseline).
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** accepted (TRIAGE2, 2026-10-27)
 
 ## Cited, not repeated
 

@@ -450,3 +450,128 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Assumed:** none. The autopilot stopped before APPLY1 (journal, tick 2).
 - **Blocked:** APPLY1, then R3, R6, TRIAGE2 and APPLY2.
 - **Reading (Thomas, 2026-10-27):** 57 %, so 7 of the 15 points are spent; the autopilot continues APPLY1 with an 8-point budget.
+
+## TRIAGE2 (2026-10-27)
+
+**Step page:** [TRIAGE2](../progress/W2/TRIAGE2.md)
+
+- **Triaged:** 61 findings from [R3](R3-journeys.md) (journeys, 27) and [R6](R6-contract.md) (API contract, 34). 21 accepted, 0 rejected, 40 sent here.
+- **Assumed:** 33 of the 40 already proceed on the recommended option, marked `assumed — pending Thomas`. The other 7 wait for your answer: SR-054, SR-056, SR-057, SR-058, SR-067 (R3), SR-080 and SR-091 (R6).
+- **How to answer:** #32 to #37 hold one question each, in the order of the R3 and R6 "Questions for Thomas" sections. #34, #36 and #37 are reserved (scope, auth, security posture), so nothing is assumed there. #38, #39 and #40 only list assumptions to confirm. One `Answer:` line per entry is enough.
+
+APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sections named under **Blocked** untouched until you answer.
+
+### #32 · Relaunch at a failed gate, Resume after a failure, and the 0.0.1 gate verbs
+
+- **Covers:** [SR-062](../reviews/R3-journeys.md#sr-062-blocker-relaunch-with-changed-parameters-from-a-failed-gate-is-two-incompatible-flows-and-neither-is-drawn), [CH-042](../reviews/R3-journeys.md#ch-042-blocker-run-state-machine-failed-is-terminal-yet-resumable-and-launch-outcomes-are-mapped-onto-the-run-state), [SR-063](../reviews/R3-journeys.md#sr-063-major-the-post-runsidrelaunch-contract-is-undefined), [UX-243](../reviews/R3-journeys.md#ux-243-major-relaunch-with-changed-parameters-has-no-parameter-editor-and-no-snakemake-variant), [SR-081](../reviews/R6-contract.md#sr-081-major-run-actions-and-relaunch-source-states-responses-the-dialogs-three-meanings-of-resume-lineage-and-a-fourth-mode-vocabulary), [SR-085](../reviews/R6-contract.md#sr-085-major-the-001-gate-no-run-filter-untyped-check-values-without-thresholds-unclear-if-match-no-response-body-label-only-actor-kinds-verbs-still-split), [UX-280](../reviews/R6-contract.md#ux-280-major-relaunch-overrides-are-parameters-only-the-dialogs-main-example-is-a-process-resource-override-extra-config), [UX-281](../reviews/R6-contract.md#ux-281-major-the-relaunch-preview-reused-to-run-per-stage-estimate-suggested-mode-suggestions-pre-flight-has-no-operation), [UX-282](../reviews/R6-contract.md#ux-282-major-lineage-and-compare-entries-lack-name-from-stage-actor-failure-summary-and-old-new-values), [UX-284](../reviews/R6-contract.md#ux-284-major-reviewreports-action-bar-maps-to-apply-change-set-outside-001-the-001-gate-actions-are-not-drawn)
+- **Context:** R3 question 1 and R6 question 4. "Relaunch with changed parameters" from a gate is drawn as two incompatible flows, `failed` is both terminal and "resumable", `:relaunch` has no contract, and ReviewReport's action bar needs change sets that 0.0.1 does not have.
+- **Options:**
+  - (A) the same run continues: gate `apply` or `go_back` carries a parameter change set, and `failed` → `queued` is allowed, with a lattice per launch;
+  - (B) a new child run: at a gate, "Relaunch…" records `stop` (reason `relaunched`) and calls `POST /runs/{id}:relaunch`; after a failure, Resume creates a child run that reuses the parent's launch directory; the parent stays terminal. The 0.0.1 gate verbs are `approve` and `stop`; `apply` and `go_back` return 422 `not-in-this-version`;
+  - (C) B for failures, A for gates.
+- **Recommendation:** (B). It keeps the run lattice intact, it is what journey 2's "compare the two runs" needs, and it reuses one verb.
+- **Assumed:** (B), for all ten findings. The relaunch preview is the `dry_run` of the relaunch body, as already assumed for UX-113 in #30.
+- **Blocked:** nothing; a different answer reverts the assumed text in api §5, §7, §7.1, synthesis §5ter and ui-spec §4.4–§4.6.
+
+### #33 · When every check passes, does the gate wait for a person?
+
+- **Covers:** [SR-059](../reviews/R3-journeys.md#sr-059-major-when-every-check-passes-does-the-planned-stop-open-a-gate-or-continue-automatically)
+- **Context:** R3 question 2. checking §4 and §12.4 do not say whether a planned stop with all checks passing opens a gate.
+- **Options:**
+  - (a) the gate always waits for a person;
+  - (b) Spectio continues by itself;
+  - (c) a gate row is always created, and `decide.auto_approve: when_checks_pass` in the manifest turns on automatic approval, recorded as a decision by `service`.
+- **Recommendation:** (c), with "wait for a person" as the 0.0.1 default, because journey 1 needs a gate to approve.
+- **Assumed:** (c).
+- **Blocked:** nothing.
+
+### #34 · 0.0.1 scope: how nf-core/rnaseq gets its stages and gate, workflow registration, MultiQC in the install
+
+- **Covers:** [SR-057](../reviews/R3-journeys.md#sr-057-blocker-nf-corernaseq-cannot-be-registered-get-a-stage-and-get-a-gate-in-001-through-any-specified-path), [SR-056](../reviews/R3-journeys.md#sr-056-major-registering-a-workflow-is-outside-the-001-cut-and-its-contract-is-undefined), [SR-058](../reviews/R3-journeys.md#sr-058-blocker-at-gate-time-after-stage-1-multiqc-bindings-find-no-multiqc-data-and-001-installs-no-multiqc)
+- **Context:** R3 questions 3 and 4. Reserved: they add or drop 0.0.1 features ([`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §15.1). Today no specified path lets journey 1 register rnaseq, give it a stage and a gate, and evaluate a `multiqc:` binding after stage 1 with the documented `spectio[server]` install.
+- **Options:**
+  - (a) 0.0.1 ships one built-in rnaseq overlay, and the user may pass a `spectio.yml` at launch (`--gates FILE`, inline in `POST /runs`); YAML only, shown read-only in the UI; the install becomes `spectio[server,checks]`, and a missing value gets verdict `error`;
+  - (b) the overlay editor UI and a workflow import form in 0.0.1;
+  - (c) gates only from a `spectio.yml` in the workflow repository; MultiQC stays optional and missing values show `n/a`.
+- **Recommendation:** (a).
+- **Assumed:** none (reserved).
+- **Blocked:** checking §12.7 (overlays), api §5 `POST /workflows` and the inline `gates` value of SR-087, architecture §7.3 extras, the install line in `mvp-0.0.1.md`.
+
+### #35 · Engines and the in-process runner on a laptop
+
+- **Covers:** [SR-055](../reviews/R3-journeys.md#sr-055-blocker-no-local-environment-runner-record-or-in-process-runner-interface-in-001), [CH-041](../reviews/R3-journeys.md#ch-041-blocker-in-process-runner-the-engine-heads-fate-on-server-stop-re-adoption-and-exit-code-are-unspecified), [SR-067](../reviews/R3-journeys.md#sr-067-major-engine-prerequisites-on-a-laptop-who-provides-java-and-nextflow-the-snakemake-environment-and-the-bridges)
+- **Context:** R3 question 5 and 6 (b). 0.0.1 has no local environment record, no runner interface for the in-process case, and no rule for engine heads when `spectio serve` stops. Who installs Java, Nextflow and Snakemake, and how nf-spectio is delivered, are unstated.
+- **Options:**
+  - (a) one built-in local environment and runner record is the default `environment_id`; heads keep running detached when the server stops and are re-adopted at the next start; the user installs the engines (`spectio doctor` reports them); nf-spectio ships as a jar in the spectio wheel **[to be validated]**;
+  - (b) as (a), but heads are stopped with the server;
+  - (c) as (a), but nf-spectio comes from the Nextflow plugin registry.
+- **Recommendation:** (a). A restart or upgrade should not fail a multi-hour run, and a pinned plugin works offline.
+- **Assumed:** the local environment and runner record (SR-055) and detached heads (CH-041). Not assumed: who installs the engines and how nf-spectio ships (SR-067), because they change the 0.0.1 install and what Spectio publishes.
+- **Blocked:** architecture §7.3 "0.0.1 prerequisites" (SR-067).
+
+### #36 · The ingest contract for 0.0.1 (split inbox #11?)
+
+- **Covers:** [SR-054](../reviews/R3-journeys.md#sr-054-blocker-001-needs-the-ingest-contract-but-the-log-parks-it-as-not-needed-for-001), [SR-080](../reviews/R6-contract.md#sr-080-major-ingest-14-the-wire-items-the-draft-had-to-invent-beyond-sr-054s-subset)
+- **Context:** R3 question 6 (a). api §14 is cited but does not exist; the log parks it as "not needed for 0.0.1", yet both bridges must report driven runs to a local server. R6 SR-080 lists the wire items the draft had to invent (batch envelope, acknowledgement, heartbeat, engine event vocabulary). Same root as SR-001 (#11), which holds the ingest credential and is reserved (auth).
+- **Options:**
+  - (a) split #11: write the driven-run part of api §14 for 0.0.1 (envelope, run ID and launch number variables, ack, version header, no credential on loopback); only the observed-run credential stays deferred;
+  - (b) keep #11 whole and write all of §14 once it is answered;
+  - (c) no §14 in 0.0.1: the bridges call the public API.
+- **Recommendation:** (a).
+- **Assumed:** none (auth is reserved).
+- **Blocked:** api §14 and the bridge-facing parts of architecture §13.
+
+### #37 · Browser protection for the token-less loopback API
+
+- **Covers:** [SR-091](../reviews/R6-contract.md#sr-091-major-token-less-loopback-the-browser-threat-dns-rebinding-csrf-was-parked-with-the-login-node-question-but-it-applies-to-every-001-laptop)
+- **Context:** R6 question 1. Reserved (security posture). In 0.0.1 the API trusts loopback with no token, so any web page can reach it through DNS rebinding or CSRF and launch runs. #15 covers shared login nodes only.
+- **Options:**
+  - (a) a host allow-list, an Origin check on writes and JSON-only writes, now;
+  - (b) wait for #15;
+  - (c) a local token even in 0.0.1.
+- **Recommendation:** (a). It costs little and keeps the "no setup" story.
+- **Assumed:** none (reserved).
+- **Blocked:** api §6 (single-user mode) and auth-and-roles for 0.0.1.
+
+### #38 · Assumed: engine events and the progress denominator
+
+- **Covers:** [SR-084](../reviews/R6-contract.md#sr-084-major-events-and-sse-frames-outside-the-complete-catalogue-no-sequence-for-sse-only-frames-no-data-schemas), [SR-088](../reviews/R6-contract.md#sr-088-major-run-resource-name-tags-task-counts-and-the-tasks-denominator-have-no-fields), [UX-272](../reviews/R6-contract.md#ux-272-major-task-progress-denominators-1248-tasks-68-tasks-task-quarters-have-no-source)
+- **Context:** R6 questions 2 and 3; reversible and docs-only.
+  - Events: one `events` log; engine-native types under `spectio.engine.*`, internal (never delivered to webhooks), with a `seq`; heartbeats kept out of the log (SR-084).
+  - Progress: "% tasks" only when the engine gives a total (expected for Snakemake **[to be validated]**), otherwise "N done · M running" (SR-088, UX-272).
+- **Options:**
+  - (a) confirm both;
+  - (b) a separate ingest log, with only published types in `events`;
+  - (c) estimate the task total from the previous run.
+- **Recommendation:** (a).
+- **Assumed:** (a).
+- **Blocked:** nothing.
+
+### #39 · Assumed: the reads that 0.0.1 boards need
+
+- **Covers:** [UX-274](../reviews/R6-contract.md#ux-274-major-runs-list-free-text-tag-date-and-multi-state-filters-totals-previous-and-needs-attention-are-not-in-listruns), [UX-275](../reviews/R6-contract.md#ux-275-major-app-chrome-on-every-001-board-has-no-operation-runner-and-server-status-review-badge-search-bell), [UX-278](../reviews/R6-contract.md#ux-278-major-no-manifest-read-the-gate-list-before-launch-stage-sources-and-names-overlay-versions-and-gate-names-cannot-be-shown), [UX-279](../reviews/R6-contract.md#ux-279-major-copy-to-a-new-launch-cannot-rebuild-a-runcreate-samplesheet-profile-and-gates-are-not-readable-from-a-run), [UX-285](../reviews/R6-contract.md#ux-285-major-gate-check-results-cannot-be-pivoted-into-the-item-table-or-the-per-check-cards-without-reading-every-row), [UX-286](../reviews/R6-contract.md#ux-286-major-tabs-and-row-actions-that-001-boards-show-have-no-draft-operation-outputs-reports-software-environment-evidence-report), [UX-291](../reviews/R6-contract.md#ux-291-minor-runscompare-outcome-and-cpu-hours-rows-need-per-run-check-and-accounting-data-that-001-does-not-have)
+- **Context:** R6 question 5; reversible and docs-only. api §5 lists `GET /runs:summary`, `/gates:summary`, `/version`, a manifest read, `/runs/{id}/samplesheets`, `/gates/{id}/items` and artefacts, but the R6 draft cut them, although 0.0.1 boards use them. Nothing here adds a feature to the §15.1 cut: they are reads behind screens that are already in it.
+- **Options:**
+  - (a) widen the 0.0.1 contract to all of them;
+  - (b) keep the reads a 0.0.1 board needs (`runs:summary`, `/version`, `gates:summary`, a read-only manifest, `/runs/{id}/samplesheets`, `/gates/{id}/items`, evidence artefacts), and hide the rest on the boards (search, Software, Environment, Batch, Adopt, RunsCompare Outcome and CPU-hours);
+  - (c) keep the draft's cut and hide everything they feed.
+- **Recommendation:** (b).
+- **Assumed:** (b).
+- **Blocked:** nothing.
+
+### #40 · Assumed: fixes that are right but not local
+
+- **Covers:** [SR-061](../reviews/R3-journeys.md#sr-061-major-failures-before-the-engine-starts-have-no-state-transition-reason-or-screen), [CH-047](../reviews/R3-journeys.md#ch-047-major-why-did-it-fail-no-run-level-failure-cause-no-pointer-to-the-failing-task-and-no-local-failure-classes), [CH-043](../reviews/R3-journeys.md#ch-043-major-resume-inputs-are-not-stored-launch-directory-engine-session-id-engine-version-snakemake-unlock-and-rerun-flags), [CH-046](../reviews/R3-journeys.md#ch-046-major-a-head-that-ends-with-no-terminal-event-leaves-the-run-and-its-tasks-running-forever-on-the-local-launcher), [CH-048](../reviews/R3-journeys.md#ch-048-major-task-and-run-logs-on-the-local-executor-sources-unspecified-tasks-and-logs-tabs-never-drawn), [CH-050](../reviews/R3-journeys.md#ch-050-major-task-identity-across-launches-of-one-run-cached-tasks-reported-by-nextflow-and-silent-in-snakemake), [SR-065](../reviews/R3-journeys.md#sr-065-major-the-snakemake-launch-form-and-parameter-delivery-are-not-specified-for-001), [UX-250](../reviews/R3-journeys.md#ux-250-major-runscompare-cannot-be-reached-from-a-001-run-screen-and-draws-data-a-local-run-does-not-have), [CH-051](../reviews/R3-journeys.md#ch-051-minor-boot-recovery-has-no-defined-order-and-no-catching-up-signal-in-the-ui), [SR-082](../reviews/R6-contract.md#sr-082-major-stages-have-no-api-contract-no-resource-no-state-enum-no-single-identifier)
+- **Context:** the doc review of TRIAGE2 asked how policy condition 3 was checked ("the proposal changes at most two sections of the owning spec, plus links elsewhere"). A re-check found ten first-pass accepts whose proposal also writes content, not only links, into other specs or boards:
+  - SR-061, CH-047, CH-046, CH-048 and UX-250 add UI frames or boards, or local failure rules in `schedulers-and-monitoring.md`;
+  - CH-043, CH-050, SR-065 and CH-051 change `synthesis.md` §5ter.5 or architecture §7.2 / §13.2 as well as the owner;
+  - SR-082 adds the stage resource to api §7 and §5, the glob rules to `checking-scenarios.md` §12.3, and a CLI flag.
+
+  Each proposal is confirmed, reverses no logged decision, and stays inside the 0.0.1 features (monitor, relaunch, parameters, one gate). Only its size takes it out of the accept rule.
+- **Options:**
+  - (a) apply each proposal as written in APPLY2;
+  - (b) apply only the owner's part in APPLY2, and turn the rest (boards, other specs) into follow-up findings for a later round.
+- **Recommendation:** (a). The other-spec parts are what makes each fix usable: a failure cause with no screen, or a stage resource with no matcher rule, would leave the gap open.
+- **Assumed:** (a).
+- **Blocked:** nothing.
+
