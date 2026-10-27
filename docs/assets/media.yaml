@@ -93,3 +93,11 @@ media:
       - docs/assets/diagrams/triage2_sort_dark.svg
       - docs/assets/diagrams/triage2_sort_light.png
       - docs/assets/diagrams/triage2_sort_dark.png
+  - id: apply2-specs
+    kind: diagram
+    generator: python3 tools/diagrams/apply2_specs.py
+    outputs:
+      - docs/assets/diagrams/apply2_specs_light.svg
+      - docs/assets/diagrams/apply2_specs_dark.svg
+      - docs/assets/diagrams/apply2_specs_light.png
+      - docs/assets/diagrams/apply2_specs_dark.png

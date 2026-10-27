@@ -1,0 +1,275 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="870" viewBox="0 0 1640 870">
+  <rect width="1640" height="870" fill="#1f2129"/>
+  <text x="40.0" y="52.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="27" fill="#e3e3e3" text-anchor="start" font-weight="normal">APPLY2 · 54 of 61 findings reached the specs</text>
+  <text x="40.0" y="80.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">R3 journeys and R6 API contract · 7 applied in full, 47 partly, 7 untouched (waiting for Thomas) · 33 fixes assumed pending an inbox answer</text>
+  <rect x="30.0" y="120.0" width="350.0" height="650.0" rx="4" fill="#282b33" fill-opacity="0.5"/>
+  <text x="48.0" y="152.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="20" fill="#e3e3e3" text-anchor="start" font-weight="normal">R3 · journeys</text>
+  <text x="48.0" y="176.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#9aa0ac" text-anchor="start" font-weight="normal">27 findings</text>
+  <rect x="48.0" y="192.0" width="22" height="22" rx="3" fill="#23342a" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="59.0" cy="203.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="74.0" y="192.0" width="22" height="22" rx="3" fill="#23342a" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="100.0" y="192.0" width="22" height="22" rx="3" fill="#23342a" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="111.0" cy="203.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="126.0" y="192.0" width="22" height="22" rx="3" fill="#23342a" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="137.0" cy="203.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="152.0" y="192.0" width="22" height="22" rx="3" fill="#23342a" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="163.0" cy="203.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="178.0" y="192.0" width="22" height="22" rx="3" fill="#23342a" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="204.0" y="192.0" width="22" height="22" rx="3" fill="#23342a" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="230.0" y="192.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="241.0" cy="203.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="256.0" y="192.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="267.0" cy="203.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="282.0" y="192.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="293.0" cy="203.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="308.0" y="192.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="319.0" cy="203.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="334.0" y="192.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="345.0" cy="203.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="48.0" y="218.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="59.0" cy="229.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="74.0" y="218.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="85.0" cy="229.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="100.0" y="218.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="111.0" cy="229.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="126.0" y="218.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="152.0" y="218.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="163.0" cy="229.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="178.0" y="218.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="204.0" y="218.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="215.0" cy="229.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="230.0" y="218.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="241.0" cy="229.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="256.0" y="218.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="267.0" cy="229.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="282.0" y="218.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="308.0" y="218.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <rect x="334.0" y="218.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <rect x="48.0" y="244.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <rect x="74.0" y="244.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <rect x="100.0" y="244.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <text x="48.0" y="316.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="20" fill="#e3e3e3" text-anchor="start" font-weight="normal">R6 · API contract</text>
+  <text x="48.0" y="340.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#9aa0ac" text-anchor="start" font-weight="normal">34 findings</text>
+  <rect x="48.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="59.0" cy="367.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="74.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="85.0" cy="367.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="100.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="126.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="137.0" cy="367.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="152.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="163.0" cy="367.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="178.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="204.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="230.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="241.0" cy="367.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="256.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="282.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="308.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="334.0" y="356.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="48.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="59.0" cy="393.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="74.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="100.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="111.0" cy="393.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="126.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="137.0" cy="393.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="152.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="178.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="204.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="215.0" cy="393.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="230.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="241.0" cy="393.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="256.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="267.0" cy="393.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="282.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="293.0" cy="393.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="308.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="319.0" cy="393.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="334.0" y="382.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="48.0" y="408.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="59.0" cy="419.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="74.0" y="408.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="85.0" cy="419.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="100.0" y="408.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="111.0" cy="419.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="126.0" y="408.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="152.0" y="408.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="178.0" y="408.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="204.0" y="408.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="230.0" y="408.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="241.0" cy="419.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="256.0" y="408.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <rect x="282.0" y="408.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <rect x="48.0" y="474.0" width="22" height="22" rx="3" fill="#23342a" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="80.0" y="490.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">applied in full (7)</text>
+  <rect x="48.0" y="506.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="80.0" y="522.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">partly applied (47)</text>
+  <rect x="48.0" y="538.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-dasharray="3 3"/>
+  <text x="80.0" y="554.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">untouched, waits for Thomas (7)</text>
+  <rect x="48.0" y="570.0" width="22" height="22" rx="3" fill="#382c22" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="59.0" cy="581.0" r="3.6" fill="#e3e3e3"/>
+  <text x="80.0" y="586.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">dot: assumed, pending inbox (33)</text>
+  <rect x="410.0" y="120.0" width="640.0" height="400.0" rx="4" fill="#2b2938" fill-opacity="0.45"/>
+  <path d="M428.0,136.0 L451.8,136.0 L462.0,146.2 L462.0,180.0 L428.0,180.0 Z" fill="#24272f" stroke="none"/>
+  <path d="M427.9,136.2 C435.9,136.1 444.4,135.7 451.8,135.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M452.1,136.2 C455.0,139.1 458.1,143.0 462.1,146.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M461.8,146.6 C461.9,156.9 462.4,168.4 461.9,180.4" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M462.2,179.8 C450.9,180.4 439.5,179.5 427.9,179.7" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M428.3,180.4 C427.3,165.1 427.2,150.5 427.9,135.7" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M451.9,135.6 C451.6,138.7 451.3,143.0 451.8,146.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M451.9,146.3 C455.0,145.6 458.4,145.6 462.1,146.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M433.2,151.3 C441.0,151.3 448.1,151.3 456.1,151.6" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M433.1,159.0 C440.9,158.9 448.3,159.2 455.9,158.9" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M433.0,166.3 C440.9,166.2 448.1,166.6 456.0,166.3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="474.0" y="156.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="20" fill="#e3e3e3" text-anchor="start" font-weight="normal">10 specs edited</text>
+  <text x="474.0" y="178.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">lines added + and removed − (to scale)</text>
+  <text x="650.0" y="215.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="end" font-weight="normal">api-and-data-model</text>
+  <rect x="660.0" y="202.0" width="286.9" height="9" rx="2" fill="#23342a" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="660.0" y="213.0" width="93.1" height="9" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="954.9" y="216.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+151 −49</text>
+  <text x="650.0" y="245.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="end" font-weight="normal">ui-spec</text>
+  <rect x="660.0" y="232.0" width="83.6" height="9" rx="2" fill="#23342a" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="660.0" y="243.0" width="47.5" height="9" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="751.6" y="246.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+44 −25</text>
+  <text x="650.0" y="275.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="end" font-weight="normal">architecture-plugins-and-packaging</text>
+  <rect x="660.0" y="262.0" width="34.2" height="9" rx="2" fill="#23342a" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="660.0" y="273.0" width="1.0" height="9" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="702.2" y="276.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+18 −0</text>
+  <text x="650.0" y="305.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="end" font-weight="normal">schedulers-and-monitoring</text>
+  <rect x="660.0" y="292.0" width="26.6" height="9" rx="2" fill="#23342a" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="660.0" y="303.0" width="1.0" height="9" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="694.6" y="306.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+14 −0</text>
+  <text x="650.0" y="335.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="end" font-weight="normal">synthesis</text>
+  <rect x="660.0" y="322.0" width="19.0" height="9" rx="2" fill="#23342a" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="660.0" y="333.0" width="7.6" height="9" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="687.0" y="336.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+10 −4</text>
+  <text x="650.0" y="365.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="end" font-weight="normal">checking-scenarios</text>
+  <rect x="660.0" y="352.0" width="11.4" height="9" rx="2" fill="#23342a" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="660.0" y="363.0" width="3.8" height="9" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="679.4" y="366.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+6 −2</text>
+  <text x="650.0" y="395.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="end" font-weight="normal">cli-and-shared-libraries</text>
+  <rect x="660.0" y="382.0" width="7.6" height="9" rx="2" fill="#23342a" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="660.0" y="393.0" width="7.6" height="9" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="675.6" y="396.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+4 −4</text>
+  <text x="650.0" y="425.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="end" font-weight="normal">admin-and-operations</text>
+  <rect x="660.0" y="412.0" width="5.7" height="9" rx="2" fill="#23342a" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="660.0" y="423.0" width="1.9" height="9" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="673.7" y="426.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+3 −1</text>
+  <text x="650.0" y="455.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="end" font-weight="normal">mvp-0.0.1</text>
+  <rect x="660.0" y="442.0" width="3.8" height="9" rx="2" fill="#23342a" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="660.0" y="453.0" width="1.9" height="9" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="671.8" y="456.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+2 −1</text>
+  <text x="650.0" y="485.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="end" font-weight="normal">dev-environment-and-testing</text>
+  <rect x="660.0" y="472.0" width="1.9" height="9" rx="2" fill="#23342a" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="660.0" y="483.0" width="1.9" height="9" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="669.9" y="486.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+1 −1</text>
+  <rect x="410.0" y="540.0" width="640.0" height="230.0" rx="4" fill="#2b2938" fill-opacity="0.35"/>
+  <path d="M436.2,562.4 V557.0 a5.8,5.8 0 0 1 11.5,0 V562.4" fill="none" stroke="#e3e3e3" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="433.0" y="562.4" width="18.0" height="13.2" rx="2.5" fill="#2b2938" stroke="#e3e3e3" stroke-width="1.5"/>
+  <circle cx="442.0" cy="569.0" r="1.6" fill="#e3e3e3"/>
+  <text x="466.0" y="572.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="normal">left untouched: an inbox entry blocks the section</text>
+  <text x="662.0" y="602.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#36 ingest contract</text>
+  <rect x="670.0" y="590.0" width="90.0" height="16" rx="2" fill="#2b2938" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="768.0" y="603.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">5</text>
+  <text x="662.0" y="624.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#34 rnaseq stages, gates file</text>
+  <rect x="670.0" y="612.0" width="72.0" height="16" rx="2" fill="#2b2938" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="750.0" y="625.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">4</text>
+  <text x="662.0" y="646.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#16 pause and stop</text>
+  <rect x="670.0" y="634.0" width="72.0" height="16" rx="2" fill="#2b2938" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="750.0" y="647.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">4</text>
+  <text x="662.0" y="668.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#37 loopback protection</text>
+  <rect x="670.0" y="656.0" width="18.0" height="16" rx="2" fill="#2b2938" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="696.0" y="669.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="662.0" y="690.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#13 API limits</text>
+  <rect x="670.0" y="678.0" width="18.0" height="16" rx="2" fill="#2b2938" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="696.0" y="691.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="662.0" y="712.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#19 gate verbs</text>
+  <rect x="670.0" y="700.0" width="18.0" height="16" rx="2" fill="#2b2938" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="696.0" y="713.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="662.0" y="734.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#20 environment files</text>
+  <rect x="670.0" y="722.0" width="18.0" height="16" rx="2" fill="#2b2938" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="696.0" y="735.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="662.0" y="756.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#25 lease renewal</text>
+  <rect x="670.0" y="744.0" width="18.0" height="16" rx="2" fill="#2b2938" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="696.0" y="757.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <rect x="1080.0" y="120.0" width="530.0" height="650.0" rx="4" fill="#363020" fill-opacity="0.4"/>
+  <path d="M1096.0,138.0 L1116.0,138.0 L1106.0,148.0 Z" fill="#363020" stroke="none"/>
+  <path d="M1096.3,138.4 C1102.3,137.4 1109.2,137.4 1116.1,137.7" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1116.0,137.7 C1112.8,140.8 1109.1,144.1 1105.8,147.8" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1106.2,148.0 C1102.6,145.4 1099.5,141.8 1095.7,137.6" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1106.0,148.0 L1116.0,158.0 L1096.0,158.0 Z" fill="#363020" stroke="none"/>
+  <path d="M1105.8,147.7 C1108.7,151.4 1112.4,155.4 1116.1,158.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1116.2,158.3 C1108.6,157.8 1102.6,158.5 1096.0,158.4" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1096.1,158.1 C1099.3,154.3 1102.1,151.9 1106.4,148.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="1128.0" y="156.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="normal">deferred: one bar unit = one finding</text>
+  <text x="1100.0" y="190.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="16" fill="#e3e3e3" text-anchor="start" font-weight="normal">UI boards (15)</text>
+  <text x="1272.0" y="214.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">RunDetail</text>
+  <rect x="1280.0" y="202.0" width="221.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1509.0" y="215.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">17</text>
+  <text x="1272.0" y="237.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">ReviewReport</text>
+  <rect x="1280.0" y="225.0" width="65.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1353.0" y="238.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">5</text>
+  <text x="1272.0" y="260.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">Launch</text>
+  <rect x="1280.0" y="248.0" width="65.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1353.0" y="261.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">5</text>
+  <text x="1272.0" y="283.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">RunsRows</text>
+  <rect x="1280.0" y="271.0" width="65.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1353.0" y="284.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">5</text>
+  <text x="1272.0" y="306.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">RelaunchDialog</text>
+  <rect x="1280.0" y="294.0" width="52.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1340.0" y="307.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">4</text>
+  <text x="1272.0" y="329.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">RunsTable</text>
+  <rect x="1280.0" y="317.0" width="52.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1340.0" y="330.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">4</text>
+  <text x="1272.0" y="352.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">LaunchSnakemake</text>
+  <rect x="1280.0" y="340.0" width="39.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1327.0" y="353.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">3</text>
+  <text x="1272.0" y="375.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">RunDetailReconnect</text>
+  <rect x="1280.0" y="363.0" width="26.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1314.0" y="376.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">2</text>
+  <text x="1272.0" y="398.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">RunsCompare</text>
+  <rect x="1280.0" y="386.0" width="26.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1314.0" y="399.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">2</text>
+  <text x="1272.0" y="421.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">Legend</text>
+  <rect x="1280.0" y="409.0" width="26.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1314.0" y="422.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">2</text>
+  <text x="1272.0" y="444.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">AppSidebar, AppTopbar</text>
+  <rect x="1280.0" y="432.0" width="26.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1314.0" y="445.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">2</text>
+  <text x="1272.0" y="467.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">RunFailed (local)</text>
+  <rect x="1280.0" y="455.0" width="13.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1301.0" y="468.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1272.0" y="490.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">RunTasks, RunLogs (new)</text>
+  <rect x="1280.0" y="478.0" width="13.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1301.0" y="491.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1272.0" y="513.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">Manifest</text>
+  <rect x="1280.0" y="501.0" width="13.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1301.0" y="514.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1272.0" y="536.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">EnvLocal (0.0.1)</text>
+  <rect x="1280.0" y="524.0" width="13.0" height="16" rx="2" fill="#382c22" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1301.0" y="537.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1100.0" y="575.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="16" fill="#e3e3e3" text-anchor="start" font-weight="normal">tools and spikes (4)</text>
+  <text x="1272.0" y="599.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">openapi draft spike</text>
+  <rect x="1280.0" y="587.0" width="104.0" height="16" rx="2" fill="#24303d" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1392.0" y="600.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">8</text>
+  <text x="1272.0" y="622.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">engine mapping, spike T2</text>
+  <rect x="1280.0" y="610.0" width="13.0" height="16" rx="2" fill="#24303d" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1301.0" y="623.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1272.0" y="645.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">spectio-sdk schemas</text>
+  <rect x="1280.0" y="633.0" width="13.0" height="16" rx="2" fill="#24303d" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1301.0" y="646.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1272.0" y="668.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">later compare endpoints</text>
+  <rect x="1280.0" y="656.0" width="13.0" height="16" rx="2" fill="#24303d" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1301.0" y="669.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <path d="M384.9,329.8 C389.9,330.8 399.0,328.7 403.2,330.0" fill="none" stroke="#585e6b" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M383.2,330.3 C391.8,330.0 396.4,331.1 403.7,330.2" fill="none" stroke="#585e6b" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M404.0,329.8 C399.9,327.4 395.2,326.3 391.7,323.7" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M403.5,330.3 C399.1,332.1 395.1,334.9 391.7,336.6" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1049.7,330.2 C1058.1,329.1 1065.8,328.7 1074.2,329.6" fill="none" stroke="#585e6b" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M1050.0,329.3 C1058.5,331.1 1067.1,328.0 1074.6,330.2" fill="none" stroke="#585e6b" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M1074.4,329.6 C1069.8,328.0 1065.8,325.0 1061.2,323.2" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1074.5,329.8 C1069.2,331.9 1066.0,334.2 1062.1,337.1" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round"/>
+  <text x="40.0" y="800.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">IDs: SR spec-reviewer · CH constraints-hunter · UX ux-reviewer</text>
+  <text x="40.0" y="844.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Sources: Status lines of docs/reviews/R3-journeys.md and R6-contract.md, the APPLY2 entry of docs/decisions/log.md, git diff --numstat docs/specs (2026-10-27) · tools/diagrams/apply2_specs.py</text>
+</svg>

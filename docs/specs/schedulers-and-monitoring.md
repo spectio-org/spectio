@@ -71,6 +71,15 @@ Job names and comments carry the run ID only, never project, sample or workflow 
 - **Walltime.** The runner performs a controlled stop well before the head job's limit and, if the policy allows, resubmits the head with `-resume`; a warning alone does not stop a run from being killed overnight. At the limit Slurm waits only `KillWait` between SIGTERM and SIGKILL (default 30 s, `slurm.conf`, Slurm 26.05), which may not be enough to cancel thousands of tasks, leaving orphan jobs **[to be validated]**. Resuming is safe because the engine caches the completed work.
 - **Runner restart.** When a runner restarts, it reconciles: it lists the user's jobs with `squeue --me --json` and keeps those whose name starts with `spectio-head-` and whose comment is `spectio:<run_id>` (filtered client-side, since `--name` only matches exact names: Slurm 26.05.5 `squeue.1:1423-1425`, `src/squeue/print.c:3263-3275`; `sacct --name` too, slurmdbd `as_mysql_jobacct_process.c:1608`), then reads finished head jobs with `sacct --json -j <ids>` for the IDs stored in `scheduler_jobs`. No run is lost ([`synthesis.md`](synthesis.md) §10, main risks) *(assumed — pending Thomas, inbox #29)*.
 
+#### 3.1.1 Local launcher: detach, adopt, exit
+
+*(assumed — pending Thomas, inbox #35)* On the local executor (the in-process runner of `spectio serve`) the engine heads keep running detached when the server stops, and the next start re-adopts them.
+- **Detach.** The local launcher starts each head in its own session (`setsid` / `start_new_session=True`) and outside the server's cgroup with `systemd-run --user --scope` where available, because systemd's default `KillMode=control-group` kills every process of the unit ([R4 CH-028](../reviews/R4-constraints.md#ch-028-major-hosting-the-runner-on-login-nodes-scrontab-does-not-run-there-systemd-kills-supervised-heads-duplicate-runners)). stdin is `/dev/null`; stdout and stderr go to `<launch_dir>/.spectio/head.out` and `.spectio/head.err`, never to pipes.
+- **PID and exit files.** A wrapper, `spectio-head-wrap`, writes `.spectio/head.pid` (PID, process start time, host boot ID) before it execs the head, and `.spectio/head.exit` (exit code, time) when the head ends, so the exit code survives the server. The values are stored on the `launches` row ([`api-and-data-model.md`](api-and-data-model.md) §7).
+- **Adopt on boot.** For every `launches` row not in a terminal state, Spectio checks PID + start time + boot ID: if they match, it adopts the running process; otherwise it reads `head.exit`. The same check makes a re-delivered `launch` command idempotent, as the `squeue` name match does on SLURM (§3.1).
+- **Head exit with no terminal event.** *(assumed — pending Thomas, inbox #40)* This is the local counterpart of the head-job watch: when `head.exit` exists, or the PID is gone, and no terminal engine event was received, the launcher reports the head exit (`launches.exited_at`, `exit_code`), and the run transition of [`api-and-data-model.md`](api-and-data-model.md) §7.1 (`head_lost` / `engine_fault`) applies.
+- **Why the head must not be signalled.** Nextflow aborts the run on SIGTERM or SIGINT (`Session.groovy:609-615`, Nextflow `114f1fe`); Snakemake drains running jobs on SIGTERM (`job_scheduler.py:171, 241-245`, Snakemake `1c67a66`) ([`synthesis.md`](synthesis.md) §5ter.3). Whether a server stop (systemd restart, Ctrl-C in the terminal of `spectio serve`) still delivers a signal to a detached head is **[to be validated]**.
+
 ### 3.2 Batched observation and budgets
 
 One `SchedulerObserver` per runner keeps a cache of all jobs of its user. Each layer has its own default interval:
@@ -145,6 +154,11 @@ One `SchedulerObserver` per runner keeps a cache of all jobs of its user. Each l
 - an OOM kill gives 137 locally, but `OUT_OF_MEMORY` with exit code 0:125 under SLURM **[to be validated on sind]** (consistent with `SIG_OOM 253` in `src/common/slurm_protocol_defs.h:875`, 253 & 0x7f = 125, Slurm 26.05.5).
 
 The engine plugin therefore combines the trace status, the error text, the scheduler record and the exit code (`docs/research/spike-synthetic-pipelines-2026-10-26.md`).
+
+**Local executor.** With no scheduler record, a local task failure is classed as follows *(assumed — pending Thomas, inbox #40)*:
+- a non-zero exit is `tool_error`;
+- SIGKILL or exit 137 is shown as "killed (memory?)", only where the engine reports it **[to be validated]**;
+- otherwise the class is unknown, and the UI shows "n/a · no scheduler accounting on a local run".
 
 **Efficiency.**
 - CPU efficiency = `TotalCPU / (Elapsed × AllocCPUS)`.
