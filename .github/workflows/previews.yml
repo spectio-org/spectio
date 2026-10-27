@@ -1,12 +1,14 @@
 name: previews
 
 # Static dev previews on Cloudflare Pages (docs/specs/dev-environment-and-testing.md §7.1).
-# One branch alias per PR (pr-<n>), validated wave (wave-<id>, manual), release (v0-3-0) and main.
+# One branch alias per PR (pr-<n>), approved wave (wave-w<n>), release (v0-3-0) and main.
 # Every deployment keeps its own hash URL; /versions lists them all. Without the secrets, it builds and skips the deploy.
+# Wave approval: label a wave-review PR (title names one wave, e.g. "... (W3 complete)") with `wave-approved`.
 # The CLOUDFARE_* names are the ones set on 2026-10-26 (typo); rename them to CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID
 # and drop the fallbacks.
 on:
   pull_request:
+    types: [opened, synchronize, reopened, labeled]
   push:
     branches: [main]
     tags: ["v*"]
@@ -16,50 +18,70 @@ on:
         description: "Branch alias for this preview, e.g. wave-w2"
         required: true
 
-permissions:
-  contents: read
-  pull-requests: write
+permissions: {}
 
 concurrency:
-  group: previews-${{ github.event.pull_request.number || github.ref }}
+  # A label other than wave-approved gets its own group, so it never cancels a deploy (its job is skipped).
+  group: previews-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'labeled' && github.event.label.name || 'deploy' }}
   cancel-in-progress: true
 
 env:
   CF_PROJECT: spectio
+  WRANGLER: wrangler@4.153.0
+  SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
 jobs:
   preview:
-    # PRs from forks cannot read the environment secrets; skip them.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    # PRs from forks cannot read the environment secrets; skip them. Of the label events, only wave-approved deploys.
+    if: >-
+      (github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository)
+      && (github.event.action != 'labeled' || github.event.label.name == 'wave-approved')
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: previews
+    permissions:
+      contents: read
+      pull-requests: write
     steps:
       - name: Check the Cloudflare secrets (names only, never values)
         id: cf
         env:
           T: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN }}
           A: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFARE_ACCOUND_ID }}
+          T_NEW: ${{ secrets.CLOUDFLARE_API_TOKEN != '' }}
+          A_NEW: ${{ secrets.CLOUDFLARE_ACCOUNT_ID != '' }}
         run: |
           missing=""
           [ -n "$T" ] || missing="$missing CLOUDFLARE_API_TOKEN"
           [ -n "$A" ] || missing="$missing CLOUDFLARE_ACCOUNT_ID"
+          echo "Secret names set: CLOUDFLARE_API_TOKEN=$T_NEW CLOUDFLARE_ACCOUNT_ID=$A_NEW (false means the CLOUDFARE_* fallback or nothing)"
           if [ -z "$missing" ]; then echo "has=true" >> "$GITHUB_OUTPUT"; echo "Cloudflare secrets: both present";
           else echo "has=false" >> "$GITHUB_OUTPUT"; echo "::notice::Missing in environment 'previews' (or repository secrets):$missing"; fi
 
-      - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v6
+      # Build the PR head itself, not GitHub's merge commit, so the footer SHA names exactly what is served.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          ref: ${{ env.SHA }}
+          persist-credentials: false
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
 
       - name: Choose the branch alias
         id: alias
         env:
           EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
           PR: ${{ github.event.pull_request.number }}
+          TITLE: ${{ github.event.pull_request.title }}
           INPUT: ${{ inputs.alias }}
         run: |
-          case "$EVENT" in
-            pull_request)      a="pr-$PR" ;;
-            workflow_dispatch) a="$INPUT" ;;
+          case "$EVENT/$ACTION" in
+            pull_request/labeled)
+              # wave-approved: the PR title names exactly one wave, e.g. "Promote W3" -> wave-w3.
+              waves=$(grep -oE '\bW[0-9]+\b' <<<"$TITLE" | sort -u || true)
+              [ "$(grep -c . <<<"$waves")" = 1 ] || { echo "::error::wave-approved needs exactly one wave id (W<n>) in the PR title, found: ${waves//$'\n'/ }"; exit 1; }
+              a="wave-$waves" ;;
+            pull_request/*)    a="pr-$PR" ;;
+            workflow_dispatch/*) a="$INPUT" ;;
             *) if [[ "$GITHUB_REF" == refs/tags/* ]]; then a="${GITHUB_REF_NAME//./-}"; else a="main"; fi ;;
           esac
           a=$(echo "$a" | tr '[:upper:]' '[:lower:]' | tr -c 'a-z0-9-\n' '-')
@@ -68,7 +90,7 @@ jobs:
 
       - name: Build the docs site
         env:
-          SPECTIO_BUILD_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          SPECTIO_BUILD_SHA: ${{ env.SHA }}
           SPECTIO_PREVIEW: ${{ steps.alias.outputs.alias }}
         run: uvx --with mkdocs-material mkdocs build --strict -d site
 
@@ -81,9 +103,10 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFARE_ACCOUND_ID }}
+          ALIAS: ${{ steps.alias.outputs.alias }}
         run: |
           python3 tools/previews/versions_page.py --project "$CF_PROJECT" --out site/versions/index.html \
-            --current-alias "${{ steps.alias.outputs.alias }}" --current-sha "${{ github.event.pull_request.head.sha || github.sha }}"
+            --current-alias "$ALIAS" --current-sha "$SHA"
 
       - name: Deploy to Cloudflare Pages
         id: deploy
@@ -91,54 +114,63 @@ jobs:
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN || secrets.CLOUDFARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || secrets.CLOUDFARE_ACCOUND_ID }}
+          ALIAS: ${{ steps.alias.outputs.alias }}
           MSG: ${{ github.event.pull_request.title || github.event.head_commit.message || 'manual preview' }}
         run: |
-          npx --yes wrangler@4 pages project create "$CF_PROJECT" --production-branch main >/dev/null 2>&1 || true
-          out=$(npx --yes wrangler@4 pages deploy site --project-name "$CF_PROJECT" \
-                  --branch "${{ steps.alias.outputs.alias }}" \
-                  --commit-hash "${{ github.event.pull_request.head.sha || github.sha }}" \
+          npx --yes "$WRANGLER" pages project create "$CF_PROJECT" --production-branch main >/dev/null 2>&1 || true
+          out=$(npx --yes "$WRANGLER" pages deploy site --project-name "$CF_PROJECT" \
+                  --branch "$ALIAS" --commit-hash "$SHA" \
                   --commit-message "$(printf '%s' "$MSG" | head -1 | cut -c1-200)" 2>&1) || { echo "$out"; exit 1; }
           echo "$out"
           url=$(grep -oE 'https://[a-z0-9.-]+\.pages\.dev' <<<"$out" | head -1)
           echo "url=$url" >> "$GITHUB_OUTPUT"
           # The production branch (main) is served at the project root; other branches get an alias subdomain.
-          if [ "${{ steps.alias.outputs.alias }}" = main ]; then echo "alias_url=https://$CF_PROJECT.pages.dev" >> "$GITHUB_OUTPUT";
-          else echo "alias_url=https://${{ steps.alias.outputs.alias }}.$CF_PROJECT.pages.dev" >> "$GITHUB_OUTPUT"; fi
+          if [ "$ALIAS" = main ]; then echo "alias_url=https://$CF_PROJECT.pages.dev" >> "$GITHUB_OUTPUT";
+          else echo "alias_url=https://$ALIAS.$CF_PROJECT.pages.dev" >> "$GITHUB_OUTPUT"; fi
 
-      - name: Verify the deployed preview
+      - name: Verify the deployed preview and its alias
         if: steps.cf.outputs.has == 'true'
         env:
           URL: ${{ steps.deploy.outputs.url }}
-          SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+          ALIAS_URL: ${{ steps.deploy.outputs.alias_url }}
         run: |
           # A new deployment's hostname can take a minute or two to answer (seen on 2026-10-26: > 60 s).
-          ok=""
-          for i in $(seq 1 24); do
-            if curl -fsS --max-time 15 "$URL/" -o home.html 2>/dev/null && grep -q "build ${SHA:0:7}" home.html; then ok=1; break; fi
-            sleep 10
+          # The alias must then point at this build too; both wait up to 4 minutes.
+          for u in "$URL" "$ALIAS_URL"; do
+            ok=""
+            for i in $(seq 1 24); do
+              if curl -fsS --max-time 15 "$u/" -o home.html 2>/dev/null && grep -q "build ${SHA:0:7}" home.html; then ok=1; break; fi
+              sleep 10
+            done
+            [ -n "$ok" ] || { echo "::error::$u does not show build ${SHA:0:7} after 4 minutes"; exit 1; }
+            echo "$u shows build ${SHA:0:7}"
           done
-          [ -n "$ok" ] || { echo "::error::$URL does not show build ${SHA:0:7} after 4 minutes"; exit 1; }
           curl -fsS "$URL/versions/" -o /dev/null
           curl -fsS "$URL/progress/" -o /dev/null
-          echo "Preview OK: $URL"
+          echo "Preview OK: $URL (alias $ALIAS_URL)"
 
       - name: Comment the links on the PR
         if: steps.cf.outputs.has == 'true' && github.event_name == 'pull_request'
-        uses: actions/github-script@v7
+        uses: actions/github-script@f28e40c7f34bde8b3046d885e986cb6290c5673b # v7.1.0
         env:
           URL: ${{ steps.deploy.outputs.url }}
+          ALIAS: ${{ steps.alias.outputs.alias }}
           ALIAS_URL: ${{ steps.deploy.outputs.alias_url }}
           BRANCH: ${{ github.head_ref }}
         with:
           script: |
-            const marker = '<!-- spectio-preview -->';
-            const body = `${marker}
-            **Preview of this PR** (kept, never overwritten): ${process.env.URL}
-            Latest for this PR: ${process.env.ALIAS_URL} · all versions: ${process.env.ALIAS_URL}/versions/
+            const { URL, ALIAS, ALIAS_URL, BRANCH, SHA } = process.env;
+            const wave = ALIAS.startsWith('wave-');
+            const marker = wave ? '<!-- spectio-preview-wave -->' : '<!-- spectio-preview -->';
+            const body = wave ? `${marker}
+            **Approved wave preview \`${ALIAS}\`** (build ${SHA.slice(0, 7)}, kept, never overwritten): ${URL}
+            Wave alias: ${ALIAS_URL} · all versions: ${ALIAS_URL}/versions/` : `${marker}
+            **Preview of this PR** (build ${SHA.slice(0, 7)}, kept, never overwritten): ${URL}
+            Latest for this PR: ${ALIAS_URL} · all versions: ${ALIAS_URL}/versions/
 
-            [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/${context.repo.owner}/${context.repo.repo}/tree/${process.env.BRANCH}?quickstart=1)
+            [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/${context.repo.owner}/${context.repo.repo}/tree/${BRANCH}?quickstart=1)
             Full stack on demand: the codespace serves the docs on port 8000 (and Spectio on 8080 once it exists).`;
-            const { data: comments } = await github.rest.issues.listComments({ ...context.repo, issue_number: context.issue.number });
+            const comments = await github.paginate(github.rest.issues.listComments, { ...context.repo, issue_number: context.issue.number });
             const old = comments.find(c => c.body && c.body.startsWith(marker));
             if (old) await github.rest.issues.updateComment({ ...context.repo, comment_id: old.id, body });
             else await github.rest.issues.createComment({ ...context.repo, issue_number: context.issue.number, body });
