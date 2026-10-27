@@ -38,31 +38,49 @@ Companion docs:
 
 ## 1. Toolchain (pinned in `dev/versions.env`)
 
-| Tool | Pin (initial) | How it is installed | Used for |
+`dev/versions.env` holds the exact value of every pin below, with the sha256 of every download and the digest of every image, and cites where each was read (step D3, 2026-10-27). This table says what is pinned and how it is installed; it does not repeat the values that change.
+
+| Tool | Pin | How it is installed | Used for |
 |---|---|---|---|
-| Python | 3.13 (uv-managed; embeds SQLite ≥ 3.51.3) | `uv python install` | server, CLI, runner, tests |
-| uv | latest at bootstrap time, then pinned | official installer | everything Python |
-| Node.js | 24 LTS (maintenance until 2028-04-30); move to 26 once it is Active LTS (2026-10-28) ([Node release schedule](https://github.com/nodejs/Release/blob/main/schedule.json); v22 ends on 2027-04-30) | distro or `nvm` | UI build, Playwright, mermaid-cli |
-| Java | 21 (Temurin) | distro package or SDKMAN | Nextflow |
-| Nextflow | 26.10.x, 25.10.x and 25.04.x, the supported floor ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.4); all tested, and `nf-spectio`'s `requires` equals this range *(assumed — pending Thomas, inbox #28)* | the self-contained `nextflow-<ver>-dist` from GitHub releases (offline-capable, still downloads plugins; [install docs](https://docs.seqera.io/nextflow/install)), or the `get.nextflow.io` launcher with `NXF_VER` pinned, which downloads `nextflow-<ver>-one.jar` from `www.nextflow.io/releases`; plugins come from `registry.nextflow.io` (`PluginsFacade.groovy:48`). All reachable from a cloud session (checked 2026-10-26). | fixture and nf-core runs |
-| Snakemake | two versions, both tested: the minimum supported and the latest (9.27.1 today). Supported range: Snakemake ≥ 9.0 (the logger plugin interface arrived in 9.0.0, `CHANGELOG.md` at `1c67a66`; [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.4) with `snakemake-interface-logger-plugins` `>=1.2,<3` (1.x and 2.x, the range snkmt also pins); the exact minimum tested version is set by R9 spike 2 **[to be validated]** *(assumed — pending Thomas, inbox #28)*. Plus `snakemake-executor-plugin-slurm`, `-kubernetes`, and `snakemake-logger-plugin-spectio` (ours); `-kueue` (0.1.0, the only PyPI release, 2024-01-03; repository unmaintained since 2024-03, HEAD `c09bf0d`; wheel says "under development") only if spike D2 shows it runs on Snakemake 9 **[to be validated]** | `uv tool install` with `--with` plugins, or a pixi environment | fixture runs |
-| sind | latest release, pinned | release binary `sind-linux-<arch>` from GitHub releases; needs Docker ≥ 28 on cgroup v2 | SLURM clusters |
-| kind, kubectl, helm | pinned releases | release binaries | Kubernetes clusters, chart tests |
+| Python | 3.13, an exact uv-managed patch (embeds SQLite ≥ 3.51.3; `dev/doctor.sh` checks it) | `uv python install --no-bin`, so the system `python3` is not shadowed | server, CLI, runner, tests |
+| uv | the version pre-installed in cloud sessions (0.11.32 on 2026-10-27), so the cloud setup reuses it | release tarball at an explicit tag, sha256-checked, only when the found version differs | everything Python |
+| Node.js | 24 LTS (maintenance until 2028-04-30); move to 26 once it is Active LTS (2026-10-28) ([Node release schedule](https://github.com/nodejs/Release/blob/main/schedule.json); v22 ends on 2027-04-30). Cloud sessions ship Node 22, so bootstrap installs 24 | `nodejs.org/dist` tarball, sha256 from its `SHASUMS256.txt` | UI build, Playwright, mermaid-cli |
+| Java | 21 (Temurin) | a prerequisite, not installed by bootstrap: distro package, SDKMAN, `actions/setup-java` in CI; doctor checks the major | Nextflow |
+| Nextflow | 26.10.x, 25.10.x and 25.04.x, the supported floor ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.4); all tested, and `nf-spectio`'s `requires` equals this range *(assumed — pending Thomas, inbox #28)* | bootstrap: the self-contained `nextflow-<ver>-dist` asset at an explicit tag, one per version (`nextflow` is the 26.10 one, `nextflow-<ver>` the others; offline-capable, still downloads plugins; [install docs](https://docs.seqera.io/nextflow/install)). The release publishes no checksum, so the sha256 is the one computed at download. Never `releases/latest`, which the cloud's GitHub proxy refuses ([spike D2](../research/spike-cloud-env-2026-10-26.md#network)). The `get.nextflow.io` launcher with `NXF_VER` pinned also works; it downloads `nextflow-<ver>-one.jar` from `www.nextflow.io/releases`. Plugins come from `registry.nextflow.io` (`PluginsFacade.groovy:48`). | fixture and nf-core runs |
+| Snakemake | two versions, both tested: the minimum supported and the latest (9.27.1 today). Supported range: Snakemake ≥ 9.0 (the logger plugin interface arrived in 9.0.0, `CHANGELOG.md` at `1c67a66`; [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.4) with `snakemake-interface-logger-plugins` `>=1.2,<3` (1.x and 2.x, the range snkmt also pins); the exact minimum tested version is set by R9 spike 2 **[to be validated]** *(assumed — pending Thomas, inbox #28)*. Plus `snakemake-executor-plugin-slurm`, `-kubernetes`, and `snakemake-logger-plugin-spectio` (ours); `-kueue` (0.1.0, the only PyPI release, 2024-01-03; repository unmaintained since 2024-03, HEAD `c09bf0d`; wheel says "under development") only if spike D2 shows it runs on Snakemake 9 **[to be validated]** | bootstrap: a venv from the hash-locked `dev/snakemake.lock.txt` (`uv pip sync --require-hashes`, see "Bootstrap" below), or a pixi environment | fixture runs |
+| sind | latest release, pinned (v0.15.0 on 2026-10-27), with its node image and the mesh's CoreDNS image pinned by digest | release binary `sind-linux-amd64` at an explicit tag, sha256 from the release's `checksums.txt`; needs Docker ≥ 28 on cgroup v2 with `nsdelegate` (sind `README.md:40`, `pkg/doctor/run.go:123-168` at v0.15.0) | SLURM clusters |
+| kind, kubectl, helm | pinned releases; the kind node image by the digest its release notes give | release binaries (helm: tarball), sha256 from each project's published checksum | Kubernetes clusters, chart tests; out of 0.0.1 ([decision log, 2026-10-27](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), kept in the toolchain for T4 |
 | Kueue | two pinned manifest versions: the newest supported Kueue minor (v0.20 at the time of R4) and an older one, both run in `k8s-kueue`. The older one is chosen to support the lowest targeted Kubernetes (1.33), with the kind node image pinned to match (Kueue v0.20.3 recommends Kubernetes 1.34 or newer, [install page](https://kueue.sigs.k8s.io/docs/getting-started/installation/)) **[to be validated: Kueue release supporting 1.33]** | `kubectl apply --server-side -f` | queueing scenarios |
-| Playwright | pinned, Chromium | `npm i -D playwright`; Chromium is pre-installed in some environments | e2e tests, board rendering |
-| mermaid-cli, mkdocs-material | pinned | `npx`, `uvx` | docs CI |
+| Playwright | the version whose Chromium cloud sessions ship under `/opt/pw-browsers` (1.63.0); another version would download a browser from a host off the allowlist | `npm install` into `$SPECTIO_HOME/npm`; Chromium downloaded only where it is missing (CI) | e2e tests, board rendering |
+| mermaid-cli, mkdocs, mkdocs-material | pinned | on demand, never by bootstrap: `npx -y @mermaid-js/mermaid-cli@<pin>`, `uvx --with mkdocs-material==<pin> mkdocs==<pin>` | docs CI |
 | Apptainer | pinned; installed on the sind submitter node *(assumed — pending Thomas, inbox #28)* | distro package | the Apptainer runtime axis on `slurm-site`, nightly (§5); whether Apptainer works in nested containers is **[to be validated]** |
 | depictio | `DEPICTIO_VERSION`: the latest stable release, pinned (`v1.19.2` on 2026-10-26); never `next`, which also moves on betas, nor the force-moved `stable` git tag (depictio `build-images.yaml:280-282`, `bump-with-helm.sh:55-60`) *(decided — Thomas, 2026-10-27, inbox #22)* | container images `ghcr.io/depictio/depictio-{api,worker,viewer,cli}:<version>` | tier 5 hand-off tests |
 
+**Bootstrap.** `bash dev/bootstrap.sh [--ci]` installs everything above that is not a prerequisite.
+- **Where.** Each tool goes to `$SPECTIO_HOME/pkgs/<tool>-<version>/` (default `~/.local/share/spectio`), and its commands are linked into `$SPECTIO_BIN` (default `~/.local/bin`, which bootstrap also adds to `$GITHUB_PATH` in Actions). Snakemake and its plugins live in a venv named after their lock file.
+- **Prerequisites,** checked and not installed: Docker, Java 21, `curl`, `tar`, `xz`, `sha256sum`. Linux x86_64 only, since the checksums are for linux/amd64.
+- **Idempotent.** A tool already at its pin is not downloaded again; a second run takes about 1 s.
+- **Checked downloads.**
+  - Binaries and tarballs: against their sha256 in `versions.env`, before they are moved into place.
+  - Snakemake, its plugins and all their dependencies: from `dev/snakemake.lock.txt` (`uv pip compile --generate-hashes`), installed with `uv pip sync --require-hashes`. A wrong hash stops the install ("Hash mismatch", checked 2026-10-27).
+  - Playwright: from `dev/npm/package-lock.json` with `npm ci`, which checks each package's integrity hash.
+  - Two downloads are not hashed by us: the uv-managed CPython, which uv fetches and checks against its own release metadata **[to be validated]**, and Playwright's Chromium where it is missing (CI), fetched over TLS from Playwright's CDN.
+- **Parallel.** The installs run as background jobs, each with its own log in `$SPECTIO_HOME/logs/`; the script reports every job and exits non-zero if any failed.
+- **`--ci`** also starts `dockerd` where nothing else will (root, no systemd, as in a cloud session, with `--registry-mirror=https://mirror.gcr.io`), then pre-pulls the doctor's images by digest. Docker Hub images come from `mirror.gcr.io` first, because Docker Hub rate-limits anonymous pulls on shared egress ([spike D2](../research/spike-cloud-env-2026-10-26.md#network); sind's own CI does the same, `.github/workflows/ci.yml` at v0.15.0). On cgroup v1 it skips the sind and kind images. It warns when it took more than 5 minutes.
+- **Measured** on 2026-10-27: cold `--ci` run in 25 s in a cloud session (sind and kind images skipped), 56 s on an `ubuntu-24.04` runner (all images, Chromium downloaded with its system dependencies).
+
 **Checks.**
-- `dev/doctor.sh` prints each tool and version, then runs one smoke test per layer:
-  - `docker run --rm hello-world`;
-  - `sind` create, then `sbatch --wrap hostname` with `--wait`;
-  - `kind create cluster`, then a Job, then delete;
+- `dev/doctor.sh` prints each tool and its version against `dev/versions.env` (a different version fails), then runs one smoke test per layer:
+  - `docker run --rm hello-world`, pinned by digest;
+  - `sind create cluster` (a controller and a worker, node image by digest), then `sbatch --wait --wrap hostname`;
+  - `kind create cluster` (node image by digest), then a Job that must complete, then delete;
   - `nextflow run tests/pipelines/synthetic/nextflow -profile test,local`;
   - `snakemake -n -s tests/pipelines/synthetic/snakemake/workflow/Snakefile`;
-  - Playwright opening `about:blank`.
-- It exits non-zero on the first failure, naming the tool.
+  - Playwright's Chromium opening `about:blank`.
+- It exits non-zero on the first failure, naming the tool, and shows the end of that tool's output.
+- **Skipped layers.** Where Docker runs on cgroup v1, as in a cloud session, the sind and kind layers print `skip` with the reason and the run still passes. `SPECTIO_DOCTOR_STRICT=1` turns a skip into a failure.
+- **Isolation.** Each run uses its own sind realm and kind cluster, `spx-doctor-<pid>`, deleted on exit, so parallel runs do not collide (§5).
+- **Where it runs.** In a cloud session (the exit check of step D3), and in `dev-env.yml` (§11) on an `ubuntu-24.04` runner with `SPECTIO_DOCTOR_STRICT=1`, so that sind and kind are proven there. A runner change cannot turn that job green by skipping them, as in sind's own CI (`.github/workflows/ci.yml`, "Check prerequisites", at v0.15.0).
 
 **Dependency updates.** Renovate keeps every pin current: the uv lock, npm, GitHub Actions (pinned by commit SHA), Docker image digests, Helm dependencies and pre-commit hooks, plus regex managers for `dev/versions.env` and `tests/pipelines/real/corpus.yaml` (Renovate rather than Dependabot because of these regex managers **[to be validated: Dependabot has no equivalent]**). Updates arrive as grouped monthly PRs; security updates arrive as they are published. Every update PR goes through the `ci-ok` gate (§11). depictio runs Dependabot monthly for uv (two groups) and GitHub Actions (`.github/dependabot.yml` l.20-59 at `v1.19.2`), and its actions are at `checkout@v7`, `upload-artifact@v7`, `setup-uv@v7`; Spectio's workflows still use `checkout@v4`, `upload-artifact@v4`, `setup-node@v4`, `setup-uv@v6` and `github-script@v7`, and Node 20 actions face deprecation **[to be validated: date]**.
 
@@ -71,16 +89,60 @@ Companion docs:
 | Place | What it is good for | Limits to design around |
 |---|---|---|
 | **Claude Code on the user's machine** (terminal, desktop) | interactive work, plugins (superpowers, Karpathy guidelines, frontend-design) installed normally | the user's machine resources |
-| **Cloud sessions** (claude.ai/code, `claude --cloud`) | parallel autonomous tasks, one per branch; Docker is available | setup script cached only if it finishes in about 5 min; commands time out at 2 min by default (10 max, then moved to the background, up to 30 more min; `BASH_DEFAULT_TIMEOUT_MS` raises it); outbound network through an allowlist proxy (Trusted, Custom or Full); **plugins are not loaded**, so the skills are vendored in `.claude/skills/`; VM memory limits; idle VMs are reclaimed ([cloud environments](https://code.claude.com/docs/en/cloud-environments.md), [cloud sessions](https://code.claude.com/docs/en/claude-code-on-the-web.md)) |
+| **Cloud sessions** (claude.ai/code, `claude --cloud`) | parallel autonomous tasks, one per branch; Docker is available; engines, Compose and UI work | setup script cached only if it finishes in about 5 min; commands time out at 2 min by default (10 max, then moved to the background, up to 30 more min; `BASH_DEFAULT_TIMEOUT_MS` raises it); outbound network through an allowlist proxy (Trusted, Custom or Full); **plugins are not loaded**, so the skills are vendored in `.claude/skills/`; about 4 vCPU, 16 GB RAM, 30 GB disk; idle VMs are reclaimed ([cloud environments](https://code.claude.com/docs/en/cloud-environments.md), [cloud sessions](https://code.claude.com/docs/en/claude-code-on-the-web.md)). Measured by [spike D2](../research/spike-cloud-env-2026-10-26.md): a Firecracker VM with no swap; **cgroup v1**, so sind and kind cannot run (they run in CI, §1 "Checks"); Docker installed but its daemon not running, and not kept by the environment cache, which keeps files only; Docker Hub answers 429 to anonymous pulls; the GitHub proxy serves only the session's repositories, so downloads use explicit release tags; the auto-mode classifier refuses remote code such as `nextflow run <repo>` |
 | **GitHub Actions** | PR gates, nightly matrix, preview deploys, Claude PR review | runner time and memory |
 | **Cloudflare Pages** | one static preview per PR, wave and release (docs, boards, later the UI with a mocked API) | static only; public unless Cloudflare Access is on |
 | **GitHub Codespaces** | the full stack on demand for Thomas, one per branch | about 60 h a month of a 2-core machine in the free quota; stops when idle |
 
-**Cloud environment settings** (claude.ai/code → environment):
-- **Network:** Custom, with the default list plus the hosts Nextflow, nf-core and the container registries need. The list is to be confirmed by spike D2: `www.nextflow.io`, `get.nextflow.io`, `registry.nextflow.io`, `quay.io`, `ghcr.io`, `community.wave.seqera.io`, `conda.anaconda.org`, `prefix.dev`.
-- **Environment variables:** `BASH_DEFAULT_TIMEOUT_MS=600000`, `BASH_MAX_TIMEOUT_MS=1800000`, `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` (optional).
-- **Setup script:** `bash dev/bootstrap.sh --ci` (toolchain and pre-pulled images only).
-- **SessionStart hook:** in `.claude/settings.json`, starts nothing heavy by default. Scenarios start their own clusters.
+**Cloud environment settings** (claude.ai/code → environment; written by step D3 from [spike D2](../research/spike-cloud-env-2026-10-26.md#recommended-custom-allowlist)):
+- **Network access:** **Custom**, with **"Also include default list of common package managers"** checked, and these lines in **Allowed domains** (a leading `*.` matches every subdomain, [docs](https://code.claude.com/docs/en/cloud-environments.md#access-levels)):
+
+  ```text
+  nodejs.org
+  get.helm.sh
+  get.nextflow.io
+  www.nextflow.io
+  registry.nextflow.io
+  nf-co.re
+  quay.io
+  *.quay.io
+  community.wave.seqera.io
+  cerbero.seqera.io
+  community-cr-prod.seqera.io
+  pkg-containers.githubusercontent.com
+  registry.k8s.io
+  *.pkg.dev
+  prefix.dev
+  *.prefix.dev
+  ```
+
+  - `nodejs.org` and `get.helm.sh` are what bootstrap needs beyond the default list (Node and helm downloads); D2's list predates bootstrap and lacked them. Everything else bootstrap fetches is in the default list (PyPI, npm, `dl.k8s.io`, `*.gcr.io` for the Docker Hub mirror, `ghcr.io`, `release-assets.githubusercontent.com`) or goes through the GitHub proxy ([default allowed domains](https://code.claude.com/docs/en/cloud-environments.md#default-allowed-domains), checked 2026-10-27).
+  - The other lines are for nf-core containers (`quay.io`, Seqera), the Nextflow launcher and plugins, `nf-core` tooling, Kubernetes images and pixi.
+  - Not checked yet **[to be validated]**: where Nextflow plugin downloads redirect to; whether `*.prefix.dev` and `*.pkg.dev` cover every host pixi and `registry.k8s.io` use. The spike ran on a broader access level, so the list must be re-probed once the environment is set to Custom (spike D2, follow-up 3).
+  - The wildcards widen what a session can reach: anyone can host a registry under `*.pkg.dev`. At the re-probe, replace each wildcard with the exact hosts seen in the redirects, and drop the lines no scenario uses yet (security review of D3, SEC-D3-04).
+- **Environment variables** (`.env` format, readable by everyone who uses the environment, so never a secret):
+
+  ```text
+  BASH_DEFAULT_TIMEOUT_MS=600000
+  BASH_MAX_TIMEOUT_MS=1800000
+  ```
+
+  Both are in milliseconds and raise the 2-minute foreground default to 10 minutes ([time limits](https://code.claude.com/docs/en/cloud-environments.md#time-limits)). `CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` is optional.
+- **Setup script:**
+
+  ```bash
+  #!/bin/bash
+  # Spectio: pinned toolchain and pre-pulled images (docs/specs/dev-environment-and-testing.md §1).
+  # Exits 0 even on failure: a failing setup script stops the session from starting.
+  if [ -f dev/bootstrap.sh ]; then bash dev/bootstrap.sh --ci || true; fi
+  ```
+
+  - **Exit zero:** a setup script that exits non-zero stops the session from starting ([script requirements](https://code.claude.com/docs/en/cloud-environments.md#script-requirements)). If bootstrap fails, run `bash dev/bootstrap.sh --ci` in the session; its log names the failed job.
+  - **Cached:** it took 25 s cold in a cloud session (§1 "Bootstrap"), far under the five minutes beyond which the environment is not cached. The cache keeps files and pulled images, and is rebuilt when the script or the network list changes, or after about seven days ([environment caching](https://code.claude.com/docs/en/cloud-environments.md#environment-caching)).
+  - **Which pins:** the cache holds the pins of the branch the setup script ran on. A branch with other pins runs `bash dev/bootstrap.sh` itself (about 1 s when nothing changed).
+  - Whether the repository is already cloned in the working directory when the setup script runs is **[to be validated]**; the `if` keeps the script harmless when it is not.
+- **Docker daemon:** not running at session start, and not kept by the cache. `dev/bootstrap.sh --ci` and `dev/doctor.sh` start it when it is missing, so no SessionStart hook is needed for it.
+- **SessionStart hook:** none for now. Scenarios start their own clusters.
 
 ## 3. Fixture workflows (see §10.1)
 
@@ -115,7 +177,7 @@ The runner runs on the sind submitter node as an unprivileged user, exactly as o
 | `k8s-kueue` | kind with 2 workers, Kueue with a `ClusterQueue` and a `LocalQueue`, the visibility API | queue positions, admission, preemption |
 | `k8s-rwx` | `k8s-mini` + an RWX storage class (NFS provisioner) | Nextflow k8s executor with a shared work directory (Nextflow only; Snakemake needs S3) |
 
-Whether kind runs inside a Claude Code cloud session (kind needs privileged node containers) is the first thing spike D2 answers. If it does not, Kubernetes scenarios run in CI and on the user's machine only.
+kind does not run inside a Claude Code cloud session: the VM's cgroup v1 layout stops the node's static pods ([spike D2](../research/spike-cloud-env-2026-10-26.md#result)), and the same layout stops sind (§4.1). Kubernetes and SLURM scenarios therefore run in CI and on the user's machine only; `dev-env.yml` proves both layers on every change to `dev/` (§1 "Checks").
 
 ## 5. Isolated, parallel scenarios
 
@@ -243,6 +305,7 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
   - `setup.sh` reads `dev/versions.env` when it exists. It does not exist yet (D3 writes it), so the defaults apply: Nextflow 26.10.3 and Snakemake 9.27.1, as in §1 and §10;
   - Python 3.13 and Java 21 match §1. Node was 22 and is now 24, to match §1.
   - Still unpinned until D3: the image tag `1-3.13-bookworm`, the features (by major), uv, mkdocs, mkdocs-material and Playwright.
+- **Since D3 (2026-10-27).** `dev/versions.env` exists, so `setup.sh` now takes Nextflow 26.10.4 and Snakemake 9.27.1 from it. `setup.sh` still installs with its own commands, not with `dev/bootstrap.sh` (§1 "Bootstrap"), so its downloads are not hash-checked. Switching it to bootstrap is proposed in [inbox #41](../reviews/inbox.md).
 - **To be validated live by Thomas:**
   - that `setup.sh` finishes;
   - the time from the badge to the docs on port 8000 (codespace start time);
@@ -401,8 +464,9 @@ Imaging review and the OME-Zarr viewer are designed on real images, not drawings
 |---|---|---|
 | `docs.yml` | PR and push touching `docs/` | strict MkDocs build, Mermaid render |
 | `claude-config.yml` (D1) | every PR; push to `main` and `autopilot/integration` | `tools/claude/check_frontmatter.py` on `.claude`, after its own unit tests on broken fixtures. It fails when an agent (any `.md` under `agents/`, which Claude Code scans recursively) or a skill would not load as intended: no YAML frontmatter on line 1, or one that is unclosed, does not parse or is not a mapping; an agent `name` that is missing, starts with `-`, contains `:`, is over 256 characters or is used twice; an agent with no `description`; a skill directory with no `SKILL.md`; and, as a repository rule rather than a loading failure, a skill with no `description` (Claude Code would fall back to the first line of its body); a field Claude Code does not document, since it ignores unknown fields silently ([sub-agents](https://code.claude.com/docs/en/sub-agents.md), [skills](https://code.claude.com/docs/en/skills.md), read 2026-10-27). `claude plugin validate` is not used: on Claude Code 2.1.311, `claude plugin validate --strict` passed an agent with no `name` (which then does not load) and an unknown field, as its docs say for the first case. Not a required check (see **Required checks** below); for `ci.yml` to call it, it needs `on: workflow_call`. Step page: [D1](../progress/W3/D1.md) |
+| `dev-env.yml` (D3) | push to any branch touching `dev/`, `tests/pipelines/synthetic/` or itself; weekly; manual | `dev/bootstrap.sh --ci`, timed, then `dev/doctor.sh` with `SPECTIO_DOCTOR_STRICT=1` on `ubuntu-24.04`, so every layer runs, sind and kind included (§1 "Checks"); the doctor output goes to the job summary. To be called by `ci.yml` once it exists. Step page: [D3](../progress/W3/D3.md) |
 | `ci.yml` | every PR, push to `main` and `autopilot/integration` | a change-detection job (docs only, `tests/pipelines/synthetic/**`, the corpus, runner code, `deploy/helm/`…; pattern from depictio `depictio-ci.yaml:89-159` at `v1.19.2` / `0d1aa0a`) calls each pipeline workflow as a reusable workflow (`workflow_call`) only when its paths changed; a final `ci-ok` job `needs:` every job, runs with `if: always()`, counts skipped jobs as passing and fails only when a job ended `failure` or `cancelled` (depictio `depictio-ci.yaml:3144-3174`, `:3166-3170`) *(decided — Thomas, 2026-10-27, inbox #26)* |
-| `pipelines-synthetic.yml` | called by `ci.yml` (PR, main) when its paths changed; nightly | synthetic scenarios × {Nextflow 26.10.3, 25.10.9, Snakemake 9.27.1 and the minimum supported Snakemake (§1)}; where nf-prov is enabled, nf-prov 1.7.x with Nextflow 25.10.9 and 1.8.x with 26.10.3 (nf-prov README, `8aa8280`); stress scenario nightly; artifacts with reports, logs, traces |
+| `pipelines-synthetic.yml` | called by `ci.yml` (PR, main) when its paths changed; nightly | synthetic scenarios × {Nextflow 26.10.3 (its matrix predates `dev/versions.env`, whose 26.10 pin is now 26.10.4), 25.10.9, Snakemake 9.27.1 and the minimum supported Snakemake (§1)}; where nf-prov is enabled, nf-prov 1.7.x with Nextflow 25.10.9 and 1.8.x with 26.10.3 (nf-prov README, `8aa8280`); stress scenario nightly; artifacts with reports, logs, traces |
 | `pipelines-real.yml` | called by `ci.yml` when the corpus changed; nightly; manual | matrix generated from `corpus.yaml`: nf-core with `nf-core/setup-nextflow@v3`, the catalog with `snakemake/snakemake-github-action@v2` on the workflow's own `.test` |
 | `pipelines-slurm.yml` (T3) | called by `ci.yml` when runner code changed; nightly | `GSI-HPC/sind-action@v2` cluster, synthetic scenarios with the SLURM profiles. Needs cgroup v2 Docker, which GitHub runners have; this cloud session has cgroup v1, so not here |
 | `pipelines-k8s.yml` (T4) | nightly | `helm/kind-action@v1` + Kueue, synthetic scenarios with the k8s profile, nf-core/demo; a first `helm install` of the chart on an empty kind cluster, which must pass the pre-install migrate hook (architecture §7.5) |

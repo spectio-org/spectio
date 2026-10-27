@@ -1,0 +1,7 @@
+{
+  "private": true,
+  "description": "Node packages of the Spectio dev toolchain, installed by dev/bootstrap.sh with npm ci (pins: dev/versions.env)",
+  "dependencies": {
+    "playwright": "1.63.0"
+  }
+}

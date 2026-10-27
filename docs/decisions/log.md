@@ -678,3 +678,13 @@ Step page: [APPLY2](../progress/W2/APPLY2.md).
   - [`next-phase.md`](../playbooks/next-phase.md) T1 prompt (#32);
   - *assumed* → *decided* markers for #13, #22–#27, #33 and #35 in the specs, features and installation pages; dated research notes keep their markers.
 - **Applied later:** the spec text of the later-version decisions (#11, #13, #19–#27, #33, and #36 for api §14) goes into one apply pass of the inbox answers after W3, as Thomas chose in the session on 2026-10-27, so the W3 budget goes to the build steps. The autopilot proposes its slot when W3 ends. Review files keep their statuses until that pass.
+
+## 2026-10-27 — D3: pinned toolchain, bootstrap and doctor
+
+- **Context.** Step D3 wrote `dev/versions.env`, `dev/bootstrap.sh` and `dev/doctor.sh` from the [D2 spike](../research/spike-cloud-env-2026-10-26.md) and ran them in a cloud session and in `dev-env.yml`. These are the choices the step made; Thomas reviews them in the step's PR.
+- **Pins follow the cloud image where a re-download would cost or be blocked:** uv 0.11.32 and Playwright 1.63.0 are the pre-installed versions, so the cloud setup reuses them and no browser is fetched from a host off the allowlist. Node is the exception: §1 asks for 24 LTS and the image ships 22, so bootstrap installs 24.
+- **Downloads are checked:** each binary and tarball has its sha256 in `versions.env`, from the project's published checksum where one exists (Nextflow publishes none, so its sha256 is the one computed at download). Snakemake's and Playwright's dependency trees are hash-locked (`dev/snakemake.lock.txt`, `dev/npm/package-lock.json`), after the security review found them unlocked (SEC-D3-01). The uv-managed CPython and Playwright's Chromium are the two downloads not hashed by us. Every image the doctor runs is pinned by digest, and Docker Hub images are pulled from `mirror.gcr.io` first.
+- **Linux x86_64 only** for now: the checksums are for linux/amd64.
+- **The doctor never goes green by skipping in CI:** sind and kind are skipped, with the reason, only where Docker runs on cgroup v1 (cloud sessions); `dev-env.yml` sets `SPECTIO_DOCTOR_STRICT=1`, so a skip fails there.
+- **No SessionStart hook:** bootstrap `--ci` and the doctor start `dockerd` when it is missing, which covers the daemon that the environment cache does not keep.
+- **Specs changed:** [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §1 (table, new "Bootstrap" paragraph, "Checks"), §2 (cloud sessions row and the cloud environment settings: network list with `nodejs.org` and `get.helm.sh` added to D2's, environment variables, setup script), §4.2 (answered: kind and sind do not run in cloud sessions), §11 (`dev-env.yml` row). Progress page: [D3](../progress/W3/D3.md).
