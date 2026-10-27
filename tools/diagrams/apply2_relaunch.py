@@ -10,7 +10,7 @@ After (cf5357b, assumed pending inbox #32): `failed` is terminal; Resume and Rel
 create a child run with `parent_run_id`, and mode `resume` reuses the parent's
 `launch_dir` and engine cache (api §5.1, §7.1). The 0.0.1 gate verbs are approve and
 stop; Relaunch... at a gate records `stop` with reason `relaunched` (the run becomes
-`cancelled`), then calls `:relaunch` (api §5.1, mvp-0.0.1.md §2).
+`cancelled`), then calls `:relaunch` (api §5.1, dev-environment-and-testing.md §15.1).
 """
 
 from __future__ import annotations
@@ -59,7 +59,7 @@ def build(theme: Theme) -> Sketch:
            anchor="start", colour=t.dim)
     s.text(bx + 170, 580, "with a change set or from an earlier stage (api §7 decisions)", size=14,
            anchor="start", colour=t.dim)
-    s.step(bx + 385, 680, 1, "one run carries every retry")
+    s.step(bx + 385, 680, 1, "in place or child run: undefined")
 
     # -- after -------------------------------------------------------------------------------------
     ax = 840
@@ -93,7 +93,7 @@ def build(theme: Theme) -> Sketch:
     s.step(ax + 385, 680, 2, "a lineage of runs, each one unchanged")
 
     s.text(40, H - 30, "Sources: docs/specs/api-and-data-model.md before and after commit cf5357b (§5, §5.1, §7, "
-                       "§7.1), docs/specs/mvp-0.0.1.md §2 · tools/diagrams/apply2_relaunch.py", size=12.5,
+                       "§7.1), docs/specs/dev-environment-and-testing.md §15.1 · tools/diagrams/apply2_relaunch.py", size=12.5,
            anchor="start", colour=t.dim)
     return s
 

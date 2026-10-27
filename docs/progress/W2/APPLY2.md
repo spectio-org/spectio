@@ -4,7 +4,7 @@ wave: W2
 status: done
 pr: null
 review: approve
-review_score: 12/14
+review_score: 13/14
 review_ref: ".autopilot/journal.md, tick 6"
 ---
 # APPLY2 · Apply the findings of the journeys and API contract rounds to the specs
@@ -58,7 +58,7 @@ $ grep -A20 "^### SR-065" docs/reviews/R3-journeys.md | grep "Status:"
 | Topic | Before | After | Owner now |
 |---|---|---|---|
 | Relaunch and Resume | `:resume` listed with no source state; no transition out of `failed` | `failed` is terminal; Resume and Relaunch create a child run with `parent_run_id`, and the parent stays terminal *(assumed, inbox #32)* | [api §5.1](../../specs/api-and-data-model.md#51-run-actions), §7.1 |
-| 0.0.1 gate verbs | `approve`, `apply`, `go_back`, `stop` | `approve`, `stop`; Relaunch… at a gate is `stop` with reason `relaunched`, then `:relaunch` *(assumed, inbox #32)* | [`mvp-0.0.1.md`](../../specs/mvp-0.0.1.md) §2, api §5.1 |
+| 0.0.1 gate verbs | `approve`, `apply`, `go_back`, `stop` | `approve`, `stop`; Relaunch… at a gate is `stop` with reason `relaunched`, then `:relaunch` *(assumed, inbox #32)* | [dev-environment §15.1](../../specs/dev-environment-and-testing.md#151-capabilities-by-version), api §5.1 |
 | Idempotency key replayed with a different body | `422` | `409 idempotency-key-reused` | [api §4.1](../../specs/api-and-data-model.md#41-wire-conventions) |
 | Snakemake changed parameters | `--configfile` or `--config` | `--configfile` only, written to `<launch_dir>/.spectio/config.<n>.yaml` *(assumed, inbox #40)* | [`synthesis.md`](../../specs/synthesis.md) §5ter |
 | Task and attempt states | upper case, in synthesis §2ter | lower case, one list | [api §7.2](../../specs/api-and-data-model.md#72-task-and-attempt-states) |
@@ -122,13 +122,13 @@ media: 50 outputs in the manifest
 progress: 22 pages checked
 docs gate: 0 failure(s)
 $ uvx --with mkdocs-material mkdocs build --strict
-INFO    -  Documentation built in 5.80 seconds
+INFO    -  Documentation built in 7.04 seconds
 ```
 
 ## Figures and media
 
 - **Step figure** at the top of this page (to scale: one cell per finding, bar lengths in lines and in findings). Script: `tools/diagrams/apply2_specs.py`; outputs `docs/assets/diagrams/apply2_specs_{light,dark}.{svg,png}`; manifest entry `apply2-specs` in `docs/assets/media.yaml`.
-- **Relaunch figure** under "Before and after" (the run model before and after the step). Script: `tools/diagrams/apply2_relaunch.py`; outputs `docs/assets/diagrams/apply2_relaunch_{light,dark}.{svg,png}`; manifest entry `apply2-relaunch`.
+- **Relaunch figure** under "Before and after" (the run model before and after the step). Script: `tools/diagrams/apply2_relaunch.py`; outputs `docs/assets/diagrams/apply2_relaunch_{light,dark}.{svg,png}`; manifest entry `apply2-relaunch`. It covers the main mechanism that changed; the other rows of the table (idempotency, Snakemake configfile, task states, current stage) are renames or one-line rules and get no figure.
 
 ## Findings and open questions
 
