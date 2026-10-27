@@ -253,22 +253,38 @@
     },
     "D1": {
       "wave": "W3",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T14:26:56Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "",
+      "finished_at": "2026-10-27T15:01:00Z",
+      "outputs": [
+        "tools/claude/check_frontmatter.py",
+        ".github/workflows/claude-config.yml",
+        "CLAUDE.md",
+        "docs/progress/W3/D1.md",
+        "docs/reviews/code/D1.md"
+      ],
+      "notes": "PR weber8thomas/spectio#14 squash 74fd447 (media.yaml conflict resolved by merge 3a14c73); CODE review=approve 0/0/2, security=approve 0/0/3, rounds=1; doc-review approve 14/14; open: SEC-D1-03, claude-config as required check, PyYAML hash pin",
       "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
     },
     "D3": {
       "wave": "W3",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T14:26:56Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "",
+      "finished_at": "2026-10-27T15:46:00Z",
+      "outputs": [
+        "dev/versions.env",
+        "dev/lib.sh",
+        "dev/bootstrap.sh",
+        "dev/doctor.sh",
+        "dev/snakemake.lock.txt",
+        "dev/npm/package-lock.json",
+        ".github/workflows/dev-env.yml",
+        "docs/progress/W3/D3.md",
+        "docs/reviews/code/D3.md"
+      ],
+      "notes": "PR weber8thomas/spectio#15 squash fc19981; exit_check bash dev/doctor.sh exit 0 (2 skipped, cgroup v1); CODE review=approve 0/0/5, security=approve 0/1/4 (SEC-D3-01 fixed), rounds=2, simplify -1/+0; doc-review approve 13/14; inbox #41-#44",
       "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
     },
     "D4": {
@@ -283,12 +299,17 @@
     },
     "D5": {
       "wave": "W3",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T14:26:56Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "",
+      "finished_at": "2026-10-27T14:58:00Z",
+      "outputs": [
+        ".github/workflows/previews.yml",
+        "docs/progress/W3/D5.md",
+        "docs/reviews/code/D5.md",
+        "docs/specs/dev-environment-and-testing.md"
+      ],
+      "notes": "PR weber8thomas/spectio#13 squash 5eb2542; CODE review=approve 0/0/2, security=approve 0/0/2, rounds=2; doc-review approve 12/14; hand items for Thomas (CLOUDFLARE_* secret names, Codespaces live check, wave-approved label)",
       "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
     },
     "T1": {
