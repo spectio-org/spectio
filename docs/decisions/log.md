@@ -648,6 +648,7 @@ Step page: [APPLY2](../progress/W2/APPLY2.md).
 - **Specs and pages changed:**
   - [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md): §15.1 (intro and rows), new §15.3 (architecture and security requirements on a cluster), §11 (security checks on every PR), §8 (Claude PR review row), §14 (first stage row and note);
   - [`mvp-0.0.1.md`](../specs/mvp-0.0.1.md) rewritten to match;
+  - the docs site: the landing page `docs/index.md` (hero, status pill, Works-with icons), `docs/stylesheets/extra.css` (header and tabs on the page surface, emblem motion after depictio's logo) and `overrides/partials/logo.html` (inline header mark); the §15.3 sketch `tools/diagrams/mvp001_cluster.py`, registered in `docs/assets/media.yaml`;
   - [`authentication-and-access.md`](../specs/authentication-and-access.md) §1 and [`api-and-data-model.md`](../specs/api-and-data-model.md) §6 (single-user mode): dated notes that link to dev-env §15.3;
   - [`synthesis.md`](../specs/synthesis.md) §9, the roadmap, the installation, changelog and glossary pages, and the runners and gates feature pages: they now link to §15 instead of restating the old cut;
   - the P1 prompt and its heading, and the D4, P3 and T3 prompts in [`next-phase.md`](../playbooks/next-phase.md), and [`autopilot.md`](../playbooks/autopilot.md) §9;

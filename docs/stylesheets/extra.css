@@ -42,12 +42,12 @@
 .md-tabs { border-bottom: 1px solid var(--sp-line); }
 @media screen and (max-width: 76.234375em) {
   .md-nav--primary .md-nav__title[for="__drawer"] { background-color: var(--sp-surface); color: var(--sp-text); border-bottom: 1px solid var(--sp-line); }
-  .md-nav--primary .md-nav__title .md-nav__button.md-logo img { height: 1.6rem; width: auto; }
+  .md-nav--primary .md-nav__title .md-nav__button.md-logo svg { height: 1.6rem; width: auto; }
   .md-nav__source { background-color: var(--sp-surface-subtle); color: var(--sp-text); border-bottom: 1px solid var(--sp-line); }
 }
 .md-tabs__link--active, .md-tabs__item--active .md-tabs__link { color: var(--sp-violet-700); }
 [data-md-color-scheme="slate"] .md-tabs__item--active .md-tabs__link { color: var(--sp-violet-200); }
-.md-header__button.md-logo img { height: 1.2rem; width: auto; }
+.md-header__button.md-logo svg { height: 1.2rem; width: auto; overflow: visible; }
 @media screen and (min-width: 60em) {
   .md-header .md-search__input { background-color: var(--sp-surface-subtle); color: var(--sp-text); box-shadow: inset 0 0 0 1px var(--sp-line); }
   .md-header .md-search__input::placeholder, .md-header .md-search__icon { color: var(--sp-text-3); }
@@ -142,21 +142,32 @@
   filter: blur(18px); pointer-events: none; }
 /* lockup: the fan sits on the wordmark's baseline */
 .sp-hero2__brand { display: inline-flex; align-items: flex-end; gap: 1.1rem; margin: 1.6rem 0 1.4rem; }
-.sp-emblem { width: 7rem; height: auto; overflow: visible; }
-.sp-emblem path { transform-origin: 100px 98px; transform-box: view-box; animation: sp-fan .9s cubic-bezier(.2, .8, .2, 1) backwards; transition: transform .3s; }
-.sp-emblem path:nth-child(1) { animation-delay: .05s; --r: -50deg; }
-.sp-emblem path:nth-child(2) { animation-delay: .15s; --r: -25deg; }
-.sp-emblem path:nth-child(3) { animation-delay: .25s; --r: 25deg; }
-.sp-emblem path:nth-child(4) { animation-delay: .35s; --r: 50deg; }
-@keyframes sp-fan { from { opacity: 0; transform: rotate(var(--r)) scale(.6); } to { opacity: 1; transform: none; } }
-.sp-hero2__brand:hover .sp-emblem path:nth-child(1) { transform: translate(-3px, 0); }
-.sp-hero2__brand:hover .sp-emblem path:nth-child(2) { transform: translate(-2px, -2px); }
-.sp-hero2__brand:hover .sp-emblem path:nth-child(3) { transform: translate(2px, -2px); }
-.sp-hero2__brand:hover .sp-emblem path:nth-child(4) { transform: translate(3px, 0); }
+.sp-emblem { width: 7rem; height: auto; overflow: visible; animation: sp-look 9s 2.2s ease-in-out infinite; }
+/* Emblem motion, after depictio's logo (depictio/viewer/src/components/rose/depictio-rose.js, 2026-10-23):
+   each wedge's radius moves like a chart refreshing, eased by a damped spring (zeta .5) sampled into linear().
+   A wedge scales around its own apex, so the white gaps keep their width. The hero emblem opens and then
+   loops for ever, tilting slowly in perspective; the header mark runs the same loop while hovered. */
+.sp-emblem path, .sp-mark path { transform-box: view-box; }
+.sp-emblem path:nth-child(1), .sp-mark path:nth-child(1) { transform-origin: 86.09px 94.24px; --a: .78; --b: .93; --d: 0s; }
+.sp-emblem path:nth-child(2), .sp-mark path:nth-child(2) { transform-origin: 94.24px 86.09px; --a: .96; --b: .64; --d: .12s; }
+.sp-emblem path:nth-child(3), .sp-mark path:nth-child(3) { transform-origin: 105.76px 86.09px; --a: .62; --b: .95; --d: .24s; }
+.sp-emblem path:nth-child(4), .sp-mark path:nth-child(4) { transform-origin: 113.91px 94.24px; --a: .88; --b: .7; --d: .36s; }
+.sp-emblem path { animation: sp-open 1.1s calc(.3s + var(--d) * .75) linear(0, .029, .104, .213, .34, .476, .61, .737, .849, .946, 1.023, 1.083, 1.124, 1.15, 1.162, 1.162, 1.153, 1.138, 1.118, 1.097, 1.075, 1.053, 1.034, 1.017, 1.002, .991, .983, .977, .974, .973, .974, .976, .979, .982, .986, .99, .993, .996, .999, 1.001, 1) backwards, sp-live 4.8s calc(1.9s + var(--d)) infinite; }
+.md-header__button.md-logo:hover .sp-mark path, .md-header__button.md-logo:focus-visible .sp-mark path { animation: sp-live 4.8s calc(var(--d) * .5) infinite; }
+@keyframes sp-open { from { scale: .2; } to { scale: 1; } }
+@keyframes sp-live {
+  0% { transform: scale(1); animation-timing-function: linear(0, .029, .104, .213, .34, .476, .61, .737, .849, .946, 1.023, 1.083, 1.124, 1.15, 1.162, 1.162, 1.153, 1.138, 1.118, 1.097, 1.075, 1.053, 1.034, 1.017, 1.002, .991, .983, .977, .974, .973, .974, .976, .979, .982, .986, .99, .993, .996, .999, 1.001, 1); }
+  20% { transform: scale(var(--a)); }
+  32% { transform: scale(var(--a)); animation-timing-function: linear(0, .029, .104, .213, .34, .476, .61, .737, .849, .946, 1.023, 1.083, 1.124, 1.15, 1.162, 1.162, 1.153, 1.138, 1.118, 1.097, 1.075, 1.053, 1.034, 1.017, 1.002, .991, .983, .977, .974, .973, .974, .976, .979, .982, .986, .99, .993, .996, .999, 1.001, 1); }
+  52% { transform: scale(var(--b)); }
+  64% { transform: scale(var(--b)); animation-timing-function: linear(0, .029, .104, .213, .34, .476, .61, .737, .849, .946, 1.023, 1.083, 1.124, 1.15, 1.162, 1.162, 1.153, 1.138, 1.118, 1.097, 1.075, 1.053, 1.034, 1.017, 1.002, .991, .983, .977, .974, .973, .974, .976, .979, .982, .986, .99, .993, .996, .999, 1.001, 1); }
+  84%, 100% { transform: scale(1); }
+}
+@keyframes sp-look { 0%, 100% { transform: perspective(40rem) rotateX(0) rotateY(0); } 30% { transform: perspective(40rem) rotateX(14deg) rotateY(-16deg); } 65% { transform: perspective(40rem) rotateX(8deg) rotateY(16deg); } }
 .sp-wordmark { font-family: "Outfit", "Inter", sans-serif; font-size: 4.2rem; font-weight: 600; line-height: .74; letter-spacing: -.035em; color: var(--sp-text);
   animation: sp-rise .8s .3s cubic-bezier(.2, .8, .2, 1) both; }
 @keyframes sp-rise { from { opacity: 0; transform: translateY(.4rem); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { .sp-emblem path, .sp-wordmark { animation: none; } .sp-hero2__brand:hover .sp-emblem path { transform: none; } }
+@media (prefers-reduced-motion: reduce) { .sp-emblem, .sp-emblem path, .sp-wordmark, .md-header__button.md-logo .sp-mark path { animation: none !important; } }
 /* status line above the lockup: replaces the old "design phase" badge */
 .md-typeset a.sp-status { display: inline-flex; align-items: center; gap: .55rem; max-width: 100%; padding: .3rem .8rem .3rem .45rem; border-radius: 2rem; font-size: .68rem; color: var(--sp-text-2);
   background: linear-gradient(var(--sp-surface), var(--sp-surface)) padding-box, linear-gradient(90deg, var(--sp-indigo-500), var(--sp-violet-500), var(--sp-coral-500), var(--sp-amber-500)) border-box;
