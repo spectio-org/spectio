@@ -141,9 +141,9 @@ One entry per tick: time, steps started and finished, verification results, tria
   - D3's first `docs-gate` hung for 29 min on a slow apt mirror while Playwright installed its fonts. It was cancelled and re-run once, and passed in 1 min 37.
   - `pipelines-real`, the corpus of real pipelines, is red: 18 of 23 jobs failed in the nightly run on `main`, and 5 of 9 in the PR tier on D4. It is kept out of `ci-ok` until T7, but still runs and reports its own checks.
   - Causes found so far:
-    - methylseq 4.2.0 and viralrecon 3.0.0: Nextflow 26 refuses configs that include files missing from the release;
+    - methylseq 4.2.0 and viralrecon 3.0.0: Nextflow 26 stops at config parse with `Invalid include source` (`conf/aws/batch/nextflow.config`, `conf/test_full_sispa.config`); whether those files are absent from the release tags is **[to be validated]**;
     - dna-seq-gatk-variant-calling v2.1.1: conda can no longer solve `bcftools=1.10`;
-    - molkart and rnaseq: not diagnosed, because `run_corpus.py` does not print `run.log`.
+    - molkart and rnaseq: `No space left on device` on the runner (CREATE_STACK, UCSC_BEDCLIP), read from the `run.log` artifacts of run 40535210648. T7 starts with runner disk.
 - **Triage:** none (build steps). New inbox entries #41–#44 (D3).
 - **Waiting on Thomas:**
   - **D5:** rename the Cloudflare secrets to `CLOUDFLARE_*`, check Codespaces live, and add `wave-approved` himself.
@@ -151,3 +151,4 @@ One entry per tick: time, steps started and finished, verification results, tria
   - **D3:** inbox #41–#44.
   - **D4:** the Claude review secret; the release App ID and key in the `release` environment; `RELEASE_PLEASE_ENABLED`; the branch protection from autopilot §8; whether the autopilot gets its own GitHub identity; whether to switch to `client-id`.
   - **Earlier answers:** confirm #14 and #32; allow deleting the old branch (#5); the GitHub App (#8).
+- **17:40 UTC, Thomas:** usage reading 69 % (limit 75 %; budget restarted with `--now 69`, 4 points of room). Promotion PR weber8thomas/spectio#17 may be merged once `docs-gate`, `pr-body`, `preview`, `ci-ok` and the security checks are green; the known-red `pipelines-real` corpus is ignored until T7 (his choice 1a).
