@@ -15,7 +15,7 @@ For a step:
 1. Collect the evidence: `git diff --stat` and the diff of the step branch, the commands the worker ran and their output, test reports (`report.json`, `result.json`), the exit check output.
 2. Create or update `docs/progress/<wave>/<step>.md` from `.claude/skills/write-docs/progress-template.md`. Fill every section. In **Evidence**, paste the real commands and the decisive lines of output, never a paraphrase of success.
 3. Change the owning spec only for decided behaviour, and link to it from the Progress page. Never copy spec content into another page.
-4. List the figures and media the step kind requires (§3.1) and ask `diagram-artist` / `media-capture` for them by name and purpose; embed the results as light/dark pairs (`#only-light`, `#only-dark`).
+4. List the figures and media the step kind requires (§3.1); every step needs at least one sketch, placed first under the `!!!` line (§3.4) and ask `diagram-artist` / `media-capture` for them by name and purpose; embed the results as light/dark pairs (`#only-light`, `#only-dark`).
 5. Run `uvx --with mkdocs-material mkdocs build --strict -d /tmp/spectio-site` and fix every warning you caused.
 
 For a PR body: generate it from the Progress page (§7.2) — summary, docs links into the preview, at least one figure for `feat`/`docs` PRs that change a mechanism (raw URLs pinned to the head SHA), evidence, checks, and the attribution line the repository uses.

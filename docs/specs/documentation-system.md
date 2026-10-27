@@ -46,6 +46,8 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
    - numbered captions.
 
    Mermaid is kept for small structural diagrams inside specs (sequence, state, ER), where text-diffability matters more than looks.
+
+   Every step leaves at least one sketch, placed first on its Progress page, so a reviewer sees the step before reading it (§3.4).
 5. **Every PR carries its docs.** The PR body has:
    - the summary;
    - the docs pages changed (with links into the preview site);
@@ -129,9 +131,9 @@ Front matter `hide: [navigation, toc]`. The markup is HTML through `md_in_html`;
 
 | Step kind | Pages it must change | Figures and media |
 |---|---|---|
-| `review` | `docs/reviews/<round>.md`, plus its Progress page | none required |
-| `triage` | inbox and review files (status fields), plus its Progress page | none |
-| `apply` | the owning specs, `decisions/log.md`, plus its Progress page with a before/after summary per finding | a sketch when a mechanism changed |
+| `review` | `docs/reviews/<round>.md`, plus its Progress page | a round map (§3.4), also embedded in the review file's summary |
+| `triage` | inbox and review files (status fields), plus its Progress page | a to-scale sorting figure: findings in, accepted / rejected / inbox / assumed out (§3.4) |
+| `apply` | the owning specs, `decisions/log.md`, plus its Progress page with a before/after summary per finding | a before/after sketch per mechanism changed; when none changed, a map of the specs touched with the findings applied to each (§3.4) |
 | `spike` | `docs/research/spike-<name>-<date>.md`, plus its Progress page | a cast of the commands that proved it; a sketch of the setup |
 | `build` (D*, T*, later code) | the guide or reference page for what was built, the owning spec if behaviour was decided, plus its Progress page with the `CODE` report line of the `review-code` skill and a link to `docs/reviews/code/<step>.md` | a sketch for each new mechanism; a cast for each new CLI flow; screenshots for each new screen; a combined capture for a CLI-to-UI flow |
 | `plan` | `docs/plans/<id>.md`, plus its Progress page | a sketch of the milestone's architecture slice |
@@ -178,13 +180,26 @@ A step reaches `done` only when all of these pass:
 2. Every Mermaid block renders (`check_mermaid()` in `tools/docs/check.py`, which extracts every fenced `mermaid` block from `docs/**/*.md` and renders it with `npx -y @mermaid-js/mermaid-cli@11 -p <puppeteer config>`, the config adding `--no-sandbox` for GitHub runners and root sessions) *(assumed — pending Thomas, inbox #30)*.
 3. **Diagram freshness:** every `tools/diagrams/*.py` script re-run gives byte-identical SVGs. The seeded RNG makes this testable; a figure whose script changed without its output, or the reverse, fails. Only SVGs are compared (the scripts run with `--no-png`). PNGs are rendered locally, because the Virgil font is not committed ([inbox #1](../reviews/inbox.md)): rendering needs `SPECTIO_VIRGIL_TTF` (default `docs/fonts/Virgil.ttf`) and Python `playwright`, and `docs/assets/media.yaml` says so for each diagram generator. `tools/diagrams/sketch.py` fails when the font is missing unless `--allow-fallback-font` is passed, so no figure ships with a silent fallback font.
 4. **Media manifest:** every screenshot, cast and video referenced from a page exists and is listed in `docs/assets/media.yaml` with its generator command. The gate scans every `docs/**/*.md` for `data-cast`, `src` and `poster` attributes and resolves each target, as well as comparing the asset folders with the manifest. The churn guard (`tools/media/check_churn.sh`) rejects a mass change unless `SPECTIO_ALLOW_SCREENSHOT_UPDATE=1`.
-5. **Required pages for the step kind** (§3.1) changed, derived from the step's `kind` in `docs/playbooks/pipeline.yaml` and its `outputs` in `.autopilot/state.json`; the Progress page front matter is valid; and the page has the `!!!` admonition line and all five §3.2 headings (What changed, Why, Evidence, Figures and media, Findings and open questions).
+5. **Required pages for the step kind** (§3.1) changed, derived from the step's `kind` in `docs/playbooks/pipeline.yaml` and its `outputs` in `.autopilot/state.json`; the Progress page front matter is valid; and the page has the `!!!` admonition line and all five §3.2 headings (What changed, Why, Evidence, Figures and media, Findings and open questions). A `done` page embeds its sketch pair (§3.4).
 6. **`doc-reviewer` verdict** ≥ `approve` (§4.2). The tick appends the verdict line (`<step>: doc-reviewer <verdict> n/14`, plus the required changes) to `.autopilot/journal.md`. The Progress page front matter records `review: approve | changes | block`, `review_score: n/14` and `review_ref` (the journal tick that holds the line). `check_progress` requires `review_score` and `review_ref` on every new `status: done` page. Pages done before 2026-10-27 whose score is not in the journal carry `review_score: unrecorded` until they are next edited, when they are reviewed again *(assumed — pending Thomas, inbox #30)*.
 7. **Size budget:** at most 5 MB of new media per PR (checked against the base branch in CI), videos ≤ 3 MB and ≤ 30 s each. GIF previews for PR bodies are generated on demand outside `docs/assets/` and are not committed.
 
 **Not yet run by `tools/docs/check.py` (2026-10-27):** the page scan of item 4, the required-pages check of item 5, and three of the five headings (only What changed and Evidence are checked). Until they are, a `0 failure(s)` result does not cover them (R11 DOC-002; proposed spike `spikes/docs-gate-coverage/`).
 
 If the gate fails, the step goes back to `doc-writer` with the reviewer's notes. After two failed revisions, the step is `blocked`, with an inbox entry.
+
+### 3.4 A sketch for every step
+
+Since 2026-10-27 every step leaves at least one sketch pair (light and dark, `tools/diagrams/`), whatever its kind ([decision log](../decisions/log.md), 2026-10-27). The figure makes the step quick to review: Thomas and the reviewers see what the step did, and where its findings land, before reading the text.
+
+- **Where.** The figure is the first thing under the Progress page's `!!!` line, before **What changed**, and is listed again under **Figures and media**. A review round also embeds it at the top of its review file's summary.
+- **What it shows,** by step kind (§3.1 lists the minimum):
+  - `review`: the scope the round walked — journeys as numbered steps, specs or boards — drawn as pictograms, with each blocker and major pinned where it hits, labelled by finding ID;
+  - `triage`: bars to scale from the round's real counts;
+  - `apply`: before and after, side by side, for the mechanism that changed;
+  - `spike`, `build`, `plan`: the setup, the new mechanism or the architecture slice.
+- **How.** One script per figure in `tools/diagrams/`, drawn by `diagram-artist` in the Excalidraw-like sketch style (§0.4, `tools/diagrams/README.md`). Counts come from the step's real outputs, never from memory.
+- **Checked.** `check_progress` fails a `done` Progress page that does not embed a `docs/assets/diagrams/*_light.png#only-light` and `*_dark.png#only-dark` pair. Pages finished before the rule are listed in `FIGURE_EXEMPT` in `tools/docs/check.py`; a page leaves the list when it gets its figure.
 
 ## 4. Writers and reviewers
 
@@ -219,7 +234,7 @@ Each criterion is scored 0–2, with a one-line justification.
 | Completeness | the pages §3.1 requires are present; a newcomer could repeat the step |
 | Ownership | the topic changed in its owning spec only; other pages link to it |
 | Clarity | scannable; a page title says what it is; no unexplained jargon |
-| Figures | a mechanism is drawn with pictograms, not boxes; labels legible in light and dark (reviewer opens the PNGs) |
+| Figures | the step's sketch (§3.4) comes first and lets a reader grasp the step without the text; a mechanism is drawn with pictograms, not boxes; labels legible in light and dark (reviewer opens the PNGs) |
 | Media | screenshots match the current boards; casts replay; videos play and are short |
 | Navigation | the page is reachable from the nav, the Progress index and its spec |
 
