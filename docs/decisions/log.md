@@ -359,3 +359,173 @@ Everything must be traced, including:
   - the landing page, the roadmap, the installation, changelog, API and feature pages;
   - the P1 and R10 prompts in [`next-phase.md`](../playbooks/next-phase.md);
   - inbox #11, #12, #14, #15, #16 and #31.
+
+## 2026-10-27 — APPLY1: review findings applied (R1 R2 R4 R5 R7 R8 R8b R9 R11)
+
+- **Context.** APPLY1 applies the findings that TRIAGE1 accepted or assumed, in the nine rounds listed. It changes the owning specs only, and adds no version claims outside [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §15. Each finding's **Status** line in its review file says what was applied and what is pending. Overlapping findings were applied once, in the wording of the most recent round (for example CH-001 over SR-017, FC-007 over SR-037, FC-040 over CH-009, DEP-T-018 over FC-013). Total: 60 applied, 148 partly applied, 24 not applied. "Partly" mostly means that the doc edits are done and a board, tool, CI or blocked part remains.
+- **Per round** (applied / partly / not applied):
+  - **R1** ([R1-consistency](../reviews/R1-consistency.md)), 11 / 26 / 1. Applied: SR-008, SR-011, SR-026, SR-032, SR-042, SR-045, SR-046, SR-049, SR-051, SR-052, SR-053. Partly: SR-003, SR-004, SR-005, SR-006, SR-009, SR-012, SR-013, SR-015, SR-016, SR-017, SR-019, SR-022, SR-027, SR-028, SR-034, SR-036, SR-037, SR-038, SR-039, SR-040, SR-041, SR-043, SR-044, SR-047, SR-048, SR-050. Not applied: SR-035 (blocked, inbox #25).
+  - **R2** ([R2-open-validations](../reviews/R2-open-validations.md)), 25 / 8 / 2. Applied: FC-004–FC-007, FC-009–FC-012, FC-014, FC-015, FC-017–FC-020, FC-022–FC-027, FC-031–FC-035. Partly: FC-001, FC-008, FC-013, FC-016, FC-029, FC-030, FC-036, FC-037. Not applied: FC-002 (blocked, inbox #19), FC-021 (already fixed by CH-001 and CH-006).
+  - **R4** ([R4-constraints](../reviews/R4-constraints.md)), 8 / 28 / 1. Applied: CH-014, CH-018, CH-019, CH-024, CH-029, CH-033, CH-035, CH-039. Partly: CH-001, CH-002, CH-003, CH-005–CH-013, CH-015–CH-017, CH-020–CH-023, CH-025–CH-027, CH-031, CH-032, CH-036–CH-038, CH-040. Not applied: CH-028 (blocked, inbox #14, #25).
+  - **R5** ([R5-security](../reviews/R5-security.md)), 2 / 7 / 1. Applied: SEC-125, SEC-130. Partly: SEC-103, SEC-105, SEC-107, SEC-110, SEC-112, SEC-123, SEC-126. Not applied: SEC-129 (blocked, inbox #15, #20, #21).
+  - **R7** ([R7-ui](../reviews/R7-ui.md)), 0 / 27 / 6. Partly (spec text done, boards pending): UX-203, UX-205, UX-207–UX-210, UX-212–UX-216, UX-218–UX-221, UX-223–UX-226, UX-228–UX-235. Not applied (board-only fixes, no spec edit needed): UX-211, UX-222, UX-236–UX-239.
+  - **R8** ([R8-depictio](../reviews/R8-depictio.md)), 1 / 8 / 2. Applied: DL-114. Partly: DL-103, DL-105–DL-108, DL-110, DL-111, DL-113. Not applied: DL-109 (blocked, inbox #21, #26), DL-115 (blocked, inbox #26).
+  - **R8b** ([R8b-depictio-tooling](../reviews/R8b-depictio-tooling.md)), 1 / 22 / 3. Applied: DEP-T-012. Partly: DEP-T-001, DEP-T-002, DEP-T-004–DEP-T-006, DEP-T-009–DEP-T-011, DEP-T-014, DEP-T-016–DEP-T-024, DEP-T-027, DEP-T-029–DEP-T-031. Not applied: DEP-T-003 (blocked, inbox #26), DEP-T-013 (blocked, inbox #23), DEP-T-025 (blocked, inbox #17).
+  - **R9** ([R9-landscape](../reviews/R9-landscape.md)), 5 / 9 / 1. Applied: FC-043, FC-049, FC-052, FC-053, FC-054. Partly: FC-038–FC-042, FC-044–FC-047. Not applied: FC-050 (blocked, inbox #17, #26).
+  - **R11** ([R11-docs](../reviews/R11-docs.md)), 7 / 13 / 7. Applied: DOC-004, DOC-006, DOC-007, DOC-014, DOC-015, DOC-016, DOC-027. Partly: DOC-001, DOC-002, DOC-003, DOC-005, DOC-008–DOC-013, DOC-019, DOC-020, DOC-022. Not applied: DOC-017, DOC-021, DOC-023–DOC-026 (tool or stylesheet fixes only), DOC-018 (its shots do not exist yet).
+- **Specs changed** (new sections keep the existing numbers; nothing was renumbered):
+  - [`admin-and-operations.md`](../specs/admin-and-operations.md): header, §0, §1, §2.1, §3.1 (background tasks: ledger renamed `background_tasks`), §3.2, §3.4, §3.5, §4.1–§4.5, §5, §6;
+  - [`api-and-data-model.md`](../specs/api-and-data-model.md): §2, §3 (kinds table removed, owned by architecture §2), §4, §5, §7, new §7.1 (run and gate state machines), §8, new §8.1–§8.4 (event pipeline, ordering, live streams, retention), §10, §11, §12, §13.3, §13.5, §13.6;
+  - [`architecture-plugins-and-packaging.md`](../specs/architecture-plugins-and-packaging.md): §0, §1, §2, new §2.1 (secrets on runners), §3.1, §3.5, §4, §5, §6 (diagram and dependency rules), §7.2–§7.6, §8–§11, new §12 (compatibility between components), new §13 (engine bridges, §13.1–§13.6);
+  - [`authentication-and-access.md`](../specs/authentication-and-access.md): new §3.1 (browser hardening), §4, §5;
+  - [`checking-scenarios.md`](../specs/checking-scenarios.md): §0, new §4.1 (keys of each check kind), §9, §11.1–§11.5, new §12 (`spectio.yml` reference, §12.1–§12.7);
+  - [`cli-and-shared-libraries.md`](../specs/cli-and-shared-libraries.md): §0–§6;
+  - [`depictio-ecosystem-reuse.md`](../specs/depictio-ecosystem-reuse.md): §2, §3 (requests turned into a dated status table);
+  - [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md): §0, §1, §3 (now a pointer to §10.1), §4.1, §4.2, §5, §6, §7.1, §8, §9, §11, §12, §14;
+  - [`documentation-system.md`](../specs/documentation-system.md): §0, §1, §2, §3.2, §3.3, §5.1, §5.2, §6, §8, §9, §10;
+  - [`schedulers-and-monitoring.md`](../specs/schedulers-and-monitoring.md): §0–§4, §7, §8, §10, §11, §12;
+  - [`synthesis.md`](../specs/synthesis.md): §1–§5ter, §7–§10 (dated "superseded" notes where a newer spec owns the topic);
+  - [`telemetry-and-analytics.md`](../specs/telemetry-and-analytics.md): §0, §2.3, §2.4, §4.2, §5;
+  - [`ui-spec.md`](../specs/ui-spec.md): §1, §2, §3.1, new §3.3 (system states), new §3.4 (colour use and contrast), §4.1, §4.3–§4.11, §5, §5.1, §6, §7, §9, §10.1, §10.2, new §11 (component states);
+  - pages: [`map.md`](../map.md), [`api/index.md`](../api/index.md), [`features/index.md`](../features/index.md), new [`features/other-tools.md`](../features/other-tools.md), [`index.md`](../index.md), [`installation/index.md`](../installation/index.md), [`usage/index.md`](../usage/index.md), [`next-phase.md`](../playbooks/next-phase.md) (T1–T4, P1, D6), [`autopilot.md`](../playbooks/autopilot.md) §7, new research note [`depictio-audit-2026-10-26.md`](../research/depictio-audit-2026-10-26.md), [`depictio-harmonization.md`](../research/depictio-harmonization.md) §1.3, [`depictio-qc-integration-2026-10-26.md`](../research/depictio-qc-integration-2026-10-26.md) §1.2, §1.4, §2, §3, and the Progress pages W0 F1–F7, the nine W1 pages and W2 TRIAGE1 (front matter `review_score`, pre-squash notes, superseded notes).
+- **Revisions of earlier decisions** (recorded here, as the findings asked):
+  - **Snakemake steering** (SR-008, with CH-009): Snakemake runs as a CLI head job (`--until`, `--forcerun`, `--configfile`), not through the API. The 2026-10-25 constraint is restated as "no parsing of process output for tracking" (synthesis §2, §5ter) *(assumed — pending Thomas, inbox #28)*.
+  - **"Broker" wording** (SR-049): the 2026-10-25 entries that say "broker" mean the three extension points "task backend, pub/sub, event bridge" (architecture §2). api §3 no longer keeps its own kinds table.
+  - **Shell** (SR-053): the top bar spans the full width, with the logo and the colour mode, and the sidebar sits below it (ui-spec §2). This revises the 2026-10-25 "UI review round 2" shell. List views use a "table / rows" toggle, since the card grid was dropped *(assumed — pending Thomas, inbox #29)*.
+  - **Raw engine payloads** (CH-011): kept while the run is active, then archived (api §8.4). This revises "keep the raw JSON" in synthesis §2ter *(assumed — pending Thomas, inbox #28)*.
+  - **Projections** (CH-012): one projector builds the read models after the ingest ack, not in the same transaction (api §8.1). This revises synthesis §4 *(assumed — pending Thomas, inbox #28)*.
+  - **Backups** (CH-022): native same-engine backups by default, JSON Lines only for migration and export (admin §4.3). This departs from the 2026-10-25 JSON-backup decision *(assumed — pending Thomas, inbox #24)*.
+  - **SLURM poll** (CH-027): the routine poll is plain-text `squeue --me` with a fixed format (job name last), and `--json` is kept for details (schedulers §3.2–§3.3). This revises the 2026-10-25 "JSON CLI" choice *(assumed — pending Thomas, inbox #28)*.
+- **Assumed decisions.** Each is marked in the text "*(assumed — pending Thomas, inbox #n)*" and can be reverted by removing what that marker covers:
+  - #12 (runner transport): CH-007 (`runner_commands`), CH-032 (proxy and CA bundle);
+  - #13 (embeds and streams): SEC-112;
+  - #14 (secrets on runners): SEC-103;
+  - #17 (roadmap, WES): UX-210, FC-044, FC-046;
+  - #18 (share links): SR-019;
+  - #22 (depictio hand-off): DL-105, DEP-T-014, DEP-T-017 (DL-115 assumed but blocked);
+  - #23 (co-hosting): SEC-126, DL-103;
+  - #24 (backups and restore): SR-050, CH-021, CH-022;
+  - #25 (runner confinement, imports): SEC-105, SEC-110;
+  - #26 (CI and release rules): UX-219, DEP-T-001, DEP-T-002, DEP-T-005, DEP-T-018, DEP-T-029;
+  - #27 (outreach): SR-036, SEC-107, DL-113, FC-042;
+  - #28 (engine bridges and runner): SR-003, SR-006, SR-008, SR-017, SR-022, SR-047, SR-048, FC-001, CH-001, CH-002, CH-003, CH-005, CH-006, CH-008, CH-009, CH-011, CH-012, CH-016, CH-025, CH-027, FC-038, FC-040, FC-052 (SR-035 assumed but blocked);
+  - #29 (names and model): SR-004, SR-005, SR-012, SR-013, SR-015, SR-016, SR-026, SR-032, SR-034, SR-041, SR-042, SR-046, SR-052, SR-053, FC-025;
+  - #30 (UI and docs process): UX-207, UX-209, UX-216, UX-226, UX-234, DOC-001, DOC-003, DOC-004, DOC-005, DOC-007.
+- **Stale references fixed in this step:** ui-spec §2, the Review row read "Interventions waiting for a decision" (it now says "Gates", SR-012); admin §6, the board list now names the "Background tasks" screen, and notes that board `AdminTasks` is still labelled Tasks (SR-005). Stale names left in place because their sections are blocked: depictio-ecosystem-reuse §1.1 (`tasks` table, "Settings → Version check", inbox #26), api §13.1 (`~/.spectio/config.yaml`, inbox #21), api §6 ("Flat in v1", inbox #13–#15), checking §11.3 (`nf-toy`, inbox #19), auth §2 (plugin `auth-oidc` / `auth-saml`, inbox #20, #21), schedulers §5 (inbox #26).
+- **Deferred: UI boards** (by board):
+  - Legend: SR-016, UX-205, UX-212;
+  - RunsTable and the run lists: SR-016, UX-207, UX-236;
+  - RunDetail: SR-040, SR-041, CH-006, UX-207, UX-216, UX-223, UX-236;
+  - RunDetailDegraded: UX-205;
+  - Main: SR-040;
+  - RunScheduler: CH-027, UX-205, UX-212, UX-222, UX-223, UX-237;
+  - RunObserved and Profile: UX-222;
+  - Overview: UX-205, UX-207, UX-213;
+  - OverviewFirstRun, RunsEmpty, ReviewQueueEmpty and MEmpty: UX-211;
+  - Review, with the 11 Review* boards: CH-010, UX-238;
+  - ReviewReport and ReviewDashboard: SR-041, DL-103;
+  - ReviewQueue: UX-207, UX-213, UX-218, UX-236;
+  - RelaunchDialog: CH-010;
+  - Launch: CH-016, SEC-110, UX-216, UX-235, UX-236;
+  - LaunchChain: UX-235;
+  - Workflow boards: UX-221 (WorkflowVersions, Workflows, WorkflowSnakemake, WorkflowImport, WorkflowOverlay, WorkflowWatches), UX-222 (WorkflowsCatalog, WorkflowDiscovered), CH-016 (WorkflowOverlay), SEC-110 (WorkflowImport), UX-237 (WorkflowSnakemake);
+  - Environments, EnvKubernetes and EnvStorage: UX-205, UX-209, UX-212, UX-223, UX-228, UX-237;
+  - EnvCapacity: CH-026, UX-205, UX-235;
+  - RunnerOffline: CH-001;
+  - SignIn, MagicLinkSent, MagicLinkConfirm, MustChangePassword, the reset landing and the SSO callback error: UX-203;
+  - AppTopbar: SR-039;
+  - AdminNav and AdminTasks: SR-005, UX-208, UX-215, UX-228;
+  - AdminHealth: CH-002, CH-013, UX-239;
+  - AdminLogs: CH-038;
+  - AdminRestore: CH-021, UX-237;
+  - AdminBackups: CH-022;
+  - AdminMaintenance: UX-229, UX-235;
+  - AdminBranding: UX-212, UX-226;
+  - AIAgents: UX-212;
+  - AdminEvents, AdminAudit, AdminNotifications and AdminSettings: UX-208;
+  - AdminSingleUser: UX-215;
+  - SettingsServiceAccounts: UX-228;
+  - admin boards titled "Settings": SR-039;
+  - DepictioDecisions: DL-108;
+  - Landing: DOC-001, FC-044 (WES item, inbox #17);
+  - phone boards:
+    - MobileTopbar: UX-205, UX-210, UX-214, UX-220, UX-230, UX-233;
+    - MobileTabbar: UX-235;
+    - MRunnerOffline: CH-001, UX-213;
+    - MReview, MReviewCells and MReviewQueue: UX-213, UX-218, UX-233, UX-234, UX-235;
+    - MRuns and MRunDetail: UX-232, UX-233, UX-234;
+    - MLaunch: UX-234;
+    - MWorkflows: UX-213, UX-235;
+    - MAdmin: UX-214, UX-215, UX-235;
+    - MMore: SR-039, UX-230;
+    - MOverview: UX-230;
+    - MNotifications and the desktop bell: UX-210;
+    - MProfile, MSearch, MWorkflowDetail, MEnvironmentDetail and MAdminSection: UX-231;
+    - MProjectSwitcher: UX-224;
+  - keyboard and labels on 21 boards: UX-219;
+  - 44 px hit areas on the phone boards: UX-220;
+  - board data and the shared fixture: UX-225;
+  - tokens (`design/tokens/spectio-tokens.css`): UX-212.
+- **Deferred: tools and CI:**
+  - workflows:
+    - `ci.yml` with `ci-ok`, and the pipeline workflows as `workflow_call`: DEP-T-001;
+    - GitHub App token in `release-please.yml`: DEP-T-002;
+    - `quick-start.yml` and multi-arch builds: DEP-T-004, DEP-T-021;
+    - `security.yml`, attestations and signing: DEP-T-005;
+    - the publishing workflow: DEP-T-006;
+    - `renovate.json` and actions pinned by SHA: DEP-T-009;
+    - `chart.yml`, with the first-install case: DEP-T-010, FC-008;
+    - `upgrade.yml`: DEP-T-011;
+    - `base-install.yml` and the import-linter allow-list: DEP-T-018, SR-027;
+    - the workflow conventions applied to the existing workflows: DEP-T-019;
+    - `deploy-audit.yml`: DEP-T-020;
+    - the release-notes check: DEP-T-021;
+    - `nextflow-edge.yml`, plus 25.04.x in the Nextflow matrix of dev-env §5 and §11: CH-006;
+    - the runtime axis in `pipelines-slurm.yml`: CH-025;
+    - the minimum Snakemake version: FC-040;
+    - nf-prov pins: FC-045;
+    - the rocrate-validator step: FC-041;
+    - the migration-time budget: CH-023;
+    - `docs.yml` on Node 24: FC-013;
+    - the admin-operation → CLI-command test: SR-006;
+  - tools:
+    - the `spectio.yml` JSON Schema and `spectio workflow validate`: SR-004;
+    - `dev/doctor.sh`: SR-047;
+    - `DEPICTIO_VERSION` in `dev/versions.env`: DEP-T-017;
+    - `.pre-commit-config.yaml`: DEP-T-022;
+    - the collection guard and diff coverage: DEP-T-023;
+    - the telemetry field-docs generator and the traffic snapshot: DEP-T-024;
+    - `include-component-in-tag`: DEP-T-027;
+    - `tools/docs/check.py`: DOC-002, DOC-003, DOC-012;
+    - `tools/docs/render_landing.js`: DOC-011;
+    - media (synthetic-gate cast and combo, cloud-env replay, `sketch.py` font check, the three diagram scripts, the `run-failed`, `run-outputs` and `*_crop` shots): DOC-008, DOC-009, DOC-010, DOC-017, DOC-018, DOC-019;
+    - `hooks/progress.py` and `public_title` in `pipeline.yaml` (titles only, no status edits): DOC-021, DOC-022;
+    - board lint with a contrast check (spike S-R7-1): UX-219, UX-235;
+    - the shared board fixture (spike S-R7-2): UX-225;
+    - tests: a squid proxy (CH-032) and a slow-FUSE `stat` (CH-037);
+  - site:
+    - `docs/stylesheets/extra.css`: DOC-005, DOC-012, DOC-019, DOC-020, DOC-021, DOC-022, DOC-023–DOC-026;
+    - `overrides/main.html`: DOC-013, DOC-020;
+    - `mkdocs.yml`: `repo_url` (DOC-013), and nav entries for `features/other-tools.md` (FC-047) and `research/depictio-audit-2026-10-26.md` (DL-111);
+  - skills: `autopilot` and `write-docs` record the doc-reviewer verdict: DOC-003.
+- **Deferred: CLAUDE.md and agents:** the External facts rule cites the tag, the SHA and the `git archive` sha256 (DEP-T-031); keyboard rules in the board conventions (UX-219, inbox #26). Both wait for Thomas.
+- **Deferred: for Thomas** (outside the repository): create the GitHub App (inbox #8, DEP-T-002); trusted publishers (DEP-T-006); the Renovate app (DEP-T-009); the EMBL egress probe (CH-001); requests and reports to depictio (SR-036, DL-113, DEP-T-014, inbox #27); `spk_` secret-scanning registration (SEC-107); FlowO and Snakemake docs outreach (FC-042).
+- **Deferred: blocked by inbox** (sections not edited):
+  - #11, api §14 (ingest contract): SR-006, SR-017, SR-022, SR-038, SR-048, CH-001, CH-002, CH-005, CH-011;
+  - #12, architecture §7.7 (runner transport): SR-027, CH-002, CH-007, CH-021, CH-032;
+  - #13–#15, api §6: SR-004, SR-006, SR-019, SR-043;
+  - #13, api §4 limits and api §9: FC-036, CH-008, SEC-112;
+  - #14, runners schema, gate assignment and schedulers §6: SR-012, UX-207, CH-026, CH-028, CH-031, SEC-103, SEC-105;
+  - #15, auth §1, auth §6 and api §1: SR-013, CH-015, SEC-123, SEC-126, SEC-129;
+  - #16, run verbs and states, stage tags and dev-env §15: SR-004, SR-016, SR-036, SR-043, CH-003, DL-105, FC-039;
+  - #17, roadmap ideas, the landing page's WES item, LaunchReview and dev-env §14: UX-216, DEP-T-025, FC-044, FC-046, FC-050;
+  - #18, share links and the guest kind: SR-006, SR-019, UX-203, UX-224, DL-108;
+  - #19, checking §5, §7 and §11.3, and the MCP catalogue: SR-004, SR-012, SR-036, SR-047, FC-001, FC-002, CH-010, SEC-110;
+  - #20, users and groups, sessions, environments API and auth §2: SR-013, SR-034, SR-044, SEC-123, SEC-129, UX-203, UX-208, UX-209, UX-215, UX-228, UX-231, DL-110;
+  - #21, api §13.1–§13.2, auth §2 and the depictio chart: SR-009, SR-013, SR-019, SR-044, DL-108, DL-109, DL-110, DL-113, DEP-T-010, DEP-T-030;
+  - #22, api §13.3 step 1 and `doctor`: DL-105, DL-106, DL-107, DEP-T-016;
+  - #23, co-hosting and api §13.4: DL-108, DEP-T-013, SEC-126;
+  - #24, admin §4.3 restore wizard and encryption: SR-038, SR-050, CH-021;
+  - #25, architecture §3 and §7.6, schedulers §0, §3.3 and §6: SR-003, SR-009, SR-015, SR-022, SR-035, CH-009, CH-012, CH-020, CH-028, CH-036, SEC-103, SEC-105, FC-045, UX-221;
+  - #26, depictio-ecosystem-reuse §1, architecture §7.4, schedulers §5 and autopilot.md §8: SR-005, SR-028, SR-036, SR-039, FC-001, FC-016, FC-037, CH-008, DL-103, DL-109, DL-111, DL-115, DEP-T-001–DEP-T-005, DEP-T-014, DEP-T-018, DEP-T-020, DEP-T-029, FC-038, FC-050.
+- **Gate.** `mkdocs build --strict` passes; `python3 tools/docs/check.py` reports 0 failures; the four Mermaid blocks in the changed files render with mermaid-cli 11.
