@@ -402,7 +402,7 @@ Local SLURM cluster with sind for scenario tests (T3).
 
 **Policy.**
 - A PR merges automatically (squash, through GitHub's native auto-merge) when:
-  - all required checks pass: `docs-gate` and `pr-body` (§7.3), and `ci-ok`, the aggregator job of `ci.yml` that covers the pipeline workflows the PR touches (`dev-environment-and-testing.md` §11) *(assumed — pending Thomas, inbox #26)*;
+  - all required checks pass: `docs-gate` and `pr-body` (§7.3), and `ci-ok`, the aggregator job of `ci.yml` that covers the pipeline workflows the PR touches (`dev-environment-and-testing.md` §11) *(decided — Thomas, 2026-10-27, inbox #26)*;
   - its `doc-reviewer` verdict is `approve`, posted as a PR review by the bot account;
   - it has no `needs-human` label.
 - **On `autopilot/integration`:** auto-merge is always on.
@@ -418,7 +418,7 @@ Local SLURM cluster with sind for scenario tests (T3).
 ## 9. Generated reference (from M1)
 
 **API reference.**
-- **Generation.** depictio's release workflow is copied: import the app inside the released image in a mode that needs no database, dump `app.openapi()`, check it with `jq` and a minimum path count, stamp it with the version, and open a docs PR (audit §1.6). The docs PR is opened with the GitHub App token of `dev-environment-and-testing.md` §12, so its checks run; a PR opened with `GITHUB_TOKEN` gets no CI *(assumed — pending Thomas, inbox #26)*.
+- **Generation.** depictio's release workflow is copied: import the app inside the released image in a mode that needs no database, dump `app.openapi()`, check it with `jq` and a minimum path count, stamp it with the version, and open a docs PR (audit §1.6). The docs PR is opened with the GitHub App token of `dev-environment-and-testing.md` §12, so its checks run; a PR opened with `GITHUB_TOKEN` gets no CI *(decided — Thomas, 2026-10-27, inbox #26)*.
 - **Requirement.** This needs the no-database import mode in `spectio-server` from day one (`architecture-plugins-and-packaging.md` §6).
 
 **CLI reference.** Generated from the Typer command tree (`mkdocs-typer` or a small generator).

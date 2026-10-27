@@ -134,7 +134,7 @@ Providers ship as built-in plugins of the `spectio.analytics` kind. A site can a
 
 1. **Runtime configuration.** The UI is a static bundle, so the tracker settings are served at runtime from the public `GET /api/v1/public-config`, under `analytics: {provider, settings, consent_required}`. This copies depictio's GA4 design (`utils_endpoints/routes.py:171-197`). Settings are only served when complete and valid.
 2. **No inline snippet.** First-party UI code creates the provider's script element. The CSP never needs `unsafe-inline`.
-3. **CSP managed by the server.** Each provider plugin declares its origins for `script-src`, `connect-src` and `img-src`, and the server adds them to the CSP header. Operators never edit CSP by hand. These origins are added to the baseline CSP of [`authentication-and-access.md`](authentication-and-access.md) §3.1. *(assumed — pending Thomas, inbox #23)*
+3. **CSP managed by the server.** Each provider plugin declares its origins for `script-src`, `connect-src` and `img-src`, and the server adds them to the CSP header. Operators never edit CSP by hand. These origins are added to the baseline CSP of [`authentication-and-access.md`](authentication-and-access.md) §3.1. *(decided — Thomas, 2026-10-27, inbox #23)*
    - A self-hosted Umami, Plausible or Matomo needs only its own origin.
    - GA4 needs `www.googletagmanager.com`, plus `*.google-analytics.com`, `*.google.com` and the regional Google domains, listed one by one (Google's CSP guide, cited in the research note).
 4. **Page views on route changes.** The router calls `analytics.page(template)` after each navigation.
@@ -144,7 +144,7 @@ Providers ship as built-in plugins of the `spectio.analytics` kind. A site can a
 6. **Consent and Do Not Track.**
    - `navigator.doNotTrack === "1"` and a per-user opt-out in the profile both stop the tracker.
    - If the provider requires consent (`consent_required`), a minimal banner asks first, and nothing is loaded before the answer.
-7. **Never inside sensitive views.** No tracker loads on share-link landing pages for guests, on embedded views (`api-and-data-model.md` §9), on sign-in pages, on administration pages (`/admin/*`), or on gate review and decision pages. *(assumed — pending Thomas, inbox #23)*
+7. **Never inside sensitive views.** No tracker loads on share-link landing pages for guests, on embedded views (`api-and-data-model.md` §9), on sign-in pages, on administration pages (`/admin/*`), or on gate review and decision pages. *(decided — Thomas, 2026-10-27, inbox #23)*
 
 **Legal context.** The CNIL lists the conditions for audience measurement without consent:
 - users are informed and can object;
@@ -170,4 +170,4 @@ The docs site uses the same choice of provider through Material's `extra.analyti
 | No identifiers in web analytics | Playwright: navigate runs, gates and share links with a fake provider, and assert every recorded path is a template |
 | CSP | each provider plugin: the response CSP contains its declared origins and no `unsafe-inline` |
 | Do Not Track and consent | Playwright with `doNotTrack` set: no provider script requested |
-| No tracker in sensitive views | Playwright with a fake provider: no provider script requested on sign-in, share-link landing, embedded, `/admin/*` and gate review pages *(assumed — pending Thomas, inbox #23)* |
+| No tracker in sensitive views | Playwright with a fake provider: no provider script requested on sign-in, share-link landing, embedded, `/admin/*` and gate review pages *(decided — Thomas, 2026-10-27, inbox #23)* |

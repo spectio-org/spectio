@@ -658,3 +658,22 @@ Step page: [APPLY2](../progress/W2/APPLY2.md).
   - `.claude/skills/review-code/SKILL.md`, `.claude/skills/autopilot/SKILL.md`, `.claude/agents/code-reviewer.md` and `.claude/agents/security-reviewer.md`;
   - inbox #11, #12, #14, #15, #16, #32, #33, #34, #35, #36, #37 and #39 (dated notes).
 - **Open points** (written as **[to be validated]** in §15.3): site prerequisites for a long-running process and node-local disk on login nodes; whether a Snakemake head may run inside a SLURM job, which the Snakemake SLURM executor plugin advises against ([`schedulers-and-monitoring.md`](../specs/schedulers-and-monitoring.md) §3.1, spike T3; fallback: the head on the login node, tasks still through the SLURM executor); browser behaviour of `SameSite=Strict` cookies and SSE.
+
+## 2026-10-27 — Inbox answers #5 to #37 (dashboard)
+
+- **Context.** Thomas answered 24 inbox entries from the progress dashboard (14:03–14:20 UTC). Each answer is recorded on its entry in [`inbox.md`](../reviews/inbox.md). Where an answer confirms an assumed option, the specs' markers now read *decided — Thomas, 2026-10-27*.
+- **Decided, as recommended:** #11 (a), #19 (a), #20 (b), #21 (a), #22 (a), #23 (c), #24 (a), #25 (a), #26 (a), #27 (a), #33 (c), #35 (a), #36 (a), #37 (a).
+- **Decided, with a change:**
+  - #13: (a), but kept lightweight. 0.0.1 and single mode have only the token link; the token registry and the authorisation matrix start with the first multi-user version.
+  - #14: (a), restricted to local and SLURM. The Kubernetes identity model is deferred.
+  - #32: (B). Whether the engines themselves create a new run on resume is checked in spike T1, and its prompt now asks for it.
+  - #34: no gates in 0.0.1, as in the cut above; SR-056 (workflow registration) stays open for 0.0.1.
+- **Deferred:** #17 (rediscuss separately), #18 (too complex for the MVP).
+- **Still open:** #5 (deleting the old branch needs Thomas's go), #8 (waiting for the GitHub App), #12 and #15 (re-explained in the session).
+- **Applied now:**
+  - [`architecture-plugins-and-packaging.md`](../specs/architecture-plugins-and-packaging.md) §7.3, "0.0.1 prerequisites" (#35, SR-067);
+  - [`dev-environment-and-testing.md`](../specs/dev-environment-and-testing.md) §15.3, security requirement 7, "Writes" (#37), and requirement 6 pointing to #36;
+  - `CLAUDE.md` board conventions: the UX-219 keyboard rule (#26);
+  - [`next-phase.md`](../playbooks/next-phase.md) T1 prompt (#32);
+  - *assumed* → *decided* markers for #13, #14, #22–#27, #32, #33 and #35 in the specs, features and installation pages.
+- **Applied later:** the spec text of the later-version decisions (#11, #13, #14, #19–#27, #33, #36 api §14) goes into one apply pass after W3, by Thomas's choice, so the W3 budget goes to the build steps. Review files keep their statuses until that pass.

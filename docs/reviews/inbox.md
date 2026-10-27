@@ -49,6 +49,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
 - **Done (additive, nothing deleted).** A new branch `main` with one clean commit holding the current tree was pushed. The old history is kept as the local branch `archive/history-2026-10-26` and on the remote branch above.
 - **Your part.** In GitHub settings, make `main` the default branch. Then delete the old branch (`git push origin --delete claude/foundations-2026-10-26`), or tell the autopilot to do it.
 - **Optional.** Also replace the real names in the boards with fixtures before going public.
+- **Answer (Thomas, 2026-10-27, dashboard):** "make `main` the default branch, done?" Yes: the remote's default branch is `main` (checked with `git ls-remote --symref origin HEAD`). The old remote branch `claude/foundations-2026-10-26` still exists; it is deleted only on Thomas's explicit go (the history stays as the local `archive/history-2026-10-26`). *Open (branch deletion).*
 
 ### #6 · Nextflow ingestion: keep the Tower protocol, or only Spectio's own plugin?
 
@@ -79,6 +80,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - a GitHub App token for release-please and the other bot PRs.
 - **Your part, meanwhile:** create a GitHub App for the repository (contents and pull requests: write), and store its ID and key as environment secrets.
 - **Assumed:** protection is not set.
+- **Answer (Thomas, 2026-10-27, dashboard):** asked what to do concretely. Steps sent in the session: create the GitHub App (Contents and Pull requests: read and write, Issues: read and write for the release-please labels **[to be validated]**, webhook off), install it on this repository only, generate a private key, store the App ID as a variable and the key as a secret in a `release` environment; D4 wires it with `actions/create-github-app-token` **[inputs to be validated from its README]**. *Open (waiting for the App).*
 
 ### #9 · GitHub organisation for packages and images (DEP-T-026)
 
@@ -125,6 +127,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Blocked:** APPLY1 for api §14 and the auth §3 ingest-token row; nf-spectio and the Snakemake logger credential handling (spike T2 envelope); the walking skeleton. Related assumptions that already proceed: [SR-006](../reviews/R1-consistency.md#sr-006-major-the-cli-command-tree-lacks-commands-that-other-specs-cite) (no wrapper, setup by `spectio login`, see #28) and [CH-002](../reviews/R4-constraints.md#ch-002-major-no-compatibility-window-for-the-ingest-and-runner-protocols-across-bridge-runner-and-server-versions) (separate ingest version, see #28).
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 - **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: observed runs are out of it, and the plugins only write to the spool.
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended. Not needed for 0.0.1; applied to api §14 and auth §3 in the next apply pass (APPLY-INBOX, after W3). *Decided.*
 
 ### #12 · Runner ↔ server transport and runner credential lifetime
 
@@ -144,6 +147,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Blocked:** APPLY1 for architecture §7.7 and the auth §3 runner row; every launch, cancel, file view and stop file; the walking skeleton. UX-124 blocks the EnvConnect values (later apply).
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 - **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: the runner is built into the server process; a shared server with remote runners stays later.
+- **Answer (Thomas, 2026-10-27, dashboard):** asked for the pros and cons of (a), (b) and (c), and why (a). Sent in the session; not needed for 0.0.1 (the runner is built into the server). *Open.*
 
 ### #13 · Token registry, authorisation matrix and which column authorises reads
 
@@ -164,6 +168,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a). The SEC-122 postMessage origin checks apply whatever the answer.
 - **Assumed:** SEC-112 A and UX-111 A proceed; the rest is not assumed.
 - **Blocked:** APPLY1 for auth §3 (token catalogue, scope list, revocation), api §6 (matrix, role rows), api §4 limits, api §9 embeds and the LabID integration contract, api §5 `allowed_actions`, api §5/§7/§8 tenancy and run move; the role-variant boards of R7; spike sec-authz-matrix exit criteria.
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), but kept lightweight for single-user mode and the MVP: 0.0.1 keeps only the token link of dev-env §15.3; the token registry, matrix and scopes apply from the first multi-user version. Spec edits in APPLY-INBOX. *Decided.*
 
 ### #14 · Which Unix identity a launch runs as, and who may move a run to another runner
 
@@ -182,6 +187,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Blocked:** APPLY1 for api §6, schedulers §6, the environments/runners schema and the gate assignment fields (api §5/§7, checking); spike sec-slurm-identity; runner protocol design and P1 planning.
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 - **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: every launch runs as the Unix account that started `spectio serve`.
+- **Answer (Thomas, 2026-10-27, dashboard):** skip Kubernetes for now; focus on local and SLURM launch. Read as (a) restricted to local and SLURM (per-user runner, slurmrestd where it exists, declared shared accounts only with delegation); the Kubernetes identity model is deferred. Spec edits in APPLY-INBOX. *Decided (Kubernetes deferred).*
 
 ### #15 · `single` mode on shared login nodes
 
@@ -196,6 +202,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Blocked:** APPLY1 for auth §1/§6 and api §1/§6; spike sec-single-mode; the walking-skeleton auth design.
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 - **Note (2026-10-27, cut revised):** the 0.0.1 part is answered ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)): 0.0.1 now runs on the login node, so tokenless loopback is not accepted. The server binds to 127.0.0.1 only, the user opens it through an SSH tunnel, and every request needs the token set as a cookie from a one-time link ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). The rest stays open for later versions: a Unix socket with SO_PEERCRED, refusing to start when other users are logged in, `single` mode on a shared server.
+- **Answer (Thomas, 2026-10-27, dashboard):** "too complex, re-explain". Re-explained in the session: the 0.0.1 part is already settled by the token link; the open question for later is only whether to add a Unix socket that only the owner can open. *Open.*
 
 ### #16 · What ships in 0.1 (MVP cut)
 
@@ -234,6 +241,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** FC-044 A, the FC-046 table refresh and UX-210 (a) proceed.
 - **Blocked:** APPLY1 for api §0/§1/§5/§10 labels (WES, TRS), synthesis §7bis item 6 and its log entry, the roadmap ideas, dev-env §14 private-alpha list, the WES item on the landing page (DOC-001); the LaunchBatch, LaunchChain and LaunchReview boards (later apply).
+- **Answer (Thomas, 2026-10-27, dashboard):** to rediscuss later, separately. Nothing changes; the assumed parts stay assumed. *Deferred.*
 
 ### #18 · Who can read a project: visibility values and share links
 
@@ -250,6 +258,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** SR-019 (a) proceeds; the kind may be renamed by your answer.
 - **Blocked:** APPLY1 for api §6/§12/§13.2 visibility and mapping, auth §2/§2.1 share links, the `principals.kind` enum, the sharing UI (ShareDialog, ShareLanding), the share-link endpoints and the staging reviewer flow (dev-env §13).
+- **Answer (Thomas, 2026-10-27, dashboard):** too complex for the MVP. Visibility values and share links wait for a later version; the assumed SR-019 part stays assumed. *Deferred.*
 
 ### #19 · Project roles and who may decide a gate (people and agents)
 
@@ -269,6 +278,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** none.
 - **Blocked:** APPLY1 for `project_grants`, CLI `project share`, bioplatform-models Role, checking §5 decisions, checking §7 and §11.3, api §6 agent rules, the MCP tool catalogue, admin §1 Content → Workflows; the Review sticky bar and EnvAccess board (later apply).
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended, for the versions that bring roles and gates. Spec edits in APPLY-INBOX. *Decided.*
 
 ### #20 · Admin rights, sign-in administration and new users
 
@@ -286,6 +296,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (b). R7 recommended (a), but SR-007's recommended cut in #16 puts OIDC in the alpha; (b) keeps the two answers consistent. Pick (a) if you put OIDC in 0.1 in #16.
 - **Assumed:** none.
 - **Blocked:** APPLY1 for the users/groups schema, environments and plugin-instance API, auth §0/§2, admin §3.4 audit log, the logout and session endpoints (api §5, admin §5); the AdminSignIn, Profile and SettingsUsers boards.
+- **Answer (Thomas, 2026-10-27, dashboard):** (b), as recommended: OIDC in a later phase, with a phase column in auth §0. Spec edits in APPLY-INBOX. *Decided.*
 
 ### #21 · How Spectio trusts depictio identities
 
@@ -300,6 +311,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** none.
 - **Blocked:** APPLY1 for auth §1/§2 (depictio trust, linking, group sync), api §13.1/§13.2, auth §6 test row, cli §2 `--with-depictio`, architecture §7.5 Helm co-hosting (phase 2); spike depictio-introspection.
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended. Spec edits in APPLY-INBOX. *Decided.*
 
 ### #22 · depictio hand-off: credentials and storage
 
@@ -315,6 +327,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** DEP-T-014 (a) without the request to depictio, DL-105 (a), DL-115 (a), DEP-T-017 (a).
 - **Blocked:** APPLY1 for api §13.3 step 1 and cli §2 hand-off text, the scope of spike depictio-handoff. Not 0.1.
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended. Spec edits in APPLY-INBOX. *Decided.*
 
 ### #23 · Co-hosting with depictio and browser hardening
 
@@ -327,6 +340,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (c). It affects the depictio team (shared cookie, SSO, shared Redis).
 - **Assumed:** DL-103 (a) and SEC-126 A proceed; the co-hosting default is not assumed.
 - **Blocked:** APPLY1 for api §13.4, architecture §8 Redis sharing, the report sandbox origin, the SEC-126 `__Host-` cookie, DEP-T-013; the RunOutputs sandbox rules (UX-115).
+- **Answer (Thomas, 2026-10-27, dashboard):** (c), as recommended: separate hosts by default, path co-hosting as a documented opt-in. Spec edits in APPLY-INBOX. *Decided.*
 
 ### #24 · Backup and restore under live runs
 
@@ -342,6 +356,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** CH-021 A, CH-022 A, SR-050 (a) proceed.
 - **Blocked:** APPLY1 for the admin §4.3 restore wizard and encryption rules, cli §2 backup example, ingest 409 behaviour.
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended. Spec edits in APPLY-INBOX. *Decided.*
 
 ### #25 · Trust boundaries: plugins, outbound calls, event bridges, runner policy, restricted data
 
@@ -361,6 +376,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** SEC-105 A, SEC-110 A, UX-117 A proceed.
 - **Blocked:** APPLY1 for architecture §3, §3.4 (`ctx.http`), §7.6 and §10, admin §2.3, schedulers §6 and jobcomp/kafka handling, checking §7 `script:` binding, the webhook and WES facade specs; the Workflow boards and ReviewTrio (later apply).
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended. Spec edits in APPLY-INBOX. *Decided.*
 
 ### #26 · Licences, repository governance and CI costs
 
@@ -380,6 +396,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** DEP-T-001 (a), DEP-T-002 docs part, DEP-T-005 (a), DEP-T-018 Linux part, DEP-T-029 docs part, UX-219 (a). The CLAUDE.md edit for UX-219 is only made once you confirm.
 - **Blocked:** APPLY1 for dev-env §10.3/§10.4, architecture §7.4, schedulers §5, depictio-ecosystem-reuse §1, the release-PR rule in autopilot.md §8 and documentation-system §8, the branch-protection payload (#8), admin §3.5 metrics access; RELEASE_PLEASE_ENABLED and 0.1.0; spike 8 licence scan.
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended. The UX-219 keyboard rule is added to the board conventions in `CLAUDE.md`; the other spec edits in APPLY-INBOX. *Decided.*
 
 ### #27 · Messages to other teams (nothing is sent without you)
 
@@ -395,6 +412,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** the doc parts of DL-113 (api §13.1 whitelist), FC-042 (synthesis §2 and the comparison page), SR-036 (keys in checking §4/§7) and SEC-107 (one redaction function in admin §3.4).
 - **Blocked:** only the messages themselves; no spec section waits.
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended: confirm DL-113 in spike depictio-introspection first, then report privately; other outreach at the public beta. Nothing is sent without Thomas. *Decided.*
 
 ### #28 · Assumed: engine bridges, runner and scheduler
 
@@ -478,6 +496,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** (B), for all ten findings. The relaunch preview is the `dry_run` of the relaunch body, as already assumed for UX-113 in #30.
 - **Blocked:** nothing; a different answer reverts the assumed text in api §5, §7, §7.1, synthesis §5ter and ui-spec §4.4–§4.6.
 - **Note (2026-10-27, cut revised):** gates are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so the 0.0.1 gate verbs (`approve`, `stop`) are moot for 0.0.1; all gate verbs are now "later (open)". The relaunch part still applies to 0.0.1: every relaunch, Resume after a failure included, is a new child run, and the parent stays terminal.
+- **Answer (Thomas, 2026-10-27, dashboard):** (B), with a check: does Nextflow or Snakemake itself create a new run when resuming? Spike T1 records what each engine does on `-resume` and on a rerun in the same directory. Markers in the specs now read *decided*. *Decided (engine behaviour to be checked in T1).*
 
 ### #33 · When every check passes, does the gate wait for a person?
 
@@ -491,6 +510,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** (c).
 - **Blocked:** nothing.
 - **Note (2026-10-27, cut revised):** gates and QC checks are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so the "wait for a person" 0.0.1 default is moot; the question stays open for the version that brings gates.
+- **Answer (Thomas, 2026-10-27, dashboard):** (c), as recommended, for the version that brings gates. *Decided.*
 
 ### #34 · 0.0.1 scope: how nf-core/rnaseq gets its stages and gate, workflow registration, MultiQC in the install
 
@@ -504,6 +524,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** none (reserved).
 - **Blocked:** checking §12.7 (overlays), api §5 `POST /workflows` and the inline `gates` value of SR-087, architecture §7.3 extras, the install line in `mvp-0.0.1.md`.
 - **Note (2026-10-27, cut revised):** gates and QC checks are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so the overlay, the `--gates FILE` and the MultiQC install questions (SR-057, SR-058) no longer block 0.0.1. How a workflow is registered for launch from the UI (SR-056) still applies to 0.0.1.
+- **Answer (Thomas, 2026-10-27, dashboard):** no gating in the MVP or 0.0.1, as in the revised cut. SR-056 (how a workflow is registered for launch from the UI) still applies to 0.0.1 and stays open. *Handled for gates; SR-056 open.*
 
 ### #35 · Engines and the in-process runner on a laptop
 
@@ -517,6 +538,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** the local environment and runner record (SR-055) and detached heads (CH-041). Not assumed: who installs the engines and how nf-spectio ships (SR-067), because they change the 0.0.1 install and what Spectio publishes.
 - **Blocked:** architecture §7.3 "0.0.1 prerequisites" (SR-067).
 - **Note (2026-10-27, cut revised):** 0.0.1 heads are SLURM jobs submitted from the login node, adopted after a server restart by the head-job name match ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)). The detached local heads of SR-055 and CH-041 now concern only the local executor, kept for tests and development. SR-067 (who installs the engines and how nf-spectio ships) still applies, now on a login node.
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended: the user installs the engines and `spectio doctor` reports them; nf-spectio ships as a jar in the wheel **[to be validated]**. Applied in architecture §7.3. *Decided.*
 
 ### #36 · The ingest contract for 0.0.1 (split inbox #11?)
 
@@ -530,6 +552,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** none (auth is reserved).
 - **Blocked:** api §14 and the bridge-facing parts of architecture §13.
 - **Note (2026-10-27, cut revised):** in 0.0.1 the plugins write only to the spool in the run directory, and the built-in runner reads it; nothing posts over the network ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). The 0.0.1 part of the contract is therefore the spool's event format and its size caps; the question itself stays open.
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended: #11 is split. For 0.0.1 the contract is the spool event format of dev-env §15.3; api §14 for driven runs over the network is written in APPLY-INBOX. *Decided.*
 
 ### #37 · Browser protection for the token-less loopback API
 
@@ -543,6 +566,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** none (reserved).
 - **Blocked:** api §6 (single-user mode) and auth-and-roles for 0.0.1.
 - **Note (2026-10-27, cut revised):** answered for 0.0.1 by the token link ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)): no request is accepted without the token, the cookie is `SameSite=Strict`, and a `Host` allow-list refuses DNS rebinding. Whether to add an Origin check on writes and JSON-only writes (option a) stays open.
+- **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended: an Origin check and JSON-only bodies on every write, on top of the token link. Applied in dev-env §15.3. *Decided.*
 
 ### #38 · Assumed: engine events and the progress denominator
 

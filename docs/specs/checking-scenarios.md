@@ -90,7 +90,7 @@ HTML reports run in a sandboxed iframe from a separate origin, with no access to
 
 Each check has:
 - a **scope**: item, group or run;
-- a **severity**: `block` (a failure prevents auto-approval), `warn` (shown, never prevents it) or `info`. A gated stage always opens its gate; whether it then waits for a person is set by `decide.auto_approve` (§12.4) *(assumed — pending Thomas, inbox #33)*;
+- a **severity**: `block` (a failure prevents auto-approval), `warn` (shown, never prevents it) or `info`. A gated stage always opens its gate; whether it then waits for a person is set by `decide.auto_approve` (§12.4) *(decided — Thomas, 2026-10-27, inbox #33)*;
 - a **source binding** that tells Spectio where the value comes from (§7).
 
 Built-in presets for frequent pipelines can ship with Spectio as overlays:
@@ -109,7 +109,7 @@ Built-in presets for frequent pipelines can ship with Spectio as overlays:
 
 ### 4.1 Keys of each check kind
 
-*(assumed — pending Thomas, inbox #27)*
+*(decided — Thomas, 2026-10-27, inbox #27)*
 
 Common keys of every check: `id`, `kind`, `from` (source binding, §7), `scope` (`item`, `group` or `run`), `severity` (`block`, `warn`, `info`).
 
@@ -284,7 +284,7 @@ Three parts, each with one job:
    - runs the check's source binding (§7);
    - sends back the values only, over its outbound connection, as a `spectio.check.evaluated` event (SSE only, [`api-and-data-model.md`](api-and-data-model.md) §8). *(assumed — pending Thomas, inbox #29)*
 
-   **Reads are confined to the run's roots.** *(assumed — pending Thomas, inbox #25)* For each run the runner holds a set of roots: the launch directory, the engine work directory, the results directory, and the input and reference locations the environment declares ([`ui-spec.md`](ui-spec.md) §4.8). For every read (watched file, evidence, artefact content, task log, directory listing) the runner:
+   **Reads are confined to the run's roots.** *(decided — Thomas, 2026-10-27, inbox #25)* For each run the runner holds a set of roots: the launch directory, the engine work directory, the results directory, and the input and reference locations the environment declares ([`ui-spec.md`](ui-spec.md) §4.8). For every read (watched file, evidence, artefact content, task log, directory listing) the runner:
    - resolves the path with `realpath`;
    - refuses it unless it falls inside one of the run's roots;
    - follows a symlink only when its target is inside a root or inside the engine work directory of the same run. Nextflow publishes as `'symlink'` by default (nextflow `114f1fe`, `docs/reference/process/directives/publish-dir.mdx:89`), so published results usually point into the work directory;
@@ -415,7 +415,7 @@ A task whose process or rule matches no `stages[].match` glob has no stage (`tas
 
 One block, `decide`: `humans`, `agents` (`propose` | `approve` | `none`), `auto_approve`, `timeout`, `on_timeout`, plus `item_actions`, `per_item`, `rules`, `constraints` (§7). The `intervention.policy.mode` form of [`synthesis.md`](synthesis.md) §5ter.1 and the key list of [`ui-spec.md`](ui-spec.md) §5.1 are superseded. Who may decide, and how agents are bounded, is owned by [`api-and-data-model.md`](api-and-data-model.md) §6 and pending inbox #19.
 
-A gate row is always created at the stage boundary. With `decide.auto_approve: when_checks_pass` and every `block` check passing, Spectio records `approve` with `actor_kind = service` ([`api-and-data-model.md`](api-and-data-model.md) §7.1); otherwise the gate stays open. A failed `warn` never prevents auto-approval. When `auto_approve` is absent the gate waits for a person. *(assumed — pending Thomas, inbox #33)*
+A gate row is always created at the stage boundary. With `decide.auto_approve: when_checks_pass` and every `block` check passing, Spectio records `approve` with `actor_kind = service` ([`api-and-data-model.md`](api-and-data-model.md) §7.1); otherwise the gate stays open. A failed `warn` never prevents auto-approval. When `auto_approve` is absent the gate waits for a person. *(decided — Thomas, 2026-10-27, inbox #33)*
 
 ### 12.5 Evidence
 

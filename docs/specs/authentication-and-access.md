@@ -106,7 +106,7 @@ It never returns secrets.
 
 ### 3.1 Browser hardening
 
-*(assumed — pending Thomas, inbox #23)*
+*(decided — Thomas, 2026-10-27, inbox #23)*
 
 Defaults for every browser page, whatever the mode:
 - **Content Security Policy baseline:** `default-src 'self'; object-src 'none'; base-uri 'none'; frame-ancestors 'none'`. Embed routes replace `frame-ancestors` with the allowed host origins ([`api-and-data-model.md`](api-and-data-model.md) §9). Analytics providers add their origins through the server ([`telemetry-and-analytics.md`](telemetry-and-analytics.md) §4.2).
