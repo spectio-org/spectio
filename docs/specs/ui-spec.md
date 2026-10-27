@@ -18,7 +18,7 @@ Scope: web UI of Spectio (formerly drafted as Ductio / Perspectio). Companion do
 |---|---|---|
 | **Overview** | Landing screen after login | "Needs attention" (reviews pending, failed runs), active runs, recent activity, environment health |
 | **Runs** | All runs, table or rows | Filters (state, workflow, engine, environment, owner, tag, date), saved views, bulk actions |
-| **Review** | Interventions waiting for a decision | Queue (assigned to me / my team / AI agents / external systems), evidence viewers, approve / apply changes / go back to a stage / stop *(assumed — pending Thomas, inbox #29)*, decision history |
+| **Review** | Gates waiting for a decision | Queue (assigned to me / my team / AI agents / external systems), evidence viewers, approve / apply changes / go back to a stage / stop *(assumed — pending Thomas, inbox #29)*, decision history |
 | **Launch** | Start a run | One parameters page with a progress stepper as its header (workflow → version → parameters (form from schema) → inputs → environment → review and launch); "Review and launch" is the final step (§4.6) *(assumed — pending Thomas, inbox #30)* |
 | **Workflows** | Catalog of registered workflows | Import from nf-core, Snakemake Workflow Catalog, git URL or cluster path; versions, parameter schema, stages manifest, software versions, docs |
 | **Environments** | Where runs execute | Compute environments, runners, executors/backends, storage, software deployment (conda / Apptainer / Docker / modules), credentials |

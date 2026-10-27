@@ -2,7 +2,7 @@
 
 **Step page:** [R7](../progress/W1/R7.md)
 
-**Round:** R7 (UI review) · **Date:** 2026-10-26 · **Found by:** ux-reviewer, three instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 26 accepted, 0 rejected, 14 inbox (7 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
+**Round:** R7 (UI review) · **Date:** 2026-10-26 · **Found by:** ux-reviewer, three instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 26 accepted, 0 rejected, 14 inbox (7 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md) · APPLY1 (2026-10-27): 0 applied, 27 partly applied, 6 not applied
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l." or `file:line`) refer to that commit.
@@ -171,7 +171,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **API:** name the exchange and logout endpoints in api §5 (for example `POST /auth/magic-links:exchange`, mirroring depictio's `POST /auth/magic/exchange`).
   - **Accessibility:** focus starts on the first provider; errors in an `aria-live` region; 44 px targets on the phone.
 - **Found by:** ux-reviewer (a), ux-reviewer (b), ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): api §5; auth §5; pending: boards SignIn, MagicLinkSent, MagicLinkConfirm, MustChangePassword, reset landing, SSO callback error; `POST /auth/logout` (inbox #20); auth §2 row (inbox #18, #20)
 
 ### UX-204 · major · No share-link landing, no "Create link" tab, and no endpoint to list or revoke links
 
@@ -221,7 +221,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - **Legend:** a "Live data" row (live, stale, reconnecting, head silent), each with an icon and a word.
   - **Spec:** define these screen states once in ui-spec (see UX-211 for where).
 - **Found by:** ux-reviewer (a), ux-reviewer (b), ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27) — screen states defined where SR-041 (assumed) puts them
+- **Status:** partly applied (APPLY1, 2026-10-27): schedulers §3.2, §7; ui-spec §4.4, §4.7, §11; pending: boards RunDetailDegraded, RunScheduler, EnvStorage, EnvCapacity, Workflows, MobileTopbar / MRunDetail / MReview, Legend, Overview; spike S-R7-3
 
 ### UX-206 · major · Review queue scopes, bulk actions and "Move to another runner" have no endpoint
 
@@ -259,7 +259,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - A per-gate `item_kind` (from `spectio.yml` `items`).
   - `actor_principal_id` and `actor_kind` on events, and `GET /events?project=&type=` for the feed.
 - **Found by:** ux-reviewer (a)
-- **Status:** inbox, assumed: `GET /runs:summary` and `GET /gates:summary`, `GET /runs/{id}/processes`, a per-gate `item_kind` and actor columns on events in api §4, §5 and §7; boards show Next / Load more instead of numbered pages until spike S-R7-4 says whether exact totals are affordable — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): api §4, §5, §7; ui-spec §4.3 (assumed — pending Thomas, inbox #30); pending: boards RunsTable, Overview, ReviewQueue, RunDetail; assignee counts (inbox #14); spike S-R7-4
 - **Merge note:** `gate_items.kind` exists (api §7), so item kinds can be read per item; what is missing is a per-gate kind and an aggregate. The `decisions` table already has `principal_id` and `actor_kind`; events do not.
 
 ### UX-208 · major · Four Administration sections have no board, and AI & agents and the outbox have no endpoint
@@ -275,7 +275,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Endpoints in admin §5: `GET /outbox?type&state`; `POST /subscribers/{id}:pause|resume`; `GET /bridges`; `GET/PUT /notification-routes`; `GET/POST/PATCH /ai/endpoints`; `GET/PUT /ai/agent-defaults`; `GET /audit-log?principal&object&since` with a cursor.
 - **Related:** R1 SR-042 already covers the missing AI endpoints and tables; R1 SR-013 covers the duplicated endpoint catalogues (where admin endpoints belong).
 - **Found by:** ux-reviewer (b)
-- **Status:** accepted (TRIAGE1, 2026-10-27) — AI endpoints as SR-042 (assumed), admin routes per SR-013 (assumed)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §5, §6; ui-spec §4.9; pending: boards AdminEvents, AdminAudit, AdminNotifications, AdminSettings, AdminNav; AdminSettings sign-in (inbox #20)
 
 ### UX-209 · major · EnvStorage cannot be fed: no API or table for locations, lifecycle rules or work-directory actions
 
@@ -290,7 +290,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - api §7: a `workdir_usage` table. api §8: the event `spectio.run.workdir_cleaned`.
   - Reuse the schedulers §3 quota layer for usage.
 - **Found by:** ux-reviewer (b)
-- **Status:** inbox, assumed: storage, lifecycle and work-directory endpoints in api §5 (keep / clean guarded by `If-Match` on resumable runs), a `workdir_usage` table in api §7 and `spectio.run.workdir_cleaned` in api §8 — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §4.4; api §4, §5, §7, §8; ui-spec §4.8 (assumed — pending Thomas, inbox #30); pending: board EnvStorage; environments API (inbox #20)
 
 ### UX-210 · major · The notification bell and "Notify me when it is back" have no endpoint and no board
 
@@ -306,7 +306,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Decide whether phones get Web Push (PWA) or only email and Slack. Browser support and the iOS home-screen requirement are **[to be validated]** (see the proposed spikes).
 - **Related:** R1 SR-045 (gate notifications have two paths: `gate.notify` task vs outbox notifiers).
 - **Found by:** ux-reviewer (c)
-- **Status:** inbox, assumed: in-app notification and subscription endpoints in api §5 and the bell and MNotifications boards; phones rely on in-app, email and Slack; Web Push stays undecided until spike S-R7-3 and your answer — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): api §5; ui-spec §2, §4.8, §4.10, §4.11 (assumed — pending Thomas, inbox #17); pending: boards MNotifications, desktop bell panel, MobileTopbar; spike S-R7-3
 
 ### UX-211 · major · No empty or first-run state on any board, including single-user mode
 
@@ -326,7 +326,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Build them with the shared `EmptyState` component (ui-spec §7).
 - **Related:** R1 SR-041 already proposes defining the screen states (empty, loading, error, permission, n/a) in ui-spec and repointing §10.2. This finding adds the boards. Triage together.
 - **Found by:** ux-reviewer (a), ux-reviewer (b), ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27) — boards only; screen-state definitions as SR-041 (assumed)
+- **Status:** accepted (TRIAGE1, 2026-10-27) — boards only; screen-state definitions as SR-041 (assumed); not applied (APPLY1): board-only fix (per triage), no doc edit; boards OverviewFirstRun, RunsEmpty, ReviewQueueEmpty, empty Workflows, Environments, MEmpty deferred
 
 ### UX-212 · major · The Legend and tokens cover run states only; boards invent colours and words for every other state family
 
@@ -358,7 +358,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Alias `--sp-section-settings` as `--sp-section-admin`.
 - **Related:** R12 UX-103 covers the check-state vocabulary itself (n/a, suspect, computing, muted).
 - **Found by:** ux-reviewer (a), ux-reviewer (b), ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §3.2; ui-spec §3.3 (new); pending: tokens in `design/tokens/spectio-tokens.css`; boards Legend, RunScheduler, EnvStorage, AdminBranding, AIAgents, phone boards
 - **Merge note:** reviewers placed "degraded" differently (amber in (a) and (c), red in (b)). The table above follows (a) and (c), so red stays for hard failures; confirm at triage.
 
 ### UX-213 · major · Warning and failure differ only by colour in check summaries and on the phone decision screen
@@ -378,7 +378,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Replace the workflow dot with the run-state icon and a short word ("Running · 27 runs"), or the stage gauge used on MRuns.
 - **Related:** R12 UX-103 (additional check states); UX-212 (Legend panel for check verdicts).
 - **Found by:** ux-reviewer (a), ux-reviewer (b), ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §1, §3.3, §4.5; pending: boards Overview, ReviewQueue, MReview, MReviewCells, MReviewQueue, MWorkflows, MRunnerOffline
 - **Merge note:** reviewer (a) rated its part minor; reviewer (c) rated it major because the phone decision screen uses the same icon for warn and fail. Kept as major.
 
 ### UX-214 · major · One tap on the phone turns on maintenance mode, and maintenance is invisible to phone users
@@ -395,7 +395,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Disable primary actions with the reason while maintenance is on.
 - **Related:** R1 SR-038 (which writes still work in maintenance); UX-229 (desktop Maintenance board).
 - **Found by:** ux-reviewer (b), ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §4.4, §5; ui-spec §4.11; pending: boards MAdmin, shared maintenance banner (MobileTopbar, desktop shell)
 
 ### UX-215 · major · Administration has no single-user or untrusted-instance variant
 
@@ -410,7 +410,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - An AdminNav variant and an MAdmin variant for `public` / `demo` with no Activity, Backups or Maintenance.
   - Projects: a "Not a member · admin access" role chip and an "All projects (admin)" filter.
 - **Found by:** ux-reviewer (b), ux-reviewer (c) (untrusted MAdmin variant, from c308)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §1, §6; pending: boards AdminSingleUser, AdminNav / MAdmin variants, Projects chip; 'Set up sign-in' target (inbox #20)
 - **Merge note:** the non-admin part of the reviewer's finding moved to UX-201. Hiding Administration from non-admins applies to multi-user instances only, since admin §1 keeps it "always visible" in single-user mode.
 
 ### UX-216 · major · The launch flow is drawn two ways, Launch has no project picker, and boards disagree on gates
@@ -428,7 +428,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - A Project picker as the first aside row, hidden in single mode.
   - Gate label: "1 gate after stage 2 · lab overlay rnaseq-demo-lab vN", with one overlay version across Launch, LaunchReview and RunDetail.
 - **Found by:** ux-reviewer (a)
-- **Status:** inbox, assumed: one parameters page with the stepper as a progress header and "Review and launch" as the final step (ui-spec §2, §4.6); a Project picker hidden in single mode; one overlay version across Launch, LaunchReview and RunDetail — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §2, §4.6 (assumed — pending Thomas, inbox #30); pending: boards Launch, RunDetail; LaunchReview (inbox #17)
 
 ### UX-217 · major · Workflow visibility per group is drawn, but the data model has no workflow grants
 
@@ -457,7 +457,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - A bulk result sheet: "2 approved · 1 already decided by Bob".
   - Record the rules in ui-spec §4.11 "Review queue"; the desktop queue needs the same 412 and partial-result states.
 - **Found by:** ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §4.5, §4.11; pending: boards MReviewQueue, MReview, MReviewCells, ReviewQueue
 
 ### UX-219 · major · Custom switches, checkboxes, tabs, radios and sliders cannot be reached by keyboard
 
@@ -477,7 +477,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Sheets: `aria-modal="true"`, a focus trap, focus returned to the opener.
   - Record the rules in ui-spec §4.11 and the canvas conventions, and add a lint in `tools/canvas` (see the proposed spikes). Changing CLAUDE.md needs Thomas.
 - **Found by:** ux-reviewer (b), ux-reviewer (c)
-- **Status:** inbox, assumed: the board fixes and the keyboard rules in ui-spec §4.11; the CLAUDE.md board conventions wait for your approval — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §4.11 (assumed — pending Thomas, inbox #26); pending: 21 boards (keyboard and labels); tool: board lint (spike S-R7-1); CLAUDE.md keyboard rules (inbox #26)
 
 ### UX-220 · major · Touch targets below 44 px in the shared phone components and most phone boards
 
@@ -509,7 +509,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Plate map: tap a row to open a zoomed strip (12 wells, 44 px hit areas through spacing), or treat the map as an overview and decide from the flagged list.
   - Threshold thumb: a 44 px hit area plus −/+ steppers (UX-219).
 - **Found by:** ux-reviewer (c), ux-reviewer (b)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §4.11; pending: boards MobileTopbar and the phone boards (44 × 44 hit areas)
 
 ### UX-221 · major · Three navigation models for one workflow, and two editors for one overlay
 
@@ -525,7 +525,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Rebuild Workflows and WorkflowSnakemake as the Overview tab.
 - **Related:** R12 UX-123 (overlay versions, catalogue).
 - **Found by:** ux-reviewer (b)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §4.7; pending: boards WorkflowVersions, Workflows, WorkflowSnakemake, WorkflowImport, WorkflowOverlay, WorkflowWatches (also inbox #25)
 
 ### UX-222 · major · Five boards still show the Tower protocol or `-with-tower` as the Nextflow route
 
@@ -552,7 +552,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Re-render the five boards.
 - **Related:** R12 UX-116 still asks for "the launch host in the Tower payload"; it should be retargeted to `nf-spectio` at triage. UX-232 covers CLI runs on the phone.
 - **Found by:** ux-reviewer (a), ux-reviewer (b); confirmed absent on phone boards by ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** accepted (TRIAGE1, 2026-10-27); not applied (APPLY1): board-only fix, docs already follow decision 0001; boards RunScheduler, RunObserved, Profile, WorkflowsCatalog, WorkflowDiscovered deferred
 - **Merge note:** reviewer (b) asked to re-render the docs media. `docs/assets/shots/` holds nine shots, none from these five boards, so only the boards change.
 
 ---
@@ -572,7 +572,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Give RunDetail the Scheduler tab.
 - **Related:** R1 SR-041 already proposes adding the Scheduler tab to ui-spec §4.4.
 - **Found by:** ux-reviewer (a), ux-reviewer (b)
-- **Status:** accepted (TRIAGE1, 2026-10-27) — the Scheduler tab is the same fix as SR-041 (assumed)
+- **Status:** partly applied (APPLY1, 2026-10-27): schedulers §10; ui-spec §4.4, §4.8; pending: boards RunScheduler, Capacity tab (Environments, EnvStorage, EnvKubernetes), RunDetail
 
 ### UX-224 · minor · The project switcher appears on some boards and not others, with conflicting owners
 
@@ -586,7 +586,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - One owning group per project across boards; ShareDialog breadcrumb "Administration".
   - Phone: make the top-bar title tappable, with a chevron, to open MProjectSwitcher.
 - **Found by:** ux-reviewer (a), ux-reviewer (b), ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): api §11; ui-spec §2, §4.11; pending: boards with the project switcher, MProjectSwitcher; ShareDialog (inbox #18)
 
 ### UX-225 · minor · Boards disagree on shared data, which hides the version-skew warning
 
@@ -604,7 +604,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Draw the skew warning on the runner row and the environment header ("runner 0.3.2 · server 0.4.0 · update").
   - Change "Settings" to "Administration" in ui-spec §4.11.
 - **Found by:** ux-reviewer (b), ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §3.2 (merged with SR-022); ui-spec §4.11; pending: tool: shared board fixture (spike S-R7-2); board data fixes and skew warning
 
 ### UX-226 · minor · Branding lets admins recolour status colours with no rule linking them to run states
 
@@ -613,7 +613,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Problem:** it is undefined whether `danger` recolours Failed and the gauge, or only depictio-style alerts. A custom value can fall below AA.
 - **Proposal:** in admin §4.1: `success`, `warning` and `danger` map to `--sp-state-succeeded`, `--sp-state-review` and `--sp-state-failed` (fg, bg and rail derived); the panel blocks values below 4.5:1 for `-fg` on white and on the dark surface; running, paused, queued and cancelled are not brandable.
 - **Found by:** ux-reviewer (b)
-- **Status:** inbox, assumed: admin §4.1 says the brand status colours style alerts only and run states keep their own tokens (as AdminBranding already says), and the panel refuses `-fg` values below 4.5:1 — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §4.1 (assumed — pending Thomas, inbox #30); pending: board AdminBranding (contrast check)
 
 ### UX-227 · minor · Boards show features outside the MVP without marking them
 
@@ -633,7 +633,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Proposal:** one route: Environment → "Connect a runner" (EnvConnect) issues the registration token; fix the copy on all four boards; Admin → Runners anchors to `AdminHealth#runners`; keep the Users → Runners tab read-only with a link to the environment.
 - **Related:** R12 UX-124 covers the token's values, not where it comes from.
 - **Found by:** ux-reviewer (b)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §2.1; ui-spec §4.8, §4.9; pending: boards Environments, EnvKubernetes, SettingsServiceAccounts, AdminNav; SettingsUsers (inbox #20); EnvConnect (inbox #12)
 
 ### UX-229 · minor · The desktop Maintenance board contradicts admin §4.4
 
@@ -643,7 +643,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Proposal:** remove the "Keep runners executing" option (recommended) or add it to admin §4.4 with its effect on runs; limit tones to Info and Warning; make the header switch a read-only status, with "Turn on now" and "Schedule" as the only actions.
 - **Related:** UX-214 (phone), R1 SR-038.
 - **Found by:** ux-reviewer (b)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §4.4; pending: board AdminMaintenance
 
 ### UX-230 · minor · The phone top bar hard-codes the Spectio emblem, so branded instances lose their brand on phones
 
@@ -652,7 +652,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Problem:** a branded instance shows a branded desktop and an unbranded phone.
 - **Proposal:** `logo` / `logoDark` / `logoMode` props on MobileTopbar, falling back to the emblem; "Powered by Spectio" in the More sheet footer when the emblem is hidden; section colours read from the branding layer; one branded phone variant using AdminBranding's "Demo Lab Spectio" preset. Mention branding in ui-spec §4.11.
 - **Found by:** ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §4.11; pending: boards MobileTopbar, MMore, MOverview, branded phone variant
 
 ### UX-231 · minor · Phone navigation dead-ends in desktop boards and `#` links
 
@@ -663,7 +663,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Problem:** no phone design exists for Profile (tokens, sign out), search, workflow or environment detail, or the read-only admin pages MAdmin promises.
 - **Proposal:** add MProfile, MSearch (a sheet over `GET /search`), MWorkflowDetail, MEnvironmentDetail and a generic read-only MAdminSection; extend the ui-spec §4.11 screen table to cover them.
 - **Found by:** ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §4.11; pending: boards MProfile, MSearch, MWorkflowDetail, MEnvironmentDetail, MAdminSection; Sign out (inbox #20)
 
 ### UX-232 · minor · CLI-launched runs (`nf-spectio`) have no phone representation
 
@@ -673,7 +673,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Proposal:** a "CLI · observed" or "CLI · adopted" chip on run cards; an MRunDetail variant with the adopt banner and ⋯ limited to the level's actions; "Launched · alice@hpc-login-1 · terminal (nf-spectio)".
 - **Related:** UX-222, R12 UX-116.
 - **Found by:** ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §4.11; pending: boards MRuns, MRunDetail
 
 ### UX-233 · minor · Phone boards only work at demo scale: large lists, large plates, long names
 
@@ -681,7 +681,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Evidence:** MRuns shows "All 312" with no paging or end-of-list marker; the MReview plate map is hard-wired to 8×12 (384 or 1,536 wells would give cells of about 11 px and 5 px); MReviewCells lists every sample although `GET /gates/{id}/items` is "paged, filterable" (api §5); truncated titles expose the full name only on hover. Reviewer (b) also asks for 60-character workflow and environment names and a 500-workflow catalogue.
 - **Proposal:** infinite scroll with "Showing 50 of 312" and a jump to search; Items defaults to flagged first, paged through the API; the plate map is an overview for 96 wells, with a quadrant picker above that; a tap on a truncated title opens a details sheet; an MReviewItems-500 variant; long-name variants on desktop cards and breadcrumbs.
 - **Found by:** ux-reviewer (c), ux-reviewer (b) (long names, large catalogue, from b205)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §4.11; pending: boards MRuns, MReview, MReviewCells, MReviewItems-500, MobileTopbar, long-name desktop variants
 
 ### UX-234 · minor · Phone pinned bars: content shows through, chips are clipped, Next stays enabled with an open issue
 
@@ -693,7 +693,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Top bar, action bar and tab bar take about 250 of 844 px; no `env(safe-area-inset-bottom)`.
 - **Proposal:** an opaque backdrop under the tab bar covering the bottom inset (`padding-bottom: max(8px, env(safe-area-inset-bottom))`); a solid action-bar background; end the chip row with "+1"; disable Next with "Fix 1 issue in Input / output", or allow it with a warning (decide in ui-spec §4.6); hide the tab bar while a pinned action bar shows on Review and Launch detail.
 - **Found by:** ux-reviewer (c)
-- **Status:** inbox, assumed: Next disabled with its reason ("Fix 1 issue in Input / output"), recorded in ui-spec §4.6, plus the opaque bars and safe-area padding — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §4.6, §4.11 (assumed — pending Thomas, inbox #30); pending: boards MLaunch, MReview, MReviewCells, MRuns
 
 ### UX-235 · minor · Contrast failures on primary buttons, the Review badge, switches and helper text
 
@@ -708,7 +708,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Problem:** the primary actions and the most visible counter in the app are among the least legible elements. A section colour is used as a button fill, which no token allows, and the review-state amber fills an action although the tokens say "Run-state colours never appear in the brand".
 - **Proposal:** `--sp-accent` (`#7750D4`, 5.41:1) for primary buttons; section colours for tints and icons only; `--sp-state-review-fg` `#8F5806` (5.89:1) for amber fills such as the badge; `--sp-ink-400` for switch tracks; `--sp-text-faint` or `--sp-ink-500` for helper text; a 1 px divider between bar segments; a contrast check for `color` / `background` pairs in the board lint.
 - **Found by:** ux-reviewer (a), ux-reviewer (b), ux-reviewer (c)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): ui-spec §3.4 (new); pending: boards EnvCapacity, MWorkflows, MobileTabbar, AdminMaintenance, Launch, MAdmin, LaunchChain, MReviewQueue; tool: contrast check in the board lint
 
 ### UX-236 · minor · Focus ring, disabled state, active tab and truncated names on the core boards
 
@@ -719,7 +719,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - RunsTable.dc.html:78: run names are cut ("rnaseq-3.27-validati…") with no full name in a `title` or accessible name.
 - **Proposal:** `label:focus-within{outline:2px solid var(--sp-line-focus)}`; a real disabled button with the reason outside it, in a `--sp-text-secondary` line linked by `aria-describedby`; `aria-current="page"` on the active tab; the full name as the accessible name and in a visible detail on tap or focus.
 - **Found by:** ux-reviewer (a)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** accepted (TRIAGE1, 2026-10-27); not applied (APPLY1): board-only fix (rule already in ui-spec §4.6); boards RunsTable, ReviewQueue, Launch, RunDetail deferred
 
 ### UX-237 · minor · Clipped columns and truncated instructions
 
@@ -731,7 +731,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Problem:** retention, the key fact of a location, is unreadable, and the restore steps hide their instructions.
 - **Proposal:** retention as a second line under the path, or an expandable row; `overflow-wrap:anywhere` on container references; shorter stepper subtitles, or the full text under the active step only; a sticky Task column on RunScheduler and CPU efficiency or Node hidden below 1440 px.
 - **Found by:** ux-reviewer (b), ux-reviewer (a)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** accepted (TRIAGE1, 2026-10-27); not applied (APPLY1): board-only fix; boards EnvStorage, WorkflowSnakemake, AdminRestore, RunScheduler deferred
 
 ### UX-238 · minor · The Review boards call a run waiting at a gate "paused"
 
@@ -739,7 +739,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Evidence:** the boards say "paused after stage 2 of 4 · waiting 47 min". ui-spec §3.1 defines Paused (violet) as "Stopped on request" and distinct from Awaiting review. The Legend says "Awaiting review · Gate after stage 2 · since 12 min".
 - **Proposal:** header "Awaiting review · gate after stage 2 of 4 · 47 min" with the flag icon (§3.1 card rule); keep "paused" for the Paused state only.
 - **Found by:** ux-reviewer (a)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** accepted (TRIAGE1, 2026-10-27); not applied (APPLY1): board-only fix (ui-spec §3.1 already distinguishes the states); Review and the 11 Review* boards deferred
 
 ### UX-239 · minor · The Health board's heartbeat timing and runner table disagree with the specs
 
@@ -747,7 +747,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
 - **Evidence:** the board says "Each runner sends a heartbeat every 15 s and is marked offline after 60 s". admin §3.2: "every 30 s … marked offline after 3 missed heartbeats". schedulers §10 (l.286): "Health → Runners shows each observer's layers, interval, last success and latency"; the table has only Version, Environment, Status, Heartbeat, Runs and Last error.
 - **Proposal:** the spec values (30 s, offline after 90 s); an expandable row per runner with its observer layers (L1–L5), interval, last success, latency and stale state.
 - **Found by:** ux-reviewer (b)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** accepted (TRIAGE1, 2026-10-27); not applied (APPLY1): board-only fix, specs already state the values (admin §3.2, schedulers §10); board AdminHealth deferred
 
 ### UX-240 · minor · Creating a user shows a plaintext password instead of offering a sign-in link
 

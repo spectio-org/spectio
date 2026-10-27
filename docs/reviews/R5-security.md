@@ -2,7 +2,7 @@
 
 **Step page:** [R5](../progress/W1/R5.md)
 
-**Round:** R5 (security) · **Date:** 2026-10-26 · **Found by:** security-reviewer · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 4 accepted, 0 rejected, 26 inbox (6 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
+**Round:** R5 (security) · **Date:** 2026-10-26 · **Found by:** security-reviewer · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 4 accepted, 0 rejected, 26 inbox (6 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md) · APPLY1 (2026-10-27): 2 applied, 7 partly applied, 1 not applied
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l.") and `§n:line` references refer to that commit.
@@ -180,7 +180,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - The site prerequisite is documented: `PrivateData=jobs` is recommended.
   - **Test:** a synthetic pipeline that dumps `env` finds no long-lived secret.
 - **Found by:** security-reviewer
-- **Status:** inbox, assumed: per-run credentials delivered as 0600 files in the run directory, never through `sbatch --export`; head jobs use `--export=NONE`; derived short-lived credentials where the secret backend supports them; job names and comments carry no project or sample names; `PrivateData=jobs` documented as a recommended site prerequisite (owner architecture §3.2, linked from schedulers) — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): architecture §2.1 (new); schedulers §3.1, §12 (assumed — pending Thomas, inbox #14); pending: site prerequisite line in schedulers §6 (inbox #14, #25)
 
 ### SEC-104 · major · No endpoint → action → scope → role matrix, so "every endpoint has a principal and a `can()`" cannot be checked
 
@@ -237,7 +237,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Credentials and Spectio's own files are always denied.
   - **Tests:** the glob `../../.ssh/*`, a symlink to `$HOME` and an absolute path in a forged event are all refused.
 - **Found by:** security-reviewer
-- **Status:** inbox, assumed: runner reads confined to per-run roots (realpath, symlinks followed only inside a root or the run's engine work directory), server sends (run, root, relative path) only; owner checking §11.1, linked from schedulers §6; compatibility with symlink publishDir checked in spike `sec-runner-confinement` — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): checking-scenarios §11.1 (assumed — pending Thomas, inbox #25); pending: link from schedulers §6 (inbox #14, #25); `list_dir` shape (UX-117); spike `sec-runner-confinement`
 
 ### SEC-106 · major · The runner credential has no route allow-list, and it can forge the check values that drive auto-approval
 
@@ -292,7 +292,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Register the `spk_` prefix with GitHub secret scanning **[to be validated: partner programme terms]**.
   - **Test:** seed a canary secret in params, env, a webhook URL and a backup passphrase. Then grep every sink, the crate and the DB dump for it.
 - **Found by:** security-reviewer
-- **Status:** inbox, assumed: one redaction function owned by admin §3.4, applied to event ingest, logs, task arguments and results, audit diffs, crate export and telemetry; `SecretRef` task arguments; GitHub secret-scanning registration left to Thomas — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §3.1, §3.4; api §7; synthesis §7quinquies (assumed — pending Thomas, inbox #27); pending: GitHub secret-scanning registration of `spk_` (Thomas, inbox #27); spike `sec-redaction-canary`
 
 ### SEC-108 · major · Ingest credentials for observed runs are undefined, and tokens may land on command lines, in configs and in captured run metadata
 
@@ -384,7 +384,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - A prefilled launch shows every non-default param and flags the params that load code.
   - **Tests:** a zip-slip crate, an `ext::` URL and an import with a foreign run ID are all refused.
 - **Found by:** security-reviewer
-- **Status:** inbox, assumed: imports treated as untrusted input: IDs re-minted, `--overwrite` only inside the target project, imported decisions as `imported_from` provenance, no webhooks, plugin instances, service accounts or tokens imported, imported manifests inert, safe crate extraction with JSON-LD remote loading off, git URLs https or ssh only, code-loading params flagged (api §5, admin §4.3) — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §4.3; api §5; synthesis §7quinquies; ui-spec §4.6 (assumed — pending Thomas, inbox #25); pending: boards Launch, WorkflowImport (inbox #25); policy review of imported manifests (SEC-114, inbox #19)
 
 ### SEC-111 · major · Agent decisions on gates are not bounded or reversible, and they record a self-reported identity
 
@@ -444,7 +444,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
     - Embeds stream with `fetch()` and a header, or with a single-use stream ticket valid for 60 s.
   - **Tests:** two-tenant search and SSE fixtures; revoking a grant during a stream closes it; no `token=` appears in access logs.
 - **Found by:** security-reviewer
-- **Status:** inbox, assumed: every event carries `project_id` or `environment_id`; SSE fan-out filtered per event against an authorization cache invalidated on grant changes; search built from per-type list queries joined on `visible_projects`; embeds stream with `fetch()` and a header or a single-use 60 s ticket (owner api §8) — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): api §8 (assumed — pending Thomas, inbox #13); pending: link from api §9 (inbox #13); admin §3.4 live log tail
 
 ### SEC-113 · major · Identities are linked by email across IdPs, and group sync is not namespaced or kept away from protected groups
 
@@ -724,7 +724,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - Linking an SSO identity to an `unverified` principal ends all of its sessions and asks for confirmation (SEC-113).
   - **Tests:** provisioning an existing user with wider grants puts only a scoped link in the result JSON; the first SSO login on a provisioned principal revokes earlier sessions.
 - **Found by:** security-reviewer
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): auth §4; pending: auth §6 test row (inbox #15); `unverified` state in api §7 (inbox #20); auth §2 SSO matching and magic-link row (inbox #20, #21)
 
 ### SEC-124 · major · Plugins run in-process with full trust; "plugins never touch the database" is a convention, not a boundary
 
@@ -770,7 +770,7 @@ Spec short names: [auth](../specs/authentication-and-access.md), [api](../specs/
   - A replay must still pass `can(read)` on the stored result.
   - **Test:** tenant B reuses tenant A's key and gets a new run, or 422, never A's run.
 - **Found by:** security-reviewer
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): api §4, §5, §7
 
 ---
 
@@ -800,7 +800,7 @@ Minor findings were checked for their quotes but less deeply than blockers and m
     - no analytics on `/admin/*` or on gate decision routes.
   - **Test:** a README containing `<img onerror>` does not execute.
 - **Found by:** security-reviewer
-- **Status:** inbox, assumed: baseline browser hardening written in auth §3 (CSP baseline except embed routes, Trusted Types, sanitised Markdown with no raw HTML, session ID rotated on login and privilege change) and no analytics on `/admin/*` or gate decision routes (telemetry §4.2); the `__Host-` cookie waits for the co-hosting answer (SEC-109) — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): auth §3.1 (new); telemetry §4.2, §5; ui-spec §4.7 (assumed — pending Thomas, inbox #23); pending: `__Host-` cookie (inbox #23); auth §6 XSS test row (inbox #15)
 
 ### SEC-127 · minor · Admins can sign in as any user without that being recorded, and sensitive admin actions have no step-up
 
@@ -865,7 +865,7 @@ Minor findings were checked for their quotes but less deeply than blockers and m
     - IdP-initiated SAML keeps an assertion-ID cache until `NotOnOrAfter`, and requires a matching `Audience`.
   - **Test:** replaying the same IdP-initiated assertion is refused.
 - **Found by:** security-reviewer
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** accepted (TRIAGE1, 2026-10-27); not applied (APPLY1): blocked by inbox #20 and #21 (auth §2) and #15 (auth §6)
 
 ### SEC-130 · minor · `webhooks.secret_hash` cannot produce HMAC signatures
 
@@ -880,7 +880,7 @@ Minor findings were checked for their quotes but less deeply than blockers and m
   - **Test:** the DB dump does not contain the webhook secret.
 - **Related:** R1 SR-026 (webhooks are both a project table and a notifier plugin instance).
 - **Found by:** security-reviewer
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): api §7, §8
 
 ---
 

@@ -2,7 +2,7 @@
 
 **Step page:** [R1](../progress/W1/R1.md)
 
-**Round:** R1 (consistency) · **Date:** 2026-10-26 · **Found by:** spec-reviewer, four instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 13 accepted, 0 rejected, 40 inbox (25 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md)
+**Round:** R1 (consistency) · **Date:** 2026-10-26 · **Found by:** spec-reviewer, four instances in parallel · **Status of the round:** triaged (TRIAGE1, 2026-10-27): 13 accepted, 0 rejected, 40 inbox (25 assumed) · triage: [TRIAGE1](../progress/W2/TRIAGE1.md) · APPLY1 (2026-10-27): 11 applied, 26 partly applied, 1 not applied
 
 **Sources.**
 - **Branch and commit:** `autopilot/integration` at `3b209d3`. Line numbers ("l.") refer to that commit.
@@ -189,7 +189,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - Ship heavy bindings as an extra (`spectio[checks]`) or as separate check plugins so the 80 MB budget holds, and state which extra 0.1 needs (see SR-027).
   - api §3 links to architecture §2 instead of restating the table (SR-049).
 - **Found by:** spec-reviewer (b) SR-202, (c) SR-303, (d) SR-401
-- **Status:** inbox, assumed: source binding (file → values) on the runner, verdict on the server, owned by checking §11.1; heavy bindings in an extra — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §3.1; architecture §2, §6, §7.3; checking-scenarios §11.1 (assumed — pending Thomas, inbox #28); pending: architecture §3.6 `CheckProvider` signature and §7.6 'evaluate gate checks' (inbox #25); footprint of `spectio[checks]` (spike runner-footprint)
 
 ### SR-004 · blocker · `spectio.yml` has four shapes and no owner of its schema
 
@@ -208,7 +208,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - One policy block (`decide.humans / agents / auto_approve / timeout / on_timeout`), the object form of `evidence`, the keys of each check kind (SR-036), the `depictio:` and `ui:` keys, and the overlay merge rules.
   - Synthesis §5ter.1 gets a "superseded" note; ui-spec §5.1 keeps only "where stages come from"; api §6 and §13.3 link to §12.
 - **Found by:** spec-reviewer (a) SR-107, (d) SR-402
-- **Status:** inbox, assumed: checking §12 owns the `spectio.yml` schema; gate link `stages[].gate: <gate_id>`, `after_stage` dropped — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): api §13.3; checking-scenarios §12 (new, §12.1–§12.7); cli §2; synthesis §5ter.1; ui-spec §5.1, §9 (assumed — pending Thomas, inbox #29); pending: api §6 gate-policy sentence (inbox #13, #14, #15); checking §7 example keys (inbox #16, #19); overlay precedence (inbox #19); tool: JSON Schema in `spectio-sdk` and `spectio workflow validate`
 
 ### SR-005 · blocker · `tasks` names two different tables, ID spaces and endpoint families
 
@@ -231,7 +231,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - Split `log_records.task_id` into `engine_task_id` and `background_task_id`.
   - Update architecture §7.2/§7.6, admin §3.1/§4.3/§5 and reuse §1.1.
 - **Found by:** spec-reviewer (b) SR-201, (d) SR-407
-- **Status:** inbox, assumed: the ledger is renamed `background_tasks` (`btask_`, `/admin/background-tasks`); engine `tasks` unchanged — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): map (reading order 8); admin §1, §3.1, §3.4, §4.3, §5; api §5; architecture §7.2, §7.6; cli §2; ui-spec §2, §4.9 (assumed — pending Thomas, inbox #29); pending: depictio-ecosystem-reuse §1.1 (inbox #26); boards AdminTasks and AdminNav labels → 'Background tasks'
 
 ## Majors
 
@@ -253,7 +253,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - For terminal runs, cli §2 owns the choice: either add `run nextflow|snakemake -- <args>` and a `login --configure-engines` option, or drop them from ui-spec §6 and 0001 in favour of `engine nextflow config --install` / `engine snakemake profile --install`. ui-spec §6 links to the result; the credential follows SR-001.
   - Add a CI check that every admin OpenAPI operation maps to a CLI command.
 - **Found by:** spec-reviewer (a) SR-115, (c) SR-313, (d) SR-418 (CLI part)
-- **Status:** inbox, assumed: add the cited commands to cli §2; `spectio login` stays the one-time engine setup (it runs `engine … --install`), no `run nextflow|snakemake` wrapper — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): cli §2, §6; ui-spec §6 (assumed — pending Thomas, inbox #28); pending: api §6 `spectio auth method enable oidc` (inbox #13, #14, #15); share-link CLI commands (inbox #18, #19); ingest credential written by `login` (inbox #11); CI: admin-operation → CLI-command test
 
 ### SR-007 · major · Phase labels do not map to release stages, and the phase tables contradict each other
 
@@ -288,7 +288,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** the two designs differ in process model, in which Snakemake version runs (the runner's or the workflow's) and in how to stop (API call vs SIGINT). The API worker would have to run inside the user's Snakemake environment, in the head job, which no spec describes. The CLI route breaks the logged "no subprocess" constraint as worded.
 - **Proposal:** Thomas picks one. Reviewer (a) recommends a CLI head job, which matches the boards, the synthetic suite and `ExecutionPlan.command`. Record the choice in the log, revise synthesis §2, §5ter.3 and §5ter.6, and restate the constraint as "no parsing of process output for tracking".
 - **Found by:** spec-reviewer (a) SR-106
-- **Status:** inbox, assumed: CLI head job (`--until`, `--forcerun`), constraint restated as "no parsing of process output for tracking" — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): synthesis §2, §5ter.3, §5ter.5, §5ter.6 (merged with CH-009); choice recorded in decisions/log.md (APPLY1 entry) (assumed — pending Thomas, inbox #28)
 
 ### SR-009 · major · Environment-variable and config-file names follow incompatible rules
 
@@ -306,7 +306,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - plugin env vars set only the default (untagged) instance, as Snakemake does; tagged instances come from the file or the UI;
   - api §13.1 points to cli §3 for the CLI file.
 - **Found by:** spec-reviewer (c) SR-309
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): architecture §0 item 4, §7.3; pending: api §13.1 CLI config row → cli §3 (inbox #21); architecture §3.2 derived-forms table (inbox #25; covered by the §7.3 rule)
 
 ### SR-010 · major · The WES facade has four release dates and is under-specified
 
@@ -344,7 +344,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - The claim that nf-core modules honour `task.ext.when` needs a source (nf-core modules template, file:line) or **[to be validated]**.
   - Specify rerun-from-stage for Nextflow, for example a generated per-process `ext` key that enters the task hash, **[to be validated]** in spike T2.
 - **Found by:** spec-reviewer (a) SR-105, (d) SR-403
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): checking-scenarios §11.3, §12.3; synthesis §5, §5bis, §5ter.1, §5ter.3, §5ter.5; ui-spec §4.6, §5, §5.1
 
 ### SR-012 · major · Gate decisions: five verb sets, two resource names, stale MCP tools and scopes
 
@@ -363,7 +363,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - Synthesis §5/§5bis/§5ter/§7bis get "Intervention = Gate; names superseded by api §5"; `interventions:resolve` becomes `gates:decide`. ui-spec §2 uses the same verbs.
   - Related, not duplicates: UX-106, UX-107 (more verbs), UX-110 (waiting for a signal), R12.
 - **Found by:** spec-reviewer (a) SR-109, (c) SR-312, (d) SR-404
-- **Status:** inbox, assumed: decisions `approve | apply | go_back | stop`; `reassign` and `wait` become gate operations; MCP tools named after gates — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): api/index.md; api §5, §7; cli §2; synthesis §5, §5bis, §5ter.2, §7bis; ui-spec §2 (assumed — pending Thomas, inbox #29); pending: checking §5 decision verbs (inbox #19); MCP tool names in api §5 and synthesis §5bis (inbox #19); gate assignment fields (inbox #14)
 
 ### SR-013 · major · Endpoint catalogues duplicated between api §5 and admin §5; three public config endpoints
 
@@ -379,7 +379,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - Remove the duplicated rows from the api §5 Admin row and keep the link; add `ui-manifest` and the admin audit-log endpoint.
   - One public `GET /api/v1/public-config` with sections `auth`, `branding` and `analytics`; `/auth/config` goes or becomes an alias.
 - **Found by:** spec-reviewer (b) SR-211, (c) SR-310 (endpoint part)
-- **Status:** inbox, assumed: `/api/v1/admin/*` for system admins only (admin §5), everything else at the root (api §5); one `GET /api/v1/public-config` — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §5; api §5 (assumed — pending Thomas, inbox #29); pending: auth §1 `GET /api/v1/auth/config` → `GET /public-config` section `auth` (inbox #15, #21); logout and session endpoints (inbox #20)
 
 ### SR-014 · major · Which Unix account runs a launch on a group-owned environment is undefined
 
@@ -410,7 +410,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** two schemas and two locking designs for one thing; advisory locks are per-session and do not exist on SQLite. The user-facing record is a third, undefined object. Each spec defers to the other.
 - **Proposal:** admin §3.1 owns the ledger schema (renamed per SR-005) and the screen; architecture §7.6 owns the mechanism and links to admin for the columns. Use one mechanism, a unique insert into `schedules(schedule_key, slot_start)`, portable to SQLite; only `worker` and `all` roles run the loops. Define "Jobs" as the api §4 `Operation`: a projection of the ledger that the caller created. Update map.md so that each aspect has one owner.
 - **Found by:** spec-reviewer (b) SR-214, (c) SR-315
-- **Status:** inbox, assumed: admin §3.1 owns the ledger schema, architecture §7.6 the mechanism; unique insert into `schedules(schedule_key, slot_start)`; Jobs = the api §4 `Operation` — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): map (reading order 6, 8); admin §3.1, §5; api §4; architecture §7.2, §7.6 (assumed — pending Thomas, inbox #29); pending: architecture §7.6 link to admin §3.1 and worker-role rule (inbox #25)
 
 ### SR-016 · major · Run and gate states: five vocabularies, no enum, a 2-of-11 WES mapping
 
@@ -431,7 +431,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - api §10 gets the full WES table: `queued`→QUEUED; `running`→RUNNING; `pausing`/`paused`/`awaiting_review`→PAUSED; `succeeded`→COMPLETE; `failed`→EXECUTOR_ERROR or SYSTEM_ERROR by failure class (schedulers §3.5); `cancelling`→CANCELING; `cancelled`→CANCELED.
   - ui-spec §3.1 maps every value to icon, word and colour, including the transient states. Synthesis §4, §5, §5bis and §5ter.2 link to §7.1 and are marked superseded.
 - **Found by:** spec-reviewer (a) SR-104, (b) SR-204, (c) SR-306, (d) SR-404 (state part)
-- **Status:** inbox, assumed: api §7.1 owns the lower-snake-case run and gate enums and the full WES mapping — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): api §7, §7.1 (new), §10; synthesis §4, §5, §5bis, §5ter.2; ui-spec §3.1 (assumed — pending Thomas, inbox #29); pending: boards: Legend and run lists (Pausing, Cancelling, head-silent and runner-offline flags); pause verbs (inbox #16, SR-018)
 
 ### SR-017 · major · Engine bridge behaviour when the server is unreachable: Tower-era text and no testable bound
 
@@ -453,7 +453,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 
   Rewrite synthesis §10 risk 2 accordingly (or mark the last sentence Tower-only); reword checking §11.1 l.259 ("for `when: task_done`, until reading declared outputs through the handler is validated, the runner lists the task work directory"); reword schedulers §3.2 ("only if `nf-spectio` fed scheduler states back into Nextflow; not planned").
 - **Found by:** spec-reviewer (a) SR-111, (b) SR-222, (d) SR-416
-- **Status:** inbox, assumed: the proposed testable bridge bounds (hooks ≤ 50 ms, buffer 24 h / 200 MB, backoff cap 5 min, spool read by the runner) in the ingest contract — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): checking-scenarios §11.1 (reconciled with FC-034); schedulers §3.2; synthesis §8 (rest superseded by CH-001) (assumed — pending Thomas, inbox #28); pending: api §14 bridge bounds (inbox #11)
 
 ### SR-018 · major · "Pause": immediate stop or after the current stage
 
@@ -481,7 +481,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** api §7 mandates CHECK constraints, so guest rows and plugin or bridge principals fail to insert. Instance-scoped plugins have no group for `owning_group_id`. Admins cannot list or expire guests.
 - **Proposal:** add `guest` to `principals.kind` with `expires_at` and `share_link_id`; add purposes `plugin` and `bridge`; make `owning_group_id` nullable for instance-scoped principals, owned by `system`; add "Guests" to the admin §2.1 filter; state in api §13.2 that guests are never mirrored to depictio.
 - **Found by:** spec-reviewer (b) SR-207
-- **Status:** inbox, assumed: add `guest` kind, `plugin` and `bridge` purposes, nullable `owning_group_id` for instance-scoped principals — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): api §7 service_accounts (assumed — pending Thomas, inbox #18); pending: `guest` principal kind, admin §2.1 'Guests' filter and api §13.2 mirroring rule (inbox #18, #21); api §6 kind list (inbox #13, #14, #15)
 
 ### SR-020 · major · The system-admin flag, protected groups and P.I. fields are missing from the schema
 
@@ -521,7 +521,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** a 0.3 runner on a login node against a 0.4 server, which is allowed to break, only gets a warning. Three version axes (SDK package, per-kind API, core) have no stated relation.
 - **Proposal:** add architecture §12 "Compatibility between components": a table for CLI ↔ server, runner ↔ server, bridge ↔ ingest `schema_version` (SR-001) and plugin ↔ SDK. Before 1.0, the runner and CLI must match the server's minor (otherwise refuse with exit 6 and an upgrade hint); from 1.0, N−1 minor. Plugins declare only the per-kind range; the SDK package version is independent. Question for Thomas (lag tolerance before 1.0).
 - **Found by:** spec-reviewer (c) SR-314
-- **Status:** inbox, assumed: architecture §12; before 1.0 the CLI and runners match the server minor (exit 6 otherwise), from 1.0 N−1 — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §3.2; architecture §4, §12 (new); cli §1 (assumed — pending Thomas, inbox #28); pending: architecture §3.1 example dependency (inbox #25); bridge ↔ ingest `schema_version` contract in api §14 (inbox #11)
 
 ### SR-023 · major · Gate checks depend on the depictio catalogue, but 0.1 has no depictio
 
@@ -576,7 +576,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** two storage models, two permission models (project owner vs plugin-instance scope) and two UIs for one object; the outbox worker has two sources of subscriptions.
 - **Proposal:** webhooks stay first-class (the `webhooks` table and `/webhooks` API, project-scoped, owned by api §8) and the outbox worker delivers them. Remove the `webhook` notifier from architecture §2/§9, or define it as the delivery code that reads the `webhooks` table. api §13.5 links to admin §1 (SR-039).
 - **Found by:** spec-reviewer (b) SR-212
-- **Status:** inbox, assumed: webhooks stay first-class (`webhooks` table, api §8); the `webhook` notifier is removed or reads that table — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): architecture §2 (Notifier row), §3.5 (assumed — pending Thomas, inbox #29)
 
 ### SR-027 · major · The base install's "nothing else" dependency rule is contradicted by the specs' own choices
 
@@ -588,7 +588,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** the base-install CI job and import-linter would encode a rule the design already breaks.
 - **Proposal:** cli §6 lists an explicit allow-list (`spectio-sdk`, pydantic, pydantic-settings, httpx, typer, rich, a YAML parser, and a WebSocket client if SR-002 picks WebSocket). keyring goes in `[keyring]`; Copier runs through `uvx copier`; check-provider dependencies are named. The < 80 MB budget stays the testable rule. Architecture §6 links to the list.
 - **Found by:** spec-reviewer (c) SR-308
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): architecture §4, §6; cli §0 item 3, §3, §6; pending: CI: base-install job and import-linter rule enforcing the allow-list; WebSocket client (inbox #12)
 
 ### SR-028 · major · The TypeScript client handles bearer tokens for the UI, which should use HttpOnly cookies
 
@@ -600,7 +600,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** following cli §5 rebuilds depictio's token-in-JavaScript pattern, which auth §3 rejects.
 - **Proposal:** cli §5 defines two modes: `session` (same origin, cookies, CSRF header, no token in JavaScript; used by the UI) and `bearer` (embed tokens and host plugins). reuse §1.3 copies only the retry logic.
 - **Found by:** spec-reviewer (c) SR-316
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): cli §5; pending: depictio-ecosystem-reuse §1.3 `authFetch` row (inbox #26)
 
 ### SR-029 · major · Project visibility has three values in the model and two in the UI
 
@@ -653,7 +653,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** nobody can tell which wheels a login node or the image needs, whether an extra installs a library or a plugin distribution, or what the plugin packages are called. As written, the image contains no server.
 - **Proposal:** in architecture §6, built-ins ship as modules inside `spectio` (runner side) and the server package (server side) and register entry points there; `plugins/` holds optional plugins only. Each auth or backend extra pulls its plugin distribution (`spectio[oidc]` → `spectio-plugin-oidc`). Directory name = `<name>`. Align the extras in architecture §7.3 and cli §6, decide between `spectio[server]` and `spectio-server`, and fix the image line.
 - **Found by:** spec-reviewer (c) SR-307
-- **Status:** inbox, assumed: built-ins ship as modules of `spectio` and of the server extra; one wheel with `spectio[server]`; extras aligned — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): architecture §0, §2, §6, §7.3, §7.4, §8; cli §6 (assumed — pending Thomas, inbox #29)
 
 ### SR-033 · major · `on_fail: open_gate` creates a gate with no items, policy or deciders
 
@@ -676,7 +676,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** the single `task_attempt_id` link contradicts the n:m model. The API catalogue, which is the OpenAPI source, misses three endpoints, two events and a table.
 - **Proposal:** api §5, §7 and §8 own the contracts: add the three endpoints, the two events, `environment_snapshots`, and `failure_class` on `spectio.task.failed`. Drop `task_attempt_id` in favour of `attempt_jobs`. schedulers §8 keeps the meaning and links to api. Define `failure_class` as an enum: `oom`, `timeout`, `preempted`, `node_failure`, `cancelled_external`, `image`, `tool_error`, `engine_fault`.
 - **Found by:** spec-reviewer (d) SR-408
-- **Status:** inbox, assumed: api §5, §7, §8 own the scheduler endpoints, events, `environment_snapshots` and the `failure_class` enum; `attempt_jobs` replaces `task_attempt_id` — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): api §5, §7, §8; schedulers §3.5, §8 (assumed — pending Thomas, inbox #29); pending: `GET /environments/{id}/capacity` and `POST /environments/{id}/preflight` in api §5 (inbox #20)
 
 ### SR-035 · major · Push transport needs an inbound Kafka consumer the architecture does not have
 
@@ -688,7 +688,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** it is unclear whether the server bridge or the runner observer consumes the topic. The topic carries every user's jobs on the cluster and nothing filters them per tenant. The phases disagree.
 - **Proposal:** in schedulers §3.3, make the Kafka consumer a transport of the runner's `SchedulerObserver`, filtering to the runner's own user before anything leaves the cluster; it is not an event bridge. Align its stage in dev-env §15 (SR-007; reviewer (d) suggests unscheduled).
 - **Found by:** spec-reviewer (d) SR-409
-- **Status:** inbox, assumed: the Kafka consumer is a transport of the runner's `SchedulerObserver`, filtered to its own user; its stage follows SR-007 — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** inbox, assumed: the Kafka consumer is a transport of the runner's `SchedulerObserver`, filtered to its own user; its stage follows SR-007 — pending Thomas (TRIAGE1, 2026-10-27); not applied (APPLY1): blocked by inbox #25 (schedulers §0 item 3 and §3.3)
 
 ### SR-036 · major · The `checks_as` preset shape requested from depictio does not match Spectio's check syntax
 
@@ -700,7 +700,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** depictio would build and validate a shape Spectio cannot read (`column` vs `from`; `by` and `k` undefined). Changing a contract across two projects later is costly.
 - **Proposal:** define the keys of each check kind in checking §4/§7 (or the new §12, SR-004), for example `outlier: {k, by}`, `relative: {against}`, and the preset file format. Send depictio that exact shape, without `from` (it comes from the catalogue output). Fix "match" to "path" in reuse §1.4.
 - **Found by:** spec-reviewer (d) SR-414
-- **Status:** inbox, assumed: check-kind keys defined in checking §4/§7; the draft request in reuse §3.7 aligned to them (sending it stays with Thomas) — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): checking-scenarios §4.1 (new); depictio-ecosystem-reuse §3 row 7 (assumed — pending Thomas, inbox #27); pending: depictio-ecosystem-reuse §1.4 `match` → `path` (inbox #26); checking §7 example (inbox #16, #19); sending the request to depictio (Thomas, inbox #27)
 
 ### SR-037 · major · SLURM job names: the head-job pattern and the Snakemake join do not work as written
 
@@ -713,7 +713,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** `--name spectio-<run_id>` matches only the head job, and the UUID is known only from a log line. `'spectio-*'` probably matches nothing; if it did, it would also match Snakemake task jobs and treat them as head jobs.
 - **Proposal:** name head jobs `spectio-head-<run_id>`. Reconcile from the batched `squeue --me --json` / `sacct --json` snapshot, filtered client-side on the name prefix and on `--comment=spectio:<run_id>`. For Snakemake, join on the prefix `spectio-<run_id>_` client-side; do not use `--name`. Validate in T3.
 - **Found by:** spec-reviewer (d) SR-411
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): schedulers §3.1 (head-job prefix, Runner restart); pending: none; the §3.4 Snakemake cell was superseded by FC-007
 
 ### SR-038 · major · Maintenance mode does not say which writes still work
 
@@ -725,7 +725,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
 - **Problem:** "read-only" is not testable. Engines keep sending events, so it is undefined whether `POST /ingest/events`, runner heartbeats and the runner channel, `check.evaluated`, robot signals (`/gates/{id}/signals`), sign-in, webhook delivery and the scheduled loops keep working; which status code a refused request gets; whether gate timeouts keep counting; and how long the bridges must buffer.
 - **Proposal:** add to admin §4.4 a table of endpoint families against the modes `normal`, `no-launch`, `read-only` and `restoring`. Ingest and the runner channel stay open in every mode except `restoring`. Refused writes return `503` with `Retry-After` and problem type `…/maintenance`. Gate timeouts pause during maintenance. Bridges must buffer at least the announced maximum window (proposed 2 h; see SR-017).
 - **Found by:** spec-reviewer (b) SR-215
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §4.4; pending: restore wizard step → mode `restoring` (inbox #24); bridge buffer bounds in api §14 (inbox #11)
 
 ## Minors
 
@@ -739,7 +739,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - ui-spec: "Auto-approve rules (Settings)" (§4.5, l.100); the phone More sheet lists "Settings" (§4.11, l.164); a bare "settings" control in the top bar (§2, l.28). Auto-approve rules live in the gate's `decide` policy, not in an admin page.
 - **Proposal:** write paths as "Administration → `<group>` → `<section>`"; api §11 and §13.5 link to admin §1 and ui-spec §4.9 instead of listing tabs; admin §4.5 lists Sign-in, Telemetry and Version check sub-panels; ui-spec §4.5 says "(from the gate's `decide` policy)"; the phone More sheet and the top bar say "Administration" (admins only).
 - **Found by:** spec-reviewer (a) SR-113, (b) SR-218 (Settings part), (c) SR-318, (d) SR-418 (Settings part)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §4.5; api §11, §13.5; architecture §3.1, §4, §10; auth §5; telemetry §0, §2.3; ui-spec §2, §4.5, §4.11; pending: depictio-ecosystem-reuse §1.1 (inbox #26); boards AppTopbar, MMore and admin boards titled Settings
 
 ### SR-040 · minor · Stale names: agent for runner, `perspectio`, companion plugin, Duplicate
 
@@ -751,7 +751,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - Run detail action "Duplicate" (ui-spec §4.4, l.86; §6, l.208) vs "'Duplicate' becomes the secondary 'Copy to a new launch'" (§4.6, l.124).
 - **Proposal:** "runner" for the Spectio process, "engine plugin" (`nf-spectio`, Snakemake logger) for the in-engine reporters, `spectio serve --with-runner` for the combined process, the cli §2 syntax for `runner connect`, "runners (depictio's watcher agents)" in admin §0.4, "`nf-spectio`" in ui-spec §5, and "Copy to a new launch" in ui-spec §4.4 and §6.
 - **Found by:** spec-reviewer (a) SR-112, (b) SR-218 (agent part), (c) SR-319, (d) SR-418 (agent part)
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §0; synthesis §1, §7quater, §8, §9; ui-spec §4.4, §5, §6; pending: boards RunDetail and Main still labelled 'Duplicate'
 
 ### SR-041 · minor · Run and review screens are specified outside ui-spec; two cross-references are broken
 
@@ -762,7 +762,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - "No run is lost (synthesis §7 risk register)" (schedulers §3.1, l.67). The risks are in synthesis §10.
 - **Proposal:** add Scheduler and Live checks to ui-spec §4.4 and Dashboard (conditional) to §4.5, each linking to its owning spec; add ui-spec §11 "Component states" (empty, loading, error, permission, n/a) and point §10.2 to it; fix the schedulers reference to synthesis §10.
 - **Found by:** spec-reviewer (a) SR-116
-- **Status:** inbox, assumed: Scheduler and Live checks tabs in ui-spec §4.4, Dashboard in §4.5, new ui-spec §11 component states — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): schedulers §3.1; ui-spec §4.4, §4.5, §10.2, §11 (new) (assumed — pending Thomas, inbox #29); pending: boards RunDetail tab bar (Scheduler, Live checks), ReviewReport / ReviewDashboard tab bar (Dashboard)
 
 ### SR-042 · minor · The built-in AI assistant has UI and a runner command but no API, data model or CLI entry
 
@@ -773,7 +773,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - No `ai` command in cli §2; no model-endpoint or agent-limit endpoint or table in api §5 or §7.
 - **Proposal:** architecture §2 (AI provider kind) owns model endpoints; add `/admin/ai/endpoints` and agent-limit fields to api §5/§7 and `spectio ai serve` to cli §2 (SR-006). Or mark ui-spec §4.9 item 2 as post-1.0. Per-agent launch limits overlap UX-126.
 - **Found by:** spec-reviewer (a) SR-117
-- **Status:** inbox, assumed: add `/admin/ai/endpoints`, agent-limit fields and `spectio ai serve`; the stage is left to SR-007 — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): admin §5; api §7; architecture §2; cli §2 (`ai` row); no stage claim (owned by dev-env §15) (assumed — pending Thomas, inbox #29)
 
 ### SR-043 · minor · "v1" means both the API path and a release; the API rule conflicts with 0.x semver
 
@@ -783,7 +783,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - "Kinds in v1: … `sink.depictio`, `sink.labid`, … `bridge.publish`" (admin §3.1, l.134). The depictio hand-off is after 0.1 (log, l.318); LabID and bridges come in phases 2 and 3 (architecture §9).
 - **Proposal:** api §4: "During 0.x, `/api/v1` may break in a minor release, announced in the changelog; the additive-only rule starts at 1.0.0." Elsewhere write "API v1" for the path and "0.1" / "1.0" for releases. Tag each background-task kind with its stage (SR-007).
 - **Found by:** spec-reviewer (b) SR-221
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §3.1, §4.2; api §4, §5 heading, §12; architecture §11; pending: api §6 'Flat in v1' (inbox #13, #14, #15); stage tag per background-task kind (inbox #16)
 
 ### SR-044 · minor · Superseded merge and staging rules remain in dev-env, map.md and auth
 
@@ -794,7 +794,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - "staging behind Tailscale Funnel" (map.md) and "For staging and demos" (auth §2, l.65). Staging was dropped (log, "Dev previews without a server").
 - **Proposal:** dev-env §0.6 and §8 say "Merges follow documentation-system §8" and link to the CLAUDE.md agent table; map.md says "dev previews (Cloudflare Pages, Codespaces), public instance from the beta"; auth §2 says "dev previews and demos".
 - **Found by:** spec-reviewer (c) SR-322
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): map (reading order 11); dev-env §0, §8; pending: auth §2 'For staging and demos' (inbox #20, #21)
 
 ### SR-045 · minor · The event catalogue is incomplete, and gate notifications have two paths
 
@@ -805,7 +805,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - The `gate.notify` background-task kind (admin §3.1, l.134) vs notifiers that subscribe through the outbox (architecture §3.5, l.164).
 - **Proposal:** api §8 lists every type (webhook, SSE-only, extension); `dashboard_ready` is marked after 0.1; drop `gate.notify` or define it as the outbox delivery to notifiers. See SR-052 for the `check.evaluated` name.
 - **Found by:** spec-reviewer (b) SR-219
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): admin §3.1; api §8
 
 ### SR-046 · minor · Pipeline identifier and workflow version key: `@` vs `/`, no column
 
@@ -817,7 +817,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - The CLI takes names (`--env embl-slurm`, `--project liver-tc`); the API takes prefixed IDs. How a name resolves is not specified.
 - **Proposal:** canonical form `<org>/<name>/<version>`; the CLI accepts `@` as input only and prints the canonical form. Add `workflow_versions.key` (unique per project) with a defined form for git and local sources. Define name → ID resolution: a project or environment slug unique per instance, or an error listing the candidates.
 - **Found by:** spec-reviewer (c) SR-320, (d) SR-420
-- **Status:** inbox, assumed: canonical `<org>/<name>/<version>`, `@` accepted as CLI input only; `workflow_versions.key`; slug-based name resolution — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): api/index.md; api §7; cli §2, §5 (assumed — pending Thomas, inbox #29)
 
 ### SR-047 · minor · Fixture workflows and step numbers in dev-env disagree with the playbook and with §10.1
 
@@ -828,7 +828,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - checking §11.5 validates the stop-file closure "on `nf-toy`".
 - **Proposal:** declare the §10.1 synthetic pipelines the fixture workflows; §3 becomes a pointer and keeps its number. `doctor.sh`, T1/T2 and checking §11.5 use `tests/pipelines/synthetic`. dev-env §9 links to `pipeline.yaml` instead of numbering steps itself.
 - **Found by:** spec-reviewer (c) SR-323
-- **Status:** inbox, assumed: the dev-env §10.1 synthetic pipelines are the fixture workflows; dev-env §3 becomes a pointer — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): next-phase T1–T4, P1; dev-env §1, §3, §9 (assumed — pending Thomas, inbox #28); pending: checking §11.3 `nf-toy` (inbox #19); tool: `dev/doctor.sh` paths
 
 ### SR-048 · minor · Untestable thresholds: "head silent" and the 10,000-file watch limit
 
@@ -838,7 +838,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - "A watch on 10,000 per-cell files is refused at save time" (checking §11.5). The number of matching files is unknown at save time.
 - **Proposal:** bridges send a heartbeat every 60 s when idle, as the Tower model does (synthesis §2bis); "head silent" = no event for 5 min while the last `squeue` shows the head job `RUNNING` (put the heartbeat in api §14, SR-001). A watch is refused at save time when `{key}` binds to a `children` kind; at run time, evaluation stops after N files per watch (for example 2,000) with the state "suspended: too many files".
 - **Found by:** spec-reviewer (d) SR-417
-- **Status:** inbox, assumed: 60 s idle heartbeat, "head silent" after 5 min; watches refused on `children` keys, run-time cap of 2,000 files — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): checking-scenarios §11.5; schedulers §7 (assumed — pending Thomas, inbox #28); pending: api §14 idle heartbeat (inbox #11)
 
 ### SR-049 · minor · api §3 repeats the plugin-kind table with the stale "broker" kind and another engine contract
 
@@ -848,7 +848,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - api §3 gives the engine contract as "launch, stop at stage, resume, cancel, event source"; in architecture §3.6, `cancel` belongs to `Launcher`, and `Engine` has `detect / describe / plan / plan_resume / collect / ingest`.
 - **Proposal:** replace the api §3 table with one sentence and a link to architecture §2; word the kinds as "task backend, pub/sub, event bridge". The log is append-only, so the "broker" wording of 2026-10-25 is corrected by a new log entry, not an edit.
 - **Found by:** spec-reviewer (b) SR-218 (broker part), (c) SR-317
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): api §3 (table removed, kinds owned by architecture §2); 2026-10-25 'broker' wording corrected in decisions/log.md (APPLY1 entry)
 
 ### SR-050 · minor · The backup and restore contract differs between the CLI and admin specs
 
@@ -860,7 +860,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - "the manifest signature" (l.268), although the manifest (l.239) has no signature field or signing key.
 - **Proposal:** decide whether partial restore by table exists (recommended: no, which removes `--tables`); use one verb, `verify`; fix the wizard count; define the signature (Ed25519 with the instance key, verifiable without the archive's own `keys/`).
 - **Found by:** spec-reviewer (b) SR-220
-- **Status:** inbox, assumed: no partial restore by table; one verb `verify`; four wizards; Ed25519 manifest signature with the instance key — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** partly applied (APPLY1, 2026-10-27): admin §4.3, §4.4; cli §2 (assumed — pending Thomas, inbox #24); pending: restore wizard steps and encryption rules, cli §2 backup example (inbox #24)
 
 ### SR-051 · minor · Kubernetes RBAC differs between specs, and the Nextflow head pod has none
 
@@ -871,7 +871,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - Nextflow "creates one Kubernetes `Job` per task (default since 26.10; `Pod` before)" (schedulers §1, l.43); dev-env also tests 25.10. That is done by the head pod, whose ServiceAccount is never specified. Nextflow's required permissions are **[to be validated]** (https://docs.seqera.io/nextflow/kubernetes); 25.10 needs `pods: create` **[to be validated on k8s-mini]**.
 - **Proposal:** schedulers §4 owns RBAC and defines two ServiceAccounts: the runner's (creates the head Job and watches) and the engine head's (create / delete / get / list / watch on pods and jobs, `pods/log`, by Nextflow version), validated in T4. Architecture §7.5 links to it.
 - **Found by:** spec-reviewer (c) SR-321, (d) SR-419
-- **Status:** accepted (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): next-phase T4; architecture §7.5; schedulers §4
 
 ### SR-052 · minor · Check-result vocabulary: `state` vs `verdict`, and how severity maps to them
 
@@ -882,7 +882,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - The SSE event is "`check.evaluated`" (api §8, l.248), while every other type is `spectio.*`.
 - **Proposal:** store the outcome (`pass` / `fail` / `provisional` / `too_large` / `error`) and the severity separately, and display warn / fail as outcome × severity. Name the column `verdict` in both specs; rename the event `spectio.check.evaluated` (SSE only). Extra states are covered by UX-103.
 - **Found by:** spec-reviewer (d) SR-415
-- **Status:** inbox, assumed: outcome and severity stored separately; column `verdict`; event `spectio.check.evaluated` — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): api §7, §8; checking-scenarios §11.1, §11.4 (assumed — pending Thomas, inbox #29)
 
 ### SR-053 · minor · ui-spec contradicts the logged shell and list decisions without a new log entry
 
@@ -893,7 +893,7 @@ SR-005 (two tables named `tasks`) is also a blocker: the first migration cannot 
   - "Card grid dropped" (log, l.104; ui-spec §4.3) vs "list patterns (card grid / table toggle)" (ui-spec §1.1, l.8) and "List pattern: card/table toggle (`ViewPicker`)" (§7, l.220).
 - **Proposal:** add a dated log entry recording the full-width top bar with logo and colour mode, and the sidebar below it. In ui-spec §1.1 and §7, say "table / rows toggle".
 - **Found by:** spec-reviewer (a) SR-114
-- **Status:** inbox, assumed: a new log entry records the full-width top bar; ui-spec §1.1 and §7 say "table / rows toggle" — pending Thomas (TRIAGE1, 2026-10-27)
+- **Status:** applied (APPLY1, 2026-10-27): ui-spec §1, §7; shell revision recorded in decisions/log.md (APPLY1 entry) (assumed — pending Thomas, inbox #29)
 
 ## Questions for Thomas
 

@@ -426,7 +426,7 @@ Only system admins may call these endpoints; everything else is in [`api-and-dat
 
 The canvas has a new "Administration" row:
 - Users, Groups, Service accounts, Projects (reworked);
-- Tasks, Logs, Health with Runners;
+- Background tasks (`AdminTasks`, still labelled Tasks on the board), Logs, Health with Runners;
 - Branding, Plugins, AI & agents (reworked);
 - Backups, Restore wizard, Maintenance;
 - a phone Administration screen.
