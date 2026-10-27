@@ -110,7 +110,7 @@ Snapshot this session's token usage: `python3 tools/dashboard/usage.py ~/.claude
 
 ## 5. Report (always, last)
 
-Refresh the dashboard when the Artifact tool is available (not in headless `run.sh`): build it with `tools/dashboard/gen.py` and `build.py` into the scratchpad, then publish `spectio-board.html` with `url` set to the dashboard link in `tools/dashboard/README.md`, so the link stays the same.
+Refresh the dashboard when the Artifact tool is available (not in headless `run.sh`): build it with `tools/dashboard/gen.py` and `build.py` into the scratchpad, read the dashboard once (`action: "read"` with that `url`, which also returns Thomas's answers stored in its `answers` collection), then publish `spectio-board.html` with `url` set to the dashboard link in `tools/dashboard/README.md`, so every session updates the same page.
 
 Run `python3 tools/autopilot/ready.py` and print its two lines verbatim, so a `/goal` evaluator can judge from the conversation:
 
