@@ -1,0 +1,80 @@
+name: ci
+
+# The single required CI check, ci-ok (docs/specs/dev-environment-and-testing.md §11, R8b DEP-T-001, inbox #26).
+# A change-detection job decides which pipeline workflows a PR needs; they are reusable workflows called here,
+# so a PR that skips them still gets a ci-ok result. security.yml runs on every PR and push, with no path filter.
+# Required checks: ci-ok here, docs-gate and pr-body in docs.yml. Never a job of a path-filtered workflow.
+on:
+  pull_request:
+  push:
+    branches: [main, autopilot/integration]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      synthetic: ${{ steps.paths.outputs.synthetic }}
+      real: ${{ steps.paths.outputs.real }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: {fetch-depth: 2, persist-credentials: false}
+      - id: paths
+        env:
+          EVENT: ${{ github.event_name }}
+        run: |
+          # On a PR the checkout is the merge commit: its first parent is the base branch tip.
+          if [ "$EVENT" = pull_request ]; then
+            git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
+            touched() { grep -qE "$1" "$RUNNER_TEMP/changed.txt" && echo true || echo false; }
+            synthetic=$(touched '^(tests/pipelines/synthetic/|\.github/workflows/(pipelines-synthetic|ci)\.yml$)')
+            real=$(touched '^(tests/pipelines/real/|\.github/workflows/(pipelines-real|ci)\.yml$)')
+          else
+            # Pushes to main and autopilot/integration: the synthetic scenarios always; the corpus runs nightly.
+            synthetic=true; real=false
+          fi
+          echo "synthetic=$synthetic real=$real"
+          { echo "synthetic=$synthetic"; echo "real=$real"; } >> "$GITHUB_OUTPUT"
+
+  security:
+    permissions:
+      contents: read
+    uses: ./.github/workflows/security.yml
+
+  pipelines-synthetic:
+    needs: changes
+    if: needs.changes.outputs.synthetic == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipelines-synthetic.yml
+
+  pipelines-real:
+    needs: changes
+    if: needs.changes.outputs.real == 'true'
+    permissions:
+      contents: read
+    uses: ./.github/workflows/pipelines-real.yml
+
+  ci-ok:
+    # Skipped jobs count as passing; only failure or cancelled fails (pattern: depictio depictio-ci.yaml:3144-3174).
+    if: always()
+    needs: [changes, security, pipelines-synthetic, pipelines-real]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions: {}
+    steps:
+      - env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          case " $RESULTS " in
+            *" failure "*|*" cancelled "*) echo "::error::a required CI job failed or was cancelled"; exit 1 ;;
+          esac

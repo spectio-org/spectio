@@ -1,0 +1,17 @@
+# Paths that never merge without Thomas's review (R8b DEP-T-008, inbox #26, decided 2026-10-27).
+# Enforced once branch protection on main and autopilot/integration sets require_code_owner_reviews
+# (docs/playbooks/autopilot.md §8). The last matching pattern wins.
+/.github/                       @weber8thomas
+/.claude/                       @weber8thomas
+/CLAUDE.md                      @weber8thomas
+/docs/playbooks/pipeline.yaml   @weber8thomas
+/tools/ci/                      @weber8thomas
+# Security exceptions are reviewed entries in each scanner's ignore file (dev-environment-and-testing.md §11).
+/.gitleaks.toml                 @weber8thomas
+/.gitleaksignore                @weber8thomas
+/.semgrepignore                 @weber8thomas
+**/osv-scanner.toml             @weber8thomas
+# Auth and secrets code, once it exists (architecture-plugins-and-packaging.md §6).
+/plugins/auth-*/                @weber8thomas
+**/auth/                        @weber8thomas
+**/*secret*                     @weber8thomas
