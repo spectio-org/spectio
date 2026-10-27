@@ -117,3 +117,37 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Commits.** `ef9a4cf` (specs), `0302826` (landing), `bd639db` (sketch), `ab8e4e0` (CSS review fixes), then the doc-review fixes. PR weber8thomas/spectio#12, preview https://pr-12.spectio.pages.dev.
 - **DOC-REVIEW** first pass verdict=changes score=10/14 (Host allow-list vs tunnel ports, undefined one-time token, Snakemake sbatch head stated as decided, §11 contradiction, stale owners and inbox notes, missing step record, landing owner not updated, emblem hover, a copied hex). All 15 fixed.
 - **New assumptions for Thomas.** Snakemake head via `sbatch` (fallback: on the login node); run directories under a runs root on the shared file system; local executor for tests only; token link = single-use 15-minute ticket swapped for an in-memory session cookie (a restart ends sessions); CI security fail policy.
+
+## 2026-10-27 14:03 → 16:35 UTC — tick 7 (inbox answers, then W3 batch D1 D3 D4 D5)
+
+- **Inbox answers first.** Thomas answered 24 entries in the dashboard. They are recorded in `docs/reviews/inbox.md` and the decision log entry "2026-10-27 — Inbox answers #5 to #37 (dashboard)" (`69c46ad`, doc-review fixes `60e03a8`, `ae36f3a`). Later-version spec edits wait for one apply pass after W3 (Thomas's choice).
+- **Budget:** Thomas's reading 64 % at about 14:25, limit 75 % (`budget.py start --weekly 11 --now 64`). Four build steps fitted. Step costs were not recorded, so the counter still reads 0 pt; a fresh `/usage` reading is needed before the next step.
+- **Finished:** D5, D1, D3, D4, claimed in `98d74c2`. Each step got its own worktree and branch and was squash-merged into the integration branch.
+
+  | Step | PR | Squash | code / security review | rounds | doc-review |
+  |---|---|---|---|---|---|
+  | D5 dev previews | weber8thomas/spectio#13 | `5eb2542` | approve / approve | 2 | approve 12/14 |
+  | D1 Claude setup check | weber8thomas/spectio#14 | `74fd447` | approve / approve | 1 | approve 14/14 |
+  | D3 toolchain, bootstrap, doctor | weber8thomas/spectio#15 | `fc19981` | approve / approve | 2 | approve 13/14 |
+  | D4 CI, security checks, Claude review | weber8thomas/spectio#16 | `6a6338b` | approve / approve | 3 | approve 14/14 |
+
+- **Exit checks and step tests, on the integration branch after the merges:**
+  - D3 `bash dev/doctor.sh`: exit 0, `doctor: all layers passed (2 skipped)`. sind and kind are skipped on cgroup v1 here; all six layers pass in CI (`dev-env.yml`).
+  - D4 `ZIZMOR_OFFLINE=true bash tools/ci/security.sh all`: exit 0 (no leaks, no dependency issues, 0 SAST findings, 0 workflow findings). Online zizmor audits need a GitHub token: 401 in this session, green in CI.
+  - D1 and D5 have no `exit_check`. Their checks (`claude-config`, `preview`) were green on their PRs.
+  - `python3 tools/docs/check.py`: 0 failures.
+- **Merge conflicts:** `docs/assets/media.yaml`, `previews.yml`, the decision log and dev-env §11, because the parallel steps all edit them. Each was resolved by merging the integration branch into the step branch and keeping both sides; nothing was rebased or force-pushed.
+- **CI incidents:**
+  - D3's first `docs-gate` hung for 29 min on a slow apt mirror while Playwright installed its fonts. It was cancelled and re-run once, and passed in 1 min 37.
+  - `pipelines-real`, the corpus of real pipelines, is red: 18 of 23 jobs failed in the nightly run on `main`, and 5 of 9 in the PR tier on D4. It is kept out of `ci-ok` until T7, but still runs and reports its own checks.
+  - Causes found so far:
+    - methylseq 4.2.0 and viralrecon 3.0.0: Nextflow 26 refuses configs that include files missing from the release;
+    - dna-seq-gatk-variant-calling v2.1.1: conda can no longer solve `bcftools=1.10`;
+    - molkart and rnaseq: not diagnosed, because `run_corpus.py` does not print `run.log`.
+- **Triage:** none (build steps). New inbox entries #41–#44 (D3).
+- **Waiting on Thomas:**
+  - **D5:** rename the Cloudflare secrets to `CLOUDFLARE_*`, check Codespaces live, and add `wave-approved` himself.
+  - **D1:** SEC-D1-03; whether `claude-config` becomes a required check; PyYAML hash pinning.
+  - **D3:** inbox #41–#44.
+  - **D4:** the Claude review secret; the release App ID and key in the `release` environment; `RELEASE_PLEASE_ENABLED`; the branch protection from autopilot §8; whether the autopilot gets its own GitHub identity; whether to switch to `client-id`.
+  - **Earlier answers:** confirm #14 and #32; allow deleting the old branch (#5); the GitHub App (#8).

@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T14:26:56Z",
+  "updated_at": "2026-10-27T16:35:00Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -289,12 +289,23 @@
     },
     "D4": {
       "wave": "W3",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T14:26:56Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "",
+      "finished_at": "2026-10-27T16:29:00Z",
+      "outputs": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/security.yml",
+        ".github/workflows/claude-review.yml",
+        "tools/ci/security.sh",
+        ".github/CODEOWNERS",
+        ".gitleaks.toml",
+        ".gitleaksignore",
+        ".github/zizmor.yml",
+        "docs/progress/W3/D4.md",
+        "docs/reviews/code/D4.md"
+      ],
+      "notes": "PR weber8thomas/spectio#16 squash 6a6338b; test command ZIZMOR_OFFLINE=true bash tools/ci/security.sh all exit 0 (online zizmor needs a GitHub token, 401 here); CODE review=approve, security=approve, rounds=3, simplify nochange; doc-review approve 14/14; pipelines-real kept out of ci-ok until T7 (5 corpus jobs red, also red on main); nf-core Slack webhook redacted from fixtures, still in history (inbox #5, #27)",
       "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
     },
     "D5": {
