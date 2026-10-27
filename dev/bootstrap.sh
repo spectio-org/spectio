@@ -5,8 +5,9 @@
 #   bash dev/bootstrap.sh          install or update the tools; touches no daemon
 #   bash dev/bootstrap.sh --ci     also start dockerd if needed and pre-pull the doctor's images
 #
-# Idempotent: a tool already at its pinned version is not downloaded again. Every download is
-# checked against its sha256 in versions.env. Tools go to $SPECTIO_HOME (default
+# Idempotent: a tool already at its pinned version is not downloaded again. Every binary and
+# tarball is checked against its sha256 in versions.env; Python and npm packages against the
+# hashes of dev/snakemake.lock.txt and dev/npm/package-lock.json. Tools go to $SPECTIO_HOME (default
 # ~/.local/share/spectio) and their commands are linked into $SPECTIO_BIN (default ~/.local/bin).
 # Prerequisites, not installed here: Docker, Java 21, curl, tar, xz, sha256sum (dev/doctor.sh checks them).
 # shellcheck disable=SC2317  # the install_* functions run through job(), which shellcheck cannot follow
@@ -61,7 +62,7 @@ install_tar() {
   if [ ! -d "$dir" ]; then
     fetch "$url" "$sha" "$dir.tar"
     mkdir -p "$dir.tmp"
-    tar -xf "$dir.tar" -C "$dir.tmp" --strip-components=1
+    tar -xf "$dir.tar" -C "$dir.tmp" --strip-components=1 --no-same-owner --no-same-permissions
     mv "$dir.tmp" "$dir"
     rm -f "$dir.tar"
   fi
@@ -79,9 +80,17 @@ install_python_and_snakemake() {
   install_uv
   # --no-bin: do not put python3.13 on PATH in front of the system Python.
   uv python install --no-bin "$PYTHON_VERSION"
-  uv tool install --python "$PYTHON_VERSION" "snakemake==$SNAKEMAKE_VERSION" \
-    --with "snakemake-executor-plugin-slurm==$SNAKEMAKE_EXECUTOR_SLURM_VERSION" \
-    --with "snakemake-executor-plugin-kubernetes==$SNAKEMAKE_EXECUTOR_KUBERNETES_VERSION"
+  # Snakemake, its plugins and every dependency from the hash-locked file, in a venv named
+  # after the lock, so a changed lock gets a fresh venv. The marker says the sync finished.
+  local lock=$SPECTIO_REPO/dev/snakemake.lock.txt venv
+  venv=$pkgs/snakemake-$(sha256sum "$lock" | cut -c1-12)
+  if [ ! -f "$venv/.installed" ]; then
+    rm -rf "$venv"
+    uv venv --quiet --python "$PYTHON_VERSION" "$venv"
+    uv pip sync --quiet --python "$venv/bin/python" --require-hashes "$lock"
+    touch "$venv/.installed"
+  fi
+  ln -sfn "$venv/bin/snakemake" "$SPECTIO_BIN/snakemake"
 }
 
 install_node_and_playwright() {
@@ -90,10 +99,14 @@ install_node_and_playwright() {
       "https://nodejs.org/dist/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64.tar.xz" \
       "$NODE_SHA256" bin/node bin/npm bin/npx
   fi
-  if [ "$(node -p "require('playwright/package.json').version" 2>/dev/null)" != "$PLAYWRIGHT_VERSION" ]; then
-    npm install --prefix "$NPM_PREFIX" --save-exact --no-audit --no-fund "playwright@$PLAYWRIGHT_VERSION"
+  # npm ci installs exactly the lock, checking each package's integrity hash.
+  if ! cmp -s "$SPECTIO_REPO/dev/npm/package-lock.json" "$NPM_PREFIX/package-lock.json"; then
+    mkdir -p "$NPM_PREFIX"
+    cp "$SPECTIO_REPO/dev/npm/package.json" "$SPECTIO_REPO/dev/npm/package-lock.json" "$NPM_PREFIX/"
+    npm ci --prefix "$NPM_PREFIX" --no-audit --no-fund
   fi
-  # Cloud sessions ship this version's Chromium (PLAYWRIGHT_BROWSERS_PATH); elsewhere download it.
+  # Cloud sessions ship this version's Chromium (PLAYWRIGHT_BROWSERS_PATH). Elsewhere Playwright
+  # downloads it from its CDN, over TLS but with no checksum we pin: the one unhashed download.
   if ! node -e "process.exit(require('fs').existsSync(require('playwright').chromium.executablePath()) ? 0 : 1)"; then
     if [ "$ci" = 1 ]; then
       node "$NPM_PREFIX/node_modules/playwright/cli.js" install --with-deps chromium

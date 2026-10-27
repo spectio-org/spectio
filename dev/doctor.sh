@@ -75,9 +75,10 @@ for v in "$NEXTFLOW_25_10_VERSION" "$NEXTFLOW_25_04_VERSION"; do
   pinned "nextflow-$v" "$v" "$(nf_version "nextflow-$v")"
 done
 pinned snakemake "$SNAKEMAKE_VERSION" "$(snakemake --version 2>/dev/null)"
-smk_python=$(uv tool dir 2>/dev/null)/snakemake/bin/python
-pinned smk-slurm "$SNAKEMAKE_EXECUTOR_SLURM_VERSION" \
-  "$("$smk_python" -c 'import importlib.metadata as m; print(m.version("snakemake-executor-plugin-slurm"))' 2>/dev/null)"
+smk_python=$(dirname "$(readlink -f "$(command -v snakemake)")")/python
+plugin_version() { "$smk_python" -c "import importlib.metadata as m; print(m.version('$1'))" 2>/dev/null; }
+pinned smk-slurm "$SNAKEMAKE_EXECUTOR_SLURM_VERSION" "$(plugin_version snakemake-executor-plugin-slurm)"
+pinned smk-kubernetes "$SNAKEMAKE_EXECUTOR_KUBERNETES_VERSION" "$(plugin_version snakemake-executor-plugin-kubernetes)"
 pinned sind "$SIND_VERSION" "$(sind version 2>/dev/null | cut -d' ' -f2)"
 pinned kind "$KIND_VERSION" "$(kind version 2>/dev/null | cut -d' ' -f2 | tr -d v)"
 pinned kubectl "$KUBECTL_VERSION" "$(kubectl version --client 2>/dev/null | sed -n 's/^Client Version: v//p')"
@@ -92,7 +93,7 @@ run docker run --rm "${HELLO_WORLD_IMAGE%@*}" && grep -q 'Hello from Docker!' "$
 ok docker "docker run hello-world ($((SECONDS - t))s)"
 
 if cgroup_v1; then
-  reason="Docker runs on cgroup v1 here; sind and kind need cgroup v2 (spike D2). They run in CI."
+  reason="Docker on cgroup v1; sind and kind need cgroup v2 (spike D2), so they run in CI"
   skip sind "$reason"
   skip kind "$reason"
 else
