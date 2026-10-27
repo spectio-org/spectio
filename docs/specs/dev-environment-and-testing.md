@@ -369,7 +369,7 @@ Both engines produce byte-identical results (the counts matrix compared with `di
 
 **Gate stops** use exactly what Spectio generates:
 - Nextflow: a config setting `ext.when = false` on later stages (`conf/stop_after_qc.config`), then `-resume`.
-- Snakemake: `--until qc_report` or `--until align_done`, then a plain rerun.
+- Snakemake: `--until qc_report` or `--until qc_report align_done`, then a plain rerun. `--until` runs only the dependencies of its targets, not sibling branches, so the second gate names both stages ([T1 note](../research/spike-t1-fixture-workflows-2026-10-27.md)).
 
 **Scenarios** are in `scenarios.yaml`. `run_scenarios.py` runs them and checks:
 - exit codes;
@@ -385,8 +385,8 @@ Both engines produce byte-identical results (the counts matrix compared with `di
 | `exclude_sample_and_resume` | samplesheet v2 without the outlier; downstream recomputed without it |
 | `flaky_retry` | failure on attempt 1, success on retry |
 | `oom_once_retry` | exit 137 once, success with more memory on attempt 2 |
-| `oom_fatal`, `timeout_fatal` | failure after 3 attempts with the right exit codes (137, 143 / 124) |
-| `tool_error_then_fixed_resume` | a non-retried tool error, then a resume after the fix |
+| `oom_fatal`, `timeout_fatal` | failure after 3 attempts with the right exit codes: 137; for the time limit, 143 on Nextflow 26.10, none on Nextflow 25.04 and 25.10, 124 on Snakemake ([T1 note](../research/spike-t1-fixture-workflows-2026-10-27.md)) |
+| `tool_error_then_fixed_resume` | a tool error, then a resume after the fix. Nextflow does not retry it; Snakemake's `--retries 2` restarts every failed job, so it runs 3 attempts ([T1 note](../research/spike-t1-fixture-workflows-2026-10-27.md)) |
 | `dynamic_fanout` | chunk count decided at run time (Nextflow dynamic channel, Snakemake checkpoint): 45 ALIGN tasks |
 | `fanout_medium` | 180 ALIGN tasks (PR) |
 | `fanout_stress` | about 12 000 ALIGN tasks (nightly) |

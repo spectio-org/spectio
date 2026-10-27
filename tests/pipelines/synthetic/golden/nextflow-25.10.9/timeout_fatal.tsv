@@ -1,0 +1,6 @@
+# nextflow 25.10.9 · timeout_fatal
+# run 1: exit 1
+run	process	status	exit	attempt	tag	count
+1	QC_STATS	FAILED	-	1	S05	1
+1	QC_STATS	FAILED	-	2	S05	1
+1	QC_STATS	FAILED	-	3	S05	1
