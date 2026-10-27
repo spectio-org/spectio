@@ -24,6 +24,7 @@
 - [Next phase](playbooks/next-phase.md): the prompt behind each pipeline step (review rounds, development layer, test infrastructure, planning).
 - [Inbox](reviews/inbox.md): the only place Thomas needs to look between runs.
 - [Reviews](reviews/README.md): one file per review round, and the finding format.
+- [Glossary](glossary.md): the codes W, F, R, D, T, P, TRIAGE, APPLY and GO, finding prefixes, severities, statuses and product terms.
 
 ## Decisions
 

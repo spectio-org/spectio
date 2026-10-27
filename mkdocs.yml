@@ -93,6 +93,7 @@ nav:
   - Developer:
       - developer/index.md
       - Documentation map: map.md
+      - Glossary: glossary.md
       - Progress:
           - progress/index.md
       - Specifications:
@@ -122,6 +123,8 @@ nav:
           - "R1: consistency": reviews/R1-consistency.md
           - "R2: open validations": reviews/R2-open-validations.md
           - "R2: verification table": reviews/verification-2026-10-26.md
+          - "R3: journeys": reviews/R3-journeys.md
+          - "R6: API contract": reviews/R6-contract.md
           - "R4: constraints": reviews/R4-constraints.md
           - "R5: security": reviews/R5-security.md
           - "R7: UI": reviews/R7-ui.md

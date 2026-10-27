@@ -20,7 +20,7 @@ Each review round writes one file here, `<round-id>.md` (e.g. `R1-consistency.md
 - **Major:** a real problem that will cost rework.
 - **Minor:** worth fixing, low risk.
 
-**ID prefixes:**
+**ID prefixes** (also in the [glossary](../glossary.md#21-finding-prefixes)):
 - `SR`: spec reviewer;
 - `FC`: fact checker;
 - `CH`: constraints hunter;
@@ -30,4 +30,5 @@ Each review round writes one file here, `<round-id>.md` (e.g. `R1-consistency.md
 - `TA`: test architect;
 - `IE`: infra engineer;
 - `DEP-T`: depictio liaison, tooling and ecosystem re-audit (R8b);
+- `DOC`: doc reviewer, the documentation review round (R11);
 - `CR`: code reviewer, one file per build step in `code/<step-id>.md` (`review-code` skill).

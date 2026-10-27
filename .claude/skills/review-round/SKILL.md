@@ -29,5 +29,7 @@ Focus: $ARGUMENTS
    - the full findings;
    - the questions for Thomas;
    - proposed spikes.
+
+   Then dispatch `diagram-artist` for the round map (`documentation-system.md` §3.4): the scope walked, with each blocker and major pinned by finding ID. Embed its light/dark pair at the top of the summary.
 5. **Check** that the docs still build: `uvx --with mkdocs-material mkdocs build --strict`. Add the review file to the `nav` in `mkdocs.yml` under "Reviews".
 6. **Stop.** Do not change specs in this step. Report the summary and ask Thomas which findings to accept, after which `/apply-findings $0` applies them.

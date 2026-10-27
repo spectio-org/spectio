@@ -33,6 +33,11 @@ STATUSES = {"running", "done", "blocked"}
 REVIEWS = {None, "approve", "changes", "block"}
 TITLE_RE = re.compile(r"^(feat|fix|docs|test|ci|chore|refactor|perf|build|revert|autopilot)(\([\w./-]+\))?!?: .+")
 PR_SECTIONS = ["## Summary", "## Docs", "## Evidence", "## Checks"]
+FIGURE_LIGHT = re.compile(r"assets/diagrams/[\w.-]+_light\.png#only-light")
+FIGURE_DARK = re.compile(r"assets/diagrams/[\w.-]+_dark\.png#only-dark")
+# Progress pages finished before the sketch-per-step rule (documentation-system.md §3.4, 2026-10-27).
+# A page leaves this list when it gets its figure.
+FIGURE_EXEMPT = {"W0/F3", "W0/F4", "W0/F6", "W1/R1", "W1/R11", "W1/R2", "W1/R4", "W1/R5", "W1/R7", "W1/R8", "W1/R9", "W2/APPLY1", "W2/TRIAGE1"}
 
 failures: list[str] = []
 
@@ -167,6 +172,9 @@ def check_progress() -> None:
         for heading in ("## What changed", "## Evidence"):
             if heading not in text:
                 fail("progress", f"missing section '{heading}'", rel)
+        key = f"{p.parent.name}/{p.stem}"
+        if fm.get("status") == "done" and key not in FIGURE_EXEMPT and not (FIGURE_LIGHT.search(text) and FIGURE_DARK.search(text)):
+            fail("progress", "a done step embeds its sketch pair, light and dark (documentation-system.md §3.4)", rel)
     print(f"progress: {len(pages)} pages checked")
 
 

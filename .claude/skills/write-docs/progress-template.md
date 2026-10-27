@@ -9,6 +9,9 @@ review: null             # approve | changes | block (set by doc-reviewer)
 
 !!! info "Running since YYYY-MM-DD"
 
+![What the step did, in one look](../../assets/diagrams/FIGURE_light.png#only-light)
+![What the step did, in one look](../../assets/diagrams/FIGURE_dark.png#only-dark)
+
 ## What changed
 
 ## Why

@@ -549,3 +549,10 @@ Step page: [APPLY1](../progress/W2/APPLY1.md).
   - `review-code`: chains them, with at most two fix rounds by the worker and the tests re-run after each change.
 - **Where it runs:** step 3 of the autopilot verification, before the docs ([`autopilot.md`](../playbooks/autopilot.md) §9). In P3, the task reviewer of subagent-driven-development gets Karpathy §2–3 as global constraints, and `review-code` runs once on the whole branch. The vendored superpowers skills stay unchanged (`.claude/skills/THIRD_PARTY.md`).
 - **Docs:** a `build` Progress page carries the `CODE` line and links `docs/reviews/code/<step>.md` ([`documentation-system.md`](../specs/documentation-system.md) §3.1).
+
+## 2026-10-27 — A sketch for every step
+
+- **Decision (Thomas):** every pipeline step gets more Excalidraw-style visuals, to make reviewing clearer and simpler.
+- **Rule:** every step leaves at least one sketch pair, placed first on its Progress page. This includes review, triage and apply steps, which needed none before. A review round also puts its map at the top of the review file ([`documentation-system.md`](../specs/documentation-system.md) §3.4; minimum per step kind in §3.1).
+- **Checked:** `check_progress` in `tools/docs/check.py` fails a `done` Progress page that has no light/dark pair. The 13 pages finished before the rule are listed in `FIGURE_EXEMPT` until they get their figure.
+- **Who:** `diagram-artist` draws the figures. `write-docs`, `review-round`, `doc-writer` and `doc-reviewer` were updated to match.
