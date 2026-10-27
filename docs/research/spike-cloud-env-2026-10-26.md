@@ -1,5 +1,7 @@
 # Spike D2: what a Claude Code cloud session can run (2026-10-26)
 
+**Step page:** [D2](../progress/W1/D2.md)
+
 **Question.** In a Claude Code cloud session, which of these work, and with what limits?
 - `docker run` and `docker compose`;
 - sind: create a cluster with 1 controller and 1 worker, then `sbatch --wait`;

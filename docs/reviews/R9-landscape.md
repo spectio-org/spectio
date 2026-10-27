@@ -1,5 +1,7 @@
 # R9 · Prior art and landscape
 
+**Step page:** [R9](../progress/W1/R9.md)
+
 **Round:** R9 (prior art and landscape, again) · **Date:** 2026-10-26 · **Found by:** fact-checker and constraints-hunter, in parallel · **Status of the round:** waiting for triage (TRIAGE1)
 
 **Sources.**

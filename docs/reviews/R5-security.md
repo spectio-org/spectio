@@ -1,5 +1,7 @@
 # R5 · Security and threat model (STRIDE per trust boundary)
 
+**Step page:** [R5](../progress/W1/R5.md)
+
 **Round:** R5 (security) · **Date:** 2026-10-26 · **Found by:** security-reviewer · **Status of the round:** waiting for triage (TRIAGE1)
 
 **Sources.**

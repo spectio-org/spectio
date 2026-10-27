@@ -1,5 +1,7 @@
 # R4 · Implementation constraints and risks
 
+**Step page:** [R4](../progress/W1/R4.md)
+
 **Round:** R4 (constraints) · **Date:** 2026-10-26 · **Found by:** constraints-hunter, two instances in parallel · **Status of the round:** waiting for triage (TRIAGE1)
 
 **Sources.**

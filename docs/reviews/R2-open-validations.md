@@ -1,5 +1,7 @@
 # R2 · Fact verification and open validations
 
+**Step page:** [R2](../progress/W1/R2.md)
+
 **Round:** R2 · Fact verification · **Date:** 2026-10-26 · **Found by:** fact-checker (three runs) · **Status of the round:** waiting for triage (TRIAGE1)
 
 **Scope.** Eight specs, checked in three parallel `/verify-claims` runs:

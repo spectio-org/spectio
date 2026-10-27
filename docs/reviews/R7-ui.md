@@ -1,5 +1,7 @@
 # R7 · UI review: missing states, accessibility, consistency, sign-in flows
 
+**Step page:** [R7](../progress/W1/R7.md)
+
 **Round:** R7 (UI review) · **Date:** 2026-10-26 · **Found by:** ux-reviewer, three instances in parallel · **Status of the round:** waiting for triage (TRIAGE1)
 
 **Sources.**

@@ -1,5 +1,7 @@
 # Verification of external claims · 2026-10-26
 
+**Step page:** [R2](../progress/W1/R2.md)
+
 **Round:** R2 · Fact verification · **Date:** 2026-10-26 · **Produced by:** three `fact-checker` runs (`/verify-claims`), merged in [R2-open-validations.md](R2-open-validations.md) · **Status:** waiting for triage (TRIAGE1)
 
 This is the full claim table that `verify-claims` asks for. It covers eight specs:

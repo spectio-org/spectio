@@ -1,5 +1,7 @@
 # Landscape of workflow monitoring, launch and steering tools (2026-10-26)
 
+**Step page:** [R9](../progress/W1/R9.md)
+
 **Question** (playbook round R9, [`next-phase.md`](../playbooks/next-phase.md)). What has changed since [`synthesis.md`](../specs/synthesis.md) was written (23–25/10/2026) among the tools next to Spectio? For each tool: licence, activity, overlap with Spectio, and anything worth reusing or integrating.
 
 **Short answer.**

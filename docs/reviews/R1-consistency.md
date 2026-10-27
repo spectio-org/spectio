@@ -1,5 +1,7 @@
 # R1 · Consistency across specs
 
+**Step page:** [R1](../progress/W1/R1.md)
+
 **Round:** R1 (consistency) · **Date:** 2026-10-26 · **Found by:** spec-reviewer, four instances in parallel · **Status of the round:** waiting for triage (TRIAGE1)
 
 **Sources.**
