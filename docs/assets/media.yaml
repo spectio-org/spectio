@@ -125,3 +125,7 @@ media:
       - docs/assets/diagrams/d1_claude_config_dark.svg
       - docs/assets/diagrams/d1_claude_config_light.png
       - docs/assets/diagrams/d1_claude_config_dark.png
+  - id: claude-config
+    kind: cast
+    generator: python3 tools/media/cast.py tools/media/casts/claude-config.yaml
+    outputs: [docs/assets/casts/claude-config.cast]

@@ -75,7 +75,7 @@ def build(theme: Theme) -> Sketch:
     # -- 3. why not `claude plugin validate` -----------------------------------------------------
     s.shade(1080, 110, 530, 560, fill="work", opacity=0.25)
     s.text(1104, 148, "the same broken fixtures", size=18, anchor="start")
-    s.text(1104, 170, "caught or passed, exit code of each tool", size=13.5, anchor="start", colour=t.dim)
+    s.text(1104, 170, "✓ caught (exit 1) · ✗ missed (exit 0)", size=13.5, anchor="start", colour=t.dim)
     s.text(1430, 214, "validate", size=13.5, weight="bold")
     s.text(1540, 214, "check", size=13.5, weight="bold")
     for k, (case, by_validate, by_check) in enumerate(CASES):
