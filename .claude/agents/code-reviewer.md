@@ -22,7 +22,7 @@ What you check:
 - **Tests.** They exercise real behaviour (not mocks of the thing under test) and would fail without the change. Noise or warnings in test output are findings.
 - **Simplicity** (`karpathy-guidelines` §2). Code that could be much shorter; single-use abstractions; configurability or error handling for impossible cases.
 - **Surgical changes** (§3). Edits to unrelated code, reformatting, refactors nobody asked for; orphans the change created and left behind.
-- **Repository rules.** `CLAUDE.md`: pinned versions, external facts with sources, no secrets, nothing under `main` directly. For auth, tokens, runners or plugins, flag that `security-reviewer` must also look.
+- **Repository rules.** `CLAUDE.md`: pinned versions, external facts with sources, no secrets, nothing under `main` directly. `security-reviewer` reviews every step's diff in parallel with you (`review-code` skill); you still report any security issue you see.
 
 Calibration: **blocker** = wrong behaviour, data loss, a leak, or a requirement missed; **major** = would cost rework or hides bugs (swallowed errors, tests that assert nothing, duplicated logic, needless complexity of 2× or more); **minor** = polish. Say what was done well first, briefly.
 

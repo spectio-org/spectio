@@ -232,7 +232,7 @@ Personal tokens, service-account tokens and agent tokens share one format (`spk_
 
 ### Single-user mode
 - `auth.mode: single` (the default for `spectio serve`). At first start Spectio creates: the instance, a user named after the OS account, a group `personal`, a project `default` owned by that group, and owner rights for the user.
-- Requests from `127.0.0.1` / a Unix socket without a token are treated as that user. Any remote access (another machine, a runner, an integration) still needs a token, created in Profile › Tokens or with `spectio token create`.
+- Requests from `127.0.0.1` / a Unix socket without a token are treated as that user. Not in 0.0.1: there, every request needs the token from a one-time link (revised 2026-10-27, [`dev-environment-and-testing.md`](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) §15.3). Any remote access (another machine, a runner, an integration) still needs a token, created in Profile › Tokens or with `spectio token create`.
 - The UI hides the project switcher and sharing controls while there is a single project and user; all API fields are still present.
 
 ### Moving to multi-user (no migration)

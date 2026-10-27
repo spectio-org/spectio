@@ -8,7 +8,7 @@ Three questions: what is done, what is being worked on, and what comes next. Spe
 
 <div class="sp-timeline">
 <div class="sp-tl sp-tl--now"><span class="sp-tl__dot"></span><b>Design</b><span class="sp-tl__when">now</span><p>Specifications, screen designs, test pipelines on both engines, reviews before any code.</p></div>
-<div class="sp-tl"><span class="sp-tl__dot"></span><b>0.0.1 · Local MVP</b><span class="sp-tl__when">after the go decision</span><p>One user, on one machine: launch a Nextflow or Snakemake run from the browser, follow its state, tasks and stages, relaunch it with changed parameters and see what changed, and stop it at one simple QC gate. What comes between 0.0.x and the private alpha is not decided yet. <a href="../specs/dev-environment-and-testing/#15-what-ships-in-which-version">What ships in which version</a>.</p></div>
+<div class="sp-tl"><span class="sp-tl__dot"></span><b>0.0.1 · First MVP</b><span class="sp-tl__when">after the go decision</span><p>The simplest version to try: launch, follow and relaunch Nextflow and Snakemake runs on your cluster from the browser. What comes between 0.0.x and the private alpha is not decided yet. <a href="../specs/dev-environment-and-testing/#15-what-ships-in-which-version">What ships in which version</a>.</p></div>
 <div class="sp-tl"><span class="sp-tl__dot"></span><b>0.2 – 0.4 · Private alpha</b><span class="sp-tl__when">with 3 to 5 EMBL groups</span><p>Installed from the docs in under 30 minutes, real pipelines every night, backups tested.</p></div>
 <div class="sp-tl"><span class="sp-tl__dot"></span><b>0.5 – 0.9 · Public beta</b><span class="sp-tl__when">with a demo instance</span><p>Open to everyone, demo instance on EMBL's Kubernetes, upgrades tested release after release.</p></div>
 <div class="sp-tl"><span class="sp-tl__dot"></span><b>1.0 · Stable</b><span class="sp-tl__when">when the 1.0 conditions are met</span><p>Several groups using it daily, both engines on SLURM and Kubernetes, frozen API.</p></div>
@@ -33,7 +33,7 @@ Each step has its own page under [Progress](../progress/index.md).
 
 - **Reviews before code** (waves W1 and W2): consistency, facts, constraints, security, screens, depictio.
 - **Development setup and test clusters** (wave W3): local SLURM and Kubernetes for tests, dev previews, end-to-end tests.
-- **The go decision** (wave W4), then the first version, [0.0.1](../specs/mvp-0.0.1.md): a basic local MVP.
+- **The go decision** (wave W4), then the first version, [0.0.1](../specs/mvp-0.0.1.md): a basic MVP.
 
 ## Ideas, not scheduled
 

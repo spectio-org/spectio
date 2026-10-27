@@ -120,4 +120,4 @@ Each finding has an ID made of the prefix of the agent that found it and a numbe
 | Engine bridge | How an engine reports events: nf-spectio for Nextflow, a logger plugin for Snakemake | [architecture §13](specs/architecture-plugins-and-packaging.md#13-engine-bridges) |
 | Board | A UI design source in `design/ui-canvas/*.dc.html`, rendered to PNG for review | [UI spec](specs/ui-spec.md) |
 | Progress page | The page each pipeline step writes while it runs, figure first | [documentation §3.2](specs/documentation-system.md#32-progress-pages-docsprogresswavestepmd) |
-| Version 0.0.1 | The first, basic local version: one user, engines on the same machine | [MVP 0.0.1](specs/mvp-0.0.1.md) |
+| Version 0.0.1 | The first, basic version; what it contains is in [dev environment §15](specs/dev-environment-and-testing.md#15-what-ships-in-which-version) | [MVP 0.0.1](specs/mvp-0.0.1.md) |
