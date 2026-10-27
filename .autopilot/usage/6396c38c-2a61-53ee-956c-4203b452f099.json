@@ -1,0 +1,123 @@
+{
+ "agents": [
+  {
+   "tokens": {
+    "input": 171,
+    "cache_write": 212690,
+    "cache_read": 10561223,
+    "output": 27108
+   },
+   "calls": 70,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T23:14:03.633Z",
+   "end": "2026-10-27T23:42:26.259Z",
+   "id": "6396c38c-2a61-53ee-956c-4203b452f099",
+   "kind": "main",
+   "type": "session",
+   "label": "main session 6396c38c"
+  },
+  {
+   "tokens": {
+    "input": 14,
+    "cache_write": 23963,
+    "cache_read": 113449,
+    "output": 3162
+   },
+   "calls": 7,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T23:33:01.161Z",
+   "end": "2026-10-27T23:33:55.519Z",
+   "id": "a03155f34ff2256c7",
+   "kind": "subagent",
+   "type": "code-simplifier",
+   "label": "Simplify D6 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 162,
+    "cache_write": 183147,
+    "cache_read": 9561842,
+    "output": 58366
+   },
+   "calls": 80,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T23:15:35.509Z",
+   "end": "2026-10-27T23:32:45.259Z",
+   "id": "a2032801b0b4a585c",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "Build D6 minimal (docs CI)",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 22,
+    "cache_write": 35123,
+    "cache_read": 284517,
+    "output": 9866
+   },
+   "calls": 11,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T23:22:24.456Z",
+   "end": "2026-10-27T23:24:14.523Z",
+   "id": "a383267ac7d4f765c",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code review D6 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 20,
+    "cache_write": 29092,
+    "cache_read": 214237,
+    "output": 5382
+   },
+   "calls": 10,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T23:35:22.379Z",
+   "end": "2026-10-27T23:37:23.690Z",
+   "id": "a62fa04479d1cf926",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc re-review D6 (round 2)",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 40,
+    "cache_write": 133964,
+    "cache_read": 755118,
+    "output": 15227
+   },
+   "calls": 19,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T23:22:24.483Z",
+   "end": "2026-10-27T23:34:39.720Z",
+   "id": "aaa5bd2bfa4cc8932",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review D6 pages",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 10,
+    "cache_write": 30299,
+    "cache_read": 90030,
+    "output": 4949
+   },
+   "calls": 5,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-27T23:22:24.471Z",
+   "end": "2026-10-27T23:23:16.352Z",
+   "id": "aab8fbd6d84de3913",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review D6 diff",
+   "workflow": null
+  }
+ ],
+ "workflows": []
+}

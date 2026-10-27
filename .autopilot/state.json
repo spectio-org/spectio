@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T23:15:19Z",
+  "updated_at": "2026-10-27T23:42:27Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -484,12 +484,23 @@
     },
     "D6": {
       "wave": "W3",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T23:15:19Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "",
+      "finished_at": "2026-10-27T23:42:27Z",
+      "outputs": [
+        "tools/docs/check.py",
+        "tools/docs/test_check.py",
+        ".github/workflows/docs.yml",
+        "mkdocs.yml",
+        "tools/diagrams/FONT-LICENSE.md",
+        "tools/diagrams/d6_progress_hook_check.py",
+        "docs/fonts/OFL.txt",
+        "docs/progress/W3/D6.md",
+        "docs/reviews/code/D6.md",
+        "PR #23 (b67ace9)"
+      ],
+      "notes": "minimal version on Thomas's request (tick 9); deferred parts in inbox #50; Virgil licence conflict inbox #49",
       "base": "99826d2a7df2e278df36dd1d0c804683596a7e63"
     }
   }
