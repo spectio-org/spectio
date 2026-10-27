@@ -220,11 +220,11 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
 - **Checked end to end on 2026-10-27 (step D5, PR #13; [Progress page](../progress/W3/D5.md)):**
   - Each kind of URL answered 200: the hash URL, the `pr-13` alias, `/versions/` and `/progress/`.
   - The footer showed the head SHA (`build 950e1de · preview pr-13`). The workflow now builds the PR head, not GitHub's merge commit, so the SHA names exactly what is served.
-  - After a second push, the first deployment (`4367baf3…`, build `950e1de`) still answered 200. The new one (`8c909d6d…`, build `086a84b`) did too, the alias had moved to it, and `/versions` listed both. The PR comment was updated in place.
+  - After a second push, the first deployment (`4367baf3…`, build `950e1de`) still answered 200. The new one (`8c909d6d…`, build `086a84b`) did too, and the alias had moved to it. The new build's `/versions` listed `pr-13 950e1de` in its table and named `086a84b` as "This build": the page is written before its own deploy. The PR comment was updated in place.
   - The verification step now also waits until the branch alias shows the new SHA.
   - Wave path, live:
-    - `wave-approved` on a PR whose title names no wave failed with the expected error (run 40522735039);
-    - the same label from the owner on a PR into `autopilot/integration` skipped the job (run 40524120754);
+    - `wave-approved` on a PR whose title names no wave failed with the expected error (run 40522735039, job log);
+    - the same label from the owner on a PR into `autopilot/integration` skipped the job (run 40524120754, conclusion `skipped` in the Actions runs API; a skipped job has no log);
     - the positive path was not run live, so that no unapproved wave preview gets published. `tools/previews/test_alias.py` covers the alias it would choose.
 
 ### 7.2 The full stack on demand in GitHub Codespaces (from D3)
