@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T21:30:00Z",
+  "updated_at": "2026-10-27T21:41:03Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -325,12 +325,13 @@
     },
     "T1": {
       "wave": "W3",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-27T21:41:03Z",
       "finished_at": null,
       "outputs": [],
-      "notes": ""
+      "notes": "",
+      "base": "cc00b25fb782251b4f2ba4326a5d64395df61181"
     },
     "T2": {
       "wave": "W3",
