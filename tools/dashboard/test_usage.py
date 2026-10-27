@@ -2,7 +2,7 @@
 
 python3 tools/dashboard/test_usage.py
 """
-import json, os, pathlib, subprocess, sys, tempfile, time, unittest
+import json, os, pathlib, shutil, subprocess, sys, tempfile, time, unittest
 
 REPO = pathlib.Path(__file__).resolve().parents[2]
 USAGE = REPO / "tools/dashboard/usage.py"
@@ -18,6 +18,8 @@ class TestUsage(unittest.TestCase):
     def setUp(self):
         self.home = pathlib.Path(tempfile.mkdtemp())
         self.out = pathlib.Path(tempfile.mkdtemp())
+        for d in (self.home, self.out):
+            self.addCleanup(shutil.rmtree, d, ignore_errors=True)
         projects = self.home / ".claude/projects"
         transcript(projects / "this-repo/aaaa.jsonl", str(REPO), 1)
         time.sleep(0.01)

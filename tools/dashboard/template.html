@@ -1,5 +1,6 @@
 <title>Spectio Dashboard</title>
 <meta name="claude:viewport-fit-sides" content="cover">
+<meta http-equiv="Content-Security-Policy" content="img-src data: blob:; media-src data: blob:">
 <style>
 :root{
   --bg:#F7F7FB; --surface:#FFFFFF; --sunk:#EEEFF5; --ink:#0F1020; --muted:#4D5065; --line:#DFE1EA; --hair:rgba(15,16,32,.11); --muted2:#6E7287;
@@ -258,7 +259,7 @@ aside.doc::before{content:"";height:3px;flex-shrink:0;background:linear-gradient
 .dbtn:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
 .dbtn[disabled]{opacity:.4;pointer-events:none}
 .doc .dbody{overflow-y:auto;padding:4px max(28px,env(safe-area-inset-right,0px)) calc(env(safe-area-inset-bottom,0px) + 56px) 28px;flex:1;overscroll-behavior:contain}
-.mdv{max-width:78ch;font-size:14.5px;line-height:1.68;overflow-wrap:anywhere;color:var(--ink)}
+.mdv{contain:paint;max-width:78ch;font-size:14.5px;line-height:1.68;overflow-wrap:anywhere;color:var(--ink)}
 .mdv h1,.mdv h2,.mdv h3,.mdv h4,.mdv h5{font-family:var(--display);font-variation-settings:normal;font-weight:600;color:var(--ink);text-transform:none;letter-spacing:-.01em;line-height:1.25;scroll-margin-top:12px;text-wrap:balance}
 .mdv h1{font-size:28px;margin:22px 0 12px}
 .mdv h2{font-size:20px;margin:30px 0 10px;padding-top:14px;border-top:1px solid var(--line)}
@@ -666,7 +667,8 @@ function asDocLink(a, p, frag) {
 }
 // Markdown is untrusted: no data-* attributes (the page adds data-doc, data-anchor, data-lb itself), no style or form controls,
 // no ids (they could shadow the page's own) or inline styles (overlays), and no comment but the <!--cls:…--> image markers
-const PURIFY = {ADD_TAGS: ["#comment"], ALLOW_DATA_ATTR: false, SAFE_FOR_XML: true, FORBID_TAGS: ["style", "form", "input", "textarea", "button", "select"], FORBID_ATTR: ["id", "name", "style"]};
+const PURIFY = {ADD_TAGS: ["#comment"], ALLOW_DATA_ATTR: false, SAFE_FOR_XML: true, FORBID_TAGS: ["style", "form", "input", "textarea", "button", "select", "audio", "track", "picture", "image", "feimage", "mglyph"],
+  FORBID_ATTR: ["id", "name", "style", "srcset", "background"]};
 // media URLs wait in data-src / data-poster until renderMd has resolved them, so the browser never fetches one by itself
 DOMPurify.addHook("afterSanitizeAttributes", n => {
   if (/^(IMG|VIDEO|SOURCE)$/.test(n.nodeName)) for (const at of ["src", "poster"]) if (n.hasAttribute(at)) { n.setAttribute("data-" + at, n.getAttribute(at)); n.removeAttribute(at); }
@@ -723,7 +725,7 @@ function renderMd(path, text, el = $("#doc-md")) {
   if (mm.length) {
     mm.forEach(c => { const d = document.createElement("div"); d.className = "mermaid"; d.textContent = c.textContent; c.parentElement.replaceWith(d); });
     mermaidP ||= new Promise((ok, ko) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/mermaid/10.9.8/mermaid.min.js"; sc.integrity = "sha384-N3QqR/7q+xm3BGX+CBbNI8AUmRRqcsDzToy+0z1NLDI0QmTKW8zvwLvqulJgk3dP"; sc.crossOrigin = "anonymous"; sc.onload = ok; sc.onerror = ko; document.head.appendChild(sc); });
-    mermaidP.then(() => { mermaid.initialize({startOnLoad: false, securityLevel: "strict", theme: isDark() ? "dark" : "neutral", fontFamily: "system-ui, sans-serif"}); return mermaid.run({nodes: el.querySelectorAll(".mermaid")}); }).catch(() => {});
+    mermaidP.then(() => { mermaid.initialize({startOnLoad: false, securityLevel: "strict", dompurifyConfig: {ALLOW_DATA_ATTR: false, FORBID_TAGS: [...PURIFY.FORBID_TAGS, "img"], FORBID_ATTR: PURIFY.FORBID_ATTR}, theme: isDark() ? "dark" : "neutral", fontFamily: "system-ui, sans-serif"}); return mermaid.run({nodes: el.querySelectorAll(".mermaid")}); }).catch(() => {});
   }
 }
 // one panel for files and steps; docCur is {path} or {step, tab}, docHist the views Back returns to
@@ -771,6 +773,7 @@ document.addEventListener("toggle", e => {
   const i = D.inbox.find(x => String(x.n) === c.dataset.inbox);
   const body = section(INB, new RegExp(`^### #${i.n} · `))?.replace(/^.*\n/, "");
   ib.innerHTML = `<div class="mdv"></div><div class="act" data-act="${i.n}" hidden></div>${ext(gh(INB) + "#" + i.anchor, "Open on GitHub ↗")}`;
+  ACTS.add(ib.querySelector(".act"));
   if (body != null) renderMd(INB, body, ib.firstChild); else ib.firstChild.textContent = "Entry not found in inbox.md.";
   ib.hidden = false; paintAct(ib.querySelector(".act"));
 }, true);
@@ -778,20 +781,21 @@ document.addEventListener("toggle", e => {
 // answers: one db doc per entry, answers/<n> = {choice: "recommended" | "own", text, at}; only the owner writes (db rules at publish,
 // tools/dashboard/README.md), and only the owner sees the form. The next autopilot tick copies them into inbox.md (autopilot skill §0).
 const ANSWERABLE = ["open", "assumed", "partial"];
+const ACTS = new WeakSet();  // the answer forms this page built; nothing rendered from Markdown or a diagram is one
 let DB = null, OWNER = false, ANS = {};
 function paintAct(el) {
   const n = el.dataset.act, i = D.inbox.find(x => String(x.n) === n), a = ANS[n];
   if (!DB || !OWNER || !ANSWERABLE.includes(i.status)) { el.hidden = true; return; }
   el.hidden = false; el.dataset.state = a ? a.at : ""; delete el.dataset.editing;
   el.innerHTML = a ? `<div class="mine"><b>Your answer</b> (${fmt(a.at)}): ${a.choice === "recommended" ? "accept the recommendation." : ""} ${esc(a.text || "")}</div>
-      <div class="row"><button class="dbtn" data-ans-edit="${n}">Change</button><button class="dbtn" data-ans-del="${n}">Withdraw</button><span class="msg">Copied into the inbox at the next tick; confirm it in the chat or a commit.</span></div>`
+      <div class="row"><button class="dbtn" data-ans-edit="${n}">Change</button><button class="dbtn" data-ans-del="${n}">Withdraw</button><span class="msg">Copied into the inbox at the next tick; confirm it in the chat or a commit. Withdraw works until then; after, tell the session.</span></div>`
     : `<div class="row">${i.rec ? `<button class="pbtn" data-ans-rec="${n}">Accept the recommendation</button>` : ""}</div>
       <textarea data-ans-text="${n}" placeholder="Or write your answer (an option letter, a choice, a condition)…" aria-label="Your answer to #${n}"></textarea>
       <div class="row"><button class="dbtn" data-ans-own="${n}">Save my answer</button><span class="msg" data-ans-msg="${n}"></span></div>`;
 }
 function paintAnswers() {
   document.querySelectorAll("[data-ansd]").forEach(t => t.hidden = !ANS[t.dataset.ansd]);
-  document.querySelectorAll(".act[data-act]").forEach(el => { const a = ANS[el.dataset.act]; if (!el.dataset.editing || a?.at !== el.dataset.editing) paintAct(el); });
+  document.querySelectorAll(".act[data-act]").forEach(el => { if (!ACTS.has(el)) return; const a = ANS[el.dataset.act]; if (!el.dataset.editing || a?.at !== el.dataset.editing) paintAct(el); });
 }
 async function saveAns(n, body) {
   const msg = document.querySelector(`[data-ans-msg="${n}"]`);
@@ -801,7 +805,7 @@ async function saveAns(n, body) {
 document.addEventListener("click", e => {
   const t = e.target.closest("[data-ans-rec],[data-ans-own],[data-ans-del],[data-ans-edit]"); if (!t || !DB || !OWNER) return;
   const d = t.dataset, at = new Date().toISOString(), act = t.closest(".act[data-act]");
-  if (!act || act.closest(".mdv") || act.dataset.act !== (d.ansRec || d.ansOwn || d.ansDel || d.ansEdit)) return;
+  if (!act || !ACTS.has(act) || act.dataset.act !== (d.ansRec || d.ansOwn || d.ansDel || d.ansEdit)) return;
   if (d.ansRec) saveAns(d.ansRec, {choice: "recommended", text: "", at});
   else if (d.ansOwn) { const v = act.querySelector("textarea[data-ans-text]").value.trim(); if (v) saveAns(d.ansOwn, {choice: "own", text: v.slice(0, 4000), at}); }
   else if (d.ansDel) saveAns(d.ansDel, null);

@@ -21,7 +21,7 @@ for f in sorted((here.parents[1] / ".autopilot" / "usage").glob("*.json")):
     u = json.loads(f.read_text())
     for k, key in (("agents", "id"), ("workflows", "runId")):
         for r in u[k]:
-            r.pop("summary", None)  # the workflow's prompt summary is not shown, so not embedded
+            r.pop("summary", None)  # guard: snapshots from other branches may still carry the workflow's prompt summary
             old = rows[k].get(r[key])
             if old is None or rank[k](r) > rank[k](old):
                 rows[k][r[key]] = r

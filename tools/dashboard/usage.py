@@ -32,10 +32,11 @@ def scan(path):
     return {"tokens": tok, "calls": calls, "model": model.most_common(1)[0][0] if model else None, "start": first, "end": last}
 
 def first_cwd(path):
-    for line in path.open():
-        try: cwd = json.loads(line).get("cwd")
-        except (ValueError, AttributeError): continue
-        if cwd: return cwd
+    with path.open() as f:
+        for line in f:
+            try: cwd = json.loads(line).get("cwd")
+            except (ValueError, AttributeError): continue
+            if cwd: return cwd
 
 def transcript():
     projects = pathlib.Path.home() / ".claude" / "projects"
