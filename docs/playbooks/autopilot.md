@@ -45,6 +45,7 @@ The 31 steps collapse into **5 waves**:
 | No per-tool prompts | auto permission mode | a classifier reviews actions ([headless](https://code.claude.com/docs/en/headless.md)) |
 | Unattended, machine off | a cloud session, or a routine | keeps running after the laptop closes; a routine can restart a tick nightly ([cloud](https://code.claude.com/docs/en/claude-code-on-the-web.md), [routines](https://code.claude.com/docs/en/routines.md)) |
 | Scripted | `claude -p` with stream-json and `--max-budget-usd` | `tools/autopilot/run.sh`, for a VM or CI |
+| Dashboard | a private claude.ai artifact with a `db` collection | at the start of a tick, answers typed on the page are copied into `docs/reviews/inbox.md` (skill §0, step 3); at the end, the page is rebuilt and republished (skill §5). Interactive and cloud ticks only, not `run.sh`. Build, permissions and data exposure: `tools/dashboard/README.md` |
 
 ## 3. How to run it
 
@@ -60,7 +61,9 @@ Use auto mode (Shift+Tab until "auto"), or answer prompts as they come. `/goal` 
 1. Push the repository and install the Claude GitHub App on it.
 2. Open claude.ai/code, pick the repository and the "Spectio" cloud environment (see `docs/specs/dev-environment-and-testing.md` §2), and choose auto mode.
 3. Paste the same `/goal` line.
-4. Check it from your phone. Answers go in `docs/reviews/inbox.md`, either in a commit or by telling the session.
+4. Check it from your phone. Answers go in `docs/reviews/inbox.md`, in a commit, by telling the session, or on the dashboard (below).
+
+**Answering on the dashboard.** In the dashboard's Decisions view, the owner can answer an open, assumed or partial entry: accept the recommendation, or type an answer. The page applies nothing. The next interactive or cloud tick copies the answer into the entry as `Answer (Thomas, <time>, dashboard)` and handles it like any other answer. An answer typed there only chooses among the entry's options. A human gate (`GO`), a merge, a permission or configuration change, or an edit to `CLAUDE.md`, a skill or a `pipeline.yaml` status still needs a session message or a commit (skill §0, step 3).
 
 **C. Headless, on any machine with Claude Code signed in (a laptop, or a codespace).**
 
@@ -160,6 +163,7 @@ Spectio is a side project, so the autopilot spends only what Thomas gives it. Ho
 - No environment variable, CLI command, hook input or OpenTelemetry metric reports the remaining quota.
 - Headless ticks (`claude -p`) have no status line. The governor then estimates: the last live reading plus the USD reported by each tick (`total_cost_usd`) times a percent-per-USD ratio. The ratio is calibrated from live readings (median of the last 20 samples), or given with `--pct-per-usd`.
 - With no reading at all, say where you are: `--now 42`, read from `/usage`.
+- Not to be confused: `.autopilot/usage.json` holds these rate-limit readings and is gitignored; `.autopilot/usage/` holds each session's committed token counts for the dashboard (`tools/dashboard/README.md`).
 
 **The rules** (`tools/autopilot/budget.py`, tested in `test_budget.py`):
 1. **Points, not levels.** The budget counts points consumed since the start, summed over readings, so a weekly reset during the run does not reset the budget.
