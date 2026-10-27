@@ -4,6 +4,9 @@ wave: W2
 status: done
 pr: null
 review: approve
+review_score: 12/14
+review_ref: ".autopilot/journal.md, tick 2"
+# R11 DOC-003: doc-reviewer verdict recorded as score + journal reference *(assumed — pending Thomas, inbox #30)*
 ---
 # TRIAGE1 · Sort the findings of ten review rounds
 

@@ -5,9 +5,9 @@ Scope: web UI of Spectio (formerly drafted as Ductio / Perspectio). Companion do
 
 ## 1. Principles
 
-1. **Same family as depictio.** Reuse depictio's app shell, theme mechanics, components and list patterns (card grid / table toggle). Spectio differs in brand colours (Dawn palette) and emblem, not in interaction model. See §9.
+1. **Same family as depictio.** Reuse depictio's app shell, theme mechanics, components and list patterns (table / rows toggle) *(assumed — pending Thomas, inbox #29)*. Spectio differs in brand colours (Dawn palette) and emblem, not in interaction model. See §9.
 2. **No terminal for end users.** Everything an end user does — register a workflow, launch, monitor, review, relaunch, debug — is possible from the browser. The CLI remains for experts and automation.
-3. **State is explicit.** A run's state is always shown as icon + word + context ("Awaiting review · stage 2 of 4 · 12 min"), never as a colour alone.
+3. **State is explicit.** A run's state is always shown as icon + word + context ("Awaiting review · stage 2 of 4 · 12 min"), never as a colour alone. The same holds for every other state: check verdicts, runners, health (§3.3).
 4. **Humans, AI agents and systems are first-class actors.** Every decision shows who made it (person, AI agent with model/version, or external system).
 6. **Words.** The Spectio process installed on a compute environment is a **runner** (like a self-hosted CI runner). **Agent** always means an AI agent. A **stage** is a named group of processes or rules; a **gate** is a stop point at the end of a stage.
 5. **Engine-agnostic surface, engine-aware details.** Lists look the same for Nextflow and Snakemake; detail panels expose engine specifics (nf-core schema, Snakemake checkpoints, etc.).
@@ -18,14 +18,14 @@ Scope: web UI of Spectio (formerly drafted as Ductio / Perspectio). Companion do
 |---|---|---|
 | **Overview** | Landing screen after login | "Needs attention" (reviews pending, failed runs), active runs, recent activity, environment health |
 | **Runs** | All runs, table or rows | Filters (state, workflow, engine, environment, owner, tag, date), saved views, bulk actions |
-| **Review** | Interventions waiting for a decision | Queue (assigned to me / my team / AI agents / external systems), evidence viewers, approve / change params / rerun / reject, decision history |
-| **Launch** | Start a run | Wizard: workflow → version → parameters (form from schema) → inputs → environment → review & launch |
+| **Review** | Interventions waiting for a decision | Queue (assigned to me / my team / AI agents / external systems), evidence viewers, approve / apply changes / go back to a stage / stop *(assumed — pending Thomas, inbox #29)*, decision history |
+| **Launch** | Start a run | One parameters page with a progress stepper as its header (workflow → version → parameters (form from schema) → inputs → environment → review and launch); "Review and launch" is the final step (§4.6) *(assumed — pending Thomas, inbox #30)* |
 | **Workflows** | Catalog of registered workflows | Import from nf-core, Snakemake Workflow Catalog, git URL or cluster path; versions, parameter schema, stages manifest, software versions, docs |
 | **Environments** | Where runs execute | Compute environments, runners, executors/backends, storage, software deployment (conda / Apptainer / Docker / modules), credentials |
-| **Administration** | Instance administration (admins only; personal settings live in Profile) | depictio's four groups: People (users, groups, service accounts) · Content (projects, workflows, environments) · Activity (tasks, runners, events & webhooks, logs, health, audit log) · Instance (branding, plugins, AI & agents, notifications, backups, maintenance, settings). Details: [`admin-and-operations.md`](admin-and-operations.md) |
+| **Administration** | Instance administration (admins only; personal settings live in Profile) | depictio's four groups: People (users, groups, service accounts) · Content (projects, workflows, environments) · Activity (background tasks *(assumed — pending Thomas, inbox #29)*, runners, events & webhooks, logs, health, audit log) · Instance (branding, plugins, AI & agents, notifications, backups, maintenance, settings). Details: [`admin-and-operations.md`](admin-and-operations.md) |
 
 Shell (depictio Glass model): a grid filling the viewport.
-- **Top bar** across the full width: animated logo (home), breadcrumbs, search (⌘K), notifications, settings, **colour mode** (only here), avatar → Profile.
+- **Top bar** across the full width: animated logo (home), breadcrumbs, project switcher (shown on Overview, Runs, Review, Launch and Workflows; hidden on Environments, Administration and Profile, and hidden while there is a single project ([`api-and-data-model.md`](api-and-data-model.md) §6)), search (⌘K), notifications (bell with the unread count; its panel lists in-app notifications, each deep-linking to a run or gate; `GET /me/notifications`, [`api-and-data-model.md`](api-and-data-model.md) §5) *(assumed — pending Thomas, inbox #17)*, Administration (admins only), **colour mode** (only here), avatar → Profile.
 - **Sidebar** below it, full remaining height: head with "WORKSPACE" and the **fold button** (PanelLeftClose / PanelLeftOpen, as in depictio); one 56 px item per menu with a 25 px line icon in the menu's colour; active item tinted; Review shows its count; footer with runners status and server status. Folds to a 92 px icon rail (labels hidden, counts become badges).
 - **Content** scrolls on its own; the shell never scrolls.
 
@@ -35,15 +35,19 @@ Shell (depictio Glass model): a grid filling the viewport.
 
 ### 3.1 Run states
 
-| State | Icon | Colour | Meaning |
-|---|---|---|---|
-| Queued | clock | ink 400 | Accepted, waiting for a runner or the scheduler |
-| Running | play (animated ring) | blue `#3B82F6` | Engine running |
-| Awaiting review | hand / flag | amber `#D9890B` | Stopped at a gate; a decision is required |
-| Paused | pause | violet `#8B5CF6` | Stopped on request, resumable |
-| Succeeded | check | green `#1F9D63` | Completed |
-| Failed | cross | red `#DC3B3B` | Engine or task failure; resumable |
-| Cancelled | slash | ink 500 | Stopped by a user or a policy |
+| Value | State | Icon | Colour | Meaning |
+|---|---|---|---|---|
+| `queued` | Queued | clock | ink 400 | Accepted, waiting for a runner or the scheduler |
+| `running` | Running | play (animated ring) | blue `#3B82F6` | Engine running |
+| `awaiting_review` | Awaiting review | hand / flag | amber `#D9890B` | Stopped at a gate; a decision is required |
+| `pausing` | Pausing | pause, animated ring | violet `#8B5CF6` | Stopping as requested; becomes Paused |
+| `paused` | Paused | pause | violet `#8B5CF6` | Stopped on request, resumable |
+| `succeeded` | Succeeded | check | green `#1F9D63` | Completed |
+| `failed` | Failed | cross | red `#DC3B3B` | Engine or task failure; resumable |
+| `cancelling` | Cancelling | slash, animated ring | ink 500 | Cancel requested; the head process is stopping |
+| `cancelled` | Cancelled | slash | ink 500 | Stopped by a user or a policy |
+
+The values are the run-state enum of [`api-and-data-model.md`](api-and-data-model.md) §7.1, which owns them and their WES mapping. A gate `stop` shows as Cancelled. Head silent and Runner offline are flags shown next to the state, not states ([`api-and-data-model.md`](api-and-data-model.md) §7.1). *(assumed — pending Thomas, inbox #29)*
 
 Rendering rules (replaces the current pill badges):
 - In tables: a 4 px **state rail** on the left edge of the row, plus icon + state word in the State column, plus a context line ("stage 2 of 4 · 12 min ago").
@@ -66,10 +70,30 @@ The emblem's half-disc is reused as a compact **stage gauge**: one sector per de
 
 A legend is available from any gauge (hover / tap) and in Help. In the relaunch stage strip, stages reused from cache use animated hatching.
 
+### 3.3 System states
+
+States outside runs (runners, observers, model endpoints, storage, tasks, health checks, plugins) reuse the run-state tokens of §3.1. No family gets its own palette, red stays for hard failures, and every state shows icon + word.
+
+| Run-state token | System states mapped to it |
+|---|---|
+| `running` | active, in progress, retrying |
+| `succeeded` | healthy, online, verified |
+| `review` | notice, draining, degraded, pending verification |
+| `failed` | offline, failed to load, dead |
+| `cancelled` | disabled |
+
+The Legend also shows: scheduler job states and failure classes in Spectio words (red only for failures; a finished job reads Succeeded, not "Completed"); check verdicts (pass / warn / fail); pre-start states (Starts now, Waits for a slot, Queued · quota) with the clock icon, never the Running play icon; origin and level chips (UI / API / CLI / Batch; Observed / Adopted, §6). State words are exactly those of §3.1 ("Awaiting review", "Succeeded") and of its task-state list ("pending").
+
+Check verdicts have distinct icons: check for pass, triangle for warn, octagon-x for fail. Text always says the severity ("6 / 8 pass · 1 warning · 1 failing"; in a value column "fail · 3 outliers"), never only a colour (WCAG 2.1 SC 1.4.1, https://www.w3.org/TR/WCAG21/#use-of-color).
+
+### 3.4 Colour use and contrast
+
+Text reaches 4.5:1 against its background (WCAG 2.1 SC 1.4.3, https://www.w3.org/TR/WCAG21/#contrast-minimum); switch tracks, icons and other non-text controls reach 3:1 (SC 1.4.11, https://www.w3.org/TR/WCAG21/#non-text-contrast). Primary buttons use `--sp-accent` (`#7750D4`, 5.41:1 with white). Section colours are for tints and icons only, never button fills. An amber fill (the Review badge, a warning action) uses `--sp-state-review-fg` (`#8F5806`, 5.89:1); otherwise run-state colours stay out of the brand. Switch tracks use `--sp-ink-400`. Helper text uses `--sp-text-faint` or `--sp-ink-500`; on the `#F7F7FB` surface use `--sp-ink-500`, since `#6E7287` gives 4.45:1 there. Adjacent segments of a bar are separated by a 1 px divider. Ratios as recomputed in review R7 with the WCAG 2.x formula.
+
 ## 4. Screens
 
 ### 4.1 Landing page (public site)
-Hero (logo, one-line promise, "Get started" / "Docs" / GitHub), three pillars (Launch without a terminal · See every run · Steer with checkpoints), works-with strip (Nextflow, nf-core, Snakemake, SLURM, Kubernetes, GA4GH WES), how it works in three steps (install the server, connect a runner, launch from the browser), screenshots, sister project depictio, footer.
+The public landing page is owned by [documentation-system §2](documentation-system.md#2-landing-page-docsindexmd). The `Landing.dc.html` board is a marketing draft for a later release, not the source of `docs/index.md`. *(assumed — pending Thomas, inbox #30)*
 
 ### 4.2 Overview
 - Needs attention: reviews waiting (count, oldest), failed runs in the last 24 h.
@@ -78,12 +102,27 @@ Hero (logo, one-line promise, "Get started" / "Docs" / GitHub), three pillars (L
 - Recent activity feed (launches, decisions, failures).
 
 ### 4.3 Runs — table and rows
-Columns: Run (name + ID, first) · State (rail + icon + word + context) · Workflow (official engine logo, name, version) · Progress (stage gauge + "2 of 4 stages · 63 % tasks") · Environment · Origin · Started · Duration. Toggle **Table / Rows**. Rows mode = full-width "paper" rows grouped into "Needs attention" and "Active and recent": state rail, gauge, name, workflow line, state with context, time, one contextual action (Review, Resume, Continue, Reports). The card grid is dropped.
+Columns: Run (name + ID, first) · State (rail + icon + word + context) · Workflow (official engine logo, name, version) · Progress (stage gauge + "2 of 4 stages · 63 % tasks") · Environment · Origin · Started · Duration. Toggle **Table / Rows**. Rows mode = full-width "paper" rows grouped into "Needs attention" and "Active and recent": state rail, gauge, name, workflow line, state with context, time, one contextual action (Review, Resume, Continue, Reports). The card grid is dropped. Paging: Next / Load more on cursor pages, with no numbered pages and no "of N" total until the API offers one ([`api-and-data-model.md`](api-and-data-model.md) §4); headline counts come from `GET /runs:summary`. *(assumed — pending Thomas, inbox #30)*
 
 Engine marks: the official files (as shipped in depictio `public/logos/workflows/`), 16–24 px on white, never recoloured; one mark per workflow, nf-core replacing Nextflow for genuine nf-core pipelines.
 
 ### 4.4 Run detail
-Header: run name, state line, gauge, actions (Resume, Relaunch…, Cancel, Duplicate). Tabs:
+Header: run name, state line, gauge, actions by state (table below). When the runner is offline or live data is stale, the header shows that state and its actions follow §11 (for example "Queue pause · applies on reconnect").
+
+| State | Header actions |
+|---|---|
+| Queued | Cancel · Copy to a new launch |
+| Running | Pause after stage · Cancel |
+| Awaiting review | Review (opens the gate) · Cancel |
+| Paused | Continue · Relaunch… · Cancel |
+| Failed | Resume · Relaunch… |
+| Succeeded | Relaunch… |
+| Cancelled | Relaunch… |
+| Observed (CLI) | None besides Copy to a new launch, with the adopt banner of §6 (no relaunch); an Adopted run follows its state's row |
+
+Copy to a new launch is under More in every state. Pause and an immediate stop follow the open question of inbox #16 (SR-018).
+
+Tabs:
 1. **Summary** — stages timeline, key numbers, last events.
 2. **Stages & gates** — each stage with its tasks, gate, evidence, decision.
 3. **Tasks** — table (process/rule, tag/wildcards, state, attempts, executor, native job id, CPU/memory, duration), filter by state.
@@ -93,11 +132,13 @@ Header: run name, state line, gauge, actions (Resume, Relaunch…, Cancel, Dupli
 7. **Software** — software versions, containers, conda envs, modules (nf-core `modules.json`).
 8. **Environment** — compute environment, executor, queue/partition, storage, work dir.
 9. **Lineage** — previous and next runs (resume / rerun / restart), with what changed.
+10. **Scheduler** — head job, tasks by scheduler state, why pending, requested vs used, relaunch suggestions; shown when the environment has a scheduler observer ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §10). *(assumed — pending Thomas, inbox #29)*
+11. **Live checks** — one row per item, one column per watched check, filled as tasks finish; shown when the run has watched stages ([`checking-scenarios.md`](checking-scenarios.md) §11.4). *(assumed — pending Thomas, inbox #29)*
 
 ### 4.5 Review
 **Review views.** Every gate is items × checks × evidence × decisions ([`checking-scenarios.md`](checking-scenarios.md)). The detail page opens on Summary, then the view that fits the item kind and scale: **item table** (a few items: samples, MS runs, predictions, grouped samples), **distributions & thresholds** (massive: cells, spots, features), **spatial grid** (wells, slides, tiles), **candidate list** (many: bins, candidate variants, structures), **report reader** (MultiQC and any HTML report, sandboxed). Examples on the canvas: Review (plate, spatial grid), ReviewCoverage (grouped samples), ReviewReport (item table + report reader), ReviewCells (distributions), ReviewCandidates (MAG bins).
 
-**Queue** (the Review menu): built for many open gates. Summary strip (assigned to me, my groups, agents may decide, waiting for a signal), scope filter, search, group by workflow, sort by waiting time, saved views. Table rows: gate + run + ID, checks bar (pass / warn / fail), suggestion (AI or robot), who can decide, waiting time (amber over 1 h), Open. Multi-select with bulk actions: approve the selected gates whose checks all pass, assign, snooze. Auto-approve rules (Settings) are reported at the bottom. Keyboard: J / K, Enter, A.
+**Queue** (the Review menu): built for many open gates. Summary strip (assigned to me, my groups, agents may decide, waiting for a signal), scope filter, search, group by workflow, sort by waiting time, saved views. Table rows: gate + run + ID, checks bar (pass / warn / fail) with the counts in words, e.g. "6 / 8 pass · 1 warning · 1 failing" (§3.3), suggestion (AI or robot), who can decide, waiting time (amber over 1 h), Open. Multi-select with bulk actions: approve the selected gates whose checks all pass, assign, snooze. Auto-approve rules (from the gate's `decide` policy) are reported at the bottom. Keyboard: J / K, Enter, A. Single and bulk decisions show the same lost-update (412) and partial-result states as on the phone (§4.11).
 
 **Detail**: back to queue with "3 of 12" and previous / next; compact header (gauge, gate, run, engine, waiting time, who can decide). Tabs — what a reviewer can actually do:
 | Tab | What you can do |
@@ -108,40 +149,42 @@ Header: run name, state line, gauge, actions (Resume, Relaunch…, Cancel, Dupli
 | Parameters | Change parameters for the next stages, for all items or per item when the workflow reads that parameter from a samplesheet column |
 | Files | Edit intermediate outputs declared `editable` in `spectio.yml` (e.g. a TSV of per-well metrics or annotations): grid editor with diff against the original, changes by people and proposals by AI agents accepted or rejected cell by cell; versions kept |
 | History | Every event and decision with its actor |
+| Dashboard (only with `depictio: {on: gate:<id>}`) | Look at the preliminary depictio dashboard of the partial results, with selections kept in step ([`api-and-data-model.md`](api-and-data-model.md) §13.6, rule 3) *(assumed — pending Thomas, inbox #29)* |
 All changes pile up in a **sticky bar** at the bottom (chips + a flow bar showing which stages rerun for how many items). One primary action follows from them: "Approve and continue" when nothing changed, "Apply and continue" otherwise; "Discard changes"; More: go back to an earlier stage, stop the run here, reassign.
 
 How edited files reach the engine: Snakemake — the edited file replaces the output, and its consumers rerun (modification-time trigger). Nextflow — the file is passed on Continue through the parameter named in `spectio.yml` (the pipeline must read it), since files inside the work directory must not be edited.
 
 ### 4.6 Launch and relaunch
-Launch: the form is generated from `nextflow_schema.json` (or the Snakemake config schema plus the `ui:` block of `spectio.yml`). One **collapsible section per schema group**, each with a light line icon mapped from the group's `fa_icon`, a summary on the right ("2 required", "1 issue", "2 changed") and a chevron; sections with issues or changes open by default. Search, "Show hidden", "Changed only", "Expand all", "Load params file…". File checks (samplesheet rows, paths with `exists: true`) run through the runner, show when they last ran, and have a **Recheck** button; they run again automatically before launch. Aside: environment, software, gates (each with "Change"), params file preview, Launch button (disabled with the reason while issues remain).
+Launch is one parameters page; a stepper across the top shows progress, and "Review and launch" is its final step *(assumed — pending Thomas, inbox #30)*. The form is generated from `nextflow_schema.json` (or the Snakemake config schema plus the `ui:` block of `spectio.yml`). One **collapsible section per schema group**, each with a light line icon mapped from the group's `fa_icon`, a summary on the right ("2 required", "1 issue", "2 changed") and a chevron; sections with issues or changes open by default. Search, "Show hidden", "Changed only", "Expand all", "Load params file…". File checks (samplesheet rows, paths with `exists: true`) run through the runner, show when they last ran, and have a **Recheck** button; they run again automatically before launch. Aside: project (first row; hidden while there is a single project, as in single-user mode, [`api-and-data-model.md`](api-and-data-model.md) §6, §11), environment, software, gates (each with "Change"), params file preview, and a "Review and launch" button, disabled while issues remain, with the reason shown beside it rather than inside it. Each gate names its source and overlay version ("1 gate after stage 2 · lab overlay rnaseq-demo-lab vN"); Launch, the review step and Run detail show the same overlay version (§5.1). *(assumed — pending Thomas, inbox #30)* On the phone wizard (§4.11), Next follows the same rule: disabled while the current step has an issue, with its reason beside it ("Fix 1 issue in Input / output") *(assumed — pending Thomas, inbox #30)*. A launch pre-filled from an imported crate shows every non-default parameter, hidden ones included, and marks the parameters that load code or config from elsewhere ([`api-and-data-model.md`](api-and-data-model.md) §5) *(assumed — pending Thomas, inbox #25)*.
 
 Relaunch dialog, three choices instead of five:
 | Choice | What happens |
 |---|---|
 | **Resume** (labelled **Continue** on a paused run or an open gate) | Pick up where it stopped; finished work reused (`-resume`; Snakemake reruns incomplete jobs) |
-| **Rerun from a stage** | Click a stage on the strip; earlier stages reused, later ones recomputed (Nextflow stage override + `-resume`; Snakemake `--forcerun`) |
+| **Rerun from a stage** | Click a stage on the strip; earlier stages reused, later ones recomputed (Nextflow: a generated per-process `ext` key that enters the task hash, then `-resume`, **[to be validated]** in spike T2; Snakemake `--forcerun`) |
 | **Start fresh** | New work directory, nothing reused |
-Under the choices: a clickable stage strip (reused · starts here · will run), "Edit parameters · N changed" (with suggestions from the failure, e.g. more memory for the task that ran out), an estimate of reused vs to-run tasks, and the primary button. "Duplicate" becomes the secondary "Copy to a new launch".
+Under the choices: a clickable stage strip (reused · starts here · will run), "Edit parameters · N changed" (with suggestions from the failure, e.g. more memory for the task that ran out), an estimate of reused vs to-run tasks (for Nextflow, from a work-directory scan, labelled "estimate"; [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.5), and the primary button. "Duplicate" becomes the secondary "Copy to a new launch".
 
 ### 4.7 Workflows catalog and workflow detail
-Catalog cards/table: name, source (nf-core / Snakemake catalog / git / local), engine, latest version, stars/topics when available, last run. Detail: README, versions/tags, parameter schema (browsable), stages manifest (`spectio.yml`), required inputs, profiles, software versions from the last successful run, runs of this workflow.
+Catalog cards/table: name, source (nf-core / Snakemake catalog / git / local), engine, latest version, stars/topics when available, last run. Detail: one tab set for every workflow: Overview (required inputs, profiles) · README (sanitised Markdown, no raw HTML: [`authentication-and-access.md`](authentication-and-access.md) §3.1) *(assumed — pending Thomas, inbox #23)* · Versions (versions / tags) · Parameters (schema, browsable) · Stages & gates, with sub-tabs Stages · Watches (the `spectio.yml` manifest or lab overlay, edited under one header with one draft state) · Software (versions from the last successful run) · Runs. Browsing the nf-core and Snakemake catalogues happens only in Import. When `https://nf-co.re/pipelines.json` or the Snakemake catalogue cannot be reached, import falls back to a Git URL or a path, with skeleton cards while loading. Whether HPC login nodes can reach these catalogues is site-dependent **[to be validated]**.
 
 ### 4.8 Environments
-An environment = a runner + compute + storage + software deployment. List of environment cards (state rail, runner, compute, engines, storage, software, load), then one page per environment with tabs Compute · Storage · Software · Credentials · Limits · Activity, built from collapsible sections with icons.
+An environment = a runner + compute + storage + software deployment. List of environment cards (state rail, runner, compute, engines, storage, software, load), then one page per environment with tabs Compute · Capacity · Storage · Software · Credentials · Limits · Activity, built from collapsible sections with icons.
 - **Compute**: SLURM / SGE / PBS / LSF partitions and job arrays, or Kubernetes namespace, node pools (incl. GPU), quota, live pods; executor settings per engine.
-- **Runners**: per host or namespace, heartbeat, version, Unix user / service account, outbound-only connection.
-- **Storage**: one role per location — Work (scratch), Results, Inputs (read only), References (shared cache), Archive (object store), Container cache — with path, type, usage against quota, access and retention. Work-directory lifecycle rules (succeeded: delete after 30 days; failed or paused: keep while resumable; Snakemake `temp()`; cancelled: 7 days), largest work directories with Clean / Keep, quota alert with a proposed cleanup that never breaks a resumable run. Collapsed: viewer access (files streamed by the runner, HTTP range requests), staging and transfers, permissions. Aside: how each engine is pointed at these locations.
+- **Capacity**: partitions, limits and fairshare, storage quotas, reservations and the pre-flight checklist; content in [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §10 (board EnvCapacity).
+- **Runners**: per host or namespace, heartbeat, version, Unix user / service account, outbound-only connection. A runner is connected from its environment: "Connect a runner" (board EnvConnect) issues the one-time registration token (`POST /runners:register`, [`api-and-data-model.md`](api-and-data-model.md) §5). Registration tokens come only from there, not from Profile or Administration.
+- **Storage**: one role per location — Work (scratch), Results, Inputs (read only), References (shared cache), Archive (object store), Container cache — with path, type, usage against quota, access and retention. Work-directory lifecycle rules (succeeded: delete after 30 days; failed or paused: keep while resumable; Snakemake `temp()`; cancelled: 7 days), largest work directories with Clean / Keep, quota alert with a proposed cleanup that never breaks a resumable run. Collapsed: viewer access (files streamed by the runner, HTTP range requests), staging and transfers, permissions. Aside: how each engine is pointed at these locations. API: Storage and work directories in [`api-and-data-model.md`](api-and-data-model.md) §5. *(assumed — pending Thomas, inbox #30)*
 - **Software deployment**: conda, Apptainer/Singularity, Docker, environment modules, Wave.
 - **Credentials**: tokens and keys (masked), scoped to environments, rotation dates.
 
-**Runner offline** (from the sidebar footer, the Overview card or the environment): heartbeat strip showing when contact stopped; two columns, **Still working** (runs keep computing because each engine runs as its own job; live monitoring continues because engines send events straight to the server; published results stay readable) and **On hold** (new launches, cancel/pause/continue — queued and applied on reconnect —, viewers on work-directory files, storage measurements); affected runs with one action each (Open, Move to another runner on the same cluster, Review — decisions are recorded and applied later); likely cause (maintenance feed, last message, token validity, other runners); "Bring it back" command and auto-restart setup (user systemd service or cron @reboot); "Notify me when it is back".
+**Runner offline** (from the sidebar footer, the Overview card or the environment): heartbeat strip showing when contact stopped; two columns, **Still working** (runs keep computing because each engine runs as its own job; live monitoring continues while the engine can post directly; otherwise events wait in the launch-directory spool and arrive when the runner is back ([architecture §13.1](architecture-plugins-and-packaging.md)) *(assumed — pending Thomas, inbox #28)*; published results stay readable) and **On hold** (new launches, cancel/pause/continue — queued and applied on reconnect —, viewers on work-directory files, storage measurements); affected runs with one action each (Open, Move to another runner on the same cluster, Review — decisions are recorded and applied later); likely cause (maintenance feed, last message, token validity, other runners); "Bring it back" command and auto-restart setup (user systemd service or cron @reboot); "Notify me when it is back" (a subscription to that runner's `spectio.runner.online`) *(assumed — pending Thomas, inbox #17)*.
 
 ### 4.9 Administration (formerly Settings)
 Same structure as depictio's Administration page.
-- **Layout.** The header "Administration" (shield tile), then a 208 px section nav inside the content area. Labels are 11 px uppercase: People / Content / Activity / Instance. The active item is tinted, and badges show failed tasks and offline runners.
+- **Layout.** The header "Administration" (shield tile), then a 208 px section nav inside the content area. Labels are 11 px uppercase: People / Content / Activity / Instance. The active item is tinted, and badges show failed background tasks and offline runners *(assumed — pending Thomas, inbox #29)*.
 - **CLI equivalent.** Every page ends with a collapsible "CLI equivalent".
 - **Access.** Admins only. Activity, Backups and Maintenance are hidden on public or demo instances, as in depictio.
-- **Boards.** Users, Groups, Service accounts, Projects, Tasks, Logs, Health (with the runner registry), Branding, Plugins, AI & agents, Backups, Restore wizard, Maintenance, and a phone Administration screen. Behaviour and fields are in [`admin-and-operations.md`](admin-and-operations.md).
+- **Boards.** Users, Groups, Service accounts, Projects, Background tasks *(assumed — pending Thomas, inbox #29)*, Logs, Health (with the runner registry) (Administration → Runners opens Health at its Runners section, `/admin/health#runners`), Branding, Plugins, AI & agents, Backups, Restore wizard, Maintenance, and a phone Administration screen. Behaviour and fields are in [`admin-and-operations.md`](admin-and-operations.md). Events & webhooks, Audit log, Notifications and Settings have no board yet ([`admin-and-operations.md`](admin-and-operations.md) §6).
 
 **AI & agents** opens with a three-lane diagram of where the model runs, then model endpoints, connected agents and limits.
 Spectio needs no model of its own. Three ways AI comes in, each saying where the compute is:
@@ -151,7 +194,7 @@ Spectio needs no model of its own. Three ways AI comes in, each saying where the
 Lists: model endpoints (kind, where it runs, data policy, state), connected agents (door: MCP / REST / webhook, scopes as chips, last action), default limits for agents (read, read evidence ≤ 50 MB, propose, approve gates only where `spectio.yml` allows, launch only on listed environments, send files to hosted models off). A gate can be stricter than the defaults, never looser.
 
 ### 4.10 User profile
-From the avatar in the top bar (depictio model): identity header with stats; **CLI & API tokens** generated in the UI (scopes, created, last used, expiry, revoke) with copyable `spectio login` / `SPECTIO_TOKEN` / Nextflow and Snakemake snippets; account (auth mode, time zone, default environment and landing page); notifications matrix (event × in-app / email / Slack); personal agents; groups and projects (phase 2); recent activity.
+From the avatar in the top bar (depictio model): identity header with stats; **CLI & API tokens** generated in the UI (scopes, created, last used, expiry, revoke) with copyable `spectio login` / `SPECTIO_TOKEN` / Nextflow and Snakemake snippets; account (auth mode, time zone, default environment and landing page); notifications matrix (event × in-app / email / Slack), stored as the user's subscriptions (`GET/PUT /me/subscriptions`) *(assumed — pending Thomas, inbox #17)*; personal agents; groups and projects (phase 2); recent activity.
 
 ### 4.11 Phone and tablet
 A separate, simpler layout below 768 px (depictio's phone model), not a squeezed desktop.
@@ -159,12 +202,17 @@ A separate, simpler layout below 768 px (depictio's phone model), not a squeezed
 **Breakpoints.** Phone < 768 px: phone layout below. Tablet 768–1199 px: desktop shell with the sidebar folded to the icon rail by default, Runs in rows mode, side columns stacked under the main column. Desktop ≥ 1200 px.
 
 **Phone shell.**
-- Compact top bar (60 px): logo (or a back chevron on detail screens), title + one-line subtitle, search, notifications, avatar.
+- Compact top bar (60 px): the instance logo from Branding (`logo_mode`, `logo_url`, `logo_url_dark`, [`admin-and-operations.md`](admin-and-operations.md) §4.1), falling back to the Spectio emblem (or a back chevron on detail screens), title + one-line subtitle (where the switcher applies, the title is tappable, with a chevron, and opens the project switcher sheet), search, notifications, avatar.
 - **Bottom tab bar** replacing the sidebar: floating paper bar, 64 px, inset 8 px, five keys with icon over name — Home · Runs · Review (count) · Launch · More. Active key tinted in its section colour.
-- **More** opens a bottom sheet: profile, Workflows, Environments, Settings, Help, Appearance (light / dark / auto — on the phone the colour mode lives here, as in depictio), runners and server status.
-- Content scrolls between the two bars; a screen's primary action sits in a bar pinned just above the tab bar.
+- **More** opens a bottom sheet: profile, Workflows, Environments, Administration (admins only), Help, Appearance (light / dark / auto — on the phone the colour mode lives here, as in depictio), runners and server status; "Powered by Spectio" in its footer when the Spectio wordmark is hidden (admin §4.1). Section colours come from the branding layer.
+- Notifications (bell) open a sheet grouped Today / Earlier, each item deep-linking to a run or gate, with empty and loading states. Phones get in-app, email and Slack notifications. Web Push through an installed PWA is undecided until spike S-R7-3 ([R7](../reviews/R7-ui.md#proposed-spikes)); browser support and the iOS home-screen requirement are **[to be validated]**. *(assumed — pending Thomas, inbox #17)*
+- Content scrolls between the two bars; a screen's primary action sits in a bar pinned just above the tab bar. The pinned action bar and the tab bar are opaque, and the tab bar's backdrop covers the bottom inset (`padding-bottom: max(8px, env(safe-area-inset-bottom))`), so no content shows between or below them. A chip row that overflows ends with "+N". On Review detail and Launch, the tab bar is hidden while a pinned action bar shows. *(assumed — pending Thomas, inbox #30)*
 
-**Phone rules.** One column; touch targets ≥ 44 px; body text 15–16 px; no tables (stacked rows and cards); filters and segments as horizontally scrolling pills; side panels become pill tabs; dialogs and menus become bottom sheets; nothing hover-only; at most one primary action per screen.
+**Phone rules.** One column; touch targets ≥ 44 × 44 px of hit area, in the shared top bar and tab bar too; the visual can be smaller (WCAG 2.2 asks 24 px at AA, SC 2.5.8, and 44 px at AAA, SC 2.5.5, https://www.w3.org/TR/WCAG22/#target-size-minimum; Spectio chose 44); body text 15–16 px; no tables (stacked rows and cards); filters and segments as horizontally scrolling pills; side panels become pill tabs; dialogs and menus become bottom sheets; nothing hover-only; at most one primary action per screen.
+
+**Keyboard and screen readers (every layout).** Switches, checkboxes and radios are native `<input type="checkbox|radio">` inside labels, or `<button role="switch" aria-checked>`; never an ARIA-role `<span>` without focus. Tabs are `<button role="tab">` with a roving tabindex and `aria-controls` (WAI-ARIA APG tabs pattern). Per-row controls have per-row labels ("Group admin: a.smith@example.org", "Remove a.smith@example.org"); a toggle such as P.I. is a `<button aria-pressed>` with an icon of at least 3:1 (WCAG 2.1 SC 1.4.11, https://www.w3.org/TR/WCAG21/#non-text-contrast). A slider is focusable with `aria-valuenow`, `aria-valuemin` and `aria-valuemax` (APG slider pattern, https://www.w3.org/WAI/ARIA/apg/patterns/slider/), with a numeric field and −/+ beside it. No information lives only in a `title`: use a visible label or a tap-to-open sheet. Sheets and dialogs set `aria-modal="true"`, trap focus and return it to the opener. *(assumed — pending Thomas, inbox #26)*
+
+**Scale.** Long lists scroll without end, with an end-of-list marker and a jump to search; a count such as "Showing 50 of 312" appears only when the list returns a total ([`api-and-data-model.md`](api-and-data-model.md) §4). Gate items open flagged first and are paged through `GET /gates/{id}/items` (api §5). The plate map is an overview up to 96 wells; larger plates (384, 1,536 wells) get a quadrant picker above it. A tap on a truncated title opens a details sheet with the full name.
 
 **Phone screens (canvas page "Mobile").**
 | Screen | What changes from desktop |

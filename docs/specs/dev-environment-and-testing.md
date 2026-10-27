@@ -14,7 +14,7 @@ Companion docs:
    - Mocks are for unit tests only.
    - Real outputs are recorded as golden fixtures, with the tool version in the file name.
 2. **Local clusters, no real HPC needed for development.**
-   - SLURM runs in Docker with [sind](https://github.com/GSI-HPC/sind) (Slurm 25.11 and 26.05 images; slurmdbd; slurmrestd with JWT; node power-cycle simulation; GitHub Action; MCP server; no privileged containers needed; LGPL-3.0, used as a tool, not linked).
+   - SLURM runs in Docker with [sind](https://github.com/GSI-HPC/sind) (Slurm 25.11 and 26.05 images; slurmdbd; slurmrestd with JWT on the 26.05 images only, sind `0065750` `docs/content/guides/rest-api.md:36`; node power-cycle simulation; GitHub Action; MCP server; no privileged containers needed; LGPL-3.0, used as a tool, not linked).
    - Kubernetes runs in kind with Kueue installed.
 3. **Scenarios are isolated and run in parallel.** Each has its own Compose project, port range, Docker network, sind realm or kind cluster, and data directory. Agents in parallel worktrees never collide.
 4. **One bootstrap script everywhere.** `dev/bootstrap.sh` installs the pinned toolchain from `dev/versions.env` in:
@@ -34,7 +34,7 @@ Companion docs:
    - auto-fix of CI failures on PRs;
    - scheduled routines for drift checks.
    
-   Humans merge.
+   Merges follow [`documentation-system.md`](documentation-system.md#8-auto-merge) §8.
 
 ## 1. Toolchain (pinned in `dev/versions.env`)
 
@@ -42,26 +42,29 @@ Companion docs:
 |---|---|---|---|
 | Python | 3.13 (uv-managed; embeds SQLite ≥ 3.51.3) | `uv python install` | server, CLI, runner, tests |
 | uv | latest at bootstrap time, then pinned | official installer | everything Python |
-| Node.js | 22 LTS | distro or `nvm` | UI build, Playwright, mermaid-cli |
+| Node.js | 24 LTS (maintenance until 2028-04-30); move to 26 once it is Active LTS (2026-10-28) ([Node release schedule](https://github.com/nodejs/Release/blob/main/schedule.json); v22 ends on 2027-04-30) | distro or `nvm` | UI build, Playwright, mermaid-cli |
 | Java | 21 (Temurin) | distro package or SDKMAN | Nextflow |
-| Nextflow | 26.10.x and 25.10.x (two versions, both tested) | release launcher from GitHub releases, `NXF_VER` pinned **[to be validated: asset names and whether the cloud allowlist reaches `get.nextflow.io` / `www.nextflow.io`]** | fixture and nf-core runs |
-| Snakemake | 9.x + `snakemake-executor-plugin-slurm`, `-kubernetes`, `-kueue`, plus `snakemake-logger-plugin-spectio` (ours) | `uv tool install` with `--with` plugins, or a pixi environment | fixture runs |
-| sind | latest release, pinned | release binary **[to be validated: install method, see gsi-hpc.github.io/sind]** | SLURM clusters |
+| Nextflow | 26.10.x, 25.10.x and 25.04.x, the supported floor ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.4); all tested, and `nf-spectio`'s `requires` equals this range *(assumed — pending Thomas, inbox #28)* | the self-contained `nextflow-<ver>-dist` from GitHub releases (offline-capable, still downloads plugins; [install docs](https://docs.seqera.io/nextflow/install)), or the `get.nextflow.io` launcher with `NXF_VER` pinned, which downloads `nextflow-<ver>-one.jar` from `www.nextflow.io/releases`; plugins come from `registry.nextflow.io` (`PluginsFacade.groovy:48`). All reachable from a cloud session (checked 2026-10-26). | fixture and nf-core runs |
+| Snakemake | two versions, both tested: the minimum supported and the latest (9.27.1 today). Supported range: Snakemake ≥ 9.0 (the logger plugin interface arrived in 9.0.0, `CHANGELOG.md` at `1c67a66`; [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.4) with `snakemake-interface-logger-plugins` `>=1.2,<3` (1.x and 2.x, the range snkmt also pins); the exact minimum tested version is set by R9 spike 2 **[to be validated]** *(assumed — pending Thomas, inbox #28)*. Plus `snakemake-executor-plugin-slurm`, `-kubernetes`, and `snakemake-logger-plugin-spectio` (ours); `-kueue` (0.1.0, the only PyPI release, 2024-01-03; repository unmaintained since 2024-03, HEAD `c09bf0d`; wheel says "under development") only if spike D2 shows it runs on Snakemake 9 **[to be validated]** | `uv tool install` with `--with` plugins, or a pixi environment | fixture runs |
+| sind | latest release, pinned | release binary `sind-linux-<arch>` from GitHub releases; needs Docker ≥ 28 on cgroup v2 | SLURM clusters |
 | kind, kubectl, helm | pinned releases | release binaries | Kubernetes clusters, chart tests |
-| Kueue | pinned manifest version | `kubectl apply --server-side -f` | queueing scenarios |
+| Kueue | two pinned manifest versions: the newest supported Kueue minor (v0.20 at the time of R4) and an older one, both run in `k8s-kueue`. The older one is chosen to support the lowest targeted Kubernetes (1.33), with the kind node image pinned to match (Kueue v0.20.3 recommends Kubernetes 1.34 or newer, [install page](https://kueue.sigs.k8s.io/docs/getting-started/installation/)) **[to be validated: Kueue release supporting 1.33]** | `kubectl apply --server-side -f` | queueing scenarios |
 | Playwright | pinned, Chromium | `npm i -D playwright`; Chromium is pre-installed in some environments | e2e tests, board rendering |
 | mermaid-cli, mkdocs-material | pinned | `npx`, `uvx` | docs CI |
-| Apptainer | optional, later | distro package | Apptainer-only HPC scenarios |
+| Apptainer | pinned; installed on the sind submitter node *(assumed — pending Thomas, inbox #28)* | distro package | the Apptainer runtime axis on `slurm-site`, nightly (§5); whether Apptainer works in nested containers is **[to be validated]** |
+| depictio | `DEPICTIO_VERSION`: the latest stable release, pinned (`v1.19.2` on 2026-10-26); never `next`, which also moves on betas, nor the force-moved `stable` git tag (depictio `build-images.yaml:280-282`, `bump-with-helm.sh:55-60`) *(assumed — pending Thomas, inbox #22)* | container images `ghcr.io/depictio/depictio-{api,worker,viewer,cli}:<version>` | tier 5 hand-off tests |
 
 **Checks.**
 - `dev/doctor.sh` prints each tool and version, then runs one smoke test per layer:
   - `docker run --rm hello-world`;
   - `sind` create, then `sbatch --wrap hostname` with `--wait`;
   - `kind create cluster`, then a Job, then delete;
-  - `nextflow run tests/fixtures/workflows/nf-toy -profile local`;
-  - `snakemake -n -s tests/fixtures/workflows/smk-toy/Snakefile`;
+  - `nextflow run tests/pipelines/synthetic/nextflow -profile test,local`;
+  - `snakemake -n -s tests/pipelines/synthetic/snakemake/workflow/Snakefile`;
   - Playwright opening `about:blank`.
 - It exits non-zero on the first failure, naming the tool.
+
+**Dependency updates.** Renovate keeps every pin current: the uv lock, npm, GitHub Actions (pinned by commit SHA), Docker image digests, Helm dependencies and pre-commit hooks, plus regex managers for `dev/versions.env` and `tests/pipelines/real/corpus.yaml` (Renovate rather than Dependabot because of these regex managers **[to be validated: Dependabot has no equivalent]**). Updates arrive as grouped monthly PRs; security updates arrive as they are published. Every update PR goes through the `ci-ok` gate (§11). depictio runs Dependabot monthly for uv (two groups) and GitHub Actions (`.github/dependabot.yml` l.20-59 at `v1.19.2`), and its actions are at `checkout@v7`, `upload-artifact@v7`, `setup-uv@v7`; Spectio's workflows still use `checkout@v4`, `upload-artifact@v4`, `setup-node@v4`, `setup-uv@v6` and `github-script@v7`, and Node 20 actions face deprecation **[to be validated: date]**.
 
 ## 2. Where agents work
 
@@ -79,23 +82,17 @@ Companion docs:
 - **Setup script:** `bash dev/bootstrap.sh --ci` (toolchain and pre-pulled images only).
 - **SessionStart hook:** in `.claude/settings.json`, starts nothing heavy by default. Scenarios start their own clusters.
 
-## 3. Fixture workflows (`tests/fixtures/workflows/`)
+## 3. Fixture workflows (see §10.1)
 
-Tiny, deterministic, shell-only tasks (seconds each), with explicit stages so gates can be exercised:
+The fixture workflows are the synthetic scenario pipelines of §10.1 (`tests/pipelines/synthetic/`): one twin per engine, three stages, two gates, the same failure injection. Real pipelines (nf-core/demo, the nf-core/rnaseq test profile) are in §10.2. *(assumed — pending Thomas, inbox #28)*
 
-| Fixture | Engine | What it exercises |
-|---|---|---|
-| `nf-toy` | Nextflow DSL2 | 3 stages (A → gate → B → C), `ext.when` stage stop and `-resume`; params `fail=oom\|timeout\|exit\|flaky`, `fanout=N`, `array=true`; `publishDir` outputs, a MultiQC-like JSON and a per-sample TSV for checks |
-| `smk-toy` | Snakemake | the same stages with `--until` and `--forcerun`; a checkpoint that changes the DAG; rule `resources` for SLURM; the same failure parameters |
-| `nf-core/demo` (real) | Nextflow | `-profile test,docker` on the local executor and on kind; a real MultiQC report for review views |
-| `nf-core/rnaseq` test profile (real, nightly) | Nextflow | full gate scenario "Mapping QC" from `checking-scenarios.md`, on kind |
+**Gate stop on real pipelines.** The `nf-core/rnaseq` and `nf-core/sarek` test profiles (Nextflow, local executor with Docker) check the gate stop on a real pipeline: a generated config stops after alignment through `ext.when`, then `-resume` without it; the cached-task count and the exit code are checked. Part of spikes T1/T2, before the walking skeleton. *(assumed — pending Thomas, inbox #28)*
 
 **Failure injection.**
-- *OOM:* a task allocates more memory than requested. SLURM then reports `OUT_OF_MEMORY`, Kubernetes reports `OOMKilled`.
-- *Timeout:* `sleep` beyond the time limit.
-- *Flaky:* fails when `task.attempt == 1`.
-- *Node failure:* sind power-cycles a worker during a running job.
-- *Preemption:* a higher-priority partition and QoS in the sind cluster.
+- *OOM, timeout, flaky:* §10.1 scenarios (`oom`, `oom_once`, `oom_real`, `timeout`, `flaky`). On a cluster, SLURM reports `OUT_OF_MEMORY` and Kubernetes reports `OOMKilled`.
+- Cluster-level cases, run in T3:
+  - *Node failure:* sind power-cycles a worker during a running job.
+  - *Preemption:* a higher-priority partition and QoS in the sind cluster.
 
 ## 4. Local clusters
 
@@ -103,10 +100,10 @@ Tiny, deterministic, shell-only tasks (seconds each), with explicit stages so ga
 
 | Profile | Topology | Used for |
 |---|---|---|
-| `slurm-mini` | controller + 1 worker, no accounting | head job, `squeue --json`, cancel, reconcile |
+| `slurm-mini` | controller + 1 worker, no accounting | head job, `squeue --json`, signal drain then cancel (`scancel --signal=TERM --full`, then a plain `scancel` after the grace period; one test per engine, spike T3) *(assumed — pending Thomas, inbox #28)*, runner restart while a head job runs, reconciled by `squeue --me --json` and the `spectio-head-` prefix filter (spike T3) |
 | `slurm-site` | controller, db (slurmdbd), 3 workers in partitions `htc`, `bigmem`, `gpu` (fake GRES), users with association limits, a maintenance reservation | pending reasons, `sacct` outcomes, fairshare, limits, pre-flight, failure classes |
 | `slurm-rest` | `slurm-site` + api node (slurmrestd, JWT, 26.05) | slurmrestd transport and `data_parser` negotiation |
-| `slurm-versions` | `slurm-site` on 25.11 and 26.05 | version matrix |
+| `slurm-versions` | `slurm-site` on 25.11 and 26.05 | version matrix; the 25.11 leg covers the CLI transport only (sind's 25.11 images have no slurmrestd) |
 
 The runner runs on the sind submitter node as an unprivileged user, exactly as on a login node. Fixture workflows are mounted into it. Nextflow and Snakemake run inside the submitter node, using the cluster's `sbatch`.
 
@@ -114,9 +111,9 @@ The runner runs on the sind submitter node as an unprivileged user, exactly as o
 
 | Profile | Setup | Used for |
 |---|---|---|
-| `k8s-mini` | kind, 1 node, a namespace with a `ResourceQuota`, a namespaced runner Role (see `schedulers-and-monitoring.md` §4) | watch API, pod reasons, OOMKilled, logs |
+| `k8s-mini` | kind, 1 node, a namespace with a `ResourceQuota`, a namespaced runner Role (see `schedulers-and-monitoring.md` §4), SeaweedFS (S3) in the cluster | watch API, pod reasons, OOMKilled, logs, Snakemake Kubernetes executor with `--default-storage-provider s3` against SeaweedFS (object storage is mandatory for it, architecture §7.5); the real pod and Job objects of a failed task (`state.terminated.reason`, pod `DeadlineExceeded`, Job `Failed` condition) captured as golden fixtures (spike T4) |
 | `k8s-kueue` | kind with 2 workers, Kueue with a `ClusterQueue` and a `LocalQueue`, the visibility API | queue positions, admission, preemption |
-| `k8s-rwx` | `k8s-mini` + an RWX storage class (NFS provisioner) | Nextflow k8s executor with a shared work directory |
+| `k8s-rwx` | `k8s-mini` + an RWX storage class (NFS provisioner) | Nextflow k8s executor with a shared work directory (Nextflow only; Snakemake needs S3) |
 
 Whether kind runs inside a Claude Code cloud session (kind needs privileged node containers) is the first thing spike D2 answers. If it does not, Kubernetes scenarios run in CI and on the user's machine only.
 
@@ -130,20 +127,34 @@ Whether kind runs inside a Claude Code cloud session (kind needs privileged node
   
   It prints a JSON with every URL and credential. `down` removes all of it.
 - **Scenarios are YAML** (`tests/scenarios/*.yaml`): deployment (bundle / compose), scheduler profile, engine and version, fixture and parameters, gate script (who decides what, when), and expected events and states.
-- **The matrix** is engine {nextflow 25.10, 26.10; snakemake 9} × scheduler {local, slurm-mini, slurm-site, k8s-mini, k8s-kueue} × deployment {bundle, compose} × scenario {happy, gate-approve, gate-exclude-and-resume, oom-retry-suggestion, runner-offline-mid-run, restore-during-idle, multi-user-permissions}. A PR runs a smoke subset, the full matrix runs nightly.
+- **The matrix** is engine {nextflow 25.10, 26.10; snakemake minimum and latest (§1)} × scheduler {local, slurm-mini, slurm-site, k8s-mini, k8s-kueue} × runtime {docker, apptainer} (apptainer on `slurm-site`, nightly only; Spectio targets HPC, where Apptainer is the usual container runtime, and every scenario used Docker) *(assumed — pending Thomas, inbox #28)* × deployment {bundle, compose} × scenario {happy, gate-approve, gate-exclude-and-resume, oom-retry-suggestion, runner-offline-mid-run, restore-during-idle, multi-user-permissions}. A PR runs a smoke subset, the full matrix runs nightly. The cell snakemake × `k8s-kueue` is pending a spike (D2 install, T4 run): `snakemake-executor-plugin-kueue` 0.1.0 is an unmaintained prototype (§1); if it does not run, Snakemake on Kueue is tested with the `kubernetes` executor and Kueue's pod integration **[to be validated]**.
 - **Parallelism is capped by memory,** checked against free RAM before `up`. One Claude agent per worktree and scenario ID, so agents working in parallel never share state.
 
 ## 6. Test tiers
 
 | Tier | What | Runs on | Gates |
 |---|---|---|---|
-| 0 · static | ruff, ty or mypy, import-linter (dependency rules), eslint, OpenAPI diff, docs build, Mermaid | every push | PR |
+| 0 · static | ruff, mypy on every package (`--strict` on `spectio-sdk`), import-linter (dependency rules), `pre-commit run --all-files`, eslint, OpenAPI diff, docs build, Mermaid | every push | PR |
 | 1 · unit and contract | pure logic; plugin conformance suites (`spectio_sdk.testing`); golden fixtures for `nf-spectio` events, Snakemake logger events, `squeue` / `sacct` JSON and Kubernetes objects | every push, seconds | PR |
-| 2 · component | server with SQLite, fake runner, recorded engine event streams replayed; API tests with RFC 9457 errors, `If-Match`, idempotency | every push, < 2 min | PR |
-| 3 · integration | real engines on `slurm-mini` and `k8s-mini`; backup → restore → migrate; bundle → Compose hand-over | PR (smoke subset), < 15 min | PR |
+| 2 · component | server on SQLite and on Postgres 18, fake runner, recorded engine event streams replayed; API tests with RFC 9457 errors, `If-Match`, idempotency; the golden fixtures of every released bridge version replayed against the current server (compatibility window, [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §12) *(assumed — pending Thomas, inbox #28)* | every push, < 2 min | PR |
+| 3 · integration | real engines on `slurm-mini` and `k8s-mini`; backup → restore → migrate; bundle → Compose hand-over; two-replica tests on Postgres | PR (smoke subset), < 15 min | PR |
 | 4 · end-to-end | Playwright against the bundle and Compose: launch, watch, review a gate, relaunch, admin pages, phone viewport | PR (smoke), nightly (full) | PR (smoke) |
-| 5 · matrix and compatibility | the full scenario matrix; cross-version backup restore (previous release → current); depictio hand-off with a depictio container | nightly / weekly | release |
+| 5 · matrix and compatibility | the full scenario matrix; cross-version backup restore (previous release → current); depictio hand-off against the minimum depictio version `spectio-plugin-depictio` supports and the latest stable (`DEPICTIO_VERSION`, §1) *(assumed — pending Thomas, inbox #22)*; in-place upgrades N-1 → N and N-3 → N (`upgrade.yml`, §11) | nightly / weekly | release |
 | 6 · preview and instance | static preview: links and media checked on the deployed URL. Public instance, from the beta: deploy + Playwright smoke over its URL; inbound webhook round trip | after merge | release |
+
+**Both databases.** Tiers 1 and 2 run on SQLite and on Postgres 18; tests marked `@pytest.mark.db(...)` name the dialects they need. This covers the Postgres-only paths (`FOR UPDATE SKIP LOCKED`, `LISTEN/NOTIFY`, advisory locks: [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.2 and §7.6) and SQLite's Alembic batch mode. A migration test runs from an empty database and from each frozen backup fixture, on both dialects. The two-replica tests run on Postgres in tier 3. depictio's unit suite runs on mongomock and misses runtime-only regressions (`pyproject.toml:79-80,109-110` at `v1.19.2`).
+
+**One type checker, one source of tool versions.** mypy gates every package from the first commit, with no narrowed paths, and `spectio-sdk` runs `--strict`. Pre-commit hooks are `language: system` and call the tools through `uv run`, so `uv.lock` is the only source of tool versions; tier 0 runs `pre-commit run --all-files`. depictio narrowed its ty gate to `depictio/models/` after about 280 diagnostics (`depictio-ci.yaml:242-250`), pins ruff `v0.15.16` in pre-commit but `ruff==0.16.1` in its dev dependencies, and has `pre-commit run --all-files` commented out in CI (`:252-255`).
+
+**Safety nets.**
+- A collection guard fails tier 1 when a `test_*.py` file is not collected (depictio's recipe tests were written but never run, because their directory was missing from `testpaths`: `pyproject.toml:293-297`).
+- Diff coverage is reported on every PR, advisory for now, not a gate.
+- Flaky tests are quarantined the way known engine faults are (§10.1): a `quarantine` marker, a linked issue, and a fix or removal within 2 weeks.
+- Destructive end-to-end specs run last, in their own Playwright project (as depictio does: `playwright.config.ts:16-17,50-58,80-87`).
+
+**Snakemake versions.** Tier 1 runs the logger interface's own suite (`snakemake_interface_logger_plugins.tests`) against `snakemake-logger-plugin-spectio`, and tier 2 replays the recorded Snakemake event streams, on both Snakemake versions of §1. Why: `DefaultFilter.__init__` changed signature three times within 9.x ("<=9.2.x … >=9.10.0 … >=9.23", FlowO 2.2.0 sdist, `plugin/client/log_handler.py:156-176`), and interface 2.1.0 (2026-05-20) added `needs_rulegraph`, which its `tests.py:114-116` asserts. A silent logger means no events, and so no gates. *(assumed — pending Thomas, inbox #28)*
+
+**Exported crates.** Tier 2 validates every RO-Crate the export produces with `crs4/rocrate-validator`, against the version set pinned in [`api-and-data-model.md`](api-and-data-model.md) §10 (RO-Crate 1.1 + WRROC 0.5). `snakemake-report-plugin-rocrate` validates its crates the same way ([landscape note](../research/landscape-2026-10-26.md) §7).
 
 **Visual review.** Playwright saves screenshots of the real pages named after the canvas boards (`RunDetail`, `ReviewQueue`…). A report puts them side by side with the renders of `design/ui-canvas`. This is a review aid for the `ux-reviewer` agent and for humans, not a pixel-diff gate.
 
@@ -177,7 +188,7 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
 
 - **The `/versions` page.** It is generated at every deploy from the Cloudflare deployments API (`tools/previews/versions_page.py`) and lists every preview with its date, branch, commit, PR and link. It is the "versions step by step" view.
 - **Privacy.**
-  - Previews are public by default. Cloudflare Access can restrict them to Thomas.
+  - Previews are public by default. Cloudflare Pages' access policy restricts preview deployments to members of the Cloudflare account; the production URL (`spectio.pages.dev`), whose `/versions` page lists every preview, needs a separate Cloudflare Access application ([preview deployments](https://developers.cloudflare.com/pages/configuration/preview-deployments/)).
   - Media are rendered with fixture names (`documentation-system.md` §5.5).
 - **Limits (free plan):** 500 builds a month, 20 000 files and 25 MiB per file ([limits](https://developers.cloudflare.com/pages/platform/limits/)). Whether direct uploads count as builds is **[to be validated]**. The site is far below both limits.
 - **Without the secrets,** the workflow skips the deploy, with a notice, and still builds.
@@ -211,13 +222,13 @@ The front-end has a build flag that replaces the API with fixtures generated fro
 | Mechanism | Use in Spectio | Reference |
 |---|---|---|
 | Project memory `CLAUDE.md` | project rules, phase, commands | [memory](https://code.claude.com/docs/en/memory.md) |
-| Subagents `.claude/agents/` | eight reviewers and builders (spec, facts, constraints, security, UX, depictio liaison, tests, infra) | [sub-agents](https://code.claude.com/docs/en/sub-agents.md) |
+| Subagents `.claude/agents/` | the reviewers and builders listed in the agent table of `CLAUDE.md` | [sub-agents](https://code.claude.com/docs/en/sub-agents.md) |
 | Skills `.claude/skills/` | workflow skills (`review-round`, `apply-findings`, `verify-claims`, `render-board`, `spike`) + vendored superpowers and Karpathy guidelines | [skills](https://code.claude.com/docs/en/skills.md), `.claude/skills/THIRD_PARTY.md` |
 | Worktrees | one agent and scenario per worktree (`isolation: worktree` for implementer agents later) | sub-agents docs |
 | Cloud sessions in parallel | independent spikes and review rounds, each on its own branch | [cloud sessions](https://code.claude.com/docs/en/claude-code-on-the-web.md) |
 | Auto-fix pull requests | Claude watches CI and review comments on a PR and pushes fixes (needs the Claude GitHub App) | same page, "Auto-fix" |
 | GitHub Actions with Claude | PR review by `spec-reviewer` on `docs/**`, `security-reviewer` on auth, tokens, plugins and runner paths | [GitHub Actions](https://code.claude.com/docs/en/github-actions.md) |
-| Routines | weekly `depictio-liaison` drift check; weekly nf-core release check against templates and `checking-scenarios.md`; nightly `verify-claims` on specs whose upstream released | [routines](https://code.claude.com/docs/en/routines.md) |
+| Routines | weekly `depictio-liaison` drift check, which also opens the `DEPICTIO_VERSION` bump PR when depictio has a new stable release *(assumed — pending Thomas, inbox #22)*; weekly nf-core release check against templates and `checking-scenarios.md`; nightly `verify-claims` on specs whose upstream released | [routines](https://code.claude.com/docs/en/routines.md) |
 | Agent teams (experimental) | large review rounds where reviewers discuss findings | [agent teams](https://code.claude.com/docs/en/agent-teams.md) |
 | sind's MCP server | agents create and break SLURM clusters through tools instead of shell | sind README |
 | Playwright | e2e tests, and agents looking at the UI they built | — |
@@ -225,21 +236,14 @@ The front-end has a build flag that replaces the API with fixtures generated fro
 **Guard rails.**
 - Agents work on branches and open PRs.
 - CI tiers 0–4 must pass.
-- A human merges.
+- Merges follow [`documentation-system.md`](documentation-system.md#8-auto-merge) §8.
 - Reviewers are read-only.
 - No secrets in the repository or in shared environment variables.
 - Deploy credentials (Cloudflare now, EMBL later) stay in GitHub environments, never in repository-level secrets (R8b DEP-T-007).
 
 ## 9. First steps (playbook phase D)
 
-1. **D1:** validate `.claude/` (agents load, skills appear in `/`), and add the docs CI.
-2. **D2 spike (the cloud environment):**
-   - does Docker, sind and kind each work in a cloud session?
-   - which domains Nextflow, nf-core and the registries need;
-   - can the setup script stay under 5 minutes?
-3. **D3:** write `dev/versions.env`, `dev/bootstrap.sh` and `dev/doctor.sh`, and run them green in a cloud session, in CI and locally.
-4. **D4:** build the fixture workflows and record the first golden fixtures (`nf-spectio` events, Snakemake logger events, `squeue` / `sacct` JSON from sind).
-5. **D5:** dev previews: the Cloudflare Pages deploy with the `/versions` page, and the Codespaces dev container (§7).
+The D steps and their exit checks are defined in [`pipeline.yaml`](../playbooks/pipeline.yaml) and described in [`next-phase.md`](../playbooks/next-phase.md) (phase D); this section does not number steps itself. *(assumed — pending Thomas, inbox #28)*
 
 ## 10. Pipeline test corpus
 
@@ -355,20 +359,43 @@ Imaging review and the OME-Zarr viewer are designed on real images, not drawings
 | Workflow | Trigger | What it runs |
 |---|---|---|
 | `docs.yml` | PR and push touching `docs/` | strict MkDocs build, Mermaid render |
-| `pipelines-synthetic.yml` | PR, main, nightly | synthetic scenarios × {Nextflow 26.10.3, 25.10.9, Snakemake 9.27.1}; stress scenario nightly; artifacts with reports, logs, traces |
-| `pipelines-real.yml` | PR touching the corpus, nightly, manual | matrix generated from `corpus.yaml`: nf-core with `nf-core/setup-nextflow@v3`, the catalog with `snakemake/snakemake-github-action@v2` on the workflow's own `.test` |
-| `pipelines-slurm.yml` (T3) | PR touching runner code, nightly | `GSI-HPC/sind-action@v2` cluster, synthetic scenarios with the SLURM profiles. Needs cgroup v2 Docker, which GitHub runners have; this cloud session has cgroup v1, so not here |
-| `pipelines-k8s.yml` (T4) | nightly | `helm/kind-action@v1` + Kueue, synthetic scenarios with the k8s profile, nf-core/demo |
-| `release-please.yml` | push to main | release PR with version bump and changelog (§12) |
+| `ci.yml` | every PR, push to `main` and `autopilot/integration` | a change-detection job (docs only, `tests/pipelines/synthetic/**`, the corpus, runner code, `deploy/helm/`…; pattern from depictio `depictio-ci.yaml:89-159` at `v1.19.2` / `0d1aa0a`) calls each pipeline workflow as a reusable workflow (`workflow_call`) only when its paths changed; a final `ci-ok` job `needs:` every job, runs with `if: always()`, counts skipped jobs as passing and fails only when a job ended `failure` or `cancelled` (depictio `depictio-ci.yaml:3144-3174`, `:3166-3170`) *(assumed — pending Thomas, inbox #26)* |
+| `pipelines-synthetic.yml` | called by `ci.yml` (PR, main) when its paths changed; nightly | synthetic scenarios × {Nextflow 26.10.3, 25.10.9, Snakemake 9.27.1 and the minimum supported Snakemake (§1)}; where nf-prov is enabled, nf-prov 1.7.x with Nextflow 25.10.9 and 1.8.x with 26.10.3 (nf-prov README, `8aa8280`); stress scenario nightly; artifacts with reports, logs, traces |
+| `pipelines-real.yml` | called by `ci.yml` when the corpus changed; nightly; manual | matrix generated from `corpus.yaml`: nf-core with `nf-core/setup-nextflow@v3`, the catalog with `snakemake/snakemake-github-action@v2` on the workflow's own `.test` |
+| `pipelines-slurm.yml` (T3) | called by `ci.yml` when runner code changed; nightly | `GSI-HPC/sind-action@v2` cluster, synthetic scenarios with the SLURM profiles. Needs cgroup v2 Docker, which GitHub runners have; this cloud session has cgroup v1, so not here |
+| `pipelines-k8s.yml` (T4) | nightly | `helm/kind-action@v1` + Kueue, synthetic scenarios with the k8s profile, nf-core/demo; a first `helm install` of the chart on an empty kind cluster, which must pass the pre-install migrate hook (architecture §7.5) |
+| `nextflow-edge.yml` | weekly | the synthetic Nextflow pipeline (§10.1) with `nf-spectio` against Nextflow `edge` and the latest stable release; events diffed against the golden fixtures ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.4) *(assumed — pending Thomas, inbox #28)* |
+| `release-please.yml` | push to main | release PR with version bump and changelog (§12), opened with the GitHub App token (§12); runs only when `RELEASE_PLEASE_ENABLED` is `true` *(assumed — pending Thomas, inbox #26)* |
 | `previews.yml` | PR, push to main, `v*` tags, wave approvals, manual | build the docs site, deploy it to Cloudflare Pages under its own branch alias, regenerate `/versions`, comment the preview and Codespaces links on the PR (§7) |
+| `quick-start.yml` | PR (amd64), release (every published image architecture) | boots the docs' `compose.yaml` alone, with no `.env`, once per image architecture on native runners (`ubuntu-24.04`, `ubuntu-24.04-arm`, no QEMU), and asserts the version (`/api/v1/version`), `/api/v1/openapi.json` and first-boot seeding. depictio runs a smoke test per architecture and boots its Compose quick start with no `.env` (`build-images.yaml:296-312`, `:335-467` at `v1.19.2`) |
+| `security.yml` | PR, push to main, weekly | Trivy or Grype on every built image, failing on fixable critical vulnerabilities; `zizmor` on `.github/workflows/`; CodeQL (Python, JavaScript) and dependency review once the repository's plan provides them **[to be validated: availability for a private repository on this plan]** *(assumed — pending Thomas, inbox #26)* |
+| `chart.yml` | PR touching `deploy/helm/`, release | `helm lint --strict`; `values.schema.json` generated from the Pydantic settings and checked for drift; `kubeconform` against the supported Kubernetes minors; `ct install` and `ct upgrade` on kind in a namespace labelled `pod-security.kubernetes.io/enforce=restricted`; `helm test` hooks that call `/health/ready`. It verifies the chart claims of [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.5 (PodSecurity `restricted`, NetworkPolicies, the migrate hook, probes). depictio's chart has no values schema, no `templates/tests/`, no `ct` and no upgrade test (`test-and-package-helm-chart.yaml`, `v1.19.2`) |
+| `upgrade.yml` | weekly, release PRs | in-place upgrade from the previous release (N-1 → N) and from three releases back (N-3 → N) on the bundle, Compose and Helm (`ct upgrade`): seed with synthetic runs, upgrade (pre-upgrade backup, then migrations), then assert that the schema is at head, the pre-upgrade backup exists, runs and gates are intact, and tokens behave as specified; results go on the 1.0-gate checklist (§14 item 5). depictio tests restore across versions and package upgrades, never an in-place stack upgrade (`backup-compat-cross-version.yaml:45-60`, `publish-pypi.yaml:92-138`) |
+| `base-install.yml` | PR (subset), nightly (full grid) | the base install (`uv tool install spectio`, no server extras) and the runner tests on every supported Python (3.11–3.14, [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §7.3) × {Linux x86_64, Linux aarch64}: the full grid nightly; on PRs the lowest and highest supported Python on x86_64. It asserts that server dependencies are absent, as depictio's `cli-base-install.yaml:38-56` does. macOS arm64 waits for Thomas (inbox #26: Actions minutes) *(assumed — pending Thomas, inbox #26)* |
+| `deploy-audit.yml` | PR touching `deploy/`, nightly | the static checks of Spectio's copies of depictio's `scripts/security_audit_compose.sh` and `security_audit_helm.sh` on PRs; the live audit nightly against a running Compose stack and a kind install. depictio runs neither script in any workflow, and its static check 1.10 already fails on its own Compose (`security_audit_compose.sh:188-196` expects `DEPICTIO_S3_ROOT_PASSWORD:?`, `docker-compose.yaml:59-60` uses `:-minio123`, `v1.19.2`) |
+
+**Required checks.** Branch protection requires only `ci-ok`, `docs-gate` and `pr-body`, never a path-filtered workflow or a matrix leg. A check that a PR skips never reports, so the PR would wait forever ("Expected — waiting"), and a matrix job skipped before it expands never reports under its leg names (R8b DEP-T-001; depictio's comment at `depictio-ci.yaml:3144-3174`). The pipeline workflows (`pipelines-synthetic.yml`, `pipelines-real.yml`, `pipelines-slurm.yml`, `pipelines-k8s.yml`) are reusable workflows (`on: workflow_call`, plus their own schedule) that `ci.yml` calls. Branch protection stays unset until `ci.yml` exists (inbox #8). No merge queue for now. *(assumed — pending Thomas, inbox #26)*
+
+**Workflow conventions** (every workflow): `concurrency` per workflow and PR or ref, cancelling superseded PR runs; `timeout-minutes` on every job; a fork guard on jobs that use secrets or push; docs-only detection through the change-detection job of `ci.yml`; `permissions:` set per job, read-only by default; actions pinned by full commit SHA. depictio does each of these (`depictio-ci.yaml:20-28`, `:437-439`, `:412-416`, `:116-121` at `v1.19.2`). Today only `previews.yml` has all three of concurrency, a timeout and a fork guard (`pipelines-real.yml` has a timeout only; checked 2026-10-27).
 
 ## 12. Versioning and releases
 
 - **Commit and PR titles: Conventional Commits** (`feat:`, `fix:`, `docs:`, `test:`, `ci:`, `chore:`). The PR title becomes the squash commit, so the title is what is checked.
 - **Release PR.** `release-please` keeps one open on `main`, with the next version and a concise `CHANGELOG.md` section grouped by type. Each line links the PR and its commit.
 - **Releasing.** Merging the release PR tags `vX.Y.Z`, creates the GitHub release, and triggers the image, Helm chart and PyPI builds.
-- **One version train for the core** (`spectio`, `spectio-server`, Helm `appVersion`), kept in step with the `linked-versions` plugin once the Python packages exist. `spectio-sdk` follows its own semver (`architecture-plugins-and-packaging.md` §4). For now `release-type: simple` versions the repository as a whole.
+- **Bot token.** `release-please.yml` runs with a GitHub App installation token (`actions/create-github-app-token`, permissions `contents: write` and `pull-requests: write`), never `GITHUB_TOKEN`. Events created with `GITHUB_TOKEN` start no new workflow run, except `workflow_dispatch` and `repository_dispatch` ([GitHub docs](https://docs.github.com/en/actions/how-tos/write-workflows/choose-when-workflows-run/trigger-a-workflow); [release-please-action README](https://github.com/GoogleCloudPlatform/release-please-action)). With `GITHUB_TOKEN`, the release tag would start no image, chart or PyPI build, and the release PR would get no required checks, so `release-guard.yml` would never run on it. Every other bot PR (the generated API docs PR of [`documentation-system.md`](documentation-system.md) §9, dependency updates) uses the same App token. release-please stays off (`RELEASE_PLEASE_ENABLED` unset) until the App exists and its ID and key are stored as environment secrets (inbox #8). *(assumed — pending Thomas, inbox #26)*
+- **One version train for the core** (`spectio`, `spectio-server`, Helm `appVersion`), kept in step with the `linked-versions` plugin once the Python packages exist. `spectio-sdk` follows its own semver (`architecture-plugins-and-packaging.md` §4). For now `release-type: simple` versions the repository as a whole. When `spectio-sdk` is released on its own, it gets component tags (`spectio-sdk-v1.2.0`) while the core keeps `vX.Y.Z`. With today's `include-component-in-tag: false`, a second component would also tag `vX.Y.Z` and collide **[to be validated with a dry run]**.
 - **Image tags** (`docker/metadata-action@v6`): `X.Y.Z` and `X.Y` on releases, `sha-<7>` on every build, `edge` on main, `pr-<n>` on previews.
+- **Supply-chain evidence, from the first published artifact.** Every published image and Helm chart carries an SBOM and a provenance attestation (buildx `provenance: mode=max` and `sbom: true`, `actions/attest-build-provenance`) and a keyless cosign signature. Adding them later would change tags and digests that users have already pinned. The install docs show how to check them with `gh attestation verify` **[to be validated: exact command for OCI images]**. depictio has no SBOM, cosign or attestations (R8b DEP-T-005). *(assumed — pending Thomas, inbox #26)*
+- **Publishing** (about 30 artifacts per release: the core packages, the plugins, `nf-spectio`, `snakemake-logger-plugin-spectio`, the npm packages; `architecture-plugins-and-packaging.md` §6):
+  - a strict order through `needs:`: `spectio-sdk` → `spectio` → `spectio-server` → first-party plugins → `spectio-cli`, each with `skip-existing`, so a re-run after a partial failure resumes;
+  - one PyPI trusted publisher and one GitHub environment (`pypi-<project>`) per project, registered before that project's first publish (owner `weber8thomas` for now, inbox #9);
+  - before upload: the tag matches the package version, `twine check --strict`, and a wheel-content check;
+  - an upgrade-from-previous-release job that installs the last published version with pip and with uv, upgrades to the new wheels, and fails if any file went missing;
+  - `nf-spectio` is released to the Nextflow plugin registry by its own job **[to be validated: registry release steps]**;
+  - npm packages are published with provenance.
+
+  Pattern from depictio `publish-pypi.yaml` l.36-43 (tag check), 77-80 (`twine check --strict`, wheel content), 92-138 (upgrade matrix), 145-207 (one environment per project, trusted publishing), 184 and 203 (`needs:` order), at `v1.19.2` / `0d1aa0a`.
 - **Versions you can see:**
   - `GET /api/v1/version` returns `version`, `git_sha`, `build_date`, `schema_revision` and `deployment`;
   - the UI footer shows the version and links to its changelog entry;
@@ -385,7 +412,7 @@ Imaging review and the OME-Zarr viewer are designed on real images, not drawings
   | a breaking change (`feat!:` or a `BREAKING CHANGE:` footer) | minor too (`bump-minor-pre-major`), never 1.0.0 |
 
   - **Design phase:** `feat` and `fix` are kept for product code. Tooling (`tools/`, `tests/`, workflows) uses `chore`, `test` or `ci`. Docs, specs and research use `docs`. So no release is cut before the first version, `0.0.1` ([§15](#15-what-ships-in-which-version); how its tag is made: §15.2).
-  - **Docs and tests do not cut releases.** They are hidden from the generated `CHANGELOG.md`, because the curated changelog (`documentation-system.md` §6) covers docs. Whether a visible changelog section alone makes a commit releasable is **[to be validated]** with a dry run (`release-please release-pr --dry-run`).
+  - **Docs and tests do not cut releases.** They are hidden from the generated `CHANGELOG.md`, because the curated changelog (`documentation-system.md` §6) covers docs. A commit in a visible changelog section is releasable: release-please skips a release only when the generated changelog is empty (release-please `c589293`, `src/strategies/base.ts:331-337`).
   - **1.0.0 is never automatic.** release-please only reaches it when `release-as: 1.0.0` is set in the config (release-please manifest docs). Exception: the very first release, whose default is 1.0.0; §15.2 says how 0.0.1 is forced instead. A guard (`release-guard.yml`) also fails any release PR at ≥ 1.0.0 unless the repository variable `ALLOW_V1` is `true`. Thomas sets that variable once the 1.0 gate (§14) is met.
 
 ## 13. Instance verification and access
@@ -430,7 +457,7 @@ The stage between 0.0.x and the private alpha is not defined yet (inbox #16). Re
 2. **Users and sites.** At least 3 groups, 2 of them outside Thomas's own team, and 10 or more active users over 8 consecutive weeks. At least one site other than EMBL **[to be validated: realistic target]**.
 3. **Engines and schedulers.** Nextflow and Snakemake on SLURM and on Kubernetes in daily use, plus the local runner.
 4. **Tests.** The synthetic suite is green on every PR, and the real corpus is green nightly for 4 consecutive weeks. The auth matrix (`authentication-and-access.md` §6) and the Playwright suite are green.
-5. **Operations.** An upgrade path is tested across at least 3 minors with backup, restore and migration. No open P0 or P1 bug. A documented support channel answers within a week.
+5. **Operations.** An upgrade path is tested across at least 3 minors with backup, restore and migration, in place, by `upgrade.yml` (§11). No open P0 or P1 bug. A documented support channel answers within a week.
 6. **Contracts.** The OpenAPI and the plugin SDK are frozen, with a deprecation policy. The data model has a migration test for every revision.
 7. **Docs.** Install, user, admin and operator guides, the reference (API, CLI, configuration), and a curated changelog for every 0.x version.
 

@@ -26,7 +26,7 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
    - a landing page with hero, ecosystem cards, component cards and numbered features;
    - a curated per-version changelog;
    - hand-drawn diagrams from `sketch.py`;
-   - asciinema casts and light/dark screenshot pairs.
+   - asciinema casts and screenshots: light only while they come from the design boards (§5.1), light/dark pairs once they come from the running app *(assumed — pending Thomas, inbox #30)*.
 
    It also closes depictio's gaps:
    - no inline CSS: the landing page has 0 lines of `<style>`, against about 2 270 in depictio;
@@ -64,29 +64,31 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 | Home | landing page (§2) | now |
 | Installation | the three ways to run Spectio; "nothing to install yet" until 0.0.1 | now (short); the Python bundle from 0.0.1, the other ways with the versions that add them ([dev-env §15](dev-environment-and-testing.md#15-what-ships-in-which-version)) |
 | Usage | how Spectio works: the five words, a run without gates, a run with an optional gate; later the guides | now (short), guides from M1 |
-| Features | one short page per area (runs, runners, optional QC gates, administration, depictio), each with its screen designs, its status and a link to the owning spec | now |
+| Features | one short page per area (runs, runners, optional QC gates, administration, depictio), each with its screen designs, its status and a link to the owning spec; plus one neutral comparison page, "Spectio and other tools" | now |
 | API | the headless API and the CLI in plain words; later the generated reference (§9) | now (short) |
 | Developer | documentation map, Progress (§3.2), specifications, playbooks, reviews, decisions, research | now |
 | Roadmap | done, now, next, ideas, with the release stages as a timeline | now |
 | Changelog | curated, one block per version (§6) | now (empty until 0.0.1, [dev-env §15](dev-environment-and-testing.md#15-what-ships-in-which-version)) |
 
+**Spectio and other tools** (`docs/features/other-tools.md`, under Features). This section owns the page. Its source of truth is the latest dated landscape research note, starting with [`landscape-2026-10-26.md`](../research/landscape-2026-10-26.md) §10. Every row has a "checked on" date and a link to its source. Wording is neutral: no pricing, no "alternative to" phrasing ([adoption note](../research/adoption-and-positioning-2026-10-26.md) §2). The page is re-checked at each release stage ([dev-env §14](dev-environment-and-testing.md#14-release-stages-and-the-10-gate)) and every quarter, each time in a new dated landscape note. Other docs (synthesis §7quater, the adoption note) link to it and keep no table of their own.
+
 **Writing for users.** User-facing pages are short, use plain words, and say plainly what is designed and what is built. Gates are presented as optional: most pipelines run straight through.
 
 **Theme and assets.**
-- Theme `material`, with `custom_dir: overrides`. The overrides preload the Virgil font for inlined sketches and set a footer.
+- Theme `material`, with `custom_dir: overrides`. The overrides load the Outfit font and set a footer. The Virgil font used by the sketches is not committed or preloaded ([inbox #1](../reviews/inbox.md), 2026-10-26: it stays local); sketches are embedded as PNGs rendered locally *(assumed — pending Thomas, inbox #30)*.
 - Logo and favicon: the emblem (`docs/assets/brand/`).
 - Fonts: Outfit for headings, Inter for text, JetBrains Mono for code, as in the UI tokens.
-- One stylesheet, `docs/stylesheets/extra.css`, which maps Material variables to the Spectio tokens (`design/tokens/spectio-tokens.css`) and holds the landing-page classes.
+- One stylesheet, `docs/stylesheets/extra.css`, which maps Material variables (`--md-default-fg-color`, `--md-typeset-color`, `--md-default-bg-color`, `--md-footer-bg-color`, primary and accent) to the Spectio tokens in both schemes and holds the landing-page classes. It reads `design/tokens/spectio-tokens.css` (by `@import` or a generated `:root` block) instead of copying hex values, and `tools/docs/check.py` diffs the two.
 - Extra JavaScript is limited to `asciinema.js` (lazy player, §5.2).
 
 **Material features:** `navigation.tabs`, `.sections`, `.top`, `.indexes`, `.instant`, `.tracking`, `content.code.copy`, `.annotate`, `search.suggest`, `.highlight`, `toc.follow`.
 
-**Markdown extensions:** `admonition`, `attr_list`, `md_in_html`, `footnotes`, `def_list`, `pymdownx.details`, `.superfences` (mermaid), `.tabbed`, `.emoji` (twemoji), `.tasklist`, `.snippets`.
+**Markdown extensions:** `admonition`, `attr_list`, `md_in_html`, `footnotes`, `def_list`, `pymdownx.details`, `.superfences` (mermaid), `.tabbed`, `.emoji` (twemoji), `.tasklist`.
 
 **Versions with mike.**
 - Each release deploys `X.Y` with the aliases `latest` and `stable`.
 - `main` deploys `dev`.
-- The size hook from depictio (`hooks/shared_images.py`) is adopted *before* images grow, because mike copies the site for every version. depictio hit about 2 GB of `gh-pages` against the 1 GB Pages limit (audit §1.5).
+- The size hook from depictio (`hooks/shared_images.py`) is not adopted yet (`hooks/` holds `lists.py` and `progress.py`). It is a D6 deliverable, due before the first mike version is deployed or when `docs/assets` passes 50 MB, whichever comes first (about 3.3 MB on 2026-10-27), because mike copies the site for every version *(assumed — pending Thomas, inbox #30)*. depictio hit about 2 GB of `gh-pages` against the 1 GB Pages limit (audit §1.5).
 
 **Toolchain lifetime.** The Material for MkDocs build prints that Material reaches end of life on 2027-05-05, with critical fixes until then, and names Zensical, from the same team, as its successor (build notice seen 2026-10-26). Step D6 evaluates Zensical against this site: hooks, `md_in_html`, mike-style versions.
 
@@ -101,19 +103,22 @@ Status: draft v0.1 · 2026-10-26 · author: Thomas Weber (with Claude)
 
 Front matter `hide: [navigation, toc]`. The markup is HTML through `md_in_html`; every style lives in `extra.css`.
 
+**Owner.** This section owns the public landing page; [ui-spec §4.1](ui-spec.md#41-landing-page-public-site) links here. The board `design/ui-canvas/Landing.dc.html` is kept as a marketing draft for a later release (marked so on the board) and does not specify this page: its install line (`pip install spectio && spectio serve`) is removed, and its GA4GH WES and MCP items wait for the answer to SR-010 ([inbox #17](../reviews/inbox.md)) *(assumed — pending Thomas, inbox #30)*.
+
 **Sections, in depictio's order** (revised 2026-10-26: clearer and more visual):
-1. **Centred hero.** The emblem and the name; one sentence on what Spectio does (launch, monitor and relaunch runs on your cluster); one line on gates being optional and on depictio; two buttons (How it works, Roadmap); a status badge (design phase); then the combined capture as a looping muted video.
+1. **Centred hero.** The emblem and the name; one sentence on what Spectio does (launch, monitor and relaunch runs on your cluster); one line on gates being optional and on depictio; two buttons (How it works, Roadmap); a status badge (design phase); then the combined capture as a muted video with its poster and player controls, not autoplayed: play is opt-in, so moving content longer than 5 s never starts by itself ([WCAG 2.2 SC 2.2.2 Pause, Stop, Hide](https://www.w3.org/WAI/WCAG22/Understanding/pause-stop-hide.html)) and reduced-motion users get no loop.
 2. **Works with.** Logo cards for Nextflow, Snakemake, nf-core, the Snakemake Workflow Catalog, SLURM, Kubernetes and depictio. The logos are the projects' own assets, or Material's bundled Simple Icons, with a notice that they show compatibility only.
 3. **How it works.** Four illustrated steps (Launch, Watch, Fix and relaunch, Results and dashboards), each with a screen design.
 4. **Optional quality checks.** One box saying what a gate is for and that pipelines without gates run straight through.
 5. **What is inside.** Six cards with coloured icons, linking to the Features pages.
-6. **Where it stands.** The progress strip of the waves (`hooks/progress.py`), and links to the roadmap, the developer docs and the changelog.
-7. **Footer.** Licence, author, links, build SHA.
+6. **Where it stands.** The progress strip of the waves (`hooks/progress.py`), centred like the other sections, showing each wave's user-facing `public_title` from `pipeline.yaml` in plain words (no internal step names, dates or jargon); the wave detail stays on the Progress pages it links to. Then links to the roadmap, the developer docs and the changelog.
+7. **Footer.** Licence, author, links, build SHA. While the repository is private, the GitHub source widget (`repo_url`) and the "Repository" link are hidden, because the GitHub API answers 404 for a private repository; `repo_url` is set only through the environment in previews until the repository is public. The "All preview versions" link (`versions/`) is rendered only on Cloudflare previews (`config.extra.preview != 'local'`), where that page exists ([dev environment §7.1](dev-environment-and-testing.md#71-static-previews-on-cloudflare-pages-now)).
 
 **Check:**
 - the page is rendered by Playwright at 1440 × 900 and at 390 × 844, light and dark;
 - `doc-reviewer` looks at the PNGs;
-- the phone render must not scroll horizontally.
+- the phone render must not scroll horizontally;
+- the render is scripted by `tools/docs/render_landing.js` (planned, R11 DOC-011), which writes the four PNGs and fails if `scrollWidth` exceeds the viewport; `tools/docs/check.py` calls it. Until it exists, the render is done by hand and recorded in the step's Progress page.
 
 ## 3. Incremental writing and verification in the loop
 
@@ -143,6 +148,9 @@ step: T3
 wave: W3
 status: done            # running | done | blocked
 pr: 42
+review: approve         # approve | changes | block
+review_score: 13/14
+review_ref: ".autopilot/journal.md, tick 5"
 ---
 # T3 · Local SLURM with sind
 
@@ -160,19 +168,21 @@ pr: 42
 - **Figures and media:** the sketch pair, cast or screenshots.
 - **Findings and open questions:** links to the review file and the inbox.
 
-The Progress tab index is generated from the front matter of these pages (MkDocs hook, ordered by wave). The landing-page status strip uses the same data.
+The Progress tab index is generated by the MkDocs hook `hooks/progress.py` from `docs/playbooks/pipeline.yaml` and `.autopilot/state.json`: one row per step, ordered by wave, linking the step's Progress page when it exists *(assumed — pending Thomas, inbox #30)*. The landing-page status strip uses the same data.
 
 ### 3.3 The docs gate (run by autopilot after every step, and by CI on every PR)
 
 A step reaches `done` only when all of these pass:
 
 1. `mkdocs build --strict` (broken links and anchors fail).
-2. Every Mermaid block renders (`tools/docs/check_mermaid.py`, which extracts the blocks and runs `mmdc`).
-3. **Diagram freshness:** every `tools/diagrams/*.py` script re-run gives byte-identical SVGs. The seeded RNG makes this testable; a figure whose script changed without its output, or the reverse, fails.
-4. **Media manifest:** every screenshot, cast and video referenced from a page exists and is listed in `docs/assets/media.yaml` with its generator command. The churn guard (`tools/media/check_churn.sh`) rejects a mass change unless `SPECTIO_ALLOW_SCREENSHOT_UPDATE=1`.
-5. **Required pages for the step kind** (§3.1) changed, and the Progress page front matter is valid.
-6. **`doc-reviewer` verdict** ≥ `approve` (§4.2), stored in the Progress page front matter as `review: approve | changes | block`.
+2. Every Mermaid block renders (`check_mermaid()` in `tools/docs/check.py`, which extracts every fenced `mermaid` block from `docs/**/*.md` and renders it with `npx -y @mermaid-js/mermaid-cli@11 -p <puppeteer config>`, the config adding `--no-sandbox` for GitHub runners and root sessions) *(assumed — pending Thomas, inbox #30)*.
+3. **Diagram freshness:** every `tools/diagrams/*.py` script re-run gives byte-identical SVGs. The seeded RNG makes this testable; a figure whose script changed without its output, or the reverse, fails. Only SVGs are compared (the scripts run with `--no-png`). PNGs are rendered locally, because the Virgil font is not committed ([inbox #1](../reviews/inbox.md)): rendering needs `SPECTIO_VIRGIL_TTF` (default `docs/fonts/Virgil.ttf`) and Python `playwright`, and `docs/assets/media.yaml` says so for each diagram generator. `tools/diagrams/sketch.py` fails when the font is missing unless `--allow-fallback-font` is passed, so no figure ships with a silent fallback font.
+4. **Media manifest:** every screenshot, cast and video referenced from a page exists and is listed in `docs/assets/media.yaml` with its generator command. The gate scans every `docs/**/*.md` for `data-cast`, `src` and `poster` attributes and resolves each target, as well as comparing the asset folders with the manifest. The churn guard (`tools/media/check_churn.sh`) rejects a mass change unless `SPECTIO_ALLOW_SCREENSHOT_UPDATE=1`.
+5. **Required pages for the step kind** (§3.1) changed, derived from the step's `kind` in `docs/playbooks/pipeline.yaml` and its `outputs` in `.autopilot/state.json`; the Progress page front matter is valid; and the page has the `!!!` admonition line and all five §3.2 headings (What changed, Why, Evidence, Figures and media, Findings and open questions).
+6. **`doc-reviewer` verdict** ≥ `approve` (§4.2). The tick appends the verdict line (`<step>: doc-reviewer <verdict> n/14`, plus the required changes) to `.autopilot/journal.md`. The Progress page front matter records `review: approve | changes | block`, `review_score: n/14` and `review_ref` (the journal tick that holds the line). `check_progress` requires `review_score` and `review_ref` on every new `status: done` page. Pages done before 2026-10-27 whose score is not in the journal carry `review_score: unrecorded` until they are next edited, when they are reviewed again *(assumed — pending Thomas, inbox #30)*.
 7. **Size budget:** at most 5 MB of new media per PR (checked against the base branch in CI), videos ≤ 3 MB and ≤ 30 s each. GIF previews for PR bodies are generated on demand outside `docs/assets/` and are not committed.
+
+**Not yet run by `tools/docs/check.py` (2026-10-27):** the page scan of item 4, the required-pages check of item 5, and three of the five headings (only What changed and Evidence are checked). Until they are, a `0 failure(s)` result does not cover them (R11 DOC-002; proposed spike `spikes/docs-gate-coverage/`).
 
 If the gate fails, the step goes back to `doc-writer` with the reviewer's notes. After two failed revisions, the step is `blocked`, with an inbox entry.
 
@@ -232,8 +242,8 @@ Each criterion is scored 0–2, with a one-line justification.
 - **Implementation:** the same names are taken from the running app with Playwright, against the seeded demo data.
 
 **Pairs and embedding.**
-- Shots are saved as WebP light/dark pairs.
-- They are embedded with `#only-light` / `#only-dark`, inside a link that opens the full image. Pages with many shots set `glightbox: true`.
+- Shots are saved as WebP. Design-phase shots are light only (see Sources above; [decision log, 2026-10-26, first independent docs review](../decisions/log.md#2026-10-26-first-independent-docs-review-w0-pages-and-landing-page)). In dark mode the landing page dims them with a CSS filter in `extra.css` so they do not glare. Light/dark pairs come with app shots, or earlier if the boards get a dark variant (proposed spike `spikes/dark-boards/`); there is no dark-twin check in the docs gate until then *(assumed — pending Thomas, inbox #30)*.
+- Pairs, when they exist, are embedded with `#only-light` / `#only-dark`, inside a link that opens the full image. Pages with many shots set `glightbox: true`.
 
 ### 5.2 Terminal casts
 
@@ -251,6 +261,14 @@ Each criterion is scored 0–2, with a one-line justification.
 - theme: `spectio`.
 
 **Tool choice.** asciinema is preferred to VHS GIFs: the text stays selectable and the files are small. VHS can be added for GIFs in the README if needed.
+
+**Replayed casts.** A cast may replay a spike's recorded output instead of running the tools again, when they cannot run where casts are generated (for example sind and kind in a cloud session, D2). Then:
+- the cast script names its recorded-log source (file and commit, for example `spikes/cloud-env/LOG.md` at `217a92c`);
+- its title says "replayed";
+- its `docs/assets/media.yaml` entry has `kind: cast-replay`;
+- the page that embeds it says it is a replay.
+
+The CI regeneration above does not apply to replayed casts and cannot detect drift; a replayed cast is regenerated when its log changes.
 
 ### 5.3 Browser videos
 
@@ -306,6 +324,7 @@ depictio has no equivalent (audit §4.4).
   - one sentence;
   - links to the feature page, the PR and the commit.
 - **Breaking changes** come with a migration note.
+- **The 📦 Images and packages section is generated.** Its list comes from the `docker/metadata-action` output and the published package list of the release run, and each entry is checked with `docker manifest inspect` before the notes are published. depictio's notes list `ghcr.io/depictio/depictio:{version,latest,stable,edge}`, which are never published (`changelog_generator.sh:29-32` vs `build-images.yaml:280-282`).
 
 ## 7. Pull requests
 
@@ -367,7 +386,7 @@ Local SLURM cluster with sind for scenario tests (T3).
 
 **Policy.**
 - A PR merges automatically (squash, through GitHub's native auto-merge) when:
-  - all required checks pass (§7.3, plus the pipeline workflows the PR touches);
+  - all required checks pass: `docs-gate` and `pr-body` (§7.3), and `ci-ok`, the aggregator job of `ci.yml` that covers the pipeline workflows the PR touches (`dev-environment-and-testing.md` §11) *(assumed — pending Thomas, inbox #26)*;
   - its `doc-reviewer` verdict is `approve`, posted as a PR review by the bot account;
   - it has no `needs-human` label.
 - **On `autopilot/integration`:** auto-merge is always on.
@@ -383,7 +402,7 @@ Local SLURM cluster with sind for scenario tests (T3).
 ## 9. Generated reference (from M1)
 
 **API reference.**
-- **Generation.** depictio's release workflow is copied: import the app inside the released image in a mode that needs no database, dump `app.openapi()`, check it with `jq` and a minimum path count, stamp it with the version, and open a docs PR (audit §1.6).
+- **Generation.** depictio's release workflow is copied: import the app inside the released image in a mode that needs no database, dump `app.openapi()`, check it with `jq` and a minimum path count, stamp it with the version, and open a docs PR (audit §1.6). The docs PR is opened with the GitHub App token of `dev-environment-and-testing.md` §12, so its checks run; a PR opened with `GITHUB_TOKEN` gets no CI *(assumed — pending Thomas, inbox #26)*.
 - **Requirement.** This needs the no-database import mode in `spectio-server` from day one (`architecture-plugins-and-packaging.md` §6).
 
 **CLI reference.** Generated from the Typer command tree (`mkdocs-typer` or a small generator).
@@ -400,3 +419,5 @@ A docs claim is verified when one of these holds:
 - an external fact links its source.
 
 `doc-reviewer` samples at least three claims per page and re-runs them when they are commands that run in under a minute.
+
+**Audits of external repositories** (depictio and others) cite the tag and the SHA (for example `v1.19.2` / `0d1aa0a`), never the SHA alone, and record `git archive <sha> | sha256sum` in the audit note, so a cited file can be found again after a history rewrite. depictio has rewritten its default branch (tag `backup-before-author-rewrite`, 2026-08-04, and `backup/pre-*` tags; R8b DEP-T-031).
