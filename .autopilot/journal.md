@@ -225,4 +225,4 @@ One entry per tick: time, steps started and finished, verification results, tria
   - answer #44, #46, #47, #48 and #32;
   - replace the cloud setup script (#43); network to Custom without wildcards;
   - a fresh `/usage` reading before the next build step.
-- **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (6 subagents, 202 API calls at snapshot time); dashboard republished at the same link (below).
+- **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (6 subagents, 202 API calls at snapshot time); dashboard rebuilt (41 steps, 50 inbox entries; `check_xss.js` ok with and without the CSP) and republished as version 18 at the same link, private, `answers` write rule owner-only. The first two publishes were refused (not read; then identical content); the third went through after checking the saved live copy is the tick-8 build (no tick-9 content), so nothing was lost.
