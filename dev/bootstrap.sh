@@ -100,10 +100,12 @@ install_node_and_playwright() {
       "$NODE_SHA256" bin/node bin/npm bin/npx
   fi
   # npm ci installs exactly the lock, checking each package's integrity hash.
-  if ! cmp -s "$SPECTIO_REPO/dev/npm/package-lock.json" "$NPM_PREFIX/package-lock.json"; then
+  # .installed-lock is written only after npm ci succeeds, so a refused install is retried.
+  if ! cmp -s "$SPECTIO_REPO/dev/npm/package-lock.json" "$NPM_PREFIX/.installed-lock"; then
     mkdir -p "$NPM_PREFIX"
     cp "$SPECTIO_REPO/dev/npm/package.json" "$SPECTIO_REPO/dev/npm/package-lock.json" "$NPM_PREFIX/"
-    npm ci --prefix "$NPM_PREFIX" --no-audit --no-fund
+    npm ci --prefix "$NPM_PREFIX" --no-audit --no-fund --ignore-scripts
+    cp "$SPECTIO_REPO/dev/npm/package-lock.json" "$NPM_PREFIX/.installed-lock"
   fi
   # Cloud sessions ship this version's Chromium (PLAYWRIGHT_BROWSERS_PATH). Elsewhere Playwright
   # downloads it from its CDN, over TLS but with no checksum we pin: the one unhashed download.
