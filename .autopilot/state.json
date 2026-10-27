@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T17:47:37Z",
+  "updated_at": "2026-10-27T21:30:00Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -454,12 +454,23 @@
     },
     "T7": {
       "wave": "W3",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-27T17:47:37Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "",
+      "finished_at": "2026-10-27T21:28:00Z",
+      "outputs": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/pipelines-real.yml",
+        "tests/pipelines/real/corpus.yaml",
+        "tests/pipelines/real/run_corpus.py",
+        "tests/pipelines/real/runner_probe.sh",
+        "tests/pipelines/real/test_run_corpus.py",
+        "docs/research/corpus-ci-2026-10-27.md",
+        "docs/progress/W3/T7.md",
+        "docs/reviews/code/T7.md",
+        "docs/specs/dev-environment-and-testing.md"
+      ],
+      "notes": "PR weber8thomas/spectio#19 squash 761d845; CODE review=approve 0/0/2, security=approve 0/0/6, rounds=1; doc-review approve 11/14; light PR tier (inbox #45 answered); final CI run 40584542402 green incl. pipelines-real; inbox #46 open",
       "base": "cddb67ba7d33e729ee80093edbd93b1ae098c6a1"
     },
     "D6": {
