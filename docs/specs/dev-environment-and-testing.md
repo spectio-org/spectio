@@ -412,10 +412,12 @@ These run against sind and kind in T3 and T4.
 
 Step pages: [F3](../progress/W0/F3.md), then [T7](../progress/W3/T7.md). Real pipelines run with their own test datasets. They are chosen to cover the scenario classes of [`checking-scenarios.md`](checking-scenarios.md) §1. Sources: `docs/research/corpus-and-ci-2026-10-26.md`. The CI results, the runner measurements and the reason for each tier move are in [corpus-ci-2026-10-27](../research/corpus-ci-2026-10-27.md).
 
-| Source | PR tier | Nightly tier | Manual (conda pins that no longer solve, a dead download URL, a missing conda package, Ensembl timeouts, unmaintained since 2019; see the research note) |
+| Source | PR tier | Nightly tier | Manual |
 |---|---|---|---|
 | nf-core (`-profile test,docker`, data from nf-core/test-datasets) | demo, rnaseq, viralrecon, methylseq, molkart | fetchngs, sarek, scrnaseq, mhcquant, differentialabundance, mag, ampliseq, taxprofiler | mcmicro |
 | Snakemake Workflow Catalog (`.test/` directory, `--sdm conda`) | rna-seq-star-deseq2, ms-proteomics (dry-run only, as upstream) | dna-seq-varlociraptor | dna-seq-gatk-variant-calling, rna-seq-kallisto-sleuth, single-cell-rna-seq, chipseq, cyrcular-calling, ONT-AmpSeq |
+
+mcmicro was already manual before T7. T7 moved the six Snakemake entries there: conda pins that no longer solve, a dead download URL, a missing conda package, Ensembl timeouts, or no maintenance since 2019 (reasons per entry in the research note, §2).
 
 - **`run_corpus.py`** runs one entry, a tier or everything, and writes `result.json` per pipeline. An entry can carry extra environment (`env`), extra arguments (`args`), its own `snakefile`, the external services it needs (`network`) and a `note`. A ref that is a full commit SHA is cloned by SHA. Every invocation, including `--matrix TIER` (the CI matrix), first validates the corpus: every ref must be a release tag or a commit SHA, never a branch, and paths and `args` must be plain tokens.
 - **The same entries are reused later:** once the server exists, they are launched *through Spectio* (runner → engine), and the checks move from exit codes to Spectio's own run states, gates and evidence.
