@@ -1,0 +1,1502 @@
+openapi: 3.1.0
+# Throwaway spike (review round R6-contract). Not a contract, not product code.
+# Derived from docs/specs/api-and-data-model.md (draft v0.1, 2026-10-25), scoped to
+# version 0.0.1 by docs/specs/dev-environment-and-testing.md §15 and docs/specs/mvp-0.0.1.md.
+# Every place where the specs are silent, ambiguous or contradictory carries `x-spec-gap`.
+info:
+  title: Spectio API (0.0.1 draft skeleton)
+  version: 0.0.1-draft
+  summary: Skeleton of API v1 restricted to the 0.0.1 features. No implementation.
+  description: |
+    Scope (dev-environment-and-testing.md §15.1): workflows, launch, runs, tasks and logs,
+    stages, events (SSE stream and engine-bridge ingest), relaunch with parameter overrides,
+    parameter history and lineage, checks and gates of one stage (read results, decide).
+
+    Deployment: personal mode, `auth.mode: single`, bound to 127.0.0.1 (api-and-data-model.md §1, §6;
+    authentication-and-access.md §1). There are no roles in 0.0.1. All tenancy fields
+    (`project_id`, `created_by`, `created_at`) are still present (api-and-data-model.md §4, §6).
+
+    Conventions (api-and-data-model.md §4): JSON; prefixed ULID IDs; cursor pagination with
+    `cursor`, `limit` (max 200) and `next`, no totals; `Idempotency-Key` on every POST that
+    creates or triggers something (kept 24 h, scoped to the caller; replay with a different body
+    returns 422); `ETag` / `If-Match` on gates; errors as RFC 9457 `application/problem+json`.
+  x-spec-ref: "api-and-data-model.md §4"
+servers:
+  - url: "{root}/api/v1"
+    description: "Base path `{root}/api/v1` (api-and-data-model.md §4)."
+    variables:
+      root:
+        default: ""
+        enum: ["", "/spectio"]
+        description: "Empty for a standalone install; `/spectio` when co-hosted with depictio."
+
+# Single-user mode (api-and-data-model.md §6 "Single-user mode"; authentication-and-access.md §1):
+# requests from 127.0.0.1 or a Unix socket without a token are treated as the one local user;
+# any remote access needs a token. The empty requirement `{}` models the loopback case.
+security:
+  - {}
+  - bearerToken: []
+x-spec-gap: "Single mode accepts token-less requests from 127.0.0.1 (api-and-data-model.md §6; authentication-and-access.md §1), but no spec says how the API defends against a web page in the user's browser calling 127.0.0.1 (cross-site requests, DNS rebinding): no Origin / Host check and no CSRF rule for single mode. The CSRF token of authentication-and-access.md §3 applies to browser sessions only."
+
+tags:
+  - name: workflows
+  - name: runs
+  - name: tasks
+  - name: gates
+  - name: events
+  - name: ingest
+
+paths:
+  # ---------------------------------------------------------------- workflows
+  /workflows:
+    x-spec-ref: "api-and-data-model.md §5 (Workflows)"
+    get:
+      tags: [workflows]
+      operationId: listWorkflows
+      summary: List workflows of the projects the caller can see.
+      parameters:
+        - $ref: "#/components/parameters/Project"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Fields"
+      responses:
+        "200":
+          description: One page of workflows.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkflowPage" }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      tags: [workflows]
+      operationId: registerWorkflow
+      summary: Register a workflow.
+      x-spec-gap: "api-and-data-model.md §5 lists `POST /workflows` but gives no request body; §7 only gives the stored columns (project_id, source, engine). How a source location (git URL, local path, nf-core name) and a revision are passed, and whether the first workflow version is created by this call, is not specified."
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/WorkflowCreate" }
+      responses:
+        "201":
+          description: The registered workflow.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Workflow" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /workflows/{id}:
+    x-spec-ref: "api-and-data-model.md §5 (Workflows)"
+    parameters:
+      - $ref: "#/components/parameters/WorkflowId"
+    get:
+      tags: [workflows]
+      operationId: getWorkflow
+      summary: Read one workflow.
+      responses:
+        "200":
+          description: The workflow.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Workflow" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /workflows/{id}/versions:
+    x-spec-ref: "api-and-data-model.md §5 (Workflows)"
+    parameters:
+      - $ref: "#/components/parameters/WorkflowId"
+    get:
+      tags: [workflows]
+      operationId: listWorkflowVersions
+      summary: List the versions of a workflow.
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: One page of workflow versions.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/WorkflowVersionPage" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /workflow-versions/{id}/schema:
+    x-spec-ref: "api-and-data-model.md §5 (Workflows); ui-spec.md §4.6"
+    parameters:
+      - $ref: "#/components/parameters/WorkflowVersionId"
+    get:
+      tags: [workflows]
+      operationId: getWorkflowVersionSchema
+      summary: Read the parameters JSON Schema of a workflow version (drives the launch form).
+      x-spec-gap: "ui-spec.md §4.6 builds the Snakemake form from the config schema plus the `ui:` block of `spectio.yml`, whose format is 'still to be drafted' (checking-scenarios.md §12.1). Whether this endpoint returns the merged schema, and how `ui:` hints are carried, is not specified."
+      responses:
+        "200":
+          description: "The params JSON Schema (`workflow_versions.params_schema`, api-and-data-model.md §7)."
+          content:
+            application/json:
+              schema:
+                type: object
+                description: A JSON Schema document (nextflow_schema.json or the Snakemake config schema).
+                additionalProperties: true
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  # ---------------------------------------------------------------- runs
+  /runs:
+    x-spec-ref: "api-and-data-model.md §5 (Runs; Example: launch from a LIMS)"
+    get:
+      tags: [runs]
+      operationId: listRuns
+      summary: List runs of the projects the caller can see.
+      parameters:
+        - $ref: "#/components/parameters/Project"
+        - name: state
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/RunState" }
+        - name: workflow
+          in: query
+          required: false
+          description: "Workflow ID (`wf_…`)."
+          schema: { $ref: "#/components/schemas/WorkflowId" }
+        - name: external_ref
+          in: query
+          required: false
+          description: "For example `labid:sample/123`."
+          schema: { type: string }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Fields"
+      responses:
+        "200":
+          description: One page of runs.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RunPage" }
+        default: { $ref: "#/components/responses/Problem" }
+    post:
+      tags: [runs]
+      operationId: launchRun
+      summary: Launch a run.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RunCreate" }
+      responses:
+        "201":
+          description: "The run, with its `id`, `state: queued` and links (api-and-data-model.md §5). A retry with the same Idempotency-Key from the same caller returns the same run."
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /runs/{id}:
+    x-spec-ref: "api-and-data-model.md §5 (Runs)"
+    parameters:
+      - $ref: "#/components/parameters/RunIdPath"
+    get:
+      tags: [runs]
+      operationId: getRun
+      summary: Read one run.
+      responses:
+        "200":
+          description: The run.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /runs/{id}:cancel:
+    x-spec-ref: "api-and-data-model.md §5 (Runs), §7.1"
+    parameters:
+      - $ref: "#/components/parameters/RunIdPath"
+    post:
+      tags: [runs]
+      operationId: cancelRun
+      summary: "Request cancellation: `queued`, `running`, `awaiting_review` or `paused` → `cancelling` (§7.1)."
+      x-spec-gap: "api-and-data-model.md §5/§7.1 do not say what `:cancel` returns (the run, 202, or nothing), nor the response on a run in a state that cannot be cancelled (terminal or already `cancelling`): 409 or an idempotent 200."
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: The run, now `cancelling`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Problem" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /runs/{id}:relaunch:
+    x-spec-ref: "api-and-data-model.md §5 (Runs: mode, from stage, param overrides); ui-spec.md §4.6"
+    parameters:
+      - $ref: "#/components/parameters/RunIdPath"
+    post:
+      tags: [runs]
+      operationId: relaunchRun
+      summary: Relaunch a run (resume, rerun from a stage, or start fresh), optionally with parameter overrides.
+      x-spec-gap: "api-and-data-model.md §5 says a relaunch creates a run linked by `runs.parent_run_id` and `relaunch_mode` (§7), and synthesis.md §5ter says each launch is a Run in the same Lineage; but §7 `launches` holds 'one row per head process of a run (first launch, each Continue, resume or relaunch)', which suggests a relaunch is a new launch of the same run. Whether this returns a new run (201) or the same run is contradictory."
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/RelaunchRequest" }
+      responses:
+        "201":
+          description: The new run, with `parent_run_id` set to this run.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Run" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409": { $ref: "#/components/responses/Problem" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /runs/{id}/graph:
+    x-spec-ref: "api-and-data-model.md §5 (Runs); ui-spec.md §3.2, §4.4, §5.1"
+    parameters:
+      - $ref: "#/components/parameters/RunIdPath"
+    get:
+      tags: [runs]
+      operationId: getRunGraph
+      summary: Read the run's stages (and graph).
+      x-spec-gap: "Stages are a 0.0.1 monitoring feature (dev-environment-and-testing.md §15.1), but api-and-data-model.md §5 has no stages endpoint and no stage schema; `GET /runs/{id}/graph` is listed without content. The per-stage state shown by the gauge (ui-spec.md §3.2: completed, running, awaiting review, failed, skipped, not started) has no enum, and whether a stage is referenced by `stages[].id` or by index (`runs.stage_index`, `gates.stage`) is not specified (§7)."
+      responses:
+        "200":
+          description: The run graph with its stages.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/RunGraph" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /runs/{id}/processes:
+    x-spec-ref: "api-and-data-model.md §5 (Runs)"
+    parameters:
+      - $ref: "#/components/parameters/RunIdPath"
+    get:
+      tags: [runs]
+      operationId: listRunProcesses
+      summary: "Per process or rule: tasks by state, retries, peak RSS, native ID range (the source of task counts, since lists return no total, §4)."
+      responses:
+        "200":
+          description: One entry per process or rule.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/ProcessSummaryPage" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /runs/{id}/params:
+    x-spec-ref: "api-and-data-model.md §5 (Runs), §7 (run_inputs); ui-spec.md §4.4 (Parameters tab)"
+    parameters:
+      - $ref: "#/components/parameters/RunIdPath"
+    get:
+      tags: [runs]
+      operationId: getRunParams
+      summary: Read the parameter versions of a run (parameter history).
+      x-spec-gap: "api-and-data-model.md §5 lists `GET /runs/{id}/params` without a response shape. Whether it returns every `run_inputs` version of kind `params` or only the resolved one, and whether the server or the client computes the diff against the previous run of the lineage (ui-spec.md §4.4 'what changed'), is not specified."
+      responses:
+        "200":
+          description: "The `run_inputs` rows of kind `params` for this run."
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/RunInput" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /runs/{id}/lineage:
+    x-spec-ref: "api-and-data-model.md §5 (Runs); ui-spec.md §4.4 (Lineage tab)"
+    parameters:
+      - $ref: "#/components/parameters/RunIdPath"
+    get:
+      tags: [runs]
+      operationId: getRunLineage
+      summary: Read the previous and next runs of this run's lineage, with what changed.
+      x-spec-gap: "`GET /runs/{id}/lineage` has no response shape in api-and-data-model.md §5. ui-spec.md §4.4 wants 'previous and next runs (resume / rerun / restart), with what changed'; no lineage ID or 'what changed' structure is defined (§7 has only `parent_run_id` and `relaunch_mode`)."
+      responses:
+        "200":
+          description: The lineage of the run.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Lineage" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /runs/{id}/tasks:
+    x-spec-ref: "api-and-data-model.md §5 (Tasks & logs)"
+    parameters:
+      - $ref: "#/components/parameters/RunIdPath"
+    get:
+      tags: [tasks]
+      operationId: listRunTasks
+      summary: List the tasks of a run (filter by state, ui-spec.md §4.4).
+      parameters:
+        - name: state
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/TaskState" }
+        - name: stage
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/StageRef" }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Sort"
+        - $ref: "#/components/parameters/Fields"
+      responses:
+        "200":
+          description: One page of tasks.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/TaskPage" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /runs/{id}/logs:
+    x-spec-ref: "api-and-data-model.md §5 (Tasks & logs)"
+    parameters:
+      - $ref: "#/components/parameters/RunIdPath"
+    get:
+      tags: [tasks]
+      operationId: getRunLog
+      summary: Read the run log (the engine head process log).
+      x-spec-gap: "`GET /runs/{id}/logs` (api-and-data-model.md §5) has no content type or range rule (unlike task logs, which take range requests), and does not say which launch's head log is returned when a run has several `launches` (§7)."
+      responses:
+        "200":
+          description: The run log as text.
+          content:
+            text/plain:
+              schema: { type: string }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /tasks/{id}:
+    x-spec-ref: "api-and-data-model.md §5 (Tasks & logs)"
+    parameters:
+      - $ref: "#/components/parameters/TaskIdPath"
+    get:
+      tags: [tasks]
+      operationId: getTask
+      summary: Read one task.
+      responses:
+        "200":
+          description: The task.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Task" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /tasks/{id}/attempts:
+    x-spec-ref: "api-and-data-model.md §5 (Tasks & logs), §7 (attempts)"
+    parameters:
+      - $ref: "#/components/parameters/TaskIdPath"
+    get:
+      tags: [tasks]
+      operationId: listTaskAttempts
+      summary: List the attempts (retries) of a task.
+      responses:
+        "200":
+          description: The attempts, in order of `n`.
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Attempt" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /tasks/{id}/logs/{stream}:
+    x-spec-ref: "api-and-data-model.md §5 (Tasks & logs); ui-spec.md §4.4 (Logs tab)"
+    parameters:
+      - $ref: "#/components/parameters/TaskIdPath"
+      - name: stream
+        in: path
+        required: true
+        schema:
+          type: string
+          enum: [stdout, stderr]
+    get:
+      tags: [tasks]
+      operationId: getTaskLog
+      summary: Read a task's stdout or stderr (range requests; fetched on demand through the runner).
+      x-spec-gap: "api-and-data-model.md §5 does not say which attempt's log is returned (the last one?) nor how to ask for another attempt, nor the response when the runner that holds the file is offline (ui-spec.md §4.4 'fetched on demand through the runner')."
+      parameters:
+        - name: Range
+          in: header
+          required: false
+          description: "RFC 9110 byte range, e.g. `bytes=0-65535`."
+          schema: { type: string }
+      responses:
+        "200":
+          description: The whole log.
+          content:
+            text/plain:
+              schema: { type: string }
+        "206":
+          description: The requested byte range.
+          headers:
+            Content-Range:
+              schema: { type: string }
+          content:
+            text/plain:
+              schema: { type: string }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "416":
+          description: Range not satisfiable.
+        default: { $ref: "#/components/responses/Problem" }
+
+  # ---------------------------------------------------------------- gates and checks
+  /gates:
+    x-spec-ref: "api-and-data-model.md §5 (Gates)"
+    get:
+      tags: [gates]
+      operationId: listGates
+      summary: List gates (in 0.0.1, at most one gate per run).
+      parameters:
+        - $ref: "#/components/parameters/Project"
+        - name: state
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/GateState" }
+        - name: assigned_to
+          in: query
+          required: false
+          description: "`me` for the caller's queue (§5). With one user and no roles in 0.0.1 it has no effect."
+          schema: { type: string }
+        - name: run
+          in: query
+          required: false
+          description: Restrict to the gates of one run.
+          x-spec-gap: "api-and-data-model.md §5 gives `GET /gates` filters `assigned_to` and `state` only; Run detail (ui-spec.md §4.4 Stages & gates) needs a run's gate, but no `run` filter, no `gate_id` on the run and no `/runs/{id}/gates` path is specified."
+          schema: { $ref: "#/components/schemas/RunId" }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Sort"
+      responses:
+        "200":
+          description: One page of gates.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/GatePage" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /gates/{id}:
+    x-spec-ref: "api-and-data-model.md §5 (Gates), §7, §7.1"
+    parameters:
+      - $ref: "#/components/parameters/GateIdPath"
+    get:
+      tags: [gates]
+      operationId: getGate
+      summary: Read one gate; the response carries its ETag.
+      responses:
+        "200":
+          description: The gate.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Gate" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /gates/{id}/checks:
+    x-spec-ref: "api-and-data-model.md §5 (Gates), §7 (check_results); checking-scenarios.md §4, §11.4"
+    parameters:
+      - $ref: "#/components/parameters/GateIdPath"
+    get:
+      tags: [gates]
+      operationId: listGateChecks
+      summary: Read the check results that are the gate's evidence.
+      x-spec-gap: "`GET /gates/{id}/checks` has no response shape or paging rule in api-and-data-model.md §5; with item-scoped checks one gate can hold items × checks rows. The check definition (threshold `min`/`max`, `kind`, `scope`, checking-scenarios.md §4.1) is not on `check_results` (§7), so a client cannot show 'value vs threshold' (ReviewReport) without reading the manifest."
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: One page of check results.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CheckResultPage" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /gates/{id}/decisions:
+    x-spec-ref: "api-and-data-model.md §5 (Gates), §7 (decisions), §7.1"
+    parameters:
+      - $ref: "#/components/parameters/GateIdPath"
+    post:
+      tags: [gates]
+      operationId: decideGate
+      summary: "Record a decision: `approve`, `apply`, `go_back` (with a stage) or `stop` (§7)."
+      description: |
+        A decision is a vote; the gate's policy resolves the gate state in one conditional update
+        (`UPDATE gates … WHERE id=? AND state='open' AND etag=?`), so a timeout and a decision cannot both win (§7).
+        `approve` → run goes `awaiting_review` → `running`; `stop` → `cancelled` (§7.1). There is no `reject` verb: `stop` is the spec's term.
+      x-spec-gap: "(1) 0.0.1 allows 'approve then continue, or relaunch with changed parameters' (dev-environment-and-testing.md §15.1); whether 'relaunch with changed parameters' from a gate is decision `apply` with a change set (needs `/gates/{id}/change-set`, not in the 0.0.1 cut) or `go_back`, or `POST /runs/{id}:relaunch`, is not specified. (2) §4 says a decision on a quorum gate does not compare-and-swap on the gate ETag, yet §5 requires If-Match on `/decisions`; the response to a missing If-Match (428?) is not specified. (3) The response body (decision, gate, or both) is not specified."
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/DecisionCreate" }
+      responses:
+        "201":
+          description: The recorded decision.
+          headers:
+            ETag: { $ref: "#/components/headers/ETag" }
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Decision" }
+        "404": { $ref: "#/components/responses/NotFound" }
+        "409":
+          description: The gate is no longer `open` (decided, expired or superseded, §7.1).
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "412": { $ref: "#/components/responses/PreconditionFailed" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  # ---------------------------------------------------------------- events
+  /events:
+    x-spec-ref: "api-and-data-model.md §5 (Events), §8, §8.2"
+    get:
+      tags: [events]
+      operationId: listEvents
+      summary: "Read events: one run after a sequence number, or the activity feed of visible projects."
+      x-spec-gap: "api-and-data-model.md §8 defines the CloudEvents envelope for webhooks and SSE, and §7 the `events` table columns (seq, event_id, source_seq, engine_time, received_at, actor_kind, payload). Which of the two shapes `GET /events` returns is not specified; the draft returns the envelope. How `after=seq` combines with `cursor`/`next` (§4) is not specified either."
+      parameters:
+        - name: run
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/RunId" }
+        - name: after
+          in: query
+          required: false
+          description: "Per-run sequence (`seq`); only with `run` (§8.2: there is no global cursor)."
+          schema: { type: integer, minimum: 0 }
+        - $ref: "#/components/parameters/Project"
+        - name: type
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/EventType" }
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: One page of events, ordered by `spectiosequence` within a run.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EventPage" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  /events/stream:
+    x-spec-ref: "api-and-data-model.md §5 (Events), §8, §8.2, §8.3"
+    get:
+      tags: [events]
+      operationId: streamEvents
+      summary: "Server-sent events. A single-run stream resumes with `Last-Event-ID` (= the run's `seq`); a multi-run stream resumes by snapshot then tail (§8.2)."
+      description: |
+        Rules (§8.3): at most one coalesced delta per run per second (counters per process and state,
+        and the IDs of changed rows; clients refetch what they show); raw task events go only to a client
+        that has that task open; one `EventSource` per browser, shared by its tabs; clients reconnect with jitter.
+        Events are filtered at fan-out against an authorisation cache (§8 "Who receives which event").
+      x-spec-gap: "(1) The stream's filter parameters are not named in api-and-data-model.md §5 (the draft reuses `run` and `project` from `GET /events`). (2) The coalesced delta of §8.3 is not an event type in the §8 catalogue, which says it is complete; its name and fields are not specified. (3) How a client says it 'has a task open' to receive raw task events (§8.3) is not specified. (4) The SSE `event:` field value is not specified."
+      parameters:
+        - name: run
+          in: query
+          required: false
+          schema: { $ref: "#/components/schemas/RunId" }
+        - $ref: "#/components/parameters/Project"
+        - name: Last-Event-ID
+          in: header
+          required: false
+          description: "Single-run streams only: the last `spectiosequence` received."
+          schema: { type: string }
+      responses:
+        "200":
+          description: "A `text/event-stream`. Each frame is described by `SseFrame`; its `data` is one JSON object."
+          content:
+            text/event-stream:
+              schema: { $ref: "#/components/schemas/SseFrame" }
+        default: { $ref: "#/components/responses/Problem" }
+
+  # ---------------------------------------------------------------- ingest
+  /ingest/events:
+    x-spec-ref: "api-and-data-model.md §5 (Ingest), §8.1; architecture-plugins-and-packaging.md §12, §13"
+    post:
+      tags: [ingest]
+      operationId: ingestEvents
+      summary: "Engine bridges (`nf-spectio`, Snakemake logger plugin) and the runner (forwarding the spool) post event batches."
+      description: |
+        Ingest validates the batch, appends it to `events` and acknowledges (§8.1). Batches of at most
+        500 events or 1 s, gzip-compressed (architecture §13.2). Idempotent on `unique (run_id, event_id)`
+        (architecture §13.1). Under back-pressure: `429` with `Retry-After` (§8.1); bridges also honour `503`.
+        Servers ignore unknown fields; a bridge outside the support window gets problem type
+        `ingest-version-unsupported` (architecture §12). The Tower `/trace/*` routes are not implemented (decision 0001).
+      x-spec-gap: "The wire format, payload cap, heartbeat and buffer bounds are delegated by architecture-plugins-and-packaging.md §12/§13, cli-and-shared-libraries.md §2 and schedulers-and-monitoring.md to 'the ingest contract, api-and-data-model.md §14', which does not exist (the spec ends at §13). Missing: the batch envelope, how a bridge names its run (run ID? launch ID?), how the ingest schema version is sent, whether heartbeats are ingest events, the acknowledgement body (the runner must know what was acknowledged, §13.1), and how a bridge authenticates (single mode: token-less from 127.0.0.1?)."
+      parameters:
+        - name: Content-Encoding
+          in: header
+          required: false
+          schema:
+            type: string
+            enum: [gzip]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: "#/components/schemas/IngestBatch" }
+      responses:
+        "200":
+          description: The batch was appended (duplicates by event ID are ignored).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/IngestAck" }
+        "422": { $ref: "#/components/responses/ValidationProblem" }
+        "429":
+          description: Back-pressure; retry after the given delay.
+          headers:
+            Retry-After: { $ref: "#/components/headers/RetryAfter" }
+          content:
+            application/problem+json:
+              schema: { $ref: "#/components/schemas/Problem" }
+        "503":
+          description: Unavailable; retry after the given delay.
+          headers:
+            Retry-After: { $ref: "#/components/headers/RetryAfter" }
+        default: { $ref: "#/components/responses/Problem" }
+
+components:
+  securitySchemes:
+    bearerToken:
+      type: http
+      scheme: bearer
+      description: |
+        Personal, service-account or agent token `spk_<kind>_<random>` (api-and-data-model.md §6
+        "Tokens and scopes"). In `single` mode it is needed only for non-loopback access
+        (another machine, a runner, an integration); loopback requests without a token act as the local user.
+        Scopes (`runs:read`, `runs:launch`, `gates:decide`, …) are not enforced as roles in 0.0.1.
+
+  parameters:
+    Project:
+      name: project
+      in: query
+      required: false
+      description: "Project ID (`prj_…`). Without it, every project the caller can read (§4)."
+      schema: { $ref: "#/components/schemas/ProjectId" }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque cursor, the `next` value of the previous page.
+      schema: { type: string }
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 200 }
+      x-spec-gap: "api-and-data-model.md §4 sets `limit` ≤ 200 but no default."
+    Sort:
+      name: sort
+      in: query
+      required: false
+      description: "Field name, `-` prefix for descending, e.g. `-created_at` (§4)."
+      schema: { type: string }
+      x-spec-gap: "api-and-data-model.md §4 gives `?sort=-created_at` as the only example; the sortable fields of each list are not specified."
+    Fields:
+      name: fields
+      in: query
+      required: false
+      description: Sparse fields, comma-separated (§4).
+      style: form
+      explode: false
+      schema:
+        type: array
+        items: { type: string }
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: false
+      description: "Kept 24 h, unique per (caller scope, method, route). A replay returns the stored response; a replay with a different body returns 422 (§4)."
+      x-spec-gap: "api-and-data-model.md §4 puts `Idempotency-Key` 'on every POST that creates or triggers something' but does not say whether it is required or optional, nor its maximum length or charset."
+      schema: { type: string }
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: The gate's current ETag (§4, §5).
+      schema: { type: string }
+    WorkflowId:
+      name: id
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/WorkflowId" }
+    WorkflowVersionId:
+      name: id
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/WorkflowVersionId" }
+    RunIdPath:
+      name: id
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/RunId" }
+    TaskIdPath:
+      name: id
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/TaskId" }
+    GateIdPath:
+      name: id
+      in: path
+      required: true
+      schema: { $ref: "#/components/schemas/GateId" }
+
+  headers:
+    ETag:
+      description: Entity tag of the gate (`gates.etag`, §7).
+      schema: { type: string }
+    RetryAfter:
+      description: Seconds to wait (RFC 9110).
+      schema: { type: integer, minimum: 0 }
+
+  responses:
+    Problem:
+      description: "RFC 9457 problem details (§4)."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    NotFound:
+      description: Not found, or not visible to the caller.
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    ValidationProblem:
+      description: "Validation failed, or an Idempotency-Key was replayed with a different body (§4)."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+    PreconditionFailed:
+      description: "The If-Match ETag is stale: someone else acted first (lost-update guard, §4)."
+      content:
+        application/problem+json:
+          schema: { $ref: "#/components/schemas/Problem" }
+
+  schemas:
+    # ------------------------------------------------------------ IDs
+    UlidBody:
+      description: "26-character Crockford base32 ULID body (§4: prefixed ULIDs, sortable, URL-safe)."
+      type: string
+      pattern: "^[0-9A-HJKMNP-TV-Z]{26}$"
+    ProjectId:
+      type: string
+      pattern: "^prj_[0-9A-HJKMNP-TV-Z]{26}$"
+    WorkflowId:
+      type: string
+      pattern: "^wf_[0-9A-HJKMNP-TV-Z]{26}$"
+    WorkflowVersionId:
+      type: string
+      pattern: "^wfv_[0-9A-HJKMNP-TV-Z]{26}$"
+    EnvironmentId:
+      type: string
+      pattern: "^env_[0-9A-HJKMNP-TV-Z]{26}$"
+    RunId:
+      type: string
+      pattern: "^run_[0-9A-HJKMNP-TV-Z]{26}$"
+    GateId:
+      type: string
+      pattern: "^gate_[0-9A-HJKMNP-TV-Z]{26}$"
+    TaskId:
+      type: string
+      x-spec-gap: "api-and-data-model.md §4 gives the prefixes `run_`, `gate_`, `prj_` and, in §5 examples, `wf_`, `wfv_`, `env_`, `whk_`. The prefixes of tasks, attempts, check results, decisions, events and principals are not specified."
+    PrincipalId:
+      type: string
+    StageRef:
+      type: string
+      description: "A stage, as `spectio.yml` `stages[].id` (checking-scenarios.md §12.1)."
+      x-spec-gap: "`runs.stage_index`, `gates.stage`, `tasks.stage`, `check_results.stage` and `decisions.stage` (api-and-data-model.md §7) do not say whether a stage is the `stages[].id` string or an index."
+
+    # ------------------------------------------------------------ common
+    Tenancy:
+      description: "Every object returns `project_id`, `created_by` and `created_at` (§4)."
+      type: object
+      required: [project_id, created_by, created_at]
+      properties:
+        project_id: { $ref: "#/components/schemas/ProjectId" }
+        created_by: { $ref: "#/components/schemas/PrincipalId" }
+        created_at: { type: string, format: date-time }
+    Problem:
+      description: "RFC 9457 problem details with a stable `type` URI; for validation, a list of field errors (§4)."
+      type: object
+      properties:
+        type: { type: string, format: uri-reference }
+        title: { type: string }
+        status: { type: integer }
+        detail: { type: string }
+        instance: { type: string, format: uri-reference }
+        errors:
+          type: array
+          items: { $ref: "#/components/schemas/FieldError" }
+          x-spec-gap: "api-and-data-model.md §4 asks for 'a list of field errors' but names neither the member nor its fields, nor the catalogue of `type` URIs (only `ingest-version-unsupported` is named, architecture §12)."
+    FieldError:
+      type: object
+      properties:
+        field: { type: string, description: JSON Pointer to the offending field. }
+        message: { type: string }
+    PageNext:
+      type: object
+      properties:
+        next:
+          type: [string, "null"]
+          description: Cursor of the next page; null on the last page. Lists return no total (§4).
+      x-spec-gap: "api-and-data-model.md §4 names `next` but not the member that holds the items; the draft uses `items`."
+
+    # ------------------------------------------------------------ workflows
+    Engine:
+      type: string
+      enum: [nextflow, snakemake]
+      description: "0.0.1 engines (dev-environment-and-testing.md §15.1); CWL and WDL later."
+    WorkflowSource:
+      type: string
+      enum: [git, nf-core, catalog, crate]
+      x-spec-gap: "api-and-data-model.md §7 `workflows.source` ∈ {git, nf-core, catalog, crate}, but the version `key` rule of the same row has a `local/<directory name>/<hash>` form and ui-spec.md §4.7 shows a 'local' source. `local` is missing from the enum, yet it is the obvious 0.0.1 source."
+    Workflow:
+      allOf:
+        - $ref: "#/components/schemas/Tenancy"
+        - type: object
+          required: [id, source, engine]
+          properties:
+            id: { $ref: "#/components/schemas/WorkflowId" }
+            source: { $ref: "#/components/schemas/WorkflowSource" }
+            engine: { $ref: "#/components/schemas/Engine" }
+            name:
+              type: string
+              x-spec-gap: "ui-spec.md §4.7 and §7 search ('names') show a workflow name, but the `workflows` row of api-and-data-model.md §7 has no name column."
+            updated_at: { type: string, format: date-time }
+    WorkflowCreate:
+      type: object
+      required: [source, engine]
+      properties:
+        project_id:
+          $ref: "#/components/schemas/ProjectId"
+          description: Defaults to the caller's default project (§4).
+        source: { $ref: "#/components/schemas/WorkflowSource" }
+        engine: { $ref: "#/components/schemas/Engine" }
+        location:
+          type: string
+          description: Git URL (https or ssh only, §5 'Imports are untrusted input'), nf-core name or local path.
+          x-spec-gap: "Field not named in api-and-data-model.md §5/§7; see the gap on `POST /workflows`."
+        revision:
+          type: string
+          description: Tag, branch or commit.
+    WorkflowVersion:
+      allOf:
+        - $ref: "#/components/schemas/Tenancy"
+        - type: object
+          required: [id, workflow_id, key]
+          properties:
+            id: { $ref: "#/components/schemas/WorkflowVersionId" }
+            workflow_id: { $ref: "#/components/schemas/WorkflowId" }
+            revision: { type: string }
+            commit: { type: string }
+            key:
+              type: string
+              description: "Canonical `<org>/<name>/<version>`, unique per project (§7, §13.4)."
+    WorkflowPage:
+      allOf:
+        - $ref: "#/components/schemas/PageNext"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Workflow" }
+    WorkflowVersionPage:
+      allOf:
+        - $ref: "#/components/schemas/PageNext"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/WorkflowVersion" }
+
+    # ------------------------------------------------------------ runs
+    RunState:
+      description: "Owned by api-and-data-model.md §7.1."
+      type: string
+      enum: [queued, running, pausing, paused, awaiting_review, cancelling, succeeded, failed, cancelled]
+    RunOrigin:
+      type: string
+      enum: [ui, api, wes, cli-observed, cli-adopted]
+    RunFlags:
+      description: "Flags, not states (§7.1)."
+      type: object
+      properties:
+        head_silent: { type: boolean }
+        runner_offline: { type: boolean }
+    RelaunchMode:
+      type: string
+      enum: [resume, rerun_from_stage, start_fresh]
+      description: "The three relaunch choices of ui-spec.md §4.6 (Resume / Rerun from a stage / Start fresh)."
+      x-spec-gap: "`runs.relaunch_mode` (api-and-data-model.md §7) has no value list. ui-spec.md §4.6 names Resume / Rerun from a stage / Start fresh, the Lineage tab (§4.4) says resume / rerun / restart, and synthesis.md §5ter.2 uses continue / params_changed / rerun_all. The wire values are invented here."
+    Run:
+      allOf:
+        - $ref: "#/components/schemas/Tenancy"
+        - type: object
+          required: [id, workflow_version_id, environment_id, state, origin]
+          properties:
+            id: { $ref: "#/components/schemas/RunId" }
+            workflow_version_id: { $ref: "#/components/schemas/WorkflowVersionId" }
+            environment_id: { $ref: "#/components/schemas/EnvironmentId" }
+            state: { $ref: "#/components/schemas/RunState" }
+            flags: { $ref: "#/components/schemas/RunFlags" }
+            stage_index:
+              type: [integer, "null"]
+              description: Current stage (§7).
+            origin: { $ref: "#/components/schemas/RunOrigin" }
+            parent_run_id:
+              oneOf:
+                - $ref: "#/components/schemas/RunId"
+                - type: "null"
+            relaunch_mode:
+              oneOf:
+                - $ref: "#/components/schemas/RelaunchMode"
+                - type: "null"
+            last_seq:
+              type: integer
+              description: "Per-run event sequence (§8.2); the SSE cursor."
+            bridge_versions:
+              type: object
+              description: Bridge name → version, as reported by the bridges (§7).
+              additionalProperties: { type: string }
+            external_refs:
+              type: array
+              items: { type: string }
+            updated_at: { type: string, format: date-time }
+            links:
+              type: object
+              additionalProperties: { type: string, format: uri-reference }
+              x-spec-gap: "api-and-data-model.md §5 says the launch response carries 'links' but defines neither their names nor their format."
+          x-spec-gap: "The run has no task counters and no name in api-and-data-model.md §7, while RunsTable (ui-spec.md §4.3) shows a name and counts; `PATCH /runs/{id}` (§5) edits `name` and `tags`, which no table holds."
+    RunPage:
+      allOf:
+        - $ref: "#/components/schemas/PageNext"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Run" }
+    Samplesheet:
+      type: object
+      required: [param, rows]
+      properties:
+        param:
+          type: string
+          description: The workflow parameter that receives the samplesheet (e.g. `input`).
+        rows:
+          type: array
+          items:
+            type: object
+            additionalProperties: true
+    RunCreate:
+      description: "Fields of the launch example in api-and-data-model.md §5."
+      type: object
+      required: [workflow_version_id, environment_id]
+      properties:
+        project_id:
+          $ref: "#/components/schemas/ProjectId"
+          description: Defaults to the caller's default project (§4).
+        workflow_version_id: { $ref: "#/components/schemas/WorkflowVersionId" }
+        environment_id:
+          $ref: "#/components/schemas/EnvironmentId"
+          x-spec-gap: "Required in the §5 example, but 0.0.1 has one local environment (mvp-0.0.1.md §1) and no environments endpoint in its cut; unlike `project_id`, no default environment is specified, so a 0.0.1 client has no way to learn the ID."
+        profile:
+          type: string
+          description: Engine profile, e.g. `singularity`.
+        params:
+          type: object
+          additionalProperties: true
+        samplesheet: { $ref: "#/components/schemas/Samplesheet" }
+        gates:
+          type: string
+          description: "`from-manifest` (§5 example)."
+          x-spec-gap: "Only the value `from-manifest` appears (api-and-data-model.md §5 example); other values (none, an explicit list, an overlay version, ui-spec.md §4.6) are not specified."
+        external_refs:
+          type: array
+          items: { type: string }
+      x-spec-gap: "The §5 example also has `notify.webhook_ids`; webhooks are outside the 0.0.1 cut (dev-environment-and-testing.md §15.1 does not list them), so it is left out here."
+    RelaunchRequest:
+      type: object
+      required: [mode]
+      properties:
+        mode: { $ref: "#/components/schemas/RelaunchMode" }
+        from_stage:
+          $ref: "#/components/schemas/StageRef"
+          description: Required when `mode` is `rerun_from_stage`.
+        params:
+          type: object
+          description: Parameter overrides, merged over the parent run's parameters.
+          additionalProperties: true
+      x-spec-gap: "api-and-data-model.md §5 says only '(mode, from stage, param overrides)'; the field names `from_stage` and `params`, and whether overrides merge or replace, are not specified."
+    RunInput:
+      description: "`run_inputs` row (§7)."
+      type: object
+      required: [run_id, version, kind, content, checksum]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+        version: { type: integer }
+        kind:
+          type: string
+          enum: [params, samplesheet]
+        content:
+          type: object
+          additionalProperties: true
+        checksum: { type: string }
+        created_at: { type: string, format: date-time }
+    LineageEntry:
+      type: object
+      required: [run_id, state]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+        parent_run_id:
+          oneOf:
+            - $ref: "#/components/schemas/RunId"
+            - type: "null"
+        relaunch_mode:
+          oneOf:
+            - $ref: "#/components/schemas/RelaunchMode"
+            - type: "null"
+        state: { $ref: "#/components/schemas/RunState" }
+        created_at: { type: string, format: date-time }
+        changed_params:
+          type: array
+          description: Names of the parameters that differ from the parent run.
+          items: { type: string }
+    Lineage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          description: Runs of the lineage, oldest first.
+          items: { $ref: "#/components/schemas/LineageEntry" }
+    Stage:
+      type: object
+      required: [id]
+      properties:
+        id: { $ref: "#/components/schemas/StageRef" }
+        name: { type: string }
+        gate_id:
+          oneOf:
+            - $ref: "#/components/schemas/GateId"
+            - type: "null"
+        state:
+          type: string
+          description: "Gauge state, ui-spec.md §3.2 (no wire values in the specs)."
+    RunGraph:
+      type: object
+      required: [run_id, stages]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+        stages:
+          type: array
+          items: { $ref: "#/components/schemas/Stage" }
+    ProcessSummary:
+      type: object
+      required: [process_or_rule]
+      x-spec-gap: "api-and-data-model.md §5 lists the content of `/processes` in words ('tasks by state, retries, peak RSS, native ID range') without field names."
+      properties:
+        process_or_rule: { type: string }
+        stage: { $ref: "#/components/schemas/StageRef" }
+        tasks_by_state:
+          type: object
+          additionalProperties: { type: integer, minimum: 0 }
+        retries: { type: integer, minimum: 0 }
+        peak_rss_bytes: { type: [integer, "null"] }
+        native_id_range:
+          type: [string, "null"]
+    ProcessSummaryPage:
+      allOf:
+        - $ref: "#/components/schemas/PageNext"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/ProcessSummary" }
+
+    # ------------------------------------------------------------ tasks
+    TaskState:
+      type: string
+      description: "Task states from ui-spec.md §3.1 (display labels)."
+      enum: [pending, submitted, running, succeeded, retried, failed, failed_ignored, cached, stored, not_scheduled]
+      x-spec-gap: "No spec owns a task state enum: the `tasks` row of api-and-data-model.md §7 has no state column (only `attempts.state`), ui-spec.md §3.1 lists display labels ('failed (ignored)', 'not scheduled'), and §8.2 writes `SUCCEEDED` / `RUNNING` in upper case."
+    FailureClass:
+      type: string
+      enum: [oom, timeout, preempted, node_failure, cancelled_external, image, tool_error, engine_fault]
+    Task:
+      allOf:
+        - $ref: "#/components/schemas/Tenancy"
+        - type: object
+          required: [id, run_id, process_or_rule]
+          properties:
+            id: { $ref: "#/components/schemas/TaskId" }
+            run_id: { $ref: "#/components/schemas/RunId" }
+            process_or_rule: { type: string }
+            stage: { $ref: "#/components/schemas/StageRef" }
+            tag:
+              type: string
+              description: Nextflow tag or Snakemake wildcards.
+            state: { $ref: "#/components/schemas/TaskState" }
+    Attempt:
+      type: object
+      required: [task_id, n, state]
+      properties:
+        task_id: { $ref: "#/components/schemas/TaskId" }
+        n: { type: integer, minimum: 1 }
+        state: { $ref: "#/components/schemas/TaskState" }
+        exit: { type: [integer, "null"] }
+        resources:
+          type: object
+          additionalProperties: true
+        failure_class:
+          oneOf:
+            - $ref: "#/components/schemas/FailureClass"
+            - type: "null"
+    TaskPage:
+      allOf:
+        - $ref: "#/components/schemas/PageNext"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Task" }
+
+    # ------------------------------------------------------------ gates and checks
+    GateState:
+      description: "Owned by api-and-data-model.md §7.1."
+      type: string
+      enum: [open, decided, expired, superseded]
+    Gate:
+      allOf:
+        - $ref: "#/components/schemas/Tenancy"
+        - type: object
+          required: [id, run_id, stage, state, etag]
+          properties:
+            id: { $ref: "#/components/schemas/GateId" }
+            run_id: { $ref: "#/components/schemas/RunId" }
+            stage: { $ref: "#/components/schemas/StageRef" }
+            state: { $ref: "#/components/schemas/GateState" }
+            item_kind: { type: string }
+            policy:
+              type: object
+              description: "The `decide` block (checking-scenarios.md §12.4)."
+              additionalProperties: true
+            opened_at: { type: string, format: date-time }
+            etag: { type: string }
+    Verdict:
+      type: string
+      enum: [pass, fail, provisional, too_large, error]
+    Severity:
+      type: string
+      enum: [block, warn, info]
+    CheckResult:
+      description: "`check_results` row (api-and-data-model.md §7; checking-scenarios.md §11.4)."
+      type: object
+      required: [run_id, stage, check_key, verdict, severity, evaluated_at]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+        stage: { $ref: "#/components/schemas/StageRef" }
+        gate_id:
+          oneOf:
+            - $ref: "#/components/schemas/GateId"
+            - type: "null"
+        watch_id: { type: [string, "null"] }
+        check_key: { type: string }
+        item_key: { type: [string, "null"] }
+        value:
+          description: The measured value.
+          x-spec-gap: "The type of `check_results.value` (number, string, JSON) is not specified (api-and-data-model.md §7); `spectio.check.evaluated` carries 'values' (plural, §8)."
+        verdict: { $ref: "#/components/schemas/Verdict" }
+        severity: { $ref: "#/components/schemas/Severity" }
+        file_uri: { type: [string, "null"] }
+        file_hash: { type: [string, "null"] }
+        evaluated_at: { type: string, format: date-time }
+    CheckResultPage:
+      allOf:
+        - $ref: "#/components/schemas/PageNext"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/CheckResult" }
+    GatePage:
+      allOf:
+        - $ref: "#/components/schemas/PageNext"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/Gate" }
+    DecisionAction:
+      type: string
+      enum: [approve, apply, go_back, stop]
+      description: "`approve` continue unchanged · `apply` continue with the change set · `go_back` rerun from an earlier stage · `stop` end the run (→ `cancelled`) (§7)."
+    ActorKind:
+      type: string
+      enum: [person, agent, service, cli]
+      x-spec-gap: "api-and-data-model.md §7 gives the `actor_kind` vocabulary as labels ('person, AI agent, service / API, CLI'), not wire values."
+    DecisionCreate:
+      type: object
+      required: [action]
+      properties:
+        action: { $ref: "#/components/schemas/DecisionAction" }
+        stage:
+          $ref: "#/components/schemas/StageRef"
+          description: Required for `go_back`.
+        justification: { type: string }
+        evidence:
+          type: object
+          additionalProperties: true
+        change_set_id:
+          type: string
+          description: "For `apply`; change sets are outside the 0.0.1 cut."
+    Decision:
+      type: object
+      required: [id, gate_id, principal_id, actor_kind, action, created_at]
+      properties:
+        id: { type: string }
+        gate_id: { $ref: "#/components/schemas/GateId" }
+        principal_id: { $ref: "#/components/schemas/PrincipalId" }
+        actor_kind: { $ref: "#/components/schemas/ActorKind" }
+        model:
+          type: [string, "null"]
+          description: Agent model, for AI agents.
+        action: { $ref: "#/components/schemas/DecisionAction" }
+        stage:
+          oneOf:
+            - $ref: "#/components/schemas/StageRef"
+            - type: "null"
+        justification: { type: [string, "null"] }
+        evidence:
+          type: object
+          additionalProperties: true
+        change_set_id: { type: [string, "null"] }
+        created_at: { type: string, format: date-time }
+
+    # ------------------------------------------------------------ events
+    EventType:
+      description: "The §8 catalogue entries relevant to 0.0.1 (complete catalogue: api-and-data-model.md §8)."
+      type: string
+      enum:
+        - spectio.run.created
+        - spectio.run.state_changed
+        - spectio.run.completed
+        - spectio.run.failed
+        - spectio.stage.started
+        - spectio.stage.completed
+        - spectio.task.failed
+        - spectio.task.retried
+        - spectio.gate.opened
+        - spectio.gate.decided
+        - spectio.check.failed
+        - spectio.check.evaluated
+    CloudEvent:
+      description: |
+        CloudEvents 1.0.2 envelope with the Spectio extensions (api-and-data-model.md §8).
+        `id`, `source`, `specversion` and `type` are required.
+      type: object
+      required: [specversion, id, source, type]
+      properties:
+        specversion: { const: "1.0" }
+        id: { type: string }
+        source: { type: string, format: uri-reference }
+        type: { $ref: "#/components/schemas/EventType" }
+        time: { type: string, format: date-time }
+        subject: { type: string }
+        datacontenttype: { const: application/json }
+        spectioproject: { $ref: "#/components/schemas/ProjectId" }
+        spectioenvironment: { $ref: "#/components/schemas/EnvironmentId" }
+        spectiosequence:
+          type: integer
+          description: Per-run sequence (`seq`, §8.2).
+          x-spec-gap: "§8 offers `spectiosequence` 'or the documented `sequence` extension' without choosing; CloudEvents extension attributes are strings, so whether the value is sent as a string or an integer is also open."
+        data: { type: object }
+      x-spec-gap: "api-and-data-model.md §8 lists event types with a 'When' column only; the `data` schema of each type is not specified (except fragments: `state_changed` 'with the new value', `task.failed` carries `failure_class`, `check.failed` 'run, stage, item, check, value', `check.evaluated` 'run, stage, item, check, values, verdict, file hash'). The `data` schemas below are minimal guesses from those fragments."
+    RunStateChangedData:
+      type: object
+      required: [run_id, state]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+        state: { $ref: "#/components/schemas/RunState" }
+    RunLifecycleData:
+      description: "`spectio.run.created`, `.completed`, `.failed`."
+      type: object
+      required: [run_id]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+    StageData:
+      description: "`spectio.stage.started`, `.completed`."
+      type: object
+      required: [run_id, stage]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+        stage: { $ref: "#/components/schemas/StageRef" }
+    TaskEventData:
+      description: "`spectio.task.failed`, `.retried`; coalesced per run per minute for subscribers (§8)."
+      type: object
+      required: [run_id, task_id]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+        task_id: { $ref: "#/components/schemas/TaskId" }
+        failure_class: { $ref: "#/components/schemas/FailureClass" }
+      x-spec-gap: "§8 says task events are 'coalesced per run per minute for subscribers' but not what a coalesced event carries (one task ID or a list, counts)."
+    GateEventData:
+      description: "`spectio.gate.opened`, `.decided`."
+      type: object
+      required: [run_id, gate_id]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+        gate_id: { $ref: "#/components/schemas/GateId" }
+        stage: { $ref: "#/components/schemas/StageRef" }
+        action: { $ref: "#/components/schemas/DecisionAction" }
+    CheckEventData:
+      description: "`spectio.check.failed` (webhooks and SSE) and `spectio.check.evaluated` (SSE only)."
+      type: object
+      required: [run_id, stage, check_key]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+        stage: { $ref: "#/components/schemas/StageRef" }
+        item_key: { type: [string, "null"] }
+        check_key: { type: string }
+        value: {}
+        verdict: { $ref: "#/components/schemas/Verdict" }
+        file_hash: { type: [string, "null"] }
+    EventPage:
+      allOf:
+        - $ref: "#/components/schemas/PageNext"
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items: { $ref: "#/components/schemas/CloudEvent" }
+    SseFrame:
+      description: |
+        One SSE frame, written in the `text/event-stream` wire format (WHATWG HTML).
+        `id` is the run's `seq` on a single-run stream (§8.2). `data` is a CloudEvent,
+        or a coalesced delta (§8.3).
+      type: object
+      properties:
+        id: { type: string }
+        event: { type: string }
+        retry: { type: integer }
+        data:
+          oneOf:
+            - $ref: "#/components/schemas/CloudEvent"
+            - $ref: "#/components/schemas/RunDelta"
+    RunDelta:
+      description: "Coalesced per-run delta, at most one per run per second (§8.3)."
+      type: object
+      required: [run_id]
+      properties:
+        run_id: { $ref: "#/components/schemas/RunId" }
+        counters:
+          type: object
+          description: "Counters per process and state: process → state → count."
+          additionalProperties:
+            type: object
+            additionalProperties: { type: integer, minimum: 0 }
+        changed:
+          type: object
+          description: IDs of changed rows, by kind.
+          additionalProperties:
+            type: array
+            items: { type: string }
+      x-spec-gap: "Not in the §8 event catalogue, which says it is complete; shape invented from the §8.3 sentence."
+
+    # ------------------------------------------------------------ ingest
+    IngestEvent:
+      type: object
+      required: [event_id, type, source, source_seq]
+      properties:
+        event_id:
+          type: string
+          description: "Unique per run; makes direct posts and spool forwarding idempotent (architecture §13.1)."
+        run_id: { $ref: "#/components/schemas/RunId" }
+        type:
+          type: string
+          description: Native engine event type; the engine plugin's IngestAdapter maps it to Spectio events (architecture §3.6).
+        source:
+          type: string
+          description: "Producer: engine bridge, scheduler observer or live check (§8.2)."
+        source_seq:
+          type: integer
+          description: Monotonic per producer and run (§8.2).
+        engine_time:
+          type: string
+          format: date-time
+          description: The producer's clock (§8.2).
+        payload:
+          type: object
+          description: Native payload; the full trace record only on terminal events (architecture §13.2, §13.5).
+          additionalProperties: true
+    IngestBatch:
+      type: object
+      required: [events]
+      properties:
+        bridge:
+          type: object
+          description: Bridge name and version, recorded in `runs.bridge_versions` (§7; architecture §12).
+          properties:
+            name: { type: string, enum: [nf-spectio, snakemake-logger-plugin-spectio] }
+            version: { type: string }
+            engine_version: { type: string }
+        events:
+          type: array
+          maxItems: 500
+          items: { $ref: "#/components/schemas/IngestEvent" }
+      x-spec-gap: "Whole envelope invented: api-and-data-model.md §14 (the ingest contract named by architecture-plugins-and-packaging.md §12-§13) does not exist."
+    IngestAck:
+      type: object
+      properties:
+        accepted:
+          type: integer
+          description: Events appended.
+        duplicates:
+          type: integer
+          description: Events ignored because their `event_id` was already stored.
+      x-spec-gap: "§8.1 says ingest 'acknowledges'; the acknowledgement body, and how the runner learns which spooled events the server has (architecture §13.1), are not specified."
