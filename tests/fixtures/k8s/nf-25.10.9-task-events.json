@@ -1,0 +1,171 @@
+{
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "count": 16,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:29:10Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
+        "namespace": "spectio-work",
+        "resourceVersion": "877",
+        "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:29:21Z",
+      "message": "0/1 nodes are available: 1 Insufficient cpu. preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:29:10Z",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905.18e2aac1adc98030",
+        "namespace": "spectio-work",
+        "resourceVersion": "1286",
+        "uid": "5eb98ad0-0234-43d6-8598-63f1155377dd"
+      },
+      "reason": "FailedScheduling",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "",
+      "source": {
+        "component": "default-scheduler"
+      },
+      "type": "Warning"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:29:21Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
+        "namespace": "spectio-work",
+        "resourceVersion": "879",
+        "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:29:21Z",
+      "message": "Successfully assigned spectio-work/nf-12922699a5646d4d959b91bdfd6dfe20-6c905 to k8s-mini-control-plane",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:29:21Z",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905.18e2aac4318cca6a",
+        "namespace": "spectio-work",
+        "resourceVersion": "1304",
+        "uid": "5cef2f26-d0d2-419b-8934-beae00c92dd2"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "",
+      "source": {
+        "component": "default-scheduler"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:29:21Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{nf-12922699a5646d4d959b91bdfd6dfe20-6c905}",
+        "kind": "Pod",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
+        "namespace": "spectio-work",
+        "resourceVersion": "1275",
+        "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:29:21Z",
+      "message": "Container image \"python:3.12@sha256:98d8fe4e28bb2efeed9d9bce6a4705e80a6764367b65aea1dc4b96ded7b05620\" already present on machine and can be accessed by the pod",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:29:21Z",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905.18e2aac44d982479",
+        "namespace": "spectio-work",
+        "resourceVersion": "1308",
+        "uid": "5fd8064f-c136-4f89-9f8c-319d6d308b41"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:29:21Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{nf-12922699a5646d4d959b91bdfd6dfe20-6c905}",
+        "kind": "Pod",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
+        "namespace": "spectio-work",
+        "resourceVersion": "1275",
+        "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:29:21Z",
+      "message": "Container created",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:29:21Z",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905.18e2aac44eafbae3",
+        "namespace": "spectio-work",
+        "resourceVersion": "1311",
+        "uid": "43f4c4d4-aa06-44e7-a2b1-f1ec2b0d1431"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:29:21Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{nf-12922699a5646d4d959b91bdfd6dfe20-6c905}",
+        "kind": "Pod",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
+        "namespace": "spectio-work",
+        "resourceVersion": "1275",
+        "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:29:21Z",
+      "message": "Container started",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:29:21Z",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905.18e2aac454860dc7",
+        "namespace": "spectio-work",
+        "resourceVersion": "1316",
+        "uid": "585ee262-1643-4d0d-96af-3a8fd5c327ad"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    }
+  ],
+  "_fixture": {
+    "kubernetes": "kindest/node:v1.37.0",
+    "source": "https://github.com/weber8thomas/spectio/actions/runs/40672184666",
+    "nextflow": "25.10.9"
+  }
+}

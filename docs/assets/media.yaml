@@ -190,6 +190,14 @@ media:
       - docs/assets/diagrams/t3-sind-slurm_dark.svg
       - docs/assets/diagrams/t3-sind-slurm_light.png
       - docs/assets/diagrams/t3-sind-slurm_dark.png
+  - id: t4-kind-kueue
+    kind: diagram
+    generator: python3 tools/diagrams/t4_kind_kueue.py
+    outputs:
+      - docs/assets/diagrams/t4-kind-kueue_light.svg
+      - docs/assets/diagrams/t4-kind-kueue_dark.svg
+      - docs/assets/diagrams/t4-kind-kueue_light.png
+      - docs/assets/diagrams/t4-kind-kueue_dark.png
   - id: t2-engine-events-cast
     kind: cast
     # runs.sh replayed from spikes/engine-events/LOG.md §5 through a stub; analyse_*.py run for real on

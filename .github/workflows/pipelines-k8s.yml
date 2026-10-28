@@ -1,0 +1,73 @@
+name: pipelines · Kubernetes (kind, Kueue)
+
+# The kind profiles of docs/specs/dev-environment-and-testing.md §4.2 (dev/k8s/cluster.sh) and the Kubernetes
+# scenarios (tests/k8s/scenarios.sh): the synthetic Nextflow pipeline with -profile k8s on 25.10.9 and 26.10.4, each
+# head under its own ServiceAccount token; failure objects; Kueue Workloads waiting for quota; the runner's Role.
+# Fixtures go to the k8s-fixtures-* artifacts (committed copies in tests/fixtures/k8s/). Step page: docs/progress/W3/T4.md.
+# Not called by ci.yml yet, so not part of ci-ok: like dev-env.yml it runs on any push that touches its paths.
+on:
+  push:                    # any branch, so autopilot branches are checked before their PR
+    paths: ["dev/k8s/**", "dev/versions.env", "tests/k8s/**", "tests/pipelines/synthetic/nextflow/**", ".github/workflows/pipelines-k8s.yml"]
+  schedule:
+    - cron: "23 4 * * *"   # nightly (§11)
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: pipelines-k8s-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  k8s:
+    name: ${{ matrix.profile }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Nextflow 25.10 creates bare Pods, which Kueue manages only through its opt-in pod integration.
+          - {profile: mini, scenarios: "failures nf25"}
+          - {profile: kueue, scenarios: "kueue-wait nf26 runner"}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Bootstrap (kind, kubectl, Nextflow at the dev/versions.env pins)
+        run: bash dev/bootstrap.sh
+      - name: Cluster up
+        env:
+          PROFILE: ${{ matrix.profile }}
+        run: bash dev/k8s/cluster.sh up "$PROFILE"
+      - name: Scenarios
+        env:
+          SCENARIOS: ${{ matrix.scenarios }}
+        run: |
+          for s in $SCENARIOS; do
+            start=$SECONDS
+            echo "===== scenario $s"
+            bash tests/k8s/scenarios.sh "$s"
+            echo "TIMING $s $((SECONDS - start)) s"
+          done
+      - name: Cluster state on failure
+        if: failure()
+        run: |
+          kubectl get nodes,pods -A -o wide || true
+          kubectl -n spectio-work get events --sort-by=.lastTimestamp | tail -n 40 || true
+      - name: Upload fixtures and Nextflow logs
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: k8s-fixtures-${{ matrix.profile }}
+          path: |
+            .scenarios/k8s/fixtures/
+            .scenarios/k8s/*/.nextflow.log
+          include-hidden-files: true   # .scenarios/ and .nextflow.log are hidden paths
+          if-no-files-found: ignore

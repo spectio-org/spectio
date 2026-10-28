@@ -1,0 +1,29 @@
+# The work namespace of k8s-mini and k8s-kueue (docs/specs/dev-environment-and-testing.md §4.2), with a
+# ResourceQuota. Generous on purpose: it must never be the reason a task waits.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spectio-work
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: spectio-work
+  namespace: spectio-work
+spec:
+  hard:
+    pods: "100"
+    requests.cpu: "32"
+    requests.memory: 64Gi
+    count/jobs.batch: "200"
+---
+# Task pods run as `default` and never call the API: no token in them. Nextflow leaves the pod's own
+# automountServiceAccountToken unset unless k8s.pod sets it to false (PodSpecBuilder.groovy L469-L470 at v26.10.4,
+# L464-L465 at v25.10.9), so this account-level setting applies to both. Heads and the runner use their own
+# accounts (tests/k8s/rbac.yaml), which keep their token.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: default
+  namespace: spectio-work
+automountServiceAccountToken: false
