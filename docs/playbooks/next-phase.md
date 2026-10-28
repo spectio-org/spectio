@@ -378,12 +378,12 @@ accounts) under their own account on a SLURM login node and opens it through an 
 tunnel with a one-time token link; every request needs the token, and §15.3's security
 requirements are tasks with their own tests. From the UI it launches the synthetic
 Nextflow pipeline through nf-spectio and the synthetic Snakemake pipeline through the
-Spectio logger plugin: the built-in runner submits each Nextflow head with sbatch, and
-the Snakemake head too unless spike T3 rules it out (then it runs on the login node, per
-§15.1); each engine sends its tasks through its own SLURM executor. The plugins write events to the spool in
+Spectio logger plugin: the built-in runner starts each engine head in its own tmux
+session on the login node, never with sbatch (Thomas, 2026-10-28; the EMBL cluster only);
+each engine sends its tasks through its own SLURM executor. The plugins write events to the spool in
 the run directory and the built-in runner reads it; nothing posts over the network. It
-shows the runs in the Runs table and Run detail with their state, tasks, stages and head
-job state. The UI is ultra simple (Thomas, 2026-10-28): three screens (launch form, runs
+shows the runs in the Runs table and Run detail with their state, tasks, stages and
+whether the head is alive. The UI is ultra simple (Thomas, 2026-10-28): three screens (launch form, runs
 list, run detail), text and tables only, no visualisation (no DAG, timeline or charts).
 Relaunch and the parameter history are out of 0.0.1 (assumed — pending Thomas, inbox #61). Tests: the local executor for unit and API
 tests; the mini SLURM cluster (sind, slurm-mini, dev-environment-and-testing.md §4.1,
