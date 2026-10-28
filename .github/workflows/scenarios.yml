@@ -20,7 +20,7 @@ concurrency:
 
 jobs:
   parallel:
-    name: three scenarios in parallel
+    name: four scenarios in parallel
     runs-on: ubuntu-24.04
     timeout-minutes: 30
     permissions:

@@ -5,6 +5,8 @@
 # directory; then `down` in parallel, and nothing may be left: containers, networks and volumes are compared with
 # the state before `up`, and no sind realm or kind cluster named spx-* may remain.
 # Needs Docker on cgroup v2 (not a Claude Code cloud session), dev/bootstrap.sh's tools and Java (for slurm).
+# CI only (.github/workflows/scenarios.yml, on a dedicated runner): it takes ids 1-4 and compares the whole Docker
+# state before and after. On failure, a trap runs `down` for those ids.
 #
 #   bash tests/scenarios/parallel.sh
 set -euo pipefail
@@ -14,6 +16,8 @@ cd "$SPECTIO_REPO"
 out=$(mktemp -d)
 declare -A SCENARIO=([1]=happy-slurm-mini [2]=happy-slurm-mini [3]=happy-k8s-mini [4]=happy-local)
 die() { echo "::error::$*"; exit 1; }
+cleanup() { for id in "${!SCENARIO[@]}"; do python3 dev/scenario.py down "$id" >/dev/null || true; done; }
+trap '[ "$?" = 0 ] || cleanup' EXIT
 docker_state() { # every container, network and volume, by name
   { docker ps -a --format 'container {{.Names}}'; docker network ls --format 'network {{.Name}}'
     docker volume ls --format 'volume {{.Name}}'; } | sort
@@ -46,7 +50,7 @@ for id in 1 2; do
   grep -q "^spx-$id " "$out/realms" || die "no sind realm spx-$id"
   sind --realm "spx-$id" get clusters | grep -qw mini || die "realm spx-$id has no cluster mini"
 done
-[ "$(kind get clusters)" = spx-3 ] || die "kind clusters: $(kind get clusters | tr '\n' ' ')"
+kind get clusters | grep -qx spx-3 || die "no kind cluster spx-3: $(kind get clusters | tr '\n' ' ')"
 # Each sind cluster runs a job as spx that writes its realm into its own data directory, and only there.
 for id in 1 2; do
   data=$SPECTIO_REPO/.scenarios/$id
@@ -63,6 +67,10 @@ kc=$SPECTIO_REPO/.scenarios/3/kubeconfig
 KUBECONFIG=$kc kubectl wait --for=condition=Ready node --all --timeout=120s
 [ "$(docker inspect -f '{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}' spx-3-control-plane)" = "spx-3 " ] ||
   die "spx-3-control-plane is not on network spx-3 alone"
+# The node mounts the repository read-only; the only read-write bind under it is the scenario's own directory.
+rw=$(docker inspect spx-3-control-plane --format '{{json .Mounts}}' | jq -r --arg repo "$SPECTIO_REPO" \
+  '[.[] | select(.Type == "bind" and .RW and (.Source == $repo or (.Source | startswith($repo + "/")))) | .Source] | join(" ")')
+[ "$rw" = "$SPECTIO_REPO/.scenarios/3" ] || die "spx-3-control-plane: read-write binds under the repository: $rw"
 echo "--- memory per scenario (docker stats, MiB)"
 docker stats --no-stream --format '{{.Name}} {{.MemUsage}}' | sort | tee "$out/stats"
 python3 dev/scenario.py list

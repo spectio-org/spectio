@@ -8,10 +8,12 @@
 #
 # Tools (kind, kubectl) come from dev/bootstrap.sh at the pins of dev/versions.env. Docker must run on
 # cgroup v2, so not in a Claude Code cloud session (spike D2): this runs in CI (pipelines-k8s.yml) and on a laptop.
-# The repository is mounted into every node at its own path (kind extraMounts), so task pods that mount it
-# as a hostPath see the pipeline and its work directory under .scenarios/ (tests/k8s/kind.config).
+# The repository is mounted read-only into every node at its own path (kind extraMounts), so task pods that mount
+# it as a hostPath see the pipeline (tests/k8s/kind.config); only the data directory, $KIND_DATA_DIR (dev/scenario.py:
+# .scenarios/N) or else .scenarios/k8s (tests/k8s/scenarios.sh's work directory), is mounted read-write over it.
 # The kind cluster is named after the profile (k8s-mini, k8s-kueue), or $CLUSTER.
 # dev/scenario.py also sets KIND_API_PORT, KUBECONFIG and KIND_EXPERIMENTAL_DOCKER_NETWORK (its own network).
+DATA=${KIND_DATA_DIR:-$SPECTIO_REPO/.scenarios/k8s}
 # Built from spike t4-ci (docs/research/spike-t4-ci-2026-10-28.md).
 set -euo pipefail
 # shellcheck source=dev/lib.sh
@@ -27,24 +29,27 @@ log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 kind_config() { # mini|kueue
   printf 'kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\n'
   # dev/scenario.py puts the API in the scenario's port range; kind picks a random port otherwise
-  [ -z "${KIND_API_PORT:-}" ] || printf 'networking:\n  apiServerPort: %d\n' "$KIND_API_PORT"
+  [ -z "${KIND_API_PORT:-}" ] || printf 'networking:\n  apiServerAddress: 127.0.0.1\n  apiServerPort: %d\n' "$KIND_API_PORT"
   printf 'nodes:\n'
   local roles=(control-plane)
   [ "$1" = kueue ] && roles+=(worker worker)
   for role in "${roles[@]}"; do
-    printf '  - role: %s\n    extraMounts:\n      - hostPath: %s\n        containerPath: %s\n' \
-      "$role" "$SPECTIO_REPO" "$SPECTIO_REPO"
+    printf '  - role: %s\n    extraMounts:\n' "$role"
+    printf '      - hostPath: %s\n        containerPath: %s\n        readOnly: %s\n' \
+      "$SPECTIO_REPO" "$SPECTIO_REPO" true "$DATA" "$DATA" false
   done
 }
 
 install_kueue() {
-  local manifest=$SPECTIO_REPO/.scenarios/kueue-$KUEUE_VERSION.yaml t=$SECONDS
-  mkdir -p "${manifest%/*}"
+  local manifest t=$SECONDS
+  manifest=$(mktemp "$DATA/kueue-$KUEUE_VERSION.XXXXXX.yaml")
   curl -fsSL --retry 3 -o "$manifest" \
     "https://github.com/kubernetes-sigs/kueue/releases/download/v$KUEUE_VERSION/manifests.yaml"
-  echo "$KUEUE_MANIFEST_SHA256  $manifest" | sha256sum -c --status || { echo "checksum failed: $manifest" >&2; return 1; }
-  # server-side apply: the CRDs are too large for the client-side last-applied annotation
+  echo "$KUEUE_MANIFEST_SHA256  $manifest" | sha256sum -c --status ||
+    { echo "checksum failed: $manifest" >&2; rm -f "$manifest"; return 1; }
+  # server-side apply of the file just checked: the CRDs are too large for the client-side last-applied annotation
   kubectl apply --server-side -f "$manifest" >/dev/null
+  rm -f "$manifest"
   kubectl -n kueue-system rollout status deployment/kueue-controller-manager --timeout=300s
   # the webhook answers a little after the deployment is Available: retry the queue objects
   for _ in $(seq 30); do
@@ -58,6 +63,7 @@ install_kueue() {
 
 up() { # mini|kueue
   local shape=$1 cluster=${CLUSTER:-k8s-$1} cfg t=$SECONDS
+  mkdir -p "$DATA" # before kind: a bind mount source docker creates itself is owned by root
   cfg=$(mktemp)
   kind_config "$shape" >"$cfg"
   kind create cluster --name "$cluster" --image "$KIND_NODE_IMAGE" --config "$cfg" --wait 180s

@@ -1,10 +1,15 @@
-"""Unit tests of the pure parts of dev/scenario.py: names, ports and paths per id, and the scenario files.
+"""Unit tests of dev/scenario.py without Docker: names, ports and paths per id, the scenario files, the id claim,
+and the commands `down` runs (subprocess mocked).
 
     python3 -m unittest discover -s tests/scenarios -p 'test_*.py'
 """
 import importlib.util
+import subprocess
+import tempfile
+import threading
 import unittest
 from pathlib import Path
+from unittest import mock
 
 REPO = Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("scenario", REPO / "dev" / "scenario.py")
@@ -29,7 +34,7 @@ class Names(unittest.TestCase):
         self.assertEqual(len({n["data_dir"] for n in all_ids}), len(all_ids))
         # sind names a realm's resources <realm>-<cluster>-*: spx-1 with cluster mini must not read as another
         # id's realm, which holds only when no profile name starts with a digit
-        for layer, profile, _ in scenario.SCHEDULERS.values():
+        for _, profile, _ in scenario.SCHEDULERS.values():
             self.assertFalse(profile and profile[0].isdigit())
 
     def test_ids_out_of_range(self):
@@ -68,6 +73,87 @@ class Yaml(unittest.TestCase):
     def test_bad_scenario_name(self):
         with self.assertRaises(ValueError):
             scenario.load("../etc/passwd")
+
+
+class TempState(unittest.TestCase):
+    """scenario.STATE points at a temporary directory for the test."""
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        patcher = mock.patch.object(scenario, "STATE", Path(self.tmp.name) / ".scenarios")
+        patcher.start()
+        self.addCleanup(patcher.stop)
+        self.addCleanup(self.tmp.cleanup)
+
+
+class Claim(TempState):
+    def test_parallel_claims_get_distinct_ids(self):
+        got, lock = [], threading.Lock()
+
+        def take():
+            n = scenario.claim(None)
+            with lock:
+                got.append(n)
+        threads = [threading.Thread(target=take) for _ in range(8)]
+        for t in threads:
+            t.start()
+        for t in threads:
+            t.join()
+        self.assertEqual(sorted(got), list(range(1, 9)))
+
+    def test_same_id_twice_is_refused(self):
+        self.assertEqual(scenario.claim(3), 3)
+        with self.assertRaises(SystemExit):
+            scenario.claim(3)
+
+    def test_id_zero_is_rejected(self):
+        with self.assertRaises(ValueError):
+            scenario.claim(0)
+        with mock.patch.object(scenario, "available_mib", return_value=1 << 20), self.assertRaises(SystemExit):
+            scenario.main(["up", "happy-local", "--id", "0"])
+        self.assertFalse((scenario.STATE / "0").exists())
+
+
+class Down(TempState):
+    def test_down_never_searches_the_data_directory(self):
+        data = scenario.names(5)["data_dir"]
+        Path(data, "tools", "bin").mkdir(parents=True)
+        calls = []
+
+        def fake_run(cmd, env=None, **kw):
+            calls.append((cmd, env))
+            return subprocess.CompletedProcess(cmd, 0, stdout="spx-5 x\n")
+        which_paths = []
+        with mock.patch.object(scenario.subprocess, "run", side_effect=fake_run), \
+                mock.patch.object(scenario.shutil, "which",
+                                  side_effect=lambda cmd, path=None: which_paths.append(path) or f"/usr/bin/{cmd}"), \
+                mock.patch("sys.stdout"):
+            scenario.down(5)
+        self.assertTrue(calls)
+        for cmd, env in calls:
+            self.assertNotIn(data, (env or {}).get("PATH", ""), cmd)
+        for path in which_paths:
+            self.assertNotIn(data, path or "")
+        self.assertFalse(Path(data).exists())
+
+    def test_down_keeps_the_data_directory_when_a_step_fails(self):
+        data = scenario.names(6)["data_dir"]
+        Path(data).mkdir(parents=True)
+        with mock.patch.object(scenario.subprocess, "run",
+                               side_effect=lambda cmd, **kw: subprocess.CompletedProcess(cmd, 1, stdout="spx-6\n")), \
+                mock.patch.object(scenario.shutil, "which", return_value="/usr/bin/x"), mock.patch("sys.stdout"):
+            with self.assertRaises(SystemExit):
+                scenario.down(6)
+        self.assertTrue(Path(data).exists())
+
+
+class Up(TempState):
+    def test_failed_up_takes_down_what_it_created(self):
+        with mock.patch.object(scenario, "available_mib", return_value=1 << 20), \
+                mock.patch.object(scenario, "_up", side_effect=RuntimeError("boom")), \
+                mock.patch.object(scenario, "down") as down, mock.patch("sys.stderr"):
+            with self.assertRaises(RuntimeError):
+                scenario.up("happy-local", 4)
+        down.assert_called_once_with(4)
 
 
 if __name__ == "__main__":

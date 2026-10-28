@@ -27,7 +27,8 @@ REPO = Path(__file__).resolve().parent.parent
 SCENARIOS = REPO / "tests" / "scenarios"
 STATE = REPO / ".scenarios"
 # scheduler -> (layer, cluster.sh profile, MiB of free memory needed before `up`). The memory figures are
-# estimates of what the running containers use, not their limits [to be validated: measured by scenarios.yml].
+# estimates of what the running containers use, not their limits; the measured idle figures are in
+# docs/specs/dev-environment-and-testing.md §5 (scenarios.yml run 40685163237).
 SCHEDULERS = {
     "local": (None, None, 256),
     "slurm-mini": ("slurm", "mini", 2048),
@@ -132,14 +133,16 @@ def run(cmd, env=None, check=True):
 
 def claim(n):
     """Create .scenarios/<n>/ (atomic: two parallel `up` never get the same id); n=None takes the lowest free."""
+    if STATE.is_symlink():
+        raise SystemExit(f"{STATE} is a symlink: refusing to use it")
     STATE.mkdir(exist_ok=True)
-    for i in [n] if n else range(1, MAX_ID + 1):
+    for i in [n] if n is not None else range(1, MAX_ID + 1):
         try:
             os.mkdir(STATE / str(names(i)["id"]))
             return i
         except FileExistsError:
             continue
-    raise SystemExit(f"scenario id {n} is in use (.scenarios/{n}/ exists)" if n else "no free scenario id")
+    raise SystemExit(f"scenario id {n} is in use (.scenarios/{n}/ exists)" if n is not None else "no free scenario id")
 
 
 def layer_env(env_ids, layer):
@@ -151,7 +154,7 @@ def layer_env(env_ids, layer):
                    UV_PYTHON_INSTALL_DIR=f"{data}/tools/python", PATH=f"{data}/tools/bin:{env['PATH']}")
     elif layer == "k8s":
         env.update(CLUSTER=name, KUBECONFIG=f"{data}/kubeconfig", KIND_EXPERIMENTAL_DOCKER_NETWORK=name,
-                   KIND_API_PORT=str(env_ids["port"]["kube_api"]))
+                   KIND_API_PORT=str(env_ids["port"]["kube_api"]), KIND_DATA_DIR=data)
     return env
 
 
@@ -162,10 +165,21 @@ def up(scenario, n):
     if free < need:
         raise SystemExit(f"{s['scheduler']} needs about {need} MiB free, {free} MiB available: `down` another scenario")
     n = claim(n)
+    try:
+        _up(s, n, layer, profile)
+    except BaseException:  # leave nothing behind: a failed or interrupted `up` removes what it created
+        print(f"up {n} failed: removing what it created", file=sys.stderr)
+        try:
+            down(n)
+        except (SystemExit, Exception) as e:  # report it, and re-raise the error of `up`
+            print(e, file=sys.stderr)
+        raise
+
+
+def _up(s, n, layer, profile):
     ids = names(n)
     taken = [p for p in range(ids["ports"][0], ids["ports"][1] + 1) if not port_free(p)]
     if taken:
-        shutil.rmtree(ids["data_dir"])
         raise SystemExit(f"ports {taken} of id {n} are in use: pick another --id")
     env = layer_env(ids, layer)
     state = dict(ids, scenario=s, compose={"project": ids["name"], "started": False},
@@ -189,19 +203,19 @@ def up(scenario, n):
 def down(n):
     """Idempotent, and needs no state: it removes whatever exists under the id's names."""
     ids = names(n)
-    env = layer_env(ids, "slurm")  # PATH with the data directory's tools, where sind may be the only copy
-    env["KUBECONFIG"] = f"{ids['data_dir']}/kubeconfig"
+    # The host PATH only: cluster jobs can write the data directory, so its tools/bin is never searched here.
+    env = dict(os.environ, KUBECONFIG=f"{ids['data_dir']}/kubeconfig")
     failed = 0
-    if shutil.which("sind", path=env["PATH"]) and ids["name"] in _first_column(["sind", "get", "realms"], env):
+    if shutil.which("sind", path=env.get("PATH")) and ids["name"] in _first_column(["sind", "get", "realms"], env):
         failed |= run(["sind", "--realm", ids["name"], "delete", "realm"], env, check=False)
-    if shutil.which("kind", path=env["PATH"]) and ids["name"] in _first_column(["kind", "get", "clusters"], env):
+    if shutil.which("kind", path=env.get("PATH")) and ids["name"] in _first_column(["kind", "get", "clusters"], env):
         failed |= run(["kind", "delete", "cluster", "--name", ids["name"]], env, check=False)
     if ids["name"] in _first_column(["docker", "network", "ls", "--format", "{{.Name}}"], env):
         failed |= run(["docker", "network", "rm", ids["name"]], check=False)
+    if failed:  # keep the data directory: the id stays claimed until a later `down` succeeds
+        raise SystemExit(f"down {n}: a step failed, see above; .scenarios/{n}/ is kept")
     if Path(ids["data_dir"]).exists():
         shutil.rmtree(ids["data_dir"])
-    if failed:
-        raise SystemExit(f"down {n}: a step failed, see above")
     print(json.dumps({"id": n, "down": True}))
 
 
@@ -236,7 +250,8 @@ def main(argv=None):
     except ValueError as e:
         raise SystemExit(str(e))
     except subprocess.CalledProcessError as e:
-        raise SystemExit(f"{a.cmd} failed ({e}); `dev/scenario.py down <id>` removes what was created")
+        hint = "what it created was removed" if a.cmd == "up" else f"retry with `dev/scenario.py down {a.id}`"
+        raise SystemExit(f"{a.cmd} failed ({e}); {hint}")
 
 
 if __name__ == "__main__":
