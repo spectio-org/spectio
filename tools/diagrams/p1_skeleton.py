@@ -183,7 +183,7 @@ def build(theme: Theme) -> Sketch:
     s.text(1052, 540, "Cancel: Ctrl-C in its pane,", size=12, colour=t.dim)
     s.text(1052, 556, "then SIGTERM, SIGKILL", size=12, colour=t.dim)
     s.text(1052, 572, "`tmux attach` to take over", size=12, colour=t.dim)
-    badge(1098, 372, "M2")
+    badge(1098, 366, "M2")
 
     # -- 3 · SLURM: only the tasks --------------------------------------------------------------
     s.frame(1230, 130, 500, 460, fill="surface", colour=t.muted, dashed=True)

@@ -451,8 +451,8 @@
   <text x="1052.0" y="540.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#9aa0ac" text-anchor="middle" font-weight="normal">Cancel: Ctrl-C in its pane,</text>
   <text x="1052.0" y="556.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#9aa0ac" text-anchor="middle" font-weight="normal">then SIGTERM, SIGKILL</text>
   <text x="1052.0" y="572.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#9aa0ac" text-anchor="middle" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">tmux attach</tspan> to take over</text>
-  <rect x="1098.0" y="372.0" width="40" height="23" rx="11" fill="#6b4a26" stroke="#e3e3e3" stroke-width="1.4"/>
-  <text x="1118.0" y="389.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="middle" font-weight="bold">M2</text>
+  <rect x="1098.0" y="366.0" width="40" height="23" rx="11" fill="#6b4a26" stroke="#e3e3e3" stroke-width="1.4"/>
+  <text x="1118.0" y="383.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="middle" font-weight="bold">M2</text>
   <rect x="1230.0" y="130.0" width="500.0" height="460.0" rx="6" fill="#24272f"/>
   <path d="M1230.0,129.7 C1397.3,129.5 1564.6,128.5 1730.2,129.7" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M1229.7,129.9 C1397.0,129.1 1563.6,129.6 1729.3,129.6" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>

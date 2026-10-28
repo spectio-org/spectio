@@ -85,7 +85,7 @@ def build(theme: Theme) -> Sketch:
     s.terminal(AX + 30, y + 30, 230, 56, ("$ spectio-open embl",), size=12.5)
     s.page(AX + 30, y + 98, 230, 54, fill="surface", lines=0)
     s.text(AX + 44, y + 120, "Host spectio-embl", size=12.5, anchor="start")
-    s.text(AX + 44, y + 140, "  LocalForward <port> 127.0.0.1:<port>", size=11.5, anchor="start")
+    s.text(AX + 44, y + 140, "LocalForward 127.0.0.1:<p> 127.0.0.1:<p>", size=10.5, anchor="start")
     note(AX + 280, y + 46, "`spectio-open <host> [--node <login node>]`",
          "reads `~/.spectio/server.json` to find the node,",
          "starts the server if none runs, opens the link;",

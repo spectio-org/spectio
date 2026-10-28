@@ -2,10 +2,10 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use `subagent-driven-development` (step P3 of [`next-phase.md`](../playbooks/next-phase.md)) or `executing-plans` to implement this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-*Draft, 2026-10-28 (step P1); revised the same day for the head in tmux, the EMBL target and the laptop access ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)), then after the doc review of PR #47 for live refresh over SSE and SQLite as a rebuildable index ([log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index)). Waiting for Thomas at the GO gate ([R10 §5](../reviews/R10-synthesis.md#5-go-no-go)). No product code exists yet; this page writes none.*
+*Draft, 2026-10-28 (step P1); revised the same day for the head in tmux, the EMBL target and the laptop access ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)), then after the doc review of PR #47 for live refresh over SSE and SQLite as a rebuildable index ([log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index)), and after the security review of that change for §15.3 requirements 8–11 ([record](../reviews/code/APPLY4.md)). Waiting for Thomas at the GO gate ([R10 §5](../reviews/R10-synthesis.md#5-go-no-go)). No product code exists yet; this page writes none.*
 
-![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel reaches spectio serve, in its own tmux session on a SLURM login node, through an SSH tunnel and a one-time token link; the runner starts each engine head in its own tmux session on that login node, the engine sends its tasks to SLURM, and the plugins' spool file in the run directory is read back into SQLite; milestones M1 to M5 and the seven §15.3 security requirements are marked where they apply, above a to-scale strip of the 24 tasks](../assets/diagrams/p1_skeleton_light.png#only-light)
-![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel reaches spectio serve, in its own tmux session on a SLURM login node, through an SSH tunnel and a one-time token link; the runner starts each engine head in its own tmux session on that login node, the engine sends its tasks to SLURM, and the plugins' spool file in the run directory is read back into SQLite; milestones M1 to M5 and the seven §15.3 security requirements are marked where they apply, above a to-scale strip of the 24 tasks](../assets/diagrams/p1_skeleton_dark.png#only-dark)
+![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel, refreshed over SSE, reaches spectio serve, in its own tmux session on an EMBL login node, through an SSH tunnel (spectio-open or an SSH config entry) and a one-time token link; the runner starts each engine head in its own tmux session on that login node, the engine sends its tasks to SLURM, and the plugins' spool file in the run directory is read back into a SQLite index that the server can rebuild from the run directories; milestones M1 to M5 and §15.3 security requirements 1 to 7 are marked where they apply, above a to-scale strip of the 24 tasks](../assets/diagrams/p1_skeleton_light.png#only-light)
+![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel, refreshed over SSE, reaches spectio serve, in its own tmux session on an EMBL login node, through an SSH tunnel (spectio-open or an SSH config entry) and a one-time token link; the runner starts each engine head in its own tmux session on that login node, the engine sends its tasks to SLURM, and the plugins' spool file in the run directory is read back into a SQLite index that the server can rebuild from the run directories; milestones M1 to M5 and §15.3 security requirements 1 to 7 are marked where they apply, above a to-scale strip of the 24 tasks](../assets/diagrams/p1_skeleton_dark.png#only-dark)
 
 Step page: [Progress · P1](../progress/W4/P1.md).
 
@@ -26,13 +26,13 @@ Decisions taken in place of Thomas, who was not available for brainstorming. Eac
 1. **D1, no relaunch, no parameter history** (inbox #61). The run detail shows its own parameters only. *(assumed — pending Thomas)*
 2. **D2, how a workflow reaches the form** (inbox #34, SR-056). The user types an absolute path to a pipeline directory that their own account can read. The engine is detected from the files: `main.nf` means Nextflow; `workflow/Snakefile` or `Snakefile` means Snakemake. The schema comes from `nextflow_schema.json`, or from `config.schema.yaml` / `workflow/schemas/config.schema.yaml`. Without a schema, the types are inferred from `config/config.yaml`, or the form falls back to key / value rows. There is no catalogue, no `POST /workflows`, no Git URL and no `POST /runs:validate` in P1. A `workflows` row (source `local`) and a `workflow_versions` row are created at launch. *(assumed — pending Thomas)*
 3. **D3, what engine events may carry** (inbox #55, option (a)). `nf-spectio` sends no `script` or `env`. The SDK event models are allow-lists (`extra="ignore"`), so `script`, `env`, `homeDir`, `commandLine`, `configText` and Snakemake's `cmd` are never stored, even if a plugin sends them. *(assumed — pending Thomas)*
-4. **D4, Cancel** (inbox #62). One Cancel action: an interrupt in the head's tmux pane (`tmux send-keys -t spectio-<run_id> C-c`), then SIGTERM to the head's process group if it is still alive after a 60 s grace period, then SIGKILL after another 60 s ([schedulers §3.1.1](../specs/schedulers-and-monitoring.md), tmux launcher). On the local executor: SIGTERM to the process group, then SIGKILL. *(assumed — pending Thomas)*
+4. **D4, Cancel** (inbox #62). One Cancel action: a cancel marker `.spectio/cancel` in the run directory, then an interrupt in the head's tmux pane (`tmux send-keys -t <pane id> C-c`), then SIGTERM to the head's process group if it is still alive after a 60 s grace period, then SIGKILL after another 60 s ([schedulers §3.1.1](../specs/schedulers-and-monitoring.md), tmux launcher). On the local executor: SIGTERM to the process group, then SIGKILL. *(assumed — pending Thomas)*
 5. **Attempt state `aborted`** (inbox #56, option (a)). *(assumed — pending Thomas)*
 6. **"Stages" in 0.0.1 are the engine's processes (Nextflow) or rules (Snakemake)**, in first-seen order, with task counts by state: a subset of `GET /runs/{id}/processes` ([api §5](../specs/api-and-data-model.md)). Structural stage detection ([ui-spec §5.1](../specs/ui-spec.md) source (2)) and `run_stages` come later. The synthetic pipelines have no subworkflows, so detection would show nothing. *(assumed — pending Thomas)*
 7. **Live refresh over SSE** *(decided — Thomas, 2026-10-28; [log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index))*. The UI opens one stream per browser, `GET /api/v1/events/stream` ([api §8.3](../specs/api-and-data-model.md)), behind the session cookie; each frame names a run, and the UI refetches that run, or the first page of the list. The P1 subset sends one frame type, `spectio.run.delta`, and a keep-alive comment every 15 s. The `EventSource` cookie behaviour of §15.3 req. 3 is in scope and checked by the Playwright smoke (Task 20). *Note 2026-10-28: this replaces the assumption "No SSE in 0.0.1, the UI polls every 5 s".*
 8. **A session-free bootstrap page.** §15.3 req. 2 asks for a session on every request, but something must serve the page that reads the ticket from the URL fragment. Four routes are served without a session cookie: `GET /auth/link` (static HTML) and `GET /auth/link.js`, which carry no data and need no credential; `POST /api/v1/auth/magic-links:exchange`, which needs a valid one-time ticket; and `POST /api/v1/auth/links`, which needs the server key (Assumption 9). *(assumed — pending Thomas; a spec gap to record in §15.3)*
-9. **The state file and `spectio login --print-link`.** The server writes `~/.spectio/server.json` in the shared home (login node, port, PID, data directory, start time; mode 0600) and removes it at a clean stop; `spectio serve` refuses to start on another login node while it names a server there, unless given `--force` ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). `spectio login --print-link` reads it and the server key file, and calls `POST /api/v1/auth/links` with `Authorization: Bearer <server key>` and the loopback `Origin`. Run on another login node, where the server's loopback cannot be reached, it prints "The server runs on <node>: run `ssh <node> spectio login --print-link`." and exits 2, with no link. *(assumed — pending Thomas)*
-10. **Port.** The default is 8080 ([architecture §7.3](../specs/architecture-plugins-and-packaging.md)). When 8080 is taken (likely on a shared login node), `spectio init` picks a free port once and records it in `spectio.toml`, so an SSH config entry stays valid; if that port is taken at start, the server takes a free one and prints it. *(assumed — pending Thomas)*
+9. **The state file and `spectio login --print-link`.** The server creates `~/.spectio/server.json` in the shared home with `O_EXCL` (login node, port, PID, database directory, start time; mode 0600; no secret) and removes it at a clean stop; `spectio serve` refuses to start on another login node while it names a server there, unless given `--force`, which replaces it ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). `spectio login --print-link` reads it and the server key file in the node-local directory, checks that the listener on the recorded port belongs to the caller's uid (§15.3 req. 9), and calls `POST /api/v1/auth/links` with `Authorization: Bearer <server key>` and the loopback `Origin`. With `--json` it prints one line, a fixed sentinel then `{"ticket": …}`, for `spectio-open` (§15.3 req. 8). Run on another login node, where the server's loopback cannot be reached, it checks the node name from the state file, then prints "The server runs on <node>: run `ssh <node> spectio login --print-link`." and exits 2, with no link. *(assumed — pending Thomas)*
+10. **Port.** The default is 8080 ([architecture §7.3](../specs/architecture-plugins-and-packaging.md)). When 8080 is taken (likely on a shared login node), `spectio init` picks a free port once and records it in `spectio.toml`, so an SSH config entry stays valid; `spectio init --port` changes it. If that port is taken at start, `spectio serve` refuses and names the port and the uid that holds it; it never picks another (§15.3 req. 9). *(assumed — pending Thomas)*
 11. **Ingest and projection share one transaction on the writer thread**, and the spool cursor (file, byte offset) is a SQLite row written in that same transaction, not the `.spectio/events/.cursor` file of [architecture §13.1](../specs/architecture-plugins-and-packaging.md), which stays for a remote forwarder. `runs.projected_seq` therefore always equals `last_seq`. When the index is rebuilt (Assumption 21), the cursor starts again at 0 and event IDs make the replay idempotent. *(assumed — pending Thomas)*
 12. **Spool numbers** (written into api §14 by Task 1): one JSON object per line; a line of at most 64 KiB; the writer rotates at 32 MiB; the reader ignores anything past 64 MiB in one file and counts it. *(assumed — pending Thomas, inbox #28)*
 13. **One head script for both launchers.** `<launch>/.spectio/head.sh` runs under `setsid bash` on the local executor, and as the command of the tmux session's pane on the login node, in the pane's foreground and without `setsid` (Task 10). On both, it starts with a cleared environment that keeps only an allow-list (`HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `TMPDIR`), then runs through the user's login shell (`bash -l`) so that their modules and `PATH` apply, as the `--export=NONE` head job did before: nothing from `spectio serve` or the tmux server (the `SPECTIO_*` settings, the server key path) reaches the engine. The security posture is unchanged. A trailer writes `.spectio/head.exit` (exit code, epoch), and the engine's output is copied to `.spectio/head.out` while the pane shows it. The script sets `SPECTIO_RUN_ID`, `SPECTIO_LAUNCH_N` and `SPECTIO_SPOOL_DIR`, and runs the engine command recorded at `spectio init` (Assumption 14). Parameters reach the engine as a file (`-params-file`, `--configfile`), never as shell words. *(assumed — pending Thomas)*
@@ -43,7 +43,7 @@ Decisions taken in place of Thomas, who was not available for brainstorming. Eac
 18. **Minimal tenancy.** `spectio init` creates one principal (the Unix user), one project `default`, one environment (kind `slurm`, or `local` with `--local`) and its runner row. There are no groups. Every tenant row keeps `project_id` ([`mvp-0.0.1.md`](../specs/mvp-0.0.1.md) §4). *(assumed — pending Thomas)*
 19. **Where the tests run.** The Playwright smoke runs against `spectio serve` on the local executor on the CI runner. The sind end-to-end tests drive the HTTP API from inside the submitter node, as a browser behind a tunnel would. *(assumed — pending Thomas)*
 20. **Ultra-simple screens.** The launch form has no stepper, no review step and no file checks. Logs are the head stdout and stderr and the engine run log, last 64 KiB; per-task logs come later. Sessions last until the server restarts. *(assumed — pending Thomas)*
-21. **The database is an index in a node-local temporary directory** (inbox #64, option (d)). At EMBL everything is shared between the login nodes except some temporary directories (Thomas, 2026-10-28). The data directory (`spectio.toml`, the server key, the state file) stays in `~/.spectio/`; the database and `serve.lock` go in `<node-local tmp>/spectio-<uid>/`, 0700, by default `$TMPDIR` or `/tmp` (which path is node-local on the EMBL login nodes is **[to be validated]**). Each run directory holds the truth: the manifest `.spectio/run.json`, the spool, `head.pid` and `head.exit`. At boot, when the database is missing, the server rebuilds it from the run directories under the runs root ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) Where data lives). *(assumed — pending Thomas, inbox #64)*
+21. **The database is an index in a node-local temporary directory** (inbox #64, option (d)). At EMBL everything is shared between the login nodes except some temporary directories (Thomas, 2026-10-28). The data directory (`spectio.toml`, the state file; no secret) stays in `~/.spectio/`; the database, `serve.lock` and the server key go in `<node-local tmp>/spectio-<uid>/`, 0700, by default `$TMPDIR` or `/tmp`, with the `mkdtemp` fallback of §15.3 when that path is squatted (which path is node-local on the EMBL login nodes is **[to be validated]**). Each run directory holds the truth: the manifest `.spectio/run.json`, the spool, `head.pid`, `head.exit`, the cancel marker and `.spectio/launch-failed.json`. At boot the server reconciles the run directories missing from the index, which is all of them when the database is new, under the checks of §15.3 req. 10 ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) Where data lives). *(assumed — pending Thomas, inbox #64)*
 
 ## Global Constraints
 
@@ -126,7 +126,7 @@ def test_envelope_rejects_unknown_keys_and_bad_run_id(): ...   # extra key, "run
 - Test: `packages/spectio-server/tests/test_store.py`
 
 **Interfaces:**
-- Produces: tables `principals`, `projects`, `environments`, `runners`, `runner_commands`, `workflows`, `workflow_versions`, `runs`, `run_inputs`, `launches`, `tasks`, `attempts`, `events`, `spool_cursors(launch_id, file, offset)`, `spool_drops(launch_id, reason, count)`. `default_db_dir() -> Path` (`$TMPDIR` or `/tmp`, then `spectio-<uid>`; created 0700; raises `UnsafeDatabase` when it exists as a symlink, with another owner, or with a wider mode). `open_db(db_dir: Path) -> tuple[Engine, bool]` (the flag is true when the database was created, so boot rebuilds it, Task 11; WAL, `busy_timeout=5000`, `auto_vacuum=INCREMENTAL` at creation; raises `UnsafeDatabase` on a network file system or an old SQLite). `Writer.submit(fn: Callable[[Connection], T]) -> Future[T]`: one thread, one connection, `BEGIN IMMEDIATE`. `fs_type(path, mounts=Path("/proc/self/mounts")) -> str`.
+- Produces: tables `principals`, `projects`, `environments`, `runners`, `runner_commands`, `workflows`, `workflow_versions`, `runs`, `run_inputs`, `launches`, `tasks`, `attempts`, `events`, `spool_cursors(launch_id, file, offset)`, `spool_drops(launch_id, reason, count)`. `default_db_dir() -> Path` (`$TMPDIR` or `/tmp`, then `spectio-<uid>`; `os.mkdir` 0700; an existing path is accepted only if, opened with `O_DIRECTORY|O_NOFOLLOW`, it is the same directory, owned by the user, with no group or other bits; otherwise `tempfile.mkdtemp(prefix=f"spectio-{uid}-")` with a warning naming the squatter's uid; never tightened). `open_db(db_dir: Path) -> tuple[Engine, bool]` (the flag is true when the database was created, so boot rebuilds it, Task 11; WAL, `busy_timeout=5000`, `auto_vacuum=INCREMENTAL` at creation; raises `UnsafeDatabase` on a network file system or an old SQLite). `Writer.submit(fn: Callable[[Connection], T]) -> Future[T]`: one thread, one connection, `BEGIN IMMEDIATE`. `fs_type(path, mounts=Path("/proc/self/mounts")) -> str`.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -137,8 +137,9 @@ def test_refuses_old_sqlite(monkeypatch): ...   # sqlite_version "3.45.0" → Un
 def test_pragmas(tmp_path):                     # journal_mode == "wal", auto_vacuum == 2
 def test_writer_serialises(tmp_path):           # 50 concurrent submits → 50 rows, no SQLITE_BUSY
 def test_run_state_check_constraint(tmp_path):  # inserting state "paused_forever" raises IntegrityError
-def test_default_db_dir_private(tmp_path, monkeypatch):  # TMPDIR=tmp_path → tmp_path/spectio-<uid>, mode 0700;
-                                                # a symlink there, or a dir owned by another uid → UnsafeDatabase
+def test_default_db_dir_private(tmp_path, monkeypatch):  # TMPDIR=tmp_path → tmp_path/spectio-<uid>, mode 0700
+def test_db_dir_squatted_falls_back(tmp_path, monkeypatch):  # a symlink there, a dir of another uid, or mode 0755 →
+                                                # mkdtemp fallback, warning names the uid, the path untouched
 def test_open_db_reports_created(tmp_path):     # first open → created True; second open → False
 ```
 
@@ -302,7 +303,7 @@ def test_unwritable_spool_never_fails_run(tmp_path): ...
 
 **Interfaces:**
 - Produces:
-  - `spectio init [--data-dir PATH] [--db-dir PATH] [--runs-root PATH] [--local] [--partition P] [--account A] [--nextflow CMD] [--snakemake CMD]`, every option with a default so that `spectio-open` can run it unattended on first use (data directory `~/.spectio/`, database in `default_db_dir()`, Assumption 21; runs root `~/spectio-runs/` in the shared home); it resolves the engines through the login shell (Assumption 14), picks the port (Assumption 10), writes `spectio.toml` and creates the rows of Assumption 18 through the server store (the CLI imports `spectio_server` lazily; `spectio` alone says "install spectio[server]");
+  - `spectio init [--data-dir PATH] [--db-dir PATH] [--runs-root PATH] [--port N] [--local] [--partition P] [--account A] [--nextflow CMD] [--snakemake CMD]`, every option with a default so that `spectio-open` can run it unattended on first use (data directory `~/.spectio/`, database in `default_db_dir()`, Assumption 21; runs root `~/spectio-runs/` in the shared home); it resolves the engines through the login shell (Assumption 14), picks the port (Assumption 10), writes `spectio.toml` and creates the rows of Assumption 18 through the server store (the CLI imports `spectio_server` lazily; `spectio` alone says "install spectio[server]");
   - `Settings` with `data_dir`, `db_dir`, `runs_root`, `port=8080`, `slurm: SlurmOpts(partition: str | None, account: str | None)` (for the engines' task jobs), `engines.nextflow_cmd`, `engines.snakemake_cmd`, `engines.nxf_opts="-Xmx2g"`, `engines.extra_args`, `runner.head_watch_s=5`, `runner.spool_s=2`;
   - `spectio doctor`, which prints `ok|warn|fail <check> <detail>` lines and exits 1 on any `fail`.
 
@@ -339,8 +340,8 @@ def test_init_defaults_unattended(tmp_path, monkeypatch):  # no flags, stdin clo
   - `render_head_script(spec: LaunchSpec) -> str`, where `LaunchSpec(run_id, launch_n, engine, engine_cmd: str, location: Path, launch_dir: Path, work_dir: Path, profiles: list[str], params: dict, slurm: SlurmOpts | None, env: dict[str, str])`;
   - `check_engine(engine) -> EngineInfo(path, version)`, raising `EngineMissing` or `EngineTooOld`;
   - the `Launcher` protocol: `submit(spec) -> str` (native id), `poll(ids) -> dict[str, HeadReport]`, `cancel(native_id, grace_s: int = 60) -> None`, `adopt(launch) -> HeadReport`;
-  - `write_run_manifest(run_dir: Path, manifest: RunManifest) -> None`: `.spectio/run.json` (run ID, name, workflow, parameters, profiles, creation time, tmux session name, login node), written atomically before the head starts, the file the index is rebuilt from (Assumption 21);
-  - `LocalLauncher` (`setsid bash head.sh`; `.spectio/head.pid` holds PID, start time and boot ID);
+  - `write_run_manifest(run_dir: Path, manifest: RunManifest) -> None`: `.spectio/run.json` (run ID, name, workflow, parameters, profiles, creation time), written atomically when the run is created (called by Task 17), the file the index is rebuilt from (Assumption 21); the runner writes `.spectio/cancel` before a cancel interrupt and `.spectio/launch-failed.json` when a launch fails;
+  - `LocalLauncher` (`setsid bash head.sh`; `.spectio/head.pid` holds PID, process group, leader start time, boot ID and host name, checked again before every signal);
   - `RunnerSink` (a protocol in `spectio/runner/types.py`, implemented by the server through its `Writer`, so the runner never imports the server): `lease_commands() -> list[Command]`, `ack(command_id: str, ok: bool, detail: str | None)`, `active_launches() -> list[LaunchRef]`, `cursor(launch_id) -> dict[str, int]`, `ingest(launch_id, batch: SpoolBatch)`, `head_report(launch_id, report: HeadReport)`;
   - `RunnerLoop(sink: RunnerSink, launcher: Launcher, tick_s: float = 2)`, which leases `runner_commands` (`launch`, `cancel`), reads spools (Task 3) and polls heads.
 
@@ -355,7 +356,10 @@ def test_engine_missing_and_too_old(fakebin):  # no nextflow → class engine_mi
                                                # message names the path and the version
 def test_local_launch_exit_file(tmp_path):     # trivial engine stub exits 3 → head.exit "3 …", HeadReport(exit_code=3)
 def test_adopt_after_restart(tmp_path): ...    # new LocalLauncher sees the live PID (same start time and boot id) → adopted
-def test_run_manifest_written(tmp_path): ...   # run.json before head.pid; round-trips to RunManifest; mode 0600
+def test_run_manifest_written(tmp_path): ...   # run.json round-trips to RunManifest; mode 0600
+def test_cancel_and_launch_failure_markers(tmp_path): ...  # cancel → .spectio/cancel before the signal; missing
+                                                # engine → launch-failed.json with class engine_missing
+def test_cancel_never_signals_other_boot_id(tmp_path): ...  # head.pid with another boot ID or start time → no signal
 def test_head_env_cleared(tmp_path, monkeypatch): ...  # SPECTIO_SERVER_X=1 in the runner's env → absent from the
                                                        # stub engine's env dump; HOME and the login PATH present
 ```
@@ -375,7 +379,7 @@ def test_head_env_cleared(tmp_path, monkeypatch): ...  # SPECTIO_SERVER_X=1 in t
 
 **Interfaces:**
 - Consumes: the `Launcher` protocol, the head script and the PID file of `LocalLauncher` (Task 9), `HeadReport` (Task 4).
-- Produces: `TmuxLauncher(tmux: str = "tmux")`, which implements `Launcher`: `submit` runs `tmux new-session -d -s spectio-<run_id> bash head.sh` and returns the session name as the native id; only the tmux server is detached: the head runs in the pane's foreground process group, without `setsid`, so a Ctrl-C typed in the pane, or sent by `send-keys`, reaches the engine ([schedulers §3.1.1](../specs/schedulers-and-monitoring.md)); `poll` uses the PID check and `head.exit`; `adopt` matches the session name and the PID check; `cancel` sends `C-c` to the pane, then SIGTERM and SIGKILL to the head's process group (Assumption 4).
+- Produces: `TmuxLauncher(tmux: str = "tmux")`, which implements `Launcher`: `submit` runs `tmux new-session -d -P -F '#{pane_id}' -s spectio-<run_id> -c <launch dir> bash <absolute head.sh>` (separate arguments) and returns the session name as the native id, recording the pane ID; every later call targets `=spectio-<run_id>` and `send-keys` targets the pane ID (§15.3 req. 11); only the tmux server is detached: the head runs in the pane's foreground process group, without `setsid`, so a Ctrl-C typed in the pane, or sent by `send-keys`, reaches the engine ([schedulers §3.1.1](../specs/schedulers-and-monitoring.md)); `poll` uses the PID check and `head.exit`; `adopt` matches the session name and the PID check; `cancel` sends `C-c` to the pane, then SIGTERM and SIGKILL to the head's process group (Assumption 4).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -386,6 +390,8 @@ def test_tmux_start_failure_fails_run(fake_tmux):     # tmux missing, or session
 def test_adopt_by_session_and_pid(fake_tmux):         # new launcher, session and PID check match → adopted, no second start
 def test_head_stopped_by_hand(fake_tmux):             # the head exits 130 (Ctrl-C by a person) → HeadReport(exit_code=130)
 def test_cancel_interrupt_then_term(fake_tmux): ...   # send-keys C-c; still alive after grace → SIGTERM, then SIGKILL
+def test_targets_exact_and_pane_id(fake_tmux): ...    # every -t is "=spectio-<run_id>" or the recorded pane ID
+def test_argv_never_single_string(fake_tmux): ...     # every tmux call is an argument list; no shell=True
 def test_real_tmux_roundtrip(tmp_path): ...           # @pytest.mark.tmux: a stub engine in a real session; attach-able
                                                       # session listed by `tmux ls`; the head's process group is the pane's
                                                       # foreground group; send-keys C-c stops it; exit code from head.exit
@@ -412,11 +418,11 @@ Each task below carries one §15.3 security requirement; its tests are named `te
 
 **Interfaces:**
 - Consumes: `open_db`, `Writer` (Task 2), `RunnerLoop`, `RunnerSink` and the launchers (Tasks 9 and 10).
-- Produces: `create_app(settings) -> FastAPI` and `serve(settings) -> None`. Boot takes `<db-dir>/serve.lock` (flock, on the node-local directory), opens the database and, when it was just created, rebuilds it from the run directories under the runs root (`rebuild_index(writer, runs_root) -> int`, in `spectio_server/rebuild.py`; Assumption 21), then adopts the heads, replay the spools, start the runner loop, then uvicorn on `127.0.0.1`. It writes the state file `~/.spectio/server.json` (Assumption 9) and prints the start text below. `spectio serve --detach` starts the same process in the tmux session `spectio-server` and prints the same text.
+- Produces: `create_app(settings) -> FastAPI` and `serve(settings) -> None`. Boot takes `<db-dir>/serve.lock` (flock, on the node-local directory), opens the database and, when it was just created, rebuilds it from the run directories under the runs root (`rebuild_index(writer, runs_root) -> int`, in `spectio_server/rebuild.py`; Assumption 21), then adopts the heads, replays the spools, starts the runner loop, and starts uvicorn on `127.0.0.1` on the recorded port only (Assumption 10). At every boot it also reconciles run directories missing from the index, and marks the rebuild complete in its last transaction. It creates the state file `~/.spectio/server.json` with `O_EXCL` (Assumption 9) and the server key in the node-local directory and prints the start text below. `spectio serve --detach` starts the same process in the tmux session `spectio-server` and prints the same text in the calling terminal, never inside the pane.
 
 ```text
 Spectio 0.0.1 is running on <hostname>, port <port>.
-1. On your laptop, open a tunnel:  ssh -N -L <port>:127.0.0.1:<port> <user>@<hostname>
+1. On your laptop, open a tunnel:  ssh -N -L 127.0.0.1:<port>:127.0.0.1:<port> <user>@<hostname>
 2. Then open this link (single use, valid 15 minutes):
    http://127.0.0.1:<port>/auth/link#<ticket>
 New link at any time: spectio login --print-link
@@ -432,10 +438,19 @@ def test_second_serve_refused(settings):          # serve.lock held → exit 2 n
 def test_state_file_names_other_node(settings): ...  # server.json names a server on login2 → exit 2 naming login2;
                                                     # --force → starts and rewrites server.json
 def test_detach_starts_tmux_session(fake_tmux): ...  # --detach → session spectio-server, link printed
-def test_port_taken_picks_free_port(settings): ...  # 8080 busy → another port, printed and written to server.json
-def test_rebuild_from_run_dirs(settings, replayed_runs): ...  # two finished runs and one live head; delete the
-                                                    # database; boot → three runs from run.json, counts equal the
-                                                    # golden, the live head adopted, no duplicate event_id
+def test_port_taken_refuses(settings): ...       # recorded port busy → exit 2 naming the port and the owning uid
+def test_rebuild_from_run_dirs(settings, replayed_runs): ...  # two finished runs, one live head, one cancelled run and
+                                                    # one failed launch; delete the database; boot → five runs
+                                                    # from run.json, counts equal the golden, the live head adopted,
+                                                    # cancelled and failed (launch_error) kept, no duplicate event_id
+def test_boot_reconciles_missing_runs(settings): ...  # a run dir absent from an existing index → added at boot;
+                                                    # a rebuild interrupted before its completion mark → redone
+def test_rebuild_skips_symlinked_foreign_or_loose_dirs(settings): ...  # symlink, other uid, 0755, bad name → skipped
+def test_rebuild_run_id_must_match_dir(settings): ...  # run.json run_id ≠ directory name → skipped, counted
+def test_rebuild_ignores_manifest_session_and_paths(settings): ...  # extra keys → refused (extra=forbid); session
+                                                    # name and paths derived from the run ID
+def test_rebuild_caps(settings): ...               # more dirs or bytes than the per-boot caps → the rest next boot
+def test_runs_root_loose_refused(settings): ...     # runs root group-writable or another owner → exit 2
 ```
 
 - [ ] **Step 2:** `uv run pytest packages/spectio-server/tests/security/test_req1_bind.py packages/spectio-server/tests/test_serve.py -v`: FAIL.
@@ -474,7 +489,10 @@ def test_reused_or_expired_link_message(client):       # 2nd exchange → 401 pr
                                                        # GET /auth/link HTML holds the exact Review Focus 5 sentence
 def test_login_print_link(cli, running_server): ...    # prints a working link; ticket removed from history
 def test_print_link_on_other_node(cli, tmp_path): ...  # server.json names login3, hostname is login1 → exit 2,
-                                                       # prints "ssh login3 spectio login --print-link", no request sent
+                                                       # prints "ssh login3 spectio login --print-link", no request sent;
+                                                       # a node "x;y" in server.json → refused, nothing printed
+def test_print_link_refuses_foreign_listener(cli, tmp_path): ...  # recorded port held by another uid → exit 2, key not sent
+def test_print_link_json(cli, running_server): ...     # --json → sentinel line, then {"ticket": <43 chars>}
 ```
 
 - [ ] **Step 2:** `uv run pytest packages/spectio-server/tests/security/test_req2_secrets.py -v`: FAIL.
@@ -538,7 +556,7 @@ def test_req4_refused_before_auth(authed_client): ...   # valid cookie + Host ev
 **Spec:** [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 5 · **Depends on:** 8, 9, 12 · **R10 §4:** Q10 (group ACLs)
 
 **Files:**
-- Create: `packages/spectio/src/spectio/fsmodes.py` (`secure_dir(path) -> None` creates the directory 0700 or tightens it; `secure_file(path) -> None` sets 0600)
+- Create: `packages/spectio/src/spectio/fsmodes.py` (`secure_dir(path) -> None` creates the data directory 0700 or tightens it; `write_secret(path, data) -> None` creates a temporary name with `O_CREAT|O_EXCL` 0600, writes, then renames)
 - Modify: `init.py` (Task 8), `store/db.py` (Task 2), `auth/secrets.py` (Task 12), `runner/headscript.py` (Task 9)
 - Test: `packages/spectio-server/tests/security/test_req5_modes.py`
 
@@ -548,8 +566,11 @@ def test_req4_refused_before_auth(authed_client): ...   # valid cookie + Host ev
 def test_req5_data_dir_0700(initialised): ...                # stat mode & 0o777 == 0o700
 def test_req5_key_and_db_files_0600(served): ...             # server.key, spectio.db, -wal, -shm, server.json
 def test_req5_run_dirs_0700(launched): ...                   # <runs_root>/<run_id> and launch/, work/
-def test_req5_umask_does_not_loosen(monkeypatch): ...        # with umask 000 the modes above still hold
-def test_req5_existing_loose_dir_tightened_or_refused(tmp_path): ...  # data dir 0755 → 0700, with a warning
+def test_req5_umask_does_not_loosen(monkeypatch): ...        # with umask 000 the modes above still hold, and no file
+                                                             # is wider than 0600 at any moment of its creation
+def test_req5_key_not_in_shared_home(served): ...            # server.key in the node-local dir; nothing secret in ~/.spectio
+def test_req5_existing_loose_dir_tightened_or_refused(tmp_path): ...  # data dir 0755 → 0700, with a warning (the node-local
+                                                                      # directory is never tightened: Task 2)
 ```
 
 - [ ] **Step 2:** `uv run pytest packages/spectio-server/tests/security/test_req5_modes.py -v`: FAIL.
@@ -598,7 +619,7 @@ def test_req7_get_head_unaffected(authed_client): ...
 - Consumes: `authed_client`; `runner_commands` (Task 9).
 - Produces:
   - `GET /api/v1/workflows:inspect?location=` → `{location, engine, name, schema, schema_source: "nextflow_schema.json" | "config.schema.yaml" | "inferred" | "none", profiles: [str]}`;
-  - `POST /api/v1/runs` with body `{workflow: {location}, name?, profiles?: [str], params: {}}` → `201` with the run (`state: queued`), a `Location` header and a `launch` row in `runner_commands` written in the same transaction; `422 validation-failed` with `errors: [{field, message}]` otherwise.
+  - `POST /api/v1/runs` with body `{workflow: {location}, name?, profiles?: [str], params: {}}` → `201` with the run (`state: queued`), a `Location` header and a `launch` row in `runner_commands` written in the same transaction, after the run directory and its manifest are written (`write_run_manifest`, Task 9); `422 validation-failed` with `errors: [{field, message}]` otherwise.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -633,7 +654,7 @@ def test_launch_ambiguous_engine_422(tmp_path): ...   # both main.nf and Snakefi
   - `GET /api/v1/runs/{id}/tasks?state=&process=&limit=&cursor=`;
   - `GET /api/v1/runs/{id}/logs?source=head-out|head-err|engine` → `text/plain; charset=utf-8`, the last 64 KiB;
   - `POST /api/v1/runs/{id}:cancel` → `202` with the run (`cancelling`) and a `cancel` command; `200` when it is already `cancelling` or terminal;
-  - `GET /api/v1/events/stream` → `text/event-stream` (Assumption 7): `event: spectio.run.delta`, `data: {run_id, state, seq_through}`, one frame per committed change to a run (coalesced to at most one per run per second), and `: keep-alive` every 15 s; the writer thread publishes to an in-process broadcaster after each commit.
+  - `GET /api/v1/events/stream` → `text/event-stream` (Assumption 7): `event: spectio.run.delta`, `data: {run_id, seq_through, counts, changed: {tasks}}`, a strict subset of api §8.5, one frame per committed change to a run (coalesced to at most one per run per second), and `: keep-alive` every 15 s; the writer thread publishes to an in-process broadcaster after each commit.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -645,7 +666,7 @@ def test_logs_confined(authed_client, tmp_path): ...  # .nextflow.log -> /etc/pa
 def test_cancel_states(authed_client): ...      # queued → 202 cancelling; cancelled → 200 unchanged; unknown → 404
 def test_stream_needs_session(client): ...      # no cookie → 401 problem, no stream opened
 def test_stream_delta_after_ingest(authed_client, writer): ...  # a spool batch committed → one spectio.run.delta
-                                                # frame naming the run and its new state
+                                                # frame naming the run, its counts and the changed task IDs
 def test_openapi_snapshot(app): ...             # app.openapi() == openapi/0.0.1.json (regenerate with --update)
 ```
 
@@ -768,7 +789,7 @@ test("a request without the cookie shows the 401 page, not data", async ({ page 
 - Modify: `docs/specs/architecture-plugins-and-packaging.md` (§6: the `spectio-open/` row, already added 2026-10-28; adjust it if the code differs), `mkdocs.yml` (the guide in the nav), the `.github/workflows/ci.yml` `product` job (the new package's tests, and a check that it imports nothing outside the standard library)
 
 **Interfaces:**
-- Produces: `spectio-open <host> [--node NODE] [--remote-cmd CMD] [--local-port N] [--no-browser]`; a per-cluster laptop configuration, `~/.config/spectio-open/clusters.toml` (`[<host>] node`, `remote_cmd`) read with `tomllib`; exit codes 0 (browser opened, tunnel up until Ctrl-C), 2 (remote `spectio` missing: prints the one-time install command), 3 (ssh failed).
+- Produces: `spectio-open <host> [--node NODE] [--remote-cmd CMD] [--local-port N] [--no-browser]`, under §15.3 req. 8; a per-cluster laptop configuration, `~/.config/spectio-open/clusters.toml` (`[<host>] node`, `remote_cmd`) read with `tomllib`; exit codes 0 (browser opened, tunnel up until Ctrl-C), 2 (remote `spectio` missing: prints the one-time install command), 3 (ssh failed).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -780,13 +801,22 @@ def test_login_shell_and_remote_cmd(fake_ssh):             # remote commands run
                                                            # remote_cmd "module load spectio && spectio" used as given
 def test_missing_remote_spectio_prints_install(fake_ssh):  # "spectio: command not found" → exit 2, prints the
                                                            # uv tool install line, runs no install
-def test_free_local_port_and_link(fake_ssh, monkeypatch): ...  # a free port; the link from --print-link is opened
-                                                              # with webbrowser.open, with the local port in it
+def test_rejects_bad_node_from_state_file(fake_ssh): ...  # node "-oProxyCommand=x", "a b", "x;y", "\x1b]0;" or
+                                                           # non-ASCII → exit 3, ssh never called
+def test_ssh_argv_has_double_dash(fake_ssh): ...           # "--" before the destination; no cluster value inside -o
+def test_tunnel_argv_hardened(fake_ssh): ...               # -N, -o ExitOnForwardFailure=yes,
+                                                           # -L 127.0.0.1:<lport>:127.0.0.1:<rport>, no host-key option
+def test_remote_quoting_two_layers(fake_ssh): ...         # a remote_cmd with spaces and quotes reaches the remote shell
+                                                           # intact (shlex.quote(shlex.join(argv)))
+def test_url_built_locally(fake_ssh, monkeypatch): ...     # remote prints a URL to evil.example → ignored; the opened URL
+                                                           # is http://127.0.0.1:<lport>/auth/link#<ticket>
+def test_free_local_port_and_link(fake_ssh, monkeypatch): ...  # a free port; the ticket from --print-link --json
+                                                              # opened with webbrowser.open, with the local port in it
 def test_stdlib_only(): ...                                # every import in spectio_open is in sys.stdlib_module_names
 ```
 
 - [ ] **Step 2:** `uv run pytest packages/spectio-open/tests -v`: FAIL.
-- [ ] **Step 3:** implement. Remote commands are argument lists quoted with `shlex.join`, never strings built from user input. The guide gives the `Host` block (`HostName <login node>`, `LocalForward <port> 127.0.0.1:<port>`) with the port that `spectio init` recorded (Assumption 10).
+- [ ] **Step 3:** implement. Remote commands are argument lists quoted with `shlex.quote(shlex.join(argv))` for the two shell layers, never strings built from user input. The guide gives the `Host` block (`HostName <login node>`, `LocalForward 127.0.0.1:<port> 127.0.0.1:<port>`) with the port that `spectio init` recorded (Assumption 10).
 - [ ] **Step 4:** the same command PASSES; by hand, once, on an EMBL login node: `spectio-open <host>` opens the runs list, and the SSH config entry does the same (recorded on the Progress page; nothing in CI reaches EMBL).
 - [ ] **Step 5: Commit** `feat(open): spectio-open and the SSH config guide`.
 
@@ -820,7 +850,7 @@ Also not in P1:
 - [ ] Tasks 1–24 are merged, each with its tests first and its `review-code` pass (Assumptions, Process).
 - [ ] On `slurm-mini` in CI (`pipelines-slurm.yml`, job `e2e`), through a token-link session, the synthetic Nextflow and Snakemake `happy` runs launch with their heads in tmux on the submitter node, end `succeeded`, and match the golden counts per process (Task 22).
 - [ ] A running run of each engine cancels to `cancelled` with no job left, and a server killed while a Nextflow head runs adopts it on restart, with no duplicate event (Task 23).
-- [ ] Each of §15.3 requirements 1–7 has passing `test_req<N>_*` tests (Tasks 3, 11–16).
+- [ ] Each of §15.3 requirements 1–7 has passing `test_req<N>_*` tests (Tasks 3, 11–16), and requirements 8–11 their named tests (Tasks 2, 9–12, 24).
 - [ ] The Playwright smoke passes on the local executor: link, launch, list, detail with live refresh, cancel (Task 20).
 - [ ] A server started with no database rebuilds it from the run directories (Task 11).
 - [ ] `spectio-open` and the SSH config entry both open the runs list on an EMBL login node (Task 24).
