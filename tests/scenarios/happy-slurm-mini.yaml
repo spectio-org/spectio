@@ -1,0 +1,11 @@
+# The synthetic Nextflow pipeline, scenario happy, on slurm-mini (docs/specs/dev-environment-and-testing.md §5).
+# `python3 dev/scenario.py up happy-slurm-mini` creates its environment; only `scheduler` is used until
+# there is product code: the other fields say what the scenario will run and expect.
+deployment: bundle                        # bundle | compose
+scheduler: slurm-mini                     # local | slurm-mini | slurm-site | slurm-rest | k8s-mini | k8s-kueue
+engine: nextflow 26.10
+fixture: tests/pipelines/synthetic/nextflow
+params: [scenario=happy, profile=test]    # tests/pipelines/synthetic/scenarios.yaml
+gate: none                                # gate script: who decides what, when
+expect:
+  - run succeeded

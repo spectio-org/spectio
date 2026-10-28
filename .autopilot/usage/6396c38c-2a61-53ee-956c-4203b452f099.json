@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 1763,
-    "cache_write": 1899928,
-    "cache_read": 148868937,
-    "output": 379362
+    "input": 1945,
+    "cache_write": 2081581,
+    "cache_read": 165012890,
+    "output": 430973
    },
-   "calls": 773,
+   "calls": 856,
    "model": "claude-opus-5-5",
    "start": "2026-10-27T23:14:03.633Z",
-   "end": "2026-10-28T12:41:48.869Z",
+   "end": "2026-10-28T13:03:49.673Z",
    "id": "6396c38c-2a61-53ee-956c-4203b452f099",
    "kind": "main",
    "type": "session",
@@ -647,6 +647,23 @@
   },
   {
    "tokens": {
+    "input": 8,
+    "cache_write": 25716,
+    "cache_read": 46101,
+    "output": 2681
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T12:59:42.875Z",
+   "end": "2026-10-28T13:00:12.582Z",
+   "id": "a8562429fe2b5eff9",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Re-review T5 round 4 (PR #43)",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 254,
     "cache_write": 299472,
     "cache_read": 24903769,
@@ -681,15 +698,15 @@
   },
   {
    "tokens": {
-    "input": 14,
-    "cache_write": 38190,
-    "cache_read": 149203,
-    "output": 8258
+    "input": 16,
+    "cache_write": 39233,
+    "cache_read": 187393,
+    "output": 10827
    },
-   "calls": 7,
+   "calls": 8,
    "model": "claude-opus-5-5",
    "start": "2026-10-28T12:40:16.180Z",
-   "end": "2026-10-28T12:41:47.195Z",
+   "end": "2026-10-28T12:42:11.897Z",
    "id": "aa1b82e2210c93243",
    "kind": "subagent",
    "type": "code-reviewer",
@@ -745,6 +762,23 @@
    "kind": "subagent",
    "type": "security-reviewer",
    "label": "Security review D6 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 26,
+    "cache_write": 29499,
+    "cache_read": 244893,
+    "output": 6477
+   },
+   "calls": 13,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T12:59:42.885Z",
+   "end": "2026-10-28T13:01:03.188Z",
+   "id": "ab276458a1be13606",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Review dashboard SVG embedding change",
    "workflow": null
   },
   {
@@ -885,6 +919,23 @@
   },
   {
    "tokens": {
+    "input": 14,
+    "cache_write": 33523,
+    "cache_read": 143299,
+    "output": 7033
+   },
+   "calls": 7,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T12:52:56.101Z",
+   "end": "2026-10-28T12:54:13.712Z",
+   "id": "ad7e723a3a41baabf",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code review T5 round 3",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 68,
     "cache_write": 133293,
     "cache_read": 1546062,
@@ -919,15 +970,15 @@
   },
   {
    "tokens": {
-    "input": 8,
-    "cache_write": 36573,
-    "cache_read": 67650,
-    "output": 7367
+    "input": 10,
+    "cache_write": 38023,
+    "cache_read": 104223,
+    "output": 10505
    },
-   "calls": 4,
+   "calls": 5,
    "model": "claude-opus-5-5",
    "start": "2026-10-28T12:40:16.195Z",
-   "end": "2026-10-28T12:41:37.349Z",
+   "end": "2026-10-28T12:42:06.079Z",
    "id": "ae192d1df35e2294b",
    "kind": "subagent",
    "type": "security-reviewer",

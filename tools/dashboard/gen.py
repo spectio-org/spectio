@@ -169,6 +169,11 @@ for p, txt in docs.items():
             f = Path(full)
             if full in tracked and inside(full) and f.suffix.lower() in MIME:
                 if full not in imgs:
+                    # a sketch.py figure ships an SVG next to its PNG, about half the size: embed that (16 MB page limit);
+                    # inside <img> the SVG cannot load the Virgil font and falls back to cursive or serif, a deliberate trade-off
+                    svg = f.with_suffix(".svg")
+                    if f.suffix.lower() == ".png" and svg.as_posix() in tracked:
+                        f = svg
                     imgs[full] = f"data:{MIME[f.suffix.lower()]};base64," + base64.b64encode(f.read_bytes()).decode()
                 figs.setdefault(p, [])
                 if full not in figs[p]:

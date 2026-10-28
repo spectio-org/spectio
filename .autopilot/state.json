@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-28T12:47:00Z",
+  "updated_at": "2026-10-28T12:57:00Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -407,12 +407,22 @@
     },
     "T5": {
       "wave": "W3",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-28T12:00:04Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "CI-driven worker on autopilot/T5 (inbox #52 (b) would move T5 after the walking skeleton; launched under the current plan); review 2 rounds (round 2: CR-8 blocker fixed, not re-reviewed); doc review approve 12/14; PR weber8thomas/spectio#41 open, CI pending"
+      "finished_at": "2026-10-28T13:05:00Z",
+      "outputs": [
+        "dev/scenario.py",
+        "dev/k8s/cluster.sh",
+        "tests/scenarios/",
+        "tests/scenarios/parallel.sh",
+        ".github/workflows/scenarios.yml",
+        "docs/progress/W3/T5.md",
+        "docs/reviews/code/T5.md",
+        "docs/specs/dev-environment-and-testing.md",
+        "tools/diagrams/t5_scenarios.py"
+      ],
+      "notes": "CI-driven (inbox #52 (b) would move T5 after the walking skeleton; built under the current plan); PR weber8thomas/spectio#41 squash 90ec099, every check green on aa05608 (scenarios.yml four in parallel, pipelines-k8s mini+kueue); review round 1 changes, round 2 changes (CR-8 blocker fixed in cf655ec), round 3 changes (CR-13 major, CR-14 minor), fixed in PR weber8thomas/spectio#43 (squash aaff4e0, every check green on 5158f4c); round 4 approve 0/0/2 (CR-15 fixed, CR-16 recorded); doc review approve 12/14"
     },
     "T6": {
       "wave": "W3",
