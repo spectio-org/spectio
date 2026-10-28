@@ -5,7 +5,7 @@
 # Optional keys: env (nf-core: extra environment), args (extra command-line arguments), snakefile (catalog; default
 # workflow/Snakefile), network (external services the test data needs), note (why an entry is where it is).
 versions:
-  nextflow: {current: "26.10.3", previous: "25.10.9"}
+  nextflow: {previous: "25.10.9"}  # current: NEXTFLOW_VERSION in dev/versions.env, read by pipelines-real.yml
   snakemake: "9.27.1"
   snakemake_executor_plugin_slurm: "2.8.0"
   java: "21"
