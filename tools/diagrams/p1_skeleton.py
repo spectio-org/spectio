@@ -6,15 +6,17 @@ Writes docs/assets/diagrams/p1_skeleton_{light,dark}.{svg,png}.
 Every fact comes from docs/plans/P1-walking-skeleton.md (draft, 2026-10-28) and the spec it cites,
 docs/specs/dev-environment-and-testing.md §15.3:
 - Architecture header: one process per user on the login node, a FastAPI app, an in-process runner
-  thread and SQLite on node-local disk; the runner writes a head script, starts it in its own tmux
+  thread and SQLite as an index in a node-local temporary directory, rebuilt from the run
+  directories when it is missing (Assumption 21); the runner writes a head script, starts it in its own tmux
   session on the login node, watches its PID and exit files and tails the event spool the engine plugins write in the
   run directory; one writer thread validates spool events and projects them into runs, tasks and
-  attempts; a three-screen UI polls the API (Assumption 7: every 5 s);
+  attempts; a three-screen UI refreshed live by one SSE stream (Assumption 7, decided 2026-10-28);
 - Goal and §15.3: opened through an SSH tunnel with a one-time token link; the head runs Nextflow
   with nf-spectio or Snakemake with the logger plugin; its tasks go through the engine's own SLURM
   executor; the run directory and its spool `.spectio/events/*.jsonl` sit on the shared file system;
 - Assumption 4 (D4): Cancel is Ctrl-C in the head's tmux pane, then SIGTERM, then SIGKILL after 60 s;
-- Task 24: the tunnel is opened by `spectio open --node` or an SSH config entry (2026-10-28);
+- Task 24: the tunnel is opened by `spectio-open [--node]` or an SSH config entry (2026-10-28); done
+  when, by hand on an EMBL login node, both open the runs list;
 - Milestones table: M1 Events in, tasks 1-7; M2 Heads, 8-10; M3 Served safely, 11-16;
   M4 API and screens, 17-21; M5 On the cluster, 22-24 (24 tasks);
 - §15.3 security requirements and their tasks: req. 6 is Task 3, req. 1 to 5 are Tasks 11 to 15,
@@ -121,8 +123,8 @@ def build(theme: Theme) -> Sketch:
                 bar(x + 54, ry, 24 - r * 4, "bar_blue")
             s.button(x + 8, sy + 128, 72, "Cancel", fill="problem", h=28)
     s.step(200, 506, 1, "open the token link")
-    s.text(200, 530, "tunnel: `spectio open --node`, or an SSH config entry", size=13.5, colour=t.dim)
-    s.text(200, 550, "the three screens poll the API every 5 s", size=13.5, colour=t.dim)
+    s.text(200, 530, "tunnel: `spectio-open [--node]`, or an SSH config entry", size=13.5, colour=t.dim)
+    s.text(200, 550, "live refresh: one SSE stream per browser", size=13.5, colour=t.dim)
     s.text(200, 570, "a new link: `spectio login --print-link`", size=13.5, colour=t.dim)
 
     # -- the SSH tunnel, the token link, the checks at the door -----------------------------------
@@ -165,8 +167,8 @@ def build(theme: Theme) -> Sketch:
     cylinder(712, 430, 80, 56, "work")
     s.text(712, 468, "SQLite", size=14, weight="bold")
     s.arrow(712, 418, 712, 376, colour=t.dim, width=1.3)
-    s.text(764, 452, "node-local disk", size=14, anchor="start")
-    s.text(764, 472, "runs, tasks, attempts", size=13, anchor="start", colour=t.dim)
+    s.text(764, 452, "an index, node-local tmp", size=14, anchor="start")
+    s.text(764, 472, "rebuilt from the run dirs", size=13, anchor="start", colour=t.dim)
     shield(774, 498, 5, r=9)
     s.text(790, 503, "0700 and 0600", size=13, anchor="start", colour=t.dim)
     badge(692, 506, "M1")
@@ -178,7 +180,10 @@ def build(theme: Theme) -> Sketch:
                size=11.5, line_h=19)
     s.arrow(1010, 372, 1018, 392, width=1.3)
     s.text(1050, 520, "engine head, in tmux", size=13.5, weight="bold")
-    badge(1098, 372, "M2")
+    s.text(1052, 540, "Cancel: Ctrl-C in its pane,", size=12, colour=t.dim)
+    s.text(1052, 556, "then SIGTERM, SIGKILL", size=12, colour=t.dim)
+    s.text(1052, 572, "`tmux attach` to take over", size=12, colour=t.dim)
+    badge(1098, 366, "M2")
 
     # -- 3 · SLURM: only the tasks --------------------------------------------------------------
     s.frame(1230, 130, 500, 460, fill="surface", colour=t.muted, dashed=True)
@@ -191,9 +196,6 @@ def build(theme: Theme) -> Sketch:
     s.text(1690, 280, "tasks", size=14.5, weight="bold")
     s.step(1480, 456, 3, "the engine sends the tasks")
     s.text(1480, 482, "through its own SLURM executor; no `sbatch` for the head", size=13.5, colour=t.dim)
-    s.text(1480, 502, "Cancel: Ctrl-C in the tmux pane,", size=13.5, colour=t.dim)
-    s.text(1480, 522, "then SIGTERM, SIGKILL after 60 s", size=13.5, colour=t.dim)
-    s.text(1480, 542, "a person can attach: `tmux attach`", size=13.5, colour=t.dim)
 
     # -- 4 · the shared file system: the spool -----------------------------------------------------
     fy = 640
@@ -253,9 +255,11 @@ def build(theme: Theme) -> Sketch:
     s.text(x + 6, cy0 + 16, "done when, on `slurm-mini` in CI,", size=13, anchor="start", colour=t.dim)
     s.text(x + 6, cy0 + 36, "both engines launch, succeed", size=13, anchor="start", colour=t.dim)
     s.text(x + 6, cy0 + 56, "and cancel, and a restarted", size=13, anchor="start", colour=t.dim)
-    s.text(x + 6, cy0 + 76, "server adopts the running head", size=13, anchor="start", colour=t.dim)
+    s.text(x + 6, cy0 + 76, "server adopts the running head;", size=13, anchor="start", colour=t.dim)
+    s.text(x + 6, cy0 + 96, "by hand on an EMBL login node,", size=13, anchor="start", colour=t.dim)
+    s.text(x + 6, cy0 + 116, "`spectio-open` opens the runs list", size=13, anchor="start", colour=t.dim)
 
-    s.text(40, H - 16, "Source: docs/plans/P1-walking-skeleton.md, Architecture, Assumptions 4 and 7, Milestones, "
+    s.text(40, H - 16, "Source: docs/plans/P1-walking-skeleton.md, Architecture, Assumptions 4, 7 and 21, Milestones, "
                        "Tasks 1–24 · docs/specs/dev-environment-and-testing.md §15.3 · "
                        "tools/diagrams/p1_skeleton.py", size=12.5, anchor="start", colour=t.dim)
     return s

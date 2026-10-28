@@ -299,7 +299,7 @@ Spectio keeps the depictio UI model so a user moving between the two apps finds 
 
 **Changed for Spectio**
 - Router: TanStack Router (depictio uses a pathname switch). Deep links matter here: runs, tasks and review gates are shared in chat and by webhooks.
-- Data: TanStack Query + SSE for live runs, with one `EventSource` per browser shared by its tabs (SharedWorker, or BroadcastChannel with leader election) and coalesced deltas per run ([`api-and-data-model.md`](api-and-data-model.md) §8.3) *(assumed — pending Thomas, inbox #28)*.
+- Data: TanStack Query + SSE for live runs, with one `EventSource` per browser shared by its tabs (SharedWorker, or BroadcastChannel with leader election) and coalesced deltas per run ([`api-and-data-model.md`](api-and-data-model.md) §8.3) *(assumed — pending Thomas, inbox #28)*. SSE itself is kept for 0.0.1 *(decided — Thomas, 2026-10-28, api §8.3)*.
 - Pagination on Runs and Tasks (depictio lists have none; Spectio lists grow without bound).
 - JSON-schema forms (new): the launch form is generated from `nextflow_schema.json`, with a Spectio `ui:` block for Snakemake.
 - Status rail + icon + word instead of pill badges (section 3).

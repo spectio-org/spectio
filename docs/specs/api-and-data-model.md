@@ -453,6 +453,8 @@ Why: `sqlite3` calls are synchronous; measured in R4, 200 000 events take 7.2 s 
 
 Why: at 1–10 k events/s for one run, applying every event in every watching tab freezes it; over HTTP/1.1 a browser allows only 6 SSE connections ([MDN EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)); with an HPA, every rollout or scale-down reconnects every stream at once.
 
+Note 2026-10-28: 0.0.1 keeps live refresh over SSE, rather than polling, for the runs list and the run detail *(decided — Thomas, 2026-10-28; [decision log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index))*. One stream per browser, behind the session cookie ([`dev-environment-and-testing.md`](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) §15.3 req. 2 and 3).
+
 ### 8.4 Event retention and raw payloads
 
 While a run is active, every event keeps its full raw payload next to the normalised columns. Once the run is terminal and a configurable number of days has passed, a cleanup job moves the raw payloads into one compressed file per run (`events-<run>.jsonl.zst`) in the file store and keeps only the normalised rows. The raw payload kept per task is the terminal one. Backups copy these archives as files, not rows ([`admin-and-operations.md`](admin-and-operations.md) §4.3). *(assumed — pending Thomas, inbox #28)*
