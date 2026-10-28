@@ -8,7 +8,7 @@ which no endpoint served (the API had /processes only), above a separate process
 column, and "stage 3 of 4" in the header. After (branch autopilot/ui-lite-review): the stages in order, each with its
 state word, "n of m tasks" and a Detected badge, opening to its processes; the header
 "3 of 8 stages done · 4 running"; the rules in the ui-spec §4.4 note of 2026-10-28. Stages: the stage-detection
-spike's output for nf-core/rnaseq 3.27.0 (tests/pipelines/real/stages/expected/ on autopilot/apply-stages);
+spike's output for nf-core/rnaseq 3.27.0 (tests/pipelines/real/stages/expected/, merged with APPLY6);
 counts: the fixture of the lite boards (803 known tasks for 20 samples).
 """
 
@@ -110,10 +110,10 @@ def build(theme: Theme) -> Sketch:
                                  ("Failed", "failed"), ("Not run", "skipped"))):
         s.text(AX + 566, 354 + i * 22, f"{w} → {st}", size=13, anchor="start", colour=t.dim)
     s.text(AX + 566, 500, "processes keyed by", size=14, anchor="start")
-    s.text(AX + 566, 522, "task.process, shown", size=13.5, anchor="start", colour=t.dim)
+    s.text(AX + 566, 522, "fully qualified name, shown", size=13.5, anchor="start", colour=t.dim)
     s.text(AX + 566, 544, "by its last segment", size=13.5, anchor="start", colour=t.dim)
-    s.text(AX + 566, 600, "/stages is empty until", size=14, anchor="start")
-    s.text(AX + 566, 622, "the detector task (APPLY6)", size=13.5, anchor="start", colour=t.dim)
+    s.text(AX + 566, 600, "how stages are found:", size=14, anchor="start")
+    s.text(AX + 566, 622, "ui-spec §5.1.1 (APPLY6)", size=13.5, anchor="start", colour=t.dim)
 
     s.text(40, H - 34, "Sources: design/ui-canvas/LiteRunDetail.dc.html at 1abd5dd (before) and on autopilot/ui-lite-review "
                        "(after); ui-spec §4.4 note 2026-10-28; P1 Assumption 6, Tasks 18 and 20; stages from the stage-detection spike "

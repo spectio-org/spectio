@@ -161,6 +161,14 @@ media:
       - docs/assets/diagrams/uilite_stages_dark.svg
       - docs/assets/diagrams/uilite_stages_light.png
       - docs/assets/diagrams/uilite_stages_dark.png
+  - id: apply6-stages
+    kind: diagram
+    generator: python3 tools/diagrams/apply6_stages.py
+    outputs:
+      - docs/assets/diagrams/apply6_stages_light.svg
+      - docs/assets/diagrams/apply6_stages_dark.svg
+      - docs/assets/diagrams/apply6_stages_light.png
+      - docs/assets/diagrams/apply6_stages_dark.png
   - id: d4-pr-checks
     kind: diagram
     generator: python3 tools/diagrams/d4_pr_checks.py

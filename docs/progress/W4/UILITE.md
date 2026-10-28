@@ -14,7 +14,7 @@ review_ref: "doc-reviewer 2026-10-28, changes 7/14 on 8bba74e; items 1-13 and 15
 ![UILITE figure, before and after. Before, at 1abd5dd: the lite run detail of a running nf-core/rnaseq run, header "stage 3 of 4", four stage cards named by hand (Preprocessing, Alignment & QC, Quantification, Reporting) that no endpoint served, since the API had /processes only, above a separate processes table with a Stage column of labels, 6 of 14 processes shown. After: header "3 of 8 stages done · 4 running · 524 / 803 tasks", the eight stages the stage-detection spike found for nf-core/rnaseq 3.27.0, in order, each with a Done, Running or Pending word and icon, a Detected badge, a bar and "n of m", the fourth, Bam markduplicates picard, open to its processes; notes: a process in no stage goes under "Not in a stage", with no stage the run detail shows the flat list, the state words map to run_stages.state (Pending not_started, Running running, Done completed, Failed failed, Not run skipped), processes are keyed by task.process and shown by their last segment, and /stages is empty until the detector task of step APPLY6](../../assets/diagrams/uilite_stages_light.png#only-light)
 ![UILITE figure, before and after. Before, at 1abd5dd: the lite run detail of a running nf-core/rnaseq run, header "stage 3 of 4", four stage cards named by hand (Preprocessing, Alignment & QC, Quantification, Reporting) that no endpoint served, since the API had /processes only, above a separate processes table with a Stage column of labels, 6 of 14 processes shown. After: header "3 of 8 stages done · 4 running · 524 / 803 tasks", the eight stages the stage-detection spike found for nf-core/rnaseq 3.27.0, in order, each with a Done, Running or Pending word and icon, a Detected badge, a bar and "n of m", the fourth, Bam markduplicates picard, open to its processes; notes: a process in no stage goes under "Not in a stage", with no stage the run detail shows the flat list, the state words map to run_stages.state (Pending not_started, Running running, Done completed, Failed failed, Not run skipped), processes are keyed by task.process and shown by their last segment, and /stages is empty until the detector task of step APPLY6](../../assets/diagrams/uilite_stages_dark.png#only-dark)
 
-*Left: `LiteRunDetail` on `autopilot/integration` at `1abd5dd`. Right: this branch. Sources are named under the figure. The stages are the stage-detection spike's output for nf-core/rnaseq 3.27.0 (`tests/pipelines/real/stages/expected/` on branch `autopilot/apply-stages`); the counts are fixture data.*
+*Left: `LiteRunDetail` on `autopilot/integration` at `1abd5dd`. Right: this branch. Sources are named under the figure. The stages are the stage-detection spike's output for nf-core/rnaseq 3.27.0 (`tests/pipelines/real/stages/expected/`, merged with APPLY6); the counts are fixture data.*
 
 This step is outside [`pipeline.yaml`](../../playbooks/pipeline.yaml): a `ux-reviewer` pass on the 0.0.1 lite boards, applied with Thomas's answers of 2026-10-28 ([review record](../../reviews/code/UI-LITE.md), [decision log](../../decisions/log.md#2026-10-28-001-has-four-screens-home-kept)).
 
@@ -24,10 +24,10 @@ This step is outside [`pipeline.yaml`](../../playbooks/pipeline.yaml): a `ux-rev
 
 **Part 2, the second commit: the doc review, the re-check and Thomas's design requests.**
 
-- **[ui-spec §4.4](../../specs/ui-spec.md#44-run-detail), a dated note, the one owner of the 0.0.1 stage presentation.** What the run detail shows, with or without stages; the header "n of m stages done · k running" (UX-306); one state-word rule from the task counts, with Pending including Submitted (UX-305); each word mapped to an api §7 `run_stages.state`, with Stopped → `failed` left to the stage-detection task; processes keyed by `task.process` **[to be validated]** and shown by their last segment (UX-307); `/stages` empty until step APPLY6.
+- **[ui-spec §4.4](../../specs/ui-spec.md#44-run-detail), a dated note, the one owner of the 0.0.1 stage presentation.** What the run detail shows, with or without stages; the header "n of m stages done · k running" (UX-306); one state-word rule from the task counts, with Pending including Submitted (UX-305); a word for each api §7 `run_stages.state`, Stopped for a `failed` stage on a cancelled run; processes keyed by their fully qualified name and shown by their last segment (UX-307). After APPLY6 merged, the note links ui-spec §5.1 and §5.1.1 for where stages come from and their stored state, and holds no mechanism.
 - **[ui-spec §2](../../specs/ui-spec.md#2-main-navigation), a dated note.** The 0.0.1 top bar starts with the breadcrumbs; the Spectio logo is the favicon only.
 - **[P1](../../plans/P1-walking-skeleton.md).**
-    - Assumption 6 is one clause and a link to the §4.4 note. It names the spike and its branch, says `/stages` returns `{items: []}` until APPLY6, and that the same task reads the declared stages from `spectio.yml` or a lab overlay at launch.
+    - Assumption 6, merged with APPLY6's: its mechanism text (declared, detected, none; Task 27), and the link to the §4.4 note for state words, the header line, badges, the "Not in a stage" group, process names and the empty-state line.
     - Task 18:
         - `/stages` is a subset of `run_stages`: `{id, position, name, source, state, task_counts}`;
         - `/processes` items carry `stage_id`, and `process` is the fully qualified name;
@@ -45,7 +45,7 @@ This step is outside [`pipeline.yaml`](../../playbooks/pipeline.yaml): a `ux-rev
     - The engine and pipeline logos (Nextflow, Snakemake, nf-core).
     - A light icon on each section, each section collapsible, in the run detail, home and launch.
     - No logo in the top bar.
-    - The examples rebuilt on the stage-detection spike's real output (`tests/pipelines/real/stages/expected/` on branch `autopilot/apply-stages`): nf-core/rnaseq 3.27.0 with STAR and Salmon, eight stages, 63 processes seen, 803 known tasks for 20 samples; mosaicatcher-pipeline v2.5.1, eight stages, 347 jobs for 96 cells. Stage names and membership verbatim; counts are fixture data, the same on every board.
+    - The examples rebuilt on the stage-detection spike's real output (`tests/pipelines/real/stages/expected/`, merged with APPLY6): nf-core/rnaseq 3.27.0 with STAR and Salmon, eight stages, 63 processes seen, 803 known tasks for 20 samples; mosaicatcher-pipeline v2.5.1, eight stages, 347 jobs for 96 cells. Stage names and membership verbatim; counts are fixture data, the same on every board.
     - The state rule, and fully qualified names as accessible names.
     - Phone wrapping, padding and a "Now" line.
     - Served facts only.
@@ -84,7 +84,7 @@ Thomas, 2026-10-28, wants both the stages and the processes in 0.0.1 ("les 2 dan
 
 ## Findings and open questions
 
-- **Spike output used, not yet merged:** the boards follow the detector files on `autopilot/apply-stages` (2a245bf); if the stage-detection task changes a stage name or a merge, the boards follow it. **[to be validated]**: `task.process` as the process key in `/processes`; whether Snakemake declares a pipeline version.
-- **Open:** Stopped → `failed` in the mapping, because api §7 has no cancelled stage state; to settle with the stage-detection task.
+- **Spike output used:** the boards follow the detector files in `tests/pipelines/real/stages/expected/`, merged with APPLY6 (f8fa949); if Task 27 changes a stage name or a merge, the boards follow it. The fully qualified process name is verified by the spike (ui-spec §5.1.1). **[to be validated]**: whether Snakemake declares a pipeline version.
+- **Open:** a stage the cancel interrupts is stored `failed` and shown Stopped, because neither api §7 nor ui-spec §5.1.1 has a cancelled stage state.
 - **Doc review item 14** stays as it is, as the coordinator decided.
-- **Coordination:** the spike's branch `autopilot/apply-stages` owns ui-spec §5.1 "Where stages come from", checking-scenarios §12, and the stages rows of dev-env §15.1 and mvp-0.0.1 §2; this branch edited only existing lines there.
+- **Coordination:** APPLY6 owns ui-spec §5.1 and §5.1.1, checking-scenarios §12, P1 Task 27, and the Stages rows of dev-env §15.1 and mvp-0.0.1 §2; this branch merged `autopilot/integration` after APPLY6, kept both sides, and only linked the §4.4 note from those rows.

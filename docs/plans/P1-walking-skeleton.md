@@ -2,16 +2,16 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use `subagent-driven-development` (step P3 of [`next-phase.md`](../playbooks/next-phase.md)) or `executing-plans` to implement this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-*Draft, 2026-10-28 (step P1); revised the same day for the head in tmux, the EMBL target and the laptop access ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)), then after the doc review of PR #47 for live refresh over SSE and SQLite as a rebuildable index ([log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index)), and after the security review of that change for §15.3 requirements 8–11 ([record](../reviews/code/APPLY4.md)); then for runs started from a terminal, Tasks 25 and 26 ([log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)). Waiting for Thomas at the GO gate ([R10 §5](../reviews/R10-synthesis.md#5-go-no-go)). No product code exists yet; this page writes none.*
+*Draft, 2026-10-28 (step P1); revised the same day for the head in tmux, the EMBL target and the laptop access ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)), then after the doc review of PR #47 for live refresh over SSE and SQLite as a rebuildable index ([log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index)), and after the security review of that change for §15.3 requirements 8–11 ([record](../reviews/code/APPLY4.md)); then for runs started from a terminal, Tasks 25 and 26 ([log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)); then for stages declared or detected, Assumption 6 and Task 27 ([log](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list)). Waiting for Thomas at the GO gate ([R10 §5](../reviews/R10-synthesis.md#5-go-no-go)). No product code exists yet; this page writes none.*
 
 ![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel, refreshed over SSE, reaches spectio serve, in its own tmux session on an EMBL login node, through an SSH tunnel (spectio-open or an SSH config entry) and a one-time token link; the runner starts each engine head in its own tmux session on that login node, the engine sends its tasks to SLURM, and the plugins' spool file in the run directory is read back into a SQLite index that the server can rebuild from the run directories; milestones M1 to M5 and §15.3 security requirements 1 to 7 are marked where they apply, above a to-scale strip of the 24 tasks](../assets/diagrams/p1_skeleton_light.png#only-light)
 ![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel, refreshed over SSE, reaches spectio serve, in its own tmux session on an EMBL login node, through an SSH tunnel (spectio-open or an SSH config entry) and a one-time token link; the runner starts each engine head in its own tmux session on that login node, the engine sends its tasks to SLURM, and the plugins' spool file in the run directory is read back into a SQLite index that the server can rebuild from the run directories; milestones M1 to M5 and §15.3 security requirements 1 to 7 are marked where they apply, above a to-scale strip of the 24 tasks](../assets/diagrams/p1_skeleton_dark.png#only-dark)
 
-*Note 2026-10-28: the figure predates Tasks 25 and 26 (M6, runs started from a terminal).*
+*Note 2026-10-28: the figure predates Tasks 25 and 26 (M6, runs started from a terminal) and Task 27 (M7, stages).*
 
 Step page: [Progress · P1](../progress/W4/P1.md).
 
-**Goal:** the smallest Spectio a test user can run on the EMBL cluster: `spectio serve` in a tmux session on a login node, opened through an SSH tunnel with a one-time token link (by `spectio-open` or an SSH config entry), that launches the synthetic Nextflow or Snakemake pipeline (its head in its own tmux session on the login node, its tasks on SLURM), lists the runs, shows one run's state, task counts, processes or rules, and whether its head is alive, as text and tables, and cancels it; it also monitors the runs that users start by hand from a terminal with the bridge enabled (Tasks 25 and 26).
+**Goal:** the smallest Spectio a test user can run on the EMBL cluster: `spectio serve` in a tmux session on a login node, opened through an SSH tunnel with a one-time token link (by `spectio-open` or an SSH config entry), that launches the synthetic Nextflow or Snakemake pipeline (its head in its own tmux session on the login node, its tasks on SLURM), lists the runs, shows one run's state, task counts, stages (declared or detected, Task 27) and processes or rules, and whether its head is alive, as text and tables, and cancels it; it also monitors the runs that users start by hand from a terminal with the bridge enabled (Tasks 25 and 26).
 
 **Architecture:** one process per user on the login node: a FastAPI app, an in-process runner thread and SQLite as an index in a node-local temporary directory, rebuilt from the run directories when it is missing ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts); Assumption 21). The runner writes a head script, starts it in its own tmux session on the login node, in the pane's foreground (or detached with `setsid` on the local executor in tests), watches its PID and exit files, and tails the event spool that the engine plugins write in the run directory. One writer thread validates spool events and projects them into `runs`, `tasks` and `attempts` in the same transaction. A three-screen React UI reads the API and refreshes over one SSE stream.
 
@@ -30,7 +30,7 @@ Decisions taken in place of Thomas, who was not available for brainstorming. Eac
 3. **D3, what engine events may carry** (inbox #55, option (a)). `nf-spectio` sends no `script` or `env`. The SDK event models are allow-lists (`extra="ignore"`), so `script`, `env`, `homeDir`, `commandLine`, `configText` and Snakemake's `cmd` are never stored, even if a plugin sends them. *(assumed — pending Thomas)*
 4. **D4, Cancel** (inbox #62). One Cancel action: a cancel marker `.spectio/cancel` in the run directory, then an interrupt in the head's tmux pane (`tmux send-keys -t <pane id> C-c`), then SIGTERM to the head's process group if it is still alive after a 60 s grace period, then SIGKILL after another 60 s ([schedulers §3.1.1](../specs/schedulers-and-monitoring.md), tmux launcher). On the local executor: SIGTERM to the process group, then SIGKILL. *(assumed — pending Thomas)*
 5. **Attempt state `aborted`** (inbox #56, option (a)). *(assumed — pending Thomas)*
-6. **0.0.1 shows both named stages and the processes or rules** (Thomas, 2026-10-28: "les 2 dans 0.0.1", [log](../decisions/log.md#2026-10-28-001-has-four-screens-home-kept)): the run detail shows the stages, each opening to its processes or rules, or the flat list when there is none, with the state words, the header line and the process names of the [ui-spec §4.4 note of 2026-10-28](../specs/ui-spec.md#44-run-detail). `GET /runs/{id}/stages` returns `{items: []}` until the stage-detection task lands: pipeline step APPLY6 adds it from the spike on branch `spike/stage-detection` (applied on `autopilot/apply-stages`); that task also reads the declared stages from `spectio.yml` or a lab overlay at launch. Until then every run shows the flat list; the synthetic pipelines have no subworkflows, so they show it anyway. Counts come from `GET /runs/{id}/processes` ([api §5](../specs/api-and-data-model.md)).
+6. **Stages and the processes or rules list, both** *(decided — Thomas, 2026-10-28; [log](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list))*. The processes (Nextflow) or rules (Snakemake) list of Tasks 18 and 20 stays, in first-seen order, with task counts by state. Task 27 adds named stages: declared in a `spectio.yml` (the workflow's own, or a lab overlay file, [checking-scenarios §12.7](../specs/checking-scenarios.md)), else detected ([ui-spec §5.1.1](../specs/ui-spec.md)), else none; display only, no gates; names in no stage have `tasks.stage_id` null. State words, the header line, badges, the "Not in a stage" group, process names and the empty-state line: the [ui-spec §4.4 note of 2026-10-28](../specs/ui-spec.md#44-run-detail). The synthetic pipelines have no subworkflows, so they show no stages; the stage tests use the real-pipeline fixtures of `tests/pipelines/real/stages/`. *Note 2026-10-28: this replaces "stages are the processes or rules; detection and `run_stages` come later".* The naming of detected stages is *(assumed — pending Thomas, inbox #68)*.
 7. **Live refresh over SSE** *(decided — Thomas, 2026-10-28; [log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index))*. The UI opens one stream per browser, `GET /api/v1/events/stream` ([api §8.3](../specs/api-and-data-model.md)), behind the session cookie; each frame names a run, and the UI refetches that run, or the first page of the list. The P1 subset sends one frame type, `spectio.run.delta`, and a keep-alive comment every 15 s. The `EventSource` cookie behaviour of §15.3 req. 3 is in scope and checked by the Playwright smoke (Task 20). *Note 2026-10-28: this replaces the assumption "No SSE in 0.0.1, the UI polls every 5 s".*
 8. **A session-free bootstrap page.** §15.3 req. 2 asks for a session on every request, but something must serve the page that reads the ticket from the URL fragment. Four routes are served without a session cookie: `GET /auth/link` (static HTML) and `GET /auth/link.js`, which carry no data and need no credential; `POST /api/v1/auth/magic-links:exchange`, which needs a valid one-time ticket; and `POST /api/v1/auth/links`, which needs the server key (Assumption 9). *(assumed — pending Thomas; a spec gap to record in §15.3)*
 9. **The state file and `spectio login --print-link`.** The server creates `~/.spectio/server.json` in the shared home with `O_EXCL` (login node, port, PID, database directory, start time; mode 0600; no secret) and removes it at a clean stop; `spectio serve` refuses to start on another login node while it names a server there, unless given `--force`, which replaces it ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). `spectio login --print-link` reads it and the server key file in the node-local directory, checks that the listener on the recorded port belongs to the caller's uid (§15.3 req. 9), and calls `POST /api/v1/auth/links` with `Authorization: Bearer <server key>` and the loopback `Origin`. With `--json` it prints one line, a fixed sentinel then `{"ticket": …}`, for `spectio-open` (§15.3 req. 8). Run on another login node, where the server's loopback cannot be reached, it checks the node name from the state file, then prints "The server runs on <node>: run `ssh <node> spectio login --print-link`." and exits 2, with no link. *(assumed — pending Thomas)*
@@ -85,6 +85,7 @@ The five inputs most likely to hurt a test user that no other test covers. Each 
 | M4 · API and screens | 17–21 | the API of the four screens, the UI, and a wheel that carries the UI and both bridges |
 | M5 · On the cluster | 22–24 | both engines end to end on `slurm-mini` in CI, with cancel and restart; the SSH config entry and `spectio-open` |
 | M6 · Runs from a terminal | 25–26 | a run started by hand with the bridge enabled shows in the runs list, monitor only; both bridges build as release packages, dry-run only |
+| M7 · Stages | 27 | the run detail shows named stages, declared or detected, above the processes or rules list, on the four example pipelines |
 
 Commands assume the repository root, and that the uv workspace exists (after Task 1).
 
@@ -355,6 +356,7 @@ def test_init_defaults_unattended(tmp_path, monkeypatch):  # no flags, stdin clo
 def test_head_script_shell_metacharacters(tmp_path):  # location "/p/a b'$(x)", param "x\n$(rm -rf ~)" →
                                                       # `bash -n` OK; the value only in params.json; no "$(rm" in head.sh
 def test_head_script_nextflow_args():   # "-params-file", "-plugins nf-spectio@0.0.1", "-c .spectio/spectio.config"
+                                        # note 2026-10-28: how nf-spectio is loaded is open, inbox #69; mechanism unchanged
 def test_head_script_snakemake_args():  # "--logger spectio", "--configfile", PYTHONPATH=<launch>/.spectio/pylib
 def test_engine_missing_and_too_old(fakebin):  # no nextflow → class engine_missing; "24.10.0" → engine_version,
                                                # message names the path and the version
@@ -656,8 +658,8 @@ def test_launch_ambiguous_engine_422(tmp_path): ...   # both main.nf and Snakefi
   - `GET /api/v1/runs:summary?group_by=state` → `{groups: [{key: <state>, count}]}` over all the user's runs, with no time window (`since=` and `project=` come later); it feeds the count cards of the home screen;
   - `GET /api/v1/version` → `{version, node, runs_root, account, executor: "slurm" | "local"}`: the Spectio version, the login node the server runs on, the runs root, the Unix account and the executor runs use; behind the session cookie in 0.0.1 (not public, Assumption 8); it feeds the shell's "server on <node>" line;
   - `GET /api/v1/runs/{id}` → `{id, name, state, origin: "ui" | "cli-observed", created_at, started_at, ended_at, workflow: {engine, engine_version, location, name, version}, profiles, params, failure, head: {session, node, alive, exit_code} | null, summary: {tasks_total, tasks_expected, counts}}`; `engine_version` is the version `check_engine` (Task 9) found at launch, or the pointer's for a `cli-observed` run (Task 25); `workflow.version` is the version the pipeline declares, from the bridge's start event (Nextflow `workflow.manifest.version` **[to be validated]**), `null` when it declares none (Snakemake declares none **[to be validated]**); `head` is `null` while the head has not started (`queued`); for a `cli-observed` run, `session` is `null` and `alive` is `null` when the head is on another node ("not checked", Task 25). No other fact (partition, queue, cluster name) is returned in 0.0.1; the run items of `GET /runs` carry the same fields but `params`;
-  - `GET /api/v1/runs/{id}/processes` → `{items: [{process, stage_id, counts, retries}]}`, in first-seen order; `process` is the fully qualified Nextflow name (`task.process` **[to be validated]**) or the Snakemake rule name, and `stage_id` is `null` for a process in no stage ([ui-spec §4.4 note](../specs/ui-spec.md#44-run-detail));
-  - `GET /api/v1/runs/{id}/stages` → `{items: [{id, position, name, source: "declared" | "detected", state, task_counts}]}` in `position` order, a subset of the `run_stages` row of [api §7](../specs/api-and-data-model.md); `state` follows the rule of the [ui-spec §4.4 note](../specs/ui-spec.md#44-run-detail); `{items: []}` when the pipeline has none, and for every run until the stage-detection task lands (Assumption 6);
+  - `GET /api/v1/runs/{id}/processes` → `{items: [{process, stage_id, counts, retries}]}`, in first-seen order; `process` is the fully qualified Nextflow name, as `nf-spectio` reports it ([ui-spec §5.1.1](../specs/ui-spec.md#511-detected-stages)), or the Snakemake rule name, the key Task 27's `assign()` matches, and `stage_id` is `null` for a process in no stage ([ui-spec §4.4 note](../specs/ui-spec.md#44-run-detail));
+  - `GET /api/v1/runs/{id}/stages` → `{items: [{id, position, name, source: "declared" | "detected", state, task_counts}]}` in `position` order, a subset of the `run_stages` row of [api §7](../specs/api-and-data-model.md); `state` is the stored `run_stages.state` of [ui-spec §5.1.1](../specs/ui-spec.md#511-detected-stages), shown with the words of the [ui-spec §4.4 note](../specs/ui-spec.md#44-run-detail); `{items: []}` when the run has no stage; Task 27 fills the rows (Assumption 6);
   - `GET /api/v1/runs/{id}/tasks?state=&process=&limit=&cursor=`;
   - `GET /api/v1/runs/{id}/logs?source=head-out|head-err|engine` → `text/plain; charset=utf-8`, the last 64 KiB;
   - `POST /api/v1/runs/{id}:cancel` → `202` with the run (`cancelling`) and a `cancel` command; `200` when it is already `cancelling` or terminal;
@@ -674,7 +676,7 @@ def test_version_behind_session(client, authed_client): ...  # no cookie → 401
 def test_runs_sort_ended(authed_client): ...    # sort=-ended_at → ended runs, last ended first
 def test_stages_ordered(authed_client, seeded_stages): ...  # run_stages rows inserted directly → items in position order, each with state and task_counts
 def test_stages_empty(authed_client, replayed_flaky): ...  # no stage → {items: []}; processes carry stage_id null
-def test_stages_source(authed_client, seeded_stages): ...  # source "declared" or "detected"; processes keyed by task.process
+def test_stages_source(authed_client, seeded_stages): ...  # source "declared" or "detected"; processes keyed by the fully qualified name
 def test_run_versions_and_origin(authed_client, replayed_flaky): ...  # origin "ui", engine_version from check_engine,
                                                 # workflow.version from the start event, null for Snakemake
 def test_queued_run_head_null(authed_client): ...  # launched, head not started → state queued, head null
@@ -855,7 +857,7 @@ def test_stdlib_only(): ...                                # every import in spe
 
 **Files:**
 - Modify: `engine-bridges/nf-spectio/src/spectio/SpectioPlugin.groovy` and `engine-bridges/snakemake-logger-plugin-spectio/snakemake_logger_plugin_spectio/__init__.py` (run ID, spool file names, pointer, the fd-relative writes of req. 12), `packages/spectio/src/spectio/runner/loop.py` (scan when `observed/` changes), `packages/spectio-server/src/spectio_server/rebuild.py` (read the pointers), `packages/spectio-server/src/spectio_server/api/{cancel.py,logs.py}` (422 on a `cli-observed` run, [api §5.1](../specs/api-and-data-model.md) note; the log checks of req. 12), `web/src/runs/{RunsPage.tsx,RunDetailPage.tsx}` (the "started from a terminal" mark; no Cancel), `tools/docs/check.py` (install lines pin versions), `mkdocs.yml`
-- Create: `packages/spectio/src/spectio/runner/observed.py`, `docs/guides/runs-from-a-terminal.md` (the setup of architecture §13.8; merged only once the names are claimed, inbox #66)
+- Create: `packages/spectio/src/spectio/runner/observed.py`, `docs/guides/runs-from-a-terminal.md` (the setup of architecture §13.8; merged only once the names are claimed, inbox #66; how `nf-spectio` is loaded is open, [inbox #69](../reviews/inbox.md#69-nf-spectio-is-enabled-in-a-way-that-breaks-nf-core-runs-or-drops-the-bridge), note 2026-10-28)
 - Test: `packages/spectio/tests/test_observed.py`; the bridge tests of Tasks 6 and 7
 
 **Interfaces:**
@@ -921,6 +923,51 @@ def test_guide_pins_bridge_versions(): ...                   # every install lin
 
 ---
 
+## M7 · Stages
+
+### Task 27: Stages, declared or detected, above the processes or rules list
+
+**Spec:** [ui-spec §5.1 and §5.1.1](../specs/ui-spec.md) (sources, detection rules, order and state), [checking-scenarios §12.1](../specs/checking-scenarios.md) (`stages[]`, what `match` sees) and §12.3 (overlaps), [api §7](../specs/api-and-data-model.md) (`run_stages`, `tasks.stage_id`, `summary.stage_mode`; when detected stages freeze), [api §5](../specs/api-and-data-model.md) (`GET /runs/{id}/stages`); evidence: [stage-detection spike](../research/spike-stage-detection-2026-10-28.md) · **Depends on:** 4, 5, 18, 20, 25 · **Added 2026-10-28 (Thomas, [log](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list))**
+
+**Files:**
+- Create: `packages/spectio-sdk/src/spectio_sdk/stages.py` (the `stages[]` model of `spectio.yml`, read from the workflow's own file or from a lab overlay file in `~/.spectio/overlays/`, matched to the run as [checking-scenarios §12.7](../specs/checking-scenarios.md) (note 2026-10-28) says; no editor), `packages/spectio-server/src/spectio_server/stages/{detect_nf.py,detect_smk.py,assign.py,state.py}`, `packages/spectio-server/tests/test_stages.py`, `tests/pipelines/real/stages/expected/*.json` (from the spike's `out/*_detected.json`; the freeze tests replay `tests/pipelines/real/stages/events/rnaseq-3.27.0_star_salmon_preview_events.jsonl`, and build events from the other `processes/*.txt` lists)
+- Modify: the projector of Tasks 4 and 5 (freeze `run_stages` at the first `onFlowBegin` or `workflow_started`; set `tasks.stage_id`; stage state on each event), the store schema of Task 2 (`run_stages`, `tasks.stage_id`), the head script of Task 9 (Snakemake only: `snakemake --list-rules` with the run's configuration into `.spectio/rules.txt` before the engine starts; a failure there is logged and ignored; it prints `name (docstring)`, so the reader strips a trailing ` (…)`), the read API of Task 18 (fills Task 18's `/stages` subset from `run_stages`, plus `summary.stage_mode`; no new route), `web/src/runs/RunDetailPage.tsx` (Task 20: stages and the processes or rules, per [ui-spec §4.4](../specs/ui-spec.md))
+
+**Interfaces:**
+- Produces: `detect_nextflow(process_names: list[str], manifest_name: str | None, meta: Mapping[str, str]) -> list[StageDef]` and `detect_snakemake(main_snakefile: Path, defined: set[str] | None) -> list[StageDef]`, pure functions with a cap of 8; `assign(stages: list[StageDef], name: str) -> str | None` (the one stage whose `match` matches, with `fnmatchcase` on the fully qualified name, since §12.3 refuses overlaps; `None` leaves `tasks.stage_id` null). `StageDef` has `id`, `name`, `source` (`declared` or `detected`), `description`, `match`.
+- The Snakemake detector reads source files as the server's user, on the run's pipeline directory only: regular files, no symlink leaving the directory of the main Snakefile, at most 200 files of 1 MiB each; for a run started from a terminal, `snakefile_main` is untrusted input under [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 12, and a path that fails the checks gives no detected stages. The server never runs `snakemake` itself. *(assumed — pending Thomas)*
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+# packages/spectio-server/tests/test_stages.py — golden tests on tests/pipelines/real/stages/
+def test_detect_nf_golden(fixture): ...          # rnaseq star_salmon (67 → 8), rnaseq hisat2 (62 → 8), sarek (48 → 8),
+                                                 # methylseq bismark (13 → 4), bwameth (15 → 5): == expected/*.json
+def test_detect_nf_without_manifest(fixture): ...   # manifest name None → the same stages on all five lists
+def test_detect_nf_flat_none(): ...              # the synthetic happy process list → []
+def test_detect_nf_report_kept(fixture): ...     # MULTIQC is its own last stage "Report" after the cap
+def test_detect_smk_golden(fixture): ...         # mosaicatcher v2.5.1 source + list-rules (101 rules → 8) == expected
+def test_detect_smk_source_only(fixture): ...    # no rules.txt → 204 rules, 8 stages, Final targets last
+def test_rules_txt_docstrings_stripped(tmp_path): ...  # "count_reads (Count reads per bin)" → "count_reads"
+def test_detect_smk_unsafe_path(tmp_path): ...   # symlink out of the pipeline dir, > 200 files, FIFO → [] and a warning
+def test_overlay_assign_golden(fixture): ...     # the four overlays: every name assigned, no overlap
+def test_overlay_overlap_refused(fixture): ...   # two stages match one name → the overlay is refused with both stage ids
+def test_overlay_matching(tmp_home): ...         # ~/.spectio/overlays/: name and engine match, version out of range,
+                                                 # two files match → none applied (checking-scenarios §12.7 note)
+def test_declared_beats_detected(fixture): ...   # an overlay for the pipeline → source declared; none → detected
+def test_stages_frozen_at_flow_begin(replayed): ...  # onProcessCreate after onFlowBegin → no new stage, stage_id null
+def test_stage_states(replayed): ...             # running on first task, completed, skipped with no task, failed
+def test_stages_route(authed_client, replayed): ...  # Task 18's GET /api/v1/runs/{id}/stages: items {id, position, name,
+                                                 # source, state, task_counts} in position order; stage_id on /processes items; stage_mode
+```
+
+- [ ] **Step 2:** `uv run pytest packages/spectio-server/tests/test_stages.py -v`: FAIL.
+- [ ] **Step 3:** implement, starting from the spike's `detect_nf.py` and `detect_smk.py` (branch `spike/stage-detection`), as typed pure functions.
+- [ ] **Step 4:** the same command PASSES; the Playwright smoke of Task 20 gains a check that a run of the synthetic `happy` shows no stage and its processes, and a run directory seeded with the rnaseq fixture's events (read at boot, Task 11) shows 8 detected stages above its processes.
+- [ ] **Step 5: Commit** `feat(server): stages, declared or detected, above the processes list`.
+
+---
+
 ## Out of scope
 
 Everything that [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) marks "no" for 0.0.1 or "later (open)":
@@ -946,7 +993,7 @@ Also not in P1:
 
 ## Done when
 
-- [ ] Tasks 1–26 are merged, each with its tests first and its `review-code` pass (Assumptions, Process).
+- [ ] Tasks 1–27 are merged, each with its tests first and its `review-code` pass (Assumptions, Process).
 - [ ] On `slurm-mini` in CI (`pipelines-slurm.yml`, job `e2e`), through a token-link session, the synthetic Nextflow and Snakemake `happy` runs launch with their heads in tmux on the submitter node, end `succeeded`, and match the golden counts per process (Task 22).
 - [ ] A running run of each engine cancels to `cancelled` with no job left, and a server killed while a Nextflow head runs adopts it on restart, with no duplicate event (Task 23).
 - [ ] Each of §15.3 requirements 1–7 has passing `test_req<N>_*` tests (Tasks 3, 11–16), and requirements 8–12 their named tests (Tasks 2, 9–12, 24–26).
@@ -955,6 +1002,7 @@ Also not in P1:
 - [ ] `spectio-open` and the SSH config entry both open home on an EMBL login node (Task 24).
 - [ ] A run started by hand with the bridge enabled shows in the runs list as started from a terminal, monitor only, and a missing `~/.spectio` leaves the run unaffected (Task 25).
 - [ ] Both bridges build as release packages, dry-run only; nothing is published (Task 26).
+- [ ] The run detail shows declared or detected stages above the processes or rules list, and the detectors match their golden output on nf-core/rnaseq, sarek, methylseq and mosaicatcher-pipeline (Task 27).
 - [ ] `tests/packaging/test_wheel.sh` passes: one installable wheel with the UI and both bridges, and a `spectio` environment under 80 MB (Task 21).
 - [ ] Tier 0 is green on every package: ruff, mypy (`--strict` on `spectio-sdk`), `lint-imports`.
 - [ ] api §14 (driven runs) is written, and every spec the code contradicted is updated with a log entry; `python3 tools/docs/check.py` passes.
