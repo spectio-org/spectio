@@ -9,10 +9,10 @@ export type Target = { url: string; serveStatic: boolean };
 /** Where the tests run: SPECTIO_E2E_BASE_URL, else urls.spectio of SPECTIO_SCENARIO, else the static stand-in. */
 export function resolveTarget(env: NodeJS.ProcessEnv): Target {
   if (env.SPECTIO_E2E_BASE_URL) {
-    const { protocol } = new URL(env.SPECTIO_E2E_BASE_URL);
-    if (protocol !== 'http:' && protocol !== 'https:') {
-      throw new Error(`SPECTIO_E2E_BASE_URL must be http or https: ${env.SPECTIO_E2E_BASE_URL}`);
-    }
+    const { protocol, username, password, search } = new URL(env.SPECTIO_E2E_BASE_URL);
+    if (protocol !== 'http:' && protocol !== 'https:') throw new Error('SPECTIO_E2E_BASE_URL must be http or https');
+    // Traces and reports keep the URL: a credential in it would end up in a CI artifact (SEC-T6-01).
+    if (username || password || search) throw new Error('SPECTIO_E2E_BASE_URL must carry no user, password or query');
     return { url: env.SPECTIO_E2E_BASE_URL, serveStatic: false };
   }
   if (env.SPECTIO_SCENARIO) {

@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { boardShotPath } from './boards';
+import { resolveTarget } from './base-url';
 
 test('the home page answers, shows its main region, no script errors', async ({ page }, testInfo) => {
   const errors: Error[] = [];
@@ -8,7 +9,9 @@ test('the home page answers, shows its main region, no script errors', async ({ 
   expect(response?.ok()).toBe(true);
   await expect(page).toHaveTitle(/Spectio/);
   await expect(page.getByRole('main')).toBeVisible();
-  // The stand-in page plays the Runs table until the product exists.
-  await page.screenshot({ path: boardShotPath('RunsTable', testInfo.project.name), fullPage: true });
+  // The stand-in page plays the Runs table until the product exists; another target is not that board.
+  if (resolveTarget(process.env).serveStatic) {
+    await page.screenshot({ path: boardShotPath('RunsTable', testInfo.project.name), fullPage: true });
+  }
   expect(errors).toEqual([]);
 });

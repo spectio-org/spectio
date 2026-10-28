@@ -7,9 +7,9 @@ const target = resolveTarget(process.env);
 export default defineConfig({
   testDir: '.',
   forbidOnly: !!process.env.CI,
-  retries: 0,
   reporter: [['list'], ['html', { open: 'never' }]],
-  use: { baseURL: target.url, trace: 'retain-on-failure' },
+  // Traces record headers and cookies: keep them for the stand-in only (SEC-T6-01).
+  use: { baseURL: target.url, trace: target.serveStatic ? 'retain-on-failure' : 'off' },
   webServer: target.serveStatic
     ? { command: `python3 -m http.server ${STATIC_PORT} --bind 127.0.0.1 --directory static`, url: STATIC_URL }
     : undefined,
