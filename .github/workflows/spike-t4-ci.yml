@@ -27,9 +27,10 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - {part: k8s-mini nextflow, shape: mini, scenarios: "failures nf-happy nf-oom"}
+          - {part: k8s-mini nextflow, shape: mini, scenarios: "failures nf-happy nf25-happy nf-oom"}
           - {part: k8s-kueue, shape: kueue, scenarios: "kueue-wait nf-kueue"}
-          - {part: k8s-mini rbac, shape: mini, scenarios: "rbac"}
+          # kueue shape: the 26.10 head is also run through lq-main, so its Jobs wait suspended with no pod
+          - {part: rbac, shape: kueue, scenarios: "rbac"}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:

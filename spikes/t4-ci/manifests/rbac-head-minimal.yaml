@@ -1,0 +1,44 @@
+# Candidate minimal engine-head Roles: exactly the calls the Nextflow head made in run 1 of this spike
+# (api_calls.py over `-trace nextflow.k8s.client`), plus jobs/status get, the fallback read when a Job
+# has no pod yet (K8sClient.jobStateFallback0, L411-L445 at v26.10.4), which a Kueue-suspended Job hits.
+# scenarios.sh rbac swaps these in for the spec Roles (pass "minimal") and reruns both pipelines.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: nf-head-26-minimal, namespace: spectio-work}
+rules:
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [create, delete]
+  - apiGroups: [batch]
+    resources: [jobs/status]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list, delete]
+  - apiGroups: [""]
+    resources: [pods/status]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: nf-head-26-minimal, namespace: spectio-work}
+subjects: [{kind: ServiceAccount, name: nf-head-26, namespace: spectio-work}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: nf-head-26-minimal}
+---
+# Nextflow 25.10 (Pods): predicted from K8sClient podCreate / podStatus / podDelete at v25.10.9.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: nf-head-25-minimal, namespace: spectio-work}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [create, delete]
+  - apiGroups: [""]
+    resources: [pods/status]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: nf-head-25-minimal, namespace: spectio-work}
+subjects: [{kind: ServiceAccount, name: nf-head-25, namespace: spectio-work}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: nf-head-25-minimal}

@@ -4,6 +4,7 @@
 #
 #   bash spikes/t4-ci/scenarios.sh failures            plain OOMKilled / DeadlineExceeded / exit-3 objects
 #   bash spikes/t4-ci/scenarios.sh nf-happy            synthetic Nextflow, -profile test,k8s, all tasks succeed
+#   bash spikes/t4-ci/scenarios.sh nf25-happy          same on Nextflow 25.10.9 (bare Pods instead of Jobs)
 #   bash spikes/t4-ci/scenarios.sh nf-oom              same, oom_real on QC_STATS S05 (memory limit kills it)
 #   bash spikes/t4-ci/scenarios.sh kueue-wait          3 Jobs on a 1-CPU ClusterQueue: Workloads waiting for quota
 #   bash spikes/t4-ci/scenarios.sh nf-kueue            synthetic Nextflow (2 samples) through lq-main
@@ -101,6 +102,12 @@ scenario_nf_happy() {
   nf_fixtures nf26-happy QC_STATS S01
 }
 
+scenario_nf25_happy() { # Nextflow 25.10.9 creates bare Pods; it needs the plugin named (see rbac)
+  SPIKE_CLEANUP=false nf_run nf25-happy "nextflow-$NEXTFLOW_25_10_VERSION" -plugins nf-k8s@1.2.3
+  echo "RESULT nf25-happy: exit=$NF_RC seconds=$NF_SECONDS tasks=$(trace_json nf25-happy | jq -c '[.items[] | .status] | group_by(.) | map({(.[0]): length}) | add')"
+  nf_fixtures nf25-happy QC_STATS S01
+}
+
 scenario_nf_oom() {
   SPIKE_CLEANUP=false nf_run nf26-oom nextflow --fail_mode oom_real --fail_process QC_STATS --fail_sample S05
   echo "RESULT nf26-oom: exit=$NF_RC seconds=$NF_SECONDS S05=$(trace_json nf26-oom | jq -c '[.items[] | select(.process=="QC_STATS" and .tag=="S05") | {attempt, status, exit, peak_rss}]')"
@@ -118,14 +125,17 @@ visibility() { # lq|cq NAME
 
 scenario_kueue_wait() {
   k apply -f "$here/manifests/kueue-wait.yaml"
-  local admitted=0 pending=0
+  # wait until the state is settled: one admitted, two with QuotaReserved=False, and the ClusterQueue
+  # status counting them (run 1 dumped after 1 s and caught one Workload with no QuotaReserved yet)
+  local admitted=0 waiting=0 cq_pending=0
   for _ in $(seq 60); do
     admitted=$(k get workloads -o json | jq '[.items[] | select(.status.conditions[]? | .type=="Admitted" and .status=="True")] | length')
-    pending=$(visibility lq lq-tight | jq '.items | length')
-    [ "$admitted" -ge 1 ] && [ "$pending" -ge 2 ] && break
+    waiting=$(k get workloads -o json | jq '[.items[] | select(.status.conditions[]? | .type=="QuotaReserved" and .status=="False")] | length')
+    cq_pending=$(kubectl get clusterqueue cq-tight -o jsonpath='{.status.pendingWorkloads}')
+    [ "$admitted" -ge 1 ] && [ "$waiting" -ge 2 ] && [ "${cq_pending:-0}" -ge 2 ] && break
     sleep 2
   done
-  log "kueue-wait: admitted=$admitted pending=$pending"
+  log "kueue-wait: admitted=$admitted waiting=$waiting clusterqueue.pendingWorkloads=$cq_pending"
   k get workloads -o json | fixture kueue-workloads --meta kueue="v$KUEUE_VERSION"
   visibility lq lq-tight | fixture kueue-pending-lq-tight --meta kueue="v$KUEUE_VERSION"
   visibility cq cq-tight | fixture kueue-pending-cq-tight --meta kueue="v$KUEUE_VERSION"
@@ -141,14 +151,24 @@ scenario_kueue_wait() {
 
 scenario_nf_kueue() {
   # sample the queue while Nextflow runs: how many of its Jobs wait in Kueue, and their positions
+  # and keep the first moment with 3 or more waiting: the visibility answer and those Workloads
+  rm -f "$WORK/nf-kueue-pending.json" "$WORK/nf-kueue-pending-wl.json"
   ( for _ in $(seq 200); do
-      printf '%s %s\n' "$(date -u +%H:%M:%S)" "$(visibility lq lq-main 2>/dev/null | jq -c '[.items[] | .positionInLocalQueue]')"
-      sleep 3
+      vis=$(visibility lq lq-main 2>/dev/null)
+      printf '%s %s\n' "$(date -u +%H:%M:%S)" "$(echo "$vis" | jq -c '[.items[] | .positionInLocalQueue]')"
+      if [ ! -s "$WORK/nf-kueue-pending.json" ] && [ "$(echo "$vis" | jq '.items | length')" -ge 3 ]; then
+        echo "$vis" >"$WORK/nf-kueue-pending.json"
+        k get workloads -o json | jq --argjson v "$vis" '([$v.items[].metadata.name]) as $p | {kind: "List", items: [.items[] | select(.metadata.name as $n | $p | index($n))]}' \
+          >"$WORK/nf-kueue-pending-wl.json"
+      fi
+      sleep 2
     done ) >"$WORK/nf-kueue-samples.txt" 2>&1 &
   local sampler=$!
   SPIKE_CLEANUP=false SPIKE_QUEUE=lq-main nf_run nf26-kueue nextflow --input "$here/nextflow/mini-samplesheet.csv"
   kill "$sampler" 2>/dev/null
-  echo "::group::nf26-kueue pending positions every 3 s"; cat "$WORK/nf-kueue-samples.txt"; echo "::endgroup::"
+  echo "::group::nf26-kueue pending positions every 2 s"; cat "$WORK/nf-kueue-samples.txt"; echo "::endgroup::"
+  fixture nf26-kueue-pending-visibility --meta kueue="v$KUEUE_VERSION" <"$WORK/nf-kueue-pending.json"
+  fixture nf26-kueue-pending-workloads --meta kueue="v$KUEUE_VERSION" <"$WORK/nf-kueue-pending-wl.json"
   echo "RESULT nf26-kueue: exit=$NF_RC seconds=$NF_SECONDS max_pending=$(sed 's/^[^ ]* //' "$WORK/nf-kueue-samples.txt" | jq -s 'map(length) | max')"
   echo "RESULT nf26-kueue-job-labels: $(k get jobs -l spectio.io/run-id=nf26-kueue -o json | jq -c '[.items[0].metadata.labels, .items[0].spec.suspend]')"
   k get workloads -o json | fixture nf26-kueue-workloads --meta kueue="v$KUEUE_VERSION" --max-bytes 40000
@@ -172,32 +192,48 @@ can_i() { # SA verb resource[/subresource]
   printf '%-12s %-8s %-48s %s\n' "$1" "$2" "$3" "${got:-no}"
 }
 
-rbac_head() { # TAG NFBIN SA: run the mini pipeline twice (success, then a tool error that kills in-flight tasks)
-  local tag=$1 nf=$2 sa=$3 kc="$WORK/kc-$3"
+# rbac_head TAG NFBIN SA QUEUE [extra nextflow args]: run the mini pipeline twice (success, then a tool
+# error that makes the head kill in-flight tasks) under the SA's own token, with three Role sets:
+# spec (rbac-spec.yaml only), additions (spec + rbac-head-additions.yaml), minimal (rbac-head-minimal.yaml
+# only). QUEUE, when set, sends the success run through Kueue, so its Jobs wait suspended with no pod.
+rbac_head() {
+  local tag=$1 nf=$2 sa=$3 queue=$4 kc="$WORK/kc-$3"
+  shift 4
   sa_kubeconfig "$sa" "$kc"
   KUBECONFIG=$kc kubectl auth whoami -o jsonpath='{.status.userInfo.username}{"\n"}' 2>/dev/null || true
-  for pass in spec additions; do
-    if [ "$pass" = additions ]; then
-      kubectl apply -f "$here/manifests/rbac-head-additions.yaml" >/dev/null
-    fi
-    KUBECONFIG=$kc SPIKE_CLEANUP=true nf_run "$tag-$pass-ok" "$nf" --input "$here/nextflow/mini-samplesheet.csv"
+  for pass in spec additions minimal; do
+    case $pass in
+      additions) kubectl apply -f "$here/manifests/rbac-head-additions.yaml" >/dev/null ;;
+      minimal)
+        k delete rolebinding "$sa" "$sa-additions" >/dev/null
+        kubectl apply -f "$here/manifests/rbac-head-minimal.yaml" >/dev/null
+        ;;
+    esac
+    echo "::group::can-i --list $sa (pass $pass)"
+    kubectl auth can-i --list -n "$NS" --as="system:serviceaccount:$NS:$sa" | grep -v -E "selfsubject|^ +\[/"
+    echo "::endgroup::"
+    KUBECONFIG=$kc SPIKE_CLEANUP=true SPIKE_QUEUE=$queue nf_run "$tag-$pass-ok" "$nf" \
+      --input "$here/nextflow/mini-samplesheet.csv" "$@"
     local ok_rc=$NF_RC ok_s=$NF_SECONDS
     KUBECONFIG=$kc SPIKE_CLEANUP=true nf_run "$tag-$pass-err" "$nf" --input "$here/nextflow/mini-samplesheet.csv" \
-      --fail_mode exit --fail_process ALIGN --fail_sample S07
-    local err_rc=$NF_RC
+      --fail_mode exit --fail_process ALIGN --fail_sample S07 "$@"
+    local err_rc=$NF_RC refused
     for run in ok err; do
       python3 "$here/api_calls.py" "$WORK/$tag-$pass-$run/.nextflow.log" >"$WORK/$tag-$pass-$run.api.json"
       fixture "$tag-$pass-$run-api" <"$WORK/$tag-$pass-$run.api.json"
     done
-    echo "RESULT rbac $tag role=$pass: ok-run exit=$ok_rc (${ok_s}s), err-run exit=$err_rc (expect 1); refused=$(jq -s -c 'map(.refused) | add' "$WORK/$tag-$pass-ok.api.json" "$WORK/$tag-$pass-err.api.json"); used=$(jq -s -c 'map(.used | keys) | add | unique' "$WORK/$tag-$pass-ok.api.json" "$WORK/$tag-$pass-err.api.json")"
+    refused=$(jq -s -c 'map(.refused) | add' "$WORK/$tag-$pass-ok.api.json" "$WORK/$tag-$pass-err.api.json")
+    echo "RESULT rbac $tag role=$pass: ok-run exit=$ok_rc (${ok_s}s, queue=${queue:-none}), err-run exit=$err_rc (expect 1); refused=$refused; used=$(jq -s -c '{ok: .[0].used, err: .[1].used}' "$WORK/$tag-$pass-ok.api.json" "$WORK/$tag-$pass-err.api.json")"
     grep -h "Unable to delete" "$WORK/$tag-$pass-ok/.nextflow.log" "$WORK/$tag-$pass-err/.nextflow.log" | head -n 3
-    # stop at the first pass that works with no refusal
-    if [ "$ok_rc" = 0 ] && [ "$(jq -s 'map(.refused | length) | add' "$WORK/$tag-$pass-ok.api.json" "$WORK/$tag-$pass-err.api.json")" = 0 ]; then
-      echo "RESULT rbac $tag: sufficient with role=$pass"
-      break
+    if [ "$ok_rc" = 0 ] && [ "$err_rc" = 1 ] && [ "$refused" = "[]" ]; then
+      echo "RESULT rbac $tag role=$pass: SUFFICIENT"
+    else
+      echo "RESULT rbac $tag role=$pass: NOT sufficient"
     fi
   done
-  kubectl delete -f "$here/manifests/rbac-head-additions.yaml" --ignore-not-found >/dev/null
+  # the cluster is shared by both heads: restore the spec bindings for the next one
+  kubectl delete -f "$here/manifests/rbac-head-additions.yaml" -f "$here/manifests/rbac-head-minimal.yaml" --ignore-not-found >/dev/null
+  kubectl apply -f "$here/manifests/rbac-spec.yaml" >/dev/null
 }
 
 scenario_rbac() {
@@ -240,18 +276,24 @@ scenario_rbac() {
   step quota kubectl get resourcequotas
   step limitranges kubectl get limitranges
   step delete-job kubectl delete job runner-head-probe --wait=true
+  # §4: the runner watches Workload objects and, optionally, reads the visibility API
+  step workloads kubectl get workloads.kueue.x-k8s.io
+  step visibility kubectl get --raw "/apis/visibility.kueue.x-k8s.io/v1beta2/namespaces/$NS/localqueues/lq-main/pendingworkloads"
   echo "RESULT rbac runner: ${steps[*]}"
 
-  rbac_head nf26 nextflow nf-head-26
-  rbac_head nf25 "nextflow-$NEXTFLOW_25_10_VERSION" nf-head-25
+  rbac_head nf26 nextflow nf-head-26 lq-main
+  # Nextflow 25.10.9 does not start the k8s executor plugin by itself ("Unknown executor name: k8s",
+  # run 1); nf-k8s@1.2.3 is the version its own log lists among its core plugins.
+  rbac_head nf25 "nextflow-$NEXTFLOW_25_10_VERSION" nf-head-25 "" -plugins nf-k8s@1.2.3
 }
 
 case "${1:-}" in
   failures) scenario_failures ;;
   nf-happy) scenario_nf_happy ;;
+  nf25-happy) scenario_nf25_happy ;;
   nf-oom) scenario_nf_oom ;;
   kueue-wait) scenario_kueue_wait ;;
   nf-kueue) scenario_nf_kueue ;;
   rbac) scenario_rbac ;;
-  *) sed -n '2,13p' "$0"; exit 2 ;;
+  *) sed -n '2,12p' "$0"; exit 2 ;;
 esac
