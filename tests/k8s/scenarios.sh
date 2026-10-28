@@ -77,7 +77,8 @@ sa_kubeconfig() { # SA OUT
 }
 
 # Calls no ServiceAccount of rbac.yaml may make. "create pods" is not here: nf-head-25 needs it.
-DENIED=("get secrets" "list nodes" "create pods/exec" "create serviceaccounts/token" "create rolebindings"
+# A subresource needs --subresource: "create pods/exec" would ask about a pod named exec.
+DENIED=("get secrets" "list nodes" "create pods --subresource=exec" "create serviceaccounts --subresource=token" "create rolebindings"
   "impersonate serviceaccounts" "create jobs -n default" "create pods -n default")
 # deny_check [CALL...]: each call of DENIED, then each CALL, must be refused to the current KUBECONFIG; prints
 # one line per call. Run with the ServiceAccount's own kubeconfig, whose context sets the namespace.
