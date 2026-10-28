@@ -1,0 +1,293 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1640" height="860" viewBox="0 0 1640 860">
+  <rect width="1640" height="860" fill="#1f2129"/>
+  <text x="40.0" y="52.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="27" fill="#e3e3e3" text-anchor="start" font-weight="normal">APPLY3 · 49 of 69 spikes-round findings reached the specs</text>
+  <text x="40.0" y="80.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">T2, T3, T4, T7 · 44 applied (2 of them by PR #36), 5 partly, 0 not applied · 5 fixes rest on an assumed inbox answer · 9 findings wait for Thomas</text>
+  <rect x="30.0" y="116.0" width="370.0" height="680.0" rx="4" fill="#282b33" fill-opacity="0.5"/>
+  <text x="48.0" y="146.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="18" fill="#e3e3e3" text-anchor="start" font-weight="normal">T2 · engine events</text>
+  <text x="380.0" y="146.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#9aa0ac" text-anchor="end" font-weight="normal">27</text>
+  <rect x="48.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="74.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="100.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="126.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="152.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="178.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="204.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="230.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="241.0" cy="169.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="256.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="267.0" cy="169.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="282.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="308.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="334.0" y="158.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="48.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="74.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="100.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="126.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="152.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="178.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="204.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="230.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="256.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="282.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="308.0" y="184.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="334.0" y="184.0" width="22" height="22" rx="3" fill="#2b2938" stroke="#585e6b" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <rect x="48.0" y="210.0" width="22" height="22" rx="3" fill="#2b2938" stroke="#585e6b" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <rect x="74.0" y="210.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="0.9"/>
+  <line x1="80.0" y1="216.0" x2="90.0" y2="226.0" stroke="#585e6b" stroke-width="1.2"/>
+  <rect x="100.0" y="210.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="0.9"/>
+  <line x1="106.0" y1="216.0" x2="116.0" y2="226.0" stroke="#585e6b" stroke-width="1.2"/>
+  <text x="48.0" y="270.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="18" fill="#e3e3e3" text-anchor="start" font-weight="normal">T3 · SLURM</text>
+  <text x="380.0" y="270.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#9aa0ac" text-anchor="end" font-weight="normal">20</text>
+  <rect x="48.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="74.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="100.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="126.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="152.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="178.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="204.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="230.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="256.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="282.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="308.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="319.0" cy="293.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="334.0" y="282.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="48.0" y="308.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="74.0" y="308.0" width="22" height="22" rx="3" fill="#3a3e48" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="100.0" y="308.0" width="22" height="22" rx="3" fill="#3a3e48" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="126.0" y="308.0" width="22" height="22" rx="3" fill="#3a3e48" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="152.0" y="308.0" width="22" height="22" rx="3" fill="#2b2938" stroke="#585e6b" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <rect x="178.0" y="308.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="0.9"/>
+  <line x1="184.0" y1="314.0" x2="194.0" y2="324.0" stroke="#585e6b" stroke-width="1.2"/>
+  <rect x="204.0" y="308.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="0.9"/>
+  <line x1="210.0" y1="314.0" x2="220.0" y2="324.0" stroke="#585e6b" stroke-width="1.2"/>
+  <rect x="230.0" y="308.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="0.9"/>
+  <line x1="236.0" y1="314.0" x2="246.0" y2="324.0" stroke="#585e6b" stroke-width="1.2"/>
+  <text x="48.0" y="368.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="18" fill="#e3e3e3" text-anchor="start" font-weight="normal">T4 · Kubernetes</text>
+  <text x="380.0" y="368.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#9aa0ac" text-anchor="end" font-weight="normal">17</text>
+  <rect x="48.0" y="380.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="74.0" y="380.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="100.0" y="380.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="126.0" y="380.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="152.0" y="380.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="178.0" y="380.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="204.0" y="380.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="230.0" y="380.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="241.0" cy="391.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="256.0" y="380.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="282.0" y="380.0" width="22" height="22" rx="3" fill="#2b2938" stroke="#585e6b" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <rect x="308.0" y="380.0" width="22" height="22" rx="3" fill="#2b2938" stroke="#585e6b" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <rect x="334.0" y="380.0" width="22" height="22" rx="3" fill="#2b2938" stroke="#585e6b" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <rect x="48.0" y="406.0" width="22" height="22" rx="3" fill="#2b2938" stroke="#585e6b" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <rect x="74.0" y="406.0" width="22" height="22" rx="3" fill="#2b2938" stroke="#585e6b" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <rect x="100.0" y="406.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="0.9"/>
+  <line x1="106.0" y1="412.0" x2="116.0" y2="422.0" stroke="#585e6b" stroke-width="1.2"/>
+  <rect x="126.0" y="406.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="0.9"/>
+  <line x1="132.0" y1="412.0" x2="142.0" y2="422.0" stroke="#585e6b" stroke-width="1.2"/>
+  <rect x="152.0" y="406.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="0.9"/>
+  <line x1="158.0" y1="412.0" x2="168.0" y2="422.0" stroke="#585e6b" stroke-width="1.2"/>
+  <text x="48.0" y="466.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="18" fill="#e3e3e3" text-anchor="start" font-weight="normal">T7 · corpus</text>
+  <text x="380.0" y="466.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#9aa0ac" text-anchor="end" font-weight="normal">5</text>
+  <rect x="48.0" y="478.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="74.0" y="478.0" width="22" height="22" rx="3" fill="#2f5577" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="100.0" y="478.0" width="22" height="22" rx="3" fill="#2f5577" stroke="#e3e3e3" stroke-width="0.9"/>
+  <rect x="126.0" y="478.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="137.0" cy="489.0" r="3.6" fill="#e3e3e3"/>
+  <rect x="152.0" y="478.0" width="22" height="22" rx="3" fill="#2b2938" stroke="#585e6b" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <rect x="48.0" y="530.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="80.0" y="546.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">applied by APPLY3 (42)</text>
+  <rect x="48.0" y="558.0" width="22" height="22" rx="3" fill="#2f5577" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="80.0" y="574.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">applied by PR #36, corpus retry (2)</text>
+  <rect x="48.0" y="586.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="80.0" y="602.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">partly applied (5)</text>
+  <rect x="48.0" y="614.0" width="22" height="22" rx="3" fill="#2b2938" stroke="#585e6b" stroke-width="1.3" stroke-dasharray="3 3"/>
+  <text x="80.0" y="630.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">waits for Thomas (9)</text>
+  <rect x="48.0" y="642.0" width="22" height="22" rx="3" fill="#3a3e48" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="80.0" y="658.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">applied by T3 before triage (3)</text>
+  <rect x="48.0" y="670.0" width="22" height="22" rx="3" fill="none" stroke="#585e6b" stroke-width="0.9"/>
+  <line x1="54.0" y1="676.0" x2="64.0" y2="686.0" stroke="#585e6b" stroke-width="1.2"/>
+  <text x="80.0" y="686.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">rejected (8)</text>
+  <rect x="48.0" y="698.0" width="22" height="22" rx="3" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.9"/>
+  <circle cx="59.0" cy="709.0" r="3.6" fill="#e3e3e3"/>
+  <text x="80.0" y="714.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">dot: assumed answer, pending (5)</text>
+  <rect x="430.0" y="116.0" width="640.0" height="400.0" rx="4" fill="#2b2938" fill-opacity="0.45"/>
+  <path d="M448.0,132.0 L471.8,132.0 L482.0,142.2 L482.0,176.0 L448.0,176.0 Z" fill="#24272f" stroke="none"/>
+  <path d="M447.7,132.2 C455.8,131.7 464.5,132.0 471.5,131.8" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M471.6,132.3 C474.5,135.6 479.1,139.0 482.3,142.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M482.3,142.4 C481.6,153.7 482.8,165.4 481.8,176.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M482.3,175.6 C470.6,176.2 459.3,175.5 447.9,175.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M448.1,176.3 C448.7,160.7 448.1,147.4 447.9,132.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M472.2,132.2 C471.6,135.2 471.6,138.1 471.9,142.2" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M471.8,142.4 C474.7,141.8 479.3,142.7 482.4,141.8" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M452.9,147.2 C460.6,147.3 468.2,147.4 476.1,147.4" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M452.8,154.8 C460.9,154.6 468.2,154.9 475.9,154.8" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M453.0,162.4 C460.5,162.6 468.3,162.2 475.9,162.5" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="494.0" y="152.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="20" fill="#e3e3e3" text-anchor="start" font-weight="normal">7 specs and decision 0001 changed</text>
+  <text x="494.0" y="174.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">lines added + and removed − (to scale; most lines are long paragraphs)</text>
+  <text x="690.0" y="217.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">dev-environment-and-testing</text>
+  <rect x="700.0" y="202.0" width="250.0" height="12" rx="2" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="700.0" y="216.0" width="130.0" height="12" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="958.0" y="217.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+25 −13</text>
+  <text x="690.0" y="255.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">schedulers-and-monitoring</text>
+  <rect x="700.0" y="240.0" width="220.0" height="12" rx="2" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="700.0" y="254.0" width="110.0" height="12" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="928.0" y="255.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+22 −11</text>
+  <text x="690.0" y="293.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">api-and-data-model</text>
+  <rect x="700.0" y="278.0" width="130.0" height="12" rx="2" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="700.0" y="292.0" width="70.0" height="12" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="838.0" y="293.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+13 −7</text>
+  <text x="690.0" y="331.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">synthesis</text>
+  <rect x="700.0" y="316.0" width="130.0" height="12" rx="2" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="700.0" y="330.0" width="90.0" height="12" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="838.0" y="331.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+13 −9</text>
+  <text x="690.0" y="369.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">checking-scenarios</text>
+  <rect x="700.0" y="354.0" width="70.0" height="12" rx="2" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="700.0" y="368.0" width="30.0" height="12" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="778.0" y="369.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+7 −3</text>
+  <text x="690.0" y="407.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">architecture-plugins-and-packaging</text>
+  <rect x="700.0" y="392.0" width="30.0" height="12" rx="2" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="700.0" y="406.0" width="30.0" height="12" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="738.0" y="407.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+3 −3</text>
+  <text x="690.0" y="445.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">decision 0001 (nf-spectio)</text>
+  <rect x="700.0" y="430.0" width="30.0" height="12" rx="2" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="700.0" y="444.0" width="10.0" height="12" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="738.0" y="445.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+3 −1</text>
+  <text x="690.0" y="483.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">ui-spec</text>
+  <rect x="700.0" y="468.0" width="10.0" height="12" rx="2" fill="#2e5c3b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <rect x="700.0" y="482.0" width="10.0" height="12" rx="2" fill="#38262b" stroke="#e3e3e3" stroke-width="0.7"/>
+  <text x="718.0" y="483.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">+1 −1</text>
+  <rect x="430.0" y="536.0" width="640.0" height="260.0" rx="4" fill="#382c22" fill-opacity="0.35"/>
+  <path d="M471.9,566.1 C473.7,565.7 475.4,565.9 477.0,566.1" fill="none" stroke="#e3e3e3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M469.1,573.0 C470.2,574.2 471.2,575.5 472.7,576.6" fill="none" stroke="#e3e3e3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M462.0,575.9 C461.8,578.0 462.0,579.6 462.0,581.0" fill="none" stroke="#e3e3e3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M454.9,573.1 C453.9,574.2 452.5,575.4 451.5,576.6" fill="none" stroke="#e3e3e3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M452.1,566.0 C450.1,565.7 448.7,565.8 447.1,565.9" fill="none" stroke="#e3e3e3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M454.9,558.9 C454.0,557.5 452.4,556.5 451.4,555.4" fill="none" stroke="#e3e3e3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M461.9,556.1 C461.7,554.4 461.9,552.7 461.9,550.9" fill="none" stroke="#e3e3e3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M469.0,558.8 C470.4,557.8 471.2,556.5 472.6,555.4" fill="none" stroke="#e3e3e3" stroke-width="3" stroke-linecap="round"/>
+  <path d="M472.0,566.0 L471.7,568.2 L471.0,570.3 L469.8,572.2 L468.2,573.8 L466.3,575.0 L464.2,575.7 L462.0,576.0 L459.8,575.7 L457.7,575.0 L455.8,573.8 L454.2,572.2 L453.0,570.3 L452.3,568.2 L452.0,566.0 L452.3,563.8 L453.0,561.7 L454.2,559.8 L455.8,558.2 L457.7,557.0 L459.8,556.3 L462.0,556.0 L464.2,556.3 L466.3,557.0 L468.2,558.2 L469.8,559.8 L471.0,561.7 L471.7,563.8 Z" fill="#24272f" stroke="none"/>
+  <path d="M472.1,566.0 C472.0,566.9 471.6,567.3 471.8,568.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M471.8,568.2 C471.3,568.6 471.1,569.5 471.1,570.2" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M471.2,570.3 C470.5,570.9 470.0,571.6 469.7,572.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M469.9,572.2 C469.3,573.0 468.5,573.5 468.2,573.7" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M468.3,573.9 C467.9,574.1 466.9,574.7 466.3,575.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M466.2,575.0 C465.7,575.1 465.2,575.3 464.2,575.6" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M464.2,575.6 C463.7,576.1 462.8,576.0 461.9,576.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M462.0,575.9 C461.5,575.8 460.4,575.7 459.8,575.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M459.7,575.8 C458.8,575.6 458.2,575.0 457.6,575.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M457.8,575.1 C457.1,574.6 456.6,574.5 455.6,573.8" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M455.7,573.7 C455.1,573.3 454.4,573.1 454.3,572.2" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M454.3,572.1 C453.5,571.3 453.5,570.6 452.8,570.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M453.0,570.5 C452.5,569.3 452.5,568.7 452.4,568.4" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M452.4,568.1 C452.2,567.6 452.0,566.9 451.8,566.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M452.0,566.1 C452.1,565.3 452.0,564.3 452.2,563.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M452.2,563.7 C452.5,563.3 452.5,562.5 452.8,561.7" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M453.1,561.5 C453.4,561.1 453.7,560.1 454.1,559.7" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M454.3,559.7 C454.9,559.2 455.3,559.0 455.7,558.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M455.7,558.1 C456.6,557.8 457.1,557.1 457.8,556.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M457.6,556.9 C458.7,556.6 459.2,556.4 459.9,556.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M459.8,556.1 C460.3,556.1 461.3,556.1 462.0,555.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M462.2,556.1 C462.9,556.3 463.2,556.1 464.1,556.2" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M464.2,556.2 C465.0,556.5 465.8,556.8 466.2,557.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M466.4,557.1 C466.8,557.2 467.7,557.5 468.1,558.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M468.3,558.3 C469.0,558.7 469.2,559.5 469.8,559.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M469.7,559.9 C470.1,560.6 470.5,560.8 471.1,561.8" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M471.0,561.7 C471.3,562.0 471.5,563.1 471.9,563.8" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M471.7,563.9 C471.7,564.2 472.2,565.4 471.9,566.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M465.8,565.9 C465.8,566.6 466.0,566.6 465.8,566.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M465.8,567.0 C465.7,566.9 465.4,567.7 465.5,567.6" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M465.5,567.6 C465.0,567.5 465.4,568.2 465.0,568.2" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M464.9,568.5 C465.0,568.5 464.5,568.4 464.5,568.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M464.5,569.1 C463.9,569.3 463.7,569.2 463.6,569.5" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M463.6,569.3 C463.2,569.4 462.8,569.4 462.7,569.6" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M462.9,569.7 C462.4,570.1 462.1,569.6 461.9,569.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M462.1,569.9 C461.5,570.1 461.1,569.8 461.1,569.6" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M461.0,569.6 C460.9,569.3 460.8,569.4 460.4,569.4" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M460.4,569.3 C460.3,569.2 460.2,569.4 459.5,568.8" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M459.5,568.9 C459.5,568.9 459.6,568.7 459.0,568.4" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M459.1,568.5 C458.6,568.3 458.9,567.8 458.7,567.8" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M458.5,567.8 C458.4,567.1 458.6,566.9 458.5,566.8" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M458.1,567.0 C458.2,566.7 457.9,566.2 458.0,566.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M458.1,566.0 C458.1,565.6 458.3,565.6 458.4,565.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M458.3,565.2 C458.7,564.7 458.4,564.7 458.4,564.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M458.7,564.3 C458.7,564.0 459.1,563.7 459.0,563.5" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M459.1,563.8 C459.2,563.8 459.2,563.3 459.5,563.2" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M459.5,563.1 C460.1,562.7 460.1,562.5 460.3,562.4" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M460.4,562.7 C460.9,562.3 460.9,562.6 461.0,562.2" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M461.3,562.1 C461.3,562.6 461.6,562.1 462.1,562.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M461.9,562.1 C462.0,562.3 462.3,562.0 462.7,562.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M462.8,562.2 C463.1,562.2 463.6,562.2 463.7,562.7" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M463.6,562.5 C464.2,562.5 463.9,563.0 464.5,563.2" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M464.3,563.1 C464.7,563.1 464.9,563.4 464.8,563.6" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M465.1,563.8 C465.1,564.0 465.1,563.9 465.5,564.4" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M465.4,564.4 C465.8,564.5 465.5,565.1 465.7,565.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M465.6,565.0 C465.9,565.8 465.7,565.9 465.7,566.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="486.0" y="572.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="normal">partly applied: work left outside the specs</text>
+  <rect x="460.0" y="594.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="494.0" y="610.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#e3e3e3" text-anchor="start" font-weight="normal">SPK-T3-20 · read-only node tools in dev/slurm, dev/k8s</text>
+  <rect x="460.0" y="632.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="494.0" y="648.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#e3e3e3" text-anchor="start" font-weight="normal">SPK-T4-15 · digests, nf-k8s sha256, --only (with #46)</text>
+  <rect x="460.0" y="670.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="494.0" y="686.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#e3e3e3" text-anchor="start" font-weight="normal">SPK-T4-09 · ci.yml calls pipelines-slurm / -k8s</text>
+  <rect x="460.0" y="708.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="494.0" y="724.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#e3e3e3" text-anchor="start" font-weight="normal">SPK-T7-01 · autopilot reads the nightly runs</text>
+  <rect x="460.0" y="746.0" width="22" height="22" rx="3" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.9"/>
+  <text x="494.0" y="762.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#e3e3e3" text-anchor="start" font-weight="normal">SPK-T4-02 · the Role lists, after inbox #53</text>
+  <rect x="1100.0" y="116.0" width="510.0" height="400.0" rx="4" fill="#2b2938" fill-opacity="0.4"/>
+  <path d="M1124.2,142.4 V137.0 a5.8,5.8 0 0 1 11.5,0 V142.4" fill="none" stroke="#e3e3e3" stroke-width="1.6" stroke-linecap="round"/>
+  <rect x="1121.0" y="142.4" width="18.0" height="13.2" rx="2.5" fill="#2b2938" stroke="#e3e3e3" stroke-width="1.5"/>
+  <circle cx="1130.0" cy="149.0" r="1.6" fill="#e3e3e3"/>
+  <text x="1154.0" y="152.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="normal">waits for Thomas: not in the specs</text>
+  <text x="1154.0" y="174.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">one bar unit = one finding</text>
+  <text x="1402.0" y="210.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#53 Kubernetes Roles</text>
+  <rect x="1410.0" y="198.0" width="160.0" height="16" rx="2" fill="#4a3f78" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1578.0" y="211.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">4</text>
+  <text x="1402.0" y="240.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#54 task-pod tokens, shared namespace</text>
+  <rect x="1410.0" y="228.0" width="80.0" height="16" rx="2" fill="#4a3f78" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1498.0" y="241.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">2</text>
+  <text x="1402.0" y="270.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#55 what engine events may carry</text>
+  <rect x="1410.0" y="258.0" width="80.0" height="16" rx="2" fill="#4a3f78" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1498.0" y="271.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">2</text>
+  <text x="1402.0" y="300.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#59 slurmrestd token and user</text>
+  <rect x="1410.0" y="288.0" width="40.0" height="16" rx="2" fill="#4a3f78" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1458.0" y="301.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1402.0" y="330.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#46 corpus pins (existing)</text>
+  <rect x="1410.0" y="318.0" width="40.0" height="16" rx="2" fill="#4a3f78" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1458.0" y="331.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1120.0" y="372.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">#53 holds the Role part of SPK-T4-02;</text>
+  <text x="1120.0" y="392.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">its fact part (pods: create) is applied.</text>
+  <rect x="1100.0" y="536.0" width="510.0" height="260.0" rx="4" fill="#363020" fill-opacity="0.45"/>
+  <path d="M1120.0,556.0 L1140.0,556.0 L1130.0,566.0 Z" fill="#363020" stroke="none"/>
+  <path d="M1119.8,555.8 C1127.1,555.3 1134.0,556.0 1140.0,556.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1140.0,556.2 C1137.1,559.6 1133.2,562.2 1130.0,566.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1129.9,566.1 C1127.2,563.5 1123.1,558.6 1120.0,556.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1130.0,566.0 L1140.0,576.0 L1120.0,576.0 Z" fill="#363020" stroke="none"/>
+  <path d="M1130.1,565.6 C1133.2,569.5 1136.1,572.3 1139.9,576.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1140.3,576.3 C1133.3,576.4 1126.2,576.4 1119.9,575.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1120.4,575.7 C1124.0,571.9 1126.1,568.6 1129.9,566.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="1154.0" y="572.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="normal">applied on an assumed answer</text>
+  <text x="1154.0" y="594.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">marked in the text; reverted if Thomas disagrees</text>
+  <text x="1402.0" y="626.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#32 resume reuses checks</text>
+  <rect x="1410.0" y="614.0" width="40.0" height="16" rx="2" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1458.0" y="627.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1402.0" y="656.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#56 attempt state aborted</text>
+  <rect x="1410.0" y="644.0" width="40.0" height="16" rx="2" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1458.0" y="657.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1402.0" y="686.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#57 pipeline workflows standalone</text>
+  <rect x="1410.0" y="674.0" width="40.0" height="16" rx="2" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1458.0" y="687.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1402.0" y="716.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#58 nightly runs read</text>
+  <rect x="1410.0" y="704.0" width="40.0" height="16" rx="2" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1458.0" y="717.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <text x="1402.0" y="746.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="end" font-weight="normal">#60 slurm-versions planned</text>
+  <rect x="1410.0" y="734.0" width="40.0" height="16" rx="2" fill="#6b4a26" stroke="#e3e3e3" stroke-width="0.8"/>
+  <text x="1458.0" y="747.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">1</text>
+  <path d="M403.8,330.8 C412.6,330.4 418.2,332.0 423.1,331.0" fill="none" stroke="#585e6b" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M403.6,329.9 C409.8,330.4 418.7,328.8 423.1,329.5" fill="none" stroke="#585e6b" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M424.3,330.2 C419.8,328.2 415.5,326.3 411.9,323.6" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M423.6,330.2 C419.0,332.3 415.5,335.3 411.8,336.3" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1071.0,329.1 C1079.3,329.4 1086.3,331.4 1093.9,329.0" fill="none" stroke="#585e6b" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M1069.9,330.8 C1077.1,330.7 1084.2,331.9 1093.8,329.4" fill="none" stroke="#585e6b" stroke-width="1.4" stroke-linecap="round"/>
+  <path d="M1093.9,330.3 C1089.3,327.2 1085.9,325.0 1081.1,323.5" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1094.4,329.8 C1090.5,331.3 1085.1,334.4 1081.7,336.7" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round"/>
+  <text x="40.0" y="834.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Sources: Status lines of docs/reviews/spikes.md, the TRIAGE3 block of docs/reviews/inbox.md, git diff --numstat 90180cb..APPLY3 -- docs/specs docs/decisions/0001 (2026-10-28) · tools/diagrams/apply3_specs.py</text>
+</svg>
