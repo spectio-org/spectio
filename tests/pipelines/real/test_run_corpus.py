@@ -18,6 +18,14 @@ class CloneTest(unittest.TestCase):
             self.assertFalse(dest.exists())
 
 
+class WorkdirTest(unittest.TestCase):
+    def test_default_workdir_is_fresh_and_private(self):
+        a, b = run_corpus.make_workdir(None), run_corpus.make_workdir(None)
+        self.addCleanup(a.rmdir); self.addCleanup(b.rmdir)
+        self.assertNotEqual(a, b)
+        self.assertEqual(a.stat().st_mode & 0o777, 0o700)
+
+
 class ValidateTest(unittest.TestCase):
     def test_current_corpus_is_valid(self):
         self.assertEqual(run_corpus.validate(run_corpus.CORPUS), [])
