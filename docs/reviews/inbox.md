@@ -948,3 +948,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a): the smallest UI, and both can come back without rework because the data model keeps `run_inputs`.
 - **Assumed:** (a) *(assumed — pending Thomas)*.
 - **Blocked:** nothing; P1 plans without them.
+
+### #62 · Assumed: 0.0.1 can cancel a run
+
+- **Covers:** [R10 §5](R10-synthesis.md#5-go-no-go) D4; [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) (no Cancel row) and [§15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) requirement 7 (names `:cancel`).
+- **Context:** R10 found a gap no review finding names: §15.3 protects a `:cancel` route, but §15.1 does not say whether 0.0.1 cancels runs. A user who launches a run with the wrong parameters needs to stop it, and the head job holds SLURM resources.
+- **Options:**
+  - (a) one Cancel action in the run detail: `scancel` of the head job, which lets the engine stop its tasks (the drain rule of [schedulers §2](../specs/schedulers-and-monitoring.md));
+  - (b) no cancel in 0.0.1; the user runs `scancel` by hand.
+- **Recommendation:** (a): one button and one route, and the security requirement already exists.
+- **Assumed:** (a) *(assumed — pending Thomas)*; P1 plans it. The §15.1 row is added when Thomas confirms.
+- **Blocked:** nothing.
