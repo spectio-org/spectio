@@ -158,34 +158,50 @@ def layer_env(env_ids, layer):
     return env
 
 
+TOOL = {"slurm": "sind", "k8s": "kind"}  # what `down` needs on the host PATH to remove the layer's cluster
+
+
 def up(scenario, n):
     s = load(scenario)
     layer, profile, need = SCHEDULERS[s["scheduler"]]
+    if layer in TOOL and not shutil.which(TOOL[layer]):
+        raise SystemExit(f"{TOOL[layer]} is not on the host PATH, so `down` could not remove the cluster: "
+                         "run `bash dev/bootstrap.sh` and put its bin directory on PATH")
     free = available_mib()
     if free < need:
         raise SystemExit(f"{s['scheduler']} needs about {need} MiB free, {free} MiB available: `down` another scenario")
     n = claim(n)
+    ids = names(n)
+    try:  # the names spx-<n> are global to the Docker host: own the network before anything can be torn down
+        state = _reserve(s, n, ids)
+    except BaseException:  # another checkout may hold spx-<n>: release the claim only, delete nothing by name
+        shutil.rmtree(ids["data_dir"])
+        raise
     try:
-        _up(s, n, layer, profile)
+        _up(state, ids, layer, profile)
     except BaseException:  # leave nothing behind: a failed or interrupted `up` removes what it created
         print(f"up {n} failed: removing what it created", file=sys.stderr)
         try:
             down(n)
         except (SystemExit, Exception) as e:  # report it, and re-raise the error of `up`
-            print(e, file=sys.stderr)
+            print(f"{e}; retry with `dev/scenario.py down {n}`", file=sys.stderr)
         raise
 
 
-def _up(s, n, layer, profile):
-    ids = names(n)
+def _reserve(s, n, ids):
     taken = [p for p in range(ids["ports"][0], ids["ports"][1] + 1) if not port_free(p)]
     if taken:
         raise SystemExit(f"ports {taken} of id {n} are in use: pick another --id")
-    env = layer_env(ids, layer)
     state = dict(ids, scenario=s, compose={"project": ids["name"], "started": False},
                  network=ids["name"], urls={}, credentials={})
     (Path(ids["data_dir"]) / "scenario.json").write_text(json.dumps(state, indent=2) + "\n")
+    # fails when the network exists, e.g. another checkout's scenario <n>: Docker refuses a duplicate name
     run(["docker", "network", "create", "--label", f"spectio.scenario={n}", ids["name"]])
+    return state
+
+
+def _up(state, ids, layer, profile):
+    env = layer_env(ids, layer)
     if layer == "slurm":
         run(["bash", str(REPO / "dev/bootstrap.sh")], env)
         run(["bash", str(REPO / "dev/slurm/cluster.sh"), "up", profile], env)
@@ -207,10 +223,15 @@ def down(n):
     env = dict(os.environ, KUBECONFIG=f"{ids['data_dir']}/kubeconfig")
     failed = 0
     saved = Path(ids["data_dir"]) / "scenario.json"  # written by `up` before it creates anything
-    layer = SCHEDULERS[json.loads(saved.read_text())["scenario"]["scheduler"]][0] if saved.exists() else None
+    try:  # cluster jobs can write this file: a bad one must not stop the teardown (SEC-T5-09)
+        layer = SCHEDULERS[json.loads(saved.read_text())["scenario"]["scheduler"]][0] if saved.exists() else None
+    except (OSError, ValueError, KeyError, TypeError) as e:
+        print(f"down {n}: unreadable scenario.json ({e!r}), removing whatever exists", file=sys.stderr)
+        layer = None
     for tool, needed_by in ("sind", "slurm"), ("kind", "k8s"):
         if layer == needed_by and not shutil.which(tool, path=env.get("PATH")):
-            print(f"down {n}: {tool} is not on the host PATH, its {needed_by} cluster is kept", file=sys.stderr)
+            print(f"down {n}: {tool} is not on the host PATH, its {needed_by} cluster is kept: "
+                  "run `bash dev/bootstrap.sh`", file=sys.stderr)
             failed = 1
     if shutil.which("sind", path=env.get("PATH")) and ids["name"] in _first_column(["sind", "get", "realms"], env):
         failed |= run(["sind", "--realm", ids["name"], "delete", "realm"], env, check=False)
@@ -256,7 +277,7 @@ def main(argv=None):
     except ValueError as e:
         raise SystemExit(str(e))
     except subprocess.CalledProcessError as e:
-        hint = "what it created was removed" if a.cmd == "up" else f"retry with `dev/scenario.py down {a.id}`"
+        hint = "see the lines above" if a.cmd == "up" else f"retry with `dev/scenario.py down {a.id}`"
         raise SystemExit(f"{a.cmd} failed ({e}); {hint}")
 
 

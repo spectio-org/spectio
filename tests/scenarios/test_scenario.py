@@ -127,7 +127,7 @@ class Down(TempState):
         with mock.patch.object(scenario.subprocess, "run", side_effect=fake_run), \
                 mock.patch.object(scenario.shutil, "which",
                                   side_effect=lambda cmd, path=None: which_paths.append(path) or f"/usr/bin/{cmd}"), \
-                mock.patch("sys.stdout"):
+                mock.patch("sys.stdout"), mock.patch("sys.stderr"):
             scenario.down(5)
         self.assertTrue(calls)
         for cmd, env in calls:
@@ -141,7 +141,8 @@ class Down(TempState):
         Path(data).mkdir(parents=True)
         with mock.patch.object(scenario.subprocess, "run",
                                side_effect=lambda cmd, **kw: subprocess.CompletedProcess(cmd, 1, stdout="spx-6\n")), \
-                mock.patch.object(scenario.shutil, "which", return_value="/usr/bin/x"), mock.patch("sys.stdout"):
+                mock.patch.object(scenario.shutil, "which", return_value="/usr/bin/x"), mock.patch("sys.stdout"), \
+                mock.patch("sys.stderr"):
             with self.assertRaises(SystemExit):
                 scenario.down(6)
         self.assertTrue(Path(data).exists())
@@ -158,15 +159,40 @@ class Down(TempState):
                 scenario.down(7)
         self.assertTrue(Path(data).exists())
 
+    def test_down_survives_a_corrupt_scenario_json(self):
+        data = scenario.names(8)["data_dir"]
+        Path(data).mkdir(parents=True)
+        Path(data, "scenario.json").write_text("{not json")
+        with mock.patch.object(scenario.subprocess, "run",
+                               side_effect=lambda cmd, **kw: subprocess.CompletedProcess(cmd, 0, stdout="")), \
+                mock.patch.object(scenario.shutil, "which", return_value="/usr/bin/x"), \
+                mock.patch("sys.stdout"), mock.patch("sys.stderr"):
+            scenario.down(8)
+        self.assertFalse(Path(data).exists())
+
 
 class Up(TempState):
     def test_failed_up_takes_down_what_it_created(self):
         with mock.patch.object(scenario, "available_mib", return_value=1 << 20), \
+                mock.patch.object(scenario, "_reserve", return_value={}), \
                 mock.patch.object(scenario, "_up", side_effect=RuntimeError("boom")), \
                 mock.patch.object(scenario, "down") as down, mock.patch("sys.stderr"):
             with self.assertRaises(RuntimeError):
                 scenario.up("happy-local", 4)
         down.assert_called_once_with(4)
+
+    def test_up_that_cannot_own_the_network_deletes_nothing_by_name(self):
+        # another checkout holds spx-4: `docker network create` fails, and only the claim is released (CR-8)
+        fail = subprocess.CalledProcessError(1, ["docker", "network", "create"])
+        with mock.patch.object(scenario, "available_mib", return_value=1 << 20), \
+                mock.patch.object(scenario, "port_free", return_value=True), \
+                mock.patch.object(scenario.subprocess, "run", side_effect=fail) as run, \
+                mock.patch.object(scenario, "down") as down, mock.patch("sys.stderr"):
+            with self.assertRaises(subprocess.CalledProcessError):
+                scenario.up("happy-local", 4)
+        down.assert_not_called()
+        self.assertEqual(run.call_count, 1)
+        self.assertFalse(Path(scenario.names(4)["data_dir"]).exists())
 
 
 if __name__ == "__main__":

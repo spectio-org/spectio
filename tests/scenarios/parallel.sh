@@ -17,6 +17,9 @@ out=$(mktemp -d)
 declare -A SCENARIO=([1]=happy-slurm-mini [2]=happy-slurm-mini [3]=happy-k8s-mini [4]=happy-local)
 die() { echo "::error::$*"; exit 1; }
 cleanup() { for id in "${!SCENARIO[@]}"; do python3 dev/scenario.py down "$id" >/dev/null || true; done; }
+for id in "${!SCENARIO[@]}"; do  # never take down a scenario this run did not create (SEC-T5-11)
+  [ ! -e ".scenarios/$id" ] || die ".scenarios/$id exists: run \`dev/scenario.py down $id\` first"
+done
 trap '[ "$?" = 0 ] || cleanup' EXIT
 docker_state() { # every container, network and volume, by name
   { docker ps -a --format 'container {{.Names}}'; docker network ls --format 'network {{.Name}}'
