@@ -2,19 +2,21 @@
 """Run one or more real pipelines from corpus.yaml with their own test datasets.
 
   python3 run_corpus.py --list
-  python3 run_corpus.py --engine nextflow --name demo --workdir /tmp/corpus [--limits private] [--nextflow nextflow]
-  python3 run_corpus.py --engine snakemake --name rna-seq-star-deseq2 --workdir /tmp/corpus
-  python3 run_corpus.py --tier pr --workdir /tmp/corpus           # everything in a tier
+  python3 run_corpus.py --engine nextflow --name demo [--limits private] [--nextflow nextflow]
+  python3 run_corpus.py --engine snakemake --name rna-seq-star-deseq2 [--workdir DIR]
+  python3 run_corpus.py --tier pr                                 # everything in a tier
   python3 run_corpus.py --matrix nightly                          # CI matrix (pipelines-real.yml)
 
 Every invocation first validates corpus.yaml (pinned refs, plain-token paths and args) and exits on an error.
 
 Each run writes <workdir>/<name>/result.json (exit code, duration, outputs found, Nextflow trace
-summary). Later these runs are launched through Spectio instead of directly (same entries).
+summary). Without --workdir, the workdir is a fresh private directory (mode 0700) under ${TMPDIR:-/tmp},
+printed at the start and kept for debugging (`rm -rf "${TMPDIR:-/tmp}"/spectio-corpus-*` removes them).
+Later these runs are launched through Spectio instead of directly (same entries).
 """
 from __future__ import annotations
 
-import argparse, json, os, re, shutil, subprocess, sys, time
+import argparse, json, os, re, shutil, subprocess, sys, tempfile, time
 from pathlib import Path
 
 import yaml
@@ -105,6 +107,10 @@ def smk_entry(e, wd: Path, smk: str) -> dict:
     return {"cmd": cmd, "env": dict(os.environ), "cwd": repo}
 
 
+def make_workdir(arg: str | None) -> Path:
+    return Path(arg) if arg else Path(tempfile.mkdtemp(prefix="spectio-corpus-"))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--list", action="store_true")
@@ -112,7 +118,7 @@ def main() -> int:
     ap.add_argument("--engine", choices=["nextflow", "snakemake"])
     ap.add_argument("--name")
     ap.add_argument("--tier", choices=["pr", "nightly", "manual"])
-    ap.add_argument("--workdir", default="/tmp/spectio-corpus")
+    ap.add_argument("--workdir")
     ap.add_argument("--limits", choices=["private", "public", "auto"], default="private")
     ap.add_argument("--nextflow", default=os.environ.get("NXF_BIN", "nextflow"))
     ap.add_argument("--nf-version")
@@ -138,10 +144,12 @@ def main() -> int:
     if not sel:
         sys.exit("nothing selected")
     failures = 0
+    workdir = make_workdir(a.workdir)
+    print(f"workdir: {workdir}", flush=True)
     for eng, e, n in sel:
         if eng == "nextflow" and a.nf_version and tuple(map(int, a.nf_version.split("."))) < tuple(map(int, e["min_nf"].split("."))):
             print(f"SKIP {n}: needs Nextflow >= {e['min_nf']}"); continue
-        wd = Path(a.workdir) / n; wd.mkdir(parents=True, exist_ok=True)
+        wd = workdir / n; wd.mkdir(parents=True, exist_ok=True)
         spec = nf_entry(e, wd, a.nextflow, a.limits, a.nf_version) if eng == "nextflow" else smk_entry(e, wd, a.snakemake)
         t0 = time.time()
         # Stream to run.log, so a run killed by a full disk or the job timeout still leaves its log.

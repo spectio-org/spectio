@@ -100,6 +100,17 @@ class GoldenDirTest(unittest.TestCase):
                 rs.golden_dir_for("nextflow", v, "record")
 
 
+class WorkdirTest(unittest.TestCase):
+    def test_default_workdir_is_fresh_and_private(self):
+        a, b = rs.make_workdir(None), rs.make_workdir(None)
+        self.addCleanup(a.rmdir); self.addCleanup(b.rmdir)
+        self.assertNotEqual(a, b)
+        self.assertEqual(a.stat().st_mode & 0o777, 0o700)
+
+    def test_an_explicit_workdir_is_kept(self):
+        self.assertEqual(rs.make_workdir("/tmp/spx"), Path("/tmp/spx"))
+
+
 class FixturesTest(unittest.TestCase):
     """The recorded fixtures parse and cover every PR scenario that runs on their engine."""
 
