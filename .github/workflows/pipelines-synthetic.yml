@@ -35,16 +35,21 @@ jobs:
           version: ${{ matrix.version }}
       - name: Set up Snakemake
         if: matrix.engine == 'snakemake'
-        run: uv tool install "snakemake==${{ matrix.version }}" --with "snakemake-executor-plugin-slurm==2.8.0"
+        env:
+          VERSION: ${{ matrix.version }}
+        run: uv tool install "snakemake==$VERSION" --with "snakemake-executor-plugin-slurm==2.8.0"
       - name: Unit tests (golden fixtures)
         run: uv run --with pyyaml python -m unittest tests/pipelines/synthetic/test_golden.py
       - name: Run scenarios
         # --golden check: task outcomes must match golden/<engine>-<version>/. A missing directory, an unreadable
         # engine version or a missing fixture for a PR scenario fails the job; only nightly scenarios may have none.
+        env:
+          ENGINE: ${{ matrix.engine }}
+          NIGHTLY: ${{ github.event_name == 'schedule' && '1' || '' }}
         run: |
           uv run --with pyyaml python tests/pipelines/synthetic/run_scenarios.py \
-            --engine ${{ matrix.engine }} --workdir "$RUNNER_TEMP/scenarios" --golden check \
-            ${{ github.event_name == 'schedule' && '--nightly' || '' }}
+            --engine "$ENGINE" --workdir "$RUNNER_TEMP/scenarios" --golden check \
+            ${NIGHTLY:+--nightly}
       - name: Upload report and logs
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
