@@ -78,6 +78,13 @@ EOF
       rc=0
     fi
     [ "$rc" = 0 ] || die "$engine $id: run_scenarios.py failed (report: $DATA/work/$engine-$id/$engine/report.json)"
+    if ! inroot sacct -n -X -j 0 >/dev/null 2>&1; then   # slurm-mini has no accounting: squeue only
+      jobs=$(inroot squeue -h -a --states=all -o %i)
+      [ -n "$jobs" ] || die "$engine $id: no Slurm job in squeue"
+      [ "$id" = happy ] || die "$engine $id: failure scenarios need accounting (slurm-site)"
+      results+=("$id=pass;jobs-in-squeue:$(echo "$jobs" | wc -l)")
+      continue
+    fi
     # Filter states here, not with sacct -s (spike finding 6).
     jobs=$(inroot sacct -X -n -P -a -S "$since" -o JobIDRaw,State,ExitCode)
     [ -n "$jobs" ] || die "$engine $id: no Slurm job since $since"
