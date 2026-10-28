@@ -780,5 +780,25 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
   - (b) CI-driven T3/T4 from a cloud session: the worker writes the profiles and a `workflow_dispatch` job on `autopilot/T3`, and iterates through pushes. The fixtures come back printed in the job log (size-limited) or as an artifact that Thomas downloads. Slower and costlier: each loop is a CI run of several minutes;
   - (c) Thomas enables Remote Control on a machine that has Docker on cgroup v2, and a cloud session attaches to that folder.
 - **Recommendation:** (a) for T3 and T4. They are experiments with many short loops (create a cluster, inject a failure, read `squeue`/`sacct`), and a local Docker keeps each loop in seconds. (b) only if no local machine is available.
-- **Assumed:** none. No T3/T4 work was started; both stay `pending`.
-- **Blocked:** T3, T4, and everything in W3/W4 that depends on them (TRIAGE3 needs T2, T3, T4, T7).
+- **Update (2026-10-28, 09:50):** spike `t4-ci` ran T4's whole scope on GitHub-hosted runners in 2 push iterations: kind and Kueue, the synthetic pipeline with `-profile k8s` on Nextflow 26.10.4 and 25.10.9 (65/65 tasks each), a real `OOMKilled`, Workloads waiting for quota, both §4 ServiceAccounts. One loop takes 4–5 minutes. The fixtures came back from the job log, and this session could also download full logs and an artifact, contrary to the context above ([note](../research/spike-t4-ci-2026-10-28.md), branch `spike/t4-ci`). Spike `t3-ci` (sind `slurm-site`) is still running.
+- **Assumed:** (b), CI-driven, *assumed — pending Thomas, inbox #51*. Thomas cannot answer before 14:00 and asked the autopilot to go on and keep only critical decisions for later (session, 2026-10-28 09:45). (b) is reversible: the profiles and fixtures are the same on his machine, only the place where the loop runs changes. T4 starts CI-driven; T3 starts once spike `t3-ci` shows sind works on a runner.
+- **Blocked:** nothing while (b) holds.
+
+## Direction (2026-10-28)
+
+### #52 · Code first: start the walking skeleton before T5, T6, R10 and P1? (critical, not assumed)
+
+- **Covers:** [`pipeline.yaml`](../playbooks/pipeline.yaml) W3 to W5, the rule "do not start writing product code" in `CLAUDE.md`, [proposal](../plans/walking-skeleton-proposal.md).
+- **Context:**
+  - Thomas, 2026-10-28: "J'ai l'impression que l'on surcomplexifie la totalité du projet" and "À quoi servent l'ensemble de ces étapes alors que l'on n'a pas commencé à coder ?".
+  - On 2026-10-28 the repository held 85,000 words of specs, 154,000 words of reviews, 51 inbox entries, 14 agents, 24 skills, 11 workflows, 54 tool scripts, and no product code.
+  - What is already worth having for code: T1 (synthetic pipelines that fail on demand), T2 (engine events captured from Nextflow and Snakemake), D3 (pinned engines), T7 (real pipelines in CI).
+  - T5 (scenario runner), T6 (Playwright), R10 (synthesis), P1 (plan) and GO all come before the first line of product code. They prepare tests for an API and a UI that do not exist yet.
+  - The review process is the same for a three-line test-harness fix as for product code (SEC-T1-06: five review rounds for a 15-line helper).
+- **Options:**
+  - (a) keep the pipeline as it is;
+  - (b) code first: after T3 and T4, Thomas reorders `pipeline.yaml` so the walking skeleton ([proposal](../plans/walking-skeleton-proposal.md)) starts next. T5 and T6 move after it, and R10, P1 and GO shrink to that one-page proposal and Thomas's go. The full review circuit is kept for product code and real security boundaries; tooling and test changes get tests plus one review;
+  - (c) as (b), and also stop T3 and T4 now.
+- **Recommendation:** (b). T3 and T4 are cheap now that they run in CI, and their findings (RBAC in schedulers §4, the `nf-k8s` plugin) are needed by the first runners.
+- **Assumed:** none. It changes the plan and a `CLAUDE.md` rule, which are Thomas's. The autopilot does not edit `pipeline.yaml` and writes no product code until he answers.
+- **Blocked:** nothing yet; T3 and T4 go on.

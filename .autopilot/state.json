@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-28T08:49:53Z",
+  "updated_at": "2026-10-28T09:53:26Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -370,12 +370,13 @@
     },
     "T4": {
       "wave": "W3",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-28T09:53:26Z",
       "finished_at": null,
       "outputs": [],
-      "notes": ""
+      "notes": "CI-driven (inbox #51 (b), assumed \u2014 pending Thomas); from spike t4-ci",
+      "base": "504bc62ecdda2ba01316b10e9b5a1b35c214dabf"
     },
     "T5": {
       "wave": "W3",
