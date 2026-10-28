@@ -16,9 +16,9 @@ set -euo pipefail
 # shellcheck source=dev/lib.sh
 . "$(dirname "$0")/../lib.sh"
 here=$SPECTIO_REPO/dev/k8s
-# The task image: the python:3.12 digest of the `k8s` profile of the synthetic pipeline, read from its config.
-TASK_IMAGE=$(sed -n '/^    k8s {/,/^    }/p' "$SPECTIO_REPO/tests/pipelines/synthetic/nextflow/nextflow.config" |
-  grep -o -m1 'python:3.12@sha256:[0-9a-f]\{64\}') || { echo "no python:3.12 digest in the k8s profile" >&2; exit 1; }
+# The task image: params.python_image of the synthetic pipeline (its docker and k8s profiles), by digest.
+TASK_IMAGE=$(grep -o -m1 "^params.python_image = 'python:3.12@sha256:[0-9a-f]\{64\}" \
+  "$SPECTIO_REPO/tests/pipelines/synthetic/nextflow/nextflow.config") || { echo "no params.python_image digest" >&2; exit 1; }
 TASK_IMAGE=docker.io/library/python@${TASK_IMAGE#*@}
 
 log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
