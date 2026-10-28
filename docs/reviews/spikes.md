@@ -1,6 +1,6 @@
 # Spikes round (W3) — differences found by T2, T3, T4, T7
 
-**Round:** spikes (TRIAGE3) · **Date:** 2026-10-28 · **Found by:** the W3 steps T2, T3, T4 and T7, their spikes and their code reviews · **Status of the round:** triaged on 2026-10-28; the orchestrator re-ran the checks of every accepted finding.
+**Round:** spikes ([TRIAGE3](../progress/W3/TRIAGE3.md)) · **Date:** 2026-10-28 · **Found by:** the W3 steps T2, T3, T4 and T7, their spikes and their code reviews · **Status of the round:** triaged on 2026-10-28; the orchestrator re-ran the checks of every accepted finding.
 
 **Applied:** [APPLY3](../progress/W3/APPLY3.md) (2026-10-28): 44 applied (42 by APPLY3, 2 by PR #36), 5 partly applied, 0 not applied. Not for APPLY3: 8 rejected, 9 waiting for Thomas (reserved), 3 applied by T3.
 
