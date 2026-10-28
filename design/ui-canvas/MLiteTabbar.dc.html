@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — phone tab bar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+.mt-key{position:relative;flex:1 1 0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border-radius:19px;text-decoration:none;font-size:11px;font-weight:600}
+.mt-key:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}
+</style>
+</helmet>
+<div style="width: 100%; box-sizing: border-box; padding: 0 8px 8px; font-family: 'Inter', system-ui, sans-serif;">
+  <nav aria-label="Main" style="height: 64px; box-sizing: border-box; display: flex; gap: 2px; padding: 4px; border-radius: 24px; background: rgba(255,255,255,0.94); box-shadow: 0 0 0 1px rgba(15,16,32,0.10), 0 12px 32px -14px rgba(15,16,32,0.35); -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);">
+    <sc-for list="{{keys}}" as="k" hint-placeholder-count="3">
+      <a class="mt-key" href="{{k.href}}" aria-current="{{k.cur}}" style="background: {{k.bg}}; color: {{k.fg}};">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="{{k.ic}}" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{k.icon}}"/></svg>
+        <span>{{k.label}}</span>
+      </a>
+    </sc-for>
+  </nav>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","runs","launch"],"default":"home"},"$preview":{"width":390,"height":72}}'>
+class Component extends DCLogic {
+renderVals() {
+  const active = this.props.active ?? 'home';
+  const defs = [
+    ['home', 'Home', 'MLiteHome.dc.html', 'M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z', '#5A4FCF', '#F2F1FB'],
+    ['runs', 'Runs', 'MLiteRuns.dc.html', 'M6 4l14 8-14 8z', '#7750D4', '#F6F2FE'],
+    ['launch', 'Launch', 'MLiteLaunch.dc.html', 'M12 3v12 M7 8l5-5 5 5 M5 21h14', '#EC5F87', '#FDF2F5']
+  ];
+  return { keys: defs.map(([id, label, href, icon, color, tint]) => {
+    const on = id === active;
+    return { label, href, icon, cur: on ? 'page' : 'false', bg: on ? tint : 'transparent', fg: on ? '#0F1020' : '#4D5065', ic: on ? color : '#6E7287' };
+  }) };
+}
+}
+</script>
+</body>
+</html>

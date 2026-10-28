@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — launch (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.chips::-webkit-scrollbar{display:none}
+summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}details>summary .chev{transition:transform .15s}details:not([open])>summary .chev{transform:rotate(180deg)}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="Launch a workflow" hint-size="390px,60px"></dc-import></div>
+  <main style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <span style="font-size: 13.5px; color: #4D5065; padding: 2px 2px 0; line-height: 1.4;">Type the path of a pipeline directory your account can read.</span>
+    <section aria-label="Pipeline" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="m-location" style="font-size: 13.5px; font-weight: 600;">Pipeline directory (absolute path)</label>
+          <input id="m-location" value="/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0" spellcheck="false" style="font: 15px 'Inter', sans-serif; border-radius: 12px; border: 1px solid #C4C7D4; padding: 10px 12px; background: #FFFFFF; color: #0F1020; box-sizing: border-box; width: 100%; min-height: 44px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+          <button type="button" style="height: 44px; border-radius: 12px; border: none; background: #F6F2FE; color: #4D368B; font: 600 14px 'Inter', sans-serif; cursor: pointer;">Load</button>
+        </div>
+        <div role="status" style="display: flex; align-items: center; gap: 10px; border-radius: 12px; background: #F7F7FB; padding: 9px 11px;">
+          <img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="20" height="20" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;">
+          <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600;">Nextflow · nf-core/rnaseq 3.27.0</span><span style="font-size: 12px; color: #4D5065;">form from nextflow_schema.json</span></span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="m-profile" style="font-size: 13.5px; font-weight: 600;">Profile</label>
+          <select id="m-profile" style="font: 15px 'Inter', sans-serif; border-radius: 12px; border: 1px solid #C4C7D4; padding: 10px 12px; background: #FFFFFF; color: #0F1020; box-sizing: border-box; width: 100%; min-height: 44px;"><option>singularity</option><option>conda</option><option>test</option></select>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="m-name" style="font-size: 13.5px; font-weight: 600;">Run name <span style="font-weight: 400; color: #4D5065;">(optional)</span></label>
+          <input id="m-name" placeholder="rnaseq-2026-10-28" style="font: 15px 'Inter', sans-serif; border-radius: 12px; border: 1px solid #C4C7D4; padding: 10px 12px; background: #FFFFFF; color: #0F1020; box-sizing: border-box; width: 100%; min-height: 44px;">
+          <span style="font-size: 12px; color: #4D5065;">Left empty: the pipeline name and the date.</span>
+        </div>
+    </section>
+    <h2 style="margin: 6px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">PARAMETERS · 2 CHANGED</h2>
+    <details open style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05);">
+      <summary style="min-height: 48px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; box-sizing: border-box;"><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">Input/output options</span><span style="font-size: 12px; color: #157A4B; font-weight: 600;">2 required · filled</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></summary>
+      <div style="padding: 0 14px 14px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="m-input" style="font-size: 13.5px; font-weight: 600;">input <span style="color: #B02A2A;" aria-hidden="true">*</span></label>
+          <input id="m-input" value="/g/demo-lab/rnaseq/liver-tc/samplesheet.csv" required aria-required="true" style="font: 15px 'Inter', sans-serif; border-radius: 12px; border: 1px solid #C4C7D4; padding: 10px 12px; background: #FFFFFF; color: #0F1020; box-sizing: border-box; width: 100%; min-height: 44px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+          <span style="font-size: 12px; color: #4D5065;">Comma-separated sample sheet. file-path</span>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 5px;">
+          <label for="m-outdir" style="font-size: 13.5px; font-weight: 600;">outdir <span style="color: #B02A2A;" aria-hidden="true">*</span></label>
+          <input id="m-outdir" value="/g/demo-lab/rnaseq/2026-10-25" required aria-required="true" style="font: 15px 'Inter', sans-serif; border-radius: 12px; border: 1px solid #C4C7D4; padding: 10px 12px; background: #FFFFFF; color: #0F1020; box-sizing: border-box; width: 100%; min-height: 44px; font-family: 'JetBrains Mono', monospace; font-size: 13px;">
+          <span style="font-size: 12px; color: #4D5065;">Where the results are saved. directory-path</span>
+        </div>
+      </div>
+    </details>
+    <details style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05);">
+      <summary style="min-height: 48px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; box-sizing: border-box;"><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">Reference genome options</span><span style="font-size: 12px; color: #6E7287;">14 parameters · defaults</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></summary>
+    </details>
+    <details style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05);">
+      <summary style="min-height: 48px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; box-sizing: border-box;"><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">Read trimming options</span><span style="font-size: 12px; color: #6E7287;">7 parameters · defaults</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></summary>
+    </details>
+    <details style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05);">
+      <summary style="min-height: 48px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; box-sizing: border-box;"><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">Quality control</span><span style="font-size: 12px; color: #6E7287;">9 parameters · defaults</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></summary>
+    </details>
+    <details style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05);">
+      <summary style="min-height: 48px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; box-sizing: border-box;"><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">Process skipping options</span><span style="font-size: 12px; color: #6E7287;">21 parameters · defaults</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></summary>
+    </details>
+    <details style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05);">
+      <summary style="min-height: 48px; padding: 10px 14px; display: flex; align-items: center; gap: 10px; box-sizing: border-box;"><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14px; font-weight: 600;">Generic options</span><span style="font-size: 12px; color: #6E7287;">23 parameters · defaults</span></span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></summary>
+    </details>
+    <button type="button" style="height: 50px; border-radius: 14px; border: none; background: #7750D4; color: #FFFFFF; font: 600 15px 'Inter', sans-serif; cursor: pointer; margin-top: 4px;">Launch</button>
+    <span style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">Starts the engine in a new tmux session on login1. Tasks go to SLURM. Run directory: /scratch/amartin/spectio-runs/&lt;run ID&gt;.</span>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="launch" hint-size="390px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>
