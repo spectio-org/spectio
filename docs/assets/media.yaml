@@ -190,6 +190,14 @@ media:
       - docs/assets/diagrams/t2-engine-events_dark.svg
       - docs/assets/diagrams/t2-engine-events_light.png
       - docs/assets/diagrams/t2-engine-events_dark.png
+  - id: t3-sind-slurm
+    kind: diagram
+    generator: python3 tools/diagrams/t3_sind_slurm.py
+    outputs:
+      - docs/assets/diagrams/t3-sind-slurm_light.svg
+      - docs/assets/diagrams/t3-sind-slurm_dark.svg
+      - docs/assets/diagrams/t3-sind-slurm_light.png
+      - docs/assets/diagrams/t3-sind-slurm_dark.png
   - id: t4-kind-kueue
     kind: diagram
     generator: python3 tools/diagrams/t4_kind_kueue.py

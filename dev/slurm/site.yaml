@@ -1,0 +1,50 @@
+# slurm-site (docs/specs/dev-environment-and-testing.md §4.1): controller, db (MariaDB + slurmdbd), a
+# submitter (the login node), worker-[0-1] in partition htc and worker-2 in bigmem, two accounts with an
+# association limit. Sized for a GitHub-hosted ubuntu-24.04 runner (4 vCPU, 16 GB, public repository).
+# slurm-rest is this file plus an api node (dev/slurm/cluster.sh). The maintenance reservation is made
+# by the probes (tests/slurm/scenarios.sh), since it must start at a known moment.
+# Rendered by dev/slurm/cluster.sh: @NAME@ the cluster, @IMAGE@ the pinned node image, @UID@ the caller's
+# uid (files under @DATA@, a host bind mount at the same path, keep one owner on both sides).
+# Schema: sind docs/content/configuration/cluster-config.md and node-definitions.md at v0.15.0.
+# From spike t3-ci (docs/research/spike-t3-ci-2026-10-28.md).
+kind: Cluster
+name: @NAME@
+defaults:
+  image: @IMAGE@
+storage:
+  dataStorage:
+    type: hostPath
+    hostPath: @DATA@
+    mountPath: @DATA@
+users:
+  - name: spx
+    uid: @UID@
+    accounts: [lab, capped]      # lab is the default account
+accounts:
+  - lab
+  - name: capped
+    limits:
+      MaxJobs: 1                 # a second job pends with AssocMaxJobsLimit
+slurm:
+  main: |
+    SlurmdTimeout=45
+    AccountingStorageEnforce=associations,limits
+    PartitionName=htc Nodes=worker-[0-1] Default=YES MaxTime=60
+    PartitionName=bigmem Nodes=worker-2 MaxTime=60
+  cgroup: |
+    ConstrainRAMSpace=yes
+nodes:
+  - role: controller
+    memory: 1g
+  - role: db
+    memory: 1g
+  - role: submitter              # the login node: the engines (and later the runner) run here
+    cpus: 2
+    memory: 3g
+  - role: worker                 # worker-0, worker-1: partition htc
+    count: 2
+    cpus: 2
+    memory: 1536m
+  - role: worker                 # worker-2: partition bigmem
+    cpus: 2
+    memory: 3g

@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-28T10:56:00Z",
+  "updated_at": "2026-10-28T12:18:00Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -361,12 +361,28 @@
     },
     "T3": {
       "wave": "W3",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-28T10:46:00Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); from spike t3-ci (run 40670286528)",
+      "finished_at": "2026-10-28T12:15:00Z",
+      "outputs": [
+        ".github/workflows/pipelines-slurm.yml",
+        "dev/slurm/cluster.sh",
+        "dev/slurm/env.sh",
+        "dev/slurm/mini.yaml",
+        "dev/slurm/site.yaml",
+        "tests/slurm/scenarios.sh",
+        "tests/slurm/fixture.py",
+        "tests/slurm/rest_get.py",
+        "tests/slurm/test_fixture.py",
+        "tests/fixtures/slurm/slurm-26.05.5/",
+        "docs/research/spike-t3-ci-2026-10-28.md",
+        "docs/progress/W3/T3.md",
+        "docs/reviews/code/T3.md",
+        "docs/specs/dev-environment-and-testing.md",
+        "tools/diagrams/t3_sind_slurm.py"
+      ],
+      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); from spike t3-ci (run 40670286528); PR weber8thomas/spectio#35 squash e2c7d41; CODE review=approve 1/2/12, security=approve 0/0/7, rounds=2; doc review approve 13/14; pipelines-slurm green on 646a6eb",
       "base": "89fb4f38c6fa0b8837f53bd81a86ec7a778043a0"
     },
     "T4": {
@@ -391,12 +407,12 @@
     },
     "T5": {
       "wave": "W3",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-28T12:00:04Z",
       "finished_at": null,
       "outputs": [],
-      "notes": ""
+      "notes": "CI-driven worker on autopilot/T5 (inbox #52 (b) would move T5 after the walking skeleton; launched under the current plan)"
     },
     "T6": {
       "wave": "W3",
@@ -409,21 +425,26 @@
     },
     "TRIAGE3": {
       "wave": "W3",
-      "status": "pending",
+      "status": "done",
       "attempts": 0,
-      "started_at": null,
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "started_at": "2026-10-28T11:20:00Z",
+      "finished_at": "2026-10-28T12:04:00Z",
+      "outputs": [
+        "docs/reviews/spikes.md",
+        "docs/reviews/inbox.md",
+        "tools/triage/check_t2.py",
+        "tools/triage/check_t3.py"
+      ],
+      "notes": "69 findings (T2 27, T3 20, T4 17, T7 5): 44 accepted, 8 rejected, 3 applied by T3, 14 inbox (#53-#60; 4 assumed, 9 reserved); commit efb00cf on autopilot/APPLY3, merged with APPLY3"
     },
     "APPLY3": {
       "wave": "W3",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-28T12:04:00Z",
       "finished_at": null,
       "outputs": [],
-      "notes": ""
+      "notes": "branch autopilot/APPLY3; parts A-C applied, dev-env part D running"
     },
     "R10": {
       "wave": "W4",
@@ -500,7 +521,7 @@
         "docs/reviews/code/T7.md",
         "docs/specs/dev-environment-and-testing.md"
       ],
-      "notes": "PR weber8thomas/spectio#19 squash 761d845; CODE review=approve 0/0/2, security=approve 0/0/6, rounds=1; doc-review approve 11/14; light PR tier (inbox #45 answered); final CI run 40584542402 green incl. pipelines-real; inbox #46 open",
+      "notes": "PR weber8thomas/spectio#19 squash 761d845; CODE review=approve 0/0/2, security=approve 0/0/6, rounds=1; doc-review approve 11/14; light PR tier (inbox #45 answered); final CI run 40584542402 green incl. pipelines-real; inbox #46 open; follow-up PR weber8thomas/spectio#36 squash 613c89c: one -resume retry for a failed Nextflow entry, public limits 13 GB (SPK-T7-02, SPK-T7-05)",
       "base": "cddb67ba7d33e729ee80093edbd93b1ae098c6a1"
     },
     "D6": {

@@ -1,0 +1,582 @@
+{
+ "_fixture": {
+  "command": "sacct --json -j 123",
+  "slurm": "26.05.5",
+  "source": "https://github.com/weber8thomas/spectio/actions/runs/40680736055"
+ },
+ "errors": [],
+ "jobs": [
+  {
+   "account": "lab",
+   "allocation_nodes": 1,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 1,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "ERROR"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 1,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "ERROR"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "STARTED_ON_SCHEDULE",
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 123,
+   "kill_request_user": "",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "11707c70-f156-40a4-a4c4-2d2b3a3eea91",
+   "nodes": "worker-0",
+   "original_sluid": "s171M6152GWP00",
+   "oversubscribe": "NO",
+   "partition": "htc",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 512,
+     "set": true
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s171M6152GWP00",
+   "state": {
+    "current": [
+     "FAILED"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "$REPO/.scenarios/slurm/work/snakemake-tool_error_then_fixed_resume/snakemake/tool_error_then_fixed_resume/.snakemake/slurm_logs/rule_compare/treatA/%j.log",
+   "stdout_expanded": "$REPO/.scenarios/slurm/work/snakemake-tool_error_then_fixed_resume/snakemake/tool_error_then_fixed_resume/.snakemake/slurm_logs/rule_compare/treatA/123.log",
+   "steps": [
+    {
+     "CPU": {
+      "governor": "0",
+      "requested_frequency": {
+       "max": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       },
+       "min": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "exit_code": {
+      "return_code": {
+       "infinite": false,
+       "number": 1,
+       "set": true
+      },
+      "signal": {
+       "id": {
+        "infinite": false,
+        "number": 0,
+        "set": false
+       },
+       "name": ""
+      },
+      "status": [
+       "ERROR"
+      ]
+     },
+     "kill_request_user": "",
+     "nodes": {
+      "count": 1,
+      "list": [
+       "worker-0"
+      ],
+      "range": "worker-0"
+     },
+     "state": [
+      "FAILED"
+     ],
+     "statistics": {
+      "CPU": {
+       "actual_frequency": 0
+      },
+      "energy": {
+       "consumed": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "step": {
+      "id": "123.batch",
+      "name": "batch",
+      "stderr": "",
+      "stderr_expanded": "",
+      "stdin": "",
+      "stdin_expanded": "",
+      "stdout": "",
+      "stdout_expanded": ""
+     },
+     "submit_line": "",
+     "task": {
+      "distribution": "Unknown"
+     },
+     "tasks": {
+      "count": 1
+     },
+     "time": {
+      "elapsed": 5,
+      "end": {
+       "infinite": false,
+       "number": 1793187694,
+       "set": true
+      },
+      "limit": {
+       "infinite": true,
+       "number": 0,
+       "set": false
+      },
+      "start": {
+       "infinite": false,
+       "number": 1793187689,
+       "set": true
+      },
+      "suspended": 0,
+      "system": {
+       "microseconds": 227081,
+       "seconds": 0
+      },
+      "total": {
+       "microseconds": 509810,
+       "seconds": 1
+      },
+      "user": {
+       "microseconds": 282729,
+       "seconds": 1
+      }
+     },
+     "tres": {
+      "allocated": [
+       {
+        "count": 1,
+        "id": 1,
+        "name": "",
+        "type": "cpu"
+       },
+       {
+        "count": 512,
+        "id": 2,
+        "name": "",
+        "type": "mem"
+       },
+       {
+        "count": 1,
+        "id": 4,
+        "name": "",
+        "type": "node"
+       }
+      ],
+      "consumed": {
+       "average": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ],
+       "max": [],
+       "min": [],
+       "total": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ]
+      },
+      "requested": {
+       "average": [],
+       "max": [],
+       "min": [],
+       "total": []
+      }
+     }
+    },
+    {
+     "CPU": {
+      "governor": "Unknown",
+      "requested_frequency": {
+       "max": {
+        "infinite": false,
+        "number": 0,
+        "set": false
+       },
+       "min": {
+        "infinite": false,
+        "number": 0,
+        "set": false
+       }
+      }
+     },
+     "exit_code": {
+      "return_code": {
+       "infinite": false,
+       "number": 1,
+       "set": true
+      },
+      "signal": {
+       "id": {
+        "infinite": false,
+        "number": 0,
+        "set": false
+       },
+       "name": ""
+      },
+      "status": [
+       "ERROR"
+      ]
+     },
+     "kill_request_user": "",
+     "nodes": {
+      "count": 1,
+      "list": [
+       "worker-0"
+      ],
+      "range": "worker-0"
+     },
+     "state": [
+      "FAILED"
+     ],
+     "statistics": {
+      "CPU": {
+       "actual_frequency": 0
+      },
+      "energy": {
+       "consumed": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "step": {
+      "id": "123.0",
+      "name": "python",
+      "stderr": "",
+      "stderr_expanded": "",
+      "stdin": "",
+      "stdin_expanded": "",
+      "stdout": "",
+      "stdout_expanded": ""
+     },
+     "submit_line": "srun -n1 --cpu-bind=q --cpus-per-task=1 --nodes=1 $REPO/.scenarios/slurm/tools/pkgs/snakemake-2e729c525cbe/bin/python -m snakemake --snakefile $REPO/.scenarios/slurm/synthetic/snakemake/workflow/Snakefile --target-jobs compare:group=treatA --allowed-rules compare --cores all --attempt 1 --force-use-threads --force --target-files-omit-workdir-adjustment --max-inventory-time 0 --retries 0 --nocolor --no-hooks --nolock --ignore-incomplete --rerun-triggers mtime params input code software-env --conda-frontend conda --shared-fs-usage software-deployment-cache source-cache input-output storage-local-copies sources software-deployment persistence --config outdir=results samples=$REPO/.scenarios/slurm/synthetic/data/samplesheet.csv chunks=2 fail_mode=exit fail_process=COMPARE fail_sample=treatA --printshellcmds --latency-wait 5 --scheduler ilp --local-storage-prefix base64//LnNuYWtlbWFrZS9zdG9yYWdl --scheduler-solver-path $REPO/.scenarios/slurm/tools/pkgs/snakemake-2e729c525cbe/bin --runtime-source-cache-path /home/spx/.cache/snakemake/snakemake/source-cache/snakemake-runtime-cache/tmp32w6i0_r --set-resources base64//YWxpZ246c2x1cm1fcGFydGl0aW9uPWh0Yw== --default-resources base64//dG1wZGlyPXN5c3RlbV90bXBkaXI= base64//bWVtX21iPTUxMg== base64//c2x1cm1fcGFydGl0aW9uPWh0Yw== base64//cnVudGltZT01 --mode remote",
+     "task": {
+      "distribution": "Cyclic"
+     },
+     "tasks": {
+      "count": 1
+     },
+     "time": {
+      "elapsed": 2,
+      "end": {
+       "infinite": false,
+       "number": 1793187693,
+       "set": true
+      },
+      "limit": {
+       "infinite": true,
+       "number": 0,
+       "set": false
+      },
+      "start": {
+       "infinite": false,
+       "number": 1793187691,
+       "set": true
+      },
+      "suspended": 0,
+      "system": {
+       "microseconds": 229769,
+       "seconds": 0
+      },
+      "total": {
+       "microseconds": 480159,
+       "seconds": 1
+      },
+      "user": {
+       "microseconds": 250390,
+       "seconds": 1
+      }
+     },
+     "tres": {
+      "allocated": [
+       {
+        "count": 1,
+        "id": 1,
+        "name": "",
+        "type": "cpu"
+       },
+       {
+        "count": 512,
+        "id": 2,
+        "name": "",
+        "type": "mem"
+       },
+       {
+        "count": 1,
+        "id": 4,
+        "name": "",
+        "type": "node"
+       }
+      ],
+      "consumed": {
+       "average": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ],
+       "max": [],
+       "min": [],
+       "total": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ]
+      },
+      "requested": {
+       "average": [],
+       "max": [],
+       "min": [],
+       "total": []
+      }
+     }
+    }
+   ],
+   "submit_line": "sbatch --parsable --job-name 11707c70-f156-40a4-a4c4-2d2b3a3eea91 --output $REPO/.scenarios/slurm/work/snakemake-tool_error_then_fixed_resume/snakemake/tool_error_then_fixed_resume/.snakemake/slurm_logs/rule_compare/treatA/%j.log --export=ALL --comment rule_compare_wildcards_treatA -p htc -t 2 --mem 512 --ntasks=1 --cpus-per-task=1 -D $REPO/.scenarios/slurm/work/snakemake-tool_error_then_fixed_resume/snakemake/tool_error_then_fixed_resume --wrap=$REPO/.scenarios/slurm/tools/pkgs/snakemake-2e729c525cbe/bin/python -m snakemake --snakefile '$REPO/.scenarios/slurm/synthetic/snakemake/workflow/Snakefile' --target-jobs 'compare:group=treatA' --allowed-rules compare --cores 2 --attempt 1 --force-use-threads  --wait-for-files '$REPO/.scenarios/slurm/work/snakemake-tool_error_then_fixed_resume/snakemake/tool_error_then_fixed_resume/.snakemake/tmp.gpo1y4lg' 'results/quant/counts_matrix.tsv' --force --target-files-omit-workdir-adjustment --max-inventory-time 0 --retries 0 --nocolor --no-hooks --nolock --ignore-incomplete --rerun-triggers input mtime code params software-env --conda-frontend 'conda' --shared-fs-usage storage-local-copies software-deployment-cache persistence input-output sources source-cache software-deployment --config 'outdir=results' 'samples=$REPO/.scenarios/slurm/synthetic/data/samplesheet.csv' 'chunks=2' 'fail_mode=exit' 'fail_process=COMPARE' 'fail_sample=treatA' --printshellcmds  --latency-wait 5 --scheduler 'ilp' --local-storage-prefix base64//LnNuYWtlbWFrZS9zdG9yYWdl --scheduler-solver-path '$REPO/.scenarios/slurm/tools/pkgs/snakemake-2e729c525cbe/bin' --runtime-source-cache-path '/home/spx/.cache/snakemake/snakemake/source-cache/snakemake-runtime-cache/tmp32w6i0_r' --set-resources base64//YWxpZ246c2x1cm1fcGFydGl0aW9uPWh0Yw== --default-resources base64//dG1wZGlyPXN5c3RlbV90bXBkaXI= base64//bWVtX21iPTUxMg== base64//c2x1cm1fcGFydGl0aW9uPWh0Yw== base64//cnVudGltZT01 --executor slurm-jobstep --jobs 1 --mode 'remote'",
+   "time": {
+    "elapsed": 5,
+    "eligible": 1793187689,
+    "end": 1793187694,
+    "limit": {
+     "infinite": false,
+     "number": 2,
+     "set": true
+    },
+    "planned": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "start": 1793187689,
+    "submission": 1793187689,
+    "suspended": 0,
+    "system": {
+     "microseconds": 456850,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 989969,
+     "seconds": 2
+    },
+    "user": {
+     "microseconds": 533119,
+     "seconds": 2
+    }
+   },
+   "tres": {
+    "allocated": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 512,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 512,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm/work/snakemake-tool_error_then_fixed_resume/snakemake/tool_error_then_fixed_resume"
+  }
+ ],
+ "meta": {
+  "client": {
+   "group": "root",
+   "source": "",
+   "user": "root"
+  },
+  "command": [
+   "sacct",
+   "--json",
+   "-j",
+   "123"
+  ],
+  "plugin": {
+   "accounting_storage": "accounting_storage/slurmdbd",
+   "data_parser": "data_parser/v0.0.45",
+   "name": "",
+   "type": ""
+  },
+  "slurm": {
+   "cluster": "site",
+   "release": "26.05.5",
+   "version": {
+    "major": "26",
+    "micro": "5",
+    "minor": "05"
+   }
+  }
+ },
+ "warnings": []
+}

@@ -1,0 +1,3429 @@
+{
+ "_fixture": {
+  "command": "sacct --json -j 328,329,330,331,339,341,335,336,337,338,340",
+  "slurm": "26.05.5",
+  "source": "https://github.com/weber8thomas/spectio/actions/runs/40680736055"
+ },
+ "errors": [],
+ "jobs": [
+  {
+   "account": "lab",
+   "allocation_nodes": 1,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 125,
+      "set": true
+     },
+     "name": "125"
+    },
+    "status": [
+     "SIGNALED"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "STARTED_ON_SCHEDULE",
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 328,
+   "kill_request_user": "",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-oom",
+   "nodes": "worker-0",
+   "original_sluid": "s7F9M6151D3300",
+   "oversubscribe": "NO",
+   "partition": "htc",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 100,
+     "set": true
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6151D3300",
+   "state": {
+    "current": [
+     "OUT_OF_MEMORY"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [
+    {
+     "CPU": {
+      "governor": "0",
+      "requested_frequency": {
+       "max": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       },
+       "min": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "exit_code": {
+      "return_code": {
+       "infinite": false,
+       "number": 0,
+       "set": false
+      },
+      "signal": {
+       "id": {
+        "infinite": false,
+        "number": 125,
+        "set": true
+       },
+       "name": "125"
+      },
+      "status": [
+       "SIGNALED"
+      ]
+     },
+     "kill_request_user": "",
+     "nodes": {
+      "count": 1,
+      "list": [
+       "worker-0"
+      ],
+      "range": "worker-0"
+     },
+     "state": [
+      "OUT_OF_MEMORY"
+     ],
+     "statistics": {
+      "CPU": {
+       "actual_frequency": 0
+      },
+      "energy": {
+       "consumed": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "step": {
+      "id": "328.batch",
+      "name": "batch",
+      "stderr": "",
+      "stderr_expanded": "",
+      "stdin": "",
+      "stdin_expanded": "",
+      "stdout": "",
+      "stdout_expanded": ""
+     },
+     "submit_line": "",
+     "task": {
+      "distribution": "Unknown"
+     },
+     "tasks": {
+      "count": 1
+     },
+     "time": {
+      "elapsed": 1,
+      "end": {
+       "infinite": false,
+       "number": 1793187653,
+       "set": true
+      },
+      "limit": {
+       "infinite": true,
+       "number": 0,
+       "set": false
+      },
+      "start": {
+       "infinite": false,
+       "number": 1793187652,
+       "set": true
+      },
+      "suspended": 0,
+      "system": {
+       "microseconds": 61015,
+       "seconds": 0
+      },
+      "total": {
+       "microseconds": 77207,
+       "seconds": 0
+      },
+      "user": {
+       "microseconds": 16192,
+       "seconds": 0
+      }
+     },
+     "tres": {
+      "allocated": [
+       {
+        "count": 1,
+        "id": 1,
+        "name": "",
+        "type": "cpu"
+       },
+       {
+        "count": 100,
+        "id": 2,
+        "name": "",
+        "type": "mem"
+       },
+       {
+        "count": 1,
+        "id": 4,
+        "name": "",
+        "type": "node"
+       }
+      ],
+      "consumed": {
+       "average": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ],
+       "max": [],
+       "min": [],
+       "total": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ]
+      },
+      "requested": {
+       "average": [],
+       "max": [],
+       "min": [],
+       "total": []
+      }
+     }
+    }
+   ],
+   "submit_line": "sbatch --parsable -p htc --mem=100M -J probe-oom -o /dev/null --wrap python3 -c 'b = b\"x\" * (400 << 20); import time; time.sleep(5)'",
+   "time": {
+    "elapsed": 1,
+    "eligible": 1793187652,
+    "end": 1793187653,
+    "limit": {
+     "infinite": false,
+     "number": 60,
+     "set": true
+    },
+    "planned": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "start": 1793187652,
+    "submission": 1793187652,
+    "suspended": 0,
+    "system": {
+     "microseconds": 61015,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 77207,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 16192,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 100,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": -2,
+      "id": 3,
+      "name": "",
+      "type": "energy"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 100,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  },
+  {
+   "account": "lab",
+   "allocation_nodes": 1,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "STARTED_ON_SCHEDULE",
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 329,
+   "kill_request_user": "",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-timeout",
+   "nodes": "worker-0",
+   "original_sluid": "s7F9M6151D5J00",
+   "oversubscribe": "NO",
+   "partition": "htc",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 768,
+     "set": true
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6151D5J00",
+   "state": {
+    "current": [
+     "TIMEOUT"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [
+    {
+     "CPU": {
+      "governor": "0",
+      "requested_frequency": {
+       "max": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       },
+       "min": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "exit_code": {
+      "return_code": {
+       "infinite": false,
+       "number": 0,
+       "set": false
+      },
+      "signal": {
+       "id": {
+        "infinite": false,
+        "number": 15,
+        "set": true
+       },
+       "name": "TERM"
+      },
+      "status": [
+       "SIGNALED"
+      ]
+     },
+     "kill_request_user": "",
+     "nodes": {
+      "count": 1,
+      "list": [
+       "worker-0"
+      ],
+      "range": "worker-0"
+     },
+     "state": [
+      "CANCELLED"
+     ],
+     "statistics": {
+      "CPU": {
+       "actual_frequency": 0
+      },
+      "energy": {
+       "consumed": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "step": {
+      "id": "329.batch",
+      "name": "batch",
+      "stderr": "",
+      "stderr_expanded": "",
+      "stdin": "",
+      "stdin_expanded": "",
+      "stdout": "",
+      "stdout_expanded": ""
+     },
+     "submit_line": "",
+     "task": {
+      "distribution": "Unknown"
+     },
+     "tasks": {
+      "count": 1
+     },
+     "time": {
+      "elapsed": 73,
+      "end": {
+       "infinite": false,
+       "number": 1793187726,
+       "set": true
+      },
+      "limit": {
+       "infinite": true,
+       "number": 0,
+       "set": false
+      },
+      "start": {
+       "infinite": false,
+       "number": 1793187653,
+       "set": true
+      },
+      "suspended": 0,
+      "system": {
+       "microseconds": 2386,
+       "seconds": 0
+      },
+      "total": {
+       "microseconds": 2386,
+       "seconds": 0
+      },
+      "user": {
+       "microseconds": 0,
+       "seconds": 0
+      }
+     },
+     "tres": {
+      "allocated": [
+       {
+        "count": 1,
+        "id": 1,
+        "name": "",
+        "type": "cpu"
+       },
+       {
+        "count": 768,
+        "id": 2,
+        "name": "",
+        "type": "mem"
+       },
+       {
+        "count": 1,
+        "id": 4,
+        "name": "",
+        "type": "node"
+       }
+      ],
+      "consumed": {
+       "average": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ],
+       "max": [],
+       "min": [],
+       "total": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ]
+      },
+      "requested": {
+       "average": [],
+       "max": [],
+       "min": [],
+       "total": []
+      }
+     }
+    }
+   ],
+   "submit_line": "sbatch --parsable -p htc -t 1 -J probe-timeout -o /dev/null --wrap sleep 600",
+   "time": {
+    "elapsed": 72,
+    "eligible": 1793187652,
+    "end": 1793187725,
+    "limit": {
+     "infinite": false,
+     "number": 1,
+     "set": true
+    },
+    "planned": {
+     "infinite": false,
+     "number": 1,
+     "set": true
+    },
+    "start": 1793187653,
+    "submission": 1793187652,
+    "suspended": 0,
+    "system": {
+     "microseconds": 2386,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 2386,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 0,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": -2,
+      "id": 3,
+      "name": "",
+      "type": "energy"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  },
+  {
+   "account": "capped",
+   "allocation_nodes": 1,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 5,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "STARTED_ON_SCHEDULE",
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 330,
+   "kill_request_user": "",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-cap1",
+   "nodes": "worker-1",
+   "original_sluid": "s7F9M6151D8400",
+   "oversubscribe": "NO",
+   "partition": "htc",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 768,
+     "set": true
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6151D8400",
+   "state": {
+    "current": [
+     "COMPLETED"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [
+    {
+     "CPU": {
+      "governor": "0",
+      "requested_frequency": {
+       "max": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       },
+       "min": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "exit_code": {
+      "return_code": {
+       "infinite": false,
+       "number": 0,
+       "set": true
+      },
+      "signal": {
+       "id": {
+        "infinite": false,
+        "number": 0,
+        "set": false
+       },
+       "name": ""
+      },
+      "status": [
+       "SUCCESS"
+      ]
+     },
+     "kill_request_user": "",
+     "nodes": {
+      "count": 1,
+      "list": [
+       "worker-1"
+      ],
+      "range": "worker-1"
+     },
+     "state": [
+      "COMPLETED"
+     ],
+     "statistics": {
+      "CPU": {
+       "actual_frequency": 0
+      },
+      "energy": {
+       "consumed": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "step": {
+      "id": "330.batch",
+      "name": "batch",
+      "stderr": "",
+      "stderr_expanded": "",
+      "stdin": "",
+      "stdin_expanded": "",
+      "stdout": "",
+      "stdout_expanded": ""
+     },
+     "submit_line": "",
+     "task": {
+      "distribution": "Unknown"
+     },
+     "tasks": {
+      "count": 1
+     },
+     "time": {
+      "elapsed": 90,
+      "end": {
+       "infinite": false,
+       "number": 1793187743,
+       "set": true
+      },
+      "limit": {
+       "infinite": true,
+       "number": 0,
+       "set": false
+      },
+      "start": {
+       "infinite": false,
+       "number": 1793187653,
+       "set": true
+      },
+      "suspended": 0,
+      "system": {
+       "microseconds": 1717,
+       "seconds": 0
+      },
+      "total": {
+       "microseconds": 4878,
+       "seconds": 0
+      },
+      "user": {
+       "microseconds": 3161,
+       "seconds": 0
+      }
+     },
+     "tres": {
+      "allocated": [
+       {
+        "count": 1,
+        "id": 1,
+        "name": "",
+        "type": "cpu"
+       },
+       {
+        "count": 768,
+        "id": 2,
+        "name": "",
+        "type": "mem"
+       },
+       {
+        "count": 1,
+        "id": 4,
+        "name": "",
+        "type": "node"
+       }
+      ],
+      "consumed": {
+       "average": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ],
+       "max": [],
+       "min": [],
+       "total": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ]
+      },
+      "requested": {
+       "average": [],
+       "max": [],
+       "min": [],
+       "total": []
+      }
+     }
+    }
+   ],
+   "submit_line": "sbatch --parsable -p htc -A capped -J probe-cap1 -o /dev/null --wrap sleep 90",
+   "time": {
+    "elapsed": 90,
+    "eligible": 1793187652,
+    "end": 1793187743,
+    "limit": {
+     "infinite": false,
+     "number": 60,
+     "set": true
+    },
+    "planned": {
+     "infinite": false,
+     "number": 1,
+     "set": true
+    },
+    "start": 1793187653,
+    "submission": 1793187652,
+    "suspended": 0,
+    "system": {
+     "microseconds": 1717,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 4878,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 3161,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": -2,
+      "id": 3,
+      "name": "",
+      "type": "energy"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  },
+  {
+   "account": "capped",
+   "allocation_nodes": 1,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 5,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "STARTED_ON_SCHEDULE",
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 331,
+   "kill_request_user": "",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-cap2",
+   "nodes": "worker-1",
+   "original_sluid": "s7F9M6151DAM00",
+   "oversubscribe": "NO",
+   "partition": "htc",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 768,
+     "set": true
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6151DAM00",
+   "state": {
+    "current": [
+     "COMPLETED"
+    ],
+    "reason": "AssocMaxJobsLimit"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [
+    {
+     "CPU": {
+      "governor": "0",
+      "requested_frequency": {
+       "max": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       },
+       "min": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "exit_code": {
+      "return_code": {
+       "infinite": false,
+       "number": 0,
+       "set": true
+      },
+      "signal": {
+       "id": {
+        "infinite": false,
+        "number": 0,
+        "set": false
+       },
+       "name": ""
+      },
+      "status": [
+       "SUCCESS"
+      ]
+     },
+     "kill_request_user": "",
+     "nodes": {
+      "count": 1,
+      "list": [
+       "worker-1"
+      ],
+      "range": "worker-1"
+     },
+     "state": [
+      "COMPLETED"
+     ],
+     "statistics": {
+      "CPU": {
+       "actual_frequency": 0
+      },
+      "energy": {
+       "consumed": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "step": {
+      "id": "331.batch",
+      "name": "batch",
+      "stderr": "",
+      "stderr_expanded": "",
+      "stdin": "",
+      "stdin_expanded": "",
+      "stdout": "",
+      "stdout_expanded": ""
+     },
+     "submit_line": "",
+     "task": {
+      "distribution": "Unknown"
+     },
+     "tasks": {
+      "count": 1
+     },
+     "time": {
+      "elapsed": 6,
+      "end": {
+       "infinite": false,
+       "number": 1793187749,
+       "set": true
+      },
+      "limit": {
+       "infinite": true,
+       "number": 0,
+       "set": false
+      },
+      "start": {
+       "infinite": false,
+       "number": 1793187743,
+       "set": true
+      },
+      "suspended": 0,
+      "system": {
+       "microseconds": 3002,
+       "seconds": 0
+      },
+      "total": {
+       "microseconds": 3297,
+       "seconds": 0
+      },
+      "user": {
+       "microseconds": 295,
+       "seconds": 0
+      }
+     },
+     "tres": {
+      "allocated": [
+       {
+        "count": 1,
+        "id": 1,
+        "name": "",
+        "type": "cpu"
+       },
+       {
+        "count": 768,
+        "id": 2,
+        "name": "",
+        "type": "mem"
+       },
+       {
+        "count": 1,
+        "id": 4,
+        "name": "",
+        "type": "node"
+       }
+      ],
+      "consumed": {
+       "average": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ],
+       "max": [],
+       "min": [],
+       "total": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ]
+      },
+      "requested": {
+       "average": [],
+       "max": [],
+       "min": [],
+       "total": []
+      }
+     }
+    }
+   ],
+   "submit_line": "sbatch --parsable -p htc -A capped -J probe-cap2 -o /dev/null --wrap sleep 5",
+   "time": {
+    "elapsed": 6,
+    "eligible": 1793187652,
+    "end": 1793187749,
+    "limit": {
+     "infinite": false,
+     "number": 60,
+     "set": true
+    },
+    "planned": {
+     "infinite": false,
+     "number": 91,
+     "set": true
+    },
+    "start": 1793187743,
+    "submission": 1793187652,
+    "suspended": 0,
+    "system": {
+     "microseconds": 3002,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 3297,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 295,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": -2,
+      "id": 3,
+      "name": "",
+      "type": "energy"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  },
+  {
+   "account": "lab",
+   "allocation_nodes": 0,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 335,
+   "kill_request_user": "root",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-partlimit",
+   "nodes": "None assigned",
+   "original_sluid": "s7F9M6151DNW00",
+   "oversubscribe": "NO",
+   "partition": "htc",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 768,
+     "set": true
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6151DNW00",
+   "state": {
+    "current": [
+     "CANCELLED"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [],
+   "submit_line": "sbatch --parsable -p htc -t 120 -J probe-partlimit -o /dev/null --wrap true",
+   "time": {
+    "elapsed": 0,
+    "eligible": 1793187653,
+    "end": 1793187679,
+    "limit": {
+     "infinite": false,
+     "number": 120,
+     "set": true
+    },
+    "planned": {
+     "infinite": false,
+     "number": 26,
+     "set": true
+    },
+    "start": 4294967294,
+    "submission": 1793187653,
+    "suspended": 0,
+    "system": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 0,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  },
+  {
+   "account": "lab",
+   "allocation_nodes": 0,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 336,
+   "kill_request_user": "root",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-dep",
+   "nodes": "None assigned",
+   "original_sluid": "s7F9M6151DRG00",
+   "oversubscribe": "NO",
+   "partition": "htc",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 768,
+     "set": true
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6151DRG00",
+   "state": {
+    "current": [
+     "CANCELLED"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [],
+   "submit_line": "sbatch --parsable -p htc -d afterok:330 -J probe-dep -o /dev/null --wrap true",
+   "time": {
+    "elapsed": 0,
+    "eligible": 0,
+    "end": 1793187679,
+    "limit": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    },
+    "planned": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "start": 4294967294,
+    "submission": 1793187653,
+    "suspended": 0,
+    "system": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 0,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  },
+  {
+   "account": "lab",
+   "allocation_nodes": 0,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 337,
+   "kill_request_user": "root",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-depnever",
+   "nodes": "None assigned",
+   "original_sluid": "s7F9M6151DV100",
+   "oversubscribe": "NO",
+   "partition": "htc",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 768,
+     "set": true
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6151DV100",
+   "state": {
+    "current": [
+     "CANCELLED"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [],
+   "submit_line": "sbatch --parsable -p htc -d afterok:328 -J probe-depnever -o /dev/null --wrap true",
+   "time": {
+    "elapsed": 0,
+    "eligible": 0,
+    "end": 1793187679,
+    "limit": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    },
+    "planned": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "start": 4294967294,
+    "submission": 1793187653,
+    "suspended": 0,
+    "system": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 0,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  },
+  {
+   "account": "lab",
+   "allocation_nodes": 0,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": true,
+   "job_id": 338,
+   "kill_request_user": "root",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-held",
+   "nodes": "None assigned",
+   "original_sluid": "s7F9M6151DXN00",
+   "oversubscribe": "NO",
+   "partition": "htc",
+   "priority": {
+    "infinite": false,
+    "number": 0,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 768,
+     "set": true
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6151DXN00",
+   "state": {
+    "current": [
+     "CANCELLED"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [],
+   "submit_line": "sbatch --parsable -p htc -H -J probe-held -o /dev/null --wrap true",
+   "time": {
+    "elapsed": 0,
+    "eligible": 0,
+    "end": 1793187679,
+    "limit": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    },
+    "planned": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "start": 4294967294,
+    "submission": 1793187653,
+    "suspended": 0,
+    "system": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 0,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  },
+  {
+   "account": "lab",
+   "allocation_nodes": 1,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "STARTED_ON_SCHEDULE",
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 339,
+   "kill_request_user": "",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-maint",
+   "nodes": "worker-2",
+   "original_sluid": "s7F9M6151E2M00",
+   "oversubscribe": "NO",
+   "partition": "bigmem",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 768,
+     "set": true
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6151E2M00",
+   "state": {
+    "current": [
+     "COMPLETED"
+    ],
+    "reason": "ReqNodeNotAvail"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [
+    {
+     "CPU": {
+      "governor": "0",
+      "requested_frequency": {
+       "max": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       },
+       "min": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "exit_code": {
+      "return_code": {
+       "infinite": false,
+       "number": 0,
+       "set": true
+      },
+      "signal": {
+       "id": {
+        "infinite": false,
+        "number": 0,
+        "set": false
+       },
+       "name": ""
+      },
+      "status": [
+       "SUCCESS"
+      ]
+     },
+     "kill_request_user": "",
+     "nodes": {
+      "count": 1,
+      "list": [
+       "worker-2"
+      ],
+      "range": "worker-2"
+     },
+     "state": [
+      "COMPLETED"
+     ],
+     "statistics": {
+      "CPU": {
+       "actual_frequency": 0
+      },
+      "energy": {
+       "consumed": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "step": {
+      "id": "339.batch",
+      "name": "batch",
+      "stderr": "",
+      "stderr_expanded": "",
+      "stdin": "",
+      "stdin_expanded": "",
+      "stdout": "",
+      "stdout_expanded": ""
+     },
+     "submit_line": "",
+     "task": {
+      "distribution": "Unknown"
+     },
+     "tasks": {
+      "count": 1
+     },
+     "time": {
+      "elapsed": 1,
+      "end": {
+       "infinite": false,
+       "number": 1793187680,
+       "set": true
+      },
+      "limit": {
+       "infinite": true,
+       "number": 0,
+       "set": false
+      },
+      "start": {
+       "infinite": false,
+       "number": 1793187679,
+       "set": true
+      },
+      "suspended": 0,
+      "system": {
+       "microseconds": 2346,
+       "seconds": 0
+      },
+      "total": {
+       "microseconds": 2662,
+       "seconds": 0
+      },
+      "user": {
+       "microseconds": 316,
+       "seconds": 0
+      }
+     },
+     "tres": {
+      "allocated": [
+       {
+        "count": 1,
+        "id": 1,
+        "name": "",
+        "type": "cpu"
+       },
+       {
+        "count": 768,
+        "id": 2,
+        "name": "",
+        "type": "mem"
+       },
+       {
+        "count": 1,
+        "id": 4,
+        "name": "",
+        "type": "node"
+       }
+      ],
+      "consumed": {
+       "average": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ],
+       "max": [],
+       "min": [],
+       "total": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ]
+      },
+      "requested": {
+       "average": [],
+       "max": [],
+       "min": [],
+       "total": []
+      }
+     }
+    }
+   ],
+   "submit_line": "sbatch --parsable -p bigmem -J probe-maint -o /dev/null --wrap hostname",
+   "time": {
+    "elapsed": 1,
+    "eligible": 1793187653,
+    "end": 1793187680,
+    "limit": {
+     "infinite": false,
+     "number": 60,
+     "set": true
+    },
+    "planned": {
+     "infinite": false,
+     "number": 26,
+     "set": true
+    },
+    "start": 1793187679,
+    "submission": 1793187653,
+    "suspended": 0,
+    "system": {
+     "microseconds": 2346,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 2662,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 316,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": -2,
+      "id": 3,
+      "name": "",
+      "type": "energy"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  },
+  {
+   "account": "lab",
+   "allocation_nodes": 0,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 340,
+   "kill_request_user": "root",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-adminhold",
+   "nodes": "None assigned",
+   "original_sluid": "s7F9M6151E5900",
+   "oversubscribe": "NO",
+   "partition": "bigmem",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 768,
+     "set": true
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6151E5900",
+   "state": {
+    "current": [
+     "CANCELLED"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [],
+   "submit_line": "sbatch --parsable -p bigmem -J probe-adminhold -o /dev/null --wrap true",
+   "time": {
+    "elapsed": 0,
+    "eligible": 1793187653,
+    "end": 1793187679,
+    "limit": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    },
+    "planned": {
+     "infinite": false,
+     "number": 26,
+     "set": true
+    },
+    "start": 4294967294,
+    "submission": 1793187653,
+    "suspended": 0,
+    "system": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 0,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  },
+  {
+   "account": "lab",
+   "allocation_nodes": 1,
+   "array": {
+    "job_id": 0,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "PENDING"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 1,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "ERROR"
+    ]
+   },
+   "extra": "",
+   "failed_node": "worker-2",
+   "flags": [
+    "STARTED_ON_SCHEDULE",
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 341,
+   "kill_request_user": "",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "probe-nodefail",
+   "nodes": "worker-2",
+   "original_sluid": "s7F9M6152AEC00",
+   "oversubscribe": "NO",
+   "partition": "bigmem",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 768,
+     "set": true
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M6152AEC00",
+   "state": {
+    "current": [
+     "NODE_FAIL"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [
+    {
+     "CPU": {
+      "governor": "0",
+      "requested_frequency": {
+       "max": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       },
+       "min": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "exit_code": {
+      "return_code": {
+       "infinite": false,
+       "number": 0,
+       "set": false
+      },
+      "signal": {
+       "id": {
+        "infinite": false,
+        "number": 0,
+        "set": false
+       },
+       "name": ""
+      },
+      "status": [
+       "PENDING"
+      ]
+     },
+     "kill_request_user": "",
+     "nodes": {
+      "count": 1,
+      "list": [
+       "worker-2"
+      ],
+      "range": "worker-2"
+     },
+     "state": [
+      "CANCELLED"
+     ],
+     "statistics": {
+      "CPU": {
+       "actual_frequency": 0
+      },
+      "energy": {
+       "consumed": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "step": {
+      "id": "341.batch",
+      "name": "batch",
+      "stderr": "",
+      "stderr_expanded": "",
+      "stdin": "",
+      "stdin_expanded": "",
+      "stdout": "",
+      "stdout_expanded": ""
+     },
+     "submit_line": "",
+     "task": {
+      "distribution": "Unknown"
+     },
+     "tasks": {
+      "count": 1
+     },
+     "time": {
+      "elapsed": 73,
+      "end": {
+       "infinite": false,
+       "number": 1793187758,
+       "set": true
+      },
+      "limit": {
+       "infinite": true,
+       "number": 0,
+       "set": false
+      },
+      "start": {
+       "infinite": false,
+       "number": 1793187685,
+       "set": true
+      },
+      "suspended": 0,
+      "system": {
+       "microseconds": 0,
+       "seconds": 0
+      },
+      "total": {
+       "microseconds": 0,
+       "seconds": 0
+      },
+      "user": {
+       "microseconds": 0,
+       "seconds": 0
+      }
+     },
+     "tres": {
+      "allocated": [
+       {
+        "count": 1,
+        "id": 1,
+        "name": "",
+        "type": "cpu"
+       },
+       {
+        "count": 768,
+        "id": 2,
+        "name": "",
+        "type": "mem"
+       },
+       {
+        "count": 1,
+        "id": 4,
+        "name": "",
+        "type": "node"
+       }
+      ],
+      "consumed": {
+       "average": [],
+       "max": [],
+       "min": [],
+       "total": []
+      },
+      "requested": {
+       "average": [],
+       "max": [],
+       "min": [],
+       "total": []
+      }
+     }
+    }
+   ],
+   "submit_line": "sbatch --parsable -p bigmem --no-requeue -J probe-nodefail -o /dev/null --wrap sleep 600",
+   "time": {
+    "elapsed": 73,
+    "eligible": 1793187682,
+    "end": 1793187758,
+    "limit": {
+     "infinite": false,
+     "number": 60,
+     "set": true
+    },
+    "planned": {
+     "infinite": false,
+     "number": 3,
+     "set": true
+    },
+    "start": 1793187685,
+    "submission": 1793187682,
+    "suspended": 0,
+    "system": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 0,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 0,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 768,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm"
+  }
+ ],
+ "meta": {
+  "client": {
+   "group": "root",
+   "source": "",
+   "user": "root"
+  },
+  "command": [
+   "sacct",
+   "--json",
+   "-j",
+   "328,329,330,331,339,341,335,336,337,338,340"
+  ],
+  "plugin": {
+   "accounting_storage": "accounting_storage/slurmdbd",
+   "data_parser": "data_parser/v0.0.45",
+   "name": "",
+   "type": ""
+  },
+  "slurm": {
+   "cluster": "site",
+   "release": "26.05.5",
+   "version": {
+    "major": "26",
+    "micro": "5",
+    "minor": "05"
+   }
+  }
+ },
+ "warnings": []
+}
