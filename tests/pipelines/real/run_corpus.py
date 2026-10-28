@@ -16,7 +16,7 @@ Later these runs are launched through Spectio instead of directly (same entries)
 """
 from __future__ import annotations
 
-import argparse, json, os, re, shutil, subprocess, sys, tempfile, time
+import argparse, json, os, re, shutil, stat, subprocess, sys, tempfile, time
 from pathlib import Path
 
 import yaml
@@ -108,7 +108,15 @@ def smk_entry(e, wd: Path, smk: str) -> dict:
 
 
 def make_workdir(arg: str | None) -> Path:
-    return Path(arg) if arg else Path(tempfile.mkdtemp(prefix="spectio-corpus-"))
+    """A fresh private directory, or the given one if this user owns it and nobody else can write to it."""
+    if not arg:
+        return Path(tempfile.mkdtemp(prefix="spectio-corpus-"))
+    path = Path(arg)
+    path.mkdir(mode=0o700, parents=True, exist_ok=True)
+    st = os.lstat(path)
+    if stat.S_ISLNK(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o022:
+        sys.exit(f"--workdir {path}: must be a directory you own that group and others cannot write to (not a symlink)")
+    return path
 
 
 def main() -> int:

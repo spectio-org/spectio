@@ -107,8 +107,22 @@ class WorkdirTest(unittest.TestCase):
         self.assertNotEqual(a, b)
         self.assertEqual(a.stat().st_mode & 0o777, 0o700)
 
+    def test_an_explicit_workdir_is_created_private(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            wd = rs.make_workdir(f"{tmp}/a/b")
+            self.assertEqual(wd.stat().st_mode & 0o777, 0o700)
+
+    def test_a_shared_or_linked_workdir_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            shared = Path(tmp) / "shared"; shared.mkdir(); shared.chmod(0o777)
+            link = Path(tmp) / "link"; link.symlink_to(Path(tmp))
+            for bad in (shared, link):
+                with self.assertRaises(SystemExit):
+                    rs.make_workdir(str(bad))
+
     def test_an_explicit_workdir_is_kept(self):
-        self.assertEqual(rs.make_workdir("/tmp/spx"), Path("/tmp/spx"))
+        with tempfile.TemporaryDirectory() as tmp:
+            self.assertEqual(rs.make_workdir(tmp), Path(tmp))
 
 
 class FixturesTest(unittest.TestCase):
