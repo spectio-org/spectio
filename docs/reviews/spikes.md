@@ -778,7 +778,7 @@ T7 edited its own specs (dev-env §10.2 and §11) and sent its decisions to the 
 - **Problem:** the corpus tests another Nextflow than the pinned one. Inbox #42's answer (a) moved only the synthetic matrix.
 - **Proposal:** in the §11 `pipelines-real.yml` row: "Nextflow at the `dev/versions.env` pin". The step that next edits `pipelines-real.yml` reads it from there, as #42 (a) did for the synthetic matrix. No required check is renamed: only `ci-ok` is required.
 - **Found by:** T7 build
-- **Status:** accepted (auto: confirmed by `pipelines-real.yml:58`, `corpus.yaml:8` and `versions.env:39`; local fix in dev-env §11; in line with #42 (a)) → applied (APPLY3, 2026-10-28): dev-env §11 `pipelines-real.yml` row; the workflow pin moves to `versions.env` in the next step that edits `pipelines-real.yml`, as proposed
+- **Status:** accepted (auto: confirmed by `pipelines-real.yml:58`, `corpus.yaml:8` and `versions.env:39`; local fix in dev-env §11; in line with #42 (a)) → applied (APPLY3, 2026-10-28): dev-env §11 `pipelines-real.yml` row; the workflow and `corpus.yaml` read the pin from `versions.env` since PR #38 (2026-10-28)
 
 ### SPK-T7-04 (SEC-T7-01, SEC-T7-04) · minor · Corpus pinned by tag; unpinned conda inside the Snakemake action
 

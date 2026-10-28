@@ -55,7 +55,7 @@ Rendering rules (replaces the current pill badges):
 - In tables: a 4 px **state rail** on the left edge of the row, plus icon + state word in the State column, plus a context line ("stage 2 of 4 · 12 min ago").
 - In cards: the state rail runs along the top edge of the card; icon + word in the header.
 - Hover / focus on any state shows a tooltip with the last event and timestamp.
-- Task labels come from the states of [`api-and-data-model.md`](api-and-data-model.md) §7.2: pending, submitted, running, succeeded, failed, cached, stored, aborted, not scheduled; "Aborted" is an attempt the engine stopped, or never ran, because of another failure: it is not shown as a failure and does not count in the failed total *(assumed — pending Thomas, [inbox #56](../reviews/inbox.md#56-assumed-the-state-of-a-task-still-open-when-the-run-ends))*; "failed (ignored)" is `failed` with `ignored`; "retried" is shown on a task whose last attempt has n > 1. Cached and Stored are distinct looks, for `cached` and `stored`.
+- Task labels come from the states of [`api-and-data-model.md`](api-and-data-model.md) §7.2: pending, submitted, running, succeeded, failed, cached, stored, aborted, not scheduled; "Aborted" is an attempt the engine stopped, or never ran, because of another failure: it is not shown as a failure and does not count in the failed total *(assumed — pending Thomas, inbox #56)*; "failed (ignored)" is `failed` with `ignored`; "retried" is shown on a task whose last attempt has n > 1. Cached and Stored are distinct looks, for `cached` and `stored`.
 
 ### 3.2 Stage gauge (the emblem as a progress indicator)
 

@@ -1,15 +1,15 @@
 ---
 step: APPLY3
 wave: W3
-status: running
+status: done
 pr: null
-review: null
-review_score: null
-review_ref: null
+review: approve
+review_score: 12/14
+review_ref: "journal 2026-10-28 12:55 UTC, tick 11 continued (APPLY3)"
 ---
 # APPLY3 · Apply the findings of the spikes round to the specs
 
-!!! info "Running since 2026-10-28 · 49 of 69 findings reached the specs: 44 applied (2 of them by PR #36), 5 partly applied, 0 not applied · 9 wait for Thomas · 7 specs and decision 0001 changed · no inbox entry added · doc review pending"
+!!! success "Done 2026-10-28 · 49 of 69 findings reached the specs: 44 applied (2 of them by PR #36), 5 partly applied, 0 not applied · 9 wait for Thomas · 7 specs and decision 0001 changed · no inbox entry added · doc review approve 12/14, changes applied"
 
 ![APPLY3 figure: the 69 findings of the spikes round as cells, grouped by step T2, T3, T4 and T7: 42 applied by APPLY3, 2 by PR #36, 5 partly applied, 9 waiting for Thomas, 3 applied by T3 and 8 rejected; the lines added and removed in each of the 7 specs and decision 0001, to scale; the work left outside the specs; the inbox entries #53, #54, #55, #59 and #46 that hold 10 findings; and the 5 assumed answers already applied](../../assets/diagrams/apply3_specs_light.png#only-light)
 ![APPLY3 figure: the 69 findings of the spikes round as cells, grouped by step T2, T3, T4 and T7: 42 applied by APPLY3, 2 by PR #36, 5 partly applied, 9 waiting for Thomas, 3 applied by T3 and 8 rejected; the lines added and removed in each of the 7 specs and decision 0001, to scale; the work left outside the specs; the inbox entries #53, #54, #55, #59 and #46 that hold 10 findings; and the 5 assumed answers already applied](../../assets/diagrams/apply3_specs_dark.png#only-dark)
@@ -30,6 +30,28 @@ review_ref: null
     - [decision 0001](../../decisions/0001-nextflow-through-nf-spectio.md): a dated "Update 2026-10-28" line. The decision stays as decided.
 - **Status lines in [`spikes.md`](../../reviews/spikes.md).** Each of the 49 findings now ends its **Status** line with `→ applied (APPLY3, 2026-10-28): <spec> §<n>`, `→ partly applied (APPLY3, 2026-10-28): … pending: …`, or `→ applied by PR #36 (corpus retry, 2026-10-28): dev-env §10.2`. The header gets an APPLY3 count. The rejected findings, the reserved inbox findings and the 3 findings T3 applied keep their TRIAGE3 status.
 - **One decision-log section** for the whole step: [2026-10-28 — APPLY3](../../decisions/log.md#2026-10-28-apply3-spikes-round-findings-applied).
+
+**Before and after.** Each row was read in `git diff 90180cb HEAD -- docs/specs docs/decisions` and matches a bullet of the [decision-log section](../../decisions/log.md#2026-10-28-apply3-spikes-round-findings-applied):
+
+| Findings | Before | After | Owner now |
+|---|---|---|---|
+| SPK-T3-09 | a task over its time limit on SLURM ends `TIMEOUT` | a Nextflow task also ends `FAILED` with exit 140 (`--signal B:USR2@30`), classed `timeout` | [schedulers §3.5](../../specs/schedulers-and-monitoring.md) |
+| SPK-T3-03, -02 | SLURM OOM kill gives `OUT_OF_MEMORY` 0:125 **[to be validated on sind]** | verified on sind, Slurm 26.05.5: signal 125, status `SIGNALED`; only `oom_real` triggers it | schedulers §3.5, [dev-env §3](../../specs/dev-environment-and-testing.md) |
+| SPK-T3-05, -16 | not covered | Nextflow's own cleanup of pending jobs (`CANCELLED by <uid>`, the run's uid) is not an external cancel; `sacct --json` names the canceller in `kill_request_user` | schedulers §3.5 |
+| SPK-T3-01, SPK-T2-17 | `attempts.exit` listed with no null case | a Snakemake task job on SLURM ends `FAILED 1:0`; `attempts.exit` is nullable | schedulers §3.5, [api §7](../../specs/api-and-data-model.md) |
+| SPK-T2-09 | attempt states without `aborted` | terminal state `aborted` for attempts still open when a launch ends; not a failure *(assumed, #56)* | api §7.2, [ui-spec §3.1](../../specs/ui-spec.md) |
+| SPK-T2-07 | Nextflow trace statuses map to attempt states **[to be validated]** | the mapping reads the hooks and `trace.status`, never `handler.status` | api §7.2 |
+| SPK-T2-06 | not covered | a repeated flow completion for the same launch is logged and changes nothing | api §8.2 |
+| SPK-T2-01, -02 | end of stage on Nextflow = every matching process fired `onProcessTerminate` | that, **and** every seen task of those processes completed or cached; unended stages close when the run ends | [checking-scenarios §11.5](../../specs/checking-scenarios.md) |
+| SPK-T2-05 | not covered | the `nf-spectio` sender stops at observer shutdown, not at `onFlowComplete` | [architecture §13.3](../../specs/architecture-plugins-and-packaging.md) |
+| SPK-T2-25, -26 | how `nf-spectio` reaches Nextflow **[to be validated]**; Snakemake plugin discovery open | unpacked into `$NXF_HOME/plugins`; the Snakemake logger plugin found on `PYTHONPATH`, no install | architecture §7.3, §13.4 |
+| SPK-T2-12 | `nf-tower` "ships with Nextflow" | a core plugin, downloaded from the plugin registry on first use | [synthesis §1, §2](../../specs/synthesis.md) |
+| SPK-T4-17 | Kueue pod integration "opt-in" **[to be validated]** | listed in Kueue's default configuration (v0.20.3) | schedulers §4 |
+| SPK-T4-05 | not covered | Nextflow 25.10 needs the `nf-k8s` plugin for the `k8s` executor | schedulers §4 |
+| SPK-T4-02 (fact part) | `pods: create` **[to be validated]** | verified on `k8s-mini`; the Role lists wait for inbox #53 | schedulers §4 |
+| SPK-T3-19 | Snakemake head under `sbatch` or on a service node **[to be validated]** | works on `slurm-site` for `happy`; failures and long runs **[to be validated]** | schedulers §3.1, dev-env §15.1, §15.3 |
+| SPK-T3-20 | no rule | "Node tools are read-only for jobs" (not built yet) | dev-env §4 |
+| SPK-T4-09, SPK-T7-01 | pipeline workflows "Standalone: `ci.yml` does not call it"; nobody reads the nightly runs | standalone until `ci.yml` calls them *(assumed, #57)*; the autopilot reads the nightly runs *(assumed, #58)* | dev-env §11 |
 
 ## Why
 
@@ -75,6 +97,7 @@ $ grep -rno "pending Thomas, inbox #\(56\|57\|58\|60\)" docs/specs | sort | uniq
       1 docs/specs/dev-environment-and-testing.md:490:pending Thomas, inbox #57
       1 docs/specs/dev-environment-and-testing.md:491:pending Thomas, inbox #57
       1 docs/specs/dev-environment-and-testing.md:505:pending Thomas, inbox #58
+      1 docs/specs/ui-spec.md:58:pending Thomas, inbox #56
 ```
 
 Every accepted or assumed finding had a matching change. None was left out.
@@ -108,7 +131,7 @@ $ grep -c "→ applied (APPLY3" docs/reviews/spikes.md; grep -c "→ partly appl
 | SPK-T4-09 | dev-env §11, both rows "standalone until `ci.yml` calls it" *(assumed, #57)* | `ci.yml` calls `pipelines-slurm.yml` and `pipelines-k8s.yml` |
 | SPK-T7-01 | dev-env §11, "Nightly runs" *(assumed, #58)* | the autopilot playbook and skill read the scheduled runs |
 
-SPK-T7-03 counts as applied: its proposal was the §11 text only, and the next step that edits `pipelines-real.yml` reads the pin from `versions.env`.
+SPK-T7-03 counts as applied: its proposal was the §11 text, and its code part, `pipelines-real.yml` reading `NEXTFLOW_VERSION` from `dev/versions.env`, landed in PR #38 (merged into this branch at `3bafe3e`).
 
 **Exit criterion.** The docs gate and the strict build:
 
@@ -126,7 +149,7 @@ INFO    -  Documentation built in 5.91 seconds
 ## Figures and media
 
 - **Step figure** at the top of this page (to scale: one cell per finding, bar lengths in lines and in findings). Script: `tools/diagrams/apply3_specs.py`; outputs `docs/assets/diagrams/apply3_specs_{light,dark}.{svg,png}`; manifest entry `apply3-specs` in `docs/assets/media.yaml`.
-- No before-and-after figure: no single mechanism changed. The changes are many local facts (exit codes, event order, plugin loading), each linked to the T2, T3 or T4 note that measured it.
+- The figure is a map of line changes per spec, not a before-and-after drawing of a mechanism. Two changes are mechanisms: the new attempt state `aborted` (api §7.2) and the Nextflow end-of-stage rule (checking-scenarios §11.5). Their before and after are in the table under [What changed](#what-changed); the other changes are local facts (exit codes, event order, plugin loading), each linked to the T2, T3 or T4 note that measured it.
 
 ## Findings and open questions
 
