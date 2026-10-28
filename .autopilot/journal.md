@@ -226,3 +226,25 @@ One entry per tick: time, steps started and finished, verification results, tria
   - replace the cloud setup script (#43); network to Custom without wildcards;
   - a fresh `/usage` reading before the next build step.
 - **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (6 subagents, 202 API calls at snapshot time); dashboard rebuilt (41 steps, 50 inbox entries; `check_xss.js` ok with and without the CSP) and republished as version 18 at the same link, private, `answers` write rule owner-only. The first two publishes were refused (not read; then identical content); the third went through after checking the saved live copy is the tick-8 build (no tick-9 content), so nothing was lost.
+
+## 2026-10-28 07:10 → 08:00 UTC — tick 10 (promotion of D6, T2 spike)
+
+- **Promotion:** weber8thomas/spectio#24 (D6 and the tick-9 records) merged into `main` as a merge commit (`35f2514`), every check green.
+- **Budget:** Thomas gave 76 % and the same 85 % stop. One step (T2). `check` answered go, fits 1, still `manual-stale`; step cost not recorded.
+- **Inbox:** Thomas corrects the dashboard answers at 10:00; the next tick reads them.
+- **Finished: T2**, engine event capture (spike). PR weber8thomas/spectio#25, squash `afc2e9c`. The spike code stays on `spike/engine-events` @`3b4f654`; integration gets the note, the Progress page, the figure, the cast and the fixtures.
+  - Snakemake 9.27.1: a logger plugin on `snakemake-interface-logger-plugins` 2.1.0 receives every record; 3 fixtures.
+  - Nextflow 26.10.4 and 25.10.9: Tower protocol captured by a stdlib server; a first `nf-spectio` (`TraceObserverV2`, built without Gradle) runs next to `nf-tower` and reports the same run name and session ID in 6 of 6 runs; 12 fixtures.
+  - 24 differences with the specs, for TRIAGE3. Three change a spec: the last `onTaskComplete` of a process can arrive after its `onProcessTerminate` (end of stage in checking-scenarios §11.5); Snakemake `job_error` carries no attempt number and no exit code; a checkpoint grows the total (32 → 67) through progress events only.
+  - Fixtures: 15 JSON-lines files, 2.6 MB, normalised (paths, host, user, token); whether they stay on `main` in full is follow-up 5 of the note.
+  - No review-code (spike code not reused); doc-review changes 10/14, then approve 13/14. The Progress banner said "review pending" after the merge; fixed in the tick commit.
+- **Exit checks:** fixtures and note present; `python3 tools/docs/check.py` green in `docs-gate` on `925d262`. `ci-ok` red on superseded `2162203` was the concurrency cancel.
+- **Triage:** none (spike). No new inbox entry; the note's two open questions (task `script`/`env` in `nf-spectio`, drain after the last `onProcessTerminate`) go to TRIAGE3.
+- **Waiting on Thomas:**
+  - the dashboard answers (10:00);
+  - #49 (font) and #50 (rest of D6);
+  - the 9 stale branches carrying the webhook URL, and #5;
+  - GitHub settings: fork PR workflow approval, secret scanning and push protection, auto-merge;
+  - #44, #46, #47, #48 and #32; the cloud setup script (#43); network to Custom;
+  - a fresh `/usage` reading before the next build step.
+- **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (8 subagents, 424 API calls at snapshot time); dashboard rebuilt (41 steps, 50 inbox entries; `check_xss.js` ok with and without the CSP) and republished as version 19 at the same link, private, `answers` write rule owner-only.
