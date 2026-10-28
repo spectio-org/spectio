@@ -13,7 +13,8 @@
 #     UV_PYTHON_INSTALL_DIR=$SLURM_DATA/tools/python bash dev/bootstrap.sh
 # Docker must run on cgroup v2, so not in a Claude Code cloud session (spike D2): this runs in CI
 # (pipelines-slurm.yml) and on a laptop. No key is written to the host: sind creates the munge key and
-# the JWT key inside the containers. The cluster is named after the profile.
+# the JWT key inside the containers. The cluster is named after the profile, in the sind realm $SIND_REALM
+# (default sind; dev/scenario.py sets spx-<id>).
 # Built from spike t3-ci (docs/research/spike-t3-ci-2026-10-28.md).
 set -euo pipefail
 # shellcheck source=dev/lib.sh
