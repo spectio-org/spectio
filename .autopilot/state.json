@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-27T23:42:27Z",
+  "updated_at": "2026-10-28T07:14:46Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -343,12 +343,21 @@
     },
     "T2": {
       "wave": "W3",
-      "status": "pending",
+      "status": "done",
       "attempts": 0,
-      "started_at": null,
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "started_at": "2026-10-28T07:14:46Z",
+      "finished_at": "2026-10-28T07:52:00Z",
+      "outputs": [
+        "PR weber8thomas/spectio#25, squash afc2e9c",
+        "spike branch spike/engine-events @3b4f654 (code stays there)",
+        "docs/research/spike-engine-events-2026-10-28.md",
+        "docs/progress/W3/T2.md",
+        "spikes/engine-events/fixtures/ (15 JSONL, 2.6 MB)",
+        "tools/diagrams/t2_engine_events.py + docs/assets/diagrams/t2-engine-events_*",
+        "docs/assets/casts/t2-engine-events.cast"
+      ],
+      "notes": "Snakemake 9.27.1 logger plugin yes; Tower capture on Nextflow 26.10.4 and 25.10.9 yes; first nf-spectio (TraceObserverV2) next to nf-tower: same run 6/6. 24 differences with the specs for TRIAGE3. Doc review changes 10/14, then approve 13/14.",
+      "base": "35f2514dde99e0c76be48bc391db48e3ecc8ee05"
     },
     "T3": {
       "wave": "W3",
