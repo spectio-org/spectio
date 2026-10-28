@@ -263,3 +263,17 @@ One entry per tick: time, steps started and finished, verification results, tria
   - #49, #50, #44, #46, #47, #48, #32, #43; the 9 stale branches carrying the webhook URL, and #5;
   - GitHub settings: fork PR workflow approval, secret scanning and push protection, auto-merge.
 - **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (8 subagents, 463 API calls at snapshot time); dashboard rebuilt and republished at the same link (version 20), private, `answers` write rule owner-only.
+
+## 2026-10-28 08:25 → 08:35 UTC — tick 11, continued (SEC-T1-06 fixed)
+
+- **Promotion:** weber8thomas/spectio#27 (inbox #51, tick-11 records) merged into `main` as a merge commit (`08ef3cf`), every check green.
+- **Thomas:** "Lance ce que tu peux avant d'avoir les réponses." T3 and T4 stay blocked on #51. The one thing doable here was their prerequisite, SEC-T1-06.
+- **Fixed: SEC-T1-06** (follow-up of T1, not a pipeline step). PR weber8thomas/spectio#28, squash `7a2f1b0`.
+  - Without `--workdir`, `run_scenarios.py` and `run_corpus.py` create a private `mkdtemp` directory (0700), print it and keep it for debugging. Before, they deleted and reused `/tmp/spectio-scenarios` and `/tmp/spectio-corpus`. An explicit `--workdir` is used as given; CI is unchanged.
+  - 3 new unit tests (16 OK). Snakemake `happy` PASS in a `drwx------` workdir.
+  - code / security review: approve / approve (2 and 3 minors). The fix round applied CR-S06-1 (corpus runner too), SEC-S06-2 (T1 How-to-test command) and SEC-S06-3 (cleanup documented). Code review approved the delta, adding CR-S06-3 (`${TMPDIR:-/tmp}`), which was applied. The simplifier made no change. Doc review approve 13/14, with its one optional fix applied.
+  - Open: SEC-S06-1. An explicit `--workdir` in shared `/tmp` is still trusted (owner, symlink, mode not checked). Recorded in `docs/reviews/code/SEC-T1-06.md`.
+  - CI on `720c8c8`: every check green, including `pipelines-real` (nf-core/demo, snakemake-ms-proteomics) and the three `pipelines-synthetic` legs.
+- **Exit checks:** `python3 -m unittest tests/pipelines/synthetic/test_golden.py tests/pipelines/real/test_run_corpus.py` (16 OK); `python3 tools/docs/check.py`: 0 failures.
+- **Waiting on Thomas:** #51 (where T3/T4 run; their SEC-T1-06 prerequisite is now met), then the items listed above.
+- **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (12 subagents, 541 API calls at snapshot time); dashboard republished as version 21 at the same link, private, `answers` write rule owner-only, `check_xss.js` ok with and without the CSP.
