@@ -245,7 +245,7 @@ kind does not run inside a Claude Code cloud session: the VM's cgroup v1 layout 
 
 ### 6.1 End-to-end tests (`tests/e2e/`)
 
-Built in T6 ([Progress page](../progress/W3/T6.md)), narrowed by the MVP decision of 2026-10-28 (the first UI only launches and monitors runs): the smallest skeleton that the tier 4 tests will grow from.
+Built in T6 ([Progress page](../progress/W3/T6.md)), narrowed by the MVP decision of 2026-10-28 ([decision log](../decisions/log.md#2026-10-28-001-narrowed-launch-and-monitor-an-ultra-simple-ui)) (the first UI only launches and monitors runs): the smallest skeleton that the tier 4 tests will grow from.
 
 - **Playwright in TypeScript,** `@playwright/test` pinned to `PLAYWRIGHT_VERSION` of `dev/versions.env` (1.63.0, §1) in `tests/e2e/package.json`, with integrity hashes in its `package-lock.json`; `tests/e2e/pin.unit.ts` fails when the two disagree. Cloud sessions use the Chromium under `/opt/pw-browsers`; CI downloads it with `playwright install --with-deps chromium`.
 - **Where the tests point,** first match wins (`tests/e2e/base-url.ts`):
