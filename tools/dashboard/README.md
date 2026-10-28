@@ -8,7 +8,7 @@ The Spectio dashboard is one self-contained HTML page. It is published as a clau
 - every Markdown file and figure;
 - the token usage.
 
-Build it from the repository root, into a folder outside the repository (the page is about 12 MB):
+Build it from the repository root, into a folder outside the repository (the page is about 11 MB; figures are embedded as their SVG):
 
 ```bash
 OUT=$(mktemp -d)
