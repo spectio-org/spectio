@@ -1,0 +1,66 @@
+# Plain failure objects for the golden fixtures of dev-environment-and-testing.md §4.2 (k8s-mini row):
+# a memory-limit OOM kill, a Job over its activeDeadlineSeconds, and a bare Pod over its own deadline.
+# busybox pinned as BUSYBOX_IMAGE in dev/versions.env. `tail /dev/zero` buffers an endless line, so it
+# grows until the memory limit kills it.
+apiVersion: batch/v1
+kind: Job
+metadata: {name: fx-oom, namespace: spectio-work, labels: {spectio.io/run-id: fx-failures}}
+spec:
+  backoffLimit: 0
+  template:
+    metadata: {labels: {spectio.io/run-id: fx-failures}}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: main
+          image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command: [sh, -c, "tail /dev/zero"]
+          resources:
+            requests: {cpu: 100m, memory: 32Mi}
+            limits: {memory: 32Mi}
+---
+apiVersion: batch/v1
+kind: Job
+metadata: {name: fx-job-deadline, namespace: spectio-work, labels: {spectio.io/run-id: fx-failures}}
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 10
+  template:
+    metadata: {labels: {spectio.io/run-id: fx-failures}}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: main
+          image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command: [sleep, "300"]
+          resources:
+            requests: {cpu: 100m, memory: 16Mi}
+---
+apiVersion: v1
+kind: Pod
+metadata: {name: fx-pod-deadline, namespace: spectio-work, labels: {spectio.io/run-id: fx-failures}}
+spec:
+  restartPolicy: Never
+  activeDeadlineSeconds: 10
+  containers:
+    - name: main
+      image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+      command: [sleep, "300"]
+      resources:
+        requests: {cpu: 100m, memory: 16Mi}
+---
+apiVersion: batch/v1
+kind: Job
+metadata: {name: fx-exit3, namespace: spectio-work, labels: {spectio.io/run-id: fx-failures}}
+spec:
+  backoffLimit: 1
+  template:
+    metadata: {labels: {spectio.io/run-id: fx-failures}}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: main
+          image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command: [sh, -c, "echo synthetic tool error >&2; exit 3"]
+          resources:
+            requests: {cpu: 100m, memory: 16Mi}

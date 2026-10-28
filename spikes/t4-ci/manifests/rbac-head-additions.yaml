@@ -1,0 +1,41 @@
+# Rules the engine-head Roles of rbac-spec.yaml lack, predicted from the Nextflow source and applied
+# only if a run under the spec Role is refused (scenarios.sh rbac). Kept as separate Roles so the
+# delta to schedulers-and-monitoring.md §4 is explicit.
+#   pods/status get : K8sClient.podStatus() reads /api/v1/namespaces/<ns>/pods/<name>/status for every
+#                     task poll (plugins/nf-k8s/.../client/K8sClient.groovy L327-L333 at v26.10.4; also
+#                     used by 25.10.9 podState()).
+#   jobs/status get : K8sClient.jobStatus(), the fallback when a Job has no pod yet (L319-L325, v26.10.4).
+#   pods delete     : K8sClient.jobDelete() deletes the Job's pods one by one before the Job (L234-L262).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: nf-head-26-additions, namespace: spectio-work}
+rules:
+  - apiGroups: [""]
+    resources: [pods/status]
+    verbs: [get]
+  - apiGroups: [batch]
+    resources: [jobs/status]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [delete]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: nf-head-26-additions, namespace: spectio-work}
+subjects: [{kind: ServiceAccount, name: nf-head-26, namespace: spectio-work}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: nf-head-26-additions}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: nf-head-25-additions, namespace: spectio-work}
+rules:
+  - apiGroups: [""]
+    resources: [pods/status]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: nf-head-25-additions, namespace: spectio-work}
+subjects: [{kind: ServiceAccount, name: nf-head-25, namespace: spectio-work}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: nf-head-25-additions}

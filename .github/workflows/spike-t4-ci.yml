@@ -1,0 +1,61 @@
+name: spike · t4-ci (kind and Kueue)
+
+# Spike t4-ci, evidence for inbox #51 option (b): can T4 (k8s-mini, k8s-kueue, Job / pod / Workload
+# fixtures, the §4 ServiceAccounts) run CI-driven on GitHub-hosted runners (cgroup v2)?
+# Throwaway: lives on branch spike/t4-ci only. Files: spikes/t4-ci/. Note: docs/research/spike-t4-ci-2026-10-28.md.
+# Fixtures come back in the job log, fenced by =====SPECTIO-FIXTURE-BEGIN/END===== (spikes/t4-ci/fixture.py),
+# and are written back to files by spikes/t4-ci/extract_fixtures.py.
+on:
+  push:
+    branches: [spike/t4-ci]
+    paths: ["spikes/t4-ci/**", ".github/workflows/spike-t4-ci.yml"]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spike-t4-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  k8s:
+    name: ${{ matrix.part }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {part: k8s-mini nextflow, shape: mini, scenarios: "failures nf-happy nf-oom"}
+          - {part: k8s-kueue, shape: kueue, scenarios: "kueue-wait nf-kueue"}
+          - {part: k8s-mini rbac, shape: mini, scenarios: "rbac"}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Install kind, kubectl, Nextflow (pinned, sha256-checked)
+        run: bash spikes/t4-ci/cluster.sh install
+      - name: Cluster up
+        env:
+          SHAPE: ${{ matrix.shape }}
+        run: bash spikes/t4-ci/cluster.sh up "$SHAPE"
+      - name: Scenarios
+        env:
+          SCENARIOS: ${{ matrix.scenarios }}
+        run: |
+          for s in $SCENARIOS; do
+            start=$SECONDS
+            echo "===== scenario $s"
+            bash spikes/t4-ci/scenarios.sh "$s"
+            echo "TIMING $s $((SECONDS - start))s"
+          done
+      - name: Cluster state on failure
+        if: failure()
+        run: |
+          kubectl get nodes,pods -A -o wide || true
+          kubectl -n kueue-system logs deploy/kueue-controller-manager --tail=80 || true

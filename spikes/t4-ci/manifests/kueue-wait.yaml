@@ -1,0 +1,59 @@
+# Three 1-CPU Jobs on lq-tight (1 CPU of quota): one is admitted, two wait for quota and get
+# visibility positions 0 and 1. Shaped like Kueue's site/static/examples/jobs/sample-job.yaml at v0.20.3.
+# Created suspended: the Kueue webhook would suspend them anyway (batch/job integration).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fx-kq-1
+  namespace: spectio-work
+  labels: {kueue.x-k8s.io/queue-name: lq-tight, spectio.io/run-id: fx-kueue}
+spec:
+  suspend: true
+  template:
+    metadata: {labels: {spectio.io/run-id: fx-kueue}}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: main
+          image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command: [sleep, "600"]
+          resources:
+            requests: {cpu: "1", memory: 200Mi}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fx-kq-2
+  namespace: spectio-work
+  labels: {kueue.x-k8s.io/queue-name: lq-tight, spectio.io/run-id: fx-kueue}
+spec:
+  suspend: true
+  template:
+    metadata: {labels: {spectio.io/run-id: fx-kueue}}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: main
+          image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command: [sleep, "600"]
+          resources:
+            requests: {cpu: "1", memory: 200Mi}
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: fx-kq-3
+  namespace: spectio-work
+  labels: {kueue.x-k8s.io/queue-name: lq-tight, spectio.io/run-id: fx-kueue}
+spec:
+  suspend: true
+  template:
+    metadata: {labels: {spectio.io/run-id: fx-kueue}}
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: main
+          image: busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e
+          command: [sleep, "600"]
+          resources:
+            requests: {cpu: "1", memory: 200Mi}

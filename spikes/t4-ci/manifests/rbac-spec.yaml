@@ -1,0 +1,76 @@
+# The two ServiceAccounts of docs/specs/schedulers-and-monitoring.md §4 ("RBAC: two ServiceAccounts"),
+# transcribed verbatim (rules as of autopilot/integration 504bc62). The spike tests these, unchanged first.
+# Runner: creates the engine's head Job and watches.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: spectio-runner, namespace: spectio-work}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: spectio-runner, namespace: spectio-work}
+rules:
+  - apiGroups: [""]
+    resources: [pods, pods/log, events]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [create, get, list, watch, delete]
+  - apiGroups: [""]
+    resources: [resourcequotas, limitranges]
+    verbs: [get, list]
+  - apiGroups: [""]
+    resources: [persistentvolumeclaims]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: spectio-runner, namespace: spectio-work}
+subjects: [{kind: ServiceAccount, name: spectio-runner, namespace: spectio-work}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: spectio-runner}
+---
+# Engine head, Nextflow 26.10: one Job per task.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: nf-head-26, namespace: spectio-work}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: nf-head-26, namespace: spectio-work}
+rules:
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [create, delete, get, list, watch]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [get, list, watch]
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: nf-head-26, namespace: spectio-work}
+subjects: [{kind: ServiceAccount, name: nf-head-26, namespace: spectio-work}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: nf-head-26}
+---
+# Engine head, Nextflow 25.10: one Pod per task.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: nf-head-25, namespace: spectio-work}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: nf-head-25, namespace: spectio-work}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [create, delete, get, list, watch]
+  - apiGroups: [""]
+    resources: [pods/log]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: nf-head-25, namespace: spectio-work}
+subjects: [{kind: ServiceAccount, name: nf-head-25, namespace: spectio-work}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: nf-head-25}

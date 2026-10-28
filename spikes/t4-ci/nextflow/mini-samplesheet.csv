@@ -1,0 +1,3 @@
+sample,group,replicate,n_reads
+S01,ctrl,1,400
+S07,treatA,1,400
