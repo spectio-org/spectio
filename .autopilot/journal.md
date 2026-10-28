@@ -248,3 +248,18 @@ One entry per tick: time, steps started and finished, verification results, tria
   - #44, #46, #47, #48 and #32; the cloud setup script (#43); network to Custom;
   - a fresh `/usage` reading before the next build step.
 - **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (8 subagents, 424 API calls at snapshot time); dashboard rebuilt (41 steps, 50 inbox entries; `check_xss.js` ok with and without the CSP) and republished as version 19 at the same link, private, `answers` write rule owner-only.
+
+## 2026-10-28 08:05 → 08:20 UTC — tick 11 (T3 not runnable here; inbox #51)
+
+- **Sync:** `autopilot/integration` fast-forwarded to `main` (`26299db`, promotion weber8thomas/spectio#26 of T2, merge commit, every check green).
+- **Inbox:** the dashboard `answers` collection holds the same 27 documents (version 1, same `at` as recorded); nothing to copy. Thomas corrects them at 10:00.
+- **Budget:** Thomas said "continue", limit 85 %, no fresh `/usage` reading (last 76 % before T2). Asked which step; no preference given. Chose T3.
+- **Not started: T3 (and T4).** Both need sind or kind, which need cgroup v2. This cloud session still has the hybrid cgroup v1 layout (spike D2; dev environment §4.2), and Remote Control is not available to it. No worktree, no claim commit; both stay `pending`. Inbox #51: where T3/T4 run (recommendation: Thomas's machine, after the SEC-T1-06 fix).
+- **Exit checks:** none (no step finished). `python3 tools/docs/check.py --only build`: 0 failures after the inbox entry.
+- **Triage:** none.
+- **Waiting on Thomas:**
+  - #51 (where T3/T4 run); every ready step is blocked on it;
+  - the dashboard answers (10:00);
+  - #49, #50, #44, #46, #47, #48, #32, #43; the 9 stale branches carrying the webhook URL, and #5;
+  - GitHub settings: fork PR workflow approval, secret scanning and push protection, auto-merge.
+- **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (8 subagents, 463 API calls at snapshot time); dashboard rebuilt and republished at the same link (version 20), private, `answers` write rule owner-only.

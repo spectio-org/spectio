@@ -764,3 +764,21 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b): nothing deferred blocks W3 or W4; mike and `shared_images.py` are due at the first versioned docs.
 - **Assumed:** none. The autopilot does not edit `pipeline.yaml`.
 - **Blocked:** nothing.
+
+## T3 / T4 (2026-10-28)
+
+### #51 · T3 and T4 cannot run in a Claude Code cloud session: where do they run?
+
+- **Covers:** `T3` and `T4` in [next-phase.md](../playbooks/next-phase.md#t3-mini-slurm-with-sind), [dev environment §4](../specs/dev-environment-and-testing.md#4-local-clusters), [spike D2](../research/spike-cloud-env-2026-10-26.md#result)
+- **Context:**
+  - The two next ready steps are T3 (sind profiles `slurm-mini`, `slurm-site`, `slurm-rest`, failure modes, `NODE_FAIL`, fixtures) and T4 (kind, Kueue, Job and Workload fixtures).
+  - sind and kind need cgroup v2. Cloud sessions boot with a hybrid cgroup v1 layout that a session cannot change (spike D2). Dev environment §4.2 already says it: Kubernetes and SLURM scenarios run in CI and on the user's machine only. On 2026-10-28 this session still showed the v1 controllers under `/sys/fs/cgroup` (`blkio`, `cpu`, `cpuacct`, `cpuset`, …). Connecting a computer through Remote Control is not available to this session.
+  - `dev-env.yml` already brings a sind cluster up on an `ubuntu-24.04` runner (cgroup v2) and runs `sbatch --wait` (`dev/doctor.sh`). A CI-driven T3 would extend it, iterating by push. The GitHub tools available here read job logs but cannot download artifacts. Fixtures would therefore have to come back through the logs, or through a write token, which is a new permission.
+  - SEC-T1-06 (the harness deletes and reuses the predictable shared workdir `/tmp/spectio-scenarios`) must be fixed before T3 runs the harness on a submitter node ([T1 code review](code/T1.md)).
+- **Options:**
+  - (a) Thomas runs `/autopilot --only T3` (then T4) in Claude Code on his own machine (Docker on cgroup v2), and the autopilot integrates as usual;
+  - (b) CI-driven T3/T4 from a cloud session: the worker writes the profiles and a `workflow_dispatch` job on `autopilot/T3`, and iterates through pushes. The fixtures come back printed in the job log (size-limited) or as an artifact that Thomas downloads. Slower and costlier: each loop is a CI run of several minutes;
+  - (c) Thomas enables Remote Control on a machine that has Docker on cgroup v2, and a cloud session attaches to that folder.
+- **Recommendation:** (a) for T3 and T4. They are experiments with many short loops (create a cluster, inject a failure, read `squeue`/`sacct`), and a local Docker keeps each loop in seconds. Fix SEC-T1-06 first, in a cloud session (a small change to the harness). (b) only if no local machine is available.
+- **Assumed:** none. No T3/T4 work was started; both stay `pending`.
+- **Blocked:** T3, T4, and everything in W3/W4 that depends on them (TRIAGE3 needs T2, T3, T4, T7).
