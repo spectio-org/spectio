@@ -1,0 +1,47 @@
+# Spike t3-ci: a sind cluster shaped like `slurm-site` (docs/specs/dev-environment-and-testing.md §4.1),
+# sized for a GitHub-hosted ubuntu-24.04 runner (4 vCPU, 16 GB for public repositories).
+# Rendered by cluster.sh: @IMAGE@ is the pinned node image, @UID@ the runner's uid, so that files
+# under /data (a host bind mount) belong to the same uid on the runner and in the nodes.
+# Schema: sind docs/content/configuration/cluster-config.md and node-definitions.md at v0.15.0.
+# Not covered here (spike scope): partition `gpu` with fake GRES, slurmrestd (`slurm-rest`).
+kind: Cluster
+name: site
+defaults:
+  image: @IMAGE@
+storage:
+  dataStorage:
+    type: hostPath
+    hostPath: /data
+    mountPath: /data
+users:
+  - name: spx
+    uid: @UID@
+    accounts: [lab, capped]      # lab is the default account
+accounts:
+  - lab
+  - name: capped
+    limits:
+      MaxJobs: 1                 # a second job pends with an association-limit reason
+slurm:
+  main: |
+    SlurmdTimeout=45
+    AccountingStorageEnforce=associations,limits
+    PartitionName=htc Nodes=worker-[0-1] Default=YES MaxTime=60
+    PartitionName=bigmem Nodes=worker-2 MaxTime=60
+  cgroup: |
+    ConstrainRAMSpace=yes
+nodes:
+  - role: controller
+    memory: 1g
+  - role: db
+    memory: 1g
+  - role: submitter              # the login node: engines and the future runner run here
+    cpus: 2
+    memory: 3g
+  - role: worker                 # worker-0, worker-1: partition htc
+    count: 2
+    cpus: 2
+    memory: 1536m
+  - role: worker                 # worker-2: partition bigmem
+    cpus: 2
+    memory: 3g

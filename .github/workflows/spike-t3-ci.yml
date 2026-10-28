@@ -1,0 +1,66 @@
+name: spike · t3-ci (sind slurm-site)
+
+# Spike t3-ci, throwaway: can step T3 (mini SLURM with sind) run CI-driven on a GitHub-hosted
+# runner? Brings up a slurm-site-shaped sind cluster, runs the synthetic pipelines through
+# run_scenarios.py on it, and prints Slurm JSON as fenced fixture blocks in the job log.
+# Scripts: spikes/t3-ci/. Note: docs/research/spike-t3-ci-2026-10-28.md.
+on:
+  push:
+    branches: [spike/t3-ci]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: spike-t3-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  slurm-site:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    env:
+      SIND_REALM: spx-t3
+      SIND_PROGRESS: plain
+      SPECTIO_HOME: /data/tools
+      SPECTIO_BIN: /data/tools/bin
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Runner facts (cgroup)
+        run: bash spikes/t3-ci/cluster.sh facts
+      - name: Tools into /data (dev/bootstrap.sh)
+        timeout-minutes: 10
+        run: bash spikes/t3-ci/cluster.sh tools
+      - name: Create the slurm-site cluster
+        timeout-minutes: 10
+        run: bash spikes/t3-ci/cluster.sh up
+      - name: Nextflow -profile slurm (happy, oom_fatal)
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: bash spikes/t3-ci/cluster.sh scenarios nextflow happy,oom_fatal
+      - name: Fixtures of a failed task job
+        if: ${{ !cancelled() }}
+        timeout-minutes: 5
+        run: bash spikes/t3-ci/cluster.sh failed-fixtures
+      - name: Snakemake --workflow-profile profiles/slurm (happy, oom_fatal)
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: bash spikes/t3-ci/cluster.sh scenarios snakemake happy,oom_fatal
+      - name: Engine heads submitted with sbatch
+        if: ${{ !cancelled() }}
+        timeout-minutes: 15
+        run: bash spikes/t3-ci/cluster.sh heads
+      - name: Probes (OOM, timeout, pending reasons, NODE_FAIL)
+        if: ${{ !cancelled() }}
+        timeout-minutes: 10
+        run: bash spikes/t3-ci/cluster.sh probes
+      - name: Delete the cluster
+        if: always()
+        run: bash spikes/t3-ci/cluster.sh down || true
