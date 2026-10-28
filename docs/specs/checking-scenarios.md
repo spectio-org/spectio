@@ -395,7 +395,7 @@ This section is the single owner of the `spectio.yml` schema (author file and la
 | Key | Content |
 |---|---|
 | `workflow` | name, engine, version range |
-| `stages[]` | `id`, `name`, `match` (globs on process / rule names), optional `gate: <gate_id>`, `important`, `watch[]`; meaning of `important` and `watch` in §11.2 |
+| `stages[]` | `id`, `name`, `match` (globs on process / rule names; on Nextflow a glob sees the fully qualified name, `NFCORE_RNASEQ:RNASEQ:ALIGN_STAR:STAR_ALIGN`, and `*` also crosses `:`, so `*:ALIGN_STAR:*` or `*STAR_ALIGN` both match it; matching is case-sensitive, as Python's `fnmatchcase`; note 2026-10-28, [stage-detection spike](../research/spike-stage-detection-2026-10-28.md#declared-overlays-compared-with-detection)), optional `gate: <gate_id>`, `important`, `watch[]`; meaning of `important` and `watch` in §11.2 |
 | `gates.<gate_id>` | `title`, `items`, `checks`, `evidence`, `decide`, `editable`; shape in §7, check keys in §4.1 |
 | `reports` | reports listed in the Outputs & reports tab ([`ui-spec.md`](ui-spec.md) §4.4); format to be drafted |
 | `launch` | profiles, hidden params ([`ui-spec.md`](ui-spec.md) §4.6) |

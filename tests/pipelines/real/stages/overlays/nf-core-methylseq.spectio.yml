@@ -1,0 +1,24 @@
+# Lab overlay for nf-core/methylseq 4.2.0 (spike: stage detection, 2026-10-28). Display only in 0.0.1.
+workflow: {name: nf-core/methylseq, engine: nextflow, version: ">=4.2.0 <5"}
+stages:
+  - id: reference
+    name: Reference indexing
+    match: ["*:FASTA_INDEX_METHYLSEQ:*"]
+  - id: reads
+    name: Read QC and trimming
+    match: ["*:METHYLSEQ:CAT_FASTQ", "*:METHYLSEQ:FASTQC", "*:METHYLSEQ:TRIMGALORE"]
+  - id: align
+    name: Alignment and deduplication
+    # The Bismark subworkflow also extracts methylation: its last three processes go to the next stage,
+    # which a detected stage (one per subworkflow) cannot do.
+    match: ["*:FASTQ_ALIGN_DEDUP_*:*ALIGN*", "*:FASTQ_ALIGN_DEDUP_*:*DEDUPLICATE*", "*:FASTQ_ALIGN_DEDUP_*:SAMTOOLS_*",
+            "*:FASTQ_ALIGN_DEDUP_*:PICARD_MARKDUPLICATES", "*:BAM_TAPS_CONVERSION:*"]
+  - id: methylation
+    name: Methylation calling
+    match: ["*:BISMARK_METHYLATIONEXTRACTOR", "*:BISMARK_REPORT", "*:BISMARK_SUMMARY", "*:BAM_METHYLDACKEL:*"]
+  - id: qc
+    name: Coverage QC
+    match: ["*:QUALIMAP_BAMQC", "*:PRESEQ_LCEXTRAP", "*:TARGETED_SEQUENCING:*"]
+  - id: report
+    name: Report
+    match: ["*:METHYLSEQ:MULTIQC"]

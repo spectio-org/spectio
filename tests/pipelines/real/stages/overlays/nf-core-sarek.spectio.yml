@@ -1,0 +1,27 @@
+# Lab overlay for nf-core/sarek 3.11.0 (spike: stage detection, 2026-10-28). Display only in 0.0.1.
+workflow: {name: nf-core/sarek, engine: nextflow, version: ">=3.11.0 <4"}
+stages:
+  - id: reference
+    name: Reference preparation
+    match: ["NFCORE_SAREK:PREPARE_*", "NFCORE_SAREK:CACHE_DOWNLOAD_*", "NFCORE_SAREK:UTILS_ANNOTATION_CACHE:*"]
+  - id: reads
+    name: Read preparation and QC
+    match: ["*:SAREK:SPRING_DECOMPRESS_*", "*:CONVERT_FASTQ_INPUT:*", "*:SAREK:FASTQC"]
+  - id: mapping
+    name: Mapping, duplicates and recalibration
+    match: ["*:FASTQ_PREPROCESS_GATK:*", "*:FASTQ_PREPROCESS_PARABRICKS:*", "*:CRAM_TO_BAM*"]
+  - id: sampleqc
+    name: Sample QC
+    match: ["*:CRAM_SAMPLEQC:*"]
+  - id: calling
+    name: Variant calling
+    match: ["*:BAM_VARIANT_CALLING_*", "*:POST_VARIANTCALLING:*"]
+  - id: annotation
+    name: Annotation
+    match: ["*:VCF_ANNOTATE_ALL:*"]
+  - id: vcfqc
+    name: Variant QC
+    match: ["*:VCF_QC_BCFTOOLS_VCFTOOLS:*"]
+  - id: report
+    name: Report
+    match: ["*:SAREK:MULTIQC"]

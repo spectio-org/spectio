@@ -1024,3 +1024,34 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a) for 0.0.1: nothing writes the user's engine config, and the guide is short.
 - **Assumed:** (a) *(assumed — pending Thomas)*.
 - **Blocked:** nothing.
+
+## Stages (2026-10-28)
+
+### #68 · Assumed: the example pipelines, and detected stages named after the code
+
+- **Covers:** [ui-spec §5.1.1](../specs/ui-spec.md) (detected stages); [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) (Stages row); [api §7](../specs/api-and-data-model.md) (`run_stages`); [P1](../plans/P1-walking-skeleton.md) Assumption 6 and Task 27; [log 2026-10-28](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list).
+- **Context:** you asked for two or three nf-core pipelines and mosaicatcher-pipeline. The [spike](../research/spike-stage-detection-2026-10-28.md) used nf-core/rnaseq 3.27.0, sarek 3.11.0 and methylseq 4.2.0, and mosaicatcher-pipeline v2.5.1. Detected names are technical ("Fastq qc trim filter setstrandedness"), and the cap of 8 merges neighbours ("Align star + Quantify bam salmon"). The four example lab overlays give readable names ("Read QC and trimming", "Alignment").
+- **Options:**
+  - (a) these four pipelines; detected stages keep the subworkflow or file names, humanised; readable names come from lab overlays, shipped as example files that a lab copies and edits;
+  - (b) as (a), plus a small built-in dictionary of nf-core subworkflow prefixes (`ALIGN_`, `QUANTIFY_`, `PREPARE_GENOME`) for shorter detected names;
+  - (c) as (a), and Spectio applies the four example overlays by itself to those pipelines, so they show readable names with no setup.
+- **Recommendation:** (a). (b) is guesswork for each pipeline, and (c) makes Spectio keep overlays in step with each pipeline release.
+- **Assumed:** (a) *(assumed — pending Thomas)*.
+- **Blocked:** nothing.
+
+### #69 · `nf-spectio` is enabled in a way that breaks nf-core runs or drops the bridge
+
+- **Covers:** [architecture §13](../specs/architecture-plugins-and-packaging.md) (0.0.1 prerequisites: `-plugins nf-spectio@<ver>`) and [§13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) (Enabling it: `-plugins` or `~/.nextflow/config`); [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) (terminal row); [`mvp-0.0.1.md`](../specs/mvp-0.0.1.md) §2; [P1](../plans/P1-walking-skeleton.md) Task 10 (head script) and the Task 25 guide; inbox #67.
+- **Context:** found by the [stage-detection spike](../research/spike-stage-detection-2026-10-28.md#side-finding-enabling-nf-spectio-next-to-an-nf-core-pipeline) on nf-core/rnaseq 3.27.0 with Nextflow 26.10.4:
+  - `-plugins nf-spectio@<ver>` replaces the pipeline's own plugin list, so its pinned `nf-schema` is dropped, the latest one starts instead, and the run fails;
+  - a `-c` file with a `plugins` block fails the same way;
+  - a `plugins` block in `$NXF_HOME/config` is overridden by the pipeline's own: the run succeeds without the bridge, and nothing warns;
+  - `NXF_PLUGINS_DEFAULT=nf-spectio@<ver>` adds the bridge next to the pipeline's plugins, and the run works. Its one caveat: it replaces the plugins Nextflow would infer from the config (for example `nf-amazon` for an `s3://` work directory), which does not matter on SLURM with a POSIX work directory.
+  - The synthetic pipelines declare no plugin, so the CI tests planned in P1 would not show the problem.
+- **Options:**
+  - (a) `NXF_PLUGINS_DEFAULT=nf-spectio@<ver>` everywhere: the head script sets it, and the terminal guide tells users to export it in their shell profile;
+  - (b) keep `-plugins`, and have the runner add the pipeline's own plugins to the list, read from its configuration (needs the configuration parsed before launch);
+  - (c) keep `-plugins` for the synthetic pipelines only, and document that nf-core runs need (a).
+- **Recommendation:** (a): one way for launched and terminal runs, no configuration parsing, and checked on a real nf-core pipeline. `spectio doctor` could warn when a `plugins` block in `$NXF_HOME/config` names `nf-spectio`.
+- **Assumed:** none: the specs still say `-plugins`, and this changes how the bridge is enabled.
+- **Blocked:** P1 Task 10 for real nf-core pipelines, and the Nextflow part of the Task 25 guide. The synthetic tests are not blocked.

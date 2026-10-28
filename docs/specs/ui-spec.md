@@ -59,7 +59,7 @@ Rendering rules (replaces the current pill badges):
 
 ### 3.2 Stage gauge (the emblem as a progress indicator)
 
-The emblem's half-disc is reused as a compact **stage gauge**: one sector per declared stage (1 to 8). Workflows without declared stages get 4 sectors = quarters of task progress, measured against `tasks_expected` when `tasks_expected_source` is `engine_plan` and against the known tasks otherwise ([`api-and-data-model.md`](api-and-data-model.md) §7 `runs`). *(assumed — pending Thomas, inbox #38)*
+The emblem's half-disc is reused as a compact **stage gauge**: one sector per declared or detected stage (1 to 8, §5.1). Workflows without stages get 4 sectors = quarters of task progress, measured against `tasks_expected` when `tasks_expected_source` is `engine_plan` and against the known tasks otherwise ([`api-and-data-model.md`](api-and-data-model.md) §7 `runs`). *(assumed — pending Thomas, inbox #38)*
 
 | Sector look | Meaning | `run_stages.state` |
 |---|---|---|
@@ -255,7 +255,9 @@ A separate, simpler layout below 768 px (depictio's phone model), not a squeezed
 - Snakemake: checkpoints shown as "DAG grows — at least N tasks"; temporary files with lifecycle (created → removed); group jobs; benchmark-based resource usage.
 
 ### 5.1 Stages, gates and `spectio.yml`
-Where stages come from, in order: (1) declared in `spectio.yml`, in the workflow repository or attached in Spectio as a **lab overlay** for a pipeline you do not own (nf-core/rnaseq declares none; the rnaseq stages in the mockups come from such an overlay); (2) detected from structure, display only, no gates: Nextflow top-level subworkflows from the fully qualified task name (`NFCORE_RNASEQ:RNASEQ:ALIGN_STAR:STAR_ALIGN`), Snakemake module prefixes and checkpoints; (3) none: the gauge shows task quarters; resume and restart still work, rerun-from-stage does not.
+Where stages come from, in order, per run: (1) declared in `spectio.yml`, in the workflow repository or attached in Spectio as a **lab overlay** for a pipeline you do not own (nf-core/rnaseq declares none; the rnaseq stages in the mockups come from such an overlay); (2) detected from structure, display only, no gates: Nextflow subworkflows below the pipeline's wrapper scopes, read from the fully qualified process names (`NFCORE_RNASEQ:RNASEQ:ALIGN_STAR:STAR_ALIGN` → "Align star"), and Snakemake rule files included by the main Snakefile; rules in §5.1.1; (3) none: the gauge shows task quarters; resume and restart still work, rerun-from-stage does not.
+
+*Note 2026-10-28 (Thomas, [decision log](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list)):* the run detail shows both the stages and the processes (Nextflow) or rules (Snakemake), grouped under their stage, with an **Other** group for the names that no stage matches; with no stages it shows the flat list. 0.0.1 has sources (1), as files, and (2), display only; the [stage-detection spike](../research/spike-stage-detection-2026-10-28.md) replaced "top-level subworkflows" and "module prefixes and checkpoints" with the rules of §5.1.1.
 
 The `spectio.yml` keys (`workflow`, `stages`, `gates`, `reports`, `launch`, `ui`, `depictio`) are specified in [`checking-scenarios.md`](checking-scenarios.md) §12. *(assumed — pending Thomas, inbox #29)*
 
@@ -264,6 +266,33 @@ How a gate stops the engine without forking:
 - Snakemake — `--until` the last rules of the stage; Continue drops `--until`; rerun from a stage uses `--forcerun`.
 
 The mechanism is owned by [`checking-scenarios.md`](checking-scenarios.md) §12.
+
+### 5.1.1 Detected stages
+
+Added 2026-10-28 from the [stage-detection spike](../research/spike-stage-detection-2026-10-28.md) ([decision log](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list)). A detected stage is for display only: it has no gate, no `ext.when` or `--until` override and no rerun from a stage. Its name is the technical name, humanised; a lab overlay is the way to good names, and the only way to split a subworkflow into two stages. *(assumed — pending Thomas, inbox #68)*
+
+**Where detection runs.** On the server, from what the bridges already send, so a run Spectio launched and a run started from a terminal (§6) get the same stages:
+- **Nextflow.** `nf-spectio` sends one `onProcessCreate` per process with its fully qualified name, in script order, all before `onFlowBegin` and before the first task (Nextflow 26.10.4: the name is built in `BindableDef.groovy:41-49`; the hooks in `TraceObserverV2.groovy:62`; [spike note](../research/spike-stage-detection-2026-10-28.md#nextflow-where-the-stage-information-is)). The server detects once, on that list, at the run's first `onFlowBegin`. A process left out by a Groovy `if` is never created and is absent; a process turned off by `when:` or `ext.when` is created, gets no task, and its stage can end `skipped`.
+- **Snakemake.** The logger gets a rule name per job (`job_info`), never the rule's file (Snakemake 9.27.1, `jobs.py:1072-1075`). The server reads the rule files from the main Snakefile named in `workflow_started` (`snakefile_main`, `workflow.py:289-305`), as the user who owns the run. For a run it launches, Spectio also runs `snakemake --list-rules` with the run's configuration and drops the rules that configuration does not define (conditional `include:`s). Checkpoints hide most of the DAG at start; they do not mark stages.
+
+**Nextflow rules.**
+1. **Wrapper scopes.** Skip the leading scopes that every process shares (`NFCORE_RNASEQ`), then the pipeline scope: the scope named after `manifest.name` (`nf-core/rnaseq` → `RNASEQ`), or, with no manifest name, the child scope that holds more than half of the processes. The children of these scopes are the candidates.
+2. **Groups.** Each child subworkflow is a group. Processes called directly form one group per run of consecutive direct calls in the same parent scope.
+3. **Aliases.** Neighbouring subworkflows whose names differ only in their last word (`…_FORWARD`, `…_REVERSE`) merge.
+4. **Lone processes.** A group of one direct process joins its neighbour in the same parent scope, the previous one, else the next; `MULTIQC` stays its own stage, named "Report".
+5. **Cap.** While there are more than 8 groups (the gauge holds 1 to 8 sectors, §2), merge the neighbouring pair with the fewest processes, inside one parent scope while such a pair exists, never the Report.
+6. **Names.** The subworkflow names humanised (`PREPARE_GENOME` → "Prepare genome"), joined with " + " when merged; the subworkflow's `meta.yml` `description`, when present, is the stage description.
+7. **None.** No subworkflow at all, or fewer than 2 groups: no detected stages, and the run shows its processes only.
+
+**Snakemake rules.**
+1. **Groups.** Follow every `include:` with a literal path from the main Snakefile, in source order, depth first. Each rule file that defines rules is a group; the files under one sub-directory of `rules/` are one group.
+2. **Final targets.** The main Snakefile's own rules (usually `all`) are the last group, "Final targets".
+3. **Cap and names.** At most 8 groups, merged as for Nextflow, never Final targets; names are the file or directory stems humanised.
+4. **None.** A single rule file: no detected stages. Rules found in no file (a computed `include:` path, a `module`) go to Other.
+
+**Order and state.** Stages keep the detection order: creation order (the source order) for Nextflow; for Snakemake, the topological order of the start rule graph for the rules it holds, then include order. A stage is `running` from its first task, `completed` when all its processes have ended (`onProcessTerminate`) or its rules have no job left, `failed` when the run fails on one of its tasks, and `skipped` when it ended with no task. A Snakemake stage behind a checkpoint stays `not_started` until its first job.
+
+**Examples** (spike, pinned versions; fixtures in `tests/pipelines/real/stages/`): nf-core/rnaseq 3.27.0, 67 processes → 8 stages; nf-core/sarek 3.11.0, 48 → 8; nf-core/methylseq 4.2.0, 13 → 4; mosaicatcher-pipeline v2.5.1, 101 rules → 8; the synthetic pipelines of [dev-env §10.1](dev-environment-and-testing.md) → none. The four example lab overlays in the same folder are the 0.0.1 documentation of declared stages.
 
 ## 6. Runs launched from the command line
 
