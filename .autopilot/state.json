@@ -426,12 +426,17 @@
     },
     "T6": {
       "wave": "W3",
-      "status": "pending",
+      "status": "done",
       "attempts": 0,
-      "started_at": null,
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "started_at": "2026-10-28T13:37:16Z",
+      "finished_at": "2026-10-28T14:25:00Z",
+      "outputs": [
+        "tests/e2e/",
+        ".github/workflows/e2e.yml",
+        "docs/progress/W3/T6.md",
+        "docs/reviews/code/T6.md"
+      ],
+      "notes": "worker in a separate cloud session (session_01MF8RxLya2qysy5qS11CEqD), branch autopilot/T6; narrowed to a minimal skeleton by Thomas's MVP decision of 2026-10-28 (no side-by-side report against the boards); PR weber8thomas/spectio#45 squash e956025, every check green on 84b5331; code review approve after 3 rounds (0/1/6 fixed), security approve (0/0/5, SEC-T6-05 → inbox #63), simplifier no change, doc review approve 13/14; deferred: side-by-side board report, tier-4 journeys"
     },
     "TRIAGE3": {
       "wave": "W3",
@@ -471,21 +476,31 @@
     },
     "R10": {
       "wave": "W4",
-      "status": "pending",
+      "status": "done",
       "attempts": 0,
-      "started_at": null,
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "started_at": "2026-10-28T13:45:00Z",
+      "finished_at": "2026-10-28T14:35:00Z",
+      "outputs": [
+        "docs/reviews/R10-synthesis.md",
+        "docs/progress/W4/R10.md",
+        "tools/diagrams/r10_synthesis.py",
+        "docs/reviews/inbox.md (#62)"
+      ],
+      "notes": "synthesis by one general-purpose agent (450 findings, 123 open, 12 touch the narrowed 0.0.1, 7 decided); GO for P1, code after P1 under C1–C4; decisions D0–D4 for Thomas (#52, #61, #34, #55, #62); doc review changes 10/14 then approve 13/14; committed directly on integration (docs only)",
+      "base": "b217a1efc4eb822c828de351516cace3df0cd3fa"
     },
     "P1": {
       "wave": "W4",
-      "status": "pending",
+      "status": "done",
       "attempts": 0,
-      "started_at": null,
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "started_at": "2026-10-28T14:10:00Z",
+      "finished_at": "2026-10-28T14:40:00Z",
+      "outputs": [
+        "docs/plans/P1-walking-skeleton.md",
+        "docs/progress/W4/P1.md",
+        "tools/diagrams/p1_skeleton.py"
+      ],
+      "notes": "one general-purpose agent with writing-plans; 5 milestones, 23 tasks, 20 assumptions pending Thomas; all 13 R10 §3a rows and the seven §15.3 requirements mapped to tasks; doc review approve 11/14 with 4 required changes applied (four session-free routes, D3 storage test, api §5 owner on tasks 12 and 17, T6 dependency); next: GO (human gate)"
     },
     "GO": {
       "wave": "W4",

@@ -1,0 +1,55 @@
+name: e2e · Playwright skeleton
+
+# The end-to-end skeleton of docs/specs/dev-environment-and-testing.md §6.1 (tests/e2e): the unit tests of its config,
+# then the smoke test on a desktop and a phone project. Until the product exists it runs against the static stand-in
+# page tests/e2e/static/. Step page: docs/progress/W3/T6.md.
+# Not called by ci.yml, so not part of ci-ok: like scenarios.yml it runs on any push that touches its paths.
+on:
+  push:                    # any branch, so autopilot branches are checked before their PR
+    paths: ["tests/e2e/**", "dev/versions.env", "design/ui-canvas/**", ".github/workflows/e2e.yml"]
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: e2e-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    name: unit, desktop and phone
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: tests/e2e
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with: {persist-credentials: false}
+      - name: Read the Node pin (dev/versions.env, §1)
+        id: pins
+        run: grep '^NODE_VERSION=' ../../dev/versions.env | sed 's/^NODE_VERSION=/node=/' >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: {node-version: "${{ steps.pins.outputs.node }}"}
+      # npm ci checks each package's integrity hash; --no-install keeps npx off the registry. The Chromium download is
+      # not hashed by us (§1), as in dev/bootstrap.sh.
+      - name: Install, then Chromium
+        run: |
+          node --version
+          npm ci --no-audit --no-fund --ignore-scripts
+          npx --no-install playwright install --with-deps chromium
+      - name: Test
+        env:
+          CI: "true"
+        run: npx --no-install playwright test
+      - name: Keep the report and the board screenshots
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-report
+          path: |
+            tests/e2e/playwright-report/
+            tests/e2e/screens/
+          retention-days: 14
