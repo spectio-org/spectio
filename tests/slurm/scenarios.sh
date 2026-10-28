@@ -186,7 +186,7 @@ scenario_heads() {
 }
 
 scenario_rest() {
-  local out=$DATA/work/rest a b v n imp
+  local out=$DATA/work/rest a b v n imp rootjob rootst
   local -A path=([jobs]=/slurm/v0.0.45/jobs [nodes]=/slurm/v0.0.45/nodes [partitions]=/slurm/v0.0.45/partitions
     [slurmdb-jobs]=/slurmdb/v0.0.45/jobs)
   inc mkdir -p "$out"
@@ -201,11 +201,15 @@ scenario_rest() {
     "${@:3}"' sh "$DATA" "$out" "jobs=${path[jobs]}" "nodes=${path[nodes]}" "partitions=${path[partitions]}" \
     "slurmdb-jobs=${path[slurmdb-jobs]}" | tee "$out/codes.txt"
   awk '$2 != 200 {b = 1} END {exit b}' "$out/codes.txt" || die "rest: a GET did not answer 200"
-  # spx's token with another user's name must be refused.
+  # spx's token with X-SLURM-USER-NAME root must not act as root: it tries to cancel a held job of root's.
+  # (Run 40679302148: a GET of ping with that header answers 200, so the check is on the effect.)
+  rootjob=$(inroot sbatch --parsable -H -J rest-root -o /dev/null --wrap true)
   # shellcheck disable=SC2016  # expanded by the inner bash
   imp=$(inc bash -c 'export "$(scontrol token lifespan=300)" && REST_USER=root python3 "$1/rest_get.py" http://api:6820 "$2" \
-    impersonate-root=/slurm/v0.0.45/ping' sh "$DATA" "$out" | awk '{print $2}')
-  [ "$imp" = 401 ] || [ "$imp" = 403 ] || die "rest: spx's token with X-SLURM-USER-NAME root answered $imp"
+    "impersonate-root=DELETE /slurm/v0.0.45/job/$3"' sh "$DATA" "$out" "$rootjob" | awk '{print $2}')
+  rootst=$(inroot squeue -h -j "$rootjob" -o %T)
+  inroot scancel "$rootjob"
+  [ "$rootst" = PENDING ] || die "rest: spx's token as root cancelled root's job $rootjob (HTTP $imp, now ${rootst:-gone})"
   # A call without a token must be refused.
   v=$(inc python3 -c 'import urllib.request as u, urllib.error as e
 try: print(u.urlopen("http://api:6820/slurm/v0.0.45/ping", timeout=10).status)
@@ -215,7 +219,7 @@ except e.HTTPError as x: print(x.code)')
     python3 "$repo/tests/slurm/fixture.py" "$FIXTURES/rest-$n.json" --jobs "$a,$b" \
       --meta "slurm=$SLURM_VERSION" "source=${RUN_URL:-local}" "request=GET ${path[$n]}" <"$out/$n.json"
   done
-  echo "RESULT rest: $(tr '\n' ' ' <"$out/codes.txt")no-token=$v spx-token-as-root=$imp"
+  echo "RESULT rest: $(tr '\n' ' ' <"$out/codes.txt")no-token=$v spx-token-as-root:DELETE-root-job=$imp,root-job=$rootst"
 }
 
 case "${1:-}" in

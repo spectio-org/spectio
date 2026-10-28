@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""GET slurmrestd endpoints with the caller's JWT and write each JSON answer to OUT_DIR/NAME.json.
+"""Call slurmrestd endpoints with the caller's JWT and write each JSON answer to OUT_DIR/NAME.json.
 
-  SLURM_JWT=... python3 rest_get.py URL OUT_DIR NAME=PATH ...
+  SLURM_JWT=... python3 rest_get.py URL OUT_DIR NAME=PATH ...    (GET; "NAME=DELETE PATH" for a DELETE)
 
 Runs inside a sind node as the cluster user (tests/slurm/scenarios.sh rest). X-SLURM-USER-NAME is the
 caller, or $REST_USER (to check that a token cannot act as another user). The token is read from the
@@ -17,8 +17,11 @@ def main() -> int:
                "X-SLURM-USER-TOKEN": os.environ["SLURM_JWT"]}
     for call in calls:
         name, path = call.split("=", 1)
+        method, _, rest = path.partition(" ")
+        method, path = (method, rest) if rest else ("GET", path)
+        req = urllib.request.Request(url + path, headers=headers, method=method)
         try:
-            with urllib.request.urlopen(urllib.request.Request(url + path, headers=headers), timeout=30) as r:
+            with urllib.request.urlopen(req, timeout=30) as r:
                 code, body = r.status, r.read()
         except urllib.error.HTTPError as e:
             code, body = e.code, e.read()
