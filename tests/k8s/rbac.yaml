@@ -1,0 +1,89 @@
+# The two ServiceAccounts of docs/specs/schedulers-and-monitoring.md §4, as measured in spike t4-ci
+# (docs/research/spike-t4-ci-2026-10-28.md) and re-checked by tests/k8s/scenarios.sh with each account's own
+# token. They differ from §4; the differences are listed in docs/progress/W3/T4.md for TRIAGE3.
+#   spectio-runner : the §4 rules, plus Kueue Workloads (refused under §4) and the optional visibility rule.
+#   nf-head-26/-25 : exactly the calls the Nextflow head makes (tests/k8s/api_calls.py over -trace nextflow.k8s.client).
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: spectio-runner, namespace: spectio-work}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: spectio-runner, namespace: spectio-work}
+rules:
+  - apiGroups: [""]
+    resources: [pods, pods/log, events]
+    verbs: [get, list, watch]
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [create, get, list, watch, delete]
+  - apiGroups: [""]
+    resources: [resourcequotas, limitranges]
+    verbs: [get, list]
+  - apiGroups: [""]
+    resources: [persistentvolumeclaims]
+    verbs: [get]
+  - apiGroups: [kueue.x-k8s.io]
+    resources: [workloads]
+    verbs: [get, list, watch]
+  - apiGroups: [visibility.kueue.x-k8s.io]
+    resources: [localqueues/pendingworkloads]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: spectio-runner, namespace: spectio-work}
+subjects: [{kind: ServiceAccount, name: spectio-runner, namespace: spectio-work}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: spectio-runner}
+---
+# Nextflow 26.10, one Job per task. pods/status get: every task poll (K8sClient.podStatus, L327-L333 at
+# v26.10.4); jobs/status get: a Job with no pod yet, as under Kueue (jobStateFallback0, L411-L445);
+# pods delete: jobDelete deletes the Job's pods before the Job (L234-L262).
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: nf-head-26, namespace: spectio-work}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: nf-head-26, namespace: spectio-work}
+rules:
+  - apiGroups: [batch]
+    resources: [jobs]
+    verbs: [create, delete]
+  - apiGroups: [batch]
+    resources: [jobs/status]
+    verbs: [get]
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [list, delete]
+  - apiGroups: [""]
+    resources: [pods/status]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: nf-head-26, namespace: spectio-work}
+subjects: [{kind: ServiceAccount, name: nf-head-26, namespace: spectio-work}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: nf-head-26}
+---
+# Nextflow 25.10, one bare Pod per task.
+apiVersion: v1
+kind: ServiceAccount
+metadata: {name: nf-head-25, namespace: spectio-work}
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata: {name: nf-head-25, namespace: spectio-work}
+rules:
+  - apiGroups: [""]
+    resources: [pods]
+    verbs: [create, delete]
+  - apiGroups: [""]
+    resources: [pods/status]
+    verbs: [get]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata: {name: nf-head-25, namespace: spectio-work}
+subjects: [{kind: ServiceAccount, name: nf-head-25, namespace: spectio-work}]
+roleRef: {apiGroup: rbac.authorization.k8s.io, kind: Role, name: nf-head-25}

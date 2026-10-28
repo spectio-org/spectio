@@ -1,0 +1,56 @@
+# k8s-kueue queues (docs/specs/dev-environment-and-testing.md §4.2), Kueue v1beta2 API, shaped like
+# Kueue's own example at v0.20.3: site/static/examples/admin/single-clusterqueue-setup.yaml.
+#   cq-main / lq-main   : what Nextflow tasks go through (2 CPU: more tasks than that wait in Kueue)
+#   cq-tight / lq-tight : 1 CPU, so a second and third 1-CPU Job wait for quota (tests/k8s/kueue-wait.yaml)
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ResourceFlavor
+metadata:
+  name: default-flavor
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: cq-main
+spec:
+  namespaceSelector: {}
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: default-flavor
+          resources:
+            - name: cpu
+              nominalQuota: 2
+            - name: memory
+              nominalQuota: 8Gi
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: ClusterQueue
+metadata:
+  name: cq-tight
+spec:
+  namespaceSelector: {}
+  resourceGroups:
+    - coveredResources: ["cpu", "memory"]
+      flavors:
+        - name: default-flavor
+          resources:
+            - name: cpu
+              nominalQuota: 1
+            - name: memory
+              nominalQuota: 1Gi
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: lq-main
+  namespace: spectio-work
+spec:
+  clusterQueue: cq-main
+---
+apiVersion: kueue.x-k8s.io/v1beta2
+kind: LocalQueue
+metadata:
+  name: lq-tight
+  namespace: spectio-work
+spec:
+  clusterQueue: cq-tight
