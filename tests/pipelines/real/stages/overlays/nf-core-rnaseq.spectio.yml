@@ -1,0 +1,25 @@
+# Lab overlay for nf-core/rnaseq 3.27.0 (spike: stage detection, 2026-10-28).
+# Schema: checking-scenarios.md §12 (stages[] with id, name, match). 0.0.1: display only, no gates.
+# match: shell-style globs on the fully qualified process name, `*` also crosses `:`.
+workflow: {name: nf-core/rnaseq, engine: nextflow, version: ">=3.27.0 <4"}
+stages:
+  - id: reference
+    name: Reference preparation
+    match: ["NFCORE_RNASEQ:PREPARE_GENOME*"]
+  - id: reads
+    name: Read QC and trimming
+    match: ["*:FASTQ_QC_TRIM_FILTER_SETSTRANDEDNESS:*"]
+  - id: align
+    name: Alignment
+    match: ["*:RNASEQ:SAMTOOLS_INDEX", "*:ALIGN_STAR:*", "*:ALIGN_BOWTIE2:*", "*:FASTQ_ALIGN_HISAT2:*",
+            "*:BAM_DEDUP_UMI:*", "*:BAM_MARKDUPLICATES_PICARD:*"]
+  - id: quant
+    name: Quantification
+    match: ["*:QUANTIFY_*", "*:DESEQ2_QC_*", "*:STRINGTIE_STRINGTIE", "*:BAM_STRINGTIE_MERGE:*"]
+  - id: qc
+    name: Alignment QC and coverage
+    match: ["*:BAM_QC_RNASEQ:*", "*:RUSTQC*", "*:BEDTOOLS_GENOMECOV_*", "*:BEDGRAPH_BEDCLIP_BEDGRAPHTOBIGWIG_*",
+            "*:KRAKEN2*", "*:BRACKEN*", "*:SYLPH*"]
+  - id: report
+    name: Report
+    match: ["*:MULTIQC_RNASEQ:*"]

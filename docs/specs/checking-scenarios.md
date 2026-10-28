@@ -395,7 +395,7 @@ This section is the single owner of the `spectio.yml` schema (author file and la
 | Key | Content |
 |---|---|
 | `workflow` | name, engine, version range |
-| `stages[]` | `id`, `name`, `match` (globs on process / rule names), optional `gate: <gate_id>`, `important`, `watch[]`; meaning of `important` and `watch` in §11.2 |
+| `stages[]` | `id`, `name`, `match` (globs on process / rule names; on Nextflow a glob sees the fully qualified name, `NFCORE_RNASEQ:RNASEQ:ALIGN_STAR:STAR_ALIGN`, and `*` also crosses `:`, so `*:ALIGN_STAR:*` or `*STAR_ALIGN` both match it; matching is case-sensitive, as Python's `fnmatchcase`; note 2026-10-28, [stage-detection spike](../research/spike-stage-detection-2026-10-28.md#declared-overlays-compared-with-detection)), optional `gate: <gate_id>`, `important`, `watch[]`; meaning of `important` and `watch` in §11.2 |
 | `gates.<gate_id>` | `title`, `items`, `checks`, `evidence`, `decide`, `editable`; shape in §7, check keys in §4.1 |
 | `reports` | reports listed in the Outputs & reports tab ([`ui-spec.md`](ui-spec.md) §4.4); format to be drafted |
 | `launch` | profiles, hidden params ([`ui-spec.md`](ui-spec.md) §4.6) |
@@ -432,3 +432,8 @@ Common keys and the keys of each check kind: §4.1.
 ### 12.7 Overlays
 
 A lab overlay (`WorkflowOverlay` board) is merged over the author's file. It can add stages, watches, gates and checks, and never removes an author's `block` check (§11.1). Which policy wins when both set one is pending inbox #19.
+
+*Note 2026-10-28, 0.0.1 (display-only stages, no editor; [decision log](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list)):* *(assumed — pending Thomas, inbox #68)*
+- **Where overlay files live.** One file per pipeline, `<name>.spectio.yml`, in `~/.spectio/overlays/`, the data directory in the shared home ([`dev-environment-and-testing.md`](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) §15.3, Where data lives). The user copies one of the example overlays of `tests/pipelines/real/stages/overlays/` there and edits it. A file holds `workflow` and `stages[]` only; `gates`, `reports`, `launch`, `ui` and `depictio` are refused in 0.0.1.
+- **How a file matches a run.** `workflow.engine` equals the run's engine, and `workflow.name` equals the pipeline's name: on Nextflow `manifest.name` (`nf-core/rnaseq`), which `nf-spectio` reads from the session **[to be validated]**; on Snakemake, which has no manifest, the last part of `workflow.name` equals the name of the pipeline directory (`mosaicatcher-pipeline`). `workflow.version` is a range (`">=3.27.0 <4"`), checked against `manifest.version` on Nextflow; on Snakemake no version is known, so the range is not checked.
+- **When.** The server reads the files when it freezes the run's stages (at the first `onFlowBegin` or `workflow_started`, [`api-and-data-model.md`](api-and-data-model.md) §7 `run_stages`). If more than one file matches, none is applied and the run detail says so; a file that fails the schema or the overlap check of §12.3 is not applied either, and the run falls back to detected stages.

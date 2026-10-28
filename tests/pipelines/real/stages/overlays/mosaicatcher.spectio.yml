@@ -1,0 +1,36 @@
+# Lab overlay for friendsofstrandseq/mosaicatcher-pipeline v2.5.1 (spike: stage detection, 2026-10-28).
+# Display only in 0.0.1. Stage names follow the steps listed in the pipeline README (README.md, "the
+# workflow goes through the following steps"). match: globs on rule names.
+workflow: {name: friendsofstrandseq/mosaicatcher-pipeline, engine: snakemake, version: ">=2.5.1 <3"}
+stages:
+  - id: ashleys
+    name: Cell QC (ASHLEYS, optional)
+    match: ["ashleys_*", "tune_predictions_based_on_threshold"]
+  - id: setup
+    name: Inputs and references
+    match: ["dl_example_data", "download_*", "generate_canFam*", "fake_package", "install_*", "config_run_summary",
+            "check_sm_tag", "index_input_bam", "gunzip_fasta", "samtools_faindex", "save_config", "save_conda_versions_*"]
+  - id: counts
+    name: Binning and strand states
+    match: ["generate_exclude_file_for_mosaic_count", "mosaic_count", "populate_counts", "touch_labels", "copy_labels",
+            "symlink_selected_bam", "remove_unselected_bam*", "filter_bad_cells_from_mosaic_count",
+            "merge_blacklist_bins_for_norm", "correct_norm_for_blacklisting", "normalize_counts", "sort_counts",
+            "extract_single_cell_counts", "library_size_normalisation", "GC_correction", "VST_correction",
+            "reformat_ms_norm", "populate_counts_GC", "plot_mosaic_gc_norm_counts"]
+  - id: segmentation
+    name: Segmentation
+    match: ["segment*", "fix_segmentation"]
+  - id: phasing
+    name: Haplotype resolution
+    match: ["mergeBams", "mergeSortBams", "index_merged_bam", "regenotype_SNVs", "call_SNVs_bcftools_chrom",
+            "*strandphaser*", "check_single_paired_end", "*breakpointr", "prepare_haplotag_input_bam", "haplotag_bams",
+            "index_haplotag_bam", "create_haplotag_segment_bed", "create_haplotag_table", "merge_haplotag_tables", "compress_indiv_*",
+            "index_indiv_*", "index_merged_strandphaser_vcf"]
+  - id: sv
+    name: SV classification
+    match: ["mosaiClassifier_*", "create_haplotag_likelihoods", "call_complex_regions", "postprocessing_*",
+            "filter_calls", "estimate_ploidy", "summarise_ploidy", "ploidy_bcftools"]
+  - id: report
+    name: Plots and report
+    match: ["plot_*", "divide_pdf", "final_results", "scTRIP_*", "*_genome_browser_file", "split_ucsc_*",
+            "generate_igv_session", "summary_statistics", "aggregate_summary_statistics", "transpose_table", "all"]
