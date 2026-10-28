@@ -340,3 +340,10 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Next:** promotion PR integration → main (T5, #43, dashboard fix).
 - **Waiting on Thomas:** unchanged (#52 critical, #51 (b), reserved #53, #54, #55, #59; assumed #56, #57, #58, #60; dashboard answers).
 - **Promoted to main:** weber8thomas/spectio#44, merge commit `1aa45fe` (T5, #43, dashboard SVG fix), 27 checks green on `452292b`. Dashboard version 25 published at the same URL.
+
+## 2026-10-28 13:31 → — tick 12 (MVP narrowed, T6, R10, P1)
+
+- **Thomas, 13:35 UTC:** the MVP handles no Kubernetes and no extra complexity; an ultra-simple UI; launch and monitoring of workflows; no gating; no visualisation. Recorded: decision log "0.0.1 narrowed: launch and monitor, an ultra-simple UI", dev-env §15.1 (owner), `mvp-0.0.1.md`, the P1 prompt; relaunch and parameter history out of 0.0.1, assumed (inbox #61); dated note on #52 (stays open).
+- **T6 running** in a separate cloud session (`session_01MF8RxLya2qysy5qS11CEqD`, branch `autopilot/T6`), narrowed to a minimal Playwright skeleton; it reports back with its PR.
+- **Done: R10** (synthesis and go / no-go), `docs/reviews/R10-synthesis.md`: 450 findings read, 123 open (8 blockers, 74 majors, 41 minors); 70 of the 82 open blockers and majors belong to features that left 0.0.1; 12 touch it, 7 already decided or applied. Recommendation: GO for P1 now, code after P1 under C1–C4; no-go trigger if login nodes forbid long-running processes or SSH forwarding. Decisions for Thomas: D0 #52, D1 #61, D2 #34 (SR-056), D3 #55, D4 #62 (new, cancel assumed yes). Doc review: changes 10/14, fixed, then approve 13/14.
+- **P1 running** (plan of the walking skeleton under the narrowed cut).
