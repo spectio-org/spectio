@@ -1,5 +1,5 @@
 """fixture.py must refuse a document that holds a credential, and write nothing (security review SEC-T3-03,
-SEC-T3-07); no committed fixture may hold one. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
+SEC-T3-07); no committed SLURM fixture may hold one. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
 import glob, json, os, subprocess, sys, tempfile, unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -38,7 +38,8 @@ class FixtureGuard(unittest.TestCase):
         self.assertTrue(files, "no committed SLURM fixture found")
         for f in files:
             with self.subTest(os.path.relpath(f, HERE)), open(f) as fh:
-                self.assertIsNone(SECRET.search(fh.read()))
+                m = SECRET.search(fh.read())
+                self.assertIsNone(m and m.span(), "credential-like text")  # never the match itself
 
     def test_no_job_kept_refused(self):
         self.assertEqual(run({"jobs": [{"job_id": 1}]}, "--jobs", "2"), (1, False))

@@ -192,12 +192,15 @@ scenario_heads() {
   echo "RESULT heads: snakemake head in sbatch: happy pass, head $(inroot sacct -X -a -n -P --name spectio-head-snakemake -o State,ExitCode | tail -n 1); plugin says: ${log:-nothing}"
 }
 
-# errors FILE: the errors and warnings of a slurmrestd answer (never the request, so never the token).
+# errors FILE: the errors and warnings of a slurmrestd answer (never the request), with anything that looks like a
+# credential (fixture.py's SECRET) redacted.
 errors() {
   python3 -c 'import json, sys
-try: d = json.load(open(sys.argv[1]))
-except Exception as x: sys.exit(print(sys.argv[1], "not JSON:", x))
-for k in "errors", "warnings": print(sys.argv[1].rsplit("/", 1)[-1], k, json.dumps(d.get(k)))' "$1" || true
+sys.path.insert(0, sys.argv[2])
+from fixture import SECRET
+d = json.load(open(sys.argv[1]))
+for k in "errors", "warnings": print(sys.argv[1].rsplit("/", 1)[-1], k, SECRET.sub("<redacted>", json.dumps(d.get(k))))' \
+    "$1" "$repo/tests/slurm" || true
 }
 
 scenario_rest() {
@@ -221,11 +224,11 @@ scenario_rest() {
   # shellcheck disable=SC2016  # expanded by the inner bash
   ownc=$(inc bash -c 'export "$(scontrol token lifespan=300)" && python3 "$1/rest_get.py" http://api:6820 "$2" \
     "delete-own=DELETE /slurm/v0.0.45/job/$3"' sh "$DATA" "$out" "$own" | awk '{print $2}')
-  ownst=$(inroot squeue -h --states=all -j "$own" -o %T 2>/dev/null || true)   # empty once the job is purged
+  ownst=$(inroot squeue -h --states=all -j "$own" -o %T 2>/dev/null || true)
   inroot scancel "$own" 2>/dev/null || true
   errors "$out/delete-own.json"
   [ "$ownc" = 200 ] || die "rest: spx's DELETE of its own job $own answered HTTP ${ownc:-none}, not 200"
-  [ -z "$ownst" ] || [ "$ownst" = CANCELLED ] || die "rest: spx's DELETE of its own job $own left it $ownst"
+  [ "$ownst" = CANCELLED ] || die "rest: spx's DELETE of its own job $own left it ${ownst:-unreadable}"
   # spx's token with X-SLURM-USER-NAME root must not act as root: it tries to cancel a held job of root's.
   # (Run 40679302148: a GET of ping with that header answers 200, so both the code and the effect are checked.)
   rootjob=$(inroot sbatch --parsable -H -J rest-root -o /dev/null --wrap true)
