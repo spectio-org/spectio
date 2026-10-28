@@ -1,15 +1,16 @@
 # Code review · SEC-T1-06, private workdir for the test runners
 
-`review-code` on `claude/autopilot-promotion-t1-d6-hutw7a`, range `a2f87d3..881a65d`, 2026-10-28, tick 11. Reviewers: `code-reviewer` and `security-reviewer`, independent, in parallel. Format: [`README.md`](../README.md).
+`review-code` on `claude/autopilot-promotion-t1-d6-hutw7a`, range `a2f87d3..e8ab2f4`, 2026-10-28, tick 11. Reviewers: `code-reviewer` and `security-reviewer`, independent, in parallel. Format: [`README.md`](../README.md).
 
-The change fixes SEC-T1-06 from the [T1 code review](T1.md): before T3 runs the harness on a sind submitter node ([dev environment §4.1](../../specs/dev-environment-and-testing.md#41-slurm-with-sind)), `run_scenarios.py` must stop deleting and reusing the predictable shared directory `/tmp/spectio-scenarios`. Without `--workdir`, `run_scenarios.py` and `run_corpus.py` now create a fresh private directory with `tempfile.mkdtemp` (mode 0700) and print its path. An explicit `--workdir` is created with mode 0700 and refused unless this user owns it, it is not a symlink, nobody else can write to it, and its resolved parents belong to this user or root (sticky if others can write, like `/tmp`). CI passes `$RUNNER_TEMP/…` and is unchanged.
+The change fixes SEC-T1-06 from the [T1 code review](T1.md): before T3 runs the harness on a sind submitter node ([dev environment §4.1](../../specs/dev-environment-and-testing.md#41-slurm-with-sind)), `run_scenarios.py` must stop deleting and reusing the predictable shared directory `/tmp/spectio-scenarios`. Without `--workdir`, `run_scenarios.py` and `run_corpus.py` now create a fresh private directory with `tempfile.mkdtemp` (mode 0700) and print its path. An explicit `--workdir` is created with its missing parents under umask 077, resolved, and refused unless this user owns it, it is not a symlink, nobody else can write to it, and its resolved parents belong to this user or root (sticky if others can write, like `/tmp`); the resolved path is the one used. CI passes `$RUNNER_TEMP/…` and is unchanged.
 
 | Round | Head | code-reviewer | security-reviewer |
 |---|---|---|---|
 | 1 | `9954aa0` | **approve** (0 blockers, 0 majors, 2 minors) | **approve** (0 blockers, 0 majors, 3 minors) |
 | 2 | `f9a4d6e` | **approve** on the fix delta (0 blockers, 0 majors, 1 minor) | not re-run (round 1 had minors only) |
 | 3 | `d31b2c9` | **approve** on `3355a10..d31b2c9` (0 blockers, 0 majors, 2 minors) | **approve** on `3355a10..d31b2c9` (0 blockers, 0 majors, 1 minor) |
-| 4 | `881a65d` | not re-run (round 3 had minors only) | pending |
+| 4 | `881a65d` | not re-run (round 3 had minors only) | **approve** on `d31b2c9..881a65d` (0 blockers, 0 majors, 2 minors) |
+| 5 | `e8ab2f4` | not re-run (round 4 had minors only) | not re-run (round 4 had minors only; both fixes are the ones it proposed, with unit tests) |
 
 `code-simplifier` ran on `f9a4d6e` and changed nothing: each helper is one line and the unit tests call it. Test command:
 
@@ -18,7 +19,7 @@ python3 -m unittest tests/pipelines/synthetic/test_golden.py tests/pipelines/rea
 ```
 
 ```text
-Ran 16 tests in 0.041s (round 2; 22 tests at `881a65d`)
+Ran 16 tests in 0.041s (round 2; 26 tests at `e8ab2f4`)
 
 OK
 $ python3 tests/pipelines/synthetic/run_scenarios.py --engine snakemake --only happy
@@ -44,3 +45,5 @@ $ echo $?
 | SEC-S06-4 | minor | Only the last component of an explicit `--workdir` was checked; a parent another user owns or can write to allowed a swap after the check | `881a65d` (resolved parents must belong to this user or root, sticky if others can write; unit tests for a shared and a sticky parent) |
 | CR-S06-4 | minor | Same parent gap as SEC-S06-4 (proposed a docstring note instead of a check) | `881a65d` (the check from SEC-S06-4; the docstring states the rule) |
 | CR-S06-5 | minor | With umask 002 a directory the user made is refused without a hint | `881a65d` (the refusal names `chmod go-w`) |
+| SEC-S06-4a | minor | The resolved parents were checked but the path as given was used, so a symlink on the way could be swapped after the check | `e8ab2f4` (the resolved path is checked and returned; unit test with a linked parent) |
+| SEC-S06-4b | minor | Missing parents followed the umask, so with umask 002 the script refused a path it had just created | `e8ab2f4` (parents created under umask 077; unit test under umask 002) |
