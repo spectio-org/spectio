@@ -221,7 +221,7 @@ scenario_rest() {
   # shellcheck disable=SC2016  # expanded by the inner bash
   ownc=$(inc bash -c 'export "$(scontrol token lifespan=300)" && python3 "$1/rest_get.py" http://api:6820 "$2" \
     "delete-own=DELETE /slurm/v0.0.45/job/$3"' sh "$DATA" "$out" "$own" | awk '{print $2}')
-  ownst=$(inroot squeue -h -j "$own" -o %T 2>/dev/null || true)   # empty once the job is purged
+  ownst=$(inroot squeue -h --states=all -j "$own" -o %T 2>/dev/null || true)   # empty once the job is purged
   inroot scancel "$own" 2>/dev/null || true
   errors "$out/delete-own.json"
   [ "$ownc" = 200 ] || die "rest: spx's DELETE of its own job $own answered HTTP ${ownc:-none}, not 200"
@@ -232,7 +232,7 @@ scenario_rest() {
   # shellcheck disable=SC2016  # expanded by the inner bash
   imp=$(inc bash -c 'export "$(scontrol token lifespan=300)" && REST_USER=root python3 "$1/rest_get.py" http://api:6820 "$2" \
     "impersonate-root=DELETE /slurm/v0.0.45/job/$3"' sh "$DATA" "$out" "$rootjob" | awk '{print $2}')
-  rootst=$(inroot squeue -h -j "$rootjob" -o %T 2>/dev/null || true)
+  rootst=$(inroot squeue -h --states=all -j "$rootjob" -o %T 2>/dev/null || true)
   inroot scancel "$rootjob" 2>/dev/null || true
   errors "$out/impersonate-root.json"
   case $imp in 2??) die "rest: spx's token as root got HTTP $imp on DELETE of root's job $rootjob" ;; esac
