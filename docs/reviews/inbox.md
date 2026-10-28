@@ -699,6 +699,12 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a), as a small W3 step after T7.
 - **Assumed:** none. Nothing changes until you answer.
 - **Blocked:** nothing.
+- **Update (TRIAGE3, 2026-10-28):**
+  - **Also covers:** [SPK-T4-15](spikes.md#spk-t4-15-sec-t4-05-minor-supply-chain-nf-k8s-by-version-kueue-image-by-tag-full-bootstrap-in-the-job) (SEC-T4-05), code part:
+    - the Kueue controller image by digest;
+    - `nf-k8s` installed by bootstrap with a sha256;
+    - `bootstrap.sh --only` in `pipelines-k8s.yml`.
+  - The spec rule (dev-env §1) is accepted in TRIAGE3. The code waits for the same follow-up step as (a) of #46.
 
 ## T1 (2026-10-27)
 
@@ -802,3 +808,128 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b). T3 and T4 are cheap now that they run in CI, and their findings (RBAC in schedulers §4, the `nf-k8s` plugin) are needed by the first runners.
 - **Assumed:** none. It changes the plan and a `CLAUDE.md` rule, which are Thomas's. The autopilot does not edit `pipeline.yaml` and writes no product code until he answers.
 - **Blocked:** nothing yet; T3 and T4 go on.
+
+## TRIAGE3 (2026-10-28)
+
+From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measured.
+
+### #53 · Kubernetes Roles for the runner and the Nextflow heads
+
+- **Covers:** [SPK-T4-01](spikes.md#spk-t4-01-major-nextflow-2610-head-role-not-sufficient-and-broader-than-needed), [SPK-T4-02](spikes.md#spk-t4-02-major-nextflow-2510-head-role-lacks-podsstatus-get), [SPK-T4-03](spikes.md#spk-t4-03-major-the-runner-role-cannot-read-kueue-workloads), [SPK-T4-04](spikes.md#spk-t4-04-minor-runner-role-visibility-needs-only-get-minimality-is-not-measured)
+- **Context:** the §4 engine-head Roles break every run. 26.10 is refused `pods/status get` and `pods delete`; 25.10 is refused `pods/status get`. The runner Role forbids the Workloads that §4 tells it to watch. T4 measured replacement Roles (`tests/k8s/rbac.yaml`): 0 refusals, and every head grant used. Kubernetes is not in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)). Reserved: permission defaults.
+- **Options:**
+  - (a) §4 takes the measured Roles of `tests/k8s/rbac.yaml`:
+    - 26.10 head: `jobs` create, delete; `jobs/status` get; `pods` list, delete; `pods/status` get;
+    - 25.10 head: `pods` create, delete; `pods/status` get;
+    - runner: the §4 rules plus `workloads.kueue.x-k8s.io` get, list, watch when Kueue is installed, and the visibility rule with `get` only;
+    - a new Nextflow call shows up as a 403 in `pipelines-k8s.yml`, which fails on any refusal;
+  - (b) as (a), but each head Role keeps §4's read grants (`get`, `list`, `watch`, `pods/log`) as headroom for code paths T4 did not hit (`fetchNodeName`, `kuberun`);
+  - (c) leave §4 as it is until the runner code exists.
+- **Recommendation:** (a): least privilege, measured, and CI catches the next missing call.
+- **Assumed:** none (reserved).
+- **Blocked:** schedulers §4 RBAC text. Nothing in 0.0.1. The fact part of SPK-T4-02 (drop "[to be validated on k8s-mini]" for `pods: create`) can be applied now.
+
+### #54 · Kubernetes work namespace: task-pod tokens and a shared namespace
+
+- **Covers:** [SPK-T4-12](spikes.md#spk-t4-12-sec-t4-02-major-task-pods-get-the-namespaces-default-serviceaccount-token) (SEC-T4-02), [SPK-T4-14](spikes.md#spk-t4-14-sec-t4-03-major-a-shared-work-namespace-lets-any-job-run-as-any-serviceaccount-there) (SEC-T4-03); related: [#14](#14-which-unix-identity-a-launch-runs-as-and-who-may-move-a-run-to-another-runner) (Kubernetes identity model, deferred)
+- **Context:**
+  - Task pods mounted the `default` token in every spike run. T4 turned it off for the test cluster only.
+  - In one shared `spectio-work` namespace, whoever can create Jobs or Pods can run as any ServiceAccount there, mount a hostPath and delete another run's pods.
+  - architecture §7.5 says only "in a work namespace". Reserved: security posture defaults.
+- **Options:**
+  - (a) one work namespace per user, labelled `pod-security.kubernetes.io/enforce=restricted` (which forbids hostPath), with `automountServiceAccountToken: false` on its `default` ServiceAccount, and a ValidatingAdmissionPolicy that allows only the head ServiceAccount on head Jobs **[to be validated]**;
+  - (b) one namespace per run, with the same three controls; more objects, cleaned per run;
+  - (c) a shared namespace with the token off and PodSecurity `restricted` only.
+- **Recommendation:** (a). It matches "one runner per user" of #14 (a). Turning the task token off costs nothing and could be written now.
+- **Assumed:** none (reserved).
+- **Blocked:** architecture §7.5 runner sub-chart; schedulers §4. Nothing in 0.0.1.
+
+### #55 · What engine events may carry: task `script` and `env`, user, host and command line
+
+- **Covers:** [SPK-T2-11](spikes.md#spk-t2-11-major-task-script-and-env-in-engine-events), [SPK-T2-23](spikes.md#spk-t2-23-major-engine-events-carry-user-host-home-directory-and-command-line)
+- **Context:**
+  - The Tower client sends every task's `script` and `env` in every `progress` record.
+  - Snakemake `WORKFLOW_STARTED` carries `host`, `user`, `cmd` and `cwd`. Tower `begin` carries `userName`, `homeDir`, `commandLine` and `configText`.
+  - architecture §13.5 leaves "`script` and `env` at most once per task, or never" open *(assumed — pending Thomas, inbox #28)*.
+  - The admin §3.4 redaction covers secrets, not personal identifiers.
+  - In 0.0.1 these events land in SQLite on a shared login node. Reserved: security posture defaults.
+- **Options:**
+  - (a) `nf-spectio` never sends `script` or `env`; the runner reads `.command.sh` on demand inside the run's roots. Identity fields are kept on the run for display only (`user`, `host`), and `homeDir`, `commandLine`, `configText` and `env` are never stored. All of it passes the §3.4 redaction;
+  - (b) `script` once per task, on its terminal event, after redaction; `env` never; identity fields as in (a);
+  - (c) send and store everything, redacted server-side.
+- **Recommendation:** (a). The UI can still show the command (read on demand), and nothing that may hold a secret leaves the cluster by default.
+- **Assumed:** none (reserved).
+- **Blocked:** architecture §13.5 wording; the payload rules of api §14 (inbox #36 apply pass).
+
+### #56 · Assumed: the state of a task still open when the run ends
+
+- **Covers:** [SPK-T2-09](spikes.md#spk-t2-09-major-tasks-left-open-when-the-run-ends)
+- **Context:**
+  - After a fatal error, Nextflow leaves tasks with `onTaskPending` and nothing after (FINAL_REPORT, 26.10.4), and ends a running one `ABORTED` (25.10.9).
+  - api §7.2 has no terminal state for them, so they would stay `pending` or `running` forever. Reversible and docs-only.
+- **Options:**
+  - (a) a terminal attempt state `aborted` in §7.2 (Nextflow `ABORTED`, and every attempt still open when the launch ends), with an "Aborted" label in ui-spec §3.1; a task with no attempt stays `not_scheduled`;
+  - (b) map them to `failed` with a new `failure_class` `aborted`;
+  - (c) leave them open; the UI derives "stopped" from the run's terminal state.
+- **Recommendation:** (a). The failed-task counts stay true (one tool error, not five failures), and the lattice keeps one terminal state per attempt.
+- **Assumed:** (a) *(assumed — pending Thomas)*.
+- **Blocked:** nothing.
+
+### #57 · Assumed: `pipelines-k8s.yml` and `pipelines-slurm.yml` join `ci.yml`, as inbox #26 decided
+
+- **Covers:** [SPK-T4-09](spikes.md#spk-t4-09-minor-pipelines-k8syml-is-standalone-while-required-checks-says-ciyml-calls-it), and the Required-checks part of [SPK-T3-13](spikes.md#spk-t3-13-minor-the-pipelines-slurmyml-row)
+- **Context:**
+  - dev-env §11 "Required checks" (*decided — Thomas, 2026-10-27, inbox #26*) says `ci.yml` calls every pipeline workflow, `pipelines-k8s.yml` and `pipelines-slurm.yml` included.
+  - T4 and T3 built both standalone, outside `ci-ok`, and each asked whether it should join. `pipelines-k8s.yml` takes 3 to 4 minutes, and kind adds a flake risk. The longest `pipelines-slurm.yml` job takes about 16 minutes.
+- **Options:**
+  - (a) keep the #26 rule: both get `on: workflow_call`, and `ci.yml` calls each one when its own paths change, so it gates `ci-ok`:
+    - `pipelines-k8s.yml`: `dev/k8s/`, `tests/k8s/`, `dev/versions.env`, `tests/pipelines/synthetic/nextflow/`;
+    - `pipelines-slurm.yml`: `dev/slurm/`, `tests/slurm/`, `dev/versions.env`; changes to the synthetic pipelines alone are covered by its nightly run;
+    - a red kind or sind job is re-run once before anyone investigates, as for `network:` entries in §10.2;
+  - (b) keep both standalone and amend the paragraph (this reverses #26 for these workflows);
+  - (c) `ci.yml` calls them, but they stay out of `ci-ok`'s `needs`, as `pipelines-real` was between D4 and T7.
+- **Recommendation:** (a): RBAC and Slurm-classification regressions are cheap to catch there, and only PRs that touch those paths pay the time.
+- **Assumed:** (a) *(assumed — pending Thomas)*. The two §11 rows say "standalone until it is converted to `workflow_call`", and the step that next edits each workflow converts it.
+- **Blocked:** nothing.
+
+### #58 · Assumed: who watches the nightly runs
+
+- **Covers:** [SPK-T7-01](spikes.md#spk-t7-01-minor-nobody-watches-the-nightly-runs)
+- **Context:** the nightly tier now holds the heavy corpus entries (#45). The nightly on `main` failed on 2026-10-28 (run 40649538349: rna-seq-star-deseq2, taxprofiler), and nothing recorded it. Reversible and docs-only for (b).
+- **Options:**
+  - (a) each nightly workflow opens or updates one GitHub issue when a scheduled run fails (needs `issues: write` on that job);
+  - (b) at each tick, the autopilot reads the last scheduled run of each pipeline workflow (`gh run list --event schedule`) and reports a red one in the journal and the step report, with the failed jobs; a failure seen twice in a row becomes an inbox line;
+  - (c) rely on GitHub's own notification for scheduled workflows **[to be validated: who receives it]**.
+- **Recommendation:** (b): no new permission, and it uses the loop that already runs.
+- **Assumed:** (b) *(assumed — pending Thomas)*, written in `autopilot.md`. The autopilot skill text follows once Thomas confirms, since `.claude/` is his to change.
+- **Blocked:** nothing.
+
+### #59 · slurmrestd: which token the runner holds, and which user it names
+
+- **Covers:** [SPK-T3-15](spikes.md#spk-t3-15-major-x-slurm-user-name-with-a-users-own-token-no-clean-refusal); related: [#14](#14-which-unix-identity-a-launch-runs-as-and-who-may-move-a-run-to-another-runner) (which identity a launch runs as)
+- **Context:**
+  - schedulers §3.3 says the slurmrestd transport "lets a runner live off the login node", with JWT auth, but not whose token the runner holds.
+  - On `slurm-rest` (Slurm 26.05.5), a user's token sent with `X-SLURM-USER-NAME: root` gets 200 on `ping` and 511 on cancelling root's job, which stays pending (runs 40679302148, 40680736055). The header does not let a user act as root, but a 2xx proves nothing about identity, and the meaning of 511 is **[to be validated]**.
+  - 0.0.1 uses the CLI transport only (dev-env §15.3). Reserved: auth modes and security posture defaults.
+- **Options:**
+  - (a) per-user tokens only: the runner holds a JWT made for the run's user (`scontrol token` as that user, short lifespan, renewed on the login node), names only that user in `X-SLURM-USER-NAME` (or omits the header), and never holds a `SlurmUser` or root token. A successful call is never taken as proof of identity: the runner compares the `user_name` of the jobs it reads with the run's user;
+  - (b) one service token per site with impersonation through `X-SLURM-USER-NAME` for each call. This needs the site to trust the runner with every user's identity **[to be validated: slurmrestd impersonation rules]**;
+  - (c) keep slurmrestd out until #14 is decided; CLI transport only.
+- **Recommendation:** (a). It keeps "runs as the user" from the CLI transport, and a stolen runner token is worth one user's jobs for a short time.
+- **Assumed:** none (reserved).
+- **Blocked:** schedulers §3.3 slurmrestd row. Nothing in 0.0.1.
+
+### #60 · Assumed: who builds the deferred SLURM coverage
+
+- **Covers:** [SPK-T3-18](spikes.md#spk-t3-18-minor-slurm-versions-2511-is-described-as-if-built-and-no-step-owns-the-deferred-slurm-coverage); related: SPK-T3-12, SPK-T3-17, and T3's open question 2.
+- **Context:** T3 built `slurm-mini`, `slurm-site` and `slurm-rest` as its prompt asked. The following are in the specs but not built: `slurm-versions` (25.11), partition `gpu` with fake GRES, preemption, the `slurm-mini` signal drain, and head `OUT_OF_MEMORY` / head walltime scenarios. The signal drain and the head scenarios need a head job driven by runner code. No pipeline step owns any of them. Reversible and docs-only for (a).
+- **Options:**
+  - (a) mark every one "Planned, not built yet" in dev-env §3 and §4.1 now. Each is built by the first build step that needs it:
+    - the signal drain and the head scenarios, with the runner's head-job code;
+    - `slurm-versions`, `gpu` and preemption, with the first product code that reads SLURM JSON (the CLI collector);
+    - that step's prompt names them;
+  - (b) a dedicated build step after T5 that builds them all, added to `pipeline.yaml` by Thomas;
+  - (c) drop `slurm-versions` and `gpu` from §4.1 until a site asks for them.
+- **Recommendation:** (a): each piece is built when there is code to test against it, and the rows stop claiming coverage today.
+- **Assumed:** (a) *(assumed — pending Thomas)*: the rows are marked planned. Naming them in later step prompts waits for Thomas, since `pipeline.yaml` and the prompts are his to change.
+- **Blocked:** nothing.
