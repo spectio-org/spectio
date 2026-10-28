@@ -2,7 +2,7 @@
 
   python3 -m unittest tests/pipelines/real/test_run_corpus.py
 """
-import copy, subprocess, sys, tempfile, unittest
+import copy, os, stat, subprocess, sys, tempfile, unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -24,6 +24,41 @@ class WorkdirTest(unittest.TestCase):
         self.addCleanup(a.rmdir); self.addCleanup(b.rmdir)
         self.assertNotEqual(a, b)
         self.assertEqual(a.stat().st_mode & 0o777, 0o700)
+
+    def test_an_explicit_workdir_is_created_private(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            wd = run_corpus.make_workdir(f"{tmp}/a/b")
+            self.assertEqual(wd.stat().st_mode & 0o777, 0o700)
+
+    def test_a_workdir_under_a_sticky_shared_directory_is_accepted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sticky = Path(tmp) / "sticky"; sticky.mkdir(); sticky.chmod(0o1777)
+            self.assertEqual(run_corpus.make_workdir(str(sticky / "wd")), sticky / "wd")
+
+    def test_a_workdir_through_a_linked_parent_is_resolved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "target"; target.mkdir()
+            (Path(tmp) / "link").symlink_to(target)
+            self.assertEqual(run_corpus.make_workdir(str(Path(tmp) / "link" / "wd")), target / "wd")
+
+    def test_missing_parents_are_created_private_under_a_group_umask(self):
+        old = os.umask(0o002)
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                wd = run_corpus.make_workdir(str(Path(tmp) / "a" / "b"))
+                self.assertEqual(stat.S_IMODE((Path(tmp) / "a").stat().st_mode), 0o700)
+                self.assertEqual(stat.S_IMODE(wd.stat().st_mode), 0o700)
+        finally:
+            os.umask(old)
+
+    def test_a_shared_or_linked_workdir_is_refused(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            shared = Path(tmp) / "shared"; shared.mkdir(); shared.chmod(0o777)
+            link = Path(tmp) / "link"; link.symlink_to(Path(tmp))
+            under_shared = shared / "wd"
+            for bad in (shared, link, under_shared):
+                with self.assertRaises(SystemExit):
+                    run_corpus.make_workdir(str(bad))
 
 
 class ValidateTest(unittest.TestCase):

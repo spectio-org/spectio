@@ -12,11 +12,13 @@ Every invocation first validates corpus.yaml (pinned refs, plain-token paths and
 Each run writes <workdir>/<name>/result.json (exit code, duration, outputs found, Nextflow trace
 summary). Without --workdir, the workdir is a fresh private directory (mode 0700) under ${TMPDIR:-/tmp},
 printed at the start and kept for debugging (`rm -rf "${TMPDIR:-/tmp}"/spectio-corpus-*` removes them).
+An explicit --workdir is created private and refused if you do not own it, it is a symlink, group or
+others can write to it, or it sits under a directory that others can change (see make_workdir).
 Later these runs are launched through Spectio instead of directly (same entries).
 """
 from __future__ import annotations
 
-import argparse, json, os, re, shutil, subprocess, sys, tempfile, time
+import argparse, json, os, re, shutil, stat, subprocess, sys, tempfile, time
 from pathlib import Path
 
 import yaml
@@ -108,7 +110,25 @@ def smk_entry(e, wd: Path, smk: str) -> dict:
 
 
 def make_workdir(arg: str | None) -> Path:
-    return Path(arg) if arg else Path(tempfile.mkdtemp(prefix="spectio-corpus-"))
+    """A fresh private directory, or the given one if this user owns it and nobody else can write to it
+    or swap it: its resolved parents must belong to this user or root, and be sticky if others can write."""
+    if not arg:
+        return Path(tempfile.mkdtemp(prefix="spectio-corpus-"))
+    path = Path(arg)
+    old_umask = os.umask(0o077)  # missing parents are created private too
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    finally:
+        os.umask(old_umask)
+    real = Path(os.path.realpath(path))  # checked and returned, so a symlink on the way cannot be swapped later
+    st = os.lstat(real)
+    bad = path.is_symlink() or st.st_uid != os.getuid() or st.st_mode & 0o022
+    for d in real.parents:
+        s = os.stat(d)
+        bad = bad or s.st_uid not in (0, os.getuid()) or (s.st_mode & 0o022 and not s.st_mode & stat.S_ISVTX)
+    if bad:
+        sys.exit(f"--workdir {path}: must be a directory you own that others cannot write to (chmod go-w), not a symlink, under directories that only you or root can change")
+    return real
 
 
 def main() -> int:
@@ -118,7 +138,7 @@ def main() -> int:
     ap.add_argument("--engine", choices=["nextflow", "snakemake"])
     ap.add_argument("--name")
     ap.add_argument("--tier", choices=["pr", "nightly", "manual"])
-    ap.add_argument("--workdir")
+    ap.add_argument("--workdir", help="default: a fresh private directory; an explicit one must be owned by you, not a symlink, not writable by others, under directories only you or root can change")
     ap.add_argument("--limits", choices=["private", "public", "auto"], default="private")
     ap.add_argument("--nextflow", default=os.environ.get("NXF_BIN", "nextflow"))
     ap.add_argument("--nf-version")
