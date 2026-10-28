@@ -959,3 +959,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a): one button and one route, and the security requirement already exists.
 - **Assumed:** (a) *(assumed — pending Thomas)*; P1 plans it. The §15.1 row is added when Thomas confirms.
 - **Blocked:** nothing.
+
+### #63 · Assumed: the repository-wide semgrep scan skips `tests/`
+
+- **Covers:** SEC-T6-05 ([T6 code review](code/T6.md), PR #45); the SAST row of [dev-env §11](../specs/dev-environment-and-testing.md#11-ci-workflows).
+- **Context:** semgrep's default ignore list applies when the repository has no root `.semgrepignore`, and it skips test directories, so `tests/` (the e2e harness of T6, the scenario runner tests of T5) is never scanned.
+- **Options:**
+  - (a) add a root `.semgrepignore` that keeps the defaults except `tests/`, in the next build step that touches CI;
+  - (b) leave tests unscanned: they hold no product code.
+- **Recommendation:** (a): the test harnesses run shell commands and Docker on CI runners.
+- **Assumed:** (a) *(assumed — pending Thomas)*; done by the next step that touches `security.yml`.
+- **Blocked:** nothing.
