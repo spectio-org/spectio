@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — failed run (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chips::-webkit-scrollbar{display:none}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div>
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="wgs-cohort-12" sub="Failed · 143 / 175 jobs done" back="MLiteRuns.dc.html" backLabel="Back to runs" hint-size="390px,104px"></dc-import></div>
+  <main style="position: absolute; top: 104px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <section aria-label="Run summary" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <div style="height: 4px; background: #DC3B3B;"></div>
+      <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #B02A2A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg>Failed · 2 jobs failed</span>
+        <span style="font-size: 12.5px; color: #4D5065;">Run <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6E7287;">F5KZNW</span> · 9 h 47 · ended Sun 06:57 · head exited 1</span>
+        <div role="group" aria-label="Tasks by state" style="display: flex; gap: 6px; flex-wrap: wrap;"><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #E8F6EF; color: #157A4B;">143 succeeded</span><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #FCEBEB; color: #B02A2A;">2 failed</span><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #F1F2F6; color: #33364A;">30 not scheduled</span></div>
+        <a href="MLiteResumeSheet.dc.html" role="button" aria-haspopup="dialog" style="height: 44px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font: 600 14.5px 'Inter', sans-serif; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6 M4 4v4h4"/></svg>Resume</a>
+        <div style="display: flex; gap: 8px;">
+          <a href="MLiteLaunch.dc.html" style="flex: 1 1 0; height: 44px; border-radius: 12px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #22253A; text-decoration: none; display: flex; align-items: center; justify-content: center;">Copy to a new launch</a>
+          <button type="button" aria-haspopup="menu" aria-expanded="false" style="flex: 0 0 auto; height: 44px; padding: 0 14px; border-radius: 12px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: flex; align-items: center; gap: 6px;">Copy<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+        </div>
+      </div>
+    </section>
+    <div class="chips" role="tablist" aria-label="Run sections" style="position: sticky; top: -12px; z-index: 1; background: #F7F7FB; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid #DFE1EA; margin: 0 -12px; padding: 0 12px;">
+      <button type="button" role="tab" id="tab-summary" aria-selected="true" aria-controls="panel-summary" tabindex="0" style="flex-shrink: 0; height: 44px; padding: 0 12px; border: none; background: transparent; font: 600 14px 'Inter', sans-serif; color: #4D368B; box-shadow: inset 0 -2px 0 #7750D4; cursor: pointer;">Summary</button><button type="button" role="tab" id="tab-tasks" aria-selected="false" aria-controls="panel-tasks" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 12px; border: none; background: transparent; font: 500 14px 'Inter', sans-serif; color: #4D5065; box-shadow: none; cursor: pointer;">Tasks</button><button type="button" role="tab" id="tab-parameters" aria-selected="false" aria-controls="panel-parameters" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 12px; border: none; background: transparent; font: 500 14px 'Inter', sans-serif; color: #4D5065; box-shadow: none; cursor: pointer;">Parameters</button><button type="button" role="tab" id="tab-logs" aria-selected="false" aria-controls="panel-logs" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 12px; border: none; background: transparent; font: 500 14px 'Inter', sans-serif; color: #4D5065; box-shadow: none; cursor: pointer;">Logs</button>
+    </div>
+    <div id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" hidden></div>
+    <div id="panel-parameters" role="tabpanel" aria-labelledby="tab-parameters" hidden></div>
+    <div id="panel-logs" role="tabpanel" aria-labelledby="tab-logs" hidden></div>
+    <div id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" style="display: flex; flex-direction: column; gap: 10px;">
+      <h2 style="margin: 4px 0 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 19px;">Why it failed</h2>
+      <div role="note" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); box-shadow: 0 0 0 1px rgba(15,16,32,0.07), inset 4px 0 0 #DC3B3B; padding: 12px 14px 12px 18px; display: flex; flex-direction: column; gap: 6px;">
+        <span style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;"><span style="font-size: 12.5px; font-weight: 600; padding: 3px 8px; border-radius: 8px; background: #FCEBEB; color: #B02A2A;">tool_error</span><span style="font-size: 14px; font-weight: 600;">2 jobs failed on their last attempt</span></span>
+        <span style="font-size: 13px; color: #33364A; line-height: 1.5;">One ran out of memory and one reached its time limit. Showing 2 of 2 failed jobs.</span>
+        <a href="MLiteRunTasks.dc.html" style="font-size: 13px; font-weight: 600; text-decoration: none;">Tasks, filtered to Failed →</a>
+      </div>
+      <article aria-label="bwa_mem (sample=WGS-07), attempt 2 of 2" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="display: flex; justify-content: space-between; gap: 8px; align-items: baseline;"><strong style="font-size: 15px; font-weight: 600; overflow-wrap: anywhere; min-width: 0;">bwa_mem</strong><span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 8px; background: #FCEBEB; color: #B02A2A; font-family: 'JetBrains Mono', monospace; white-space: nowrap;">OUT_OF_MEMORY</span></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">sample=WGS-07</span>
+        <dl style="margin: 0;">
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><dt style="color: #6E7287; font-size: 12.5px; flex-shrink: 0;">Attempt</dt><dd style="margin: 0; font-size: 13px; text-align: right; font-weight: 500; overflow-wrap: anywhere; min-width: 0;">2 of 2</dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><dt style="color: #6E7287; font-size: 12.5px; flex-shrink: 0;">SLURM job</dt><dd style="margin: 0; font-size: 13px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; overflow-wrap: anywhere; min-width: 0;">48731209</dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><dt style="color: #6E7287; font-size: 12.5px; flex-shrink: 0;">Exit code</dt><dd style="margin: 0; font-size: 13px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; overflow-wrap: anywhere; min-width: 0;">0:125</dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><dt style="color: #6E7287; font-size: 12.5px; flex-shrink: 0;">Memory, asked · used</dt><dd style="margin: 0; font-size: 13px; text-align: right; font-weight: 500; overflow-wrap: anywhere; min-width: 0;">16 GB · 16.0 GB</dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><dt style="color: #6E7287; font-size: 12.5px; flex-shrink: 0;">Time, limit · used</dt><dd style="margin: 0; font-size: 13px; text-align: right; font-weight: 500; overflow-wrap: anywhere; min-width: 0;">4 h · 1 h 12</dd></div>
+        </dl>
+        <span style="font-size: 12px; color: #6E7287;">SLURM state: from the Snakemake SLURM plugin's message · used: from sacct</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #B02A2A; overflow-wrap: anywhere; line-height: 1.5;">SLURM-job '48731209' failed, SLURM status is: 'OUT_OF_MEMORY'. Reason: Step 0: OutOfMemory.</span>
+        <pre tabindex="0" aria-label="Last lines of the SLURM job log of bwa_mem (sample=WGS-07)" style="margin: 0; border-radius: 10px; background: #0F1020; padding: 8px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;"><span style="display: block; color: #C4C7D4;">[M::mem_process_seqs] Processed 400000 reads in 214.6 CPU sec</span><span style="display: block; color: #F59A9A;">slurmstepd: error: Detected 1 oom_kill event in StepId=48731209.batch.</span></pre>
+        <a href="MLiteTaskFilesSheet.dc.html" aria-label="Open job files of bwa_mem (sample=WGS-07)" style="height: 44px; border-radius: 12px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #22253A; text-decoration: none; display: flex; align-items: center; justify-content: center;">Open job files</a>
+        <button type="button" aria-label="Copy the launch directory of bwa_mem (sample=WGS-07)" style="height: 44px; border-radius: 12px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Copy launch directory</button>
+      </article>
+      <article aria-label="haplotype_caller (sample=WGS-03, interval=0007), attempt 2 of 2" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="display: flex; justify-content: space-between; gap: 8px; align-items: baseline;"><strong style="font-size: 15px; font-weight: 600; overflow-wrap: anywhere; min-width: 0;">haplotype_caller</strong><span style="font-size: 12px; font-weight: 600; padding: 3px 8px; border-radius: 8px; background: #FCEBEB; color: #B02A2A; font-family: 'JetBrains Mono', monospace; white-space: nowrap;">TIMEOUT</span></span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">sample=WGS-03, interval=0007</span>
+        <dl style="margin: 0;">
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><dt style="color: #6E7287; font-size: 12.5px; flex-shrink: 0;">Attempt</dt><dd style="margin: 0; font-size: 13px; text-align: right; font-weight: 500; overflow-wrap: anywhere; min-width: 0;">2 of 2</dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><dt style="color: #6E7287; font-size: 12.5px; flex-shrink: 0;">SLURM job</dt><dd style="margin: 0; font-size: 13px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; overflow-wrap: anywhere; min-width: 0;">48731544</dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><dt style="color: #6E7287; font-size: 12.5px; flex-shrink: 0;">Exit code</dt><dd style="margin: 0; font-size: 13px; text-align: right; font-family: 'JetBrains Mono', monospace; font-size: 12px; overflow-wrap: anywhere; min-width: 0;">0:0</dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><dt style="color: #6E7287; font-size: 12.5px; flex-shrink: 0;">Memory, asked · used</dt><dd style="margin: 0; font-size: 13px; text-align: right; font-weight: 500; overflow-wrap: anywhere; min-width: 0;">8 GB · unavailable</dd></div>
+          <div style="display: flex; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid #EEEFF5;"><dt style="color: #6E7287; font-size: 12.5px; flex-shrink: 0;">Time, limit · used</dt><dd style="margin: 0; font-size: 13px; text-align: right; font-weight: 500; overflow-wrap: anywhere; min-width: 0;">6 h · unavailable</dd></div>
+        </dl>
+        <span style="font-size: 12px; color: #6E7287;">SLURM state: from the Snakemake SLURM plugin's message · used: SLURM accounting unavailable</span>
+        <span style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #B02A2A; overflow-wrap: anywhere; line-height: 1.5;">SLURM-job '48731544' failed, SLURM status is: 'TIMEOUT'. Reason: Step 0: TimeLimit.</span>
+        <pre tabindex="0" aria-label="Last lines of the SLURM job log of haplotype_caller (sample=WGS-03, interval=0007)" style="margin: 0; border-radius: 10px; background: #0F1020; padding: 8px 10px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.55; white-space: pre-wrap; overflow-wrap: anywhere;"><span style="display: block; color: #C4C7D4;">07:01:44.910 INFO  ProgressMeter - chr7:118204331   359.2</span><span style="display: block; color: #F59A9A;">slurmstepd: error: *** JOB 48731544 ON node-c07 CANCELLED AT 2026-10-26T06:41:02 DUE TO TIME LIMIT ***</span></pre>
+        <a href="MLiteTaskFilesSheet.dc.html" aria-label="Open job files of haplotype_caller (sample=WGS-03, interval=0007)" style="height: 44px; border-radius: 12px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #22253A; text-decoration: none; display: flex; align-items: center; justify-content: center;">Open job files</a>
+        <button type="button" aria-label="Copy the launch directory of haplotype_caller (sample=WGS-03, interval=0007)" style="height: 44px; border-radius: 12px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Copy launch directory</button>
+      </article>
+      <span style="font-size: 11.5px; color: #6E7287; line-height: 1.45;">Data: the run of LiteRunFailed; the engine messages follow snakemake-executor-plugin-slurm (slurm.py:1594-1599), the rest is fixture data. A Nextflow card says "Copy work directory".</span>
+    </div>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="runs" hint-size="390px,72px"></dc-import></div>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>

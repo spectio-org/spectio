@@ -34,11 +34,11 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
         <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Launch a workflow</h1>
         <span style="font-size: 14px; color: #4D5065;">Type the path of a pipeline directory your account can read. Spectio detects the engine and builds the form from the pipeline's schema.</span>
       </div>
-      <div role="status" style="border-radius: 14px; background: #F4F1FD; box-shadow: inset 0 0 0 1px #DCD3F7; padding: 12px 16px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
+      <div style="border-radius: 14px; background: #F4F1FD; box-shadow: inset 0 0 0 1px #DCD3F7; padding: 12px 16px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4D368B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M8 8h11v11H8z M5 16V5h11"/></svg>
         <div style="flex: 1 1 420px; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
-          <span style="font-size: 13.5px; font-weight: 600; color: #22253A;">Prefilled from <a href="LiteRunDetail.dc.html" style="text-decoration: none;">rnaseq-2026-10-25</a> <span style="font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 12px; color: #4D5065;">7T9V1W</span></span>
-          <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">Same pipeline, profile and the 4 values set at its launch: input, outdir, min_mapped_reads, pseudo_aligner. The new run gets its own run directory. <b style="font-weight: 600; color: #8F5806;">outdir</b> still points at the first run's results: change it to keep them apart.</span>
+          <span style="font-size: 13.5px; font-weight: 600; color: #22253A; line-height: 1.45;">Prefilled from <a href="LiteRunDetail.dc.html" style="text-decoration: none;">rnaseq-2026-10-25</a> (<span style="font-family: 'JetBrains Mono', monospace; font-weight: 400; font-size: 12px; color: #4D5065;">7T9V1W</span>): 4 values differ from the pipeline's defaults: input, outdir, min_mapped_reads, pseudo_aligner.</span>
+          <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">Same pipeline and profile. The new run gets its own run directory; <b style="font-weight: 600; color: #8F5806;">outdir</b> is the first run's: see the warning under it.</span>
         </div>
         <a href="LiteLaunch.dc.html" style="height: 36px; padding: 0 12px; border-radius: 10px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A; text-decoration: none; display: flex; align-items: center; flex-shrink: 0;">Clear and start empty</a>
       </div>
@@ -76,14 +76,14 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
 
       <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
         <section aria-labelledby="h-params" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
-          <section class="cx"><h2 id="h-params" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-2" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg></span><span style="min-width: 0;">Parameters</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">11 groups · 2 changed</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-2"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;"><div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+          <section class="cx"><h2 id="h-params" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-2" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg></span><span style="min-width: 0;">Parameters</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">11 groups · 4 changed</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-2"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;"><div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 10px; flex-wrap: wrap;">
             
-            <span style="font-size: 12.5px; color: #4D5065;">One section per schema group · 2 changed from their defaults</span>
+            <span style="font-size: 12.5px; color: #4D5065;">One section per schema group · 4 values differ from their defaults</span>
           </div>
           <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
             <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
               <span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Input/output options</span><span style="font-size: 12px; color: #4D5065;">Define where the pipeline should find input data and save output data · 4 parameters · 2 required</span></span>
-              <span style="font-size: 12.5px; font-weight: 600; color: #157A4B;">2 required · filled</span>
+              <span style="font-size: 12.5px; font-weight: 600; color: #157A4B; white-space: nowrap;">2 required · filled</span><span style="font-size: 12.5px; font-weight: 600; color: #8F5806; white-space: nowrap;">2 changed</span>
               <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
             </summary>
             <div style="padding: 4px 16px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 12px;">
@@ -94,8 +94,9 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
               </div>
               <div style="display: flex; flex-direction: column; gap: 5px;">
                 <label for="p-outdir" style="font-size: 13px; font-weight: 600;">outdir <span style="color: #B02A2A;" aria-hidden="true">*</span></label>
-                <input id="p-outdir" type="text" value="/g/demo-lab/rnaseq/2026-10-25" required aria-required="true" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">
-                <span style="font-size: 12px; color: #4D5065;">Where the results are saved. string · directory-path</span>
+                <input id="p-outdir" type="text" value="/g/demo-lab/rnaseq/2026-10-25" required aria-required="true" aria-describedby="p-outdir-warn p-outdir-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; box-shadow: inset 0 0 0 1px #D9890B;">
+                <span id="p-outdir-warn" style="font-size: 12.5px; color: #8F5806; font-weight: 600; line-height: 1.4;">Warning: same as rnaseq-2026-10-25. Change it to keep the two runs' results apart.</span>
+                <span id="p-outdir-help" style="font-size: 12px; color: #4D5065;">Where the results are saved. string · directory-path</span>
               </div>
               <div style="display: flex; flex-direction: column; gap: 5px;">
                 <label for="p-email" style="font-size: 13px; font-weight: 600;">email</label>
@@ -104,7 +105,7 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
               </div>
               <div style="display: flex; flex-direction: column; gap: 5px;">
                 <label for="p-multiqc-title" style="font-size: 13px; font-weight: 600;">multiqc_title</label>
-                <input id="p-multiqc-title" type="text" value="Liver time course">
+                <input id="p-multiqc-title" type="text">
                 <span style="font-size: 12px; color: #4D5065;">Title of the MultiQC report. string</span>
               </div>
             </div>
@@ -164,7 +165,6 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
             <pre tabindex="0" style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.55; white-space: pre-wrap;">{
   "input": "/g/demo-lab/rnaseq/liver-tc/samplesheet.csv",
   "outdir": "/g/demo-lab/rnaseq/2026-10-25",
-  "multiqc_title": "Liver time course",
   "min_mapped_reads": 10,
   "pseudo_aligner": "salmon"
 }</pre>

@@ -14,7 +14,7 @@ from __future__ import annotations
 
 from sketch import Sketch, Theme, main_for
 
-W, H = 1640, 930
+W, H = 1640, 1010
 
 
 def build(theme: Theme) -> Sketch:
@@ -25,8 +25,18 @@ def build(theme: Theme) -> Sketch:
                       "results, copy and resources",
               "Thomas's decision of 2026-10-28 · architecture §13.7 · api Job files · dev-env §15.3 req. 13-16")
 
+    # -- before · what 5e2493e showed ---------------------------------------------------------------
+    y = 96
+    s.text(40, y + 22, "before (5e2493e)", size=15, anchor="start", weight="bold", colour=t.dim)
+    for i, tab in enumerate(("head output", "head errors", "engine log")):
+        s.frame(200 + i * 150, y + 2, 136, 32, fill="neutral")
+        s.text(268 + i * 150, y + 23, tab, size=12.5, colour=t.dim)
+    s.text(668, y + 23, "work dir: a path to copy, no files shown", size=13, anchor="start", colour=t.dim)
+    s.text(1600, y + 23, "after: every job's own files, below", size=13, anchor="end", colour=t.dim)
+    s.line(40, y + 52, W - 40, y + 52, width=1, amount=0.3, passes=1, colour=t.muted)
+
     # -- A · each job's files -----------------------------------------------------------------------
-    y = 110
+    y = 180
     s.text(40, y + 20, "A · job files", size=18, anchor="start", weight="bold")
     s.hpc_node(40, y + 50, w=60, h=84, busy=3)
     s.text(70, y + 160, "SLURM job", size=12.5, colour=t.dim)
@@ -42,8 +52,8 @@ def build(theme: Theme) -> Sketch:
     s.arrow(510, y + 130, 570, y + 130)
     s.cog(600, y + 130, 16, fill="work")
     s.lock(640, y + 130, 11)
-    for i, line in enumerate(("confined reads (req. 13):", "realpath under the run or", "work directory; names from",
-                              "an allow-list; last 64 KiB,", "1 MiB at most; no binary")):
+    for i, line in enumerate(("confined reads (req. 13):", "openat walk, no symlink out", "of the run or work directory;",
+                              "names from an allow-list;", "last 64 KiB, 1 MiB at most")):
         s.text(664, y + 100 + i * 20, line, size=13, anchor="start", colour=t.ink if i == 0 else t.dim)
     s.arrow(860, y + 130, 910, y + 130)
     s.browser(920, y + 40, 420, 200, url="runs/7T9V1W · Tasks")
@@ -64,18 +74,19 @@ def build(theme: Theme) -> Sketch:
     s.line(40, y + 290, W - 40, y + 290, width=1, amount=0.3, passes=1, colour=t.muted)
 
     # -- B2 and B5 · failure summary and resources ---------------------------------------------------
-    y = 420
+    y = 490
     s.text(40, y + 20, "B2 · why it failed", size=18, anchor="start", weight="bold")
     s.text(40, y + 44, "B5 · resources per task", size=18, anchor="start", weight="bold")
     s.terminal(40, y + 64, 520, 120, (
         "SLURM-job '48731209' failed, SLURM status is:",
         "'OUT_OF_MEMORY'   (Snakemake SLURM plugin)",
-        "sacct -j 48731209  → MaxRSS, Elapsed, Timelimit",
+        "sacct  → ReqMem, MaxRSS, Elapsed, Timelimit",
     ), size=12)
-    s.text(40, y + 210, "sacct once per failed attempt; resources in batches of 100,", size=13, anchor="start",
-           colour=t.dim)
-    s.text(40, y + 230, "at most once a minute; [slurm] accounting = false turns it off (req. 15)", size=13,
+    s.text(40, y + 204, "Nextflow: sacct per failed attempt; Snakemake: batch", size=13, anchor="start")
+    s.text(40, y + 224, "one limiter: 1 call in flight, 60 s apart, 100 IDs a call; fetched when", size=13,
            anchor="start", colour=t.dim)
+    s.text(40, y + 244, "first opened, cached in .spectio/sacct.json; off with accounting = false (req. 15)",
+           size=13, anchor="start", colour=t.dim)
     s.arrow(570, y + 124, 630, y + 124)
     # to scale: 25 px per GB, 75 px per hour
     bx = 760
@@ -97,7 +108,7 @@ def build(theme: Theme) -> Sketch:
     s.line(40, y + 260, W - 40, y + 260, width=1, amount=0.3, passes=1, colour=t.muted)
 
     # -- B1, B3, B4 ---------------------------------------------------------------------------------
-    y = 700
+    y = 780
     s.text(40, y + 20, "B1 · Resume", size=18, anchor="start", weight="bold")
     s.frame(40, y + 40, 200, 56, fill="problem")
     s.text(140, y + 64, "wgs-cohort-12", size=13.5, weight="bold")
@@ -117,7 +128,7 @@ def build(theme: Theme) -> Sketch:
     s.arrow(758, y + 86, 808, y + 86)
     s.browser(816, y + 40, 230, 120, url="multiqc_report.html")
     s.lock(1020, y + 120, 10)
-    s.text(600, y + 182, "read-only; HTML in a sandboxed tab, no same-origin (req. 14)", size=13,
+    s.text(600, y + 182, "read-only; HTML in Spectio's report viewer, a sandboxed iframe (req. 14)", size=13,
            anchor="start", colour=t.dim)
 
     s.text(1110, y + 20, "B4 · copy", size=18, anchor="start", weight="bold")
@@ -126,7 +137,7 @@ def build(theme: Theme) -> Sketch:
     s.arrow(1240, y + 90, 1290, y + 90)
     s.frame(1300, y + 40, 300, 100, fill="surface")
     s.text(1450, y + 68, "Launch", size=14, weight="bold")
-    s.text(1450, y + 92, "Prefilled from wgs-cohort-12", size=12.5, colour=t.dim)
+    s.text(1450, y + 92, "Prefilled from wgs-cohort-12 (F5KZNW)", size=12.5, colour=t.dim)
     s.button(1360, y + 104, 180, "Clear and start empty", fill="neutral", h=28)
     s.text(1110, y + 182, "Copy to a new launch: a fresh run, its own directory", size=13, anchor="start",
            colour=t.dim)

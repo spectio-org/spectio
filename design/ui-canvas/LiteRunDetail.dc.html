@@ -161,13 +161,13 @@ tmux attach -t spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W</pre>
             <span style="display: flex; gap: 8px; align-items: center;"><code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #22253A; overflow-wrap: anywhere; flex: 1 1 auto; min-width: 0;">/g/demo-lab/rnaseq/2026-10-25</code><button type="button" aria-label="Copy the results directory" style="height: 32px; padding: 0 10px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; flex-shrink: 0;">Copy</button></span>
             <h3 style="margin: 4px 0 0; font-size: 12.5px; font-weight: 600; color: #33364A;">Reports</h3>
             <sc-for list="{{reports}}" as="r" hint-placeholder-count="3">
-              <div style="display: flex; gap: 8px; align-items: center; font-size: 12.5px; padding-top: 6px; border-top: 1px solid #EEEFF5;"><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px;"><span style="font-weight: 500;">{{r.name}}</span><span style="color: #6E7287; font-size: 11.5px;">{{r.sub}}</span></span><sc-if value="{{r.ready}}"><a href="#" aria-label="Open {{r.name}} in a new tab" style="font-size: 12.5px; font-weight: 600; text-decoration: none; flex-shrink: 0;">Open ↗</a></sc-if></div>
+              <div style="display: flex; gap: 8px; align-items: center; font-size: 12.5px; padding-top: 6px; border-top: 1px solid #EEEFF5;"><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px;"><span style="font-weight: 500;">{{r.name}}</span><span style="color: #6E7287; font-size: 11.5px;">{{r.sub}}</span></span><sc-if value="{{r.ready}}"><a href="{{r.href}}" aria-label="{{r.aria}}" style="font-size: 12.5px; font-weight: 600; text-decoration: none; flex-shrink: 0;">{{r.act}}</a></sc-if></div>
             </sc-for>
             <h3 style="margin: 4px 0 0; font-size: 12.5px; font-weight: 600; color: #33364A;">Folders</h3>
             <sc-for list="{{folders}}" as="f" hint-placeholder-count="4">
-              <a href="#" style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; padding-top: 6px; border-top: 1px solid #EEEFF5; text-decoration: none; color: #22253A;"><code style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">{{f.n}}</code><span style="color: #4D5065;">{{f.sub}}</span></a>
+              <a href="LiteResults.dc.html" aria-label="Browse {{f.n}}, {{f.sub}}" style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; padding-top: 6px; border-top: 1px solid #EEEFF5; text-decoration: none; color: #22253A;"><code style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">{{f.n}}</code><span style="color: #4D5065;">{{f.sub}}</span></a>
             </sc-for>
-            <span style="font-size: 11.5px; color: #6E7287; line-height: 1.45;">Reports open in a sandboxed tab: their scripts run, but they cannot reach Spectio.</span>
+            <span style="font-size: 11.5px; color: #6E7287; line-height: 1.45;">Reports open in Spectio's sandboxed report viewer: their scripts run, but they cannot reach Spectio.</span>
           </div></div></section>
         </aside>
       </div>
@@ -234,13 +234,13 @@ renderVals() {
     reports: [
       { name: 'MultiQC report', sub: 'written at the end of the run', ready: false },
       { name: 'Execution report', sub: 'pipeline_info · written at the end of the run', ready: false },
-      { name: 'FastQC reports', sub: '20 HTML files · fastqc/', ready: true }
+      { name: 'FastQC reports', sub: '20 HTML files · fastqc/', ready: true, href: 'LiteResults.dc.html', act: 'Browse fastqc/', aria: 'Browse the FastQC reports in fastqc/' }
     ],
     folders: [
-      { n: 'fastqc/', sub: '40 files · 268 MB' },
-      { n: 'trimgalore/', sub: '72 files · 41 GB' },
-      { n: 'star_salmon/', sub: '216 files · 188 GB' },
-      { n: 'pipeline_info/', sub: '3 files · 84 KB' }
+      { n: 'fastqc/', sub: 'modified 09:02' },
+      { n: 'trimgalore/', sub: 'modified 08:57' },
+      { n: 'star_salmon/', sub: 'modified 08:44' },
+      { n: 'pipeline_info/', sub: 'modified 07:41' }
     ],
     params: [
       { k: 'input', v: 'samplesheet.csv' },

@@ -979,11 +979,11 @@ def test_stages_route(authed_client, replayed): ...  # Task 18's GET /api/v1/run
 
 **Files:**
 - Create: `packages/spectio-server/src/spectio_server/files/{confine.py,taskfiles.py,redact.py}`, `packages/spectio-server/src/spectio_server/api/taskfiles.py`
-- Modify: `nf-spectio` (Task 6: send `workdir` and `native_id` with each task event, and return `true` from `enableMetrics()`), the Snakemake logger plugin (Task 7: keep `log` from `job_info`, `log` and `aux.external_jobid` from `job_error`, and the SLURM ID and log path from the submission info text, with a regular expression versioned per `snakemake-executor-plugin-slurm` release), the projector of Tasks 4 and 5 (store `attempts.work_dir`, `attempts.native_id` and the Snakemake log paths, each kept only when it resolves under a root of the run, req. 13), the head script of Task 9 (Nextflow: `NXF_LOG_FILE=<run dir>/.spectio/nextflow.log`; Snakemake on SLURM: `--slurm-keep-successful-logs`), the logs route of Task 18 (the engine log path from the run, not a fixed name)
+- Modify: `nf-spectio` (Task 6: send `workdir` and `native_id` with each task event, and return `true` from `enableMetrics()`), the Snakemake logger plugin (Task 7: keep `log` from `job_info`, `log` and `aux.external_jobid` from `job_error`, and the SLURM ID and log path from the submission info text, with a regular expression versioned per `snakemake-executor-plugin-slurm` release), the projector of Tasks 4 and 5 (store `attempts.work_dir`, `attempts.native_id` and the Snakemake log paths, each kept only when it resolves under a root of the run, req. 13), the head script of Task 9 (Nextflow: `NXF_LOG_FILE=<run dir>/.spectio/nextflow.log` and `unset NXF_DEBUG`; Snakemake on SLURM: `--slurm-keep-successful-logs`), the logs route of Task 18 (the engine log path from the run, not a fixed name)
 - Test: `packages/spectio-server/tests/test_taskfiles.py`, `packages/spectio-server/tests/api/test_taskfiles_api.py`
 
 **Interfaces:**
-- Produces: `open_confined(roots: list[Path], rel: PurePosixPath) -> BinaryIO` (raises `NotAllowed`, `NotFound`), `tail(f, max_bytes: int = 65536) -> bytes`; `list_task_files(attempt) -> list[TaskFile]`; `redact_command_run(text: str) -> str`; the routes `GET /api/v1/tasks/{id}/attempts/{n}/files` and `…/files/{name}` of [api §5](../specs/api-and-data-model.md) (note 2026-10-28).
+- Produces: `open_confined(root_fd: int, rel: PurePosixPath, *, work_dir_fd: int) -> BinaryIO` (the walk of [checking-scenarios §11.1](../specs/checking-scenarios.md#111-how-files-reach-a-check), revised 2026-10-28; raises `NotAllowed`, `NotFound`), `list_confined(root_fd, rel, cap: int) -> Listing`, `tail(f, max_bytes: int = 65536) -> bytes`; `list_task_files(attempt) -> list[TaskFile]`; `redact_command_run(text: str) -> str`; the routes `GET /api/v1/tasks/{id}/attempts/{n}/files` and `…/files/{name}` of [api §5](../specs/api-and-data-model.md) (note 2026-10-28).
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -991,7 +991,10 @@ def test_stages_route(authed_client, replayed): ...  # Task 18's GET /api/v1/run
 def test_nf_allow_list(nf_workdir): ...          # files lists .command.log/err/out/sh/run, .exitcode, .command.begin/trace;
                                                  # never .command.env/.in/.stage or a staged input
 def test_nf_file_tail(authed_client, nf_workdir): ...   # 100 KiB .command.err → last 65536 bytes, text/plain, nosniff
-def test_command_run_redacted(nf_workdir): ...   # export TOKEN="abc" → export TOKEN=«hidden»; #SBATCH lines kept
+def test_req13_command_run_redacted(nf_workdir): ...     # export TOKEN="abc" → export TOKEN=«hidden»; #SBATCH lines kept
+def test_req13_redact_lexer(nf_workdir): ...     # multi-line "…" value, $'a\nb', beforeScript FOO=bar → hidden
+def test_req13_redact_container_env(nf_workdir): ...     # -e NAME=value, SINGULARITYENV_X=… → hidden [to be validated]
+def test_req13_redact_fails_closed(nf_workdir): ...      # unterminated quote → every line from there on hidden
 def test_array_task_has_no_log(nf_workdir): ...  # native_id 8812345_3 and no .command.log → state absent, note
 def test_cleaned_workdir_410(authed_client): ... # work directory gone → 410 log-cleaned
 def test_not_written_yet(authed_client): ...     # running attempt, no .exitcode → state not_yet, no error
@@ -999,12 +1002,24 @@ def test_smk_rule_and_slurm_logs(smk_run): ...   # job_info log + submission tex
                                                  # .snakemake/slurm_logs/rule_bwa_mem/WGS-07/48731209.log
 def test_smk_job_error_paths(smk_run): ...       # job_error log and aux.external_jobid recorded on the attempt
 def test_smk_deleted_after_success(smk_run): ... # SLURM log missing on a succeeded job → deleted_after_success
-def test_forged_paths_dropped(replayed): ...     # workdir /etc, log ../../.ssh/id_rsa, SLURM log outside the launch dir
-                                                 # → not stored, counted
-def test_symlink_fifo_refused(tmp_path): ...     # .command.err symlink to ~/.bashrc, FIFO, device → refused, no hang
-def test_name_outside_allow_list_422(authed_client): ...  # name ".command.env", "../x", "/etc/passwd" → 422
+def test_req13_forged_paths_dropped(replayed): ...       # workdir /etc, log ../../.ssh/id_rsa, SLURM log outside the
+                                                 # launch dir → not stored, counted
+def test_req13_symlink_fifo_refused(tmp_path): ...       # .command.err symlink to ~/.bashrc, FIFO, device → refused, no hang
+def test_req13_dir_swapped_mid_request(tmp_path): ...    # a parent directory replaced by a symlink between two openat → refused
+def test_req13_published_symlink_served(tmp_path): ...   # results/x.bam → symlink into the run's work dir → served
+def test_req13_symlink_to_home_refused(tmp_path): ...    # results/x → symlink to $HOME → refused, listed "link outside the run"
+def test_req13_foreign_uid(tmp_path, other_uid): ...     # a file owned by another uid → refused by fstat; hidden from listings
+def test_req13_spectio_dir(authed_client): ...   # .spectio/head.out, head.err, nextflow.log served; .spectio/manifest.json,
+                                                 # .spectio/sacct.json → 422
+def test_req13_name_outside_allow_list_422(authed_client): ...  # name ".command.env", "../x", "/etc/passwd" → 422
+def test_req13_smk_name_exact(authed_client, smk_run): ...      # a recorded log path with one byte changed → 422
+def test_req13_escape_sequences_removed(authed_client): ...     # ESC [ 31m, OSC 8 links, BEL → stripped from the text served
+def test_req13_headers(authed_client): ...       # no-store, no-referrer, filename* on Download; a name with \x07 → 422
+def test_req13_range_capped(authed_client): ...  # Range of 5 MiB → 1 MiB served
+def test_req13_file_pool_separate(slow_fs): ...  # a file read stalled 30 s → spool events still projected
 def test_binary_415(authed_client, nf_workdir): ...       # NUL in the first 8 KiB → 415 binary-file
-def test_engine_log_per_run(tmp_path): ...       # head.sh exports NXF_LOG_FILE under the run's .spectio/; Snakemake
+def test_engine_log_per_run(tmp_path): ...       # head.sh exports NXF_LOG_FILE under the run's .spectio/ and runs
+                                                 # unset NXF_DEBUG; Snakemake
                                                  # args carry --slurm-keep-successful-logs on SLURM only
 def test_metrics_enabled(nf_run): ...            # the trace of a finished task has realtime, %cpu and peak_rss
 ```
@@ -1020,24 +1035,33 @@ def test_metrics_enabled(nf_run): ...            # the trace of a finished task 
 
 **Files:**
 - Create: `packages/spectio/src/spectio/runner/sacct.py`, `packages/spectio-server/src/spectio_server/failure.py`
-- Modify: the projector (resources from the Nextflow trace and the Snakemake `job_info`; `benchmark:` files read at job end), the read API of Task 18 (`failure` extended, `resources` on task items)
+- Modify: the projector (resources from the Nextflow trace and the Snakemake `job_info`; `benchmark:` files read at job end), the read API of Task 18 (`failures`, `failures_total`, `resources` on task items), `spectio init` (resolve and store the `sacct` path)
 - Test: `packages/spectio/tests/test_sacct.py`, `packages/spectio-server/tests/test_failure.py`
 
 **Interfaces:**
-- Produces: `sacct_jobs(ids: list[str], timeout_s: float = 10) -> dict[str, SacctRow]` (`SacctRow(state, exit_code, reason, max_rss_bytes, elapsed_s, req_mem_bytes, time_limit_s)`), `parse_smk_slurm_message(text: str) -> SchedulerInfo | None`, `build_failure(run) -> Failure`.
+- Produces: `SacctLimiter` (one call in flight, one call per 60 s, 100 IDs per call), `sacct_jobs(ids: list[str], timeout_s: float = 10) -> dict[str, SacctRow]` (`SacctRow(state, exit_code, reason, max_rss_bytes, elapsed_s, req_mem_bytes, time_limit_s)`), `parse_smk_slurm_message(text: str) -> SchedulerInfo | None`, `build_failures(run, limit: int = 10) -> tuple[list[Failure], int]`.
 
 - [ ] **Step 1: Write the failing tests**
 
 ```python
-def test_sacct_argv_and_id_check(fakebin): ... # ids "8812477", "8812345_3" → one argv list, no shell; "1;rm" → refused
+def test_req15_argv_and_id_check(fakebin): ... # ids "8812477", "8812345_3" → one argv list, no shell; "1;rm",
+                                               # 13 digits, "1_123456789" → refused before any call
+def test_req15_env_explicit(fakebin): ...      # the stored sacct path, SLURM_TIME_FORMAT=standard, nothing inherited
 def test_sacct_parse_and_timeout(fakebin): ... # parsable2 output → SacctRow; slow fake → None after 10 s, no crash
-def test_sacct_batches(fakebin): ...           # 250 finished Snakemake jobs → 3 calls, at most one a minute
-def test_sacct_off(fakebin, settings): ...     # [slurm] accounting = false → no call; summary says unavailable
-def test_smk_message_parsed(): ...             # "SLURM-job '48731209' failed, SLURM status is: 'OUT_OF_MEMORY'. Reason: …"
-                                               # → state OUT_OF_MEMORY, reason, source engine_message
+def test_req15_limiter(fakebin): ...           # 5,000 failed attempts opened → at most 50 calls, one in flight, 60 s apart
+def test_req15_rebuild_no_calls(fakebin): ...  # index rebuild and spool replay → 0 calls; values read from .spectio/sacct.json
+def test_req15_cache_file(fakebin): ...        # .spectio/sacct.json written with mode 0600
+def test_req15_off(fakebin, settings): ...     # [slurm] accounting = false → no call; usage_source null, "unavailable"
+def test_smk_message_parsed(): ...             # "… SLURM status is: 'OUT_OF_MEMORY'. Reason: Step 0: OutOfMemory."
+                                               # → state OUT_OF_MEMORY, reason, state_source engine_message;
+                                               # "… 'FAILED'. Reasons: Step 0: NonZeroExitCode, Step 1: …" → both reasons;
+                                               # "… failed due to a node failure, SLURM status is: 'NODE_FAIL'. Failed
+                                               # nodes will be excluded …" → state NODE_FAIL, reason node failure
 def test_smk_message_no_sacct(): ...           # "… Detailed failure reason unavailable …" → state, reason None
-def test_nf_failure_summary(replayed_flaky, fakebin): ...  # exit 137 on its last attempt → process, exit_code, native_id,
-                                               # scheduler from sacct, log_tail = last 20 lines of .command.log
+def test_nf_failure_summary(replayed_flaky, fakebin): ...  # exit 137 on its last attempt → process, tag, exit_code,
+                                               # native_id, scheduler from sacct on first view, log_tail = last 20
+                                               # lines of .command.log
+def test_failures_capped(replayed_many_failures): ...  # 25 failed jobs → failures has 10, failures_total 25
 def test_resources_nf(replayed_flaky): ...     # task item resources: cpus, memory_bytes, time_s, realtime_s, cpu_percent,
                                                # peak_rss_bytes, source trace
 def test_resources_smk(smk_run): ...           # threads and mem_mb requested; benchmark file → source benchmark;
@@ -1051,11 +1075,11 @@ def test_resources_smk(smk_run): ...           # threads and mem_mb requested; b
 
 ### Task 30: Resume, Copy to a new launch and the copy actions
 
-**Spec:** [api §5.1](../specs/api-and-data-model.md) (`:relaunch` mode `resume`, note 2026-10-28), [api §5](../specs/api-and-data-model.md) (note 2026-10-28, Run, Copy to a new launch, Resume), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 16 · **Depends on:** 9, 10, 17, 18
+**Spec:** [api §5.1](../specs/api-and-data-model.md) (`:relaunch` mode `resume`, note 2026-10-28), [api §5](../specs/api-and-data-model.md) (note 2026-10-28, Run, Copy to a new launch, Resume), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 7 and 16 · **Depends on:** 9, 10, 17, 18, 28
 
 **Files:**
 - Create: `packages/spectio-server/src/spectio_server/api/relaunch.py`
-- Modify: `render_head_script` (Task 9: `LaunchSpec.resume_of: ResumeSource | None`, with the parent's launch and work directories and `engine_session_id`), `write_run_manifest` (`parent_run_id`), the read API of Task 18 (`command`, `parent_run_id`, `resumed_as`), the launch API of Task 17 (`GET /runs/{id}:launch-template`)
+- Modify: `render_head_script` (Task 9: `LaunchSpec.resume_of: ResumeSource | None`, with the parent's launch and work directories and `engine_session_id`), `write_run_manifest` (`parent_run_id`), the read API of Task 18 (`command`, `parent_run_id`, `resumed_as`, `actions.resume`), the launch API of Task 17 (`GET /runs/{id}:launch-template` with `code_loading`), the head script of Task 9 (launch-directory lock file, `stat .` device and inode check, `umask 022`)
 - Test: `packages/spectio-server/tests/api/test_relaunch.py`, `packages/spectio/tests/test_headscript.py` (new cases)
 
 - [ ] **Step 1: Write the failing tests**
@@ -1063,16 +1087,24 @@ def test_resources_smk(smk_run): ...           # threads and mem_mb requested; b
 ```python
 def test_resume_failed_creates_child(authed_client, failed_run): ...  # 201, child queued, parent_run_id set, parent stays failed
 def test_resume_states(authed_client): ...     # succeeded or running → 409; cli-observed → 422 not-in-this-version
-def test_resume_parent_head_alive_409(authed_client): ...
-def test_resume_one_child_at_a_time(authed_client): ...  # a second resume while the first child runs → 409
+def test_resume_actions_field(authed_client): ...  # actions.resume {allowed, reason} for each state; resumed_as [{id, name, state}]
 def test_resume_other_fields_422(authed_client): ...     # mode rerun_from, params_patch → 422 not-in-this-version
+def test_req16_relaunch_origin_csrf(authed_client): ...  # no Origin, foreign Origin, or no CSRF token → 403, no child
+def test_req16_parent_head_unverified_409(authed_client): ...  # parent head on another node, or another boot ID → 409
+def test_req16_one_child_parallel(authed_client): ...    # two parallel POSTs → one 201, one 409 (BEGIN IMMEDIATE)
+def test_req16_no_unlock_when_live(tmp_path): ...  # a live Snakemake started by hand in the directory → no --unlock, 409
+def test_req16_dir_swapped(tmp_path): ...        # launch dir replaced after the check → head refuses (stat . dev/inode)
+def test_req16_planted_config(authed_client): ...  # nextflow.config or .nextflow/ owned by another uid or group-writable → refused
+def test_req16_session_id_uuid(authed_client): ...  # engine_session_id "x; rm -rf ~" → refused before the head script
 def test_resume_head_script_nf(tmp_path): ...  # cwd = parent's launch dir, "-resume <session id>", "-w <parent work>",
-                                               # spool and NXF_LOG_FILE in the child's .spectio/
-def test_resume_head_script_smk(tmp_path): ... # "--unlock" then "--rerun-incomplete", in the parent's launch dir
+                                               # spool and NXF_LOG_FILE in the child's .spectio/, umask 022, lock file
+def test_resume_head_script_smk(tmp_path): ... # "--unlock" only when the head is proven gone, then "--rerun-incomplete"
 def test_resume_rechecks_dirs(authed_client): ...  # parent launch dir made group-writable → refused (req. 10)
 def test_command_quoted(authed_client): ...    # location "/p/a b'$(x)" → argv list; text is POSIX-quoted, names the
                                                # params file, never a value; cli-observed → command null
 def test_launch_template(authed_client): ...   # params, profiles, location; non_default lists the changed keys
+def test_req16_code_loading_flagged(authed_client): ...  # custom_config_base, -c, --configfile, a local location → in
+                                               # code_loading; writable_by_others true for a group-writable path
 ```
 
 - [ ] **Step 2:** `uv run pytest packages/spectio-server/tests/api/test_relaunch.py packages/spectio/tests/test_headscript.py -v`: FAIL.
@@ -1086,22 +1118,29 @@ def test_launch_template(authed_client): ...   # params, profiles, location; non
 
 **Files:**
 - Create: `packages/spectio-server/src/spectio_server/api/results.py`
-- Modify: the launch API of Task 17 (`runs.results_dir`: Nextflow `params.outdir`, resolved against the launch directory; Snakemake the launch directory, without `.snakemake/` and `.spectio/`)
+- Modify: the launch API of Task 17 (`runs.results_dir`: Nextflow `params.outdir`, resolved against the launch directory; Snakemake the launch directory, without `.snakemake/` and `.spectio/`); the web app's report viewer page and its CSP (`frame-src 'self'`); the token link page and the CLI ("Spectio never asks you to paste a link")
 - Test: `packages/spectio-server/tests/api/test_results.py`, `tests/e2e/report.spec.ts`
 
 - [ ] **Step 1: Write the failing tests**
 
 ```python
-def test_results_listing(authed_client, results): ...   # one level, dirs first, 1000-entry cap with truncated
-def test_results_reports(authed_client, results): ...   # multiqc_report.html first, FastQC reports after, depth ≤ 4
-def test_results_confined(authed_client, results): ...  # ../, absolute, symlink to $HOME → 422 or "link outside the run"
-def test_html_sandbox_headers(authed_client, results): ...  # CSP sandbox without allow-same-origin, connect-src 'none',
-                                                        # nosniff; SVG → attachment
+def test_results_listing(authed_client, results): ...   # one level, dirs first, folder size null, no recursion;
+                                                        # exists false before the directory is created
+def test_req14_scandir_cap(authed_client, results): ... # 5,000 entries → 1000 read, truncated, scandir stopped there
+def test_results_reports(authed_client, results): ...   # multiqc_report.html first, FastQC grouped, .html/.htm only, depth ≤ 4
+def test_req14_report_search_caps(authed_client, big_results): ...  # stops at 10,000 entries or 5 s; cached after the run ends
+def test_req13_results_confined(authed_client, results): ...  # ../, absolute, symlink to $HOME → 422 or "link outside the run"
+def test_req14_headers(authed_client, results): ...     # .html: CSP sandbox allow-scripts allow-downloads, no
+                                                        # allow-same-origin, frame-ancestors 'self'; .svg, .xhtml, .xml →
+                                                        # attachment with CSP sandbox; all: no-store, no-referrer, nosniff
+def test_req14_stream_cap(authed_client): ...           # a fifth follow stream in one session → 429
 def test_observed_run_no_results(authed_client): ...    # cli-observed → 404
 ```
 
 ```ts
-test("a MultiQC report renders in its sandbox and cannot call the API", async ({ page }) => { /* real report fixture */ });
+test("req14: a report in the viewer cannot open windows, navigate the top page or leave", async ({ page }) => {
+  /* fixture report calls window.open, sets top.location, clicks an external link: all blocked; banner shown */ });
+test("a MultiQC report renders in the viewer and cannot call the API", async ({ page }) => { /* real report fixture */ });
 ```
 
 - [ ] **Step 2:** `uv run pytest packages/spectio-server/tests/api/test_results.py -v`: FAIL.
@@ -1111,20 +1150,24 @@ test("a MultiQC report renders in its sandbox and cannot call the API", async ({
 
 ### Task 32: The screens: job files, failure summary, results, Resume, copy and resources
 
-**Spec:** [ui-spec §4.4](../specs/ui-spec.md#44-run-detail) (note 2026-10-28, run tools) · **Depends on:** 20, 28–31 · **Boards:** LiteRunTasks, MLiteRunTasks, LiteRunLogs, LiteRunFailed, LiteRunDetail, MLiteRunDetail, LiteLaunch
+**Spec:** [ui-spec §4.4](../specs/ui-spec.md#44-run-detail) (note 2026-10-28, run tools) · **Depends on:** 20, 28–31 · **Boards:** LiteRunDetail, MLiteRunDetail, LiteRunTasks, MLiteRunTasks, LiteTaskFiles, MLiteTaskFilesSheet, LiteTaskFilesStates, LiteRunLogs, MLiteRunLogs, LiteRunFailed, MLiteRunFailed, LiteRunActions, MLiteResumeSheet, LiteResults, LiteReportViewer, LiteLaunch
 
 **Files:**
-- Create: `web/src/runs/{TaskFilesDrawer.tsx,FailureSummary.tsx,ResultsSection.tsx,RunActions.tsx}`, `web/src/runs/TaskFilesDrawer.test.tsx`
+- Create: `web/src/runs/{RunHeader.tsx,TaskFilesDrawer.tsx,FailureSummary.tsx,ResultsSection.tsx,ResultsBrowser.tsx,ReportViewer.tsx,ResumeDialog.tsx}`, `web/src/runs/TaskFilesDrawer.test.tsx`
 - Modify: `web/src/runs/RunDetailPage.tsx`, `web/src/launch/LaunchPage.tsx` (prefill from `:launch-template`), `tests/e2e/skeleton.spec.ts`
 
 - [ ] **Step 1: Write the failing tests**
 
 ```ts
 test("Files opens the drawer on .command.log for a failed attempt; Escape returns focus to the row's button", …);
-test("a missing file says why, in words", …);           // not yet, deleted after success, cleaned
+test("a missing file says why, in words, and its tab label carries the state", …);  // every LiteTaskFilesStates panel
+test("the size line says 'whole file' or 'last 64 KiB of …'; Download says 'Download last 1 MiB'", …);
 test("tabs are buttons with role tab; the drawer is aria-modal", …);
 test("failed run: Why it failed shows SLURM state, requested and used memory, last lines", async ({ page }) => { /* … */ });
 test("Resume asks, creates a child, and both runs link to each other", async ({ page }) => { /* … */ });
+test("a refused Resume stays visible, aria-disabled, with its reason as text", async ({ page }) => { /* … */ });
+test("the Copy menu is in the shared header on every tab and state, and announces 'Copied'", async ({ page }) => { /* … */ });
+test("a report opens in the viewer with its 'Untrusted report' banner", async ({ page }) => { /* … */ });
 test("Copy to a new launch opens the form prefilled with the non-default values listed", async ({ page }) => { /* … */ });
 test("resources columns show 'near limit' as text", async ({ page }) => { /* … */ });
 ```

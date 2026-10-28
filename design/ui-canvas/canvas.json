@@ -1166,6 +1166,54 @@
    "h": 844,
    "title": "0.0.1 phone · Job files sheet",
    "page": "lite"
+  },
+  "LiteTaskFilesStates.dc.html": {
+   "x": 12480,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Job files, every state",
+   "page": "lite"
+  },
+  "LiteRunActions.dc.html": {
+   "x": 14040,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Run actions, Resume and Copy",
+   "page": "lite"
+  },
+  "LiteResults.dc.html": {
+   "x": 15600,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Results browser",
+   "page": "lite"
+  },
+  "LiteReportViewer.dc.html": {
+   "x": 17160,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Report viewer, sandboxed",
+   "page": "lite"
+  },
+  "MLiteRunFailed.dc.html": {
+   "x": 4230,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Run detail, failed",
+   "page": "lite"
+  },
+  "MLiteResumeSheet.dc.html": {
+   "x": 4700,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Resume sheet",
+   "page": "lite"
   }
  },
  "order": [
@@ -1268,8 +1316,12 @@
   "LiteRunDetailSnakemake.dc.html",
   "LiteRunTasks.dc.html",
   "LiteTaskFiles.dc.html",
+  "LiteTaskFilesStates.dc.html",
   "LiteRunLogs.dc.html",
   "LiteRunFailed.dc.html",
+  "LiteRunActions.dc.html",
+  "LiteResults.dc.html",
+  "LiteReportViewer.dc.html",
   "LiteCancelDialog.dc.html",
   "LiteRunObserved.dc.html",
   "MLiteHome.dc.html",
@@ -1278,8 +1330,10 @@
   "MLiteRunTasks.dc.html",
   "MLiteTaskFilesSheet.dc.html",
   "MLiteRunLogs.dc.html",
+  "MLiteRunFailed.dc.html",
   "MLiteRunObserved.dc.html",
   "MLiteCancelSheet.dc.html",
+  "MLiteResumeSheet.dc.html",
   "MLiteLaunch.dc.html",
   "LiteLegend.dc.html",
   "LiteStates.dc.html",

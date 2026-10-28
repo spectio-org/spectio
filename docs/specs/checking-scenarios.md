@@ -292,6 +292,14 @@ Three parts, each with one job:
    - follows a symlink only when its target is inside a root or inside the engine work directory of the same run. Nextflow publishes as `'symlink'` by default (nextflow `114f1fe`, `docs/reference/process/directives/publish-dir.mdx:89`), so published results usually point into the work directory;
    - always refuses its own credentials and Spectio's own files (runner configuration, credential file).
 
+   *Revised 2026-10-28 (APPLY7 review SEC-150): the walk.* `realpath` then `open` leaves a window in which a directory can be swapped for a symlink, so every read and listing walks the path instead, one component at a time, from an open file descriptor of the root; this replaces the first three steps above, and [dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 13 links here:
+   - each directory component is opened with `openat(dirfd, name, O_RDONLY|O_DIRECTORY|O_NOFOLLOW)`, so a symlinked directory fails the walk;
+   - the last component is opened with `openat(dirfd, name, O_RDONLY|O_NOFOLLOW|O_NONBLOCK)`, then `fstat` must show a regular file (or a directory, for a listing) owned by the user's uid; a FIFO, a device or another owner is refused;
+   - when the last component is a symlink (`ELOOP`), the walk reads it with `readlinkat` and follows it only when the target lies inside the same run's engine work directory, the case of `publishDir` in `'symlink'` mode; the target is then opened by the same walk from the work directory's descriptor, never by path, and a second symlink is refused;
+   - a listing reads entries with `fstatat(dirfd, name, AT_SYMLINK_NOFOLLOW)`, shows a symlink to anywhere else as "link outside the run" without following it, and hides entries owned by another uid; it stops at its entry cap.
+
+   **Tests** (P1 Tasks 28 and 31): a parent directory swapped for a symlink in the middle of a request is refused; a published symlink into the work directory is served; a symlink to `$HOME` is refused; an entry owned by another uid is hidden.
+
    The server never sends an absolute path: a request names (run, root, relative path). Globs from `spectio.yml` or an overlay are evaluated relative to a root; `..` and absolute patterns are refused. The server converts paths from engine events to (root, relative path) and drops those outside every root; the runner checks again. Whether these roots coexist with symlink publishing and Snakemake outputs is checked in the proposed spike `sec-runner-confinement` ([R5](../reviews/R5-security.md)). **Tests:** the glob `../../.ssh/*`, a symlink to `$HOME` and an absolute path in a forged event are refused.
 
    Files on object storage (Snakemake storage plugins, Nextflow on cloud executors) are read through the same storage credentials the run uses **[to be validated]** per provider.
