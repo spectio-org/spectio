@@ -1,0 +1,10 @@
+{
+  "private": true,
+  "description": "Spectio end-to-end tests (docs/specs/dev-environment-and-testing.md §6.1). Pin: dev/versions.env PLAYWRIGHT_VERSION",
+  "scripts": {
+    "test": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.63.0"
+  }
+}
