@@ -50,6 +50,10 @@ media:
       - docs/assets/shots/review-queue_light.webp
       - docs/assets/shots/environments_light.webp
       - docs/assets/shots/admin-plugins_light.webp
+      - docs/assets/shots/lite-run-detail_light.webp
+      - docs/assets/shots/lite-launch_light.webp
+      - docs/assets/shots/lite-runs_light.webp
+      - docs/assets/shots/lite-run-detail-phone_light.webp
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
