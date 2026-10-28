@@ -2,12 +2,12 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use `subagent-driven-development` (step P3 of [`next-phase.md`](../playbooks/next-phase.md)) or `executing-plans` to implement this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-*Draft, 2026-10-28 (step P1); revised the same day for the head in tmux, the EMBL target and the laptop access ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)), then after the doc review of PR #47 for live refresh over SSE and SQLite as a rebuildable index ([log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index)), and after the security review of that change for §15.3 requirements 8–11 ([record](../reviews/code/APPLY4.md)); then for runs started from a terminal, Tasks 25 and 26 ([log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)); then for stages declared or detected, Assumption 6 and Task 27 ([log](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list)). Waiting for Thomas at the GO gate ([R10 §5](../reviews/R10-synthesis.md#5-go-no-go)). No product code exists yet; this page writes none.*
+*Draft, 2026-10-28 (step P1); revised the same day for the head in tmux, the EMBL target and the laptop access ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)), then after the doc review of PR #47 for live refresh over SSE and SQLite as a rebuildable index ([log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index)), and after the security review of that change for §15.3 requirements 8–11 ([record](../reviews/code/APPLY4.md)); then for runs started from a terminal, Tasks 25 and 26 ([log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)); then for stages declared or detected, Assumption 6 and Task 27 ([log](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list)); then for each job's files, Resume, the failure summary, results, the copy actions and resources, Assumptions 1, 3 and 20 (notes) and Tasks 28 to 32 ([log](../decisions/log.md#2026-10-28-001-shows-each-jobs-files-and-gains-resume-failure-summary-results-copy-and-resources)). Waiting for Thomas at the GO gate ([R10 §5](../reviews/R10-synthesis.md#5-go-no-go)). No product code exists yet; this page writes none.*
 
 ![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel, refreshed over SSE, reaches spectio serve, in its own tmux session on an EMBL login node, through an SSH tunnel (spectio-open or an SSH config entry) and a one-time token link; the runner starts each engine head in its own tmux session on that login node, the engine sends its tasks to SLURM, and the plugins' spool file in the run directory is read back into a SQLite index that the server can rebuild from the run directories; milestones M1 to M5 and §15.3 security requirements 1 to 7 are marked where they apply, above a to-scale strip of the 24 tasks](../assets/diagrams/p1_skeleton_light.png#only-light)
 ![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel, refreshed over SSE, reaches spectio serve, in its own tmux session on an EMBL login node, through an SSH tunnel (spectio-open or an SSH config entry) and a one-time token link; the runner starts each engine head in its own tmux session on that login node, the engine sends its tasks to SLURM, and the plugins' spool file in the run directory is read back into a SQLite index that the server can rebuild from the run directories; milestones M1 to M5 and §15.3 security requirements 1 to 7 are marked where they apply, above a to-scale strip of the 24 tasks](../assets/diagrams/p1_skeleton_dark.png#only-dark)
 
-*Note 2026-10-28: the figure predates Tasks 25 and 26 (M6, runs started from a terminal) and Task 27 (M7, stages).*
+*Note 2026-10-28: the figure predates Tasks 25 and 26 (M6, runs started from a terminal), Task 27 (M7, stages) and Tasks 28 to 32 (M8, job files and run tools).*
 
 Step page: [Progress · P1](../progress/W4/P1.md).
 
@@ -25,9 +25,9 @@ Step page: [Progress · P1](../progress/W4/P1.md).
 
 Decisions taken in place of Thomas, who was not available for brainstorming. Each is *(assumed — pending Thomas)*; the inbox entry is named where one exists.
 
-1. **D1, no relaunch, no parameter history** (inbox #61). The run detail shows its own parameters only. *(assumed — pending Thomas)*
+1. **D1, no relaunch, no parameter history** (inbox #61). The run detail shows its own parameters only. *(assumed — pending Thomas)* *Note 2026-10-28 (Thomas, "les 5 dans 0.0.1", [log](../decisions/log.md#2026-10-28-001-shows-each-jobs-files-and-gains-resume-failure-summary-results-copy-and-resources)): Resume of a failed or cancelled run and Copy to a new launch are in 0.0.1 (Task 30); rerun from a stage, the relaunch dialog and the parameter history stay out.*
 2. **D2, how a workflow reaches the form** (inbox #34, SR-056). The user types an absolute path to a pipeline directory that their own account can read. The engine is detected from the files: `main.nf` means Nextflow; `workflow/Snakefile` or `Snakefile` means Snakemake. The schema comes from `nextflow_schema.json`, or from `config.schema.yaml` / `workflow/schemas/config.schema.yaml`. Without a schema, the types are inferred from `config/config.yaml`, or the form falls back to key / value rows. There is no catalogue, no `POST /workflows`, no Git URL and no `POST /runs:validate` in P1. A `workflows` row (source `local`) and a `workflow_versions` row are created at launch. *(assumed — pending Thomas)*
-3. **D3, what engine events may carry** (inbox #55, option (a)). `nf-spectio` sends no `script` or `env`. The SDK event models are allow-lists (`extra="ignore"`), so `script`, `env`, `homeDir`, `commandLine`, `configText` and Snakemake's `cmd` are never stored, even if a plugin sends them. *(assumed — pending Thomas)*
+3. **D3, what engine events may carry** (inbox #55, option (a)). `nf-spectio` sends no `script` or `env`. The SDK event models are allow-lists (`extra="ignore"`), so `script`, `env`, `homeDir`, `commandLine`, `configText` and Snakemake's `cmd` are never stored, even if a plugin sends them. *(assumed — pending Thomas)* *Note 2026-10-28: unchanged by Task 30. The command a run shows is the one the head script runs, built by Spectio, and Snakemake's `shellcmd` is not stored, so a Snakemake job has no script to show (inbox #70). The trace's resource fields, `workdir` and `native_id` are kept (Task 28, 29).*
 4. **D4, Cancel** (inbox #62). One Cancel action: a cancel marker `.spectio/cancel` in the run directory, then an interrupt in the head's tmux pane (`tmux send-keys -t <pane id> C-c`), then SIGTERM to the head's process group if it is still alive after a 60 s grace period, then SIGKILL after another 60 s ([schedulers §3.1.1](../specs/schedulers-and-monitoring.md), tmux launcher). On the local executor: SIGTERM to the process group, then SIGKILL. *(assumed — pending Thomas)*
 5. **Attempt state `aborted`** (inbox #56, option (a)). *(assumed — pending Thomas)*
 6. **Stages and the processes or rules list, both** *(decided — Thomas, 2026-10-28; [log](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list))*. The processes (Nextflow) or rules (Snakemake) list of Tasks 18 and 20 stays, in first-seen order, with task counts by state. Task 27 adds named stages: declared in a `spectio.yml` (the workflow's own, or a lab overlay file, [checking-scenarios §12.7](../specs/checking-scenarios.md)), else detected ([ui-spec §5.1.1](../specs/ui-spec.md)), else none; display only, no gates; names in no stage have `tasks.stage_id` null. State words, the header line, badges, the "Not in a stage" group, process names and the empty-state line: the [ui-spec §4.4 note of 2026-10-28](../specs/ui-spec.md#44-run-detail). The synthetic pipelines have no subworkflows, so they show no stages; the stage tests use the real-pipeline fixtures of `tests/pipelines/real/stages/`. *Note 2026-10-28: this replaces "stages are the processes or rules; detection and `run_stages` come later".* The naming of detected stages is *(assumed — pending Thomas, inbox #68)*.
@@ -44,7 +44,7 @@ Decisions taken in place of Thomas, who was not available for brainstorming. Eac
 17. **Bridge delivery.** `nf-spectio` is unpacked into `$NXF_HOME/plugins/nf-spectio-<ver>/`, as [architecture §7.3](../specs/architecture-plugins-and-packaging.md) says. The Snakemake logger is copied to `<launch>/.spectio/pylib/` and put on `PYTHONPATH`, so compute nodes read it from the run directory. *(assumed — pending Thomas)*
 18. **Minimal tenancy.** `spectio init` creates one principal (the Unix user), one project `default`, one environment (kind `slurm`, or `local` with `--local`) and its runner row. There are no groups. Every tenant row keeps `project_id` ([`mvp-0.0.1.md`](../specs/mvp-0.0.1.md) §4). *(assumed — pending Thomas)*
 19. **Where the tests run.** The Playwright smoke runs against `spectio serve` on the local executor on the CI runner. The sind end-to-end tests drive the HTTP API from inside the submitter node, as a browser behind a tunnel would. *(assumed — pending Thomas)*
-20. **Ultra-simple screens.** The launch form has no stepper, no review step and no file checks. Logs are the head stdout and stderr and the engine run log, last 64 KiB; per-task logs come later. Sessions last until the server restarts. *(assumed — pending Thomas)*
+20. **Ultra-simple screens.** The launch form has no stepper, no review step and no file checks. Logs are the head stdout and stderr and the engine run log, last 64 KiB; per-task logs come later. Sessions last until the server restarts. *(assumed — pending Thomas)* *Reversed in part 2026-10-28 (Thomas: "Je veux également que ça soit possible de voir les logs globaux et les lots et stout err log sh et autres de chaque job si possible via workdir", [log](../decisions/log.md#2026-10-28-001-shows-each-jobs-files-and-gains-resume-failure-summary-results-copy-and-resources)): each job's own files and its work directory are in 0.0.1 (Task 28), with the failure summary, Resume, results, the copy actions and resources (Tasks 29 to 32); the run logs keep the last 64 KiB.*
 21. **The database is an index in a node-local temporary directory** (inbox #64, option (d)). At EMBL everything is shared between the login nodes except some temporary directories (Thomas, 2026-10-28). The data directory (`spectio.toml`, the state file; no secret) stays in `~/.spectio/`; the database, `serve.lock` and the server key go in `<node-local tmp>/spectio-<uid>/`, 0700, by default `$TMPDIR` or `/tmp`, with the `mkdtemp` fallback of §15.3 when that path is squatted (which path is node-local on the EMBL login nodes is **[to be validated]**). Each run directory holds the truth: the manifest `.spectio/run.json`, the spool, `head.pid`, `head.exit`, the cancel marker and `.spectio/launch-failed.json`. At boot the server reconciles the run directories missing from the index, which is all of them when the database is new, under the checks of §15.3 req. 10 ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) Where data lives). *(assumed — pending Thomas, inbox #64)*
 22. **Runs started from a terminal** (Thomas, 2026-10-28, [log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)). A bridge started without `SPECTIO_RUN_ID` makes its own run ID, writes the spool in `<launch dir>/.spectio/events/`, and writes a pointer `~/.spectio/observed/<run ID>.json` only if `~/.spectio/` exists ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal)). The runner scans the pointers under §15.3 req. 12; the run gets origin `cli-observed` and is monitor only, with no Cancel (inbox #65). The bridges are released as [dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases) says, once Thomas has claimed the names (inbox #66); P1 builds and dry-runs the release packages only. *(assumed — pending Thomas)*
 
@@ -86,6 +86,7 @@ The five inputs most likely to hurt a test user that no other test covers. Each 
 | M5 · On the cluster | 22–24 | both engines end to end on `slurm-mini` in CI, with cancel and restart; the SSH config entry and `spectio-open` |
 | M6 · Runs from a terminal | 25–26 | a run started by hand with the bridge enabled shows in the runs list, monitor only; both bridges build as release packages, dry-run only |
 | M7 · Stages | 27 | the run detail shows named stages, declared or detected, above the processes or rules list, on the four example pipelines |
+| M8 · Job files and run tools | 28–32 | each job's files and work directory, the failure summary with the SLURM state, resources per job, Resume and the copy actions, results and reports in a sandbox |
 
 Commands assume the repository root, and that the uv workspace exists (after Task 1).
 
@@ -968,23 +969,189 @@ def test_stages_route(authed_client, replayed): ...  # Task 18's GET /api/v1/run
 
 ---
 
+## M8 · Job files and run tools
+
+*Added 2026-10-28 (Thomas: "Je veux également que ça soit possible de voir les logs globaux et les lots et stout err log sh et autres de chaque job si possible via workdir", then "les 5 dans 0.0.1"; [log](../decisions/log.md#2026-10-28-001-shows-each-jobs-files-and-gains-resume-failure-summary-results-copy-and-resources)).* Each job's files and the work directory (Task 28), the failure summary and resources per job (Task 29), Resume and the copy actions (Task 30), results and reports (Task 31), and their screens (Task 32). Specs: [architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine) (files, failure reason, resources), [api §5 and §5.1](../specs/api-and-data-model.md) (notes 2026-10-28), [ui-spec §4.4](../specs/ui-spec.md#44-run-detail) (note 2026-10-28, run tools), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 13 to 16. *(assumed — pending Thomas, inbox #70)*
+
+### Task 28: Each job's files and the work directory
+
+**Spec:** [architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine), [api §5](../specs/api-and-data-model.md) (note 2026-10-28, Job files), [checking-scenarios §11.1](../specs/checking-scenarios.md) (confinement), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 13 · **Depends on:** 4, 5, 6, 7, 9, 18
+
+**Files:**
+- Create: `packages/spectio-server/src/spectio_server/files/{confine.py,taskfiles.py,redact.py}`, `packages/spectio-server/src/spectio_server/api/taskfiles.py`
+- Modify: `nf-spectio` (Task 6: send `workdir` and `native_id` with each task event, and return `true` from `enableMetrics()`), the Snakemake logger plugin (Task 7: keep `log` from `job_info`, `log` and `aux.external_jobid` from `job_error`, and the SLURM ID and log path from the submission info text, with a regular expression versioned per `snakemake-executor-plugin-slurm` release), the projector of Tasks 4 and 5 (store `attempts.work_dir`, `attempts.native_id` and the Snakemake log paths, each kept only when it resolves under a root of the run, req. 13), the head script of Task 9 (Nextflow: `NXF_LOG_FILE=<run dir>/.spectio/nextflow.log`; Snakemake on SLURM: `--slurm-keep-successful-logs`), the logs route of Task 18 (the engine log path from the run, not a fixed name)
+- Test: `packages/spectio-server/tests/test_taskfiles.py`, `packages/spectio-server/tests/api/test_taskfiles_api.py`
+
+**Interfaces:**
+- Produces: `open_confined(roots: list[Path], rel: PurePosixPath) -> BinaryIO` (raises `NotAllowed`, `NotFound`), `tail(f, max_bytes: int = 65536) -> bytes`; `list_task_files(attempt) -> list[TaskFile]`; `redact_command_run(text: str) -> str`; the routes `GET /api/v1/tasks/{id}/attempts/{n}/files` and `…/files/{name}` of [api §5](../specs/api-and-data-model.md) (note 2026-10-28).
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+def test_nf_allow_list(nf_workdir): ...          # files lists .command.log/err/out/sh/run, .exitcode, .command.begin/trace;
+                                                 # never .command.env/.in/.stage or a staged input
+def test_nf_file_tail(authed_client, nf_workdir): ...   # 100 KiB .command.err → last 65536 bytes, text/plain, nosniff
+def test_command_run_redacted(nf_workdir): ...   # export TOKEN="abc" → export TOKEN=«hidden»; #SBATCH lines kept
+def test_array_task_has_no_log(nf_workdir): ...  # native_id 8812345_3 and no .command.log → state absent, note
+def test_cleaned_workdir_410(authed_client): ... # work directory gone → 410 log-cleaned
+def test_not_written_yet(authed_client): ...     # running attempt, no .exitcode → state not_yet, no error
+def test_smk_rule_and_slurm_logs(smk_run): ...   # job_info log + submission text → rule log and
+                                                 # .snakemake/slurm_logs/rule_bwa_mem/WGS-07/48731209.log
+def test_smk_job_error_paths(smk_run): ...       # job_error log and aux.external_jobid recorded on the attempt
+def test_smk_deleted_after_success(smk_run): ... # SLURM log missing on a succeeded job → deleted_after_success
+def test_forged_paths_dropped(replayed): ...     # workdir /etc, log ../../.ssh/id_rsa, SLURM log outside the launch dir
+                                                 # → not stored, counted
+def test_symlink_fifo_refused(tmp_path): ...     # .command.err symlink to ~/.bashrc, FIFO, device → refused, no hang
+def test_name_outside_allow_list_422(authed_client): ...  # name ".command.env", "../x", "/etc/passwd" → 422
+def test_binary_415(authed_client, nf_workdir): ...       # NUL in the first 8 KiB → 415 binary-file
+def test_engine_log_per_run(tmp_path): ...       # head.sh exports NXF_LOG_FILE under the run's .spectio/; Snakemake
+                                                 # args carry --slurm-keep-successful-logs on SLURM only
+def test_metrics_enabled(nf_run): ...            # the trace of a finished task has realtime, %cpu and peak_rss
+```
+
+- [ ] **Step 2:** `uv run pytest packages/spectio-server/tests/test_taskfiles.py packages/spectio-server/tests/api/test_taskfiles_api.py -v`: FAIL.
+- [ ] **Step 3:** implement; reads go through the bounded thread pool of the logs route.
+- [ ] **Step 4:** the same command PASSES; on `slurm-mini` (Task 22) a finished Nextflow task shows a non-empty `.command.log` and a Snakemake job its SLURM log.
+- [ ] **Step 5: Commit** `feat(server): each job's files and the work directory`.
+
+### Task 29: Failure summary and resources per job
+
+**Spec:** [architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine) (failure reason, resources), [api §5](../specs/api-and-data-model.md) (note 2026-10-28, Run and Resources), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 15 · **Depends on:** 4, 5, 18, 28
+
+**Files:**
+- Create: `packages/spectio/src/spectio/runner/sacct.py`, `packages/spectio-server/src/spectio_server/failure.py`
+- Modify: the projector (resources from the Nextflow trace and the Snakemake `job_info`; `benchmark:` files read at job end), the read API of Task 18 (`failure` extended, `resources` on task items)
+- Test: `packages/spectio/tests/test_sacct.py`, `packages/spectio-server/tests/test_failure.py`
+
+**Interfaces:**
+- Produces: `sacct_jobs(ids: list[str], timeout_s: float = 10) -> dict[str, SacctRow]` (`SacctRow(state, exit_code, reason, max_rss_bytes, elapsed_s, req_mem_bytes, time_limit_s)`), `parse_smk_slurm_message(text: str) -> SchedulerInfo | None`, `build_failure(run) -> Failure`.
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+def test_sacct_argv_and_id_check(fakebin): ... # ids "8812477", "8812345_3" → one argv list, no shell; "1;rm" → refused
+def test_sacct_parse_and_timeout(fakebin): ... # parsable2 output → SacctRow; slow fake → None after 10 s, no crash
+def test_sacct_batches(fakebin): ...           # 250 finished Snakemake jobs → 3 calls, at most one a minute
+def test_sacct_off(fakebin, settings): ...     # [slurm] accounting = false → no call; summary says unavailable
+def test_smk_message_parsed(): ...             # "SLURM-job '48731209' failed, SLURM status is: 'OUT_OF_MEMORY'. Reason: …"
+                                               # → state OUT_OF_MEMORY, reason, source engine_message
+def test_smk_message_no_sacct(): ...           # "… Detailed failure reason unavailable …" → state, reason None
+def test_nf_failure_summary(replayed_flaky, fakebin): ...  # exit 137 on its last attempt → process, exit_code, native_id,
+                                               # scheduler from sacct, log_tail = last 20 lines of .command.log
+def test_resources_nf(replayed_flaky): ...     # task item resources: cpus, memory_bytes, time_s, realtime_s, cpu_percent,
+                                               # peak_rss_bytes, source trace
+def test_resources_smk(smk_run): ...           # threads and mem_mb requested; benchmark file → source benchmark;
+                                               # no benchmark → sacct batch → source sacct
+```
+
+- [ ] **Step 2:** `uv run pytest packages/spectio/tests/test_sacct.py packages/spectio-server/tests/test_failure.py -v`: FAIL.
+- [ ] **Step 3:** implement; `sacct` is called with `--parsable2 --noheader -j <ids> --format=JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit` (fields **[to be validated]** on `slurm-mini` and at EMBL).
+- [ ] **Step 4:** the same command PASSES; on `slurm-mini` the `flaky` pipeline's injected out-of-memory task shows its SLURM state.
+- [ ] **Step 5: Commit** `feat(server): failure summary and resources per job`.
+
+### Task 30: Resume, Copy to a new launch and the copy actions
+
+**Spec:** [api §5.1](../specs/api-and-data-model.md) (`:relaunch` mode `resume`, note 2026-10-28), [api §5](../specs/api-and-data-model.md) (note 2026-10-28, Run, Copy to a new launch, Resume), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 16 · **Depends on:** 9, 10, 17, 18
+
+**Files:**
+- Create: `packages/spectio-server/src/spectio_server/api/relaunch.py`
+- Modify: `render_head_script` (Task 9: `LaunchSpec.resume_of: ResumeSource | None`, with the parent's launch and work directories and `engine_session_id`), `write_run_manifest` (`parent_run_id`), the read API of Task 18 (`command`, `parent_run_id`, `resumed_as`), the launch API of Task 17 (`GET /runs/{id}:launch-template`)
+- Test: `packages/spectio-server/tests/api/test_relaunch.py`, `packages/spectio/tests/test_headscript.py` (new cases)
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+def test_resume_failed_creates_child(authed_client, failed_run): ...  # 201, child queued, parent_run_id set, parent stays failed
+def test_resume_states(authed_client): ...     # succeeded or running → 409; cli-observed → 422 not-in-this-version
+def test_resume_parent_head_alive_409(authed_client): ...
+def test_resume_one_child_at_a_time(authed_client): ...  # a second resume while the first child runs → 409
+def test_resume_other_fields_422(authed_client): ...     # mode rerun_from, params_patch → 422 not-in-this-version
+def test_resume_head_script_nf(tmp_path): ...  # cwd = parent's launch dir, "-resume <session id>", "-w <parent work>",
+                                               # spool and NXF_LOG_FILE in the child's .spectio/
+def test_resume_head_script_smk(tmp_path): ... # "--unlock" then "--rerun-incomplete", in the parent's launch dir
+def test_resume_rechecks_dirs(authed_client): ...  # parent launch dir made group-writable → refused (req. 10)
+def test_command_quoted(authed_client): ...    # location "/p/a b'$(x)" → argv list; text is POSIX-quoted, names the
+                                               # params file, never a value; cli-observed → command null
+def test_launch_template(authed_client): ...   # params, profiles, location; non_default lists the changed keys
+```
+
+- [ ] **Step 2:** `uv run pytest packages/spectio-server/tests/api/test_relaunch.py packages/spectio/tests/test_headscript.py -v`: FAIL.
+- [ ] **Step 3:** implement; the child's run directory holds its own `.spectio/`, and its head runs in the parent's launch directory.
+- [ ] **Step 4:** the same command PASSES; on `slurm-mini` (Task 22) a `flaky` Nextflow run, fixed by a parameter file edit, resumes and reports its earlier tasks as cached.
+- [ ] **Step 5: Commit** `feat(api): resume a run and copy it to a new launch`.
+
+### Task 31: Results and reports
+
+**Spec:** [api §5](../specs/api-and-data-model.md) (note 2026-10-28, Results), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 13 and 14 · **Depends on:** 17, 18, 28
+
+**Files:**
+- Create: `packages/spectio-server/src/spectio_server/api/results.py`
+- Modify: the launch API of Task 17 (`runs.results_dir`: Nextflow `params.outdir`, resolved against the launch directory; Snakemake the launch directory, without `.snakemake/` and `.spectio/`)
+- Test: `packages/spectio-server/tests/api/test_results.py`, `tests/e2e/report.spec.ts`
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+def test_results_listing(authed_client, results): ...   # one level, dirs first, 1000-entry cap with truncated
+def test_results_reports(authed_client, results): ...   # multiqc_report.html first, FastQC reports after, depth ≤ 4
+def test_results_confined(authed_client, results): ...  # ../, absolute, symlink to $HOME → 422 or "link outside the run"
+def test_html_sandbox_headers(authed_client, results): ...  # CSP sandbox without allow-same-origin, connect-src 'none',
+                                                        # nosniff; SVG → attachment
+def test_observed_run_no_results(authed_client): ...    # cli-observed → 404
+```
+
+```ts
+test("a MultiQC report renders in its sandbox and cannot call the API", async ({ page }) => { /* real report fixture */ });
+```
+
+- [ ] **Step 2:** `uv run pytest packages/spectio-server/tests/api/test_results.py -v`: FAIL.
+- [ ] **Step 3:** implement.
+- [ ] **Step 4:** the same command PASSES, and the Playwright test passes with a MultiQC report from the nf-core/rnaseq megatest (whether MultiQC renders under the policy is **[to be validated]** here).
+- [ ] **Step 5: Commit** `feat(api): results and reports, read only`.
+
+### Task 32: The screens: job files, failure summary, results, Resume, copy and resources
+
+**Spec:** [ui-spec §4.4](../specs/ui-spec.md#44-run-detail) (note 2026-10-28, run tools) · **Depends on:** 20, 28–31 · **Boards:** LiteRunTasks, MLiteRunTasks, LiteRunLogs, LiteRunFailed, LiteRunDetail, MLiteRunDetail, LiteLaunch
+
+**Files:**
+- Create: `web/src/runs/{TaskFilesDrawer.tsx,FailureSummary.tsx,ResultsSection.tsx,RunActions.tsx}`, `web/src/runs/TaskFilesDrawer.test.tsx`
+- Modify: `web/src/runs/RunDetailPage.tsx`, `web/src/launch/LaunchPage.tsx` (prefill from `:launch-template`), `tests/e2e/skeleton.spec.ts`
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+test("Files opens the drawer on .command.log for a failed attempt; Escape returns focus to the row's button", …);
+test("a missing file says why, in words", …);           // not yet, deleted after success, cleaned
+test("tabs are buttons with role tab; the drawer is aria-modal", …);
+test("failed run: Why it failed shows SLURM state, requested and used memory, last lines", async ({ page }) => { /* … */ });
+test("Resume asks, creates a child, and both runs link to each other", async ({ page }) => { /* … */ });
+test("Copy to a new launch opens the form prefilled with the non-default values listed", async ({ page }) => { /* … */ });
+test("resources columns show 'near limit' as text", async ({ page }) => { /* … */ });
+```
+
+- [ ] **Step 2:** `npm --prefix web test` and the Playwright smoke: FAIL.
+- [ ] **Step 3:** implement; native `<button>` and `<input>` only, per-row accessible names, nothing hover-only (`CLAUDE.md`).
+- [ ] **Step 4:** both PASS on the desktop and phone projects; render the boards and compare by eye.
+- [ ] **Step 5: Commit** `feat(web): job files, failure summary, results, resume and copy`.
+
+---
+
 ## Out of scope
 
 Everything that [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) marks "no" for 0.0.1 or "later (open)":
 - QC checks and gates in every form;
 - Kubernetes, a shared server and remote runners;
 - users, sign-in, accounts and roles;
-- relaunch and the parameter history (#61);
+- relaunch with changed parameters, rerun from a stage, and the parameter history (#61); Resume and Copy to a new launch are in (Task 30);
 - visualisation (DAG, timelines, charts, comparison);
 - full scheduler monitoring (task jobs, pending reasons, accounting, capacity);
 - Postgres, Compose and Helm;
 - the depictio hand-off, WES, MCP, embedded elements and LabID.
 
 Also not in P1:
-- pause / resume;
+- pause, and resume of a paused run (Resume after a failure is Task 30);
 - a workflow catalogue and Git URLs (D2);
 - `POST /runs:validate` and file checks;
-- per-task logs;
 - publishing the bridges (Thomas, inbox #66), Cancel and the other actions on runs started from a terminal (#65), and a `spectio run --` wrapper;
 - the head as an `sbatch` head job, and sites other than EMBL ([log 2026-10-28](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open));
 - slurmrestd;
@@ -993,16 +1160,17 @@ Also not in P1:
 
 ## Done when
 
-- [ ] Tasks 1–27 are merged, each with its tests first and its `review-code` pass (Assumptions, Process).
+- [ ] Tasks 1–32 are merged, each with its tests first and its `review-code` pass (Assumptions, Process).
 - [ ] On `slurm-mini` in CI (`pipelines-slurm.yml`, job `e2e`), through a token-link session, the synthetic Nextflow and Snakemake `happy` runs launch with their heads in tmux on the submitter node, end `succeeded`, and match the golden counts per process (Task 22).
 - [ ] A running run of each engine cancels to `cancelled` with no job left, and a server killed while a Nextflow head runs adopts it on restart, with no duplicate event (Task 23).
-- [ ] Each of §15.3 requirements 1–7 has passing `test_req<N>_*` tests (Tasks 3, 11–16), and requirements 8–12 their named tests (Tasks 2, 9–12, 24–26).
+- [ ] Each of §15.3 requirements 1–7 has passing `test_req<N>_*` tests (Tasks 3, 11–16), requirements 8–12 their named tests (Tasks 2, 9–12, 24–26), and requirements 13–16 theirs (Tasks 28–31).
 - [ ] The Playwright smoke passes on the local executor: link, home, launch, list, detail (stages and the flat list) with live refresh, cancel (Task 20).
 - [ ] A server started with no database rebuilds it from the run directories (Task 11).
 - [ ] `spectio-open` and the SSH config entry both open home on an EMBL login node (Task 24).
 - [ ] A run started by hand with the bridge enabled shows in the runs list as started from a terminal, monitor only, and a missing `~/.spectio` leaves the run unaffected (Task 25).
 - [ ] Both bridges build as release packages, dry-run only; nothing is published (Task 26).
 - [ ] The run detail shows declared or detected stages above the processes or rules list, and the detectors match their golden output on nf-core/rnaseq, sarek, methylseq and mosaicatcher-pipeline (Task 27).
+- [ ] A failed run shows each job's files, the failure summary with its SLURM state, and resources per job; it resumes as a child run; a MultiQC report opens in its sandbox (Tasks 28–32).
 - [ ] `tests/packaging/test_wheel.sh` passes: one installable wheel with the UI and both bridges, and a `spectio` environment under 80 MB (Task 21).
 - [ ] Tier 0 is green on every package: ruff, mypy (`--strict` on `spectio-sdk`), `lint-imports`.
 - [ ] api §14 (driven runs) is written, and every spec the code contradicted is updated with a log entry; `python3 tools/docs/check.py` passes.

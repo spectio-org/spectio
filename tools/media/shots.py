@@ -59,8 +59,8 @@ REGISTRY: dict[str, Shot] = {
         Shot("review-queue", "ReviewQueue", 1440, 1180, "The review queue: gates waiting for a decision"),
         Shot("environments", "Environments", 1440, 1180, "Environments: SLURM and Kubernetes runners, capacity, health"),
         Shot("admin-plugins", "AdminPlugins", 1440, 1180, "Administration: plugins for engines, auth, storage and notifications"),
-        Shot("lite-run-detail", "LiteRunDetail", 1440, 1180, "0.0.1: a running nf-core/rnaseq run with its detected stages, each opening to its processes, its head in tmux and Cancel"),
-        Shot("lite-launch", "LiteLaunch", 1440, 1180, "0.0.1: launching a pipeline from its directory, the form built from nextflow_schema.json"),
+        Shot("lite-run-detail", "LiteRunDetail", 1440, 1180, "0.0.1: a running nf-core/rnaseq run with its detected stages, each opening to its processes, its head in tmux, Cancel and Copy"),
+        Shot("lite-launch", "LiteLaunch", 1440, 1180, "0.0.1: launching a pipeline from its directory, the form built from nextflow_schema.json, here prefilled from an earlier run"),
         Shot("lite-runs", "LiteRuns", 1440, 1180, "0.0.1: every run with its state, workflow, tasks, start and duration"),
         Shot("lite-run-detail-phone", "MLiteRunDetail", 390, 844, "0.0.1: the same run on a phone"),
     )

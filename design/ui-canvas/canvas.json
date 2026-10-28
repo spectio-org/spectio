@@ -1150,6 +1150,22 @@
    "h": 1180,
    "title": "0.0.1 · Run detail, Snakemake with detected stages",
    "page": "lite"
+  },
+  "LiteTaskFiles.dc.html": {
+   "x": 10920,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Run detail, job files drawer",
+   "page": "lite"
+  },
+  "MLiteTaskFilesSheet.dc.html": {
+   "x": 3760,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Job files sheet",
+   "page": "lite"
   }
  },
  "order": [
@@ -1251,6 +1267,7 @@
   "LiteRunDetail.dc.html",
   "LiteRunDetailSnakemake.dc.html",
   "LiteRunTasks.dc.html",
+  "LiteTaskFiles.dc.html",
   "LiteRunLogs.dc.html",
   "LiteRunFailed.dc.html",
   "LiteCancelDialog.dc.html",
@@ -1259,6 +1276,7 @@
   "MLiteRuns.dc.html",
   "MLiteRunDetail.dc.html",
   "MLiteRunTasks.dc.html",
+  "MLiteTaskFilesSheet.dc.html",
   "MLiteRunLogs.dc.html",
   "MLiteRunObserved.dc.html",
   "MLiteCancelSheet.dc.html",

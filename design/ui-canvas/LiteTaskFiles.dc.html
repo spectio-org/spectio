@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — job files</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.cx-btn{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.cx-btn:focus-visible{outline:2px solid #7750D4;outline-offset:2px;border-radius:10px}
+.cx-sum{font-family:'Inter',sans-serif;font-weight:400}
+.cx-btn[aria-expanded="true"] .cx-sum{display:none}
+.cx-btn[aria-expanded="true"] .cx-chev{transform:rotate(180deg)}
+</style>
+</helmet>
+<div inert aria-hidden="true" style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="LiteTopbar" crumbs="Runs / rnaseq-2026-10-25" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="LiteSidebar" active="runs" hint-size="236px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+
+      <section aria-labelledby="run-title" style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
+        <div style="height: 4px; background: #3B82F6;"></div>
+        <div style="padding: 16px 20px; display: flex; gap: 20px; align-items: center; flex-wrap: wrap;">
+          <span style="width: 52px; height: 52px; border-radius: 15px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+            <img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="32" height="32" alt="nf-core (Nextflow)" style="display: block; object-fit: contain;">
+          </span>
+          <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 260px;">
+            <h1 id="run-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">rnaseq-2026-10-25 <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 400; color: #6E7287;">7T9V1W</span></h1>
+            <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1D5FC9; flex-wrap: wrap;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· 3 of 8 stages done · 4 running · 524 / 803 tasks · 1 h 05 · live, updated 4 s ago</span>
+            </span>
+          </div>
+          <button type="button" aria-haspopup="dialog" style="height: 42px; padding: 0 16px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #B02A2A; cursor: pointer; display: flex; align-items: center;">Cancel run</button>
+        </div>
+        <section class="cx" style="padding: 8px 20px 12px; border-top: 1px solid #EEEFF5;"><h2 style="margin: 0; font-size: 14px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 32px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01"/></svg></span><span style="min-width: 0;">Facts</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">nf-core/rnaseq 3.27.0 · Nextflow 25.10.4 · head alive</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1">
+        <dl style="margin: 0; padding: 4px 0 4px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 18px; font-size: 13px;">
+          <sc-for list="{{facts}}" as="f" hint-placeholder-count="8">
+            <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;"><dt style="color: #6E7287; font-size: 12px;">{{f.k}}</dt><dd style="margin: 0; font-weight: 500; font-family: {{f.font}}; font-size: {{f.size}}; overflow-wrap: anywhere;"><sc-if value="{{f.logo}}" hint-placeholder-val="{{false}}"><img src="{{f.logo}}" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 6px;"></sc-if>{{f.v}}</dd></div>
+          </sc-for>
+        </dl>
+        </div></section>
+        <div aria-label="Tasks by state" role="group" style="padding: 10px 20px 14px; border-top: 1px solid #EEEFF5; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+          <span style="font-size: 12.5px; color: #4D5065; margin-right: 4px;">Tasks</span>
+          <sc-for list="{{counts}}" as="c" hint-placeholder-count="6">
+            <span style="font-size: 12.5px; font-weight: 600; padding: 4px 10px; border-radius: 8px; background: {{c.bg}}; color: {{c.fg}};">{{c.n}} {{c.t}}</span>
+          </sc-for>
+        </div>
+      </section>
+
+      <div role="tablist" aria-label="Run sections" style="display: flex; gap: 4px; flex-wrap: wrap; border-bottom: 1px solid #EEEFF5;">
+        <sc-for list="{{tabs}}" as="t" hint-placeholder-count="4">
+          <button type="button" role="tab" id="{{t.id}}" aria-selected="{{t.sel}}" aria-controls="{{t.panel}}" tabindex="{{t.ti}}" style="padding: 10px 12px; border: none; background: transparent; font: {{t.w}} 13.5px 'Inter', sans-serif; color: {{t.c}}; box-shadow: {{t.u}}; cursor: pointer;">{{t.label}}</button>
+        </sc-for>
+      </div>
+
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><sc-if value="{{t.off}}" hint-placeholder-val="{{true}}"><div id="{{t.panel}}" role="tabpanel" aria-labelledby="{{t.id}}" hidden></div></sc-if></sc-for>
+
+      <div id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" style="display: flex; flex-direction: column; gap: 12px;">
+        <div role="toolbar" aria-label="Task list controls" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+          <div role="group" aria-label="Show tasks in state" style="display: flex; padding: 3px; border-radius: 12px; background: #EEEFF5; gap: 2px;">
+            <sc-for list="{{filters}}" as="f" hint-placeholder-count="6">
+              <button type="button" aria-pressed="{{f.on}}" aria-label="{{f.t}}, {{f.n}} tasks" style="height: 34px; padding: 0 12px; border: none; border-radius: 9px; background: {{f.bg}}; box-shadow: {{f.sh}}; color: {{f.fg}}; font: {{f.w}} 13px 'Inter', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px;">{{f.t}}<span style="font-weight: 500; color: #6E7287;">{{f.n}}</span></button>
+            </sc-for>
+          </div>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #33364A;">Process
+            <select aria-label="Show tasks of process" style="height: 38px; border-radius: 10px; border: 1px solid #C4C7D4; padding: 0 10px; font: 13px 'Inter', sans-serif; color: #0F1020; background: #FFFFFF;"><option value="">All processes (67)</option><option value="NFCORE_RNASEQ:RNASEQ:BAM_QC_RNASEQ:SUBREAD_FEATURECOUNTS">SUBREAD_FEATURECOUNTS</option><option value="NFCORE_RNASEQ:RNASEQ:QUANTIFY_PSEUDO_ALIGNMENT:SALMON_QUANT">SALMON_QUANT</option><option value="NFCORE_RNASEQ:RNASEQ:ALIGN_STAR:BAM_SORT_STATS_SAMTOOLS:SAMTOOLS_INDEX">SAMTOOLS_INDEX · ALIGN_STAR</option><option value="NFCORE_RNASEQ:RNASEQ:BAM_MARKDUPLICATES_PICARD:SAMTOOLS_INDEX">SAMTOOLS_INDEX · BAM_MARKDUPLICATES_PICARD</option></select>
+          </label>
+          <span style="flex-grow: 1;"></span>
+          <span style="font-size: 12.5px; color: #4D5065;">Sorted by last change · live, updated 4 s ago</span>
+        </div>
+        <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);" tabindex="0" role="region" aria-label="Tasks table">
+          <table style="width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 13px;">
+            <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Tasks of rnaseq-2026-10-25, last changed first</caption>
+            <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
+              <th scope="col" style="padding: 8px 12px 8px 16px; font-weight: 600;">Task</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">State</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Attempt</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">SLURM job</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Exit</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Duration</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">CPUs</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">CPU %</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Memory</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Peak memory</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Time limit</th><th scope="col" style="padding: 8px 16px 8px 12px; font-weight: 600;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Job files</span></th>
+            </tr></thead>
+            <tbody>
+              <sc-for list="{{tasks}}" as="t" hint-placeholder-count="12">
+                <tr style="border-top: 1px solid #EEEFF5; box-shadow: inset 4px 0 0 {{t.rail}};">
+                  <th scope="row" style="padding: 8px 12px 8px 16px; text-align: left; font-weight: 600;">{{t.proc}} <span style="font-weight: 400; color: #4D5065;">({{t.tag}})</span></th>
+                  <td style="padding: 8px 12px; white-space: nowrap; font-weight: 600; color: {{t.fg}};">{{t.state}}</td>
+                  <td style="padding: 8px 12px; color: {{t.afg}};">{{t.attempt}}</td>
+                  <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">{{t.job}}</td>
+                  <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.efg}};">{{t.exit}}</td>
+                  <td style="padding: 8px 12px; white-space: nowrap; color: #33364A;">{{t.dur}}</td>
+                  <td style="padding: 8px 12px; text-align: right; color: #33364A;">{{t.cpus}}</td>
+                  <td style="padding: 8px 12px; text-align: right; color: #33364A;">{{t.cpu}}</td>
+                  <td style="padding: 8px 12px; text-align: right; color: #33364A; white-space: nowrap;">{{t.mem}}</td>
+                  <td style="padding: 8px 12px; white-space: nowrap; color: #33364A;">{{t.peak}}<sc-if value="{{t.near}}" hint-placeholder-val="{{false}}"><span style="margin-left: 6px; font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 7px; background: #FDF3E2; color: #8F5806;">near limit</span></sc-if></td>
+                  <td style="padding: 8px 12px; text-align: right; color: #33364A; white-space: nowrap;">{{t.tl}}</td>
+                  <td style="padding: 6px 16px 6px 12px;"><button type="button" aria-haspopup="dialog" aria-label="Files of {{t.proc}} ({{t.tag}}), attempt {{t.attempt}}" style="height: 30px; padding: 0 10px; border-radius: 8px; border: none; box-shadow: {{t.fsh}}; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: flex; align-items: center; gap: 6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg>Files</button></td>
+                </tr>
+              </sc-for>
+            </tbody>
+          </table>
+        </div>
+        <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #4D5065;">
+          <span>12 of 803 tasks <span style="margin-left: 12px; font-size: 11.5px; color: #6E7287;">Data: process names and the exit 137 retry from the nf-core/rnaseq 3.27.0 megatest (results-a1fcddd); job ids, durations, hashes and resources are fixture data. CPUs, Memory and Time limit are requested; CPU % and Peak memory are measured (trace).</span></span>
+          <button type="button" style="height: 36px; padding: 0 14px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A;">Load more</button>
+        </div>
+      </div>
+    </main>
+
+</div>
+
+  <div style="position: fixed; inset: 0; z-index: 10; font-family: 'Inter', system-ui, sans-serif; color: #0F1020; background: rgba(15,16,32,0.45); display: flex; justify-content: flex-end;">
+  <section role="dialog" aria-modal="true" aria-labelledby="drawer-title" aria-describedby="drawer-desc" style="height: 100%; width: 640px; max-width: 100%; box-sizing: border-box; background: #FFFFFF; box-shadow: -24px 0 48px -24px rgba(15,16,32,0.45); display: flex; flex-direction: column; gap: 14px; padding: 18px 22px 20px; overflow: hidden;">
+    <div style="display: flex; align-items: flex-start; gap: 12px;">
+      <span style="width: 34px; height: 34px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg></span>
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
+        <h2 id="drawer-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">SUBREAD_FEATURECOUNTS (S19) · attempt 1</h2>
+        <span id="drawer-desc" style="font-size: 13px; color: #4D5065;"><strong style="color: #8F5806; font-weight: 600;">Failed · retried</strong> · exit 137 · SLURM job 8812477 · 6 min · peak memory 8.0 GB of 8 GB</span>
+      </div>
+      <button type="button" aria-label="Close job files" style="height: 36px; padding: 0 12px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Close</button>
+    </div>
+    <div style="display: flex; flex-direction: column; gap: 6px;">
+      <span id="wd-label" style="font-size: 12px; color: #6E7287;">Work directory</span>
+      <div style="display: flex; gap: 8px; align-items: center;">
+        <code aria-labelledby="wd-label" style="flex-grow: 1; min-width: 0; font-family: 'JetBrains Mono', monospace; font-size: 12px; padding: 8px 10px; border-radius: 9px; background: #F7F7FB; color: #22253A; overflow-wrap: anywhere;">/scratch/amartin/spectio-runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/work/9d/77c2140f5be3a1c96e04d2b88a7f13</code>
+        <button type="button" aria-label="Copy work directory path" style="height: 36px; padding: 0 12px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A; cursor: pointer; flex-shrink: 0;">Copy</button>
+      </div>
+    </div>
+    <div role="tablist" aria-label="Files of this attempt" style="display: flex; gap: 2px; flex-wrap: wrap; border-bottom: 1px solid #EEEFF5;">
+      <sc-for list="{{ftabs}}" as="f" hint-placeholder-count="7">
+        <button type="button" role="tab" id="{{f.id}}" aria-selected="{{f.sel}}" aria-controls="file-panel" tabindex="{{f.ti}}" style="padding: 8px 10px; border: none; background: transparent; font: {{f.w}} 12.5px 'JetBrains Mono', monospace; color: {{f.c}}; box-shadow: {{f.u}}; cursor: pointer;">{{f.t}}</button>
+      </sc-for>
+    </div>
+    <div id="file-panel" role="tabpanel" aria-labelledby="ft-log" style="display: flex; flex-direction: column; gap: 8px; min-height: 0; flex: 1 1 auto;">
+      <div style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+        <span style="font-size: 12.5px; color: #4D5065; flex-grow: 1;">The SLURM job's output: stdout and stderr together, with SLURM's own messages · 2.4 KiB · written 08:42 · last 64 KiB</span>
+        <button type="button" style="height: 32px; padding: 0 10px; border-radius: 8px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Reload</button>
+        <button type="button" style="height: 32px; padding: 0 10px; border-radius: 8px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Download</button>
+      </div>
+      <span style="font-size: 12px; color: #6E7287;">May show values from your parameters or environment.</span>
+      <pre tabindex="0" aria-label=".command.log of SUBREAD_FEATURECOUNTS (S19), attempt 1, last lines" style="margin: 0; flex: 1 1 auto; min-height: 0; overflow: auto; border-radius: 12px; background: #0F1020; padding: 12px 14px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; color: #C4C7D4; white-space: pre-wrap; overflow-wrap: anywhere;"><sc-for list="{{flines}}" as="l" hint-placeholder-count="14"><span style="display: block; color: {{l.c}};">{{l.t}}</span></sc-for></pre>
+      <span style="font-size: 11.5px; color: #6E7287; line-height: 1.45;">Files: <code style="font-family: 'JetBrains Mono', monospace;">.command.log</code> opens first for a failed attempt; <code style="font-family: 'JetBrains Mono', monospace;">.command.run</code> shows its exported values as «hidden». Board note: the page behind is inert; Close or Escape returns focus to this row's Files button. Data: fixture lines shaped on featureCounts and slurmstepd output.</span>
+    </div>
+  </section>
+  </div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  const mono = "'JetBrains Mono', monospace", sans = "'Inter', sans-serif";
+  const fact = (k, v, m, logo) => ({ k, v, logo, font: m ? mono : sans, size: m ? '12px' : '13px' });
+  const tab = (label, on) => ({ label, id: 'tab-' + label.toLowerCase(), panel: 'panel-' + label.toLowerCase(), off: !on, sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
+  const chip = (n, t, k) => ({ n, t, bg: { run: '#EAF2FE', done: '#E8F6EF', fail: '#FCEBEB', wait: '#F1F2F6', retry: '#FDF3E2' }[k], fg: { run: '#1D5FC9', done: '#157A4B', fail: '#B02A2A', wait: '#33364A', retry: '#8F5806' }[k] });
+  const seg = (t, n, on) => ({ t, n, on: on ? 'true' : 'false', bg: on ? '#FFFFFF' : 'transparent', sh: on ? '0 1px 2px rgba(15,16,32,0.12)' : 'none', fg: on ? '#0F1020' : '#4D5065', w: on ? 600 : 500 });
+  const base = {
+    facts: [
+      fact('Pipeline', 'nf-core/rnaseq 3.27.0', 0, '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'),
+      fact('Engine · profile', 'Nextflow 25.10.4 · singularity', 0, '/_blob/636203cdee0bc09b61efe0fa351e239b'),
+      fact('Started · ended', 'Today 07:40 · —'),
+      fact('Duration', '1 h 05'),
+      fact('Head session', 'spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W', 1),
+      fact('Head', 'Alive'),
+      fact('Login node', 'login1'),
+      fact('Exit code', '— (still running)'),
+      fact('Pipeline directory', '/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0', 1),
+      fact('Run directory', '/scratch/amartin/spectio-runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W', 1),
+      fact('Executor', 'SLURM'),
+      fact('Failure', '—')
+    ],
+    counts: [chip('524', 'succeeded', 'done'), chip('64', 'running', 'run'), chip('215', 'pending', 'wait'), chip('0', 'failed', 'fail'), chip('7', 'retried', 'retry')],
+    tabs: [tab('Summary'), tab('Tasks', true), tab('Parameters'), tab('Logs')]
+  };
+  const ST = { running: ['Running', '#3B82F6', '#1D5FC9'], done: ['Succeeded', '#1F9D63', '#157A4B'], submitted: ['Submitted', '#6E7287', '#33364A'], failed: ['Failed · retried', '#D9890B', '#8F5806'] };
+  const task = (proc, tag, st, attempt, job, exit, dur, work, cpus, cpu, mem, peak, tl, near, open) => { const [state, rail, fg] = ST[st]; return { proc, tag, state, rail, fg, attempt, afg: attempt === '1' ? '#4D5065' : '#8F5806', job, exit, efg: exit === '137' ? '#B02A2A' : '#33364A', dur, work, cpus, cpu, mem, peak, tl, near, fsh: open ? 'inset 0 0 0 2px #7750D4' : 'inset 0 0 0 1px #DFE1EA' }; };
+  const ft = (t, on) => ({ t, id: on ? 'ft-log' : 'ft-' + t.replace(/[^a-z]/g, ''), sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 400, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
+  const FL = (t, k) => ({ t, c: { info: '#C4C7D4', err: '#F59A9A', warn: '#F5C779' }[k || 'info'] });
+  return { ...base,
+    filters: [seg('All', '803', true), seg('Running', '64'), seg('Pending', '215'), seg('Succeeded', '524'), seg('Failed', '0'), seg('Retried', '7')],
+    ftabs: [ft('.command.log', true), ft('.command.err'), ft('.command.out'), ft('.command.sh'), ft('.command.run'), ft('.exitcode'), ft('More files')],
+    flines: [
+      FL('//================================= Running ==================================\\\\'),
+      FL('|| Load annotation file genes.gtf ...                                         ||'),
+      FL('||    Features : 1458235                                                      ||'),
+      FL('||    Meta-features : 62754                                                   ||'),
+      FL('|| Process BAM file S19.markdup.sorted.bam...                                 ||'),
+      FL('||    Paired-end reads are included.                                          ||'),
+      FL('||    Total alignments : 61842317                                             ||'),
+      FL('||    Successfully assigned alignments : 48210552 (78.0%)                     ||'),
+      FL('/tmp/slurmd/job8812477/slurm_script: line 172:  48211 Killed  featureCounts -T 6 ...', 'err'),
+      FL('slurmstepd: error: Detected 1 oom_kill event in StepId=8812477.batch. Some of the step tasks have been OOM Killed.', 'err')
+    ],
+    tasks: [
+      task('SUBREAD_FEATURECOUNTS', 'S19', 'submitted', '2', '8812591', '—', '—', '9d/77c21e', '6', '—', '16 GB', '—', '8 h'),
+      task('SUBREAD_FEATURECOUNTS', 'S19', 'failed', '1', '8812477', '137', '6 min', '9d/77c214', '6', '412 %', '8 GB', '8.0 GB', '8 h', true, true),
+      task('SALMON_QUANT', 'S03', 'done', '1', '8812345_3', '0', '22 min', '2f/90aa28', '6', '538 %', '36 GB', '11.2 GB', '16 h'),
+      task('SUBREAD_FEATURECOUNTS', 'S07', 'done', '1', '8812402', '0', '4 min', '9d/1e0a31', '6', '455 %', '8 GB', '5.1 GB', '8 h'),
+      task('SUBREAD_FEATURECOUNTS', 'S15', 'running', '1', '8812533', '—', '3 min', '4b/c0d915', '6', '—', '8 GB', '—', '8 h'),
+      task('SUBREAD_FEATURECOUNTS', 'S16', 'running', '1', '8812534', '—', '3 min', '71/2a9e0c', '6', '—', '8 GB', '—', '8 h'),
+      task('SALMON_QUANT', 'S12', 'done', '1', '8812345_12', '0', '24 min', '2f/6b4c17', '6', '541 %', '36 GB', '10.8 GB', '16 h'),
+      task('SUBREAD_FEATURECOUNTS', 'S08', 'done', '1', '8812403', '0', '5 min', 'c3/58e0aa', '6', '470 %', '8 GB', '5.4 GB', '8 h'),
+      task('STAR_ALIGN', 'S11', 'done', '2', '8811902_11', '0', '41 min', '5e/0b2c71', '12', '1080 %', '72 GB', '41.3 GB', '16 h'),
+      task('STAR_ALIGN', 'S04', 'done', '1', '8811902_4', '0', '33 min', '88/f1d0e2', '12', '1105 %', '36 GB', '33.9 GB', '16 h', true),
+      task('QUALIMAP_RNASEQ', 'S04', 'done', '1', '8812120', '0', '9 min', 'a0/37bc55', '2', '180 %', '16 GB', '9.7 GB', '8 h'),
+      task('FASTQC', 'S04_T1', 'done', '1', '8811650_7', '0', '2 min', '1d/9e44b0', '6', '210 %', '36 GB', '1.1 GB', '4 h')
+    ]
+  };
+}
+}
+</script>
+</body>
+</html>

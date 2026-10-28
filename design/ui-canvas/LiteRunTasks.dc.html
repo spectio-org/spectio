@@ -78,10 +78,10 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           <span style="font-size: 12.5px; color: #4D5065;">Sorted by last change · live, updated 4 s ago</span>
         </div>
         <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);" tabindex="0" role="region" aria-label="Tasks table">
-          <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 13px;">
+          <table style="width: 100%; min-width: 1120px; border-collapse: collapse; font-size: 13px;">
             <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Tasks of rnaseq-2026-10-25, last changed first</caption>
             <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
-              <th scope="col" style="padding: 8px 12px 8px 16px; font-weight: 600;">Task</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">State</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Attempt</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">SLURM job</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Exit</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Duration</th><th scope="col" style="padding: 8px 16px 8px 12px; font-weight: 600;">Work directory</th>
+              <th scope="col" style="padding: 8px 12px 8px 16px; font-weight: 600;">Task</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">State</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Attempt</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">SLURM job</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Exit</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Duration</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">CPUs</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">CPU %</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Memory</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">Peak memory</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Time limit</th><th scope="col" style="padding: 8px 16px 8px 12px; font-weight: 600;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Job files</span></th>
             </tr></thead>
             <tbody>
               <sc-for list="{{tasks}}" as="t" hint-placeholder-count="12">
@@ -92,18 +92,24 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
                   <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">{{t.job}}</td>
                   <td style="padding: 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{t.efg}};">{{t.exit}}</td>
                   <td style="padding: 8px 12px; white-space: nowrap; color: #33364A;">{{t.dur}}</td>
-                  <td style="padding: 8px 16px 8px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">{{t.work}}</td>
+                  <td style="padding: 8px 12px; text-align: right; color: #33364A;">{{t.cpus}}</td>
+                  <td style="padding: 8px 12px; text-align: right; color: #33364A;">{{t.cpu}}</td>
+                  <td style="padding: 8px 12px; text-align: right; color: #33364A; white-space: nowrap;">{{t.mem}}</td>
+                  <td style="padding: 8px 12px; white-space: nowrap; color: #33364A;">{{t.peak}}<sc-if value="{{t.near}}" hint-placeholder-val="{{false}}"><span style="margin-left: 6px; font-size: 11.5px; font-weight: 600; padding: 2px 7px; border-radius: 7px; background: #FDF3E2; color: #8F5806;">near limit</span></sc-if></td>
+                  <td style="padding: 8px 12px; text-align: right; color: #33364A; white-space: nowrap;">{{t.tl}}</td>
+                  <td style="padding: 6px 16px 6px 12px;"><button type="button" aria-haspopup="dialog" aria-label="Files of {{t.proc}} ({{t.tag}}), attempt {{t.attempt}}" style="height: 30px; padding: 0 10px; border-radius: 8px; border: none; box-shadow: {{t.fsh}}; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: flex; align-items: center; gap: 6px;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg>Files</button></td>
                 </tr>
               </sc-for>
             </tbody>
           </table>
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #4D5065;">
-          <span>12 of 803 tasks <span style="margin-left: 12px; font-size: 11.5px; color: #6E7287;">Data: process names and the exit 137 retry from the nf-core/rnaseq 3.27.0 megatest (results-a1fcddd); job ids, durations and hashes are fixture data.</span></span>
+          <span>12 of 803 tasks <span style="margin-left: 12px; font-size: 11.5px; color: #6E7287;">Data: process names and the exit 137 retry from the nf-core/rnaseq 3.27.0 megatest (results-a1fcddd); job ids, durations, hashes and resources are fixture data. CPUs, Memory and Time limit are requested; CPU % and Peak memory are measured (trace).</span></span>
           <button type="button" style="height: 36px; padding: 0 14px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A;">Load more</button>
         </div>
       </div>
     </main>
+
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
@@ -133,22 +139,37 @@ renderVals() {
     tabs: [tab('Summary'), tab('Tasks', true), tab('Parameters'), tab('Logs')]
   };
   const ST = { running: ['Running', '#3B82F6', '#1D5FC9'], done: ['Succeeded', '#1F9D63', '#157A4B'], submitted: ['Submitted', '#6E7287', '#33364A'], failed: ['Failed · retried', '#D9890B', '#8F5806'] };
-  const task = (proc, tag, st, attempt, job, exit, dur, work) => { const [state, rail, fg] = ST[st]; return { proc, tag, state, rail, fg, attempt, afg: attempt === '1' ? '#4D5065' : '#8F5806', job, exit, efg: exit === '137' ? '#B02A2A' : '#33364A', dur, work }; };
+  const task = (proc, tag, st, attempt, job, exit, dur, work, cpus, cpu, mem, peak, tl, near, open) => { const [state, rail, fg] = ST[st]; return { proc, tag, state, rail, fg, attempt, afg: attempt === '1' ? '#4D5065' : '#8F5806', job, exit, efg: exit === '137' ? '#B02A2A' : '#33364A', dur, work, cpus, cpu, mem, peak, tl, near, fsh: open ? 'inset 0 0 0 2px #7750D4' : 'inset 0 0 0 1px #DFE1EA' }; };
+  const ft = (t, on) => ({ t, id: on ? 'ft-log' : 'ft-' + t.replace(/[^a-z]/g, ''), sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 400, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
+  const FL = (t, k) => ({ t, c: { info: '#C4C7D4', err: '#F59A9A', warn: '#F5C779' }[k || 'info'] });
   return { ...base,
     filters: [seg('All', '803', true), seg('Running', '64'), seg('Pending', '215'), seg('Succeeded', '524'), seg('Failed', '0'), seg('Retried', '7')],
+    ftabs: [ft('.command.log', true), ft('.command.err'), ft('.command.out'), ft('.command.sh'), ft('.command.run'), ft('.exitcode'), ft('More files')],
+    flines: [
+      FL('//================================= Running ==================================\\\\'),
+      FL('|| Load annotation file genes.gtf ...                                         ||'),
+      FL('||    Features : 1458235                                                      ||'),
+      FL('||    Meta-features : 62754                                                   ||'),
+      FL('|| Process BAM file S19.markdup.sorted.bam...                                 ||'),
+      FL('||    Paired-end reads are included.                                          ||'),
+      FL('||    Total alignments : 61842317                                             ||'),
+      FL('||    Successfully assigned alignments : 48210552 (78.0%)                     ||'),
+      FL('/tmp/slurmd/job8812477/slurm_script: line 172:  48211 Killed  featureCounts -T 6 ...', 'err'),
+      FL('slurmstepd: error: Detected 1 oom_kill event in StepId=8812477.batch. Some of the step tasks have been OOM Killed.', 'err')
+    ],
     tasks: [
-      task('SUBREAD_FEATURECOUNTS', 'S19', 'submitted', '2', '8812591', '—', '—', '9d/77c21e'),
-      task('SUBREAD_FEATURECOUNTS', 'S19', 'failed', '1', '8812477', '137', '6 min', '9d/77c214'),
-      task('SALMON_QUANT', 'S03', 'done', '1', '8812345_3', '0', '22 min', '2f/90aa28'),
-      task('SUBREAD_FEATURECOUNTS', 'S07', 'done', '1', '8812402', '0', '4 min', '9d/1e0a31'),
-      task('SUBREAD_FEATURECOUNTS', 'S15', 'running', '1', '8812533', '—', '3 min', '4b/c0d915'),
-      task('SUBREAD_FEATURECOUNTS', 'S16', 'running', '1', '8812534', '—', '3 min', '71/2a9e0c'),
-      task('SALMON_QUANT', 'S12', 'done', '1', '8812345_12', '0', '24 min', '2f/6b4c17'),
-      task('SUBREAD_FEATURECOUNTS', 'S08', 'done', '1', '8812403', '0', '5 min', 'c3/58e0aa'),
-      task('STAR_ALIGN', 'S11', 'done', '2', '8811902_11', '0', '41 min', '5e/0b2c71'),
-      task('STAR_ALIGN', 'S04', 'done', '1', '8811902_4', '0', '33 min', '88/f1d0e2'),
-      task('QUALIMAP_RNASEQ', 'S04', 'done', '1', '8812120', '0', '9 min', 'a0/37bc55'),
-      task('FASTQC', 'S04_T1', 'done', '1', '8811650_7', '0', '2 min', '1d/9e44b0')
+      task('SUBREAD_FEATURECOUNTS', 'S19', 'submitted', '2', '8812591', '—', '—', '9d/77c21e', '6', '—', '16 GB', '—', '8 h'),
+      task('SUBREAD_FEATURECOUNTS', 'S19', 'failed', '1', '8812477', '137', '6 min', '9d/77c214', '6', '412 %', '8 GB', '8.0 GB', '8 h', true, true),
+      task('SALMON_QUANT', 'S03', 'done', '1', '8812345_3', '0', '22 min', '2f/90aa28', '6', '538 %', '36 GB', '11.2 GB', '16 h'),
+      task('SUBREAD_FEATURECOUNTS', 'S07', 'done', '1', '8812402', '0', '4 min', '9d/1e0a31', '6', '455 %', '8 GB', '5.1 GB', '8 h'),
+      task('SUBREAD_FEATURECOUNTS', 'S15', 'running', '1', '8812533', '—', '3 min', '4b/c0d915', '6', '—', '8 GB', '—', '8 h'),
+      task('SUBREAD_FEATURECOUNTS', 'S16', 'running', '1', '8812534', '—', '3 min', '71/2a9e0c', '6', '—', '8 GB', '—', '8 h'),
+      task('SALMON_QUANT', 'S12', 'done', '1', '8812345_12', '0', '24 min', '2f/6b4c17', '6', '541 %', '36 GB', '10.8 GB', '16 h'),
+      task('SUBREAD_FEATURECOUNTS', 'S08', 'done', '1', '8812403', '0', '5 min', 'c3/58e0aa', '6', '470 %', '8 GB', '5.4 GB', '8 h'),
+      task('STAR_ALIGN', 'S11', 'done', '2', '8811902_11', '0', '41 min', '5e/0b2c71', '12', '1080 %', '72 GB', '41.3 GB', '16 h'),
+      task('STAR_ALIGN', 'S04', 'done', '1', '8811902_4', '0', '33 min', '88/f1d0e2', '12', '1105 %', '36 GB', '33.9 GB', '16 h', true),
+      task('QUALIMAP_RNASEQ', 'S04', 'done', '1', '8812120', '0', '9 min', 'a0/37bc55', '2', '180 %', '16 GB', '9.7 GB', '8 h'),
+      task('FASTQC', 'S04_T1', 'done', '1', '8811650_7', '0', '2 min', '1d/9e44b0', '6', '210 %', '36 GB', '1.1 GB', '4 h')
     ]
   };
 }

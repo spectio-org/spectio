@@ -1,0 +1,149 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — job files sheet, run tasks (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.chips::-webkit-scrollbar{display:none}
+
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div inert aria-hidden="true">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="rnaseq-2026-10-25" sub="Running · 3 of 8 stages done · 4 running" back="MLiteRuns.dc.html" backLabel="Back to runs" hint-size="390px,104px"></dc-import></div>
+  <main style="position: absolute; top: 104px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <section aria-label="Run summary" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <div style="height: 4px; background: #3B82F6;"></div>
+      <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: #4D5065;"><span>Run <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400; color: #6E7287;">7T9V1W</span></span><span>1 h 05 · live, updated 4 s ago</span></span>
+        <span style="font-size: 13px; color: #33364A; line-height: 1.4;"><strong style="font-weight: 600;">Head alive</strong> · tmux on login1</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">nf-core/rnaseq 3.27.0 · <img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="13" height="13" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 5px;">Nextflow 25.10.4 · singularity</span></span>
+        <div role="group" aria-label="Tasks by state" style="display: flex; gap: 6px; flex-wrap: wrap;"><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #E8F6EF; color: #157A4B;">524 succeeded</span><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #EAF2FE; color: #1D5FC9;">64 running</span><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #F1F2F6; color: #33364A;">215 pending</span><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #FDF3E2; color: #8F5806;">7 retried</span></div>
+        <button type="button" aria-haspopup="dialog" style="height: 44px; border-radius: 12px; border: none; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #B02A2A; cursor: pointer;">Cancel run</button>
+      </div>
+    </section>
+    <div class="chips" role="tablist" aria-label="Run sections" style="position: sticky; top: -12px; z-index: 1; background: #F7F7FB; display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid #DFE1EA; margin: 0 -12px; padding: 0 12px;">
+      <button type="button" role="tab" id="tab-summary" aria-selected="false" aria-controls="panel-summary" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 12px; border: none; background: transparent; font: 500 14px 'Inter', sans-serif; color: #4D5065; box-shadow: none; cursor: pointer;">Summary</button>
+      <button type="button" role="tab" id="tab-tasks" aria-selected="true" aria-controls="panel-tasks" tabindex="0" style="flex-shrink: 0; height: 44px; padding: 0 12px; border: none; background: transparent; font: 600 14px 'Inter', sans-serif; color: #4D368B; box-shadow: inset 0 -2px 0 #7750D4; cursor: pointer;">Tasks</button>
+      <button type="button" role="tab" id="tab-parameters" aria-selected="false" aria-controls="panel-parameters" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 12px; border: none; background: transparent; font: 500 14px 'Inter', sans-serif; color: #4D5065; box-shadow: none; cursor: pointer;">Parameters</button>
+      <button type="button" role="tab" id="tab-logs" aria-selected="false" aria-controls="panel-logs" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 12px; border: none; background: transparent; font: 500 14px 'Inter', sans-serif; color: #4D5065; box-shadow: none; cursor: pointer;">Logs</button>
+    </div>
+    <div id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" hidden></div>
+    <div id="panel-parameters" role="tabpanel" aria-labelledby="tab-parameters" hidden></div>
+    <div id="panel-logs" role="tabpanel" aria-labelledby="tab-logs" hidden></div>
+    <div id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" style="display: flex; flex-direction: column; gap: 10px;">
+      <div style="position: relative; margin: 0 -12px;">
+      <div class="chips" role="group" aria-label="Show tasks in state" style="display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding: 0 28px 0 12px;">
+      <button type="button" aria-pressed="true" aria-label="All, 803 tasks" style="flex-shrink: 0; height: 44px; padding: 0 14px; border-radius: 22px; border: none; display: flex; align-items: center; gap: 6px; font: 600 13.5px 'Inter', sans-serif; cursor: pointer; background: #0F1020; color: #FFFFFF; box-shadow: none;">All<span style="font-weight: 500; opacity: 0.75;">803</span></button>
+      <button type="button" aria-pressed="false" aria-label="Running, 64 tasks" style="flex-shrink: 0; height: 44px; padding: 0 14px; border-radius: 22px; border: none; display: flex; align-items: center; gap: 6px; font: 600 13.5px 'Inter', sans-serif; cursor: pointer; background: #FFFFFF; color: #22253A; box-shadow: inset 0 0 0 1px #DFE1EA;">Running<span style="font-weight: 500; opacity: 0.75;">64</span></button>
+      <button type="button" aria-pressed="false" aria-label="Pending, 215 tasks" style="flex-shrink: 0; height: 44px; padding: 0 14px; border-radius: 22px; border: none; display: flex; align-items: center; gap: 6px; font: 600 13.5px 'Inter', sans-serif; cursor: pointer; background: #FFFFFF; color: #22253A; box-shadow: inset 0 0 0 1px #DFE1EA;">Pending<span style="font-weight: 500; opacity: 0.75;">215</span></button>
+      <button type="button" aria-pressed="false" aria-label="Succeeded, 524 tasks" style="flex-shrink: 0; height: 44px; padding: 0 14px; border-radius: 22px; border: none; display: flex; align-items: center; gap: 6px; font: 600 13.5px 'Inter', sans-serif; cursor: pointer; background: #FFFFFF; color: #22253A; box-shadow: inset 0 0 0 1px #DFE1EA;">Succeeded<span style="font-weight: 500; opacity: 0.75;">524</span></button>
+      <button type="button" aria-pressed="false" aria-label="Failed, 0 tasks" style="flex-shrink: 0; height: 44px; padding: 0 14px; border-radius: 22px; border: none; display: flex; align-items: center; gap: 6px; font: 600 13.5px 'Inter', sans-serif; cursor: pointer; background: #FFFFFF; color: #22253A; box-shadow: inset 0 0 0 1px #DFE1EA;">Failed<span style="font-weight: 500; opacity: 0.75;">0</span></button>
+      <button type="button" aria-pressed="false" aria-label="Retried, 7 tasks" style="flex-shrink: 0; height: 44px; padding: 0 14px; border-radius: 22px; border: none; display: flex; align-items: center; gap: 6px; font: 600 13.5px 'Inter', sans-serif; cursor: pointer; background: #FFFFFF; color: #22253A; box-shadow: inset 0 0 0 1px #DFE1EA;">Retried<span style="font-weight: 500; opacity: 0.75;">7</span></button>
+      </div>
+      <span aria-hidden="true" style="position: absolute; top: 0; right: 0; bottom: 0; width: 36px; background: linear-gradient(90deg, rgba(247,247,251,0), #F7F7FB 80%); pointer-events: none;"></span>
+      </div>
+      <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #22253A;">Process
+        <select style="height: 44px; border-radius: 12px; border: 1px solid #C4C7D4; padding: 0 10px; font: 15px 'Inter', sans-serif; color: #0F1020; background: #FFFFFF;"><option value="">All processes (67)</option><option value="NFCORE_RNASEQ:RNASEQ:BAM_QC_RNASEQ:SUBREAD_FEATURECOUNTS">SUBREAD_FEATURECOUNTS</option><option value="NFCORE_RNASEQ:RNASEQ:QUANTIFY_PSEUDO_ALIGNMENT:SALMON_QUANT">SALMON_QUANT</option><option value="NFCORE_RNASEQ:RNASEQ:ALIGN_STAR:BAM_SORT_STATS_SAMTOOLS:SAMTOOLS_INDEX">SAMTOOLS_INDEX · ALIGN_STAR</option><option value="NFCORE_RNASEQ:RNASEQ:BAM_MARKDUPLICATES_PICARD:SAMTOOLS_INDEX">SAMTOOLS_INDEX · BAM_MARKDUPLICATES_PICARD</option></select>
+      </label>
+      <span style="font-size: 12.5px; color: #4D5065;">Last changed first · live, updated 4 s ago</span>
+      <ul aria-label="Tasks of rnaseq-2026-10-25, last changed first" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px;">
+      <li style="display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+        <span style="width: 4px; flex-shrink: 0; background: #6E7287;"></span>
+        <span style="flex-grow: 1; min-width: 0; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: break-word;">SUBREAD_FEATURECOUNTS <span style="font-weight: 400; color: #4D5065;">(S19)</span></span><span style="font-size: 12.5px; font-weight: 600; color: #33364A; white-space: nowrap;">Submitted</span></span>
+          <span style="font-size: 12.5px; color: #4D5065;">Attempt <span style="color: #8F5806; font-weight: 600;">2</span> · job <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">8812591</span> · exit <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">—</span> · —</span>
+          <span style="display: flex; align-items: center; gap: 8px;"><span style="flex-grow: 1; min-width: 0; font-size: 12.5px; color: #4D5065;">6 CPUs · 16 GB · peak — · 8 h</span><button type="button" aria-haspopup="dialog" aria-label="Files of SUBREAD_FEATURECOUNTS (S19), attempt 2" style="flex-shrink: 0; height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg>Files</button></span>
+        </span>
+      </li>
+      <li style="display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+        <span style="width: 4px; flex-shrink: 0; background: #D9890B;"></span>
+        <span style="flex-grow: 1; min-width: 0; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: break-word;">SUBREAD_FEATURECOUNTS <span style="font-weight: 400; color: #4D5065;">(S19)</span></span><span style="font-size: 12.5px; font-weight: 600; color: #8F5806; white-space: nowrap;">Failed · retried</span></span>
+          <span style="font-size: 12.5px; color: #4D5065;">Attempt <span style="color: #33364A; font-weight: 600;">1</span> · job <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">8812477</span> · exit <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #B02A2A;">137</span> · 6 min</span>
+          <span style="display: flex; align-items: center; gap: 8px;"><span style="flex-grow: 1; min-width: 0; font-size: 12.5px; color: #4D5065;">6 CPUs · 8 GB · peak 8.0 GB · 8 h <span style="font-size: 11.5px; font-weight: 600; padding: 1px 6px; border-radius: 6px; background: #FDF3E2; color: #8F5806;">near limit</span></span><button type="button" aria-haspopup="dialog" aria-label="Files of SUBREAD_FEATURECOUNTS (S19), attempt 1" style="flex-shrink: 0; height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg>Files</button></span>
+        </span>
+      </li>
+      <li style="display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+        <span style="width: 4px; flex-shrink: 0; background: #1F9D63;"></span>
+        <span style="flex-grow: 1; min-width: 0; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: break-word;">SALMON_QUANT <span style="font-weight: 400; color: #4D5065;">(S03)</span></span><span style="font-size: 12.5px; font-weight: 600; color: #157A4B; white-space: nowrap;">Succeeded</span></span>
+          <span style="font-size: 12.5px; color: #4D5065;">Attempt <span style="color: #33364A; font-weight: 600;">1</span> · job <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">8812345_3</span> · exit <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">0</span> · 22 min</span>
+          <span style="display: flex; align-items: center; gap: 8px;"><span style="flex-grow: 1; min-width: 0; font-size: 12.5px; color: #4D5065;">6 CPUs · 36 GB · peak 11.2 GB · 16 h</span><button type="button" aria-haspopup="dialog" aria-label="Files of SALMON_QUANT (S03), attempt 1" style="flex-shrink: 0; height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg>Files</button></span>
+        </span>
+      </li>
+      <li style="display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+        <span style="width: 4px; flex-shrink: 0; background: #3B82F6;"></span>
+        <span style="flex-grow: 1; min-width: 0; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: break-word;">SUBREAD_FEATURECOUNTS <span style="font-weight: 400; color: #4D5065;">(S21)</span></span><span style="font-size: 12.5px; font-weight: 600; color: #1D5FC9; white-space: nowrap;">Running</span></span>
+          <span style="font-size: 12.5px; color: #4D5065;">Attempt <span style="color: #33364A; font-weight: 600;">1</span> · job <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">8812533</span> · exit <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">—</span> · 3 min</span>
+          <span style="display: flex; align-items: center; gap: 8px;"><span style="flex-grow: 1; min-width: 0; font-size: 12.5px; color: #4D5065;">6 CPUs · 8 GB · peak — · 8 h</span><button type="button" aria-haspopup="dialog" aria-label="Files of SUBREAD_FEATURECOUNTS (S21), attempt 1" style="flex-shrink: 0; height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg>Files</button></span>
+        </span>
+      </li>
+      <li style="display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+        <span style="width: 4px; flex-shrink: 0; background: #3B82F6;"></span>
+        <span style="flex-grow: 1; min-width: 0; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: break-word;">SUBREAD_FEATURECOUNTS <span style="font-weight: 400; color: #4D5065;">(S22)</span></span><span style="font-size: 12.5px; font-weight: 600; color: #1D5FC9; white-space: nowrap;">Running</span></span>
+          <span style="font-size: 12.5px; color: #4D5065;">Attempt <span style="color: #33364A; font-weight: 600;">1</span> · job <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">8812534</span> · exit <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">—</span> · 3 min</span>
+          <span style="display: flex; align-items: center; gap: 8px;"><span style="flex-grow: 1; min-width: 0; font-size: 12.5px; color: #4D5065;">6 CPUs · 8 GB · peak — · 8 h</span><button type="button" aria-haspopup="dialog" aria-label="Files of SUBREAD_FEATURECOUNTS (S22), attempt 1" style="flex-shrink: 0; height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg>Files</button></span>
+        </span>
+      </li>
+      <li style="display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+        <span style="width: 4px; flex-shrink: 0; background: #1F9D63;"></span>
+        <span style="flex-grow: 1; min-width: 0; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px;">
+          <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-size: 14px; font-weight: 600; min-width: 0; overflow-wrap: break-word;">STAR_ALIGN <span style="font-weight: 400; color: #4D5065;">(S11)</span></span><span style="font-size: 12.5px; font-weight: 600; color: #157A4B; white-space: nowrap;">Succeeded</span></span>
+          <span style="font-size: 12.5px; color: #4D5065;">Attempt <span style="color: #8F5806; font-weight: 600;">2</span> · job <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">8811902_11</span> · exit <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #33364A;">0</span> · 41 min</span>
+          <span style="display: flex; align-items: center; gap: 8px;"><span style="flex-grow: 1; min-width: 0; font-size: 12.5px; color: #4D5065;">12 CPUs · 72 GB · peak 41.3 GB · 16 h</span><button type="button" aria-haspopup="dialog" aria-label="Files of STAR_ALIGN (S11), attempt 2" style="flex-shrink: 0; height: 40px; padding: 0 12px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg>Files</button></span>
+        </span>
+      </li>
+      </ul>
+      <button type="button" style="height: 44px; border-radius: 12px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Load more</button>
+      <span style="font-size: 11.5px; color: #4D5065; padding: 0 2px;">6 of 803 tasks. Data: process names and the exit 137 retry from the nf-core/rnaseq 3.27.0 megatest (results-a1fcddd); job ids, durations and resources are fixture data; CPUs, memory and time limit are requested, peak memory is measured.</span>
+    </div>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="runs" hint-size="390px,72px"></dc-import></div>
+  </div>
+  <div style="position: absolute; inset: 0; z-index: 4; background: rgba(15,16,32,0.45);"></div>
+  <section role="dialog" aria-modal="true" aria-labelledby="sheet-title" aria-describedby="sheet-desc" style="position: absolute; left: 0; right: 0; bottom: 0; top: 96px; z-index: 5; background: #FFFFFF; border-radius: 22px 22px 0 0; padding: 10px 16px 20px; display: flex; flex-direction: column; gap: 10px; box-shadow: 0 -12px 32px -16px rgba(15,16,32,0.4); overflow: hidden;">
+    <span aria-hidden="true" style="align-self: center; width: 40px; height: 4px; border-radius: 2px; background: #DFE1EA;"></span>
+    <div style="display: flex; align-items: flex-start; gap: 10px;">
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px;">
+        <h2 id="sheet-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 19px; overflow-wrap: anywhere;">SUBREAD_FEATURECOUNTS (S19) · attempt 1</h2>
+        <span id="sheet-desc" style="font-size: 13px; color: #4D5065;"><strong style="color: #8F5806; font-weight: 600;">Failed · retried</strong> · exit 137 · job 8812477 · peak 8.0 GB of 8 GB</span>
+      </div>
+      <button type="button" autofocus aria-label="Close job files" style="flex-shrink: 0; height: 44px; padding: 0 14px; border-radius: 12px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Close</button>
+    </div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <code style="flex-grow: 1; min-width: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; padding: 8px 10px; border-radius: 10px; background: #F7F7FB; color: #22253A; overflow-wrap: anywhere;">…/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W/work/9d/77c2140f5be3a1c96e04d2b88a7f13</code>
+      <button type="button" aria-label="Copy work directory path" style="flex-shrink: 0; height: 44px; padding: 0 12px; border-radius: 12px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Copy</button>
+    </div>
+    <div role="tablist" aria-label="Files of this attempt" class="chips" style="display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid #EEEFF5; margin: 0 -16px; padding: 0 16px;"><button type="button" role="tab" id="mft-0" aria-selected="true" aria-controls="mfile-panel" tabindex="0" style="flex-shrink: 0; height: 44px; padding: 0 10px; border: none; background: transparent; font: 600 13px 'JetBrains Mono', monospace; color: #4D368B; box-shadow: inset 0 -2px 0 #7750D4; cursor: pointer;">.command.log</button><button type="button" role="tab" id="mft-1" aria-selected="false" aria-controls="mfile-panel" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 10px; border: none; background: transparent; font: 400 13px 'JetBrains Mono', monospace; color: #4D5065; box-shadow: none; cursor: pointer;">.command.err</button><button type="button" role="tab" id="mft-2" aria-selected="false" aria-controls="mfile-panel" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 10px; border: none; background: transparent; font: 400 13px 'JetBrains Mono', monospace; color: #4D5065; box-shadow: none; cursor: pointer;">.command.out</button><button type="button" role="tab" id="mft-3" aria-selected="false" aria-controls="mfile-panel" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 10px; border: none; background: transparent; font: 400 13px 'JetBrains Mono', monospace; color: #4D5065; box-shadow: none; cursor: pointer;">.command.sh</button><button type="button" role="tab" id="mft-4" aria-selected="false" aria-controls="mfile-panel" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 10px; border: none; background: transparent; font: 400 13px 'JetBrains Mono', monospace; color: #4D5065; box-shadow: none; cursor: pointer;">.command.run</button><button type="button" role="tab" id="mft-5" aria-selected="false" aria-controls="mfile-panel" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 10px; border: none; background: transparent; font: 400 13px 'JetBrains Mono', monospace; color: #4D5065; box-shadow: none; cursor: pointer;">.exitcode</button><button type="button" role="tab" id="mft-6" aria-selected="false" aria-controls="mfile-panel" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 10px; border: none; background: transparent; font: 400 13px 'JetBrains Mono', monospace; color: #4D5065; box-shadow: none; cursor: pointer;">More files</button></div>
+    <div id="mfile-panel" role="tabpanel" aria-labelledby="mft-0" style="display: flex; flex-direction: column; gap: 8px; flex: 1 1 auto; min-height: 0;">
+      <span style="font-size: 12.5px; color: #4D5065;">SLURM job output, stdout and stderr together · 2.4 KiB · last 64 KiB. May show values from your parameters or environment.</span>
+      <pre tabindex="0" aria-label=".command.log of SUBREAD_FEATURECOUNTS (S19), attempt 1, last lines" style="margin: 0; flex: 1 1 auto; min-height: 0; overflow: auto; border-radius: 12px; background: #0F1020; padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere;"><span style="display: block; color: #C4C7D4;">|| Process BAM file S19.markdup.sorted.bam...</span><span style="display: block; color: #C4C7D4;">||    Total alignments : 61842317</span><span style="display: block; color: #C4C7D4;">||    Successfully assigned alignments : 48210552 (78.0%)</span><span style="display: block; color: #F59A9A;">/tmp/slurmd/job8812477/slurm_script: line 172:  48211 Killed  featureCounts -T 6 ...</span><span style="display: block; color: #F59A9A;">slurmstepd: error: Detected 1 oom_kill event in StepId=8812477.batch. Some of the step tasks have been OOM Killed.</span></pre>
+      <div style="display: flex; gap: 8px;"><button type="button" style="flex: 1 1 0; height: 44px; border-radius: 12px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Reload</button><button type="button" style="flex: 1 1 0; height: 44px; border-radius: 12px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Download</button></div>
+      <span style="font-size: 11.5px; color: #6E7287; line-height: 1.4;">Board note: the page behind is inert; focus starts on Close and stays in the sheet; closing it returns focus to this job's Files button. Data: fixture lines.</span>
+    </div>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>
