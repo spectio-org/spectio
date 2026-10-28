@@ -117,8 +117,8 @@
   <path d="M260.3,363.6 C258.9,355.5 260.6,345.7 260.5,336.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <text x="296.0" y="355.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#1e1e1e" text-anchor="middle" font-weight="bold">Cancel</text>
   <text x="200.0" y="506.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">1 · open the token link</text>
-  <text x="200.0" y="530.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">tunnel: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">spectio open --node</tspan>, or an SSH config entry</text>
-  <text x="200.0" y="550.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">the three screens poll the API every 5 s</text>
+  <text x="200.0" y="530.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">tunnel: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">spectio-open [--node]</tspan>, or an SSH config entry</text>
+  <text x="200.0" y="550.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">live refresh: one SSE stream per browser</text>
   <text x="200.0" y="570.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">a new link: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">spectio login --print-link</tspan></text>
   <path d="M371.7,317.8 C463.6,318.6 556.3,317.5 648.1,318.1" fill="none" stroke="#1e1e1e" stroke-width="1.8" stroke-linecap="round"/>
   <path d="M371.8,317.9 C464.5,318.5 555.6,317.6 648.0,317.9" fill="none" stroke="#1e1e1e" stroke-width="1.8" stroke-linecap="round"/>
@@ -409,8 +409,8 @@
   <path d="M712.7,418.0 C710.1,404.1 710.0,388.8 711.2,376.1" fill="none" stroke="#5c5c5c" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M712.2,376.1 C709.8,380.6 707.5,384.5 705.0,388.3" fill="none" stroke="#5c5c5c" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M712.3,376.2 C714.7,379.6 716.6,383.8 718.6,388.3" fill="none" stroke="#5c5c5c" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="764.0" y="452.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">node-local disk</text>
-  <text x="764.0" y="472.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">runs, tasks, attempts</text>
+  <text x="764.0" y="452.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">an index, node-local tmp</text>
+  <text x="764.0" y="472.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">rebuilt from the run dirs</text>
   <path d="M765.0,489.4 L774.0,486.8 L783.0,489.4 L783.0,499.8 L774.0,509.7 L765.0,499.8 Z" fill="#fff9db" stroke="none"/>
   <path d="M764.9,489.6 C767.7,488.4 771.2,487.9 774.1,486.8" fill="none" stroke="#1e1e1e" stroke-width="1.6" stroke-linecap="round"/>
   <path d="M774.1,486.8 C777.3,487.9 779.9,488.5 783.1,489.4" fill="none" stroke="#1e1e1e" stroke-width="1.6" stroke-linecap="round"/>
@@ -448,6 +448,9 @@
   <path d="M1018.5,392.5 C1017.7,387.3 1019.7,383.6 1019.4,377.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1018.3,392.4 C1015.2,388.2 1011.1,385.9 1007.2,382.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <text x="1050.0" y="520.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#1e1e1e" text-anchor="middle" font-weight="bold">engine head, in tmux</text>
+  <text x="1052.0" y="540.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="middle" font-weight="normal">Cancel: Ctrl-C in its pane,</text>
+  <text x="1052.0" y="556.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="middle" font-weight="normal">then SIGTERM, SIGKILL</text>
+  <text x="1052.0" y="572.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="middle" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">tmux attach</tspan> to take over</text>
   <rect x="1098.0" y="372.0" width="40" height="23" rx="11" fill="#ffd8a8" stroke="#1e1e1e" stroke-width="1.4"/>
   <text x="1118.0" y="389.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="middle" font-weight="bold">M2</text>
   <rect x="1230.0" y="130.0" width="500.0" height="460.0" rx="6" fill="#ffffff"/>
@@ -573,9 +576,6 @@
   <text x="1690.0" y="280.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#1e1e1e" text-anchor="middle" font-weight="bold">tasks</text>
   <text x="1480.0" y="456.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">3 · the engine sends the tasks</text>
   <text x="1480.0" y="482.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">through its own SLURM executor; no <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">sbatch</tspan> for the head</text>
-  <text x="1480.0" y="502.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">Cancel: Ctrl-C in the tmux pane,</text>
-  <text x="1480.0" y="522.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">then SIGTERM, SIGKILL after 60 s</text>
-  <text x="1480.0" y="542.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">a person can attach: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">tmux attach</tspan></text>
   <rect x="650.0" y="640.0" width="1080.0" height="172.0" rx="4" fill="#e7f5ff" fill-opacity="0.55"/>
   <path d="M732.0,680.0 L731.2,682.0 L728.8,683.9 L725.0,685.6 L720.0,687.0 L713.9,688.1 L707.1,688.8 L700.0,689.0 L692.9,688.8 L686.1,688.1 L680.0,687.0 L675.0,685.6 L671.2,683.9 L668.8,682.0 L668.0,680.0 L668.8,678.0 L671.2,676.1 L675.0,674.4 L680.0,673.0 L686.1,671.9 L692.9,671.2 L700.0,671.0 L707.1,671.2 L713.9,671.9 L720.0,673.0 L725.0,674.4 L728.8,676.1 L731.2,678.0 Z" fill="#e7f5ff" stroke="none"/>
   <path d="M732.1,680.2 C732.0,680.4 731.2,681.2 731.3,681.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
@@ -1026,6 +1026,8 @@
   <text x="1500.0" y="888.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">done when, on <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.4">slurm-mini</tspan> in CI,</text>
   <text x="1500.0" y="908.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">both engines launch, succeed</text>
   <text x="1500.0" y="928.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">and cancel, and a restarted</text>
-  <text x="1500.0" y="948.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">server adopts the running head</text>
-  <text x="40.0" y="1034.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Source: docs/plans/P1-walking-skeleton.md, Architecture, Assumptions 4 and 7, Milestones, Tasks 1–24 · docs/specs/dev-environment-and-testing.md §15.3 · tools/diagrams/p1_skeleton.py</text>
+  <text x="1500.0" y="948.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">server adopts the running head;</text>
+  <text x="1500.0" y="968.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">by hand on an EMBL login node,</text>
+  <text x="1500.0" y="988.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.4">spectio-open</tspan> opens the runs list</text>
+  <text x="40.0" y="1034.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Source: docs/plans/P1-walking-skeleton.md, Architecture, Assumptions 4, 7 and 21, Milestones, Tasks 1–24 · docs/specs/dev-environment-and-testing.md §15.3 · tools/diagrams/p1_skeleton.py</text>
 </svg>

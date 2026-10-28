@@ -5,3 +5,7 @@ Every step of the [pre-implementation pipeline](../playbooks/autopilot.md) write
 This page is generated at build time from `docs/playbooks/pipeline.yaml` and `.autopilot/state.json`.
 
 <!-- spectio:progress-table -->
+
+## Steps outside the pipeline
+
+- [APPLY4 · Apply Thomas's 2026-10-28 answers on cluster access](W4/APPLY4.md): PR #47 and the fixes of its doc review (running).

@@ -983,7 +983,9 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Options:**
   - (a) a node-local path exists on the EMBL login nodes (for example a local `/scratch` or `/tmp` that is not purged): the data directory goes there, and `spectio init` asks for it;
   - (b) no such disk: the data directory goes on the shared home, with a single writer process and SQLite's rollback journal instead of WAL **[to be validated]**, and the server checks at start that no other server uses it;
-  - (c) no such disk: ask EMBL IT for a small persistent local directory per user.
-- **Recommendation:** none yet; it depends on what EMBL's login nodes have. Thomas, or EMBL IT, knows.
-- **Assumed:** nothing; the spec keeps node-local disk until this is answered.
-- **Blocked:** P1 Task 8 (`spectio init` and the `doctor` file-system check) on the real cluster; nothing in CI.
+  - (c) no such disk: ask EMBL IT for a small persistent local directory per user;
+  - (d) *(added 2026-10-28)* the database is an index that can be lost: it goes in a node-local temporary directory of the server's login node (`<node-local tmp>/spectio-<uid>/`, 0700), and the server rebuilds it at boot from the run directories on the shared file system when it is missing. The rest of the data directory (configuration, server key, state file) stays in the shared home.
+- **Note 2026-10-28 (Thomas):** at EMBL everything is shared across the login nodes, except some temporary directories. So (a) has no persistent disk, and (b) puts SQLite on a network file system.
+- **Recommendation:** (d): it needs no persistent local disk and no SQLite file on a network file system, and losing the temporary directory costs only the open sessions and the drop counters.
+- **Assumed:** (d) *(assumed — pending Thomas)*; [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Where data lives), [architecture §7.2](../specs/architecture-plugins-and-packaging.md) (dated note), P1 Assumption 21, [log 2026-10-28](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index). Still to confirm: which temporary directory is node-local on the EMBL login nodes, and how often it is purged.
+- **Blocked:** nothing in CI; the real-cluster checks of P1 Tasks 8 and 24 confirm the temporary directory.
