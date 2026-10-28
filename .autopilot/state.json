@@ -426,12 +426,17 @@
     },
     "T6": {
       "wave": "W3",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-28T13:37:16Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "worker in a separate cloud session (session_01MF8RxLya2qysy5qS11CEqD), branch autopilot/T6; narrowed to a minimal skeleton by Thomas's MVP decision of 2026-10-28 (no side-by-side report against the boards)"
+      "finished_at": "2026-10-28T14:25:00Z",
+      "outputs": [
+        "tests/e2e/",
+        ".github/workflows/e2e.yml",
+        "docs/progress/W3/T6.md",
+        "docs/reviews/code/T6.md"
+      ],
+      "notes": "worker in a separate cloud session (session_01MF8RxLya2qysy5qS11CEqD), branch autopilot/T6; narrowed to a minimal skeleton by Thomas's MVP decision of 2026-10-28 (no side-by-side report against the boards); PR weber8thomas/spectio#45 squash e956025, every check green on 84b5331; code review approve after 3 rounds (0/1/6 fixed), security approve (0/0/5, SEC-T6-05 → inbox #63), simplifier no change, doc review approve 13/14; deferred: side-by-side board report, tier-4 journeys"
     },
     "TRIAGE3": {
       "wave": "W3",
