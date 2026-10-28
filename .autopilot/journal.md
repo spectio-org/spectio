@@ -339,3 +339,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Dashboard:** `tools/dashboard/gen.py` embeds each figure's tracked SVG instead of its PNG (8.6 MB of PNG become 4.0 MB of SVG; the figures lose the hand-drawn font inside `<img>`, a deliberate trade-off): page 10.6 MB, under the 16 MB limit; `check_xss.js` passes. Code review approve 0/0/3 (font trade-off and size claim fixed in the comment and README; the previous entry named `build.py`, the change is in `gen.py`). Republished at the same URL.
 - **Next:** promotion PR integration → main (T5, #43, dashboard fix).
 - **Waiting on Thomas:** unchanged (#52 critical, #51 (b), reserved #53, #54, #55, #59; assumed #56, #57, #58, #60; dashboard answers).
+- **Promoted to main:** weber8thomas/spectio#44, merge commit `1aa45fe` (T5, #43, dashboard SVG fix), 27 checks green on `452292b`. Dashboard version 25 published at the same URL.
