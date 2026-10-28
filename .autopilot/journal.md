@@ -340,3 +340,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Next:** promotion PR integration → main (T5, #43, dashboard fix).
 - **Waiting on Thomas:** unchanged (#52 critical, #51 (b), reserved #53, #54, #55, #59; assumed #56, #57, #58, #60; dashboard answers).
 - **Promoted to main:** weber8thomas/spectio#44, merge commit `1aa45fe` (T5, #43, dashboard SVG fix), 27 checks green on `452292b`. Dashboard version 25 published at the same URL.
+
+## 2026-10-28 13:31 → — tick 12 (MVP narrowed, T6, R10, P1)
+
+- **Thomas, 13:35 UTC:** the MVP handles no Kubernetes and no extra complexity; an ultra-simple UI; launch and monitoring of workflows; no gating; no visualisation. Recorded: decision log "0.0.1 narrowed: launch and monitor, an ultra-simple UI", dev-env §15.1 (owner), `mvp-0.0.1.md`, the P1 prompt; relaunch and parameter history out of 0.0.1, assumed (inbox #61); dated note on #52 (stays open).
+- **T6 running** in a separate cloud session (`session_01MF8RxLya2qysy5qS11CEqD`, branch `autopilot/T6`), narrowed to a minimal Playwright skeleton; it reports back with its PR.

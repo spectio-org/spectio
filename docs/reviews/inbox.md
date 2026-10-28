@@ -808,6 +808,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b). T3 and T4 are cheap now that they run in CI, and their findings (RBAC in schedulers §4, the `nf-k8s` plugin) are needed by the first runners.
 - **Assumed:** none. It changes the plan and a `CLAUDE.md` rule, which are Thomas's. The autopilot does not edit `pipeline.yaml` and writes no product code until he answers.
 - **Blocked:** nothing yet; T3 and T4 go on.
+- **Note, 2026-10-28 13:35 UTC:** Thomas asked to run T6 and to go on with what can move; the pipeline continues in its order (T6, then R10 and P1) under the narrowed 0.0.1 ([log](../decisions/log.md#2026-10-28-001-narrowed-launch-and-monitor-an-ultra-simple-ui)). #52 stays open.
 
 ## TRIAGE3 (2026-10-28)
 
@@ -933,3 +934,17 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a): each piece is built when there is code to test against it, and the rows stop claiming coverage today.
 - **Assumed:** (a) *(assumed — pending Thomas)*: the rows are marked planned. Naming them in later step prompts waits for Thomas, since `pipeline.yaml` and the prompts are his to change.
 - **Blocked:** nothing.
+
+## MVP scope (2026-10-28)
+
+### #61 · Assumed: relaunch and parameter history leave 0.0.1
+
+- **Covers:** [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) Relaunch and Parameter history rows, [`mvp-0.0.1.md`](../specs/mvp-0.0.1.md) §2–§3, [decision log](../decisions/log.md#2026-10-28-001-narrowed-launch-and-monitor-an-ultra-simple-ui), inbox #32.
+- **Context:** Thomas, 2026-10-28: "UI ultra simple ; launch & monitoring de wf ; pas de gating ; pas de visu". The 0.0.1 cut of 2026-10-27 also had relaunch with changed parameters (a child run) and the parameter history across runs (Parameters and Lineage tabs, RunsCompare).
+- **Options:**
+  - (a) both leave 0.0.1 for "later (open)"; the run detail shows its own run's parameters;
+  - (b) keep a plain Relaunch button (same parameters, a new run), drop the changed-parameter dialog and the history;
+  - (c) keep both, as on 2026-10-27.
+- **Recommendation:** (a): the smallest UI, and both can come back without rework because the data model keeps `run_inputs`.
+- **Assumed:** (a) *(assumed — pending Thomas)*.
+- **Blocked:** nothing; P1 plans without them.

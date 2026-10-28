@@ -426,12 +426,12 @@
     },
     "T6": {
       "wave": "W3",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-28T13:37:16Z",
       "finished_at": null,
       "outputs": [],
-      "notes": ""
+      "notes": "worker in a separate cloud session (session_01MF8RxLya2qysy5qS11CEqD), branch autopilot/T6; narrowed to a minimal skeleton by Thomas's MVP decision of 2026-10-28 (no side-by-side report against the boards)"
     },
     "TRIAGE3": {
       "wave": "W3",
