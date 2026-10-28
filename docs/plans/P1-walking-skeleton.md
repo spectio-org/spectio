@@ -4,6 +4,11 @@
 
 *Draft, 2026-10-28 (step P1). Waiting for Thomas at the GO gate ([R10 §5](../reviews/R10-synthesis.md#5-go-no-go)). No product code exists yet; this page writes none.*
 
+![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel reaches spectio serve on a SLURM login node through an SSH tunnel and a one-time token link; the runner sends the engine head to a compute node with sbatch, the plugins' spool file in the run directory is read back into SQLite; milestones M1 to M5 and the seven §15.3 security requirements are marked where they apply, above a to-scale strip of the 23 tasks](../assets/diagrams/p1_skeleton_light.png#only-light)
+![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel reaches spectio serve on a SLURM login node through an SSH tunnel and a one-time token link; the runner sends the engine head to a compute node with sbatch, the plugins' spool file in the run directory is read back into SQLite; milestones M1 to M5 and the seven §15.3 security requirements are marked where they apply, above a to-scale strip of the 23 tasks](../assets/diagrams/p1_skeleton_dark.png#only-dark)
+
+Step page: [Progress · P1](../progress/W4/P1.md).
+
 **Goal:** the smallest Spectio a test user can run: `spectio serve` on a SLURM login node, opened through an SSH tunnel with a one-time token link, that launches the synthetic Nextflow or Snakemake pipeline (head through `sbatch`), lists the runs, shows one run's state, task counts, processes or rules, and head-job state as text and tables, and cancels it.
 
 **Architecture:** one process per user on the login node: a FastAPI app, an in-process runner thread and SQLite on node-local disk ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). The runner writes a head script, submits it with `sbatch` (or starts it detached on the local executor in tests), watches the head with `squeue` / `sacct`, and tails the event spool that the engine plugins write in the run directory. One writer thread validates spool events and projects them into `runs`, `tasks` and `attempts` in the same transaction. A three-screen React UI polls the API.

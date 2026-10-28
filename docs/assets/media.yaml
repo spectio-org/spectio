@@ -250,3 +250,11 @@ media:
       - docs/assets/diagrams/r10_synthesis_dark.svg
       - docs/assets/diagrams/r10_synthesis_light.png
       - docs/assets/diagrams/r10_synthesis_dark.png
+  - id: p1-skeleton
+    kind: diagram
+    generator: python3 tools/diagrams/p1_skeleton.py
+    outputs:
+      - docs/assets/diagrams/p1_skeleton_light.svg
+      - docs/assets/diagrams/p1_skeleton_dark.svg
+      - docs/assets/diagrams/p1_skeleton_light.png
+      - docs/assets/diagrams/p1_skeleton_dark.png
