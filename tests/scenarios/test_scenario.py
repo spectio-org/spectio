@@ -4,6 +4,7 @@ and the commands `down` runs (subprocess mocked).
     python3 -m unittest discover -s tests/scenarios -p 'test_*.py'
 """
 import importlib.util
+import json
 import subprocess
 import tempfile
 import threading
@@ -143,6 +144,18 @@ class Down(TempState):
                 mock.patch.object(scenario.shutil, "which", return_value="/usr/bin/x"), mock.patch("sys.stdout"):
             with self.assertRaises(SystemExit):
                 scenario.down(6)
+        self.assertTrue(Path(data).exists())
+
+    def test_down_keeps_the_data_directory_when_the_cluster_tool_is_missing(self):
+        data = scenario.names(7)["data_dir"]
+        Path(data).mkdir(parents=True)
+        Path(data, "scenario.json").write_text(json.dumps({"scenario": {"scheduler": "slurm-mini"}}))
+        with mock.patch.object(scenario.subprocess, "run",
+                               side_effect=lambda cmd, **kw: subprocess.CompletedProcess(cmd, 0, stdout="")), \
+                mock.patch.object(scenario.shutil, "which", return_value=None), \
+                mock.patch("sys.stdout"), mock.patch("sys.stderr"):
+            with self.assertRaises(SystemExit):
+                scenario.down(7)
         self.assertTrue(Path(data).exists())
 
 

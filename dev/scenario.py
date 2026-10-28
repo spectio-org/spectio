@@ -206,6 +206,12 @@ def down(n):
     # The host PATH only: cluster jobs can write the data directory, so its tools/bin is never searched here.
     env = dict(os.environ, KUBECONFIG=f"{ids['data_dir']}/kubeconfig")
     failed = 0
+    saved = Path(ids["data_dir"]) / "scenario.json"  # written by `up` before it creates anything
+    layer = SCHEDULERS[json.loads(saved.read_text())["scenario"]["scheduler"]][0] if saved.exists() else None
+    for tool, needed_by in ("sind", "slurm"), ("kind", "k8s"):
+        if layer == needed_by and not shutil.which(tool, path=env.get("PATH")):
+            print(f"down {n}: {tool} is not on the host PATH, its {needed_by} cluster is kept", file=sys.stderr)
+            failed = 1
     if shutil.which("sind", path=env.get("PATH")) and ids["name"] in _first_column(["sind", "get", "realms"], env):
         failed |= run(["sind", "--realm", ids["name"], "delete", "realm"], env, check=False)
     if shutil.which("kind", path=env.get("PATH")) and ids["name"] in _first_column(["kind", "get", "clusters"], env):
