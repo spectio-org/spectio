@@ -33,7 +33,7 @@ The chrome shows the bell, avatar menu, project switcher, "n / m runners" and se
 
 **Logo motion (the panorama):** on load the four blades start stacked as one narrow view and fan out into the 180° panorama; on hover a beam of light sweeps across it; boot splash and long waits use a back-and-forth "radar" beam; static for favicons, print and reduced motion. Pure CSS.
 
-*Note 2026-10-28 (0.0.1 lite):* the 0.0.1 top bar starts with the breadcrumbs; the Spectio logo is the favicon only, with no logo or wordmark in the bar (Thomas, 2026-10-28). The engine and pipeline logos (Nextflow, Snakemake, nf-core) mark the pipeline on the run, launch and home screens, and each section of the run detail and launch form is collapsible, with a light line icon ([`design/README.md`](https://github.com/weber8thomas/spectio/blob/main/design/README.md#001-lite-boards)).
+*Note 2026-10-28 (0.0.1 lite):* the 0.0.1 app bar starts with the complete Spectio logo, the emblem and the "Spectio" wordmark, on desktop and on the phone; it links to Home, with "Spectio" as its accessible name and the emblem decorative. The emblem alone is the favicon, in the browser tab. On the phone the logo and the login node take a first row, and the back arrow and the page title a second (Thomas, 2026-10-28, [decision log](../decisions/log.md#2026-10-28-001-has-four-screens-home-kept): a first request was misread as "favicon only", then corrected). The engine and pipeline logos (Nextflow, Snakemake, nf-core) mark the pipeline on the run, launch and home screens, and each section of the run detail and launch form is collapsible, with a light line icon ([`design/README.md`](https://github.com/weber8thomas/spectio/blob/main/design/README.md#001-lite-boards)).
 
 ## 3. Status system
 

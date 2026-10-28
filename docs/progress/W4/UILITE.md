@@ -9,7 +9,7 @@ review_ref: "doc-reviewer 2026-10-28, changes 7/14 on 8bba74e; items 1-13 and 15
 ---
 # UILITE · The 0.0.1 lite boards: review, stages and Thomas's design requests
 
-!!! info "Running 2026-10-28 · branch `autopilot/ui-lite-review` · UX-292 to UX-304, then the re-check UX-305 to UX-314, all applied · Thomas: both stages and processes in 0.0.1, four screens with Home, logos, collapsible sections, the Spectio logo as the favicon only · doc review changes 7/14 on `8bba74e`, applied; re-review pending"
+!!! info "Running 2026-10-28 · branch `autopilot/ui-lite-review` · UX-292 to UX-304, then the re-check UX-305 to UX-314, all applied · Thomas: both stages and processes in 0.0.1, four screens with Home, logos, collapsible sections, the complete Spectio logo in the app bar on desktop and phone (a first reading, favicon only, corrected) · doc review changes 7/14 on `8bba74e`, applied; re-review pending"
 
 ![UILITE figure, before and after. Before, at 1abd5dd: the lite run detail of a running nf-core/rnaseq run, header "stage 3 of 4", four stage cards named by hand (Preprocessing, Alignment & QC, Quantification, Reporting) that no endpoint served, since the API had /processes only, above a separate processes table with a Stage column of labels, 6 of 14 processes shown. After: header "3 of 8 stages done · 4 running · 524 / 803 tasks", the eight stages the stage-detection spike found for nf-core/rnaseq 3.27.0, in order, each with a Done, Running or Pending word and icon, a Detected badge, a bar and "n of m", the fourth, Bam markduplicates picard, open to its processes; notes: a process in no stage goes under "Not in a stage", with no stage the run detail shows the flat list, the state words map to run_stages.state (Pending not_started, Running running, Done completed, Failed failed, Not run skipped), processes are keyed by task.process and shown by their last segment, and /stages is empty until the detector task of step APPLY6](../../assets/diagrams/uilite_stages_light.png#only-light)
 ![UILITE figure, before and after. Before, at 1abd5dd: the lite run detail of a running nf-core/rnaseq run, header "stage 3 of 4", four stage cards named by hand (Preprocessing, Alignment & QC, Quantification, Reporting) that no endpoint served, since the API had /processes only, above a separate processes table with a Stage column of labels, 6 of 14 processes shown. After: header "3 of 8 stages done · 4 running · 524 / 803 tasks", the eight stages the stage-detection spike found for nf-core/rnaseq 3.27.0, in order, each with a Done, Running or Pending word and icon, a Detected badge, a bar and "n of m", the fourth, Bam markduplicates picard, open to its processes; notes: a process in no stage goes under "Not in a stage", with no stage the run detail shows the flat list, the state words map to run_stages.state (Pending not_started, Running running, Done completed, Failed failed, Not run skipped), processes are keyed by task.process and shown by their last segment, and /stages is empty until the detector task of step APPLY6](../../assets/diagrams/uilite_stages_dark.png#only-dark)
@@ -25,7 +25,7 @@ This step is outside [`pipeline.yaml`](../../playbooks/pipeline.yaml): a `ux-rev
 **Part 2, the second commit: the doc review, the re-check and Thomas's design requests.**
 
 - **[ui-spec §4.4](../../specs/ui-spec.md#44-run-detail), a dated note, the one owner of the 0.0.1 stage presentation.** What the run detail shows, with or without stages; the header "n of m stages done · k running" (UX-306); one state-word rule from the task counts, with Pending including Submitted (UX-305); a word for each api §7 `run_stages.state`, Stopped for a `failed` stage on a cancelled run; processes keyed by their fully qualified name and shown by their last segment (UX-307). After APPLY6 merged, the note links ui-spec §5.1 and §5.1.1 for where stages come from and their stored state, and holds no mechanism.
-- **[ui-spec §2](../../specs/ui-spec.md#2-main-navigation), a dated note.** The 0.0.1 top bar starts with the breadcrumbs; the Spectio logo is the favicon only.
+- **[ui-spec §2](../../specs/ui-spec.md#2-main-navigation), a dated note.** The 0.0.1 app bar starts with the complete Spectio logo, emblem and wordmark, on desktop and phone; the emblem alone is the favicon. A first version said "favicon only", from a misread request; Thomas corrected it the same day.
 - **[P1](../../plans/P1-walking-skeleton.md).**
     - Assumption 6, merged with APPLY6's: its mechanism text (declared, detected, none; Task 27), and the link to the §4.4 note for state words, the header line, badges, the "Not in a stage" group, process names and the empty-state line.
     - Task 18:
@@ -44,7 +44,7 @@ This step is outside [`pipeline.yaml`](../../playbooks/pipeline.yaml): a `ux-rev
 - **Boards.**
     - The engine and pipeline logos (Nextflow, Snakemake, nf-core).
     - A light icon on each section, each section collapsible, in the run detail, home and launch.
-    - No logo in the top bar.
+    - The complete Spectio logo in `LiteTopbar` and `MLiteTopbar` (two rows on the phone).
     - The examples rebuilt on the stage-detection spike's real output (`tests/pipelines/real/stages/expected/`, merged with APPLY6): nf-core/rnaseq 3.27.0 with STAR and Salmon, eight stages, 63 processes seen, 803 known tasks for 20 samples; mosaicatcher-pipeline v2.5.1, eight stages, 347 jobs for 96 cells. Stage names and membership verbatim; counts are fixture data, the same on every board.
     - The state rule, and fully qualified names as accessible names.
     - Phone wrapping, padding and a "Now" line.
@@ -55,7 +55,7 @@ This step is outside [`pipeline.yaml`](../../playbooks/pipeline.yaml): a `ux-rev
 
 ## Why
 
-Thomas, 2026-10-28, wants both the stages and the processes in 0.0.1 ("les 2 dans 0.0.1"), a home screen, and asked for the logos, light icons, collapsible sections and the logo as favicon only. The doc review of `8bba74e` found the stage presentation described in seven places, state words with no mapping to the API, a `/stages` shape that did not match api §7, and no Progress page. The re-check found state words that contradicted their counts, colliding short process names, and facts no endpoint serves.
+Thomas, 2026-10-28, wants both the stages and the processes in 0.0.1 ("les 2 dans 0.0.1"), a home screen, and asked for the logos, light icons and collapsible sections; his sentence on the Spectio logo was first misread as "favicon only", and he corrected it: the complete logo in the app bar, on desktop and phone. The doc review of `8bba74e` found the stage presentation described in seven places, state words with no mapping to the API, a `/stages` shape that did not match api §7, and no Progress page. The re-check found state words that contradicted their counts, colliding short process names, and facts no endpoint serves.
 
 ## Evidence
 
@@ -72,6 +72,7 @@ Thomas, 2026-10-28, wants both the stages and the processes in 0.0.1 ("les 2 dan
 - **Strict build:** `uvx --with mkdocs-material mkdocs build --strict` exits 0. The anchors linked from the plan and the specs exist in the built pages: `44-run-detail` and `2-main-navigation` (ui-spec), `5-endpoint-catalogue-api-v1` (api), `2026-10-28-001-has-four-screens-home-kept` (decision log).
 - **Frontmatter:** `python3 tools/claude/check_frontmatter.py` reports 0 problems.
 - **Boards:** `LiteRunDetail`, `LiteRunDetailSnakemake`, `LiteRunTasks`, `LiteHome`, `LiteLaunch`, `LiteCancelDialog` (1440 × 1180) and `MLiteRunDetail`, `MLiteCancelSheet` (390 × 844) rendered with `node tools/canvas/render.js` and looked at; the run detail also at 1440 × 1700, to read its last stages and caption.
+- **Logo correction:** every lite board with `LiteTopbar` (1440 × 1180) and every phone board (390 × 844) rendered again after the complete logo went back into the app bar, and looked at: the logo and the breadcrumbs on one line on desktop; on the phone the logo and the login node above the back arrow and the title, with nothing hidden under the 104 px header.
 - **One set of numbers:** the stage rows, the header, the chips, the Tasks filters, home and the runs list all read 524 succeeded, 64 running, 215 pending, 7 retried, 803 known tasks; `grep -rn "524 / 824\|3 of 5 stages" design docs` prints only this line.
 - **No stale wording:** `grep -rn "spike, pending" docs design` prints only this line.
 - **Before:** `git show 1abd5dd:design/ui-canvas/LiteRunDetail.dc.html`. **After:** `git diff 1abd5dd -- docs design tools`.
