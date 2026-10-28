@@ -1,0 +1,941 @@
+{
+  "kind": "List",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:39Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "fx-exit3-6wnht",
+        "namespace": "spectio-work",
+        "resourceVersion": "657",
+        "uid": "fc8d0de1-48dd-40cc-b5b3-31ddc606899b"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:39Z",
+      "message": "Successfully assigned spectio-work/fx-exit3-6wnht to k8s-mini-control-plane",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:39Z",
+        "name": "fx-exit3-6wnht.18e2a9db07b8cd57",
+        "namespace": "spectio-work",
+        "resourceVersion": "661",
+        "uid": "93dd2731-064a-4179-bd01-b8d7759c3ed5"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "",
+      "source": {
+        "component": "default-scheduler"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:40Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-exit3-6wnht",
+        "namespace": "spectio-work",
+        "resourceVersion": "658",
+        "uid": "fc8d0de1-48dd-40cc-b5b3-31ddc606899b"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:40Z",
+      "message": "Container image \"busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e\" already present on machine and can be accessed by the pod",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:40Z",
+        "name": "fx-exit3-6wnht.18e2a9db1e75232d",
+        "namespace": "spectio-work",
+        "resourceVersion": "663",
+        "uid": "202e9139-56c4-416b-b89e-31e0cb0cfe06"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:40Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-exit3-6wnht",
+        "namespace": "spectio-work",
+        "resourceVersion": "658",
+        "uid": "fc8d0de1-48dd-40cc-b5b3-31ddc606899b"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:40Z",
+      "message": "Container created",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:40Z",
+        "name": "fx-exit3-6wnht.18e2a9db1ee0ee2d",
+        "namespace": "spectio-work",
+        "resourceVersion": "665",
+        "uid": "39eba998-65a9-44a3-b39c-80e8d16ef83f"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:40Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-exit3-6wnht",
+        "namespace": "spectio-work",
+        "resourceVersion": "658",
+        "uid": "fc8d0de1-48dd-40cc-b5b3-31ddc606899b"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:40Z",
+      "message": "Container started",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:40Z",
+        "name": "fx-exit3-6wnht.18e2a9db2190811a",
+        "namespace": "spectio-work",
+        "resourceVersion": "666",
+        "uid": "53bf5afd-7ffd-4c8c-8acb-54986c484256"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:26Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "fx-exit3-tj7t7",
+        "namespace": "spectio-work",
+        "resourceVersion": "575",
+        "uid": "b58e71ec-1993-4cd5-b1d7-45877c0ef4f1"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:26Z",
+      "message": "Successfully assigned spectio-work/fx-exit3-tj7t7 to k8s-mini-control-plane",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:26Z",
+        "name": "fx-exit3-tj7t7.18e2a9d7f28867d0",
+        "namespace": "spectio-work",
+        "resourceVersion": "579",
+        "uid": "b3ea442b-6ae6-4b6b-88f6-6b0d8c71e6c5"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "",
+      "source": {
+        "component": "default-scheduler"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:27Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-exit3-tj7t7",
+        "namespace": "spectio-work",
+        "resourceVersion": "577",
+        "uid": "b58e71ec-1993-4cd5-b1d7-45877c0ef4f1"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:27Z",
+      "message": "Pulling image \"busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e\"",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:27Z",
+        "name": "fx-exit3-tj7t7.18e2a9d81b0f4a1d",
+        "namespace": "spectio-work",
+        "resourceVersion": "584",
+        "uid": "87801779-7eae-4acf-adcf-46160833f1ad"
+      },
+      "reason": "Pulling",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:28Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-exit3-tj7t7",
+        "namespace": "spectio-work",
+        "resourceVersion": "577",
+        "uid": "b58e71ec-1993-4cd5-b1d7-45877c0ef4f1"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:28Z",
+      "message": "Successfully pulled image \"busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e\" in 283ms (1.66s including waiting). Image size: 2222118 bytes.",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:28Z",
+        "name": "fx-exit3-tj7t7.18e2a9d87e0a9318",
+        "namespace": "spectio-work",
+        "resourceVersion": "603",
+        "uid": "c8fac638-a0c2-4da7-a856-36074952c3a8"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:29Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-exit3-tj7t7",
+        "namespace": "spectio-work",
+        "resourceVersion": "577",
+        "uid": "b58e71ec-1993-4cd5-b1d7-45877c0ef4f1"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:29Z",
+      "message": "Container created",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:29Z",
+        "name": "fx-exit3-tj7t7.18e2a9d88528839a",
+        "namespace": "spectio-work",
+        "resourceVersion": "604",
+        "uid": "98f1af5a-a518-463a-baa0-4ab6939e1dcb"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:29Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-exit3-tj7t7",
+        "namespace": "spectio-work",
+        "resourceVersion": "577",
+        "uid": "b58e71ec-1993-4cd5-b1d7-45877c0ef4f1"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:29Z",
+      "message": "Container started",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:29Z",
+        "name": "fx-exit3-tj7t7.18e2a9d8940ebe50",
+        "namespace": "spectio-work",
+        "resourceVersion": "605",
+        "uid": "7e33789c-e1a2-4e60-941d-221cce50bb28"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:26Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "fx-exit3",
+        "namespace": "spectio-work",
+        "resourceVersion": "571",
+        "uid": "6afd327a-3d0f-456c-b2b8-ec76fa12c5d8"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:26Z",
+      "message": "Created pod: fx-exit3-tj7t7",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:26Z",
+        "name": "fx-exit3.18e2a9d7f2284881",
+        "namespace": "spectio-work",
+        "resourceVersion": "576",
+        "uid": "d4208d63-a980-4521-a6c0-c4fba5df1fdf"
+      },
+      "reason": "SuccessfulCreate",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:39Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "fx-exit3",
+        "namespace": "spectio-work",
+        "resourceVersion": "648",
+        "uid": "6afd327a-3d0f-456c-b2b8-ec76fa12c5d8"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:39Z",
+      "message": "Created pod: fx-exit3-6wnht",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:39Z",
+        "name": "fx-exit3.18e2a9db079b5b4e",
+        "namespace": "spectio-work",
+        "resourceVersion": "659",
+        "uid": "2514b0f4-2a50-4da6-9d47-b4920752c0c3"
+      },
+      "reason": "SuccessfulCreate",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:42Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "fx-exit3",
+        "namespace": "spectio-work",
+        "resourceVersion": "675",
+        "uid": "6afd327a-3d0f-456c-b2b8-ec76fa12c5d8"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:42Z",
+      "message": "Job has reached the specified backoff limit",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:42Z",
+        "name": "fx-exit3.18e2a9dbbd555c03",
+        "namespace": "spectio-work",
+        "resourceVersion": "679",
+        "uid": "cd18fdce-05f8-498d-bed3-8c6d76d8a9fe"
+      },
+      "reason": "BackoffLimitExceeded",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Warning"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:26Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "fx-job-deadline",
+        "namespace": "spectio-work",
+        "resourceVersion": "552",
+        "uid": "76fe7bde-f971-4df2-8de5-55fa0e376ca4"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:26Z",
+      "message": "Created pod: fx-job-deadline-x6cd7",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:26Z",
+        "name": "fx-job-deadline.18e2a9d7efb719e8",
+        "namespace": "spectio-work",
+        "resourceVersion": "563",
+        "uid": "cd5eb507-11b4-4930-95e5-04763ddd297d"
+      },
+      "reason": "SuccessfulCreate",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:36Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "fx-job-deadline",
+        "namespace": "spectio-work",
+        "resourceVersion": "607",
+        "uid": "76fe7bde-f971-4df2-8de5-55fa0e376ca4"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:36Z",
+      "message": "Deleted pod: fx-job-deadline-x6cd7",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:36Z",
+        "name": "fx-job-deadline.18e2a9da2325d2fc",
+        "namespace": "spectio-work",
+        "resourceVersion": "625",
+        "uid": "f0dae648-b876-4274-a51a-93b7214300d7"
+      },
+      "reason": "SuccessfulDelete",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:13:07Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "fx-job-deadline",
+        "namespace": "spectio-work",
+        "resourceVersion": "720",
+        "uid": "76fe7bde-f971-4df2-8de5-55fa0e376ca4"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:13:07Z",
+      "message": "Job was active longer than specified deadline",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:13:07Z",
+        "name": "fx-job-deadline.18e2a9e15ffeaca0",
+        "namespace": "spectio-work",
+        "resourceVersion": "722",
+        "uid": "4cadd4b1-7bff-487c-837c-bf25fa32c724"
+      },
+      "reason": "DeadlineExceeded",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Warning"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:26Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "fx-oom-s867j",
+        "namespace": "spectio-work",
+        "resourceVersion": "554",
+        "uid": "2f349296-ddf1-405b-8738-1bb9f9cbaafa"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:26Z",
+      "message": "Successfully assigned spectio-work/fx-oom-s867j to k8s-mini-control-plane",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:26Z",
+        "name": "fx-oom-s867j.18e2a9d7ef95c715",
+        "namespace": "spectio-work",
+        "resourceVersion": "562",
+        "uid": "460e9d5c-e746-4c8d-92ee-b00d82d0e9c3"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "",
+      "source": {
+        "component": "default-scheduler"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:27Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-oom-s867j",
+        "namespace": "spectio-work",
+        "resourceVersion": "558",
+        "uid": "2f349296-ddf1-405b-8738-1bb9f9cbaafa"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:27Z",
+      "message": "Pulling image \"busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e\"",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:27Z",
+        "name": "fx-oom-s867j.18e2a9d81ab2b55c",
+        "namespace": "spectio-work",
+        "resourceVersion": "583",
+        "uid": "2579dd65-0c38-4296-91cb-93c2e71ce616"
+      },
+      "reason": "Pulling",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:28Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-oom-s867j",
+        "namespace": "spectio-work",
+        "resourceVersion": "558",
+        "uid": "2f349296-ddf1-405b-8738-1bb9f9cbaafa"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:28Z",
+      "message": "Successfully pulled image \"busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e\" in 334ms (1.383s including waiting). Image size: 2222118 bytes.",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:28Z",
+        "name": "fx-oom-s867j.18e2a9d86d23d350",
+        "namespace": "spectio-work",
+        "resourceVersion": "598",
+        "uid": "0a0f3ef6-3ec5-4b07-9b20-f579c0954b8b"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:28Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-oom-s867j",
+        "namespace": "spectio-work",
+        "resourceVersion": "558",
+        "uid": "2f349296-ddf1-405b-8738-1bb9f9cbaafa"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:28Z",
+      "message": "Container created",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:28Z",
+        "name": "fx-oom-s867j.18e2a9d86d8680c9",
+        "namespace": "spectio-work",
+        "resourceVersion": "599",
+        "uid": "07224df9-15dd-4d45-bfbd-78fe21239924"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:28Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-oom-s867j",
+        "namespace": "spectio-work",
+        "resourceVersion": "558",
+        "uid": "2f349296-ddf1-405b-8738-1bb9f9cbaafa"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:28Z",
+      "message": "Container started",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:28Z",
+        "name": "fx-oom-s867j.18e2a9d8700b69ad",
+        "namespace": "spectio-work",
+        "resourceVersion": "600",
+        "uid": "eb8cd372-d8ec-444c-8ed3-61e0cf7ce1ed"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:26Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "fx-oom",
+        "namespace": "spectio-work",
+        "resourceVersion": "550",
+        "uid": "d732d322-8ca7-41a6-8197-dbff7988b6eb"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:26Z",
+      "message": "Created pod: fx-oom-s867j",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:26Z",
+        "name": "fx-oom.18e2a9d7ef3bde5c",
+        "namespace": "spectio-work",
+        "resourceVersion": "556",
+        "uid": "ffeaf4a7-ba93-4579-b3fb-30f91327bcbe"
+      },
+      "reason": "SuccessfulCreate",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:37Z",
+      "involvedObject": {
+        "apiVersion": "batch/v1",
+        "kind": "Job",
+        "name": "fx-oom",
+        "namespace": "spectio-work",
+        "resourceVersion": "646",
+        "uid": "d732d322-8ca7-41a6-8197-dbff7988b6eb"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:37Z",
+      "message": "Job has reached the specified backoff limit",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:37Z",
+        "name": "fx-oom.18e2a9da909da347",
+        "namespace": "spectio-work",
+        "resourceVersion": "651",
+        "uid": "18c4b233-64e9-45a7-b2a2-799e69130c59"
+      },
+      "reason": "BackoffLimitExceeded",
+      "reportingComponent": "job-controller",
+      "reportingInstance": "",
+      "source": {
+        "component": "job-controller"
+      },
+      "type": "Warning"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:26Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "fx-pod-deadline",
+        "namespace": "spectio-work",
+        "resourceVersion": "564",
+        "uid": "399b8e27-07b4-428f-82fc-85fb556a4660"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:26Z",
+      "message": "Successfully assigned spectio-work/fx-pod-deadline to k8s-mini-control-plane",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:26Z",
+        "name": "fx-pod-deadline.18e2a9d7f0a95d1a",
+        "namespace": "spectio-work",
+        "resourceVersion": "570",
+        "uid": "1f40862f-eb4c-4951-9043-3a1a612eefd5"
+      },
+      "reason": "Scheduled",
+      "reportingComponent": "default-scheduler",
+      "reportingInstance": "",
+      "source": {
+        "component": "default-scheduler"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:27Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-pod-deadline",
+        "namespace": "spectio-work",
+        "resourceVersion": "567",
+        "uid": "399b8e27-07b4-428f-82fc-85fb556a4660"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:27Z",
+      "message": "Pulling image \"busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e\"",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:27Z",
+        "name": "fx-pod-deadline.18e2a9d81b1394fa",
+        "namespace": "spectio-work",
+        "resourceVersion": "586",
+        "uid": "76e04d08-060c-43a4-be35-76cc432f4c14"
+      },
+      "reason": "Pulling",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:29Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-pod-deadline",
+        "namespace": "spectio-work",
+        "resourceVersion": "567",
+        "uid": "399b8e27-07b4-428f-82fc-85fb556a4660"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:29Z",
+      "message": "Successfully pulled image \"busybox:1.37.0@sha256:bdf57e528e45e4433820e045b29b4597825a1c9e38353532d90a01445013f82e\" in 499ms (2.159s including waiting). Image size: 2222118 bytes.",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:29Z",
+        "name": "fx-pod-deadline.18e2a9d89bcf1057",
+        "namespace": "spectio-work",
+        "resourceVersion": "608",
+        "uid": "f51af68e-8d0b-448b-8675-a8ad90eb4ad9"
+      },
+      "reason": "Pulled",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:29Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-pod-deadline",
+        "namespace": "spectio-work",
+        "resourceVersion": "567",
+        "uid": "399b8e27-07b4-428f-82fc-85fb556a4660"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:29Z",
+      "message": "Container created",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:29Z",
+        "name": "fx-pod-deadline.18e2a9d8a8e5e4c5",
+        "namespace": "spectio-work",
+        "resourceVersion": "610",
+        "uid": "1458a723-cd83-4c02-a793-bc5f5a207dd0"
+      },
+      "reason": "Created",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:29Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-pod-deadline",
+        "namespace": "spectio-work",
+        "resourceVersion": "567",
+        "uid": "399b8e27-07b4-428f-82fc-85fb556a4660"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:29Z",
+      "message": "Container started",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:29Z",
+        "name": "fx-pod-deadline.18e2a9d8ac8e0efa",
+        "namespace": "spectio-work",
+        "resourceVersion": "612",
+        "uid": "0279c441-bb05-4bdb-8484-3963fc06b0c8"
+      },
+      "reason": "Started",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 4,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:36Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "kind": "Pod",
+        "name": "fx-pod-deadline",
+        "namespace": "spectio-work",
+        "resourceVersion": "567",
+        "uid": "399b8e27-07b4-428f-82fc-85fb556a4660"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:13:07Z",
+      "message": "Pod was active on the node longer than the specified deadline",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:36Z",
+        "name": "fx-pod-deadline.18e2a9da4cfeb094",
+        "namespace": "spectio-work",
+        "resourceVersion": "725",
+        "uid": "fad027bc-f5a1-4ac9-8c88-d43e6ce20727"
+      },
+      "reason": "DeadlineExceeded",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    },
+    {
+      "apiVersion": "v1",
+      "count": 1,
+      "eventTime": null,
+      "firstTimestamp": "2026-10-28T10:12:36Z",
+      "involvedObject": {
+        "apiVersion": "v1",
+        "fieldPath": "spec.containers{main}",
+        "kind": "Pod",
+        "name": "fx-pod-deadline",
+        "namespace": "spectio-work",
+        "resourceVersion": "567",
+        "uid": "399b8e27-07b4-428f-82fc-85fb556a4660"
+      },
+      "kind": "Event",
+      "lastTimestamp": "2026-10-28T10:12:36Z",
+      "message": "Stopping container main",
+      "metadata": {
+        "creationTimestamp": "2026-10-28T10:12:36Z",
+        "name": "fx-pod-deadline.18e2a9da5362acfc",
+        "namespace": "spectio-work",
+        "resourceVersion": "636",
+        "uid": "777bf97e-42f1-47f0-b0fb-41706411c680"
+      },
+      "reason": "Killing",
+      "reportingComponent": "kubelet",
+      "reportingInstance": "k8s-mini-control-plane",
+      "source": {
+        "component": "kubelet",
+        "host": "k8s-mini-control-plane"
+      },
+      "type": "Normal"
+    }
+  ],
+  "_fixture": {
+    "kubernetes": "kindest/node:v1.37.0",
+    "source": "https://github.com/weber8thomas/spectio/actions/runs/40670116723"
+  }
+}
