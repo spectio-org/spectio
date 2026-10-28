@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 1763,
-    "cache_write": 1899928,
-    "cache_read": 148868937,
-    "output": 379362
+    "input": 1863,
+    "cache_write": 1983764,
+    "cache_read": 159104147,
+    "output": 406944
    },
-   "calls": 773,
+   "calls": 817,
    "model": "claude-opus-5-5",
    "start": "2026-10-27T23:14:03.633Z",
-   "end": "2026-10-28T12:41:48.869Z",
+   "end": "2026-10-28T12:53:14.756Z",
    "id": "6396c38c-2a61-53ee-956c-4203b452f099",
    "kind": "main",
    "type": "session",
@@ -681,15 +681,15 @@
   },
   {
    "tokens": {
-    "input": 14,
-    "cache_write": 38190,
-    "cache_read": 149203,
-    "output": 8258
+    "input": 16,
+    "cache_write": 39233,
+    "cache_read": 187393,
+    "output": 10827
    },
-   "calls": 7,
+   "calls": 8,
    "model": "claude-opus-5-5",
    "start": "2026-10-28T12:40:16.180Z",
-   "end": "2026-10-28T12:41:47.195Z",
+   "end": "2026-10-28T12:42:11.897Z",
    "id": "aa1b82e2210c93243",
    "kind": "subagent",
    "type": "code-reviewer",
@@ -885,6 +885,23 @@
   },
   {
    "tokens": {
+    "input": 6,
+    "cache_write": 23215,
+    "cache_read": 30417,
+    "output": 1405
+   },
+   "calls": 3,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T12:52:56.101Z",
+   "end": "2026-10-28T12:53:13.971Z",
+   "id": "ad7e723a3a41baabf",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code review T5 round 3",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 68,
     "cache_write": 133293,
     "cache_read": 1546062,
@@ -919,15 +936,15 @@
   },
   {
    "tokens": {
-    "input": 8,
-    "cache_write": 36573,
-    "cache_read": 67650,
-    "output": 7367
+    "input": 10,
+    "cache_write": 38023,
+    "cache_read": 104223,
+    "output": 10505
    },
-   "calls": 4,
+   "calls": 5,
    "model": "claude-opus-5-5",
    "start": "2026-10-28T12:40:16.195Z",
-   "end": "2026-10-28T12:41:37.349Z",
+   "end": "2026-10-28T12:42:06.079Z",
    "id": "ae192d1df35e2294b",
    "kind": "subagent",
    "type": "security-reviewer",
