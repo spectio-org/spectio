@@ -198,6 +198,14 @@ media:
       - docs/assets/diagrams/t4-kind-kueue_dark.svg
       - docs/assets/diagrams/t4-kind-kueue_light.png
       - docs/assets/diagrams/t4-kind-kueue_dark.png
+  - id: t5-scenarios
+    kind: diagram
+    generator: python3 tools/diagrams/t5_scenarios.py
+    outputs:
+      - docs/assets/diagrams/t5-scenarios_light.svg
+      - docs/assets/diagrams/t5-scenarios_dark.svg
+      - docs/assets/diagrams/t5-scenarios_light.png
+      - docs/assets/diagrams/t5-scenarios_dark.png
   - id: t2-engine-events-cast
     kind: cast
     # runs.sh replayed from spikes/engine-events/LOG.md §5 through a stub; analyse_*.py run for real on
