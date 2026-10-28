@@ -1,0 +1,90 @@
+# nf-core/rnaseq: 67 processes -> 10 detected stages (cap 99)
+detected:1     9  Prepare genome references + Prepare genome indices
+detected:2    11  Fastq qc trim filter setstrandedness (meta.yml)  [+ SAMTOOLS_INDEX]
+detected:3     6  Align star
+detected:4     6  Quantify bam salmon  [+ DESEQ2_QC_BAM_SALMON]
+detected:5     6  Bam markduplicates picard (meta.yml)  [+ STRINGTIE_STRINGTIE]
+detected:6    13  Bam qc rnaseq (meta.yml)
+detected:7     3  Bedtools genomecov fw, Bedtools genomecov rev, Bedtools genomecov combined
+detected:8     6  Bedgraph bedclip bedgraphtobigwig forward + Bedgraph bedclip bedgraphtobigwig reverse + Bedgraph bedclip bedgraphtobigwig combined
+detected:9     6  Quantify pseudo alignment (meta.yml)  [+ DESEQ2_QC_PSEUDO]
+detected:10    1  Report
+# nf-core/rnaseq: 67 processes -> 8 detected stages (cap 8)
+detected:1     9  Prepare genome references + Prepare genome indices
+detected:2    11  Fastq qc trim filter setstrandedness (meta.yml)  [+ SAMTOOLS_INDEX]
+detected:3    12  Align star + Quantify bam salmon  [+ DESEQ2_QC_BAM_SALMON]
+detected:4     6  Bam markduplicates picard (meta.yml)  [+ STRINGTIE_STRINGTIE]
+detected:5    13  Bam qc rnaseq (meta.yml)
+detected:6     9  Bedtools genomecov fw + Bedtools genomecov rev + Bedtools genomecov combined + Bedgraph bedclip bedgraphtobigwig forward + Bedgraph bedclip bedgraphtobigwig reverse + Bedgraph bedclip bedgraphtobigwig combined
+detected:7     6  Quantify pseudo alignment (meta.yml)  [+ DESEQ2_QC_PSEUDO]
+detected:8     1  Report
+
+# nf-core/rnaseq: 62 processes -> 9 detected stages (cap 99)
+detected:1    10  Prepare genome references + Prepare genome indices
+detected:2    11  Fastq qc trim filter setstrandedness (meta.yml)  [+ SAMTOOLS_INDEX]
+detected:3     6  Fastq align hisat2 (meta.yml)
+detected:4     6  Bam markduplicates picard (meta.yml)  [+ STRINGTIE_STRINGTIE]
+detected:5    13  Bam qc rnaseq (meta.yml)
+detected:6     3  Bedtools genomecov fw, Bedtools genomecov rev, Bedtools genomecov combined
+detected:7     6  Bedgraph bedclip bedgraphtobigwig forward + Bedgraph bedclip bedgraphtobigwig reverse + Bedgraph bedclip bedgraphtobigwig combined
+detected:8     6  Quantify pseudo alignment (meta.yml)  [+ DESEQ2_QC_PSEUDO]
+detected:9     1  Report
+# nf-core/rnaseq: 62 processes -> 8 detected stages (cap 8)
+detected:1    10  Prepare genome references + Prepare genome indices
+detected:2    11  Fastq qc trim filter setstrandedness (meta.yml)  [+ SAMTOOLS_INDEX]
+detected:3     6  Fastq align hisat2 (meta.yml)
+detected:4     6  Bam markduplicates picard (meta.yml)  [+ STRINGTIE_STRINGTIE]
+detected:5    13  Bam qc rnaseq (meta.yml)
+detected:6     9  Bedtools genomecov fw + Bedtools genomecov rev + Bedtools genomecov combined + Bedgraph bedclip bedgraphtobigwig forward + Bedgraph bedclip bedgraphtobigwig reverse + Bedgraph bedclip bedgraphtobigwig combined
+detected:7     6  Quantify pseudo alignment (meta.yml)  [+ DESEQ2_QC_PSEUDO]
+detected:8     1  Report
+
+# nf-core/sarek: 48 processes -> 9 detected stages (cap 99)
+detected:1     5  Prepare genome + Prepare intervals
+detected:2     3  Spring decompress to fq pair, Spring decompress to r1 fq, Spring decompress to r2 fq
+detected:3     9  Convert fastq input  [+ FASTQC]
+detected:4    11  Fastq preprocess gatk
+detected:5     4  Cram sampleqc
+detected:6     3  Bam variant calling germline all
+detected:7     8  Bam variant calling somatic all
+detected:8     4  Vcf qc bcftools vcftools
+detected:9     1  Report
+# nf-core/sarek: 48 processes -> 8 detected stages (cap 8)
+detected:1     5  Prepare genome + Prepare intervals
+detected:2     3  Spring decompress to fq pair, Spring decompress to r1 fq, Spring decompress to r2 fq
+detected:3     9  Convert fastq input  [+ FASTQC]
+detected:4    11  Fastq preprocess gatk
+detected:5     7  Cram sampleqc + Bam variant calling germline all
+detected:6     8  Bam variant calling somatic all
+detected:7     4  Vcf qc bcftools vcftools
+detected:8     1  Report
+
+# nf-core/methylseq: 13 processes -> 4 detected stages (cap 99)
+detected:1     2  Fasta index methylseq (meta.yml)
+detected:2     3  Cat fastq, Fastqc, Trimgalore
+detected:3     7  Fastq align dedup bismark (meta.yml)
+detected:4     1  Report
+# nf-core/methylseq: 13 processes -> 4 detected stages (cap 8)
+detected:1     2  Fasta index methylseq (meta.yml)
+detected:2     3  Cat fastq, Fastqc, Trimgalore
+detected:3     7  Fastq align dedup bismark (meta.yml)
+detected:4     1  Report
+
+# nf-core/methylseq: 15 processes -> 5 detected stages (cap 99)
+detected:1     2  Fasta index methylseq (meta.yml)
+detected:2     3  Cat fastq, Fastqc, Trimgalore
+detected:3     7  Fastq align dedup bwameth (meta.yml)
+detected:4     2  Bam methyldackel (meta.yml)
+detected:5     1  Report
+# nf-core/methylseq: 15 processes -> 5 detected stages (cap 8)
+detected:1     2  Fasta index methylseq (meta.yml)
+detected:2     3  Cat fastq, Fastqc, Trimgalore
+detected:3     7  Fastq align dedup bwameth (meta.yml)
+detected:4     2  Bam methyldackel (meta.yml)
+detected:5     1  Report
+
+# -: 4 processes -> 2 detected stages (cap 8)
+detected:1     1  Qc
+detected:2     3  Align  [+ REPORT]
+# flat synthetic pipeline (spike T2 fixture), no subworkflows:
+# -: 8 processes -> 0 detected stages (cap 8)

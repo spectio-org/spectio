@@ -1,0 +1,487 @@
+Config file config/config.yaml is extended by additional config specified via the command line.
+Workflow defines that rule samtools_faindex is eligible for caching between workflows (use the --cache argument to enable this).
+Assuming unrestricted shared filesystem usage.
+
+SNAKEMAKE
+=========
+  Date: 2026-10-28 19:16:15
+  Workflow ID: c36257bd-86e5-4b8c-93cc-69009deba6f7
+  Platform: Linux-6.18.44-fc-v180-x86_64-with-glibc2.39
+  Host: vm
+  User: root
+  Snakemake version: 9.27.1
+  Python version: 3.13.14 (main, Jul 18 2026, 17:02:37) [Clang 22.1.3 ]
+  Command: <bin>/snakemake -n --configfile .tests/config/simple_config_mosaicatcher.yaml
+  Snakefile: <src>/mosaicatcher/workflow/Snakefile
+  Base directory: <src>/mosaicatcher/workflow
+  Run directory: <src>/mosaicatcher
+  Working directory: <src>/mosaicatcher
+  Config file(s): [PosixPath('<src>/mosaicatcher/.tests/config/simple_config_mosaicatcher.yaml'), 'config/config.yaml']
+  Config MD5: 5805bdfca0b39d350a808550c900f7d7
+
+Building DAG of jobs...
+Job stats:
+job                                       count
+--------------------------------------  -------
+check_sm_tag                                 18
+generate_exclude_file_for_mosaic_count        1
+index_input_bam                              18
+save_conda_versions_mc_base                   1
+save_conda_versions_mc_bioinfo_tools          1
+save_conda_versions_rtools                    1
+save_config                                   1
+touch_labels                                  1
+copy_labels                                   1
+mosaic_count                                  1
+filter_bad_cells_from_mosaic_count            1
+final_results                                 1
+all                                           1
+total                                        47
+
+
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20304.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20304.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20304.log
+    jobid: 7
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20304.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20304
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule save_conda_versions_rtools:
+    output: .tests/data_CHR17/RPE-BM510/config/conda_export/rtools.yaml
+    log: .tests/data_CHR17/log/save_conda_versions/RPE-BM510/rtools.log
+    jobid: 45
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/config/conda_export/rtools.yaml
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510
+    resources: tmpdir=/tmp
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20308.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20308.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20308.log
+    jobid: 11
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20308.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20308
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule save_conda_versions_mc_base:
+    output: .tests/data_CHR17/RPE-BM510/config/conda_export/mc_base.yaml
+    log: .tests/data_CHR17/log/save_conda_versions/RPE-BM510/mc_base.log
+    jobid: 44
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/config/conda_export/mc_base.yaml
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510
+    resources: tmpdir=/tmp
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20316.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20316.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20316.sm_check.log
+    jobid: 37
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20316.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20316
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20308.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20308.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20308.sm_check.log
+    jobid: 30
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20308.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20308
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20301.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20301.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20301.sm_check.log
+    jobid: 23
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20301.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20301
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20316.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20316.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20316.log
+    jobid: 18
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20316.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20316
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20312.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20312.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20312.sm_check.log
+    jobid: 34
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20312.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20312
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20301.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20301.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20301.log
+    jobid: 4
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20301.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20301
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20305.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20305.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20305.sm_check.log
+    jobid: 27
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20305.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20305
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule generate_exclude_file_for_mosaic_count:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20301.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20302.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20303.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20304.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20305.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20306.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20307.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20308.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20309.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20310.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20311.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20312.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20313.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20314.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20316.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20317.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20318.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20319.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/config/chroms_to_exclude.txt
+    log: .tests/data_CHR17/log/config/RPE-BM510/exclude_file.log
+    jobid: 22
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/config/chroms_to_exclude.txt
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510
+    resources: tmpdir=/tmp
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20312.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20312.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20312.log
+    jobid: 15
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20312.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20312
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20305.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20305.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20305.log
+    jobid: 8
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20305.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20305
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule save_conda_versions_mc_bioinfo_tools:
+    output: .tests/data_CHR17/RPE-BM510/config/conda_export/mc_bioinfo_tools.yaml
+    log: .tests/data_CHR17/log/save_conda_versions/RPE-BM510/mc_bioinfo_tools.log
+    jobid: 46
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/config/conda_export/mc_bioinfo_tools.yaml
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510
+    resources: tmpdir=/tmp
+[Wed Oct 28 19:16:15 2026]
+rule touch_labels:
+    output: .tests/data_CHR17/RPE-BM510/cell_selection/labels.tsv
+    log: .tests/data_CHR17/log/RPE-BM510/touch_labels/labels.log
+    jobid: 42
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/cell_selection/labels.tsv
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510
+    resources: tmpdir=/tmp
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20317.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20317.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20317.sm_check.log
+    jobid: 38
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20317.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20317
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20309.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20309.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20309.sm_check.log
+    jobid: 31
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20309.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20309
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20302.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20302.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20302.sm_check.log
+    jobid: 24
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20302.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20302
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20317.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20317.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20317.log
+    jobid: 19
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20317.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20317
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20309.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20309.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20309.log
+    jobid: 12
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20309.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20309
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20302.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20302.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20302.log
+    jobid: 5
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20302.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20302
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20306.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20306.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20306.sm_check.log
+    jobid: 28
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20306.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20306
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20313.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20313.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20313.log
+    jobid: 16
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20313.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20313
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20306.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20306.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20306.log
+    jobid: 9
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20306.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20306
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20313.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20313.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20313.sm_check.log
+    jobid: 35
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20313.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20313
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20318.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20318.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20318.sm_check.log
+    jobid: 39
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20318.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20318
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20310.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20310.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20310.sm_check.log
+    jobid: 32
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20310.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20310
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20303.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20303.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20303.sm_check.log
+    jobid: 25
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20303.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20303
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20318.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20318.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20318.log
+    jobid: 20
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20318.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20318
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20310.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20310.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20310.log
+    jobid: 13
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20310.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20310
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20303.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20303.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20303.log
+    jobid: 6
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20303.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20303
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20314.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20314.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20314.log
+    jobid: 17
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20314.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20314
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20307.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20307.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20307.log
+    jobid: 10
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20307.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20307
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule save_config:
+    input: config/config.yaml
+    output: .tests/data_CHR17/RPE-BM510/config/config.yaml
+    log: .tests/data_CHR17/log/save_config/RPE-BM510.log
+    jobid: 43
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/config/config.yaml
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510
+    resources: tmpdir=/tmp, mem_mb=2000, mem=2 GB, mem_mib=1908
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20314.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20314.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20314.sm_check.log
+    jobid: 36
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20314.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20314
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20307.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20307.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20307.sm_check.log
+    jobid: 29
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20307.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20307
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20319.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20319.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20319.sm_check.log
+    jobid: 40
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20319.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20319
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20311.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20311.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20311.sm_check.log
+    jobid: 33
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20311.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20311
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule check_sm_tag:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20304.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20304.sm_check.ok
+    log: .tests/data_CHR17/log/RPE-BM510/checks/BM510x04_PE20304.sm_check.log
+    jobid: 26
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20304.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20304
+    resources: tmpdir=/tmp, mem_mb=1000, mem=1 GB, mem_mib=954
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20319.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20319.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20319.log
+    jobid: 21
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20319.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20319
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule index_input_bam:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20311.sort.mdup.bam
+    output: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20311.sort.mdup.bam.bai
+    log: .tests/data_CHR17/log/index_input_bam/RPE-BM510/BM510x04_PE20311.log
+    jobid: 14
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20311.sort.mdup.bam.bai
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510, cell=BM510x04_PE20311
+    resources: tmpdir=/tmp, mem_mb=8000, mem=8 GB, mem_mib=7630
+[Wed Oct 28 19:16:15 2026]
+rule copy_labels:
+    input: .tests/data_CHR17/RPE-BM510/cell_selection/labels.tsv
+    output: .tests/data_CHR17/RPE-BM510/config/labels.tsv
+    log: .tests/data_CHR17/log/copy_labels/RPE-BM510.log
+    jobid: 41
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/config/labels.tsv; Input files updated by another job: .tests/data_CHR17/RPE-BM510/cell_selection/labels.tsv
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510
+    resources: tmpdir=/tmp
+[Wed Oct 28 19:16:15 2026]
+checkpoint mosaic_count:
+    input: .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20301.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20302.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20303.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20304.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20305.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20306.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20307.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20308.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20309.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20310.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20311.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20312.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20313.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20314.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20316.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20317.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20318.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20319.sort.mdup.bam, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20301.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20302.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20303.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20304.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20305.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20306.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20307.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20308.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20309.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20310.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20311.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20312.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20313.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20314.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20316.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20317.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20318.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20319.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/config/chroms_to_exclude.txt, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20301.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20302.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20303.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20304.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20305.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20306.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20307.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20308.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20309.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20310.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20311.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20312.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20313.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20314.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20316.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20317.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20318.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20319.sm_check.ok
+    output: .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.txt.raw.gz, .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.info_raw
+    log: .tests/data_CHR17/log/counts/RPE-BM510/mosaic_count.log
+    jobid: 3
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.info_raw, .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.txt.raw.gz; Input files updated by another job: .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20303.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20308.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20317.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20310.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20302.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20319.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20307.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20316.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20316.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20314.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20311.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20311.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20303.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20309.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20314.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20318.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20309.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20308.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20305.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20304.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20317.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20307.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20301.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20313.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20304.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20313.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/config/chroms_to_exclude.txt, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20312.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20301.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20310.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20305.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20306.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20318.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20312.sm_check.ok, .tests/data_CHR17/RPE-BM510/bam/BM510x04_PE20319.sort.mdup.bam.bai, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20302.sm_check.ok, .tests/data_CHR17/RPE-BM510/checks/BM510x04_PE20306.sm_check.ok
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510
+    resources: tmpdir=/tmp, runtime=180, mem_mb=8000, mem=8 GB, mem_mib=7630
+DAG of jobs will be updated after completion.
+
+[Wed Oct 28 19:16:15 2026]
+checkpoint filter_bad_cells_from_mosaic_count:
+    input: .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.info_raw, .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.txt.raw.gz, .tests/data_CHR17/RPE-BM510/config/labels.tsv
+    output: .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.info, .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.info_rm, .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.txt.filter.gz
+    log: .tests/data_CHR17/log/filter_bad_cells_from_mosaic_count/RPE-BM510.log
+    jobid: 2
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.info; Input files updated by another job: .tests/data_CHR17/RPE-BM510/config/labels.tsv, .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.txt.raw.gz, .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.info_raw
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510
+    resources: tmpdir=/tmp, mem_mb=2000, mem=2 GB, mem_mib=1908
+DAG of jobs will be updated after completion.
+
+[Wed Oct 28 19:16:15 2026]
+rule final_results:
+    input: <TBD>
+    output: .tests/data_CHR17/RPE-BM510/plots/final_results/RPE-BM510.txt
+    log: .tests/data_CHR17/log/final_blank_results/RPE-BM510.log
+    jobid: 1
+    reason: Missing output files: .tests/data_CHR17/RPE-BM510/plots/final_results/RPE-BM510.txt; Input files updated by another job: .tests/data_CHR17/RPE-BM510/counts/RPE-BM510.info
+    wildcards: folder=.tests/data_CHR17, sample=RPE-BM510
+    resources: tmpdir=/tmp
+[Wed Oct 28 19:16:15 2026]
+rule all:
+    input: .tests/data_CHR17/RPE-BM510/plots/final_results/RPE-BM510.txt, .tests/data_CHR17/RPE-BM510/config/config.yaml, .tests/data_CHR17/RPE-BM510/config/conda_export/mc_base.yaml, .tests/data_CHR17/RPE-BM510/config/conda_export/rtools.yaml, .tests/data_CHR17/RPE-BM510/config/conda_export/mc_bioinfo_tools.yaml
+    jobid: 0
+    reason: Input files updated by another job: .tests/data_CHR17/RPE-BM510/plots/final_results/RPE-BM510.txt, .tests/data_CHR17/RPE-BM510/config/conda_export/mc_bioinfo_tools.yaml, .tests/data_CHR17/RPE-BM510/config/conda_export/mc_base.yaml, .tests/data_CHR17/RPE-BM510/config/config.yaml, .tests/data_CHR17/RPE-BM510/config/conda_export/rtools.yaml
+    resources: tmpdir=/tmp
+Job stats:
+job                                       count
+--------------------------------------  -------
+check_sm_tag                                 18
+generate_exclude_file_for_mosaic_count        1
+index_input_bam                              18
+save_conda_versions_mc_base                   1
+save_conda_versions_mc_bioinfo_tools          1
+save_conda_versions_rtools                    1
+save_config                                   1
+touch_labels                                  1
+copy_labels                                   1
+mosaic_count                                  1
+filter_bad_cells_from_mosaic_count            1
+final_results                                 1
+all                                           1
+total                                        47
+
+Reasons:
+    (check individual jobs above for details)
+    input files updated by another job:
+        all, copy_labels, filter_bad_cells_from_mosaic_count, final_results, mosaic_count
+    output files have to be generated:
+        check_sm_tag, copy_labels, filter_bad_cells_from_mosaic_count, final_results, generate_exclude_file_for_mosaic_count, index_input_bam, mosaic_count, save_conda_versions_mc_base, save_conda_versions_mc_bioinfo_tools, save_conda_versions_rtools, save_config, touch_labels
+This was a dry-run (flag -n). The order of jobs does not reflect the order of execution.
+The run involves checkpoint jobs, which will result in alteration of the DAG of jobs (e.g. adding more jobs) after their completion.

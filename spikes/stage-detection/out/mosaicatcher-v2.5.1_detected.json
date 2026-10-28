@@ -1,0 +1,203 @@
+[
+ {
+  "id": "detected:1",
+  "name": "External data",
+  "source": "detected",
+  "match": [
+   "dl_example_data",
+   "download_hg19_reference",
+   "download_hg38_reference",
+   "download_T2T_reference",
+   "download_mm10_reference",
+   "download_mm39_reference",
+   "download_canFam3_reference",
+   "download_canFam4_reference",
+   "generate_canFam3_bin_bed",
+   "generate_canFam4_bin_bed",
+   "generate_canFam3_gc_matrix",
+   "generate_canFam4_gc_matrix",
+   "download_T2T_tarball",
+   "download_arbigent_mappability_track",
+   "download_scnova_data"
+  ],
+  "files": [
+   "rules/external_data.smk"
+  ],
+  "checkpoints": []
+ },
+ {
+  "id": "detected:2",
+  "name": "Setup + Utils",
+  "source": "detected",
+  "match": [
+   "fake_package",
+   "install_BSgenome_package",
+   "install_sctrip_multiplot_package",
+   "config_run_summary",
+   "check_sm_tag",
+   "index_haplotag_bam",
+   "compress_indiv_freebayes_vcf",
+   "index_indiv_freebayes_vcf",
+   "compress_indiv_strandphaser_vcf",
+   "index_indiv_strandphaser_vcf",
+   "index_merged_strandphaser_vcf",
+   "index_input_bam",
+   "gunzip_fasta",
+   "samtools_faindex",
+   "save_config",
+   "save_conda_versions_mc_base",
+   "save_conda_versions_mc_bioinfo_tools",
+   "save_conda_versions_rtools"
+  ],
+  "files": [
+   "rules/setup.smk",
+   "rules/utils.smk"
+  ],
+  "checkpoints": []
+ },
+ {
+  "id": "detected:3",
+  "name": "Count + Segmentation",
+  "source": "detected",
+  "match": [
+   "generate_exclude_file_for_mosaic_count",
+   "mosaic_count",
+   "populate_counts",
+   "touch_labels",
+   "copy_labels",
+   "symlink_selected_bam",
+   "remove_unselected_bam",
+   "remove_unselected_bam_empty",
+   "filter_bad_cells_from_mosaic_count",
+   "merge_blacklist_bins_for_norm",
+   "correct_norm_for_blacklisting",
+   "normalize_counts",
+   "sort_counts",
+   "extract_single_cell_counts",
+   "segmentation",
+   "fix_segmentation",
+   "segment_one_cell",
+   "segmentation_selection"
+  ],
+  "files": [
+   "rules/count.smk",
+   "rules/segmentation.smk"
+  ],
+  "checkpoints": [
+   "mosaic_count",
+   "filter_bad_cells_from_mosaic_count"
+  ]
+ },
+ {
+  "id": "detected:4",
+  "name": "Plots",
+  "source": "detected",
+  "match": [
+   "plot_mosaic_counts",
+   "divide_pdf",
+   "final_results",
+   "plot_SV_consistency_barplot",
+   "plot_clustering_position",
+   "plot_clustering_chromosome",
+   "plot_SV_calls",
+   "plot_ploidy",
+   "scTRIP_multiplot",
+   "scTRIP_multiplot_aggr",
+   "jbrowse_genome_browser_file",
+   "ucsc_genome_browser_file",
+   "split_ucsc_into_individual_tracks",
+   "generate_igv_session"
+  ],
+  "files": [
+   "rules/plots.smk"
+  ],
+  "checkpoints": []
+ },
+ {
+  "id": "detected:5",
+  "name": "Regenotyping + Strandphaser",
+  "source": "detected",
+  "match": [
+   "mergeBams",
+   "mergeSortBams",
+   "index_merged_bam",
+   "regenotype_SNVs",
+   "call_SNVs_bcftools_chrom",
+   "convert_strandphaser_input",
+   "check_single_paired_end",
+   "prepare_strandphaser_config_per_chrom",
+   "run_strandphaser_per_chrom",
+   "merge_strandphaser_vcfs",
+   "combine_strandphaser_output",
+   "convert_strandphaser_output",
+   "keep_canonical_strandphaser_output"
+  ],
+  "files": [
+   "rules/regenotyping.smk",
+   "rules/strandphaser.smk"
+  ],
+  "checkpoints": []
+ },
+ {
+  "id": "detected:6",
+  "name": "Breakpointr + Haplotagging",
+  "source": "detected",
+  "match": [
+   "prepare_breakpointr",
+   "run_breakpointr",
+   "prepare_haplotag_input_bam",
+   "haplotag_bams",
+   "create_haplotag_segment_bed",
+   "create_haplotag_table",
+   "merge_haplotag_tables"
+  ],
+  "files": [
+   "rules/breakpointr.smk",
+   "rules/haplotagging.smk"
+  ],
+  "checkpoints": []
+ },
+ {
+  "id": "detected:7",
+  "name": "Mosaiclassifier + Postprocessing + Ploidy + Stats",
+  "source": "detected",
+  "match": [
+   "mosaiClassifier_calc_probs",
+   "create_haplotag_likelihoods",
+   "mosaiClassifier_make_call",
+   "mosaiClassifier_make_call_biallelic",
+   "call_complex_regions",
+   "postprocessing_filter",
+   "postprocessing_merge",
+   "postprocessing_sv_group_table",
+   "filter_calls",
+   "estimate_ploidy",
+   "summarise_ploidy",
+   "ploidy_bcftools",
+   "summary_statistics",
+   "aggregate_summary_statistics",
+   "transpose_table"
+  ],
+  "files": [
+   "rules/mosaiclassifier.smk",
+   "rules/postprocessing.smk",
+   "rules/ploidy.smk",
+   "rules/stats.smk"
+  ],
+  "checkpoints": [
+   "summarise_ploidy"
+  ]
+ },
+ {
+  "id": "detected:8",
+  "name": "Final targets",
+  "source": "detected",
+  "match": [
+   "all"
+  ],
+  "files": [
+   "Snakefile"
+  ],
+  "checkpoints": []
+ }
+]

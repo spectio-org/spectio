@@ -1,0 +1,60 @@
+## static (terminal-started run: source only)
+# <mosaicatcher>/workflow/Snakefile: 204 rules -> 20 detected stages (cap 99)
+detected:1    26  Ashleys  checkpoints: tune_predictions_based_on_threshold
+detected:2    17  External data
+detected:3     4  Setup
+detected:4    14  Utils
+detected:5    17  Count  checkpoints: mosaic_count, filter_bad_cells_from_mosaic_count
+detected:6     4  Segmentation
+detected:7    14  Plots
+detected:8     5  Regenotyping
+detected:9     8  Strandphaser
+detected:10    2  Breakpointr
+detected:11    5  Haplotagging
+detected:12    5  Mosaiclassifier
+detected:13    4  Postprocessing
+detected:14    3  Ploidy  checkpoints: summarise_ploidy
+detected:15    3  Stats
+detected:16    6  Arbigent rules
+detected:17    6  Arbigent
+detected:18    6  Gc
+detected:19   55  Scnova
+detected:20    3  Final targets
+# <mosaicatcher>/workflow/Snakefile: 204 rules -> 8 detected stages (cap 8)
+detected:1    26  Ashleys  checkpoints: tune_predictions_based_on_threshold
+detected:2    35  External data + Setup + Utils
+detected:3    17  Count  checkpoints: mosaic_count, filter_bad_cells_from_mosaic_count
+detected:4    18  Segmentation + Plots
+detected:5    29  Regenotyping + Strandphaser + Breakpointr + Haplotagging + Mosaiclassifier + Postprocessing
+detected:6    24  Ploidy + Stats + Arbigent rules + Arbigent + Gc  checkpoints: summarise_ploidy
+detected:7    55  Scnova
+detected:8     3  Final targets
+
+## at launch (rules defined by --list-rules with the run's config)
+# <mosaicatcher>/workflow/Snakefile: 101 rules -> 15 detected stages (cap 99)
+detected:1    15  External data
+detected:2     4  Setup
+detected:3    14  Utils
+detected:4    14  Count  checkpoints: mosaic_count, filter_bad_cells_from_mosaic_count
+detected:5     4  Segmentation
+detected:6    14  Plots
+detected:7     5  Regenotyping
+detected:8     8  Strandphaser
+detected:9     2  Breakpointr
+detected:10    5  Haplotagging
+detected:11    5  Mosaiclassifier
+detected:12    4  Postprocessing
+detected:13    3  Ploidy  checkpoints: summarise_ploidy
+detected:14    3  Stats
+detected:15    1  Final targets
+rules defined (--list-rules): 101; in no stage (-> Other): none
+# <mosaicatcher>/workflow/Snakefile: 101 rules -> 8 detected stages (cap 8)
+detected:1    15  External data
+detected:2    18  Setup + Utils
+detected:3    18  Count + Segmentation  checkpoints: mosaic_count, filter_bad_cells_from_mosaic_count
+detected:4    14  Plots
+detected:5    13  Regenotyping + Strandphaser
+detected:6     7  Breakpointr + Haplotagging
+detected:7    15  Mosaiclassifier + Postprocessing + Ploidy + Stats  checkpoints: summarise_ploidy
+detected:8     1  Final targets
+rules defined (--list-rules): 101; in no stage (-> Other): none

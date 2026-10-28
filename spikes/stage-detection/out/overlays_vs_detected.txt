@@ -1,0 +1,62 @@
+# nf-core-rnaseq.spectio.yml on rnaseq-3.27.0_star_salmon_preview_events.jsonl
+reference       9  Reference preparation   <- detected: Prepare genome references + Prepare genome indices
+reads          10  Read QC and trimming   <- detected: Fastq qc trim filter setstrandedness
+align          12  Alignment   <- detected: Align star + Quantify bam salmon; Bam markduplicates picard; Fastq qc trim filter setstrandedness
+quant          13  Quantification   <- detected: Align star + Quantify bam salmon; Bam markduplicates picard; Quantify pseudo alignment
+qc             22  Alignment QC and coverage   <- detected: Bam qc rnaseq; Bedtools genomecov fw + Bedtools genomecov rev + Bedtools genomecov combined + Bedgraph bedclip bedgraphtobigwig forward + Bedgraph bedclip bedgraphtobigwig reverse + Bedgraph bedclip bedgraphtobigwig combined
+report          1  Report   <- detected: Report
+Other           0  -
+overlaps: none
+
+# nf-core-rnaseq.spectio.yml on rnaseq-3.27.0_hisat2_preview_events.jsonl
+reference      10  Reference preparation   <- detected: Prepare genome references + Prepare genome indices
+reads          10  Read QC and trimming   <- detected: Fastq qc trim filter setstrandedness
+align          12  Alignment   <- detected: Bam markduplicates picard; Fastq align hisat2; Fastq qc trim filter setstrandedness
+quant           7  Quantification   <- detected: Bam markduplicates picard; Quantify pseudo alignment
+qc             22  Alignment QC and coverage   <- detected: Bam qc rnaseq; Bedtools genomecov fw + Bedtools genomecov rev + Bedtools genomecov combined + Bedgraph bedclip bedgraphtobigwig forward + Bedgraph bedclip bedgraphtobigwig reverse + Bedgraph bedclip bedgraphtobigwig combined
+report          1  Report   <- detected: Report
+Other           0  -
+overlaps: none
+
+# nf-core-sarek.spectio.yml on sarek-3.11.0_preview_events.jsonl
+reference       5  Reference preparation   <- detected: Prepare genome + Prepare intervals
+reads          12  Read preparation and QC   <- detected: Convert fastq input; Spring decompress to fq pair, Spring decompress to r1 fq, Spring decompress to r2 fq
+mapping        11  Mapping, duplicates and recalibration   <- detected: Fastq preprocess gatk
+sampleqc        4  Sample QC   <- detected: Cram sampleqc + Bam variant calling germline all
+calling        11  Variant calling   <- detected: Bam variant calling somatic all; Cram sampleqc + Bam variant calling germline all
+annotation      0  Annotation   <- detected: -
+vcfqc           4  Variant QC   <- detected: Vcf qc bcftools vcftools
+report          1  Report   <- detected: Report
+Other           0  -
+overlaps: none
+
+# nf-core-methylseq.spectio.yml on methylseq-4.2.0_bismark_preview_events.jsonl
+reference       2  Reference indexing   <- detected: Fasta index methylseq
+reads           3  Read QC and trimming   <- detected: Cat fastq, Fastqc, Trimgalore
+align           4  Alignment and deduplication   <- detected: Fastq align dedup bismark
+methylation     3  Methylation calling   <- detected: Fastq align dedup bismark
+qc              0  Coverage QC   <- detected: -
+report          1  Report   <- detected: Report
+Other           0  -
+overlaps: none
+
+# nf-core-methylseq.spectio.yml on methylseq-4.2.0_bwameth_preview_events.jsonl
+reference       2  Reference indexing   <- detected: Fasta index methylseq
+reads           3  Read QC and trimming   <- detected: Cat fastq, Fastqc, Trimgalore
+align           7  Alignment and deduplication   <- detected: Fastq align dedup bwameth
+methylation     2  Methylation calling   <- detected: Bam methyldackel
+qc              0  Coverage QC   <- detected: -
+report          1  Report   <- detected: Report
+Other           0  -
+overlaps: none
+
+# mosaicatcher.spectio.yml on mosaicatcher-v2.5.1_list-rules_default.txt
+ashleys         0  Cell QC (ASHLEYS, optional)   <- detected: -
+setup          27  Inputs and references   <- detected: External data; Setup + Utils
+counts         14  Binning and strand states   <- detected: Count + Segmentation
+segmentation    4  Segmentation   <- detected: Count + Segmentation
+phasing        26  Haplotype resolution   <- detected: Breakpointr + Haplotagging; Regenotyping + Strandphaser; Setup + Utils
+sv             12  SV classification   <- detected: Mosaiclassifier + Postprocessing + Ploidy + Stats
+report         18  Plots and report   <- detected: Final targets; Mosaiclassifier + Postprocessing + Ploidy + Stats; Plots
+Other           0  -
+overlaps: none

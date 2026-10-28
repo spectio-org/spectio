@@ -1,0 +1,51 @@
+[
+ {
+  "id": "detected:1",
+  "name": "Fasta index methylseq",
+  "source": "detected",
+  "match": [
+   "NFCORE_METHYLSEQ:FASTA_INDEX_METHYLSEQ:GUNZIP",
+   "NFCORE_METHYLSEQ:FASTA_INDEX_METHYLSEQ:BISMARK_GENOMEPREPARATION_BOWTIE"
+  ],
+  "description": "Generate index files from reference fasta for bismark, bwameth and bwamem aligners",
+  "attached_processes": []
+ },
+ {
+  "id": "detected:2",
+  "name": "Cat fastq, Fastqc, Trimgalore",
+  "source": "detected",
+  "match": [
+   "NFCORE_METHYLSEQ:METHYLSEQ:CAT_FASTQ",
+   "NFCORE_METHYLSEQ:METHYLSEQ:FASTQC",
+   "NFCORE_METHYLSEQ:METHYLSEQ:TRIMGALORE"
+  ],
+  "description": null,
+  "attached_processes": []
+ },
+ {
+  "id": "detected:3",
+  "name": "Fastq align dedup bismark",
+  "source": "detected",
+  "match": [
+   "NFCORE_METHYLSEQ:METHYLSEQ:FASTQ_ALIGN_DEDUP_BISMARK:BISMARK_ALIGN",
+   "NFCORE_METHYLSEQ:METHYLSEQ:FASTQ_ALIGN_DEDUP_BISMARK:BISMARK_DEDUPLICATE",
+   "NFCORE_METHYLSEQ:METHYLSEQ:FASTQ_ALIGN_DEDUP_BISMARK:SAMTOOLS_SORT",
+   "NFCORE_METHYLSEQ:METHYLSEQ:FASTQ_ALIGN_DEDUP_BISMARK:SAMTOOLS_INDEX",
+   "NFCORE_METHYLSEQ:METHYLSEQ:FASTQ_ALIGN_DEDUP_BISMARK:BISMARK_METHYLATIONEXTRACTOR",
+   "NFCORE_METHYLSEQ:METHYLSEQ:FASTQ_ALIGN_DEDUP_BISMARK:BISMARK_REPORT",
+   "NFCORE_METHYLSEQ:METHYLSEQ:FASTQ_ALIGN_DEDUP_BISMARK:BISMARK_SUMMARY"
+  ],
+  "description": "Align BS-Seq reads to a reference genome using bismark, deduplicate and sort",
+  "attached_processes": []
+ },
+ {
+  "id": "detected:4",
+  "name": "Report",
+  "source": "detected",
+  "match": [
+   "NFCORE_METHYLSEQ:METHYLSEQ:MULTIQC"
+  ],
+  "description": null,
+  "attached_processes": []
+ }
+]

@@ -1,0 +1,5 @@
+rnaseq-3.27.0_star_salmon: no-manifest fallback gives the same stages
+rnaseq-3.27.0_hisat2: no-manifest fallback gives the same stages
+sarek-3.11.0: no-manifest fallback gives the same stages
+methylseq-4.2.0_bismark: no-manifest fallback gives the same stages
+methylseq-4.2.0_bwameth: no-manifest fallback gives the same stages
