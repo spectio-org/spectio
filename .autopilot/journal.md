@@ -203,3 +203,63 @@ One entry per tick: time, steps started and finished, verification results, tria
   - the items still open from tick 7.
 - **Follow-ups:** SEC-T1-06 (shared `/tmp` workdir) before T3; the Snakemake fault rate (repeat more than once, or move off the checkpoint).
 - **End of tick:** usage snapshot refreshed (`.autopilot/usage/744d3a04-….json`: 24 subagents, 1246 API calls); dashboard republished as version 17 at the same link, private, `answers` write rule owner-only, `check_xss.js` ok with and without the CSP.
+
+## 2026-10-27 23:10 → 23:45 UTC — tick 9 (promotion of T1, D6 minimal)
+
+- **Inbox:** the dashboard `answers` collection holds the same 27 documents recorded at the first owner-only publish (same `at`); nothing new to copy. No unhandled `Answer:` line.
+- **Promotion:** weber8thomas/spectio#22 (T1 and the tick-8 records) merged into `main` as a merge commit (`62a4c88`), every check green; `pipelines-synthetic / snakemake 9.27.1` passed first time (no `lost-retry-at-checkpoint-update` this run).
+- **Budget:** `--budget 10%w --now 75`, stop at 85 % (Thomas). One build step only (`ready.py --only D6`); `check` answered go, fits 1. No live usage reading in this cloud session (`manual-stale`); step cost not recorded.
+- **Finished: D6**, docs pipeline in CI, **minimal version** on Thomas's request. PR weber8thomas/spectio#23, squash `b67ace9`.
+  - `check.py` build check now fails when the `hooks/progress.py` output is missing (unrendered placeholder, or a page without the rendered strip or table); `tools/docs/test_check.py` (7 tests) runs in `docs-gate`; `fail()` escapes workflow-command characters; `mkdocs.yml` excludes `fonts/*.ttf`.
+  - Virgil licence: `excalidraw/virgil` `LICENSE.md` declares OFL-1.1, but its own `Virgil.woff2` name table says "Your Own Font Foundry … Freeware for personal use"; the depictio copy is a third build. Recorded as unconfirmed in `FONT-LICENSE.md`; no font committed; inbox #49.
+  - Deferred (inbox #50): mike on the previews and `/versions`; Zensical evaluation; `hooks/shared_images.py` (not due: no mike version, `docs/assets` about 11 MB); byte-identical PNGs in CI (#49); the F4 and F6 figures.
+  - code / security review approve / approve (0/0/4, 0/0/2), one fix round applying all minors except CR-4 (kept); simplifier no change; doc-review changes 10/14, then approve 14/14 (a fresh reviewer after a container restart lost the first re-review).
+  - CI: one `ci-ok` failure on `343ab71` was the concurrency cancel caused by the next push (`results: success cancelled …`); green on `154a2f2`.
+- **Exit checks:** D6 step test `python3 -m unittest tools/docs/test_check.py && python3 tools/docs/check.py --only build` (7 OK, 0 failures); `python3 tools/docs/check.py` on integration after the merge: 0 failures.
+- **Triage:** none (build step). New inbox entries #49 (Virgil licence conflict, revisits #1) and #50 (the D6 follow-up).
+- **Environment:** auto-merge is not enabled on the repository, so step PRs are merged by hand once green; the container restarted once mid-step (worktree commits survived; `autopilot/D6` pushed right after).
+- **Waiting on Thomas:**
+  - #49 (font) and #50 (where the rest of D6 goes);
+  - the 9 stale branches carrying the webhook URL, and #5 (history rewrite);
+  - GitHub settings: fork PR workflow approval, secret scanning and push protection; allow auto-merge if wanted;
+  - answer #44, #46, #47, #48 and #32;
+  - replace the cloud setup script (#43); network to Custom without wildcards;
+  - a fresh `/usage` reading before the next build step.
+- **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (6 subagents, 202 API calls at snapshot time); dashboard rebuilt (41 steps, 50 inbox entries; `check_xss.js` ok with and without the CSP) and republished as version 18 at the same link, private, `answers` write rule owner-only. The first two publishes were refused (not read; then identical content); the third went through after checking the saved live copy is the tick-8 build (no tick-9 content), so nothing was lost.
+
+## 2026-10-28 07:10 → 08:00 UTC — tick 10 (promotion of D6, T2 spike)
+
+- **Promotion:** weber8thomas/spectio#24 (D6 and the tick-9 records) merged into `main` as a merge commit (`35f2514`), every check green.
+- **Budget:** Thomas gave 76 % and the same 85 % stop. One step (T2). `check` answered go, fits 1, still `manual-stale`; step cost not recorded.
+- **Inbox:** Thomas corrects the dashboard answers at 10:00; the next tick reads them.
+- **Finished: T2**, engine event capture (spike). PR weber8thomas/spectio#25, squash `afc2e9c`. The spike code stays on `spike/engine-events` @`3b4f654`; integration gets the note, the Progress page, the figure, the cast and the fixtures.
+  - Snakemake 9.27.1: a logger plugin on `snakemake-interface-logger-plugins` 2.1.0 receives every record; 3 fixtures.
+  - Nextflow 26.10.4 and 25.10.9: Tower protocol captured by a stdlib server; a first `nf-spectio` (`TraceObserverV2`, built without Gradle) runs next to `nf-tower` and reports the same run name and session ID in 6 of 6 runs; 12 fixtures.
+  - 24 differences with the specs, for TRIAGE3. Three change a spec: the last `onTaskComplete` of a process can arrive after its `onProcessTerminate` (end of stage in checking-scenarios §11.5); Snakemake `job_error` carries no attempt number and no exit code; a checkpoint grows the total (32 → 67) through progress events only.
+  - Fixtures: 15 JSON-lines files, 2.6 MB, normalised (paths, host, user, token); whether they stay on `main` in full is follow-up 5 of the note.
+  - No review-code (spike code not reused); doc-review changes 10/14, then approve 13/14. The Progress banner said "review pending" after the merge; fixed in the tick commit.
+- **Exit checks:** fixtures and note present; `python3 tools/docs/check.py` green in `docs-gate` on `925d262`. `ci-ok` red on superseded `2162203` was the concurrency cancel.
+- **Triage:** none (spike). No new inbox entry; the note's two open questions (task `script`/`env` in `nf-spectio`, drain after the last `onProcessTerminate`) go to TRIAGE3.
+- **Waiting on Thomas:**
+  - the dashboard answers (10:00);
+  - #49 (font) and #50 (rest of D6);
+  - the 9 stale branches carrying the webhook URL, and #5;
+  - GitHub settings: fork PR workflow approval, secret scanning and push protection, auto-merge;
+  - #44, #46, #47, #48 and #32; the cloud setup script (#43); network to Custom;
+  - a fresh `/usage` reading before the next build step.
+- **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (8 subagents, 424 API calls at snapshot time); dashboard rebuilt (41 steps, 50 inbox entries; `check_xss.js` ok with and without the CSP) and republished as version 19 at the same link, private, `answers` write rule owner-only.
+
+## 2026-10-28 08:05 → 08:20 UTC — tick 11 (T3 not runnable here; inbox #51)
+
+- **Sync:** `autopilot/integration` fast-forwarded to `main` (`26299db`, promotion weber8thomas/spectio#26 of T2, merge commit, every check green).
+- **Inbox:** the dashboard `answers` collection holds the same 27 documents (version 1, same `at` as recorded); nothing to copy. Thomas corrects them at 10:00.
+- **Budget:** Thomas said "continue", limit 85 %, no fresh `/usage` reading (last 76 % before T2). Asked which step; no preference given. Chose T3.
+- **Not started: T3 (and T4).** Both need sind or kind, which need cgroup v2. This cloud session still has the hybrid cgroup v1 layout (spike D2; dev environment §4.2), and Remote Control is not available to it. No worktree, no claim commit; both stay `pending`. Inbox #51: where T3/T4 run (recommendation: Thomas's machine, after the SEC-T1-06 fix).
+- **Exit checks:** none (no step finished). `python3 tools/docs/check.py --only build`: 0 failures after the inbox entry.
+- **Triage:** none.
+- **Waiting on Thomas:**
+  - #51 (where T3/T4 run); every ready step is blocked on it;
+  - the dashboard answers (10:00);
+  - #49, #50, #44, #46, #47, #48, #32, #43; the 9 stale branches carrying the webhook URL, and #5;
+  - GitHub settings: fork PR workflow approval, secret scanning and push protection, auto-merge.
+- **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (8 subagents, 463 API calls at snapshot time); dashboard rebuilt and republished at the same link (version 20), private, `answers` write rule owner-only.

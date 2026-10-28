@@ -5,6 +5,9 @@ repo_url: https://github.com/weber8thomas/spectio
 edit_uri: edit/main/docs/
 docs_dir: docs
 strict: true
+# A local Virgil.ttf, ignored by version control (tools/diagrams/FONT-LICENSE.md), never goes into the site.
+exclude_docs: |
+  fonts/*.ttf
 
 theme:
   name: material
@@ -152,5 +155,6 @@ nav:
           - Landscape: research/landscape-2026-10-26.md
           - "Spike: cloud environment": research/spike-cloud-env-2026-10-26.md
           - "Spike T1: fixture workflows and resume identity": research/spike-t1-fixture-workflows-2026-10-27.md
+          - "Spike T2: engine event capture": research/spike-engine-events-2026-10-28.md
   - Roadmap: roadmap/index.md
   - Changelog: changelog/index.md

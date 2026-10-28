@@ -732,3 +732,53 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a), applied to §12.3 through `/apply-findings`; ui-spec and synthesis then link to §12.3 instead of restating it.
 - **Assumed:** none. §12.3 is unchanged until then.
 - **Blocked:** nothing.
+
+## D6 (2026-10-27)
+
+### #49 · Virgil licence: the excalidraw/virgil font file contradicts its repository's licence (revisits #1)
+
+- **Covers:** [#1](#1-virgil-font-licence-blocks-publishing-the-hand-drawn-figures-font), `tools/diagrams/FONT-LICENSE.md`, [D6 Progress page](../progress/W3/D6.md)
+- **Context:**
+  - `excalidraw/virgil` `LICENSE.md` declares OFL-1.1: "Copyright (c) 2021 - Present, Ellinor Rapp, with Reserved Font Name Virgil." (read 2026-10-27).
+  - The same repository's `Virgil.woff2` (fetched through `cdn.jsdelivr.net/gh/excalidraw/virgil@main`, 2026-10-27) carries other metadata in its name table: "Virgil 3 YOFF", "Copyright (c) 2011 by Your Own Font Foundry. All rights reserved.", "Freeware for personal use! For commercial license please go to https://www.yourownfont.com/ …".
+  - The local copy taken from depictio is a third build ("Virgil GS", Jason Smith 2002, "All rights reserved").
+  - The repository is public now. No font file is committed; `mkdocs.yml` excludes `fonts/*.ttf` so a local copy never reaches the site. `docs/fonts/OFL.txt` is committed, scoped to the release as `excalidraw/virgil` declares it. PNGs are still rendered locally, so byte-identical PNG rendering in CI stays blocked.
+- **Options:**
+  - (a) ask Excalidraw (issue on `excalidraw/virgil`) which licence covers `Virgil.woff2`, and commit it only on a clear OFL answer;
+  - (b) switch to a font whose file and licence agree (Excalifont, or an OFL handwriting font from Google Fonts) **[to be validated]**, re-render every figure, then commit it with its licence;
+  - (c) keep (c) of #1: font local only, SVGs checked in CI, PNGs rendered locally.
+- **Recommendation:** (b), since it unblocks CI rendering without waiting on a third party; (c) until then. Nothing is sent to Excalidraw without Thomas.
+- **Assumed:** (c), unchanged from #1.
+- **Blocked:** byte-identical PNG rendering in CI (a deferred part of D6).
+
+### #50 · D6 was built in a minimal version: the rest needs a follow-up step
+
+- **Covers:** [D6 Progress page](../progress/W3/D6.md), [documentation system §1, §3.3, §7, §8](../specs/documentation-system.md)
+- **Context:**
+  - On Thomas's request (budget, tick 9), D6 did only: the build check now fails when `hooks/progress.py` output is missing; the docs-gate unit tests run in CI; the Virgil licence record (#49); and its review fixes.
+  - Deferred: mike versioning on the Cloudflare previews (`dev` from `main`, `X.Y` on release, `latest` / `stable`, `/versions` page); the Zensical evaluation; `hooks/shared_images.py` (not due: no mike version, `docs/assets` about 11 MB < 50 MB); byte-identical PNGs in CI (#49); the F4 and F6 figures.
+  - Two spec gaps seen on the way, not fixed: documentation system §3.3 item 3 names a `--allow-fallback-font` flag that `sketch.py` does not have (it falls back to a system font silently); §2 item 6 says the landing strip shows each wave's `public_title`, but `hooks/progress.py` renders `title`.
+- **Options:**
+  - (a) Thomas adds a step `D6b` to `pipeline.yaml` (after D6, before W4) with the deferred parts and the two gaps;
+  - (b) fold the deferred parts into the release work (mike only matters once there is a release) and the two gaps into the next `/apply-findings`.
+- **Recommendation:** (b): nothing deferred blocks W3 or W4; mike and `shared_images.py` are due at the first versioned docs.
+- **Assumed:** none. The autopilot does not edit `pipeline.yaml`.
+- **Blocked:** nothing.
+
+## T3 / T4 (2026-10-28)
+
+### #51 · T3 and T4 cannot run in a Claude Code cloud session: where do they run?
+
+- **Covers:** `T3` and `T4` in [next-phase.md](../playbooks/next-phase.md#t3-mini-slurm-with-sind), [dev environment §4](../specs/dev-environment-and-testing.md#4-local-clusters), [spike D2](../research/spike-cloud-env-2026-10-26.md#result)
+- **Context:**
+  - The two next ready steps are T3 (sind profiles `slurm-mini`, `slurm-site`, `slurm-rest`, failure modes, `NODE_FAIL`, fixtures) and T4 (kind, Kueue, Job and Workload fixtures).
+  - sind and kind need cgroup v2. Cloud sessions boot with a hybrid cgroup v1 layout that a session cannot change (spike D2). Dev environment §4.2 already says it: Kubernetes and SLURM scenarios run in CI and on the user's machine only. On 2026-10-28 this session still showed the v1 controllers under `/sys/fs/cgroup` (`blkio`, `cpu`, `cpuacct`, `cpuset`, …). Connecting a computer through Remote Control is not available to this session.
+  - `dev-env.yml` already brings a sind cluster up on an `ubuntu-24.04` runner (cgroup v2) and runs `sbatch --wait` (`dev/doctor.sh`). A CI-driven T3 would extend it, iterating by push. The GitHub tools available here read job logs but cannot download artifacts. Fixtures would therefore have to come back through the logs, or through a write token, which is a new permission.
+  - SEC-T1-06 (the harness deletes and reuses the predictable shared workdir `/tmp/spectio-scenarios`) must be fixed before T3 runs the harness on a submitter node ([T1 code review](code/T1.md)).
+- **Options:**
+  - (a) Thomas runs `/autopilot --only T3` (then T4) in Claude Code on his own machine (Docker on cgroup v2), and the autopilot integrates as usual;
+  - (b) CI-driven T3/T4 from a cloud session: the worker writes the profiles and a `workflow_dispatch` job on `autopilot/T3`, and iterates through pushes. The fixtures come back printed in the job log (size-limited) or as an artifact that Thomas downloads. Slower and costlier: each loop is a CI run of several minutes;
+  - (c) Thomas enables Remote Control on a machine that has Docker on cgroup v2, and a cloud session attaches to that folder.
+- **Recommendation:** (a) for T3 and T4. They are experiments with many short loops (create a cluster, inject a failure, read `squeue`/`sacct`), and a local Docker keeps each loop in seconds. Fix SEC-T1-06 first, in a cloud session (a small change to the harness). (b) only if no local machine is available.
+- **Assumed:** none. No T3/T4 work was started; both stay `pending`.
+- **Blocked:** T3, T4, and everything in W3/W4 that depends on them (TRIAGE3 needs T2, T3, T4, T7).

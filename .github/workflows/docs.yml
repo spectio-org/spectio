@@ -29,6 +29,8 @@ jobs:
           sudo apt-get update -qq && sudo apt-get install -y -qq ffmpeg
           pip install --break-system-packages pyyaml playwright
           python3 -m playwright install --with-deps chromium
+      - name: Unit tests of the docs gate
+        run: python3 -m unittest tools/docs/test_check.py
       - name: Strict build, Mermaid, diagram freshness, media manifest and budget, Progress pages
         # fetch-depth 0 already fetched every branch, so origin/<base> exists without a credentialed fetch.
         env:
