@@ -30,7 +30,7 @@ Decisions taken in place of Thomas, who was not available for brainstorming. Eac
 3. **D3, what engine events may carry** (inbox #55, option (a)). `nf-spectio` sends no `script` or `env`. The SDK event models are allow-lists (`extra="ignore"`), so `script`, `env`, `homeDir`, `commandLine`, `configText` and Snakemake's `cmd` are never stored, even if a plugin sends them. *(assumed — pending Thomas)*
 4. **D4, Cancel** (inbox #62). One Cancel action: a cancel marker `.spectio/cancel` in the run directory, then an interrupt in the head's tmux pane (`tmux send-keys -t <pane id> C-c`), then SIGTERM to the head's process group if it is still alive after a 60 s grace period, then SIGKILL after another 60 s ([schedulers §3.1.1](../specs/schedulers-and-monitoring.md), tmux launcher). On the local executor: SIGTERM to the process group, then SIGKILL. *(assumed — pending Thomas)*
 5. **Attempt state `aborted`** (inbox #56, option (a)). *(assumed — pending Thomas)*
-6. **"Stages" in 0.0.1 are the engine's processes (Nextflow) or rules (Snakemake)**, in first-seen order, with task counts by state: a subset of `GET /runs/{id}/processes` ([api §5](../specs/api-and-data-model.md)). Structural stage detection ([ui-spec §5.1](../specs/ui-spec.md) source (2)) and `run_stages` come later. The synthetic pipelines have no subworkflows, so detection would show nothing. *(assumed — pending Thomas)*
+6. **0.0.1 shows both named stages and the processes or rules** (Thomas, 2026-10-28: "les 2 dans 0.0.1", [log](../decisions/log.md#2026-10-28-001-has-four-screens-home-kept)). Stages are declared or detected (see the stage-detection spike, pending); each shows its state word (Running, Pending or Done; on an ended run also Failed, Stopped or Not run), "n of m tasks" and a source badge, Declared or Detected (display only), and opens to its processes (Nextflow) or rules (Snakemake) in first-seen order; the leftovers are under "Not in a stage". With no stage, the run detail shows the flat processes or rules list and the line "No stages for this pipeline: processes as the engine reports them." Counts come from `GET /runs/{id}/processes` ([api §5](../specs/api-and-data-model.md)). The synthetic pipelines have no subworkflows, so they show the flat list. *(how stages are found: the stage-detection spike, pending)*
 7. **Live refresh over SSE** *(decided — Thomas, 2026-10-28; [log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index))*. The UI opens one stream per browser, `GET /api/v1/events/stream` ([api §8.3](../specs/api-and-data-model.md)), behind the session cookie; each frame names a run, and the UI refetches that run, or the first page of the list. The P1 subset sends one frame type, `spectio.run.delta`, and a keep-alive comment every 15 s. The `EventSource` cookie behaviour of §15.3 req. 3 is in scope and checked by the Playwright smoke (Task 20). *Note 2026-10-28: this replaces the assumption "No SSE in 0.0.1, the UI polls every 5 s".*
 8. **A session-free bootstrap page.** §15.3 req. 2 asks for a session on every request, but something must serve the page that reads the ticket from the URL fragment. Four routes are served without a session cookie: `GET /auth/link` (static HTML) and `GET /auth/link.js`, which carry no data and need no credential; `POST /api/v1/auth/magic-links:exchange`, which needs a valid one-time ticket; and `POST /api/v1/auth/links`, which needs the server key (Assumption 9). *(assumed — pending Thomas; a spec gap to record in §15.3)*
 9. **The state file and `spectio login --print-link`.** The server creates `~/.spectio/server.json` in the shared home with `O_EXCL` (login node, port, PID, database directory, start time; mode 0600; no secret) and removes it at a clean stop; `spectio serve` refuses to start on another login node while it names a server there, unless given `--force`, which replaces it ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). `spectio login --print-link` reads it and the server key file in the node-local directory, checks that the listener on the recorded port belongs to the caller's uid (§15.3 req. 9), and calls `POST /api/v1/auth/links` with `Authorization: Bearer <server key>` and the loopback `Origin`. With `--json` it prints one line, a fixed sentinel then `{"ticket": …}`, for `spectio-open` (§15.3 req. 8). Run on another login node, where the server's loopback cannot be reached, it checks the node name from the state file, then prints "The server runs on <node>: run `ssh <node> spectio login --print-link`." and exits 2, with no link. *(assumed — pending Thomas)*
@@ -82,7 +82,7 @@ The five inputs most likely to hurt a test user that no other test covers. Each 
 | M1 · Events in | 1–7 | T2 fixtures and real local runs of both engines replay into SQLite with the right states |
 | M2 · Heads | 8–10 | heads launched, watched, adopted and cancelled, locally and in tmux |
 | M3 · Served safely | 11–16 | `spectio serve` in its tmux session, with the state file, the token link and §15.3 requirements 1–5 and 7 (6 is Task 3) |
-| M4 · API and screens | 17–21 | the API of the three screens, the UI, and a wheel that carries the UI and both bridges |
+| M4 · API and screens | 17–21 | the API of the four screens, the UI, and a wheel that carries the UI and both bridges |
 | M5 · On the cluster | 22–24 | both engines end to end on `slurm-mini` in CI, with cancel and restart; the SSH config entry and `spectio-open` |
 | M6 · Runs from a terminal | 25–26 | a run started by hand with the bridge enabled shows in the runs list, monitor only; both bridges build as release packages, dry-run only |
 
@@ -644,7 +644,7 @@ def test_launch_ambiguous_engine_422(tmp_path): ...   # both main.nf and Snakefi
 
 ### Task 18: Read API, logs and Cancel
 
-**Spec:** [api §5](../specs/api-and-data-model.md) (`GET /runs`, `GET /runs/{id}`, `/processes`, `/tasks`, `/logs`), [api §5.1](../specs/api-and-data-model.md) (`:cancel` source states), [api §8.3](../specs/api-and-data-model.md) (the stream, dated note 2026-10-28), [architecture §13.7](../specs/architecture-plugins-and-packaging.md) (log sources), [checking-scenarios §11.1](../specs/checking-scenarios.md) (confinement rule) · **Depends on:** 4, 5, 17 · **R10 §3a:** rows 9, 10; D4
+**Spec:** [api §5](../specs/api-and-data-model.md) (`GET /runs`, `GET /runs:summary`, `GET /runs/{id}`, `/processes`, `/tasks`, `/logs`, `GET /version`; the 0.0.1 subset in the dated note of 2026-10-28), [api §5.1](../specs/api-and-data-model.md) (`:cancel` source states), [api §8.3](../specs/api-and-data-model.md) (the stream, dated note 2026-10-28), [architecture §13.7](../specs/architecture-plugins-and-packaging.md) (log sources), [checking-scenarios §11.1](../specs/checking-scenarios.md) (confinement rule) · **Depends on:** 4, 5, 17 · **R10 §3a:** rows 9, 10; D4
 
 **Files:**
 - Create: `packages/spectio-server/src/spectio_server/api/{runs_read.py,logs.py,cancel.py,stream.py}`, `packages/spectio-server/openapi/0.0.1.json`
@@ -652,9 +652,12 @@ def test_launch_ambiguous_engine_422(tmp_path): ...   # both main.nf and Snakefi
 
 **Interfaces:**
 - Produces:
-  - `GET /api/v1/runs?limit=&cursor=` → `{items, next}`, newest first;
-  - `GET /api/v1/runs/{id}` → `{id, name, state, created_at, started_at, ended_at, workflow: {engine, location, name}, profiles, params, failure, head: {session, node, alive, exit_code} | null, summary: {tasks_total, tasks_expected, counts}}`;
-  - `GET /api/v1/runs/{id}/processes` → `{items: [{process, counts, retries}]}`;
+  - `GET /api/v1/runs?state=&q=&limit=&cursor=` → `{items, next}`, newest first; `state` takes a comma-separated list of run states, `q` is a prefix of the run name, as in api §5; both feed the filters of the runs list (UX-296);
+  - `GET /api/v1/runs:summary?group_by=state` → `{groups: [{key: <state>, count}]}` over all the user's runs, with no time window (`since=` and `project=` come later); it feeds the count cards of the home screen;
+  - `GET /api/v1/version` → `{version, node, runs_root, account}`: the Spectio version, the login node the server runs on, the runs root and the Unix account; behind the session cookie in 0.0.1 (not public, Assumption 8); it feeds the shell's "server on <node>" line;
+  - `GET /api/v1/runs/{id}` → `{id, name, state, origin: "ui" | "cli-observed", created_at, started_at, ended_at, workflow: {engine, engine_version, location, name, version}, profiles, params, failure, head: {session, node, alive, exit_code} | null, summary: {tasks_total, tasks_expected, counts}}`; `engine_version` is the version `check_engine` (Task 9) found at launch, or the pointer's for a `cli-observed` run (Task 25); `workflow.version` is the version the pipeline declares, from the bridge's start event (Nextflow `workflow.manifest.version` **[to be validated]**), `null` when it declares none (Snakemake declares none); `head` is `null` while the head has not started (`queued`); for a `cli-observed` run, `session` is `null` and `alive` is `null` when the head is on another node ("not checked", Task 25). No other fact (partition, queue, cluster name) is returned in 0.0.1; the run items of `GET /runs` carry the same fields but `params`;
+  - `GET /api/v1/runs/{id}/processes` → `{items: [{process, counts, retries}]}`, in first-seen order;
+  - `GET /api/v1/runs/{id}/stages` → `{items: [{name, source: "declared" | "detected", processes: [str]}]}` in order, empty when the pipeline has none; stages are declared or detected (see the stage-detection spike, pending), which also owns how they are found (Assumption 6);
   - `GET /api/v1/runs/{id}/tasks?state=&process=&limit=&cursor=`;
   - `GET /api/v1/runs/{id}/logs?source=head-out|head-err|engine` → `text/plain; charset=utf-8`, the last 64 KiB;
   - `POST /api/v1/runs/{id}:cancel` → `202` with the run (`cancelling`) and a `cancel` command; `200` when it is already `cancelling` or terminal;
@@ -665,6 +668,12 @@ def test_launch_ambiguous_engine_422(tmp_path): ...   # both main.nf and Snakefi
 ```python
 def test_run_detail_after_replay(authed_client, replayed_flaky): ...  # counts, processes in first-seen order, head null
 def test_runs_paging(authed_client): ...        # 3 runs, limit=2 → 2 items + next; next page → 1 item, next null
+def test_runs_filter_state_and_q(authed_client): ...  # state=running,queued → only those; q=rnaseq → only names starting with rnaseq
+def test_runs_summary_by_state(authed_client): ...    # 2 running, 1 failed → groups running 2, failed 1; no since needed
+def test_version_behind_session(client, authed_client): ...  # no cookie → 401; with it → version, node, runs_root, account
+def test_run_versions_and_origin(authed_client, replayed_flaky): ...  # origin "ui", engine_version from check_engine,
+                                                # workflow.version from the start event, null for Snakemake
+def test_queued_run_head_null(authed_client): ...  # launched, head not started → state queued, head null
 def test_logs_tail_and_sources(authed_client): ...  # 100 KiB head.out → last 65536 bytes; engine log per engine
 def test_logs_confined(authed_client, tmp_path): ...  # .nextflow.log -> /etc/passwd symlink → 404 log-not-found
 def test_cancel_states(authed_client): ...      # queued → 202 cancelling; cancelled → 200 unchanged; unknown → 404
@@ -681,7 +690,7 @@ def test_openapi_snapshot(app): ...             # app.openapi() == openapi/0.0.1
 
 ### Task 19: UI shell and launch form
 
-**Spec:** [ui-spec §4.6](../specs/ui-spec.md) (launch form, without stepper or review: Assumption 20), §3.1 (state words), [architecture §6](../specs/architecture-plugins-and-packaging.md#6-code-layout) (React, Vite, Mantine 7, TanStack) · **Depends on:** 17 · **Boards:** Launch, LaunchSnakemake (reference only; boards show more than 0.0.1, UX-227)
+**Spec:** [ui-spec §4.6](../specs/ui-spec.md) (launch form, without stepper or review: Assumption 20), §3.1 (state words), [mvp-0.0.1 §1](../specs/mvp-0.0.1.md) (four screens), [architecture §6](../specs/architecture-plugins-and-packaging.md#6-code-layout) (React, Vite, Mantine 7, TanStack) · **Depends on:** 17 · **Boards:** Launch, LaunchSnakemake (reference only; boards show more than 0.0.1, UX-227)
 
 **Files:**
 - Create: `web/package.json`, `web/vite.config.ts`, `web/src/{main.tsx,api.ts,routes.tsx}`, `web/src/launch/{LaunchPage.tsx,schemaFields.ts}`, `web/src/launch/schemaFields.test.ts`
@@ -689,7 +698,7 @@ def test_openapi_snapshot(app): ...             # app.openapi() == openapi/0.0.1
 
 **Interfaces:**
 - Consumes: `workflows:inspect`, `POST /runs` (Task 17).
-- Produces: `schemaFields(schema: JSONSchema) -> Section[]` (`Section {title, fields: Field[]}`; `Field {key, label, type: "string" | "integer" | "number" | "boolean" | "enum" | "json", required, default, help}`). Routes `/`, `/launch` and `/runs/:id`. The page title is "Launch a workflow". The fields are Pipeline directory (absolute path) and Load, the detected engine, Profile, Run name (optional) and the parameters, with the Launch button disabled while a required field is empty, the reason shown beside it.
+- Produces: `schemaFields(schema: JSONSchema) -> Section[]` (`Section {title, fields: Field[]}`; `Field {key, label, type: "string" | "integer" | "number" | "boolean" | "enum" | "json", required, default, help}`). Routes `/` (home), `/runs`, `/launch` and `/runs/:id`; the shell shows the server's node from `GET /version` (Task 18). The page title is "Launch a workflow". The fields are Pipeline directory (absolute path) and Load, the detected engine, Profile, Run name (optional) and the parameters, with the Launch button disabled while a required field is empty, the reason shown beside it.
 
 - [ ] **Step 1: Write the failing tests**
 
@@ -706,17 +715,18 @@ test("no schema → empty sections (key/value rows)", () => expect(schemaFields(
 
 ### Task 20: Runs list, run detail, Cancel, and the Playwright smoke
 
-**Spec:** [api §8.3](../specs/api-and-data-model.md) (live refresh over SSE, decided 2026-10-28), [ui-spec §4.3](../specs/ui-spec.md) (columns in 0.0.1: Run, State, Workflow, Tasks, Started, Duration; no gauge, no Rows mode, no compare), §4.4 (header and Cancel; Summary and Tasks as tables; Logs), §3.1, [ui-spec §11](../specs/ui-spec.md) (empty state) · **Depends on:** 18, 19, step T6 (`tests/e2e/`, PR #45) · **R10 §3a:** row 13 (UX-211) · **Boards:** RunsTable, RunDetail (reference only)
+**Spec:** [api §8.3](../specs/api-and-data-model.md) (live refresh over SSE, decided 2026-10-28), [ui-spec §4.3](../specs/ui-spec.md) (columns in 0.0.1: Run, State, Workflow, Tasks, Started, Duration; no gauge, no Rows mode, no compare), §4.4 (header and Cancel; Summary and Tasks as tables; Logs), §3.1, [ui-spec §11](../specs/ui-spec.md) (empty state) · **Depends on:** 18 (including `GET /runs:summary` for home), 19, step T6 (`tests/e2e/`, PR #45) · **R10 §3a:** row 13 (UX-211) · **Boards:** the 0.0.1 lite boards (`LiteHome`, `LiteRuns`, `LiteRunDetail`, `LiteRunObserved`, `LiteStatesRun` and their phone twins, [design/README](https://github.com/weber8thomas/spectio/blob/main/design/README.md#001-lite-boards)); RunsTable, RunDetail for reference only
 
 **Files:**
-- Create: `web/src/runs/{RunsPage.tsx,RunDetailPage.tsx,stateWord.ts}`, `tests/e2e/skeleton.spec.ts` (in the T6 Playwright setup), `tests/e2e/serve-local.sh` (`spectio init --local` in a temp directory, `spectio serve`, prints the link)
+- Create: `web/src/home/HomePage.tsx`, `web/src/runs/{RunsPage.tsx,RunDetailPage.tsx,stateWord.ts}`, `tests/e2e/skeleton.spec.ts` (in the T6 Playwright setup), `tests/e2e/serve-local.sh` (`spectio init --local` in a temp directory, `spectio serve`, prints the link)
 - Modify: `.github/workflows/ci.yml` (job `e2e-local`: Nextflow and Snakemake from `dev/bootstrap.sh`, then Playwright)
 
 **Interfaces:**
 - Consumes: the read API and `:cancel` (Task 18).
 - Produces:
-  - the runs list, refreshed from the SSE stream of Task 18 (one `EventSource` per browser), with "Load more"; its empty state reads "No runs yet." with a "Launch a workflow" button;
-  - the run detail, refetched on each stream frame for its run until it is terminal: a header (name, state word, short id, Cancel while `queued` or `running`, after a confirm "Cancel this run? Spectio interrupts its head in the tmux session, and the engine stops its tasks."), a facts table (pipeline, engine, profile, started, ended, duration, the head: tmux session name, alive or exited, login node, exit code; failure class and message), a counts row, the processes / rules table, the tasks table (filter by state; on a failed run it defaults to `failed`), the parameters table, and the logs (head out, head err, engine log) loaded on click in `<pre>`.
+  - the home screen at `/`: count cards by state from `GET /runs:summary?group_by=state`, the active runs, the runs that ended recently, and the pipeline directories of the recent runs (derived from `GET /runs`, no new endpoint), refreshed from the stream; the shell and every list say "live, updated N s ago" from the age of the last frame, and "Reconnecting…" while the `EventSource` reconnects;
+  - the runs list, refreshed from the SSE stream of Task 18 (one `EventSource` per browser), with state filters and a name filter (`state=`, `q=`), "Load more", and a neutral "From a terminal" chip on `cli-observed` runs; its empty state reads "No runs yet." with a "Launch a workflow" button;
+  - the run detail, refetched on each stream frame for its run until it is terminal: a header (name, state word, short id, Cancel while `queued` or `running`, after a confirm "Cancel this run? Spectio interrupts its head in the tmux session, and the engine stops its tasks."), a facts table (pipeline and its declared version, engine and its version, profile, started, ended, duration, the head: tmux session name, alive or exited, login node, exit code; "Head not started yet" while `head` is `null`; failure class and message), a counts row, the stages (Assumption 6: each with its state word, "n of m tasks" and its Declared or Detected badge, opening to its processes or rules in first-seen order, with "Not in a stage"; the flat list when there is none) and "stage n of m" in the header for a run that has stages, a `cli-observed` run with no Cancel, "head on <node>, not checked" and the engine log only (Task 25), the tasks table (filter by state; on a failed run it defaults to `failed`), the parameters table, and the logs (head out, head err, engine log) loaded on click in `<pre>`.
 
 - [ ] **Step 1: Write the failing test**
 

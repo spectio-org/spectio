@@ -128,6 +128,8 @@ Paths under `/admin/*` are for system admins only and are specified in [`admin-a
 | Ingest (engines) | `POST /ingest/events` (Nextflow plugin `nf-spectio`, Snakemake logger). The Tower protocol routes `/trace/*` are not implemented ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)) |
 | Facades | `/ga4gh/wes/v1/*` (WES 1.1 + `x-spectio` extensions), `/mcp` (MCP server) |
 
+*Note 2026-10-28 (0.0.1 screens, UX-296):* the 0.0.1 server serves a subset of this catalogue, owned by [P1](../plans/P1-walking-skeleton.md) Task 18: `GET /runs` with `state=` and `q=` only; `GET /runs:summary?group_by=state` without `since=` or `project=` (all the user's runs); `GET /runs/{id}/stages`, its stages declared or detected (see the stage-detection spike, pending); and, on the run, `origin` (`ui` or `cli-observed`) and `engine_version` as in §7. The 0.0.1 shape of `GET /version`, behind the session cookie, is in Task 18 too.
+
 ### Example: launch from a LIMS
 ```http
 POST /api/v1/runs

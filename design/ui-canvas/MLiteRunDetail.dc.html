@@ -20,16 +20,18 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 </style>
 </helmet>
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
-  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="rnaseq-2026-10-25" sub="Running · 812 / 1,248 tasks" back="MLiteRuns.dc.html" backLabel="Back to runs" hint-size="390px,60px"></dc-import></div>
+  <div>
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="rnaseq-2026-10-25" sub="Running · stage 5 of 6 · 812 / 1,248 tasks" back="MLiteRuns.dc.html" backLabel="Back to runs" hint-size="390px,60px"></dc-import></div>
   <main style="position: absolute; top: 60px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
     <section aria-labelledby="run-title" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
       <div style="height: 4px; background: #3B82F6;"></div>
       <div style="padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
-        <h1 id="run-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px; overflow-wrap: anywhere;">rnaseq-2026-10-25 <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400; color: #6E7287;">7T9V1W</span></h1>
-        <span style="display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: #1D5FC9; flex-wrap: wrap;"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· stage 3 of 4 · 1 h 05 · updated 4 s ago</span></span>
-        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block;">nf-core/rnaseq 3.27.0 · Nextflow 25.10.4 · singularity</span>
+        <h1 id="run-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px; overflow-wrap: anywhere;">rnaseq-2026-10-25 <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400; color: #6E7287;">7T9V1W</span> </h1>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 13.5px; font-weight: 600; color: #1D5FC9; flex-wrap: wrap;"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· 1 h 05 · live, updated 4 s ago</span></span>
+        <span style="font-size: 13px; color: #33364A; line-height: 1.4;"><strong style="font-weight: 600;">Head alive</strong> · tmux on login1</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">nf-core/rnaseq 3.27.0 · Nextflow 25.10.4 · singularity</span></span>
         <div role="group" aria-label="Tasks by state" style="display: flex; gap: 6px; flex-wrap: wrap;"><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #E8F6EF; color: #157A4B;">812 succeeded</span><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #EAF2FE; color: #1D5FC9;">64 running</span><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #F1F2F6; color: #33364A;">372 pending</span><span style="font-size: 12.5px; font-weight: 600; padding: 4px 9px; border-radius: 8px; background: #FDF3E2; color: #8F5806;">7 retried</span></div>
-        <a href="MLiteCancelSheet.dc.html" role="button" aria-haspopup="dialog" style="height: 44px; border-radius: 12px; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #B02A2A; text-decoration: none; display: flex; align-items: center; justify-content: center;">Cancel run</a>
+        <button type="button" aria-haspopup="dialog" style="height: 44px; border-radius: 12px; border: none; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 14px 'Inter', sans-serif; color: #B02A2A; cursor: pointer;">Cancel run</button>
       </div>
     </section>
     <div class="chips" role="tablist" aria-label="Run sections" style="display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; border-bottom: 1px solid #DFE1EA; margin: 0 -12px; padding: 0 12px;">
@@ -38,63 +40,216 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
       <button type="button" role="tab" id="tab-parameters" aria-selected="false" aria-controls="panel-parameters" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 12px; border: none; background: transparent; font: 500 14px 'Inter', sans-serif; color: #4D5065; box-shadow: none; cursor: pointer;">Parameters</button>
       <button type="button" role="tab" id="tab-logs" aria-selected="false" aria-controls="panel-logs" tabindex="-1" style="flex-shrink: 0; height: 44px; padding: 0 12px; border: none; background: transparent; font: 500 14px 'Inter', sans-serif; color: #4D5065; box-shadow: none; cursor: pointer;">Logs</button>
     </div>
+    <div id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" hidden></div>
+    <div id="panel-parameters" role="tabpanel" aria-labelledby="tab-parameters" hidden></div>
+    <div id="panel-logs" role="tabpanel" aria-labelledby="tab-logs" hidden></div>
     <div id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" style="display: flex; flex-direction: column; gap: 10px;">
       <section aria-labelledby="h-stages" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px 4px;">
-        <h2 id="h-stages" style="margin: 0 0 4px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;">Stages</h2>
-      <div style="display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid #EEEFF5; align-items: flex-start;">
-        <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 9px; background: #5A4FCF; color: #FFFFFF; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">1</span>
-        <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
-          <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-weight: 600; font-size: 14px;">Preprocessing</span><span style="font-size: 12.5px; font-weight: 600; color: #157A4B;">Completed</span></span>
-          <div role="progressbar" aria-label="Preprocessing: 100 % of tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><div style="height: 6px; width: 100%; background: #5A4FCF;"></div></div>
-          <span style="font-size: 12.5px; color: #4D5065;">288 / 288 tasks · 14 min</span>
-        </div>
-      </div>
-      <div style="display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid #EEEFF5; align-items: flex-start;">
-        <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 9px; background: #8B5CF6; color: #FFFFFF; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">2</span>
-        <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
-          <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-weight: 600; font-size: 14px;">Alignment & QC</span><span style="font-size: 12.5px; font-weight: 600; color: #157A4B;">Completed</span></span>
-          <div role="progressbar" aria-label="Alignment & QC: 100 % of tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><div style="height: 6px; width: 100%; background: #8B5CF6;"></div></div>
-          <span style="font-size: 12.5px; color: #4D5065;">336 / 336 tasks · 38 min</span>
-        </div>
-      </div>
-      <div style="display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid #EEEFF5; align-items: flex-start;">
-        <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 9px; background: #F4A5BC; color: #562941; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">3</span>
-        <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
-          <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-weight: 600; font-size: 14px;">Quantification</span><span style="font-size: 12.5px; font-weight: 600; color: #1D5FC9;">Running · 63 %</span></span>
-          <div role="progressbar" aria-label="Quantification: 63 % of tasks done" aria-valuenow="63" aria-valuemin="0" aria-valuemax="100" style="height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><div style="height: 6px; width: 63%; background: #EC5F87;"></div></div>
-          <span style="font-size: 12.5px; color: #4D5065;">188 / 300 tasks done · 64 running</span>
-        </div>
-      </div>
-      <div style="display: flex; gap: 12px; padding: 10px 0; border-top: 1px solid #EEEFF5; align-items: flex-start;">
-        <span style="width: 28px; height: 28px; flex-shrink: 0; border-radius: 9px; background: #DFE1EA; color: #33364A; font-weight: 700; font-size: 13px; display: flex; align-items: center; justify-content: center;">4</span>
-        <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
-          <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-weight: 600; font-size: 14px;">Reporting</span><span style="font-size: 12.5px; font-weight: 600; color: #4D5065;">Not started</span></span>
-          <div role="progressbar" aria-label="Reporting: 0 % of tasks done" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><div style="height: 6px; width: 0%; background: #F9A947;"></div></div>
-          <span style="font-size: 12.5px; color: #4D5065;">DESeq2 QC, MultiQC</span>
-        </div>
-      </div>
-      </section>
-      <section aria-labelledby="h-procs" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px 4px;">
-        <h2 id="h-procs" style="margin: 0 0 4px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;">Processes <span style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 12.5px; color: #4D5065;">6 of 14, most active first</span></h2>
+        <h2 id="h-stages" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;">Stages <span style="font-family: 'Inter', sans-serif; font-weight: 400; font-size: 12.5px; color: #4D5065;">6, detected · stage 5 running</span></h2>
+        <span style="display: block; font-size: 12px; color: #4D5065; line-height: 1.45; margin: 4px 0 6px;">Detected from the pipeline's subworkflows, for display only; a stage declared in spectio.yml or a lab overlay shows Declared. Open a stage for its processes, in the order Nextflow first reported them.</span>
         <ul style="list-style: none; margin: 0; padding: 0;">
-        <li style="display: flex; flex-direction: column; gap: 2px; padding: 9px 0; border-top: 1px solid #EEEFF5;"><span style="font-size: 13.5px; font-weight: 600;">SUBREAD_FEATURECOUNTS</span><span style="font-size: 12.5px; color: #4D5065;">140 done · 64 running · 48 pending · 3 retried</span></li>
-        <li style="display: flex; flex-direction: column; gap: 2px; padding: 9px 0; border-top: 1px solid #EEEFF5;"><span style="font-size: 13.5px; font-weight: 600;">SALMON_QUANT</span><span style="font-size: 12.5px; color: #4D5065;">48 done</span></li>
-        <li style="display: flex; flex-direction: column; gap: 2px; padding: 9px 0; border-top: 1px solid #EEEFF5;"><span style="font-size: 13.5px; font-weight: 600;">STAR_ALIGN</span><span style="font-size: 12.5px; color: #4D5065;">48 done · 4 retried</span></li>
-        <li style="display: flex; flex-direction: column; gap: 2px; padding: 9px 0; border-top: 1px solid #EEEFF5;"><span style="font-size: 13.5px; font-weight: 600;">QUALIMAP_RNASEQ</span><span style="font-size: 12.5px; color: #4D5065;">48 done</span></li>
-        <li style="display: flex; flex-direction: column; gap: 2px; padding: 9px 0; border-top: 1px solid #EEEFF5;"><span style="font-size: 13.5px; font-weight: 600;">TRIMGALORE</span><span style="font-size: 12.5px; color: #4D5065;">96 done</span></li>
-        <li style="display: flex; flex-direction: column; gap: 2px; padding: 9px 0; border-top: 1px solid #EEEFF5;"><span style="font-size: 13.5px; font-weight: 600;">FASTQC</span><span style="font-size: 12.5px; color: #4D5065;">96 done</span></li>
+        <li style="border-top: 1px solid #EEEFF5;"><details>
+          <summary style="list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; min-height: 44px; box-sizing: border-box;">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere;"><span style="color: #6E7287; font-weight: 500;">1</span> PREPARE_GENOME</span><span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #F1F2F6; color: #33364A;">Detected</span></span><span style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;"><span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: #157A4B;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Done</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></span>
+            <span role="progressbar" aria-label="PREPARE_GENOME: 4 of 4 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: 100%; background: #5A4FCF;"></span></span>
+            <span style="font-size: 12.5px; color: #4D5065;">4 of 4 tasks · 4 processes</span>
+          </summary>
+          <ul style="list-style: none; margin: 0 0 6px; padding: 0 0 0 14px;" aria-label="Processes of PREPARE_GENOME, in first-seen order">
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">GUNZIP_GTF</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="GUNZIP_GTF: 1 of 1 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">1 / 1 done</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">CUSTOM_GETCHROMSIZES</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="CUSTOM_GETCHROMSIZES: 1 of 1 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">1 / 1 done</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">STAR_GENOMEGENERATE</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="STAR_GENOMEGENERATE: 1 of 1 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">1 / 1 done</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">SALMON_INDEX</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="SALMON_INDEX: 1 of 1 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">1 / 1 done</span>
+            </li>
+          </ul>
+        </details></li>
+        <li style="border-top: 1px solid #EEEFF5;"><details>
+          <summary style="list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; min-height: 44px; box-sizing: border-box;">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere;"><span style="color: #6E7287; font-weight: 500;">2</span> FASTQ_QC_TRIM_FILTER_SETSTRANDEDNESS</span><span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #F1F2F6; color: #33364A;">Detected</span></span><span style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;"><span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: #157A4B;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Done</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></span>
+            <span role="progressbar" aria-label="FASTQ_QC_TRIM_FILTER_SETSTRANDEDNESS: 192 of 192 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: 100%; background: #5A4FCF;"></span></span>
+            <span style="font-size: 12.5px; color: #4D5065;">192 of 192 tasks · 2 processes</span>
+          </summary>
+          <ul style="list-style: none; margin: 0 0 6px; padding: 0 0 0 14px;" aria-label="Processes of FASTQ_QC_TRIM_FILTER_SETSTRANDEDNESS, in first-seen order">
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">FASTQC</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="FASTQC: 96 of 96 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">96 / 96 done</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">TRIMGALORE</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="TRIMGALORE: 96 of 96 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">96 / 96 done</span>
+            </li>
+          </ul>
+        </details></li>
+        <li style="border-top: 1px solid #EEEFF5;"><details>
+          <summary style="list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; min-height: 44px; box-sizing: border-box;">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere;"><span style="color: #6E7287; font-weight: 500;">3</span> ALIGN_STAR</span><span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #F1F2F6; color: #33364A;">Detected</span></span><span style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;"><span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: #157A4B;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Done</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></span>
+            <span role="progressbar" aria-label="ALIGN_STAR: 144 of 144 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: 100%; background: #5A4FCF;"></span></span>
+            <span style="font-size: 12.5px; color: #4D5065;">144 of 144 tasks · 3 processes</span>
+          </summary>
+          <ul style="list-style: none; margin: 0 0 6px; padding: 0 0 0 14px;" aria-label="Processes of ALIGN_STAR, in first-seen order">
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">STAR_ALIGN</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="STAR_ALIGN: 48 of 48 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">48 / 48 done · 4 retried</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">SAMTOOLS_SORT</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="SAMTOOLS_SORT: 48 of 48 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">48 / 48 done</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">SAMTOOLS_INDEX</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="SAMTOOLS_INDEX: 48 of 48 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">48 / 48 done</span>
+            </li>
+          </ul>
+        </details></li>
+        <li style="border-top: 1px solid #EEEFF5;"><details>
+          <summary style="list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; min-height: 44px; box-sizing: border-box;">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere;"><span style="color: #6E7287; font-weight: 500;">4</span> QUANTIFY_PSEUDO_ALIGNMENT</span><span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #F1F2F6; color: #33364A;">Detected</span></span><span style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;"><span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: #33364A;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 7v5l3 2"/></svg>Pending</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></span>
+            <span role="progressbar" aria-label="QUANTIFY_PSEUDO_ALIGNMENT: 48 of 50 known tasks done" aria-valuenow="96" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: 96%; background: #5A4FCF;"></span></span>
+            <span style="font-size: 12.5px; color: #4D5065;">48 of 50 tasks · 3 processes</span>
+          </summary>
+          <ul style="list-style: none; margin: 0 0 6px; padding: 0 0 0 14px;" aria-label="Processes of QUANTIFY_PSEUDO_ALIGNMENT, in first-seen order">
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">SALMON_QUANT</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="SALMON_QUANT: 48 of 48 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">48 / 48 done</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">TXIMETA_TXIMPORT</span><span style="font-size: 12px; font-weight: 600; color: #33364A;">Pending</span></span>
+              <span role="progressbar" aria-label="TXIMETA_TXIMPORT: 0 of 1 known tasks done" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 0%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 / 1 done · 1 pending</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">SE_GENE_UNIFIED</span><span style="font-size: 12px; font-weight: 600; color: #33364A;">Pending</span></span>
+              <span role="progressbar" aria-label="SE_GENE_UNIFIED: 0 of 1 known tasks done" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 0%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 / 1 done · 1 pending</span>
+            </li>
+          </ul>
+        </details></li>
+        <li style="border-top: 1px solid #EEEFF5;"><details open>
+          <summary style="list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; min-height: 44px; box-sizing: border-box;">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere;"><span style="color: #6E7287; font-weight: 500;">5</span> BAM_MARKDUPLICATES_PICARD</span><span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #F1F2F6; color: #33364A;">Detected</span></span><span style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;"><span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: #1D5FC9;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></span></span>
+            <span role="progressbar" aria-label="BAM_MARKDUPLICATES_PICARD: 60 of 96 known tasks done" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: 62%; background: #3B82F6;"></span></span>
+            <span style="font-size: 12.5px; color: #4D5065;">60 of 96 tasks · 2 processes</span>
+          </summary>
+          <ul style="list-style: none; margin: 0 0 6px; padding: 0 0 0 14px;" aria-label="Processes of BAM_MARKDUPLICATES_PICARD, in first-seen order">
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">PICARD_MARKDUPLICATES</span><span style="font-size: 12px; font-weight: 600; color: #1D5FC9;">Running</span></span>
+              <span role="progressbar" aria-label="PICARD_MARKDUPLICATES: 30 of 48 known tasks done" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 62%; background: #3B82F6;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">30 / 48 done · 18 running</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">SAMTOOLS_INDEX</span><span style="font-size: 12px; font-weight: 600; color: #33364A;">Pending</span></span>
+              <span role="progressbar" aria-label="SAMTOOLS_INDEX: 30 of 48 known tasks done" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 62%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">30 / 48 done · 18 pending</span>
+            </li>
+          </ul>
+        </details></li>
+        <li style="border-top: 1px solid #EEEFF5;"><details>
+          <summary style="list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; min-height: 44px; box-sizing: border-box;">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere;"><span style="color: #6E7287; font-weight: 500;">6</span> Report</span><span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #F1F2F6; color: #33364A;">Detected</span></span><span style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;"><span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: #33364A;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 7v5l3 2"/></svg>Pending</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></span>
+            <span role="progressbar" aria-label="Report: 0 of 1 known tasks done" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: 0%; background: #5A4FCF;"></span></span>
+            <span style="font-size: 12.5px; color: #4D5065;">0 of 1 tasks · 1 process</span>
+          </summary>
+          <ul style="list-style: none; margin: 0 0 6px; padding: 0 0 0 14px;" aria-label="Processes of Report, in first-seen order">
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">MULTIQC</span><span style="font-size: 12px; font-weight: 600; color: #33364A;">Pending</span></span>
+              <span role="progressbar" aria-label="MULTIQC: 0 of 1 known tasks done" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 0%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 / 1 done · 1 pending</span>
+            </li>
+          </ul>
+        </details></li>
+        <li style="border-top: 1px solid #EEEFF5;"><details>
+          <summary style="list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; min-height: 44px; box-sizing: border-box;">
+            <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600; overflow-wrap: anywhere;"><span style="color: #6E7287; font-weight: 500;">—</span> Not in a stage</span></span><span style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;"><span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: #1D5FC9;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></span></span>
+            <span role="progressbar" aria-label="Not in a stage: 364 of 761 known tasks done" aria-valuenow="48" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: 48%; background: #3B82F6;"></span></span>
+            <span style="font-size: 12.5px; color: #4D5065;">364 of 761 tasks · 10 processes</span>
+          </summary>
+          <ul style="list-style: none; margin: 0 0 6px; padding: 0 0 0 14px;" aria-label="Processes of Not in a stage, in first-seen order">
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">QUALIMAP_RNASEQ</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="QUALIMAP_RNASEQ: 48 of 48 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">48 / 48 done</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">DUPRADAR</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="DUPRADAR: 48 of 48 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">48 / 48 done</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">SUBREAD_FEATURECOUNTS</span><span style="font-size: 12px; font-weight: 600; color: #1D5FC9;">Running</span></span>
+              <span role="progressbar" aria-label="SUBREAD_FEATURECOUNTS: 140 of 280 known tasks done" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 50%; background: #3B82F6;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">140 / 280 done · 46 running · 94 pending · 3 retried</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">STRINGTIE_STRINGTIE</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="STRINGTIE_STRINGTIE: 48 of 48 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">48 / 48 done</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">BEDTOOLS_GENOMECOV_FW</span><span style="font-size: 12px; font-weight: 600; color: #157A4B;">Done</span></span>
+              <span role="progressbar" aria-label="BEDTOOLS_GENOMECOV_FW: 48 of 48 known tasks done" aria-valuenow="100" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 100%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">48 / 48 done</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">RSEQC_READDISTRIBUTION</span><span style="font-size: 12px; font-weight: 600; color: #33364A;">Pending</span></span>
+              <span role="progressbar" aria-label="RSEQC_READDISTRIBUTION: 32 of 48 known tasks done" aria-valuenow="67" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 67%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">32 / 48 done · 16 pending</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">PRESEQ_LCEXTRAP</span><span style="font-size: 12px; font-weight: 600; color: #33364A;">Pending</span></span>
+              <span role="progressbar" aria-label="PRESEQ_LCEXTRAP: 0 of 48 known tasks done" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 0%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 / 48 done · 48 pending</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">BEDGRAPH_BEDCLIP</span><span style="font-size: 12px; font-weight: 600; color: #33364A;">Pending</span></span>
+              <span role="progressbar" aria-label="BEDGRAPH_BEDCLIP: 0 of 96 known tasks done" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 0%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 / 96 done · 96 pending</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">UCSC_BEDGRAPHTOBIGWIG</span><span style="font-size: 12px; font-weight: 600; color: #33364A;">Pending</span></span>
+              <span role="progressbar" aria-label="UCSC_BEDGRAPHTOBIGWIG: 0 of 96 known tasks done" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 0%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 / 96 done · 96 pending</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">DESEQ2_QC_STAR_SALMON</span><span style="font-size: 12px; font-weight: 600; color: #33364A;">Pending</span></span>
+              <span role="progressbar" aria-label="DESEQ2_QC_STAR_SALMON: 0 of 1 known tasks done" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 0%; background: #5A4FCF;"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 / 1 done · 1 pending</span>
+            </li>
+          </ul>
+        </details></li>
         </ul>
+        <span style="display: block; font-size: 11px; color: #6E7287; line-height: 1.4; padding: 6px 0 8px;">Data: stage names are nf-core/rnaseq 3.27.0 subworkflows; which process falls in which stage is [to be validated] by the stage-detection spike; counts are fixture data.</span>
       </section>
       <section aria-labelledby="h-head" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 6px;">
-        <h2 id="h-head" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;">Head</h2>
-        <span style="font-size: 13px; color: #33364A; line-height: 1.45;">Alive · pid 48213 · tmux session on login1. From a terminal:</span>
-        <pre tabindex="0" style="margin: 0; border-radius: 10px; background: #0F1020; color: #E6E7EF; padding: 9px 11px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere;">ssh login1
+        <h2 id="h-head" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;">Open the head by hand</h2>
+        <span style="font-size: 13px; color: #33364A; line-height: 1.45;">The engine runs in the tmux session spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W on login1. From a terminal:</span>
+        <pre tabindex="0" aria-label="Commands to open the head by hand" style="margin: 0; border-radius: 10px; background: #0F1020; color: #E6E7EF; padding: 9px 11px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere;">ssh login1
 tmux attach -t spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W</pre>
       </section>
-      <span style="font-size: 11.5px; color: #4D5065; padding: 0 2px;">Data: processes and task counts from the nf-core/rnaseq 3.27.0 megatest (results-a1fcddd); stage names, login node and the tmux session are fixture data.</span>
+      <span style="font-size: 11.5px; color: #4D5065; padding: 0 2px;">Data: processes and task counts from the nf-core/rnaseq 3.27.0 megatest (results-a1fcddd); the first-seen order, login node and the tmux session are fixture data.</span>
     </div>
   </main>
   <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="runs" hint-size="390px,72px"></dc-import></div>
+  </div>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>

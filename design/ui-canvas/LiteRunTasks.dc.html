@@ -31,10 +31,10 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 260px;">
             <h1 id="run-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">rnaseq-2026-10-25 <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 400; color: #6E7287;">7T9V1W</span></h1>
             <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1D5FC9; flex-wrap: wrap;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· stage 3 of 4 (Quantification) · 812 / 1,248 tasks · 1 h 05 · updated 4 s ago</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· stage 5 of 6 · 812 / 1,248 tasks · 1 h 05 · live, updated 4 s ago</span>
             </span>
           </div>
-          <a href="LiteCancelDialog.dc.html" role="button" aria-haspopup="dialog" style="height: 42px; padding: 0 16px; border-radius: 11px; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #B02A2A; text-decoration: none; display: flex; align-items: center;">Cancel run</a>
+          <button type="button" aria-haspopup="dialog" style="height: 42px; padding: 0 16px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #B02A2A; cursor: pointer; display: flex; align-items: center;">Cancel run</button>
         </div>
         <dl style="margin: 0; padding: 12px 20px 16px; border-top: 1px solid #EEEFF5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 18px; font-size: 13px;">
           <sc-for list="{{facts}}" as="f" hint-placeholder-count="8">
@@ -55,20 +55,22 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
         </sc-for>
       </div>
 
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><sc-if value="{{t.off}}" hint-placeholder-val="{{true}}"><div id="{{t.panel}}" role="tabpanel" aria-labelledby="{{t.id}}" hidden></div></sc-if></sc-for>
+
       <div id="panel-tasks" role="tabpanel" aria-labelledby="tab-tasks" style="display: flex; flex-direction: column; gap: 12px;">
         <div role="toolbar" aria-label="Task list controls" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <div role="group" aria-label="Show tasks in state" style="display: flex; padding: 3px; border-radius: 12px; background: #EEEFF5; gap: 2px;">
             <sc-for list="{{filters}}" as="f" hint-placeholder-count="6">
-              <button type="button" aria-pressed="{{f.on}}" style="height: 34px; padding: 0 12px; border: none; border-radius: 9px; background: {{f.bg}}; box-shadow: {{f.sh}}; color: {{f.fg}}; font: {{f.w}} 13px 'Inter', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px;">{{f.t}}<span style="font-weight: 500; color: #6E7287;">{{f.n}}</span></button>
+              <button type="button" aria-pressed="{{f.on}}" aria-label="{{f.t}}, {{f.n}} tasks" style="height: 34px; padding: 0 12px; border: none; border-radius: 9px; background: {{f.bg}}; box-shadow: {{f.sh}}; color: {{f.fg}}; font: {{f.w}} 13px 'Inter', sans-serif; cursor: pointer; display: flex; align-items: center; gap: 6px;">{{f.t}}<span style="font-weight: 500; color: #6E7287;">{{f.n}}</span></button>
             </sc-for>
           </div>
           <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #33364A;">Process
             <select aria-label="Show tasks of process" style="height: 38px; border-radius: 10px; border: 1px solid #C4C7D4; padding: 0 10px; font: 13px 'Inter', sans-serif; color: #0F1020; background: #FFFFFF;"><option>All processes (14)</option><option>SUBREAD_FEATURECOUNTS</option><option>SALMON_QUANT</option><option>STAR_ALIGN</option></select>
           </label>
           <span style="flex-grow: 1;"></span>
-          <span style="font-size: 12.5px; color: #4D5065;">Sorted by last change · refreshed every 5 s</span>
+          <span style="font-size: 12.5px; color: #4D5065;">Sorted by last change · live, updated 4 s ago</span>
         </div>
-        <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+        <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);" tabindex="0" role="region" aria-label="Tasks table">
           <table style="width: 100%; min-width: 900px; border-collapse: collapse; font-size: 13px;">
             <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Tasks of rnaseq-2026-10-25, last changed first</caption>
             <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
@@ -102,19 +104,23 @@ class Component extends DCLogic {
 renderVals() {
   const mono = "'JetBrains Mono', monospace", sans = "'Inter', sans-serif";
   const fact = (k, v, m) => ({ k, v, font: m ? mono : sans, size: m ? '12px' : '13px' });
-  const tab = (label, on) => ({ label, id: 'tab-' + label.toLowerCase(), panel: 'panel-' + label.toLowerCase(), sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
+  const tab = (label, on) => ({ label, id: 'tab-' + label.toLowerCase(), panel: 'panel-' + label.toLowerCase(), off: !on, sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
   const chip = (n, t, k) => ({ n, t, bg: { run: '#EAF2FE', done: '#E8F6EF', fail: '#FCEBEB', wait: '#F1F2F6', retry: '#FDF3E2' }[k], fg: { run: '#1D5FC9', done: '#157A4B', fail: '#B02A2A', wait: '#33364A', retry: '#8F5806' }[k] });
   const seg = (t, n, on) => ({ t, n, on: on ? 'true' : 'false', bg: on ? '#FFFFFF' : 'transparent', sh: on ? '0 1px 2px rgba(15,16,32,0.12)' : 'none', fg: on ? '#0F1020' : '#4D5065', w: on ? 600 : 500 });
   const base = {
     facts: [
       fact('Pipeline', 'nf-core/rnaseq 3.27.0'),
-      fact('Pipeline directory', '/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0', 1),
       fact('Engine · profile', 'Nextflow 25.10.4 · singularity'),
       fact('Started · ended', 'Today 07:40 · —'),
-      fact('Head', 'tmux spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W on login1 · pid 48213 · alive'),
+      fact('Duration', '1 h 05'),
+      fact('Head session', 'spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W', 1),
+      fact('Head', 'Alive'),
+      fact('Login node', 'login1'),
+      fact('Exit code', '— (still running)'),
+      fact('Pipeline directory', '/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0', 1),
       fact('Run directory', '/scratch/amartin/spectio-runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W', 1),
-      fact('Tasks go to', 'SLURM through Nextflow · partition htc'),
-      fact('Duration', '1 h 05')
+      fact('Tasks go to', 'SLURM, through Nextflow'),
+      fact('Failure', '—')
     ],
     counts: [chip('812', 'succeeded', 'done'), chip('64', 'running', 'run'), chip('372', 'pending', 'wait'), chip('0', 'failed', 'fail'), chip('7', 'retried', 'retry')],
     tabs: [tab('Summary'), tab('Tasks', true), tab('Parameters'), tab('Logs')]

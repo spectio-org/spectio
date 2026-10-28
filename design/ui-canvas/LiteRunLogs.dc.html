@@ -31,10 +31,10 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 260px;">
             <h1 id="run-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">rnaseq-2026-10-25 <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 400; color: #6E7287;">7T9V1W</span></h1>
             <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1D5FC9; flex-wrap: wrap;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· stage 3 of 4 (Quantification) · 812 / 1,248 tasks · 1 h 05 · updated 4 s ago</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· stage 5 of 6 · 812 / 1,248 tasks · 1 h 05 · live, updated 4 s ago</span>
             </span>
           </div>
-          <a href="LiteCancelDialog.dc.html" role="button" aria-haspopup="dialog" style="height: 42px; padding: 0 16px; border-radius: 11px; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #B02A2A; text-decoration: none; display: flex; align-items: center;">Cancel run</a>
+          <button type="button" aria-haspopup="dialog" style="height: 42px; padding: 0 16px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #B02A2A; cursor: pointer; display: flex; align-items: center;">Cancel run</button>
         </div>
         <dl style="margin: 0; padding: 12px 20px 16px; border-top: 1px solid #EEEFF5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 18px; font-size: 13px;">
           <sc-for list="{{facts}}" as="f" hint-placeholder-count="8">
@@ -55,6 +55,8 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
         </sc-for>
       </div>
 
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><sc-if value="{{t.off}}" hint-placeholder-val="{{true}}"><div id="{{t.panel}}" role="tabpanel" aria-labelledby="{{t.id}}" hidden></div></sc-if></sc-for>
+
       <div id="panel-logs" role="tabpanel" aria-labelledby="tab-logs" style="display: flex; flex-direction: column; gap: 12px;">
         <div role="toolbar" aria-label="Log controls" style="display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
           <div role="group" aria-label="Log to show" style="display: flex; padding: 3px; border-radius: 12px; background: #EEEFF5; gap: 2px;">
@@ -64,7 +66,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           </div>
           <span style="font-size: 12.5px; color: #4D5065; flex-grow: 1;"><code style="font-family: 'JetBrains Mono', monospace;">.nextflow.log</code> in the run directory · last 64 KiB · loaded when you open it</span>
           <button type="button" style="height: 36px; padding: 0 12px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A;">Reload</button>
-          <button type="button" style="height: 36px; padding: 0 12px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A;">Download</button>
+          <button type="button" style="height: 36px; padding: 0 12px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A;">Download last 64 KiB</button>
         </div>
         <pre aria-label="Engine log of rnaseq-2026-10-25, last lines" tabindex="0" style="margin: 0; border-radius: 14px; background: #0F1020; padding: 14px 16px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.65; color: #C4C7D4; overflow-x: auto; white-space: pre;"><sc-for list="{{lines}}" as="l" hint-placeholder-count="20"><span style="color: {{l.c}};">{{l.t}}</span>
 </sc-for></pre>
@@ -78,19 +80,23 @@ class Component extends DCLogic {
 renderVals() {
   const mono = "'JetBrains Mono', monospace", sans = "'Inter', sans-serif";
   const fact = (k, v, m) => ({ k, v, font: m ? mono : sans, size: m ? '12px' : '13px' });
-  const tab = (label, on) => ({ label, id: 'tab-' + label.toLowerCase(), panel: 'panel-' + label.toLowerCase(), sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
+  const tab = (label, on) => ({ label, id: 'tab-' + label.toLowerCase(), panel: 'panel-' + label.toLowerCase(), off: !on, sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
   const chip = (n, t, k) => ({ n, t, bg: { run: '#EAF2FE', done: '#E8F6EF', fail: '#FCEBEB', wait: '#F1F2F6', retry: '#FDF3E2' }[k], fg: { run: '#1D5FC9', done: '#157A4B', fail: '#B02A2A', wait: '#33364A', retry: '#8F5806' }[k] });
   const seg = (t, n, on) => ({ t, n, on: on ? 'true' : 'false', bg: on ? '#FFFFFF' : 'transparent', sh: on ? '0 1px 2px rgba(15,16,32,0.12)' : 'none', fg: on ? '#0F1020' : '#4D5065', w: on ? 600 : 500 });
   const base = {
     facts: [
       fact('Pipeline', 'nf-core/rnaseq 3.27.0'),
-      fact('Pipeline directory', '/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0', 1),
       fact('Engine · profile', 'Nextflow 25.10.4 · singularity'),
       fact('Started · ended', 'Today 07:40 · —'),
-      fact('Head', 'tmux spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W on login1 · pid 48213 · alive'),
+      fact('Duration', '1 h 05'),
+      fact('Head session', 'spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W', 1),
+      fact('Head', 'Alive'),
+      fact('Login node', 'login1'),
+      fact('Exit code', '— (still running)'),
+      fact('Pipeline directory', '/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0', 1),
       fact('Run directory', '/scratch/amartin/spectio-runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W', 1),
-      fact('Tasks go to', 'SLURM through Nextflow · partition htc'),
-      fact('Duration', '1 h 05')
+      fact('Tasks go to', 'SLURM, through Nextflow'),
+      fact('Failure', '—')
     ],
     counts: [chip('812', 'succeeded', 'done'), chip('64', 'running', 'run'), chip('372', 'pending', 'wait'), chip('0', 'failed', 'fail'), chip('7', 'retried', 'retry')],
     tabs: [tab('Summary'), tab('Tasks'), tab('Parameters'), tab('Logs', true)]

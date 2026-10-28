@@ -28,7 +28,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
         </span>
         <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
           <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Good morning</h1>
-          <span style="font-size: 14px; color: #4D5065;">3 runs running, 1 starting and 1 cancelling on the EMBL cluster · 1 failed in the last 24 h</span>
+          <span style="font-size: 14px; color: #4D5065;">4 runs running, 1 queued and 1 cancelling · live, updated 4 s ago</span>
         </div>
         <a href="LiteLaunch.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center;">Launch a workflow</a>
       </div>
@@ -94,7 +94,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
         <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
           <section aria-labelledby="h-quick" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px; display: flex; flex-direction: column; gap: 8px;">
             <h2 id="h-quick" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Your pipelines</h2>
-            <span style="font-size: 12.5px; color: #4D5065;">Pipeline directories you launched from before. Opens the launch form with the directory filled in; parameters start from their defaults.</span>
+            <span style="font-size: 12.5px; color: #4D5065;">Pipeline directories of your recent runs. Opens the launch form with the directory filled in; parameters start from their defaults.</span>
             <sc-for list="{{quick}}" as="q" hint-placeholder-count="4">
               <a href="{{q.href}}" aria-label="Launch {{q.name}}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px; border-radius: 10px; box-shadow: inset 0 0 0 1px #DFE1EA; padding: 8px 11px;">
                 <img src="{{q.logo}}" width="18" height="18" alt="" style="display: block; object-fit: contain; flex-shrink: 0;">
@@ -125,37 +125,39 @@ renderVals() {
   const run = (st, name, eng, wf, ctx, started, href) => { const [state, rail, fg, icon] = S[st]; return { state, rail, fg, icon, name, engine: L[eng][0], logo: L[eng][1], wf, ctx, started, href: href || 'LiteRunDetail.dc.html' }; };
   const fin = (st, name, wf, ctx, when, href) => { const [state, rail, fg, icon] = S[st]; return { state, rail, fg, icon, name, wf, ctx, when, href: href || 'LiteRunDetail.dc.html' }; };
   const recent = [
-    fin('failed', 'wgs-cohort-12', 'wgs-germline v1.3.0', '2 jobs failed after retries', 'Sun 06:57', 'LiteRunFailed.dc.html'),
     fin('done', 'fetch-geo-2610', 'nf-core/fetchngs 1.13.0', '24 / 24 tasks', 'Today 07:39'),
+    fin('failed', 'sarek-wgs-na12878', 'nf-core/sarek 3.10.0', 'exit 1 · DEEPVARIANT_RUNDEEPVARIANT (NA12878)', 'Sun 22:56'),
     fin('done', 'atac-limb-e11', 'nf-core/atacseq 2.1.2', '212 / 212 tasks', 'Sun 19:50'),
-    fin('failed', 'sarek-wgs-na12878', 'nf-core/sarek 3.10.0', 'exit 1 · DEEPVARIANT_RUNDEEPVARIANT (NA12878)', 'Sun 22:56')
+    fin('failed', 'wgs-cohort-12', 'wgs-germline', '2 jobs failed after retries', 'Sun 06:57', 'LiteRunFailed.dc.html')
   ].map((r, i) => ({ ...r, bt: i ? '1px solid #EEEFF5' : 'none' }));
   return {
     counts: [
-      { kind: 'Running', value: '3', detail: '1,064 tasks done so far', color: '#3B82F6', fg: '#1D5FC9', icon: I.play, href: 'LiteRuns.dc.html', label: '3 runs running, show them' },
-      { kind: 'Queued', value: '1', detail: 'head starting on login1', color: '#6E7287', fg: '#33364A', icon: I.clock, href: 'LiteRuns.dc.html', label: '1 run queued, show it' },
-      { kind: 'Failed · last 24 h', value: '1', detail: 'sarek-wgs-na12878', color: '#DC3B3B', fg: '#B02A2A', icon: I.cross, href: 'LiteRuns.dc.html', label: '1 run failed in the last 24 hours, show it' },
-      { kind: 'Succeeded · last 24 h', value: '2', detail: 'fetch-geo-2610, atac-limb-e11', color: '#1F9D63', fg: '#157A4B', icon: I.check, href: 'LiteRuns.dc.html', label: '2 runs succeeded in the last 24 hours, show them' }
+      { kind: 'Running', value: '4', detail: '1 started from a terminal', color: '#3B82F6', fg: '#1D5FC9', icon: I.play, href: 'LiteRuns.dc.html', label: '4 runs running, show them' },
+      { kind: 'Queued', value: '1', detail: 'head not started yet', color: '#6E7287', fg: '#33364A', icon: I.clock, href: 'LiteRuns.dc.html', label: '1 run queued, show it' },
+      { kind: 'Failed', value: '3', detail: 'latest: sarek-wgs-na12878', color: '#DC3B3B', fg: '#B02A2A', icon: I.cross, href: 'LiteRuns.dc.html', label: '3 runs failed, show them' },
+      { kind: 'Succeeded', value: '5', detail: 'latest: fetch-geo-2610', color: '#1F9D63', fg: '#157A4B', icon: I.check, href: 'LiteRuns.dc.html', label: '5 runs succeeded, show them' }
     ],
     active: [
-      run('running', 'rnaseq-2026-10-25', 'nfcore', 'nf-core/rnaseq 3.27.0', 'stage 3 of 4 · 812 / 1,248 tasks', 'Today 07:40'),
+      run('running', 'rnaseq-pilot-hand', 'nfcore', 'nf-core/rnaseq 3.27.0', 'from a terminal · 288 / 384 tasks', 'Today 09:02', 'LiteRunObserved.dc.html'),
+      run('running', 'rnaseq-2026-10-25', 'nfcore', 'nf-core/rnaseq 3.27.0', '812 / 1,248 tasks', 'Today 07:40'),
       run('running', 'demux-NX-1026', 'nfcore', 'nf-core/demultiplex 1.8.0', '97 / 143 known tasks', 'Today 07:56'),
-      run('running', 'ki-screen-p05', 'smk', 'plate-qc 1.4.0', 'stage 2 of 4 · 31 / 96 jobs', 'Today 08:11'),
-      run('queued', 'nanoseq-cdna-02', 'nfcore', 'nf-core/nanoseq 3.1.0', 'starting the head', 'Today 08:43'),
+      run('running', 'ki-screen-p05', 'smk', 'plate-qc', '31 / 96 jobs', 'Today 08:11'),
+      run('queued', 'nanoseq-cdna-02', 'nfcore', 'nf-core/nanoseq 3.1.0', 'head not started yet', 'Today 08:43'),
       run('cancelling', 'scrna-pbmc', 'nfcore', 'nf-core/scrnaseq 4.2.0', 'stopping the engine', 'Today 08:20')
     ],
     recent,
     quick: [
       { name: 'nf-core/rnaseq 3.27.0', path: '/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0', logo: L.nfcore[1], href: 'LiteLaunch.dc.html' },
-      { name: 'rna-seq-star-deseq2 v2.1.2', path: '/g/demo-lab/pipelines/rna-seq-star-deseq2', logo: L.smk[1], href: 'LiteLaunchSnakemake.dc.html' },
+      { name: 'rna-seq-star-deseq2', path: '/g/demo-lab/pipelines/rna-seq-star-deseq2', logo: L.smk[1], href: 'LiteLaunchSnakemake.dc.html' },
       { name: 'nf-core/sarek 3.10.0', path: '/g/demo-lab/pipelines/nf-core-sarek_3.10.0', logo: L.nfcore[1], href: 'LiteLaunch.dc.html' },
-      { name: 'plate-qc 1.4.0', path: '/g/demo-lab/pipelines/plate-qc', logo: L.smk[1], href: 'LiteLaunchSnakemake.dc.html' }
+      { name: 'plate-qc', path: '/g/demo-lab/pipelines/plate-qc', logo: L.smk[1], href: 'LiteLaunchSnakemake.dc.html' }
     ],
     where: [
       { k: 'Server', v: 'Spectio 0.0.1 on login1, under your account amartin', dot: '#1F9D63' },
-      { k: 'Heads', v: 'one tmux session per run on login1 (spectio-<run ID>); attach to it by hand at any time', dot: '#7750D4' },
+      { k: 'Heads', v: 'one tmux session per run on login1, named spectio-<run ID> (for example spectio-run_01JBC…); attach to it by hand at any time', dot: '#7750D4' },
       { k: 'Tasks', v: 'sent to SLURM by Nextflow or Snakemake themselves', dot: '#3B82F6' },
-      { k: 'Run directories', v: '/scratch/amartin/spectio-runs', dot: '#6E7287' }
+      { k: 'Run directories', v: '/scratch/amartin/spectio-runs', dot: '#6E7287' },
+      { k: 'From a terminal', v: 'runs you start by hand with the Spectio bridge on show up here too, monitor only', dot: '#33364A' }
     ]
   };
 }

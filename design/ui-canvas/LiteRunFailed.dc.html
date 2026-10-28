@@ -55,6 +55,8 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
         </sc-for>
       </div>
 
+      <sc-for list="{{tabs}}" as="t" hint-placeholder-count="3"><sc-if value="{{t.off}}" hint-placeholder-val="{{true}}"><div id="{{t.panel}}" role="tabpanel" aria-labelledby="{{t.id}}" hidden></div></sc-if></sc-for>
+
       <div id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
         <section style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
           <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap;"><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Why it failed</h2><a href="LiteRunTasks.dc.html" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">Tasks, filtered to Failed →</a></div>
@@ -63,7 +65,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
             <span style="font-size: 13px; color: #33364A; line-height: 1.5;">Snakemake ran the jobs it could still run, then exited with code 1. The failure class comes from the engine's own events; the message is Snakemake's, unchanged. Spectio 0.0.1 does not read <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">sacct</span>, so it does not guess why a job failed: open the job’s log listed in the table.</span>
           </div>
 
-          <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+          <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);" tabindex="0" role="region" aria-label="Failed jobs">
             <table style="width: 100%; min-width: 720px; border-collapse: collapse; font-size: 13px;">
               <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Failed jobs</caption>
               <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
@@ -83,17 +85,19 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
             </table>
           </div>
 
-          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 10px;"><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Rules</h2><span style="font-size: 12.5px; color: #4D5065;">7 rules · failed first</span></div>
-          <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-top: 10px;"><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Rules</h2><span style="font-size: 12.5px; color: #4D5065;">the pipeline's 7 rules, in the order Snakemake first reported them</span></div>
+          <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">No stages for this pipeline: rules as the engine reports them. Its one Snakefile has no rule files or modules, and it declares none.</span>
+          <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);" tabindex="0" role="region" aria-label="Rules in first-seen order">
             <table style="width: 100%; min-width: 640px; border-collapse: collapse; font-size: 13px;">
               <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Jobs by rule</caption>
               <thead><tr style="background: #F7F7FB; text-align: left; color: #33364A; font-size: 12px;">
-                <th scope="col" style="padding: 8px 12px; font-weight: 600;">Rule</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Succeeded</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Failed</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Retried</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Not scheduled</th>
+                <th scope="col" style="padding: 8px 12px; font-weight: 600;">Rule</th><th scope="col" style="padding: 8px 12px; font-weight: 600;">State</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Succeeded</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Failed</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Retried</th><th scope="col" style="padding: 8px 12px; font-weight: 600; text-align: right;">Not scheduled</th>
               </tr></thead>
               <tbody>
                 <sc-for list="{{rules}}" as="r" hint-placeholder-count="7">
                   <tr style="border-top: 1px solid #EEEFF5;">
                     <th scope="row" style="padding: 8px 12px; text-align: left; font-weight: 600;">{{r.rule}}</th>
+                    <td style="padding: 8px 12px; color: {{r.sfg}}; font-weight: 600;">{{r.state}}</td>
                     <td style="padding: 8px 12px; text-align: right;">{{r.done}}</td>
                     <td style="padding: 8px 12px; text-align: right; color: {{r.ffg}}; font-weight: {{r.fw}};">{{r.fail}}</td>
                     <td style="padding: 8px 12px; text-align: right; color: {{r.rfg}};">{{r.retry}}</td>
@@ -103,7 +107,8 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
               </tbody>
             </table>
           </div>
-          <span style="font-size: 11.5px; color: #6E7287;">Data: rule names, jobs and SLURM ids shaped on the RunFailed board (wgs-germline v1.3.0); the engine messages and log paths are fixture data whose wording is [to be validated] against snakemake-executor-plugin-slurm; the class a Snakemake job error gets is [to be validated] (P1 sets tool_error from Nextflow’s errorAction).</span>
+          <span style="font-size: 12.5px; color: #4D5065;">State: Failed when a job failed on its last attempt, Stopped when the run ended with jobs left, Not run when no job started, Done when every job succeeded.</span>
+          <span style="font-size: 11.5px; color: #6E7287;">Data: rule names, jobs and SLURM ids shaped on the RunFailed board (wgs-germline); the engine messages and log paths are fixture data whose wording is [to be validated] against snakemake-executor-plugin-slurm; the class a Snakemake job error gets is [to be validated] (P1 sets tool_error from Nextflow’s errorAction).</span>
         </section>
 
         <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
@@ -129,19 +134,23 @@ renderVals() {
   const mono = "'JetBrains Mono', monospace", sans = "'Inter', sans-serif";
   const RID = 'run_01JB7X2M9C4D6F8G0H1JF5KZNW';
   const fact = (k, v, m) => ({ k, v, font: m ? mono : sans, size: m ? '12px' : '13px' });
-  const tab = (label, on) => ({ label, id: 'tab-' + label.toLowerCase(), panel: 'panel-' + label.toLowerCase(), sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
+  const tab = (label, on) => ({ label, id: 'tab-' + label.toLowerCase(), panel: 'panel-' + label.toLowerCase(), off: !on, sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
   const chip = (n, t, k) => ({ n, t, bg: { run: '#EAF2FE', done: '#E8F6EF', fail: '#FCEBEB', wait: '#F1F2F6', retry: '#FDF3E2' }[k], fg: { run: '#1D5FC9', done: '#157A4B', fail: '#B02A2A', wait: '#33364A', retry: '#8F5806' }[k] });
-  const rule = (rule, done, fail, retry, left) => ({ rule, done, fail, retry, left, ffg: fail === '0' ? '#4D5065' : '#B02A2A', fw: fail === '0' ? 400 : 600, rfg: retry === '0' ? '#4D5065' : '#8F5806' });
+  const rule = (rule, done, fail, retry, left) => ({ rule, done, fail, retry, left, state: fail !== '0' ? 'Failed' : (done === '0' ? 'Not run' : (left === '0' ? 'Done' : 'Stopped')), sfg: fail !== '0' ? '#B02A2A' : (left === '0' && done !== '0' ? '#157A4B' : '#4D5065'), ffg: fail === '0' ? '#4D5065' : '#B02A2A', fw: fail === '0' ? 400 : 600, rfg: retry === '0' ? '#4D5065' : '#8F5806' });
   return {
     facts: [
-      fact('Pipeline', 'wgs-germline v1.3.0'),
-      fact('Pipeline directory', '/g/demo-lab/pipelines/wgs-germline', 1),
+      fact('Pipeline', 'wgs-germline (no version declared)'),
       fact('Engine · profile', 'Snakemake 9.27.1 · slurm'),
       fact('Started · ended', 'Sat 21:10 · Sun 06:57'),
-      fact('Head', 'tmux spectio-' + RID + ' on login1 · exited 1'),
+      fact('Duration', '9 h 47'),
+      fact('Head session', 'spectio-' + RID, 1),
+      fact('Head', 'Exited'),
+      fact('Login node', 'login1'),
+      fact('Exit code', '1'),
+      fact('Pipeline directory', '/g/demo-lab/pipelines/wgs-germline', 1),
       fact('Run directory', '/scratch/amartin/spectio-runs/' + RID, 1),
-      fact('Tasks go to', 'SLURM through Snakemake · partition htc'),
-      fact('Duration', '9 h 47')
+      fact('Tasks go to', 'SLURM, through Snakemake'),
+      fact('Failure', 'tool_error · a job failed on its last attempt')
     ],
     counts: [chip('143', 'succeeded', 'done'), chip('2', 'failed', 'fail'), chip('30', 'not scheduled', 'wait'), chip('3', 'retried', 'retry')],
     tabs: [tab('Summary', true), tab('Tasks'), tab('Parameters'), tab('Logs')],
@@ -150,12 +159,12 @@ renderVals() {
       { rule: 'haplotype_caller', wc: 'sample=WGS-03, interval=0007', attempt: '2 of 2', job: '48731544', msg: "SLURM-job '48731544' failed, SLURM status is: 'TIMEOUT'", log: 'logs/haplotype_caller/WGS-03.0007.log' }
     ],
     rules: [
+      rule('fastp', '12', '0', '0', '0'),
       rule('bwa_mem', '11', '1', '1', '0'),
-      rule('haplotype_caller', '87', '1', '1', '8'),
       rule('mark_duplicates', '11', '0', '1', '1'),
       rule('base_recalibrator', '11', '0', '0', '1'),
       rule('apply_bqsr', '11', '0', '0', '1'),
-      rule('fastp', '12', '0', '0', '0'),
+      rule('haplotype_caller', '87', '1', '1', '8'),
       rule('genotype_gvcfs', '0', '0', '0', '19')
     ],
     tail: [
