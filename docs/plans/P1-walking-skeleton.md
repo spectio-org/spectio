@@ -46,7 +46,7 @@ Decisions taken in place of Thomas, who was not available for brainstorming. Eac
 19. **Where the tests run.** The Playwright smoke runs against `spectio serve` on the local executor on the CI runner. The sind end-to-end tests drive the HTTP API from inside the submitter node, as a browser behind a tunnel would. *(assumed — pending Thomas)*
 20. **Ultra-simple screens.** The launch form has no stepper, no review step and no file checks. Logs are the head stdout and stderr and the engine run log, last 64 KiB; per-task logs come later. Sessions last until the server restarts. *(assumed — pending Thomas)*
 21. **The database is an index in a node-local temporary directory** (inbox #64, option (d)). At EMBL everything is shared between the login nodes except some temporary directories (Thomas, 2026-10-28). The data directory (`spectio.toml`, the state file; no secret) stays in `~/.spectio/`; the database, `serve.lock` and the server key go in `<node-local tmp>/spectio-<uid>/`, 0700, by default `$TMPDIR` or `/tmp`, with the `mkdtemp` fallback of §15.3 when that path is squatted (which path is node-local on the EMBL login nodes is **[to be validated]**). Each run directory holds the truth: the manifest `.spectio/run.json`, the spool, `head.pid`, `head.exit`, the cancel marker and `.spectio/launch-failed.json`. At boot the server reconciles the run directories missing from the index, which is all of them when the database is new, under the checks of §15.3 req. 10 ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) Where data lives). *(assumed — pending Thomas, inbox #64)*
-22. **Runs started from a terminal** (Thomas, 2026-10-28, [log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)). A bridge started without `SPECTIO_RUN_ID` makes its own run ID, writes the spool in `<launch dir>/.spectio/events/`, and writes a pointer `~/.spectio/observed/<run ID>.json` only if `~/.spectio/` exists ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal)). The runner scans the pointers under §15.3 req. 10; the run gets origin `cli-observed` and is monitor only, with no Cancel (inbox #65). The bridges are released to the Nextflow plugin registry and PyPI by Thomas; P1 builds and dry-runs the release packages only (inbox #66). *(assumed — pending Thomas)*
+22. **Runs started from a terminal** (Thomas, 2026-10-28, [log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)). A bridge started without `SPECTIO_RUN_ID` makes its own run ID, writes the spool in `<launch dir>/.spectio/events/`, and writes a pointer `~/.spectio/observed/<run ID>.json` only if `~/.spectio/` exists ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal)). The runner scans the pointers under §15.3 req. 12; the run gets origin `cli-observed` and is monitor only, with no Cancel (inbox #65). The bridges are released as [dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases) says, once Thomas has claimed the names (inbox #66); P1 builds and dry-runs the release packages only. *(assumed — pending Thomas)*
 
 ## Global Constraints
 
@@ -830,56 +830,72 @@ def test_stdlib_only(): ...                                # every import in spe
 
 ### Task 25: Pointer file in both bridges; the server finds and shows the run
 
-**Spec:** [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 10 · **Depends on:** 6, 7, 11, 20 · **Added 2026-10-28 (Thomas)**
+**Spec:** [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 12 · **Depends on:** 6, 7, 9, 11, 18, 20 · **Added 2026-10-28 (Thomas)**
 
 **Files:**
-- Modify: `engine-bridges/nf-spectio/src/spectio/SpectioPlugin.groovy` and `engine-bridges/snakemake-logger-plugin-spectio/snakemake_logger_plugin_spectio/__init__.py` (run ID and pointer when `SPECTIO_RUN_ID` is unset), `packages/spectio/src/spectio/runner/loop.py` (scan on each tick), `packages/spectio-server/src/spectio_server/rebuild.py` (read the pointers), `packages/spectio-server/src/spectio_server/api/cancel.py` (422 on a `cli-observed` run, [api §5.1](../specs/api-and-data-model.md) note), `web/src/runs/{RunsPage.tsx,RunDetailPage.tsx}` (the "started from a terminal" mark; no Cancel), `mkdocs.yml`
-- Create: `packages/spectio/src/spectio/runner/observed.py`, `docs/guides/runs-from-a-terminal.md` (the setup lines of architecture §13.8)
+- Modify: `engine-bridges/nf-spectio/src/spectio/SpectioPlugin.groovy` and `engine-bridges/snakemake-logger-plugin-spectio/snakemake_logger_plugin_spectio/__init__.py` (run ID, spool file names, pointer, the fd-relative writes of req. 12), `packages/spectio/src/spectio/runner/loop.py` (scan when `observed/` changes), `packages/spectio-server/src/spectio_server/rebuild.py` (read the pointers), `packages/spectio-server/src/spectio_server/api/{cancel.py,logs.py}` (422 on a `cli-observed` run, [api §5.1](../specs/api-and-data-model.md) note; the log checks of req. 12), `web/src/runs/{RunsPage.tsx,RunDetailPage.tsx}` (the "started from a terminal" mark; no Cancel), `tools/docs/check.py` (install lines pin versions), `mkdocs.yml`
+- Create: `packages/spectio/src/spectio/runner/observed.py`, `docs/guides/runs-from-a-terminal.md` (the setup of architecture §13.8; merged only once the names are claimed, inbox #66)
 - Test: `packages/spectio/tests/test_observed.py`; the bridge tests of Tasks 6 and 7
 
 **Interfaces:**
-- Produces: `scan_observed(home: Path, known: set[str], cap: int) -> list[ObservedRun]`; the writer thread creates each new run with `origin = 'cli-observed'`. The pointer's host and PID feed the head-alive check of Task 9 only on the server's login node; nothing sends them a signal.
+- Produces: `scan_observed(home: Path, runs_root: Path, known: set[str], cap: int) -> list[ObservedRun]`; the writer thread creates each new run with `origin = 'cli-observed'`. The pointer's PID fields feed the head-alive check of Task 9 only when its boot ID is the server's; nothing sends them a signal.
 
 - [ ] **Step 1: Write the failing tests**
 
 ```python
-# bridges (Tasks 6 and 7 test files, marked engines)
+# bridges (Tasks 6 and 7 test files, marked engines; each also as *_snakemake with smk_run)
 def test_terminal_run_writes_pointer(tmp_home, nf_run): ...   # no SPECTIO_RUN_ID → ~/.spectio/observed/run_<ULID>.json,
-                                                             # 0600, run ID = file name, spool in <launch>/.spectio/ (0700)
+                                                             # 0600, run ID = file name, spool <run ID>-<producer>-0001.jsonl
 def test_no_spectio_home_run_unaffected(tmp_home, nf_run): ...   # no ~/.spectio → no pointer, spool written, exit 0
 def test_unwritable_home_run_unaffected(tmp_home, nf_run): ...   # ~/.spectio/observed mode 0500 → exit 0
 def test_driven_run_writes_no_pointer(tmp_home, nf_run): ...     # SPECTIO_RUN_ID set → no pointer
-# the same four for Snakemake: test_*_snakemake(tmp_home, smk_run)
+def test_bridge_refuses_foreign_spectio_dir(tmp_home, nf_run): ...  # .spectio a symlink, other owner or 0777, bridge.err a
+                                                             # symlink → nothing written outside, targets unchanged, exit 0
+def test_loose_spectio_home_no_pointer(tmp_home, nf_run): ...    # ~/.spectio 0777 or a symlink → no pointer
+def test_pointer_keys_exact(tmp_home, nf_run): ...               # keys are exactly those of architecture §13.8
 
 # packages/spectio/tests/test_observed.py
-def test_scan_adopts_pointer(tmp_home): ...                  # valid pointer → one ObservedRun; its spool replays to succeeded
-def test_req10_pointer_checks(tmp_home): ...                 # symlink, other owner, group/other bits, > size cap, bad JSON,
+def test_scan_finds_pointer(tmp_home): ...                   # valid pointer → one ObservedRun; its spool replays to succeeded
+def test_req12_pointer_checks(tmp_home): ...                 # symlink, other owner, group/other bits, > size cap, bad JSON,
                                                              # extra keys, run ID ≠ file name → skipped and counted
-def test_req10_spectio_dir_checks(tmp_home): ...             # <launch>/.spectio a symlink or group-writable → skipped
+def test_loose_observed_dir_not_scanned(tmp_home): ...       # observed/ 0777 → warning, server starts, nothing read
+def test_pointer_cannot_alias_driven_run(tmp_home): ...      # run ID of a run directory, relative or unnormalised launch dir,
+                                                             # launch dir under the runs root → skipped and counted
 def test_group_writable_launch_dir_accepted(tmp_home): ...   # launch dir 0770, its .spectio 0700 → read
-def test_scan_cap(tmp_home): ...                             # 10 000 pointers → at most the cap read per tick
-def test_rebuild_keeps_terminal_run_id(tmp_home): ...        # index deleted → same run ID after rebuild
+def test_spectio_dir_swapped_after_check_not_read(tmp_home): ...  # .spectio replaced by a symlink after the check → no read
+def test_terminal_log_symlink_fifo_foreign_refused(tmp_home): ... # .nextflow.log a symlink, a FIFO or foreign → "log not readable"
+def test_two_terminal_runs_same_launch_dir_kept_apart(tmp_home): ...  # two runs, one launch dir → each its own events only;
+                                                             # an envelope for the other run is dropped and counted
+def test_terminal_run_other_boot_id_never_head_lost(tmp_home): ...  # boot ID differs → "not checked", stays running
+def test_runner_never_signals_cli_observed(tmp_home): ...    # boot reconciliation included: no launcher or tmux call
+def test_scan_skips_unchanged_dir(tmp_home): ...             # observed/ mtime unchanged → not listed again
+def test_ended_pointer_moved(tmp_home): ...                  # terminal event → pointer moved to observed/ended/
+def test_scan_cap(tmp_home): ...                             # 10 000 pointers → at most the cap read per scan
+def test_rebuild_keeps_terminal_run_id(tmp_home): ...        # index deleted → same run ID after rebuild, ended/ included
 def test_server_down_events_wait(tmp_home): ...              # run ends while no server → read whole at next start
 def test_terminal_run_has_no_cancel(client): ...             # POST :cancel on a cli-observed run → 422 not-in-this-version
+
+# docs check
+def test_guide_pins_bridge_versions(): ...                   # every install line in the guide pins ==<ver> or nf-spectio@<ver>
 ```
 
 - [ ] **Step 2:** `uv run pytest packages/spectio/tests/test_observed.py -v`: FAIL.
-- [ ] **Step 3:** implement. The pointer is written under a temporary name with `O_CREAT|O_EXCL`, then renamed; any error is logged to `.spectio/bridge.err` and swallowed (architecture §13.3).
+- [ ] **Step 3:** implement. The pointer is written under a temporary name with `O_CREAT|O_EXCL`, then renamed; any error is logged once and swallowed (architecture §13.3).
 - [ ] **Step 4:** the same command PASSES, and the bridge tests PASS with `-m engines`; the Playwright smoke of Task 20 gains one terminal run that shows the mark and no Cancel.
 - [ ] **Step 5: Commit** `feat(runner): show runs started from a terminal`.
 
 ### Task 26: Release packages of both bridges, dry-run only
 
-**Spec:** [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) (Publishing), §13.4 (version ranges) · **Depends on:** 6, 7, 21 · **Added 2026-10-28 (Thomas)**
+**Spec:** [dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases) (Publishing), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 12 (Release), [architecture §13.4](../specs/architecture-plugins-and-packaging.md) (version ranges) · **Depends on:** 6, 7, 21 · **Added 2026-10-28 (Thomas)**
 
 **Files:**
-- Modify: `engine-bridges/nf-spectio/` (Gradle build with `io.nextflow.nextflow-plugin`, plugin ID `nf-spectio`, version `0.0.1`, `requires` from §13.4), `engine-bridges/snakemake-logger-plugin-spectio/pyproject.toml` (name, version, entry metadata, `snakemake-interface-logger-plugins` range, `docs/intro.md` for the catalogue page)
+- Modify: `engine-bridges/nf-spectio/` (Gradle build with a pinned `io.nextflow.nextflow-plugin` and a Gradle wrapper with `distributionSha256Sum`; plugin ID `nf-spectio`, version `0.0.1`, `requires` from §13.4), `engine-bridges/snakemake-logger-plugin-spectio/pyproject.toml` (name, version, `snakemake-interface-logger-plugins` range, `docs/intro.md` for the catalogue page)
 - Create: `tests/packaging/test_bridges_release.sh`
 
-- [ ] **Step 1: Write the failing test** `tests/packaging/test_bridges_release.sh`. It builds the Nextflow plugin zip with Gradle and checks its manifest (ID, version, `requires`); it builds the Snakemake sdist and wheel with `uv build`, runs `twine check`, installs the wheel into a fresh Snakemake 9 environment and runs a local synthetic `happy` with `--logger spectio`; it never runs `make release` or `twine upload`, and fails if `npr.apiKey` or a PyPI token is set in its environment.
+- [ ] **Step 1: Write the failing test** `tests/packaging/test_bridges_release.sh`. With a fresh, empty `GRADLE_USER_HOME`, it builds the Nextflow plugin zip and checks its manifest (ID, version, `requires`); it builds the Snakemake sdist and wheel with `uv build`, runs `twine check --strict`, installs the wheel into a fresh Snakemake 9 environment and runs a local synthetic `happy` with `--logger spectio`. It checks that no artefact holds a secret (`npr.apiKey`, a PyPI token, a `gradle.properties`), never runs `make release` or `twine upload`, and fails if `npr.apiKey` or a PyPI token is set in its environment.
 - [ ] **Step 2:** `bash tests/packaging/test_bridges_release.sh`: FAIL.
 - [ ] **Step 3:** implement the two builds.
-- [ ] **Step 4:** the same command PASSES and prints `RESULT bridges-release dry-run pass`. The real release waits for Thomas (inbox #66).
+- [ ] **Step 4:** the same command PASSES and prints `RESULT bridges-release dry-run pass`. The real release runs from CI or a laptop, never the cluster, once Thomas has claimed the names (inbox #66).
 - [ ] **Step 5: Commit** `build(bridges): release packages for the Nextflow registry and PyPI`.
 
 ---
@@ -912,7 +928,7 @@ Also not in P1:
 - [ ] Tasks 1–26 are merged, each with its tests first and its `review-code` pass (Assumptions, Process).
 - [ ] On `slurm-mini` in CI (`pipelines-slurm.yml`, job `e2e`), through a token-link session, the synthetic Nextflow and Snakemake `happy` runs launch with their heads in tmux on the submitter node, end `succeeded`, and match the golden counts per process (Task 22).
 - [ ] A running run of each engine cancels to `cancelled` with no job left, and a server killed while a Nextflow head runs adopts it on restart, with no duplicate event (Task 23).
-- [ ] Each of §15.3 requirements 1–7 has passing `test_req<N>_*` tests (Tasks 3, 11–16), and requirements 8–11 their named tests (Tasks 2, 9–12, 24).
+- [ ] Each of §15.3 requirements 1–7 has passing `test_req<N>_*` tests (Tasks 3, 11–16), and requirements 8–12 their named tests (Tasks 2, 9–12, 24–26).
 - [ ] The Playwright smoke passes on the local executor: link, launch, list, detail with live refresh, cancel (Task 20).
 - [ ] A server started with no database rebuilds it from the run directories (Task 11).
 - [ ] `spectio-open` and the SSH config entry both open the runs list on an EMBL login node (Task 24).

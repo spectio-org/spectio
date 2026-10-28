@@ -7,8 +7,8 @@ Before (main at 9d0fa54): dev-environment-and-testing.md §15.1 (the terminal ro
 mvp-0.0.1.md §3 (runs started from a terminal deferred), P1 Task 21 (the bridges only as copies
 bundled in the wheel).
 After: architecture-plugins-and-packaging.md §13.8 (enabling it, the pointer file, discovery,
-monitor only, publishing), dev-environment-and-testing.md §15.3 req. 10 (pointers are untrusted
-input), decision log 2026-10-28, inbox #65-#67, P1 Tasks 25 and 26.
+monitor only, publishing), dev-environment-and-testing.md §12 (Publishing) and §15.3 req. 12 (pointers
+and launch directories are untrusted input), decision log 2026-10-28, inbox #65-#67, P1 Tasks 25 and 26.
 """
 
 from __future__ import annotations
@@ -82,10 +82,10 @@ def build(theme: Theme) -> Sketch:
     s.text(f2.x + 75, f2.y + 70, ".spectio/events", size=12, colour=t.dim)
     s.arrow(AX + 204, y + 84, f2.x - 6, y + 84)
     s.lock(AX + 225, y + 140, size=10)
-    s.text(AX + 242, y + 145, "req. 10 checks on both", size=12.5, anchor="start", colour=t.dim)
+    s.text(AX + 242, y + 145, "req. 12 checks on both", size=12.5, anchor="start", colour=t.dim)
     note(AX + 430, y + 52, "written by the bridge",
          "only if ~/.spectio exists;",
-         "scanned on each runner tick",
+         "scanned when observed/ changes",
          "and at rebuild")
 
     # -- 3 the bridges --------------------------------------------------------------------------
@@ -101,14 +101,15 @@ def build(theme: Theme) -> Sketch:
     s.text(AX + 225, y + 61, "Nextflow registry", size=12.5)
     s.page(AX + 150, y + 92, 150, 44, fill="work", lines=0)
     s.text(AX + 225, y + 119, "PyPI → catalogue", size=12.5)
-    s.text(AX + 225, y + 160, "Thomas publishes (#66)", size=12.5, colour=t.dim)
+    s.text(AX + 225, y + 160, "names claimed by Thomas (#66)", size=12.5, colour=t.dim)
     note(AX + 330, y + 52, "nf-spectio: registry.nextflow.io",
          "snakemake-logger-plugin-spectio: PyPI,",
          "listed by the Snakemake plugin catalogue;",
+         "released as dev-env §12 says;",
          "Claude builds and dry-runs only (Task 26)")
 
     s.text(40, H - 30, "Sources: dev-env §15.1, mvp-0.0.1.md §3 and P1 Task 21 at 9d0fa54 (before); "
-                       "architecture §13.8, dev-env §15.3 req. 10, decision log 2026-10-28, inbox #65-#67, "
+                       "architecture §13.8, dev-env §12 and §15.3 req. 12, decision log 2026-10-28, inbox #65-#67, "
                        "P1 Tasks 25-26 (after) · tools/diagrams/apply5_observed.py",
            size=12.5, anchor="start", colour=t.dim)
     return s

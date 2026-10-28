@@ -188,10 +188,10 @@
   <path d="M1150.2,467.0 V462.5 a4.8,4.8 0 0 1 9.6,0 V467.0" fill="none" stroke="#e3e3e3" stroke-width="1.6" stroke-linecap="round"/>
   <rect x="1147.5" y="467.0" width="15.0" height="11.0" rx="2.5" fill="#2b2938" stroke="#e3e3e3" stroke-width="1.5"/>
   <circle cx="1155.0" cy="472.5" r="1.6" fill="#e3e3e3"/>
-  <text x="1172.0" y="475.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">req. 10 checks on both</text>
+  <text x="1172.0" y="475.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">req. 12 checks on both</text>
   <text x="1360.0" y="382.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">written by the bridge</text>
   <text x="1360.0" y="403.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">only if ~/.spectio exists;</text>
-  <text x="1360.0" y="424.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">scanned on each runner tick</text>
+  <text x="1360.0" y="424.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">scanned when observed/ changes</text>
   <text x="1360.0" y="445.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">and at rebuild</text>
   <path d="M275.0,570.0 L365.0,570.0 L353.0,650.0 L287.0,650.0 Z" fill="#382c22" stroke="none"/>
   <path d="M275.0,569.6 C305.6,569.8 334.7,571.0 365.1,569.5" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
@@ -284,10 +284,11 @@
   <path d="M1218.2,621.9 C1217.2,625.8 1218.5,630.0 1218.2,633.7" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1217.8,634.3 C1221.9,633.2 1226.1,633.6 1230.2,634.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <text x="1155.0" y="649.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#e3e3e3" text-anchor="middle" font-weight="normal">PyPI → catalogue</text>
-  <text x="1155.0" y="690.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="middle" font-weight="normal">Thomas publishes (#66)</text>
+  <text x="1155.0" y="690.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="middle" font-weight="normal">names claimed by Thomas (#66)</text>
   <text x="1260.0" y="582.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">nf-spectio: registry.nextflow.io</text>
   <text x="1260.0" y="603.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">snakemake-logger-plugin-spectio: PyPI,</text>
   <text x="1260.0" y="624.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">listed by the Snakemake plugin catalogue;</text>
-  <text x="1260.0" y="645.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Claude builds and dry-runs only (Task 26)</text>
-  <text x="40.0" y="730.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Sources: dev-env §15.1, mvp-0.0.1.md §3 and P1 Task 21 at 9d0fa54 (before); architecture §13.8, dev-env §15.3 req. 10, decision log 2026-10-28, inbox #65-#67, P1 Tasks 25-26 (after) · tools/diagrams/apply5_observed.py</text>
+  <text x="1260.0" y="645.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">released as dev-env §12 says;</text>
+  <text x="1260.0" y="666.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Claude builds and dry-runs only (Task 26)</text>
+  <text x="40.0" y="730.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Sources: dev-env §15.1, mvp-0.0.1.md §3 and P1 Task 21 at 9d0fa54 (before); architecture §13.8, dev-env §12 and §15.3 req. 12, decision log 2026-10-28, inbox #65-#67, P1 Tasks 25-26 (after) · tools/diagrams/apply5_observed.py</text>
 </svg>

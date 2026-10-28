@@ -989,6 +989,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Note 2026-10-28 (Thomas):** at EMBL everything is shared across the login nodes, except some temporary directories. So (a) has no persistent disk, and (b) puts SQLite on a network file system.
 - **Recommendation:** (d): it needs no persistent local disk and no SQLite file on a network file system, and losing the temporary directory costs only the open sessions and the drop counters: cancels and launch failures are kept as markers in the run directory, and a run never launched ends `failed` (doc review of APPLY4).
 - **Assumed:** (d) *(assumed — pending Thomas)*; [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Where data lives), [architecture §7.2](../specs/architecture-plugins-and-packaging.md) (dated note), P1 Assumption 21, [log 2026-10-28](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index). Still to confirm: which temporary directory is node-local on the EMBL login nodes, and how often it is purged **[to be validated]**; whether `/tmp` is polyinstantiated per user there (`pam_namespace`), and the age rules of `systemd-tmpfiles` for it **[to be validated]**.
+- **Note 2026-10-28 (SEC-141):** also to check on EMBL storage: whether inherited NFSv4 ACLs widen the 0700 and 0600 modes that Spectio and the bridges set **[to be validated]** ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 12).
 - **Blocked:** nothing in CI; the real-cluster checks of P1 Tasks 8 and 24 confirm the temporary directory.
 
 ## Runs started from a terminal (2026-10-28)
@@ -1004,17 +1005,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Assumed:** (a) *(assumed — pending Thomas)*.
 - **Blocked:** nothing.
 
-### #66 · Who publishes the bridges, and under which accounts?
+### #66 · Claim the four package names, and confirm how the bridges are released
 
-- **Covers:** [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) (Publishing); [P1](../plans/P1-walking-skeleton.md) Task 26.
-- **Context:** `nf-spectio` goes to the Nextflow plugin registry, which needs the plugin ID claimed and an API key; `snakemake-logger-plugin-spectio` goes to PyPI, which needs a project owner. Claude never publishes.
-- **Options:**
-  - (a) Thomas's own registry and PyPI accounts, publishing by hand from the dry-run packages of Task 26;
-  - (b) an organisation account (EMBL or a Spectio organisation), with a CI release job and PyPI trusted publishing **[to be validated]**;
-  - (c) (a) for 0.0.1, then (b).
-- **Recommendation:** none: this is Thomas's call.
-- **Assumed:** none. Until answered, Task 26 stops at the dry run.
-- **Blocked:** the first real release of the bridges, not P1.
+- **Covers:** [dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases) (Publishing, the owner of release mechanics); [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 12 (Names and pins, SEC-145); [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal); [P1](../plans/P1-walking-skeleton.md) Tasks 25 and 26.
+- **Context:** on 2026-10-28, `nf-spectio` is not in the Nextflow plugin registry, and `snakemake-logger-plugin-spectio`, `spectio` and `spectio-open` are not on PyPI (each returns 404), while the repository is public. Anyone could claim them first. Claude never publishes and cannot claim them.
+- **Current default (not a new option):** dev-env §12, with inbox #9 (c): CI release jobs under `weber8thomas`, PyPI trusted publishing with one environment per project, and `nf-spectio` released by its own job with the registry API key.
+- **Your part:** claim the plugin ID `nf-spectio` in the registry and the three PyPI names, and say whether the §12 default holds for the bridges.
+- **Assumed:** none. Task 26 stops at the dry run.
+- **Blocked:** the merge of the terminal-runs guide of P1 Task 25 (until then it installs the copies bundled in the wheel), and the first real release of the bridges. The rest of P1 is not blocked.
 
 ### #67 · Assumed: the engine setup is documented, not automated, in 0.0.1
 
