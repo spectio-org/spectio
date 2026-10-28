@@ -2,7 +2,7 @@
 
   python3 -m unittest tests/pipelines/real/test_run_corpus.py
 """
-import copy, os, stat, subprocess, sys, tempfile, unittest
+import copy, io, json, os, stat, subprocess, sys, tempfile, unittest
 from pathlib import Path
 from unittest import mock
 
@@ -63,7 +63,8 @@ class WorkdirTest(unittest.TestCase):
 
 
 class RetryTest(unittest.TestCase):
-    """A failed Nextflow entry is retried once with -resume; Snakemake entries are not retried."""
+    """A failed Nextflow entry is retried once with -resume, unless a signal killed it; Snakemake entries are not
+    retried. run_engine returns (exit, first_exit), first_exit None when there was no retry."""
 
     def run_with(self, eng, exits):
         spec = {"cmd": ["engine", "run"], "cwd": "/", "env": {}}
@@ -75,18 +76,21 @@ class RetryTest(unittest.TestCase):
 
     def test_a_failed_nextflow_run_that_passes_on_resume_is_a_retried_pass(self):
         result, cmds = self.run_with("nextflow", [125, 0])
-        self.assertEqual(result, (0, True))
+        self.assertEqual(result, (0, 125))
         self.assertEqual(cmds, [["engine", "run"], ["engine", "run", "-resume"]])
 
     def test_a_passing_nextflow_run_is_not_retried(self):
-        self.assertEqual(self.run_with("nextflow", [0]), ((0, False), [["engine", "run"]]))
+        self.assertEqual(self.run_with("nextflow", [0]), ((0, None), [["engine", "run"]]))
+
+    def test_a_run_killed_by_a_signal_is_not_retried(self):
+        self.assertEqual(self.run_with("nextflow", [-15]), ((-15, None), [["engine", "run"]]))
 
     def test_snakemake_is_run_once(self):
-        self.assertEqual(self.run_with("snakemake", [1]), ((1, False), [["engine", "run"]]))
+        self.assertEqual(self.run_with("snakemake", [1]), ((1, None), [["engine", "run"]]))
 
     def test_two_failures_keep_the_failure(self):
         result, cmds = self.run_with("nextflow", [125, 1])
-        self.assertEqual(result, (1, True))
+        self.assertEqual(result, (1, 125))
         self.assertEqual(len(cmds), 2)
 
     def test_the_retry_appends_to_the_same_log(self):
@@ -94,10 +98,41 @@ class RetryTest(unittest.TestCase):
             log = Path(tmp) / "run.log"
             spec = {"cmd": [sys.executable, "-c", "import os, sys; print('attempt'); sys.exit(0 if '-resume' in sys.argv else 3)"],
                     "cwd": tmp, "env": dict(os.environ)}
-            self.assertEqual(run_corpus.run_engine("nextflow", spec, log), (0, True))
+            self.assertEqual(run_corpus.run_engine("nextflow", spec, log), (0, 3))
             text = log.read_text()
             self.assertEqual(text.count("attempt"), 2)
             self.assertIn("retrying once with -resume", text)
+
+
+class MainReportTest(unittest.TestCase):
+    """result.json records first_exit, and a retried run prints a GitHub ::warning annotation."""
+
+    def main_with(self, exits):
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(run_corpus.subprocess, "run",
+                                  side_effect=[subprocess.CompletedProcess([], rc) for rc in exits]), \
+                mock.patch.object(run_corpus, "nf_entry", return_value={"cmd": ["nextflow"], "cwd": tmp, "env": {}}), \
+                mock.patch.object(sys, "argv", ["run_corpus.py", "--engine", "nextflow", "--name", "demo", "--workdir", f"{tmp}/wd"]), \
+                mock.patch("sys.stdout", new_callable=io.StringIO) as out:
+            rc = run_corpus.main()
+            result = json.loads((Path(tmp) / "wd" / "demo" / "result.json").read_text())
+        return rc, result, out.getvalue()
+
+    def test_a_retried_pass_is_green_and_flagged(self):
+        rc, result, out = self.main_with([125, 0])
+        self.assertEqual((rc, result["exit"], result["first_exit"]), (0, 0, 125))
+        self.assertIn("::warning title=corpus retry::demo exit 125 on first attempt, pass on -resume", out)
+        self.assertRegex(out, r"PASS  nextflow\s+demo\s+\d+s \(retried\)")
+
+    def test_a_retried_failure_is_red_and_flagged(self):
+        rc, result, out = self.main_with([125, 1])
+        self.assertEqual((rc, result["first_exit"]), (1, 125))
+        self.assertIn("fail on -resume", out)
+
+    def test_a_pass_records_no_first_exit_and_no_warning(self):
+        rc, result, out = self.main_with([0])
+        self.assertEqual((rc, result["first_exit"]), (0, None))
+        self.assertNotIn("::warning", out)
 
 
 class ValidateTest(unittest.TestCase):
@@ -123,6 +158,11 @@ class ValidateTest(unittest.TestCase):
         self.assertEqual(len(errs), 1)
         self.assertIn("rna-seq-star-deseq2", errs[0])
         self.assertTrue(self.bad("nfcore", 0, "args", "--x `id`"))
+
+    def test_resume_in_nfcore_args_is_rejected(self):
+        errs = self.bad("nfcore", 0, "args", "--max_cpus 2 -resume")
+        self.assertEqual(len(errs), 1)
+        self.assertIn("-resume", errs[0])
 
     def test_matrix_names_catalog_entries(self):
         nf, smk = run_corpus.matrix(run_corpus.CORPUS, "pr")
