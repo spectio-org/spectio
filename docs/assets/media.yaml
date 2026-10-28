@@ -242,3 +242,11 @@ media:
     # runs the real scripts; needs the toolchain installed (bash dev/bootstrap.sh --ci)
     generator: python3 tools/media/cast.py tools/media/casts/dev-doctor.yaml
     outputs: [docs/assets/casts/dev-doctor.cast]
+  - id: r10-synthesis
+    kind: diagram
+    generator: python3 tools/diagrams/r10_synthesis.py
+    outputs:
+      - docs/assets/diagrams/r10_synthesis_light.svg
+      - docs/assets/diagrams/r10_synthesis_dark.svg
+      - docs/assets/diagrams/r10_synthesis_light.png
+      - docs/assets/diagrams/r10_synthesis_dark.png
