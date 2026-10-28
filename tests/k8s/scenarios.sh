@@ -125,7 +125,8 @@ scenario_nf() {
     | (if $g == "" then "" else $g + ":" end) + $r + " " + .] | sort')
   echo "RESULT nf$v: happy exit=$happy_rc error exit=$error_rc $used unused-grants=$(jq -n -c --argjson g "$granted" --argjson u "$used" '$g - $u.used')"
   [ "$happy_rc" = 0 ] && [ "$error_rc" = 1 ] || die "nf$v: exit codes $happy_rc/$error_rc, expected 0/1"
-  [ "$(jq -c .refused <<<"$used")" = "[]" ] || die "nf$v: the $sa Role refused API calls"
+  # 403 is an RBAC refusal; a 404 is a read racing a deletion (seen once on jobs/status, run 40669626241)
+  [ "$(jq -c '[.refused[] | select(.code == 403)]' <<<"$used")" = "[]" ] || die "nf$v: the $sa Role refused API calls"
 }
 
 visibility() { kubectl get --raw "/apis/visibility.kueue.x-k8s.io/v1beta2/namespaces/$NS/localqueues/$1/pendingworkloads"; }
