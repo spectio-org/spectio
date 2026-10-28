@@ -132,19 +132,23 @@ visibility() { kubectl get --raw "/apis/visibility.kueue.x-k8s.io/v1beta2/namesp
 
 scenario_kueue_wait() {
   k apply -f "$here/kueue-wait.yaml"
-  # Wait for a settled state: the visibility API lists a Workload before its QuotaReserved=False condition
-  # is set (spike t4-ci, run 1).
-  local admitted=0 waiting=0
-  for _ in $(seq 60); do
+  # Wait until one Workload is admitted and the visibility API lists the other two. Their QuotaReserved=False
+  # condition is not waited for: the visibility API can list a Workload before it has one (spike t4-ci,
+  # run 1), and in run 40668895003 the second waiting Workload still had none after 2 minutes.
+  local admitted=0 pending=0
+  for _ in $(seq 30); do
+    visibility lq-tight >"$WORK/pending.json"
     k get workloads -o json >"$WORK/workloads.json"
     admitted=$(jq '[.items[] | select(.status.conditions[]? | .type == "Admitted" and .status == "True")] | length' "$WORK/workloads.json")
-    waiting=$(jq '[.items[] | select(.status.conditions[]? | .type == "QuotaReserved" and .status == "False")] | length' "$WORK/workloads.json")
-    [ "$admitted" -ge 1 ] && [ "$waiting" -ge 2 ] && break
+    pending=$(jq '.items | length' "$WORK/pending.json")
+    [ "$admitted" = 1 ] && [ "$pending" = 2 ] && break
     sleep 2
   done
-  [ "$admitted" -ge 1 ] && [ "$waiting" -ge 2 ] || die "kueue-wait: admitted=$admitted waiting=$waiting, expected 1 and 2"
   fixture kueue-workloads "kueue=v$KUEUE_VERSION" <"$WORK/workloads.json"
-  visibility lq-tight | fixture kueue-pending-workloads "kueue=v$KUEUE_VERSION"
+  fixture kueue-pending-workloads "kueue=v$KUEUE_VERSION" <"$WORK/pending.json"
+  [ "$admitted" = 1 ] && [ "$pending" = 2 ] || die "kueue-wait: admitted=$admitted pending=$pending, expected 1 and 2"
+  echo "RESULT kueue-wait conditions: $(jq -c '[.items[] | {name: .metadata.name,
+    conditions: [.status.conditions[]? | "\(.type)=\(.status)/\(.reason)"]}]' "$WORK/workloads.json")"
   echo "RESULT kueue-wait: $(jq -c '[.items[] | {name: .metadata.name, positionInLocalQueue, positionInClusterQueue}]' \
     "$FIXTURES/kueue-pending-workloads.json")"
   k delete -f "$here/kueue-wait.yaml" --wait=true >/dev/null
