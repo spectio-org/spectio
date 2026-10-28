@@ -1,0 +1,18 @@
+# The work namespace of k8s-mini and k8s-kueue (docs/specs/dev-environment-and-testing.md §4.2), with a
+# ResourceQuota. Generous on purpose: it must never be the reason a task waits.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: spectio-work
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: spectio-work
+  namespace: spectio-work
+spec:
+  hard:
+    pods: "100"
+    requests.cpu: "32"
+    requests.memory: 64Gi
+    count/jobs.batch: "200"
