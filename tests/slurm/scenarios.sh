@@ -79,14 +79,13 @@ EOF
     fi
     [ "$rc" = 0 ] || die "$engine $id: run_scenarios.py failed (report: $DATA/work/$engine-$id/$engine/report.json)"
     # Filter states here, not with sacct -s (spike finding 6).
-    failed=$(inroot sacct -X -n -P -a -S "$since" -o JobID,State,ExitCode | grep -v '|COMPLETED|' || true)
+    failed=$(inroot sacct -X -n -P -a -S "$since" -o JobIDRaw,State,ExitCode | grep -v '|COMPLETED|' || true)
     if [ -n "$failed" ]; then
       first=$(echo "$failed" | head -n 1 | cut -d'|' -f1)
-      first=${first%%_*}   # an array task: keep the whole array
       fixture "$engine-$id-squeue" "$first" squeue --json --states=all
       fixture "$engine-$id-sacct" "$first" sacct --json -j "$first"
     fi
-    results+=("$id=pass;not-completed:$(echo "$failed" | cut -d'|' -f2,3 | sort | uniq -c | awk '{printf "%s×%s,", $1, $2}')")
+    results+=("$id=pass;not-completed:[$([ -z "$failed" ] || echo "$failed" | cut -d'|' -f2,3 | sort | uniq -c | awk '{printf "%s×%s ", $1, $2}')]")
   done
   echo "RESULT $engine: ${results[*]}"
 }

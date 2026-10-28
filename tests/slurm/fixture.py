@@ -3,24 +3,13 @@
 
   sacct --json -j 12 | python3 fixture.py OUT.json [--jobs 12,13] [--meta key=value ...]
 
-With --jobs, only the jobs whose job_id (or array job id) is listed are kept. A "_fixture" object records
---meta (Slurm version, source run). Refuses to write a document that looks like it holds a credential
+With --jobs, only the jobs whose job_id is listed are kept (an array task has its own job_id, the
+JobIDRaw of sacct). A "_fixture" object records --meta (Slurm version, source run). Refuses to write a document that looks like it holds a credential
 (a JWT or a key block), so that no token reaches the artifacts or the committed copies.
 """
 import argparse, json, re, sys
 
 SECRET = re.compile(r"eyJ[\w-]{10,}\.[\w-]{10,}|SLURM_JWT|PRIVATE KEY")
-
-
-def job_ids(job: dict) -> set[str]:
-    ids = {str(job.get("job_id"))}
-    arr = job.get("array_job_id")                  # squeue / scontrol: {"set": .., "number": ..}
-    if isinstance(arr, dict) and arr.get("set"):
-        ids.add(str(arr.get("number")))
-    arr = (job.get("array") or {}).get("job_id")   # sacct
-    if arr:
-        ids.add(str(arr))
-    return ids
 
 
 def main() -> int:
@@ -37,7 +26,7 @@ def main() -> int:
         return 1
     want = {j for j in a.jobs.split(",") if j}
     if want and isinstance(doc.get("jobs"), list):
-        doc["jobs"] = [j for j in doc["jobs"] if job_ids(j) & want]
+        doc["jobs"] = [j for j in doc["jobs"] if str(j.get("job_id")) in want]
     doc["_fixture"] = dict(m.split("=", 1) for m in a.meta)
     text = json.dumps(doc, indent=1, sort_keys=True) + "\n"
     if SECRET.search(text):
