@@ -15,6 +15,12 @@ body{margin:0}
 main > *{flex-shrink:0}
 a{color:#6344B2}a:hover{color:#4D368B}
 a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.cx > summary{list-style:none;cursor:pointer}
+.cx > summary::-webkit-details-marker{display:none}
+.cx > summary .cx-sum{display:none}
+.cx:not([open]) > summary .cx-sum{display:inline}
+.cx[open] > summary .cx-chev{transform:rotate(180deg)}
+.cx > summary:focus-visible{outline:2px solid #7750D4;outline-offset:2px;border-radius:10px}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -31,16 +37,18 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 4px; min-width: 260px;">
             <h1 id="run-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">rnaseq-2026-10-25 <span style="font-family: 'JetBrains Mono', monospace; font-size: 14px; font-weight: 400; color: #6E7287;">7T9V1W</span></h1>
             <span style="display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 600; color: #1D5FC9; flex-wrap: wrap;">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· stage 5 of 6 · 812 / 1,248 tasks · 1 h 05 · live, updated 4 s ago</span>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running <span style="font-weight: 400; color: #4D5065;">· 3 of 8 stages done · 4 running · 524 / 803 tasks · 1 h 05 · live, updated 4 s ago</span>
             </span>
           </div>
           <button type="button" aria-haspopup="dialog" style="height: 42px; padding: 0 16px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #B02A2A; cursor: pointer; display: flex; align-items: center;">Cancel run</button>
         </div>
-        <dl style="margin: 0; padding: 12px 20px 16px; border-top: 1px solid #EEEFF5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 18px; font-size: 13px;">
+        <details class="cx" open style="padding: 8px 20px 12px; border-top: 1px solid #EEEFF5;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 32px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01"/></svg></span><h2 style="margin: 0; font-size: 14px; font-weight: 600;">Facts</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">nf-core/rnaseq 3.27.0 · Nextflow 25.10.4 · head alive</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary>
+        <dl style="margin: 0; padding: 4px 0 4px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 18px; font-size: 13px;">
           <sc-for list="{{facts}}" as="f" hint-placeholder-count="8">
-            <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;"><dt style="color: #6E7287; font-size: 12px;">{{f.k}}</dt><dd style="margin: 0; font-weight: 500; font-family: {{f.font}}; font-size: {{f.size}}; overflow-wrap: anywhere;">{{f.v}}</dd></div>
+            <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;"><dt style="color: #6E7287; font-size: 12px;">{{f.k}}</dt><dd style="margin: 0; font-weight: 500; font-family: {{f.font}}; font-size: {{f.size}}; overflow-wrap: anywhere;"><sc-if value="{{f.logo}}" hint-placeholder-val="{{false}}"><img src="{{f.logo}}" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 6px;"></sc-if>{{f.v}}</dd></div>
           </sc-for>
         </dl>
+        </details>
         <div aria-label="Tasks by state" role="group" style="padding: 10px 20px 14px; border-top: 1px solid #EEEFF5; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
           <span style="font-size: 12.5px; color: #4D5065; margin-right: 4px;">Tasks</span>
           <sc-for list="{{counts}}" as="c" hint-placeholder-count="6">
@@ -65,7 +73,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
             </sc-for>
           </div>
           <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; color: #33364A;">Process
-            <select aria-label="Show tasks of process" style="height: 38px; border-radius: 10px; border: 1px solid #C4C7D4; padding: 0 10px; font: 13px 'Inter', sans-serif; color: #0F1020; background: #FFFFFF;"><option>All processes (14)</option><option>SUBREAD_FEATURECOUNTS</option><option>SALMON_QUANT</option><option>STAR_ALIGN</option></select>
+            <select aria-label="Show tasks of process" style="height: 38px; border-radius: 10px; border: 1px solid #C4C7D4; padding: 0 10px; font: 13px 'Inter', sans-serif; color: #0F1020; background: #FFFFFF;"><option value="">All processes (63)</option><option value="NFCORE_RNASEQ:RNASEQ:BAM_QC_RNASEQ:SUBREAD_FEATURECOUNTS">SUBREAD_FEATURECOUNTS</option><option value="NFCORE_RNASEQ:RNASEQ:QUANTIFY_PSEUDO_ALIGNMENT:SALMON_QUANT">SALMON_QUANT</option><option value="NFCORE_RNASEQ:RNASEQ:ALIGN_STAR:BAM_SORT_STATS_SAMTOOLS:SAMTOOLS_INDEX">SAMTOOLS_INDEX · ALIGN_STAR</option><option value="NFCORE_RNASEQ:RNASEQ:BAM_MARKDUPLICATES_PICARD:SAMTOOLS_INDEX">SAMTOOLS_INDEX · BAM_MARKDUPLICATES_PICARD</option></select>
           </label>
           <span style="flex-grow: 1;"></span>
           <span style="font-size: 12.5px; color: #4D5065;">Sorted by last change · live, updated 4 s ago</span>
@@ -92,7 +100,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           </table>
         </div>
         <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap; font-size: 13px; color: #4D5065;">
-          <span>12 of 1,248 tasks <span style="margin-left: 12px; font-size: 11.5px; color: #6E7287;">Data: process names and the exit 137 retry from the nf-core/rnaseq 3.27.0 megatest (results-a1fcddd); job ids, durations and hashes are fixture data.</span></span>
+          <span>12 of 803 tasks <span style="margin-left: 12px; font-size: 11.5px; color: #6E7287;">Data: process names and the exit 137 retry from the nf-core/rnaseq 3.27.0 megatest (results-a1fcddd); job ids, durations and hashes are fixture data.</span></span>
           <button type="button" style="height: 36px; padding: 0 14px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A;">Load more</button>
         </div>
       </div>
@@ -103,14 +111,14 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
 class Component extends DCLogic {
 renderVals() {
   const mono = "'JetBrains Mono', monospace", sans = "'Inter', sans-serif";
-  const fact = (k, v, m) => ({ k, v, font: m ? mono : sans, size: m ? '12px' : '13px' });
+  const fact = (k, v, m, logo) => ({ k, v, logo, font: m ? mono : sans, size: m ? '12px' : '13px' });
   const tab = (label, on) => ({ label, id: 'tab-' + label.toLowerCase(), panel: 'panel-' + label.toLowerCase(), off: !on, sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
   const chip = (n, t, k) => ({ n, t, bg: { run: '#EAF2FE', done: '#E8F6EF', fail: '#FCEBEB', wait: '#F1F2F6', retry: '#FDF3E2' }[k], fg: { run: '#1D5FC9', done: '#157A4B', fail: '#B02A2A', wait: '#33364A', retry: '#8F5806' }[k] });
   const seg = (t, n, on) => ({ t, n, on: on ? 'true' : 'false', bg: on ? '#FFFFFF' : 'transparent', sh: on ? '0 1px 2px rgba(15,16,32,0.12)' : 'none', fg: on ? '#0F1020' : '#4D5065', w: on ? 600 : 500 });
   const base = {
     facts: [
-      fact('Pipeline', 'nf-core/rnaseq 3.27.0'),
-      fact('Engine · profile', 'Nextflow 25.10.4 · singularity'),
+      fact('Pipeline', 'nf-core/rnaseq 3.27.0', 0, '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'),
+      fact('Engine · profile', 'Nextflow 25.10.4 · singularity', 0, '/_blob/636203cdee0bc09b61efe0fa351e239b'),
       fact('Started · ended', 'Today 07:40 · —'),
       fact('Duration', '1 h 05'),
       fact('Head session', 'spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W', 1),
@@ -119,23 +127,23 @@ renderVals() {
       fact('Exit code', '— (still running)'),
       fact('Pipeline directory', '/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0', 1),
       fact('Run directory', '/scratch/amartin/spectio-runs/run_01JBC6Q4ZK7M8N2P3R5S7T9V1W', 1),
-      fact('Tasks go to', 'SLURM, through Nextflow'),
+      fact('Executor', 'SLURM'),
       fact('Failure', '—')
     ],
-    counts: [chip('812', 'succeeded', 'done'), chip('64', 'running', 'run'), chip('372', 'pending', 'wait'), chip('0', 'failed', 'fail'), chip('7', 'retried', 'retry')],
+    counts: [chip('524', 'succeeded', 'done'), chip('64', 'running', 'run'), chip('215', 'pending', 'wait'), chip('0', 'failed', 'fail'), chip('7', 'retried', 'retry')],
     tabs: [tab('Summary'), tab('Tasks', true), tab('Parameters'), tab('Logs')]
   };
   const ST = { running: ['Running', '#3B82F6', '#1D5FC9'], done: ['Succeeded', '#1F9D63', '#157A4B'], submitted: ['Submitted', '#6E7287', '#33364A'], failed: ['Failed · retried', '#D9890B', '#8F5806'] };
   const task = (proc, tag, st, attempt, job, exit, dur, work) => { const [state, rail, fg] = ST[st]; return { proc, tag, state, rail, fg, attempt, afg: attempt === '1' ? '#4D5065' : '#8F5806', job, exit, efg: exit === '137' ? '#B02A2A' : '#33364A', dur, work }; };
   return { ...base,
-    filters: [seg('All', '1,248', true), seg('Running', '64'), seg('Pending', '372'), seg('Succeeded', '812'), seg('Failed', '0'), seg('Retried', '7')],
+    filters: [seg('All', '803', true), seg('Running', '64'), seg('Pending', '215'), seg('Succeeded', '524'), seg('Failed', '0'), seg('Retried', '7')],
     tasks: [
       task('SUBREAD_FEATURECOUNTS', 'S19', 'submitted', '2', '8812591', '—', '—', '9d/77c21e'),
       task('SUBREAD_FEATURECOUNTS', 'S19', 'failed', '1', '8812477', '137', '6 min', '9d/77c214'),
       task('SALMON_QUANT', 'S03', 'done', '1', '8812345_3', '0', '22 min', '2f/90aa28'),
       task('SUBREAD_FEATURECOUNTS', 'S07', 'done', '1', '8812402', '0', '4 min', '9d/1e0a31'),
-      task('SUBREAD_FEATURECOUNTS', 'S21', 'running', '1', '8812533', '—', '3 min', '4b/c0d915'),
-      task('SUBREAD_FEATURECOUNTS', 'S22', 'running', '1', '8812534', '—', '3 min', '71/2a9e0c'),
+      task('SUBREAD_FEATURECOUNTS', 'S15', 'running', '1', '8812533', '—', '3 min', '4b/c0d915'),
+      task('SUBREAD_FEATURECOUNTS', 'S16', 'running', '1', '8812534', '—', '3 min', '71/2a9e0c'),
       task('SALMON_QUANT', 'S12', 'done', '1', '8812345_12', '0', '24 min', '2f/6b4c17'),
       task('SUBREAD_FEATURECOUNTS', 'S08', 'done', '1', '8812403', '0', '5 min', 'c3/58e0aa'),
       task('STAR_ALIGN', 'S11', 'done', '2', '8811902_11', '0', '41 min', '5e/0b2c71'),

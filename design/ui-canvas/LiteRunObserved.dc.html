@@ -15,6 +15,12 @@ body{margin:0}
 main > *{flex-shrink:0}
 a{color:#6344B2}a:hover{color:#4D368B}
 a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.cx > summary{list-style:none;cursor:pointer}
+.cx > summary::-webkit-details-marker{display:none}
+.cx > summary .cx-sum{display:none}
+.cx:not([open]) > summary .cx-sum{display:inline}
+.cx[open] > summary .cx-chev{transform:rotate(180deg)}
+.cx > summary:focus-visible{outline:2px solid #7750D4;outline-offset:2px;border-radius:10px}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -36,11 +42,13 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           </div>
           <span style="font-size: 12.5px; color: #4D5065; max-width: 230px; text-align: right; line-height: 1.45;">Started from a terminal · monitor only in 0.0.1</span>
         </div>
-        <dl style="margin: 0; padding: 12px 20px 16px; border-top: 1px solid #EEEFF5; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 18px; font-size: 13px;">
+        <details class="cx" open style="padding: 8px 20px 12px; border-top: 1px solid #EEEFF5;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 32px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01"/></svg></span><h2 style="margin: 0; font-size: 14px; font-weight: 600;">Facts</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">nf-core/rnaseq 3.27.0 · Nextflow 25.10.4 · from a terminal</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary>
+        <dl style="margin: 0; padding: 4px 0 4px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 18px; font-size: 13px;">
           <sc-for list="{{facts}}" as="f" hint-placeholder-count="8">
-            <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;"><dt style="color: #6E7287; font-size: 12px;">{{f.k}}</dt><dd style="margin: 0; font-weight: 500; font-family: {{f.font}}; font-size: {{f.size}}; overflow-wrap: anywhere;">{{f.v}}</dd></div>
+            <div style="display: flex; flex-direction: column; gap: 3px; min-width: 0;"><dt style="color: #6E7287; font-size: 12px;">{{f.k}}</dt><dd style="margin: 0; font-weight: 500; font-family: {{f.font}}; font-size: {{f.size}}; overflow-wrap: anywhere;"><sc-if value="{{f.logo}}" hint-placeholder-val="{{false}}"><img src="{{f.logo}}" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 6px;"></sc-if>{{f.v}}</dd></div>
           </sc-for>
         </dl>
+        </details>
         <div aria-label="Tasks by state" role="group" style="padding: 10px 20px 14px; border-top: 1px solid #EEEFF5; display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
           <span style="font-size: 12.5px; color: #4D5065; margin-right: 4px;">Tasks</span>
           <sc-for list="{{counts}}" as="c" hint-placeholder-count="6">
@@ -59,8 +67,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
 
       <div id="panel-summary" role="tabpanel" aria-labelledby="tab-summary" style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
         <section style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
-          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap;"><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Processes</h2><a href="LiteRunTasks.dc.html" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">All tasks →</a></div>
-          <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">No stages for this pipeline: processes as the engine reports them, in the order Nextflow first reported them, with their tasks known so far. Spectio read no pipeline directory for this run, so it detected no stage.</span>
+          <details class="cx" open><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6h11 M9 12h11 M9 18h11 M4.5 6h.01 M4.5 12h.01 M4.5 18h.01"/></svg></span><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Processes</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">6 processes seen so far</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;"><span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">No stages for this pipeline: processes as the engine reports them, in the order Nextflow first reported them, with their tasks known so far. Spectio read no pipeline directory for this run, so it detected no stage. <a href="LiteRunTasks.dc.html" style="font-size: 12.5px; font-weight: 600; text-decoration: none;">All tasks →</a></span>
           <div style="overflow-x: auto; border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);" tabindex="0" role="region" aria-label="Processes in first-seen order">
             <table style="width: 100%; min-width: 760px; border-collapse: collapse; font-size: 13px;">
               <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Processes in first-seen order, with their state and task counts</caption>
@@ -71,7 +78,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
                 <sc-for list="{{procs}}" as="p" hint-placeholder-count="9">
                   <tr style="border-top: 1px solid #EEEFF5;">
                     <td style="padding: 8px 8px 8px 14px; color: #6E7287;">{{p.n}}</td>
-                    <th scope="row" style="padding: 8px 12px; text-align: left; font-weight: 600;"><a href="LiteRunTasks.dc.html" style="color: #0F1020; text-decoration: none;">{{p.name}}</a></th>
+                    <th scope="row" style="padding: 8px 12px; text-align: left; font-weight: 600;"><a aria-label="{{p.fq}}" href="LiteRunTasks.dc.html" style="color: #0F1020; text-decoration: none;">{{p.name}}</a></th>
                     <td style="padding: 8px 12px; white-space: nowrap; font-weight: 600; color: {{p.sfg}};">{{p.state}}</td>
                     <td style="padding: 8px 12px;"><span style="display: flex; align-items: center; gap: 8px;"><span role="progressbar" aria-label="{{p.name}}: {{p.done}} of {{p.total}} known tasks done" aria-valuenow="{{p.pct}}" aria-valuemin="0" aria-valuemax="100" style="flex: 0 0 72px; height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: {{p.pct}}%; background: {{p.bar}};"></span></span><span style="white-space: nowrap; color: #33364A;">{{p.done}} / {{p.total}}</span></span></td>
                     <td style="padding: 8px 12px; text-align: right; color: {{p.rc}}; font-weight: {{p.rw}};">{{p.run}}</td>
@@ -83,27 +90,28 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
               </tbody>
             </table>
           </div>
-          <span style="font-size: 12px; color: #4D5065;">6 processes seen so far · State: Running when a task runs, Pending when tasks wait, Done when every task known so far succeeded. The run may still add tasks.</span>
+          <span style="font-size: 12px; color: #4D5065;">6 processes seen so far · Pending: no task has started. Running: some have started and not every known task has finished. Done: every known task succeeded or was cached; the run may still add tasks.</span>
           <span style="font-size: 11.5px; color: #6E7287;">Data: processes and versions from the nf-core/rnaseq 3.27.0 megatest (results-a1fcddd); counts, login nodes and paths are fixture data.</span>
-        </section>
+        </div></details>
+</section>
 
         <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
-          <section aria-labelledby="h-term" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
-            <h2 id="h-term" style="margin: 0; font-size: 15px; font-weight: 600;">Started from a terminal</h2>
+          <details class="cx" open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17l6-5-6-5 M12 19h8"/></svg></span><h2 id="h-term" style="margin: 0; font-size: 15px; font-weight: 600;">Started from a terminal</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">head on login2</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+            
             <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">This run was started by hand with the Spectio bridge on. Spectio reads its events and shows it here, but it did not start its head: there is no tmux session to open and no Cancel in 0.0.1. Stop it from the terminal it runs in.</span>
             <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">Its head runs on login2 and the server on login1, so Spectio cannot check whether the head is alive. Only the engine's last event ends the run.</span>
-          </section>
-          <section aria-labelledby="h-log" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
-            <h2 id="h-log" style="margin: 0; font-size: 15px; font-weight: 600;">Engine log · last lines</h2>
+          </div></details>
+          <details class="cx" open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M9 12h7 M9 16h7"/></svg></span><h2 id="h-log" style="margin: 0; font-size: 15px; font-weight: 600;">Engine log · last lines</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">last lines</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+            
             <div tabindex="0" role="region" aria-label="Engine log, last lines" style="border-radius: 10px; background: #0F1020; padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.6; color: #C4C7D4; overflow-x: auto;">
               <sc-for list="{{logs}}" as="l" hint-placeholder-count="6"><div style="white-space: pre; color: {{l.c}};">{{l.t}}</div></sc-for>
             </div>
             <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">Only the engine log is shown: Spectio did not start this head, so it has no head output or head errors.</span>
-          </section>
-          <section aria-labelledby="h-params" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
-            <h2 id="h-params" style="margin: 0; font-size: 15px; font-weight: 600;">Parameters</h2>
+          </div></details>
+          <details class="cx" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg></span><h2 id="h-params" style="margin: 0; font-size: 15px; font-weight: 600;">Parameters</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">from the engine</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
+            
             <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">Not known: they were given on the command line, which Spectio does not read.</span>
-          </section>
+          </div></details>
         </aside>
       </div>
     </main>
@@ -113,18 +121,18 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
 class Component extends DCLogic {
 renderVals() {
   const mono = "'JetBrains Mono', monospace", sans = "'Inter', sans-serif";
-  const fact = (k, v, m) => ({ k, v, font: m ? mono : sans, size: m ? '12px' : '13px' });
+  const fact = (k, v, m, logo) => ({ k, v, logo, font: m ? mono : sans, size: m ? '12px' : '13px' });
   const tab = (label, on) => ({ label, id: 'tab-' + label.toLowerCase(), panel: 'panel-' + label.toLowerCase(), off: !on, sel: on ? 'true' : 'false', ti: on ? '0' : '-1', w: on ? 600 : 500, c: on ? '#4D368B' : '#4D5065', u: on ? 'inset 0 -2px 0 #7750D4' : 'none' });
   const chip = (n, t, k) => ({ n, t, bg: { run: '#EAF2FE', done: '#E8F6EF', fail: '#FCEBEB', wait: '#F1F2F6', retry: '#FDF3E2' }[k], fg: { run: '#1D5FC9', done: '#157A4B', fail: '#B02A2A', wait: '#33364A', retry: '#8F5806' }[k] });
   const proc = (n, name, done, run, pend, fail, retry) => {
     const total = +done + +run + +pend + +fail, pct = total ? Math.round(100 * done / total) : 0;
-    const [state, sfg] = +fail ? ['Failed', '#B02A2A'] : +run ? ['Running', '#1D5FC9'] : +pend ? ['Pending', '#33364A'] : total ? ['Done', '#157A4B'] : ['No task yet', '#6E7287'];
-    return { n, name, done, run, pend, fail, retry, total: String(total), pct, state, sfg, bar: +run ? '#3B82F6' : '#5A4FCF', rw: run === '0' ? 400 : 600, rc: run === '0' ? '#4D5065' : '#1D5FC9', rfg: retry === '0' ? '#4D5065' : '#8F5806' };
+    const state = +fail ? 'Failed' : !(+done + +run) ? 'Pending' : (+run + +pend) ? 'Running' : 'Done', sfg = { Failed: '#B02A2A', Pending: '#33364A', Running: '#1D5FC9', Done: '#157A4B' }[state];
+    return { n, name, fq: n || name, done, run, pend, fail, retry, total: String(total), pct, state, sfg, bar: +run ? '#3B82F6' : '#5A4FCF', rw: run === '0' ? 400 : 600, rc: run === '0' ? '#4D5065' : '#1D5FC9', rfg: retry === '0' ? '#4D5065' : '#8F5806' };
   };
   return {
     facts: [
-      fact('Pipeline', 'nf-core/rnaseq 3.27.0'),
-      fact('Engine · profile', 'Nextflow 25.10.4 · slurm'),
+      fact('Pipeline', 'nf-core/rnaseq 3.27.0', 0, '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'),
+      fact('Engine · profile', 'Nextflow 25.10.4 · slurm', 0, '/_blob/636203cdee0bc09b61efe0fa351e239b'),
       fact('Started · ended', 'Today 09:02 · —'),
       fact('Duration', '38 min'),
       fact('Head session', 'none: Spectio did not start this head'),
@@ -133,7 +141,7 @@ renderVals() {
       fact('Exit code', '—'),
       fact('Launch directory', '/g/demo-lab/projects/pilot-rnaseq', 1),
       fact('Events read from', '/g/demo-lab/projects/pilot-rnaseq/.spectio/events', 1),
-      fact('Tasks go to', 'SLURM, through Nextflow'),
+      fact('Executor', 'SLURM'),
       fact('Failure', '—')
     ],
     counts: [chip('288', 'succeeded', 'done'), chip('48', 'running', 'run'), chip('48', 'pending', 'wait'), chip('0', 'failed', 'fail'), chip('2', 'retried', 'retry')],

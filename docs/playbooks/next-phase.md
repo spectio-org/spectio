@@ -385,7 +385,8 @@ the run directory and the built-in runner reads it; nothing posts over the netwo
 shows the runs in the Runs table and Run detail with their state, tasks, stages and
 whether the head is alive. The UI is ultra simple (Thomas, 2026-10-28): three screens (launch form, runs
 list, run detail), text and tables only, no visualisation (no DAG, timeline or charts).
-Relaunch and the parameter history are out of 0.0.1 (assumed — pending Thomas, inbox #61). Tests: the local executor for unit and API
+Relaunch and the parameter history are out of 0.0.1 (assumed — pending Thomas, inbox #61). (Note 2026-10-28: 0.0.1 has four screens, home added to the three above; Thomas,
+docs/decisions/log.md "0.0.1 has four screens; Home kept".) Tests: the local executor for unit and API
 tests; the mini SLURM cluster (sind, slurm-mini, dev-environment-and-testing.md §4.1,
 built by step T3) for the end-to-end launch, spool and restart tests. Out of scope: QC
 checks and gates, Kubernetes, a shared server or remote runner, sign-in, the depictio

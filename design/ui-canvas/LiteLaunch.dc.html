@@ -18,6 +18,12 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}details>summary .chev{transition:transform .15s}details:not([open])>summary .chev{transform:rotate(180deg)}
 input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C4C7D4;padding:8px 10px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%}
 input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
+.cx > summary{list-style:none;cursor:pointer}
+.cx > summary::-webkit-details-marker{display:none}
+.cx > summary .cx-sum{display:none}
+.cx:not([open]) > summary .cx-sum{display:inline}
+.cx[open] > summary .cx-chev{transform:rotate(180deg)}
+.cx > summary:focus-visible{outline:2px solid #7750D4;outline-offset:2px;border-radius:10px}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -30,8 +36,8 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
         <span style="font-size: 14px; color: #4D5065;">Type the path of a pipeline directory your account can read. Spectio detects the engine and builds the form from the pipeline's schema.</span>
       </div>
 
-      <section aria-labelledby="h-pipeline" style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 20px; display: flex; flex-direction: column; gap: 14px;">
-        <h2 id="h-pipeline" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Pipeline</h2>
+      <details class="cx" open style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 20px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><h2 id="h-pipeline" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Pipeline</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">nf-core/rnaseq 3.27.0 · singularity</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 14px; margin-top: 8px;">
+        
         <div style="display: flex; flex-direction: column; gap: 5px;">
           <label for="f-location" style="font-size: 13px; font-weight: 600;">Pipeline directory (absolute path)</label>
           <span style="display: flex; gap: 8px;">
@@ -40,9 +46,9 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
           </span>
         </div>
         <div role="status" style="display: flex; align-items: center; gap: 12px; border-radius: 12px; background: #F7F7FB; padding: 10px 12px; flex-wrap: wrap;">
-          <span style="width: 36px; height: 36px; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="22" height="22" alt="nf-core (Nextflow)" style="display: block; object-fit: contain;"></span>
+          <span style="width: 36px; height: 36px; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="22" height="22" alt="" style="display: block; object-fit: contain;"></span>
           <span style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 1px; min-width: 0;">
-            <span style="font-size: 14px; font-weight: 600;">Nextflow · nf-core/rnaseq 3.27.0</span>
+            <span style="font-size: 14px; font-weight: 600;"><img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 5px;">Nextflow · nf-core/rnaseq 3.27.0</span>
             <span style="font-size: 12.5px; color: #4D5065;">main.nf found · form from nextflow_schema.json · 94 parameters in 9 groups</span>
           </span>
           <span style="font-size: 12.5px; font-weight: 600; color: #157A4B; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Loaded</span>
@@ -59,17 +65,17 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
             <span style="font-size: 12px; color: #4D5065;">Left empty, Spectio names the run after the pipeline and the date.</span>
           </div>
         </div>
-      </section>
+      </div></details>
 
       <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
         <section aria-labelledby="h-params" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
-          <div style="display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap;">
-            <h2 id="h-params" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Parameters</h2>
+          <details class="cx" open><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg></span><h2 id="h-params" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Parameters</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">9 groups · 2 changed</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;"><div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+            
             <span style="font-size: 12.5px; color: #4D5065;">One section per schema group · 2 changed from their defaults</span>
           </div>
           <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
             <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Input/output options</span><span style="font-size: 12px; color: #4D5065;">Define where the pipeline should find input data and save output data · 4 parameters · 2 required</span></span>
+              <span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg></span><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Input/output options</span><span style="font-size: 12px; color: #4D5065;">Define where the pipeline should find input data and save output data · 4 parameters · 2 required</span></span>
               <span style="font-size: 12.5px; font-weight: 600; color: #157A4B;">2 required · filled</span>
               <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
             </summary>
@@ -98,7 +104,7 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
           </details>
           <details open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
             <summary style="padding: 12px 16px; display: flex; align-items: center; gap: 12px;">
-              <span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Alignment options</span><span style="font-size: 12px; color: #4D5065;">17 parameters</span></span>
+              <span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18 M5 6h11l3 3-3 3H5z"/></svg></span><span style="flex-grow: 1; display: flex; flex-direction: column;"><span style="font-size: 14.5px; font-weight: 600;">Alignment options</span><span style="font-size: 12px; color: #4D5065;">17 parameters</span></span>
               <span style="font-size: 12.5px; font-weight: 600; color: #8F5806;">2 changed</span>
               <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
             </summary>
@@ -113,16 +119,17 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
                 <input id="p-min-mapped" type="number" value="10">
                 <span style="font-size: 12px; color: #4D5065;">changed · default 5 · minimum % of uniquely mapped reads</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 5px; justify-content: center;">
-                <span style="display: flex; align-items: center; gap: 8px;"><input id="p-skip-pseudo" type="checkbox" checked style="width: 16px; height: 16px; margin: 0; accent-color: #7750D4;"><label for="p-skip-pseudo" style="font-size: 13px; font-weight: 600;">skip_pseudo_alignment</label></span>
-                <span style="font-size: 12px; color: #4D5065;">changed · default false · boolean</span>
+              <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label for="p-pseudo" style="font-size: 13px; font-weight: 600;">pseudo_aligner</label>
+                <select id="p-pseudo"><option>salmon</option><option>kallisto</option></select>
+                <span style="font-size: 12px; color: #4D5065;">changed · default none · enum [to be validated]</span>
               </div>
             </div>
           </details>
           <sc-for list="{{collapsed}}" as="c" hint-placeholder-count="5">
             <details style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); background: #FFFFFF; overflow: hidden;">
               <summary style="padding: 11px 16px; display: flex; align-items: center; gap: 12px;">
-                <span style="flex-grow: 1; font-size: 14px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12.5px;">· {{c.n}}</span></span>
+                <span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{c.icon}}"/></svg></span><span style="flex-grow: 1; font-size: 14px; font-weight: 600;">{{c.name}} <span style="font-weight: 400; color: #6E7287; font-size: 12.5px;">· {{c.n}}</span></span>
                 <span style="font-size: 12.5px; color: #6E7287;">{{c.state}}</span>
                 <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
               </summary>
@@ -132,29 +139,30 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
             </details>
           </sc-for>
           <span style="font-size: 11.5px; color: #6E7287;">Data: groups, parameter names, help texts and defaults from nf-core/rnaseq 3.27.0 nextflow_schema.json; paths, values and the login node are fixture data.</span>
-        </section>
+        </div></details>
+</section>
 
         <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
-          <section aria-labelledby="h-where" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
-            <h2 id="h-where" style="margin: 0; font-size: 15px; font-weight: 600;">Where it runs</h2>
+          <details class="cx" open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><h2 id="h-where" style="margin: 0; font-size: 15px; font-weight: 600;">Where it runs</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">SLURM · login1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+            
             <dl style="margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
               <sc-for list="{{where}}" as="w" hint-placeholder-count="4">
-                <div style="display: flex; gap: 10px; align-items: baseline;"><dt style="flex: 0 0 92px; color: #6E7287; font-size: 12px;">{{w.k}}</dt><dd style="margin: 0; font-weight: 500; overflow-wrap: anywhere;">{{w.v}}</dd></div>
+                <div style="display: flex; gap: 10px; align-items: baseline;"><dt style="flex: 0 0 92px; color: #6E7287; font-size: 12px;">{{w.k}}</dt><dd style="margin: 0; font-weight: 500; overflow-wrap: anywhere;"><sc-if value="{{w.logo}}" hint-placeholder-val="{{false}}"><img src="{{w.logo}}" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 6px;"></sc-if>{{w.v}}</dd></div>
               </sc-for>
             </dl>
-            <span style="font-size: 12px; color: #4D5065;">The cluster, the login node and the run directory are fixed for this server: there is nothing to choose in 0.0.1.</span>
-          </section>
-          <section aria-labelledby="h-preview" style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px; display: flex; flex-direction: column; gap: 8px;">
-            <h2 id="h-preview" style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;">params.json preview</h2>
+            <span style="font-size: 12px; color: #4D5065;">The executor, the login node and the run directory are fixed for this server: there is nothing to choose in 0.0.1.</span>
+          </div></details>
+          <details class="cx" open style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M10 12l-2 2 2 2 M14 12l2 2-2 2"/></svg></span><h2 id="h-preview" style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;">params.json preview</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">values you set</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+            
             <pre tabindex="0" style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.55; white-space: pre-wrap;">{
   "input": "/g/demo-lab/rnaseq/liver-tc/samplesheet.csv",
   "outdir": "/g/demo-lab/rnaseq/2026-10-25",
   "multiqc_title": "Liver time course",
   "min_mapped_reads": 10,
-  "skip_pseudo_alignment": true
+  "pseudo_aligner": "salmon"
 }</pre>
             <span style="font-size: 11.5px; color: #A6A9BA;">Only values you set · written to the run directory and passed with -params-file</span>
-          </section>
+          </div></details>
           <button type="button" style="height: 46px; border: none; border-radius: 12px; background: #7750D4; color: #FFFFFF; font: 600 14px 'Inter', sans-serif; cursor: pointer;">Launch</button>
           <span style="font-size: 12px; color: #4D5065;">Starts the engine in a new tmux session on login1 and opens the run page. The run shows Queued until the engine has started.</span>
         </aside>
@@ -169,6 +177,7 @@ renderVals() {
   "collapsed": [
     {
       "name": "Reference genome options",
+      "icon": "M7 3c0 6 10 12 10 18 M17 3c0 6-10 12-10 18 M8.5 7h7 M8.5 17h7",
       "n": "14 parameters",
       "state": "defaults",
       "fields": [
@@ -194,6 +203,7 @@ renderVals() {
     },
     {
       "name": "Read trimming options",
+      "icon": "M6 9a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M6 21a3 3 0 1 0 0-6 3 3 0 0 0 0 6z M8.5 7.5L20 19 M8.5 16.5L20 5",
       "n": "7 parameters",
       "state": "defaults",
       "fields": [
@@ -213,6 +223,7 @@ renderVals() {
     },
     {
       "name": "Quality control",
+      "icon": "M12 3l8 3v6c0 5-4 8-8 9-4-1-8-4-8-9V6z M9 12l2 2 4-4",
       "n": "9 parameters",
       "state": "defaults",
       "fields": [
@@ -232,6 +243,7 @@ renderVals() {
     },
     {
       "name": "Process skipping options",
+      "icon": "M4 6l8 6-8 6z M12 6l8 6-8 6z",
       "n": "21 parameters",
       "state": "defaults",
       "fields": [
@@ -251,6 +263,7 @@ renderVals() {
     },
     {
       "name": "Generic options",
+      "icon": "M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4",
       "n": "23 parameters",
       "state": "defaults",
       "fields": [
@@ -271,12 +284,13 @@ renderVals() {
   ],
   "where": [
     {
-      "k": "Cluster",
-      "v": "EMBL cluster · SLURM"
+      "k": "Executor",
+      "v": "SLURM"
     },
     {
       "k": "Engine",
-      "v": "Nextflow 25.10.4, in a tmux session on login1"
+      "v": "Nextflow 25.10.4, in a tmux session on login1",
+      "logo": "/_blob/636203cdee0bc09b61efe0fa351e239b"
     },
     {
       "k": "Tasks",
