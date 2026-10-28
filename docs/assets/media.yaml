@@ -101,6 +101,14 @@ media:
       - docs/assets/diagrams/triage2_sort_dark.svg
       - docs/assets/diagrams/triage2_sort_light.png
       - docs/assets/diagrams/triage2_sort_dark.png
+  - id: triage3-sort
+    kind: diagram
+    generator: python3 tools/diagrams/triage3_sort.py
+    outputs:
+      - docs/assets/diagrams/triage3_sort_light.svg
+      - docs/assets/diagrams/triage3_sort_dark.svg
+      - docs/assets/diagrams/triage3_sort_light.png
+      - docs/assets/diagrams/triage3_sort_dark.png
   - id: apply2-specs
     kind: diagram
     generator: python3 tools/diagrams/apply2_specs.py
