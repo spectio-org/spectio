@@ -162,7 +162,7 @@ The 41 open minors (board, docs-site and later-feature items) are not listed; no
 | D1 | Relaunch and parameter history out of 0.0.1 | #61 (assumed) | confirm (a) |
 | D2 | How a workflow reaches the launch form | #34, SR-056 part (open) | the smallest contract: a pipeline location the user's account can read (a path or a Git URL and revision), with its parameter schema read from it; no catalogue and no `POST /workflows` in 0.0.1 |
 | D3 | What engine events may carry | #55 (reserved) | (a): `nf-spectio` sends no `script` or `env`; `homeDir`, `commandLine`, `configText` and `env` are never stored |
-| D4 | Can 0.0.1 cancel a run? | new (gap in §3a) | yes: one Cancel action, with the drain rule of schedulers §2 |
+| D4 | Can 0.0.1 cancel a run? | [#62](inbox.md#62-assumed-001-can-cancel-a-run) (assumed; a gap in §3a) | yes: one Cancel action, with the drain rule of schedulers §2 |
 | — | Attempt state `aborted` | #56 (assumed) | confirm (a); it is visible in the 0.0.1 run detail |
 | — | GitHub App for releases | #8 (open) | needed before the tag only |
 
