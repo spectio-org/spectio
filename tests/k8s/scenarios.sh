@@ -64,15 +64,30 @@ scenario_failures() {
     terminated: (.status.containerStatuses[0].state.terminated | {reason, exitCode})}]' "$FIXTURES/failures-pods.json")"
 }
 
-# kubeconfig that authenticates as a ServiceAccount, with a bound token and no admin credentials
+# kubeconfig that authenticates as a ServiceAccount with a bound token, in $KC_DIR: outside the repository,
+# which task pods mount as a hostPath. The admin user and key are never written to it.
+KC_DIR=$(mktemp -d "${RUNNER_TEMP:-/tmp}/spectio-kc.XXXX")
 sa_kubeconfig() { # SA OUT
-  local token cluster
+  local token
   token=$(k create token "$1" --duration=2h)
-  cluster=$(kubectl config current-context)
-  kubectl config view --raw --minify >"$2"
+  (umask 077; kubectl config view --raw --minify --flatten -o json | jq 'del(.users)' >"$2")
   KUBECONFIG=$2 kubectl config set-credentials "$1" --token="$token" >/dev/null
   KUBECONFIG=$2 kubectl config set-context --current --user="$1" --namespace="$NS" >/dev/null
-  KUBECONFIG=$2 kubectl config unset "users.$cluster" >/dev/null
+}
+
+# Calls no ServiceAccount of rbac.yaml may make. "create pods" is not here: nf-head-25 needs it.
+DENIED=("get secrets" "list nodes" "create pods/exec" "create serviceaccounts/token" "create rolebindings"
+  "impersonate serviceaccounts" "create jobs -n default" "create pods -n default")
+# deny_check AUTH_FLAGS [CALL...]: each call of DENIED, then each CALL, must be refused; prints one line per call
+deny_check() {
+  local auth=$1 step rc=0
+  shift
+  for step in "${DENIED[@]}" "$@"; do
+    # shellcheck disable=SC2086  # "verb resource [-n ns]" and the flags are word lists
+    if [ "$(kubectl auth can-i $step $auth 2>/dev/null)" = no ]; then echo "denied  $step"
+    else echo "ALLOWED $step"; rc=1; fi
+  done
+  return $rc
 }
 
 # nf_run LABEL NFBIN [nextflow args...]: the synthetic pipeline on k8s from $WORK/LABEL; sets NF_RC.
@@ -92,13 +107,14 @@ nf_run() {
 # scenario_nf 26|25: happy run, then a tool-error run that makes the head kill the tasks in flight, both
 # under the head's own token. Fails unless the exit codes are 0 and 1 and no API call was refused.
 scenario_nf() {
-  local v=$1 nf sa=nf-head-$1 queue="" version kc=$WORK/kc-nf-head-$1 extra=()
+  local v=$1 nf sa=nf-head-$1 queue="" version kc=$KC_DIR/nf-head-$1 extra=() deny=()
   if [ "$v" = 26 ]; then
-    nf=nextflow version=$NEXTFLOW_VERSION queue=lq-main
+    nf=nextflow version=$NEXTFLOW_VERSION queue=lq-main deny=("create pods")
   else
     nf=nextflow-$NEXTFLOW_25_10_VERSION version=$NEXTFLOW_25_10_VERSION extra=(-plugins "nf-k8s@$NF_K8S_25_10_VERSION")
   fi
   kubectl apply -f "$here/rbac.yaml" >/dev/null
+  deny_check "--as=system:serviceaccount:$NS:$sa" "${deny[@]}" || die "nf$v: the $sa Role grants calls it must not"
   sa_kubeconfig "$sa" "$kc"
   KUBECONFIG=$kc K8S_CLEANUP=false nf_run "nf$v-happy" "$nf" "${extra[@]}"
   local happy_rc=$NF_RC
@@ -112,6 +128,8 @@ scenario_nf() {
     fixture "nf-$version-task-pod" "nextflow=$version"
   local pod job
   pod=$(jq -er .metadata.name "$FIXTURES/nf-$version-task-pod.json") || die "nf$v: no QC_STATS S01 pod"
+  jq -e '[.spec.volumes[]?.name | select(startswith("kube-api-access-"))] == []' "$FIXTURES/nf-$version-task-pod.json" \
+    >/dev/null || die "nf$v: the task pod mounts a ServiceAccount token"
   job=$(jq -r '.metadata.labels["job-name"] // empty' "$FIXTURES/nf-$version-task-pod.json")
   [ -z "$job" ] || k get job "$job" -o json | fixture "nf-$version-task-job" "nextflow=$version"
   jq -n --arg p "$pod" --arg j "$job" '[$p, $j] - [""]' >"$WORK/nf$v-names.json"
@@ -158,7 +176,7 @@ scenario_kueue_wait() {
 # The runner's own work, with its token: start a head Job under nf-head-26, follow it, read the quota and the
 # Kueue Workloads and queue positions, then delete the Job. Anything outside its Role must be refused.
 scenario_runner() {
-  local kc=$WORK/kc-runner failed=0 step
+  local kc=$KC_DIR/spectio-runner failed=0
   kubectl apply -f "$here/rbac.yaml" >/dev/null
   sa_kubeconfig spectio-runner "$kc"
   kubectl create job runner-probe -n "$NS" --image="$BUSYBOX_IMAGE" --dry-run=client -o json -- echo head-ok |
@@ -177,13 +195,9 @@ scenario_runner() {
   allowed kubectl get workloads.kueue.x-k8s.io
   allowed kubectl get --raw "/apis/visibility.kueue.x-k8s.io/v1beta2/namespaces/$NS/localqueues/lq-main/pendingworkloads"
   allowed kubectl delete job runner-probe --wait=true
-  for step in "create pods" "get secrets" "list nodes"; do
-    # shellcheck disable=SC2086  # "verb resource" pairs
-    if [ "$(KUBECONFIG=$kc kubectl auth can-i $step 2>/dev/null)" = no ]; then echo "denied  $step"
-    else echo "ALLOWED $step"; failed=1; fi
-  done
+  KUBECONFIG=$kc deny_check "" "create pods" || failed=1
   [ "$failed" = 0 ] || die "runner: the spectio-runner Role is not sufficient or not tight"
-  echo "RESULT runner: sufficient and tight"
+  echo "RESULT runner: sufficient; $((${#DENIED[@]} + 1)) out-of-Role calls denied"
 }
 
 case "${1:-}" in

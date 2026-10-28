@@ -16,8 +16,10 @@ set -euo pipefail
 # shellcheck source=dev/lib.sh
 . "$(dirname "$0")/../lib.sh"
 here=$SPECTIO_REPO/dev/k8s
-# python:3.12 by digest, the image of the `k8s` profile (tests/pipelines/synthetic/nextflow/nextflow.config).
-TASK_IMAGE=docker.io/library/python@sha256:98d8fe4e28bb2efeed9d9bce6a4705e80a6764367b65aea1dc4b96ded7b05620
+# The task image: the python:3.12 digest of the `k8s` profile of the synthetic pipeline, read from its config.
+TASK_IMAGE=$(sed -n '/^    k8s {/,/^    }/p' "$SPECTIO_REPO/tests/pipelines/synthetic/nextflow/nextflow.config" |
+  grep -o -m1 'python:3.12@sha256:[0-9a-f]\{64\}') || { echo "no python:3.12 digest in the k8s profile" >&2; exit 1; }
+TASK_IMAGE=docker.io/library/python@${TASK_IMAGE#*@}
 
 log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 
@@ -45,6 +47,7 @@ install_kueue() {
     kubectl apply -f "$here/kueue-queues.yaml" && break
     sleep 4
   done
+  kubectl get clusterqueue cq-main cq-tight >/dev/null
   kubectl wait --for=condition=Available apiservice/v1beta2.visibility.kueue.x-k8s.io --timeout=180s
   log "Kueue v$KUEUE_VERSION ready in $((SECONDS - t)) s"
 }
