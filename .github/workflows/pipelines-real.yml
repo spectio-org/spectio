@@ -55,8 +55,11 @@ jobs:
         run: bash tests/pipelines/real/runner_probe.sh free
       - name: Sample free memory and disk every 5 s
         run: bash tests/pipelines/real/runner_probe.sh sample
+      - name: Read the Nextflow pin from dev/versions.env
+        id: pin
+        run: grep -E '^NEXTFLOW_VERSION=[0-9.]+$' dev/versions.env >> "$GITHUB_OUTPUT"
       - uses: nf-core/setup-nextflow@893c28b667aedeba26e37f296d260ccc5bc4d914 # v3.0.1
-        with: {version: "26.10.3"}
+        with: {version: "${{ steps.pin.outputs.NEXTFLOW_VERSION }}"}
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with: {enable-cache: false}  # no shared cache (zizmor cache-poisoning)
       - name: Run test profile
