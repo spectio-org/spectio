@@ -72,6 +72,9 @@ def build(theme: Theme) -> Sketch:
     s.bucket(fx - 120 + 60, (ny + sy) / 2 - 40, 90, 60, fill="work")
     s.text(fx - 60, (ny + sy) / 2 + 42, "normalise:", size=13, colour=t.dim)
     s.text(fx - 60, (ny + sy) / 2 + 60, "paths, host, user, token", size=13, colour=t.dim)
+    # the normaliser sits on both capture -> fixture flows
+    s.arrow(fx - 60, (ny + sy) / 2 - 48, fx - 60, ny + 12, dashed=True)
+    s.arrow(fx - 60, (ny + sy) / 2 + 72, fx - 60, sy - 12, dashed=True)
     for i, (y, n, label) in enumerate(((ny - 40, 12, "12 Nextflow fixtures"), (sy - 40, 3, "3 Snakemake fixtures"))):
         s.folder(fx, y, 54, 40, fill="done")
         s.task_strip(fx + 66, y + 10, ((n, "done", ""),), cell=12, gap=4, h=20)

@@ -328,15 +328,23 @@
   <path d="M1403.7,392.9 C1403.9,393.4 1405.0,394.1 1405.0,394.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <text x="1360.0" y="477.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="middle" font-weight="normal">normalise:</text>
   <text x="1360.0" y="495.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="middle" font-weight="normal">paths, host, user, token</text>
+  <path d="M1360.7,386.6 C1359.4,339.7 1361.3,290.3 1359.7,241.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1359.2,386.3 C1358.8,339.2 1361.7,292.3 1360.9,241.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1360.1,241.7 C1358.5,246.5 1355.3,249.4 1353.2,254.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1360.0,242.2 C1361.9,246.4 1365.2,250.1 1367.0,254.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1360.4,507.8 C1360.2,546.6 1358.6,587.8 1360.3,628.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1360.2,506.5 C1359.0,547.0 1360.4,588.7 1359.2,628.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1359.8,627.9 C1361.7,623.5 1364.4,620.7 1366.9,616.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1360.3,627.6 C1357.2,624.3 1355.1,619.0 1353.7,615.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1420.0,199.0 L1438.4,199.0 L1441.6,190.0 L1453.5,190.0 L1456.7,199.0 L1474.0,199.0 L1474.0,230.0 L1420.0,230.0 Z" fill="#ebfbee" stroke="none"/>
-  <path d="M1420.3,198.8 C1425.8,199.5 1432.9,199.0 1438.2,198.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1437.9,198.7 C1438.8,196.3 1441.4,194.0 1442.1,189.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1441.7,189.7 C1446.3,190.4 1449.2,189.2 1453.3,190.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1453.5,190.2 C1454.3,193.2 1456.5,195.9 1457.2,199.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1456.9,199.4 C1462.6,198.6 1467.5,199.0 1474.2,199.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1474.1,198.7 C1473.5,209.2 1474.2,220.2 1473.6,230.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1473.8,229.9 C1455.5,229.6 1438.0,231.0 1420.4,230.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1420.3,229.6 C1419.4,220.0 1419.5,208.5 1420.3,198.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1420.2,199.2 C1425.2,199.0 1431.7,200.0 1438.5,198.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1438.5,198.8 C1439.3,196.5 1439.7,193.1 1441.3,190.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1441.2,190.0 C1446.1,190.0 1450.2,190.4 1453.7,190.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1453.5,190.2 C1455.4,192.2 1456.4,195.3 1456.9,199.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1457.2,198.7 C1462.0,199.1 1468.4,198.2 1474.2,199.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1473.8,198.8 C1473.7,209.9 1474.2,220.0 1473.6,230.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1474.1,230.2 C1456.9,229.1 1437.5,229.8 1420.4,230.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1420.2,230.4 C1420.2,220.2 1420.9,210.2 1419.8,198.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <rect x="1486.0" y="200.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
   <rect x="1502.0" y="200.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
   <rect x="1518.0" y="200.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
@@ -351,14 +359,14 @@
   <rect x="1662.0" y="200.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
   <text x="1420.0" y="256.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">12 Nextflow fixtures</text>
   <path d="M1420.0,609.0 L1438.4,609.0 L1441.6,600.0 L1453.5,600.0 L1456.7,609.0 L1474.0,609.0 L1474.0,640.0 L1420.0,640.0 Z" fill="#ebfbee" stroke="none"/>
-  <path d="M1420.2,609.2 C1425.2,609.0 1431.7,610.0 1438.5,608.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1438.5,608.8 C1439.3,606.5 1439.7,603.1 1441.3,600.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1441.2,600.0 C1446.1,600.0 1450.2,600.4 1453.7,600.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1453.5,600.2 C1455.4,602.2 1456.4,605.3 1456.9,609.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1457.2,608.7 C1462.0,609.1 1468.4,608.2 1474.2,609.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1473.8,608.8 C1473.7,619.9 1474.2,630.0 1473.6,640.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1474.1,640.2 C1456.9,639.1 1437.5,639.8 1420.4,640.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1420.2,640.4 C1420.2,630.2 1420.9,620.2 1419.8,608.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1420.5,609.0 C1426.5,609.1 1432.4,608.9 1438.4,608.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1438.2,608.6 C1439.5,606.1 1439.6,603.0 1441.3,600.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1441.9,599.9 C1445.6,600.8 1450.3,601.0 1453.1,600.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1453.7,599.5 C1454.2,602.7 1455.1,606.2 1456.7,609.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1456.8,608.9 C1462.4,608.6 1468.0,608.5 1474.0,609.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1474.5,609.1 C1473.0,618.8 1474.0,630.1 1473.6,639.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1474.1,639.9 C1455.5,639.3 1437.3,640.0 1419.9,639.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1419.7,640.2 C1419.2,628.8 1419.3,619.7 1420.0,608.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <rect x="1486.0" y="610.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
   <rect x="1502.0" y="610.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
   <rect x="1518.0" y="610.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
@@ -368,23 +376,23 @@
   <text x="780.0" y="455.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">1 · both engines report from the main process; we keep every payload</text>
   <text x="50.0" y="790.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15.5" fill="#1e1e1e" text-anchor="start" font-weight="bold">differences that change a spec</text>
   <path d="M62.0,821.0 L73.0,840.8 L51.0,840.8 Z" fill="#fff9db" stroke="none"/>
-  <path d="M62.4,821.0 C66.0,827.6 69.5,834.1 73.1,840.5" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M72.9,840.4 C65.7,840.8 57.6,840.8 50.7,841.1" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M51.3,840.7 C54.7,834.8 59.0,828.4 61.7,821.1" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M62.2,821.2 C65.5,826.8 69.5,834.4 72.6,841.1" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M73.3,840.7 C65.3,840.5 57.6,841.0 51.2,840.8" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M51.2,840.5 C54.1,834.9 58.7,827.3 62.0,820.9" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
   <text x="62.0" y="838.6" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.2" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
   <text x="84.0" y="837.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">last <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">onTaskComplete</tspan> of a process arrives after its <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">onProcessTerminate</tspan></text>
   <text x="84.0" y="858.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">checking-scenarios §11.5: end of stage needs both</text>
   <path d="M632.0,821.0 L643.0,840.8 L621.0,840.8 Z" fill="#fff9db" stroke="none"/>
-  <path d="M632.2,820.6 C635.3,827.3 638.9,834.3 643.0,840.9" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M643.1,840.7 C635.6,840.5 628.2,840.4 621.0,841.1" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M621.4,840.9 C623.9,833.8 628.4,827.9 631.6,820.6" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M631.9,821.2 C635.6,828.2 639.9,834.5 642.7,840.7" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M642.9,840.8 C636.2,840.6 628.6,840.6 620.7,841.0" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M621.3,840.5 C624.3,834.2 628.5,827.3 632.0,821.0" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
   <text x="632.0" y="838.6" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.2" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
   <text x="654.0" y="837.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">Snakemake: no attempt number, no exit code in <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">job_error</tspan></text>
   <text x="654.0" y="858.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">synthesis §2ter retries row; exit code only in the error text</text>
   <path d="M1202.0,821.0 L1213.0,840.8 L1191.0,840.8 Z" fill="#fff9db" stroke="none"/>
-  <path d="M1202.0,820.9 C1205.3,827.0 1208.8,834.2 1212.9,840.5" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1212.7,840.9 C1205.1,840.1 1197.8,841.1 1191.0,840.6" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1191.2,841.0 C1194.5,833.4 1198.5,827.8 1201.6,821.3" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1202.0,821.0 C1205.2,827.4 1209.9,833.6 1213.1,840.6" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1212.7,840.9 C1206.4,841.1 1198.2,841.1 1191.3,840.9" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1190.7,840.4 C1195.0,833.9 1198.4,827.3 1201.9,820.7" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
   <text x="1202.0" y="838.6" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.2" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
   <text x="1224.0" y="837.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">checkpoint: total grows 32 → 67 through <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">progress</tspan>, no DAG event</text>
   <text x="1224.0" y="858.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">matches §2ter; two untyped messages per checkpoint</text>

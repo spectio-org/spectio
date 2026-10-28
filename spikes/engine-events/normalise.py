@@ -7,7 +7,8 @@ Rules (applied to every string, recursively, longest literal first):
   * each --sub literal (launch dir, repo root, scratch dir, $HOME) -> its token (<launch>, <repo>, ...);
   * the host name and the user name -> <host> and <user>;
   * the values of keys that name a person, a host or a secret -> "<redacted>";
-  * the Authorization header value (capture server) -> "<redacted>".
+  * the Authorization header value (capture server) -> "<redacted>";
+  * the string value of each --token-key key -> "<key>" (Snakemake: --token-key platform).
 Timestamps, sequence numbers and IDs (session id, run name, workflow_id) are kept: they are not
 personal, and the same-run check needs them.
 """
@@ -24,6 +25,8 @@ def main() -> int:
     ap.add_argument("--sub", action="append", default=[])
     ap.add_argument("--slim", action="store_true",
                     help="nf-spectio captures: drop the trace record from onTaskPending/Submit/Start")
+    ap.add_argument("--token-key", action="append", default=[],
+                    help="replace the string value of this key by <key> (e.g. platform: the kernel string)")
     a = ap.parse_args()
     subs = [tuple(s.split("=", 1)) for s in a.sub]
     subs += [(os.path.expanduser("~"), "<home>")]
@@ -44,6 +47,8 @@ def main() -> int:
     def walk(o, key=None):
         if key in REDACT_KEYS and o not in (None, "", [], {}):
             return "<redacted>"
+        if key in a.token_key and isinstance(o, str):
+            return f"<{key}>"
         if isinstance(o, str):
             return s(o)
         if isinstance(o, list):

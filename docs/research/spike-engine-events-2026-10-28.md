@@ -25,7 +25,7 @@ Time box: about 60 minutes of work, met. Nothing was edited in the specs: TRIAGE
   | `toolerr` | COMPARE / `compare` for treatA exits 1 | run exit 1; 1 attempt on Nextflow, 3 on Snakemake (T1 finding 2) |
   | `resume` / `rerun` | none, same launch directory | Nextflow `-resume`; Snakemake plain rerun |
 
-  All nine runs ended with the expected exit code (`spikes/engine-events/LOG.md` §2, §3, §5).
+  All nine runs ended with the expected exit code (`spikes/engine-events/LOG.md` §2, §3, §5, branch `spike/engine-events` only: of the spike, only `fixtures/` is meant to be integrated).
 
 ## What was built (branch `spike/engine-events`, throwaway)
 
@@ -43,19 +43,19 @@ Time box: about 60 minutes of work, met. Nothing was edited in the specs: TRIAGE
 
 - **Event mix**, flaky run (469 records): `job_info` 69, `shellcmd` 69, `job_finished` 67, `progress` 67, `job_started` 66, `job_error` 2, `error` 2, `resources_info` 2, `workflow_started`, `rulegraph`, `run_info` 1 each, and **122 untyped records** (`event` absent): "Select jobs to execute..." 66, "DAG of jobs will be updated after completion." 12, "Updating checkpoint dependencies." 12, "Removing temporary output ..." (logged **twice** per file), "Trying to restart job N." and log-file paths.
 - **Checkpoint.** `run_info` says 32 jobs; `progress.total` then climbs 32 → 33 … 43 (one step per `split` job) → 67. No typed event marks the DAG update; the two text messages come from `jobs.py:1107` and `dag.py:2245` (Snakemake 9.27.1 wheel). `job_info.is_checkpoint` is `true` for the 12 `split` jobs.
-- **Retry.** A retried job is re-announced with the **same `jobid`**: `job_info` → `job_error` → text "Trying to restart job 103." (`scheduling/job_scheduler.py:566`) → `job_started` → `job_info` → `job_finished`. No attempt number in any typed field. The synthetic Snakefile happens to expose one through its own `attempt` resource (`job_info.resources.attempt`), which a real workflow will not have.
+- **Retry.** A retried job is re-announced with the **same `jobid`**: `job_started` → `job_info` → `job_error` → text "Trying to restart job 103." (`scheduling/job_scheduler.py:566`) → `job_started` → `job_info` → `job_finished`. No attempt number in any typed field. The synthetic Snakefile happens to expose one through its own `attempt` resource (`job_info.resources.attempt`), which a real workflow will not have.
 - **Failure.** `job_error` carries `rule_name`, `jobid`, `input`, `output`, `log`, `shellcmd`, `conda_env`, `container_img`, `aux` (`jobs.py:1129-1142`), **no exit code**. The exit code is only in the text of the matching `error` record: "CalledProcessError ... returned non-zero exit status 1." A fatal run ends with a last `error`: "WorkflowError: At least one job did not complete successfully."
 - **Identity.** `workflow_started.workflow_id` is a `uuid.UUID` object (`workflow.py:303`); the rerun gets a new one (`6a5d370a…` → `88d1b16b…`), as T1 found. `workflow_started` also carries `host`, `user`, `cmd`, `cwd`, `rundir` and `platform`.
 - **Plugin contract gaps.** With `writes_to_file = True`, Snakemake reads `handler.baseFilename` (`logging.py:661-663`), which `LogHandlerBase` does not declare: the first run crashed with `AttributeError`. `resources` arrives as a `snakemake.io.Namedlist` and loses its names unless converted. The registry reads a settings class named `LogHandlerSettings` (`registry/__init__.py`), while the `settings.py` docstring says `LoggerSettings`. Records reach the handler through a `QueueListener` thread (`logging.py:673-679`), as [`synthesis.md`](../specs/synthesis.md) §2bis says.
 
 ### Nextflow, Tower protocol (26.10.4 and 25.10.9)
 
-- **Routes.** Every run: `POST /trace/create`, `PUT /trace/{id}/begin`, 2 to 11 `PUT /trace/{id}/progress`, `PUT /trace/{id}/complete`. No `/heartbeat` (no run lasted a minute) and no `GET`. User agent `Nextflow/<version>`; the token goes in an `Authorization` header.
+- **Routes.** Every run: `POST /trace/create`, `PUT /trace/{id}/begin`, 2 to 12 `PUT /trace/{id}/progress`, `PUT /trace/{id}/complete`. The failed 25.10.9 run (`toolerr`) sent `PUT /trace/{id}/complete` **twice**: the Tower counterpart of its double `onFlowComplete` (below). No `/heartbeat` (no run lasted a minute) and no `GET`. User agent `Nextflow/<version>`; the token goes in an `Authorization` header.
 - **create** body: `instant`, `projectName`, `repository`, `runName`, `sessionId`, `workflowId` (null without `TOWER_WORKFLOW_ID`). A reply holding only `workflowId` is enough.
-- **begin** body: `workflow` (42 keys, including `params`, `configText`, `manifest`, `launchDir`, `workDir`, `userName`, `homeDir`, `commandLine`), `processNames`, `towerLaunch` (false), `instant`, and `dag` **on 26.10.4 only**.
-- **progress** body: `tasks`, `progress` (with a per-`processes` breakdown), `containers`, `instant`. Task records have up to 53 keys (as few as 33 on early records), among them `script` (the task command) and `env`. Tasks are sent from `NEW` on: the flaky run on 26.10.4 sent 57 `NEW`, 1 `SUBMITTED`, 9 `RUNNING`, 65 `COMPLETED` and 2 `FAILED` records for 67 task IDs.
+- **begin** body: `workflow` (42 keys on 26.10.4, 41 on 25.10.9, which has no `platform`; including `params`, `configText`, `manifest`, `launchDir`, `workDir`, `userName`, `homeDir`, `commandLine`), `processNames`, `towerLaunch` (false), `instant`, and `dag` **on 26.10.4 only**.
+- **progress** body: `tasks`, `progress` (with a per-`processes` breakdown), `containers`, `instant`. Task records have 33–53 keys on 26.10.4 and 26–46 on 25.10.9 (fewer on early records), among them `script` (the task command) and `env`. Tasks are sent from `NEW` on: in the shipped fixture `nextflow-26.10.4_tower_flaky.jsonl` (`analyse_tower.py`), the flaky run sent 59 `NEW`, 3 `SUBMITTED`, 8 `RUNNING`, 65 `COMPLETED` and 2 `FAILED` records for 67 task IDs.
 - **Retry.** The failed attempt is `FAILED`, `exit` 1, `attempt` 1, `errorAction` `RETRY`; the retry is a new `taskId` with `attempt` 2. `complete.progress`: `failed` 2, `retries` 2, `succeeded` 65.
-- **Tool error.** COMPARE treatA `FAILED`, `errorAction` `TERMINATE`; FINAL_REPORT stays `NEW` in the last record; `complete.workflow.success` false, `errorMessage` "synthetic failure: tool exited with code 1".
+- **Tool error.** COMPARE treatA `FAILED`, `errorAction` `TERMINATE`. On 26.10.4, FINAL_REPORT stays `NEW` in the last record. On 25.10.9, the last record of COMPARE treatB_vs_ctrl is `ABORTED` and FINAL_REPORT never appears. In both, `complete.workflow.success` false, `errorMessage` "synthetic failure: tool exited with code 1".
 - **Resume.** `begin.workflow.resume` true, new run name, same session ID; tasks arrive as `CACHED` (63 on 26.10.4, 62 on 25.10.9: the count depends on timing, as in T1).
 
 ### Nextflow, `nf-spectio` next to `nf-tower`
@@ -80,7 +80,7 @@ Time box: about 60 minutes of work, met. Nothing was edited in the specs: TRIAGE
 
 ## Evidence
 
-Fixtures, branch `spike/engine-events`, `spikes/engine-events/fixtures/` (18 files, 2.6 MB):
+Fixtures, branch `spike/engine-events`, `spikes/engine-events/fixtures/` (15 files, 2.6 MB: 12 Nextflow, 3 Snakemake):
 
 | Engine | Files |
 |---|---|
@@ -88,9 +88,9 @@ Fixtures, branch `spike/engine-events`, `spikes/engine-events/fixtures/` (18 fil
 | Nextflow 26.10.4 | `nextflow-26.10.4_{tower,plugin}_{flaky,toolerr,resume}.jsonl` |
 | Nextflow 25.10.9 | `nextflow-25.10.9_{tower,plugin}_{flaky,toolerr,resume}.jsonl` |
 
-- **Normalisation** (`spikes/engine-events/normalise.py`): the launch directory, the repository root, the scratch directory and `$HOME` become `<launch>`, `<repo>`, `<scratch>`, `<home>`; the host name (whole word) becomes `<host>`, the user name in a path or command becomes `<user>`; the values of `userName`, `user`, `hostname`, `homeDir`, `token` and similar keys become `<redacted>`; the dummy token becomes `<token>` (it never appears: the server logs only that the header was there). Timestamps, IDs and run names are kept: the same-run check needs them. In the plugin fixtures, the trace record is dropped from `onTaskPending`, `onTaskSubmit` and `onTaskStart` (`--slim`, size only: it is repeated on `onTaskComplete`). A grep for the host, user, token, home and scratch paths over the fixtures finds nothing.
-- **Summaries:** `analyse_snakemake.py`, `analyse_tower.py`, `analyse_plugin.py` (the plugin one compares a plugin fixture with the Tower fixture of the same run). Their output is in `LOG.md`.
-- **Commands and outputs:** `spikes/engine-events/LOG.md`.
+- **Normalisation** (`spikes/engine-events/normalise.py`, branch `spike/engine-events` only): the launch directory, the repository root, the scratch directory and `$HOME` become `<launch>`, `<repo>`, `<scratch>`, `<home>`; the Snakemake `platform` string (kernel version) becomes `<platform>` (`--token-key platform`); the host name (whole word) becomes `<host>`, the user name in a path or command becomes `<user>`; the values of `userName`, `user`, `hostname`, `homeDir`, `token` and similar keys become `<redacted>`; the dummy token becomes `<token>` (it never appears: the server logs only that the header was there). Timestamps, IDs and run names are kept: the same-run check needs them. In the plugin fixtures, the trace record is dropped from `onTaskPending`, `onTaskSubmit` and `onTaskStart` (`--slim`, size only: it is repeated on `onTaskComplete`). A grep for the host, user, token, home and scratch paths over the fixtures finds nothing.
+- **Summaries:** `analyse_snakemake.py`, `analyse_tower.py`, `analyse_plugin.py` (branch `spike/engine-events` only; the plugin one compares a plugin fixture with the Tower fixture of the same run). Their output is in `LOG.md`.
+- **Commands and outputs:** `spikes/engine-events/LOG.md` (branch `spike/engine-events` only).
 
 ## Differences with the specs
 
@@ -103,10 +103,10 @@ Compared with [`synthesis.md`](../specs/synthesis.md) §2, §2bis, §2ter and [`
 | 3 | checking-scenarios §11.1 | `event.handler.task.outputs` "holds them" | Present (both versions), also in `onTaskCached`; keys are `OutParam` objects; `path` outputs have **no name**; values are absolute work-dir paths, lists for multi-file outputs | §11.1: match outputs by declared index (`fileoutparam<0:1>`) and glob on the file name, not by an output name; note `onTaskCached` as a second source on resume |
 | 4 | checking-scenarios §11.1 | Snakemake `JOB_INFO`: `jobs.py:1028-1045` at `1c67a66` | At v9.27.1 the emission is `Job.log_info`, `jobs.py:1060-1101`; it also carries `reason`, `resources`, `threads`, `priority`, `benchmark`, `shellcmd`, `is_checkpoint`, `is_handover` | §11.1: refresh the citation to the pinned version |
 | 5 | synthesis §2 (Nextflow hooks) | Lists `onFlowError` as a hook | `onFlowError` comes **after** `onFlowComplete` (26.10.4), and its `TaskEvent` has no handler | §2 / `nf-spectio` design: do not treat `onFlowComplete` as the last event; wait for observer shutdown or a short drain |
-| 6 | synthesis §2 | One `onFlowComplete` per run (implied) | 25.10.9, failed run: `onFlowComplete` **twice** | `nf-spectio` must be idempotent on flow completion (api-and-data-model §8.2 lattice) |
+| 6 | synthesis §2 | One `onFlowComplete` per run (implied) | 25.10.9, failed run: `onFlowComplete` **twice**, and the Tower client sent `PUT /trace/{id}/complete` twice in the same run | `nf-spectio` must be idempotent on flow completion (api-and-data-model §8.2 lattice) |
 | 7 | synthesis §2ter (Nextflow column, retries) | Status per task from the trace | In `nf-spectio`, `handler.status` is `COMPLETED` on a failed attempt (once `RUNNING` on 25.10.9); the failure is in `trace.status` `FAILED`, `exitStatus`, `task.errorAction` | §2ter / `nf-spectio`: derive the attempt state from the trace record and `errorAction`, never from `handler.status` |
 | 8 | synthesis §2ter (Nextflow, resume) | Cached tasks: `onTaskCached` | Cached tasks fire only `onTaskCached` (no pending/submit/start), with outputs; `onFilePublish` fires again for every published file of a cached task | §2ter: a resume republishes; the server must dedupe `onFilePublish` by target (and checks must not re-run on unchanged files) |
-| 9 | synthesis §2ter (conditional execution) | A task filtered by `when:` produces no event | Also: on a fatal error a task can get `onTaskPending` and nothing else (FINAL_REPORT, 26.10.4); Tower leaves it `NEW` | §2ter: close tasks still pending at flow end (`not_scheduled` or `cancelled`, api-and-data-model §7.2) |
+| 9 | synthesis §2ter (conditional execution) | A task filtered by `when:` produces no event | Also: on a fatal error a task can get `onTaskPending` and nothing else (FINAL_REPORT, 26.10.4); Tower leaves it `NEW`. On 25.10.9 a running task ends `ABORTED` in Tower (COMPARE treatB_vs_ctrl) and FINAL_REPORT never appears | §2ter: close tasks still pending at flow end (`not_scheduled` or `cancelled`, api-and-data-model §7.2) |
 | 10 | synthesis §2bis (begin) | `dag` (new, optional) | Present on 26.10.4, **absent** on 25.10.9 | §2bis: say which versions send it |
 | 11 | synthesis §2bis (progress) | Tasks with "all trace record fields" | Includes `script` (the task command) and `env`; tasks are sent from `NEW` on | §2bis note (Tower column only, decision 0001); for `nf-spectio`, decide whether `script` and `env` leave the cluster (secrets in commands) — security-reviewer |
 | 12 | synthesis §2bis | `nf-tower` "shipped with Nextflow" | Listed as a core plugin, but **downloaded from the registry on first use** into `~/.nextflow/plugins` (1.32.2 for 26.10.4, 1.17.8 for 25.10.9) | §2bis; matters for offline HPC (and for `nf-spectio`, which needs the same plugin cache) |

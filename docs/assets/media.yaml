@@ -182,6 +182,12 @@ media:
       - docs/assets/diagrams/t2-engine-events_dark.svg
       - docs/assets/diagrams/t2-engine-events_light.png
       - docs/assets/diagrams/t2-engine-events_dark.png
+  - id: t2-engine-events-cast
+    kind: cast
+    # runs.sh replayed from spikes/engine-events/LOG.md §5 through a stub; analyse_*.py run for real on
+    # the fixtures. Regenerate from branch spike/engine-events (the scripts live there only).
+    generator: python3 tools/media/cast.py tools/media/casts/t2-engine-events.yaml
+    outputs: [docs/assets/casts/t2-engine-events.cast]
   - id: dev-toolchain
     kind: diagram
     # PNGs need the local Virgil font (SPECTIO_VIRGIL_TTF), not committed (inbox #1)

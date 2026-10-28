@@ -143,11 +143,34 @@ The same class files, built against 26.10.4, also load on 25.10.9.
 
 ```console
 $ PLUGIN=1 bash nextflow/runs.sh $S/eng/nextflow-26.10.4 $S 8765
-flaky exit=0 / toolerr exit=1 / resume exit=0
+flaky exit=0
+toolerr exit=1
+resume exit=0
+fixtures/nextflow-26.10.4_tower_flaky.jsonl: 10 lines, 199689 bytes
+fixtures/nextflow-26.10.4_plugin_flaky.jsonl: 306 lines, 392188 bytes      (before --slim; 258074 after)
+fixtures/nextflow-26.10.4_tower_toolerr.jsonl: 15 lines, 219027 bytes
+fixtures/nextflow-26.10.4_plugin_toolerr.jsonl: 293 lines, 371879 bytes
+fixtures/nextflow-26.10.4_tower_resume.jsonl: 6 lines, 127086 bytes
+fixtures/nextflow-26.10.4_plugin_resume.jsonl: 109 lines, 143908 bytes
 $ PLUGIN=1 bash nextflow/runs.sh $S/eng/nextflow-25.10.9 $S 8766
 flaky exit=0 / toolerr exit=1 / resume exit=0
 $ bash $S/renorm.sh       # plugin fixtures again with --slim (trace record dropped from pending/submit/start)
-2.6M fixtures
+2.6M fixtures            # 15 files: 12 Nextflow, 3 Snakemake
+```
+
+Review fixes (doc review, same day): the Snakemake `platform` string (kernel version) is now replaced by
+`<platform>` (`normalise.py --token-key platform`, passed by `snakemake/runs.sh`); the three Snakemake
+fixtures were normalised again from the raw captures, a one-line change each, and `analyse_snakemake.py`
+prints the same summaries as above.
+
+```console
+$ python3 analyse_tower.py fixtures/nextflow-26.10.4_tower_flaky.jsonl | grep "task statuses"
+ task statuses: {'RUNNING': 8, 'COMPLETED': 65, 'NEW': 59, 'SUBMITTED': 3, 'FAILED': 2}
+$ python3 analyse_tower.py fixtures/nextflow-25.10.9_tower_toolerr.jsonl | grep "counts\|final statuses"
+ counts: {('POST', '/trace/create'): 1, ('PUT', '/trace/{id}/begin'): 1, ('PUT', '/trace/{id}/progress'): 7, ('PUT', '/trace/{id}/complete'): 2}
+ distinct taskIds: 64 final statuses: {'COMPLETED': 62, 'FAILED': 1, 'ABORTED': 1}
+$ python3 tools/media/cast.py tools/media/casts/t2-engine-events.yaml
+-> docs/assets/casts/t2-engine-events.cast  (16.3 s, 519 events, 14 KB)
 ```
 
 ```console
