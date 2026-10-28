@@ -1,0 +1,369 @@
+{
+ "_fixture": {
+  "request": "GET /slurm/v0.0.45/nodes",
+  "slurm": "26.05.5",
+  "source": "https://github.com/weber8thomas/spectio/actions/runs/40680736055"
+ },
+ "errors": [],
+ "last_update": {
+  "infinite": false,
+  "number": 1793187287,
+  "set": true
+ },
+ "meta": {
+  "client": {
+   "group": "root",
+   "source": "172.19.0.3:6820(fd:9)",
+   "user": "root"
+  },
+  "command": [],
+  "plugin": {
+   "accounting_storage": "accounting_storage/slurmdbd",
+   "data_parser": "data_parser/v0.0.45",
+   "name": "Slurm OpenAPI slurmctld",
+   "type": "openapi/slurmctld"
+  },
+  "slurm": {
+   "cluster": "rest",
+   "release": "26.05.5",
+   "version": {
+    "major": "26",
+    "micro": "5",
+    "minor": "05"
+   }
+  }
+ },
+ "nodes": [
+  {
+   "active_features": [],
+   "address": "worker-0",
+   "alloc_cpus": 0,
+   "alloc_idle_cpus": 2,
+   "alloc_memory": 0,
+   "architecture": "x86_64",
+   "boards": 1,
+   "boot_time": {
+    "infinite": false,
+    "number": 1793187186,
+    "set": true
+   },
+   "burstbuffer_network_address": "",
+   "cert_flags": [],
+   "cluster_name": "",
+   "comment": "",
+   "cores": 1,
+   "cpu_binding": 0,
+   "cpu_load": 277,
+   "cpus": 2,
+   "effective_cpus": 2,
+   "energy": {
+    "average_watts": 0,
+    "base_consumed_energy": 0,
+    "consumed_energy": 0,
+    "current_watts": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "last_collected": 0,
+    "previous_consumed_energy": 0
+   },
+   "extra": "",
+   "features": [],
+   "free_mem": {
+    "infinite": false,
+    "number": 7404,
+    "set": true
+   },
+   "gpu_spec": "",
+   "gres": "",
+   "gres_drained": "N/A",
+   "gres_used": "",
+   "hostname": "worker-0",
+   "instance_id": "",
+   "instance_type": "",
+   "last_busy": {
+    "infinite": false,
+    "number": 1793187286,
+    "set": true
+   },
+   "mcs_label": "",
+   "name": "worker-0",
+   "next_state_after_reboot": [
+    "INVALID"
+   ],
+   "operating_system": "Linux 6.17.0-1022-azure #22-Ubuntu SMP Mon Jul 27 17:24:03 UTC 2026",
+   "owner": "",
+   "partitions": [
+    "htc",
+    "all"
+   ],
+   "port": 6818,
+   "real_memory": 1536,
+   "reason": "",
+   "reason_changed_at": {
+    "infinite": false,
+    "number": 0,
+    "set": true
+   },
+   "reason_set_by_user": "",
+   "res_cores_per_gpu": 0,
+   "reservation": "",
+   "resume_after": {
+    "infinite": false,
+    "number": 0,
+    "set": true
+   },
+   "slurmd_start_time": {
+    "infinite": false,
+    "number": 1793187283,
+    "set": true
+   },
+   "sockets": 2,
+   "specialized_cores": 0,
+   "specialized_cpus": "",
+   "specialized_memory": 0,
+   "state": [
+    "IDLE"
+   ],
+   "suspend_time": {
+    "infinite": true,
+    "number": 0,
+    "set": false
+   },
+   "temporary_disk": 0,
+   "threads": 1,
+   "tls_cert_last_renewal": {
+    "infinite": false,
+    "number": 0,
+    "set": true
+   },
+   "topology": "",
+   "tres": "cpu=2,mem=1.50G,billing=2",
+   "tres_used": "",
+   "version": "26.05.5",
+   "weight": 1
+  },
+  {
+   "active_features": [],
+   "address": "worker-1",
+   "alloc_cpus": 0,
+   "alloc_idle_cpus": 2,
+   "alloc_memory": 0,
+   "architecture": "x86_64",
+   "boards": 1,
+   "boot_time": {
+    "infinite": false,
+    "number": 1793187186,
+    "set": true
+   },
+   "burstbuffer_network_address": "",
+   "cert_flags": [],
+   "cluster_name": "",
+   "comment": "",
+   "cores": 1,
+   "cpu_binding": 0,
+   "cpu_load": 277,
+   "cpus": 2,
+   "effective_cpus": 2,
+   "energy": {
+    "average_watts": 0,
+    "base_consumed_energy": 0,
+    "consumed_energy": 0,
+    "current_watts": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "last_collected": 0,
+    "previous_consumed_energy": 0
+   },
+   "extra": "",
+   "features": [],
+   "free_mem": {
+    "infinite": false,
+    "number": 7394,
+    "set": true
+   },
+   "gpu_spec": "",
+   "gres": "",
+   "gres_drained": "N/A",
+   "gres_used": "",
+   "hostname": "worker-1",
+   "instance_id": "",
+   "instance_type": "",
+   "last_busy": {
+    "infinite": false,
+    "number": 1793187283,
+    "set": true
+   },
+   "mcs_label": "",
+   "name": "worker-1",
+   "next_state_after_reboot": [
+    "INVALID"
+   ],
+   "operating_system": "Linux 6.17.0-1022-azure #22-Ubuntu SMP Mon Jul 27 17:24:03 UTC 2026",
+   "owner": "",
+   "partitions": [
+    "htc",
+    "all"
+   ],
+   "port": 6818,
+   "real_memory": 1536,
+   "reason": "",
+   "reason_changed_at": {
+    "infinite": false,
+    "number": 0,
+    "set": true
+   },
+   "reason_set_by_user": "",
+   "res_cores_per_gpu": 0,
+   "reservation": "",
+   "resume_after": {
+    "infinite": false,
+    "number": 0,
+    "set": true
+   },
+   "slurmd_start_time": {
+    "infinite": false,
+    "number": 1793187283,
+    "set": true
+   },
+   "sockets": 2,
+   "specialized_cores": 0,
+   "specialized_cpus": "",
+   "specialized_memory": 0,
+   "state": [
+    "IDLE"
+   ],
+   "suspend_time": {
+    "infinite": true,
+    "number": 0,
+    "set": false
+   },
+   "temporary_disk": 0,
+   "threads": 1,
+   "tls_cert_last_renewal": {
+    "infinite": false,
+    "number": 0,
+    "set": true
+   },
+   "topology": "",
+   "tres": "cpu=2,mem=1.50G,billing=2",
+   "tres_used": "",
+   "version": "26.05.5",
+   "weight": 1
+  },
+  {
+   "active_features": [],
+   "address": "worker-2",
+   "alloc_cpus": 0,
+   "alloc_idle_cpus": 2,
+   "alloc_memory": 0,
+   "architecture": "x86_64",
+   "boards": 1,
+   "boot_time": {
+    "infinite": false,
+    "number": 1793187186,
+    "set": true
+   },
+   "burstbuffer_network_address": "",
+   "cert_flags": [],
+   "cluster_name": "",
+   "comment": "",
+   "cores": 1,
+   "cpu_binding": 0,
+   "cpu_load": 277,
+   "cpus": 2,
+   "effective_cpus": 2,
+   "energy": {
+    "average_watts": 0,
+    "base_consumed_energy": 0,
+    "consumed_energy": 0,
+    "current_watts": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "last_collected": 0,
+    "previous_consumed_energy": 0
+   },
+   "extra": "",
+   "features": [],
+   "free_mem": {
+    "infinite": false,
+    "number": 7382,
+    "set": true
+   },
+   "gpu_spec": "",
+   "gres": "",
+   "gres_drained": "N/A",
+   "gres_used": "",
+   "hostname": "worker-2",
+   "instance_id": "",
+   "instance_type": "",
+   "last_busy": {
+    "infinite": false,
+    "number": 1793187283,
+    "set": true
+   },
+   "mcs_label": "",
+   "name": "worker-2",
+   "next_state_after_reboot": [
+    "INVALID"
+   ],
+   "operating_system": "Linux 6.17.0-1022-azure #22-Ubuntu SMP Mon Jul 27 17:24:03 UTC 2026",
+   "owner": "",
+   "partitions": [
+    "bigmem",
+    "all"
+   ],
+   "port": 6818,
+   "real_memory": 3072,
+   "reason": "",
+   "reason_changed_at": {
+    "infinite": false,
+    "number": 0,
+    "set": true
+   },
+   "reason_set_by_user": "",
+   "res_cores_per_gpu": 0,
+   "reservation": "",
+   "resume_after": {
+    "infinite": false,
+    "number": 0,
+    "set": true
+   },
+   "slurmd_start_time": {
+    "infinite": false,
+    "number": 1793187283,
+    "set": true
+   },
+   "sockets": 2,
+   "specialized_cores": 0,
+   "specialized_cpus": "",
+   "specialized_memory": 0,
+   "state": [
+    "IDLE"
+   ],
+   "suspend_time": {
+    "infinite": true,
+    "number": 0,
+    "set": false
+   },
+   "temporary_disk": 0,
+   "threads": 1,
+   "tls_cert_last_renewal": {
+    "infinite": false,
+    "number": 0,
+    "set": true
+   },
+   "topology": "",
+   "tres": "cpu=2,mem=3G,billing=2",
+   "tres_used": "",
+   "version": "26.05.5",
+   "weight": 1
+  }
+ ],
+ "warnings": []
+}

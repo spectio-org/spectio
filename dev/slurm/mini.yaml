@@ -1,0 +1,28 @@
+# slurm-mini (docs/specs/dev-environment-and-testing.md §4.1): controller, one worker, no accounting
+# (no db node). A submitter is added as the login node where the engines run, and the worker forms
+# partition htc, the queue of the synthetic pipelines' slurm profiles. Rendered by
+# dev/slurm/cluster.sh, as site.yaml.
+kind: Cluster
+name: @NAME@
+defaults:
+  image: @IMAGE@
+storage:
+  dataStorage:
+    type: hostPath
+    hostPath: @DATA@
+    mountPath: @DATA@
+users:
+  - name: spx
+    uid: @UID@
+nodes:
+  - role: controller
+    memory: 1g
+  - role: submitter
+    cpus: 2
+    memory: 3g
+  - role: worker
+    cpus: 2
+    memory: 2g
+slurm:
+  main: |
+    PartitionName=htc Nodes=worker-0 Default=YES MaxTime=60

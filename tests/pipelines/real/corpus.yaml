@@ -13,9 +13,12 @@ versions:
 runner_limits:
   # Measured on the private-repo ubuntu-latest runner (ubuntu-26.04 image, T7, 2026-10-27): 2 CPU, MemTotal 7.75 GB,
   # 6.9 GB available before a run, 3 GB swap; Nextflow's local executor sees 7.7 GB. 6 GB leaves room for the Nextflow
-  # JVM and Docker, and two 6 GB tasks never run together. Public runners (4 CPU / 16 GB) are not measured yet.
+  # JVM and Docker, and two 6 GB tasks never run together.
+  # Public runners (the repository is public since 2026-10-28), measured in nightly run 40649538349: 4 CPU, MemTotal
+  # 16366644 kB (15.6 GB), 14.66 GB available before a run; the highest run peak was 8.35 GB (viralrecon). 13 GB leaves
+  # room for the Nextflow JVM and Docker.
   private: {cpus: 2, memory: "6.GB", time: "2.h"}
-  public:  {cpus: 4, memory: "15.GB", time: "2.h"}
+  public:  {cpus: 4, memory: "13.GB", time: "2.h"}
 
 nfcore:
   - {name: demo,                  version: 1.2.0,  min_nf: 25.10.4, tier: pr,      class: run-only,          gate: "after MULTIQC: sample QC table"}
