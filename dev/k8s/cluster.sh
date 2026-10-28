@@ -47,7 +47,7 @@ install_kueue() {
     kubectl apply -f "$here/kueue-queues.yaml" && break
     sleep 4
   done
-  kubectl get clusterqueue cq-main cq-tight >/dev/null
+  kubectl get -f "$here/kueue-queues.yaml" >/dev/null # fails if the retries never applied them
   kubectl wait --for=condition=Available apiservice/v1beta2.visibility.kueue.x-k8s.io --timeout=180s
   log "Kueue v$KUEUE_VERSION ready in $((SECONDS - t)) s"
 }
