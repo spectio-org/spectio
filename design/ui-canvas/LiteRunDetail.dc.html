@@ -40,6 +40,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
             </span>
           </div>
           <button type="button" aria-haspopup="dialog" style="height: 42px; padding: 0 16px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #F2B8B8; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #B02A2A; cursor: pointer; display: flex; align-items: center;">Cancel run</button>
+          <button type="button" aria-haspopup="menu" aria-expanded="false" style="height: 42px; padding: 0 16px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: flex; align-items: center; gap: 8px;">Copy<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
         </div>
         <section class="cx" style="padding: 8px 20px 12px; border-top: 1px solid #EEEFF5;"><h2 style="margin: 0; font-size: 14px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 32px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01"/></svg></span><span style="min-width: 0;">Facts</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">nf-core/rnaseq 3.27.0 · Nextflow 25.10.4 · head alive</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1">
         <dl style="margin: 0; padding: 4px 0 4px; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px 18px; font-size: 13px;">
@@ -155,6 +156,19 @@ tmux attach -t spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W</pre>
               <div style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; padding-top: 6px; border-top: 1px solid #EEEFF5;"><code style="font-family: 'JetBrains Mono', monospace; color: #22253A;">{{p.k}}</code><span style="text-align: right; overflow-wrap: anywhere;">{{p.v}}</span></div>
             </sc-for>
           </div></div></section>
+          <section class="cx" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><h2 id="h-results" style="margin: 0; font-size: 15px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-6" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"/></svg></span><span style="min-width: 0;">Results and reports</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">FastQC ready · MultiQC at the end</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-6"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+            <span style="font-size: 12px; color: #6E7287;">Results directory, from <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">--outdir</code>. Read-only.</span>
+            <span style="display: flex; gap: 8px; align-items: center;"><code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #22253A; overflow-wrap: anywhere; flex: 1 1 auto; min-width: 0;">/g/demo-lab/rnaseq/2026-10-25</code><button type="button" aria-label="Copy the results directory" style="height: 32px; padding: 0 10px; border-radius: 9px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 12.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; flex-shrink: 0;">Copy</button></span>
+            <h3 style="margin: 4px 0 0; font-size: 12.5px; font-weight: 600; color: #33364A;">Reports</h3>
+            <sc-for list="{{reports}}" as="r" hint-placeholder-count="3">
+              <div style="display: flex; gap: 8px; align-items: center; font-size: 12.5px; padding-top: 6px; border-top: 1px solid #EEEFF5;"><span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 2px;"><span style="font-weight: 500;">{{r.name}}</span><span style="color: #6E7287; font-size: 11.5px;">{{r.sub}}</span></span><sc-if value="{{r.ready}}"><a href="{{r.href}}" aria-label="{{r.aria}}" style="font-size: 12.5px; font-weight: 600; text-decoration: none; flex-shrink: 0;">{{r.act}}</a></sc-if></div>
+            </sc-for>
+            <h3 style="margin: 4px 0 0; font-size: 12.5px; font-weight: 600; color: #33364A;">Folders</h3>
+            <sc-for list="{{folders}}" as="f" hint-placeholder-count="4">
+              <a href="LiteResults.dc.html" aria-label="Browse {{f.n}}, {{f.sub}}" style="display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; padding-top: 6px; border-top: 1px solid #EEEFF5; text-decoration: none; color: #22253A;"><code style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">{{f.n}}</code><span style="color: #4D5065;">{{f.sub}}</span></a>
+            </sc-for>
+            <span style="font-size: 11.5px; color: #6E7287; line-height: 1.45;">Reports open in Spectio's sandboxed report viewer: their scripts run, but they cannot reach Spectio.</span>
+          </div></div></section>
         </aside>
       </div>
     </main>
@@ -216,6 +230,17 @@ renderVals() {
       { t: '08:43:04 [9d/77c21] SUBREAD_FEATURECOUNTS (S19) submitted', c: '#C4C7D4' },
       { t: '08:44:18 [2f/90aa2] SALMON_QUANT (S03) completed', c: '#7FD3AA' },
       { t: '08:45:00 progress 524 / 803 tasks', c: '#9CC2FB' }
+    ],
+    reports: [
+      { name: 'MultiQC report', sub: 'written at the end of the run', ready: false },
+      { name: 'Execution report', sub: 'pipeline_info · written at the end of the run', ready: false },
+      { name: 'FastQC reports', sub: '20 HTML files · fastqc/', ready: true, href: 'LiteResults.dc.html', act: 'Browse fastqc/', aria: 'Browse the FastQC reports in fastqc/' }
+    ],
+    folders: [
+      { n: 'fastqc/', sub: 'modified 09:02' },
+      { n: 'trimgalore/', sub: 'modified 08:57' },
+      { n: 'star_salmon/', sub: 'modified 08:44' },
+      { n: 'pipeline_info/', sub: 'modified 07:41' }
     ],
     params: [
       { k: 'input', v: 'samplesheet.csv' },

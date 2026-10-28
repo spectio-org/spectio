@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — resume a run (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chips::-webkit-scrollbar{display:none}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div inert aria-hidden="true">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="wgs-cohort-12" sub="Failed · 143 / 175 jobs done" back="MLiteRuns.dc.html" backLabel="Back to runs" hint-size="390px,104px"></dc-import></div>
+  <main style="position: absolute; top: 104px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <section style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 14px; display: flex; flex-direction: column; gap: 10px;">
+      <span style="font-size: 14px; font-weight: 600; color: #B02A2A;">Failed · 2 jobs failed after their retries</span>
+      <button type="button" style="height: 40px; padding: 0 16px; border-radius: 11px; border: none; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; height: 44px; justify-content: center;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6 M4 4v4h4"/></svg>Resume</button>
+    </section>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="runs" hint-size="390px,72px"></dc-import></div>
+  </div>
+  <div aria-hidden="true" style="position: absolute; inset: 0; z-index: 4; background: rgba(15,16,32,0.45);"></div>
+  <section role="dialog" aria-modal="true" aria-labelledby="sheet-title" aria-describedby="sheet-desc" style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 5; background: #FFFFFF; border-radius: 22px 22px 0 0; padding: 10px 16px 24px; display: flex; flex-direction: column; gap: 12px; box-shadow: 0 -12px 32px -16px rgba(15,16,32,0.4); font-family: 'Inter', system-ui, sans-serif;">
+    <span aria-hidden="true" style="align-self: center; width: 40px; height: 4px; border-radius: 2px; background: #DFE1EA;"></span>
+    <h2 id="sheet-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 21px;">Resume this run?</h2>
+    <p id="sheet-desc" style="margin: 0; font-size: 14.5px; color: #22253A; line-height: 1.5;">Spectio starts a new run in the same launch directory. Snakemake runs again with <code style="font-family: 'JetBrains Mono', monospace; font-size: 13px;">--rerun-incomplete</code> and reuses the 143 jobs that finished. This run stays Failed.</p>
+    <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #22253A; background: #F7F7FB; border-radius: 12px; padding: 10px 12px; overflow-wrap: anywhere; line-height: 1.5;">/scratch/amartin/spectio-runs/run_01JB7X2M9C4D6F8G0H1JF5KZNW/launch</span>
+    <span style="font-size: 13px; color: #33364A; line-height: 1.5;">The head of this run has ended on login1 (checked): Spectio unlocks the directory first.</span>
+    <button type="button" style="height: 50px; border-radius: 14px; border: none; background: #7750D4; color: #FFFFFF; font: 600 15px 'Inter', sans-serif; cursor: pointer;">Resume</button>
+    <button type="button" autofocus style="height: 50px; border-radius: 14px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #FFFFFF; color: #22253A; font: 600 15px 'Inter', sans-serif; cursor: pointer;">Cancel</button>
+    <span style="font-size: 11.5px; color: #6E7287; line-height: 1.4;">Board note: the page behind is inert while the sheet is open; focus starts on Cancel and stays in the sheet; closing it returns focus to Resume.</span>
+  </section>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>

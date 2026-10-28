@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — run actions</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600;700&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}a:hover{color:#4D368B}
+.chips::-webkit-scrollbar{display:none}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+
+</style>
+</helmet>
+<div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
+  <div style="grid-column: 1 / 3;"><dc-import name="LiteTopbar" crumbs="Runs / wgs-cohort-12" hint-size="100%,76px"></dc-import></div>
+  <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="LiteSidebar" active="runs" hint-size="236px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
+    <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
+      <div style="display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Run actions: Resume and Copy</h1>
+        <span style="font-size: 14px; color: #4D5065;">Resume asks first and says why when it cannot run; Copy is in the header of every run, on every tab.</span>
+      </div>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 14px;">
+        <section aria-label="A · resume dialog" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">A · RESUME DIALOG</span>
+          <section role="dialog" aria-labelledby="resume-title" aria-describedby="resume-desc" style="border-radius: 18px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 24px 48px -24px rgba(15,16,32,0.45); padding: 20px 22px; display: flex; flex-direction: column; gap: 12px;">
+            <h2 id="resume-title" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 22px;">Resume this run?</h2>
+            <p id="resume-desc" style="margin: 0; font-size: 14px; color: #22253A; line-height: 1.5;">Spectio starts a new run in the same launch directory, <span style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; overflow-wrap: anywhere;">/scratch/amartin/spectio-runs/run_01JB7X2M9C4D6F8G0H1JF5KZNW/launch</span>. Snakemake runs again with <code style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">--rerun-incomplete</code> and reuses the 143 jobs that finished. This run stays Failed.</p>
+            <span style="font-size: 13px; color: #33364A; line-height: 1.5; background: #F7F7FB; border-radius: 12px; padding: 10px 12px;">The head of this run has ended on login1 (checked): Spectio unlocks the directory first.</span>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+              <button type="button" autofocus style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none; height: 42px; box-shadow: inset 0 0 0 1px #C4C7D4;">Cancel</button>
+              <button type="button" style="height: 40px; padding: 0 16px; border-radius: 11px; border: none; background: #7750D4; color: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; height: 42px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6 M4 4v4h4"/></svg>Resume</button>
+            </div>
+          </section>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">In the app the dialog is aria-modal over the inert page (as LiteCancelDialog); focus starts on Cancel and returns to Resume. Nextflow says "-resume" and "tasks".</span>
+        </section>
+        <section aria-label="B · copy menu, open" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">B · COPY MENU, OPEN</span>
+          <div style="display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap;"><div style="display: flex; flex-direction: column; gap: 6px; align-items: flex-start;">
+            <button type="button" aria-haspopup="menu" aria-expanded="true" aria-controls="copy-menu" id="copy-btn" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">Copy<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+            <div id="copy-menu" role="menu" aria-labelledby="copy-btn" style="width: 260px; border-radius: 14px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 16px 32px -16px rgba(15,16,32,0.35); padding: 6px; display: flex; flex-direction: column;">
+              <button type="button" role="menuitem" style="text-align: left; padding: 9px 10px; border: none; border-radius: 9px; background: #F1ECFC; font: 500 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Command</button>
+              <button type="button" role="menuitem" tabindex="-1" style="text-align: left; padding: 9px 10px; border: none; border-radius: 9px; background: none; font: 500 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Config (config.yaml)</button>
+              <button type="button" role="menuitem" tabindex="-1" style="text-align: left; padding: 9px 10px; border: none; border-radius: 9px; background: none; font: 500 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Run directory</button>
+              <button type="button" role="menuitem" tabindex="-1" style="text-align: left; padding: 9px 10px; border: none; border-radius: 9px; background: none; font: 500 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer;">Run ID</button>
+            </div></div>
+            <div role="status" style="margin-top: 50px; display: inline-flex; align-items: center; gap: 8px; border-radius: 11px; background: #0F1020; color: #FFFFFF; font-size: 13px; padding: 9px 12px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#7DD3A8" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Copied the command</div>
+          </div>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">Arrow keys move in the menu, Escape closes it and returns focus to Copy. The status line is a polite live region; it fades after 4 s.</span>
+        </section>
+        <section aria-label="C · running" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">C · RUNNING</span>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" aria-disabled="true" aria-describedby="why-1" style="height: 40px; padding: 0 16px; border-radius: 11px; border: none; background: #E4DCF7; color: #4D368B; font: 600 13.5px 'Inter', sans-serif; cursor: not-allowed; display: inline-flex; align-items: center; gap: 8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6 M4 4v4h4"/></svg>Resume</button>
+            <a href="LiteLaunch.dc.html" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">Copy to a new launch</a>
+            <button type="button" aria-haspopup="menu" aria-expanded="false" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">Copy<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <p id="why-1" style="margin: 0; font-size: 13px; color: #22253A; line-height: 1.5; display: flex; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01"/></svg><span>The run is still running.</span></p>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">actions.resume: {"allowed": false, "reason": "running"}</span>
+        </section>
+        <section aria-label="D · head_unverified" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">D · HEAD_UNVERIFIED</span>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" aria-disabled="true" aria-describedby="why-2" style="height: 40px; padding: 0 16px; border-radius: 11px; border: none; background: #E4DCF7; color: #4D368B; font: 600 13.5px 'Inter', sans-serif; cursor: not-allowed; display: inline-flex; align-items: center; gap: 8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6 M4 4v4h4"/></svg>Resume</button>
+            <a href="LiteLaunch.dc.html" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">Copy to a new launch</a>
+            <button type="button" aria-haspopup="menu" aria-expanded="false" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">Copy<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <p id="why-2" style="margin: 0; font-size: 13px; color: #22253A; line-height: 1.5; display: flex; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01"/></svg><span>The head may still be running on login2, and Spectio cannot check it from login1. Resume when it has ended.</span></p>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">actions.resume: {"allowed": false, "reason": "head_unverified"}</span>
+        </section>
+        <section aria-label="E · resume_in_progress" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">E · RESUME_IN_PROGRESS</span>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" aria-disabled="true" aria-describedby="why-3" style="height: 40px; padding: 0 16px; border-radius: 11px; border: none; background: #E4DCF7; color: #4D368B; font: 600 13.5px 'Inter', sans-serif; cursor: not-allowed; display: inline-flex; align-items: center; gap: 8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6 M4 4v4h4"/></svg>Resume</button>
+            <a href="LiteLaunch.dc.html" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">Copy to a new launch</a>
+            <button type="button" aria-haspopup="menu" aria-expanded="false" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">Copy<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <p id="why-3" style="margin: 0; font-size: 13px; color: #22253A; line-height: 1.5; display: flex; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01"/></svg><span>A resume of this run is already running: <a href="LiteRunDetail.dc.html">wgs-cohort-12 · resume</a>.</span></p>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">actions.resume: {"allowed": false, "reason": "resume_in_progress"}</span>
+        </section>
+        <section aria-label="F · cli_observed" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">F · CLI_OBSERVED</span>
+          <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center;">
+            <button type="button" aria-disabled="true" aria-describedby="why-4" style="height: 40px; padding: 0 16px; border-radius: 11px; border: none; background: #E4DCF7; color: #4D368B; font: 600 13.5px 'Inter', sans-serif; cursor: not-allowed; display: inline-flex; align-items: center; gap: 8px;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 12a8 8 0 1 0 2.3-5.6 M4 4v4h4"/></svg>Resume</button>
+            <a href="LiteLaunch.dc.html" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">Copy to a new launch</a>
+            <button type="button" aria-haspopup="menu" aria-expanded="false" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; text-decoration: none;">Copy<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg></button>
+          </div>
+          <p id="why-4" style="margin: 0; font-size: 13px; color: #22253A; line-height: 1.5; display: flex; gap: 8px;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.8" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 2px;"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 11v5 M12 8h.01"/></svg><span>Runs started from a terminal are resumed from the terminal.</span></p>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">actions.resume: {"allowed": false, "reason": "cli_observed"}</span>
+        </section>
+        <section aria-label="G · resume links" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">G · RESUME LINKS</span>
+          <dl style="margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; font-size: 13px; align-items: baseline;">
+            <dt style="color: #6E7287; font-size: 12px;">On wgs-cohort-12 F5KZNW</dt>
+            <dd style="margin: 0; display: flex; flex-direction: column; gap: 4px;"><a href="LiteRunDetail.dc.html" style="font-weight: 600;">Resumed as wgs-cohort-12 · resume · Running</a><span style="font-size: 12px; color: #4D5065;">one line per resume, each a link</span></dd>
+            <dt style="color: #6E7287; font-size: 12px;">On the new run</dt>
+            <dd style="margin: 0;"><a href="LiteRunFailed.dc.html" style="font-weight: 600;">Resume of wgs-cohort-12 F5KZNW</a></dd>
+          </dl>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">From resumed_as [{id, name, state}] on the parent and parent_run_id on the child.</span>
+        </section>
+        <section aria-label="H · copy in every state" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">H · COPY IN EVERY STATE</span>
+          <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <caption style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);">Header actions by run state</caption>
+            <thead><tr style="background: #F7F7FB; text-align: left; font-size: 12px; color: #33364A;"><th scope="col" style="padding: 7px 10px;">Run</th><th scope="col" style="padding: 7px 10px;">Header actions</th></tr></thead>
+            <tbody>
+              <tr style="border-top: 1px solid #EEEFF5;"><th scope="row" style="padding: 7px 10px; text-align: left; font-weight: 600;">Queued, Running</th><td style="padding: 7px 10px; color: #33364A;">Cancel · Copy</td></tr>
+              <tr style="border-top: 1px solid #EEEFF5;"><th scope="row" style="padding: 7px 10px; text-align: left; font-weight: 600;">Failed, Cancelled</th><td style="padding: 7px 10px; color: #33364A;">Resume · Copy to a new launch · Copy</td></tr>
+              <tr style="border-top: 1px solid #EEEFF5;"><th scope="row" style="padding: 7px 10px; text-align: left; font-weight: 600;">Succeeded</th><td style="padding: 7px 10px; color: #33364A;">Copy to a new launch · Copy</td></tr>
+              <tr style="border-top: 1px solid #EEEFF5;"><th scope="row" style="padding: 7px 10px; text-align: left; font-weight: 600;">Started from a terminal</th><td style="padding: 7px 10px; color: #33364A;">Copy (Run directory, Run ID)</td></tr>
+            </tbody>
+          </table>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">One run header for every tab (Summary, Tasks, Parameters, Logs), on the desktop and the phone. Nextflow says "Parameters (params.json)".</span>
+        </section>
+      </div>
+      <span style="font-size: 11.5px; color: #6E7287;">Data: the wgs-cohort-12 run of LiteRunFailed; the reasons are actions.resume.reason in api-and-data-model §5.1 (note 2026-10-28); the checks behind them are dev-env §15.3 req. 16.</span>
+    </main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1180}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>

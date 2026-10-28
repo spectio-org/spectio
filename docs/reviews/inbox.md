@@ -952,6 +952,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a): the smallest UI, and both can come back without rework because the data model keeps `run_inputs`.
 - **Assumed:** (a) *(assumed — pending Thomas)*.
 - **Blocked:** nothing; P1 plans without them.
+- **Note (2026-10-28):** Thomas asked for Resume and Copy to a new launch in 0.0.1 ("les 5 dans 0.0.1", [decision log](../decisions/log.md#2026-10-28-001-shows-each-jobs-files-and-gains-resume-failure-summary-results-copy-and-resources)). (a) still holds for the relaunch dialog with changed parameters, rerun from a stage and the parameter history.
 
 ### #62 · Assumed: 0.0.1 can cancel a run
 
@@ -1055,3 +1056,20 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a): one way for launched and terminal runs, no configuration parsing, and checked on a real nf-core pipeline, with the caveat that its list form is undocumented. `spectio doctor` could warn when a `plugins` block in `$NXF_HOME/config` names `nf-spectio`.
 - **Assumed:** none: the specs still say `-plugins`, and this changes how the bridge is enabled.
 - **Blocked:** P1 Task 9 for real nf-core pipelines, and the Nextflow part of the Task 25 guide. The synthetic tests are not blocked.
+
+### #70 · Assumed: what the job file viewer shows, and Spectio calling `sacct`
+
+- **Covers:** [architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine); [api §5](../specs/api-and-data-model.md) and §5.1 (notes 2026-10-28); [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 13 to 16; [ui-spec §4.4](../specs/ui-spec.md#44-run-detail) (note 2026-10-28, run tools); [P1](../plans/P1-walking-skeleton.md) Tasks 28 to 32, Assumption 3.
+- **Context:** Thomas, 2026-10-28, asked for each job's stdout, stderr, log, script "and others", through the work directory, and for five tools ([decision log](../decisions/log.md#2026-10-28-001-shows-each-jobs-files-and-gains-resume-failure-summary-results-copy-and-resources)). Four choices followed that change what users see or what runs on the cluster:
+  - Nextflow's `.command.run` exports the task environment's values inline; the viewer could hide it, show it, or show it with the values hidden;
+  - Snakemake keeps no job script on disk; its job command is `shellcmd` in the logger's `job_info`, which P1 Assumption 3 does not store, as it may hold secrets;
+  - the Snakemake SLURM plugin deletes the SLURM log of every job that succeeds unless `--slurm-keep-successful-logs` is passed;
+  - the SLURM state and reason of a failed Nextflow job, and the measured resources of Snakemake jobs, need `sacct`, which loads the cluster's accounting database.
+- **Options and what was assumed:**
+  - `.command.run`: (a) shown with every `export` value replaced by `«hidden»`; (b) shown as it is; (c) not shown. **Assumed:** (a), so the `#SBATCH` header stays readable;
+  - Snakemake job command: (a) not stored, the drawer shows the rule logs and the SLURM log only; (b) store `shellcmd` and show it as the job's script. **Assumed:** (a);
+  - SLURM logs: (a) runs Spectio launches keep every job's SLURM log; (b) the plugin's default. **Assumed:** (a); the logs live in the run directory;
+  - `sacct`: (a) once per failed Nextflow attempt, and in batches of 100 at most once a minute for Snakemake resources, with `[slurm] accounting = false` to turn it off; (b) only for failed jobs; (c) never. **Assumed:** (a), **[to be validated]** with the EMBL cluster admins.
+- **Recommendation:** the assumed options.
+- **Blocked:** nothing; P1 plans with them.
+

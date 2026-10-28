@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 2202,
-    "cache_write": 2278447,
-    "cache_read": 189180801,
-    "output": 489068
+    "input": 2823,
+    "cache_write": 3033664,
+    "cache_read": 238541262,
+    "output": 660420
    },
-   "calls": 969,
+   "calls": 1226,
    "model": "claude-opus-5-5",
    "start": "2026-10-27T23:14:03.633Z",
-   "end": "2026-10-28T14:25:54.379Z",
+   "end": "2026-10-28T22:01:55.394Z",
    "id": "6396c38c-2a61-53ee-956c-4203b452f099",
    "kind": "main",
    "type": "session",
@@ -35,6 +35,23 @@
   },
   {
    "tokens": {
+    "input": 96,
+    "cache_write": 140703,
+    "cache_read": 3921606,
+    "output": 29313
+   },
+   "calls": 48,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T18:32:12.099Z",
+   "end": "2026-10-28T18:38:10.903Z",
+   "id": "a07e43cef7e945ebf",
+   "kind": "subagent",
+   "type": "ux-reviewer",
+   "label": "UX review of lite boards",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 26,
     "cache_write": 58772,
     "cache_read": 478736,
@@ -48,6 +65,23 @@
    "kind": "subagent",
    "type": "code-reviewer",
    "label": "Code review T5",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 52,
+    "cache_write": 115885,
+    "cache_read": 1780417,
+    "output": 15731
+   },
+   "calls": 26,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T17:42:07.021Z",
+   "end": "2026-10-28T17:45:47.839Z",
+   "id": "a0f7d3aa30cf727b0",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc re-review of APPLY4 branch",
    "workflow": null
   },
   {
@@ -167,6 +201,23 @@
    "kind": "subagent",
    "type": "doc-reviewer",
    "label": "Doc review of P1",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 144,
+    "cache_write": 197176,
+    "cache_read": 14765642,
+    "output": 77960
+   },
+   "calls": 70,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T17:04:52.600Z",
+   "end": "2026-10-28T17:23:13.901Z",
+   "id": "a1e2051a683c726e4",
+   "kind": "subagent",
+   "type": "fork",
+   "label": "Apply access and head-in-tmux decisions",
    "workflow": null
   },
   {
@@ -358,6 +409,23 @@
   },
   {
    "tokens": {
+    "input": 264,
+    "cache_write": 440995,
+    "cache_read": 28375525,
+    "output": 93881
+   },
+   "calls": 127,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T18:06:27.041Z",
+   "end": "2026-10-28T18:39:43.922Z",
+   "id": "a3b1b1b4e69aa0d37",
+   "kind": "subagent",
+   "type": "fork",
+   "label": "Add terminal-launched runs to 0.0.1",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 42,
     "cache_write": 60128,
     "cache_read": 996757,
@@ -409,6 +477,23 @@
   },
   {
    "tokens": {
+    "input": 28,
+    "cache_write": 82588,
+    "cache_read": 693009,
+    "output": 32175
+   },
+   "calls": 14,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T18:17:44.276Z",
+   "end": "2026-10-28T18:23:25.066Z",
+   "id": "a48e2ce169b8e5d8e",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review of observed runs",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 10,
     "cache_write": 25563,
     "cache_read": 75160,
@@ -439,6 +524,23 @@
    "kind": "subagent",
    "type": "infra-engineer",
    "label": "Corpus retry and public limits fix",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 346,
+    "cache_write": 400284,
+    "cache_read": 34444545,
+    "output": 159948
+   },
+   "calls": 171,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T19:01:09.396Z",
+   "end": "2026-10-28T19:46:45.742Z",
+   "id": "a4e1dffa024e1c944",
+   "kind": "subagent",
+   "type": "fork",
+   "label": "Spike: automatic stage detection",
    "workflow": null
   },
   {
@@ -490,6 +592,40 @@
    "kind": "subagent",
    "type": "code-reviewer",
    "label": "Review SEC-T1-06 fix diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 44,
+    "cache_write": 114686,
+    "cache_read": 1388599,
+    "output": 19072
+   },
+   "calls": 22,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T21:15:53.776Z",
+   "end": "2026-10-28T21:19:16.817Z",
+   "id": "a540ca1a7eeca0723",
+   "kind": "subagent",
+   "type": "ux-reviewer",
+   "label": "UX review of APPLY7 boards",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 260,
+    "cache_write": 478917,
+    "cache_read": 27271753,
+    "output": 109609
+   },
+   "calls": 126,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T17:27:13.271Z",
+   "end": "2026-10-28T18:01:14.686Z",
+   "id": "a55b88322d63dade1",
+   "kind": "subagent",
+   "type": "fork",
+   "label": "Apply doc-review changes for #47",
    "workflow": null
   },
   {
@@ -596,6 +732,23 @@
   },
   {
    "tokens": {
+    "input": 60,
+    "cache_write": 91193,
+    "cache_read": 1724300,
+    "output": 20694
+   },
+   "calls": 30,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T19:08:33.227Z",
+   "end": "2026-10-28T19:13:09.568Z",
+   "id": "a6822061137bac77c",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review of lite UI branch",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 14,
     "cache_write": 41098,
     "cache_read": 165677,
@@ -613,6 +766,23 @@
   },
   {
    "tokens": {
+    "input": 106,
+    "cache_write": 120141,
+    "cache_read": 3370119,
+    "output": 31981
+   },
+   "calls": 53,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T20:04:43.849Z",
+   "end": "2026-10-28T20:13:20.453Z",
+   "id": "a68ef8f7ef7d83713",
+   "kind": "subagent",
+   "type": "ux-reviewer",
+   "label": "Final UX re-check lite boards",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 4,
     "cache_write": 17141,
     "cache_read": 10516,
@@ -626,6 +796,23 @@
    "kind": "subagent",
    "type": "code-simplifier",
    "label": "Simplify SEC-T1-06 fix diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 100,
+    "cache_write": 92476,
+    "cache_read": 2768758,
+    "output": 29364
+   },
+   "calls": 50,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T19:36:03.467Z",
+   "end": "2026-10-28T19:43:58.431Z",
+   "id": "a6b9fdfa0ffc3a059",
+   "kind": "subagent",
+   "type": "fact-checker",
+   "label": "Fact-check stage spike claims",
    "workflow": null
   },
   {
@@ -677,6 +864,23 @@
    "kind": "subagent",
    "type": "doc-reviewer",
    "label": "Doc review SEC-T1-06 change",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 510,
+    "cache_write": 945806,
+    "cache_read": 51995480,
+    "output": 240399
+   },
+   "calls": 253,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T20:50:06.904Z",
+   "end": "2026-10-28T21:44:02.969Z",
+   "id": "a738491593b7c0190",
+   "kind": "subagent",
+   "type": "fork",
+   "label": "APPLY7: logs and five MVP features",
    "workflow": null
   },
   {
@@ -766,6 +970,23 @@
   },
   {
    "tokens": {
+    "input": 26,
+    "cache_write": 91666,
+    "cache_read": 602508,
+    "output": 25597
+   },
+   "calls": 13,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T21:15:53.753Z",
+   "end": "2026-10-28T21:20:29.777Z",
+   "id": "a8e9191b86465340d",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review of APPLY7",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 42,
     "cache_write": 78757,
     "cache_read": 1036565,
@@ -779,6 +1000,23 @@
    "kind": "subagent",
    "type": "security-reviewer",
    "label": "Security review T3 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 96,
+    "cache_write": 95907,
+    "cache_read": 2886202,
+    "output": 24667
+   },
+   "calls": 48,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T20:47:48.990Z",
+   "end": "2026-10-28T20:56:09.311Z",
+   "id": "a9ce0f40cc87b16f8",
+   "kind": "subagent",
+   "type": "fact-checker",
+   "label": "Research per-task log files",
    "workflow": null
   },
   {
@@ -800,6 +1038,23 @@
   },
   {
    "tokens": {
+    "input": 226,
+    "cache_write": 573282,
+    "cache_read": 22862553,
+    "output": 135548
+   },
+   "calls": 111,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T17:12:27.631Z",
+   "end": "2026-10-28T18:32:17.437Z",
+   "id": "aa546b31e6b7f168c",
+   "kind": "subagent",
+   "type": "fork",
+   "label": "Light 0.0.1 UI boards",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 234,
     "cache_write": 594974,
     "cache_read": 22583009,
@@ -813,6 +1068,23 @@
    "kind": "subagent",
    "type": "general-purpose",
    "label": "Draft TRIAGE3 spikes findings file",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 56,
+    "cache_write": 107667,
+    "cache_read": 1396194,
+    "output": 17008
+   },
+   "calls": 28,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T21:15:53.767Z",
+   "end": "2026-10-28T21:19:39.109Z",
+   "id": "aa9731bd146b827bd",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review of APPLY7",
    "workflow": null
   },
   {
@@ -851,6 +1123,23 @@
   },
   {
    "tokens": {
+    "input": 42,
+    "cache_write": 122653,
+    "cache_read": 1671643,
+    "output": 15310
+   },
+   "calls": 21,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T17:23:26.347Z",
+   "end": "2026-10-28T17:26:53.458Z",
+   "id": "aae173ce3bb78bb14",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review of PR #47 changes",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 26,
     "cache_write": 29499,
     "cache_read": 244893,
@@ -864,6 +1153,40 @@
    "kind": "subagent",
    "type": "code-reviewer",
    "label": "Review dashboard SVG embedding change",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 24,
+    "cache_write": 106865,
+    "cache_read": 718659,
+    "output": 36803
+   },
+   "calls": 12,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T17:42:07.032Z",
+   "end": "2026-10-28T17:48:45.545Z",
+   "id": "ab45318d58067f8d3",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security look at tmux and tmp DB",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 52,
+    "cache_write": 94031,
+    "cache_read": 1451548,
+    "output": 17204
+   },
+   "calls": 26,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T19:36:03.480Z",
+   "end": "2026-10-28T19:40:06.186Z",
+   "id": "ab606a4b329a5bb8d",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review of apply-stages",
    "workflow": null
   },
   {
@@ -936,6 +1259,23 @@
   },
   {
    "tokens": {
+    "input": 44,
+    "cache_write": 111771,
+    "cache_read": 1336249,
+    "output": 27124
+   },
+   "calls": 22,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T19:08:33.214Z",
+   "end": "2026-10-28T19:14:29.028Z",
+   "id": "ac6f0e39d51548e6a",
+   "kind": "subagent",
+   "type": "ux-reviewer",
+   "label": "UX re-check of lite boards",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 222,
     "cache_write": 537821,
     "cache_read": 19270693,
@@ -970,6 +1310,23 @@
   },
   {
    "tokens": {
+    "input": 48,
+    "cache_write": 100569,
+    "cache_read": 1482551,
+    "output": 14955
+   },
+   "calls": 24,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T20:04:43.867Z",
+   "end": "2026-10-28T20:07:25.613Z",
+   "id": "ad1c095113e65dbb9",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc re-review lite UI branch",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 52,
     "cache_write": 85178,
     "cache_read": 1380385,
@@ -983,6 +1340,23 @@
    "kind": "subagent",
    "type": "code-reviewer",
    "label": "Code review T3 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 64,
+    "cache_write": 102816,
+    "cache_read": 2165092,
+    "output": 22578
+   },
+   "calls": 32,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T18:17:44.264Z",
+   "end": "2026-10-28T18:22:36.407Z",
+   "id": "ad449bb84db6ac8a5",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review of APPLY5 branch",
    "workflow": null
   },
   {
@@ -1102,6 +1476,23 @@
    "kind": "subagent",
    "type": "diagram-artist",
    "label": "Draw the P1 sketch",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 1024,
+    "cache_write": 1741254,
+    "cache_read": 102077426,
+    "output": 445232
+   },
+   "calls": 509,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T18:39:41.713Z",
+   "end": "2026-10-28T20:38:29.187Z",
+   "id": "aeacd969c9bbf78bb",
+   "kind": "subagent",
+   "type": "fork",
+   "label": "Apply UX review to lite boards",
    "workflow": null
   },
   {
