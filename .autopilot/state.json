@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-28T10:46:00Z",
+  "updated_at": "2026-10-28T10:56:00Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -371,12 +371,22 @@
     },
     "T4": {
       "wave": "W3",
-      "status": "running",
-      "attempts": 0,
+      "status": "done",
+      "attempts": 1,
       "started_at": "2026-10-28T09:53:26Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); from spike t4-ci",
+      "finished_at": "2026-10-28T10:56:00Z",
+      "outputs": [
+        "dev/k8s/cluster.sh",
+        "dev/k8s/base.yaml",
+        "dev/k8s/kueue-queues.yaml",
+        "tests/k8s/",
+        "tests/fixtures/k8s/",
+        ".github/workflows/pipelines-k8s.yml",
+        "docs/progress/W3/T4.md",
+        "docs/reviews/code/T4.md",
+        "docs/research/spike-t4-ci-2026-10-28.md"
+      ],
+      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); PR #33 squash db7eb7f; pipelines-k8s green on 007683c (run 40674240654); review 3 rounds approve; doc 14/14; 10 spec differences + SEC-T4-03/05 for TRIAGE3",
       "base": "504bc62ecdda2ba01316b10e9b5a1b35c214dabf"
     },
     "T5": {
