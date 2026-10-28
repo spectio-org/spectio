@@ -471,12 +471,13 @@
     },
     "R10": {
       "wave": "W4",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-28T13:45:00Z",
       "finished_at": null,
       "outputs": [],
-      "notes": ""
+      "notes": "",
+      "base": "b217a1efc4eb822c828de351516cace3df0cd3fa"
     },
     "P1": {
       "wave": "W4",
