@@ -145,6 +145,14 @@ media:
       - docs/assets/diagrams/apply4_access_dark.svg
       - docs/assets/diagrams/apply4_access_light.png
       - docs/assets/diagrams/apply4_access_dark.png
+  - id: apply5-observed
+    kind: diagram
+    generator: python3 tools/diagrams/apply5_observed.py
+    outputs:
+      - docs/assets/diagrams/apply5_observed_light.svg
+      - docs/assets/diagrams/apply5_observed_dark.svg
+      - docs/assets/diagrams/apply5_observed_light.png
+      - docs/assets/diagrams/apply5_observed_dark.png
   - id: d4-pr-checks
     kind: diagram
     generator: python3 tools/diagrams/d4_pr_checks.py

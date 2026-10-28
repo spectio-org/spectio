@@ -9,3 +9,4 @@ This page is generated at build time from `docs/playbooks/pipeline.yaml` and `.a
 ## Steps outside the pipeline
 
 - [APPLY4 · Apply Thomas's 2026-10-28 answers on cluster access](W4/APPLY4.md): PR #47 and the fixes of its doc review (running).
+- [APPLY5 · Runs started from a terminal in 0.0.1](W4/APPLY5.md): monitor only, bridges published in the engines' catalogues (running).

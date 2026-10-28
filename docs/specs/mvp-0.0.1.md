@@ -29,6 +29,7 @@ The full boards were drawn for the full product. They also show things 0.0.1 doe
 | **Nextflow**, always through `nf-spectio`, tasks through its `slurm` executor | [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md); [`synthesis.md`](synthesis.md) §2bis; [`ui-spec.md`](ui-spec.md) §5 | LiteLaunch, MLiteLaunch (full board: Launch) |
 | **Launch a run from the UI**, its head started in tmux on the login node | [`ui-spec.md`](ui-spec.md) §4.6 (launch form); [`api-and-data-model.md`](api-and-data-model.md) §5 (`POST /runs`, workflow schema); [`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1.1 | LiteLaunch, LiteLaunchSnakemake, MLiteLaunch, LiteStates (no schema, launch error) |
 | **Monitor it**: run state, number of jobs / tasks, stages as the engine reports them, and whether the head is alive, as text and tables | [`ui-spec.md`](ui-spec.md) §3.1, §3.2, §4.3, §4.4 (Summary, Tasks); [`api-and-data-model.md`](api-and-data-model.md) §5, §8; head process only: [`dev-environment-and-testing.md`](dev-environment-and-testing.md#151-capabilities-by-version) §15.1 (scheduler monitoring row) | LiteHome, LiteRuns, LiteRunDetail, LiteRunTasks, LiteRunLogs (log sources: [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13.7), LiteRunFailed *(assumed — pending Thomas, inbox #40)*, LiteCancelDialog, LiteLegend, LiteStates; phone: MLiteHome, MLiteRuns, MLiteRunDetail, MLiteCancelSheet |
+| **Runs started from a terminal**, monitor only: the user enables the bridge (`-plugins nf-spectio@<ver>`, `--logger spectio`) and runs the engine by hand; the server finds the run through a pointer file in `~/.spectio/observed/` (Thomas, 2026-10-28, [decision log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)) | [`dev-environment-and-testing.md`](dev-environment-and-testing.md#151-capabilities-by-version) §15.1 (row), §15.3; [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) §13.8; [`ui-spec.md`](ui-spec.md) §6 (note 2026-10-28) | not drawn on the 0.0.1 lite page (full board: RunObserved) |
 
 ## 3. Deferred
 
@@ -42,7 +43,6 @@ Not in 0.0.1, version not set:
 - Postgres, Compose and Helm;
 - the depictio hand-off;
 - WES, MCP and embedded elements;
-- runs started from a terminal (observed runs);
 - LabID.
 
 The full list, with owners, is in [`dev-environment-and-testing.md`](dev-environment-and-testing.md#15-what-ships-in-which-version) §15.
