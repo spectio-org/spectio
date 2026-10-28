@@ -471,19 +471,24 @@
     },
     "R10": {
       "wave": "W4",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-28T13:45:00Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "",
+      "finished_at": "2026-10-28T14:35:00Z",
+      "outputs": [
+        "docs/reviews/R10-synthesis.md",
+        "docs/progress/W4/R10.md",
+        "tools/diagrams/r10_synthesis.py",
+        "docs/reviews/inbox.md (#62)"
+      ],
+      "notes": "synthesis by one general-purpose agent (450 findings, 123 open, 12 touch the narrowed 0.0.1, 7 decided); GO for P1, code after P1 under C1–C4; decisions D0–D4 for Thomas (#52, #61, #34, #55, #62); doc review changes 10/14 then approve 13/14; committed directly on integration (docs only)",
       "base": "b217a1efc4eb822c828de351516cace3df0cd3fa"
     },
     "P1": {
       "wave": "W4",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-28T14:10:00Z",
       "finished_at": null,
       "outputs": [],
       "notes": ""
