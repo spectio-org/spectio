@@ -2,6 +2,8 @@
 
 **Round:** spikes (TRIAGE3) · **Date:** 2026-10-28 · **Found by:** the W3 steps T2, T3, T4 and T7, their spikes and their code reviews · **Status of the round:** triaged on 2026-10-28; the orchestrator re-ran the checks of every accepted finding.
 
+**Applied:** [APPLY3](../progress/W3/APPLY3.md) (2026-10-28): 44 applied (42 by APPLY3, 2 by PR #36), 5 partly applied, 0 not applied. Not for APPLY3: 8 rejected, 9 waiting for Thomas (reserved), 3 applied by T3.
+
 **What this round is.** The W3 steps measured real engines and clusters. Their Progress pages and research notes list where the specs disagree with what was measured, without editing the specs. This file turns each difference into one finding and proposes a triage under [`triage-policy.md`](../playbooks/triage-policy.md). Specs are not edited here.
 
 **Sources.**
@@ -31,7 +33,7 @@
 - **Problem:** a `stage_done` watch or a gate fires before the stage's last task has finished, so its last outputs are missed.
 - **Proposal:** §11.5 Order: "End of stage" means every matching process has fired `onProcessTerminate` **and** every task of those processes that `nf-spectio` has seen (from `onTaskPending` on) has had its `onTaskComplete` or `onTaskCached`. Cite the T2 note. This answers T2's open question: a deterministic rule, not a timed drain.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by the 6 plugin fixtures, `check_t2.py after_terminate`; local fix in checking-scenarios §11.5)
+- **Status:** accepted (auto: confirmed by the 6 plugin fixtures, `check_t2.py after_terminate`; local fix in checking-scenarios §11.5) → applied (APPLY3, 2026-10-28): checking-scenarios §11.5
 
 ### SPK-T2-02 · minor · A stage after a fatal error never ends
 
@@ -40,7 +42,7 @@
 - **Problem:** without a rule, a stage stays `running` after the run has failed, and a `stage_done` watch waits forever.
 - **Proposal:** a new bullet in §11.5. When the run reaches a terminal state, every stage that has not ended is closed with that terminal state, `failed` or `skipped` (the `run_stages.state` values of [api §7](../specs/api-and-data-model.md), linked). Its `stage_done` watches do not fire.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by `check_t2.py downstream_terminate`; local fix in checking-scenarios §11.5)
+- **Status:** accepted (auto: confirmed by `check_t2.py downstream_terminate`; local fix in checking-scenarios §11.5) → applied (APPLY3, 2026-10-28): checking-scenarios §11.5
 
 ### SPK-T2-03 · minor · Task outputs: keys are `OutParam` objects, and `path` outputs have no name
 
@@ -49,7 +51,7 @@
 - **Problem:** a matcher that keys on the output name finds nothing for files.
 - **Proposal:** add to §11.1, under the table: watched files are matched by output index and a glob on the file name, never by output name. On a resume, `onTaskCached` carries the same outputs.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by `check_t2.py outputs`; local fix in checking-scenarios §11.1)
+- **Status:** accepted (auto: confirmed by `check_t2.py outputs`; local fix in checking-scenarios §11.1) → applied (APPLY3, 2026-10-28): checking-scenarios §11.1
 
 ### SPK-T2-04 · minor · Snakemake `JOB_INFO` citation is at an old commit
 
@@ -58,7 +60,7 @@
 - **Problem:** the citation points to another version than the one tested.
 - **Proposal:** in §11.1, cite `jobs.py:1060-1101` at v9.27.1 and add the extra fields.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: fact correction backed by the code at v9.27.1; local fix in checking-scenarios §11.1)
+- **Status:** accepted (auto: fact correction backed by the code at v9.27.1; local fix in checking-scenarios §11.1) → applied (APPLY3, 2026-10-28): checking-scenarios §11.1
 
 ### SPK-T2-05 · minor · `onFlowError` arrives after `onFlowComplete`
 
@@ -67,7 +69,7 @@
 - **Problem:** a bridge that flushes and stops at `onFlowComplete` loses the events that follow it.
 - **Proposal:** add to §13.3: the sender flushes and stops at observer shutdown, not at `onFlowComplete`. Events after `onFlowComplete` (`onFlowError`, a second `onFlowComplete`) are sent like any other. synthesis §2 links to it.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by `check_t2.py flow_end`; local fix in architecture §13.3)
+- **Status:** accepted (auto: confirmed by `check_t2.py flow_end`; local fix in architecture §13.3) → applied (APPLY3, 2026-10-28): architecture §13.3
 
 ### SPK-T2-06 · minor · Two `onFlowComplete` in one failed run (25.10.9)
 
@@ -76,7 +78,7 @@
 - **Problem:** without a stated rule, the projector could emit `spectio.run.failed` twice, or overwrite `launches.exited_at`.
 - **Proposal:** add one sentence to §8.2: a repeated engine flow-completion for the same launch is logged but changes nothing (the first one sets `head_state` and `exited_at`). Cite 25.10.9.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by `check_t2.py flow_end`; local fix in api §8.2)
+- **Status:** accepted (auto: confirmed by `check_t2.py flow_end`; local fix in api §8.2) → applied (APPLY3, 2026-10-28): api §8.2
 
 ### SPK-T2-07 · major · Nextflow attempt state: read the trace record, never `handler.status`
 
@@ -90,7 +92,7 @@
   - `handler.status` is never read.
   - Drop the mark for Nextflow and keep it for Snakemake. `ABORTED` follows SPK-T2-09.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by `check_t2.py failed_status`; local fix in api §7.2)
+- **Status:** accepted (auto: confirmed by `check_t2.py failed_status`; local fix in api §7.2) → applied (APPLY3, 2026-10-28): api §7.2
 
 ### SPK-T2-08 · minor · A resume republishes every cached file
 
@@ -99,7 +101,7 @@
 - **Problem:** every watched file is evaluated again on each resume, at the cost of one file read each (§11.5 Cost).
 - **Proposal:** in §11.4, extend the reuse rule to live checks. A published file whose target path and hash match a stored result is not evaluated again: in the same run, or in the parent run when the run is a resume (child-run model of api §5.1, *assumed — pending Thomas, inbox #32*).
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by `check_t2.py resume`; local fix in checking-scenarios §11.4)
+- **Status:** accepted (auto: confirmed by `check_t2.py resume`; local fix in checking-scenarios §11.4) → applied (APPLY3, 2026-10-28): checking-scenarios §11.4 (assumed — pending Thomas, inbox #32)
 
 ### SPK-T2-09 · major · Tasks left open when the run ends
 
@@ -111,7 +113,7 @@
 - **Problem:** §7.2 has no terminal state for an attempt that the engine stops because of another failure. The attempt stays `pending` or `running` forever, and `ABORTED` has no mapping.
 - **Proposal:** see [proposed inbox #56](inbox.md#56-assumed-the-state-of-a-task-still-open-when-the-run-ends). The recommendation is a terminal attempt state `aborted` in §7.2, with its label in ui-spec §3.1. At flow end the projector moves every open attempt to `aborted`; a task with no attempt stays `not_scheduled`.
 - **Found by:** T2 spike
-- **Status:** inbox (assumed: (a) a terminal attempt state `aborted`). The fix is not local: it adds a state to api §7.2 and a label to ui-spec §3.1.
+- **Status:** inbox (assumed: (a) a terminal attempt state `aborted`). The fix is not local: it adds a state to api §7.2 and a label to ui-spec §3.1. → applied (APPLY3, 2026-10-28): api §7.2; ui-spec §3.1 (assumed — pending Thomas, inbox #56)
 
 ### SPK-T2-10 · minor · Tower `begin` carries `dag` on 26.10 only
 
@@ -120,7 +122,7 @@
 - **Problem:** the table does not say which versions send `dag`. This is minor because the Tower route is not used ([decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)).
 - **Proposal:** in the §2bis row: "`dag` (26.10 only; absent on 25.10.9, T2)".
 - **Found by:** T2 spike
-- **Status:** accepted (auto: fact correction backed by the fixtures; local fix in synthesis §2bis)
+- **Status:** accepted (auto: fact correction backed by the fixtures; local fix in synthesis §2bis) → applied (APPLY3, 2026-10-28): synthesis §2bis
 
 ### SPK-T2-11 · major · Task `script` and `env` in engine events
 
@@ -138,7 +140,7 @@
 - **Problem:** an offline login node cannot run `-with-tower`. Spectio users who also report to Seqera Platform hit this.
 - **Proposal:** in synthesis §2 and §1 item 2, "a core plugin, downloaded from the plugin registry on first use (T2)". How Spectio's own plugin gets there offline is SPK-T2-25.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: fact correction backed by the plugin cache and its manifest; local fix in synthesis §1 and §2)
+- **Status:** accepted (auto: fact correction backed by the plugin cache and its manifest; local fix in synthesis §1 and §2) → applied (APPLY3, 2026-10-28): synthesis §1 and §2
 
 ### SPK-T2-13 · minor · `/heartbeat` and the abort on server errors were not observed
 
@@ -162,7 +164,7 @@
   - replace the two marks with a link to the note;
   - add a decision-log entry.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: measured in 6 of 6 runs; this confirms decision 0001 and reverses nothing; only marks become links)
+- **Status:** accepted (auto: measured in 6 of 6 runs; this confirms decision 0001 and reverses nothing; only marks become links) → applied (APPLY3, 2026-10-28): decision 0001 (Update 2026-10-28); synthesis §1 and api §10, marks turned into links
 
 ### SPK-T2-15 · minor · Snakemake: the 14 `LogEvent` types, and untyped records
 
@@ -173,7 +175,7 @@
 - **Problem:** "etc." hides `SHELLCMD`, `RESOURCES_INFO` and `RULEGRAPH`, and the spec does not say what happens to untyped records.
 - **Proposal:** in §2, list the 14 members with the citation, and add: "untyped records are kept as text; a few become typed events (§2ter, Consequences 2)".
 - **Found by:** T2 spike
-- **Status:** accepted (auto: fact correction backed by the code at v2.1.0; local fix in synthesis §2)
+- **Status:** accepted (auto: fact correction backed by the code at v2.1.0; local fix in synthesis §2) → applied (APPLY3, 2026-10-28): synthesis §2
 
 ### SPK-T2-16 · minor · Snakemake attempts: count `JOB_ERROR` per `jobid`
 
@@ -185,7 +187,7 @@
 - **Problem:** the spec does not say how to count, which invites a regex on the restart text.
 - **Proposal:** in the §2ter Retries row, "attempt n = 1 + number of `JOB_ERROR` already seen for that `jobid` in this launch; no text parsing".
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by `check_t2.py smk_attempts`; local fix in synthesis §2ter)
+- **Status:** accepted (auto: confirmed by `check_t2.py smk_attempts`; local fix in synthesis §2ter) → applied (APPLY3, 2026-10-28): synthesis §2ter
 
 ### SPK-T2-17 · minor · No exit code in Snakemake `JOB_ERROR`
 
@@ -196,7 +198,7 @@
 - **Problem:** a `NOT NULL` or a default 0 would record wrong exit codes for Snakemake.
 - **Proposal:** in api §7, write `exit` as "nullable; on Snakemake it is known only when the versioned regex on the `ERROR` text matches (synthesis §2ter, Consequences 2)". Cite the T2 note.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by the 9.27.1 code and the fixture; local fix in api §7)
+- **Status:** accepted (auto: confirmed by the 9.27.1 code and the fixture; local fix in api §7) → applied (APPLY3, 2026-10-28): api §7
 
 ### SPK-T2-18 · minor · Checkpoints: two text messages mark "the DAG may change"
 
@@ -208,7 +210,7 @@
 - **Problem:** the spec does not say how Spectio knows that a checkpoint is open.
 - **Proposal:** in that row, the first message sets "DAG may change" (the "at least N" display) until the next `PROGRESS`. It is one of the typed text messages of Consequences 2.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by `check_t2.py smk` and the 9.27.1 code; local fix in synthesis §2ter)
+- **Status:** accepted (auto: confirmed by `check_t2.py smk` and the 9.27.1 code; local fix in synthesis §2ter) → applied (APPLY3, 2026-10-28): synthesis §2ter
 
 ### SPK-T2-19 · minor · "Removing temporary output" is logged twice
 
@@ -217,7 +219,7 @@
 - **Problem:** without deduplication, every deletion is counted twice.
 - **Proposal:** in that row, "`temp_removed` is deduplicated by (run, path)".
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by `check_t2.py smk`; local fix in synthesis §2ter)
+- **Status:** accepted (auto: confirmed by `check_t2.py smk`; local fix in synthesis §2ter) → applied (APPLY3, 2026-10-28): synthesis §2ter
 
 ### SPK-T2-20 · minor · Snakemake executor: only `local`
 
@@ -235,7 +237,7 @@
 - **Problem:** whoever writes `snakemake-logger-plugin-spectio` hits the same crash.
 - **Proposal:** add a second pitfall to §2bis: "a handler with `writes_to_file = True` must set `baseFilename`".
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by the 9.27.1 and 2.1.0 code; local fix in synthesis §2bis)
+- **Status:** accepted (auto: confirmed by the 9.27.1 and 2.1.0 code; local fix in synthesis §2bis) → applied (APPLY3, 2026-10-28): synthesis §2bis
 
 ### SPK-T2-22 · minor · `resources` is a `Namedlist` and `workflow_id` is a `uuid.UUID`
 
@@ -244,7 +246,7 @@
 - **Problem:** a naive plugin fails, or drops resource names.
 - **Proposal:** add to the §2bis pitfalls: "the plugin serialises defensively: `Namedlist` → dict, `UUID` → string, unknown types → `str()`".
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by the 9.27.1 code and the spike's first run; local fix in synthesis §2bis)
+- **Status:** accepted (auto: confirmed by the 9.27.1 code and the spike's first run; local fix in synthesis §2bis) → applied (APPLY3, 2026-10-28): synthesis §2bis
 
 ### SPK-T2-23 · major · Engine events carry user, host, home directory and command line
 
@@ -262,7 +264,7 @@
 - **Problem:** a plugin that follows the docstring loses its settings without an error.
 - **Proposal:** one clause in the same §2bis pitfall note: "settings class `LogHandlerSettings` (the docstring is wrong)". The upstream docstring fix is optional and is not sent without Thomas.
 - **Found by:** T2 spike
-- **Status:** accepted (auto: confirmed by the 2.1.0 code; local fix in synthesis §2bis, the same note as SPK-T2-21)
+- **Status:** accepted (auto: confirmed by the 2.1.0 code; local fix in synthesis §2bis, the same note as SPK-T2-21) → applied (APPLY3, 2026-10-28): synthesis §2bis
 
 ### SPK-T2-25 · minor · A local `nf-spectio` loads from the plugins directory with no registry lookup
 
@@ -271,7 +273,7 @@
 - **Problem:** "passed to Nextflow from there" is not how it worked. The plugin was installed into Nextflow's plugins directory first.
 - **Proposal:** replace the mark in §7.3: the runner unpacks the jar from the wheel into the plugins directory (`$NXF_HOME/plugins/nf-spectio-<ver>/`) before launch and passes `-plugins nf-spectio@<ver>`. Whether `NXF_PLUGINS_DIR` can point to a read-only copy is **[to be validated]**. This keeps #35's decision (jar in the wheel) and refines the how.
 - **Found by:** T2 spike (coordinator, from the note)
-- **Status:** accepted (auto: confirmed by the T2 note and the 6 plugin runs; local fix in architecture §7.3; #35 is not reversed)
+- **Status:** accepted (auto: confirmed by the T2 note and the 6 plugin runs; local fix in architecture §7.3; #35 is not reversed) → applied (APPLY3, 2026-10-28): architecture §7.3
 
 ### SPK-T2-26 · minor · The Snakemake logger plugin is found on `PYTHONPATH` by module prefix
 
@@ -282,7 +284,7 @@
 - **Problem:** two marks remain on something the spike did.
 - **Proposal:** in §13.4 and §7.3, replace both marks with "verified in spike T2 (Snakemake 9.27.1, interface 2.1.0)" and a link.
 - **Found by:** T2 spike (coordinator, from the note)
-- **Status:** accepted (auto: confirmed by the note and the 2.1.0 code; local fix in architecture §7.3 and §13.4)
+- **Status:** accepted (auto: confirmed by the note and the 2.1.0 code; local fix in architecture §7.3 and §13.4) → applied (APPLY3, 2026-10-28): architecture §7.3 and §13.4
 
 ### SPK-T2-27 · minor · `runs.failure` on Nextflow: the message is in `onFlowComplete`, not in `onFlowError`
 
@@ -295,7 +297,7 @@
 - **Problem:** `onFlowError` cannot fill `task_id` or `attempt_n`.
 - **Proposal:** in the api §7 `runs` row, for Nextflow, `message` comes from `onFlowComplete.errorMessage`, and `task_id` and `attempt_n` from the attempt whose `errorAction` is `TERMINATE`. Drop the mark for Nextflow.
 - **Found by:** T2 spike (coordinator, from the fixtures)
-- **Status:** accepted (auto: confirmed by `check_t2.py flow_end` and `failed_status`; local fix in api §7)
+- **Status:** accepted (auto: confirmed by `check_t2.py flow_end` and `failed_status`; local fix in api §7) → applied (APPLY3, 2026-10-28): api §7
 
 ## T3
 
@@ -316,7 +318,7 @@ Items 1 to 16 of the Progress page are SPK-T3-01 to SPK-T3-16, in the same order
 - **Problem:** the scheduler record's exit code is meaningless for Snakemake tasks. The class is still right (`tool_error`), but the code shown is wrong, and an `oom` or `timeout` injected by the tool itself cannot be told apart.
 - **Proposal:** add a bullet to §3.5, "Classify from the record": "Snakemake on SLURM (executor plugin 2.8.0): a task job runs `snakemake --executor slurm-jobstep`, so a failing rule ends `FAILED 1:0` whatever the tool returned. The tool's code is only in the task's Slurm log, so `attempts.exit` stays null (api §7, SPK-T2-17) unless that log is read (T3)."
 - **Found by:** T3 build (spike t3-ci)
-- **Status:** accepted (auto: confirmed by the four Snakemake `-sacct.json` fixtures and the run 40680736055 log; local fix in schedulers §3.5)
+- **Status:** accepted (auto: confirmed by the four Snakemake `-sacct.json` fixtures and the run 40680736055 log; local fix in schedulers §3.5) → applied (APPLY3, 2026-10-28): schedulers §3.5
 
 ### SPK-T3-02 · minor · The synthetic `oom` mode is not an OOM for Slurm
 
@@ -327,7 +329,7 @@ Items 1 to 16 of the Progress page are SPK-T3-01 to SPK-T3-16, in the same order
 - **Problem:** the sentence promises a Slurm OOM from every OOM scenario. Only `oom_real` (or the probe) gives one.
 - **Proposal:** in §3: "On a cluster, only `oom_real` makes the scheduler report the kill (SLURM `OUT_OF_MEMORY` with `ConstrainRAMSpace=yes`; Kubernetes `OOMKilled`). `oom` and `oom_once` exit 137 themselves, so SLURM records `FAILED 137:0` (Nextflow) or `FAILED 1:0` (Snakemake, SPK-T3-01) (T3)."
 - **Found by:** T3 build (spike t3-ci)
-- **Status:** accepted (auto: confirmed by `nextflow-oom_fatal-sacct.json` and `sacct-probes.json`; local fix in dev-env §3)
+- **Status:** accepted (auto: confirmed by `nextflow-oom_fatal-sacct.json` and `sacct-probes.json`; local fix in dev-env §3) → applied (APPLY3, 2026-10-28): dev-env §3
 
 ### SPK-T3-03 · minor · SLURM `OUT_OF_MEMORY` with exit 0:125: the mark can go
 
@@ -340,7 +342,7 @@ Items 1 to 16 of the Progress page are SPK-T3-01 to SPK-T3-16, in the same order
 - **Problem:** a verified fact still carries the mark. The JSON form (signal 125, no return code) is not stated.
 - **Proposal:** replace the mark with "(verified on sind, Slurm 26.05.5, T3; in `sacct --json`: `return_code` unset, `signal.id` 125, status `SIGNALED`)".
 - **Found by:** coordinator (TRIAGE3 re-check of the T3 fixtures)
-- **Status:** accepted (auto: fact correction backed by `sacct-probes.json`; local fix in schedulers §3.5)
+- **Status:** accepted (auto: fact correction backed by `sacct-probes.json`; local fix in schedulers §3.5) → applied (APPLY3, 2026-10-28): schedulers §3.5
 
 ### SPK-T3-04 · minor · Snakemake's own SLURM status polling delays task ends by 40 to 180 s
 
@@ -352,7 +354,7 @@ Items 1 to 16 of the Progress page are SPK-T3-01 to SPK-T3-16, in the same order
 - **Problem:** Snakemake's engine events about SLURM task ends lag the scheduler by up to 3 minutes. The runner's own `sacct` poll can see an end first, and nothing says that this is expected.
 - **Proposal:** add one sentence to §3.2: "Snakemake on SLURM learns of task ends only at its own status checks (plugin 2.8.0: 40 s after a submission or a finish, up to 180 s), so the runner's poll may see a job end before the engine reports it. The state lattice (api §8.2) keeps that order harmless. The sind tests pass `--slurm-init-seconds-before-status-checks 5`." Whether Spectio's generated Snakemake profile lowers the value on real sites is left open **[to be validated: site load]**.
 - **Found by:** T3 build (spike t3-ci)
-- **Status:** accepted (auto: confirmed by the plugin source at v2.8.0 and `scenarios.sh:24`; local fix in schedulers §3.2)
+- **Status:** accepted (auto: confirmed by the plugin source at v2.8.0 and `scenarios.sh:24`; local fix in schedulers §3.2) → applied (APPLY3, 2026-10-28): schedulers §3.2
 
 ### SPK-T3-05 · major · Nextflow's own cleanup reads as "Cancelled by someone else"
 
@@ -364,7 +366,7 @@ Items 1 to 16 of the Progress page are SPK-T3-01 to SPK-T3-16, in the same order
 - **Problem:** every fatal Nextflow run on SLURM would show "Cancelled by someone else" on its cleaned-up tasks.
 - **Proposal:** in the §3.5 `cancelled_external` row, SLURM column: "`CANCELLED` by a user other than the run's user (text: `by <uid>`; JSON: `kill_request_user`, SPK-T3-16)". Add a sentence under the table: "A cancel by the run's own user after the engine has reported the run's failure is engine cleanup. It is shown as 'cancelled by the engine', with no class."
 - **Found by:** T3 build (spike t3-ci)
-- **Status:** accepted (auto: confirmed by the logs of spike runs 40667769713 and 40670286528; local fix in schedulers §3.5)
+- **Status:** accepted (auto: confirmed by the logs of spike runs 40667769713 and 40670286528; local fix in schedulers §3.5) → applied (APPLY3, 2026-10-28): schedulers §3.5
 
 ### SPK-T3-06 · minor · Pending reasons in `--json`: `state_reason` and `state_description`; `sacct` keeps the last reason
 
@@ -380,7 +382,7 @@ Items 1 to 16 of the Progress page are SPK-T3-01 to SPK-T3-16, in the same order
   - "With `--json`, match `state_reason`. `ReqNodeNotAvail` needs `state_description` to tell a maintenance window from other cases; it is the only probe reason with a description (Slurm 26.05.5, T3).
   - A `sacct` reason on a job in a terminal state is history, not a wait."
 - **Found by:** T3 build (spike t3-ci)
-- **Status:** accepted (auto: confirmed by `squeue-pending-reasons.json` and `sacct-probes.json`; local fix in schedulers §3.5)
+- **Status:** accepted (auto: confirmed by `squeue-pending-reasons.json` and `sacct-probes.json`; local fix in schedulers §3.5) → applied (APPLY3, 2026-10-28): schedulers §3.5
 
 ### SPK-T3-07 · minor · `sacct -s FAILED,… -S <time>` returned nothing once
 
@@ -411,7 +413,7 @@ Items 1 to 16 of the Progress page are SPK-T3-01 to SPK-T3-16, in the same order
 - **Problem:** every Nextflow task timeout on SLURM would be classed `tool_error`, and Spectio would suggest no time increase.
 - **Proposal:** in the §3.5 `timeout` row, SLURM column: "`TIMEOUT`; for a Nextflow task also `FAILED` with exit 140 (Nextflow's `--signal B:USR2@30`, trapped by its wrapper; T3)". Whether this holds for limits well above a minute is **[to be validated]**, as T3 says.
 - **Found by:** T3 build
-- **Status:** accepted (auto: confirmed by `nextflow-timeout_fatal-sacct.json`, the run log and the Nextflow source at v26.10.4; local fix in schedulers §3.5)
+- **Status:** accepted (auto: confirmed by `nextflow-timeout_fatal-sacct.json`, the run log and the Nextflow source at v26.10.4; local fix in schedulers §3.5) → applied (APPLY3, 2026-10-28): schedulers §3.5
 
 ### SPK-T3-10 · minor · On SLURM the fatal scenarios give other exit codes than §10.1 lists
 
@@ -424,7 +426,7 @@ Items 1 to 16 of the Progress page are SPK-T3-01 to SPK-T3-16, in the same order
 - **Problem:** the row reads as if the same codes held on a cluster.
 - **Proposal:** add to that §10.1 row: "On SLURM (T3): Nextflow 137 and 140 (SPK-T3-09); Snakemake `FAILED 1:0` for both, the tool's code only in the task log. A Slurm `TIMEOUT` needs a `runtime` the job really exceeds (only the probe has one today)."
 - **Found by:** T3 build
-- **Status:** accepted (auto: confirmed by the eight scenario `-sacct.json` fixtures; local fix in dev-env §10.1)
+- **Status:** accepted (auto: confirmed by the eight scenario `-sacct.json` fixtures; local fix in dev-env §10.1) → applied (APPLY3, 2026-10-28): dev-env §10.1
 
 ### SPK-T3-11 · minor · `slurm-mini` needs partition `htc`
 
@@ -483,7 +485,7 @@ Items 1 to 16 of the Progress page are SPK-T3-01 to SPK-T3-16, in the same order
 - **Problem:** a JSON parser finds no uid in the state, and must compare a user name, not a uid.
 - **Proposal:** folded into SPK-T3-05's change to the same row: "JSON: `kill_request_user` (a user name), compared with the run's user name; text: `by <uid>`".
 - **Found by:** T3 build
-- **Status:** accepted (auto: confirmed by `sacct-probes.json`; local fix in schedulers §3.5, the same row as SPK-T3-05)
+- **Status:** accepted (auto: confirmed by `sacct-probes.json`; local fix in schedulers §3.5, the same row as SPK-T3-05) → applied (APPLY3, 2026-10-28): schedulers §3.5
 
 ### SPK-T3-17 · minor · Preemption is listed as "run in T3", but it was not built
 
@@ -492,7 +494,7 @@ Items 1 to 16 of the Progress page are SPK-T3-01 to SPK-T3-16, in the same order
 - **Problem:** the spec claims coverage that does not exist.
 - **Proposal:** in §3: "*Preemption:* planned, not built yet (T3 deferred it; it needs a preemption setup in `slurm-site`)". When it is built is part of proposed #60.
 - **Found by:** code-reviewer (CR-T3-02, deferred)
-- **Status:** accepted (auto: confirmed by `dev/slurm/site.yaml` and `sacct-probes.json`, which has no `PREEMPTED`; local fix in dev-env §3)
+- **Status:** accepted (auto: confirmed by `dev/slurm/site.yaml` and `sacct-probes.json`, which has no `PREEMPTED`; local fix in dev-env §3) → applied (APPLY3, 2026-10-28): dev-env §3
 
 The other deferred items of Progress item 16 are not findings:
 - head `OUT_OF_MEMORY`, head `TIMEOUT` and `BOOT_FAIL` are product mappings in schedulers §3.5, and no test-coverage text claims them;
@@ -509,7 +511,7 @@ The other deferred items of Progress item 16 are not findings:
 - **Problem:** the row claims a version matrix that does not run. Nothing in the pipeline builds it, or the other deferred SLURM coverage (`gpu`, preemption, signal drain, head OOM and walltime).
 - **Proposal:** see [proposed inbox #60](inbox.md#60-assumed-who-builds-the-deferred-slurm-coverage). Under the assumed option, the row gets "Planned, not built yet" now.
 - **Found by:** T3 build (open question 2), coordinator (row not marked)
-- **Status:** inbox (assumed: (a) mark the rows planned now; each deferred item is built by the first build step that needs it). Which steps do the work is pipeline planning, not a local spec fix.
+- **Status:** inbox (assumed: (a) mark the rows planned now; each deferred item is built by the first build step that needs it). Which steps do the work is pipeline planning, not a local spec fix. → applied (APPLY3, 2026-10-28): dev-env §4.1 `slurm-versions` row, and the §3 preemption item links to inbox #60 (assumed — pending Thomas, inbox #60)
 
 ### SPK-T3-19 · minor · A Snakemake head in `sbatch` works on `slurm-site`
 
@@ -520,7 +522,7 @@ The other deferred items of Progress item 16 are not findings:
 - **Problem:** both marks remain on something T3 did. The §15.1 fallback (head on the login node) applies only "if spike T3 rules it out", and T3 did not.
 - **Proposal:** replace both marks with "works on `slurm-site` for the synthetic `happy` scenario; the plugin warns but runs (T3, run 40680736055)". Failure scenarios and long runs stay **[to be validated]**. The §15.1 row links to schedulers §3.1, which owns head jobs.
 - **Found by:** coordinator (from the T3 run log)
-- **Status:** accepted (auto: confirmed by the run 40680736055 log; local fix in schedulers §3.1, plus the mark in dev-env §15.1 replaced by a link; this follows the §15.1 rule and reverses nothing)
+- **Status:** accepted (auto: confirmed by the run 40680736055 log; local fix in schedulers §3.1, plus the mark in dev-env §15.1 replaced by a link; this follows the §15.1 rule and reverses nothing) → applied (APPLY3, 2026-10-28): schedulers §3.1; dev-env §15.1 and §15.3
 
 ### SPK-T3-20 (SEC-T3-01) · minor · Nodes run tools from a directory that cluster jobs can write
 
@@ -543,7 +545,7 @@ The other deferred items of Progress item 16 are not findings:
   - Precedent: SPK-T4-15 (dev-tooling supply chain) was accepted on the same grounds.
   - If Thomas counts dev-cluster hardening as security posture, it moves to the inbox unchanged.
 - **Found by:** security-reviewer (SEC-T3-01)
-- **Status:** accepted (auto: confirmed by `dev/slurm/env.sh:8` and `dev/slurm/site.yaml:15-18`; local fix in dev-env §4; dev-tooling convention, not a product security default)
+- **Status:** accepted (auto: confirmed by `dev/slurm/env.sh:8` and `dev/slurm/site.yaml:15-18`; local fix in dev-env §4; dev-tooling convention, not a product security default) → partly applied (APPLY3, 2026-10-28): dev-env §4, rule "Node tools are read-only for jobs"; pending: the code in `dev/slurm/` and `dev/k8s/` (not built yet)
 
 ## T4
 
@@ -570,7 +572,7 @@ The other deferred items of Progress item 16 are not findings:
   - drop the "[to be validated on k8s-mini]" mark (a fact, so it could be applied alone);
   - see [proposed inbox #53](inbox.md#53-kubernetes-roles-for-the-runner-and-the-nextflow-heads).
 - **Found by:** T4 build (spike t4-ci)
-- **Status:** inbox (reserved: roles and permission defaults)
+- **Status:** inbox (reserved: roles and permission defaults) → partly applied (APPLY3, 2026-10-28): schedulers §4, the fact part (`pods: create` verified on `k8s-mini`); pending: the Role lists wait for inbox #53
 
 ### SPK-T4-03 · major · The runner Role cannot read Kueue Workloads
 
@@ -603,7 +605,7 @@ The other deferred items of Progress item 16 are not findings:
 - **Problem:** every Spectio launch of Nextflow 25.10 on Kubernetes would fail. Offline clusters would also need the plugin pre-installed.
 - **Proposal:** add a bullet to schedulers §4: on Nextflow 25.10, the generated config names `nf-k8s` at the version that Nextflow release lists as core (`plugins { id 'nf-k8s@1.2.3' }` for 25.10.9); 26.10 needs nothing. Offline sites pre-install it in the plugins directory, as for `nf-spectio` (SPK-T2-25). The synthetic `k8s` profile follows in the next step that edits it (code, not spec).
 - **Found by:** T4 build (spike t4-ci)
-- **Status:** accepted (auto: confirmed by the log of run 40662141233 and `scenarios.sh:116`; local fix in schedulers §4)
+- **Status:** accepted (auto: confirmed by the log of run 40662141233 and `scenarios.sh:116`; local fix in schedulers §4) → applied (APPLY3, 2026-10-28): schedulers §4
 
 ### SPK-T4-06 · minor · "Queued" comes from the visibility API, not from Workload conditions
 
@@ -615,7 +617,7 @@ The other deferred items of Progress item 16 are not findings:
 - **Problem:** a runner that reads conditions only shows "queued" late, or never.
 - **Proposal:** in the §4 Kueue bullet: "A task is queued when the visibility API lists its Workload; Workload conditions give the reason (`WaitingForQuota`) when present. Without visibility permission, the runner falls back to `QuotaReserved=False`."
 - **Found by:** T4 build (spike t4-ci)
-- **Status:** accepted (auto: confirmed by `tests/fixtures/k8s/kueue-*.json`; local fix in schedulers §4)
+- **Status:** accepted (auto: confirmed by `tests/fixtures/k8s/kueue-*.json`; local fix in schedulers §4) → applied (APPLY3, 2026-10-28): schedulers §4
 
 ### SPK-T4-07 · minor · An OOM kill produces no event; a Job deadline deletes its pod
 
@@ -626,7 +628,7 @@ The other deferred items of Progress item 16 are not findings:
 - **Problem:** the sentence suggests that OOM reasons are in events, and it misses the Job-deadline case.
 - **Proposal:** reword the sentence in §4: "An OOM kill is only in the container's `state.terminated` (no event), and a Job deadline deletes the Job's pod, leaving only the Job condition. So the runner keeps the last terminal state of each pod and Job itself; events expire after an hour (`FailedScheduling`)."
 - **Found by:** T4 build (spike t4-ci)
-- **Status:** accepted (auto: confirmed by `tests/fixtures/k8s/failures-*.json`; local fix in schedulers §4)
+- **Status:** accepted (auto: confirmed by `tests/fixtures/k8s/failures-*.json`; local fix in schedulers §4) → applied (APPLY3, 2026-10-28): schedulers §4
 
 ### SPK-T4-08 · minor · A 404 on `jobs/status` is not a refusal
 
@@ -644,7 +646,7 @@ The other deferred items of Progress item 16 are not findings:
 - **Problem:** the §11 row and the decided paragraph contradict each other. Fixing the paragraph would reverse the inbox #26 decision. T3 left `pipelines-slurm.yml` in the same state (SPK-T3-13); that part is merged here.
 - **Proposal:** see [proposed inbox #57](inbox.md#57-assumed-pipelines-k8syml-and-pipelines-slurmyml-join-ciyml-as-inbox-26-decided).
 - **Found by:** T4 build
-- **Status:** inbox (assumed: (a) keep the #26 rule; `pipelines-k8s.yml` and `pipelines-slurm.yml` become reusable workflows called by `ci.yml` on their paths, and their §11 rows say "standalone until then")
+- **Status:** inbox (assumed: (a) keep the #26 rule; `pipelines-k8s.yml` and `pipelines-slurm.yml` become reusable workflows called by `ci.yml` on their paths, and their §11 rows say "standalone until then") → partly applied (APPLY3, 2026-10-28): dev-env §11, `pipelines-slurm.yml` and `pipelines-k8s.yml` rows say "standalone until `ci.yml` calls it" (assumed — pending Thomas, inbox #57); pending: `ci.yml` does not call them yet
 
 ### SPK-T4-10 · minor · The `k8s-mini` row listed SeaweedFS, the Snakemake executor and a runner Role
 
@@ -664,7 +666,7 @@ The other deferred items of Progress item 16 are not findings:
   - `FailedScheduling … Insufficient cpu|memory` → "waiting for free CPU / memory" (not a failure);
   - Kueue `WaitingForQuota` → "waiting for queue quota", with its position (SPK-T4-06).
 - **Found by:** T4 build (spike t4-ci)
-- **Status:** accepted (auto: confirmed by the spike note and run 40663207755; local fix in schedulers §3.5)
+- **Status:** accepted (auto: confirmed by the spike note and run 40663207755; local fix in schedulers §3.5) → applied (APPLY3, 2026-10-28): schedulers §3.5
 
 ### SPK-T4-12 (SEC-T4-02) · major · Task pods get the namespace's `default` ServiceAccount token
 
@@ -710,7 +712,7 @@ The other deferred items of Progress item 16 are not findings:
   - "`bootstrap.sh --only <tools>` for CI jobs".
   - The code is a follow-up of the same kind as inbox #46; see the proposed update to #46 below.
 - **Found by:** security-reviewer (SEC-T4-05)
-- **Status:** accepted (auto: confirmed by `versions.env:81,85` and the v0.20.3 manifest L27290; local fix in dev-env §1; agrees with the D3 decision; code follow-up joins inbox #46)
+- **Status:** accepted (auto: confirmed by `versions.env:81,85` and the v0.20.3 manifest L27290; local fix in dev-env §1; agrees with the D3 decision; code follow-up joins inbox #46) → partly applied (APPLY3, 2026-10-28): dev-env §1, "Checked downloads"; pending: the code (manifest images by digest, `nf-k8s` sha256, `bootstrap.sh --only`), with inbox #46
 
 ### SPK-T4-16 · minor · `k8s-kueue`: one Kueue version and no preemption, against two versions and preemption in the spec
 
@@ -723,7 +725,7 @@ The other deferred items of Progress item 16 are not findings:
   - in the §4.2 `k8s-kueue` row: "built: queue positions and admission (T4); planned, not built yet: preemption";
   - in the §1 Kueue row: "the older version is pinned, not run yet".
 - **Found by:** T4 build (coordinator, from "Not done here")
-- **Status:** accepted (auto: confirmed by `.github/workflows/pipelines-k8s.yml` and `dev/k8s/cluster.sh`, which use `KUEUE_VERSION` only; local fix in dev-env §1 and §4.2)
+- **Status:** accepted (auto: confirmed by `.github/workflows/pipelines-k8s.yml` and `dev/k8s/cluster.sh`, which use `KUEUE_VERSION` only; local fix in dev-env §1 and §4.2) → applied (APPLY3, 2026-10-28): dev-env §1 Kueue row and §4.2 `k8s-kueue` row
 
 ### SPK-T4-17 · minor · Kueue's default configuration does include the `pod` integration (the T4 note is wrong)
 
@@ -732,7 +734,7 @@ The other deferred items of Progress item 16 are not findings:
 - **Problem:** the note's claim would turn the §4 mark into a wrong "off by default". The §4 word "opt-in" is also doubtful for v0.20.3.
 - **Proposal:** §4: "the pod integration is listed in Kueue's default configuration (v0.20.3 `manifests.yaml` L27163); whether a 25.10 task Pod is admitted with only the queue-name label is **[to be validated]**". The note is dated and stays as written; this finding records the correction.
 - **Found by:** coordinator (TRIAGE3 re-check of the T4 note's source)
-- **Status:** accepted (auto: fact correction backed by the Kueue v0.20.3 manifest; local fix in schedulers §4)
+- **Status:** accepted (auto: fact correction backed by the Kueue v0.20.3 manifest; local fix in schedulers §4) → applied (APPLY3, 2026-10-28): schedulers §4
 
 ## T7
 
@@ -748,7 +750,7 @@ T7 edited its own specs (dev-env §10.2 and §11) and sent its decisions to the 
 - **Problem:** the nightly tier holds the heavy entries since inbox #45, and nothing reads its results.
 - **Proposal:** see [proposed inbox #58](inbox.md#58-assumed-who-watches-the-nightly-runs).
 - **Found by:** T7 build
-- **Status:** inbox (assumed: (b) the autopilot reads the last scheduled run of each pipeline workflow at each tick and reports a red one in the journal and the step report)
+- **Status:** inbox (assumed: (b) the autopilot reads the last scheduled run of each pipeline workflow at each tick and reports a red one in the journal and the step report) → partly applied (APPLY3, 2026-10-28): dev-env §11, "Nightly runs" (assumed — pending Thomas, inbox #58); pending: the autopilot playbook and skill do not read the scheduled runs yet
 
 ### SPK-T7-02 · minor · The repository is public: the corpus now runs with the unmeasured `public` limits
 
@@ -765,7 +767,7 @@ T7 edited its own specs (dev-env §10.2 and §11) and sent its decisions to the 
   - set `public` to leave headroom as `private` does (13 GB, under the 14.66 GB measured free at start in run 40649538349).
   - The tiers of inbox #45 are not touched. The `corpus.yaml` value is a follow-up in code.
 - **Found by:** T7 build (open item 3), coordinator (repository now public; t4-ci measurement)
-- **Status:** accepted (auto: confirmed by the REST API, `pipelines-real.yml:63` and `corpus.yaml:18`; local fix in dev-env §10.2; inbox #45 is not reversed)
+- **Status:** accepted (auto: confirmed by the REST API, `pipelines-real.yml:63` and `corpus.yaml:18`; local fix in dev-env §10.2; inbox #45 is not reversed) → applied by PR #36 (corpus retry, 2026-10-28): dev-env §10.2
 
 ### SPK-T7-03 · minor · `pipelines-real.yml` pins Nextflow 26.10.3, against 26.10.4 in `versions.env`
 
@@ -776,7 +778,7 @@ T7 edited its own specs (dev-env §10.2 and §11) and sent its decisions to the 
 - **Problem:** the corpus tests another Nextflow than the pinned one. Inbox #42's answer (a) moved only the synthetic matrix.
 - **Proposal:** in the §11 `pipelines-real.yml` row: "Nextflow at the `dev/versions.env` pin". The step that next edits `pipelines-real.yml` reads it from there, as #42 (a) did for the synthetic matrix. No required check is renamed: only `ci-ok` is required.
 - **Found by:** T7 build
-- **Status:** accepted (auto: confirmed by `pipelines-real.yml:58`, `corpus.yaml:8` and `versions.env:39`; local fix in dev-env §11; in line with #42 (a))
+- **Status:** accepted (auto: confirmed by `pipelines-real.yml:58`, `corpus.yaml:8` and `versions.env:39`; local fix in dev-env §11; in line with #42 (a)) → applied (APPLY3, 2026-10-28): dev-env §11 `pipelines-real.yml` row; the workflow pin moves to `versions.env` in the next step that edits `pipelines-real.yml`, as proposed
 
 ### SPK-T7-04 (SEC-T7-01, SEC-T7-04) · minor · Corpus pinned by tag; unpinned conda inside the Snakemake action
 
@@ -794,7 +796,7 @@ T7 edited its own specs (dev-env §10.2 and §11) and sent its decisions to the 
 - **Problem:** a red nightly then means "a CDN hiccupped" as often as "a pipeline broke", which defeats SPK-T7-01.
 - **Proposal:** §10.2: "a failed Nextflow entry is retried once with `-resume` (cached tasks are not re-run); a retried pass is reported as `pass (retried)`". Code follow-up: `tests/pipelines/real/run_corpus.py` around L176, with a unit test. No retry for Snakemake entries until one is measured.
 - **Found by:** coordinator (nightly diagnosis)
-- **Status:** accepted (auto: confirmed by the job logs of run 40649538349; local fix in dev-env §10.2; reverses no decision)
+- **Status:** accepted (auto: confirmed by the job logs of run 40649538349; local fix in dev-env §10.2; reverses no decision) → applied by PR #36 (corpus retry, 2026-10-28): dev-env §10.2
 
 ## Inbox entries
 
