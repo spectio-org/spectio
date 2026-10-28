@@ -170,6 +170,20 @@ class Down(TempState):
             scenario.down(8)
         self.assertFalse(Path(data).exists())
 
+    def test_down_keeps_the_network_when_a_step_fails(self):
+        cmds = []
+
+        def fake_run(cmd, **kw):
+            cmds.append(cmd)
+            return subprocess.CompletedProcess(cmd, 1 if cmd[:2] == ["sind", "--realm"] else 0, stdout="spx-9\n")
+        Path(scenario.names(9)["data_dir"]).mkdir(parents=True)
+        with mock.patch.object(scenario.subprocess, "run", side_effect=fake_run), \
+                mock.patch.object(scenario.shutil, "which", return_value="/usr/bin/x"), \
+                mock.patch("sys.stdout"), mock.patch("sys.stderr"):
+            with self.assertRaises(SystemExit):
+                scenario.down(9)
+        self.assertNotIn(["docker", "network", "rm", "spx-9"], cmds)
+
 
 class Up(TempState):
     def test_failed_up_takes_down_what_it_created(self):
