@@ -5,15 +5,15 @@
   "items": [
     {
       "metadata": {
-        "name": "job-fx-kq-1-211cc",
+        "name": "job-fx-kq-1-04f50",
         "namespace": "spectio-work",
-        "creationTimestamp": "2026-10-28T10:12:56Z",
+        "creationTimestamp": "2026-10-28T10:28:17Z",
         "ownerReferences": [
           {
             "apiVersion": "batch/v1",
             "kind": "Job",
             "name": "fx-kq-1",
-            "uid": "8f15d526-2bd2-4da7-b415-228ec2aa043e"
+            "uid": "4dee7935-fa7a-4fc3-b747-013f2ccd05c0"
           }
         ]
       },
@@ -24,15 +24,15 @@
     },
     {
       "metadata": {
-        "name": "job-fx-kq-3-c000f",
+        "name": "job-fx-kq-3-7e5a5",
         "namespace": "spectio-work",
-        "creationTimestamp": "2026-10-28T10:12:56Z",
+        "creationTimestamp": "2026-10-28T10:28:17Z",
         "ownerReferences": [
           {
             "apiVersion": "batch/v1",
             "kind": "Job",
             "name": "fx-kq-3",
-            "uid": "254592c6-81f8-4c3b-8e71-0717a4b39e2b"
+            "uid": "af150ac9-40b1-46fe-b527-d3fdbf30e793"
           }
         ]
       },
@@ -44,7 +44,7 @@
   ],
   "_fixture": {
     "kubernetes": "kindest/node:v1.37.0",
-    "source": "https://github.com/weber8thomas/spectio/actions/runs/40670116723",
+    "source": "https://github.com/weber8thomas/spectio/actions/runs/40672184666",
     "kueue": "v0.20.3"
   }
 }

@@ -6,15 +6,15 @@
       "kind": "Job",
       "metadata": {
         "annotations": {},
-        "creationTimestamp": "2026-10-28T10:12:26Z",
+        "creationTimestamp": "2026-10-28T10:28:11Z",
         "generation": 1,
         "labels": {
           "spectio.io/run-id": "fx-failures"
         },
         "name": "fx-exit3",
         "namespace": "spectio-work",
-        "resourceVersion": "678",
-        "uid": "6afd327a-3d0f-456c-b2b8-ec76fa12c5d8"
+        "resourceVersion": "653",
+        "uid": "5319dd03-63f9-49ad-91c8-d6fb18262d14"
       },
       "spec": {
         "backoffLimit": 1,
@@ -25,16 +25,16 @@
         "podReplacementPolicy": "TerminatingOrFailed",
         "selector": {
           "matchLabels": {
-            "batch.kubernetes.io/controller-uid": "6afd327a-3d0f-456c-b2b8-ec76fa12c5d8"
+            "batch.kubernetes.io/controller-uid": "5319dd03-63f9-49ad-91c8-d6fb18262d14"
           }
         },
         "suspend": false,
         "template": {
           "metadata": {
             "labels": {
-              "batch.kubernetes.io/controller-uid": "6afd327a-3d0f-456c-b2b8-ec76fa12c5d8",
+              "batch.kubernetes.io/controller-uid": "5319dd03-63f9-49ad-91c8-d6fb18262d14",
               "batch.kubernetes.io/job-name": "fx-exit3",
-              "controller-uid": "6afd327a-3d0f-456c-b2b8-ec76fa12c5d8",
+              "controller-uid": "5319dd03-63f9-49ad-91c8-d6fb18262d14",
               "job-name": "fx-exit3",
               "spectio.io/run-id": "fx-failures"
             }
@@ -71,16 +71,16 @@
       "status": {
         "conditions": [
           {
-            "lastProbeTime": "2026-10-28T10:12:42Z",
-            "lastTransitionTime": "2026-10-28T10:12:42Z",
+            "lastProbeTime": "2026-10-28T10:28:27Z",
+            "lastTransitionTime": "2026-10-28T10:28:27Z",
             "message": "Job has reached the specified backoff limit",
             "reason": "BackoffLimitExceeded",
             "status": "True",
             "type": "FailureTarget"
           },
           {
-            "lastProbeTime": "2026-10-28T10:12:42Z",
-            "lastTransitionTime": "2026-10-28T10:12:42Z",
+            "lastProbeTime": "2026-10-28T10:28:27Z",
+            "lastTransitionTime": "2026-10-28T10:28:27Z",
             "message": "Job has reached the specified backoff limit",
             "reason": "BackoffLimitExceeded",
             "status": "True",
@@ -89,7 +89,7 @@
         ],
         "failed": 2,
         "ready": 0,
-        "startTime": "2026-10-28T10:12:26Z",
+        "startTime": "2026-10-28T10:28:11Z",
         "terminating": 0,
         "uncountedTerminatedPods": {}
       }
@@ -99,15 +99,15 @@
       "kind": "Job",
       "metadata": {
         "annotations": {},
-        "creationTimestamp": "2026-10-28T10:12:26Z",
+        "creationTimestamp": "2026-10-28T10:28:11Z",
         "generation": 1,
         "labels": {
           "spectio.io/run-id": "fx-failures"
         },
         "name": "fx-job-deadline",
         "namespace": "spectio-work",
-        "resourceVersion": "721",
-        "uid": "76fe7bde-f971-4df2-8de5-55fa0e376ca4"
+        "resourceVersion": "700",
+        "uid": "2c8fea70-5a0a-4508-8e4e-5b002df25d1f"
       },
       "spec": {
         "activeDeadlineSeconds": 10,
@@ -119,16 +119,16 @@
         "podReplacementPolicy": "TerminatingOrFailed",
         "selector": {
           "matchLabels": {
-            "batch.kubernetes.io/controller-uid": "76fe7bde-f971-4df2-8de5-55fa0e376ca4"
+            "batch.kubernetes.io/controller-uid": "2c8fea70-5a0a-4508-8e4e-5b002df25d1f"
           }
         },
         "suspend": false,
         "template": {
           "metadata": {
             "labels": {
-              "batch.kubernetes.io/controller-uid": "76fe7bde-f971-4df2-8de5-55fa0e376ca4",
+              "batch.kubernetes.io/controller-uid": "2c8fea70-5a0a-4508-8e4e-5b002df25d1f",
               "batch.kubernetes.io/job-name": "fx-job-deadline",
-              "controller-uid": "76fe7bde-f971-4df2-8de5-55fa0e376ca4",
+              "controller-uid": "2c8fea70-5a0a-4508-8e4e-5b002df25d1f",
               "job-name": "fx-job-deadline",
               "spectio.io/run-id": "fx-failures"
             }
@@ -164,16 +164,16 @@
       "status": {
         "conditions": [
           {
-            "lastProbeTime": "2026-10-28T10:12:36Z",
-            "lastTransitionTime": "2026-10-28T10:12:36Z",
+            "lastProbeTime": "2026-10-28T10:28:21Z",
+            "lastTransitionTime": "2026-10-28T10:28:21Z",
             "message": "Job was active longer than specified deadline",
             "reason": "DeadlineExceeded",
             "status": "True",
             "type": "FailureTarget"
           },
           {
-            "lastProbeTime": "2026-10-28T10:13:07Z",
-            "lastTransitionTime": "2026-10-28T10:13:07Z",
+            "lastProbeTime": "2026-10-28T10:28:52Z",
+            "lastTransitionTime": "2026-10-28T10:28:52Z",
             "message": "Job was active longer than specified deadline",
             "reason": "DeadlineExceeded",
             "status": "True",
@@ -182,7 +182,7 @@
         ],
         "failed": 1,
         "ready": 0,
-        "startTime": "2026-10-28T10:12:26Z",
+        "startTime": "2026-10-28T10:28:11Z",
         "terminating": 0,
         "uncountedTerminatedPods": {}
       }
@@ -192,15 +192,15 @@
       "kind": "Job",
       "metadata": {
         "annotations": {},
-        "creationTimestamp": "2026-10-28T10:12:26Z",
+        "creationTimestamp": "2026-10-28T10:28:11Z",
         "generation": 1,
         "labels": {
           "spectio.io/run-id": "fx-failures"
         },
         "name": "fx-oom",
         "namespace": "spectio-work",
-        "resourceVersion": "650",
-        "uid": "d732d322-8ca7-41a6-8197-dbff7988b6eb"
+        "resourceVersion": "629",
+        "uid": "ab4f95a1-bf83-4c80-a1ad-7316bc9983c5"
       },
       "spec": {
         "backoffLimit": 0,
@@ -211,16 +211,16 @@
         "podReplacementPolicy": "TerminatingOrFailed",
         "selector": {
           "matchLabels": {
-            "batch.kubernetes.io/controller-uid": "d732d322-8ca7-41a6-8197-dbff7988b6eb"
+            "batch.kubernetes.io/controller-uid": "ab4f95a1-bf83-4c80-a1ad-7316bc9983c5"
           }
         },
         "suspend": false,
         "template": {
           "metadata": {
             "labels": {
-              "batch.kubernetes.io/controller-uid": "d732d322-8ca7-41a6-8197-dbff7988b6eb",
+              "batch.kubernetes.io/controller-uid": "ab4f95a1-bf83-4c80-a1ad-7316bc9983c5",
               "batch.kubernetes.io/job-name": "fx-oom",
-              "controller-uid": "d732d322-8ca7-41a6-8197-dbff7988b6eb",
+              "controller-uid": "ab4f95a1-bf83-4c80-a1ad-7316bc9983c5",
               "job-name": "fx-oom",
               "spectio.io/run-id": "fx-failures"
             }
@@ -260,16 +260,16 @@
       "status": {
         "conditions": [
           {
-            "lastProbeTime": "2026-10-28T10:12:37Z",
-            "lastTransitionTime": "2026-10-28T10:12:37Z",
+            "lastProbeTime": "2026-10-28T10:28:22Z",
+            "lastTransitionTime": "2026-10-28T10:28:22Z",
             "message": "Job has reached the specified backoff limit",
             "reason": "BackoffLimitExceeded",
             "status": "True",
             "type": "FailureTarget"
           },
           {
-            "lastProbeTime": "2026-10-28T10:12:37Z",
-            "lastTransitionTime": "2026-10-28T10:12:37Z",
+            "lastProbeTime": "2026-10-28T10:28:22Z",
+            "lastTransitionTime": "2026-10-28T10:28:22Z",
             "message": "Job has reached the specified backoff limit",
             "reason": "BackoffLimitExceeded",
             "status": "True",
@@ -278,7 +278,7 @@
         ],
         "failed": 1,
         "ready": 0,
-        "startTime": "2026-10-28T10:12:26Z",
+        "startTime": "2026-10-28T10:28:11Z",
         "terminating": 0,
         "uncountedTerminatedPods": {}
       }
@@ -290,6 +290,6 @@
   },
   "_fixture": {
     "kubernetes": "kindest/node:v1.37.0",
-    "source": "https://github.com/weber8thomas/spectio/actions/runs/40670116723"
+    "source": "https://github.com/weber8thomas/spectio/actions/runs/40672184666"
   }
 }

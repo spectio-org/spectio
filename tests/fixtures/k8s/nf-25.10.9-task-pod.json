@@ -2,20 +2,20 @@
   "apiVersion": "v1",
   "kind": "Pod",
   "metadata": {
-    "creationTimestamp": "2026-10-28T10:13:18Z",
+    "creationTimestamp": "2026-10-28T10:29:10Z",
     "generation": 1,
     "labels": {
       "nextflow.io/app": "nextflow",
       "nextflow.io/processName": "QC_STATS",
-      "nextflow.io/runName": "magical_shannon",
-      "nextflow.io/sessionId": "uuid-015fbaff-48aa-4753-83a5-01e980da2afc",
+      "nextflow.io/runName": "scruffy_fourier",
+      "nextflow.io/sessionId": "uuid-b6d8454e-74d3-4c0a-adf9-29331822e58c",
       "nextflow.io/taskName": "QC_STATS_S01",
       "spectio.io/run-id": "nf25-happy"
     },
-    "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e",
+    "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
     "namespace": "spectio-work",
-    "resourceVersion": "1200",
-    "uid": "357b3795-0ca9-46d5-b49a-f48cd8dee830"
+    "resourceVersion": "1352",
+    "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
   },
   "spec": {
     "activeDeadlineSeconds": 120,
@@ -25,11 +25,11 @@
           "/bin/bash",
           "-ue",
           "-c",
-          "bash /home/runner/work/spectio/spectio/.scenarios/k8s/nf25-happy/work/e7/e9af00ec6dfcc3cd6992fc29e683af/.command.run 2>&1 | tee /home/runner/work/spectio/spectio/.scenarios/k8s/nf25-happy/work/e7/e9af00ec6dfcc3cd6992fc29e683af/.command.log"
+          "bash /home/runner/work/spectio/spectio/.scenarios/k8s/nf25-happy/work/12/922699a5646d4d959b91bdfd6dfe20/.command.run 2>&1 | tee /home/runner/work/spectio/spectio/.scenarios/k8s/nf25-happy/work/12/922699a5646d4d959b91bdfd6dfe20/.command.log"
         ],
         "image": "python:3.12@sha256:98d8fe4e28bb2efeed9d9bce6a4705e80a6764367b65aea1dc4b96ded7b05620",
         "imagePullPolicy": "IfNotPresent",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
         "resources": {
           "limits": {
             "memory": "512Mi"
@@ -44,12 +44,7 @@
         "volumeMounts": [
           {
             "mountPath": "/home/runner/work/spectio/spectio",
-            "name": "vol-17"
-          },
-          {
-            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
-            "name": "kube-api-access-qsh7d",
-            "readOnly": true
+            "name": "vol-18"
           }
         ]
       }
@@ -85,45 +80,7 @@
           "path": "/home/runner/work/spectio/spectio",
           "type": ""
         },
-        "name": "vol-17"
-      },
-      {
-        "name": "kube-api-access-qsh7d",
-        "projected": {
-          "defaultMode": 420,
-          "sources": [
-            {
-              "serviceAccountToken": {
-                "expirationSeconds": 3607,
-                "path": "token"
-              }
-            },
-            {
-              "configMap": {
-                "items": [
-                  {
-                    "key": "ca.crt",
-                    "path": "ca.crt"
-                  }
-                ],
-                "name": "kube-root-ca.crt"
-              }
-            },
-            {
-              "downwardAPI": {
-                "items": [
-                  {
-                    "fieldRef": {
-                      "apiVersion": "v1",
-                      "fieldPath": "metadata.namespace"
-                    },
-                    "path": "namespace"
-                  }
-                ]
-              }
-            }
-          ]
-        }
+        "name": "vol-18"
       }
     ]
   },
@@ -135,7 +92,7 @@
     "conditions": [
       {
         "lastProbeTime": null,
-        "lastTransitionTime": "2026-10-28T10:13:27Z",
+        "lastTransitionTime": "2026-10-28T10:29:24Z",
         "message": "pod sandbox is not ready",
         "observedGeneration": 1,
         "reason": "PodSandboxNotReady",
@@ -144,7 +101,7 @@
       },
       {
         "lastProbeTime": null,
-        "lastTransitionTime": "2026-10-28T10:13:25Z",
+        "lastTransitionTime": "2026-10-28T10:29:21Z",
         "observedGeneration": 1,
         "reason": "PodCompleted",
         "status": "True",
@@ -152,7 +109,7 @@
       },
       {
         "lastProbeTime": null,
-        "lastTransitionTime": "2026-10-28T10:13:25Z",
+        "lastTransitionTime": "2026-10-28T10:29:23Z",
         "observedGeneration": 1,
         "reason": "PodCompleted",
         "status": "False",
@@ -160,7 +117,7 @@
       },
       {
         "lastProbeTime": null,
-        "lastTransitionTime": "2026-10-28T10:13:25Z",
+        "lastTransitionTime": "2026-10-28T10:29:23Z",
         "observedGeneration": 1,
         "reason": "PodCompleted",
         "status": "False",
@@ -168,7 +125,7 @@
       },
       {
         "lastProbeTime": null,
-        "lastTransitionTime": "2026-10-28T10:13:25Z",
+        "lastTransitionTime": "2026-10-28T10:29:21Z",
         "observedGeneration": 1,
         "status": "True",
         "type": "PodScheduled"
@@ -180,11 +137,11 @@
           "cpu": "1",
           "memory": "512Mi"
         },
-        "containerID": "containerd://46d1938f108d82d44a2049db924efc0d57c5b5699ec3f6d60e5ebf2edef68772",
+        "containerID": "containerd://0ca2616745a9c754a6c61f32048aadbc2552a6f9706680ccdcefdc2be2c23190",
         "image": "sha256:694e7588ef75868a083d92062d58448e19b4621758b31ec894d546c32d60a6c9",
         "imageID": "docker.io/library/python@sha256:98d8fe4e28bb2efeed9d9bce6a4705e80a6764367b65aea1dc4b96ded7b05620",
         "lastState": {},
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
         "ready": false,
         "resources": {
           "limits": {
@@ -199,11 +156,11 @@
         "started": false,
         "state": {
           "terminated": {
-            "containerID": "containerd://46d1938f108d82d44a2049db924efc0d57c5b5699ec3f6d60e5ebf2edef68772",
+            "containerID": "containerd://0ca2616745a9c754a6c61f32048aadbc2552a6f9706680ccdcefdc2be2c23190",
             "exitCode": 0,
-            "finishedAt": "2026-10-28T10:13:25Z",
+            "finishedAt": "2026-10-28T10:29:22Z",
             "reason": "Completed",
-            "startedAt": "2026-10-28T10:13:25Z"
+            "startedAt": "2026-10-28T10:29:21Z"
           }
         },
         "user": {
@@ -218,13 +175,7 @@
         "volumeMounts": [
           {
             "mountPath": "/home/runner/work/spectio/spectio",
-            "name": "vol-17"
-          },
-          {
-            "mountPath": "/var/run/secrets/kubernetes.io/serviceaccount",
-            "name": "kube-api-access-qsh7d",
-            "readOnly": true,
-            "recursiveReadOnly": "Disabled"
+            "name": "vol-18"
           }
         ]
       }
@@ -237,10 +188,10 @@
     ],
     "observedGeneration": 1,
     "phase": "Succeeded",
-    "podIP": "10.244.0.24",
+    "podIP": "10.244.0.31",
     "podIPs": [
       {
-        "ip": "10.244.0.24"
+        "ip": "10.244.0.31"
       }
     ],
     "qosClass": "Burstable",
@@ -253,11 +204,11 @@
         "memory": "512Mi"
       }
     },
-    "startTime": "2026-10-28T10:13:25Z"
+    "startTime": "2026-10-28T10:29:21Z"
   },
   "_fixture": {
     "kubernetes": "kindest/node:v1.37.0",
-    "source": "https://github.com/weber8thomas/spectio/actions/runs/40670116723",
+    "source": "https://github.com/weber8thomas/spectio/actions/runs/40672184666",
     "nextflow": "25.10.9"
   }
 }

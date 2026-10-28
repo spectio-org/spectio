@@ -5,15 +5,15 @@
       "apiVersion": "kueue.x-k8s.io/v1beta2",
       "kind": "Workload",
       "metadata": {
-        "creationTimestamp": "2026-10-28T10:12:56Z",
+        "creationTimestamp": "2026-10-28T10:28:17Z",
         "finalizers": [
           "kueue.x-k8s.io/resource-in-use"
         ],
         "generation": 1,
         "labels": {
-          "kueue.x-k8s.io/job-uid": "8f15d526-2bd2-4da7-b415-228ec2aa043e"
+          "kueue.x-k8s.io/job-uid": "4dee7935-fa7a-4fc3-b747-013f2ccd05c0"
         },
-        "name": "job-fx-kq-1-211cc",
+        "name": "job-fx-kq-1-04f50",
         "namespace": "spectio-work",
         "ownerReferences": [
           {
@@ -22,11 +22,11 @@
             "controller": true,
             "kind": "Job",
             "name": "fx-kq-1",
-            "uid": "8f15d526-2bd2-4da7-b415-228ec2aa043e"
+            "uid": "4dee7935-fa7a-4fc3-b747-013f2ccd05c0"
           }
         ],
-        "resourceVersion": "912",
-        "uid": "31c9ed5e-e726-44d2-a2ec-867b65402fa8"
+        "resourceVersion": "917",
+        "uid": "59b5ca67-d2d8-43cf-b85c-1ff6a60a0cb9"
       },
       "spec": {
         "active": true,
@@ -79,37 +79,12 @@
       "status": {
         "conditions": [
           {
-            "lastTransitionTime": "2026-10-28T10:12:56Z",
-            "message": "couldn't assign flavors to pod set main: insufficient unused quota for cpu in flavor default-flavor, 1 more needed",
-            "observedGeneration": 1,
-            "reason": "WaitingForQuota",
-            "status": "False",
-            "type": "QuotaReserved"
-          },
-          {
-            "lastTransitionTime": "2026-10-28T10:12:56Z",
-            "message": "The workload has no reservation",
-            "observedGeneration": 1,
-            "reason": "NoReservation",
-            "status": "False",
-            "type": "Admitted"
-          },
-          {
-            "lastTransitionTime": "2026-10-28T10:12:56Z",
+            "lastTransitionTime": "2026-10-28T10:28:17Z",
             "message": "Not all pods are ready or succeeded",
             "observedGeneration": 1,
             "reason": "WaitForStart",
             "status": "False",
             "type": "PodsReady"
-          }
-        ],
-        "resourceRequests": [
-          {
-            "name": "main",
-            "resources": {
-              "cpu": "1",
-              "memory": "200Mi"
-            }
           }
         ]
       }
@@ -118,15 +93,15 @@
       "apiVersion": "kueue.x-k8s.io/v1beta2",
       "kind": "Workload",
       "metadata": {
-        "creationTimestamp": "2026-10-28T10:12:56Z",
+        "creationTimestamp": "2026-10-28T10:28:17Z",
         "finalizers": [
           "kueue.x-k8s.io/resource-in-use"
         ],
         "generation": 1,
         "labels": {
-          "kueue.x-k8s.io/job-uid": "5b0b9d5b-196a-47dc-9a64-097860b1d549"
+          "kueue.x-k8s.io/job-uid": "69a1172e-da53-4fbb-9922-f91effdd9351"
         },
-        "name": "job-fx-kq-2-7c57c",
+        "name": "job-fx-kq-2-17746",
         "namespace": "spectio-work",
         "ownerReferences": [
           {
@@ -135,11 +110,11 @@
             "controller": true,
             "kind": "Job",
             "name": "fx-kq-2",
-            "uid": "5b0b9d5b-196a-47dc-9a64-097860b1d549"
+            "uid": "69a1172e-da53-4fbb-9922-f91effdd9351"
           }
         ],
-        "resourceVersion": "892",
-        "uid": "d99ee254-4065-4ff8-a9b2-f18fd71322f0"
+        "resourceVersion": "900",
+        "uid": "600cb4fe-b5e4-430b-82ef-29fa371abfa3"
       },
       "spec": {
         "active": true,
@@ -209,7 +184,7 @@
         },
         "conditions": [
           {
-            "lastTransitionTime": "2026-10-28T10:12:56Z",
+            "lastTransitionTime": "2026-10-28T10:28:17Z",
             "message": "Not all pods are ready or succeeded",
             "observedGeneration": 1,
             "reason": "WaitForStart",
@@ -217,7 +192,7 @@
             "type": "PodsReady"
           },
           {
-            "lastTransitionTime": "2026-10-28T10:12:56Z",
+            "lastTransitionTime": "2026-10-28T10:28:17Z",
             "message": "Quota reserved in ClusterQueue cq-tight",
             "observedGeneration": 1,
             "reason": "QuotaReserved",
@@ -225,7 +200,7 @@
             "type": "QuotaReserved"
           },
           {
-            "lastTransitionTime": "2026-10-28T10:12:56Z",
+            "lastTransitionTime": "2026-10-28T10:28:17Z",
             "message": "The workload is admitted",
             "observedGeneration": 1,
             "reason": "Admitted",
@@ -239,15 +214,15 @@
       "apiVersion": "kueue.x-k8s.io/v1beta2",
       "kind": "Workload",
       "metadata": {
-        "creationTimestamp": "2026-10-28T10:12:56Z",
+        "creationTimestamp": "2026-10-28T10:28:17Z",
         "finalizers": [
           "kueue.x-k8s.io/resource-in-use"
         ],
         "generation": 1,
         "labels": {
-          "kueue.x-k8s.io/job-uid": "254592c6-81f8-4c3b-8e71-0717a4b39e2b"
+          "kueue.x-k8s.io/job-uid": "af150ac9-40b1-46fe-b527-d3fdbf30e793"
         },
-        "name": "job-fx-kq-3-c000f",
+        "name": "job-fx-kq-3-7e5a5",
         "namespace": "spectio-work",
         "ownerReferences": [
           {
@@ -256,11 +231,11 @@
             "controller": true,
             "kind": "Job",
             "name": "fx-kq-3",
-            "uid": "254592c6-81f8-4c3b-8e71-0717a4b39e2b"
+            "uid": "af150ac9-40b1-46fe-b527-d3fdbf30e793"
           }
         ],
-        "resourceVersion": "898",
-        "uid": "c325c3f2-519f-40fc-a411-162b66de2c26"
+        "resourceVersion": "902",
+        "uid": "e5d05b5d-5d8e-4529-a2dd-d37632afb370"
       },
       "spec": {
         "active": true,
@@ -313,7 +288,7 @@
       "status": {
         "conditions": [
           {
-            "lastTransitionTime": "2026-10-28T10:12:56Z",
+            "lastTransitionTime": "2026-10-28T10:28:17Z",
             "message": "couldn't assign flavors to pod set main: insufficient unused quota for cpu in flavor default-flavor, 1 more needed",
             "observedGeneration": 1,
             "reason": "WaitingForQuota",
@@ -321,7 +296,7 @@
             "type": "QuotaReserved"
           },
           {
-            "lastTransitionTime": "2026-10-28T10:12:56Z",
+            "lastTransitionTime": "2026-10-28T10:28:17Z",
             "message": "The workload has no reservation",
             "observedGeneration": 1,
             "reason": "NoReservation",
@@ -329,7 +304,7 @@
             "type": "Admitted"
           },
           {
-            "lastTransitionTime": "2026-10-28T10:12:56Z",
+            "lastTransitionTime": "2026-10-28T10:28:17Z",
             "message": "Not all pods are ready or succeeded",
             "observedGeneration": 1,
             "reason": "WaitForStart",
@@ -355,7 +330,7 @@
   },
   "_fixture": {
     "kubernetes": "kindest/node:v1.37.0",
-    "source": "https://github.com/weber8thomas/spectio/actions/runs/40670116723",
+    "source": "https://github.com/weber8thomas/spectio/actions/runs/40672184666",
     "kueue": "v0.20.3"
   }
 }

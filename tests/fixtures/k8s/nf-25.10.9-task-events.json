@@ -3,26 +3,26 @@
   "items": [
     {
       "apiVersion": "v1",
-      "count": 9,
+      "count": 16,
       "eventTime": null,
-      "firstTimestamp": "2026-10-28T10:13:18Z",
+      "firstTimestamp": "2026-10-28T10:29:10Z",
       "involvedObject": {
         "apiVersion": "v1",
         "kind": "Pod",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
         "namespace": "spectio-work",
-        "resourceVersion": "892",
-        "uid": "357b3795-0ca9-46d5-b49a-f48cd8dee830"
+        "resourceVersion": "877",
+        "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
       },
       "kind": "Event",
-      "lastTimestamp": "2026-10-28T10:13:25Z",
+      "lastTimestamp": "2026-10-28T10:29:21Z",
       "message": "0/1 nodes are available: 1 Insufficient cpu. preemption: 0/1 nodes are available: 1 No preemption victims found for incoming pod.",
       "metadata": {
-        "creationTimestamp": "2026-10-28T10:13:18Z",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e.18e2a9e42505a572",
+        "creationTimestamp": "2026-10-28T10:29:10Z",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905.18e2aac1adc98030",
         "namespace": "spectio-work",
-        "resourceVersion": "1136",
-        "uid": "095004ab-7cb5-4cb0-b686-249f0a460aa4"
+        "resourceVersion": "1286",
+        "uid": "5eb98ad0-0234-43d6-8598-63f1155377dd"
       },
       "reason": "FailedScheduling",
       "reportingComponent": "default-scheduler",
@@ -36,24 +36,24 @@
       "apiVersion": "v1",
       "count": 1,
       "eventTime": null,
-      "firstTimestamp": "2026-10-28T10:13:25Z",
+      "firstTimestamp": "2026-10-28T10:29:21Z",
       "involvedObject": {
         "apiVersion": "v1",
         "kind": "Pod",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
         "namespace": "spectio-work",
-        "resourceVersion": "895",
-        "uid": "357b3795-0ca9-46d5-b49a-f48cd8dee830"
+        "resourceVersion": "879",
+        "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
       },
       "kind": "Event",
-      "lastTimestamp": "2026-10-28T10:13:25Z",
-      "message": "Successfully assigned spectio-work/nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e to k8s-mini-control-plane",
+      "lastTimestamp": "2026-10-28T10:29:21Z",
+      "message": "Successfully assigned spectio-work/nf-12922699a5646d4d959b91bdfd6dfe20-6c905 to k8s-mini-control-plane",
       "metadata": {
-        "creationTimestamp": "2026-10-28T10:13:25Z",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e.18e2a9e58dcb4469",
+        "creationTimestamp": "2026-10-28T10:29:21Z",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905.18e2aac4318cca6a",
         "namespace": "spectio-work",
-        "resourceVersion": "1164",
-        "uid": "23f40628-d0fc-4885-8865-dc89531881bd"
+        "resourceVersion": "1304",
+        "uid": "5cef2f26-d0d2-419b-8934-beae00c92dd2"
       },
       "reason": "Scheduled",
       "reportingComponent": "default-scheduler",
@@ -67,25 +67,25 @@
       "apiVersion": "v1",
       "count": 1,
       "eventTime": null,
-      "firstTimestamp": "2026-10-28T10:13:25Z",
+      "firstTimestamp": "2026-10-28T10:29:21Z",
       "involvedObject": {
         "apiVersion": "v1",
-        "fieldPath": "spec.containers{nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e}",
+        "fieldPath": "spec.containers{nf-12922699a5646d4d959b91bdfd6dfe20-6c905}",
         "kind": "Pod",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
         "namespace": "spectio-work",
-        "resourceVersion": "1123",
-        "uid": "357b3795-0ca9-46d5-b49a-f48cd8dee830"
+        "resourceVersion": "1275",
+        "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
       },
       "kind": "Event",
-      "lastTimestamp": "2026-10-28T10:13:25Z",
+      "lastTimestamp": "2026-10-28T10:29:21Z",
       "message": "Container image \"python:3.12@sha256:98d8fe4e28bb2efeed9d9bce6a4705e80a6764367b65aea1dc4b96ded7b05620\" already present on machine and can be accessed by the pod",
       "metadata": {
-        "creationTimestamp": "2026-10-28T10:13:25Z",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e.18e2a9e5a67997e7",
+        "creationTimestamp": "2026-10-28T10:29:21Z",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905.18e2aac44d982479",
         "namespace": "spectio-work",
-        "resourceVersion": "1171",
-        "uid": "c5486114-5bf6-426a-a311-f226279de86b"
+        "resourceVersion": "1308",
+        "uid": "5fd8064f-c136-4f89-9f8c-319d6d308b41"
       },
       "reason": "Pulled",
       "reportingComponent": "kubelet",
@@ -100,25 +100,25 @@
       "apiVersion": "v1",
       "count": 1,
       "eventTime": null,
-      "firstTimestamp": "2026-10-28T10:13:25Z",
+      "firstTimestamp": "2026-10-28T10:29:21Z",
       "involvedObject": {
         "apiVersion": "v1",
-        "fieldPath": "spec.containers{nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e}",
+        "fieldPath": "spec.containers{nf-12922699a5646d4d959b91bdfd6dfe20-6c905}",
         "kind": "Pod",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
         "namespace": "spectio-work",
-        "resourceVersion": "1123",
-        "uid": "357b3795-0ca9-46d5-b49a-f48cd8dee830"
+        "resourceVersion": "1275",
+        "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
       },
       "kind": "Event",
-      "lastTimestamp": "2026-10-28T10:13:25Z",
+      "lastTimestamp": "2026-10-28T10:29:21Z",
       "message": "Container created",
       "metadata": {
-        "creationTimestamp": "2026-10-28T10:13:25Z",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e.18e2a9e5a771d864",
+        "creationTimestamp": "2026-10-28T10:29:21Z",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905.18e2aac44eafbae3",
         "namespace": "spectio-work",
-        "resourceVersion": "1173",
-        "uid": "22823123-faf9-45a8-9fb8-7715c0bef280"
+        "resourceVersion": "1311",
+        "uid": "43f4c4d4-aa06-44e7-a2b1-f1ec2b0d1431"
       },
       "reason": "Created",
       "reportingComponent": "kubelet",
@@ -133,25 +133,25 @@
       "apiVersion": "v1",
       "count": 1,
       "eventTime": null,
-      "firstTimestamp": "2026-10-28T10:13:25Z",
+      "firstTimestamp": "2026-10-28T10:29:21Z",
       "involvedObject": {
         "apiVersion": "v1",
-        "fieldPath": "spec.containers{nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e}",
+        "fieldPath": "spec.containers{nf-12922699a5646d4d959b91bdfd6dfe20-6c905}",
         "kind": "Pod",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905",
         "namespace": "spectio-work",
-        "resourceVersion": "1123",
-        "uid": "357b3795-0ca9-46d5-b49a-f48cd8dee830"
+        "resourceVersion": "1275",
+        "uid": "e926d87f-0143-48c0-8ba4-9e66f354f312"
       },
       "kind": "Event",
-      "lastTimestamp": "2026-10-28T10:13:25Z",
+      "lastTimestamp": "2026-10-28T10:29:21Z",
       "message": "Container started",
       "metadata": {
-        "creationTimestamp": "2026-10-28T10:13:25Z",
-        "name": "nf-e7e9af00ec6dfcc3cd6992fc29e683af-2980e.18e2a9e5abe671cb",
+        "creationTimestamp": "2026-10-28T10:29:21Z",
+        "name": "nf-12922699a5646d4d959b91bdfd6dfe20-6c905.18e2aac454860dc7",
         "namespace": "spectio-work",
-        "resourceVersion": "1178",
-        "uid": "24a0dcde-62f0-4466-868a-0fa975dd68cd"
+        "resourceVersion": "1316",
+        "uid": "585ee262-1643-4d0d-96af-3a8fd5c327ad"
       },
       "reason": "Started",
       "reportingComponent": "kubelet",
@@ -165,7 +165,7 @@
   ],
   "_fixture": {
     "kubernetes": "kindest/node:v1.37.0",
-    "source": "https://github.com/weber8thomas/spectio/actions/runs/40670116723",
+    "source": "https://github.com/weber8thomas/spectio/actions/runs/40672184666",
     "nextflow": "25.10.9"
   }
 }
