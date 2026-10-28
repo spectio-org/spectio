@@ -12,6 +12,8 @@ Every invocation first validates corpus.yaml (pinned refs, plain-token paths and
 Each run writes <workdir>/<name>/result.json (exit code, duration, outputs found, Nextflow trace
 summary). Without --workdir, the workdir is a fresh private directory (mode 0700) under ${TMPDIR:-/tmp},
 printed at the start and kept for debugging (`rm -rf "${TMPDIR:-/tmp}"/spectio-corpus-*` removes them).
+An explicit --workdir is created private and refused if you do not own it, it is a symlink, group or
+others can write to it, or it sits under a directory that others can change (see make_workdir).
 Later these runs are launched through Spectio instead of directly (same entries).
 """
 from __future__ import annotations
@@ -136,7 +138,7 @@ def main() -> int:
     ap.add_argument("--engine", choices=["nextflow", "snakemake"])
     ap.add_argument("--name")
     ap.add_argument("--tier", choices=["pr", "nightly", "manual"])
-    ap.add_argument("--workdir")
+    ap.add_argument("--workdir", help="default: a fresh private directory; an explicit one must be owned by you, not a symlink, not writable by others, under directories only you or root can change")
     ap.add_argument("--limits", choices=["private", "public", "auto"], default="private")
     ap.add_argument("--nextflow", default=os.environ.get("NXF_BIN", "nextflow"))
     ap.add_argument("--nf-version")

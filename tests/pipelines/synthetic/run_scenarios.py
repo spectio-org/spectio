@@ -8,6 +8,8 @@ Writes <workdir>/<engine>/report.json and exits non-zero if any scenario fails. 
 the workdir is a fresh private directory (mode 0700) under ${TMPDIR:-/tmp}, printed at the start: a
 shared login node never sees a predictable path that a run deletes and reuses. It is kept for
 debugging (`rm -rf "${TMPDIR:-/tmp}"/spectio-scenarios-*` removes them).
+An explicit --workdir is created private and refused if you do not own it, it is a symlink, group or
+others can write to it, or it sits under a directory that others can change (see make_workdir).
 Golden fixtures (golden/<engine>-<version>/<scenario>.tsv, local executor only):
   --golden record   writes them from this run
   --golden check    compares this run with them; a missing directory, or a missing file for a PR
@@ -257,7 +259,7 @@ def main() -> int:
     ap.add_argument("--engine", choices=["nextflow", "snakemake"], required=True)
     ap.add_argument("--nextflow", default=os.environ.get("NXF_BIN", "nextflow"))
     ap.add_argument("--snakemake", default=os.environ.get("SMK_BIN", "snakemake"))
-    ap.add_argument("--workdir")
+    ap.add_argument("--workdir", help="default: a fresh private directory; an explicit one must be owned by you, not a symlink, not writable by others, under directories only you or root can change")
     ap.add_argument("--only")
     ap.add_argument("--nightly", action="store_true")
     ap.add_argument("--golden", choices=["record", "check"])
