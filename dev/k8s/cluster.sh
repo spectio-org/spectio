@@ -13,12 +13,12 @@
 # .scenarios/N) or else .scenarios/k8s (tests/k8s/scenarios.sh's work directory), is mounted read-write over it.
 # The kind cluster is named after the profile (k8s-mini, k8s-kueue), or $CLUSTER.
 # dev/scenario.py also sets KIND_API_PORT, KUBECONFIG and KIND_EXPERIMENTAL_DOCKER_NETWORK (its own network).
-DATA=${KIND_DATA_DIR:-$SPECTIO_REPO/.scenarios/k8s}
 # Built from spike t4-ci (docs/research/spike-t4-ci-2026-10-28.md).
 set -euo pipefail
 # shellcheck source=dev/lib.sh
 . "$(dirname "$0")/../lib.sh"
 here=$SPECTIO_REPO/dev/k8s
+DATA=${KIND_DATA_DIR:-$SPECTIO_REPO/.scenarios/k8s}
 # The task image: params.python_image of the synthetic pipeline (its docker and k8s profiles), by digest.
 TASK_IMAGE=$(grep -o -m1 "^params.python_image = 'python:3.12@sha256:[0-9a-f]\{64\}" \
   "$SPECTIO_REPO/tests/pipelines/synthetic/nextflow/nextflow.config") || { echo "no params.python_image digest" >&2; exit 1; }
