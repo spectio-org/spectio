@@ -1,0 +1,380 @@
+{
+ "pipeline": "friendsofstrandseq/mosaicatcher-pipeline",
+ "version": "v2.5.1",
+ "commit": "2289f7c",
+ "main": "workflow/Snakefile",
+ "note": "rule files in include order (pre-order, depth first), as read by spikes/stage-detection/detector/detect_smk.py; paths relative to workflow/",
+ "files": [
+  {
+   "file": "Snakefile",
+   "rules": [
+    "all",
+    "all",
+    "all"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/common.smk",
+   "rules": [],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/ashleys/common.smk",
+   "rules": [],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/resources.smk",
+   "rules": [],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/ashleys/aggregate_fct.smk",
+   "rules": [],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/ashleys/alignment.smk",
+   "rules": [
+    "ashleys_genecore_symlink",
+    "ashleys_bwa_index",
+    "ashleys_bwa_strandseq_to_reference_alignment",
+    "ashleys_bwa_strandseq_to_reference_alignment",
+    "ashleys_samtools_sort_bam",
+    "ashleys_mark_duplicates",
+    "ashleys_symlink_bam_ashleys"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/ashleys/qc.smk",
+   "rules": [
+    "ashleys_generate_features",
+    "ashleys_predict",
+    "ashleys_generate_default_labels",
+    "ashleys_positive_negative_control_bypass",
+    "tune_predictions_based_on_threshold",
+    "ashleys_dev_all_cells_correct",
+    "ashleys_plot_plate",
+    "ashleys_publishdir_outputs_ashleys",
+    "ashleys_save_config",
+    "ashleys_all"
+   ],
+   "checkpoints": [
+    "tune_predictions_based_on_threshold"
+   ]
+  },
+  {
+   "file": "rules/ashleys/multiqc.smk",
+   "rules": [
+    "ashleys_fastqc",
+    "ashleys_fastqc_aggregate",
+    "ashleys_samtools_idxstats",
+    "ashleys_samtools_idxstats_aggr",
+    "ashleys_samtools_flagstats",
+    "ashleys_samtools_flagstats_aggr",
+    "ashleys_samtools_stats",
+    "ashleys_samtools_stats_aggr",
+    "ashleys_multiqc"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/aggregate_fct.smk",
+   "rules": [],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/external_data.smk",
+   "rules": [
+    "dl_example_data",
+    "download_hg19_reference",
+    "download_hg38_reference",
+    "download_T2T_reference",
+    "download_mm10_reference",
+    "download_mm39_reference",
+    "ashleys_download_bwa_indexes",
+    "ashleys_download_faidx",
+    "download_canFam3_reference",
+    "download_canFam4_reference",
+    "generate_canFam3_bin_bed",
+    "generate_canFam4_bin_bed",
+    "generate_canFam3_gc_matrix",
+    "generate_canFam4_gc_matrix",
+    "download_T2T_tarball",
+    "download_arbigent_mappability_track",
+    "download_scnova_data"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/setup.smk",
+   "rules": [
+    "fake_package",
+    "install_BSgenome_package",
+    "install_sctrip_multiplot_package",
+    "config_run_summary"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/utils.smk",
+   "rules": [
+    "check_sm_tag",
+    "index_haplotag_bam",
+    "compress_indiv_freebayes_vcf",
+    "index_indiv_freebayes_vcf",
+    "compress_indiv_strandphaser_vcf",
+    "index_indiv_strandphaser_vcf",
+    "index_merged_strandphaser_vcf",
+    "index_input_bam",
+    "gunzip_fasta",
+    "samtools_faindex",
+    "save_config",
+    "save_conda_versions_mc_base",
+    "save_conda_versions_mc_bioinfo_tools",
+    "save_conda_versions_rtools"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/count.smk",
+   "rules": [
+    "generate_exclude_file_for_mosaic_count",
+    "mosaic_count",
+    "populate_counts",
+    "selected_cells",
+    "touch_labels",
+    "copy_labels",
+    "symlink_selected_bam",
+    "remove_unselected_bam",
+    "remove_unselected_bam_empty",
+    "filter_bad_cells_from_mosaic_count",
+    "merge_blacklist_bins_for_norm",
+    "merge_blacklist_bins",
+    "correct_norm_for_blacklisting",
+    "normalize_counts",
+    "cp_mosaic_count",
+    "sort_counts",
+    "extract_single_cell_counts"
+   ],
+   "checkpoints": [
+    "mosaic_count",
+    "filter_bad_cells_from_mosaic_count"
+   ]
+  },
+  {
+   "file": "rules/segmentation.smk",
+   "rules": [
+    "segmentation",
+    "fix_segmentation",
+    "segment_one_cell",
+    "segmentation_selection"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/plots.smk",
+   "rules": [
+    "plot_mosaic_counts",
+    "divide_pdf",
+    "final_results",
+    "plot_SV_consistency_barplot",
+    "plot_clustering_position",
+    "plot_clustering_chromosome",
+    "plot_SV_calls",
+    "plot_ploidy",
+    "scTRIP_multiplot",
+    "scTRIP_multiplot_aggr",
+    "jbrowse_genome_browser_file",
+    "ucsc_genome_browser_file",
+    "split_ucsc_into_individual_tracks",
+    "generate_igv_session"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/regenotyping.smk",
+   "rules": [
+    "mergeBams",
+    "mergeSortBams",
+    "index_merged_bam",
+    "regenotype_SNVs",
+    "call_SNVs_bcftools_chrom"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/strandphaser.smk",
+   "rules": [
+    "convert_strandphaser_input",
+    "check_single_paired_end",
+    "prepare_strandphaser_config_per_chrom",
+    "run_strandphaser_per_chrom",
+    "merge_strandphaser_vcfs",
+    "combine_strandphaser_output",
+    "convert_strandphaser_output",
+    "keep_canonical_strandphaser_output"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/breakpointr.smk",
+   "rules": [
+    "prepare_breakpointr",
+    "run_breakpointr"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/haplotagging.smk",
+   "rules": [
+    "prepare_haplotag_input_bam",
+    "haplotag_bams",
+    "create_haplotag_segment_bed",
+    "create_haplotag_table",
+    "merge_haplotag_tables"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/mosaiclassifier.smk",
+   "rules": [
+    "mosaiClassifier_calc_probs",
+    "create_haplotag_likelihoods",
+    "mosaiClassifier_make_call",
+    "mosaiClassifier_make_call_biallelic",
+    "call_complex_regions"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/postprocessing.smk",
+   "rules": [
+    "postprocessing_filter",
+    "postprocessing_merge",
+    "postprocessing_sv_group_table",
+    "filter_calls"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/ploidy.smk",
+   "rules": [
+    "estimate_ploidy",
+    "summarise_ploidy",
+    "ploidy_bcftools"
+   ],
+   "checkpoints": [
+    "summarise_ploidy"
+   ]
+  },
+  {
+   "file": "rules/stats.smk",
+   "rules": [
+    "summary_statistics",
+    "aggregate_summary_statistics",
+    "transpose_table"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/arbigent_rules.smk",
+   "rules": [
+    "create_hdf_file",
+    "custom_manual_segmentation_file",
+    "watson_crick_counts",
+    "correct_watson_crick_counts",
+    "prepare_manual_segments_counts_debug",
+    "mosaiClassifier_calc_probs_arbigent"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/arbigent.smk",
+   "rules": [
+    "run_regenotypeR_samplewise_bulk",
+    "merge_alls",
+    "rephase_all_txt",
+    "make_output_vcfs",
+    "add_verdict",
+    "qc_result"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/gc.smk",
+   "rules": [
+    "library_size_normalisation",
+    "GC_correction",
+    "VST_correction",
+    "reformat_ms_norm",
+    "populate_counts_GC",
+    "plot_mosaic_gc_norm_counts"
+   ],
+   "checkpoints": []
+  },
+  {
+   "file": "rules/scNOVA.smk",
+   "rules": [
+    "save_conda_versions_scNOVA_DL",
+    "save_conda_versions_scNOVA_R",
+    "save_conda_versions_scNOVA_bioinfo_tools",
+    "assert_list_of_cells",
+    "filter_sv_calls",
+    "scNOVA_final_results",
+    "generate_CN_for_CNN",
+    "generate_CN_for_chromVAR",
+    "remove_low_quality_reads",
+    "sort_bam",
+    "index_num1",
+    "remove_dup",
+    "index_num2",
+    "count_reads_split",
+    "count_reads_split_aggr",
+    "count_sort_by_coordinate",
+    "count_sort_annotate_geneid",
+    "filter_input_subclonality",
+    "merge_bam_clones",
+    "count_reads_for_DNN",
+    "count_reads_for_DNN_aggr",
+    "count_reads_for_DNN_sc",
+    "count_reads_for_DNN_sc_aggr",
+    "count_reads_chr_length",
+    "count_reads_chr_length_aggr",
+    "count_reads_chr_length_sc",
+    "count_reads_chr_length_sc_aggr",
+    "count_reads_for_DNN_sort",
+    "count_reads_for_DNN_sort_lab",
+    "count_reads_for_DNN_sort_label_sort",
+    "count_reads_for_DNN_normalization",
+    "count_reads_for_DNN_sc_sort",
+    "count_reads_for_DNN_sc_sort_lab",
+    "count_reads_for_DNN_sc_sort_label_sort",
+    "generate_feature_sc_var",
+    "combine_features",
+    "infer_expressed_genes_split",
+    "gather_infer_expressed_genes_split",
+    "aggr_models_touch",
+    "annot_expressed_genes",
+    "infer_differential_gene_expression",
+    "infer_differential_gene_expression_alt",
+    "count_reads_CREs",
+    "count_reads_CREs_aggr",
+    "count_sort_by_coordinate_CREs",
+    "count_sort_annotate_chrid_CREs",
+    "count_sort_annotate_chrid_CREs_sort",
+    "split_bam_WC",
+    "split_bam_WC_merge",
+    "split_bam_WC_index",
+    "perl_split_sc",
+    "count_reads_CREs_haplo",
+    "count_reads_CREs_haplo_sort_by_coordinate",
+    "count_reads_genebody_haplo",
+    "count_reads_genebody_haplo_sort_by_coordinate_genebody"
+   ],
+   "checkpoints": []
+  }
+ ]
+}

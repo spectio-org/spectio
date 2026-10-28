@@ -128,6 +128,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 - **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: observed runs are out of it, and the plugins only write to the spool.
 - **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended. Not needed for 0.0.1; applied to api §14 and auth §3 in the next apply pass (see the [decision log](../decisions/log.md#2026-10-27-inbox-answers-5-to-37-dashboard), "Applied later"). *Decided.*
+- **Note 2026-10-28:** 0.0.1 now monitors runs started from a terminal ([log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)), but still needs no ingest token: the server reads their spool from the launch directory, found through a pointer file ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal)). The token stays for runs whose spool the server cannot read.
 
 ### #12 · Runner ↔ server transport and runner credential lifetime
 
@@ -203,6 +204,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 - **Note (2026-10-27, cut revised):** the 0.0.1 part is answered ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)): 0.0.1 now runs on the login node, so tokenless loopback is not accepted. The server binds to 127.0.0.1 only, the user opens it through an SSH tunnel, and every request needs the token set as a cookie from a one-time link ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). The rest stays open for later versions: a Unix socket with SO_PEERCRED, refusing to start when other users are logged in, `single` mode on a shared server.
 - **Answer (Thomas, 2026-10-27, dashboard):** "too complex, re-explain". Re-explained in the session: the 0.0.1 part is already settled by the token link; three points stay open for later: a Unix socket that only the owner can open, refusing to start when other users are logged in, and `single` mode on a shared server. *Open.*
+- **Note (2026-10-28, Thomas):** how the user reaches the server in 0.0.1 is decided ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)): an SSH config entry with `LocalForward`, with nothing to install, and `spectio-open <host> [--node <login node>]`, a small laptop tool, side by side ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), Access). The token link and the security requirements are unchanged; the later-version part of this item stays open.
 
 ### #16 · What ships in 0.1 (MVP cut)
 
@@ -429,6 +431,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a). The EMBL egress probe (CH-001 round question 4) needs EMBL IT and is not assumed.
 - **Assumed:** each finding's recommended option, as listed.
 - **Blocked:** nothing; a different answer reverts the assumed spec text.
+- **Note (2026-10-28, Thomas):** in 0.0.1 the engine head runs in tmux on the login node, not as a head job ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)). The head-job assumptions above (Snakemake as a CLI head job, prep on the login node, `NXF_OFFLINE=true`, `scancel --signal=TERM --full`) now concern only the later SLURM head launcher ([schedulers §3.1](../specs/schedulers-and-monitoring.md)).
 
 ### #29 · Assumed: data model, API vocabulary and spec owners
 
@@ -539,6 +542,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Blocked:** architecture §7.3 "0.0.1 prerequisites" (SR-067).
 - **Note (2026-10-27, cut revised):** 0.0.1 heads are SLURM jobs submitted from the login node, adopted after a server restart by the head-job name match ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)). The detached local heads of SR-055 and CH-041 now concern only the local executor, kept for tests and development. SR-067 (who installs the engines and how nf-spectio ships) still applies, now on a login node.
 - **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended: the user installs the engines and `spectio doctor` reports them; nf-spectio ships as a jar in the wheel **[to be validated]**. Applied in architecture §7.3. *Decided.*
+- **Note (2026-10-28, Thomas):** 0.0.1 heads are no longer SLURM jobs: each runs in its own detached tmux session on the login node, through the detached-head wrapper of this item, and is adopted after a server restart by its tmux session name and the PID check ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open); [schedulers §3.1.1](../specs/schedulers-and-monitoring.md), tmux launcher). This supersedes the 2026-10-27 note above.
 
 ### #36 · The ingest contract for 0.0.1 (split inbox #11?)
 
@@ -970,3 +974,84 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a): the test harnesses run shell commands and Docker on CI runners.
 - **Assumed:** (a) *(assumed — pending Thomas)*; done by the next step that touches `security.yml`.
 - **Blocked:** nothing.
+
+## Cluster access (2026-10-28)
+
+### #64 · EMBL login nodes: is there a persistent node-local disk for SQLite?
+
+- **Covers:** [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Prerequisites at EMBL); [architecture §7.2, §7.3](../specs/architecture-plugins-and-packaging.md) (the server refuses a database on a network file system); [log 2026-10-28](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open).
+- **Context:** the spec puts the data directory, with SQLite, on node-local disk of the login node, because SQLite locking is not safe on a network file system. At EMBL every login node shares the same home, software and storage (Thomas, 2026-10-28), so a node-local disk that persists and is not purged may not exist there.
+- **Options:**
+  - (a) a node-local path exists on the EMBL login nodes (for example a local `/scratch` or `/tmp` that is not purged): the data directory goes there, and `spectio init` asks for it;
+  - (b) no such disk: the data directory goes on the shared home, with a single writer process and SQLite's rollback journal instead of WAL **[to be validated]**, and the server checks at start that no other server uses it;
+  - (c) no such disk: ask EMBL IT for a small persistent local directory per user;
+  - (d) *(added 2026-10-28)* the database is an index that can be lost: it goes in a node-local temporary directory of the server's login node (`<node-local tmp>/spectio-<uid>/`, 0700), and the server rebuilds it at boot from the run directories on the shared file system when it is missing. The server key and `serve.lock` go there too; the shared home keeps only the configuration and the state file, no secret (security review of APPLY4, SEC-133).
+- **Note 2026-10-28 (Thomas):** at EMBL everything is shared across the login nodes, except some temporary directories. So (a) has no persistent disk, and (b) puts SQLite on a network file system.
+- **Recommendation:** (d): it needs no persistent local disk and no SQLite file on a network file system, and losing the temporary directory costs only the open sessions and the drop counters: cancels and launch failures are kept as markers in the run directory, and a run never launched ends `failed` (doc review of APPLY4).
+- **Assumed:** (d) *(assumed — pending Thomas)*; [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Where data lives), [architecture §7.2](../specs/architecture-plugins-and-packaging.md) (dated note), P1 Assumption 21, [log 2026-10-28](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index). Still to confirm: which temporary directory is node-local on the EMBL login nodes, and how often it is purged **[to be validated]**; whether `/tmp` is polyinstantiated per user there (`pam_namespace`), and the age rules of `systemd-tmpfiles` for it **[to be validated]**.
+- **Note 2026-10-28 (SEC-141):** also to check on EMBL storage: whether inherited NFSv4 ACLs widen the 0700 and 0600 modes that Spectio and the bridges set **[to be validated]** ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 12).
+- **Blocked:** nothing in CI; the real-cluster checks of P1 Tasks 8 and 24 confirm the temporary directory.
+
+## Runs started from a terminal (2026-10-28)
+
+### #65 · Assumed: no Cancel for runs started from a terminal in 0.0.1
+
+- **Covers:** [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) (terminal row); [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) (Monitor only); [api §5.1](../specs/api-and-data-model.md) (dated note: `:cancel` returns `422 not-in-this-version`); [log 2026-10-28](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues).
+- **Context:** Spectio did not start these heads: there is no tmux session of its own, and the head may run on another login node or under `screen`.
+- **Options:**
+  - (a) monitor only; the user stops the run where they started it;
+  - (b) Cancel when the head runs on the server's login node, by the pointer's PID and the PID check of schedulers §3.1.1.
+- **Recommendation:** (a): no signal to a process Spectio did not start, and one fewer security case.
+- **Assumed:** (a) *(assumed — pending Thomas)*.
+- **Blocked:** nothing.
+
+### #66 · Claim the four package names, and confirm how the bridges are released
+
+- **Covers:** [dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases) (Publishing, the owner of release mechanics); [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 12 (Names and pins, SEC-145); [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal); [P1](../plans/P1-walking-skeleton.md) Tasks 25 and 26.
+- **Context:** on 2026-10-28, `nf-spectio` is not in the Nextflow plugin registry, and `snakemake-logger-plugin-spectio`, `spectio` and `spectio-open` are not on PyPI (each returns 404), while the repository is public. Anyone could claim them first. Claude never publishes and cannot claim them.
+- **Current default (not a new option):** dev-env §12, with inbox #9 (c): CI release jobs under `weber8thomas`, PyPI trusted publishing with one environment per project, and `nf-spectio` released by its own job with the registry API key.
+- **Your part:** claim the plugin ID `nf-spectio` in the registry and the three PyPI names, and say whether the §12 default holds for the bridges.
+- **Assumed:** none. Task 26 stops at the dry run.
+- **Blocked:** the merge of the terminal-runs guide of P1 Task 25 (until then it installs the copies bundled in the wheel), and the first real release of the bridges. The rest of P1 is not blocked.
+
+### #67 · Assumed: the engine setup is documented, not automated, in 0.0.1
+
+- **Covers:** [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) (Enabling it); [ui-spec §6](../specs/ui-spec.md) (`spectio login` as the one-time engine setup).
+- **Context:** the user adds `-plugins nf-spectio@<ver>` or a `plugins` block to `~/.nextflow/config`, and installs the logger plugin and adds `--logger spectio` for Snakemake.
+- **Options:**
+  - (a) a guide page only, with the lines to copy;
+  - (b) a `spectio init --engines` step that writes the Nextflow `plugins` block and prints the Snakemake line.
+- **Recommendation:** (a) for 0.0.1: nothing writes the user's engine config, and the guide is short.
+- **Assumed:** (a) *(assumed — pending Thomas)*.
+- **Blocked:** nothing.
+
+## Stages (2026-10-28)
+
+### #68 · Assumed: the example pipelines, and detected stages named after the code
+
+- **Covers:** [ui-spec §5.1.1](../specs/ui-spec.md) (detected stages); [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) (Stages row); [api §7](../specs/api-and-data-model.md) (`run_stages`); [P1](../plans/P1-walking-skeleton.md) Assumption 6 and Task 27; [log 2026-10-28](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list).
+- **Context:** you asked for two or three nf-core pipelines and mosaicatcher-pipeline. The [spike](../research/spike-stage-detection-2026-10-28.md) used nf-core/rnaseq 3.27.0, sarek 3.11.0 and methylseq 4.2.0, and mosaicatcher-pipeline v2.5.1. Detected names are technical ("Fastq qc trim filter setstrandedness"), and the cap of 8 merges neighbours ("Align star + Quantify bam salmon"). The four example lab overlays give readable names ("Read QC and trimming", "Alignment").
+- **Options:**
+  - (a) these four pipelines; detected stages keep the subworkflow or file names, humanised; readable names come from lab overlays, shipped as example files that a lab copies and edits;
+  - (b) as (a), plus a small built-in dictionary of nf-core subworkflow prefixes (`ALIGN_`, `QUANTIFY_`, `PREPARE_GENOME`) for shorter detected names;
+  - (c) as (a), and Spectio applies the four example overlays by itself to those pipelines, so they show readable names with no setup.
+- **Recommendation:** (a). (b) is guesswork for each pipeline, and (c) makes Spectio keep overlays in step with each pipeline release.
+- **Assumed:** (a) *(assumed — pending Thomas)*.
+- **Blocked:** nothing.
+
+### #69 · `nf-spectio` is enabled in a way that breaks nf-core runs or drops the bridge
+
+- **Covers:** [architecture §13](../specs/architecture-plugins-and-packaging.md) (0.0.1 prerequisites: `-plugins nf-spectio@<ver>`) and [§13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) (Enabling it: `-plugins` or `~/.nextflow/config`); [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) (terminal row); [`mvp-0.0.1.md`](../specs/mvp-0.0.1.md) §2; [P1](../plans/P1-walking-skeleton.md) Task 9 (head script, `test_head_script_nextflow_args`) and the Task 25 guide; inbox #67.
+- **Context:** found by the [stage-detection spike](../research/spike-stage-detection-2026-10-28.md#side-finding-enabling-nf-spectio-next-to-an-nf-core-pipeline) on nf-core/rnaseq 3.27.0 with Nextflow 26.10.4:
+  - `-plugins nf-spectio@<ver>` replaces the pipeline's own plugin list, so its pinned `nf-schema` is replaced by the newest registry version that suits the running Nextflow: on 26.10.4 that is 3.0.0 and the run fails; on 25.10.9 it is 2.7.3 and the run drifts silently from the pin (FC-311);
+  - a `-c` file with a `plugins` block fails the same way;
+  - a `plugins` block in `$NXF_HOME/config` is overridden by the pipeline's own, when the pipeline declares one (all three nf-core pipelines do): the run succeeds without the bridge, and nothing warns;
+  - `NXF_PLUGINS_DEFAULT=nf-spectio@<ver>` adds the bridge next to the pipeline's plugins, and the run works. Two caveats (FC-312): the list form is undocumented (the docs describe a boolean; the list is in a code comment), and a list replaces the plugins Nextflow would infer from the executor and work directory (`nf-amazon`, `nf-google`, `nf-azure`, `nf-k8s`: on 25.10.9 a `k8s` executor fails with `Unknown executor name: k8s`). Neither matters on SLURM with a POSIX work directory.
+  - The synthetic pipelines declare no plugin, so the CI tests planned in P1 would not show the problem.
+- **Options:**
+  - (a) `NXF_PLUGINS_DEFAULT=nf-spectio@<ver>` everywhere: the head script sets it, appending the plugins that the executor or work directory needs (`nf-k8s` on 25.10.x, `nf-amazon`, `nf-google` or `nf-azure` for `s3://`, `gs://`, `az://`), `spectio doctor` checks it, and the terminal guide tells users to export it in their shell profile. It relies on an undocumented interface **[to be validated]**; Spectio would ask Nextflow upstream to document the list form;
+  - (b) keep `-plugins`, and have the runner add the pipeline's own plugins to the list, read from its configuration (needs the configuration parsed before launch);
+  - (c) keep `-plugins` for the synthetic pipelines only, and document that nf-core runs need (a).
+- **Recommendation:** (a): one way for launched and terminal runs, no configuration parsing, and checked on a real nf-core pipeline, with the caveat that its list form is undocumented. `spectio doctor` could warn when a `plugins` block in `$NXF_HOME/config` names `nf-spectio`.
+- **Assumed:** none: the specs still say `-plugins`, and this changes how the bridge is enabled.
+- **Blocked:** P1 Task 9 for real nf-core pipelines, and the Nextflow part of the Task 25 guide. The synthetic tests are not blocked.

@@ -160,5 +160,6 @@ nav:
           - "Spike T2: engine event capture": research/spike-engine-events-2026-10-28.md
           - "Spike t3-ci: sind SLURM on CI runners": research/spike-t3-ci-2026-10-28.md
           - "Spike t4-ci: kind and Kueue on CI runners": research/spike-t4-ci-2026-10-28.md
+          - "Spike: stage detection": research/spike-stage-detection-2026-10-28.md
   - Roadmap: roadmap/index.md
   - Changelog: changelog/index.md

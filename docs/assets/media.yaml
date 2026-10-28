@@ -50,6 +50,10 @@ media:
       - docs/assets/shots/review-queue_light.webp
       - docs/assets/shots/environments_light.webp
       - docs/assets/shots/admin-plugins_light.webp
+      - docs/assets/shots/lite-run-detail_light.webp
+      - docs/assets/shots/lite-launch_light.webp
+      - docs/assets/shots/lite-runs_light.webp
+      - docs/assets/shots/lite-run-detail-phone_light.webp
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
@@ -133,6 +137,38 @@ media:
       - docs/assets/diagrams/apply3_specs_dark.svg
       - docs/assets/diagrams/apply3_specs_light.png
       - docs/assets/diagrams/apply3_specs_dark.png
+  - id: apply4-access
+    kind: diagram
+    generator: python3 tools/diagrams/apply4_access.py
+    outputs:
+      - docs/assets/diagrams/apply4_access_light.svg
+      - docs/assets/diagrams/apply4_access_dark.svg
+      - docs/assets/diagrams/apply4_access_light.png
+      - docs/assets/diagrams/apply4_access_dark.png
+  - id: apply5-observed
+    kind: diagram
+    generator: python3 tools/diagrams/apply5_observed.py
+    outputs:
+      - docs/assets/diagrams/apply5_observed_light.svg
+      - docs/assets/diagrams/apply5_observed_dark.svg
+      - docs/assets/diagrams/apply5_observed_light.png
+      - docs/assets/diagrams/apply5_observed_dark.png
+  - id: uilite-stages
+    kind: diagram
+    generator: python3 tools/diagrams/uilite_stages.py
+    outputs:
+      - docs/assets/diagrams/uilite_stages_light.svg
+      - docs/assets/diagrams/uilite_stages_dark.svg
+      - docs/assets/diagrams/uilite_stages_light.png
+      - docs/assets/diagrams/uilite_stages_dark.png
+  - id: apply6-stages
+    kind: diagram
+    generator: python3 tools/diagrams/apply6_stages.py
+    outputs:
+      - docs/assets/diagrams/apply6_stages_light.svg
+      - docs/assets/diagrams/apply6_stages_dark.svg
+      - docs/assets/diagrams/apply6_stages_light.png
+      - docs/assets/diagrams/apply6_stages_dark.png
   - id: d4-pr-checks
     kind: diagram
     generator: python3 tools/diagrams/d4_pr_checks.py

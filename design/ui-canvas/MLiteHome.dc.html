@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — home (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.chips::-webkit-scrollbar{display:none}
+
+.cx-btn{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.cx-btn:focus-visible{outline:2px solid #7750D4;outline-offset:2px;border-radius:10px}
+.cx-sum{font-family:'Inter',sans-serif;font-weight:400}
+.cx-btn[aria-expanded="true"] .cx-sum{display:none}
+.cx-btn[aria-expanded="true"] .cx-chev{transform:rotate(180deg)}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" hint-size="390px,48px"></dc-import></div>
+  <main style="position: absolute; top: 48px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; flex-direction: column; gap: 2px; padding: 4px 2px;">
+      <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 24px;">Good morning</h1>
+      <span style="font-size: 13.5px; color: #4D5065; line-height: 1.4;">4 runs running, 1 queued and 1 cancelling · live, updated 4 s ago</span>
+    </div>
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+      <a href="MLiteRuns.dc.html" aria-label="4 runs running, show them" style="text-decoration: none; color: inherit; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), inset 0 3px 0 #3B82F6;"><span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #1D5FC9;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span><span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">4</span></a>
+      <a href="MLiteRuns.dc.html" aria-label="1 run queued, show it" style="text-decoration: none; color: inherit; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), inset 0 3px 0 #6E7287;"><span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #33364A;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>Queued</span><span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">1</span></a>
+      <a href="MLiteRuns.dc.html" aria-label="3 runs failed, show them" style="text-decoration: none; color: inherit; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), inset 0 3px 0 #DC3B3B;"><span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #B02A2A;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg>Failed</span><span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">3</span></a>
+      <a href="MLiteRuns.dc.html" aria-label="5 runs succeeded, show them" style="text-decoration: none; color: inherit; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), inset 0 3px 0 #1F9D63;"><span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #157A4B;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Succeeded</span><span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">5</span></a>
+    </div>
+    <a href="MLiteLaunch.dc.html" style="height: 48px; border-radius: 14px; background: #7750D4; color: #FFFFFF; font: 600 15px 'Inter', sans-serif; text-decoration: none; display: flex; align-items: center; justify-content: center; gap: 8px;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12 M7 8l5-5 5 5 M5 21h14"/></svg>Launch a workflow</a>
+    <section class="cx" style="display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 2px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span><span style="min-width: 0;">ACTIVE RUNS</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">6 active · 4 running</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1">
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+    <a href="MLiteRunObserved.dc.html" aria-label="rnaseq-pilot-hand, Running, started from a terminal" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #3B82F6;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #1D5FC9;"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span>
+          <span style="font-size: 12px; color: #6E7287;">38 min</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">rnaseq-pilot-hand</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">nf-core/rnaseq 3.27.0 · 288 / 384 tasks known so far</span></span>
+        <span style="display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: #33364A;"><span style="display: inline-flex; align-items: center; gap: 5px; height: 22px; padding: 0 8px; border-radius: 7px; background: #F1F2F6; color: #33364A; font-size: 11.5px; font-weight: 600;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z M7 9l3 3-3 3 M12 15h5"/></svg>From a terminal</span>48 tasks running</span>
+      </span>
+    </a>
+    <a href="MLiteRunDetail.dc.html" aria-label="nanoseq-cdna-02, Queued" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #6E7287;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>Queued</span>
+          <span style="font-size: 12px; color: #6E7287;">1 min</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">nanoseq-cdna-02</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">nf-core/nanoseq 3.1.0 · —</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">head not started yet</span>
+      </span>
+    </a>
+    <a href="MLiteRunDetail.dc.html" aria-label="scrna-pbmc, Cancelling" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #4D5065;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #33364A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M5.6 18.4L18.4 5.6"/></svg>Cancelling</span>
+          <span style="font-size: 12px; color: #6E7287;">12 min</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">scrna-pbmc</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">nf-core/scrnaseq 4.2.0 · 38 / 410 tasks</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">stopping the engine</span>
+      </span>
+    </a>
+    <a href="MLiteRunDetail.dc.html" aria-label="ki-screen-p05, Running" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #3B82F6;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #1D5FC9;"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span>
+          <span style="font-size: 12px; color: #6E7287;">34 min</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">ki-screen-p05</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="14" height="14" alt="Snakemake" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">plate-qc · 31 / 96 jobs</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">12 jobs running</span>
+      </span>
+    </a>
+    <a href="MLiteRunDetail.dc.html" aria-label="demux-NX-1026, Running" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #3B82F6;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #1D5FC9;"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span>
+          <span style="font-size: 12px; color: #6E7287;">49 min</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">demux-NX-1026</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">nf-core/demultiplex 1.8.0 · 97 / 143 tasks known so far</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">16 tasks running</span>
+      </span>
+    </a>
+    <a href="MLiteRunDetail.dc.html" aria-label="rnaseq-2026-10-25, Running" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #3B82F6;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #1D5FC9;"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span>
+          <span style="font-size: 12px; color: #6E7287;">1 h 05</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">rnaseq-2026-10-25</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">nf-core/rnaseq 3.27.0 · 524 / 803 tasks</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">64 tasks running</span>
+      </span>
+    </a>
+    </div></div></section>
+    <section class="cx" style="display: flex; flex-direction: column;"><h2 style="margin: 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-2" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 2px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 8v4l3 2"/></svg></span><span style="min-width: 0;">FINISHED RECENTLY</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">5 runs · 3 failed</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-2">
+    <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 6px;">
+    <a href="MLiteRunDetail.dc.html" aria-label="fetch-geo-2610, Succeeded" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #1F9D63;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #157A4B;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Succeeded</span>
+          <span style="font-size: 12px; color: #6E7287;">Today 07:39</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">fetch-geo-2610</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">nf-core/fetchngs 1.13.0 · 24 / 24 tasks</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">24 of 24 tasks</span>
+      </span>
+    </a>
+    <a href="MLiteRunDetail.dc.html" aria-label="rnaseq-3.27-validation, Failed" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #DC3B3B;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #B02A2A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg>Failed</span>
+          <span style="font-size: 12px; color: #6E7287;">Sun 23:01</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">rnaseq-3.27-validation</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">nf-core/rnaseq 3.27.0 · 330 / 332 tasks</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">exit 175 ×2 · RSEM_CALCULATEEXPRESSION (H1_REP2)</span>
+      </span>
+    </a>
+    <a href="MLiteRunDetail.dc.html" aria-label="sarek-wgs-na12878, Failed" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #DC3B3B;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #B02A2A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg>Failed</span>
+          <span style="font-size: 12px; color: #6E7287;">Sun 22:56</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">sarek-wgs-na12878</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">nf-core/sarek 3.10.0 · 88 / 178 tasks</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">exit 1 · DEEPVARIANT_RUNDEEPVARIANT (NA12878)</span>
+      </span>
+    </a>
+    <a href="MLiteRunDetail.dc.html" aria-label="atac-limb-e11, Succeeded" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #1F9D63;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #157A4B;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Succeeded</span>
+          <span style="font-size: 12px; color: #6E7287;">Sun 19:50</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">atac-limb-e11</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="14" height="14" alt="nf-core (Nextflow)" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">nf-core/atacseq 2.1.2 · 212 / 212 tasks</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">212 of 212 tasks</span>
+      </span>
+    </a>
+    <a href="MLiteRunDetail.dc.html" aria-label="wgs-cohort-12, Failed" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden;">
+      <span style="width: 4px; flex-shrink: 0; background: #DC3B3B;"></span>
+      <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
+        <span style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+          <span style="display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #B02A2A;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12 M18 6L6 18"/></svg>Failed</span>
+          <span style="font-size: 12px; color: #6E7287;">Sun 06:57</span>
+        </span>
+        <span style="font-size: 16px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">wgs-cohort-12</span>
+        <span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="14" height="14" alt="Snakemake" style="display: block; flex-shrink: 0;"><span style="min-width: 0; overflow: hidden; text-overflow: ellipsis;">wgs-germline · 143 / 175 jobs</span></span>
+        <span style="font-size: 12.5px; color: #33364A;">2 jobs failed after their retries</span>
+      </span>
+    </a>
+    </div></div></section>
+    <a href="MLiteRuns.dc.html" style="font-size: 13.5px; font-weight: 600; text-decoration: none; padding: 4px 2px;">All runs (15) →</a>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="home" hint-size="390px,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>

@@ -25,6 +25,10 @@
   {
    "id": "mobile",
    "name": "Mobile"
+  },
+  {
+   "id": "lite",
+   "name": "0.0.1 lite"
   }
  ],
  "boards": {
@@ -938,6 +942,214 @@
    "title": "depictio · dashboard with Spectio checks and decisions joined (nf-core/rnaseq)",
    "page": "screens",
    "expand": "fill"
+  },
+  "LiteHome.dc.html": {
+   "x": 0,
+   "y": 0,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Home",
+   "page": "lite"
+  },
+  "LiteRuns.dc.html": {
+   "x": 1560,
+   "y": 0,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Runs",
+   "page": "lite"
+  },
+  "LiteLaunch.dc.html": {
+   "x": 3120,
+   "y": 0,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Launch, Nextflow",
+   "page": "lite"
+  },
+  "LiteLaunchSnakemake.dc.html": {
+   "x": 4680,
+   "y": 0,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Launch, Snakemake (required field empty)",
+   "page": "lite"
+  },
+  "LiteRunDetail.dc.html": {
+   "x": 0,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Run detail, running",
+   "page": "lite"
+  },
+  "LiteRunTasks.dc.html": {
+   "x": 1560,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Run detail, Tasks",
+   "page": "lite"
+  },
+  "LiteRunLogs.dc.html": {
+   "x": 3120,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Run detail, Logs",
+   "page": "lite"
+  },
+  "LiteRunFailed.dc.html": {
+   "x": 4680,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Run detail, failed",
+   "page": "lite"
+  },
+  "LiteCancelDialog.dc.html": {
+   "x": 6240,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Cancel dialog",
+   "page": "lite"
+  },
+  "MLiteHome.dc.html": {
+   "x": 0,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Home",
+   "page": "lite"
+  },
+  "MLiteRuns.dc.html": {
+   "x": 470,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Runs",
+   "page": "lite"
+  },
+  "MLiteRunDetail.dc.html": {
+   "x": 940,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Run detail",
+   "page": "lite"
+  },
+  "MLiteCancelSheet.dc.html": {
+   "x": 1410,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Cancel sheet",
+   "page": "lite"
+  },
+  "MLiteLaunch.dc.html": {
+   "x": 1880,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Launch",
+   "page": "lite"
+  },
+  "LiteLegend.dc.html": {
+   "x": 0,
+   "y": 4200,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Legend",
+   "page": "lite"
+  },
+  "LiteStates.dc.html": {
+   "x": 1560,
+   "y": 4200,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · States",
+   "page": "lite"
+  },
+  "LiteSidebar.dc.html": {
+   "x": 3120,
+   "y": 4200,
+   "w": 236,
+   "h": 900,
+   "title": "0.0.1 · Sidebar",
+   "page": "lite"
+  },
+  "LiteTopbar.dc.html": {
+   "x": 3436,
+   "y": 4200,
+   "w": 1440,
+   "h": 76,
+   "title": "0.0.1 · Top bar",
+   "page": "lite"
+  },
+  "MLiteTopbar.dc.html": {
+   "x": 3436,
+   "y": 4400,
+   "w": 390,
+   "h": 60,
+   "title": "0.0.1 · Phone top bar",
+   "page": "lite"
+  },
+  "MLiteTabbar.dc.html": {
+   "x": 3906,
+   "y": 4400,
+   "w": 390,
+   "h": 72,
+   "title": "0.0.1 · Phone tab bar",
+   "page": "lite"
+  },
+  "LiteRunObserved.dc.html": {
+   "x": 7800,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Run detail, started from a terminal",
+   "page": "lite"
+  },
+  "MLiteRunObserved.dc.html": {
+   "x": 2350,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Run from a terminal",
+   "page": "lite"
+  },
+  "MLiteRunTasks.dc.html": {
+   "x": 2820,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Run detail, Tasks",
+   "page": "lite"
+  },
+  "MLiteRunLogs.dc.html": {
+   "x": 3290,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Run detail, Logs",
+   "page": "lite"
+  },
+  "LiteStatesRun.dc.html": {
+   "x": 4996,
+   "y": 4200,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · States, run and launch",
+   "page": "lite"
+  },
+  "LiteRunDetailSnakemake.dc.html": {
+   "x": 9360,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Run detail, Snakemake with detected stages",
+   "page": "lite"
   }
  },
  "order": [
@@ -1031,7 +1243,33 @@
   "RunLiveChecks.dc.html",
   "WorkflowWatches.dc.html",
   "ReviewDashboard.dc.html",
-  "DepictioDecisions.dc.html"
+  "DepictioDecisions.dc.html",
+  "LiteHome.dc.html",
+  "LiteRuns.dc.html",
+  "LiteLaunch.dc.html",
+  "LiteLaunchSnakemake.dc.html",
+  "LiteRunDetail.dc.html",
+  "LiteRunDetailSnakemake.dc.html",
+  "LiteRunTasks.dc.html",
+  "LiteRunLogs.dc.html",
+  "LiteRunFailed.dc.html",
+  "LiteCancelDialog.dc.html",
+  "LiteRunObserved.dc.html",
+  "MLiteHome.dc.html",
+  "MLiteRuns.dc.html",
+  "MLiteRunDetail.dc.html",
+  "MLiteRunTasks.dc.html",
+  "MLiteRunLogs.dc.html",
+  "MLiteRunObserved.dc.html",
+  "MLiteCancelSheet.dc.html",
+  "MLiteLaunch.dc.html",
+  "LiteLegend.dc.html",
+  "LiteStates.dc.html",
+  "LiteStatesRun.dc.html",
+  "LiteSidebar.dc.html",
+  "LiteTopbar.dc.html",
+  "MLiteTopbar.dc.html",
+  "MLiteTabbar.dc.html"
  ],
  "notes": {
   "ia": {
@@ -1121,6 +1359,38 @@
    "kind": "title1",
    "maxW": 6000,
    "page": "screens"
+  },
+  "lite": {
+   "x": 0,
+   "y": -300,
+   "text": "Spectio 0.0.1 lite — launch and monitor: home, runs, launch, run detail with stages, tasks and logs, Cancel",
+   "kind": "title1",
+   "maxW": 10800,
+   "page": "lite"
+  },
+  "lite-run": {
+   "x": 0,
+   "y": 1300,
+   "text": "One run: stages (declared or detected) with their processes or rules, tasks, logs, Cancel; a run started from a terminal",
+   "kind": "title1",
+   "maxW": 10800,
+   "page": "lite"
+  },
+  "lite-phone": {
+   "x": 0,
+   "y": 2800,
+   "text": "Phone",
+   "kind": "title1",
+   "maxW": 3700,
+   "page": "lite"
+  },
+  "lite-ref": {
+   "x": 0,
+   "y": 4000,
+   "text": "Legend, states and the reduced shell",
+   "kind": "title1",
+   "maxW": 6500,
+   "page": "lite"
   }
  },
  "designSystems": []

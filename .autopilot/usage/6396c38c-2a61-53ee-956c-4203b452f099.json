@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 1945,
-    "cache_write": 2081581,
-    "cache_read": 165012890,
-    "output": 430973
+    "input": 2202,
+    "cache_write": 2278447,
+    "cache_read": 189180801,
+    "output": 489068
    },
-   "calls": 856,
+   "calls": 969,
    "model": "claude-opus-5-5",
    "start": "2026-10-27T23:14:03.633Z",
-   "end": "2026-10-28T13:03:49.673Z",
+   "end": "2026-10-28T14:25:54.379Z",
    "id": "6396c38c-2a61-53ee-956c-4203b452f099",
    "kind": "main",
    "type": "session",
@@ -86,6 +86,23 @@
   },
   {
    "tokens": {
+    "input": 20,
+    "cache_write": 62354,
+    "cache_read": 452582,
+    "output": 9231
+   },
+   "calls": 10,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T14:05:21.047Z",
+   "end": "2026-10-28T14:07:16.049Z",
+   "id": "a18deca7d815f87f4",
+   "kind": "subagent",
+   "type": "doc-writer",
+   "label": "Write P1 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 86,
     "cache_write": 104770,
     "cache_read": 3078746,
@@ -133,6 +150,23 @@
    "kind": "subagent",
    "type": "general-purpose",
    "label": "APPLY3 part B: api, checking-scenarios",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 42,
+    "cache_write": 107975,
+    "cache_read": 1508394,
+    "output": 23027
+   },
+   "calls": 21,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T14:11:56.473Z",
+   "end": "2026-10-28T14:16:28.857Z",
+   "id": "a1c9e2cff07f83687",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review of P1",
    "workflow": null
   },
   {
@@ -324,6 +358,23 @@
   },
   {
    "tokens": {
+    "input": 42,
+    "cache_write": 60128,
+    "cache_read": 996757,
+    "output": 14800
+   },
+   "calls": 21,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T13:50:52.391Z",
+   "end": "2026-10-28T13:54:29.982Z",
+   "id": "a3f68e099278ef101",
+   "kind": "subagent",
+   "type": "doc-writer",
+   "label": "Write R10 Progress page",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 24,
     "cache_write": 40191,
     "cache_read": 352282,
@@ -337,6 +388,23 @@
    "kind": "subagent",
    "type": "code-reviewer",
    "label": "Code review corpus retry diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 94,
+    "cache_write": 218932,
+    "cache_read": 6518801,
+    "output": 52250
+   },
+   "calls": 47,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T13:40:46.523Z",
+   "end": "2026-10-28T13:49:53.620Z",
+   "id": "a47cdcf9b5ef7f4d7",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "Write R10 synthesis",
    "workflow": null
   },
   {
@@ -660,6 +728,23 @@
    "kind": "subagent",
    "type": "code-reviewer",
    "label": "Re-review T5 round 4 (PR #43)",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 36,
+    "cache_write": 76220,
+    "cache_read": 951682,
+    "output": 20747
+   },
+   "calls": 18,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T13:50:52.379Z",
+   "end": "2026-10-28T13:55:27.940Z",
+   "id": "a87fb498fb138dac9",
+   "kind": "subagent",
+   "type": "diagram-artist",
+   "label": "Draw the R10 sketch",
    "workflow": null
   },
   {
@@ -1004,6 +1089,23 @@
   },
   {
    "tokens": {
+    "input": 26,
+    "cache_write": 94059,
+    "cache_read": 737026,
+    "output": 30815
+   },
+   "calls": 13,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T14:05:21.033Z",
+   "end": "2026-10-28T14:11:10.550Z",
+   "id": "ae98dcf2f473a27a3",
+   "kind": "subagent",
+   "type": "diagram-artist",
+   "label": "Draw the P1 sketch",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 170,
     "cache_write": 151226,
     "cache_read": 9481760,
@@ -1055,6 +1157,23 @@
   },
   {
    "tokens": {
+    "input": 104,
+    "cache_write": 418736,
+    "cache_read": 7799381,
+    "output": 82176
+   },
+   "calls": 52,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T13:50:22.544Z",
+   "end": "2026-10-28T14:04:44.611Z",
+   "id": "af0f0a6e82d493a27",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "Write P1 walking-skeleton plan",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 60,
     "cache_write": 84049,
     "cache_read": 1514930,
@@ -1085,6 +1204,23 @@
    "kind": "subagent",
    "type": "doc-reviewer",
    "label": "Doc review of TRIAGE3 page",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 48,
+    "cache_write": 62024,
+    "cache_read": 1008516,
+    "output": 17026
+   },
+   "calls": 23,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T13:56:25.519Z",
+   "end": "2026-10-28T14:01:31.778Z",
+   "id": "afdfb6fcbcb2d810e",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review of R10",
    "workflow": null
   },
   {
