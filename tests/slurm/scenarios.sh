@@ -78,7 +78,7 @@ EOF
       rc=0
     fi
     [ "$rc" = 0 ] || die "$engine $id: run_scenarios.py failed (report: $DATA/work/$engine-$id/$engine/report.json)"
-    if ! inroot sacct -n -X -j 0 >/dev/null 2>&1; then   # slurm-mini has no accounting: squeue only
+    if ! inroot sacct -n -X -a -S now-1hour -o JobID >/dev/null 2>&1; then   # slurm-mini: no accounting
       jobs=$(inroot squeue -h -a --states=all -o %i)
       [ -n "$jobs" ] || die "$engine $id: no Slurm job in squeue"
       [ "$id" = happy ] || die "$engine $id: failure scenarios need accounting (slurm-site)"
