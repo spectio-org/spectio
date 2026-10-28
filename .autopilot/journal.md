@@ -277,3 +277,15 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Exit checks:** `python3 -m unittest tests/pipelines/synthetic/test_golden.py tests/pipelines/real/test_run_corpus.py` (16 OK); `python3 tools/docs/check.py`: 0 failures.
 - **Waiting on Thomas:** #51 (where T3/T4 run; their SEC-T1-06 prerequisite is now met), then the items listed above.
 - **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (12 subagents, 541 API calls at snapshot time); dashboard republished as version 21 at the same link, private, `answers` write rule owner-only, `check_xss.js` ok with and without the CSP.
+
+## 2026-10-28 08:35 → 08:52 UTC — tick 11, continued (SEC-S06-1 hardening)
+
+- **Fixed: SEC-S06-1** and the minors of the later rounds (SEC-S06-4, 4a, 4b; CR-S06-4, CR-S06-5). PR weber8thomas/spectio#30, squash `00f48db`.
+  - An explicit `--workdir` is created with its missing parents under umask 077, resolved, and refused unless this user owns it, it is not a symlink, nobody else can write to it, and every resolved parent belongs to this user or root (sticky if others can write). The resolved path is used. The refusal names `chmod go-w`; the docstrings and `--help` state the rule.
+  - 10 new unit tests (26 OK). A `--workdir` under a 777 parent is refused (exit 1).
+  - code review approve on `3355a10..d31b2c9` (2 minors, fixed); security review approve on rounds 3, 4 and 5 (1, 2, then 0 minors). The simplifier made no change. Doc review approve 11/14, its required changes applied.
+  - CI on `8d5c062`: every check green, including `pipelines-synthetic` (3 legs) and `pipelines-real` (nf-core/demo, snakemake-ms-proteomics), so `$RUNNER_TEMP` passes the new checks on hosted runners.
+  - The `pr-body` check failed once on a missing `## Summary` section; fixed by editing the PR body.
+- **Exit checks:** unit tests 26 OK; `python3 tools/docs/check.py`: 0 failures; `mkdocs build --strict`: built.
+- **Waiting on Thomas:** #51 (where T3/T4 run; nothing else in the pipeline is ready), the dashboard answers (10:00), then the items listed in tick 11.
+- **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (16 subagents, 649 API calls at snapshot time); dashboard rebuilt (41 steps, 51 inbox entries; `check_xss.js` ok with and without the CSP) and republished as version 22 at the same link, private, `answers` write rule owner-only.

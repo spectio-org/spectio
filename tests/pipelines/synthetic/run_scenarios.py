@@ -8,6 +8,8 @@ Writes <workdir>/<engine>/report.json and exits non-zero if any scenario fails. 
 the workdir is a fresh private directory (mode 0700) under ${TMPDIR:-/tmp}, printed at the start: a
 shared login node never sees a predictable path that a run deletes and reuses. It is kept for
 debugging (`rm -rf "${TMPDIR:-/tmp}"/spectio-scenarios-*` removes them).
+An explicit --workdir is created private and refused if you do not own it, it is a symlink, group or
+others can write to it, or it sits under a directory that others can change (see make_workdir).
 Golden fixtures (golden/<engine>-<version>/<scenario>.tsv, local executor only):
   --golden record   writes them from this run
   --golden check    compares this run with them; a missing directory, or a missing file for a PR
@@ -17,7 +19,7 @@ Extra executor arguments (e.g. a SLURM profile) go after `--`:
 """
 from __future__ import annotations
 
-import argparse, csv, glob, io, json, os, re, shutil, subprocess, sys, tempfile, time
+import argparse, csv, glob, io, json, os, re, shutil, stat, subprocess, sys, tempfile, time
 from collections import Counter
 from pathlib import Path
 
@@ -231,7 +233,25 @@ def check_tasks(want: dict, tasks: dict, engine: str) -> list[str]:
 
 
 def make_workdir(arg: str | None) -> Path:
-    return Path(arg) if arg else Path(tempfile.mkdtemp(prefix="spectio-scenarios-"))
+    """A fresh private directory, or the given one if this user owns it and nobody else can write to it
+    or swap it: its resolved parents must belong to this user or root, and be sticky if others can write."""
+    if not arg:
+        return Path(tempfile.mkdtemp(prefix="spectio-scenarios-"))
+    path = Path(arg)
+    old_umask = os.umask(0o077)  # missing parents are created private too
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    finally:
+        os.umask(old_umask)
+    real = Path(os.path.realpath(path))  # checked and returned, so a symlink on the way cannot be swapped later
+    st = os.lstat(real)
+    bad = path.is_symlink() or st.st_uid != os.getuid() or st.st_mode & 0o022
+    for d in real.parents:
+        s = os.stat(d)
+        bad = bad or s.st_uid not in (0, os.getuid()) or (s.st_mode & 0o022 and not s.st_mode & stat.S_ISVTX)
+    if bad:
+        sys.exit(f"--workdir {path}: must be a directory you own that others cannot write to (chmod go-w), not a symlink, under directories that only you or root can change")
+    return real
 
 
 def main() -> int:
@@ -239,7 +259,7 @@ def main() -> int:
     ap.add_argument("--engine", choices=["nextflow", "snakemake"], required=True)
     ap.add_argument("--nextflow", default=os.environ.get("NXF_BIN", "nextflow"))
     ap.add_argument("--snakemake", default=os.environ.get("SMK_BIN", "snakemake"))
-    ap.add_argument("--workdir")
+    ap.add_argument("--workdir", help="default: a fresh private directory; an explicit one must be owned by you, not a symlink, not writable by others, under directories only you or root can change")
     ap.add_argument("--only")
     ap.add_argument("--nightly", action="store_true")
     ap.add_argument("--golden", choices=["record", "check"])
