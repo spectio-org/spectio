@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Run the synthetic scenarios on Nextflow and/or Snakemake and check their expectations.
 
-  python3 run_scenarios.py --engine nextflow --nextflow nextflow --workdir /tmp/spx [--only happy,flaky_retry] [--nightly]
-  python3 run_scenarios.py --engine snakemake --workdir /tmp/spx
+  python3 run_scenarios.py --engine nextflow --nextflow nextflow [--only happy,flaky_retry] [--nightly]
+  python3 run_scenarios.py --engine snakemake [--workdir DIR]
 
-Writes <workdir>/<engine>/report.json and exits non-zero if any scenario fails.
+Writes <workdir>/<engine>/report.json and exits non-zero if any scenario fails. Without --workdir,
+the workdir is a fresh private directory (mode 0700) under ${TMPDIR:-/tmp}, printed at the start: a
+shared login node never sees a predictable path that a run deletes and reuses. It is kept for
+debugging (`rm -rf "${TMPDIR:-/tmp}"/spectio-scenarios-*` removes them).
 Golden fixtures (golden/<engine>-<version>/<scenario>.tsv, local executor only):
   --golden record   writes them from this run
   --golden check    compares this run with them; a missing directory, or a missing file for a PR
@@ -14,7 +17,7 @@ Extra executor arguments (e.g. a SLURM profile) go after `--`:
 """
 from __future__ import annotations
 
-import argparse, csv, glob, io, json, os, re, shutil, subprocess, sys, time
+import argparse, csv, glob, io, json, os, re, shutil, subprocess, sys, tempfile, time
 from collections import Counter
 from pathlib import Path
 
@@ -227,12 +230,16 @@ def check_tasks(want: dict, tasks: dict, engine: str) -> list[str]:
     return errs
 
 
+def make_workdir(arg: str | None) -> Path:
+    return Path(arg) if arg else Path(tempfile.mkdtemp(prefix="spectio-scenarios-"))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--engine", choices=["nextflow", "snakemake"], required=True)
     ap.add_argument("--nextflow", default=os.environ.get("NXF_BIN", "nextflow"))
     ap.add_argument("--snakemake", default=os.environ.get("SMK_BIN", "snakemake"))
-    ap.add_argument("--workdir", default="/tmp/spectio-scenarios")
+    ap.add_argument("--workdir")
     ap.add_argument("--only")
     ap.add_argument("--nightly", action="store_true")
     ap.add_argument("--golden", choices=["record", "check"])
@@ -251,7 +258,9 @@ def main() -> int:
     scenarios = spec["scenarios"]
     if a.only: scenarios = [s for s in scenarios if s["id"] in a.only.split(",")]
     elif not a.nightly: scenarios = [s for s in scenarios if not s.get("nightly")]
-    base = Path(a.workdir) / a.engine
+    workdir = make_workdir(a.workdir)
+    print(f"workdir: {workdir}", flush=True)
+    base = workdir / a.engine
     base.mkdir(parents=True, exist_ok=True)
     faults = spec.get("engine_faults", {}).get(a.engine, [])
     results = []
