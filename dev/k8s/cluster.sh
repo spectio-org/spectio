@@ -44,13 +44,14 @@ install_kueue() {
   local manifest t=$SECONDS
   # in the host's TMPDIR, never under $DATA: the nodes mount $DATA read-write (SEC-T5-10)
   manifest=$(mktemp "${TMPDIR:-/tmp}/kueue-$KUEUE_VERSION.XXXXXX.yaml")
-  trap 'rm -f "$manifest"' RETURN
   curl -fsSL --retry 3 -o "$manifest" \
-    "https://github.com/kubernetes-sigs/kueue/releases/download/v$KUEUE_VERSION/manifests.yaml"
+    "https://github.com/kubernetes-sigs/kueue/releases/download/v$KUEUE_VERSION/manifests.yaml" ||
+    { rm -f "$manifest"; return 1; }
   echo "$KUEUE_MANIFEST_SHA256  $manifest" | sha256sum -c --status ||
-    { echo "checksum failed: $manifest" >&2; return 1; }
+    { echo "checksum failed: $manifest" >&2; rm -f "$manifest"; return 1; }
   # server-side apply of the file just checked: the CRDs are too large for the client-side last-applied annotation
-  kubectl apply --server-side -f "$manifest" >/dev/null
+  kubectl apply --server-side -f "$manifest" >/dev/null || { rm -f "$manifest"; return 1; }
+  rm -f "$manifest"
   kubectl -n kueue-system rollout status deployment/kueue-controller-manager --timeout=300s
   # the webhook answers a little after the deployment is Available: retry the queue objects
   for _ in $(seq 30); do
