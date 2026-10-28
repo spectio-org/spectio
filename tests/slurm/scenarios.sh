@@ -78,7 +78,7 @@ EOF
       rc=0
     fi
     [ "$rc" = 0 ] || die "$engine $id: run_scenarios.py failed (report: $DATA/work/$engine-$id/$engine/report.json)"
-    if ! inroot sacct -n -X -a -S now-1hour -o JobID >/dev/null 2>&1; then   # slurm-mini: no accounting
+    if [ "$CLUSTER" = mini ]; then   # slurm-mini has no accounting (dev/slurm/cluster.sh)
       jobs=$(inroot squeue -h -a --states=all -o %i)
       [ -n "$jobs" ] || die "$engine $id: no Slurm job in squeue"
       [ "$id" = happy ] || die "$engine $id: failure scenarios need accounting (slurm-site)"
@@ -192,8 +192,19 @@ scenario_heads() {
   echo "RESULT heads: snakemake head in sbatch: happy pass, head $(inroot sacct -X -a -n -P --name spectio-head-snakemake -o State,ExitCode | tail -n 1); plugin says: ${log:-nothing}"
 }
 
+# errors FILE: the errors and warnings of a slurmrestd answer (never the request), with anything that looks like a
+# credential (fixture.py's SECRET) redacted.
+errors() {
+  python3 -c 'import json, sys
+sys.path.insert(0, sys.argv[2])
+from fixture import SECRET
+d = json.load(open(sys.argv[1]))
+for k in "errors", "warnings": print(sys.argv[1].rsplit("/", 1)[-1], k, SECRET.sub("<redacted>", json.dumps(d.get(k))))' \
+    "$1" "$repo/tests/slurm" || true
+}
+
 scenario_rest() {
-  local out=$DATA/work/rest a b v n imp rootjob rootst
+  local out=$DATA/work/rest a b v n own ownc ownst imp rootjob rootst
   local -A path=([jobs]=/slurm/v0.0.45/jobs [nodes]=/slurm/v0.0.45/nodes [partitions]=/slurm/v0.0.45/partitions
     [slurmdb-jobs]=/slurmdb/v0.0.45/jobs)
   inc mkdir -p "$out"
@@ -208,14 +219,26 @@ scenario_rest() {
     "${@:3}"' sh "$DATA" "$out" "jobs=${path[jobs]}" "nodes=${path[nodes]}" "partitions=${path[partitions]}" \
     "slurmdb-jobs=${path[slurmdb-jobs]}" | tee "$out/codes.txt"
   awk '$2 != 200 {b = 1} END {exit b}' "$out/codes.txt" || die "rest: a GET did not answer 200"
+  # Positive control: spx's token with spx's own name cancels a held job of spx's, so the DELETE itself works.
+  own=$(inc sbatch --parsable -H -J rest-own -o /dev/null --wrap true)
+  # shellcheck disable=SC2016  # expanded by the inner bash
+  ownc=$(inc bash -c 'export "$(scontrol token lifespan=300)" && python3 "$1/rest_get.py" http://api:6820 "$2" \
+    "delete-own=DELETE /slurm/v0.0.45/job/$3"' sh "$DATA" "$out" "$own" | awk '{print $2}')
+  ownst=$(inroot squeue -h --states=all -j "$own" -o %T 2>/dev/null || true)
+  inroot scancel "$own" 2>/dev/null || true
+  errors "$out/delete-own.json"
+  [ "$ownc" = 200 ] || die "rest: spx's DELETE of its own job $own answered HTTP ${ownc:-none}, not 200"
+  [ "$ownst" = CANCELLED ] || die "rest: spx's DELETE of its own job $own left it ${ownst:-unreadable}"
   # spx's token with X-SLURM-USER-NAME root must not act as root: it tries to cancel a held job of root's.
-  # (Run 40679302148: a GET of ping with that header answers 200, so the check is on the effect.)
+  # (Run 40679302148: a GET of ping with that header answers 200, so both the code and the effect are checked.)
   rootjob=$(inroot sbatch --parsable -H -J rest-root -o /dev/null --wrap true)
   # shellcheck disable=SC2016  # expanded by the inner bash
   imp=$(inc bash -c 'export "$(scontrol token lifespan=300)" && REST_USER=root python3 "$1/rest_get.py" http://api:6820 "$2" \
     "impersonate-root=DELETE /slurm/v0.0.45/job/$3"' sh "$DATA" "$out" "$rootjob" | awk '{print $2}')
-  rootst=$(inroot squeue -h -j "$rootjob" -o %T)
-  inroot scancel "$rootjob"
+  rootst=$(inroot squeue -h --states=all -j "$rootjob" -o %T 2>/dev/null || true)
+  inroot scancel "$rootjob" 2>/dev/null || true
+  errors "$out/impersonate-root.json"
+  case $imp in 2??) die "rest: spx's token as root got HTTP $imp on DELETE of root's job $rootjob" ;; esac
   [ "$rootst" = PENDING ] || die "rest: spx's token as root cancelled root's job $rootjob (HTTP $imp, now ${rootst:-gone})"
   # A call without a token must be refused.
   v=$(inc python3 -c 'import urllib.request as u, urllib.error as e
@@ -226,7 +249,7 @@ except e.HTTPError as x: print(x.code)')
     python3 "$repo/tests/slurm/fixture.py" "$FIXTURES/rest-$n.json" --jobs "$a,$b" \
       --meta "slurm=$SLURM_VERSION" "source=${RUN_URL:-local}" "request=GET ${path[$n]}" <"$out/$n.json"
   done
-  echo "RESULT rest: $(tr '\n' ' ' <"$out/codes.txt")no-token=$v spx-token-as-root:DELETE-root-job=$imp,root-job=$rootst"
+  echo "RESULT rest: $(tr '\n' ' ' <"$out/codes.txt")no-token=$v spx-token-own:DELETE-own-job=$ownc,own-job=${ownst:-gone} spx-token-as-root:DELETE-root-job=$imp,root-job=$rootst"
 }
 
 case "${1:-}" in

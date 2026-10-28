@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-28T12:18:00Z",
+  "updated_at": "2026-10-28T12:47:00Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -382,7 +382,7 @@
         "docs/specs/dev-environment-and-testing.md",
         "tools/diagrams/t3_sind_slurm.py"
       ],
-      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); from spike t3-ci (run 40670286528); PR weber8thomas/spectio#35 squash e2c7d41; CODE review=approve 1/2/12, security=approve 0/0/7, rounds=2; doc review approve 13/14; pipelines-slurm green on 646a6eb",
+      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); from spike t3-ci (run 40670286528); PR weber8thomas/spectio#35 squash e2c7d41; CODE review=approve 1/2/12, security=approve 0/0/7, rounds=2; doc review approve 13/14; pipelines-slurm green on 646a6eb; follow-ups PR weber8thomas/spectio#39 squash 7242408 (positive control for slurmrestd, test_fixture.py in ci-ok, redacted errors; review round 3 approve 0/0/4 + 0/0/4)",
       "base": "89fb4f38c6fa0b8837f53bd81a86ec7a778043a0"
     },
     "T4": {
@@ -412,7 +412,7 @@
       "started_at": "2026-10-28T12:00:04Z",
       "finished_at": null,
       "outputs": [],
-      "notes": "CI-driven worker on autopilot/T5 (inbox #52 (b) would move T5 after the walking skeleton; launched under the current plan)"
+      "notes": "CI-driven worker on autopilot/T5 (inbox #52 (b) would move T5 after the walking skeleton; launched under the current plan); review 2 rounds (round 2: CR-8 blocker fixed, not re-reviewed); doc review approve 12/14; PR weber8thomas/spectio#41 open, CI pending"
     },
     "T6": {
       "wave": "W3",
@@ -435,16 +435,29 @@
         "tools/triage/check_t2.py",
         "tools/triage/check_t3.py"
       ],
-      "notes": "69 findings (T2 27, T3 20, T4 17, T7 5): 44 accepted, 8 rejected, 3 applied by T3, 14 inbox (#53-#60; 4 assumed, 9 reserved); commit efb00cf on autopilot/APPLY3, merged with APPLY3"
+      "notes": "69 findings (T2 27, T3 20, T4 17, T7 5): 44 accepted, 8 rejected, 3 applied by T3, 14 inbox (#53-#60; 4 assumed, 9 reserved); commit efb00cf on autopilot/APPLY3, merged with APPLY3 in PR #40 (08ecc94)"
     },
     "APPLY3": {
       "wave": "W3",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-28T12:04:00Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "branch autopilot/APPLY3; parts A-C applied, dev-env part D running"
+      "finished_at": "2026-10-28T12:34:00Z",
+      "outputs": [
+        "docs/specs/schedulers-and-monitoring.md",
+        "docs/specs/api-and-data-model.md",
+        "docs/specs/dev-environment-and-testing.md",
+        "docs/specs/architecture-plugins-and-packaging.md",
+        "docs/specs/checking-scenarios.md",
+        "docs/specs/synthesis.md",
+        "docs/specs/ui-spec.md",
+        "docs/decisions/log.md",
+        "docs/decisions/0001-nextflow-through-nf-spectio.md",
+        "docs/reviews/spikes.md",
+        "docs/progress/W3/APPLY3.md",
+        "tools/diagrams/apply3_specs.py"
+      ],
+      "notes": "PR weber8thomas/spectio#40 squash 08ecc94 (with TRIAGE3); 42 applied, 5 partly, 2 by PR #36; assumed #56 #57 #58 #60; reserved #53 #54 #55 #59 #46; doc review approve 12/14"
     },
     "R10": {
       "wave": "W4",
@@ -521,7 +534,7 @@
         "docs/reviews/code/T7.md",
         "docs/specs/dev-environment-and-testing.md"
       ],
-      "notes": "PR weber8thomas/spectio#19 squash 761d845; CODE review=approve 0/0/2, security=approve 0/0/6, rounds=1; doc-review approve 11/14; light PR tier (inbox #45 answered); final CI run 40584542402 green incl. pipelines-real; inbox #46 open; follow-up PR weber8thomas/spectio#36 squash 613c89c: one -resume retry for a failed Nextflow entry, public limits 13 GB (SPK-T7-02, SPK-T7-05)",
+      "notes": "PR weber8thomas/spectio#19 squash 761d845; CODE review=approve 0/0/2, security=approve 0/0/6, rounds=1; doc-review approve 11/14; light PR tier (inbox #45 answered); final CI run 40584542402 green incl. pipelines-real; inbox #46 open; follow-up PR weber8thomas/spectio#36 squash 613c89c: one -resume retry for a failed Nextflow entry, public limits 13 GB (SPK-T7-02, SPK-T7-05); SPK-T7-03 Nextflow pin read from dev/versions.env: PR weber8thomas/spectio#38 squash 3bafe3e (CODE review=approve 0/0/2, security=approve 0/0/1)",
       "base": "cddb67ba7d33e729ee80093edbd93b1ae098c6a1"
     },
     "D6": {
