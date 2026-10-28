@@ -20,6 +20,8 @@ set -euo pipefail
 . "$(dirname "$0")/../lib.sh"
 here=$SPECTIO_REPO/dev/slurm
 DATA=${SLURM_DATA:-$SPECTIO_REPO/.scenarios/slurm}
+# DATA goes into sed and into the sind config: a plain absolute path only.
+[[ $DATA =~ ^/[A-Za-z0-9._/-]+$ ]] || { echo "SLURM_DATA must be a plain absolute path: $DATA" >&2; exit 1; }
 
 log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 
@@ -33,6 +35,7 @@ up() { # mini|site|rest
   if [ ! -x "$DATA/tools/jdk/bin/java" ]; then
     local jdk
     jdk=$(readlink -f "${JAVA_HOME:-$(dirname "$(dirname "$(readlink -f "$(command -v java)")")")}")
+    [ -x "$jdk/bin/java" ] || { echo "no JDK found: set JAVA_HOME or put java on PATH" >&2; return 1; }
     mkdir -p "$DATA/tools/jdk" && cp -a "$jdk/." "$DATA/tools/jdk/"
   fi
   rm -rf "$DATA/synthetic" && cp -a "$SPECTIO_REPO/tests/pipelines/synthetic" "$DATA/synthetic"

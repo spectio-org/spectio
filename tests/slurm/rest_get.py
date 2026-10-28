@@ -3,7 +3,8 @@
 
   SLURM_JWT=... python3 rest_get.py URL OUT_DIR NAME=PATH ...
 
-Runs inside a sind node as the cluster user (tests/slurm/scenarios.sh rest). The token is read from the
+Runs inside a sind node as the cluster user (tests/slurm/scenarios.sh rest). X-SLURM-USER-NAME is the
+caller, or $REST_USER (to check that a token cannot act as another user). The token is read from the
 environment and sent as X-SLURM-USER-TOKEN; it is never printed or written. Prints one line per call:
 NAME HTTP-STATUS BYTES.
 """
@@ -12,7 +13,8 @@ import getpass, os, sys, urllib.error, urllib.request
 
 def main() -> int:
     url, out, calls = sys.argv[1], sys.argv[2], sys.argv[3:]
-    headers = {"X-SLURM-USER-NAME": getpass.getuser(), "X-SLURM-USER-TOKEN": os.environ["SLURM_JWT"]}
+    headers = {"X-SLURM-USER-NAME": os.environ.get("REST_USER") or getpass.getuser(),
+               "X-SLURM-USER-TOKEN": os.environ["SLURM_JWT"]}
     for call in calls:
         name, path = call.split("=", 1)
         try:

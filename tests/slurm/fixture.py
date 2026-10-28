@@ -5,11 +5,11 @@
 
 With --jobs, only the jobs whose job_id is listed are kept (an array task has its own job_id, the
 JobIDRaw of sacct). A "_fixture" object records --meta (Slurm version, source run). Refuses to write a document that looks like it holds a credential
-(a JWT or a key block), so that no token reaches the artifacts or the committed copies.
+(a JWT, a token header, a munge credential or a key block), so that no token reaches the artifacts or the committed copies.
 """
 import argparse, json, re, sys
 
-SECRET = re.compile(r"eyJ[\w-]{10,}\.[\w-]{10,}|SLURM_JWT|PRIVATE KEY")
+SECRET = re.compile(r"eyJ[\w-]{10,}\.[\w-]{10,}|SLURM_JWT|X-SLURM-USER-TOKEN|PRIVATE KEY|MUNGE:[A-Za-z0-9+/=]{20,}")
 
 
 def main() -> int:
@@ -27,6 +27,9 @@ def main() -> int:
     want = {j for j in a.jobs.split(",") if j}
     if want and isinstance(doc.get("jobs"), list):
         doc["jobs"] = [j for j in doc["jobs"] if str(j.get("job_id")) in want]
+        if not doc["jobs"]:
+            print(f"fixture {a.out}: none of the jobs {a.jobs} is in the document; not written", file=sys.stderr)
+            return 1
     doc["_fixture"] = dict(m.split("=", 1) for m in a.meta)
     text = json.dumps(doc, indent=1, sort_keys=True) + "\n"
     if SECRET.search(text):

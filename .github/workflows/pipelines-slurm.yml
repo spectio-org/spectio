@@ -4,11 +4,11 @@ name: pipelines · SLURM (sind)
 # scenarios (tests/slurm/scenarios.sh): the synthetic pipelines with Nextflow -profile slurm and Snakemake
 # --workflow-profile profiles/slurm and each failure mode, OOM / TIMEOUT / NODE_FAIL / pending-reason probes,
 # a Snakemake head in sbatch, slurmrestd with JWT. Fixtures go to the slurm-fixtures-* artifacts (committed
-# copies in tests/fixtures/slurm/). Step page: docs/progress/W3/T3.md.
+# copies in tests/fixtures/slurm/slurm-<version>/). Step page: docs/progress/W3/T3.md.
 # Not called by ci.yml, so not part of ci-ok: like dev-env.yml it runs on any push that touches its paths.
 on:
   push:                    # any branch, so autopilot branches are checked before their PR
-    paths: ["dev/slurm/**", "dev/versions.env", "tests/slurm/**", "tests/pipelines/synthetic/**", ".github/workflows/pipelines-slurm.yml"]
+    paths: ["dev/slurm/**", "dev/versions.env", "dev/lib.sh", "dev/bootstrap.sh", "tests/slurm/**", "tests/pipelines/synthetic/**", ".github/workflows/pipelines-slurm.yml"]
   schedule:
     - cron: "41 4 * * *"   # nightly (§11)
   workflow_dispatch:
@@ -52,6 +52,8 @@ jobs:
         with:
           distribution: temurin
           java-version: "21"
+      - name: Fixture guard test (no credential in a fixture)
+        run: python3 -m unittest discover -s tests/slurm -p 'test_*.py'
       - name: Bootstrap (sind, Nextflow, Snakemake at the dev/versions.env pins)
         timeout-minutes: 10
         run: mkdir -p "$SLURM_DATA" && bash dev/bootstrap.sh --ci
@@ -74,14 +76,13 @@ jobs:
           sind exec "$CLUSTER" -- sinfo -R || true
           sind exec "$CLUSTER" -- squeue -a || true
           sind exec "$CLUSTER" -- sacct -X -a -S now-1hour -o JobID,JobName%24,Partition,State,ExitCode,Reason%30 || true
-      - name: Upload fixtures and reports
+      - name: Upload fixtures
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: slurm-fixtures-${{ matrix.name }}
           path: |
             .scenarios/slurm/fixtures/
-            .scenarios/slurm/work/*/*/report.json
           include-hidden-files: true   # .scenarios/ is a hidden path
           if-no-files-found: ignore
       - name: Cluster down

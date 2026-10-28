@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # SLURM scenarios on the sind profiles of dev/slurm/cluster.sh (docs/specs/dev-environment-and-testing.md §4.1).
 # Each prints a RESULT line, writes its fixtures to $FIXTURES (default .scenarios/slurm/fixtures; committed
-# copies in tests/fixtures/slurm/) and exits 1 on an unexpected outcome. $CLUSTER names the profile that is
-# up (default site). Built from spike t3-ci (docs/research/spike-t3-ci-2026-10-28.md).
+# copies in tests/fixtures/slurm/slurm-<version>/, with the runner's checkout path replaced by $REPO) and
+# exits 1 on an unexpected outcome. $CLUSTER names the profile that is up (default site). Built from spike t3-ci (docs/research/spike-t3-ci-2026-10-28.md).
 #
 #   bash tests/slurm/scenarios.sh nextflow[:IDS]   the synthetic pipeline, -profile test,slurm, through
 #   bash tests/slurm/scenarios.sh snakemake[:IDS]  run_scenarios.py on the submitter; IDS is a comma list of
@@ -55,7 +55,7 @@ wait_state() {
 
 # engine ENGINE IDS: run_scenarios.py, one id at a time, then the records of the id's first failed task job.
 scenario_engine() {
-  local engine=$1 ids=${2:-happy} id since rc failed first results=()
+  local engine=$1 ids=${2:-happy} id since rc jobs failed first results=()
   local extra=("${NF_ARGS[@]}")
   [ "$engine" = nextflow ] || extra=("${SMK_ARGS[@]}")
   for id in ${ids//,/ }; do
@@ -79,9 +79,14 @@ EOF
     fi
     [ "$rc" = 0 ] || die "$engine $id: run_scenarios.py failed (report: $DATA/work/$engine-$id/$engine/report.json)"
     # Filter states here, not with sacct -s (spike finding 6).
-    failed=$(inroot sacct -X -n -P -a -S "$since" -o JobIDRaw,State,ExitCode | grep -v '|COMPLETED|' || true)
+    jobs=$(inroot sacct -X -n -P -a -S "$since" -o JobIDRaw,State,ExitCode)
+    [ -n "$jobs" ] || die "$engine $id: no Slurm job since $since"
+    failed=$(echo "$jobs" | grep -v '|COMPLETED|' || true)
+    [ "$id" = happy ] || [ -n "$failed" ] || die "$engine $id: every task job ended COMPLETED"
     if [ -n "$failed" ]; then
-      first=$(echo "$failed" | head -n 1 | cut -d'|' -f1)
+      # the first job that failed by itself, not one the engine cancelled while cleaning up
+      first=$(echo "$failed" | grep -m1 -E '\|(FAILED|OUT_OF_MEMORY|TIMEOUT|NODE_FAIL)\|' || echo "$failed" | head -n 1)
+      first=${first%%|*}
       fixture "$engine-$id-squeue" "$first" squeue --json --states=all
       fixture "$engine-$id-sacct" "$first" sacct --json -j "$first"
     fi
@@ -99,7 +104,7 @@ print(",".join(st) if isinstance(st, list) else st, j["state_reason"], "|", j.ge
 }
 
 scenario_probes() {
-  local oom tmo cap1 cap2 res1 res2 res3 ptl dep never held maint nf t f=$FIXTURES/squeue-pending-reasons.json
+  local oom tmo cap1 cap2 res1 res2 res3 ptl dep never held adm maint nf t nf_after f=$FIXTURES/squeue-pending-reasons.json
   inc mkdir -p "$DATA/work/probes"
   # Real OOM under ConstrainRAMSpace=yes: 400 MiB touched with a 100 MiB limit.
   oom=$(inc sbatch --parsable -p htc --mem=100M -J probe-oom -o /dev/null \
@@ -120,19 +125,27 @@ scenario_probes() {
   inroot scontrol create reservation ReservationName=maint StartTime=now Duration=30 \
     Nodes=worker-2 Users=root Flags=MAINT,IGNORE_JOBS
   maint=$(inc sbatch --parsable -p bigmem -J probe-maint -o /dev/null --wrap 'hostname')
+  # An administrator's hold on a job that waits for the reservation.
+  adm=$(inc sbatch --parsable -p bigmem -J probe-adminhold -o /dev/null --wrap 'true')
+  inroot scontrol hold "$adm"
   sleep 25   # the OOM job fails and the scheduler sets the pending reasons
   inroot squeue -a -o '%.8i %.16j %.9P %.8T %.45r'
-  fixture squeue-pending-reasons "$cap1,$cap2,$res1,$res2,$res3,$ptl,$dep,$never,$held,$maint" squeue --json
+  fixture squeue-pending-reasons "$cap1,$cap2,$res1,$res2,$res3,$ptl,$dep,$never,$held,$adm,$maint" squeue --json
   local seen=() want
   for j in "$cap2:AssocMaxJobsLimit" "$ptl:PartitionTimeLimit" "$dep:Dependency" "$never:DependencyNeverSatisfied" \
-    "$held:JobHeldUser" "$maint:ReqNodeNotAvail"; do
+    "$held:JobHeldUser" "$adm:JobHeldAdmin" "$maint:ReqNodeNotAvail"; do
     want=${j#*:}
     reason "$f" "${j%%:*}" | grep -q "^PENDING $want " || die "probes: job ${j%%:*} is not pending with $want: $(reason "$f" "${j%%:*}")"
     seen+=("$want")
   done
   reason "$f" "$maint" | grep -q "Reserved for maintenance" || die "probes: no 'Reserved for maintenance' on $maint"
-  for j in $res1 $res2 $res3; do seen+=("res:$(reason "$f" "$j" | awk '{print $1 "/" $2}')"); done
-  inroot scancel "$ptl" "$dep" "$never" "$held"
+  local res=""
+  for j in $res1 $res2 $res3; do res+="$(reason "$f" "$j" | awk '{print $1 "/" $2}') "; done
+  [[ $res == *PENDING/Resources* ]] || die "probes: no two-CPU job pending with Resources: $res"
+  [[ $res == *PENDING/Priority* ]] || die "probes: no two-CPU job pending with Priority: $res"
+  seen+=("res:[${res% }]")
+  # Cancelled by root: the record that schedulers §3.5 maps to cancelled_external.
+  inroot scancel "$ptl" "$dep" "$never" "$held" "$adm"
   inroot scontrol delete ReservationName=maint
   wait_state "$oom" OUT_OF_MEMORY
   wait_state "$maint" COMPLETED
@@ -142,15 +155,22 @@ scenario_probes() {
   sind power cut "worker-2.$CLUSTER"
   t=$SECONDS
   wait_state "$nf" NODE_FAIL
-  log "NODE_FAIL seen $((SECONDS - t)) s after the power cut"
+  nf_after=$((SECONDS - t))
+  log "NODE_FAIL seen $nf_after s after the power cut"
   fixture sinfo-node-down "" sinfo --json
   sind power on "worker-2.$CLUSTER"
   wait_state "$tmo" TIMEOUT
   wait_state "$cap2" COMPLETED
-  fixture sacct-probes "$oom,$tmo,$cap1,$cap2,$maint,$nf" sacct --json -j "$oom,$tmo,$cap1,$cap2,$maint,$nf"
-  inroot sacct -X -j "$oom,$tmo,$cap1,$cap2,$maint,$nf" -o JobID,JobName%14,State,ExitCode,Reason%30
+  local cancelled
+  cancelled=$(inroot sacct -X -n -P -j "$held" -o State | head -n 1)
+  [ "$cancelled" = "CANCELLED by 0" ] || die "probes: job $held is '$cancelled', not 'CANCELLED by 0'"
+  local ids="$oom,$tmo,$cap1,$cap2,$maint,$nf,$ptl,$dep,$never,$held,$adm"
+  fixture sacct-probes "$ids" sacct --json -j "$ids"
+  inroot sacct -X -j "$ids" -o JobID,JobName%16,State,ExitCode,Reason%30
+  for _ in $(seq 40); do [ "$(inroot sinfo -h -n worker-2 -o %T)" = idle ] && break; sleep 3; done
+  [ "$(inroot sinfo -h -n worker-2 -o %T)" = idle ] || die "probes: worker-2 not idle 120 s after power on"
   fixture sinfo "" sinfo --json
-  echo "RESULT probes: pending=${seen[*]} oom=$(state "$oom") timeout=$(state "$tmo") node_fail=$(state "$nf") after $((SECONDS - t)) s"
+  echo "RESULT probes: pending=${seen[*]} oom=$(state "$oom") timeout=$(state "$tmo") node_fail=$(state "$nf") after $nf_after s; root scancel=$cancelled"
 }
 
 scenario_heads() {
@@ -166,7 +186,7 @@ scenario_heads() {
 }
 
 scenario_rest() {
-  local out=$DATA/work/rest a b v n
+  local out=$DATA/work/rest a b v n imp
   local -A path=([jobs]=/slurm/v0.0.45/jobs [nodes]=/slurm/v0.0.45/nodes [partitions]=/slurm/v0.0.45/partitions
     [slurmdb-jobs]=/slurmdb/v0.0.45/jobs)
   inc mkdir -p "$out"
@@ -180,17 +200,22 @@ scenario_rest() {
     ping-v0.0.43=/slurm/v0.0.43/ping ping-v0.0.44=/slurm/v0.0.44/ping ping-v0.0.45=/slurm/v0.0.45/ping \
     "${@:3}"' sh "$DATA" "$out" "jobs=${path[jobs]}" "nodes=${path[nodes]}" "partitions=${path[partitions]}" \
     "slurmdb-jobs=${path[slurmdb-jobs]}" | tee "$out/codes.txt"
-  grep -q '^jobs 200 ' "$out/codes.txt" || die "rest: GET jobs did not answer 200"
+  awk '$2 != 200 {b = 1} END {exit b}' "$out/codes.txt" || die "rest: a GET did not answer 200"
+  # spx's token with another user's name must be refused.
+  # shellcheck disable=SC2016  # expanded by the inner bash
+  imp=$(inc bash -c 'export "$(scontrol token lifespan=300)" && REST_USER=root python3 "$1/rest_get.py" http://api:6820 "$2" \
+    impersonate-root=/slurm/v0.0.45/ping' sh "$DATA" "$out" | awk '{print $2}')
+  [ "$imp" = 401 ] || [ "$imp" = 403 ] || die "rest: spx's token with X-SLURM-USER-NAME root answered $imp"
   # A call without a token must be refused.
   v=$(inc python3 -c 'import urllib.request as u, urllib.error as e
 try: print(u.urlopen("http://api:6820/slurm/v0.0.45/ping", timeout=10).status)
 except e.HTTPError as x: print(x.code)')
-  [ "$v" != 200 ] || die "rest: slurmrestd answered without a token"
+  [ "$v" = 401 ] || die "rest: a call without a token answered $v, not 401"
   for n in jobs nodes partitions slurmdb-jobs; do
     python3 "$repo/tests/slurm/fixture.py" "$FIXTURES/rest-$n.json" --jobs "$a,$b" \
       --meta "slurm=$SLURM_VERSION" "source=${RUN_URL:-local}" "request=GET ${path[$n]}" <"$out/$n.json"
   done
-  echo "RESULT rest: $(tr '\n' ' ' <"$out/codes.txt")no-token=$v"
+  echo "RESULT rest: $(tr '\n' ' ' <"$out/codes.txt")no-token=$v spx-token-as-root=$imp"
 }
 
 case "${1:-}" in
