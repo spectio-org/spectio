@@ -49,6 +49,10 @@ jobs:
         if: ${{ !cancelled() }}
         timeout-minutes: 5
         run: bash spikes/t3-ci/cluster.sh failed-fixtures
+      - name: Probes (OOM, timeout, pending reasons, NODE_FAIL)
+        if: ${{ !cancelled() }}
+        timeout-minutes: 10
+        run: bash spikes/t3-ci/cluster.sh probes
       - name: Snakemake --workflow-profile profiles/slurm (happy, oom_fatal)
         if: ${{ !cancelled() }}
         timeout-minutes: 15
@@ -57,10 +61,6 @@ jobs:
         if: ${{ !cancelled() }}
         timeout-minutes: 15
         run: bash spikes/t3-ci/cluster.sh heads
-      - name: Probes (OOM, timeout, pending reasons, NODE_FAIL)
-        if: ${{ !cancelled() }}
-        timeout-minutes: 10
-        run: bash spikes/t3-ci/cluster.sh probes
       - name: Delete the cluster
         if: always()
         run: bash spikes/t3-ci/cluster.sh down || true

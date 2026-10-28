@@ -19,6 +19,11 @@ REPO=$(cd "$HERE/../.." && pwd)
 . "$REPO/dev/lib.sh"
 CLUSTER=site
 START=$SECONDS
+# Engine arguments for the cluster. The Snakemake SLURM plugin waits 40 s before its first status
+# check and again after each check that sees a job finish (plugin v2.8.0 __init__.py:244-251,
+# 1611-1617); 5 s keeps the stage-by-stage synthetic pipeline from spending most of its time asleep.
+NF_ARGS=(-profile "test,slurm")
+SMK_ARGS=(--workflow-profile /data/synthetic/snakemake/profiles/slurm --slurm-init-seconds-before-status-checks 5)
 
 # inc CMD...: run as user spx on the submitter, with the tools on PATH.
 inc() { sind exec "$CLUSTER" -u spx -- bash -c '. /data/spike/env.sh && cd /data && "$@"' inc "$@"; }
@@ -59,7 +64,8 @@ cmd_tools() {
   sudo mkdir -p /data && sudo chown "$(id -u):$(id -g)" /data && chmod 755 /data
   export UV_PYTHON_INSTALL_DIR=/data/tools/python   # the venv's interpreter must be under /data too
   bash "$REPO/dev/bootstrap.sh" --ci || return 1
-  [ -d /data/tools/jdk ] || cp -a "$JAVA_HOME" /data/tools/jdk
+  # $JAVA_HOME is a symlink in the runner's tool cache: copy what it points to, not the link.
+  [ -x /data/tools/jdk/bin/java ] || { mkdir -p /data/tools/jdk && cp -a "$(readlink -f "$JAVA_HOME")/." /data/tools/jdk/; }
   rm -rf /data/synthetic /data/spike
   cp -a "$REPO/tests/pipelines/synthetic" /data/synthetic
   cp -a "$HERE" /data/spike
@@ -81,17 +87,15 @@ cmd_up() {
 }
 
 cmd_scenarios() {
-  local engine=$1 ids=$2 extra
-  case $engine in
-    nextflow) extra=(-profile "test,slurm") ;;
-    snakemake) extra=(--workflow-profile /data/synthetic/snakemake/profiles/slurm) ;;
-  esac
+  local engine=$1 ids=$2 extra=("${NF_ARGS[@]}")
+  [ "$engine" = nextflow ] || extra=("${SMK_ARGS[@]}")
   date -u +%Y-%m-%dT%H:%M:%S >"/data/spike/$engine.start"
   inc python3 /data/synthetic/run_scenarios.py --engine "$engine" --only "$ids" \
     --workdir "/data/work/$engine" -- "${extra[@]}"
   local rc=$?
   echo "::group::report.json ($engine)"
   cat "/data/work/$engine/$engine/report.json" 2>/dev/null
+  echo
   echo "::endgroup::"
   for log in /data/work/"$engine"/"$engine"/*/run*.log; do
     [ -f "$log" ] || continue
@@ -137,8 +141,8 @@ head_job() {
 
 cmd_heads() {
   local rc=0
-  head_job snakemake --workflow-profile /data/synthetic/snakemake/profiles/slurm || rc=1
-  head_job nextflow -profile test,slurm || rc=1
+  head_job snakemake "${SMK_ARGS[@]}" || rc=1
+  head_job nextflow "${NF_ARGS[@]}" || rc=1
   inroot sacct -X -a -S now-1hour -o JobID%12,JobName%22,Partition,NodeList,State,ExitCode | grep -E 'spectio-head|JobID'
   done_in heads
   return "$rc"
