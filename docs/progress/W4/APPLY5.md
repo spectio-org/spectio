@@ -84,7 +84,7 @@ Most users at EMBL already run Nextflow and Snakemake by hand in tmux on a login
     ```text
     mermaid: 5 blocks checked
     diagrams: 27 scripts re-run, 54 SVGs compared
-    media: 130 outputs in the manifest
+    media: 134 outputs in the manifest
     progress: 40 pages checked
     docs gate: 0 failure(s)
     ```

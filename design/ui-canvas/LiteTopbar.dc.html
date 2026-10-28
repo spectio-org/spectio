@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — top bar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#4D5065}a:hover{color:#0F1020}
+.spx-b{transform-box:view-box;transform-origin:100px 100px;animation:spx-open 1.1s cubic-bezier(.22,1.2,.36,1) .15s both}
+@keyframes spx-open{from{transform:rotate(var(--r))}to{transform:rotate(0)}}
+@media (prefers-reduced-motion: reduce){.spx-b{animation:none}}
+.spx-home:focus-visible{outline:2px solid #7750D4;outline-offset:4px;border-radius:6px}
+</style>
+</helmet>
+<div style="width: 100%; min-width: 320px; box-sizing: border-box; padding: 10px; font-family: 'Inter', system-ui, sans-serif; color: #0F1020;">
+  <header style="min-height: 56px; box-sizing: border-box; background: #FFFFFF; border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 1px 2px rgba(15,16,32,0.05), 0 10px 28px -18px rgba(15,16,32,0.18); padding: 8px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+    <a class="spx-home" href="LiteHome.dc.html" aria-label="Spectio home" style="display: flex; align-items: flex-end; gap: 9px; text-decoration: none;">
+      <svg width="44" height="22" viewBox="0 0 200 100" aria-hidden="true" style="overflow: visible; margin-bottom: -1px;">
+        <path class="spx-b" style="--r: 67.5deg;" fill="#5A4FCF" d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/>
+        <path class="spx-b" style="--r: 22.5deg;" fill="#8B5CF6" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/>
+        <path class="spx-b" style="--r: -22.5deg;" fill="#EC5F87" d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/>
+        <path class="spx-b" style="--r: -67.5deg;" fill="#F9A947" d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/>
+      </svg>
+      <img src="/_blob/7a570e2329427ff0980a12d04b41cb41" alt="" style="height: 18px; width: auto;">
+    </a>
+    <span style="width: 1px; height: 22px; background: #DFE1EA;"></span>
+    <span style="font-size: 14px; color: #4D5065; flex-grow: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{crumbs}}</span>
+    <span style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 10px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #DFE1EA; color: #22253A; font-size: 13px; font-weight: 500; white-space: nowrap;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F7FA8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v6H4z M4 13h16v6H4z M8 8h.01 M8 16h.01"/></svg>
+      EMBL cluster · SLURM · {{node}}
+    </span>
+  </header>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"crumbs":{"editor":"text","default":"Runs"},"$preview":{"width":1440,"height":76}}'>
+class Component extends DCLogic {
+renderVals() {
+  return { crumbs: this.props.crumbs ?? 'Runs', node: 'login1' };
+}
+}
+</script>
+</body>
+</html>
