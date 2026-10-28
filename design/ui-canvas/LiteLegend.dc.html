@@ -96,6 +96,58 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           <span style="font-size: 12px; color: #4D5065; margin-top: 4px;">Task and attempt states are owned by api-and-data-model §7.2; the Snakemake mapping is [to be validated] there.</span>
         </section>
       </div>
+      <div style="display: flex; gap: 24px; flex-wrap: wrap; align-items: flex-start;">
+        <section aria-labelledby="h-stage-states" style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <h2 id="h-stage-states" style="margin: 0 0 8px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Stage and process states</h2>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 6px 0; border-top: 1px solid #EEEFF5;">
+            <span style="flex: 0 0 150px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #33364A;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a9 9 0 1 0 0 18a9 9 0 1 0 0-18 M12 7v5l3 2"/></svg>Pending</span>
+            <span style="flex: 1 1 auto; font-size: 13px; color: #33364A; line-height: 1.45;">No task of the stage or process has started yet.</span>
+            <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">not_started</code>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 6px 0; border-top: 1px solid #EEEFF5;">
+            <span style="flex: 0 0 150px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #1D5FC9;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span>
+            <span style="flex: 1 1 auto; font-size: 13px; color: #33364A; line-height: 1.45;">Some tasks have started and not every known task has finished. The engine may still add tasks.</span>
+            <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">running</code>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 6px 0; border-top: 1px solid #EEEFF5;">
+            <span style="flex: 0 0 150px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #157A4B;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12.5l4.5 4.5L19 7.5"/></svg>Done</span>
+            <span style="flex: 1 1 auto; font-size: 13px; color: #33364A; line-height: 1.45;">Every known task succeeded or was cached.</span>
+            <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">completed</code>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 6px 0; border-top: 1px solid #EEEFF5;">
+            <span style="flex: 0 0 150px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #B02A2A;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>Failed</span>
+            <span style="flex: 1 1 auto; font-size: 13px; color: #33364A; line-height: 1.45;">A task failed for good.</span>
+            <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">failed</code>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 6px 0; border-top: 1px solid #EEEFF5;">
+            <span style="flex: 0 0 150px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #4D5065;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h10v10H7z"/></svg>Stopped</span>
+            <span style="flex: 1 1 auto; font-size: 13px; color: #33364A; line-height: 1.45;">It had started and not finished when the run ended, by Cancel or after another stage failed; not a failure of its own.</span>
+            <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">failed</code>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 6px 0; border-top: 1px solid #EEEFF5;">
+            <span style="flex: 0 0 150px; display: flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 600; color: #6E7287;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"/></svg>Not run</span>
+            <span style="flex: 1 1 auto; font-size: 13px; color: #33364A; line-height: 1.45;">The run ended before the stage started.</span>
+            <code style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">skipped</code>
+          </div>
+          <span style="font-size: 12px; color: #4D5065; margin-top: 4px;">The words, the rule and the <code style="font-family: 'JetBrains Mono', monospace;">run_stages.state</code> each maps to are owned by the ui-spec §4.4 note of 2026-10-28.</span>
+        </section>
+        <section aria-labelledby="h-stage-src" style="flex: 1 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 4px;">
+          <h2 id="h-stage-src" style="margin: 0 0 8px; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Where a stage comes from</h2>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 6px 0; border-top: 1px solid #EEEFF5;">
+            <span style="flex: 0 0 150px;"><span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #EEEDFB; color: #3F35A3;">Declared</span></span>
+            <span style="font-size: 13px; color: #33364A; line-height: 1.45;">Named in spectio.yml or a lab overlay, read at launch.</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 6px 0; border-top: 1px solid #EEEFF5;">
+            <span style="flex: 0 0 150px;"><span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #F1F2F6; color: #33364A;">Detected</span></span>
+            <span style="font-size: 13px; color: #33364A; line-height: 1.45;">Found by Spectio in the pipeline; for display only.</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 14px; padding: 6px 0; border-top: 1px solid #EEEFF5;">
+            <span style="flex: 0 0 150px; font-size: 13px; font-weight: 600;">Not in a stage</span>
+            <span style="font-size: 13px; color: #33364A; line-height: 1.45;">Processes or rules outside every stage.</span>
+          </div>
+          <span style="font-size: 12px; color: #4D5065; margin-top: 4px;">In the counts row and the Tasks filters, <b>Pending includes Submitted</b>: tasks handed to SLURM that have not started.</span>
+        </section>
+      </div>
       <section aria-labelledby="h-live" style="display: flex; flex-direction: column; gap: 8px;">
         <h2 id="h-live" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Live data</h2>
         <div style="display: flex; gap: 10px; flex-wrap: wrap;">
@@ -103,7 +155,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 10px; background: #FDF3E2; color: #8F5806;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: #8F5806; flex-shrink: 0;"><path d="M20 11a8 8 0 0 0-14.9-3 M4 4v4h4 M4 13a8 8 0 0 0 14.9 3 M20 20v-4h-4"/></svg>Reconnecting… data as of 10:41:08</span>
           <span style="display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; padding: 6px 12px; border-radius: 10px; background: #F1F2F6; color: #33364A;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#33364A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color: #33364A; flex-shrink: 0;"><path d="M12 7v5l3 2"/><circle cx="12" cy="12" r="9"/></svg>Head silent · no event for 6 min · head alive</span>
         </div>
-        <span style="font-size: 12px; color: #4D5065;">The screens poll the API every 5 s in 0.0.1; the age comes from the last successful poll.</span>
+        <span style="font-size: 12px; color: #4D5065;">Each browser keeps one live stream open to the server (server-sent events). "Updated 4 s ago" is the time of the last frame received. While the browser reconnects, the screens say "Reconnecting…" and keep the data as of the last frame.</span>
       </section>
     </main>
 </div>

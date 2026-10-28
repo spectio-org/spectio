@@ -153,6 +153,14 @@ media:
       - docs/assets/diagrams/apply5_observed_dark.svg
       - docs/assets/diagrams/apply5_observed_light.png
       - docs/assets/diagrams/apply5_observed_dark.png
+  - id: uilite-stages
+    kind: diagram
+    generator: python3 tools/diagrams/uilite_stages.py
+    outputs:
+      - docs/assets/diagrams/uilite_stages_light.svg
+      - docs/assets/diagrams/uilite_stages_dark.svg
+      - docs/assets/diagrams/uilite_stages_light.png
+      - docs/assets/diagrams/uilite_stages_dark.png
   - id: apply6-stages
     kind: diagram
     generator: python3 tools/diagrams/apply6_stages.py

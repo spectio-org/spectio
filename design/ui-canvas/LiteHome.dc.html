@@ -15,6 +15,11 @@ body{margin:0}
 main > *{flex-shrink:0}
 a{color:#6344B2}a:hover{color:#4D368B}
 a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.cx-btn{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.cx-btn:focus-visible{outline:2px solid #7750D4;outline-offset:2px;border-radius:10px}
+.cx-sum{font-family:'Inter',sans-serif;font-weight:400}
+.cx-btn[aria-expanded="true"] .cx-sum{display:none}
+.cx-btn[aria-expanded="true"] .cx-chev{transform:rotate(180deg)}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -28,7 +33,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
         </span>
         <div style="flex-grow: 1; display: flex; flex-direction: column; gap: 2px;">
           <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Good morning</h1>
-          <span style="font-size: 14px; color: #4D5065;">3 runs running, 1 starting and 1 cancelling on the EMBL cluster · 1 failed in the last 24 h</span>
+          <span style="font-size: 14px; color: #4D5065;">4 runs running, 1 queued and 1 cancelling · live, updated 4 s ago</span>
         </div>
         <a href="LiteLaunch.dc.html" style="height: 44px; padding: 0 18px; border-radius: 12px; background: #7750D4; color: #FFFFFF; font-weight: 600; font-size: 14px; text-decoration: none; display: flex; align-items: center;">Launch a workflow</a>
       </div>
@@ -50,8 +55,8 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
 
       <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
         <section aria-labelledby="h-active" style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
-          <div style="display: flex; align-items: center; justify-content: space-between;">
-            <h2 id="h-active" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Active runs</h2>
+          <section class="cx"><h2 id="h-active" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span><span style="min-width: 0;">Active runs</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">6 active · 4 running</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"><div style="display: flex; align-items: center; justify-content: flex-end;">
+            
             <a href="LiteRuns.dc.html" style="font-size: 13px; font-weight: 600; text-decoration: none;">All runs →</a>
           </div>
           <sc-for list="{{active}}" as="r" hint-placeholder-count="4">
@@ -73,13 +78,15 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
             </a>
           </sc-for>
 
-          <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 10px;">
-            <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Finished recently</h2>
+          </div></div></section>
+<section class="cx"><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-2" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 8v4l3 2"/></svg></span><span style="min-width: 0;">Finished recently</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">5 runs · 3 failed</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-2"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"><div style="display: flex; align-items: center; justify-content: flex-end;">
+            
           </div>
           <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
             <sc-for list="{{recent}}" as="r" hint-placeholder-count="4">
               <a href="{{r.href}}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 12px; padding: 9px 14px 9px 16px; border-top: {{r.bt}}; box-shadow: inset 4px 0 0 {{r.rail}};">
                 <span style="display: flex; align-items: center; gap: 6px; flex: 0 0 120px; font-size: 13px; font-weight: 600; color: {{r.fg}};"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{r.icon}}"/></svg>{{r.state}}</span>
+                <img src="{{r.logo}}" width="20" height="20" alt="{{r.engine}}" style="display: block; object-fit: contain; flex-shrink: 0;">
                 <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column;">
                   <span style="font-size: 13.5px; font-weight: 600;">{{r.name}}</span>
                   <span style="font-size: 12px; color: #4D5065;">{{r.wf}} · {{r.ctx}}</span>
@@ -88,29 +95,30 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
               </a>
             </sc-for>
           </div>
-          <p style="margin: 4px 0 0; font-size: 11.5px; color: #6E7287;">Data: failures and task counts from nf-core AWS megatests (rnaseq 3.27.0 results-a1fcddd, sarek 3.10.0 results-8ccac7a); run names, login node and account are fixture data.</p>
+          </div></div></section>
+<p style="margin: 4px 0 0; font-size: 11.5px; color: #6E7287;">Ordered by end time, newest first. Data: failures and task counts from nf-core AWS megatests (rnaseq 3.27.0 results-a1fcddd, sarek 3.10.0 results-8ccac7a); run names, login node and account are fixture data.</p>
         </section>
 
         <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
-          <section aria-labelledby="h-quick" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px; display: flex; flex-direction: column; gap: 8px;">
-            <h2 id="h-quick" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Your pipelines</h2>
-            <span style="font-size: 12.5px; color: #4D5065;">Pipeline directories you launched from before. Opens the launch form with the directory filled in; parameters start from their defaults.</span>
+          <section class="cx" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px;"><h2 id="h-quick" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-3" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><span style="min-width: 0;">Your pipelines</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">4 pipelines</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-3"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+            
+            <span style="font-size: 12.5px; color: #4D5065;">Pipeline directories of your recent runs. Opens the launch form with the directory filled in; parameters start from their defaults.</span>
             <sc-for list="{{quick}}" as="q" hint-placeholder-count="4">
               <a href="{{q.href}}" aria-label="Launch {{q.name}}" style="text-decoration: none; color: inherit; display: flex; align-items: center; gap: 10px; border-radius: 10px; box-shadow: inset 0 0 0 1px #DFE1EA; padding: 8px 11px;">
                 <img src="{{q.logo}}" width="18" height="18" alt="" style="display: block; object-fit: contain; flex-shrink: 0;">
                 <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13px; font-weight: 600;">{{q.name}}</span><span style="font-size: 11.5px; color: #6E7287; font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{q.path}}</span></span>
               </a>
             </sc-for>
-          </section>
-          <section aria-labelledby="h-where" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px; display: flex; flex-direction: column; gap: 8px;">
-            <h2 id="h-where" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Where your runs go</h2>
+          </div></div></section>
+          <section class="cx" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px;"><h2 id="h-where" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-4" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><span style="min-width: 0;">Where your runs go</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">login1 · SLURM</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-4"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+            
             <sc-for list="{{where}}" as="w" hint-placeholder-count="4">
               <div style="display: flex; gap: 10px; font-size: 13px; line-height: 1.45;">
                 <span style="width: 9px; height: 9px; margin-top: 5px; flex-shrink: 0; border-radius: 5px; background: {{w.dot}};"></span>
                 <span><strong style="font-weight: 600;">{{w.k}}</strong> {{w.v}}</span>
               </div>
             </sc-for>
-          </section>
+          </div></div></section>
         </aside>
       </div>
     </main>
@@ -123,39 +131,42 @@ renderVals() {
   const S = { queued: ['Queued', '#6E7287', '#33364A', I.clock], cancelling: ['Cancelling', '#4D5065', '#33364A', I.ban], running: ['Running', '#3B82F6', '#1D5FC9', I.play], done: ['Succeeded', '#1F9D63', '#157A4B', I.check], failed: ['Failed', '#DC3B3B', '#B02A2A', I.cross], cancelled: ['Cancelled', '#4D5065', '#33364A', I.ban] };
   const L = { nfcore: ['nf-core (Nextflow)', '/_blob/b04c0e1634ffbccff3a43d65ce1316d4'], smk: ['Snakemake', '/_blob/7a35665829f51132cb3bcb9a4c3e638c'] };
   const run = (st, name, eng, wf, ctx, started, href) => { const [state, rail, fg, icon] = S[st]; return { state, rail, fg, icon, name, engine: L[eng][0], logo: L[eng][1], wf, ctx, started, href: href || 'LiteRunDetail.dc.html' }; };
-  const fin = (st, name, wf, ctx, when, href) => { const [state, rail, fg, icon] = S[st]; return { state, rail, fg, icon, name, wf, ctx, when, href: href || 'LiteRunDetail.dc.html' }; };
+  const fin = (st, name, wf, ctx, when, href) => { const [state, rail, fg, icon] = S[st]; return { state, rail, fg, icon, name, wf, ctx, when, href: href || 'LiteRunDetail.dc.html', logo: L[/^nf-core/.test(wf) ? 'nfcore' : 'smk'][1], engine: L[/^nf-core/.test(wf) ? 'nfcore' : 'smk'][0] }; };
   const recent = [
-    fin('failed', 'wgs-cohort-12', 'wgs-germline v1.3.0', '2 jobs failed after retries', 'Sun 06:57', 'LiteRunFailed.dc.html'),
     fin('done', 'fetch-geo-2610', 'nf-core/fetchngs 1.13.0', '24 / 24 tasks', 'Today 07:39'),
+    fin('failed', 'rnaseq-3.27-validation', 'nf-core/rnaseq 3.27.0', 'exit 175 ×2 · RSEM_CALCULATEEXPRESSION (H1_REP2)', 'Sun 23:01'),
+    fin('failed', 'sarek-wgs-na12878', 'nf-core/sarek 3.10.0', 'exit 1 · DEEPVARIANT_RUNDEEPVARIANT (NA12878)', 'Sun 22:56'),
     fin('done', 'atac-limb-e11', 'nf-core/atacseq 2.1.2', '212 / 212 tasks', 'Sun 19:50'),
-    fin('failed', 'sarek-wgs-na12878', 'nf-core/sarek 3.10.0', 'exit 1 · DEEPVARIANT_RUNDEEPVARIANT (NA12878)', 'Sun 22:56')
+    fin('failed', 'wgs-cohort-12', 'wgs-germline', '2 jobs failed after retries', 'Sun 06:57', 'LiteRunFailed.dc.html')
   ].map((r, i) => ({ ...r, bt: i ? '1px solid #EEEFF5' : 'none' }));
   return {
     counts: [
-      { kind: 'Running', value: '3', detail: '1,064 tasks done so far', color: '#3B82F6', fg: '#1D5FC9', icon: I.play, href: 'LiteRuns.dc.html', label: '3 runs running, show them' },
-      { kind: 'Queued', value: '1', detail: 'head starting on login1', color: '#6E7287', fg: '#33364A', icon: I.clock, href: 'LiteRuns.dc.html', label: '1 run queued, show it' },
-      { kind: 'Failed · last 24 h', value: '1', detail: 'sarek-wgs-na12878', color: '#DC3B3B', fg: '#B02A2A', icon: I.cross, href: 'LiteRuns.dc.html', label: '1 run failed in the last 24 hours, show it' },
-      { kind: 'Succeeded · last 24 h', value: '2', detail: 'fetch-geo-2610, atac-limb-e11', color: '#1F9D63', fg: '#157A4B', icon: I.check, href: 'LiteRuns.dc.html', label: '2 runs succeeded in the last 24 hours, show them' }
+      { kind: 'Running', value: '4', detail: '1 started from a terminal', color: '#3B82F6', fg: '#1D5FC9', icon: I.play, href: 'LiteRuns.dc.html', label: '4 runs running, show them' },
+      { kind: 'Queued', value: '1', detail: 'head not started yet', color: '#6E7287', fg: '#33364A', icon: I.clock, href: 'LiteRuns.dc.html', label: '1 run queued, show it' },
+      { kind: 'Failed', value: '3', detail: 'latest: rnaseq-3.27-validation', color: '#DC3B3B', fg: '#B02A2A', icon: I.cross, href: 'LiteRuns.dc.html', label: '3 runs failed, show them' },
+      { kind: 'Succeeded', value: '5', detail: 'latest: fetch-geo-2610', color: '#1F9D63', fg: '#157A4B', icon: I.check, href: 'LiteRuns.dc.html', label: '5 runs succeeded, show them' }
     ],
     active: [
-      run('running', 'rnaseq-2026-10-25', 'nfcore', 'nf-core/rnaseq 3.27.0', 'stage 3 of 4 · 812 / 1,248 tasks', 'Today 07:40'),
+      run('running', 'rnaseq-pilot-hand', 'nfcore', 'nf-core/rnaseq 3.27.0', 'from a terminal · 288 / 384 tasks', 'Today 09:02', 'LiteRunObserved.dc.html'),
+      run('queued', 'nanoseq-cdna-02', 'nfcore', 'nf-core/nanoseq 3.1.0', 'head not started yet', 'Today 08:43'),
+      run('cancelling', 'scrna-pbmc', 'nfcore', 'nf-core/scrnaseq 4.2.0', 'stopping the engine', 'Today 08:20'),
+      run('running', 'ki-screen-p05', 'smk', 'plate-qc', '31 / 96 jobs', 'Today 08:11'),
       run('running', 'demux-NX-1026', 'nfcore', 'nf-core/demultiplex 1.8.0', '97 / 143 known tasks', 'Today 07:56'),
-      run('running', 'ki-screen-p05', 'smk', 'plate-qc 1.4.0', 'stage 2 of 4 · 31 / 96 jobs', 'Today 08:11'),
-      run('queued', 'nanoseq-cdna-02', 'nfcore', 'nf-core/nanoseq 3.1.0', 'starting the head', 'Today 08:43'),
-      run('cancelling', 'scrna-pbmc', 'nfcore', 'nf-core/scrnaseq 4.2.0', 'stopping the engine', 'Today 08:20')
+      run('running', 'rnaseq-2026-10-25', 'nfcore', 'nf-core/rnaseq 3.27.0', '524 / 803 tasks', 'Today 07:40')
     ],
     recent,
     quick: [
       { name: 'nf-core/rnaseq 3.27.0', path: '/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0', logo: L.nfcore[1], href: 'LiteLaunch.dc.html' },
-      { name: 'rna-seq-star-deseq2 v2.1.2', path: '/g/demo-lab/pipelines/rna-seq-star-deseq2', logo: L.smk[1], href: 'LiteLaunchSnakemake.dc.html' },
+      { name: 'rna-seq-star-deseq2', path: '/g/demo-lab/pipelines/rna-seq-star-deseq2', logo: L.smk[1], href: 'LiteLaunchSnakemake.dc.html' },
       { name: 'nf-core/sarek 3.10.0', path: '/g/demo-lab/pipelines/nf-core-sarek_3.10.0', logo: L.nfcore[1], href: 'LiteLaunch.dc.html' },
-      { name: 'plate-qc 1.4.0', path: '/g/demo-lab/pipelines/plate-qc', logo: L.smk[1], href: 'LiteLaunchSnakemake.dc.html' }
+      { name: 'plate-qc', path: '/g/demo-lab/pipelines/plate-qc', logo: L.smk[1], href: 'LiteLaunchSnakemake.dc.html' }
     ],
     where: [
       { k: 'Server', v: 'Spectio 0.0.1 on login1, under your account amartin', dot: '#1F9D63' },
-      { k: 'Heads', v: 'one tmux session per run on login1 (spectio-<run ID>); attach to it by hand at any time', dot: '#7750D4' },
+      { k: 'Heads', v: 'one tmux session per run on login1, named spectio-<run ID> (for example spectio-run_01JBC…); attach to it by hand at any time', dot: '#7750D4' },
       { k: 'Tasks', v: 'sent to SLURM by Nextflow or Snakemake themselves', dot: '#3B82F6' },
-      { k: 'Run directories', v: '/scratch/amartin/spectio-runs', dot: '#6E7287' }
+      { k: 'Run directories', v: '/scratch/amartin/spectio-runs', dot: '#6E7287' },
+      { k: 'From a terminal', v: 'runs you start by hand with the Spectio bridge on show up here too, monitor only', dot: '#33364A' }
     ]
   };
 }

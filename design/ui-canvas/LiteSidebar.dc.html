@@ -49,7 +49,7 @@ renderVals() {
   ];
   const items = defs.map(([id, label, href, icon, color, tint]) => {
     const on = id === active;
-    return { label, href, icon, color, cur: on ? 'page' : 'false', bg: on ? tint : 'transparent', fg: on ? '#0F1020' : '#22253A', hasCount: id === 'runs', count: 3, countLabel: '3 runs running' };
+    return { label, href, icon, color, cur: on ? 'page' : 'false', bg: on ? tint : 'transparent', fg: on ? '#0F1020' : '#22253A', hasCount: id === 'runs', count: 6, countLabel: '6 active runs' };
   });
   return { items, node: 'login1', account: 'amartin' };
 }

@@ -24,7 +24,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
     <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
       <div style="display: flex; flex-direction: column; gap: 2px;">
         <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">States</h1>
-        <span style="font-size: 14px; color: #4D5065;">Empty, loading and error states of the 0.0.1 screens (ui-spec §11). Each panel stands in for the part of the screen it replaces.</span>
+        <span style="font-size: 14px; color: #4D5065;">Empty, loading and error states of the home, the runs list and every screen (ui-spec §11). Run detail and launch states: LiteStatesRun. Each panel stands in for the part of the screen it replaces.</span>
       </div>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 16px;">
         <section aria-label="Runs list, empty" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
@@ -33,6 +33,14 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
             <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">No runs yet.</h2>
             <span style="font-size: 13px; color: #4D5065;">Runs you launch from this server appear here, newest first.</span>
             <a href="LiteLaunch.dc.html" style="height: 40px; padding: 0 16px; border-radius: 11px; border: none; background: #7750D4; font: 600 13.5px 'Inter', sans-serif; color: #FFFFFF; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; align-self: flex-start;">Launch a workflow</a>
+          </div>
+        </section>
+        <section aria-label="Home, first use" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">HOME · FIRST USE</span>
+          <div style="display: flex; flex-direction: column; align-items: flex-start; gap: 8px; padding: 10px 4px;">
+            <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Welcome to Spectio</h2>
+            <span style="font-size: 13px; color: #4D5065; line-height: 1.5;">No runs yet. Launch a pipeline from a directory on the cluster, or start one from a terminal with the Spectio bridge on: it shows up here too. The count cards and the pipeline shortcuts appear after the first run.</span>
+            <a href="LiteLaunch.dc.html" style="height: 40px; padding: 0 16px; border-radius: 11px; background: #7750D4; font: 600 13.5px 'Inter', sans-serif; color: #FFFFFF; text-decoration: none; display: inline-flex; align-items: center;">Launch a workflow</a>
           </div>
         </section>
         <section aria-label="Runs list, loading" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
@@ -49,11 +57,11 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
         <section aria-label="Session ended" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
           <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">ANY SCREEN · LINK EXPIRED OR SERVER RESTARTED (401)</span>
           <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Open a new link</h2>
-          <span style="font-size: 13px; color: #33364A; line-height: 1.5;">This browser's session has ended: the link was used, it is older than 15 minutes, or the server restarted. Get a new link on the cluster, or let <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">spectio open</span> do it from your laptop:</span>
+          <span style="font-size: 13px; color: #33364A; line-height: 1.5;">This link was already used or has expired. Run <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">spectio login --print-link</span> on the cluster for a new one, or let <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">spectio-open</span> do it from your laptop:</span>
           <pre tabindex="0" style="margin: 0; border-radius: 10px; background: #0F1020; color: #E6E7EF; padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere;">ssh login1 spectio login --print-link
 # or, on your laptop
-spectio open embl</pre>
-          <span style="font-size: 12px; color: #4D5065;">No data is shown until a new link is opened (dev-env §15.3).</span>
+spectio-open embl</pre>
+          <span style="font-size: 12px; color: #4D5065;">The same page shows when the server restarted. No data is shown until a new link is opened (dev-env §15.3; P1 Review Focus 5). <span style="font-family: 'JetBrains Mono', monospace;">embl</span> is the SSH host of your config.</span>
         </section>
         <section aria-label="Server unreachable" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
           <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">ANY SCREEN · UNREACHABLE</span>

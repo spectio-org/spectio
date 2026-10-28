@@ -1102,6 +1102,54 @@
    "h": 72,
    "title": "0.0.1 · Phone tab bar",
    "page": "lite"
+  },
+  "LiteRunObserved.dc.html": {
+   "x": 7800,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Run detail, started from a terminal",
+   "page": "lite"
+  },
+  "MLiteRunObserved.dc.html": {
+   "x": 2350,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Run from a terminal",
+   "page": "lite"
+  },
+  "MLiteRunTasks.dc.html": {
+   "x": 2820,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Run detail, Tasks",
+   "page": "lite"
+  },
+  "MLiteRunLogs.dc.html": {
+   "x": 3290,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Run detail, Logs",
+   "page": "lite"
+  },
+  "LiteStatesRun.dc.html": {
+   "x": 4996,
+   "y": 4200,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · States, run and launch",
+   "page": "lite"
+  },
+  "LiteRunDetailSnakemake.dc.html": {
+   "x": 9360,
+   "y": 1500,
+   "w": 1440,
+   "h": 1180,
+   "title": "0.0.1 · Run detail, Snakemake with detected stages",
+   "page": "lite"
   }
  },
  "order": [
@@ -1201,17 +1249,23 @@
   "LiteLaunch.dc.html",
   "LiteLaunchSnakemake.dc.html",
   "LiteRunDetail.dc.html",
+  "LiteRunDetailSnakemake.dc.html",
   "LiteRunTasks.dc.html",
   "LiteRunLogs.dc.html",
   "LiteRunFailed.dc.html",
   "LiteCancelDialog.dc.html",
+  "LiteRunObserved.dc.html",
   "MLiteHome.dc.html",
   "MLiteRuns.dc.html",
   "MLiteRunDetail.dc.html",
+  "MLiteRunTasks.dc.html",
+  "MLiteRunLogs.dc.html",
+  "MLiteRunObserved.dc.html",
   "MLiteCancelSheet.dc.html",
   "MLiteLaunch.dc.html",
   "LiteLegend.dc.html",
   "LiteStates.dc.html",
+  "LiteStatesRun.dc.html",
   "LiteSidebar.dc.html",
   "LiteTopbar.dc.html",
   "MLiteTopbar.dc.html",
@@ -1311,15 +1365,15 @@
    "y": -300,
    "text": "Spectio 0.0.1 lite — launch and monitor: home, runs, launch, run detail with stages, tasks and logs, Cancel",
    "kind": "title1",
-   "maxW": 7200,
+   "maxW": 10800,
    "page": "lite"
   },
   "lite-run": {
    "x": 0,
    "y": 1300,
-   "text": "One run: stages and their status, processes, tasks, logs, Cancel",
+   "text": "One run: stages (declared or detected) with their processes or rules, tasks, logs, Cancel; a run started from a terminal",
    "kind": "title1",
-   "maxW": 7200,
+   "maxW": 10800,
    "page": "lite"
   },
   "lite-phone": {
@@ -1327,7 +1381,7 @@
    "y": 2800,
    "text": "Phone",
    "kind": "title1",
-   "maxW": 2300,
+   "maxW": 3700,
    "page": "lite"
   },
   "lite-ref": {
@@ -1335,7 +1389,7 @@
    "y": 4000,
    "text": "Legend, states and the reduced shell",
    "kind": "title1",
-   "maxW": 5000,
+   "maxW": 6500,
    "page": "lite"
   }
  },
