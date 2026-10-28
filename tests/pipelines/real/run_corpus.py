@@ -113,16 +113,20 @@ def make_workdir(arg: str | None) -> Path:
     if not arg:
         return Path(tempfile.mkdtemp(prefix="spectio-corpus-"))
     path = Path(arg)
-    path.mkdir(mode=0o700, parents=True, exist_ok=True)
-    st = os.lstat(path)
-    bad = stat.S_ISLNK(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o022
-    real = Path(os.path.realpath(path.parent))
-    for d in (real, *real.parents):
+    old_umask = os.umask(0o077)  # missing parents are created private too
+    try:
+        path.mkdir(parents=True, exist_ok=True)
+    finally:
+        os.umask(old_umask)
+    real = Path(os.path.realpath(path))  # checked and returned, so a symlink on the way cannot be swapped later
+    st = os.lstat(real)
+    bad = path.is_symlink() or st.st_uid != os.getuid() or st.st_mode & 0o022
+    for d in real.parents:
         s = os.stat(d)
         bad = bad or s.st_uid not in (0, os.getuid()) or (s.st_mode & 0o022 and not s.st_mode & stat.S_ISVTX)
     if bad:
         sys.exit(f"--workdir {path}: must be a directory you own that others cannot write to (chmod go-w), not a symlink, under directories that only you or root can change")
-    return path
+    return real
 
 
 def main() -> int:
