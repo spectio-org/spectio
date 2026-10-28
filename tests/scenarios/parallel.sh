@@ -6,7 +6,7 @@
 # the state before `up`, and no sind realm or kind cluster named spx-* may remain.
 # Needs Docker on cgroup v2 (not a Claude Code cloud session), dev/bootstrap.sh's tools and Java (for slurm).
 # CI only (.github/workflows/scenarios.yml, on a dedicated runner): it takes ids 1-4 and compares the whole Docker
-# state before and after. On failure, a trap runs `down` for those ids.
+# state before and after. On failure, a trap runs `down` for those ids whose .scenarios/<id>/ this run still holds.
 #
 #   bash tests/scenarios/parallel.sh
 set -euo pipefail

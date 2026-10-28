@@ -332,3 +332,10 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Waiting on Thomas:** #52 (code first, critical: T5 was built under the current plan), #51 (b) to confirm, the reserved items #53, #54, #55 and #59, the assumed items #56, #57, #58 and #60, the dashboard answers.
 - **T5 round 3** (code review of the round-2 fixes on `aa05608`): CR-8 closed; changes for CR-13 (major: `parallel.sh`'s failure trap could still `down` another checkout's `spx-<id>`) and CR-14 (minor: `down` released the network before the rest was gone). Fixed on `autopilot/T5-followups`, PR weber8thomas/spectio#43 open (18 unit tests OK; `scenarios.yml` running). T5 stays running until #43 merges.
 - **Dashboard:** not republished at the end of the tick. The build is now 17 MB (images of the new figures), over the 16 MB artifact limit; version 24 (12:48 UTC) is the latest online. The next tick shrinks `imgs.json` in `tools/dashboard/build.py`.
+
+## 2026-10-28 12:57 → 13:10 UTC — tick 11, end (T5 done, dashboard size)
+
+- **Done: T5.** PR weber8thomas/spectio#43 (CR-13, CR-14), squash `aaff4e0`, every check green on `5158f4c` (17, `scenarios.yml` "four scenarios in parallel" included). Round 4 code review on `aaff4e0`: approve, 0 blockers, 0 majors, 2 minors. CR-15 (stale `parallel.sh` header) fixed on integration; CR-16 (no test runs the trap's skip of a released ID) recorded as Progress finding 11. Final `CODE step=T5 review=approve b/M/m=1/2/13 security=approve b/M/m=0/2/10 rounds=4`.
+- **Dashboard:** `tools/dashboard/gen.py` embeds each figure's tracked SVG instead of its PNG (8.6 MB of PNG become 4.0 MB of SVG; the figures lose the hand-drawn font inside `<img>`, a deliberate trade-off): page 10.6 MB, under the 16 MB limit; `check_xss.js` passes. Code review approve 0/0/3 (font trade-off and size claim fixed in the comment and README; the previous entry named `build.py`, the change is in `gen.py`). Republished at the same URL.
+- **Next:** promotion PR integration → main (T5, #43, dashboard fix).
+- **Waiting on Thomas:** unchanged (#52 critical, #51 (b), reserved #53, #54, #55, #59; assumed #56, #57, #58, #60; dashboard answers).
