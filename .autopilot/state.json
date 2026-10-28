@@ -486,12 +486,16 @@
     },
     "P1": {
       "wave": "W4",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
       "started_at": "2026-10-28T14:10:00Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "finished_at": "2026-10-28T14:40:00Z",
+      "outputs": [
+        "docs/plans/P1-walking-skeleton.md",
+        "docs/progress/W4/P1.md",
+        "tools/diagrams/p1_skeleton.py"
+      ],
+      "notes": "one general-purpose agent with writing-plans; 5 milestones, 23 tasks, 20 assumptions pending Thomas; all 13 R10 §3a rows and the seven §15.3 requirements mapped to tasks; doc review approve 11/14 with 4 required changes applied (four session-free routes, D3 storage test, api §5 owner on tasks 12 and 17, T6 dependency); next: GO (human gate)"
     },
     "GO": {
       "wave": "W4",

@@ -423,7 +423,7 @@
   <path d="M943.3,372.7 C885.6,391.8 829.0,411.0 770.4,427.6" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M769.5,427.5 C775.0,427.9 779.8,429.5 784.0,430.8" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M770.2,427.6 C773.0,424.4 776.6,421.1 780.1,418.1" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="900.0" y="422.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">projects</text>
+  <text x="820.0" y="432.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal">events → runs, tasks</text>
   <text x="860.0" y="566.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">2 · one <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="16.7">spectio serve</tspan> per user</text>
   <rect x="1230.0" y="130.0" width="500.0" height="460.0" rx="6" fill="#24272f"/>
   <path d="M1230.6,129.3 C1397.8,130.9 1563.7,129.9 1730.6,129.6" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>

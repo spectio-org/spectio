@@ -30,7 +30,7 @@ Decisions taken in place of Thomas, who was not available for brainstorming. Eac
 5. **Attempt state `aborted`** (inbox #56, option (a)). *(assumed — pending Thomas)*
 6. **"Stages" in 0.0.1 are the engine's processes (Nextflow) or rules (Snakemake)**, in first-seen order, with task counts by state: a subset of `GET /runs/{id}/processes` ([api §5](../specs/api-and-data-model.md)). Structural stage detection ([ui-spec §5.1](../specs/ui-spec.md) source (2)) and `run_stages` come later. The synthetic pipelines have no subworkflows, so detection would show nothing. *(assumed — pending Thomas)*
 7. **No SSE in 0.0.1.** The UI polls every 5 s and stops on a terminal state. This removes the `EventSource` cookie question of §15.3 req. 3 from 0.0.1. *(assumed — pending Thomas)*
-8. **A session-free bootstrap page.** §15.3 req. 2 asks for a session on every request, but something must serve the page that reads the ticket from the URL fragment. `GET /auth/link` (static HTML) and `GET /auth/link.js` are the only routes served without a session; they carry no data. *(assumed — pending Thomas; a spec gap to record in §15.3)*
+8. **A session-free bootstrap page.** §15.3 req. 2 asks for a session on every request, but something must serve the page that reads the ticket from the URL fragment. Four routes are served without a session cookie: `GET /auth/link` (static HTML) and `GET /auth/link.js`, which carry no data and need no credential; `POST /api/v1/auth/magic-links:exchange`, which needs a valid one-time ticket; and `POST /api/v1/auth/links`, which needs the server key (Assumption 9). *(assumed — pending Thomas; a spec gap to record in §15.3)*
 9. **`spectio login --print-link`** reads `<data-dir>/server.json` (port, pid; mode 0600) and the server key file, and calls `POST /api/v1/auth/links` with `Authorization: Bearer <server key>` and the loopback `Origin`. *(assumed — pending Thomas)*
 10. **Port.** The default is 8080 ([architecture §7.3](../specs/architecture-plugins-and-packaging.md)). When 8080 is taken (likely on a shared login node), the server takes a free port and prints it. *(assumed — pending Thomas)*
 11. **Ingest and projection share one transaction on the writer thread**, and the spool cursor (file, byte offset) is a SQLite row written in that same transaction, not the `.spectio/events/.cursor` file of [architecture §13.1](../specs/architecture-plugins-and-packaging.md), which stays for a remote forwarder. `runs.projected_seq` therefore always equals `last_seq`. *(assumed — pending Thomas)*
@@ -89,7 +89,7 @@ Commands assume the repository root, and that the uv workspace exists (after Tas
 
 ### Task 1: Workspace and the spool event contract
 
-**Spec:** api §14 (new: the driven-run part, inbox #36 (a)), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 6, [architecture §13.1](../specs/architecture-plugins-and-packaging.md) · **Depends on:** none · **R10 §3a:** row 1 (C2: first task)
+**Spec:** api §14 (new: the driven-run part, inbox #36 (a)), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 6, [architecture §13.1](../specs/architecture-plugins-and-packaging.md) · **Depends on:** none · **R10 §3a:** rows 1, 4 (C2: first task)
 
 **Files:**
 - Create: `pyproject.toml` (uv workspace, members `packages/*`; ruff, mypy, pytest, import-linter config), `packages/spectio-sdk/pyproject.toml`, `packages/spectio-sdk/src/spectio_sdk/events.py`, `packages/spectio/pyproject.toml`, `packages/spectio-server/pyproject.toml` (empty packages with `__init__.py`)
@@ -193,7 +193,9 @@ def test_flaky_26_10_4():      # 65 tasks all succeeded; 67 attempts, 2 failed; 
 def test_toolerr_26_10_4():    # run failed; failure.message == "synthetic failure: tool exited with code 1";
                                # COMPARE treatA attempt failed; FINAL_REPORT attempt aborted, not counted as failed
 def test_toolerr_25_10_9_double_flow_complete():  # one transition to failed, one run.state_changed event
-def test_resume_26_10_4():     # 63 tasks cached
+def test_resume_26_10_4():     # 63 tasks cached: tests the `cached` state mapping only (resume is not in 0.0.1)
+def test_forbidden_fields_never_stored():  # a line carrying script, env, commandLine, homeDir, configText, cmd →
+                                           # none of them in the stored events row (D3, inbox #55)
 def test_replay_is_idempotent():  # ingest the same batch twice → same counts, same last_seq
 def test_terminal_state_never_moves_back():  # succeeded, then a late onTaskStart → still succeeded, the event is logged
 ```
@@ -232,7 +234,7 @@ def test_untyped_records_ignored(): ...   # the 122 records without "event" chan
 
 ### Task 6: `nf-spectio` writes the spool
 
-**Spec:** [architecture §13.1, §13.3, §13.4, §7.3](../specs/architecture-plugins-and-packaging.md) (spool, never throw, version floor, jar delivery), api §14 · **Depends on:** 1 · **R10 §3a:** row 5
+**Spec:** [architecture §13.1, §13.3, §13.4, §7.3](../specs/architecture-plugins-and-packaging.md) (spool, never throw, version floor, jar delivery), api §14 · **Depends on:** 1 · **R10 §3a:** rows 4, 5
 
 **Files:**
 - Create: `engine-bridges/nf-spectio/` (from `spikes/engine-events/nextflow/nf-spectio/` on branch `spike/engine-events`: `build.sh`, `src/spectio/SpectioPlugin.groovy`; the observer appends envelopes instead of posting), `engine-bridges/nf-spectio/tests/run_local.sh`
@@ -428,6 +430,7 @@ def test_port_taken_picks_free_port(settings): ...  # 8080 busy → another port
 
 **Files:**
 - Create: `packages/spectio-server/src/spectio_server/auth/{secrets.py,routes.py,middleware.py,static/link.html,static/link.js}`, `packages/spectio/src/spectio/cli/login.py`, `packages/spectio-server/tests/conftest.py`
+- Modify: `docs/specs/api-and-data-model.md` (§5: `POST /auth/links`, `POST /auth/magic-links:exchange` and the bootstrap page `GET /auth/link`, so the OpenAPI snapshot of Task 18 matches a spec)
 - Test: `packages/spectio-server/tests/security/test_req2_secrets.py`
 
 **Interfaces:**
@@ -436,13 +439,13 @@ def test_port_taken_picks_free_port(settings): ...  # 8080 busy → another port
   - `TicketStore.mint() -> str` (43 base64url characters; only its SHA-256 is kept, with an expiry) and `TicketStore.burn(ticket) -> bool`;
   - `SessionStore.create() -> str` and `SessionStore.valid(secret) -> bool` (in memory, `compare_digest` on digests);
   - routes: `POST /api/v1/auth/magic-links:exchange` (`{"ticket"}` → 204 and the cookie) and `POST /api/v1/auth/links` (server key → `{"url"}`);
-  - middleware: 401 problem with no data on every other route, except `GET /auth/link` and `GET /auth/link.js`;
+  - middleware: 401 problem with no data on every other route, except the four of Assumption 8: `GET /auth/link` and `GET /auth/link.js` (no credential), `POST /api/v1/auth/magic-links:exchange` (a valid ticket) and `POST /api/v1/auth/links` (the server key);
   - `spectio login --print-link`.
 
 - [ ] **Step 1: Write the failing tests**
 
 ```python
-def test_req2_every_route_needs_session(client, app):  # every route of app.routes except the three exemptions → 401,
+def test_req2_every_route_needs_session(client, app):  # every route of app.routes except the four exemptions → 401,
                                                        # body has no run data
 def test_req2_secrets_256_bits():                      # ticket, session and key decode to ≥ 32 bytes; secrets used
 def test_req2_ticket_single_use_and_15_min(client, clock):  # second exchange → 401; at +15 min 1 s → 401
@@ -567,6 +570,7 @@ def test_req7_get_head_unaffected(authed_client): ...
 
 **Files:**
 - Create: `packages/spectio-server/src/spectio_server/api/{workflows.py,runs_write.py}`, `packages/spectio-server/tests/data/{nf_schema_defs.json,nf_schema_definitions.json,smk_config.schema.yaml,smk_config.yaml}`
+- Modify: `docs/specs/api-and-data-model.md` (§5: `GET /workflows:inspect` and the 0.0.1 body of `POST /runs`)
 - Test: `packages/spectio-server/tests/api/test_launch.py`
 
 **Interfaces:**
@@ -652,7 +656,7 @@ test("no schema → empty sections (key/value rows)", () => expect(schemaFields(
 
 ### Task 20: Runs list, run detail, Cancel, and the Playwright smoke
 
-**Spec:** [ui-spec §4.3](../specs/ui-spec.md) (columns in 0.0.1: Run, State, Workflow, Tasks, Started, Duration; no gauge, no Rows mode, no compare), §4.4 (header and Cancel; Summary and Tasks as tables; Logs), §3.1, [ui-spec §11](../specs/ui-spec.md) (empty state) · **Depends on:** 18, 19 · **R10 §3a:** row 13 (UX-211) · **Boards:** RunsTable, RunDetail (reference only)
+**Spec:** [ui-spec §4.3](../specs/ui-spec.md) (columns in 0.0.1: Run, State, Workflow, Tasks, Started, Duration; no gauge, no Rows mode, no compare), §4.4 (header and Cancel; Summary and Tasks as tables; Logs), §3.1, [ui-spec §11](../specs/ui-spec.md) (empty state) · **Depends on:** 18, 19, step T6 (`tests/e2e/`, PR #45) · **R10 §3a:** row 13 (UX-211) · **Boards:** RunsTable, RunDetail (reference only)
 
 **Files:**
 - Create: `web/src/runs/{RunsPage.tsx,RunDetailPage.tsx,stateWord.ts}`, `tests/e2e/skeleton.spec.ts` (in the T6 Playwright setup), `tests/e2e/serve-local.sh` (`spectio init --local` in a temp directory, `spectio serve`, prints the link)

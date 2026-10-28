@@ -167,7 +167,7 @@ def build(theme: Theme) -> Sketch:
     s.text(790, 503, "0700 and 0600", size=13, anchor="start", colour=t.dim)
     badge(692, 506, "M1")
     s.arrow(944, 372, 770, 428)
-    s.text(900, 422, "projects", size=13, anchor="start", colour=t.dim)
+    s.text(820, 432, "events → runs, tasks", size=13, anchor="start", colour=t.dim)
     s.step(860, 566, 2, "one `spectio serve` per user")
 
     # -- 3 · SLURM: the head job, then its tasks ---------------------------------------------------
