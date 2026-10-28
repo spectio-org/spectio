@@ -108,14 +108,20 @@ def smk_entry(e, wd: Path, smk: str) -> dict:
 
 
 def make_workdir(arg: str | None) -> Path:
-    """A fresh private directory, or the given one if this user owns it and nobody else can write to it."""
+    """A fresh private directory, or the given one if this user owns it and nobody else can write to it
+    or swap it: its resolved parents must belong to this user or root, and be sticky if others can write."""
     if not arg:
         return Path(tempfile.mkdtemp(prefix="spectio-corpus-"))
     path = Path(arg)
     path.mkdir(mode=0o700, parents=True, exist_ok=True)
     st = os.lstat(path)
-    if stat.S_ISLNK(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o022:
-        sys.exit(f"--workdir {path}: must be a directory you own that group and others cannot write to (not a symlink)")
+    bad = stat.S_ISLNK(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o022
+    real = Path(os.path.realpath(path.parent))
+    for d in (real, *real.parents):
+        s = os.stat(d)
+        bad = bad or s.st_uid not in (0, os.getuid()) or (s.st_mode & 0o022 and not s.st_mode & stat.S_ISVTX)
+    if bad:
+        sys.exit(f"--workdir {path}: must be a directory you own that others cannot write to (chmod go-w), not a symlink, under directories that only you or root can change")
     return path
 
 

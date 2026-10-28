@@ -30,11 +30,17 @@ class WorkdirTest(unittest.TestCase):
             wd = run_corpus.make_workdir(f"{tmp}/a/b")
             self.assertEqual(wd.stat().st_mode & 0o777, 0o700)
 
+    def test_a_workdir_under_a_sticky_shared_directory_is_accepted(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            sticky = Path(tmp) / "sticky"; sticky.mkdir(); sticky.chmod(0o1777)
+            self.assertEqual(run_corpus.make_workdir(str(sticky / "wd")), sticky / "wd")
+
     def test_a_shared_or_linked_workdir_is_refused(self):
         with tempfile.TemporaryDirectory() as tmp:
             shared = Path(tmp) / "shared"; shared.mkdir(); shared.chmod(0o777)
             link = Path(tmp) / "link"; link.symlink_to(Path(tmp))
-            for bad in (shared, link):
+            under_shared = shared / "wd"
+            for bad in (shared, link, under_shared):
                 with self.assertRaises(SystemExit):
                     run_corpus.make_workdir(str(bad))
 
