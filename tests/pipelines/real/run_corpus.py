@@ -109,6 +109,19 @@ def smk_entry(e, wd: Path, smk: str) -> dict:
     return {"cmd": cmd, "env": dict(os.environ), "cwd": repo}
 
 
+def run_engine(eng: str, spec: dict, log_path: Path) -> tuple[int, bool]:
+    """Run the entry, streaming to run.log, so a run killed by a full disk or the job timeout still leaves its log.
+    A failed Nextflow run is retried once with -resume: a registry error on a container pull (docker exit 125)
+    is not retried by the nf-core errorStrategy, and the finished tasks come from the cache. Returns (exit, retried)."""
+    with open(log_path, "w") as log:
+        run = lambda cmd: subprocess.run(cmd, cwd=spec["cwd"], env=spec["env"], stdout=log, stderr=subprocess.STDOUT).returncode
+        rc = run(spec["cmd"])
+        if rc == 0 or eng != "nextflow":
+            return rc, False
+        print(f"\n[run_corpus] exit {rc}; retrying once with -resume\n", file=log, flush=True)
+        return run(spec["cmd"] + ["-resume"]), True
+
+
 def make_workdir(arg: str | None) -> Path:
     """A fresh private directory, or the given one if this user owns it and nobody else can write to it
     or swap it: its resolved parents must belong to this user or root, and be sticky if others can write."""
@@ -172,15 +185,14 @@ def main() -> int:
         wd = workdir / n; wd.mkdir(parents=True, exist_ok=True)
         spec = nf_entry(e, wd, a.nextflow, a.limits, a.nf_version) if eng == "nextflow" else smk_entry(e, wd, a.snakemake)
         t0 = time.time()
-        # Stream to run.log, so a run killed by a full disk or the job timeout still leaves its log.
-        with open(wd / "run.log", "w") as log:
-            p = subprocess.run(spec["cmd"], cwd=spec["cwd"], env=spec["env"], stdout=log, stderr=subprocess.STDOUT)
-        res = {"engine": eng, "name": n, "exit": p.returncode, "seconds": round(time.time() - t0), "cmd": spec["cmd"]}
+        rc, retried = run_engine(eng, spec, wd / "run.log")
+        res = {"engine": eng, "name": n, "exit": rc, "retried": retried, "seconds": round(time.time() - t0), "cmd": spec["cmd"]}
         if eng == "nextflow":
             res["outputs"] = sorted(str(x.relative_to(wd / "results")) for x in (wd / "results").glob("*")) if (wd / "results").exists() else []
         (wd / "result.json").write_text(json.dumps(res, indent=2))
-        print(f"{'PASS' if p.returncode == 0 else 'FAIL'}  {eng:9s} {n:32s} {res['seconds']:6d}s")
-        failures += p.returncode != 0
+        status = ("PASS" if rc == 0 else "FAIL") + (" (retried)" if retried else "")
+        print(f"{status:5s} {eng:9s} {n:32s} {res['seconds']:6d}s")
+        failures += rc != 0
     return 1 if failures else 0
 
 

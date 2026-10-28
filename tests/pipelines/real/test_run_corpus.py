@@ -1,9 +1,10 @@
-"""Unit tests for run_corpus.py: clone cleanup and corpus entry validation.
+"""Unit tests for run_corpus.py: clone cleanup, workdir checks, the Nextflow retry and corpus entry validation.
 
   python3 -m unittest tests/pipelines/real/test_run_corpus.py
 """
 import copy, os, stat, subprocess, sys, tempfile, unittest
 from pathlib import Path
+from unittest import mock
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import run_corpus  # noqa: E402
@@ -59,6 +60,44 @@ class WorkdirTest(unittest.TestCase):
             for bad in (shared, link, under_shared):
                 with self.assertRaises(SystemExit):
                     run_corpus.make_workdir(str(bad))
+
+
+class RetryTest(unittest.TestCase):
+    """A failed Nextflow entry is retried once with -resume; Snakemake entries are not retried."""
+
+    def run_with(self, eng, exits):
+        spec = {"cmd": ["engine", "run"], "cwd": "/", "env": {}}
+        with tempfile.TemporaryDirectory() as tmp, \
+                mock.patch.object(run_corpus.subprocess, "run",
+                                  side_effect=[subprocess.CompletedProcess([], rc) for rc in exits]) as run:
+            result = run_corpus.run_engine(eng, spec, Path(tmp) / "run.log")
+        return result, [c.args[0] for c in run.call_args_list]
+
+    def test_a_failed_nextflow_run_that_passes_on_resume_is_a_retried_pass(self):
+        result, cmds = self.run_with("nextflow", [125, 0])
+        self.assertEqual(result, (0, True))
+        self.assertEqual(cmds, [["engine", "run"], ["engine", "run", "-resume"]])
+
+    def test_a_passing_nextflow_run_is_not_retried(self):
+        self.assertEqual(self.run_with("nextflow", [0]), ((0, False), [["engine", "run"]]))
+
+    def test_snakemake_is_run_once(self):
+        self.assertEqual(self.run_with("snakemake", [1]), ((1, False), [["engine", "run"]]))
+
+    def test_two_failures_keep_the_failure(self):
+        result, cmds = self.run_with("nextflow", [125, 1])
+        self.assertEqual(result, (1, True))
+        self.assertEqual(len(cmds), 2)
+
+    def test_the_retry_appends_to_the_same_log(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            log = Path(tmp) / "run.log"
+            spec = {"cmd": [sys.executable, "-c", "import os, sys; print('attempt'); sys.exit(0 if '-resume' in sys.argv else 3)"],
+                    "cwd": tmp, "env": dict(os.environ)}
+            self.assertEqual(run_corpus.run_engine("nextflow", spec, log), (0, True))
+            text = log.read_text()
+            self.assertEqual(text.count("attempt"), 2)
+            self.assertIn("retrying once with -resume", text)
 
 
 class ValidateTest(unittest.TestCase):
