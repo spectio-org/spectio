@@ -237,7 +237,8 @@ def down(n):
         failed |= run(["sind", "--realm", ids["name"], "delete", "realm"], env, check=False)
     if shutil.which("kind", path=env.get("PATH")) and ids["name"] in _first_column(["kind", "get", "clusters"], env):
         failed |= run(["kind", "delete", "cluster", "--name", ids["name"]], env, check=False)
-    if ids["name"] in _first_column(["docker", "network", "ls", "--format", "{{.Name}}"], env):
+    # the network is the ID's ownership token (see `up`): release it last, and only when the rest is gone (CR-14)
+    if not failed and ids["name"] in _first_column(["docker", "network", "ls", "--format", "{{.Name}}"], env):
         failed |= run(["docker", "network", "rm", ids["name"]], check=False)
     if failed:  # keep the data directory: the id stays claimed until a later `down` succeeds
         raise SystemExit(f"down {n}: a step failed, see above; .scenarios/{n}/ is kept")

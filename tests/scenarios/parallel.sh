@@ -16,7 +16,8 @@ cd "$SPECTIO_REPO"
 out=$(mktemp -d)
 declare -A SCENARIO=([1]=happy-slurm-mini [2]=happy-slurm-mini [3]=happy-k8s-mini [4]=happy-local)
 die() { echo "::error::$*"; exit 1; }
-cleanup() { for id in "${!SCENARIO[@]}"; do python3 dev/scenario.py down "$id" >/dev/null || true; done; }
+# only the IDs this run still holds: a failed `up` has already released its own (CR-13)
+cleanup() { for id in "${!SCENARIO[@]}"; do [ ! -e ".scenarios/$id" ] || python3 dev/scenario.py down "$id" >/dev/null || true; done; }
 for id in "${!SCENARIO[@]}"; do  # never take down a scenario this run did not create (SEC-T5-11)
   [ ! -e ".scenarios/$id" ] || die ".scenarios/$id exists: run \`dev/scenario.py down $id\` first"
 done
