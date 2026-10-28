@@ -2,6 +2,11 @@
 
 Draft · 2026-10-28 · waiting for Thomas (GO gate after P1)
 
+![R10 funnel: 450 review findings read, 123 still open, 70 of the 82 open blockers and majors deferred with features that left 0.0.1, 12 touching 0.0.1 of which 7 already decided, ending at the GO gate](../assets/diagrams/r10_synthesis_light.png#only-light)
+![R10 funnel: 450 review findings read, 123 still open, 70 of the 82 open blockers and majors deferred with features that left 0.0.1, 12 touching 0.0.1 of which 7 already decided, ending at the GO gate](../assets/diagrams/r10_synthesis_dark.png#only-dark)
+
+Step page: [Progress · R10](../progress/W4/R10.md).
+
 What, among the open review findings, stands between today and the narrowed 0.0.1 ([dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version), [§15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), [mvp-0.0.1](../specs/mvp-0.0.1.md), [log 2026-10-28](../decisions/log.md#2026-10-28-001-narrowed-launch-and-monitor-an-ultra-simple-ui)). Short answer: little, and most of it is decided. This page edits no spec.
 
 ## 1. Scope and method

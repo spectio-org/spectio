@@ -46,8 +46,8 @@
   <path d="M1497.0,165.6 C1515.0,165.7 1532.2,165.6 1549.9,165.8" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
   <path d="M1496.9,180.1 C1514.8,180.0 1532.5,180.3 1550.1,179.9" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
   <path d="M1496.9,194.4 C1514.7,194.2 1532.1,194.2 1549.9,194.3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
-  <text x="1530.0" y="224.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="middle" font-weight="normal">12 round files</text>
-  <text x="1530.0" y="242.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="middle" font-weight="normal">R1 to R12</text>
+  <text x="1530.0" y="224.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="middle" font-weight="normal">12 round files + spikes.md</text>
+  <text x="1530.0" y="242.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="middle" font-weight="normal">R1–R12, no R10</text>
   <rect x="70.0" y="188.0" width="319.8" height="82.0" rx="4" fill="#282b33" fill-opacity="0.7"/>
   <path d="M69.9,187.8 C70.1,215.8 70.3,242.5 69.8,269.9" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M389.7,187.8 C390.2,214.9 389.5,242.8 390.0,269.8" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round" stroke-dasharray="9 7"/>

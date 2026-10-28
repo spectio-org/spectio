@@ -87,8 +87,8 @@ def build(theme: Theme) -> Sketch:
     s.text(end + 12, y1 + BAR / 2 + 5, "13 rejected or closed", size=14, anchor="start", colour=t.dim)
     for k in range(3):
         s.page(1460 + k * 16, y1 - 52 + k * 12, 64, 84, fill="docs", lines=4)
-    s.text(1530, y1 + 74, "12 round files", size=14, colour=t.dim)
-    s.text(1530, y1 + 92, "R1 to R12", size=14, colour=t.dim)
+    s.text(1530, y1 + 74, "12 round files + spikes.md", size=14, colour=t.dim)
+    s.text(1530, y1 + 92, "R1–R12, no R10", size=14, colour=t.dim)
 
     # -- 2 · still open ----------------------------------------------------------------------------
     y2 = 300
