@@ -1,0 +1,434 @@
+{
+ "_fixture": {
+  "command": "sacct --json -j 242",
+  "slurm": "26.05.5",
+  "source": "https://github.com/weber8thomas/spectio/actions/runs/40680736055"
+ },
+ "errors": [],
+ "jobs": [
+  {
+   "account": "lab",
+   "allocation_nodes": 1,
+   "array": {
+    "job_id": 232,
+    "limits": {
+     "max": {
+      "running": {
+       "tasks": 0
+      }
+     }
+    },
+    "task": "",
+    "task_id": {
+     "infinite": false,
+     "number": 8,
+     "set": true
+    }
+   },
+   "association": {
+    "account": "",
+    "cluster": "site",
+    "id": 6,
+    "partition": "",
+    "user": ""
+   },
+   "block": "",
+   "cluster": "site",
+   "comment": {
+    "administrator": "",
+    "job": "",
+    "system": ""
+   },
+   "constraints": "",
+   "container": "",
+   "derived_exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 0,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "SUCCESS"
+    ]
+   },
+   "exclusive": "NO",
+   "exit_code": {
+    "return_code": {
+     "infinite": false,
+     "number": 1,
+     "set": true
+    },
+    "signal": {
+     "id": {
+      "infinite": false,
+      "number": 0,
+      "set": false
+     },
+     "name": ""
+    },
+    "status": [
+     "ERROR"
+    ]
+   },
+   "extra": "",
+   "failed_node": "",
+   "flags": [
+    "STARTED_ON_SCHEDULE",
+    "START_RECEIVED"
+   ],
+   "group": "spx",
+   "het": {
+    "job_id": 0,
+    "job_offset": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    }
+   },
+   "hold": false,
+   "job_id": 242,
+   "kill_request_user": "",
+   "licenses": "",
+   "mcs": {
+    "label": ""
+   },
+   "name": "nf-ALIGN_(1)",
+   "nodes": "worker-0",
+   "original_sluid": "s7F9M614XNCS00",
+   "oversubscribe": "NO",
+   "partition": "htc",
+   "priority": {
+    "infinite": false,
+    "number": 1,
+    "set": true
+   },
+   "qos": "normal",
+   "qosreq": "",
+   "required": {
+    "CPUs": 1,
+    "memory_per_cpu": {
+     "infinite": false,
+     "number": 0,
+     "set": false
+    },
+    "memory_per_node": {
+     "infinite": false,
+     "number": 512,
+     "set": true
+    }
+   },
+   "reservation": {
+    "id": 0,
+    "name": "",
+    "requested": ""
+   },
+   "restart_cnt": 0,
+   "script": "",
+   "segment_size": 0,
+   "sluid": "s7F9M614XNCS00",
+   "state": {
+    "current": [
+     "FAILED"
+    ],
+    "reason": "None"
+   },
+   "stderr": "",
+   "stderr_expanded": "",
+   "stdin": "/dev/null",
+   "stdin_expanded": "/dev/null",
+   "stdout": "/dev/null",
+   "stdout_expanded": "/dev/null",
+   "steps": [
+    {
+     "CPU": {
+      "governor": "0",
+      "requested_frequency": {
+       "max": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       },
+       "min": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "exit_code": {
+      "return_code": {
+       "infinite": false,
+       "number": 1,
+       "set": true
+      },
+      "signal": {
+       "id": {
+        "infinite": false,
+        "number": 0,
+        "set": false
+       },
+       "name": ""
+      },
+      "status": [
+       "ERROR"
+      ]
+     },
+     "kill_request_user": "",
+     "nodes": {
+      "count": 1,
+      "list": [
+       "worker-0"
+      ],
+      "range": "worker-0"
+     },
+     "state": [
+      "FAILED"
+     ],
+     "statistics": {
+      "CPU": {
+       "actual_frequency": 0
+      },
+      "energy": {
+       "consumed": {
+        "infinite": false,
+        "number": 0,
+        "set": true
+       }
+      }
+     },
+     "step": {
+      "id": "242.batch",
+      "name": "batch",
+      "stderr": "",
+      "stderr_expanded": "",
+      "stdin": "",
+      "stdin_expanded": "",
+      "stdout": "",
+      "stdout_expanded": ""
+     },
+     "submit_line": "",
+     "task": {
+      "distribution": "Unknown"
+     },
+     "tasks": {
+      "count": 1
+     },
+     "time": {
+      "elapsed": 0,
+      "end": {
+       "infinite": false,
+       "number": 1793187530,
+       "set": true
+      },
+      "limit": {
+       "infinite": true,
+       "number": 0,
+       "set": false
+      },
+      "start": {
+       "infinite": false,
+       "number": 1793187530,
+       "set": true
+      },
+      "suspended": 0,
+      "system": {
+       "microseconds": 62099,
+       "seconds": 0
+      },
+      "total": {
+       "microseconds": 114205,
+       "seconds": 0
+      },
+      "user": {
+       "microseconds": 52106,
+       "seconds": 0
+      }
+     },
+     "tres": {
+      "allocated": [
+       {
+        "count": 1,
+        "id": 1,
+        "name": "",
+        "type": "cpu"
+       },
+       {
+        "count": 512,
+        "id": 2,
+        "name": "",
+        "type": "mem"
+       },
+       {
+        "count": 1,
+        "id": 4,
+        "name": "",
+        "type": "node"
+       }
+      ],
+      "consumed": {
+       "average": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ],
+       "max": [],
+       "min": [],
+       "total": [
+        {
+         "count": 0,
+         "id": 3,
+         "name": "",
+         "type": "energy"
+        }
+       ]
+      },
+      "requested": {
+       "average": [],
+       "max": [],
+       "min": [],
+       "total": []
+      }
+     }
+    }
+   ],
+   "submit_line": "sbatch .command.run",
+   "time": {
+    "elapsed": 0,
+    "eligible": 1793187524,
+    "end": 1793187530,
+    "limit": {
+     "infinite": false,
+     "number": 2,
+     "set": true
+    },
+    "planned": {
+     "infinite": false,
+     "number": 6,
+     "set": true
+    },
+    "start": 1793187530,
+    "submission": 1793187522,
+    "suspended": 0,
+    "system": {
+     "microseconds": 62099,
+     "seconds": 0
+    },
+    "total": {
+     "microseconds": 114205,
+     "seconds": 0
+    },
+    "user": {
+     "microseconds": 52106,
+     "seconds": 0
+    }
+   },
+   "tres": {
+    "allocated": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 512,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": -2,
+      "id": 3,
+      "name": "",
+      "type": "energy"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ],
+    "requested": [
+     {
+      "count": 1,
+      "id": 1,
+      "name": "",
+      "type": "cpu"
+     },
+     {
+      "count": 512,
+      "id": 2,
+      "name": "",
+      "type": "mem"
+     },
+     {
+      "count": 1,
+      "id": 4,
+      "name": "",
+      "type": "node"
+     },
+     {
+      "count": 1,
+      "id": 5,
+      "name": "",
+      "type": "billing"
+     }
+    ]
+   },
+   "used_gres": "",
+   "user": "spx",
+   "wckey": {
+    "flags": [],
+    "wckey": ""
+   },
+   "working_directory": "$REPO/.scenarios/slurm/work/nextflow-flaky_retry/nextflow/flaky_retry/work/78/6c72ab157b703015472e7eac340fd5"
+  }
+ ],
+ "meta": {
+  "client": {
+   "group": "root",
+   "source": "",
+   "user": "root"
+  },
+  "command": [
+   "sacct",
+   "--json",
+   "-j",
+   "242"
+  ],
+  "plugin": {
+   "accounting_storage": "accounting_storage/slurmdbd",
+   "data_parser": "data_parser/v0.0.45",
+   "name": "",
+   "type": ""
+  },
+  "slurm": {
+   "cluster": "site",
+   "release": "26.05.5",
+   "version": {
+    "major": "26",
+    "micro": "5",
+    "minor": "05"
+   }
+  }
+ },
+ "warnings": []
+}
