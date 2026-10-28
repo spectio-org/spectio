@@ -4,6 +4,8 @@ name: pipelines · nf-core and Snakemake catalog
 # PR tier: called by ci.yml on pull requests that touch the corpus; everything nightly. nf-core runs get a
 # resourceLimits override from runner_limits.<visibility> in corpus.yaml (run_corpus.py --limits private|public);
 # the repository is public since 2026-10-28.
+# Nextflow comes from NEXTFLOW_VERSION in dev/versions.env; ci.yml does not start the PR tier on a bump of that
+# file alone, so the nightly run is the first corpus run on a new pin.
 # Each job first frees runner disk (the test profiles pull several GB of containers or conda packages) and samples
 # free memory and disk every 5 s; the job summary and the resources.json artifact give the start and minimum values.
 # Both jobs use tests/pipelines/real/runner_probe.sh (results: docs/research/corpus-ci-2026-10-27.md).
@@ -55,8 +57,11 @@ jobs:
         run: bash tests/pipelines/real/runner_probe.sh free
       - name: Sample free memory and disk every 5 s
         run: bash tests/pipelines/real/runner_probe.sh sample
+      - name: Read the Nextflow pin from dev/versions.env
+        id: pin
+        run: grep -m1 -E '^NEXTFLOW_VERSION=[0-9]+\.[0-9]+\.[0-9]+$' dev/versions.env >> "$GITHUB_OUTPUT"
       - uses: nf-core/setup-nextflow@893c28b667aedeba26e37f296d260ccc5bc4d914 # v3.0.1
-        with: {version: "26.10.3"}
+        with: {version: "${{ steps.pin.outputs.NEXTFLOW_VERSION }}"}
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with: {enable-cache: false}  # no shared cache (zizmor cache-poisoning)
       - name: Run test profile

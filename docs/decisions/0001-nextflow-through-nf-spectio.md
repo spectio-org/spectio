@@ -9,7 +9,7 @@ Date: 2026-10-26 · Status: accepted
   - the protocol is undocumented;
   - it positions Spectio as a Seqera replacement ([adoption note](../research/adoption-and-positioning-2026-10-26.md) §2, inbox #6);
   - `nf-tower` has a single endpoint: `TowerConfig` holds one `final String endpoint` (`plugins/nf-tower/src/main/io/seqera/tower/plugin/TowerConfig.groovy:84`, set at `:117`; nextflow `114f1fe`, 2026-10-26). So a run pointed at Spectio cannot report to Seqera Platform as well.
-- **Why a second plugin can coexist.** Nextflow asks **every** `TraceObserverFactoryV2` provided by the loaded plugins for observers, and registers all the observers they return (a factory can return none: `nf-tower` does when it is disabled) (`modules/nextflow/src/main/groovy/nextflow/Session.groovy:581-590`, same commit). `nf-tower` is one of these factories (`TowerFactory.groovy:38`), and `nf-spectio` would be another. Running both in one run is **[to be validated]** in spike T2.
+- **Why a second plugin can coexist.** Nextflow asks **every** `TraceObserverFactoryV2` provided by the loaded plugins for observers, and registers all the observers they return (a factory can return none: `nf-tower` does when it is disabled) (`modules/nextflow/src/main/groovy/nextflow/Session.groovy:581-590`, same commit). `nf-tower` is one of these factories (`TowerFactory.groovy:38`), and `nf-spectio` would be another. Running both in one run was verified in spike T2 ([T2 note](../research/spike-engine-events-2026-10-28.md#nextflow-nf-spectio-next-to-nf-tower); update below).
 - **Who is affected:** users who already use Seqera Platform and want Spectio's checks and gates on the same runs.
 
 ## Options
@@ -43,3 +43,5 @@ Option 3 (Thomas, 2026-10-26). Nextflow reports to Spectio only through `nf-spec
 - **Follow-up (UI boards):** RunObserved, Profile, WorkflowsCatalog, WorkflowDiscovered and RunScheduler in `design/ui-canvas/` still show the Tower protocol or `-with-tower` as the Nextflow route. They must be updated, and the media rendered from them refreshed, in the next UI step (R7 or the board pass that follows it).
 - **Follow-up (agent prompts):** `.claude/agents/test-architect.md`, `.claude/agents/constraints-hunter.md` and `.claude/skills/spike/SKILL.md` still mention Tower protocol payloads. Thomas updates them, or approves the change.
 - Still to check: how Seqera Platform shows a run that Spectio stops at a gate and resumes. It probably shows two runs.
+
+**Update 2026-10-28.** Spike T2 ran a first `nf-spectio` next to `nf-tower` in 6 of 6 runs, on Nextflow 26.10.4 and 25.10.9: both observers reported the same run name, session ID and task IDs ([T2 note](../research/spike-engine-events-2026-10-28.md#nextflow-nf-spectio-next-to-nf-tower)). This confirms the decision and reverses nothing. The coexistence marks in `synthesis.md` §1, `api-and-data-model.md` §10 and here became links to the note (SPK-T2-14, TRIAGE3).
