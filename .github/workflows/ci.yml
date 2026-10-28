@@ -49,6 +49,17 @@ jobs:
       contents: read
     uses: ./.github/workflows/security.yml
 
+  unit:
+    # Fast Python unit tests with no cluster: today the SLURM fixture guard (tests/slurm/test_fixture.py, SEC-T3-07).
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: {persist-credentials: false}
+      - run: python3 -m unittest discover -s tests/slurm -p 'test_*.py'
+
   pipelines-synthetic:
     needs: changes
     if: needs.changes.outputs.synthetic == 'true'
@@ -66,7 +77,7 @@ jobs:
   ci-ok:
     # Skipped jobs count as passing; only failure or cancelled fails (pattern: depictio depictio-ci.yaml:3144-3174).
     if: always()
-    needs: [changes, security, pipelines-synthetic, pipelines-real]
+    needs: [changes, security, unit, pipelines-synthetic, pipelines-real]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
