@@ -40,7 +40,7 @@ The 0.0.1 lite boards, rendered (regenerated with `python3 tools/media/shots.py 
 
 ![0.0.1 runs list: state and name filters, newest first, with the state, workflow, tasks, start and duration of each run and a "From a terminal" chip](../assets/shots/lite-runs_light.webp)
 
-![0.0.1 run detail on a phone: the same run, its stages collapsible, and a "Now" line naming the running processes](../assets/shots/lite-run-detail-phone_light.webp)
+![0.0.1 run detail on a phone: the same run, its stages collapsible, and a "Now" line, "Now · 64 tasks running in stages 4 to 7"](../assets/shots/lite-run-detail-phone_light.webp)
 
 ## 3. Deferred
 

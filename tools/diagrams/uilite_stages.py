@@ -5,7 +5,7 @@ Writes docs/assets/diagrams/uilite_stages_{light,dark}.{svg,png}.
 
 Before (autopilot/integration at 1abd5dd): the lite run detail draws four stage cards named by hand,
 which no endpoint served (the API had /processes only), above a separate processes table with a Stage
-column, and "stage 3 of 4" in the header. After (branch autopilot/ui-lite-review): the stages in order, each with its
+column, and "stage 3 of 4" in the header. After (this step): the stages in order, each with its
 state word, "n of m tasks" and a Detected badge, opening to its processes; the header
 "3 of 8 stages done · 4 running"; the rules in the ui-spec §4.4 note of 2026-10-28. Stages: the stage-detection
 spike's output for nf-core/rnaseq 3.27.0 (tests/pipelines/real/stages/expected/, merged with APPLY6);
@@ -115,8 +115,8 @@ def build(theme: Theme) -> Sketch:
     s.text(AX + 566, 600, "how stages are found:", size=14, anchor="start")
     s.text(AX + 566, 622, "ui-spec §5.1.1 (APPLY6)", size=13.5, anchor="start", colour=t.dim)
 
-    s.text(40, H - 34, "Sources: design/ui-canvas/LiteRunDetail.dc.html at 1abd5dd (before) and on autopilot/ui-lite-review "
-                       "(after); ui-spec §4.4 note 2026-10-28; P1 Assumption 6, Tasks 18 and 20; stages from the stage-detection spike "
+    s.text(40, H - 34, "Sources: design/ui-canvas/LiteRunDetail.dc.html at 1abd5dd (before) and after this step; "
+                       "ui-spec §4.4 note 2026-10-28; P1 Assumption 6, Tasks 18 and 20; stages from the stage detector's expected output "
                        "(rnaseq-3.27.0_star_salmon_detected.json) · tools/diagrams/uilite_stages.py",
            size=12.5, anchor="start", colour=t.dim)
     return s

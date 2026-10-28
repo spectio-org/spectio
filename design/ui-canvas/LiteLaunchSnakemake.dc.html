@@ -18,12 +18,11 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 summary{list-style:none;cursor:pointer}summary::-webkit-details-marker{display:none}summary:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}details>summary .chev{transition:transform .15s}details:not([open])>summary .chev{transform:rotate(180deg)}
 input,select{font:13px 'Inter',sans-serif;border-radius:10px;border:1px solid #C4C7D4;padding:8px 10px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%}
 input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
-.cx > summary{list-style:none;cursor:pointer}
-.cx > summary::-webkit-details-marker{display:none}
-.cx > summary .cx-sum{display:none}
-.cx:not([open]) > summary .cx-sum{display:inline}
-.cx[open] > summary .cx-chev{transform:rotate(180deg)}
-.cx > summary:focus-visible{outline:2px solid #7750D4;outline-offset:2px;border-radius:10px}
+.cx-btn{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.cx-btn:focus-visible{outline:2px solid #7750D4;outline-offset:2px;border-radius:10px}
+.cx-sum{font-family:'Inter',sans-serif;font-weight:400}
+.cx-btn[aria-expanded="true"] .cx-sum{display:none}
+.cx-btn[aria-expanded="true"] .cx-chev{transform:rotate(180deg)}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -36,7 +35,7 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
         <span style="font-size: 14px; color: #4D5065;">Type the path of a pipeline directory your account can read. Spectio detects the engine and builds the form from the pipeline's schema.</span>
       </div>
 
-      <details class="cx" open style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 20px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><h2 id="h-pipeline" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Pipeline</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">rna-seq-star-deseq2 v2.1.2</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 14px; margin-top: 8px;">
+      <section class="cx" style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 20px;"><h2 id="h-pipeline" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><span style="min-width: 0;">Pipeline</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">rna-seq-star-deseq2 · Snakemake 9.27.1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1"><div style="display: flex; flex-direction: column; gap: 14px; margin-top: 8px;">
         
         <div style="display: flex; flex-direction: column; gap: 5px;">
           <label for="f-location" style="font-size: 13px; font-weight: 600;">Pipeline directory (absolute path)</label>
@@ -48,8 +47,8 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
         <div role="status" style="display: flex; align-items: center; gap: 12px; border-radius: 12px; background: #F7F7FB; padding: 10px 12px; flex-wrap: wrap;">
           <span style="width: 36px; height: 36px; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="22" height="22" alt="" style="display: block; object-fit: contain;"></span>
           <span style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 1px; min-width: 0;">
-            <span style="font-size: 14px; font-weight: 600;">Snakemake · rna-seq-star-deseq2 v2.1.2</span>
-            <span style="font-size: 12.5px; color: #4D5065;">workflow/Snakefile found · form from workflow/schemas/config.schema.yaml</span>
+            <span style="font-size: 14px; font-weight: 600;">rna-seq-star-deseq2 · Snakemake 9.27.1</span>
+            <span style="font-size: 12.5px; color: #4D5065;">workflow/Snakefile found · no version declared · form from workflow/schemas/config.schema.yaml</span>
           </span>
           <span style="font-size: 12.5px; font-weight: 600; color: #157A4B; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Loaded</span>
         </div>
@@ -65,11 +64,11 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
             <span style="font-size: 12px; color: #4D5065;">Left empty, Spectio names the run after the pipeline and the date.</span>
           </div>
         </div>
-      </div></details>
+      </div></div></section>
 
       <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
         <section aria-labelledby="h-params" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
-          <details class="cx" open><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg></span><h2 id="h-params" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Parameters</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">7 groups</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;"><div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 10px; flex-wrap: wrap;">
+          <section class="cx"><h2 id="h-params" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-2" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg></span><span style="min-width: 0;">Parameters</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">7 groups</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-2"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;"><div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 10px; flex-wrap: wrap;">
             
             <span style="font-size: 12.5px; color: #4D5065;">One section per top-level key of the schema · raw YAML keys as labels</span>
           </div>
@@ -142,12 +141,12 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
               </div>
             </details>
           </sc-for>
-          <span style="font-size: 11.5px; color: #6E7287;">Data: keys, types and defaults shaped on rna-seq-star-deseq2 v2.1.2 config.schema.yaml [to be validated]; paths, values and the login node are fixture data.</span>
-        </div></details>
+          <span style="font-size: 11.5px; color: #6E7287;">Data: keys, types and defaults shaped on the rna-seq-star-deseq2 config.schema.yaml [to be validated]; paths, values and the login node are fixture data.</span>
+        </div></div></section>
 </section>
 
         <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
-          <details class="cx" open style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><h2 id="h-where" style="margin: 0; font-size: 15px; font-weight: 600;">Where it runs</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">SLURM · login1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+          <section class="cx" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><h2 id="h-where" style="margin: 0; font-size: 15px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-3" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><span style="min-width: 0;">Where it runs</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">SLURM · login1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-3"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
             
             <dl style="margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
               <sc-for list="{{where}}" as="w" hint-placeholder-count="4">
@@ -155,8 +154,8 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
               </sc-for>
             </dl>
             <span style="font-size: 12px; color: #4D5065;">The executor, the login node and the run directory are fixed for this server: there is nothing to choose in 0.0.1.</span>
-          </div></details>
-          <details class="cx" open style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M10 12l-2 2 2 2 M14 12l2 2-2 2"/></svg></span><h2 id="h-preview" style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;">config.yaml preview</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">values you set</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+          </div></div></section>
+          <section class="cx" style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px;"><h2 id="h-preview" style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-4" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M10 12l-2 2 2 2 M14 12l2 2-2 2"/></svg></span><span style="min-width: 0;">config.yaml preview</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">values you set</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-4"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
             
             <pre tabindex="0" style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.55; white-space: pre-wrap;">units: /g/demo-lab/rnaseq/kd-screen/config/units.tsv
 ref:
@@ -166,7 +165,7 @@ ref:
 trimming:
   activate: true</pre>
             <span style="font-size: 11.5px; color: #A6A9BA;">Only values you set · written to the run directory and passed with --configfile</span>
-          </div></details>
+          </div></div></section>
           <div style="display: flex; flex-direction: column; gap: 6px;">
             <button type="button" disabled aria-describedby="launch-why" style="height: 46px; border: none; border-radius: 12px; background: #C4C7D4; color: #FFFFFF; font: 600 14px 'Inter', sans-serif;">Launch</button>
             <span id="launch-why" role="status" style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">Fill the required field: samples</span>

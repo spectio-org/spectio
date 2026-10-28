@@ -78,12 +78,17 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
         </section>
         <section aria-label="Launch, a value refused after submit" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
           <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">LAUNCH · VALUE REFUSED BY THE SERVER (422)</span>
-          <div role="alert" style="border-radius: 12px; background: #FCEBEB; color: #8E2222; padding: 10px 12px; font-size: 13px; line-height: 1.45;">The run was not launched: 1 value needs a fix.</div>
-          <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #22253A;">Number of chunks (chunks)
-            <input value="x" aria-invalid="true" aria-describedby="err-chunks" style="font: 13px 'JetBrains Mono', monospace; border-radius: 10px; border: 1.5px solid #C62F2F; padding: 9px 10px; min-width: 0; color: #0F1020;">
-          </label>
-          <span id="err-chunks" style="display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; color: #B02A2A; line-height: 1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 8v5 M12 16h.01 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>Must be an integer.</span>
-          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">The <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">validation-failed</span> errors map onto their fields (<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">params.chunks</span>), and focus moves to the first one (P1 Task 19).</span>
+          <div role="alert" style="border-radius: 12px; background: #FCEBEB; color: #8E2222; padding: 10px 12px; font-size: 13px; line-height: 1.45;">The run was not launched: 1 value needs a fix, in <b>params</b>.</div>
+          <details open style="border-radius: 12px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11);">
+            <summary style="padding: 10px 12px; display: flex; align-items: center; gap: 10px; cursor: pointer;"><span style="flex-grow: 1; font-size: 14px; font-weight: 600;">params</span><span style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">1 to fix · opened on submit</span></summary>
+            <div style="padding: 2px 12px 12px; display: flex; flex-direction: column; gap: 6px;">
+              <label style="display: flex; flex-direction: column; gap: 6px; font-size: 13px; font-weight: 600; color: #22253A;">Number of chunks (chunks)
+                <input value="x" aria-invalid="true" aria-describedby="err-chunks" style="font: 13px 'JetBrains Mono', monospace; border-radius: 10px; border: 1.5px solid #C62F2F; padding: 9px 10px; min-width: 0; color: #0F1020; outline: 2px solid #7750D4; outline-offset: 2px;">
+              </label>
+              <span id="err-chunks" style="display: flex; gap: 6px; align-items: flex-start; font-size: 12.5px; color: #B02A2A; line-height: 1.45;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 1px;"><path d="M12 8v5 M12 16h.01 M3 12a9 9 0 1 0 18 0a9 9 0 1 0 -18 0"/></svg>Must be an integer.</span>
+            </div>
+          </details>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">The <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">validation-failed</span> errors map onto their fields (<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">params.chunks</span>, P1 Task 19). The group of the first invalid field opens and focus moves to that field (drawn: the focus ring). Groups with a required, changed or invalid value are open by default; open groups are remembered per screen in this browser, a convenience only (ui-spec §4.4 note).</span>
         </section>
         <section aria-label="Tasks tab, no tasks yet" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
           <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">TASKS · NO TASKS YET</span>

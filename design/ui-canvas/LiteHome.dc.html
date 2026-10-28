@@ -15,12 +15,11 @@ body{margin:0}
 main > *{flex-shrink:0}
 a{color:#6344B2}a:hover{color:#4D368B}
 a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
-.cx > summary{list-style:none;cursor:pointer}
-.cx > summary::-webkit-details-marker{display:none}
-.cx > summary .cx-sum{display:none}
-.cx:not([open]) > summary .cx-sum{display:inline}
-.cx[open] > summary .cx-chev{transform:rotate(180deg)}
-.cx > summary:focus-visible{outline:2px solid #7750D4;outline-offset:2px;border-radius:10px}
+.cx-btn{display:flex;align-items:center;gap:10px;width:100%;box-sizing:border-box;padding:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer}
+.cx-btn:focus-visible{outline:2px solid #7750D4;outline-offset:2px;border-radius:10px}
+.cx-sum{font-family:'Inter',sans-serif;font-weight:400}
+.cx-btn[aria-expanded="true"] .cx-sum{display:none}
+.cx-btn[aria-expanded="true"] .cx-chev{transform:rotate(180deg)}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -56,7 +55,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
 
       <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
         <section aria-labelledby="h-active" style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
-          <details class="cx" open><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span><h2 id="h-active" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Active runs</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">6 active · 4 running</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"><div style="display: flex; align-items: center; justify-content: flex-end;">
+          <section class="cx"><h2 id="h-active" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span><span style="min-width: 0;">Active runs</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">6 active · 4 running</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"><div style="display: flex; align-items: center; justify-content: flex-end;">
             
             <a href="LiteRuns.dc.html" style="font-size: 13px; font-weight: 600; text-decoration: none;">All runs →</a>
           </div>
@@ -79,8 +78,8 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
             </a>
           </sc-for>
 
-          </div></details>
-<details class="cx" open><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 8v4l3 2"/></svg></span><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Finished recently</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">5 runs · 2 failed</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"><div style="display: flex; align-items: center; justify-content: flex-end;">
+          </div></div></section>
+<section class="cx"><h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-2" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7 M3 4v5h5 M12 8v4l3 2"/></svg></span><span style="min-width: 0;">Finished recently</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">5 runs · 3 failed</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-2"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;"><div style="display: flex; align-items: center; justify-content: flex-end;">
             
           </div>
           <div style="border-radius: 14px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); overflow: hidden;">
@@ -96,12 +95,12 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
               </a>
             </sc-for>
           </div>
-          </div></details>
+          </div></div></section>
 <p style="margin: 4px 0 0; font-size: 11.5px; color: #6E7287;">Ordered by end time, newest first. Data: failures and task counts from nf-core AWS megatests (rnaseq 3.27.0 results-a1fcddd, sarek 3.10.0 results-8ccac7a); run names, login node and account are fixture data.</p>
         </section>
 
         <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 14px;">
-          <details class="cx" open style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><h2 id="h-quick" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Your pipelines</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">4 pipelines</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+          <section class="cx" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px;"><h2 id="h-quick" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-3" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><span style="min-width: 0;">Your pipelines</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">4 pipelines</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-3"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
             
             <span style="font-size: 12.5px; color: #4D5065;">Pipeline directories of your recent runs. Opens the launch form with the directory filled in; parameters start from their defaults.</span>
             <sc-for list="{{quick}}" as="q" hint-placeholder-count="4">
@@ -110,8 +109,8 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
                 <span style="display: flex; flex-direction: column; min-width: 0;"><span style="font-size: 13px; font-weight: 600;">{{q.name}}</span><span style="font-size: 11.5px; color: #6E7287; font-family: 'JetBrains Mono', monospace; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{q.path}}</span></span>
               </a>
             </sc-for>
-          </div></details>
-          <details class="cx" open style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px;"><summary style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><h2 id="h-where" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Where your runs go</h2><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">login1 · SLURM</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></summary><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+          </div></div></section>
+          <section class="cx" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 18px;"><h2 id="h-where" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-4" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><span style="min-width: 0;">Where your runs go</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">login1 · SLURM</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-4"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
             
             <sc-for list="{{where}}" as="w" hint-placeholder-count="4">
               <div style="display: flex; gap: 10px; font-size: 13px; line-height: 1.45;">
@@ -119,7 +118,7 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
                 <span><strong style="font-weight: 600;">{{w.k}}</strong> {{w.v}}</span>
               </div>
             </sc-for>
-          </div></details>
+          </div></div></section>
         </aside>
       </div>
     </main>
