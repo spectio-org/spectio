@@ -1,0 +1,89 @@
+name: pipelines · SLURM (sind)
+
+# The sind profiles of docs/specs/dev-environment-and-testing.md §4.1 (dev/slurm/cluster.sh) and the SLURM
+# scenarios (tests/slurm/scenarios.sh): the synthetic pipelines with Nextflow -profile slurm and Snakemake
+# --workflow-profile profiles/slurm and each failure mode, OOM / TIMEOUT / NODE_FAIL / pending-reason probes,
+# a Snakemake head in sbatch, slurmrestd with JWT. Fixtures go to the slurm-fixtures-* artifacts (committed
+# copies in tests/fixtures/slurm/). Step page: docs/progress/W3/T3.md.
+# Not called by ci.yml, so not part of ci-ok: like dev-env.yml it runs on any push that touches its paths.
+on:
+  push:                    # any branch, so autopilot branches are checked before their PR
+    paths: ["dev/slurm/**", "dev/versions.env", "tests/slurm/**", "tests/pipelines/synthetic/**", ".github/workflows/pipelines-slurm.yml"]
+  schedule:
+    - cron: "41 4 * * *"   # nightly (§11)
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: pipelines-slurm-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  slurm:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 40
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - {name: nextflow, profile: site, scenarios: "nextflow:happy,oom_fatal,timeout_fatal,flaky_retry,tool_error_then_fixed_resume probes"}
+          - {name: snakemake-a, profile: site, scenarios: "snakemake:happy,flaky_retry"}
+          - {name: snakemake-b, profile: site, scenarios: "snakemake:oom_fatal,timeout_fatal,tool_error_then_fixed_resume heads"}
+          - {name: rest, profile: rest, scenarios: "rest"}
+          - {name: mini, profile: mini, scenarios: "nextflow:happy"}
+    env:
+      SIND_REALM: spx-t3
+      SIND_PROGRESS: plain
+      # The tools go into the data directory that every sind node mounts at the same path (dev/slurm/cluster.sh).
+      SLURM_DATA: ${{ github.workspace }}/.scenarios/slurm
+      SPECTIO_HOME: ${{ github.workspace }}/.scenarios/slurm/tools
+      SPECTIO_BIN: ${{ github.workspace }}/.scenarios/slurm/tools/bin
+      UV_PYTHON_INSTALL_DIR: ${{ github.workspace }}/.scenarios/slurm/tools/python
+      CLUSTER: ${{ matrix.profile }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: "21"
+      - name: Bootstrap (sind, Nextflow, Snakemake at the dev/versions.env pins)
+        timeout-minutes: 10
+        run: mkdir -p "$SLURM_DATA" && bash dev/bootstrap.sh --ci
+      - name: Cluster up
+        timeout-minutes: 10
+        run: bash dev/slurm/cluster.sh up "$CLUSTER"
+      - name: Scenarios
+        env:
+          SCENARIOS: ${{ matrix.scenarios }}
+        run: |
+          for s in $SCENARIOS; do
+            start=$SECONDS
+            echo "===== scenario $s"
+            bash tests/slurm/scenarios.sh "$s"
+            echo "TIMING $s $((SECONDS - start)) s"
+          done
+      - name: Cluster state on failure
+        if: failure()
+        run: |
+          sind exec "$CLUSTER" -- sinfo -R || true
+          sind exec "$CLUSTER" -- squeue -a || true
+          sind exec "$CLUSTER" -- sacct -X -a -S now-1hour -o JobID,JobName%24,Partition,State,ExitCode,Reason%30 || true
+      - name: Upload fixtures and reports
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: slurm-fixtures-${{ matrix.name }}
+          path: |
+            .scenarios/slurm/fixtures/
+            .scenarios/slurm/work/*/*/report.json
+          include-hidden-files: true   # .scenarios/ is a hidden path
+          if-no-files-found: ignore
+      - name: Cluster down
+        if: always()
+        run: bash dev/slurm/cluster.sh down "$CLUSTER" || true
