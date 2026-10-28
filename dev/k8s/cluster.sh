@@ -11,6 +11,7 @@
 # The repository is mounted into every node at its own path (kind extraMounts), so task pods that mount it
 # as a hostPath see the pipeline and its work directory under .scenarios/ (tests/k8s/kind.config).
 # The kind cluster is named after the profile (k8s-mini, k8s-kueue), or $CLUSTER.
+# dev/scenario.py also sets KIND_API_PORT, KUBECONFIG and KIND_EXPERIMENTAL_DOCKER_NETWORK (its own network).
 # Built from spike t4-ci (docs/research/spike-t4-ci-2026-10-28.md).
 set -euo pipefail
 # shellcheck source=dev/lib.sh
@@ -24,7 +25,10 @@ TASK_IMAGE=docker.io/library/python@${TASK_IMAGE#*@}
 log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 
 kind_config() { # mini|kueue
-  printf 'kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\nnodes:\n'
+  printf 'kind: Cluster\napiVersion: kind.x-k8s.io/v1alpha4\n'
+  # dev/scenario.py puts the API in the scenario's port range; kind picks a random port otherwise
+  [ -z "${KIND_API_PORT:-}" ] || printf 'networking:\n  apiServerPort: %d\n' "$KIND_API_PORT"
+  printf 'nodes:\n'
   local roles=(control-plane)
   [ "$1" = kueue ] && roles+=(worker worker)
   for role in "${roles[@]}"; do
