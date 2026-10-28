@@ -29,3 +29,6 @@ docs/fonts/*.ttf
 
 # GIF previews for PR bodies, generated on demand (tools/media/combo.py)
 tools/media/out/
+
+# local scenario data (docs/specs/dev-environment-and-testing.md §5; dev/k8s/cluster.sh, tests/k8s/scenarios.sh)
+.scenarios/

@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-28T08:49:53Z",
+  "updated_at": "2026-10-28T10:56:00Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -338,7 +338,7 @@
         "docs/reviews/code/T1.md",
         "weber8thomas/spectio#21 (squash 4cb00c1)"
       ],
-      "notes": "rnaseq/sarek gate stop-and-resume not run: deferred to the nightly corpus, inbox #47 (assumed). Gate-target rule vs checking-scenarios \u00a712.3: inbox #48. Open: CR-07, CR-08, SEC-T1-01/02/03/06/07 (06 before T3). CI: Snakemake engine fault lost-retry-at-checkpoint-update hit twice in a row in oom_fatal on 712c3bc; one re-run green.",
+      "notes": "rnaseq/sarek gate stop-and-resume not run: deferred to the nightly corpus, inbox #47 (assumed). Gate-target rule vs checking-scenarios §12.3: inbox #48. Open: CR-07, CR-08, SEC-T1-01/02/03/06/07 (06 before T3). CI: Snakemake engine fault lost-retry-at-checkpoint-update hit twice in a row in oom_fatal on 712c3bc; one re-run green.",
       "base": "cc00b25fb782251b4f2ba4326a5d64395df61181"
     },
     "T2": {
@@ -361,21 +361,33 @@
     },
     "T3": {
       "wave": "W3",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-28T10:46:00Z",
       "finished_at": null,
       "outputs": [],
-      "notes": ""
+      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); from spike t3-ci (run 40670286528)",
+      "base": "89fb4f38c6fa0b8837f53bd81a86ec7a778043a0"
     },
     "T4": {
       "wave": "W3",
-      "status": "pending",
-      "attempts": 0,
-      "started_at": null,
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "status": "done",
+      "attempts": 1,
+      "started_at": "2026-10-28T09:53:26Z",
+      "finished_at": "2026-10-28T10:56:00Z",
+      "outputs": [
+        "dev/k8s/cluster.sh",
+        "dev/k8s/base.yaml",
+        "dev/k8s/kueue-queues.yaml",
+        "tests/k8s/",
+        "tests/fixtures/k8s/",
+        ".github/workflows/pipelines-k8s.yml",
+        "docs/progress/W3/T4.md",
+        "docs/reviews/code/T4.md",
+        "docs/research/spike-t4-ci-2026-10-28.md"
+      ],
+      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); PR #33 squash db7eb7f; pipelines-k8s green on 007683c (run 40674240654); review 3 rounds approve; doc 14/14; 10 spec differences + SEC-T4-03/05 for TRIAGE3",
+      "base": "504bc62ecdda2ba01316b10e9b5a1b35c214dabf"
     },
     "T5": {
       "wave": "W3",

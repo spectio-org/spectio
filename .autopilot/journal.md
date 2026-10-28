@@ -289,3 +289,22 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Exit checks:** unit tests 26 OK; `python3 tools/docs/check.py`: 0 failures; `mkdocs build --strict`: built.
 - **Waiting on Thomas:** #51 (where T3/T4 run; nothing else in the pipeline is ready), the dashboard answers (10:00), then the items listed in tick 11.
 - **End of tick:** usage snapshot `.autopilot/usage/6396c38c-….json` (16 subagents, 649 API calls at snapshot time); dashboard rebuilt (41 steps, 51 inbox entries; `check_xss.js` ok with and without the CSP) and republished as version 22 at the same link, private, `answers` write rule owner-only.
+
+## 2026-10-28 08:52 → 10:55 UTC — tick 11, continued (T4)
+
+- **Direction:** Thomas finds the project over-complicated and asked what the steps are for before any code exists. Answer in inbox #52 (critical, not assumed): start a walking skeleton before T5, T6, R10 and P1, with a lighter process. The one-page proposal is `docs/plans/walking-skeleton-proposal.md`. Until he answers, W3 goes on, leaner: one review per small fix.
+- **Inbox #51 (where T3/T4 run):** option (b), CI on GitHub-hosted runners (cgroup v2), assumed — pending Thomas. Two throwaway spikes checked it first:
+  - `spike/t4-ci`: kind + Kueue on `ubuntu-24.04`, green (run 40663207755).
+  - `spike/t3-ci`: sind `slurm-site`, green on run 4 (40670286528). Runs 1–3 were cancelled or red while JDK and Snakemake polling were fixed. Note on that branch: `docs/research/spike-t3-ci-2026-10-28.md`.
+- **Merged into integration:** weber8thomas/spectio#32, squash `89fb4f3`. It closes the T1 findings CR-07, SEC-T1-01, 02, 03 and 07; CR-08 stays open.
+- **Done: T4** (kind and Kueue), CI-driven. PR weber8thomas/spectio#33, squash `db7eb7f`.
+  - It adds `dev/k8s/cluster.sh` (`k8s-mini`, `k8s-kueue`), `tests/k8s/scenarios.sh` (five scenarios), `pipelines-k8s.yml` (outside `ci-ok`) and 10 fixtures in `tests/fixtures/k8s/`.
+  - Code and security review, 3 rounds. Round 1: approve, 4 + 5 minors. Round 2, on the fixes: changes, because the heads' deny check ran in namespace `default` and proved nothing (CR-T4-05, major). Round 3: approve.
+  - CI then caught `can-i create pods/exec` being read as a pod named `exec` (CR-T4-08); fixed with `--subresource`.
+  - Run 40673184674 went red after the merge of #32, which moved the task image to `params.python_image`.
+  - `pipelines-k8s` green on the final code `007683c` (run 40674240654, 3 min 38 s).
+  - Doc review: changes 7/14 (missing sketch and headings), then approve 14/14 on the fixed page.
+  - For TRIAGE3: 10 differences with schedulers §4 and dev-env §4.2/§11 (the §4 Roles are not sufficient; the runner cannot read Workloads; Nextflow 25.10 needs `nf-k8s@1.2.3`; the queued state comes from the visibility API), plus SEC-T4-03 (create Jobs/Pods in a shared namespace = any ServiceAccount, hostPath) and SEC-T4-05 (supply chain). Specs not edited.
+- **Started: T3** (sind SLURM), CI-driven, on `autopilot/T3`, from the spike.
+- **Exit checks:** T4 `python3 tools/docs/check.py`: 0 failures; `mkdocs build --strict`: built; every PR check green on `c22123d`.
+- **Waiting on Thomas:** #52 (code first, critical), confirming #51 (b), the dashboard answers, then the items listed in tick 11.

@@ -122,14 +122,16 @@ def nf_rows(trace: str) -> list[tuple]:
 def smk_rows(log: str) -> list[tuple]:
     """(RULE, wildcards, status, exit, attempt) per job outcome in a Snakemake log.
 
-    A job block ("rule x:", "localrule x:", "checkpoint x:") gives jobid, wildcards and the `attempt`
-    resource; "Finished jobid: N" closes it as COMPLETED; "Error in rule x:" with its jobid closes it as
-    FAILED, with the exit status of the "Command ... returned non-zero exit status K" line before it.
+    A job block ("rule x:", "localrule x:", "checkpoint x:") gives jobid, wildcards, the `attempt`
+    resource and the "Shell command:" line (--printshellcmds); "Finished jobid: N" closes it as COMPLETED;
+    "Error in rule x:" with its jobid closes it as FAILED. The exit status comes from the "Command '...'
+    returned non-zero exit status K" line whose command ends with that job's shell command, so two jobs
+    failing at once keep their own codes; "-" when none matches.
     """
-    jobs, rows, cur, mode, exit_code = {}, [], None, None, "-"
+    jobs, rows, cur, mode, failed = {}, [], None, None, []   # failed: (command, exit status), oldest first
     for line in log.splitlines():
         if m := re.match(r"(?:local)?(?:rule|checkpoint) (\w+):$", line):
-            cur, mode = {"rule": m[1].upper(), "wc": "", "attempt": "1"}, "job"
+            cur, mode = {"rule": m[1].upper(), "wc": "", "attempt": "1", "cmd": None}, "job"
         elif line.startswith("Error in rule "):
             mode = "error"
         elif m := re.match(r"\s+jobid: (\d+)$", line):
@@ -137,14 +139,17 @@ def smk_rows(log: str) -> list[tuple]:
                 jobs[m[1]] = cur
             elif mode == "error" and m[1] in jobs:
                 j = jobs[m[1]]
-                rows.append((j["rule"], j["wc"], "FAILED", exit_code, j["attempt"]))
-                mode, exit_code = None, "-"
+                i = next((i for i, (cmd, _) in enumerate(failed) if j["cmd"] and cmd.endswith(j["cmd"])), None)
+                rows.append((j["rule"], j["wc"], "FAILED", failed.pop(i)[1] if i is not None else "-", j["attempt"]))
+                mode = None
         elif mode == "job" and (m := re.match(r"\s+wildcards: (.*)$", line)):
             cur["wc"] = m[1]
         elif mode == "job" and (m := re.search(r"^\s+resources: .*\battempt=(\d+)", line)):
             cur["attempt"] = m[1]
-        elif m := re.search(r"non-zero exit status (\d+)", line):
-            exit_code = m[1]
+        elif mode == "job" and line.startswith("Shell command: "):
+            cur["cmd"] = line.removeprefix("Shell command: ").strip()
+        elif m := re.search(r"Command '(.*)' returned non-zero exit status (\d+)", line):
+            failed.append((m[1], m[2]))
         elif (m := re.match(r"Finished jobid: (\d+) ", line)) and m[1] in jobs:
             j = jobs[m[1]]
             rows.append((j["rule"], j["wc"], "COMPLETED", "0", j["attempt"]))

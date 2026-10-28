@@ -1,0 +1,50 @@
+{
+  "kind": "PendingWorkloadsSummary",
+  "apiVersion": "visibility.kueue.x-k8s.io/v1beta2",
+  "metadata": {},
+  "items": [
+    {
+      "metadata": {
+        "name": "job-fx-kq-1-04f50",
+        "namespace": "spectio-work",
+        "creationTimestamp": "2026-10-28T10:28:17Z",
+        "ownerReferences": [
+          {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "name": "fx-kq-1",
+            "uid": "4dee7935-fa7a-4fc3-b747-013f2ccd05c0"
+          }
+        ]
+      },
+      "priority": 0,
+      "localQueueName": "lq-tight",
+      "positionInClusterQueue": 0,
+      "positionInLocalQueue": 0
+    },
+    {
+      "metadata": {
+        "name": "job-fx-kq-3-7e5a5",
+        "namespace": "spectio-work",
+        "creationTimestamp": "2026-10-28T10:28:17Z",
+        "ownerReferences": [
+          {
+            "apiVersion": "batch/v1",
+            "kind": "Job",
+            "name": "fx-kq-3",
+            "uid": "af150ac9-40b1-46fe-b527-d3fdbf30e793"
+          }
+        ]
+      },
+      "priority": 0,
+      "localQueueName": "lq-tight",
+      "positionInClusterQueue": 1,
+      "positionInLocalQueue": 1
+    }
+  ],
+  "_fixture": {
+    "kubernetes": "kindest/node:v1.37.0",
+    "source": "https://github.com/weber8thomas/spectio/actions/runs/40672184666",
+    "kueue": "v0.20.3"
+  }
+}

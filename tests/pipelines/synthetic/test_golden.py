@@ -27,7 +27,7 @@ localrule qc_stats:
     jobid: 10
     wildcards: sample=S05
     resources: tmpdir=/tmp, attempt=1, mem_mb=512
-Shell command: true
+Shell command: synth.py fail oom 1 2
 [Tue Oct 27 21:43:47 2026]
 localrule qc_stats:
     jobid: 11
@@ -50,6 +50,39 @@ localrule qc_stats:
 Finished jobid: 10 (Rule: qc_stats)
 """
 
+# Shape of a Snakemake 9.27.1 log (--printshellcmds), shortened; S05 exits 1 here, S04 137.
+SMK_LOG_TWO_FAILURES = """[Wed Oct 28 09:00:13 2026]
+localrule make_reads:
+    output: results/work/reads/S04.reads.txt
+    jobid: 9
+    wildcards: sample=S04
+    resources: tmpdir=/tmp, runtime=2, time_limit_s=120, attempt=1, mem_mb=512
+Shell command: synth.py fail oom 1 2 && synth.py reads S04 400 42 results/work/reads/S04.reads.txt
+[Wed Oct 28 09:00:13 2026]
+localrule make_reads:
+    output: results/work/reads/S05.reads.txt
+    jobid: 11
+    wildcards: sample=S05
+    resources: tmpdir=/tmp, runtime=2, time_limit_s=120, attempt=1, mem_mb=512
+Shell command: synth.py fail exit 1 2 && synth.py reads S05 400 42 results/work/reads/S05.reads.txt
+RuleException:
+CalledProcessError in file "Snakefile", line 78:
+Command 'set -euo pipefail;  synth.py fail oom 1 2 && synth.py reads S04 400 42 results/work/reads/S04.reads.txt' returned non-zero exit status 137.
+RuleException:
+CalledProcessError in file "Snakefile", line 78:
+Command 'set -euo pipefail;  synth.py fail exit 1 2 && synth.py reads S05 400 42 results/work/reads/S05.reads.txt' returned non-zero exit status 1.
+[Wed Oct 28 09:00:14 2026]
+Error in rule make_reads:
+    message: None
+    jobid: 9
+    output: results/work/reads/S04.reads.txt
+[Wed Oct 28 09:00:14 2026]
+Error in rule make_reads:
+    message: None
+    jobid: 11
+    output: results/work/reads/S05.reads.txt
+"""
+
 
 class NormaliseTest(unittest.TestCase):
     def test_nextflow_trace_rows(self):
@@ -62,6 +95,12 @@ class NormaliseTest(unittest.TestCase):
         self.assertEqual(rows, [("QC_STATS", "sample=S05", "COMPLETED", "0", "2"),
                                 ("QC_STATS", "sample=S05", "FAILED", "137", "1"),
                                 ("QC_STATS", "sample=S06", "COMPLETED", "0", "1")])
+
+    def test_two_jobs_failing_at_once_keep_their_own_exit_codes(self):
+        # Both exceptions are logged before either "Error in rule" block (CR-07).
+        rows = sorted(rs.smk_rows(SMK_LOG_TWO_FAILURES))
+        self.assertEqual(rows, [("MAKE_READS", "sample=S04", "FAILED", "137", "1"),
+                                ("MAKE_READS", "sample=S05", "FAILED", "1", "1")])
 
     def test_first_attempt_successes_are_counted_and_the_rest_listed(self):
         text = rs.golden_text("nextflow", "0.0", "x", [(0, rs.nf_rows(TRACE))], None)

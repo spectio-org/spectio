@@ -1,0 +1,134 @@
+{
+  "apiVersion": "batch/v1",
+  "kind": "Job",
+  "metadata": {
+    "creationTimestamp": "2026-10-28T10:28:33Z",
+    "generation": 1,
+    "labels": {
+      "nextflow.io/app": "nextflow",
+      "nextflow.io/processName": "QC_STATS",
+      "nextflow.io/runName": "nauseous_tuckerman",
+      "nextflow.io/sessionId": "uuid-6bb4805c-a565-4680-ba46-9662eb3c6791",
+      "nextflow.io/taskName": "QC_STATS_S01",
+      "spectio.io/run-id": "nf26-happy"
+    },
+    "name": "nf-63dcdbb53d2a53cebc5cab3b38ef8a40-97c78",
+    "namespace": "spectio-work",
+    "resourceVersion": "1542",
+    "uid": "bbd299c0-3f6e-4bce-9f1c-74fe9b0eedd8"
+  },
+  "spec": {
+    "backoffLimit": 0,
+    "completionMode": "NonIndexed",
+    "completions": 1,
+    "manualSelector": false,
+    "parallelism": 1,
+    "podReplacementPolicy": "TerminatingOrFailed",
+    "selector": {
+      "matchLabels": {
+        "batch.kubernetes.io/controller-uid": "bbd299c0-3f6e-4bce-9f1c-74fe9b0eedd8"
+      }
+    },
+    "suspend": false,
+    "template": {
+      "metadata": {
+        "labels": {
+          "batch.kubernetes.io/controller-uid": "bbd299c0-3f6e-4bce-9f1c-74fe9b0eedd8",
+          "batch.kubernetes.io/job-name": "nf-63dcdbb53d2a53cebc5cab3b38ef8a40-97c78",
+          "controller-uid": "bbd299c0-3f6e-4bce-9f1c-74fe9b0eedd8",
+          "job-name": "nf-63dcdbb53d2a53cebc5cab3b38ef8a40-97c78",
+          "nextflow.io/app": "nextflow",
+          "nextflow.io/processName": "QC_STATS",
+          "nextflow.io/runName": "nauseous_tuckerman",
+          "nextflow.io/sessionId": "uuid-6bb4805c-a565-4680-ba46-9662eb3c6791",
+          "nextflow.io/taskName": "QC_STATS_S01",
+          "spectio.io/run-id": "nf26-happy"
+        },
+        "name": "nf-63dcdbb53d2a53cebc5cab3b38ef8a40-97c78",
+        "namespace": "spectio-work"
+      },
+      "spec": {
+        "activeDeadlineSeconds": 120,
+        "containers": [
+          {
+            "args": [
+              "/bin/bash",
+              "-ue",
+              "-o",
+              "pipefail",
+              "-c",
+              "bash /home/runner/work/spectio/spectio/.scenarios/k8s/nf26-happy/work/63/dcdbb53d2a53cebc5cab3b38ef8a40/.command.run 2>&1 | tee /home/runner/work/spectio/spectio/.scenarios/k8s/nf26-happy/work/63/dcdbb53d2a53cebc5cab3b38ef8a40/.command.log"
+            ],
+            "image": "python:3.12@sha256:98d8fe4e28bb2efeed9d9bce6a4705e80a6764367b65aea1dc4b96ded7b05620",
+            "imagePullPolicy": "IfNotPresent",
+            "name": "nf-63dcdbb53d2a53cebc5cab3b38ef8a40-97c78",
+            "resources": {
+              "limits": {
+                "memory": "512Mi"
+              },
+              "requests": {
+                "cpu": "1",
+                "memory": "512Mi"
+              }
+            },
+            "terminationMessagePath": "/dev/termination-log",
+            "terminationMessagePolicy": "File",
+            "volumeMounts": [
+              {
+                "mountPath": "/home/runner/work/spectio/spectio",
+                "name": "vol-17"
+              }
+            ]
+          }
+        ],
+        "dnsPolicy": "ClusterFirst",
+        "restartPolicy": "Never",
+        "schedulerName": "default-scheduler",
+        "securityContext": {},
+        "serviceAccount": "default",
+        "serviceAccountName": "default",
+        "terminationGracePeriodSeconds": 30,
+        "volumes": [
+          {
+            "hostPath": {
+              "path": "/home/runner/work/spectio/spectio",
+              "type": ""
+            },
+            "name": "vol-17"
+          }
+        ]
+      }
+    }
+  },
+  "status": {
+    "completionTime": "2026-10-28T10:28:37Z",
+    "conditions": [
+      {
+        "lastProbeTime": "2026-10-28T10:28:37Z",
+        "lastTransitionTime": "2026-10-28T10:28:37Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "SuccessCriteriaMet"
+      },
+      {
+        "lastProbeTime": "2026-10-28T10:28:38Z",
+        "lastTransitionTime": "2026-10-28T10:28:38Z",
+        "message": "Reached expected number of succeeded pods",
+        "reason": "CompletionsReached",
+        "status": "True",
+        "type": "Complete"
+      }
+    ],
+    "ready": 0,
+    "startTime": "2026-10-28T10:28:33Z",
+    "succeeded": 1,
+    "terminating": 0,
+    "uncountedTerminatedPods": {}
+  },
+  "_fixture": {
+    "kubernetes": "kindest/node:v1.37.0",
+    "source": "https://github.com/weber8thomas/spectio/actions/runs/40672184666",
+    "nextflow": "26.10.4"
+  }
+}
