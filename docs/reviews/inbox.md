@@ -203,6 +203,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 - **Note (2026-10-27, cut revised):** the 0.0.1 part is answered ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)): 0.0.1 now runs on the login node, so tokenless loopback is not accepted. The server binds to 127.0.0.1 only, the user opens it through an SSH tunnel, and every request needs the token set as a cookie from a one-time link ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts)). The rest stays open for later versions: a Unix socket with SO_PEERCRED, refusing to start when other users are logged in, `single` mode on a shared server.
 - **Answer (Thomas, 2026-10-27, dashboard):** "too complex, re-explain". Re-explained in the session: the 0.0.1 part is already settled by the token link; three points stay open for later: a Unix socket that only the owner can open, refusing to start when other users are logged in, and `single` mode on a shared server. *Open.*
+- **Note (2026-10-28, Thomas):** how the user reaches the server in 0.0.1 is decided ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)): an SSH config entry with `LocalForward`, with nothing to install, and `spectio open <host> [--node <login node>]`, a small laptop tool, side by side ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), Access). The token link and the security requirements are unchanged; the later-version part of this item stays open.
 
 ### #16 · What ships in 0.1 (MVP cut)
 
@@ -429,6 +430,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a). The EMBL egress probe (CH-001 round question 4) needs EMBL IT and is not assumed.
 - **Assumed:** each finding's recommended option, as listed.
 - **Blocked:** nothing; a different answer reverts the assumed spec text.
+- **Note (2026-10-28, Thomas):** in 0.0.1 the engine head runs in tmux on the login node, not as a head job ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)). The head-job assumptions above (Snakemake as a CLI head job, prep on the login node, `NXF_OFFLINE=true`, `scancel --signal=TERM --full`) now concern only the later SLURM head launcher ([schedulers §3.1](../specs/schedulers-and-monitoring.md)).
 
 ### #29 · Assumed: data model, API vocabulary and spec owners
 
@@ -539,6 +541,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Blocked:** architecture §7.3 "0.0.1 prerequisites" (SR-067).
 - **Note (2026-10-27, cut revised):** 0.0.1 heads are SLURM jobs submitted from the login node, adopted after a server restart by the head-job name match ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)). The detached local heads of SR-055 and CH-041 now concern only the local executor, kept for tests and development. SR-067 (who installs the engines and how nf-spectio ships) still applies, now on a login node.
 - **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended: the user installs the engines and `spectio doctor` reports them; nf-spectio ships as a jar in the wheel **[to be validated]**. Applied in architecture §7.3. *Decided.*
+- **Note (2026-10-28, Thomas):** 0.0.1 heads are no longer SLURM jobs: each runs in its own detached tmux session on the login node, through the detached-head wrapper of this item, and is adopted after a server restart by its tmux session name and the PID check ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open); [schedulers §3.1.1](../specs/schedulers-and-monitoring.md), tmux launcher). This supersedes the 2026-10-27 note above.
 
 ### #36 · The ingest contract for 0.0.1 (split inbox #11?)
 
@@ -970,3 +973,17 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a): the test harnesses run shell commands and Docker on CI runners.
 - **Assumed:** (a) *(assumed — pending Thomas)*; done by the next step that touches `security.yml`.
 - **Blocked:** nothing.
+
+## Cluster access (2026-10-28)
+
+### #64 · EMBL login nodes: is there a persistent node-local disk for SQLite?
+
+- **Covers:** [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Prerequisites at EMBL); [architecture §7.2, §7.3](../specs/architecture-plugins-and-packaging.md) (the server refuses a database on a network file system); [log 2026-10-28](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open).
+- **Context:** the spec puts the data directory, with SQLite, on node-local disk of the login node, because SQLite locking is not safe on a network file system. At EMBL every login node shares the same home, software and storage (Thomas, 2026-10-28), so a node-local disk that persists and is not purged may not exist there.
+- **Options:**
+  - (a) a node-local path exists on the EMBL login nodes (for example a local `/scratch` or `/tmp` that is not purged): the data directory goes there, and `spectio init` asks for it;
+  - (b) no such disk: the data directory goes on the shared home, with a single writer process and SQLite's rollback journal instead of WAL **[to be validated]**, and the server checks at start that no other server uses it;
+  - (c) no such disk: ask EMBL IT for a small persistent local directory per user.
+- **Recommendation:** none yet; it depends on what EMBL's login nodes have. Thomas, or EMBL IT, knows.
+- **Assumed:** nothing; the spec keeps node-local disk until this is answered.
+- **Blocked:** P1 Task 8 (`spectio init` and the `doctor` file-system check) on the real cluster; nothing in CI.

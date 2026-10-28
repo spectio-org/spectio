@@ -6,21 +6,23 @@ Writes docs/assets/diagrams/p1_skeleton_{light,dark}.{svg,png}.
 Every fact comes from docs/plans/P1-walking-skeleton.md (draft, 2026-10-28) and the spec it cites,
 docs/specs/dev-environment-and-testing.md §15.3:
 - Architecture header: one process per user on the login node, a FastAPI app, an in-process runner
-  thread and SQLite on node-local disk; the runner writes a head script, submits it with `sbatch`,
-  watches the head with `squeue` / `sacct` and tails the event spool the engine plugins write in the
+  thread and SQLite on node-local disk; the runner writes a head script, starts it in its own tmux
+  session on the login node, watches its PID and exit files and tails the event spool the engine plugins write in the
   run directory; one writer thread validates spool events and projects them into runs, tasks and
   attempts; a three-screen UI polls the API (Assumption 7: every 5 s);
 - Goal and §15.3: opened through an SSH tunnel with a one-time token link; the head runs Nextflow
   with nf-spectio or Snakemake with the logger plugin; its tasks go through the engine's own SLURM
   executor; the run directory and its spool `.spectio/events/*.jsonl` sit on the shared file system;
-- Assumption 4 (D4): Cancel is `scancel --signal=TERM --full`, then a plain `scancel` after 60 s;
+- Assumption 4 (D4): Cancel is Ctrl-C in the head's tmux pane, then SIGTERM, then SIGKILL after 60 s;
+- Task 24: the tunnel is opened by `spectio open --node` or an SSH config entry (2026-10-28);
 - Milestones table: M1 Events in, tasks 1-7; M2 Heads, 8-10; M3 Served safely, 11-16;
-  M4 API and screens, 17-21; M5 On the cluster, 22-23 (23 tasks);
+  M4 API and screens, 17-21; M5 On the cluster, 22-24 (24 tasks);
 - §15.3 security requirements and their tasks: req. 6 is Task 3, req. 1 to 5 are Tasks 11 to 15,
   req. 7 is Task 16 (M3 header and task titles).
 Which milestone builds which piece follows the task titles: spool contract, SQLite store, reader,
-projector and both plugins (1-7); init, head script, runner loop, SLURM launcher (8-10); serve and
-the security tasks (11-16); launch and read API, UI, wheel (17-21); end to end on slurm-mini (22-23).
+projector and both plugins (1-7); init, head script, runner loop, tmux launcher (8-10); serve and
+the security tasks (11-16); launch and read API, UI, wheel (17-21); end to end on slurm-mini and the
+laptop access (22-24).
 The strip at the bottom is to scale: one cell per task.
 """
 
@@ -36,7 +38,7 @@ MILESTONES = (
     ("M2", "Heads", 8, 10, "bar_orange"),
     ("M3", "Served safely", 11, 16, "bar_violet"),
     ("M4", "API and screens", 17, 21, "bar_green"),
-    ("M5", "On the cluster", 22, 23, "bar_grey"),
+    ("M5", "On the cluster", 22, 24, "bar_grey"),
 )
 FILL = {m: f for m, _, _, _, f in MILESTONES}
 # §15.3 requirement -> (the task that carries it, key text)
@@ -83,7 +85,7 @@ def build(theme: Theme) -> Sketch:
 
     s.heading(40, 54, "P1 · the 0.0.1 walking skeleton, and where each milestone builds it",
               "one user, `spectio serve` on a SLURM login node, launch, monitor and cancel · "
-              "a draft plan of 23 tasks, no code yet · shields: the seven §15.3 security requirements")
+              "a draft plan of 24 tasks, no code yet · shields: the seven §15.3 security requirements")
 
     # -- 1 · the laptop: a browser with the three plain screens -----------------------------------
     s.poly([(40, 160), (360, 160), (360, 440), (40, 440)], fill="neutral", width=1.8)
@@ -119,8 +121,9 @@ def build(theme: Theme) -> Sketch:
                 bar(x + 54, ry, 24 - r * 4, "bar_blue")
             s.button(x + 8, sy + 128, 72, "Cancel", fill="problem", h=28)
     s.step(200, 506, 1, "open the token link")
-    s.text(200, 530, "the three screens poll the API every 5 s", size=13.5, colour=t.dim)
-    s.text(200, 550, "a new link: `spectio login --print-link`", size=13.5, colour=t.dim)
+    s.text(200, 530, "tunnel: `spectio open --node`, or an SSH config entry", size=13.5, colour=t.dim)
+    s.text(200, 550, "the three screens poll the API every 5 s", size=13.5, colour=t.dim)
+    s.text(200, 570, "a new link: `spectio login --print-link`", size=13.5, colour=t.dim)
 
     # -- the SSH tunnel, the token link, the checks at the door -----------------------------------
     py0, py1 = 318, 352
@@ -135,6 +138,7 @@ def build(theme: Theme) -> Sketch:
     s.text(420, 295, "one-time token link", size=14, anchor="start")
     shield(592, 289, 2)
     s.text(510, 382, "`ssh -L` tunnel", size=14)
+    badge(404, 366, "M5")
     s.text(604, 414, "Host allow-list", size=13, anchor="end", colour=t.dim)
     shield(624, 409, 4)
     s.text(604, 450, "Origin on writes", size=13, anchor="end", colour=t.dim)
@@ -144,7 +148,7 @@ def build(theme: Theme) -> Sketch:
     s.frame(650, 130, 500, 460, fill="neutral", colour=t.muted)
     s.text(670, 162, "login node", size=20, anchor="start", weight="bold")
     s.text(1132, 162, "your own Unix account", size=13, anchor="end", colour=t.dim)
-    s.terminal(670, 180, 290, 92, ("$ spectio serve", "listening on 127.0.0.1", "token link printed"),
+    s.terminal(670, 180, 290, 92, ("tmux: spectio-server", "$ spectio serve", "on 127.0.0.1, link printed"),
                size=13)
     shield(984, 214, 1)
     s.text(1002, 219, "loopback only", size=13, anchor="start", colour=t.dim)
@@ -155,7 +159,7 @@ def build(theme: Theme) -> Sketch:
     badge(880, 296, "M4")
     s.cog(946, 345, 10, fill="docs")
     s.text(968, 341, "runner thread", size=15, anchor="start", weight="bold")
-    s.text(968, 362, "head script, `squeue`", size=12.5, anchor="start", colour=t.dim)
+    s.text(968, 362, "head script, PID watch", size=12.5, anchor="start", colour=t.dim)
     badge(1094, 296, "M2")
     # SQLite on node-local disk, read by the API, written by the runner
     cylinder(712, 430, 80, 56, "work")
@@ -167,32 +171,29 @@ def build(theme: Theme) -> Sketch:
     s.text(790, 503, "0700 and 0600", size=13, anchor="start", colour=t.dim)
     badge(692, 506, "M1")
     s.arrow(944, 372, 770, 428)
-    s.text(820, 432, "events → runs, tasks", size=13, anchor="start", colour=t.dim)
-    s.step(860, 566, 2, "one `spectio serve` per user")
+    s.text(820, 432, "events → rows", size=13, anchor="start", colour=t.dim)
+    s.step(790, 566, 2, "one server per user")
+    # the engine head, in its own tmux session on the login node
+    s.terminal(962, 396, 176, 104, ("tmux: spectio-<run>", "nextflow + nf-spectio", "or snakemake --logger"),
+               size=11.5, line_h=19)
+    s.arrow(1010, 372, 1018, 392, width=1.3)
+    s.text(1050, 520, "engine head, in tmux", size=13.5, weight="bold")
+    badge(1098, 372, "M2")
 
-    # -- 3 · SLURM: the head job, then its tasks ---------------------------------------------------
+    # -- 3 · SLURM: only the tasks --------------------------------------------------------------
     s.frame(1230, 130, 500, 460, fill="surface", colour=t.muted, dashed=True)
     s.text(1250, 162, "compute nodes, through SLURM", size=20, anchor="start", weight="bold")
     badge(1670, 144, "M5")
-    s.arrow(1120, 330, 1250, 262)
-    s.text(1190, 284, "`sbatch`", size=14)
-    badge(1256, 180, "M2")
-    s.hpc_node(1256, 214, 64, 96, busy=1, slots=4)
-    s.text(1288, 332, "head job", size=15, weight="bold")
-    s.text(1256, 356, "`squeue`, `sacct`: the head only", size=12.5, anchor="start", colour=t.dim)
-    s.chip(1340, 214, 200, "Nextflow + `nf-spectio`", fill="work", h=40)
-    s.text(1440, 274, "or", size=13.5, colour=t.dim)
-    s.chip(1340, 284, 200, "Snakemake + logger plugin", fill="work", h=40)
-    badge(1552, 222, "M1")
-    badge(1552, 292, "M1")
-    for i in range(3):
-        x = 1470 + i * 82
-        s.hpc_node(x, 392, 56, 76, busy=3 - i, slots=3)
-        s.arrow(1440, 326, x + 28, 386, width=1.4)
-    s.text(1578, 492, "tasks", size=14.5, weight="bold")
-    s.step(1480, 526, 3, "the head job runs the engine")
-    s.text(1480, 550, "its tasks go through the engine's own SLURM executor", size=13.5, colour=t.dim)
-    s.text(1480, 570, "Cancel: `scancel` with TERM, plain after 60 s", size=13.5, colour=t.dim)
+    for i in range(4):
+        x = 1270 + i * 105
+        s.hpc_node(x, 230, 60, 84, busy=3 - i % 3, slots=3)
+        s.arrow(1140, 420, x + 30, 336, width=1.4)
+    s.text(1690, 280, "tasks", size=14.5, weight="bold")
+    s.step(1480, 456, 3, "the engine sends the tasks")
+    s.text(1480, 482, "through its own SLURM executor; no `sbatch` for the head", size=13.5, colour=t.dim)
+    s.text(1480, 502, "Cancel: Ctrl-C in the tmux pane,", size=13.5, colour=t.dim)
+    s.text(1480, 522, "then SIGTERM, SIGKILL after 60 s", size=13.5, colour=t.dim)
+    s.text(1480, 542, "a person can attach: `tmux attach`", size=13.5, colour=t.dim)
 
     # -- 4 · the shared file system: the spool -----------------------------------------------------
     fy = 640
@@ -210,17 +211,18 @@ def build(theme: Theme) -> Sketch:
         s.page(fold.x + 22 + k * 14, fold.y + 58 - k * 4, 50, 66, fill="surface", lines=4)
     s.text(fold.x + 120, fold.y + 76, "the spool", size=15, anchor="start")
     s.text(fold.x + 120, fold.y + 100, "`.spectio/events/*.jsonl`", size=14, anchor="start")
-    s.text(fold.x + 120, fold.y + 122, "one event per line", size=13, anchor="start", colour=t.dim)
+    s.text(fold.x + 120, fold.y + 122, "untrusted: schema-checked, size-capped", size=13, anchor="start",
+           colour=t.dim)
+    shield(fold.x + 408, fold.y + 117, 6)
     # the plugin appends, the runner reads
-    s.arc(1252, 300, 1196, fy + 22, lift=-12)
-    s.text(1250, 622, "the plugins append events", size=13.5, anchor="start")
-    s.arrow(1090, fy + 24, 990, 372)
-    shield(1069, 612, 6)
-    s.text(1050, 617, "untrusted: schema-checked, size-capped", size=13, anchor="end", colour=t.dim)
+    s.arrow(1132, 502, 1196, fy + 12)
+    s.text(1186, 622, "the plugins append events", size=13.5, anchor="start")
+    s.arrow(944, fy + 14, 950, 378)
+    s.text(934, 622, "the runner reads", size=13.5, anchor="end")
     s.step(1480, fy + 62, 4, "events come back as files")
     s.text(1480, fy + 88, "the runner tails the spool with a cursor", size=13.5, colour=t.dim)
-    s.text(1480, fy + 108, "no network from compute nodes", size=13.5, colour=t.dim)
-    s.text(1480, fy + 128, "after a restart, the head is adopted by name", size=13.5, colour=t.dim)
+    s.text(1480, fy + 108, "the plugins never post to the server", size=13.5, colour=t.dim)
+    s.text(1480, fy + 128, "after a restart, the head is adopted by its tmux name", size=13.5, colour=t.dim)
 
     # -- the security key -------------------------------------------------------------------------
     ky = 604
@@ -232,8 +234,8 @@ def build(theme: Theme) -> Sketch:
         s.text(72, y, f"{text} · task {task}", size=13.5, anchor="start")
 
     # -- the plan, to scale: one cell per task ----------------------------------------------------
-    cy0, cw, cgap, ggap = 872, 56, 4, 24
-    s.text(40, cy0 - 18, "the plan, to scale: 23 tasks, one cell per task", size=17, anchor="start")
+    cy0, cw, cgap, ggap = 872, 52, 4, 22
+    s.text(40, cy0 - 18, "the plan, to scale: 24 tasks, one cell per task", size=17, anchor="start")
     x = 40
     for m, name, first, last, fill in MILESTONES:
         start = x
@@ -254,7 +256,7 @@ def build(theme: Theme) -> Sketch:
     s.text(x + 6, cy0 + 76, "server adopts the running head", size=13, anchor="start", colour=t.dim)
 
     s.text(40, H - 16, "Source: docs/plans/P1-walking-skeleton.md, Architecture, Assumptions 4 and 7, Milestones, "
-                       "Tasks 1–23 · docs/specs/dev-environment-and-testing.md §15.3 · "
+                       "Tasks 1–24 · docs/specs/dev-environment-and-testing.md §15.3 · "
                        "tools/diagrams/p1_skeleton.py", size=12.5, anchor="start", colour=t.dim)
     return s
 
