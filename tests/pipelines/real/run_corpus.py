@@ -10,8 +10,8 @@
 Every invocation first validates corpus.yaml (pinned refs, plain-token paths and args) and exits on an error.
 
 Each run writes <workdir>/<name>/result.json (exit code, duration, outputs found, Nextflow trace
-summary). Without --workdir, the workdir is a fresh private directory (mode 0700) under $TMPDIR,
-printed at the start and kept for debugging (`rm -rf "$TMPDIR"/spectio-corpus-*` removes them).
+summary). Without --workdir, the workdir is a fresh private directory (mode 0700) under ${TMPDIR:-/tmp},
+printed at the start and kept for debugging (`rm -rf "${TMPDIR:-/tmp}"/spectio-corpus-*` removes them).
 Later these runs are launched through Spectio instead of directly (same entries).
 """
 from __future__ import annotations

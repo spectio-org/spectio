@@ -5,9 +5,9 @@
   python3 run_scenarios.py --engine snakemake [--workdir DIR]
 
 Writes <workdir>/<engine>/report.json and exits non-zero if any scenario fails. Without --workdir,
-the workdir is a fresh private directory (mode 0700) under $TMPDIR, printed at the start: a
+the workdir is a fresh private directory (mode 0700) under ${TMPDIR:-/tmp}, printed at the start: a
 shared login node never sees a predictable path that a run deletes and reuses. It is kept for
-debugging (`rm -rf "$TMPDIR"/spectio-scenarios-*` removes them).
+debugging (`rm -rf "${TMPDIR:-/tmp}"/spectio-scenarios-*` removes them).
 Golden fixtures (golden/<engine>-<version>/<scenario>.tsv, local executor only):
   --golden record   writes them from this run
   --golden check    compares this run with them; a missing directory, or a missing file for a PR
