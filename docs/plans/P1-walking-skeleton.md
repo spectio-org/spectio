@@ -2,14 +2,16 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: use `subagent-driven-development` (step P3 of [`next-phase.md`](../playbooks/next-phase.md)) or `executing-plans` to implement this plan task by task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-*Draft, 2026-10-28 (step P1); revised the same day for the head in tmux, the EMBL target and the laptop access ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)), then after the doc review of PR #47 for live refresh over SSE and SQLite as a rebuildable index ([log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index)), and after the security review of that change for §15.3 requirements 8–11 ([record](../reviews/code/APPLY4.md)). Waiting for Thomas at the GO gate ([R10 §5](../reviews/R10-synthesis.md#5-go-no-go)). No product code exists yet; this page writes none.*
+*Draft, 2026-10-28 (step P1); revised the same day for the head in tmux, the EMBL target and the laptop access ([log](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)), then after the doc review of PR #47 for live refresh over SSE and SQLite as a rebuildable index ([log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index)), and after the security review of that change for §15.3 requirements 8–11 ([record](../reviews/code/APPLY4.md)); then for runs started from a terminal, Tasks 25 and 26 ([log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)). Waiting for Thomas at the GO gate ([R10 §5](../reviews/R10-synthesis.md#5-go-no-go)). No product code exists yet; this page writes none.*
 
 ![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel, refreshed over SSE, reaches spectio serve, in its own tmux session on an EMBL login node, through an SSH tunnel (spectio-open or an SSH config entry) and a one-time token link; the runner starts each engine head in its own tmux session on that login node, the engine sends its tasks to SLURM, and the plugins' spool file in the run directory is read back into a SQLite index that the server can rebuild from the run directories; milestones M1 to M5 and §15.3 security requirements 1 to 7 are marked where they apply, above a to-scale strip of the 24 tasks](../assets/diagrams/p1_skeleton_light.png#only-light)
 ![The P1 walking skeleton: a laptop browser with the launch form, runs list and run detail with Cancel, refreshed over SSE, reaches spectio serve, in its own tmux session on an EMBL login node, through an SSH tunnel (spectio-open or an SSH config entry) and a one-time token link; the runner starts each engine head in its own tmux session on that login node, the engine sends its tasks to SLURM, and the plugins' spool file in the run directory is read back into a SQLite index that the server can rebuild from the run directories; milestones M1 to M5 and §15.3 security requirements 1 to 7 are marked where they apply, above a to-scale strip of the 24 tasks](../assets/diagrams/p1_skeleton_dark.png#only-dark)
 
+*Note 2026-10-28: the figure predates Tasks 25 and 26 (M6, runs started from a terminal).*
+
 Step page: [Progress · P1](../progress/W4/P1.md).
 
-**Goal:** the smallest Spectio a test user can run on the EMBL cluster: `spectio serve` in a tmux session on a login node, opened through an SSH tunnel with a one-time token link (by `spectio-open` or an SSH config entry), that launches the synthetic Nextflow or Snakemake pipeline (its head in its own tmux session on the login node, its tasks on SLURM), lists the runs, shows one run's state, task counts, processes or rules, and whether its head is alive, as text and tables, and cancels it.
+**Goal:** the smallest Spectio a test user can run on the EMBL cluster: `spectio serve` in a tmux session on a login node, opened through an SSH tunnel with a one-time token link (by `spectio-open` or an SSH config entry), that launches the synthetic Nextflow or Snakemake pipeline (its head in its own tmux session on the login node, its tasks on SLURM), lists the runs, shows one run's state, task counts, processes or rules, and whether its head is alive, as text and tables, and cancels it; it also monitors the runs that users start by hand from a terminal with the bridge enabled (Tasks 25 and 26).
 
 **Architecture:** one process per user on the login node: a FastAPI app, an in-process runner thread and SQLite as an index in a node-local temporary directory, rebuilt from the run directories when it is missing ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts); Assumption 21). The runner writes a head script, starts it in its own tmux session on the login node, in the pane's foreground (or detached with `setsid` on the local executor in tests), watches its PID and exit files, and tails the event spool that the engine plugins write in the run directory. One writer thread validates spool events and projects them into `runs`, `tasks` and `attempts` in the same transaction. A three-screen React UI reads the API and refreshes over one SSE stream.
 
@@ -44,6 +46,7 @@ Decisions taken in place of Thomas, who was not available for brainstorming. Eac
 19. **Where the tests run.** The Playwright smoke runs against `spectio serve` on the local executor on the CI runner. The sind end-to-end tests drive the HTTP API from inside the submitter node, as a browser behind a tunnel would. *(assumed — pending Thomas)*
 20. **Ultra-simple screens.** The launch form has no stepper, no review step and no file checks. Logs are the head stdout and stderr and the engine run log, last 64 KiB; per-task logs come later. Sessions last until the server restarts. *(assumed — pending Thomas)*
 21. **The database is an index in a node-local temporary directory** (inbox #64, option (d)). At EMBL everything is shared between the login nodes except some temporary directories (Thomas, 2026-10-28). The data directory (`spectio.toml`, the state file; no secret) stays in `~/.spectio/`; the database, `serve.lock` and the server key go in `<node-local tmp>/spectio-<uid>/`, 0700, by default `$TMPDIR` or `/tmp`, with the `mkdtemp` fallback of §15.3 when that path is squatted (which path is node-local on the EMBL login nodes is **[to be validated]**). Each run directory holds the truth: the manifest `.spectio/run.json`, the spool, `head.pid`, `head.exit`, the cancel marker and `.spectio/launch-failed.json`. At boot the server reconciles the run directories missing from the index, which is all of them when the database is new, under the checks of §15.3 req. 10 ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) Where data lives). *(assumed — pending Thomas, inbox #64)*
+22. **Runs started from a terminal** (Thomas, 2026-10-28, [log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)). A bridge started without `SPECTIO_RUN_ID` makes its own run ID, writes the spool in `<launch dir>/.spectio/events/`, and writes a pointer `~/.spectio/observed/<run ID>.json` only if `~/.spectio/` exists ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal)). The runner scans the pointers under §15.3 req. 10; the run gets origin `cli-observed` and is monitor only, with no Cancel (inbox #65). The bridges are released to the Nextflow plugin registry and PyPI by Thomas; P1 builds and dry-runs the release packages only (inbox #66). *(assumed — pending Thomas)*
 
 ## Global Constraints
 
@@ -81,6 +84,7 @@ The five inputs most likely to hurt a test user that no other test covers. Each 
 | M3 · Served safely | 11–16 | `spectio serve` in its tmux session, with the state file, the token link and §15.3 requirements 1–5 and 7 (6 is Task 3) |
 | M4 · API and screens | 17–21 | the API of the three screens, the UI, and a wheel that carries the UI and both bridges |
 | M5 · On the cluster | 22–24 | both engines end to end on `slurm-mini` in CI, with cancel and restart; the SSH config entry and `spectio-open` |
+| M6 · Runs from a terminal | 25–26 | a run started by hand with the bridge enabled shows in the runs list, monitor only; both bridges build as release packages, dry-run only |
 
 Commands assume the repository root, and that the uv workspace exists (after Task 1).
 
@@ -822,6 +826,64 @@ def test_stdlib_only(): ...                                # every import in spe
 
 ---
 
+## M6 · Runs from a terminal
+
+### Task 25: Pointer file in both bridges; the server finds and shows the run
+
+**Spec:** [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 10 · **Depends on:** 6, 7, 11, 20 · **Added 2026-10-28 (Thomas)**
+
+**Files:**
+- Modify: `engine-bridges/nf-spectio/src/spectio/SpectioPlugin.groovy` and `engine-bridges/snakemake-logger-plugin-spectio/snakemake_logger_plugin_spectio/__init__.py` (run ID and pointer when `SPECTIO_RUN_ID` is unset), `packages/spectio/src/spectio/runner/loop.py` (scan on each tick), `packages/spectio-server/src/spectio_server/rebuild.py` (read the pointers), `packages/spectio-server/src/spectio_server/api/cancel.py` (422 on a `cli-observed` run, [api §5.1](../specs/api-and-data-model.md) note), `web/src/runs/{RunsPage.tsx,RunDetailPage.tsx}` (the "started from a terminal" mark; no Cancel), `mkdocs.yml`
+- Create: `packages/spectio/src/spectio/runner/observed.py`, `docs/guides/runs-from-a-terminal.md` (the setup lines of architecture §13.8)
+- Test: `packages/spectio/tests/test_observed.py`; the bridge tests of Tasks 6 and 7
+
+**Interfaces:**
+- Produces: `scan_observed(home: Path, known: set[str], cap: int) -> list[ObservedRun]`; the writer thread creates each new run with `origin = 'cli-observed'`. The pointer's host and PID feed the head-alive check of Task 9 only on the server's login node; nothing sends them a signal.
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+# bridges (Tasks 6 and 7 test files, marked engines)
+def test_terminal_run_writes_pointer(tmp_home, nf_run): ...   # no SPECTIO_RUN_ID → ~/.spectio/observed/run_<ULID>.json,
+                                                             # 0600, run ID = file name, spool in <launch>/.spectio/ (0700)
+def test_no_spectio_home_run_unaffected(tmp_home, nf_run): ...   # no ~/.spectio → no pointer, spool written, exit 0
+def test_unwritable_home_run_unaffected(tmp_home, nf_run): ...   # ~/.spectio/observed mode 0500 → exit 0
+def test_driven_run_writes_no_pointer(tmp_home, nf_run): ...     # SPECTIO_RUN_ID set → no pointer
+# the same four for Snakemake: test_*_snakemake(tmp_home, smk_run)
+
+# packages/spectio/tests/test_observed.py
+def test_scan_adopts_pointer(tmp_home): ...                  # valid pointer → one ObservedRun; its spool replays to succeeded
+def test_req10_pointer_checks(tmp_home): ...                 # symlink, other owner, group/other bits, > size cap, bad JSON,
+                                                             # extra keys, run ID ≠ file name → skipped and counted
+def test_req10_spectio_dir_checks(tmp_home): ...             # <launch>/.spectio a symlink or group-writable → skipped
+def test_group_writable_launch_dir_accepted(tmp_home): ...   # launch dir 0770, its .spectio 0700 → read
+def test_scan_cap(tmp_home): ...                             # 10 000 pointers → at most the cap read per tick
+def test_rebuild_keeps_terminal_run_id(tmp_home): ...        # index deleted → same run ID after rebuild
+def test_server_down_events_wait(tmp_home): ...              # run ends while no server → read whole at next start
+def test_terminal_run_has_no_cancel(client): ...             # POST :cancel on a cli-observed run → 422 not-in-this-version
+```
+
+- [ ] **Step 2:** `uv run pytest packages/spectio/tests/test_observed.py -v`: FAIL.
+- [ ] **Step 3:** implement. The pointer is written under a temporary name with `O_CREAT|O_EXCL`, then renamed; any error is logged to `.spectio/bridge.err` and swallowed (architecture §13.3).
+- [ ] **Step 4:** the same command PASSES, and the bridge tests PASS with `-m engines`; the Playwright smoke of Task 20 gains one terminal run that shows the mark and no Cancel.
+- [ ] **Step 5: Commit** `feat(runner): show runs started from a terminal`.
+
+### Task 26: Release packages of both bridges, dry-run only
+
+**Spec:** [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) (Publishing), §13.4 (version ranges) · **Depends on:** 6, 7, 21 · **Added 2026-10-28 (Thomas)**
+
+**Files:**
+- Modify: `engine-bridges/nf-spectio/` (Gradle build with `io.nextflow.nextflow-plugin`, plugin ID `nf-spectio`, version `0.0.1`, `requires` from §13.4), `engine-bridges/snakemake-logger-plugin-spectio/pyproject.toml` (name, version, entry metadata, `snakemake-interface-logger-plugins` range, `docs/intro.md` for the catalogue page)
+- Create: `tests/packaging/test_bridges_release.sh`
+
+- [ ] **Step 1: Write the failing test** `tests/packaging/test_bridges_release.sh`. It builds the Nextflow plugin zip with Gradle and checks its manifest (ID, version, `requires`); it builds the Snakemake sdist and wheel with `uv build`, runs `twine check`, installs the wheel into a fresh Snakemake 9 environment and runs a local synthetic `happy` with `--logger spectio`; it never runs `make release` or `twine upload`, and fails if `npr.apiKey` or a PyPI token is set in its environment.
+- [ ] **Step 2:** `bash tests/packaging/test_bridges_release.sh`: FAIL.
+- [ ] **Step 3:** implement the two builds.
+- [ ] **Step 4:** the same command PASSES and prints `RESULT bridges-release dry-run pass`. The real release waits for Thomas (inbox #66).
+- [ ] **Step 5: Commit** `build(bridges): release packages for the Nextflow registry and PyPI`.
+
+---
+
 ## Out of scope
 
 Everything that [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) marks "no" for 0.0.1 or "later (open)":
@@ -830,7 +892,6 @@ Everything that [dev-env §15.1](../specs/dev-environment-and-testing.md#151-cap
 - users, sign-in, accounts and roles;
 - relaunch and the parameter history (#61);
 - visualisation (DAG, timelines, charts, comparison);
-- runs started from a terminal;
 - full scheduler monitoring (task jobs, pending reasons, accounting, capacity);
 - Postgres, Compose and Helm;
 - the depictio hand-off, WES, MCP, embedded elements and LabID.
@@ -840,6 +901,7 @@ Also not in P1:
 - a workflow catalogue and Git URLs (D2);
 - `POST /runs:validate` and file checks;
 - per-task logs;
+- publishing the bridges (Thomas, inbox #66), Cancel and the other actions on runs started from a terminal (#65), and a `spectio run --` wrapper;
 - the head as an `sbatch` head job, and sites other than EMBL ([log 2026-10-28](../decisions/log.md#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open));
 - slurmrestd;
 - the spike sec-single-mode (R10 C6);
@@ -847,13 +909,15 @@ Also not in P1:
 
 ## Done when
 
-- [ ] Tasks 1–24 are merged, each with its tests first and its `review-code` pass (Assumptions, Process).
+- [ ] Tasks 1–26 are merged, each with its tests first and its `review-code` pass (Assumptions, Process).
 - [ ] On `slurm-mini` in CI (`pipelines-slurm.yml`, job `e2e`), through a token-link session, the synthetic Nextflow and Snakemake `happy` runs launch with their heads in tmux on the submitter node, end `succeeded`, and match the golden counts per process (Task 22).
 - [ ] A running run of each engine cancels to `cancelled` with no job left, and a server killed while a Nextflow head runs adopts it on restart, with no duplicate event (Task 23).
 - [ ] Each of §15.3 requirements 1–7 has passing `test_req<N>_*` tests (Tasks 3, 11–16), and requirements 8–11 their named tests (Tasks 2, 9–12, 24).
 - [ ] The Playwright smoke passes on the local executor: link, launch, list, detail with live refresh, cancel (Task 20).
 - [ ] A server started with no database rebuilds it from the run directories (Task 11).
 - [ ] `spectio-open` and the SSH config entry both open the runs list on an EMBL login node (Task 24).
+- [ ] A run started by hand with the bridge enabled shows in the runs list as started from a terminal, monitor only, and a missing `~/.spectio` leaves the run unaffected (Task 25).
+- [ ] Both bridges build as release packages, dry-run only; nothing is published (Task 26).
 - [ ] `tests/packaging/test_wheel.sh` passes: one installable wheel with the UI and both bridges, and a `spectio` environment under 80 MB (Task 21).
 - [ ] Tier 0 is green on every package: ruff, mypy (`--strict` on `spectio-sdk`), `lint-imports`.
 - [ ] api §14 (driven runs) is written, and every spec the code contradicted is updated with a log entry; `python3 tools/docs/check.py` passes.

@@ -269,6 +269,8 @@ The mechanism is owned by [`checking-scenarios.md`](checking-scenarios.md) §12.
 
 How a run started in a terminal with Spectio enabled is handled.
 
+*Note 2026-10-28 (0.0.1):* 0.0.1 shows these runs at the Observed level only, monitor only, with a "started from a terminal" mark, no Cancel and no adopt banner *(assumed — pending Thomas, inbox #65)*. The server finds them through a pointer file, not through ingest; the user sets the engine up by hand from the docs; `spectio login` engine setup, Adopted runs and Discovered workflows come later ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) §13.8; [decision log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)).
+
 Enabling it:
 - Nextflow: the plugin `nf-spectio` (`-plugins nf-spectio`, or a `spectio` config profile/env set once by `spectio login` ([`cli-and-shared-libraries.md`](cli-and-shared-libraries.md) §2: `login` runs `engine nextflow config --install`) *(assumed — pending Thomas, inbox #28)*). It runs next to `-with-tower`, so the same run can also report to Seqera Platform (**[to be validated]** in spike T2; [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md)). Nextflow plugins cannot add new `run` flags, so there is no literal `--spectio`.
 - Snakemake: `--logger <existing> spectio`, set once by `spectio login` (`engine snakemake profile --install`) *(assumed — pending Thomas, inbox #28)*: Spectio appends itself to the loggers already set on the command line or in a profile, so panoptes, snkmt or FlowO keep working ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §2).

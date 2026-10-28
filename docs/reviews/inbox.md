@@ -128,6 +128,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Note:** Not needed for 0.0.1 (single user, local engines; Thomas 2026-10-27); stays open for later versions.
 - **Note (2026-10-27, cut revised):** 0.0.1 now runs on SLURM from a per-user server on the login node ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), not with local engines. Still not needed for 0.0.1: observed runs are out of it, and the plugins only write to the spool.
 - **Answer (Thomas, 2026-10-27, dashboard):** (a), as recommended. Not needed for 0.0.1; applied to api §14 and auth §3 in the next apply pass (see the [decision log](../decisions/log.md#2026-10-27-inbox-answers-5-to-37-dashboard), "Applied later"). *Decided.*
+- **Note 2026-10-28:** 0.0.1 now monitors runs started from a terminal ([log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)), but still needs no ingest token: the server reads their spool from the launch directory, found through a pointer file ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal)). The token stays for runs whose spool the server cannot read.
 
 ### #12 · Runner ↔ server transport and runner credential lifetime
 
@@ -989,3 +990,39 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (d): it needs no persistent local disk and no SQLite file on a network file system, and losing the temporary directory costs only the open sessions and the drop counters: cancels and launch failures are kept as markers in the run directory, and a run never launched ends `failed` (doc review of APPLY4).
 - **Assumed:** (d) *(assumed — pending Thomas)*; [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Where data lives), [architecture §7.2](../specs/architecture-plugins-and-packaging.md) (dated note), P1 Assumption 21, [log 2026-10-28](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index). Still to confirm: which temporary directory is node-local on the EMBL login nodes, and how often it is purged **[to be validated]**; whether `/tmp` is polyinstantiated per user there (`pam_namespace`), and the age rules of `systemd-tmpfiles` for it **[to be validated]**.
 - **Blocked:** nothing in CI; the real-cluster checks of P1 Tasks 8 and 24 confirm the temporary directory.
+
+## Runs started from a terminal (2026-10-28)
+
+### #65 · Assumed: no Cancel for runs started from a terminal in 0.0.1
+
+- **Covers:** [dev-env §15.1](../specs/dev-environment-and-testing.md#151-capabilities-by-version) (terminal row); [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) (Monitor only); [api §5.1](../specs/api-and-data-model.md) (dated note: `:cancel` returns `422 not-in-this-version`); [log 2026-10-28](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues).
+- **Context:** Spectio did not start these heads: there is no tmux session of its own, and the head may run on another login node or under `screen`.
+- **Options:**
+  - (a) monitor only; the user stops the run where they started it;
+  - (b) Cancel when the head runs on the server's login node, by the pointer's PID and the PID check of schedulers §3.1.1.
+- **Recommendation:** (a): no signal to a process Spectio did not start, and one fewer security case.
+- **Assumed:** (a) *(assumed — pending Thomas)*.
+- **Blocked:** nothing.
+
+### #66 · Who publishes the bridges, and under which accounts?
+
+- **Covers:** [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) (Publishing); [P1](../plans/P1-walking-skeleton.md) Task 26.
+- **Context:** `nf-spectio` goes to the Nextflow plugin registry, which needs the plugin ID claimed and an API key; `snakemake-logger-plugin-spectio` goes to PyPI, which needs a project owner. Claude never publishes.
+- **Options:**
+  - (a) Thomas's own registry and PyPI accounts, publishing by hand from the dry-run packages of Task 26;
+  - (b) an organisation account (EMBL or a Spectio organisation), with a CI release job and PyPI trusted publishing **[to be validated]**;
+  - (c) (a) for 0.0.1, then (b).
+- **Recommendation:** none: this is Thomas's call.
+- **Assumed:** none. Until answered, Task 26 stops at the dry run.
+- **Blocked:** the first real release of the bridges, not P1.
+
+### #67 · Assumed: the engine setup is documented, not automated, in 0.0.1
+
+- **Covers:** [architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) (Enabling it); [ui-spec §6](../specs/ui-spec.md) (`spectio login` as the one-time engine setup).
+- **Context:** the user adds `-plugins nf-spectio@<ver>` or a `plugins` block to `~/.nextflow/config`, and installs the logger plugin and adds `--logger spectio` for Snakemake.
+- **Options:**
+  - (a) a guide page only, with the lines to copy;
+  - (b) a `spectio init --engines` step that writes the Nextflow `plugins` block and prints the Snakemake line.
+- **Recommendation:** (a) for 0.0.1: nothing writes the user's engine config, and the guide is short.
+- **Assumed:** (a) *(assumed — pending Thomas)*.
+- **Blocked:** nothing.

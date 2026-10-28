@@ -175,6 +175,8 @@ This section owns the source states, results and responses of the run actions. *
 | `POST /runs/{id}:relaunch` | `failed`, `succeeded`, `cancelled` | a new child run in `queued` with `parent_run_id` = this run; the parent stays terminal | `201` with the child run and a `Location` header | `409 run-state-conflict` (§4.1) |
 | `POST /runs/{id}:relaunch` with `mode: resume` | `failed`, `cancelled` | a child run that reuses the parent's launch directory and engine cache (`runs.launch_dir`, `work_dir`) | `201` | `409 run-state-conflict` |
 
+*Note 2026-10-28 (0.0.1):* a run started from a terminal (origin `cli-observed`) is monitor only: `:cancel` on it returns `422 not-in-this-version`, since Spectio did not start its head ([`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal) §13.8) *(assumed — pending Thomas, inbox #65)*.
+
 Body of `:relaunch`: `{mode, from_stage?, params_patch?, samplesheets?, resources?, gates, dry_run?}`.
 - `mode` ∈ {`resume`, `rerun_from`, `fresh`}. `resume` and `rerun_from` reuse the parent's `launch_dir` and `launches.engine_session_id`, and return `409 run-state-conflict` while the parent's head is alive; `fresh` gets a new directory.
 - `from_stage` is a stage id from `run_stages` (§7), required for `rerun_from`.

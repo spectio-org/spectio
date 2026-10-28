@@ -67,6 +67,8 @@ Built-ins ship as modules of `spectio` or `spectio-server`, not as separate dist
 - `snakemake-logger-plugin-spectio` on PyPI, installed in the Snakemake environment;
 - `nf-spectio` in the Nextflow plugin registry.
 
+They are published there for runs that users start by hand (§13.8); UI launches use the copies bundled in the wheel (§7.3).
+
 The `spectio.engine` plugin for each engine wires them in: it generates the config that enables them, and it maps their events on the server. How the bridges send events, fail and which engine versions they support: §13.
 
 **Snakemake: add `spectio` to the user's loggers, never replace them.** `--logger` takes a list (`nargs="+"`, "Specify one or more custom loggers", snakemake `1c67a66`, `src/snakemake/cli.py:1623-1628`), and the current docs say several logger plugins can be used at once (`docs/executing/monitoring.rst`). A profile only sets default command-line arguments (`cli.py:1916`, configargparse), so an explicit `--logger spectio` replaces a profile's `logger: [snkmt]` **[to be validated: how configargparse resolves lists, R9 spike 1]**, and a repeated `--logger a --logger b` may keep only `b` **[to be validated]**. On the API path, handlers come only from `settings.log_handler_settings` (`src/snakemake/logging.py:648`), so a profile Spectio does not read is ignored there. The Snakemake adapter therefore reads the effective loggers (command line, `--profile`, `--workflow-profile`, `workflow/profiles/default`), appends `spectio`, passes their settings through, and emits one `--logger <existing…> spectio`, never a second `--logger`; on the API path it passes the same handlers in `log_handler_settings`. Users of panoptes, snkmt, FlowO or prometheus (12 loggers are in the [plugin catalogue](https://snakemake.github.io/snakemake-plugin-catalog/), [landscape note](../research/landscape-2026-10-26.md) §3) keep their monitor when Spectio launches or adopts their run, as [decision 0001](../decisions/0001-nextflow-through-nf-spectio.md) does for Nextflow.
@@ -519,7 +521,7 @@ Pre-1.0 minors may break the API ([`dev-environment-and-testing.md`](dev-environ
 
 ## 13. Engine bridges
 
-`nf-spectio` and `snakemake-logger-plugin-spectio` (§2) run inside the engine's head process. This section owns how they send events, fail and which engine versions they support; the wire format and the testable bounds belong to the ingest contract ([`api-and-data-model.md`](api-and-data-model.md) §14).
+`nf-spectio` and `snakemake-logger-plugin-spectio` (§2) run inside the engine's head process. This section owns how they send events, fail, which engine versions they support and how runs started from a terminal are found (§13.8); the wire format and the testable bounds belong to the ingest contract ([`api-and-data-model.md`](api-and-data-model.md) §14).
 
 ### 13.1 Event path: spool first, forwarded by the runner
 
@@ -581,6 +583,25 @@ The runner reads these files on demand; the UI's Tasks and Logs tabs ([`ui-spec.
 | Task log | work-directory files `.command.out`, `.command.err`, `.command.log` | the rule's `log:` files, or "no per-task log, see the run log at line N" |
 | Run log | `.nextflow.log` | `.snakemake/log/*.log` |
 | Head stdout / stderr | `.spectio/head.out`, `.spectio/head.err` ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1.1) | same |
+
+### 13.8 Runs started from a terminal
+
+Added 2026-10-28 (Thomas: 0.0.1 also monitors runs that users start by hand, [decision log](../decisions/log.md#2026-10-28-001-also-monitors-runs-started-from-a-terminal-bridges-published-in-the-engines-catalogues)). What 0.0.1 shows for them: [`dev-environment-and-testing.md`](dev-environment-and-testing.md#151-capabilities-by-version) §15.1. The mechanism below is *(assumed — pending Thomas)*.
+
+- **Enabling it.**
+  - Nextflow: `nextflow run … -plugins nf-spectio@<ver>`, or once in `~/.nextflow/config`: `plugins { id 'nf-spectio@<ver>' }`. `$NXF_HOME/config` (default `$HOME/.nextflow/config`) is read by every run, with the lowest priority ([Nextflow configuration](https://docs.seqera.io/nextflow/config)). `-plugins` makes Nextflow ignore the plugins declared in config files, so a user who also passes `-plugins` names `nf-spectio` there too ([Nextflow, using plugins](https://docs.seqera.io/nextflow/plugins/using-plugins)).
+  - Snakemake ≥ 9 (§13.4): `pip install snakemake-logger-plugin-spectio` in the Snakemake environment, then `--logger spectio`, or `spectio` added to the loggers of a profile (§2).
+  - 0.0.1 documents this setup; a helper that writes it (`spectio login` in [`ui-spec.md`](ui-spec.md) §6) comes later *(assumed — pending Thomas, inbox #67)*.
+- **The pointer file.** When the bridge starts without `SPECTIO_RUN_ID` (a run Spectio did not launch, P1 Task 6), it makes a run ID (`run_` and a ULID). It writes the spool in `<launch dir>/.spectio/events/` as in §13.1, creating `.spectio/` with mode 0700. Then, only if `~/.spectio/` exists, it writes `~/.spectio/observed/<run ID>.json` (0600, created under a temporary name, then renamed). The pointer holds the run ID, the launch directory, the engine and its version, the bridge version, the host, and the PID fields of the head's PID file ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1.1: PID, start time, boot ID). A run launched by Spectio never writes a pointer.
+- **Discovery.** The server scans `~/.spectio/observed/` at boot and on each runner tick, and rebuilds read the pointers too, so a run keeps its ID. Each pointer, and the `.spectio/` directory it names, pass the checks of [dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 10; a pointer that fails one is skipped and counted. The launch directory itself is not checked, because a project directory is often group-writable. The run gets origin `cli-observed` ([`api-and-data-model.md`](api-and-data-model.md) §7) and its spool is read like a driven run's.
+- **Its end.** The engine's terminal event ends the run. The host and PID serve only to tell whether the head is alive, on the server's own login node, with the PID check of schedulers §3.1.1; a head gone with no terminal event ends the run `failed` (`head_lost`), as for a driven run (P1 Assumption 15). They are never used to send a signal.
+- **Without Spectio.** No `~/.spectio/`: the bridge writes the spool only. The server is down: events wait in the spool (§13.1, within the bounds of §13.2) and are read at the next scan. In every case the bridge never fails the run (§13.3).
+- **Monitor only in 0.0.1.** No Cancel and no other action *(assumed — pending Thomas, inbox #65)*: the Observed level of [`ui-spec.md`](ui-spec.md) §6, without its adopt banner. A later `spectio run -- <engine command>` wrapper, which would launch the head in tmux as a driven run, is noted, not planned.
+- **Versions.** A pinned bridge meets newer servers under the bridge ↔ ingest window of §12.
+- **Publishing.** Each bridge is released in its engine's own catalogue:
+  - `nf-spectio` to the [Nextflow plugin registry](https://registry.nextflow.io/), with the Gradle plugin `io.nextflow.nextflow-plugin`: the plugin ID is claimed in the registry, the API key goes in `$HOME/.gradle/gradle.properties` as `npr.apiKey`, and `make release` publishes ([Nextflow, Gradle plugin guide](https://docs.seqera.io/nextflow/guides/gradle-plugin)). From Nextflow 25.10 the registry is the only way Nextflow downloads plugins ([Nextflow, migrating plugins](https://docs.seqera.io/nextflow/guides/migrate-plugin)); whether Nextflow 25.04, the floor of §13.4, finds a plugin published only to the registry is **[to be validated]**.
+  - `snakemake-logger-plugin-spectio` to PyPI. The [Snakemake plugin catalogue](https://snakemake.github.io/snakemake-plugin-catalog/) "collects information about and documentation of all Snakemake plugins published on PyPI", and new plugins are found there automatically.
+  - Publishing uses Thomas's own accounts (inbox #66). Claude builds and dry-runs the release packages, and never uploads. Runs launched from the UI keep using the copies bundled in the wheel (§7.3).
 
 ## Sources
 
