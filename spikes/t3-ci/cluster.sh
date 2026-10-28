@@ -6,7 +6,7 @@
 #   cluster.sh tools                  pinned tools into /data/tools (dev/bootstrap.sh), JDK, fixtures
 #   cluster.sh up                     create the cluster, print its shape
 #   cluster.sh scenarios ENGINE IDS   run_scenarios.py as user spx on the submitter
-#   cluster.sh failed-fixtures        squeue/sacct/sinfo/scontrol JSON of a failed task job
+#   cluster.sh failed-fixtures ENGINE squeue/sacct/scontrol (and sinfo) JSON of a failed task job
 #   cluster.sh heads                  engine heads submitted with sbatch (Snakemake, then Nextflow)
 #   cluster.sh probes                 OUT_OF_MEMORY, TIMEOUT, pending reasons, NODE_FAIL
 #   cluster.sh down                   delete the cluster
@@ -107,19 +107,25 @@ cmd_scenarios() {
   return "$rc"
 }
 
+# failed-fixtures ENGINE: the task jobs of the engine's scenarios that did not end COMPLETED, then the
+# JSON of the first one. Run right after the scenarios, while squeue still lists it (MinJobAge).
 cmd_failed_fixtures() {
-  local since ids id
-  since=$(cat /data/spike/nextflow.start 2>/dev/null || echo now-1hour)
-  ids=$(inroot sacct -X -n -P -a -S "$since" -s FAILED,OUT_OF_MEMORY,TIMEOUT -o JobID,JobName,State,ExitCode)
-  echo "failed jobs since $since:"
-  echo "$ids"
-  id=$(echo "$ids" | head -n 1 | cut -d'|' -f1)
-  [ -n "$id" ] || { echo "no failed job found"; return 1; }
-  fixture "squeue-failed-task" "$id" squeue --json --states=all
-  fixture "scontrol-show-job-failed-task" "$id" scontrol show job --json "$id"
-  fixture "sacct-failed-task" "$id" sacct --json -j "$id"
-  fixture "sinfo" "" sinfo --json
-  done_in failed-fixtures
+  local engine=$1 since jobs id
+  since=$(cat "/data/spike/$engine.start")
+  jobs=$(inroot sacct -X -n -P -a -S "$since" -o JobID,JobName,State,ExitCode,DerivedExitCode)
+  echo "task jobs since $since: $(echo "$jobs" | wc -l); states: $(echo "$jobs" | cut -d'|' -f3 | sort | uniq -c | xargs)"
+  echo "$jobs" | grep -v '|COMPLETED|' | head -n 20
+  if [ "$engine" = nextflow ]; then   # the engine's view of the same tasks: native_id is the Slurm job id
+    awk -F'\t' 'NR == 1 || $7 == "FAILED"' /data/work/nextflow/nextflow/oom_fatal/results/pipeline_info/execution_trace.txt | cut -f1-9
+  fi
+  # oom_fatal is the only scenario with a failure, so the first such job is its QC_STATS S05 task.
+  id=$(echo "$jobs" | grep -v '|COMPLETED|' | head -n 1 | cut -d'|' -f1)
+  [ -n "$id" ] || { echo "every task job ended COMPLETED"; return 1; }
+  fixture "$engine-squeue-failed-task" "$id" squeue --json --states=all
+  fixture "$engine-scontrol-job-failed-task" "$id" scontrol show job --json "$id"
+  fixture "$engine-sacct-failed-task" "$id" sacct --json -j "$id"
+  [ "$engine" = snakemake ] || fixture "sinfo" "" sinfo --json
+  done_in "failed-fixtures $engine"
 }
 
 # head ENGINE ARGS: run_scenarios.py for `happy` inside a batch job on bigmem, which submits the tasks.
@@ -193,7 +199,7 @@ cmd_down() { sind delete cluster "$CLUSTER"; }
 
 case ${1:-} in
   facts | tools | up | heads | probes | down) "cmd_$1" ;;
-  failed-fixtures) cmd_failed_fixtures ;;
+  failed-fixtures) cmd_failed_fixtures "$2" ;;
   scenarios) cmd_scenarios "$2" "$3" ;;
   *) sed -n '2,15p' "$0"; exit 2 ;;
 esac
