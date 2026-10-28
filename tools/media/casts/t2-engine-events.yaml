@@ -1,0 +1,40 @@
+# Spike T2 (engine-events): the commands that proved the spike.
+# `runs.sh` is NOT run again: a stub prints the output recorded in spikes/engine-events/LOG.md §5
+# (2026-10-28, Nextflow 26.10.4, cut to the exit codes and two fixture lines). The analyse_*.py
+# commands are real: they read the committed fixtures. They exist on branch spike/engine-events
+# only, so this cast is regenerated from that branch.
+title: "Spike T2: two observers, one run (Nextflow 26.10.4) and a Snakemake retry"
+cols: 112
+rows: 28
+idle_time_limit: 1.5
+typing_delay: 0.012
+line_delay: 0.03
+workdir: "spikes/engine-events"
+env:
+  PATH: "{repo}/spikes/engine-events/.cast-bin:$PATH"
+setup:
+  - |
+    mkdir -p .cast-bin
+    cat > .cast-bin/runs.sh <<'EOF'
+    #!/bin/sh
+    echo "flaky exit=0"
+    echo "toolerr exit=1"
+    echo "resume exit=0"
+    echo "fixtures/nextflow-26.10.4_tower_flaky.jsonl: 10 lines, 199689 bytes"
+    echo "fixtures/nextflow-26.10.4_plugin_flaky.jsonl: 306 lines, 392188 bytes"
+    EOF
+    chmod +x .cast-bin/runs.sh
+steps:
+  - comment: "replayed from LOG.md: nf-tower and nf-spectio in the same runs (flaky, tool error, resume)"
+  - run: "PLUGIN=1 runs.sh nextflow-26.10.4 $SCRATCH 8765"
+  - pause: 0.6
+  - comment: "real: compare the plugin fixture with the Tower fixture of the same run"
+  - run: "python3 analyse_plugin.py fixtures/nextflow-26.10.4_plugin_flaky.jsonl fixtures/nextflow-26.10.4_tower_flaky.jsonl"
+    keep: "^ ids:|AFTER its|tower create ids|SAME RUN|taskIds"
+  - pause: 0.8
+  - clear: true
+  - comment: "real: the Snakemake checkpoint and the retry of job 103"
+  - run: "python3 analyse_snakemake.py fixtures/snakemake-9.27.1_checkpoint_flaky_retry.jsonl"
+    keep: "progress totals|run_info stats|jobids with|job 103 sequence"
+  - pause: 1.5
+  - run: "rm -r .cast-bin"
