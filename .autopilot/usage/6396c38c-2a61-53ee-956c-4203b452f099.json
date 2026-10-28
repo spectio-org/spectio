@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 410,
-    "cache_write": 668969,
-    "cache_read": 31039463,
-    "output": 72637
+    "input": 533,
+    "cache_write": 757905,
+    "cache_read": 43067794,
+    "output": 98427
    },
-   "calls": 178,
+   "calls": 235,
    "model": "claude-opus-5-5",
    "start": "2026-10-27T23:14:03.633Z",
-   "end": "2026-10-28T08:08:17.984Z",
+   "end": "2026-10-28T08:23:22.619Z",
    "id": "6396c38c-2a61-53ee-956c-4203b452f099",
    "kind": "main",
    "type": "session",
@@ -31,6 +31,23 @@
    "kind": "subagent",
    "type": "code-simplifier",
    "label": "Simplify D6 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 18,
+    "cache_write": 24476,
+    "cache_read": 179904,
+    "output": 4248
+   },
+   "calls": 9,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T08:15:06.191Z",
+   "end": "2026-10-28T08:16:03.411Z",
+   "id": "a1963f9eb2be5692a",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review SEC-T1-06 change",
    "workflow": null
   },
   {
@@ -86,6 +103,23 @@
   },
   {
    "tokens": {
+    "input": 14,
+    "cache_write": 25251,
+    "cache_read": 83585,
+    "output": 3771
+   },
+   "calls": 6,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T08:12:19.729Z",
+   "end": "2026-10-28T08:14:12.627Z",
+   "id": "a52df4fbf0ba65685",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Review SEC-T1-06 fix diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 20,
     "cache_write": 29092,
     "cache_read": 214237,
@@ -99,6 +133,23 @@
    "kind": "subagent",
    "type": "doc-reviewer",
    "label": "Doc re-review D6 (round 2)",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 4,
+    "cache_write": 17141,
+    "cache_read": 10516,
+    "output": 1098
+   },
+   "calls": 2,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T08:13:39.986Z",
+   "end": "2026-10-28T08:13:52.151Z",
+   "id": "a692a53baf98f02bf",
+   "kind": "subagent",
+   "type": "code-simplifier",
+   "label": "Simplify SEC-T1-06 fix diff",
    "workflow": null
   },
   {
@@ -150,6 +201,23 @@
    "kind": "subagent",
    "type": "general-purpose",
    "label": "Spike T2 engine events",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 8,
+    "cache_write": 21264,
+    "cache_read": 45839,
+    "output": 3236
+   },
+   "calls": 4,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-28T08:12:19.758Z",
+   "end": "2026-10-28T08:12:54.746Z",
+   "id": "ae914635c4e85309b",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review SEC-T1-06 fix",
    "workflow": null
   }
  ],
