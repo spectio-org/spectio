@@ -1,6 +1,6 @@
 # Code review · SEC-T1-06, private workdir for the test runners
 
-`review-code` on `claude/autopilot-promotion-t1-d6-hutw7a`, range `26299db..c9d53f9`, 2026-10-28, tick 11. Reviewers: `code-reviewer` and `security-reviewer`, independent, in parallel. Format: [`README.md`](../README.md).
+`review-code` on `claude/autopilot-promotion-t1-d6-hutw7a`, range `a2f87d3..c9d53f9`, 2026-10-28, tick 11. Reviewers: `code-reviewer` and `security-reviewer`, independent, in parallel. Format: [`README.md`](../README.md).
 
 The change fixes SEC-T1-06 from the [T1 code review](T1.md): before T3 runs the harness on a sind submitter node ([dev environment §4.1](../../specs/dev-environment-and-testing.md#41-slurm-with-sind)), `run_scenarios.py` must stop deleting and reusing the predictable shared directory `/tmp/spectio-scenarios`. Without `--workdir`, `run_scenarios.py` and `run_corpus.py` now create a fresh private directory with `tempfile.mkdtemp` (mode 0700) and print its path. An explicit `--workdir` is used as given; CI passes `$RUNNER_TEMP/…` and is unchanged.
 
