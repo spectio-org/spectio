@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-28T12:35:00Z",
+  "updated_at": "2026-10-28T12:47:00Z",
   "current_wave": "W3",
   "steps": {
     "F1": {
@@ -382,7 +382,7 @@
         "docs/specs/dev-environment-and-testing.md",
         "tools/diagrams/t3_sind_slurm.py"
       ],
-      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); from spike t3-ci (run 40670286528); PR weber8thomas/spectio#35 squash e2c7d41; CODE review=approve 1/2/12, security=approve 0/0/7, rounds=2; doc review approve 13/14; pipelines-slurm green on 646a6eb",
+      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); from spike t3-ci (run 40670286528); PR weber8thomas/spectio#35 squash e2c7d41; CODE review=approve 1/2/12, security=approve 0/0/7, rounds=2; doc review approve 13/14; pipelines-slurm green on 646a6eb; follow-ups PR weber8thomas/spectio#39 squash 7242408 (positive control for slurmrestd, test_fixture.py in ci-ok, redacted errors; review round 3 approve 0/0/4 + 0/0/4)",
       "base": "89fb4f38c6fa0b8837f53bd81a86ec7a778043a0"
     },
     "T4": {
@@ -412,7 +412,7 @@
       "started_at": "2026-10-28T12:00:04Z",
       "finished_at": null,
       "outputs": [],
-      "notes": "CI-driven worker on autopilot/T5 (inbox #52 (b) would move T5 after the walking skeleton; launched under the current plan)"
+      "notes": "CI-driven worker on autopilot/T5 (inbox #52 (b) would move T5 after the walking skeleton; launched under the current plan); review 2 rounds (round 2: CR-8 blocker fixed, not re-reviewed); doc review approve 12/14; PR weber8thomas/spectio#41 open, CI pending"
     },
     "T6": {
       "wave": "W3",
