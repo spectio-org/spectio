@@ -68,7 +68,7 @@ def build(theme: Theme) -> Sketch:
     s.text(40, y + 44, "mosaicatcher-pipeline v2.5.1", size=13.5, anchor="start", colour=t.dim)
     s.page(40, y + 64, 210, 150, fill="surface", lines=0)
     for i, line in enumerate(("workflow/Snakefile", 'include: "rules/count.smk"',
-                              'include: "rules/plots.smk"', "… 20 rule files", "rule all: …")):
+                              'include: "rules/plots.smk"', "… 26 includes", "rule all: …")):
         s.text(54, y + 92 + i * 24, line, size=12.5, anchor="start", colour=t.ink if i == 0 else t.dim)
     s.arrow(256, y + 140, 300, y + 140)
     for i in range(3):
@@ -104,7 +104,7 @@ def build(theme: Theme) -> Sketch:
     s.text(825, y + 48, "flat pipelines: the list only", size=12.5, colour=t.dim)
     s.tick(980, y + 30)
     s.text(1000, y + 26, "always: the processes or rules list, grouped", size=13.5, anchor="start")
-    s.text(1000, y + 48, "under the stages, with an Other group", size=13.5, anchor="start")
+    s.text(1000, y + 48, "under the stages; names in no stage in their own group", size=13.5, anchor="start")
 
     s.text(40, H - 24, "Sources: ui-spec §5.1, §5.1.1; spike note 2026-10-28; tests/pipelines/real/stages/expected/ "
                        "(stage sizes); decision log 2026-10-28; inbox #68 · tools/diagrams/apply6_stages.py",

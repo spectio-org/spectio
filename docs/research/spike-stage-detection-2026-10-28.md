@@ -52,7 +52,7 @@ The detector is `detector/detect_nf.py` (throwaway). It takes the ordered `onPro
 3. **Merge aliases.** Groups whose names differ only in their last word are merged: `…_FORWARD`, `…_REVERSE`, and `PREPARE_GENOME_REFERENCES` with `PREPARE_GENOME_INDICES`.
 4. **Attach single processes.** A one-process direct group joins its neighbour in the same scope.
 5. **Keep the report separate.** `MULTIQC` stays its own "Report" stage.
-6. **Cap at 8.** While there are more than 8 groups, it merges the smallest adjacent pair, because the stage gauge has 1 to 8 sectors ([`ui-spec.md`](../specs/ui-spec.md) §2).
+6. **Cap at 8.** While there are more than 8 groups, it merges the smallest adjacent pair, because the stage gauge has 1 to 8 sectors ([`ui-spec.md`](../specs/ui-spec.md) §3.2).
 7. **Name them.** A stage is named after its subworkflow, humanised. A pipeline with no subworkflow gets no detected stages.
 
 Output (`out/detector_nf.txt`; the count is the number of processes):
@@ -79,7 +79,7 @@ Output (`out/detector_nf.txt`; the count is the number of processes):
 1. **The logger sees rule names only.** `job_info` carries `rule_name` and no file (`snakemake/jobs.py:1072-1075` in the 9.27.1 wheel; record keys in `out/mosaicatcher-v2.5.1_dryrun_events.jsonl`). The rule object does know its file (`Rule.snakefile`, `snakemake/rules.py:121`, `:165`), but that never reaches the logger.
 2. **`workflow_started` names the main Snakefile.** It carries `snakefile_main`, `basedir` and `cwd` (`snakemake/workflow.py:289-305`). So the server can find the source for runs it launched and for runs started from a terminal.
 3. **The rule graph at start stops at the first checkpoint.** `rulegraph` lists rules in topological order (`snakemake/workflow.py:1222-1236`). On the mosaicatcher dry run it holds 13 rules (47 jobs). The run has two checkpoints in `rules/count.smk` (lines 22 and 181), behind which most of the DAG appears later: "The run involves checkpoint jobs, which will result in alteration of the DAG".
-4. **mosaicatcher has no `module`.** ASHLEYS QC comes in as `include:`d rule files under `workflow/rules/ashleys/` when `ashleys_pipeline` is true (`workflow/Snakefile:29-35`). scNOVA is the same, under `scNOVA: True` (`:73-75`). Twenty rule files are included in source order (`:26-75`).
+4. **mosaicatcher has no `module`.** ASHLEYS QC comes in as `include:`d rule files under `workflow/rules/ashleys/` when `ashleys_pipeline` is true (`workflow/Snakefile:29-35`). scNOVA is the same, under `scNOVA: True` (`:73-75`). Twenty-six `include:` lines (`:26`, `:31-35`, `:48-66`, `:75`) name the rule files, in source order; 21 of the included files define rules, which the detector makes 20 groups (the `ashleys/` files are one), FC-313.
 
 ### Snakemake: the detector
 
@@ -117,12 +117,12 @@ What the overlays show:
 
 | Way | Result on rnaseq 3.27.0 |
 |---|---|
-| `-plugins nf-spectio@0.0.1`, as the runner does in [`architecture-plugins-and-packaging.md`](../specs/architecture-plugins-and-packaging.md) §13 (0.0.1 prerequisites) and P1 Task 10 | **The run fails.** `-plugins` replaces the config's plugin list (`modules/nf-cli-v1/src/main/groovy/nextflow/config/ConfigCmdAdapter.groovy:351-352`), so the pinned `nf-schema@2.7.2` (`nextflow.config:473-475`) is not declared. The pipeline's `include … from 'plugin/nf-schema'` then starts the latest version, 3.0.0, and the run stops with `Missing process or function paramsSummaryLog(…)`. |
+| `-plugins nf-spectio@0.0.1`, as the runner does in [`architecture-plugins-and-packaging.md`](../specs/architecture-plugins-and-packaging.md) §13 (0.0.1 prerequisites) and P1 Task 9 (the head script) | **The run fails.** `-plugins` replaces the config's plugin list (`modules/nf-cli-v1/src/main/groovy/nextflow/config/ConfigCmdAdapter.groovy:351-352`), so the pinned `nf-schema@2.7.2` (`nextflow.config:473-475`) is not declared. The pipeline's `include … from 'plugin/nf-schema'` then starts the latest version, 3.0.0, and the run stops with `Missing process or function paramsSummaryLog(…)`. On Nextflow 25.10.9 the run goes on with the pin silently swapped for `nf-schema@2.7.3`, since 3.0.0 and 2.8.0 need Nextflow ≥ 26.04.0 (FC-311). |
 | `-c` file with `plugins { id 'nf-spectio@…' }` | **The run fails** the same way: the `-c` file's list replaces the pipeline's. |
-| `$NXF_HOME/config` with the same block, as §13.8 suggests for terminal runs | **The run succeeds without the bridge:** the pipeline's own `plugins {}` wins, and nothing warns. |
-| `NXF_PLUGINS_DEFAULT=nf-spectio@0.0.1` | **Works.** Declared `nf-schema@2.7.2`, default `nf-spectio@0.0.1`, both started (`modules/nf-commons/src/main/nextflow/plugin/PluginsFacade.groovy:458-471`, `:543-552`, merge `:621`). Caveat: a list in this variable replaces the plugins Nextflow would infer (for example `nf-amazon` for an `s3://` work dir, `:554-570`). That does not matter on a SLURM cluster with a POSIX work dir. |
+| `$NXF_HOME/config` with the same block, as §13.8 suggests for terminal runs | **The run succeeds without the bridge:** the pipeline's own `plugins {}` wins, and nothing warns. This holds only when the pipeline declares a `plugins {}` block, as all three nf-core pipelines do (FC-311). |
+| `NXF_PLUGINS_DEFAULT=nf-spectio@0.0.1` | **Works.** Declared `nf-schema@2.7.2`, default `nf-spectio@0.0.1`, both started (`modules/nf-commons/src/main/nextflow/plugin/PluginsFacade.groovy:458-471`, `:543-552`, merge `:621`). Caveats (FC-312): the list form is not documented (the docs describe a boolean only), and a list replaces the plugins Nextflow would infer from the executor and the work dir (`:554-576`: `nf-amazon`, `nf-google`, `nf-azure`, `nf-k8s`), so a `k8s` executor fails with `Unknown executor name: k8s` on 25.10.9. That does not matter on a SLURM cluster with a POSIX work dir. |
 
-Owner: architecture §13 and §13.8, P1 Task 10. Raised as [inbox #69](../reviews/inbox.md#69-nf-spectio-is-enabled-in-a-way-that-breaks-nf-core-runs-or-drops-the-bridge); APPLY6 does not change the mechanism.
+Owner: architecture §13 and §13.8, P1 Task 9 (the head script) and the Task 25 guide. Raised as [inbox #69](../reviews/inbox.md#69-nf-spectio-is-enabled-in-a-way-that-breaks-nf-core-runs-or-drops-the-bridge); APPLY6 does not change the mechanism.
 
 ## Recommendation for 0.0.1
 
@@ -146,9 +146,9 @@ Owner: architecture §13 and §13.8, P1 Task 10. Raised as [inbox #69](../review
 | 1 | [`ui-spec.md`](../specs/ui-spec.md) §5.1: detected = "Nextflow top-level subworkflows from the fully qualified task name" | "Top-level" is two levels down in nf-core (`NFCORE_<P>:<P>:<SUBWORKFLOW>`), and the reference subworkflows sit at the wrapper level. Process names are known at `onProcessCreate`, before any task. | State the wrapper and pipeline-scope rule and the source. |
 | 2 | ui-spec §5.1: Snakemake "module prefixes and checkpoints" | The real pipeline has no module. Its structure is in `include:`d rule files. Checkpoints hide the DAG; they do not mark stages. | Rule files and rule sub-directories. |
 | 3 | [`api-and-data-model.md`](../specs/api-and-data-model.md) §7 `run_stages`: "frozen at each launch" | Detected Nextflow stages are only known at `onFlowBegin`, after launch but before any task. For a terminal run there is no launch step. | Frozen at the run's first `onFlowBegin` / `workflow_started` for detected stages. |
-| 4 | ui-spec §2: 1 to 8 sectors | Uncapped detection gives 10 (rnaseq) and 9 (sarek). | Cap at 8 by merging neighbours. |
+| 4 | ui-spec §3.2: 1 to 8 sectors | Uncapped detection gives 10 (rnaseq) and 9 (sarek). | Cap at 8 by merging neighbours. |
 | 5 | [`checking-scenarios.md`](../specs/checking-scenarios.md) §12.1: `match` = "globs on process / rule names" | It does not say whether a glob sees `STAR_ALIGN` or the fully qualified name. Only the fully qualified name tells apart `ALIGN_STAR:SAMTOOLS_INDEX` from `RNASEQ:SAMTOOLS_INDEX`. | Globs match the fully qualified name; `*` crosses `:`. |
-| 6 | [`architecture-plugins-and-packaging.md`](../specs/architecture-plugins-and-packaging.md) §13, §13.8: `-plugins nf-spectio@<ver>` or `~/.nextflow/config` | Both fail on nf-core pipelines (side finding). | Inbox #69; not changed here. |
+| 6 | [`architecture-plugins-and-packaging.md`](../specs/architecture-plugins-and-packaging.md) §13, §13.8: `-plugins nf-spectio@<ver>` or `~/.nextflow/config`; P1 Task 9 (head script) | The first breaks nf-core runs; the second drops the bridge with no warning (side finding). | Inbox #69; not changed here. |
 
 ## What it changes
 
@@ -167,12 +167,21 @@ The fixtures (process lists, rule lists, the four overlays and the expected dete
 ## [to be validated]
 
 - The same names on a real nf-core run with tasks, on SLURM. Only `-preview` and a toy real run were done here.
-- The ordering and timing of `onProcessCreate` on Nextflow 25.10.x, the other pinned version. Only 26.10.4 was run.
 - Whether `onProcessTerminate` arrives for a process whose upstream channel never closes because of an error. The `skipped` rule depends on it.
 - Snakemake: whether `--list-rules` needs input data for other pipelines too, as mosaicatcher's `data_location` check did (here it failed until the test data was present).
 - Snakemake: the topological order of rules first seen after a checkpoint (only the start rule graph was read).
 - Whether nf-core pipelines with a different template (older `NFCORE_` wrappers, or none) keep the majority rule true. Three pipelines of the 2025–2026 template were tried.
 - `NXF_PLUGINS_DEFAULT` on the EMBL cluster's Nextflow and with a site-wide `$NXF_HOME/config`.
+
+## Fact-check (2026-10-28)
+
+An independent fact-checker re-ran the key claims on Nextflow 26.10.4 and 25.10.9. Verified: the fully qualified name; every `onProcessCreate` before `onFlowBegin`, on both versions (so that item left [to be validated]); the nf-core structure claims; Snakemake `job_info` with `rule_name` only; no `module` in mosaicatcher-pipeline, with ASHLEYS and scNOVA as flagged includes. Corrections, applied above:
+
+| ID | Severity | Finding | Source |
+|---|---|---|---|
+| FC-311 | major | The `-plugins` failure depends on the Nextflow version. On 26.10.4 `nf-schema` resolves to 3.0.0 and the run fails; on 25.10.9 it runs, with the pin silently replaced by 2.7.3, the newest version that suits it. Either way the pipeline's pin is replaced by the newest registry version for the running Nextflow. The `$NXF_HOME/config` case drops the bridge only when the pipeline declares `plugins {}`; the home config is read first. | `ConfigCmdAdapter.groovy:351-352` at `691b821` (v26.10.4); `ConfigBuilder.groovy:574-575` at `64d39b0` (v25.10.9); home config `ConfigCmdAdapter.groovy:178-215` |
+| FC-312 | major | The list form of `NXF_PLUGINS_DEFAULT` is undocumented: the docs describe a boolean (default `true`), and the list appears only in a code comment. A list skips the plugin inference, so on 25.10.9 with `process.executor = 'k8s'` the run fails with `Unknown executor name: k8s`. | `docs/reference/env-vars.mdx:259-261` and `docs/plugins/developing-plugins.mdx:540-542` at `691b821`; `PluginsFacade.groovy:545-552` (list), `:554-576` (inference) |
+| FC-313 | minor | mosaicatcher's Snakefile has 26 `include:` lines (26, 31-35, 48-66, 75), and 21 included files define rules; "twenty rule files" was the detector's group count. `snakemake --list-rules` prints `name (docstring)`, sorted; the fixture holds names only, so a reader of `rules.txt` must strip a trailing ` (…)`. | mosaicatcher `workflow/Snakefile` at `2289f7c`; Snakemake 9.27.1 `workflow.py:734-740` |
 
 ## Follow-ups
 
