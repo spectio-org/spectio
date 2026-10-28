@@ -811,7 +811,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 
 ## TRIAGE3 (2026-10-28)
 
-From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measured.
+From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measured. Step page: [TRIAGE3](../progress/W3/TRIAGE3.md).
 
 ### #53 · Kubernetes Roles for the runner and the Nextflow heads
 

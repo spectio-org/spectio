@@ -1,15 +1,15 @@
 ---
 step: TRIAGE3
 wave: W3
-status: running
+status: done
 pr: null
-review: null
-review_score: null
-review_ref: null
+review: approve
+review_score: 12/14
+review_ref: "journal 2026-10-28 12:18 UTC, tick 11 continued (TRIAGE3, APPLY3)"
 ---
 # TRIAGE3 · Sort what the W3 spikes measured against the specs
 
-!!! success "Triaged 2026-10-28 · 69 findings: 44 accepted, 8 rejected, 3 already applied by T3, 14 sent to the inbox (4 assumed, 9 reserved, 1 added to #46) · inbox #53–#60 · doc review pending"
+!!! success "Done 2026-10-28 · 69 findings: 44 accepted, 8 rejected, 3 already applied by T3, 14 sent to the inbox (4 assumed, 9 reserved, 1 already covered by #46) · inbox #53–#60"
 
 ![TRIAGE3 sorting figure: the 69 findings of the spikes round, one cell each, coloured by severity, grouped by step T2, T3, T4 and T7, then sorted into 44 accepted, 3 applied by the step, 4 assumed, 10 waiting for Thomas and 8 rejected](../../assets/diagrams/triage3_sort_light.png#only-light)
 ![TRIAGE3 sorting figure: the 69 findings of the spikes round, one cell each, coloured by severity, grouped by step T2, T3, T4 and T7, then sorted into 44 accepted, 3 applied by the step, 4 assumed, 10 waiting for Thomas and 8 rejected](../../assets/diagrams/triage3_sort_dark.png#only-dark)
@@ -30,7 +30,7 @@ review_ref: null
     - `check_t2.py` reads the T2 fixtures from `origin/spike/engine-events` with `git show`, so nothing is checked out;
     - `check_t3.py` reads the SLURM fixtures of `tests/fixtures/slurm/slurm-26.05.5/`.
 - **No spec was edited.** Accepted and assumed findings reach the specs in APPLY3.
-- **Commit** `efb00cf` on `autopilot/integration`: `autopilot(TRIAGE3): triage the spikes round, 69 findings`. Files: `docs/reviews/spikes.md` (new, 824 lines), `docs/reviews/inbox.md` (+131), `tools/triage/check_t2.py` (147), `tools/triage/check_t3.py` (54).
+- **Commit** `efb00cf` on `autopilot/APPLY3` (it reaches `autopilot/integration` with APPLY3): `autopilot(TRIAGE3): triage the spikes round, 69 findings`. Files: `docs/reviews/spikes.md` (new, 824 lines), `docs/reviews/inbox.md` (+131), `tools/triage/check_t2.py` (147), `tools/triage/check_t3.py` (54).
 - **This page and its figure** (`tools/diagrams/triage3_sort.py`, listed in `docs/assets/media.yaml`) were written after the commit.
 
 ## Why
@@ -81,10 +81,10 @@ workflow_started identity keys: ['cmd', 'cwd', 'host', 'platform', 'rundir', 'us
 
 These lines back SPK-T2-01 and -02 (accepted), SPK-T2-09 (assumed, #56), SPK-T2-11 and -23 (reserved, #55) and SPK-T2-17 (accepted).
 
-**The T3 checks, re-run for this page.** T3 is not merged into this worktree yet, so the fixtures were extracted from branch `autopilot/T3` into a scratch folder (`git archive autopilot/T3 tests/fixtures/slurm | tar -x`):
+**The T3 checks, re-run for this page** on the fixtures that T3 merged:
 
 ```console
-$ python3 -I tools/triage/check_t3.py <scratch>/tests/fixtures/slurm/slurm-26.05.5 probes pending
+$ python3 -I tools/triage/check_t3.py tests/fixtures/slurm/slurm-26.05.5 probes pending
 # probes
    328 probe-oom OUT_OF_MEMORY None None:125 SIGNALED kill_request_user='' elapsed=1 limit_min=60
    341 probe-nodefail NODE_FAIL None 1:0 ERROR kill_request_user='' elapsed=73 limit_min=60
@@ -139,7 +139,7 @@ The same counts per step, from the [Counts table](../../reviews/spikes.md#counts
 | Finding | Reason |
 |---|---|
 | SPK-T2-13 | cannot be reproduced from the evidence: not observed |
-| SPK-T2-20 | no difference: the observation matches synthesis §2ter |
+| SPK-T2-20 | cannot be reproduced as a difference: the observation matches synthesis §2ter |
 | SPK-T3-07 | cannot be reproduced: one spike run, not retested; no spec text affected |
 | SPK-T3-08 | no difference: the observation matches schedulers §3.5 |
 | SPK-T3-14 | no difference with schedulers §3.3; already recorded in the dev-env §4.1 `slurm-rest` row |
