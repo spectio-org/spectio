@@ -1,8 +1,9 @@
 name: pipelines · nf-core and Snakemake catalog
 
 # Real pipelines with their own test datasets (tests/pipelines/real/corpus.yaml).
-# PR tier: called by ci.yml on pull requests that touch the corpus; everything nightly. Private-repo runners have
-# 2 CPU, so nf-core runs get a resourceLimits override (run_corpus.py --limits private).
+# PR tier: called by ci.yml on pull requests that touch the corpus; everything nightly. nf-core runs get a
+# resourceLimits override from runner_limits.<visibility> in corpus.yaml (run_corpus.py --limits private|public);
+# the repository is public since 2026-10-28.
 # Each job first frees runner disk (the test profiles pull several GB of containers or conda packages) and samples
 # free memory and disk every 5 s; the job summary and the resources.json artifact give the start and minimum values.
 # Both jobs use tests/pipelines/real/runner_probe.sh (results: docs/research/corpus-ci-2026-10-27.md).

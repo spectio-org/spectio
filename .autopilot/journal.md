@@ -308,3 +308,15 @@ One entry per tick: time, steps started and finished, verification results, tria
 - **Started: T3** (sind SLURM), CI-driven, on `autopilot/T3`, from the spike.
 - **Exit checks:** T4 `python3 tools/docs/check.py`: 0 failures; `mkdocs build --strict`: built; every PR check green on `c22123d`.
 - **Waiting on Thomas:** #52 (code first, critical), confirming #51 (b), the dashboard answers, then the items listed in tick 11.
+
+## 2026-10-28 10:55 → 12:18 UTC — tick 11, continued (T3, corpus retry, TRIAGE3)
+
+- **Done: T3** (sind SLURM), CI-driven. PR weber8thomas/spectio#35, squash `e2c7d41`.
+  - It adds `dev/slurm/cluster.sh` (`slurm-mini`, `slurm-site`, `slurm-rest`), `tests/slurm/scenarios.sh`, `pipelines-slurm.yml` (outside `ci-ok`, nightly at 04:41 UTC) and 24 fixtures in `tests/fixtures/slurm/slurm-26.05.5/`.
+  - Code and security review, 2 rounds: approve (1 blocker, 2 majors, 12 minors found and fixed or deferred) and approve (7 minors). Doc review approve 13/14.
+  - New facts for the specs: a Nextflow task over its time limit ends `FAILED 140:0`, never `TIMEOUT`; a Snakemake task job always ends `FAILED 1:0`; `sacct --json` names `kill_request_user`; a Snakemake head in `sbatch` works for `happy`.
+  - Every check green on `646a6eb`, including the six `pipelines-slurm` jobs.
+- **Merged: corpus retry.** PR weber8thomas/spectio#36, squash `613c89c`. A failed Nextflow corpus entry is retried once with `-resume`, and the `public` limits go to 13 GB (SPK-T7-02, SPK-T7-05). It answers the red nightly 40649538349 (a quay.io 502 and a lost runner).
+- **Done: TRIAGE3** (round "spikes", 69 findings from T2, T3, T4 and T7): 44 accepted, 8 rejected, 3 already applied by T3, 14 to the inbox. New inbox entries #53 to #60: 9 reserved (k8s Roles #53, work namespace and tokens #54, event payloads #55, slurmrestd token #59), 4 assumed (#56 `aborted`, #57 pipeline workflows join `ci.yml`, #58 the autopilot watches the nightlies, #60 deferred SLURM coverage). Commit `efb00cf` on `autopilot/APPLY3`.
+- **Running:** APPLY3 (parts A to C applied, dev-env part running), T5 (scenario runner, CI-driven), T3 follow-ups (CR-T3-11, CR-T3-12, SEC-T3-07).
+- **Waiting on Thomas:** #52 (code first, critical), #51 (b) to confirm, the reserved items #53, #54, #55 and #59, the dashboard answers.

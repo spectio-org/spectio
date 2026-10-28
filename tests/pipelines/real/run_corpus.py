@@ -49,6 +49,8 @@ def validate(corpus: dict) -> list[str]:
             bad = [t for t in str(e.get("args", "")).split() if not ARG.fullmatch(t)]
             if bad:
                 errs.append(f"{n}: args tokens {bad} have characters outside [A-Za-z0-9._/=:,-]")
+            if section == "nfcore" and "-resume" in str(e.get("args", "")).split():
+                errs.append(f"{n}: args must not contain -resume (run_engine resumes a failed run itself)")
     return errs
 
 
@@ -107,6 +109,20 @@ def smk_entry(e, wd: Path, smk: str) -> dict:
     if "--sdm" not in e["args"] and "-n" not in e["args"].split():
         cmd += ["--sdm", "conda"]
     return {"cmd": cmd, "env": dict(os.environ), "cwd": repo}
+
+
+def run_engine(eng: str, spec: dict, log_path: Path) -> tuple[int, int | None]:
+    """Run the entry, streaming to run.log, so a run killed by a full disk or the job timeout still leaves its log.
+    A Nextflow run that exits non-zero (not killed by a signal) is retried once with -resume: a registry error on a
+    container pull (docker exit 125) is not retried by the nf-core errorStrategy, and the finished tasks come from
+    the cache. Returns (exit, first_exit); first_exit is None when the run was not retried."""
+    with open(log_path, "w") as log:
+        run = lambda cmd: subprocess.run(cmd, cwd=spec["cwd"], env=spec["env"], stdout=log, stderr=subprocess.STDOUT).returncode
+        rc = run(spec["cmd"])
+        if rc <= 0 or eng != "nextflow":
+            return rc, None
+        print(f"\n[run_corpus] exit {rc}; retrying once with -resume\n", file=log, flush=True)
+        return run(spec["cmd"] + ["-resume"]), rc
 
 
 def make_workdir(arg: str | None) -> Path:
@@ -172,15 +188,15 @@ def main() -> int:
         wd = workdir / n; wd.mkdir(parents=True, exist_ok=True)
         spec = nf_entry(e, wd, a.nextflow, a.limits, a.nf_version) if eng == "nextflow" else smk_entry(e, wd, a.snakemake)
         t0 = time.time()
-        # Stream to run.log, so a run killed by a full disk or the job timeout still leaves its log.
-        with open(wd / "run.log", "w") as log:
-            p = subprocess.run(spec["cmd"], cwd=spec["cwd"], env=spec["env"], stdout=log, stderr=subprocess.STDOUT)
-        res = {"engine": eng, "name": n, "exit": p.returncode, "seconds": round(time.time() - t0), "cmd": spec["cmd"]}
+        rc, first_exit = run_engine(eng, spec, wd / "run.log")
+        res = {"engine": eng, "name": n, "exit": rc, "first_exit": first_exit, "seconds": round(time.time() - t0), "cmd": spec["cmd"]}
         if eng == "nextflow":
             res["outputs"] = sorted(str(x.relative_to(wd / "results")) for x in (wd / "results").glob("*")) if (wd / "results").exists() else []
         (wd / "result.json").write_text(json.dumps(res, indent=2))
-        print(f"{'PASS' if p.returncode == 0 else 'FAIL'}  {eng:9s} {n:32s} {res['seconds']:6d}s")
-        failures += p.returncode != 0
+        if first_exit is not None:  # a GitHub annotation, so a green retried run stays visible
+            print(f"::warning title=corpus retry::{n} exit {first_exit} on first attempt, {'pass' if rc == 0 else 'fail'} on -resume")
+        print(f"{'PASS' if rc == 0 else 'FAIL'}  {eng:9s} {n:32s} {res['seconds']:6d}s{' (retried)' if first_exit is not None else ''}")
+        failures += rc != 0
     return 1 if failures else 0
 
 
