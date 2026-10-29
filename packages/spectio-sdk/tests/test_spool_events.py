@@ -180,7 +180,7 @@ def test_command_fields_never_survive(type_: str, data: dict[str, Any]) -> None:
             "snakemake.job_info",
             {"jobid": 1, "rule_name": "a", "resources": {"x": [{"script": "rm -rf"}]}},
         ),
-        ("snakemake.job_info", {"jobid": 1, "rule_name": "a", "wildcards": {"shellcmd": "x"}}),
+        ("snakemake.job_info", {"jobid": 1, "rule_name": "a", "resources": {"shellcmd": "x"}}),
         ("snakemake.rulegraph", {"rulegraph": {"script": "rm -rf", "nodes": []}}),
         (
             "snakemake.rulegraph",
@@ -194,6 +194,13 @@ def test_denylisted_keys_dropped_at_any_depth(type_: str, data: dict[str, Any]) 
     assert not DENYLIST & all_keys(dumped)
     assert "secret" not in repr(dumped)
     assert "rm -rf" not in repr(dumped)
+
+
+def test_wildcard_names_kept_as_declared() -> None:
+    # Wildcard names are the rule's own labels, not engine fields (SEC-P3T1-12).
+    wildcards = {"env": "prod", "cmd": "x", "sample": "S1"}
+    ev = make_event("snakemake.job_info", jobid=1, rule_name="a", wildcards=wildcards)
+    assert parse_data(ev).model_dump()["wildcards"] == wildcards
 
 
 def raw_command_values(value: Any, key: str = "") -> Iterator[str]:

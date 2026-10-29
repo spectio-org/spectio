@@ -8,7 +8,7 @@ allow-listed model of its type: keys outside the allow-list are dropped, so `scr
 import math
 import re
 from datetime import UTC, datetime
-from typing import Annotated, Any, Self
+from typing import Annotated, Any, ClassVar, Self
 
 from pydantic import (
     AwareDatetime,
@@ -124,11 +124,20 @@ class _Data(BaseModel):
     # strict: "7" or true is not an integer; the envelope already refused NaN and NUL.
     model_config = ConfigDict(extra="ignore", frozen=True, strict=True, allow_inf_nan=False)
 
+    # Fields whose keys are labels the workflow chose (wildcard names), kept as declared.
+    _verbatim_keys: ClassVar[frozenset[str]] = frozenset()
+
     @model_validator(mode="before")
     @classmethod
     def _drop_denied_keys(cls, data: Any) -> Any:
         # The allow-list drops top-level keys; this also reaches free-form values.
-        return _drop_denied(data)
+        if not isinstance(data, dict):
+            return data
+        return {
+            k: v if k in cls._verbatim_keys else _drop_denied(v)
+            for k, v in data.items()
+            if k not in DENIED_KEYS
+        }
 
 
 # Greedy: a command that quotes the marker text itself is still hidden whole (hiding more is safe).
@@ -277,6 +286,8 @@ class SnakemakeRulegraph(_Data):
 
 
 class SnakemakeJobInfo(_Data):
+    _verbatim_keys = frozenset({"wildcards"})  # a wildcard may be named `env` (SEC-P3T1-12)
+
     jobid: Int64
     rule_name: str
     wildcards: dict[str, str] = {}
