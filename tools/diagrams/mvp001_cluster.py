@@ -8,10 +8,11 @@ Drawn only from what the owner says, no measurements involved:
   requirements) and §15.1 (what is not in 0.0.1);
 - docs/decisions/log.md, "2026-10-27 — 0.0.1 revised: on the cluster, no gates, a token link"
   and "2026-10-28 — 0.0.1: head in tmux on the login node; SSH config and `spectio open`"
-  (the laptop command is named `spectio-open`, review of PR #47);
+  (the laptop command is named `spectio-open`, review of PR #47; since 2026-10-29 it is `spectio open`,
+  a command of the `spectio` package);
 - inbox #64 (SQLite as a rebuildable index in a node-local temporary directory, assumed).
 Facts drawn: the laptop reaches one login node through an SSH tunnel, opened by
-`spectio-open <host> [--node <login node>]` or by an SSH config entry with `LocalForward`,
+`spectio open <host> [--node <login node>]` or by an SSH config entry with `LocalForward`,
 then a one-time token link (single use, 15 minutes, then a session cookie);
 one `spectio serve` per user under their own Unix account, bound to 127.0.0.1, holding
 UI + API + built-in runner, SQLite as an index in a node-local temporary directory (0600),
@@ -67,7 +68,7 @@ def build(theme: Theme) -> Sketch:
     s.poly([(80, 360), (344, 360), (366, 388), (58, 388)], fill="neutral", width=1.8)
     s.line(176, 375, 248, 375, width=1.2, amount=0.3, passes=1, colour=t.dim)
     s.step(212, 432, 1, "open it from the laptop")
-    s.text(212, 458, "`spectio-open <host> [--node <login node>]`", size=13, colour=t.dim)
+    s.text(212, 458, "`spectio open <host> [--node <login node>]`", size=13, colour=t.dim)
     s.text(212, 478, "or, with nothing to install, an SSH config entry", size=13.5, colour=t.dim)
     s.text(212, 498, "then a one-time token link: single use, 15 min", size=13.5, colour=t.dim)
 
@@ -172,7 +173,7 @@ def build(theme: Theme) -> Sketch:
     s.text(460, fy + 164, "Kubernetes", size=14)
 
     s.text(60, H - 34, "Source: docs/specs/dev-environment-and-testing.md §15.3, and the decision log entries "
-                       "2026-10-27 (0.0.1 revised) and 2026-10-28 (head in tmux, `spectio-open`) · "
+                       "2026-10-27 (0.0.1 revised) and 2026-10-28 (head in tmux, `spectio-open`), 2026-10-29 (`spectio open`) · "
                        "tools/diagrams/mvp001_cluster.py",
            size=12.5, anchor="start", colour=t.dim)
     s.text(60, H - 12, "EMBL login nodes (Thomas, 2026-10-28): tmux installed, no time limit, everything shared but temporary directories; "

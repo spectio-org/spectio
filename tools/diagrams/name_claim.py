@@ -25,8 +25,8 @@ W, H = 1600, 900
 def build(theme: Theme) -> Sketch:
     s = Sketch(W, H, theme, seed=66)
     t = theme
-    s.heading(50, 58, "Claiming the four names: what holds a name, and when",
-              "`nf-spectio` on the Nextflow registry · `spectio`, `spectio-open`, "
+    s.heading(50, 58, "Claiming the three names: what holds a name, and when",
+              "`nf-spectio` on the Nextflow registry · `spectio`, "
               "`snakemake-logger-plugin-spectio` on PyPI")
 
     # Lane 1: Nextflow plugin registry
