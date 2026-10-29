@@ -5,7 +5,7 @@ name: claude-config
 on:
   pull_request:
   push:
-    branches: [main, autopilot/integration]
+    branches: [main]   # not autopilot/integration: its promotion PR already runs this on every merge
 
 permissions: {}
 

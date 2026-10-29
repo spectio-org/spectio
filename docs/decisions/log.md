@@ -871,3 +871,22 @@ Step page: [FONT1](../progress/W4/FONT1.md).
 - **Changed:** [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Access, the state file, trust boundaries, req. 8, Names and pins) and its table row; [architecture §6](../specs/architecture-plugins-and-packaging.md#6-code-layout) (the `spectio-open/` row removed, `spectio open` under `spectio/`); [MVP 0.0.1](../specs/mvp-0.0.1.md) §1; [P1](../plans/P1-walking-skeleton.md) Goal, Global Constraints, M5, Task 24 and Done when; board `LiteStates`; figures `mvp001_cluster`, `p1_skeleton` and `name-claim`; the claim guide; `.github/workflows/pypi-publish.yml` (two projects); `tools/release/pypi-placeholders/spectio-open/` removed; inbox #15 and #66.
 
 Step page: [OPEN1](../progress/W4/OPEN1.md).
+
+## 2026-10-29 — The Snakemake catalogue reads `docs/intro.md` from this repository
+
+- **Context.** Thomas, 2026-10-29: the logger "il faut qu'il puisse etre référencé sur snakemake plugin catalog" (must be listed in the Snakemake plugin catalogue). The catalogue (snakemake-plugin-catalog at `d2c11a2`, `source/collect_plugins.py`):
+  - lists every PyPI project named `snakemake-<type>-plugin-*` (`:188-189`) and rebuilds daily (`.github/workflows/deploy.yml`, `cron: "50 4 * * *"`); no registration is needed;
+  - shows the PyPI description without its first two lines (`:205`);
+  - installs the package and loads it through the logger registry (`:95-141`); a failure shows as an error on the page;
+  - reads `docs/intro.md` and `docs/further.md` at the root of the `Repository` URL's `main` or `master` branch (`:636-665`), and warns when neither exists (`:279-286`).
+- **Options:** (a) a root `docs/intro.md` in this repository, kept out of the MkDocs site; (b) a separate repository for the bridge, as most loggers have (snkmt, panoptes, prometheus, rich), which splits the bridge from the monorepo layout of [architecture §6](../specs/architecture-plugins-and-packaging.md) and changes the `Repository` URL only with a new release.
+- **Decided (Claude, 2026-10-29, reversible):** (a). One file, no new repository; (b) stays open if the bridge ever moves out.
+- **Changed:** `docs/intro.md`, `exclude_docs` in `mkdocs.yml`, [Claim the package names](../developer/claim-package-names.md) §3 and §4.
+- **Published:** Thomas ran the publish workflow on 2026-10-29 (run 40902016093). `snakemake-logger-plugin-spectio` `0.0.0` is on PyPI with `Repository: https://github.com/spectio-org/spectio` (JSON API, checked 2026-10-29). The catalogue lists it at its next daily rebuild; its page carries this text once `docs/intro.md` reaches `main`.
+
+## 2026-10-29 — CI runs on pushes to `main` only
+
+- **Context.** `ci.yml` and `claude-config.yml` ran on every PR and on pushes to `main` and `autopilot/integration`. The promotion PR from `autopilot/integration` to `main` stays open, so each merge into integration ran both workflows twice on the same commit: once for the push, once for the PR update.
+- **Decided (Thomas, 2026-10-29):** "oui ok" to Claude's recommendation: drop `autopilot/integration` from the `push` triggers of both workflows.
+- **Changed:** both workflows, and the workflow table of [dev-env §11](../specs/dev-environment-and-testing.md#11-ci-workflows).
+- **Cost:** a push used to run the synthetic scenarios whatever changed; a PR runs them only when their paths changed. Integration no longer gets that full run before `main`: it comes on the push to `main`, and nightly. Every PR into integration, and the promotion PR, still run all of `ci.yml` and `claude-config.yml`.
