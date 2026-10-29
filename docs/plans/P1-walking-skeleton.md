@@ -323,8 +323,10 @@ def test_init_records_engine_commands(fakebin):  # nextflow on the login shell's
                                                 # --nextflow "module load X && nextflow" → kept as given
 def test_doctor_reports_engines(fakebin):  # "ok nextflow 26.10.4 /…/nextflow", "fail snakemake not found on PATH"
 def test_doctor_reports_fs_and_sqlite(tmp_path): ...  # db dir on nfs4 (fake mounts) → fail; SQLite version line
-def test_doctor_nxf_plugins_default(monkeypatch): ...  # unset → "ok" with the one-shot line for terminal runs; "false"
-                                                # or a list without nf-spectio → warn (architecture §13.8, inbox #69)
+def test_doctor_nxf_plugins_default(monkeypatch): ...  # unset → "ok" with the one-shot line for terminal runs; "false",
+                                                # a list without nf-spectio, nf-spectio@<other ver>, or a plugins block naming
+                                                # nf-spectio in $NXF_HOME/config → warn; nf-spectio@0.0.1 with its plugin
+                                                # directory missing → fail (the check of architecture §13.8, inbox #69)
 def test_init_defaults_unattended(tmp_path, monkeypatch):  # no flags, stdin closed → no prompt; data dir, db dir
                                                 # and runs root take their defaults; spectio.toml records them
 ```
@@ -359,9 +361,11 @@ def test_init_defaults_unattended(tmp_path, monkeypatch):  # no flags, stdin clo
 def test_head_script_shell_metacharacters(tmp_path):  # location "/p/a b'$(x)", param "x\n$(rm -rf ~)" →
                                                       # `bash -n` OK; the value only in params.json; no "$(rm" in head.sh
 def test_head_script_nextflow_args():   # "-params-file", "-c .spectio/spectio.config", export NXF_PLUGINS_DEFAULT=nf-spectio@0.0.1,
-                                        # no "-plugins" (inbox #69, decided 2026-10-29)
+                                        # no "-plugins"; .spectio/spectio.config contains no "plugins" (inbox #69)
 def test_nfcore_style_pins_kept(nf_run): ...  # engines: a pipeline declaring nf-schema@2.7.2 → the run resolves both
                                         # nf-schema@2.7.2 and nf-spectio@0.0.1 (FC-318; no registry release of nf-spectio)
+def test_init_unpacks_nf_spectio(tmp_path, monkeypatch): ...  # NXF_PLUGINS_DIR unset, NXF_HOME=tmp → spectio init
+                                        # leaves $NXF_HOME/plugins/nf-spectio-0.0.1/; second init → same directory, unchanged
 def test_head_script_snakemake_args():  # "--logger spectio", "--configfile", PYTHONPATH=<launch>/.spectio/pylib
 def test_engine_missing_and_too_old(fakebin):  # no nextflow → class engine_missing; "24.10.0" → engine_version,
                                                # message names the path and the version
@@ -376,7 +380,7 @@ def test_head_env_cleared(tmp_path, monkeypatch): ...  # SPECTIO_SERVER_X=1 in t
 ```
 
 - [ ] **Step 2:** `uv run pytest packages/spectio/tests/test_headscript.py packages/spectio/tests/test_local_launcher.py -v`: FAIL.
-- [ ] **Step 3:** implement Assumptions 13 and 17. Bridges come from `bridge_dir() -> Path` (`importlib.resources` in an installed wheel, Task 21; `$SPECTIO_BRIDGES_DIR` pointing at the Task 6 and 7 build output in a checkout). Nextflow: write `.spectio/spectio.config` (`process.executor = 'slurm'` and `queue` on a SLURM environment) and unpack `nf-spectio` into `$NXF_HOME/plugins`; the head script exports `NXF_PLUGINS_DEFAULT=nf-spectio@<ver>`, never passes `-plugins` (0.0.1 has no `k8s` executor, so the `nf-k8s` addition of §13.8 is not built here) ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal), inbox #69 decided 2026-10-29). Snakemake: pass `--executor slurm` on SLURM, plus `--workflow-profile <location>/profiles/<p>` when a profile is given, plus the environment's `extra_args`. Run directories are `<runs_root>/<run_id>/{launch,work}`.
+- [ ] **Step 3:** implement Assumptions 13 and 17. Bridges come from `bridge_dir() -> Path` (`importlib.resources` in an installed wheel, Task 21; `$SPECTIO_BRIDGES_DIR` pointing at the Task 6 and 7 build output in a checkout). Nextflow: write `.spectio/spectio.config` (`process.executor = 'slurm'` and `queue` on a SLURM environment) and unpack `nf-spectio` into `$NXF_HOME/plugins`; the head script exports `NXF_PLUGINS_DEFAULT=nf-spectio@<ver>`, never passes `-plugins` (0.0.1 has no `k8s` executor, so the `nf-k8s` addition of §13.8 is not built here); `spectio init` (Task 8) calls the same idempotent unpack, so a terminal run finds the copy (architecture §13.8, The plugin copy) ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal), inbox #69 decided 2026-10-29). Snakemake: pass `--executor slurm` on SLURM, plus `--workflow-profile <location>/profiles/<p>` when a profile is given, plus the environment's `extra_args`. Run directories are `<runs_root>/<run_id>/{launch,work}`.
 - [ ] **Step 4:** the same command PASSES.
 - [ ] **Step 5: Commit** `feat(runner): head script, local launcher and runner loop`.
 

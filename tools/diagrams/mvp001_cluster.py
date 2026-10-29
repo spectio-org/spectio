@@ -104,8 +104,8 @@ def build(theme: Theme) -> Sketch:
     s.step(680, 528, 2, "one server per user")
     s.text(680, 554, "`spectio serve`, nothing shared", size=13.5, colour=t.dim)
     # the engine head, in its own tmux session
-    s.terminal(890, 206, 250, 124, ("tmux: spectio-<run>", "$ nextflow run ...", "  -plugins nf-spectio",
-                                    "or snakemake --logger spectio"), size=12.5)
+    s.terminal(886, 206, 271, 124, ("tmux: spectio-<run>", "$ NXF_PLUGINS_DEFAULT=nf-spectio@<ver>", "  nextflow run ...",
+                                    "or snakemake --logger spectio"), size=11)
     s.arrow(866, 360, 886, 318)
     s.text(1015, 352, "engine head, one tmux per run", size=14, weight="bold")
     person(912, 396, 8)
@@ -127,7 +127,7 @@ def build(theme: Theme) -> Sketch:
     for i in range(4):
         x = 1250 + i * 100
         s.hpc_node(x, 366, 58, 80, busy=3 - i % 3, slots=4)
-        s.arrow(1142, 300, x + 29, 360)
+        s.arrow(1157, 300, x + 29, 360)
     s.text(1455, 474, "tasks", size=14.5, weight="bold")
     s.step(1430, 512, 4, "tasks go to SLURM")
     s.text(1430, 538, "through the engine's own SLURM executor", size=13.5, colour=t.dim)
@@ -147,7 +147,7 @@ def build(theme: Theme) -> Sketch:
     s.text(fold.x + 120, fold.y + 80, "the spool", size=15, anchor="start")
     s.text(fold.x + 120, fold.y + 104, "`.spectio/events/*.jsonl`", size=14, anchor="start")
     # the plugin appends, the runner reads
-    s.line(1142, 326, 1180, 344, width=1.6)
+    s.line(1157, 326, 1180, 344, width=1.6)
     s.line(1180, 344, 1180, fy - 36, width=1.6)
     s.arrow(1180, fy - 36, 1154, fy + 56)
     s.text(1192, fy - 22, "the plugin appends events", size=14, anchor="start")
