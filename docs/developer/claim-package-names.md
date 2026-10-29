@@ -3,7 +3,7 @@ icon: material/tag-check
 ---
 # Claim the package names
 
-Spectio needs four names before its bridges can be installed from a terminal: the plugin ID `nf-spectio` on the Nextflow plugin registry, and `spectio`, `spectio-open` and `snakemake-logger-plugin-spectio` on PyPI ([inbox #66](../reviews/inbox.md#66-claim-the-four-package-names-and-confirm-how-the-bridges-are-released); [dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases) owns the release mechanics). Thomas does every step on the two sites; Claude never publishes. Every fact below was checked on 2026-10-29 in the [name-claim verification](../reviews/verification-2026-10-29-names.md).
+Spectio needs three names before its bridges can be installed from a terminal: the plugin ID `nf-spectio` on the Nextflow plugin registry, and `spectio` and `snakemake-logger-plugin-spectio` on PyPI ([inbox #66](../reviews/inbox.md#66-claim-the-four-package-names-and-confirm-how-the-bridges-are-released); [dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases) owns the release mechanics). Thomas does every step on the two sites; Claude never publishes. Every fact below was checked on 2026-10-29 in the [name-claim verification](../reviews/verification-2026-10-29-names.md).
 
 ![What holds each name, and when](../assets/diagrams/name-claim_light.png#only-light)
 ![What holds each name, and when](../assets/diagrams/name-claim_dark.png#only-dark)
@@ -21,13 +21,16 @@ Spectio needs four names before its bridges can be installed from a terminal: th
 5. **Once approved, stop.** "Ownership of a plugin is required to publish" (`plugin-registry.mdx:16`) and "You can claim a plugin even if it doesn't exist in the registry yet" (`gradle-plugin.mdx:109-111`), so an approved claim should hold the ID with no release. This is an inference: the docs do not say that a second claimant is refused **[to be validated]**. Do not upload a placeholder: a release needs a README with Summary, Get Started, Examples and License sections and no placeholder text (`gradle-plugin.mdx:82-101`).
 6. **Access token: only at the first real release,** because tokens expire. **Access tokens**, then **Create New Access Token**, name, expiry, **Generate token**; it is shown once (`plugin-registry.mdx:44-62`). Whether a token can be limited to one plugin is not documented **[to be validated]**.
 
-## 2. The three PyPI names
+## 2. The two PyPI names
+
+!!! note "`spectio-open` is no longer needed (2026-10-29)"
+    The laptop command became `spectio open`, inside the `spectio` package ([decision log](../decisions/log.md#2026-10-29-the-laptop-command-becomes-spectio-open-in-the-spectio-package)). If its pending publisher still exists on pypi.org, delete it under Publishing; delete the GitHub environment `pypi-spectio-open` too. Nothing was published under that name.
 
 ### 2.1 Before you start
 
 - **Account:** a verified primary email and two-factor authentication on pypi.org (warehouse `forklift/legacy.py:541-585` at `481006f`; [PyPI two-factor docs](https://docs.pypi.org/your-account/two-factor-authentication/)).
 - **The names are still free** on 2026-10-29: 404 on `/simple/<name>/` and on the JSON API, and no similar name in the full index under PyPI's confusable-name rule (`packaging/services.py:578-611`). PyPI's list of prohibited names is not public, so only the first run confirms them **[to be validated on upload]**.
-- **What gets uploaded:** a small, working `0.0.0` release of each project, from [`tools/release/pypi-placeholders/`](https://github.com/spectio-org/spectio/tree/main/tools/release/pypi-placeholders). PEP 541 removes projects with "no functionality" as name squatting ([PEP 541, invalid projects](https://peps.python.org/pep-0541/#invalid-projects)), so each one does something: `spectio` and `spectio-open` install a command that prints its version and what Spectio is; `snakemake-logger-plugin-spectio` is a real Snakemake logger that writes each log event as one JSON line (`--logger spectio`). No source gives a minimum **[to be validated]**.
+- **What gets uploaded:** a small, working `0.0.0` release of each project, from [`tools/release/pypi-placeholders/`](https://github.com/spectio-org/spectio/tree/main/tools/release/pypi-placeholders). PEP 541 removes projects with "no functionality" as name squatting ([PEP 541, invalid projects](https://peps.python.org/pep-0541/#invalid-projects)), so each one does something: `spectio` installs a command that prints its version and what Spectio is; `snakemake-logger-plugin-spectio` is a real Snakemake logger that writes each log event as one JSON line (`--logger spectio`). No source gives a minimum **[to be validated]**.
 - **Why `0.0.0`:** a file name can never be uploaded twice, even after deletion (warehouse `docs/user/publishing/troubleshooting.md:19` at `481006f`), so `0.0.1` stays free for the real release.
 
 ### 2.2 On GitHub (repository settings)
@@ -36,7 +39,7 @@ GitHub facts below were read on 2026-10-29 in [Deployments and environments](htt
 
 1. **Protect `main` first.** A classic branch protection rule on `main` (set by Thomas, 2026-10-29): **Require a pull request before merging** with no required approvals, **Require status checks to pass** with the CI checks selected, and force-pushes and deletion blocked (the default). Approvals are not required because the agents' PRs carry Thomas's account, and GitHub does not let an author approve their own PR. What reaches `main` has passed CI, and with no required reviewer on the environments (step 3) that is what guards a publish. Do not run the workflow before it is set.
 2. **The workflow reaches `main` through the promotion PR.** This change merges into `autopilot/integration`; "To trigger the `workflow_dispatch` event, your workflow must be in the default branch" (Manually running a workflow), so **Run workflow** appears only after the integration branch is promoted to `main`. The `publish` job also runs only from `main` (`if: github.ref == 'refs/heads/main'`).
-3. **Create the three environments before the first run** (Settings, Environments): `pypi-spectio`, `pypi-spectio-open` and `pypi-snakemake-logger-plugin-spectio`. "Running a workflow that references an environment that does not exist will create an environment with the referenced name … the newly created environment will not have any protection rules or secrets configured" (Managing environments), so a missing environment would publish from any branch. For each environment:
+3. **Create the two environments before the first run** (Settings, Environments): `pypi-spectio` and `pypi-snakemake-logger-plugin-spectio`. "Running a workflow that references an environment that does not exist will create an environment with the referenced name … the newly created environment will not have any protection rules or secrets configured" (Managing environments), so a missing environment would publish from any branch. For each environment:
     - **Required reviewers:** none. Thomas, 2026-10-29: "pas grave si on publie, on fera des patchs" (no harm if something gets published, we will release patches). A run publishes with no approval step.
     - **Deployment branches and tags:** "Selected branches and tags", with the one rule `main`.
     - **Allow administrators to bypass configured protection rules:** unticked. "By default, administrators can bypass the protection rules" (Deployments and environments).
@@ -49,14 +52,14 @@ For each name, **Your account**, then **Publishing** (`/manage/account/publishin
 
 | Field | Value |
 |---|---|
-| PyPI project name | `spectio` (then `spectio-open`, then `snakemake-logger-plugin-spectio`) |
+| PyPI project name | `spectio`, then `snakemake-logger-plugin-spectio` |
 | Owner | `spectio-org` (the repository moved there on 2026-10-29, inbox #9; a publisher added with `weber8thomas` no longer matches and is removed, then added again) |
 | Repository name | `spectio` |
 | Workflow name | `pypi-publish.yml` |
 | Environment name | `pypi-spectio` (the `pypi-<project>` that matches the name) |
 
 !!! warning "A pending publisher holds nothing"
-    "A 'pending' publisher does **not** create a project or reserve a project's name **until** it is actually used to publish. If … another user registers the project name before you actually publish to it, your 'pending' publisher will be **invalidated**" (warehouse `docs/user/trusted-publishers/creating-a-project-through-oidc.md:28-35`). Run the workflow right after you add each publisher. At most 3 pending publishers can exist at once per account (`accounts/views.py:1952-1971`): exactly the three names.
+    "A 'pending' publisher does **not** create a project or reserve a project's name **until** it is actually used to publish. If … another user registers the project name before you actually publish to it, your 'pending' publisher will be **invalidated**" (warehouse `docs/user/trusted-publishers/creating-a-project-through-oidc.md:28-35`). Run the workflow right after you add each publisher. At most 3 pending publishers can exist at once per account (`accounts/views.py:1952-1971`): more than the two names need.
 
 ### 2.4 Run the workflow
 
@@ -71,19 +74,19 @@ After the first run, the pending publisher becomes a normal trusted publisher on
 
 If the workflow cannot run (the promotion is not merged, the Actions minutes are gone), the names can be taken from a laptop, in one sitting:
 1. Make an API token scoped to the whole account (the projects do not exist yet) in Account settings, API tokens (warehouse `docs/user/publishing/publishing-to-pypi.md:21-41`).
-2. For each of the three names, from the repository root (`twine==7.0.0` is `TWINE_VERSION` in `dev/versions.env`):
+2. For each of the two names, from the repository root (`twine==7.0.0` is `TWINE_VERSION` in `dev/versions.env`):
     ```bash
     uv build --out-dir dist/<name> tools/release/pypi-placeholders/<name>
     uvx twine==7.0.0 check --strict dist/<name>/*
     uvx twine==7.0.0 upload dist/<name>/*
     ```
     Username `__token__`; paste the token only at twine's password prompt. Never put it on the command line, in an environment file or in `~/.pypirc`.
-3. Revoke the account-wide token as soon as the third upload is done.
+3. Revoke the account-wide token as soon as the second upload is done.
 4. Then add the trusted publisher of §2.3 on each new project, under Manage, Publishing; publishers on existing projects do not count against the limit of 3.
 
 ## 3. Afterwards
 
-- Inbox #66 is answered when the four names are held; tell Claude which provider string the claim used, so `nf-spectio`'s Gradle build matches it.
+- Inbox #66 is answered when the three names are held; tell Claude which provider string the claim used, so `nf-spectio`'s Gradle build matches it.
 - The Snakemake plugin catalogue finds the logger by its exact display name `snakemake-logger-plugin-spectio` (snakemake-plugin-catalog `source/collect_plugins.py:188-189` at `d2c11a2`) and warns without a `Repository` URL (`:243-250`). It reads `docs/intro.md` and `docs/further.md` at the root of the `Repository` URL's `main` or `master` branch (`:636-665`), not from the package. In this repository that root `docs/` is the MkDocs site, so the catalogue warns for `0.0.0` until the bridge's catalogue page has a home (open point below).
 - TestPyPI is a separate site and holds nothing on pypi.org ([Using TestPyPI](https://packaging.python.org/en/latest/guides/using-testpypi/)); it is not needed here.
 

@@ -10,7 +10,7 @@ on:
         description: PyPI project to publish
         required: true
         type: choice
-        options: [spectio, spectio-open, snakemake-logger-plugin-spectio]
+        options: [spectio, snakemake-logger-plugin-spectio]
 
 permissions:
   contents: read
@@ -41,7 +41,7 @@ jobs:
           PROJECT: ${{ inputs.project }}
         run: |
           case "$PROJECT" in
-            spectio|spectio-open|snakemake-logger-plugin-spectio) ;;
+            spectio|snakemake-logger-plugin-spectio) ;;
             *) echo "::error::Unknown project: $PROJECT"; exit 1 ;;
           esac
           uv build --out-dir dist "tools/release/pypi-placeholders/$PROJECT"

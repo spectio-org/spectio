@@ -57,10 +57,10 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
         <section aria-label="Session ended" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
           <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">ANY SCREEN · LINK EXPIRED OR SERVER RESTARTED (401)</span>
           <h2 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;">Open a new link</h2>
-          <span style="font-size: 13px; color: #33364A; line-height: 1.5;">This link was already used or has expired. Run <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">spectio login --print-link</span> on the cluster for a new one, or let <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">spectio-open</span> do it from your laptop:</span>
+          <span style="font-size: 13px; color: #33364A; line-height: 1.5;">This link was already used or has expired. Run <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">spectio login --print-link</span> on the cluster for a new one, or let <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">spectio open</span> do it from your laptop:</span>
           <pre tabindex="0" style="margin: 0; border-radius: 10px; background: #0F1020; color: #E6E7EF; padding: 10px 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere;">ssh login1 spectio login --print-link
 # or, on your laptop
-spectio-open embl</pre>
+spectio open embl</pre>
           <span style="font-size: 12px; color: #4D5065;">The same page shows when the server restarted. No data is shown until a new link is opened (dev-env §15.3; P1 Review Focus 5). <span style="font-family: 'JetBrains Mono', monospace;">embl</span> is the SSH host of your config.</span>
         </section>
         <section aria-label="Server unreachable" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">

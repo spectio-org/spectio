@@ -15,7 +15,7 @@ docs/specs/dev-environment-and-testing.md §15.3:
   with nf-spectio or Snakemake with the logger plugin; its tasks go through the engine's own SLURM
   executor; the run directory and its spool `.spectio/events/*.jsonl` sit on the shared file system;
 - Assumption 4 (D4): Cancel is Ctrl-C in the head's tmux pane, then SIGTERM, then SIGKILL after 60 s;
-- Task 24: the tunnel is opened by `spectio-open [--node]` or an SSH config entry (2026-10-28); done
+- Task 24: the tunnel is opened by `spectio open [--node]` or an SSH config entry (2026-10-28, one package 2026-10-29); done
   when, by hand on an EMBL login node, both open the runs list;
 - Milestones table: M1 Events in, tasks 1-7; M2 Heads, 8-10; M3 Served safely, 11-16;
   M4 API and screens, 17-21; M5 On the cluster, 22-24 (24 tasks);
@@ -123,7 +123,7 @@ def build(theme: Theme) -> Sketch:
                 bar(x + 54, ry, 24 - r * 4, "bar_blue")
             s.button(x + 8, sy + 128, 72, "Cancel", fill="problem", h=28)
     s.step(200, 506, 1, "open the token link")
-    s.text(200, 530, "tunnel: `spectio-open [--node]`, or an SSH config entry", size=13.5, colour=t.dim)
+    s.text(200, 530, "tunnel: `spectio open [--node]`, or an SSH config entry", size=13.5, colour=t.dim)
     s.text(200, 550, "live refresh: one SSE stream per browser", size=13.5, colour=t.dim)
     s.text(200, 570, "a new link: `spectio login --print-link`", size=13.5, colour=t.dim)
 
@@ -257,7 +257,7 @@ def build(theme: Theme) -> Sketch:
     s.text(x + 6, cy0 + 56, "and cancel, and a restarted", size=13, anchor="start", colour=t.dim)
     s.text(x + 6, cy0 + 76, "server adopts the running head;", size=13, anchor="start", colour=t.dim)
     s.text(x + 6, cy0 + 96, "by hand on an EMBL login node,", size=13, anchor="start", colour=t.dim)
-    s.text(x + 6, cy0 + 116, "`spectio-open` opens the runs list", size=13, anchor="start", colour=t.dim)
+    s.text(x + 6, cy0 + 116, "`spectio open` opens the runs list", size=13, anchor="start", colour=t.dim)
 
     s.text(40, H - 16, "Source: docs/plans/P1-walking-skeleton.md, Architecture, Assumptions 4, 7 and 21, Milestones, "
                        "Tasks 1–24 · docs/specs/dev-environment-and-testing.md §15.3 · "
