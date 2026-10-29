@@ -1,7 +1,7 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-28T12:57:00Z",
-  "current_wave": "W3",
+  "updated_at": "2026-10-29T19:00:00Z",
+  "current_wave": "W5",
   "steps": {
     "F1": {
       "wave": "W0",
@@ -504,12 +504,14 @@
     },
     "GO": {
       "wave": "W4",
-      "status": "pending",
+      "status": "done",
       "attempts": 0,
       "started_at": null,
-      "finished_at": null,
-      "outputs": [],
-      "notes": ""
+      "finished_at": "2026-10-29T19:00:00Z",
+      "outputs": [
+        "docs/decisions/log.md"
+      ],
+      "notes": "GO (Thomas, 2026-10-29): whole P1, M1 to M8, with five changes: EMBL allows long-running processes and SSH tunnels; inbox #52 (b); engine buttons with a guess, path or Git source; local mode on Linux; depictio's Paper look on Mantine 7, rewritten. Log 2026-10-29 'GO for the whole P1 plan, with five changes'."
     },
     "P2": {
       "wave": "W5",

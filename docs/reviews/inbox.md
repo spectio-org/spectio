@@ -816,6 +816,8 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** none. It changes the plan and a `CLAUDE.md` rule, which are Thomas's. The autopilot does not edit `pipeline.yaml` and writes no product code until he answers.
 - **Blocked:** nothing yet; T3 and T4 go on.
 - **Note, 2026-10-28 13:35 UTC:** Thomas asked to run T6 and to go on with what can move; the pipeline continues in its order (T6, then R10 and P1) under the narrowed 0.0.1 ([log](../decisions/log.md#2026-10-28-001-narrowed-launch-and-monitor-an-ultra-simple-ui)). #52 stays open.
+- **Answer (Thomas, 2026-10-29):** "52 option b, ne sur complique pas". Option (b): `review-code` for product code and security boundaries, tests and one review for tooling ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes)). *Handled.*
+
 
 ## TRIAGE3 (2026-10-28)
 
@@ -995,6 +997,8 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Assumed:** (d) *(assumed — pending Thomas)*; [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Where data lives), [architecture §7.2](../specs/architecture-plugins-and-packaging.md) (dated note), P1 Assumption 21, [log 2026-10-28](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index). Still to confirm: which temporary directory is node-local on the EMBL login nodes, and how often it is purged **[to be validated]**; whether `/tmp` is polyinstantiated per user there (`pam_namespace`), and the age rules of `systemd-tmpfiles` for it **[to be validated]**.
 - **Note 2026-10-28 (SEC-141):** also to check on EMBL storage: whether inherited NFSv4 ACLs widen the 0700 and 0600 modes that Spectio and the bridges set **[to be validated]** ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 12).
 - **Blocked:** nothing in CI; the real-cluster checks of P1 Tasks 8 and 24 confirm the temporary directory.
+- **Note 2026-10-29 (Thomas):** he does not know which directory is node-local on the login nodes; an agent tests it later on a real EMBL login node, with whether BeeGFS locks are safe for SQLite **[to be validated]** ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes)). (d) stays assumed.
+
 
 ## Runs started from a terminal (2026-10-28)
 
