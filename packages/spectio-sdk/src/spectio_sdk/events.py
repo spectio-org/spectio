@@ -111,19 +111,23 @@ class _Data(BaseModel):
     model_config = ConfigDict(extra="ignore", frozen=True, strict=True, allow_inf_nan=False)
 
 
-_QUOTED_COMMAND = re.compile(r"(?s)Command '.*?' returned non-zero exit status (\d+)")
+# Greedy: a command that quotes the marker text itself is still hidden whole (hiding more is safe).
+_QUOTED_COMMAND = re.compile(
+    r"(?s)Command '.*' (returned non-zero exit status \d+|died with <[^>]*>)"
+)
 
 
 def _hide_command(msg: str | None) -> str | None:
     """Replace the command an error text quotes; fail closed when the quote is not closed."""
     if msg is None:
         return None
-    msg = _QUOTED_COMMAND.sub(r"Command «hidden» returned non-zero exit status \1", msg)
+    # Cut first: the pattern's cost stays bounded, and a quote the cut leaves open fails closed.
+    msg = _QUOTED_COMMAND.sub(r"Command «hidden» \1", msg[:MAX_MESSAGE_CHARS])
     if "Command '" in msg:
         msg = msg.split("\n", 1)[0]
         if "Command '" in msg:
             msg = msg.split("Command '", 1)[0] + "Command «hidden»"
-    return msg[:MAX_MESSAGE_CHARS]
+    return msg
 
 
 # --- Nextflow (nf-spectio) -----------------------------------------------------------------

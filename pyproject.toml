@@ -39,6 +39,9 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "RUF", "TID251"]
 # packages/spectio/tests/test_static_imports.py refuses it.
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "importlib.import_module".msg = "the runner imports statically, so that lint-imports sees it"
+"importlib.__import__".msg = "the runner imports statically, so that lint-imports sees it"
+"importlib.util.spec_from_file_location".msg = "the runner imports statically, so that lint-imports sees it"
+"runpy".msg = "the runner imports statically, so that lint-imports sees it"
 
 [tool.ruff.lint.isort]
 known-first-party = ["spectio", "spectio_sdk", "spectio_server"]

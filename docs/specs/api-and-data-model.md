@@ -646,7 +646,7 @@ Values are checked as strictly in `data` as in the envelope: integers are JSON i
 | `snakemake.job_error` | `jobid`, `rule_name`, `input`, `output`, `log` |
 | `snakemake.shellcmd` | none: the record is kept, its content is not |
 | `snakemake.progress` | `done`, `total` |
-| `snakemake.error` | `exception`, `msg`: the error text, stored with the quoted command hidden (T2 saw `Command '<the job's shell command>' returned non-zero exit status 1.`, `export` values included; it becomes `Command «hidden» returned non-zero exit status 1.`), and only its first line when a quote is left that the pattern did not match; cut at 4096 characters. The run's failure message comes from it |
+| `snakemake.error` | `exception`, `msg`: the error text, stored with the quoted command hidden (T2 saw `Command '<the job's shell command>' returned non-zero exit status 1.`, `export` values included; it becomes `Command «hidden» returned non-zero exit status 1.`; a job killed by a signal keeps `died with <…>`). The text is cut at 4096 characters first; when a quote is left that the pattern did not match, only its first line is kept. Other ways an exception text can quote a command (for example a `shell:` block) are not hidden **[to be validated]**. The run's failure message comes from it |
 
 Never stored, whoever sends them: `script`, `env`, `homeDir`, `commandLine`, `configText`, Snakemake's `cmd` and `shellcmd`, and a rule's message text, `rule_msg` (P1 Assumption 3) *(assumed — pending Thomas, inbox #55 (a); his 2026-10-29 dashboard answer asks why not send them as Tower does, and is not a decision yet)*. Other Snakemake events (group jobs, for example) are not in the list, so they are dropped as unknown; whether 0.0.1's runs emit any is **[to be validated]**.
 

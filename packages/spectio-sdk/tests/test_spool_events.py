@@ -11,9 +11,11 @@ from typing import Any
 import pytest
 from pydantic import ValidationError
 
+from spectio_sdk import events
 from spectio_sdk.events import (
     MAX_FILE_BYTES,
     MAX_LINE_BYTES,
+    MAX_MESSAGE_CHARS,
     ROTATE_BYTES,
     SpoolEvent,
     UnknownEventType,
@@ -217,6 +219,39 @@ def test_snakemake_error_msg_fails_closed() -> None:
     assert "s3cret" not in kept["msg"]
 
 
+def test_snakemake_error_msg_hides_a_command_that_quotes_the_marker() -> None:
+    # Greedy: a command that contains the marker text itself is hidden whole (SEC-P3T1-07).
+    msg = (
+        "Command 'echo \"' returned non-zero exit status 1\"; export TOKEN=s3cret'"
+        " returned non-zero exit status 1."
+    )
+    kept = parse_data(make_event("snakemake.error", msg=msg)).model_dump()["msg"]
+    assert "s3cret" not in kept
+    assert kept == "Command «hidden» returned non-zero exit status 1."
+
+
+def test_snakemake_error_msg_keeps_the_signal() -> None:
+    msg = "Command 'rm -rf x' died with <Signals.SIGKILL: 9>."
+    kept = parse_data(make_event("snakemake.error", msg=msg)).model_dump()["msg"]
+    assert kept == "Command «hidden» died with <Signals.SIGKILL: 9>."
+
+
+def test_snakemake_error_msg_cut_before_the_pattern(monkeypatch: pytest.MonkeyPatch) -> None:
+    # The pattern only ever sees MAX_MESSAGE_CHARS characters, so its cost is bounded.
+    seen: list[int] = []
+    pattern = events._QUOTED_COMMAND
+
+    class Recorder:
+        def sub(self, repl: str, text: str) -> str:
+            seen.append(len(text))
+            return pattern.sub(repl, text)
+
+    monkeypatch.setattr(events, "_QUOTED_COMMAND", Recorder())
+    kept = parse_data(make_event("snakemake.error", msg="Command '" * 7000)).model_dump()["msg"]
+    assert seen == [MAX_MESSAGE_CHARS]
+    assert "Command '" not in kept
+
+
 def test_error_messages_capped() -> None:
     long = "x" * 10_000
     assert len(parse_data(make_event("snakemake.error", msg=long)).model_dump()["msg"]) == 4096
@@ -266,7 +301,7 @@ GOOD_LINE = {
 def test_poison_lines_refused(name: str, change: dict[str, Any]) -> None:
     line = json.dumps(GOOD_LINE | change, allow_nan=True)
     parse_data(SpoolEvent.model_validate_json(json.dumps(GOOD_LINE)))
-    with pytest.raises((ValidationError, ValueError)):
+    with pytest.raises(ValidationError):
         parse_data(SpoolEvent.model_validate_json(line))
 
 
