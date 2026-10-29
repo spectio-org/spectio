@@ -1,0 +1,14 @@
+[project]
+name = "spectio-server"
+version = "0.0.1"
+description = "Spectio's server: API, store and projector"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = ["spectio-sdk"]
+
+[tool.uv.sources]
+spectio-sdk = { workspace = true }
+
+[build-system]
+requires = ["uv_build==0.11.32"]  # = UV_VERSION in dev/versions.env
+build-backend = "uv_build"
