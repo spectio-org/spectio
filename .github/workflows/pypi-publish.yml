@@ -24,14 +24,19 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      sums: ${{ steps.build.outputs.sums }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: {persist-credentials: false}
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           version: "0.11.32" # = UV_VERSION in dev/versions.env
+          # = UV_SHA256 in dev/versions.env (the x86_64 linux tarball); setup-uv v6.8.0 knows no sum for this version.
+          checksum: aab924fd522efd06f1c5f3b93a243864fc453132c94b2dc49f1371b528a4b967
           enable-cache: false
       - name: Build
+        id: build
         env:
           PROJECT: ${{ inputs.project }}
         run: |
@@ -40,6 +45,8 @@ jobs:
             *) echo "::error::Unknown project: $PROJECT"; exit 1 ;;
           esac
           uv build --out-dir dist "tools/release/pypi-placeholders/$PROJECT"
+          # smoke runs third-party code with the run's artifact token: publish checks these sums.
+          { echo "sums<<EOF"; sha256sum dist/*; echo "EOF"; } >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dist
@@ -56,6 +63,8 @@ jobs:
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
         with:
           version: "0.11.32" # = UV_VERSION in dev/versions.env
+          # = UV_SHA256 in dev/versions.env (the x86_64 linux tarball); setup-uv v6.8.0 knows no sum for this version.
+          checksum: aab924fd522efd06f1c5f3b93a243864fc453132c94b2dc49f1371b528a4b967
           enable-cache: false
       - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
@@ -87,6 +96,12 @@ jobs:
         with:
           name: dist
           path: dist/
+      - name: Check the files are the ones build made
+        env:
+          SUMS: ${{ needs.build.outputs.sums }}
+        run: |
+          printf '%s\n' "$SUMS" | sha256sum --check --strict
+          test "$(find dist -type f ! -name '.*' | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)"
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           skip-existing: true

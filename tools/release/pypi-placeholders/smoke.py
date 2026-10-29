@@ -6,6 +6,7 @@ Usage: python smoke.py <project>
 import json
 import logging
 import os
+import signal
 import subprocess
 import sys
 import tempfile
@@ -23,6 +24,14 @@ def refused(handler_cls, settings) -> bool:
     except OSError:
         return True
     return False
+
+
+class Hung(Exception):
+    """Not an OSError, so refused() lets it through."""
+
+
+def raise_hung(signum, frame):
+    raise Hung
 
 
 def logger() -> None:
@@ -56,6 +65,18 @@ def logger() -> None:
             assert refused(LogHandler, LogHandlerSettings(file=str(path))), "another user's log file was opened"
         finally:
             os.getuid = real_getuid
+
+        # A FIFO planted at the path is refused (ENXIO with no reader) without blocking; 5 s alarm as a guard.
+        fifo = Path(tmp, "fifo.jsonl")
+        os.mkfifo(fifo, 0o600)
+        signal.signal(signal.SIGALRM, raise_hung)
+        signal.alarm(5)
+        try:
+            assert refused(LogHandler, LogHandlerSettings(file=str(fifo))), "a FIFO log file was opened"
+        except Hung:
+            raise AssertionError("opening a FIFO log file blocked") from None
+        finally:
+            signal.alarm(0)
 
         # An existing file of ours with loose permissions is tightened to 0600.
         loose = Path(tmp, "loose.jsonl")

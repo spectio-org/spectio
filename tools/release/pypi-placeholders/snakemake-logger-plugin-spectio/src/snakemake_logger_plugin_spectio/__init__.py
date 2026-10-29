@@ -28,7 +28,9 @@ class LogHandler(LogHandlerBase):
         # Snakemake reads baseFilename from file-writing handlers, as on logging.FileHandler.
         self.baseFilename = os.path.abspath(settings.file)
         # O_NOFOLLOW: a symlink planted at the path is refused, never followed.
-        fd = os.open(self.baseFilename, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        # O_NONBLOCK: a FIFO planted at the path fails or is refused below, instead of blocking the run.
+        flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK
+        fd = os.open(self.baseFilename, flags, 0o600)
         st = os.fstat(fd)
         if not stat.S_ISREG(st.st_mode) or st.st_uid != os.getuid() or st.st_nlink != 1:
             os.close(fd)
