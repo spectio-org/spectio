@@ -3,6 +3,7 @@
 import json
 import logging
 import os
+import stat
 from dataclasses import dataclass, field
 
 from snakemake_interface_logger_plugins.base import LogHandlerBase
@@ -22,10 +23,17 @@ class LogHandlerSettings(LogHandlerSettingsBase):
 
 class LogHandler(LogHandlerBase):
     def __post_init__(self) -> None:
+        # The CLI always passes settings; the interface's type allows None (an API caller).
+        settings = self.settings or LogHandlerSettings()
         # Snakemake reads baseFilename from file-writing handlers, as on logging.FileHandler.
-        self.baseFilename = os.path.abspath(self.settings.file)
+        self.baseFilename = os.path.abspath(settings.file)
         # O_NOFOLLOW: a symlink planted at the path is refused, never followed.
         fd = os.open(self.baseFilename, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        st = os.fstat(fd)
+        if not stat.S_ISREG(st.st_mode) or st.st_uid != os.getuid() or st.st_nlink != 1:
+            os.close(fd)
+            raise PermissionError(f"refusing {self.baseFilename}: not a regular file of ours with one link")
+        os.fchmod(fd, 0o600)
         self._out = os.fdopen(fd, "a", encoding="utf-8")
 
     def emit(self, record: logging.LogRecord) -> None:

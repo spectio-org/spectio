@@ -5,7 +5,6 @@ description = "Launch, monitor and steer Nextflow and Snakemake runs from one pl
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
-classifiers = ["Development Status :: 1 - Planning"]
 
 [project.scripts]
 spectio = "spectio:main"

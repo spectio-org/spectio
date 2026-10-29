@@ -17,6 +17,14 @@ def cli(project: str) -> None:
     assert out.stdout.strip() == "0.0.0", out.stdout
 
 
+def refused(handler_cls, settings) -> bool:
+    try:
+        handler_cls(None, settings).close()
+    except OSError:
+        return True
+    return False
+
+
 def logger() -> None:
     from snakemake_logger_plugin_spectio import LogHandler, LogHandlerSettings
 
@@ -33,13 +41,37 @@ def logger() -> None:
         target, link = Path(tmp, "target"), Path(tmp, "link.jsonl")
         target.write_text("")
         os.symlink(target, link)
-        try:
-            LogHandler(None, LogHandlerSettings(file=str(link)))
-        except OSError:
-            pass
-        else:
-            raise AssertionError("a symlinked log file was followed")
+        assert refused(LogHandler, LogHandlerSettings(file=str(link))), "a symlinked log file was followed"
         assert target.read_text() == ""
+
+        # A second hard link to the file is refused.
+        hard = Path(tmp, "hard.jsonl")
+        os.link(target, hard)
+        assert refused(LogHandler, LogHandlerSettings(file=str(hard))), "a hard-linked log file was opened"
+
+        # A file owned by another user is refused; os.getuid is patched, since the test runs without root.
+        real_getuid = os.getuid
+        os.getuid = lambda: real_getuid() + 1
+        try:
+            assert refused(LogHandler, LogHandlerSettings(file=str(path))), "another user's log file was opened"
+        finally:
+            os.getuid = real_getuid
+
+        # An existing file of ours with loose permissions is tightened to 0600.
+        loose = Path(tmp, "loose.jsonl")
+        loose.touch()
+        loose.chmod(0o666)
+        LogHandler(None, LogHandlerSettings(file=str(loose))).close()
+        assert loose.stat().st_mode & 0o777 == 0o600, oct(loose.stat().st_mode)
+
+        # No settings (allowed by the interface's type): the default file in the working directory.
+        cwd = os.getcwd()
+        os.chdir(tmp)
+        try:
+            LogHandler(None, None).close()
+        finally:
+            os.chdir(cwd)
+        assert Path(tmp, "spectio-events.jsonl").exists()
 
 
 project = sys.argv[1]

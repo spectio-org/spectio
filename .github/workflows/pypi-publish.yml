@@ -3,8 +3,6 @@ name: pypi-publish
 # Publishes one PyPI project with trusted publishing, started by hand (docs/developer/claim-package-names.md).
 # For now it builds the name-holding packages under tools/release/pypi-placeholders/ (dev-environment-and-testing.md §12).
 # PyPI's trusted publisher is registered against this file name, so keep it a top-level workflow named pypi-publish.yml.
-# The build job uploads dist/ and its sha256 sums before any third-party checker is installed; the smoke and
-# publish jobs check the sums before they use the files.
 on:
   workflow_dispatch:
     inputs:
@@ -22,11 +20,10 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Runs nothing but uv and the pinned build backend: the checkers run in smoke, on a copy.
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    outputs:
-      sums: ${{ steps.build.outputs.sums }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: {persist-credentials: false}
@@ -34,8 +31,7 @@ jobs:
         with:
           version: "0.11.32" # = UV_VERSION in dev/versions.env
           enable-cache: false
-      - name: Build and record the sha256 sums
-        id: build
+      - name: Build
         env:
           PROJECT: ${{ inputs.project }}
         run: |
@@ -44,28 +40,11 @@ jobs:
             *) echo "::error::Unknown project: $PROJECT"; exit 1 ;;
           esac
           uv build --out-dir dist "tools/release/pypi-placeholders/$PROJECT"
-          { echo "sums<<EOF"; sha256sum dist/*; echo "EOF"; } >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dist
           path: dist/
           if-no-files-found: error
-      - name: Check metadata, classifiers and wheel contents
-        env:
-          PROJECT: ${{ inputs.project }}
-        run: |
-          . dev/versions.env
-          uvx "twine==$TWINE_VERSION" check --strict dist/*
-          uv run --no-project --with "trove-classifiers==$TROVE_CLASSIFIERS_VERSION" python - dist/*.whl <<'PY'
-          import sys, zipfile
-          from email.parser import Parser
-          from trove_classifiers import classifiers
-          whl = zipfile.ZipFile(sys.argv[1])
-          meta = Parser().parsestr(whl.read(next(n for n in whl.namelist() if n.endswith(".dist-info/METADATA"))).decode())
-          bad = [c for c in meta.get_all("Classifier") or [] if c not in classifiers]
-          sys.exit(f"invalid classifiers: {bad}" if bad else 0)
-          PY
-          diff <(unzip -Z1 dist/*.whl | LC_ALL=C sort) "tools/release/pypi-placeholders/$PROJECT/wheel-contents.txt"
 
   smoke:
     needs: build
@@ -82,13 +61,13 @@ jobs:
         with:
           name: dist
           path: dist/
-      - name: Check the sums, install the wheel and smoke-test it
+      - name: Check, install and smoke-test the wheel
         env:
           PROJECT: ${{ inputs.project }}
-          SUMS: ${{ needs.build.outputs.sums }}
         run: |
-          printf '%s\n' "$SUMS" | sha256sum --check --strict
-          [ "$(find dist -type f ! -name '.*' | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)" ]
+          . dev/versions.env
+          uvx "twine==$TWINE_VERSION" check --strict dist/*
+          diff <(unzip -Z1 dist/*.whl | LC_ALL=C sort) "tools/release/pypi-placeholders/$PROJECT/wheel-contents.txt"
           uv venv --python 3.12 /tmp/smoke
           uv pip install --python /tmp/smoke/bin/python dist/*.whl
           /tmp/smoke/bin/python tools/release/pypi-placeholders/smoke.py "$PROJECT"
@@ -108,12 +87,6 @@ jobs:
         with:
           name: dist
           path: dist/
-      - name: Check the sums
-        env:
-          SUMS: ${{ needs.build.outputs.sums }}
-        run: |
-          printf '%s\n' "$SUMS" | sha256sum --check --strict
-          [ "$(find dist -type f ! -name '.*' | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)" ]
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           skip-existing: true
