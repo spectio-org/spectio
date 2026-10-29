@@ -3,6 +3,8 @@ name: pypi-publish
 # Publishes one PyPI project with trusted publishing, started by hand (docs/developer/claim-package-names.md).
 # For now it builds the name-holding packages under tools/release/pypi-placeholders/ (dev-environment-and-testing.md §12).
 # PyPI's trusted publisher is registered against this file name, so keep it a top-level workflow named pypi-publish.yml.
+# The build job uploads dist/ and its sha256 sums before any third-party checker is installed; the smoke and
+# publish jobs check the sums before they use the files.
 on:
   workflow_dispatch:
     inputs:
@@ -23,12 +25,17 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    outputs:
+      sums: ${{ steps.build.outputs.sums }}
     steps:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
         with: {persist-credentials: false}
       - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
-        with: {enable-cache: false}
-      - name: Build, check and smoke-test
+        with:
+          version: "0.11.32" # = UV_VERSION in dev/versions.env
+          enable-cache: false
+      - name: Build and record the sha256 sums
+        id: build
         env:
           PROJECT: ${{ inputs.project }}
         run: |
@@ -37,22 +44,58 @@ jobs:
             *) echo "::error::Unknown project: $PROJECT"; exit 1 ;;
           esac
           uv build --out-dir dist "tools/release/pypi-placeholders/$PROJECT"
-          uvx twine check --strict dist/*
-          uv venv --python 3.12 /tmp/smoke
-          uv pip install --python /tmp/smoke/bin/python dist/*.whl
-          if [ "$PROJECT" = snakemake-logger-plugin-spectio ]; then
-            /tmp/smoke/bin/python -c "from snakemake_logger_plugin_spectio import LogHandler, LogHandlerSettings"
-          else
-            /tmp/smoke/bin/"$PROJECT" --version
-          fi
+          { echo "sums<<EOF"; sha256sum dist/*; echo "EOF"; } >> "$GITHUB_OUTPUT"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: dist
           path: dist/
           if-no-files-found: error
+      - name: Check metadata, classifiers and wheel contents
+        env:
+          PROJECT: ${{ inputs.project }}
+        run: |
+          . dev/versions.env
+          uvx "twine==$TWINE_VERSION" check --strict dist/*
+          uv run --no-project --with "trove-classifiers==$TROVE_CLASSIFIERS_VERSION" python - dist/*.whl <<'PY'
+          import sys, zipfile
+          from email.parser import Parser
+          from trove_classifiers import classifiers
+          whl = zipfile.ZipFile(sys.argv[1])
+          meta = Parser().parsestr(whl.read(next(n for n in whl.namelist() if n.endswith(".dist-info/METADATA"))).decode())
+          bad = [c for c in meta.get_all("Classifier") or [] if c not in classifiers]
+          sys.exit(f"invalid classifiers: {bad}" if bad else 0)
+          PY
+          diff <(unzip -Z1 dist/*.whl | LC_ALL=C sort) "tools/release/pypi-placeholders/$PROJECT/wheel-contents.txt"
+
+  smoke:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          version: "0.11.32" # = UV_VERSION in dev/versions.env
+          enable-cache: false
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+      - name: Check the sums, install the wheel and smoke-test it
+        env:
+          PROJECT: ${{ inputs.project }}
+          SUMS: ${{ needs.build.outputs.sums }}
+        run: |
+          printf '%s\n' "$SUMS" | sha256sum --check --strict
+          [ "$(ls dist | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)" ]
+          uv venv --python 3.12 /tmp/smoke
+          uv pip install --python /tmp/smoke/bin/python dist/*.whl
+          /tmp/smoke/bin/python tools/release/pypi-placeholders/smoke.py "$PROJECT"
 
   publish:
-    needs: build
+    needs: [build, smoke]
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     timeout-minutes: 10
     environment:
@@ -65,6 +108,12 @@ jobs:
         with:
           name: dist
           path: dist/
+      - name: Check the sums
+        env:
+          SUMS: ${{ needs.build.outputs.sums }}
+        run: |
+          printf '%s\n' "$SUMS" | sha256sum --check --strict
+          [ "$(ls dist | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)" ]
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           skip-existing: true

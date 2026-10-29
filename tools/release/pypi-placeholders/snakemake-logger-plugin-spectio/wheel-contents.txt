@@ -1,0 +1,6 @@
+snakemake_logger_plugin_spectio-0.0.0.dist-info/
+snakemake_logger_plugin_spectio-0.0.0.dist-info/METADATA
+snakemake_logger_plugin_spectio-0.0.0.dist-info/RECORD
+snakemake_logger_plugin_spectio-0.0.0.dist-info/WHEEL
+snakemake_logger_plugin_spectio/
+snakemake_logger_plugin_spectio/__init__.py

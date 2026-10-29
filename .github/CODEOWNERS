@@ -11,6 +11,8 @@
 /docs/playbooks/triage-policy.md @weber8thomas
 /release-please-config.json     @weber8thomas
 /.release-please-manifest.json  @weber8thomas
+# What the PyPI publish workflow builds and uploads (SEC-3, 2026-10-29).
+/tools/release/                 @weber8thomas
 # Security exceptions are reviewed entries in each scanner's ignore file (dev-environment-and-testing.md §11).
 /.gitleaks.toml                 @weber8thomas
 /.gitleaksignore                @weber8thomas

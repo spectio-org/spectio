@@ -1,0 +1,7 @@
+spectio_open-0.0.0.dist-info/
+spectio_open-0.0.0.dist-info/METADATA
+spectio_open-0.0.0.dist-info/RECORD
+spectio_open-0.0.0.dist-info/WHEEL
+spectio_open-0.0.0.dist-info/entry_points.txt
+spectio_open/
+spectio_open/__init__.py

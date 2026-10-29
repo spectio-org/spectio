@@ -4,7 +4,6 @@ import json
 import logging
 import os
 from dataclasses import dataclass, field
-from typing import Optional
 
 from snakemake_interface_logger_plugins.base import LogHandlerBase
 from snakemake_interface_logger_plugins.settings import LogHandlerSettingsBase
@@ -15,18 +14,19 @@ _STANDARD = set(vars(logging.makeLogRecord({}))) | {"message", "asctime"}
 
 @dataclass
 class LogHandlerSettings(LogHandlerSettingsBase):
-    file: Optional[str] = field(
-        default=None,
-        metadata={"help": "File the JSON lines are appended to (default: spectio-events.jsonl)."},
+    file: str = field(
+        default="spectio-events.jsonl",
+        metadata={"help": "File the JSON lines are appended to."},
     )
 
 
 class LogHandler(LogHandlerBase):
     def __post_init__(self) -> None:
-        path = (self.settings and self.settings.file) or "spectio-events.jsonl"
         # Snakemake reads baseFilename from file-writing handlers, as on logging.FileHandler.
-        self.baseFilename = os.path.abspath(path)
-        self._out = open(self.baseFilename, "a", encoding="utf-8")
+        self.baseFilename = os.path.abspath(self.settings.file)
+        # O_NOFOLLOW: a symlink planted at the path is refused, never followed.
+        fd = os.open(self.baseFilename, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o600)
+        self._out = os.fdopen(fd, "a", encoding="utf-8")
 
     def emit(self, record: logging.LogRecord) -> None:
         try:

@@ -1,1 +1,0 @@
-Writes every Snakemake log event as one JSON line to a file (`--logger-spectio-file`, default `spectio-events.jsonl`), so [Spectio](https://github.com/weber8thomas/spectio) or any other program can follow a run. This early release holds the name; the full Spectio bridge comes with Spectio's first release.
