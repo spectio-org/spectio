@@ -10,7 +10,7 @@ hide: [navigation, toc]
 <span class="sp-wordmark">Spectio</span>
 </div>
 <p class="sp-hero2__tagline">Launch, monitor and relaunch your Nextflow and Snakemake runs, on your own cluster.</p>
-<p class="sp-hero2__sub">Open-source run manager for HPC and Kubernetes. Add quality checks between stages only where you want them. Part of the depictio platform.</p>
+<p class="sp-hero2__sub">Open-source run manager for HPC and Kubernetes. Add quality checks between stages only where you want them. A project of its own, which will connect to depictio later.</p>
 <p class="sp-hero2__actions"><a class="md-button md-button--primary" href="usage/">How it works</a> <a class="md-button" href="roadmap/">Roadmap</a></p>
 </div>
 
