@@ -1014,6 +1014,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Your part:** claim the plugin ID `nf-spectio` in the registry and the three PyPI names, and say whether the §12 default holds for the bridges.
 - **Assumed:** none. Task 26 stops at the dry run.
 - **Blocked:** the merge of the terminal-runs guide of P1 Task 25 (until then it installs the copies bundled in the wheel), and the first real release of the bridges. The rest of P1 is not blocked.
+- **Status 2026-10-29:** the procedure is checked and written down in [Claim the package names](../developer/claim-package-names.md): claim `nf-spectio` on the registry (an approved claim holds it, no release), then for each PyPI name add a pending publisher and run `pypi-publish.yml` at once, since a pending publisher alone holds nothing ([verification](verification-2026-10-29-names.md), FC-314 to FC-317). Two choices are yours: the provider string typed in the registry claim, and the placeholder version (`0.0.0` proposed). *Still open until the four names are held.*
 
 ### #67 · Assumed: the engine setup is documented, not automated, in 0.0.1
 
