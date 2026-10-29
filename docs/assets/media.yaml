@@ -310,3 +310,11 @@ media:
       - docs/assets/diagrams/p1_skeleton_dark.svg
       - docs/assets/diagrams/p1_skeleton_light.png
       - docs/assets/diagrams/p1_skeleton_dark.png
+  - id: nextflow-attach
+    kind: diagram
+    generator: python3 tools/diagrams/nextflow_attach.py
+    outputs:
+      - docs/assets/diagrams/nextflow-attach_light.svg
+      - docs/assets/diagrams/nextflow-attach_dark.svg
+      - docs/assets/diagrams/nextflow-attach_light.png
+      - docs/assets/diagrams/nextflow-attach_dark.png
