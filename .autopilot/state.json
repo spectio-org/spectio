@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-29T22:50:00Z",
+  "updated_at": "2026-10-29T23:45:00Z",
   "current_wave": "W5",
   "steps": {
     "F1": {
@@ -535,7 +535,7 @@
       "started_at": "2026-10-29T22:50:00Z",
       "finished_at": null,
       "outputs": [],
-      "notes": "P3 runs across ticks, one P1 task per branch autopilot/P3-<task>; progress: Task 1 started",
+      "notes": "P3 runs across ticks, one P1 task per branch autopilot/P3-<task> (P2 §0). Done: Task 1 (PR #73). Next: Tasks 2, 3 (then 4, 5, 6, 7), board gaps G1/G2/G3a. Deferred to Task 3: SEC-P3T1-04 + fresh-env import check; to Task 5: SEC-P3T1-08, -11; to Task 6: SEC-P3T1-09 (see journal 2026-10-29 tick 14).",
       "base": "7027a6649b7955c77b8c8c5f62bab03f2d54149c"
     },
     "R11": {
