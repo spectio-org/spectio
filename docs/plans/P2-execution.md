@@ -2,7 +2,9 @@
 
 > **For agentic workers:** this page does not repeat [P1](P1-walking-skeleton.md). It says in which order step P3 runs P1's Tasks 1–32, which run in parallel, what proves each milestone done, which review each task gets, and the few tasks P1 still lacks. Each task's files, interfaces, tests and commands are in P1.
 
-*Written 2026-10-29 (step P2). One file instead of one plan per milestone, and no task copied from P1: Thomas's narrowing of P2 after the [GO of 2026-10-29](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes) (whole plan M1–M8, five changes).*
+*Written 2026-10-29 (step P2). One file instead of one plan per milestone, and no task copied from P1: Thomas's narrowing of P2 ([decision log](../decisions/log.md#2026-10-29-p2-is-a-short-execution-guide-over-p1-not-new-milestone-plans)), after the [GO of 2026-10-29](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes) (whole plan M1–M8, five changes).*
+
+Step page: [Progress · P2](../progress/W5/P2.md).
 
 **Goal:** run P1 to its "Done when" list with the fewest blocked hours: lanes that run in parallel, the cluster-bound tasks batched, and the gaps the GO opened closed before the tasks that need them.
 
@@ -24,6 +26,8 @@
 | M1–M4, M6–M8 unit, API and Playwright tests; Tasks 6 and 7 with real local engine runs | yes ([dev-env §2](../specs/dev-environment-and-testing.md#2-where-agents-work): engines, the UI and Chromium work) | Java for Task 6, as in spike T2; `tmux` for Task 10's `-m tmux` tests |
 | Tasks 22 and 23; the `slurm-mini` checks in Step 4 of Tasks 28–30 | **no**: cloud sessions boot with cgroup v1, so sind cannot run ([dev-env §2](../specs/dev-environment-and-testing.md#2-where-agents-work), [inbox #51](../reviews/inbox.md#51-t3-and-t4-cannot-run-in-a-claude-code-cloud-session-where-do-they-run)) | `pipelines-slurm.yml` job `e2e` on a GitHub runner, iterated by push (the route of spikes `t3-ci` and `t4-ci`), or Thomas's machine with Docker on cgroup v2 (option (a), which his 2026-10-29 answer accepts, pending his confirmation) |
 | Task 24 Step 4; inbox #64 (which directory is node-local, BeeGFS locks) | no | a person on an EMBL login node; nothing in CI reaches EMBL |
+
+The SQLite location stays P1 Assumption 21 (node-local) for Tasks 2 and 11 until Thomas confirms his dashboard answer on [inbox #64](../reviews/inbox.md#64-embl-login-nodes-is-there-a-persistent-node-local-disk-for-sqlite) (the home folder for the MVP).
 
 The code of Tasks 22 and 23 is written in a cloud session; only their runs go to CI. Until the `e2e` job is green, M5 stays open while M6–M8 go on (none of their tasks depends on Task 22).
 
@@ -101,7 +105,7 @@ The GO's five changes, checked against P1: change 1 (EMBL login nodes) needs no 
 
 ### 10.1 G1 · Paper chrome on the shared lite-board components
 
-**Spec:** [ui-spec §7](../specs/ui-spec.md#7-consistency-with-depictio-reuse-plan) (Paper shell, note 2026-10-29), P1 Assumption 24 · **Before:** Task 19. Restyle `LiteSidebar`, `LiteTopbar`, `MLiteTopbar` and `MLiteTabbar` in `design/ui-canvas/` to the Paper shell: floating top bar with breadcrumbs and the theme toggle, foldable sidebar with the "Workspace" eyebrow and server status in its foot, bottom tab bar on phones. Search (⌘K), notifications and the avatar are left out: 0.0.1 has no users and no search *(assumed — pending Thomas)*. Thirty of the 34 lite boards import these four, so the chrome changes everywhere at once. **Test:** every `Lite*` and `MLite*` board renders with `render.js` and is looked at; the keyboard rules of `CLAUDE.md` hold; `ux-reviewer` approves.
+**Spec:** [ui-spec §7](../specs/ui-spec.md#7-consistency-with-depictio-reuse-plan) (Paper shell, note 2026-10-29), P1 Assumption 24 · **Before:** Task 19. Restyle `LiteSidebar`, `LiteTopbar`, `MLiteTopbar` and `MLiteTabbar` in `design/ui-canvas/` to the Paper shell: floating top bar with breadcrumbs and the theme toggle, foldable sidebar with the "Workspace" eyebrow and server status in its foot, bottom tab bar on phones. Search (⌘K), notifications and the avatar are left out: 0.0.1 has no users and no search *(assumed — pending Thomas, inbox [#72](../reviews/inbox.md#72-assumed-the-paper-shell-in-001-leaves-out-search-notifications-and-the-avatar))*. Thirty of the 34 lite boards import these four, so the chrome changes everywhere at once. **Test:** every `Lite*` and `MLite*` board renders with `render.js` and is looked at; the keyboard rules of `CLAUDE.md` hold; `ux-reviewer` approves.
 
 ### 10.2 G2 · The launch boards: engine buttons and path-or-Git
 
@@ -125,7 +129,7 @@ Same rule as G3a · **Before:** Task 32. `LiteRunTasks`, `LiteTaskFiles`, `LiteT
 
 ### 10.7 G6 · Local mode: init, doctor and start text
 
-**Spec:** [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Local mode), P1 Assumption 23 · **With:** Task 8 (first three tests), Task 11 (last two). **Test:** `test_init_local_environment` (`--local` → environment kind `local`, no `[slurm]` options written, `GET /version` later says executor `local`); `test_doctor_local_skips_sbatch` (no `sbatch` on PATH → no `fail` in local mode, still `fail` on a SLURM environment); `test_init_local_refused_off_linux` (`sys.platform` `darwin` → exit 2, "Local mode needs Linux in 0.0.1"; *assumed — pending Thomas*: refuse rather than warn); `test_serve_local_start_text` (local mode → the link and "Open this link in a browser on this machine", no `ssh -N -L` line); `test_serve_local_same_requirements` (local mode still binds 127.0.0.1 only and needs the ticket).
+**Spec:** [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Local mode), P1 Assumption 23 · **With:** Task 8 (first three tests), Task 11 (last two). **Test:** `test_init_local_environment` (`--local` → environment kind `local`, no `[slurm]` options written, `GET /version` later says executor `local`); `test_doctor_local_skips_sbatch` (no `sbatch` on PATH → no `fail` in local mode, still `fail` on a SLURM environment); `test_init_local_refused_off_linux` (`sys.platform` `darwin` → exit 2, "Local mode needs Linux in 0.0.1"; *assumed — pending Thomas, inbox [#73](../reviews/inbox.md#73-assumed-spectio-init-local-refuses-to-run-off-linux)*: refuse rather than warn); `test_serve_local_start_text` (local mode → the link and "Open this link in a browser on this machine", no `ssh -N -L` line); `test_serve_local_same_requirements` (local mode still binds 127.0.0.1 only and needs the ticket).
 
 ### 10.8 G7 · `happy-local` checked on both engines
 
@@ -138,7 +142,7 @@ P1 is not edited here; these go to the next apply pass.
 1. **Cluster checks without a dependency.** Step 4 of Tasks 28, 29 and 30 runs on `slurm-mini`, but none of them lists Task 22 in "Depends on". P2 batches them after Task 22 (§8). Also, Task 29 calls `sacct` and injects an out-of-memory task on `slurm-mini`, but `slurm-mini` has no accounting; `slurmdbd` and `ConstrainRAMSpace=yes` are in `slurm-site` ([dev-env §4.1](../specs/dev-environment-and-testing.md#41-slurm-with-sind)). Task 29's cluster check probably belongs on `slurm-site` **[to be validated]**.
 2. **"Done when", first line,** asks a `review-code` pass for every task; P1's own Process line and inbox #52 (b) ask it for product code only. The stricter line holds until Thomas edits `CLAUDE.md` (§9).
 3. **Assumption 24** says the lite boards are restyled before Task 19, but no task does it, and Task 19 does not name the Paper shell: G1–G4.
-4. **Task 8** fails `doctor` when `sbatch` is missing, and **Task 11**'s start text always prints the `ssh -N -L` line; both are wrong in local mode (Assumption 23): G6.
+4. **Task 8**'s `doctor` checks `sbatch` (a `fail` line when it is missing), and **Task 11**'s start text always prints the `ssh -N -L` line; both are wrong in local mode (Assumption 23): G6.
 5. **Task 17**'s only Git test allows the `file` transport; nothing tests the refusal of other schemes or a revision that starts with `-`: G5.
 6. **Task 19**'s boards are `Launch` and `LaunchSnakemake` (reference only); after G2, `LiteLaunch` is the reference.
 7. **`happy-local.yaml`** is never made checked by a P1 task, though "Done when" asks for local mode on both engines: G7.
