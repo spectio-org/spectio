@@ -9,7 +9,7 @@ Spectio needs four names before its bridges can be installed from a terminal: th
 ![What holds each name, and when](../assets/diagrams/name-claim_dark.png#only-dark)
 
 **In short:**
-- **Nextflow registry:** an approved claim holds the ID. No release, and no placeholder.
+- **Nextflow registry:** the claim is what makes the ID yours: no release, and no placeholder. That an approved claim holds the ID against anyone else is inferred from the docs, not stated (§1, step 5).
 - **PyPI:** only a project that exists holds a name. A pending trusted publisher holds nothing until the workflow has run once.
 
 ## 1. `nf-spectio` on the Nextflow plugin registry
@@ -18,7 +18,7 @@ Spectio needs four names before its bridges can be installed from a terminal: th
 2. **Decide the provider string first.** The claim's **Provider** must equal `nextflowPlugin.provider` in the plugin's Gradle build, or the first release is refused ([Gradle plugin guide](https://docs.seqera.io/nextflow/guides/gradle-plugin); `gradle-plugin.mdx:24-26`, `plugin-registry.mdx:32-35`). For example `weber8thomas`; it is Thomas's choice.
 3. **Claim the ID:** **My plugins**, then **Claim a plugin**. Plugin name `nf-spectio`, Provider as above, then **Submit Request** (`plugin-registry.mdx:28-38`). The ID is the Gradle `rootProject.name` and must match `[a-zA-Z0-9-]{5,64}`; the `nf-` prefix is a convention, not a rule (nextflow-plugin-gradle `NextflowPluginConfig.groovy:133-136` at `cedaf05`).
 4. **Wait for approval.** The claim shows as **PENDING REVIEW** under **Pending Ownership Requests** until an admin approves it; approval happens once (`plugin-registry.mdx:40`). How long it takes, and whether a pending claim already blocks others, is not documented **[to be validated]**. Whether the admins expect a public repository is **[to be validated]**.
-5. **Once approved, stop.** "You can claim a plugin even if it doesn't exist in the registry yet" (`gradle-plugin.mdx:107-111`). Do not upload a placeholder: a release needs a README with Summary, Get Started, Examples and License sections and no placeholder text (`gradle-plugin.mdx:82-101`).
+5. **Once approved, stop.** "Ownership of a plugin is required to publish" (`plugin-registry.mdx:16`) and "You can claim a plugin even if it doesn't exist in the registry yet" (`gradle-plugin.mdx:109-111`), so an approved claim should hold the ID with no release. This is an inference: the docs do not say that a second claimant is refused **[to be validated]**. Do not upload a placeholder: a release needs a README with Summary, Get Started, Examples and License sections and no placeholder text (`gradle-plugin.mdx:82-101`).
 6. **Access token: only at the first real release,** because tokens expire. **Access tokens**, then **Create New Access Token**, name, expiry, **Generate token**; it is shown once (`plugin-registry.mdx:44-62`). Whether a token can be limited to one plugin is not documented **[to be validated]**.
 
 ## 2. The three PyPI names
@@ -32,8 +32,16 @@ Spectio needs four names before its bridges can be installed from a terminal: th
 
 ### 2.2 On GitHub (repository settings)
 
-1. **Merge the workflow into `main`.** `.github/workflows/pypi-publish.yml` must be on the default branch before **Run workflow** appears in the Actions tab.
-2. **Create three environments** (Settings, Environments): `pypi-spectio`, `pypi-spectio-open` and `pypi-snakemake-logger-plugin-spectio`. For each: **Required reviewers** Thomas, and **Deployment branches and tags** limited to `main`. The publish job waits for that approval before it gets its token.
+GitHub facts below were read on 2026-10-29 in [Deployments and environments](https://docs.github.com/en/actions/reference/workflows-and-actions/deployments-and-environments), [Managing environments](https://docs.github.com/en/actions/how-tos/deploy/configure-and-manage-deployments/manage-environments) and [Manually running a workflow](https://docs.github.com/en/actions/how-tos/manage-workflow-runs/manually-run-a-workflow).
+
+1. **Protect `main` first.** Branch protection on `main` with code-owner review ([autopilot §8](../playbooks/autopilot.md), inbox #8) is a prerequisite: the workflow and `tools/release/` are code-owned (`.github/CODEOWNERS`), and only protection makes that review binding. Do not run the workflow before it is set.
+2. **The workflow reaches `main` through the promotion PR.** This change merges into `autopilot/integration`; "To trigger the `workflow_dispatch` event, your workflow must be in the default branch" (Manually running a workflow), so **Run workflow** appears only after the integration branch is promoted to `main`. The `publish` job also runs only from `main` (`if: github.ref == 'refs/heads/main'`).
+3. **Create the three environments before the first run** (Settings, Environments): `pypi-spectio`, `pypi-spectio-open` and `pypi-snakemake-logger-plugin-spectio`. "Running a workflow that references an environment that does not exist will create an environment with the referenced name … the newly created environment will not have any protection rules or secrets configured" (Managing environments), so a missing environment would publish with no approval. For each environment:
+    - **Required reviewers:** Thomas. "Only one of the required reviewers needs to approve the job for it to proceed" (Deployments and environments), so no agent's or bot's account is a reviewer, and none is a repository admin.
+    - **Deployment branches and tags:** "Selected branches and tags", with the one rule `main`.
+    - **Allow administrators to bypass configured protection rules:** unticked. "By default, administrators can bypass the protection rules" (Deployments and environments).
+    - **Prevent self-review:** leave it off while Thomas is the only reviewer and starts the run himself; it stops "users who initiate a deployment" from approving it (Deployments and environments).
+    - Then open the environment page and check that it lists these rules.
 
 ### 2.3 On pypi.org: one pending publisher per name
 
@@ -52,20 +60,35 @@ For each name, **Your account**, then **Publishing** (`/manage/account/publishin
 
 ### 2.4 Run the workflow
 
-Actions, **pypi-publish**, **Run workflow**, pick the project, run, then approve the deployment to `pypi-<project>`. The `build` job builds the package, runs `twine check --strict` and installs the wheel to smoke-test it; the `publish` job alone gets `id-token: write` and uploads with `pypa/gh-action-pypi-publish` v1.14.3. The project is created, owned by the account that added the pending publisher, when the workflow exchanges its GitHub token, before any file is uploaded (`oidc/views.py:208-294`). Repeat for the other two names, then check `https://pypi.org/p/<name>`.
+Actions, **pypi-publish**, **Run workflow** on `main`, pick the project, run, then approve the deployment to `pypi-<project>`. Three jobs:
+- `build` builds the package with `uv build`, records the sha256 of each file and uploads them before any checker is installed, then runs `twine check --strict`, checks every classifier against the pinned `trove-classifiers` and compares the wheel's file list with `wheel-contents.txt`;
+- `smoke` checks the sums, installs the wheel and runs `tools/release/pypi-placeholders/smoke.py` (the CLI's `--version`; for the logger, one event written as valid JSON, and a symlinked log file refused);
+- `publish` checks the sums again; it alone gets `id-token: write`, and uploads with `pypa/gh-action-pypi-publish` v1.14.3. Tool versions are pinned in `dev/versions.env`. The project is created, owned by the account that added the pending publisher, when the workflow exchanges its GitHub token, before any file is uploaded (`oidc/views.py:208-294`). Repeat for the other two names, then check `https://pypi.org/p/<name>`.
 
 After the first run, the pending publisher becomes a normal trusted publisher on that project; later releases use the same workflow file and environment ([dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases)).
 
 ### 2.5 Fallback: upload by hand
 
-If the workflow cannot run (the PR is not merged, the Actions minutes are gone), the names can be taken from a laptop:
+If the workflow cannot run (the promotion is not merged, the Actions minutes are gone), the names can be taken from a laptop, in one sitting:
 1. Make an API token scoped to the whole account (the projects do not exist yet) in Account settings, API tokens (warehouse `docs/user/publishing/publishing-to-pypi.md:21-41`).
-2. For each name: `uv build tools/release/pypi-placeholders/<name>`, `uvx twine check --strict dist/*`, `uvx twine upload dist/*` with username `__token__`.
-3. On each new project, add the trusted publisher of §2.3 under Manage, Publishing; publishers on existing projects do not count against the limit of 3.
-4. Revoke the account-wide token.
+2. For each of the three names, from the repository root (`twine==7.0.0` is `TWINE_VERSION` in `dev/versions.env`):
+    ```bash
+    uv build --out-dir dist/<name> tools/release/pypi-placeholders/<name>
+    uvx twine==7.0.0 check --strict dist/<name>/*
+    uvx twine==7.0.0 upload dist/<name>/*
+    ```
+    Username `__token__`; paste the token only at twine's password prompt. Never put it on the command line, in an environment file or in `~/.pypirc`.
+3. Revoke the account-wide token as soon as the third upload is done.
+4. Then add the trusted publisher of §2.3 on each new project, under Manage, Publishing; publishers on existing projects do not count against the limit of 3.
 
 ## 3. Afterwards
 
 - Inbox #66 is answered when the four names are held; tell Claude which provider string the claim used, so `nf-spectio`'s Gradle build matches it.
-- The Snakemake plugin catalogue finds the logger by its exact display name `snakemake-logger-plugin-spectio` and reads `docs/intro.md` and the `Repository` URL (snakemake-plugin-catalog `source/collect_plugins.py:188-189, 243-250, 282-288` at `d2c11a2`); the placeholder has both.
+- The Snakemake plugin catalogue finds the logger by its exact display name `snakemake-logger-plugin-spectio` (snakemake-plugin-catalog `source/collect_plugins.py:188-189` at `d2c11a2`) and warns without a `Repository` URL (`:243-250`). It reads `docs/intro.md` and `docs/further.md` at the root of the `Repository` URL's `main` or `master` branch (`:636-665`), not from the package. In this repository that root `docs/` is the MkDocs site, so the catalogue warns for `0.0.0` until the bridge's catalogue page has a home (open point below).
 - TestPyPI is a separate site and holds nothing on pypi.org ([Using TestPyPI](https://packaging.python.org/en/latest/guides/using-testpypi/)); it is not needed here.
+
+## 4. Open points
+
+- **Agent permissions (SEC-1, Thomas decides).** The security review proposes that `.claude/settings.json` deny `gh workflow run`, `gh api …/pending_deployments`, `gh api …/dispatches` and `gh run rerun`, so no agent session can start or approve a publish. Claude does not edit its own permissions; until Thomas decides, the environments' required reviewer (§2.2) is the guard.
+- **Where the logger's catalogue page lives.** A root `docs/intro.md` kept out of the MkDocs nav, or a separate repository for the bridge ([verification](../reviews/verification-2026-10-29-names.md), open point 9).
+- **Choices:** the placeholder version (`0.0.0` proposed) and the registry provider string.

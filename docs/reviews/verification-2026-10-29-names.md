@@ -27,7 +27,7 @@ Cloned shallowly on 2026-10-29; the live docs pages and the registry's pages wer
 | 2 | The job puts the key in `$HOME/.gradle/gradle.properties` as `npr.apiKey`, and `make release` publishes | dev-env §12 | verified | `docs/guides/gradle-plugin.mdx:103-123`; nextflow-plugin-gradle `RegistryReleaseConfig.groovy:48-54`; nf-plugin-template `Makefile:28-29` | The current template reads `NPR_API_KEY` from `.env` through a `registry {}` block; `npr.apiKey` still works (`apiKey ?: npr.apiKey ?: NPR_API_KEY`). FC-316 |
 | 3 | One trusted publisher and one environment `pypi-<project>` per project, registered before that project's first publish | dev-env §12 | partly true | warehouse `warehouse/accounts/views.py:1952-1971`, `2014-2034`; `docs/user/trusted-publishers/creating-a-project-through-oidc.md:28-35` | One environment per project is required (two pending publishers cannot share owner, repository, workflow and environment), but at most 3 personal pending publishers exist at once, and a pending publisher does not hold the name. FC-314 |
 | 4 | Each name "returned 404" on 2026-10-28, so it is free | inbox #66 | partly true | warehouse `legacy/api/json.py:268-269`; `packaging/services.py:578-611` | The JSON API also returns 404 for a project with no release; names are also refused by the confusable-name rule and an admin list. FC-315 |
-| 5 | The Snakemake catalogue "lists it from there" | dev-env §12 | partly true | snakemake-plugin-catalog `source/collect_plugins.py:188-189, 243-250, 282-288, 591-592` | Literal `startswith("snakemake-logger-plugin-")` on display names; warns without a `Repository` URL or `docs/intro.md`. FC-317 |
+| 5 | The Snakemake catalogue "lists it from there" | dev-env §12 | partly true | snakemake-plugin-catalog `source/collect_plugins.py:188-189, 243-250, 282-288, 591-592, 636-665` | Literal `startswith("snakemake-logger-plugin-")` on display names; warns without a `Repository` URL; reads `docs/intro.md` and `docs/further.md` at the root of that repository's `main` or `master` branch. FC-317 |
 
 **Status on 2026-10-29, about 09:00 UTC:**
 - `GET https://registry.nextflow.io/api/v1/plugins/nf-spectio` returns 404; the full list (109 plugins) has no ID containing "spect". A claimed ID with no release may also return 404 **[to be validated]**.
@@ -66,11 +66,11 @@ Cloned shallowly on 2026-10-29; the live docs pages and the registry's pages wer
 ### FC-317 · minor · dev-env §12: what the Snakemake catalogue needs to list the plugin
 
 - **Where:** dev-env §12 Publishing ("the Snakemake plugin catalogue lists it from there").
-- **Evidence:** the catalogue keeps only display names starting with the literal `snakemake-logger-plugin-` (`collect_plugins.py:188-189`) and warns without a `Repository` project URL or `docs/intro.md` (`collect_plugins.py:243-250, 282-288`), at `d2c11a2`.
+- **Evidence:** the catalogue keeps only display names starting with the literal `snakemake-logger-plugin-` (`collect_plugins.py:188-189`) and warns without a `Repository` project URL or `docs/intro.md` (`collect_plugins.py:243-250, 282-288`). It clones the `Repository` URL and reads `docs/intro.md` and `docs/further.md` from the root of its `main` or `master` branch (`_get_plugin_git_info`, `collect_plugins.py:636-665`), not from the package, at `d2c11a2`.
 - **Problem:** the first upload's `Name` sets the display name; an underscore or capitalised spelling would never be listed.
-- **Proposal:** §12 requires the exact name `snakemake-logger-plugin-spectio`, a `Repository` URL and `docs/intro.md`.
+- **Proposal:** §12 requires the exact name `snakemake-logger-plugin-spectio` and a `Repository` URL, and says that the catalogue page comes from `docs/intro.md` at the root of that repository. In this monorepo the root `docs/` is the MkDocs site, so the `0.0.0` release gets a catalogue warning (open point 9).
 - **Found by:** fact-checker
-- **Status:** applied (dev-env §12 Publishing; the placeholder in `tools/release/pypi-placeholders/` has both, 2026-10-29)
+- **Status:** applied (dev-env §12 Publishing, 2026-10-29); the placeholder has the exact name and the `Repository` URL; where `docs/intro.md` lives is open point 9.
 
 ## Open points
 
@@ -82,3 +82,4 @@ Cloned shallowly on 2026-10-29; the live docs pages and the registry's pages wer
 6. The PyPI prohibited-names list is not public; only the first run confirms the names **[to be validated on upload]**.
 7. The pending-publisher limit under a PyPI organization **[to be validated]**.
 8. Thomas's decisions: the placeholder version (`0.0.0` proposed; `0.0.1` stays free) and the registry provider string.
+9. The catalogue page of `snakemake-logger-plugin-spectio`: the catalogue reads `docs/intro.md` at the root of `weber8thomas/spectio`, where `docs/` is the MkDocs site. Either a root `docs/intro.md` (and `docs/further.md`) kept out of the MkDocs nav, or a separate repository for the bridge whose URL is the `Repository` link. P1 Task 26 plans a package-local `docs/intro.md`, which the catalogue would not read. Until then the catalogue warns for `0.0.0`.
