@@ -1129,3 +1129,11 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Options and what was assumed:** (a) refuse with exit 2 and "Local mode needs Linux in 0.0.1"; (b) warn and go on, untested. **Assumed:** (a); it is easy to relax later, while (b) would ship an untested path.
 - **Recommendation:** (a).
 - **Blocked:** nothing; G6 proceeds with (a).
+
+### #74 · Assumed: the budget counts 1 point of the weekly window per 10 USD of API-equivalent tokens
+
+- **Covers:** [autopilot §6](../playbooks/autopilot.md) (budget governor); `tools/autopilot/budget.py`; `.autopilot/budget.json`.
+- **Context:** this cloud session has no status line, so the governor has only the manual reading (28 % at the start of tick 14, stop at 40 %) and would answer `go` forever. P3 is 32 tasks, far more than the 12 points.
+- **Options and what was assumed:** (a) estimate: each tick prices its tokens (from `tools/dashboard/usage.py`) at the Opus 4.x list prices (5 / 25 USD per million input / output, 6.25 cache write, 0.50 cache read) and records it with `record-cost`, at a prior of 0.1 point per USD (`--pct-per-usd 0.1`) **[to be validated]**; (b) stop and wait for a reading after every step. **Assumed:** (a), with the ratio kept on the safe side.
+- **Recommendation:** read `/usage` when you wake up and write the percentage here; the next tick calibrates the ratio (`budget.py start --now <pct>`).
+- **Blocked:** nothing.

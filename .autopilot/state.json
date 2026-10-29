@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-29T22:42:00Z",
+  "updated_at": "2026-10-29T22:50:00Z",
   "current_wave": "W5",
   "steps": {
     "F1": {
@@ -530,12 +530,13 @@
     },
     "P3": {
       "wave": "W5",
-      "status": "pending",
+      "status": "running",
       "attempts": 0,
-      "started_at": null,
+      "started_at": "2026-10-29T22:50:00Z",
       "finished_at": null,
       "outputs": [],
-      "notes": ""
+      "notes": "P3 runs across ticks, one P1 task per branch autopilot/P3-<task>; progress: Task 1 started",
+      "base": "7027a6649b7955c77b8c8c5f62bab03f2d54149c"
     },
     "R11": {
       "wave": "W1",
