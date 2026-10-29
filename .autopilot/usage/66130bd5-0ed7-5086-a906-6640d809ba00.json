@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 250,
-    "cache_write": 278192,
-    "cache_read": 19411769,
-    "output": 48674
+    "input": 328,
+    "cache_write": 339753,
+    "cache_read": 28633566,
+    "output": 64791
    },
-   "calls": 107,
+   "calls": 137,
    "model": "claude-opus-5-5",
    "start": "2026-10-29T22:16:54.188Z",
-   "end": "2026-10-29T23:10:33.517Z",
+   "end": "2026-10-29T23:31:07.953Z",
    "id": "66130bd5-0ed7-5086-a906-6640d809ba00",
    "kind": "main",
    "type": "session",
@@ -69,6 +69,23 @@
   },
   {
    "tokens": {
+    "input": 70,
+    "cache_write": 123761,
+    "cache_read": 2679784,
+    "output": 24021
+   },
+   "calls": 34,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T23:18:56.923Z",
+   "end": "2026-10-29T23:26:47.235Z",
+   "id": "a3a2585440ce63669",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review P3 Task 1",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 56,
     "cache_write": 165300,
     "cache_read": 3354916,
@@ -120,15 +137,15 @@
   },
   {
    "tokens": {
-    "input": 220,
-    "cache_write": 501150,
-    "cache_read": 20532948,
-    "output": 86480
+    "input": 298,
+    "cache_write": 830547,
+    "cache_read": 31475208,
+    "output": 109692
    },
-   "calls": 108,
+   "calls": 145,
    "model": "claude-opus-5-5",
    "start": "2026-10-29T22:43:36.944Z",
-   "end": "2026-10-29T23:08:37.429Z",
+   "end": "2026-10-29T23:30:23.727Z",
    "id": "ae66878e284b1e07c",
    "kind": "subagent",
    "type": "general-purpose",
@@ -137,15 +154,15 @@
   },
   {
    "tokens": {
-    "input": 2,
-    "cache_write": 7003,
-    "cache_read": 5698,
-    "output": 296
+    "input": 80,
+    "cache_write": 143427,
+    "cache_read": 3776670,
+    "output": 39115
    },
-   "calls": 1,
+   "calls": 40,
    "model": "claude-opus-5-5",
    "start": "2026-10-29T23:10:29.985Z",
-   "end": "2026-10-29T23:10:33.360Z",
+   "end": "2026-10-29T23:18:16.768Z",
    "id": "afbb8c03658742f9c",
    "kind": "subagent",
    "type": "doc-writer",
@@ -154,15 +171,15 @@
   },
   {
    "tokens": {
-    "input": 52,
-    "cache_write": 193635,
-    "cache_read": 1556087,
-    "output": 31750
+    "input": 64,
+    "cache_write": 318712,
+    "cache_read": 2148870,
+    "output": 38986
    },
-   "calls": 25,
+   "calls": 31,
    "model": "claude-opus-5-5",
    "start": "2026-10-29T22:55:22.514Z",
-   "end": "2026-10-29T23:06:07.196Z",
+   "end": "2026-10-29T23:26:48.016Z",
    "id": "afe83eb3e4e733c04",
    "kind": "subagent",
    "type": "security-reviewer",
