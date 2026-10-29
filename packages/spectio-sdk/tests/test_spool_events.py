@@ -1,5 +1,7 @@
 """The spool event contract (api-and-data-model.md §14): envelope, allow-lists and caps."""
 
+import json
+import re
 import subprocess
 import sys
 from collections.abc import Iterator
@@ -24,7 +26,18 @@ CAPTURES = ROOT / "spikes" / "engine-events" / "fixtures"  # spike T2
 RUN_ID = "run_01K8T2F1XTVRES000000000000"
 
 # D3 (P1 Assumption 3, inbox #55): never stored, whoever sends them.
-DENYLIST = {"script", "env", "homeDir", "commandLine", "configText", "cmd", "shellcmd"}
+DENYLIST = {
+    "script",
+    "env",
+    "homeDir",
+    "commandLine",
+    "configText",
+    "cmd",
+    "shellcmd",
+    "rule_msg",
+}
+RAW_COMMAND_KEYS = {"script", "env", "cmd", "shellcmd"}
+QUOTED_COMMAND = re.compile(r"(?s)Command '.*?'")
 
 
 def fixture_lines(pattern: str) -> Iterator[str]:
@@ -93,6 +106,26 @@ def test_converted_fixtures_are_current(tmp_path: Path) -> None:
         assert (tmp_path / path.name).read_bytes() == path.read_bytes(), path.name
 
 
+def test_convert_refuses_a_capture_with_a_secret(tmp_path: Path) -> None:
+    # The credential guard of tests/slurm/fixture.py (SECRET) applies: exit 1, nothing written.
+    captures, out = tmp_path / "captures", tmp_path / "out"
+    captures.mkdir()
+    out.mkdir()
+    for name in ("snakemake-9.27.1_clean.jsonl", "snakemake-9.27.1_leak.jsonl"):
+        record = {"event": "None", "extra": {}, "level": "INFO", "msg": "ok", "seq": 1, "t": 1.0}
+        if "leak" in name:
+            record["msg"] = "export SLURM_JWT=x"
+        (captures / name).write_text(json.dumps(record) + "\n")
+    done = subprocess.run(
+        [sys.executable, str(FIXTURES / "convert_t2.py"), str(captures), str(out)],
+        capture_output=True,
+        text=True,
+    )
+    assert done.returncode == 1
+    assert "SLURM_JWT" not in done.stdout + done.stderr
+    assert list(out.iterdir()) == []
+
+
 def test_denylisted_fields_never_survive() -> None:
     # D3: allow-list models drop them, at the top and inside the trace record.
     ev = make_event(
@@ -133,6 +166,108 @@ def test_denylisted_fields_dropped_from_real_captures() -> None:
     for line in fixture_lines("*.spool.jsonl"):
         dumped = parse_data(SpoolEvent.model_validate_json(line)).model_dump()
         assert not DENYLIST & all_keys(dumped), line[:200]
+
+
+def raw_command_values(value: Any, key: str = "") -> Iterator[str]:
+    """Raw command text in a capture: denylisted values and quoted `Command '...'` text."""
+    if isinstance(value, dict):
+        for k, v in value.items():
+            yield from raw_command_values(v, k)
+    elif isinstance(value, list):
+        for v in value:
+            yield from raw_command_values(v, key)
+    elif isinstance(value, str):
+        if key in RAW_COMMAND_KEYS and len(value.strip()) >= 8:
+            yield value
+        yield from QUOTED_COMMAND.findall(value)
+
+
+def test_command_values_never_survive_in_real_captures() -> None:
+    # Value level, not key level: no command text reaches the stored data under any key.
+    leaks = []
+    for line in fixture_lines("*.spool.jsonl"):
+        stored = json.dumps(
+            parse_data(SpoolEvent.model_validate_json(line)).model_dump(), ensure_ascii=False
+        )
+        for value in raw_command_values(json.loads(line)):
+            if value in stored or json.dumps(value, ensure_ascii=False)[1:-1] in stored:
+                leaks.append(value[:80])
+    assert not leaks, f"{len(leaks)} command values stored: {leaks[:5]}"
+
+
+def test_snakemake_error_msg_hides_the_command() -> None:
+    msg = (
+        'RuleException:\nCalledProcessError in file "Snakefile", line 148:\n'
+        "Command 'set -euo pipefail; export TOKEN=s3cret; run' returned non-zero exit status 1."
+    )
+    kept = parse_data(make_event("snakemake.error", exception="RuleException", msg=msg))
+    assert kept.model_dump()["msg"] == (
+        'RuleException:\nCalledProcessError in file "Snakefile", line 148:\n'
+        "Command «hidden» returned non-zero exit status 1."
+    )
+
+
+def test_snakemake_error_msg_fails_closed() -> None:
+    # An unterminated quote does not match the pattern: only the first line is kept.
+    msg = "RuleException:\nCommand 'export TOKEN=s3cret; run returned 1"
+    kept = parse_data(make_event("snakemake.error", msg=msg)).model_dump()
+    assert kept["msg"] == "RuleException:"
+    msg = "Command 'export TOKEN=s3cret; run returned 1"
+    kept = parse_data(make_event("snakemake.error", msg=msg)).model_dump()
+    assert "s3cret" not in kept["msg"]
+
+
+def test_error_messages_capped() -> None:
+    long = "x" * 10_000
+    assert len(parse_data(make_event("snakemake.error", msg=long)).model_dump()["msg"]) == 4096
+    complete = parse_data(make_event("nextflow.onFlowComplete", errorMessage=long))
+    assert len(complete.model_dump()["errorMessage"]) == 4096
+
+
+GOOD_LINE = {
+    "v": 1,
+    "id": "evt_a",
+    "run": RUN_ID,
+    "launch": 1,
+    "producer": "snakemake-logger-spectio/0.0.1",
+    "seq": 1,
+    "time": "2026-10-28T07:18:46.182Z",
+    "type": "snakemake.job_finished",
+    "data": {"job_id": 7},
+}
+
+
+@pytest.mark.parametrize(
+    ("name", "change"),
+    [
+        ("epoch time number", {"time": 1793171926}),
+        ("epoch time string", {"time": "1793171926"}),
+        ("year 0001", {"time": "0001-01-01T00:00:00Z"}),
+        ("year 1969", {"time": "1969-12-31T23:59:59Z"}),
+        ("seq 10**30", {"seq": 10**30}),
+        ("launch 2**63", {"launch": 2**63}),
+        ("job_id string", {"data": {"job_id": "7"}}),
+        ("job_id true", {"data": {"job_id": True}}),
+        ("job_id negative", {"data": {"job_id": -1}}),
+        ("job_id 10**30", {"data": {"job_id": 10**30}}),
+        ("NaN", {"type": "snakemake.resources_info", "data": {"cores": float("nan")}}),
+        (
+            "NaN in free JSON",
+            {"type": "snakemake.rulegraph", "data": {"rulegraph": {"x": float("nan")}}},
+        ),
+        (
+            "big int in free JSON",
+            {"type": "snakemake.rulegraph", "data": {"rulegraph": {"x": 10**30}}},
+        ),
+        ("NUL", {"type": "snakemake.error", "data": {"msg": "a\x00b"}}),
+        ("NUL in a key", {"data": {"job_id": 7, "a\x00": 1}}),
+    ],
+)
+def test_poison_lines_refused(name: str, change: dict[str, Any]) -> None:
+    line = json.dumps(GOOD_LINE | change, allow_nan=True)
+    parse_data(SpoolEvent.model_validate_json(json.dumps(GOOD_LINE)))
+    with pytest.raises((ValidationError, ValueError)):
+        parse_data(SpoolEvent.model_validate_json(line))
 
 
 def test_envelope_rejects_unknown_keys_and_bad_run_id() -> None:

@@ -5,6 +5,9 @@ allow-listed model of its type: keys outside the allow-list are dropped, so `scr
 `commandLine` and the like are never kept (P1 Assumption 3).
 """
 
+import math
+import re
+from datetime import UTC, datetime
 from typing import Annotated, Self
 
 from pydantic import (
@@ -14,6 +17,7 @@ from pydantic import (
     Field,
     JsonValue,
     StrictInt,
+    field_validator,
     model_validator,
 )
 
@@ -21,7 +25,34 @@ MAX_LINE_BYTES = 65536  # one line, without its "\n"
 ROTATE_BYTES = 33554432  # the writer opens the next file before passing it
 MAX_FILE_BYTES = 67108864  # the reader ignores anything past it in one file
 
+MAX_MESSAGE_CHARS = 4096  # error texts are cut here
+
 _ULID = "[0-7][0-9A-HJKMNP-TV-Z]{25}"  # Crockford base32, 128 bits
+_RFC3339 = re.compile(r"\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(\.\d{1,9})?(Z|[+-]\d{2}:\d{2})")
+_INT64_MAX = 2**63 - 1
+
+Int64 = Annotated[StrictInt, Field(ge=0, le=_INT64_MAX)]
+PositiveInt64 = Annotated[StrictInt, Field(ge=1, le=_INT64_MAX)]
+SignedInt64 = Annotated[StrictInt, Field(ge=-_INT64_MAX - 1, le=_INT64_MAX)]  # exit codes
+
+
+def _check_json(value: JsonValue) -> None:
+    """Refuse what a JSON parser lets through but no consumer should see."""
+    if isinstance(value, bool) or value is None:
+        return
+    if isinstance(value, int) and not -_INT64_MAX - 1 <= value <= _INT64_MAX:
+        raise ValueError("integer outside the 64-bit range")
+    if isinstance(value, float) and not math.isfinite(value):
+        raise ValueError("NaN or infinity")
+    if isinstance(value, str) and "\x00" in value:
+        raise ValueError("NUL in a string")
+    if isinstance(value, list):
+        for item in value:
+            _check_json(item)
+    if isinstance(value, dict):
+        for key, item in value.items():
+            _check_json(key)
+            _check_json(item)
 
 
 class UnknownEventType(ValueError):
@@ -34,14 +65,38 @@ class SpoolEvent(BaseModel):
     v: Annotated[StrictInt, Field(ge=1, le=1)]  # Literal[1] would accept true
     id: Annotated[str, Field(pattern=r"^[A-Za-z0-9_-]{1,64}$")]
     run: Annotated[str, Field(pattern=rf"^run_{_ULID}$")]
-    launch: Annotated[StrictInt, Field(ge=1)]
+    launch: PositiveInt64
     producer: Annotated[
         str, Field(pattern=r"^(nf-spectio|snakemake-logger-spectio)/[0-9A-Za-z.+-]{1,32}$")
     ]
-    seq: Annotated[StrictInt, Field(ge=1)]
+    seq: PositiveInt64
     time: AwareDatetime
     type: Annotated[str, Field(pattern=r"^(nextflow|snakemake)\.[A-Za-z_]{1,64}$")]
     data: dict[str, JsonValue]
+
+    @field_validator("time", mode="before")
+    @classmethod
+    def _time_is_rfc3339(cls, value: object) -> object:
+        if not isinstance(value, str) or not _RFC3339.fullmatch(value):
+            raise ValueError("time must be an RFC 3339 string with a time zone")
+        return value
+
+    @field_validator("time")
+    @classmethod
+    def _time_in_range(cls, value: datetime) -> datetime:
+        try:
+            year = value.astimezone(UTC).year
+        except OverflowError:
+            year = 0
+        if not 1970 <= year <= 9999:
+            raise ValueError("time outside 1970-9999 UTC")
+        return value
+
+    @field_validator("data")
+    @classmethod
+    def _data_is_plain_json(cls, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
+        _check_json(value)
+        return value
 
     @model_validator(mode="after")
     def _producer_matches_engine(self) -> Self:
@@ -52,18 +107,36 @@ class SpoolEvent(BaseModel):
 
 
 class _Data(BaseModel):
-    model_config = ConfigDict(extra="ignore", frozen=True)
+    # strict: "7" or true is not an integer; the envelope already refused NaN and NUL.
+    model_config = ConfigDict(extra="ignore", frozen=True, strict=True, allow_inf_nan=False)
+
+
+_QUOTED_COMMAND = re.compile(r"(?s)Command '.*?' returned non-zero exit status (\d+)")
+
+
+def _hide_command(msg: str | None) -> str | None:
+    """Replace the command an error text quotes; fail closed when the quote is not closed."""
+    if msg is None:
+        return None
+    msg = _QUOTED_COMMAND.sub(r"Command «hidden» returned non-zero exit status \1", msg)
+    if "Command '" in msg:
+        msg = msg.split("\n", 1)[0]
+        if "Command '" in msg:
+            msg = msg.split("Command '", 1)[0] + "Command «hidden»"
+    return msg[:MAX_MESSAGE_CHARS]
 
 
 # --- Nextflow (nf-spectio) -----------------------------------------------------------------
 
-TraceValue = str | int | float | None
+TraceValue = str | SignedInt64 | float | None
 
 
 class NextflowTrace(_Data):
     """The trace record, without `script` and `env`."""
 
-    model_config = ConfigDict(extra="ignore", frozen=True, populate_by_name=True)
+    model_config = ConfigDict(
+        extra="ignore", frozen=True, strict=True, allow_inf_nan=False, populate_by_name=True
+    )
 
     task_id: TraceValue = None
     hash: TraceValue = None
@@ -121,13 +194,18 @@ class NextflowFlowCreate(NextflowEvent):
 
 class NextflowFlowComplete(NextflowEvent):
     success: bool | None = None
-    exitStatus: int | None = None
+    exitStatus: SignedInt64 | None = None
     errorMessage: str | None = None
+
+    @field_validator("errorMessage")
+    @classmethod
+    def _cap(cls, value: str | None) -> str | None:
+        return None if value is None else value[:MAX_MESSAGE_CHARS]
 
 
 class NextflowProcess(NextflowEvent):
     process: str | None = None
-    processId: int | None = None
+    processId: Int64 | None = None
 
 
 class NextflowTask(NextflowEvent):
@@ -136,9 +214,9 @@ class NextflowTask(NextflowEvent):
     name: str | None = None
     process: str | None = None
     tag: str | None = None
-    attempt: int | None = None
+    attempt: Int64 | None = None
     status: str | None = None
-    exitStatus: int | None = None
+    exitStatus: SignedInt64 | None = None
     errorAction: str | None = None
     cached: bool | None = None
     workDir: str | None = None
@@ -167,11 +245,11 @@ class SnakemakeWorkflowStarted(_Data):
 
 
 class SnakemakeRunInfo(_Data):
-    stats: dict[str, int] = {}
+    stats: dict[str, Int64] = {}
 
 
 class SnakemakeResourcesInfo(_Data):
-    cores: int | None = None
+    cores: Int64 | None = None
 
 
 class SnakemakeRulegraph(_Data):
@@ -179,7 +257,7 @@ class SnakemakeRulegraph(_Data):
 
 
 class SnakemakeJobInfo(_Data):
-    jobid: int
+    jobid: Int64
     rule_name: str
     wildcards: dict[str, str] = {}
     input: list[str] = []
@@ -190,21 +268,21 @@ class SnakemakeJobInfo(_Data):
     is_checkpoint: bool | None = None
     is_handover: bool | None = None
     local: bool | None = None
-    priority: int | None = None
-    threads: int | None = None
+    priority: SignedInt64 | None = None
+    threads: Int64 | None = None
     resources: dict[str, JsonValue] = {}
 
 
 class SnakemakeJobStarted(_Data):
-    jobs: list[int]
+    jobs: list[Int64]
 
 
 class SnakemakeJobFinished(_Data):
-    job_id: int
+    job_id: Int64
 
 
 class SnakemakeJobError(_Data):
-    jobid: int
+    jobid: Int64
     rule_name: str | None = None
     input: list[str] = []
     output: list[str] = []
@@ -216,13 +294,20 @@ class SnakemakeShellcmd(_Data):
 
 
 class SnakemakeProgress(_Data):
-    done: int
-    total: int
+    done: Int64
+    total: Int64
 
 
 class SnakemakeError(_Data):
+    """`msg` is kept with the quoted command hidden: it can carry `export` values."""
+
     exception: str | None = None
     msg: str | None = None
+
+    @field_validator("msg")
+    @classmethod
+    def _hide(cls, value: str | None) -> str | None:
+        return _hide_command(value)
 
 
 _TASK_HOOKS = ("onTaskPending", "onTaskSubmit", "onTaskStart", "onTaskComplete", "onTaskCached")

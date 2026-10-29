@@ -32,13 +32,22 @@ target-version = "py311"
 include = ["packages/**/*.py", "tests/fixtures/engine-events/*.py"]
 
 [tool.ruff.lint]
-select = ["E", "F", "W", "I", "B", "UP", "S", "RUF"]
+select = ["E", "F", "W", "I", "B", "UP", "S", "RUF", "TID251"]
+
+# Dynamic imports would get around the import-linter contracts below (SEC-P3T1-06); the ban
+# applies to the runner package only (per-file-ignores). ruff does not resolve `__import__`:
+# packages/spectio/tests/test_static_imports.py refuses it.
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"importlib.import_module".msg = "the runner imports statically, so that lint-imports sees it"
 
 [tool.ruff.lint.isort]
 known-first-party = ["spectio", "spectio_sdk", "spectio_server"]
 
 [tool.ruff.lint.per-file-ignores]
-"**/tests/**" = ["S101", "S603"]
+"**/tests/**" = ["S101", "S603", "TID251"]
+"packages/spectio-sdk/**" = ["TID251"]
+"packages/spectio-server/**" = ["TID251"]
+"tests/fixtures/**" = ["TID251"]
 
 [tool.mypy]
 strict = true
@@ -65,7 +74,7 @@ source_modules = ["spectio"]
 forbidden_modules = ["fastapi", "sqlalchemy"]
 
 [[tool.importlinter.contracts]]
-name = "spectio-sdk depends on nothing of Spectio's own (architecture §6)"
+name = "spectio-sdk imports neither spectio, spectio_server, FastAPI nor SQLAlchemy (architecture §6)"
 type = "forbidden"
 source_modules = ["spectio_sdk"]
-forbidden_modules = ["spectio", "spectio_server"]
+forbidden_modules = ["spectio", "spectio_server", "fastapi", "sqlalchemy"]

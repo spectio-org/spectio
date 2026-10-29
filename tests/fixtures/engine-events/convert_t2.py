@@ -7,7 +7,8 @@ Defaults: spikes/engine-events/fixtures/ and this directory. Each bridge capture
 another protocol, not spool events, and are skipped. Captured values are kept as they are,
 `<launch>` placeholders and denylisted fields included: the allow-lists must drop them.
 The output is deterministic: every file gets RUN_ID, launch 1, and event IDs built from
-the event time and a hash of (file, seq).
+the event time and a hash of (file, seq). A capture that matches the credential guard of
+tests/slurm/fixture.py (SECRET) stops the run with exit 1 before any file is written.
 
 - Nextflow (`nf-spectio` capture server lines): `body.hook` gives the type, `body.seq`
   the seq, `body.instant` (epoch ms) the time, and the rest of `body` the data.
@@ -24,6 +25,9 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(ROOT / "tests" / "slurm"))
+from fixture import SECRET  # noqa: E402
+
 RUN_ID = "run_01K8T2F1XTVRES000000000000"
 LAUNCH = 1
 PRODUCERS = {"nextflow": "nf-spectio/0.0.1", "snakemake": "snakemake-logger-spectio/0.0.1"}
@@ -72,7 +76,7 @@ def convert_line(engine: str, name: str, line: str) -> dict[str, Any]:
 
 
 def convert(captures: Path, out: Path) -> list[Path]:
-    written = []
+    outputs: dict[Path, str] = {}
     for src in sorted(captures.glob("*.jsonl")):
         if "_tower_" in src.name:
             continue
@@ -82,9 +86,13 @@ def convert(captures: Path, out: Path) -> list[Path]:
             json.dumps(convert_line(engine, src.name, line), ensure_ascii=False) + "\n"
             for line in src.read_text(encoding="utf-8").splitlines()
         ]
-        dest.write_text("".join(lines), encoding="utf-8")
-        written.append(dest)
-    return written
+        outputs[dest] = "".join(lines)
+    for dest, text in outputs.items():
+        if SECRET.search(text):  # never print the match itself
+            sys.exit(f"credential-like text in the capture for {dest.name}: nothing written")
+    for dest, text in outputs.items():
+        dest.write_text(text, encoding="utf-8")
+    return list(outputs)
 
 
 def main(argv: list[str]) -> None:

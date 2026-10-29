@@ -530,7 +530,7 @@ Each bridge appends its events to a spool in the launch directory (`.spectio/eve
 
 Why: in the recommended head-job mode the engine runs on a compute node ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §3.1), and many HPC sites filter egress from compute nodes **[to be validated at EMBL]** ([`schedulers-and-monitoring.md`](schedulers-and-monitoring.md) §12).
 
-The forwarder keeps `.spectio/events/.cursor` (file, byte offset, last `source_seq`). On boot it asks the server for the highest stored `source_seq` per (run, producer) ([`api-and-data-model.md`](api-and-data-model.md) §8.2) and forwards from there. Rotation never deletes a file beyond the cursor. The numbers (batch size, replay rate cap, drop counters) belong to the ingest contract (api §14).
+The forwarder keeps `.spectio/events/.cursor` (file, byte offset, last `source_seq`). On boot it asks the server for the highest stored `source_seq` per (run, launch, producer) ([`api-and-data-model.md`](api-and-data-model.md) §8.2; launch added 2026-10-29, api §14.1, because a bridge's counter starts again in each launch) and forwards from there. Rotation never deletes a file beyond the cursor. The numbers (batch size, replay rate cap, drop counters) belong to the ingest contract (api §14).
 
 ### 13.2 Traffic budget
 

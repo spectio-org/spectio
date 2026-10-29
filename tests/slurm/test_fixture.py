@@ -1,5 +1,5 @@
 """fixture.py must refuse a document that holds a credential, and write nothing (security review SEC-T3-03,
-SEC-T3-07); no committed SLURM fixture may hold one. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
+SEC-T3-07); no committed SLURM or engine event fixture may hold one. Runs in ci.yml (ci-ok) and in pipelines-slurm.yml."""
 import glob, json, os, subprocess, sys, tempfile, unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -36,6 +36,11 @@ class FixtureGuard(unittest.TestCase):
     def test_committed_fixtures_clean(self):
         files = glob.glob(os.path.join(HERE, "..", "fixtures", "slurm", "**", "*.json"), recursive=True)
         self.assertTrue(files, "no committed SLURM fixture found")
+        # The engine event spools and the spike T2 captures they are converted from (SEC-P3T1-03).
+        events = glob.glob(os.path.join(HERE, "..", "fixtures", "engine-events", "*.jsonl"))
+        events += glob.glob(os.path.join(HERE, "..", "..", "spikes", "engine-events", "fixtures", "*.jsonl"))
+        self.assertEqual(len(events), 24, "engine event fixtures missing")
+        files += events
         for f in files:
             with self.subTest(os.path.relpath(f, HERE)), open(f) as fh:
                 m = SECRET.search(fh.read())
