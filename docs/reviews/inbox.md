@@ -1069,7 +1069,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - `.command.run`: (a) shown with every `export` value replaced by `«hidden»`; (b) shown as it is; (c) not shown. **Assumed:** (a), so the `#SBATCH` header stays readable;
   - Snakemake job command: (a) not stored, the drawer shows the rule logs and the SLURM log only; (b) store `shellcmd` and show it as the job's script. **Assumed:** (a);
   - SLURM logs: (a) runs Spectio launches keep every job's SLURM log; (b) the plugin's default. **Assumed:** (a); the logs live in the run directory;
-  - `sacct`: (a) once per failed Nextflow attempt, and in batches of 100 at most once a minute for Snakemake resources, with `[slurm] accounting = false` to turn it off; (b) only for failed jobs; (c) never. **Assumed:** (a), **[to be validated]** with the EMBL cluster admins.
+  - `sacct`: (a) one limiter for the whole server (one call in flight, at most one call a minute, at most 100 job IDs per call), Nextflow failures fetched when first opened and batched like Snakemake resources, never during an index rebuild, with `[slurm] accounting = false` to turn it off (dev-env §15.3 req. 15, revised by SEC-153); (b) only for failed jobs; (c) never. **Assumed:** (a), **[to be validated]** with the EMBL cluster admins.
 - **Recommendation:** the assumed options.
 - **Blocked:** nothing; P1 plans with them.
 
