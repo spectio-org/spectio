@@ -16,7 +16,8 @@ Every fact comes from branch autopilot/P3-t01 at b730180:
   (docs/plans/P1-walking-skeleton.md);
 - spikes/engine-events/fixtures/: 15 captures, 6 Nextflow plugin, 3 Snakemake, 6 Tower protocol;
   tests/fixtures/engine-events/: 9 spool files, `wc -l` 2375 lines;
-- `uv run --locked pytest -v`: 38 passed in 0.38s; `lint-imports`: 3 kept, 0 broken (re-run 2026-10-29).
+- `uv run --locked pytest -v`: all pass; `lint-imports`: 3 kept, 0 broken (re-run 2026-10-29; no test
+  count, so that the figure does not go stale).
 """
 
 from __future__ import annotations
@@ -137,7 +138,7 @@ def build(theme: Theme) -> Sketch:
     s.text(ex, ry + 140, "9 converted to spool files by `convert_t2.py`:", size=13.5, anchor="start")
     s.text(ex, ry + 161, "2375 lines, every one parses", size=13.5, anchor="start")
     s.text(ex, ry + 183, "the 6 Tower captures are not spool events", size=13.5, anchor="start", colour=t.dim)
-    s.terminal(ex, ry + 206, 470, 112, ("$ uv run --locked pytest -v", "38 passed in 0.38s",
+    s.terminal(ex, ry + 206, 470, 112, ("$ uv run --locked pytest -v", "pytest: all pass",
                                         "ruff, mypy, lint-imports: clean, 3 kept"), size=12.5)
     s.text(ex + 235, ry + 344, "the same checks run in the new CI job `product`", size=13.5, colour=t.dim)
 
