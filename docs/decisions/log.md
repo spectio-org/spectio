@@ -884,3 +884,9 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Changed:** `docs/intro.md`, `exclude_docs` in `mkdocs.yml`, [Claim the package names](../developer/claim-package-names.md) §3 and §4.
 - **Published:** Thomas ran the publish workflow on 2026-10-29 (run 40902016093). `snakemake-logger-plugin-spectio` `0.0.0` is on PyPI with `Repository: https://github.com/spectio-org/spectio` (JSON API, checked 2026-10-29). The catalogue lists it at its next daily rebuild; its page carries this text once `docs/intro.md` reaches `main`.
 
+## 2026-10-29 — CI runs on pushes to `main` only
+
+- **Context.** `ci.yml` and `claude-config.yml` ran on every PR and on pushes to `main` and `autopilot/integration`. The promotion PR from `autopilot/integration` to `main` stays open, so each merge into integration ran both workflows twice on the same commit: once for the push, once for the PR update.
+- **Decided (Thomas, 2026-10-29):** "oui ok" to Claude's recommendation: drop `autopilot/integration` from the `push` triggers of both workflows.
+- **Changed:** both workflows, and the workflow table of [dev-env §11](../specs/dev-environment-and-testing.md#11-ci-workflows).
+- **Cost:** a push used to run the synthetic scenarios whatever changed; a PR runs them only when their paths changed. Integration no longer gets that full run before `main`: it comes on the push to `main`, and nightly. Every PR into integration, and the promotion PR, still run all of `ci.yml` and `claude-config.yml`.
