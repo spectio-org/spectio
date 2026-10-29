@@ -2,19 +2,36 @@
  "agents": [
   {
    "tokens": {
-    "input": 114,
-    "cache_write": 184591,
-    "cache_read": 6701619,
-    "output": 21055
+    "input": 202,
+    "cache_write": 251792,
+    "cache_read": 14664394,
+    "output": 39420
    },
-   "calls": 52,
+   "calls": 89,
    "model": "claude-opus-5-5",
    "start": "2026-10-29T22:16:54.188Z",
-   "end": "2026-10-29T22:41:56.044Z",
+   "end": "2026-10-29T23:04:41.081Z",
    "id": "66130bd5-0ed7-5086-a906-6640d809ba00",
    "kind": "main",
    "type": "session",
    "label": "main session 66130bd5"
+  },
+  {
+   "tokens": {
+    "input": 32,
+    "cache_write": 159495,
+    "cache_read": 696758,
+    "output": 15736
+   },
+   "calls": 15,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T22:55:22.503Z",
+   "end": "2026-10-29T23:04:41.554Z",
+   "id": "a1182fdb9ff79d4bf",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code review P3 Task 1",
+   "workflow": null
   },
   {
    "tokens": {
@@ -82,6 +99,40 @@
    "kind": "subagent",
    "type": "doc-writer",
    "label": "P2 Progress page (doc-writer)",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 198,
+    "cache_write": 489434,
+    "cache_read": 17832854,
+    "output": 79641
+   },
+   "calls": 98,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T22:43:36.944Z",
+   "end": "2026-10-29T23:04:22.085Z",
+   "id": "ae66878e284b1e07c",
+   "kind": "subagent",
+   "type": "general-purpose",
+   "label": "P3 Task 1 implementer",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 42,
+    "cache_write": 173525,
+    "cache_read": 1050834,
+    "output": 23252
+   },
+   "calls": 20,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T22:55:22.514Z",
+   "end": "2026-10-29T23:04:39.585Z",
+   "id": "afe83eb3e4e733c04",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review P3 Task 1",
    "workflow": null
   }
  ],
