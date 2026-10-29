@@ -1,84 +1,74 @@
-# Spectio
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="docs/assets/brand/logo_dark.svg">
+    <img alt="Spectio" src="docs/assets/brand/logo_light.svg" width="320">
+  </picture>
+</p>
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/weber8thomas/spectio?quickstart=1)
+<p align="center">
+  <b>Launch, monitor and relaunch your Nextflow and Snakemake runs, on your own cluster.</b><br>
+  Open-source run manager for HPC and Kubernetes, part of the <a href="https://github.com/depictio/depictio">depictio</a> platform.
+</p>
 
-**Status: design phase, no code yet.** This repository holds the specifications, the decision log, the research behind them and the UI design sources. Code will follow in the same repository (see [`docs/specs/architecture-plugins-and-packaging.md`](docs/specs/architecture-plugins-and-packaging.md) §6 for the planned layout).
+<p align="center">
+  <img alt="Stage: design, first release 0.0.1 in preparation" src="https://img.shields.io/badge/stage-design%20%E2%86%92%200.0.1-8B5CF6">
+  <img alt="Engines: Nextflow and Snakemake" src="https://img.shields.io/badge/engines-Nextflow%20%C2%B7%20Snakemake-5A4FCF">
+  <img alt="Runs on SLURM and Kubernetes" src="https://img.shields.io/badge/runs%20on-SLURM%20%C2%B7%20Kubernetes-EC5F87">
+</p>
 
-Spectio is an open-source tool for launching, monitoring and steering workflow runs. It works with Nextflow and Snakemake today, and with CWL and WDL later.
-- **Checkpoints.** Gates pause a run at quality-control checkpoints, where a person, an AI agent or a robot decides how it continues.
-- **Headless.** A complete API for LIMS such as LabID, portals and CI.
-- **Shared platform.** Runs on a laptop, a lab server, Docker Compose or Kubernetes, and forms one platform with [depictio](https://github.com/depictio/depictio): same accounts, groups, branding, and results that become dashboards.
+## What Spectio is for
 
-## Where to start
+- **Launch.** Start a pipeline from the browser, the CLI or the API, on a laptop, a SLURM cluster or Kubernetes.
+- **Monitor.** Follow every run live, stage by stage, from one place, including runs you started yourself in a terminal.
+- **Relaunch.** Fix a parameter and resume from the engine's cache, without starting over.
+- **Check, only where you want.** Optional quality gates between stages pause a run until a person, an AI agent or a robot decides how it continues.
+- **Headless.** Everything the UI does goes through a documented API, for LIMS, portals and CI.
+
+Spectio adds itself next to your setup rather than replacing it. On Nextflow it runs as one more plugin, `nf-spectio`, alongside the ones a pipeline already loads ([decision 0001](docs/decisions/0001-nextflow-through-nf-spectio.md)). On Snakemake it is one more logger added to the ones you already use ([architecture and packaging §2](docs/specs/architecture-plugins-and-packaging.md#2-plugin-kinds)).
+
+## Where the project stands
+
+Spectio is being designed in the open. The specifications, the UI design and the test pipelines are written first, and each step is reviewed before code is built on it. The first release, **0.0.1**, covers launch, monitor and relaunch from the browser on a SLURM cluster; its scope is in the [MVP page](docs/specs/mvp-0.0.1.md) and the [roadmap](docs/roadmap/index.md).
+
+The package names are being reserved:
+
+| Name | Where | What it will be |
+|---|---|---|
+| [`spectio`](https://pypi.org/project/spectio/) | PyPI | the CLI, the runner and, with `spectio[server]`, the server |
+| `snakemake-logger-plugin-spectio` | PyPI | the Snakemake bridge |
+| `nf-spectio` | Nextflow plugin registry | the Nextflow bridge |
+
+The `0.0.0` releases only hold the names. Do not install them yet.
+
+## Read more
 
 | If you want… | Read |
 |---|---|
-| the big picture and the reasons | [`docs/specs/synthesis.md`](docs/specs/synthesis.md) |
-| what the screens look like and do | [`docs/specs/ui-spec.md`](docs/specs/ui-spec.md) and the UI canvas (below) |
-| the API, identity, tenancy and database | [`docs/specs/api-and-data-model.md`](docs/specs/api-and-data-model.md) |
-| plugins and how Spectio is installed | [`docs/specs/architecture-plugins-and-packaging.md`](docs/specs/architecture-plugins-and-packaging.md) |
-| quality-control gates across nf-core | [`docs/specs/checking-scenarios.md`](docs/specs/checking-scenarios.md) |
-| SLURM, other schedulers, Kubernetes and monitoring | [`docs/specs/schedulers-and-monitoring.md`](docs/specs/schedulers-and-monitoring.md) |
-| administration, backups and migrations | [`docs/specs/admin-and-operations.md`](docs/specs/admin-and-operations.md) |
-| the CLI and the libraries shared with depictio and LabID | [`docs/specs/cli-and-shared-libraries.md`](docs/specs/cli-and-shared-libraries.md) |
-| what is reused from depictio | [`docs/specs/depictio-ecosystem-reuse.md`](docs/specs/depictio-ecosystem-reuse.md) |
-| how agents check their work: toolchain, local SLURM and Kubernetes, tests, dev previews | [`docs/specs/dev-environment-and-testing.md`](docs/specs/dev-environment-and-testing.md) |
-| sign-in, magic links, share links, provisioning | [`docs/specs/authentication-and-access.md`](docs/specs/authentication-and-access.md) |
-| telemetry, install tracking, external analytics | [`docs/specs/telemetry-and-analytics.md`](docs/specs/telemetry-and-analytics.md) |
-| how docs are written, drawn, captured and reviewed at every step | [`docs/specs/documentation-system.md`](docs/specs/documentation-system.md) |
-| what each step has done so far | [`docs/progress/`](docs/progress/index.md) |
-| run the next phase unattended | [`docs/playbooks/autopilot.md`](docs/playbooks/autopilot.md) (`/autopilot`, driven by `/goal`) |
-| what is waiting on you | [`docs/reviews/inbox.md`](docs/reviews/inbox.md) |
-| why a choice was made, and when | [`docs/decisions/log.md`](docs/decisions/log.md) |
+| how a run goes, from launch to results | [Usage](docs/usage/index.md) |
+| the big picture and the reasons behind it | [Synthesis](docs/specs/synthesis.md) |
+| the screens | [UI spec](docs/specs/ui-spec.md), boards in [`design/ui-canvas/`](design/ui-canvas/) |
+| the API and the data model | [API and data model](docs/specs/api-and-data-model.md) |
+| plugins, packages and installs | [Architecture and packaging](docs/specs/architecture-plugins-and-packaging.md) |
+| why a choice was made, and when | [Decision log](docs/decisions/log.md) |
+| every page and who owns which topic | [Map](docs/map.md) |
 
-Full map: [`docs/map.md`](docs/map.md).
-
-## Repository layout
+## Repository
 
 ```
-docs/
-  specs/        living specifications (English), one topic per file
-  playbooks/    step-by-step prompts for the next phases
-  reviews/      review round results (findings, triage)
-  decisions/    decision log (append-only) and new decision records
-  research/     dated working notes and data the specs cite (code audits, nf-core survey)
-design/
-  tokens/       design tokens (CSS custom properties)
-  ui-canvas/    source of the UI canvas: one .dc.html per board + canvas.json
-  brand-canvas/ logo and colour explorations
-  progress/     one page per pipeline step, written while it runs
-  assets/       generated figures, casts, screenshots and videos (media.yaml lists their generators)
-tests/pipelines/ synthetic scenario pipelines (both engines) and the real nf-core / Snakemake corpus
-tools/canvas/   local renderer for the canvas boards (Playwright) and board generators
-tools/diagrams/ hand-drawn figure toolkit (sketch.py) and one script per figure
-tools/media/    cast generator, screenshot registry, combined terminal + browser captures
-tools/docs/     the docs gate (check.py)
-mkdocs.yml      documentation site
-CLAUDE.md       instructions for Claude Code
-.claude/        project agents, skills (incl. vendored superpowers and Karpathy guidelines), settings
-.autopilot/     pipeline state and journal (committed, so any session can resume)
-tools/autopilot/ batch picker, budget governor, status-line tap and headless runner
+docs/      specs, decisions, research notes, reviews and progress pages (MkDocs site)
+design/    UI boards, design tokens and brand
+tests/     synthetic and real pipelines that every engine adapter will be tested against
+tools/     dev tooling: docs gate, figures, media, board renderer, release
 ```
 
-## Viewing the design
-
-- **The live canvas.** It is a private claude.ai artifact owned by the author. Ask for access.
-- **Rendering boards locally.** `design/ui-canvas/` is a snapshot of that canvas, taken at each milestone. To render a board:
-
-  ```bash
-  npm install playwright        # Chromium included
-  node tools/canvas/render.js design/ui-canvas/RunDetail.dc.html 1440 1180 out.png
-  ```
-
-## Building the documentation site
+Build the documentation site locally:
 
 ```bash
-uv tool install mkdocs --with mkdocs-material
-mkdocs serve      # http://127.0.0.1:8000
+uvx --with mkdocs-material mkdocs serve     # http://127.0.0.1:8000
 ```
 
-Every pull request runs the docs gate, `python3 tools/docs/check.py`: strict build, Mermaid, diagram freshness, media manifest, Progress pages, and PR body.
+Every pull request runs the docs gate (`python3 tools/docs/check.py`) and a strict site build. Much of the design work is done with Claude Code agents, under review; [`CLAUDE.md`](CLAUDE.md) holds their instructions.
 
 ## Licence
 
-To be decided before the first code release. depictio is MIT.
+The released packages are MIT. The licence for the repository as a whole will be set before the first code release.
