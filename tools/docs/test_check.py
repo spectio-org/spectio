@@ -87,19 +87,25 @@ class MediaBudget(unittest.TestCase):
     def git(self, *args):
         subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=self.root, check=True)
 
-    def commit(self, files):
+    def commit(self, files, remove=()):
+        for name in remove:
+            (self.root / name).unlink()
         for name, size in files.items():
             (self.root / name).write_bytes(b"x" * size)
         self.git("add", "-A")
         self.git("commit", "-qm", "c")
 
-    def run_check(self):
+    def run_check(self, base="base"):
         with contextlib.redirect_stdout(io.StringIO()):
-            check.check_media_budget("base")
+            check.check_media_budget(base)
         return [f for f in check.failures if f.startswith("media:")]
 
-    def test_rerendered_file_of_the_same_size_costs_nothing(self):
+    def test_shrinking_or_same_size_rerender_costs_nothing(self):
         self.commit({"fig.png": 2900})
+        self.assertEqual(self.run_check(), [])
+
+    def test_small_growth_of_a_large_file_passes(self):
+        self.commit({"fig.png": 3800})
         self.assertEqual(self.run_check(), [])
 
     def test_growth_of_a_changed_file_counts(self):
@@ -109,6 +115,17 @@ class MediaBudget(unittest.TestCase):
     def test_new_file_counts_in_full(self):
         self.commit({"new.png": 1500})
         self.assertEqual(len(self.run_check()), 1)
+
+    def test_a_shrinking_file_does_not_pay_for_a_new_one(self):
+        self.commit({"fig.png": 1000, "new.png": 1500})
+        self.assertEqual(len(self.run_check()), 1)
+
+    def test_moved_file_counts_in_full(self):
+        self.commit({"moved é.png": 3000}, remove=["fig.png"])
+        self.assertEqual(len(self.run_check()), 1)
+
+    def test_unknown_base_fails(self):
+        self.assertEqual(len(self.run_check("nosuch")), 1)
 
 
 class Annotation(unittest.TestCase):

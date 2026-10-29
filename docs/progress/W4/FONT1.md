@@ -5,7 +5,7 @@ status: running
 pr: null
 review: approve
 review_score: 12/14
-review_ref: "doc-reviewer 2026-10-29: approve 12/14 on 1fe5af9, changes 2 to 7 applied, change 1 (a before/after figure) answered under Figures and media; code-reviewer approve on 1fe5af9, CR-1 applied in aa8861e, CR-2 noted in FONT-LICENSE.md"
+review_ref: "doc-reviewer 2026-10-29: approve 12/14 on 1fe5af9, changes 2 to 7 applied, change 1 (a before/after figure) answered under Figures and media; code-reviewer approve on 1fe5af9, CR-1 applied in aa8861e, CR-2 noted in FONT-LICENSE.md; code-reviewer changes on the media-budget change (2e95e73), all seven findings applied"
 ---
 # FONT1 · The hand-drawn figures switch to Excalifont
 
@@ -23,7 +23,7 @@ review_ref: "doc-reviewer 2026-10-29: approve 12/14 on 1fe5af9, changes 2 to 7 a
 - **All 32 figures** in `docs/assets/diagrams/` re-rendered, SVG and both PNGs.
 - **`tools/diagrams/FONT-LICENSE.md`:** an Excalifont section on top (how to make the file, its sha256, the licence statements); the Virgil notes kept below as history.
 - **References:** [documentation-system §1 and §3](../../specs/documentation-system.md) (and §3's mention of an `--allow-fallback-font` flag that never existed), `tools/diagrams/README.md`, the `diagram-artist` agent, `docs/assets/media.yaml`, `mkdocs.yml`, `.gitignore`, `tools/dashboard/gen.py`.
-- **`tools/docs/check.py`, media budget:** a changed file now counts by how much it grew, a new one in full. Before, every changed file counted in full, so re-rendering the 32 figures (19.1 MB of changed files, though each PNG got smaller) failed the 5 MB budget, and no split could pass: the 64 SVGs alone weigh 5.15 MB and must change together for the freshness check. The budget guards the size of `docs/assets` and of the site ([§1](../../specs/documentation-system.md)), which an in-place re-render does not grow. Three tests in `tools/docs/test_check.py`; the same-size test fails on the old gate. Spec: [documentation-system §3, size budget](../../specs/documentation-system.md).
+- **`tools/docs/check.py`, media budget:** a changed file now counts by how much it grew, a new one in full. Before, every changed file counted in full, so re-rendering the 32 figures (19.1 MB of changed files, though each PNG got smaller) failed the 5 MB budget, and no split could pass: the 64 SVGs alone weigh 5.15 MB and must change together for the freshness check. The budget guards the size of `docs/assets` and of the site ([§1](../../specs/documentation-system.md)), which an in-place re-render does not grow. A moved file counts in full, and a git error (an unknown base, a shallow clone) fails the gate instead of passing it. Seven tests in `tools/docs/test_check.py`, run on a real git repository; the same-size test fails on the old gate, the moved-file and unknown-base tests on the first version of this change. The git history still grows by each rewritten file's full size (about 19 MB here); the budget does not bound the clone, and §3 says so. Spec: [documentation-system §3, size budget](../../specs/documentation-system.md).
 - **Records:** a [decision-log entry](../../decisions/log.md#2026-10-29-the-hand-drawn-figures-switch-from-virgil-to-excalifont) and a note on [inbox #1](../../reviews/inbox.md#1-virgil-font-licence-blocks-publishing-the-hand-drawn-figures-font).
 
 ## Why

@@ -157,22 +157,26 @@ def _duration(p: pathlib.Path) -> float | None:
 
 
 def check_media_budget(base: str) -> None:
-    """Media growth against the base branch: at most 5 MB per PR. A new file counts in full,
-    a changed one by how much it grew, so re-rendering figures in place costs nothing."""
+    """Media growth against the base branch: at most 5 MB per PR. A new or moved file counts in
+    full, a changed one by how much it grew, so re-rendering figures in place costs only their growth."""
     def git(*args: str) -> str:
-        return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True).stdout
+        return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True, check=True).stdout
 
-    fork = git("merge-base", base, "HEAD").strip()
-    total = 0
-    for line in git("diff", "--name-status", "--diff-filter=AM", f"{base}...HEAD").splitlines():
-        status, f = line.split("\t", 1)
-        if pathlib.Path(f).suffix.lower() not in MEDIA_EXT or f.startswith("design/") or not (ROOT / f).exists():
-            continue
-        old = int(git("cat-file", "-s", f"{fork}:{f}")) if status == "M" else 0
-        total += max(0, (ROOT / f).stat().st_size - old)
+    def size(rev: str, f: str) -> int:
+        return int(git("cat-file", "-s", f"{rev}:{f}"))
+
+    try:
+        fork = git("merge-base", base, "HEAD").strip()
+        fields = git("diff", "-z", "--no-renames", "--name-status", "--diff-filter=AM", fork, "HEAD").split("\0")
+        total = sum(max(0, size("HEAD", f) - (size(fork, f) if status == "M" else 0))
+                    for status, f in zip(fields[0::2], fields[1::2])
+                    if pathlib.Path(f).suffix.lower() in MEDIA_EXT and not f.startswith("design/"))
+    except subprocess.CalledProcessError as e:
+        fail("media", f"cannot compare media with {base}: {e.stderr.strip()}")
+        return
     if total > PR_MEDIA_MAX:
         fail("media", f"this change adds {total / 2**20:.1f} MB of media (max 5 MB per PR)")
-    print(f"media budget: {total / 2**20:.2f} MB new or changed against {base}")
+    print(f"media budget: {total / 2**20:.2f} MB of growth against {base}")
 
 
 def check_media() -> None:
