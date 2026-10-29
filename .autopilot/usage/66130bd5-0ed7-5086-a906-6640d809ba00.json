@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 328,
-    "cache_write": 339753,
-    "cache_read": 28633566,
-    "output": 64791
+    "input": 414,
+    "cache_write": 443003,
+    "cache_read": 38152478,
+    "output": 80212
    },
-   "calls": 137,
+   "calls": 175,
    "model": "claude-opus-5-5",
    "start": "2026-10-29T22:16:54.188Z",
-   "end": "2026-10-29T23:31:07.953Z",
+   "end": "2026-10-29T23:46:05.739Z",
    "id": "66130bd5-0ed7-5086-a906-6640d809ba00",
    "kind": "main",
    "type": "session",
