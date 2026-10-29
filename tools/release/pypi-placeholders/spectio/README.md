@@ -4,4 +4,4 @@ Spectio launches, monitors and steers Nextflow and Snakemake runs: one place to 
 
 This `0.0.0` release only holds the name on PyPI while the first real version is built. It installs a `spectio` command that prints this notice and its version.
 
-Source, design documents and progress: <https://github.com/weber8thomas/spectio>.
+Source, design documents and progress: <https://github.com/spectio-org/spectio>.

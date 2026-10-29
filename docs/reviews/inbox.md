@@ -91,6 +91,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - (c) stay under `weber8thomas` until 0.1.0.
 - **Recommendation:** (a) or (b), decided before 0.1.0, with the names reserved then. **Assumed:** (c).
 - **Answer (Thomas, 2026-10-26):** (c) for now; to be moved later. *Handled.*
+- **Update (Thomas, 2026-10-29):** (a). The repository moved to the `spectio-org` organization (`spectio` was taken) before the first PyPI upload, so the trusted publishers and the `0.0.0` packages use it ([decision log](../decisions/log.md#2026-10-29-the-repository-moves-to-the-spectio-org-organization)). *Decided.*
 
 ### #10 · Create the Cloudflare account and the two secrets (dev previews)
 

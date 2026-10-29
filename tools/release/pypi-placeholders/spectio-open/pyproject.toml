@@ -10,8 +10,7 @@ requires-python = ">=3.10"
 spectio-open = "spectio_open:main"
 
 [project.urls]
-Repository = "https://github.com/weber8thomas/spectio"
-Documentation = "https://weber8thomas.github.io/spectio/"
+Repository = "https://github.com/spectio-org/spectio"
 
 [build-system]
 requires = ["uv_build==0.11.32"]  # = UV_VERSION in dev/versions.env

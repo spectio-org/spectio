@@ -56,7 +56,7 @@ def build(theme: Theme) -> Sketch:
     s.text(60, top + 32, "PyPI · one name at a time, at most 3 pending", size=17, anchor="start", weight="bold")
     s.browser(70, top + 60, 330, 200, url="pypi.org, Publishing")
     s.text(90, top + 140, "pending publisher:", size=14, anchor="start")
-    s.text(90, top + 166, "`weber8thomas` / `spectio`", size=14, anchor="start")
+    s.text(90, top + 166, "`spectio-org` / `spectio`", size=14, anchor="start")
     s.text(90, top + 192, "`pypi-publish.yml`", size=14, anchor="start")
     s.text(90, top + 218, "environment `pypi-<project>`", size=14, anchor="start")
     s.warning(110, top + 290, size=12)

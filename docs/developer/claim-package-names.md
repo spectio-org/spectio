@@ -15,7 +15,7 @@ Spectio needs four names before its bridges can be installed from a terminal: th
 ## 1. `nf-spectio` on the Nextflow plugin registry
 
 1. **Sign in** at <https://registry.nextflow.io/> with "Log in". Sign-in goes through Seqera (GitHub, Google or email); a first login sends an authentication link by email ([plugin registry docs](https://docs.seqera.io/nextflow/plugins/plugin-registry); nextflow `docs/plugins/plugin-registry.mdx:20-26` at `00143fb`).
-2. **Decide the provider string first.** The claim's **Provider** must equal `nextflowPlugin.provider` in the plugin's Gradle build, or the first release is refused ([Gradle plugin guide](https://docs.seqera.io/nextflow/guides/gradle-plugin); `gradle-plugin.mdx:24-26`, `plugin-registry.mdx:32-35`). For example `weber8thomas`; it is Thomas's choice.
+2. **Decide the provider string first.** The claim's **Provider** must equal `nextflowPlugin.provider` in the plugin's Gradle build, or the first release is refused ([Gradle plugin guide](https://docs.seqera.io/nextflow/guides/gradle-plugin); `gradle-plugin.mdx:24-26`, `plugin-registry.mdx:32-35`). For example `spectio-org`, the repository's organization; it is Thomas's choice.
 3. **Claim the ID:** **My plugins**, then **Claim a plugin**. Plugin name `nf-spectio`, Provider as above, then **Submit Request** (`plugin-registry.mdx:28-38`). The ID is the Gradle `rootProject.name` and must match `[a-zA-Z0-9-]{5,64}`; the `nf-` prefix is a convention, not a rule (nextflow-plugin-gradle `NextflowPluginConfig.groovy:133-136` at `cedaf05`).
 4. **Wait for approval.** The claim shows as **PENDING REVIEW** under **Pending Ownership Requests** until an admin approves it; approval happens once (`plugin-registry.mdx:40`). How long it takes, and whether a pending claim already blocks others, is not documented **[to be validated]**. Whether the admins expect a public repository is **[to be validated]**.
 5. **Once approved, stop.** "Ownership of a plugin is required to publish" (`plugin-registry.mdx:16`) and "You can claim a plugin even if it doesn't exist in the registry yet" (`gradle-plugin.mdx:109-111`), so an approved claim should hold the ID with no release. This is an inference: the docs do not say that a second claimant is refused **[to be validated]**. Do not upload a placeholder: a release needs a README with Summary, Get Started, Examples and License sections and no placeholder text (`gradle-plugin.mdx:82-101`).
@@ -27,7 +27,7 @@ Spectio needs four names before its bridges can be installed from a terminal: th
 
 - **Account:** a verified primary email and two-factor authentication on pypi.org (warehouse `forklift/legacy.py:541-585` at `481006f`; [PyPI two-factor docs](https://docs.pypi.org/your-account/two-factor-authentication/)).
 - **The names are still free** on 2026-10-29: 404 on `/simple/<name>/` and on the JSON API, and no similar name in the full index under PyPI's confusable-name rule (`packaging/services.py:578-611`). PyPI's list of prohibited names is not public, so only the first run confirms them **[to be validated on upload]**.
-- **What gets uploaded:** a small, working `0.0.0` release of each project, from [`tools/release/pypi-placeholders/`](https://github.com/weber8thomas/spectio/tree/main/tools/release/pypi-placeholders). PEP 541 removes projects with "no functionality" as name squatting ([PEP 541, invalid projects](https://peps.python.org/pep-0541/#invalid-projects)), so each one does something: `spectio` and `spectio-open` install a command that prints its version and what Spectio is; `snakemake-logger-plugin-spectio` is a real Snakemake logger that writes each log event as one JSON line (`--logger spectio`). No source gives a minimum **[to be validated]**.
+- **What gets uploaded:** a small, working `0.0.0` release of each project, from [`tools/release/pypi-placeholders/`](https://github.com/spectio-org/spectio/tree/main/tools/release/pypi-placeholders). PEP 541 removes projects with "no functionality" as name squatting ([PEP 541, invalid projects](https://peps.python.org/pep-0541/#invalid-projects)), so each one does something: `spectio` and `spectio-open` install a command that prints its version and what Spectio is; `snakemake-logger-plugin-spectio` is a real Snakemake logger that writes each log event as one JSON line (`--logger spectio`). No source gives a minimum **[to be validated]**.
 - **Why `0.0.0`:** a file name can never be uploaded twice, even after deletion (warehouse `docs/user/publishing/troubleshooting.md:19` at `481006f`), so `0.0.1` stays free for the real release.
 
 ### 2.2 On GitHub (repository settings)
@@ -51,7 +51,7 @@ For each name, **Your account**, then **Publishing** (`/manage/account/publishin
 | Field | Value |
 |---|---|
 | PyPI project name | `spectio` (then `spectio-open`, then `snakemake-logger-plugin-spectio`) |
-| Owner | `weber8thomas` |
+| Owner | `spectio-org` (the repository moved there on 2026-10-29, inbox #9; a publisher added with `weber8thomas` no longer matches and is removed, then added again) |
 | Repository name | `spectio` |
 | Workflow name | `pypi-publish.yml` |
 | Environment name | `pypi-spectio` (the `pypi-<project>` that matches the name) |

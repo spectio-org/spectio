@@ -1,6 +1,6 @@
 # snakemake-logger-plugin-spectio
 
-A Snakemake logger plugin for [Spectio](https://github.com/weber8thomas/spectio), the tool that launches, monitors and steers Nextflow and Snakemake runs.
+A Snakemake logger plugin for [Spectio](https://github.com/spectio-org/spectio), the tool that launches, monitors and steers Nextflow and Snakemake runs.
 
 This early `0.0.0` release writes every Snakemake log event as one JSON line to a file (`--logger-spectio-file`, default `spectio-events.jsonl`, created 0600, never through a symlink), so another program can follow a run:
 
