@@ -1,6 +1,6 @@
 # Hand-drawn diagrams (`tools/diagrams/`)
 
-These figures are drawn in Python, not in an editor. They look like Excalidraw sketches but they are produced by code: double strokes along a wobbly line, pastel fills and the Virgil handwriting font. The toolkit is `sketch.py`, ported from depictio (MIT; the commits are listed at the top of the file).
+These figures are drawn in Python, not in an editor. They look like Excalidraw sketches but they are produced by code: double strokes along a wobbly line, pastel fills and the Excalifont handwriting font. The toolkit is `sketch.py`, ported from depictio (MIT; the commits are listed at the top of the file).
 
 Because they are produced by code:
 - a figure can be fixed in a diff when the thing it shows changes;
@@ -20,7 +20,7 @@ python3 gate_resume.py --no-png     # SVG only, no browser needed
 - Python 3.11+ with `playwright` and its Chromium, for the PNGs;
 - ImageMagick (optional): it reduces the PNGs to 256 colours, which makes them about 3 times smaller.
 
-**Font:** `SPECTIO_VIRGIL_TTF` points to the font. The default is `docs/fonts/Virgil.ttf`. The `excalidraw/virgil` repository declares OFL-1.1, but the metadata in its own font file says "freeware for personal use". The local depictio copy is a different build again. The licence is unconfirmed, see [`FONT-LICENSE.md`](FONT-LICENSE.md).
+**Font:** `SPECTIO_SKETCH_TTF` points to the font. The default is `docs/fonts/Excalifont.ttf`, not committed; [`FONT-LICENSE.md`](FONT-LICENSE.md) says how to make it and what its licence status is. Without it, PNG rendering stops; `--no-png` still writes the SVGs.
 
 ## Rules
 
@@ -42,7 +42,7 @@ python3 gate_resume.py --no-png     # SVG only, no browser needed
    Number the steps with captions (`s.step(cx, y, n, label)`).
 5. **To scale, from measurements.** When a figure shows counts or durations, draw them to scale with `task_strip`, bars or axes. Take the numbers from a real run, and name the source in the script's docstring and in the figure's footer.
 6. **Name fills by meaning,** not by colour: `input`, `work`, `gate`, `done`, `docs`, `problem`, `neutral`, `cached`, `recomputed`. Each theme maps them to its own colours.
-7. **Text in Virgil: no braces, no runs of punctuation.** Virgil draws them badly. Put code between backticks so it is set in monospace (`` `nextflow run -resume` ``).
+7. **Handwritten text: no braces, no runs of punctuation.** The handwriting font draws them badly, and has no `§`, `→`, `✓` or `✗`. Put code between backticks so it is set in monospace (`` `nextflow run -resume` ``).
 8. **Look at both PNGs before you commit:** check that no label collides with another and that the dark version reads well.
 
 ## In a pull request body

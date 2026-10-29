@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1780" height="1000" viewBox="0 0 1780 1000">
   <rect width="1780" height="1000" fill="#ffffff"/>
-  <text x="50.0" y="58.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="27" fill="#1e1e1e" text-anchor="start" font-weight="normal">T2 · What the engines send, captured as golden fixtures</text>
-  <text x="50.0" y="86.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">synthetic pipelines, local executor · Snakemake 9.27.1 · Nextflow 26.10.4 and 25.10.9 · a failed task, a retry, a resume or rerun</text>
+  <text x="50.0" y="58.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="27" fill="#1e1e1e" text-anchor="start" font-weight="normal">T2 · What the engines send, captured as golden fixtures</text>
+  <text x="50.0" y="86.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">synthetic pipelines, local executor · Snakemake 9.27.1 · Nextflow 26.10.4 and 25.10.9 · a failed task, a retry, a resume or rerun</text>
   <rect x="50.0" y="180.0" width="250.0" height="96.0" rx="5" fill="#1e1e1e"/>
   <path d="M50.3,180.5 C131.9,180.6 215.5,179.9 299.9,180.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M50.1,180.4 C131.8,179.8 216.3,181.1 299.9,179.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
@@ -17,7 +17,7 @@
   <text x="64.0" y="224.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#f1f3f5" xml:space="preserve">$ nextflow run main.nf</text>
   <text x="64.0" y="245.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#f1f3f5" xml:space="preserve">  -with-tower</text>
   <text x="64.0" y="266.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#f1f3f5" xml:space="preserve">  -plugins nf-spectio</text>
-  <text x="175.0" y="302.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#5c5c5c" text-anchor="middle" font-weight="normal">Nextflow 26.10.4, 25.10.9</text>
+  <text x="175.0" y="302.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#5c5c5c" text-anchor="middle" font-weight="normal">Nextflow 26.10.4, 25.10.9</text>
   <rect x="50.0" y="590.0" width="250.0" height="96.0" rx="5" fill="#1e1e1e"/>
   <path d="M49.4,590.5 C132.0,588.8 215.3,590.5 299.4,590.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M50.8,589.4 C133.2,588.5 215.1,591.3 300.4,590.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
@@ -33,7 +33,7 @@
   <text x="64.0" y="634.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#f1f3f5" xml:space="preserve">$ snakemake</text>
   <text x="64.0" y="655.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#f1f3f5" xml:space="preserve">  --logger spectio</text>
   <text x="64.0" y="676.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#f1f3f5" xml:space="preserve">  --retries 2</text>
-  <text x="175.0" y="712.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#5c5c5c" text-anchor="middle" font-weight="normal">Snakemake 9.27.1</text>
+  <text x="175.0" y="712.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#5c5c5c" text-anchor="middle" font-weight="normal">Snakemake 9.27.1</text>
   <path d="M310.2,209.4 C355.3,188.0 404.1,168.5 449.9,149.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M310.2,210.4 C356.2,189.3 402.4,168.5 449.4,149.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M449.6,150.2 C444.9,150.0 440.2,149.5 435.7,148.6" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
@@ -107,8 +107,8 @@
   <path d="M484.4,134.3 C484.8,134.7 485.2,135.5 485.0,135.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M485.0,135.4 C485.3,135.9 485.5,136.5 485.5,136.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M485.5,136.7 C485.8,137.3 485.6,137.7 485.8,138.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="506.0" y="144.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#1e1e1e" text-anchor="start" font-weight="bold">nf-tower observer</text>
-  <text x="506.0" y="166.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">create · begin · progress · complete</text>
+  <text x="506.0" y="144.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#1e1e1e" text-anchor="start" font-weight="bold">nf-tower observer</text>
+  <text x="506.0" y="166.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">create · begin · progress · complete</text>
   <path d="M494.9,309.9 C496.4,310.1 498.4,310.2 499.9,310.1" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
   <path d="M490.7,320.6 C491.7,321.8 492.8,323.0 494.0,324.2" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
   <path d="M479.9,325.1 C479.7,326.4 479.8,328.2 480.1,330.1" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
@@ -174,11 +174,11 @@
   <path d="M484.3,306.4 C485.0,306.7 484.8,307.4 485.2,307.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M485.2,307.5 C485.0,308.0 485.1,308.1 485.7,308.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M485.7,308.7 C485.9,309.0 485.6,309.8 485.8,310.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="506.0" y="316.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#1e1e1e" text-anchor="start" font-weight="bold">nf-spectio (TraceObserverV2)</text>
-  <text x="506.0" y="338.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">one POST per hook, built without Gradle</text>
+  <text x="506.0" y="316.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#1e1e1e" text-anchor="start" font-weight="bold">nf-spectio (TraceObserverV2)</text>
+  <text x="506.0" y="338.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">one POST per hook, built without Gradle</text>
   <rect x="574.0" y="229.5" width="17.6" height="9.0" rx="4.5" fill="none" stroke="#2f9e44" stroke-width="2.2" transform="rotate(-35 582.8 234.0)"/>
   <rect x="588.4" y="229.5" width="17.6" height="9.0" rx="4.5" fill="none" stroke="#2f9e44" stroke-width="2.2" transform="rotate(-35 597.2 234.0)"/>
-  <text x="612.0" y="240.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#2f9e44" text-anchor="start" font-weight="normal">same run name + session ID, 6 of 6 runs</text>
+  <text x="612.0" y="240.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#2f9e44" text-anchor="start" font-weight="normal">same run name + session ID, 6 of 6 runs</text>
   <path d="M309.5,639.9 C355.9,640.3 404.4,638.5 449.5,639.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M310.1,640.4 C355.8,641.2 402.2,640.2 451.0,640.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M450.1,640.0 C446.6,638.7 442.4,634.8 437.8,633.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
@@ -248,8 +248,8 @@
   <path d="M484.5,636.6 C484.4,636.8 484.7,637.3 485.3,637.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M485.1,637.5 C485.5,637.7 485.1,638.1 485.7,638.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M485.6,638.8 C485.3,639.3 485.4,639.3 485.6,639.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="506.0" y="646.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#1e1e1e" text-anchor="start" font-weight="bold">logger plugin <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.2">spectio</tspan></text>
-  <text x="506.0" y="668.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">every LogRecord as one JSON line</text>
+  <text x="506.0" y="646.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#1e1e1e" text-anchor="start" font-weight="bold">logger plugin <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.2">spectio</tspan></text>
+  <text x="506.0" y="668.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">every LogRecord as one JSON line</text>
   <path d="M770.9,150.4 C828.9,171.8 888.6,194.7 950.2,220.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M770.1,149.8 C830.1,171.6 891.7,195.7 950.8,220.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M950.3,220.3 C947.6,215.9 943.5,213.4 940.4,209.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
@@ -265,9 +265,9 @@
   <path d="M960.3,264.4 C959.2,242.9 959.8,221.8 959.7,199.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M960.3,200.3 C976.8,212.3 993.3,223.4 1009.9,235.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1010.3,235.5 C1026.4,223.3 1042.6,211.2 1060.0,200.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="1010.0" y="294.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#1e1e1e" text-anchor="middle" font-weight="bold">capture server</text>
-  <text x="1010.0" y="314.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">Python stdlib, logs every body</text>
-  <text x="1010.0" y="334.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">/trace/*</tspan> and <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">/spectio/events</tspan></text>
+  <text x="1010.0" y="294.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#1e1e1e" text-anchor="middle" font-weight="bold">capture server</text>
+  <text x="1010.0" y="314.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">Python stdlib, logs every body</text>
+  <text x="1010.0" y="334.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">/trace/*</tspan> and <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">/spectio/events</tspan></text>
   <path d="M769.1,640.8 C830.0,640.3 890.9,638.4 949.5,640.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M769.9,640.7 C832.0,639.4 890.0,641.1 950.9,640.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M950.0,639.9 C945.2,637.4 942.0,636.6 937.7,633.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
@@ -283,7 +283,7 @@
   <path d="M989.1,629.2 C1002.5,628.9 1016.2,629.2 1030.0,629.0" fill="none" stroke="#adb5bd" stroke-width="1.2" stroke-linecap="round"/>
   <path d="M988.8,640.4 C1002.9,640.2 1016.5,640.5 1029.8,640.4" fill="none" stroke="#adb5bd" stroke-width="1.2" stroke-linecap="round"/>
   <path d="M988.8,651.5 C1003.1,651.9 1016.1,651.2 1030.0,651.6" fill="none" stroke="#adb5bd" stroke-width="1.2" stroke-linecap="round"/>
-  <text x="1010.0" y="698.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="middle" font-weight="bold"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">$SPECTIO_EVENTS</tspan> file</text>
+  <text x="1010.0" y="698.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="middle" font-weight="bold"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">$SPECTIO_EVENTS</tspan> file</text>
   <path d="M1080.1,230.9 C1173.0,231.1 1266.9,231.2 1359.5,229.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1079.3,229.8 C1171.5,230.0 1266.4,230.9 1360.1,230.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1360.1,230.3 C1356.4,228.1 1351.4,226.5 1348.0,223.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
@@ -326,8 +326,8 @@
   <path d="M1395.3,389.4 C1397.0,390.0 1399.0,390.6 1400.4,391.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1400.7,391.1 C1401.5,391.8 1402.7,392.2 1403.8,393.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1403.7,392.9 C1403.9,393.4 1405.0,394.1 1405.0,394.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="1360.0" y="477.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="middle" font-weight="normal">normalise:</text>
-  <text x="1360.0" y="495.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="middle" font-weight="normal">paths, host, user, token</text>
+  <text x="1360.0" y="477.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#5c5c5c" text-anchor="middle" font-weight="normal">normalise:</text>
+  <text x="1360.0" y="495.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#5c5c5c" text-anchor="middle" font-weight="normal">paths, host, user, token</text>
   <path d="M1360.7,386.6 C1359.4,339.7 1361.3,290.3 1359.7,241.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M1359.2,386.3 C1358.8,339.2 1361.7,292.3 1360.9,241.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M1360.1,241.7 C1358.5,246.5 1355.3,249.4 1353.2,254.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
@@ -357,7 +357,7 @@
   <rect x="1630.0" y="200.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
   <rect x="1646.0" y="200.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
   <rect x="1662.0" y="200.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
-  <text x="1420.0" y="256.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">12 Nextflow fixtures</text>
+  <text x="1420.0" y="256.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">12 Nextflow fixtures</text>
   <path d="M1420.0,609.0 L1438.4,609.0 L1441.6,600.0 L1453.5,600.0 L1456.7,609.0 L1474.0,609.0 L1474.0,640.0 L1420.0,640.0 Z" fill="#ebfbee" stroke="none"/>
   <path d="M1420.5,609.0 C1426.5,609.1 1432.4,608.9 1438.4,608.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1438.2,608.6 C1439.5,606.1 1439.6,603.0 1441.3,600.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
@@ -370,32 +370,32 @@
   <rect x="1486.0" y="610.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
   <rect x="1502.0" y="610.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
   <rect x="1518.0" y="610.0" width="12.0" height="20.0" rx="2" fill="#ebfbee" stroke="#1e1e1e" stroke-width="0.8"/>
-  <text x="1420.0" y="666.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">3 Snakemake fixtures</text>
-  <text x="1420.0" y="280.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">tower + plugin × flaky, tool error, resume</text>
-  <text x="1420.0" y="690.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">checkpoint + retry, tool error, rerun</text>
-  <text x="780.0" y="455.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">1 · both engines report from the main process; we keep every payload</text>
-  <text x="50.0" y="790.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15.5" fill="#1e1e1e" text-anchor="start" font-weight="bold">differences that change a spec</text>
+  <text x="1420.0" y="666.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">3 Snakemake fixtures</text>
+  <text x="1420.0" y="280.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">tower + plugin × flaky, tool error, resume</text>
+  <text x="1420.0" y="690.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">checkpoint + retry, tool error, rerun</text>
+  <text x="780.0" y="455.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">1 · both engines report from the main process; we keep every payload</text>
+  <text x="50.0" y="790.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15.5" fill="#1e1e1e" text-anchor="start" font-weight="bold">differences that change a spec</text>
   <path d="M62.0,821.0 L73.0,840.8 L51.0,840.8 Z" fill="#fff9db" stroke="none"/>
   <path d="M62.2,821.2 C65.5,826.8 69.5,834.4 72.6,841.1" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M73.3,840.7 C65.3,840.5 57.6,841.0 51.2,840.8" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M51.2,840.5 C54.1,834.9 58.7,827.3 62.0,820.9" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="62.0" y="838.6" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.2" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
-  <text x="84.0" y="837.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">last <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">onTaskComplete</tspan> of a process arrives after its <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">onProcessTerminate</tspan></text>
-  <text x="84.0" y="858.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">checking-scenarios §11.5: end of stage needs both</text>
+  <text x="62.0" y="838.6" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.2" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
+  <text x="84.0" y="837.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">last <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">onTaskComplete</tspan> of a process arrives after its <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">onProcessTerminate</tspan></text>
+  <text x="84.0" y="858.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">checking-scenarios §11.5: end of stage needs both</text>
   <path d="M632.0,821.0 L643.0,840.8 L621.0,840.8 Z" fill="#fff9db" stroke="none"/>
   <path d="M631.9,821.2 C635.6,828.2 639.9,834.5 642.7,840.7" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M642.9,840.8 C636.2,840.6 628.6,840.6 620.7,841.0" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M621.3,840.5 C624.3,834.2 628.5,827.3 632.0,821.0" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="632.0" y="838.6" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.2" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
-  <text x="654.0" y="837.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">Snakemake: no attempt number, no exit code in <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">job_error</tspan></text>
-  <text x="654.0" y="858.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">synthesis §2ter retries row; exit code only in the error text</text>
+  <text x="632.0" y="838.6" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.2" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
+  <text x="654.0" y="837.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">Snakemake: no attempt number, no exit code in <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">job_error</tspan></text>
+  <text x="654.0" y="858.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">synthesis §2ter retries row; exit code only in the error text</text>
   <path d="M1202.0,821.0 L1213.0,840.8 L1191.0,840.8 Z" fill="#fff9db" stroke="none"/>
   <path d="M1202.0,821.0 C1205.2,827.4 1209.9,833.6 1213.1,840.6" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1212.7,840.9 C1206.4,841.1 1198.2,841.1 1191.3,840.9" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1190.7,840.4 C1195.0,833.9 1198.4,827.3 1201.9,820.7" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="1202.0" y="838.6" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.2" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
-  <text x="1224.0" y="837.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">checkpoint: total grows 32 → 67 through <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">progress</tspan>, no DAG event</text>
-  <text x="1224.0" y="858.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">matches §2ter; two untyped messages per checkpoint</text>
-  <text x="890.0" y="905.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">2 · every difference is listed in the research note; TRIAGE3 decides the spec changes</text>
-  <text x="1730.0" y="980.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">source: docs/research/spike-engine-events-2026-10-28.md · spikes/engine-events/fixtures/</text>
+  <text x="1202.0" y="838.6" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.2" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
+  <text x="1224.0" y="837.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">checkpoint: total grows 32 → 67 through <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">progress</tspan>, no DAG event</text>
+  <text x="1224.0" y="858.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">matches §2ter; two untyped messages per checkpoint</text>
+  <text x="890.0" y="905.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">2 · every difference is listed in the research note; TRIAGE3 decides the spec changes</text>
+  <text x="1730.0" y="980.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">source: docs/research/spike-engine-events-2026-10-28.md · spikes/engine-events/fixtures/</text>
 </svg>

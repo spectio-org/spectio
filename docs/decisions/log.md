@@ -270,7 +270,7 @@ Everything must be traced, including:
   release-please never reaches 1.0.0 on its own, and `release-guard.yml` fails any release PR at 1.0.0 or above unless `ALLOW_V1=true`.
 - **Release stages:** walking skeleton (0.1), private alpha with EMBL design partners (0.2–0.4), public beta with a demo instance (0.5–0.9), then 1.0.
 - **Adoption and positioning** (`docs/research/adoption-and-positioning-2026-10-26.md`):
-  - Spectio is not presented as an open-source Seqera Platform. It is the gate-and-steer layer for self-hosted HPC, Snakemake first, part of the depictio and LabID platform.
+  - Spectio is not presented as an open-source Seqera Platform. It is the gate-and-steer layer for self-hosted HPC, Snakemake first, part of the depictio and LabID platform. *Revised 2026-10-29: a project of its own, connected to depictio later ([entry](#2026-10-29-spectio-is-a-project-of-its-own-connected-to-depictio-later)).*
   - The plan does not count on nf-core endorsement; nf-core pipelines are used unmodified as test cases.
   - Order of outreach: design partners first, then neighbouring institutes, then the public beta (Snakemake community, BioHackathon Europe, BOSC, registries, JOSS later).
 - **Virgil** is set aside for now (inbox #1).
@@ -845,6 +845,21 @@ Step page: [APPLY8](../progress/W4/APPLY8.md).
 - **Still in force:** Claude never starts the publish workflow on its own (CLAUDE.md, the autopilot's standing rules); that is now a rule of conduct, not a technical block.
 - **Revisit:** before the first release with real code, when a stray publish would reach users. The narrower option is ready: a PreToolUse hook that refuses only a dispatch of `pypi-publish.yml`.
 - **Changed:** inbox #71. No settings file changes.
+
+## 2026-10-29 — Spectio is a project of its own, connected to depictio later
+
+- **Context.** The README and the site's home page said "part of the depictio platform", following the 2026-10-26 positioning ("part of the depictio and LabID platform").
+- **Decided (Thomas, 2026-10-29):** "non c'est un projet en tant que tel ; juste on le connectera plus tard" (no, it is a project in its own right; we will just connect it later). This is the same line as the move to its own `spectio-org` organization.
+- **Changed:** the README tagline and the home page's subtitle. The depictio integration itself ([depictio ecosystem reuse](../specs/depictio-ecosystem-reuse.md)) is unchanged.
+
+## 2026-10-29 — The hand-drawn figures switch from Virgil to Excalifont
+
+- **Context.** Thomas, 2026-10-29: "font utilisé pour diagram n'est pas bonne ; prends en une autre" (the diagram font is not right; pick another). Six candidates were rendered on the same figure (Excalifont, Kalam, Patrick Hand, Architects Daughter, Inter, Virgil).
+- **Decided (Thomas, 2026-10-29):** Excalifont, Excalidraw's own successor to Virgil.
+- **Changed:** `tools/diagrams/sketch.py` reads `SPECTIO_SKETCH_TTF` (default `docs/fonts/Excalifont.ttf`) in place of `SPECTIO_VIRGIL_TTF`, falls back to a plain sans instead of a novelty face, and stops before writing a PNG when the font file is missing. All 32 figures are re-rendered. `tools/diagrams/FONT-LICENSE.md` gives the source, its sha256 and the licence statements; [documentation-system §1 and §3](../specs/documentation-system.md) follow.
+- **Not changed:** the font stays uncommitted, as inbox #1 decided for Virgil. Excalidraw states OFL-1.1 for Excalifont, but the file carries no licence record **[to be validated]**; committing it stays Thomas's call.
+
+Step page: [FONT1](../progress/W4/FONT1.md).
 
 ## 2026-10-29 — The laptop command becomes `spectio open`, in the `spectio` package
 
