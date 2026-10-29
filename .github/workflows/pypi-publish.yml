@@ -88,7 +88,7 @@ jobs:
           SUMS: ${{ needs.build.outputs.sums }}
         run: |
           printf '%s\n' "$SUMS" | sha256sum --check --strict
-          [ "$(ls dist | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)" ]
+          [ "$(find dist -type f ! -name '.*' | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)" ]
           uv venv --python 3.12 /tmp/smoke
           uv pip install --python /tmp/smoke/bin/python dist/*.whl
           /tmp/smoke/bin/python tools/release/pypi-placeholders/smoke.py "$PROJECT"
@@ -113,7 +113,7 @@ jobs:
           SUMS: ${{ needs.build.outputs.sums }}
         run: |
           printf '%s\n' "$SUMS" | sha256sum --check --strict
-          [ "$(ls dist | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)" ]
+          [ "$(find dist -type f ! -name '.*' | wc -l)" -eq "$(printf '%s\n' "$SUMS" | wc -l)" ]
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           skip-existing: true
