@@ -20,7 +20,7 @@ That file is the Latin subset Excalidraw ships (212 characters). No Excalifont s
 | npm `@excalidraw/excalidraw` 0.18.0 (registry metadata, 2026-10-29) | Package licence MIT; the font ships in `dist/prod/fonts/Excalifont/` as seven subset files. |
 | The name table of the subset above (read with fontTools, 2026-10-29) | family `Excalifont`, version "Version 1.000;Glyphs 3.2 (3227)", copyright "Copyright (c) 2024 by Excalidraw. All rights reserved."; no licence or licence-URL record. |
 
-**Status: likely OFL-1.1, not confirmed.** **[to be validated]** The owner, Excalidraw, states OFL-1.1, but the file carries no licence record, and the same page also says MIT. Committing the font stays Thomas's call (inbox #1); if he decides to, take the file above and add its OFL text next to it (OFL condition 2).
+**Status: likely OFL-1.1, not confirmed.** **[to be validated]** The owner, Excalidraw, states OFL-1.1, but the file carries no licence record, and the same page also says MIT. Committing the font stays Thomas's call (inbox #1); if he decides to, take the file above and add its OFL text next to it (OFL condition 2). The `docs/fonts/OFL.txt` already there is Virgil's, kept with the history below.
 
 ## Virgil (until 2026-10-29)
 

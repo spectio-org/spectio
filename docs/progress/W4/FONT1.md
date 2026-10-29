@@ -19,7 +19,7 @@ review_ref: null
 - **`tools/diagrams/sketch.py`:**
     - the font comes from `SPECTIO_SKETCH_TTF`, default `docs/fonts/Excalifont.ttf` (was `SPECTIO_VIRGIL_TTF` and `Virgil.ttf`);
     - the SVG font stack is `Excalifont, ui-sans-serif, system-ui, sans-serif`: an SVG opened without the font shows a plain sans, not Comic Sans or a serif;
-    - PNG rendering stops with a message when the font file is missing. Before, it silently fell back to whatever the browser had. `--no-png`, which CI uses, does not need the font.
+    - PNG rendering stops with a message, before any file is written, when the font file is missing. Before, it silently fell back to whatever the browser had. `--no-png`, which CI uses, does not need the font.
 - **All 32 figures** in `docs/assets/diagrams/` re-rendered, SVG and both PNGs.
 - **`tools/diagrams/FONT-LICENSE.md`:** an Excalifont section on top (how to make the file, its sha256, the licence statements); the Virgil notes kept below as history.
 - **References:** [documentation-system §1 and §3](../../specs/documentation-system.md) (and §3's mention of an `--allow-fallback-font` flag that never existed), `tools/diagrams/README.md`, the `diagram-artist` agent, `docs/assets/media.yaml`, `mkdocs.yml`, `.gitignore`, `tools/dashboard/gen.py`.
@@ -43,7 +43,7 @@ SPECTIO_SKETCH_TTF=/nonexistent python3 tools/diagrams/autopilot_loop.py --no-pn
 
 - The six candidates were rendered side by side on one figure before Thomas chose.
 - All 32 scripts re-run with the font present: every PNG shows Excalifont (contact sheets of all figures checked by eye). Re-running them gives byte-identical SVGs.
-- The guard: with `SPECTIO_SKETCH_TTF` pointing at a missing file, a PNG render stops with the message above; with `--no-png` it writes the SVG and exits 0.
+- The guard: with `SPECTIO_SKETCH_TTF` pointing at a missing file, a PNG render stops with the message above before writing any file (no SVG, no temporary page left in `TMPDIR`); with `--no-png` it writes the SVGs and exits 0.
 
 ## Figures and media
 

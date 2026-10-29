@@ -714,8 +714,6 @@ def _png_host_page(svg: str) -> str:
     An <img>-embedded SVG cannot see an @font-face, and a file:// SVG renders
     with whatever fonts are installed, so the PNG is taken from this page.
     """
-    if not SKETCH_TTF.exists():
-        raise SystemExit(f"{SKETCH_TTF} is missing: set SPECTIO_SKETCH_TTF (tools/diagrams/FONT-LICENSE.md), or pass --no-png")
     face = f"@font-face{{font-family:'Excalifont';src:url('{SKETCH_TTF.resolve().as_uri()}') format('truetype');}}"
     return (
         "<!doctype html><meta charset='utf-8'><style>"
@@ -757,6 +755,8 @@ def _quantize(png_path: Path) -> None:
 
 def write(sketch: Sketch, out_dir: Path, name: str, *, png: bool = True) -> Path:
     """Write ``<out_dir>/<name>.svg`` and, unless ``png=False``, its PNG."""
+    if png and not SKETCH_TTF.exists():
+        raise SystemExit(f"{SKETCH_TTF} is missing: set SPECTIO_SKETCH_TTF (tools/diagrams/FONT-LICENSE.md), or pass --no-png")
     out_dir.mkdir(parents=True, exist_ok=True)
     svg_path = out_dir / f"{name}.svg"
     svg = sketch.svg()
