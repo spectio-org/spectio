@@ -270,7 +270,7 @@ Everything must be traced, including:
   release-please never reaches 1.0.0 on its own, and `release-guard.yml` fails any release PR at 1.0.0 or above unless `ALLOW_V1=true`.
 - **Release stages:** walking skeleton (0.1), private alpha with EMBL design partners (0.2–0.4), public beta with a demo instance (0.5–0.9), then 1.0.
 - **Adoption and positioning** (`docs/research/adoption-and-positioning-2026-10-26.md`):
-  - Spectio is not presented as an open-source Seqera Platform. It is the gate-and-steer layer for self-hosted HPC, Snakemake first, part of the depictio and LabID platform.
+  - Spectio is not presented as an open-source Seqera Platform. It is the gate-and-steer layer for self-hosted HPC, Snakemake first, part of the depictio and LabID platform. *Revised 2026-10-29: a project of its own, connected to depictio later ([entry](#2026-10-29-spectio-is-a-project-of-its-own-connected-to-depictio-later)).*
   - The plan does not count on nf-core endorsement; nf-core pipelines are used unmodified as test cases.
   - Order of outreach: design partners first, then neighbouring institutes, then the public beta (Snakemake community, BioHackathon Europe, BOSC, registries, JOSS later).
 - **Virgil** is set aside for now (inbox #1).
@@ -745,6 +745,8 @@ Step page: [APPLY3](../progress/W3/APPLY3.md). Triage: [TRIAGE3](../progress/W3/
 
 *Note, same day (doc review of PR #47): the laptop tool's command is `spectio-open`, the console script of the package `spectio-open`; the heading keeps its first wording so that links to it stay valid.*
 
+*Revised 2026-10-29: the laptop command is `spectio open` again, now a command of the `spectio` package ([log](#2026-10-29-the-laptop-command-becomes-spectio-open-in-the-spectio-package)).*
+
 - **Context.** Thomas, 2026-10-28, after reading how 0.0.1 launches a run and how a user reaches the server. On the head: "the good practice, as I understand it, is to launch the Snakemake or Nextflow master process in a tmux screen or an equivalent, which then hands the jobs to SLURM … I find it a bit odd to launch that master process on one of the HPC nodes … it should not be launched in an sbatch; if possible, in a tmux that can be recovered later and controlled by hand by a human if needed." On access: "I would rather have both in parallel: the SSH config for people who want to try without installing tools, and the small tool, ready and lightweight to install on the laptop, to start a Spectio remotely in one's session on the login node, with a way to give the login node's number." (Translated from French.)
 - **Decided (Thomas):**
   - **The engine head runs on the login node, one detached tmux session per run, never in `sbatch`.** A person can attach to it, watch the engine's own output and stop it by hand; the tasks still go to SLURM through the engine's own SLURM executor; Spectio watches the head through its PID and exit files and reads its events from the spool, as before. Why: it matches how users run Nextflow and Snakemake by hand, and the Snakemake SLURM executor plugin warns against running Snakemake inside a SLURM job ([`schedulers-and-monitoring.md`](../specs/schedulers-and-monitoring.md) §3.1 quotes it). It also removes the open T3 question on Snakemake head jobs and the offline-head pre-steps from 0.0.1.
@@ -843,3 +845,29 @@ Step page: [APPLY8](../progress/W4/APPLY8.md).
 - **Still in force:** Claude never starts the publish workflow on its own (CLAUDE.md, the autopilot's standing rules); that is now a rule of conduct, not a technical block.
 - **Revisit:** before the first release with real code, when a stray publish would reach users. The narrower option is ready: a PreToolUse hook that refuses only a dispatch of `pypi-publish.yml`.
 - **Changed:** inbox #71. No settings file changes.
+
+## 2026-10-29 — Spectio is a project of its own, connected to depictio later
+
+- **Context.** The README and the site's home page said "part of the depictio platform", following the 2026-10-26 positioning ("part of the depictio and LabID platform").
+- **Decided (Thomas, 2026-10-29):** "non c'est un projet en tant que tel ; juste on le connectera plus tard" (no, it is a project in its own right; we will just connect it later). This is the same line as the move to its own `spectio-org` organization.
+- **Changed:** the README tagline and the home page's subtitle. The depictio integration itself ([depictio ecosystem reuse](../specs/depictio-ecosystem-reuse.md)) is unchanged.
+
+## 2026-10-29 — The hand-drawn figures switch from Virgil to Excalifont
+
+- **Context.** Thomas, 2026-10-29: "font utilisé pour diagram n'est pas bonne ; prends en une autre" (the diagram font is not right; pick another). Six candidates were rendered on the same figure (Excalifont, Kalam, Patrick Hand, Architects Daughter, Inter, Virgil).
+- **Decided (Thomas, 2026-10-29):** Excalifont, Excalidraw's own successor to Virgil.
+- **Changed:** `tools/diagrams/sketch.py` reads `SPECTIO_SKETCH_TTF` (default `docs/fonts/Excalifont.ttf`) in place of `SPECTIO_VIRGIL_TTF`, falls back to a plain sans instead of a novelty face, and stops before writing a PNG when the font file is missing. All 32 figures are re-rendered. `tools/diagrams/FONT-LICENSE.md` gives the source, its sha256 and the licence statements; [documentation-system §1 and §3](../specs/documentation-system.md) follow.
+- **Not changed:** the font stays uncommitted, as inbox #1 decided for Virgil. Excalidraw states OFL-1.1 for Excalifont, but the file carries no licence record **[to be validated]**; committing it stays Thomas's call.
+
+Step page: [FONT1](../progress/W4/FONT1.md).
+
+## 2026-10-29 — The laptop command becomes `spectio open`, in the `spectio` package
+
+- **Context.** The laptop tool that opens the SSH tunnel was a separate package, `spectio-open`, with no dependency beyond the Python standard library ([2026-10-28](#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)). Its PyPI name was being claimed with the others (inbox #66), and its first upload had failed (`invalid-publisher`). Thomas, 2026-10-29: "pourquoi ne pas garder un seul package avec conditionnel spectio et spectio[runner] ou spectio[full] plutot que spectio et spectio-open ?" (why not keep a single package, with extras, rather than `spectio` and `spectio-open`?)
+- **Decided (Thomas, 2026-10-29):** "oui go pour ceci". The command is `spectio open <host> [--node <login node>]`, part of the base `spectio` package; the user installs `spectio` on the laptop, without extras, with `uv tool install spectio` or `pipx`.
+- **Cost:** the laptop installs the base package's environment (under 80 MB, [architecture §6](../specs/architecture-plugins-and-packaging.md#6-code-layout)) instead of a standard-library-only tool of a few kilobytes. In exchange: one name, one package, one install guide. The base package already has no server dependency (`spectio[server]` adds it), so no extra is needed for the laptop.
+- **Unchanged:** what the command does and every security requirement on it ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), req. 8, SEC-131, SEC-132, SEC-139). The SSH config entry, with nothing to install, stays side by side.
+- **The PyPI name `spectio-open`** is no longer claimed: nothing was published under it. Thomas deletes its pending publisher on pypi.org and the GitHub environment `pypi-spectio-open` ([Claim the package names](../developer/claim-package-names.md) §2). Inbox #66 now covers three names.
+- **Changed:** [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Access, the state file, trust boundaries, req. 8, Names and pins) and its table row; [architecture §6](../specs/architecture-plugins-and-packaging.md#6-code-layout) (the `spectio-open/` row removed, `spectio open` under `spectio/`); [MVP 0.0.1](../specs/mvp-0.0.1.md) §1; [P1](../plans/P1-walking-skeleton.md) Goal, Global Constraints, M5, Task 24 and Done when; board `LiteStates`; figures `mvp001_cluster`, `p1_skeleton` and `name-claim`; the claim guide; `.github/workflows/pypi-publish.yml` (two projects); `tools/release/pypi-placeholders/spectio-open/` removed; inbox #15 and #66.
+
+Step page: [OPEN1](../progress/W4/OPEN1.md).

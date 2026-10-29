@@ -1,11 +1,11 @@
 site_name: Spectio
 site_description: Launch, monitor and steer Nextflow and Snakemake runs, with QC gates, a headless API and depictio integration.
-site_url: https://weber8thomas.github.io/spectio/
-repo_url: https://github.com/weber8thomas/spectio
+site_url: https://spectio.pages.dev/
+repo_url: https://github.com/spectio-org/spectio
 edit_uri: edit/main/docs/
 docs_dir: docs
 strict: true
-# A local Virgil.ttf, ignored by version control (tools/diagrams/FONT-LICENSE.md), never goes into the site.
+# A local Excalifont.ttf, ignored by version control (tools/diagrams/FONT-LICENSE.md), never goes into the site.
 exclude_docs: |
   fonts/*.ttf
 

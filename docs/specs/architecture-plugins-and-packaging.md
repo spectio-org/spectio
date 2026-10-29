@@ -258,12 +258,11 @@ spectio/
 │  │                     + built-in runner-side plugins as modules (engines nextflow and snakemake, launchers local and slurm,
 │  │                       resolvers file and https, check bindings multiqc / table / json)
 │  │                     (deps: the allow-list of cli-and-shared-libraries.md §6; no FastAPI, no SQLAlchemy; < 80 MB env, CI-checked)
+│  │                     + `spectio open`, the laptop command of 0.0.1 (one package since 2026-10-29, dev-env §15.3)
 │  ├─ spectio-server/    FastAPI app, services, policy, SQLAlchemy + Alembic, worker, bundled web UI
 │  │                     + built-in server-side plugins as modules (single-user and local auth, email and webhook notifiers,
 │  │                       RO-Crate sink, in-process and SQL task backends, …); pulled by `spectio[server]`, never installed by name
-│  ├─ spectio-cli/       alias package depending on `spectio` (discoverability, as depictio-cli)
-│  └─ spectio-open/      laptop tool `spectio-open` (0.0.1): opens the SSH tunnel to a user's server on a login node;
-│                        standard library only, depends on no other Spectio package and none depends on it
+│  └─ spectio-cli/       alias package depending on `spectio` (discoverability, as depictio-cli)
 │  (shared with depictio and LabID, see cli-and-shared-libraries.md §4: bioplatform-client, bioplatform-models, bioplatform-runinfo)
 ├─ plugins/              optional first-party plugins, each its own distribution `spectio-plugin-<name>` in directory `<name>/`
 │  ├─ kubernetes/  oidc/  saml/  h5ad/  labid/  s3/   (s3: resolver, blobstore and backup in one package)
