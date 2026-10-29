@@ -2,6 +2,8 @@
 
 **Round:** standalone fact-check for [inbox #69](inbox.md#69-nf-spectio-is-enabled-in-a-way-that-breaks-nf-core-runs-or-drops-the-bridge) · **Date:** 2026-10-29 · **Produced by:** one `fact-checker` run · **Status:** decided by Thomas the same day (option (a), refined by FC-318); FC-318 to FC-321 applied to the owning specs ([decision log](../decisions/log.md#2026-10-29-nf-spectio-is-enabled-with-nxf_plugins_default-set-per-run)).
 
+Corrected 2026-10-29 (doc review of APPLY8): `ConfigParserV1.groovy:395`, re-read at `64d39b0`; Seqera quote re-fetched from https://docs.seqera.io/platform-cloud/launch/advanced.
+
 The question: the simplest way to attach `nf-spectio` to a Nextflow run, for the Nextflow community in general, that leaves the pipeline's own plugins alone and keeps Seqera Platform working.
 
 ## In plain words

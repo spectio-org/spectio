@@ -4,8 +4,8 @@ wave: W4
 status: running
 pr: null
 review: approve
-review_score: 11/14
-review_ref: "doc-reviewer 2026-10-29, approve 11/14 on a150447; required changes applied with the spec-reviewer's SR-421 to SR-428 in the third commit; re-review pending"
+review_score: 14/14
+review_ref: "doc-reviewer 2026-10-29, approve 14/14 on 6883057 (round 1: approve 11/14 on a150447, required changes applied in 6883057)"
 ---
 # APPLY8 · `nf-spectio` enabled with `NXF_PLUGINS_DEFAULT`
 
@@ -40,6 +40,7 @@ Each item: before, then after, then where it now lives.
 - **SR-427.** §13.8: never a `plugins` block in any config file, including Spectio's own `-c .spectio/spectio.config`; P1 `test_head_script_nextflow_args` asserts that file has none.
 - **SR-428.** The decision-log entry has a **Reverses:** line: the `-plugins` part of inbox #35 (architecture §7.3) and the Enabling-it mechanism of the 2026-10-28 terminal-runs entry.
 - **The three open questions** (opt-in export, Spectio deposits the jar, doctor fails loudly) are recorded in inbox #69 as *assumed from the decision — pending Thomas*.
+- **Spec review, round 2:** approve on `6883057` with three minors, applied: SR-429 (schedulers §4: the dev cluster passes `nf-k8s` with `-plugins`, and 26.10 bundles it, `modules/nf-cli-v1/build.gradle:18`), SR-430 (P1 Task 9 names `cli/init.py` and `test_init.py::test_init_unpacks_nf_spectio`, also in Step 2), SR-431 (a Corrected line under the verification record's Status).
 
 ## Why
 
