@@ -1,0 +1,17 @@
+[project]
+name = "spectio"
+version = "0.0.0"
+description = "Launch, monitor and steer Nextflow and Snakemake runs from one place (early placeholder release)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+
+[project.scripts]
+spectio = "spectio:main"
+
+[project.urls]
+Repository = "https://github.com/spectio-org/spectio"
+
+[build-system]
+requires = ["uv_build==0.11.32"]  # = UV_VERSION in dev/versions.env
+build-backend = "uv_build"

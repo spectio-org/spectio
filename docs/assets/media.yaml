@@ -258,6 +258,14 @@ media:
       - docs/assets/diagrams/t4-kind-kueue_dark.svg
       - docs/assets/diagrams/t4-kind-kueue_light.png
       - docs/assets/diagrams/t4-kind-kueue_dark.png
+  - id: name-claim
+    kind: diagram
+    generator: python3 tools/diagrams/name_claim.py
+    outputs:
+      - docs/assets/diagrams/name-claim_light.svg
+      - docs/assets/diagrams/name-claim_dark.svg
+      - docs/assets/diagrams/name-claim_light.png
+      - docs/assets/diagrams/name-claim_dark.png
   - id: t5-scenarios
     kind: diagram
     generator: python3 tools/diagrams/t5_scenarios.py
