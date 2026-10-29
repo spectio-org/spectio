@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 2823,
-    "cache_write": 3033664,
-    "cache_read": 238541262,
-    "output": 660420
+    "input": 3057,
+    "cache_write": 3557888,
+    "cache_read": 259118148,
+    "output": 725164
    },
-   "calls": 1226,
+   "calls": 1321,
    "model": "claude-opus-5-5",
    "start": "2026-10-27T23:14:03.633Z",
-   "end": "2026-10-28T22:01:55.394Z",
+   "end": "2026-10-29T09:52:10.435Z",
    "id": "6396c38c-2a61-53ee-956c-4203b452f099",
    "kind": "main",
    "type": "session",
@@ -31,6 +31,23 @@
    "kind": "subagent",
    "type": "code-simplifier",
    "label": "Simplify D6 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 46,
+    "cache_write": 179959,
+    "cache_read": 1281277,
+    "output": 17035
+   },
+   "calls": 22,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T09:32:45.647Z",
+   "end": "2026-10-29T09:45:09.270Z",
+   "id": "a057f020872f54717",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review inbox #69 branch",
    "workflow": null
   },
   {
@@ -82,6 +99,23 @@
    "kind": "subagent",
    "type": "doc-reviewer",
    "label": "Doc re-review of APPLY4 branch",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 68,
+    "cache_write": 149117,
+    "cache_read": 1580060,
+    "output": 23235
+   },
+   "calls": 33,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T09:20:02.966Z",
+   "end": "2026-10-29T09:35:35.411Z",
+   "id": "a115771b9cde63b55",
+   "kind": "subagent",
+   "type": "doc-reviewer",
+   "label": "Doc review PyPI claim branch",
    "workflow": null
   },
   {
@@ -324,6 +358,23 @@
   },
   {
    "tokens": {
+    "input": 140,
+    "cache_write": 327275,
+    "cache_read": 15056243,
+    "output": 73401
+   },
+   "calls": 67,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T09:24:09.551Z",
+   "end": "2026-10-29T09:46:42.002Z",
+   "id": "a294f0f7dc3b69731",
+   "kind": "subagent",
+   "type": "fork",
+   "label": "Apply inbox #69 decision",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 46,
     "cache_write": 65352,
     "cache_read": 1079990,
@@ -460,6 +511,23 @@
   },
   {
    "tokens": {
+    "input": 66,
+    "cache_write": 155591,
+    "cache_read": 1614748,
+    "output": 26630
+   },
+   "calls": 32,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T09:20:02.951Z",
+   "end": "2026-10-29T09:36:02.639Z",
+   "id": "a43f5de8edb33ebd5",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code review PyPI claim branch",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 94,
     "cache_write": 218932,
     "cache_read": 6518801,
@@ -524,6 +592,23 @@
    "kind": "subagent",
    "type": "infra-engineer",
    "label": "Corpus retry and public limits fix",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 292,
+    "cache_write": 438063,
+    "cache_read": 25365864,
+    "output": 126854
+   },
+   "calls": 142,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T09:10:41.589Z",
+   "end": "2026-10-29T09:49:53.794Z",
+   "id": "a4c2f434a4a60dd88",
+   "kind": "subagent",
+   "type": "fork",
+   "label": "Prepare PyPI name-claim branch",
    "workflow": null
   },
   {
@@ -988,6 +1073,23 @@
   {
    "tokens": {
     "input": 42,
+    "cache_write": 200129,
+    "cache_read": 731487,
+    "output": 27052
+   },
+   "calls": 19,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T09:20:02.918Z",
+   "end": "2026-10-29T09:45:33.395Z",
+   "id": "a8ef399eee78b9bac",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security review PyPI claim branch",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 42,
     "cache_write": 78757,
     "cache_read": 1036565,
     "output": 23225
@@ -1136,6 +1238,23 @@
    "kind": "subagent",
    "type": "doc-reviewer",
    "label": "Doc review of PR #47 changes",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 184,
+    "cache_write": 159362,
+    "cache_read": 8944849,
+    "output": 59363
+   },
+   "calls": 92,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T09:00:15.359Z",
+   "end": "2026-10-29T09:14:26.618Z",
+   "id": "ab0466956ade2ffce",
+   "kind": "subagent",
+   "type": "fact-checker",
+   "label": "Research Nextflow bridge options",
    "workflow": null
   },
   {
@@ -1340,6 +1459,23 @@
    "kind": "subagent",
    "type": "code-reviewer",
    "label": "Code review T3 diff",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 76,
+    "cache_write": 255420,
+    "cache_read": 2846827,
+    "output": 27596
+   },
+   "calls": 37,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T09:32:45.631Z",
+   "end": "2026-10-29T09:45:17.851Z",
+   "id": "ad3f0767a6b9936d3",
+   "kind": "subagent",
+   "type": "spec-reviewer",
+   "label": "Spec review inbox #69 branch",
    "workflow": null
   },
   {
@@ -1612,6 +1748,23 @@
    "kind": "subagent",
    "type": "doc-reviewer",
    "label": "Doc review of R10",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 114,
+    "cache_write": 101143,
+    "cache_read": 3496027,
+    "output": 34754
+   },
+   "calls": 57,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-29T09:00:15.329Z",
+   "end": "2026-10-29T09:08:33.488Z",
+   "id": "aff69b89bef53a7bb",
+   "kind": "subagent",
+   "type": "fact-checker",
+   "label": "Fact-check name-claim procedures",
    "workflow": null
   },
   {
