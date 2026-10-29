@@ -8,7 +8,7 @@ allow-listed model of its type: keys outside the allow-list are dropped, so `scr
 import math
 import re
 from datetime import UTC, datetime
-from typing import Annotated, Self
+from typing import Annotated, Any, Self
 
 from pydantic import (
     AwareDatetime,
@@ -53,6 +53,20 @@ def _check_json(value: JsonValue) -> None:
         for key, item in value.items():
             _check_json(key)
             _check_json(item)
+
+
+# Never stored, whoever sends them and at any depth (api §14.1; P1 Assumption 3).
+DENIED_KEYS = frozenset(
+    {"script", "env", "homeDir", "commandLine", "configText", "cmd", "shellcmd", "rule_msg"}
+)
+
+
+def _drop_denied(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {k: _drop_denied(v) for k, v in value.items() if k not in DENIED_KEYS}
+    if isinstance(value, list):
+        return [_drop_denied(item) for item in value]
+    return value
 
 
 class UnknownEventType(ValueError):
@@ -109,6 +123,12 @@ class SpoolEvent(BaseModel):
 class _Data(BaseModel):
     # strict: "7" or true is not an integer; the envelope already refused NaN and NUL.
     model_config = ConfigDict(extra="ignore", frozen=True, strict=True, allow_inf_nan=False)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _drop_denied_keys(cls, data: Any) -> Any:
+        # The allow-list drops top-level keys; this also reaches free-form values.
+        return _drop_denied(data)
 
 
 # Greedy: a command that quotes the marker text itself is still hidden whole (hiding more is safe).

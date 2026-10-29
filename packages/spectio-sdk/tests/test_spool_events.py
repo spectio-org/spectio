@@ -165,6 +165,37 @@ def test_command_fields_never_survive(type_: str, data: dict[str, Any]) -> None:
     assert "export K=v" not in repr(dumped)
 
 
+@pytest.mark.parametrize(
+    ("type_", "data"),
+    [
+        (
+            "snakemake.job_info",
+            {
+                "jobid": 1,
+                "rule_name": "a",
+                "resources": {"env": {"TOKEN": "x"}, "cmd": "echo secret", "mem_mb": 512},
+            },
+        ),
+        (
+            "snakemake.job_info",
+            {"jobid": 1, "rule_name": "a", "resources": {"x": [{"script": "rm -rf"}]}},
+        ),
+        ("snakemake.job_info", {"jobid": 1, "rule_name": "a", "wildcards": {"shellcmd": "x"}}),
+        ("snakemake.rulegraph", {"rulegraph": {"script": "rm -rf", "nodes": []}}),
+        (
+            "snakemake.rulegraph",
+            {"rulegraph": {"nodes": [{"rule": "a", "rule_msg": "x", "env": {"K": "v"}}]}},
+        ),
+    ],
+)
+def test_denylisted_keys_dropped_at_any_depth(type_: str, data: dict[str, Any]) -> None:
+    # "Never stored, whoever sends them" holds inside free-form values too (api §14.1).
+    dumped = parse_data(make_event(type_, **data)).model_dump()
+    assert not DENYLIST & all_keys(dumped)
+    assert "secret" not in repr(dumped)
+    assert "rm -rf" not in repr(dumped)
+
+
 def raw_command_values(value: Any, key: str = "") -> Iterator[str]:
     """Raw command text in a capture: denylisted values and quoted `Command '...'` text."""
     if isinstance(value, dict):
