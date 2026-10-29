@@ -836,6 +836,16 @@ Step page: [APPLY8](../progress/W4/APPLY8.md).
 - **Changed:** the `Repository` URL and the notice of the three `0.0.0` packages in `tools/release/pypi-placeholders/` now point to `github.com/spectio-org/spectio`; their `Documentation` URL is removed, because GitHub Pages was never deployed (`weber8thomas.github.io/spectio/` answers 404, checked 2026-10-29) and a released file cannot be changed. The owner in [Claim the package names](../developer/claim-package-names.md) §2.3, [dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases) and figure `name-claim`. Inbox #9 is updated.
 - **Not changed yet:** other links to `github.com/weber8thomas/spectio` in the site and records; GitHub redirects them while no new repository takes that name.
 
+## 2026-10-29 — Agent sessions may start workflows, including a PyPI publish, for now
+
+- **Context.** Inbox #71 (SEC-1 of the name-claim review). With no required reviewer on the `pypi-*` environments, starting `pypi-publish.yml` on `main` is enough to publish, and agent sessions act with Thomas's account.
+- **First answer (Thomas, 2026-10-29):** "accept recommendation ; deny", then "non recommendation était a": option (a), deny rules for `gh workflow run`, `gh api …pending_deployments…`, `gh api …dispatches…`, `gh run rerun` and the GitHub MCP tool `mcp__github__actions_run_trigger`. Permission rules cannot filter an MCP tool by its arguments, so that tool would have been denied whole, re-runs of CI included.
+- **Decided (Thomas, the same day, on reading that cost):** no rule today. "je veux rester en mode autopilot et autonomie max", then, between a hook that blocks only `pypi-publish.yml` and nothing: "part la dessus ; pas besoin de blocage auj" (go with that, no block needed today).
+- **Why it holds now:** the PyPI projects hold only `0.0.0` placeholders; a stray publish costs a version number, not users ("pas grave si on publie, on fera des patchs").
+- **Still in force:** Claude never starts the publish workflow on its own (CLAUDE.md, the autopilot's standing rules); that is now a rule of conduct, not a technical block.
+- **Revisit:** before the first release with real code, when a stray publish would reach users. The narrower option is ready: a PreToolUse hook that refuses only a dispatch of `pypi-publish.yml`.
+- **Changed:** inbox #71. No settings file changes.
+
 ## 2026-10-29 — The laptop command becomes `spectio open`, in the `spectio` package
 
 - **Context.** The laptop tool that opens the SSH tunnel was a separate package, `spectio-open`, with no dependency beyond the Python standard library ([2026-10-28](#2026-10-28-001-head-in-tmux-on-the-login-node-ssh-config-and-spectio-open)). Its PyPI name was being claimed with the others (inbox #66), and its first upload had failed (`invalid-publisher`). Thomas, 2026-10-29: "pourquoi ne pas garder un seul package avec conditionnel spectio et spectio[runner] ou spectio[full] plutot que spectio et spectio-open ?" (why not keep a single package, with extras, rather than `spectio` and `spectio-open`?)
