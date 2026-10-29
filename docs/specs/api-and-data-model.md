@@ -590,3 +590,64 @@ Rules:
 6. **Without depictio**, Spectio's own bindings (§7 of checking-scenarios) and its built-in renderers do the same job. The decision tables are still written, as files in the RO-Crate.
 
 Open points: the recipe runtime on the runner (polars, a depictio-cli install or a small shared runtime), and the size of per-cell tables at gate time (aggregates first, per-cell on demand). Both are in the research note, §4.
+
+## 14. Ingest contract
+
+This section owns the ingest contract: what the engine bridges (`nf-spectio`, `snakemake-logger-plugin-spectio`; [`architecture-plugins-and-packaging.md`](architecture-plugins-and-packaging.md) §13) write and send, and its testable bounds. It has its own version, separate from the REST API's v1 (architecture §12). Inbox #36 split it *(decided — Thomas, 2026-10-27, inbox #36 (a))*: §14.1, the driven-run part, is the spool that 0.0.1 needs; the network part (batch post, acknowledgement, version header, heartbeat, credential) waits for inbox #11 and is not written yet.
+
+### 14.1 Driven runs (0.0.1)
+
+Written 2026-10-29 (P1 Task 1, [decision log](../decisions/log.md#2026-10-29-api-14-driven-run-part-written-inbox-36-a)). In 0.0.1 the bridges only append to a spool in the launch directory; the runner inside `spectio serve` reads it from the shared file system and nothing posts over the network ([`dev-environment-and-testing.md`](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) §15.3 req. 6; architecture §13.1). The numbers are *(assumed — pending Thomas, inbox #28)* (P1 Assumption 12); `spectio_sdk.events` implements this section and its tests are `packages/spectio-sdk/tests/test_spool_events.py`.
+
+**Files.** A driven bridge reads `SPECTIO_RUN_ID`, `SPECTIO_LAUNCH_N` and `SPECTIO_SPOOL_DIR` (`<launch dir>/.spectio/events/`) from the head script, and writes `<producer>-<launch>-<nnnn>.jsonl` there: `<producer>` is the bridge name of the envelope, `<launch>` the launch number, `<nnnn>` a four-digit index from `0001`. The naming for runs started from a terminal is architecture §13.8. Files are UTF-8 and append-only, one JSON object per line, each line ended by `\n`; a last line without its `\n` is still being written, and the reader waits for it. Readers take the files in name order.
+
+| Bound | Value | Who applies it |
+|---|---|---|
+| `MAX_LINE_BYTES`: one line, without its `\n` | 65 536 bytes | writer: never writes a longer line; reader: drops a longer one |
+| `ROTATE_BYTES` | 33 554 432 bytes (32 MiB) | writer: opens `<nnnn + 1>` when the next line would take the file past it |
+| `MAX_FILE_BYTES` | 67 108 864 bytes (64 MiB) | reader: ignores everything past it in one file |
+
+**Envelope.** Every line is an object with exactly these keys; any other key makes the line invalid. Unknown keys *inside* `data` are ignored instead (allow-lists, below), so a newer bridge still parses.
+
+| Key | Rule |
+|---|---|
+| `v` | `1`, the version of this envelope |
+| `id` | 1 to 64 characters of `[A-Za-z0-9_-]`, unique within the run; the bridges write `evt_` and a ULID. It makes a replay idempotent (`events` unique (run_id, event_id), §7) |
+| `run` | `run_` and a ULID (26 Crockford base32 characters, the first `0`–`7`), the run of the directory |
+| `launch` | integer ≥ 1, `launches.n` (§7) |
+| `producer` | `nf-spectio/<version>` or `snakemake-logger-spectio/<version>`, version 1 to 32 characters of `[0-9A-Za-z.+-]`; its engine matches the type's |
+| `seq` | integer ≥ 1, the producer's counter, increasing within one (run, launch, producer); stored as `source_seq` (§8.2) |
+| `time` | RFC 3339 with a time zone: the producer's clock, stored as `engine_time` (§8.2) |
+| `type` | `nextflow.<hook>` or `snakemake.<event>`, one of the allow-lists below |
+| `data` | a JSON object: the hook's or the record's fields. Values are JSON only; a bridge writes any other value (a UUID, a path) as its string form |
+
+Integers are JSON integers: `"1"` or `true` is not a launch number.
+
+**Allow-lists.** Each type keeps only the keys listed; everything else in `data` is dropped when it is parsed, before anything is stored. The hooks are those of Nextflow's `TraceObserverV2` (`TraceObserverV2.groovy:77-140`, Nextflow `114f1fe`, architecture §13.2); the Snakemake events and every key below are the ones spike T2 captured on Nextflow 26.10.4 and 25.10.9 and Snakemake 9.27.1 ([T2 note](../research/spike-engine-events-2026-10-28.md#results); fixtures `tests/fixtures/engine-events/*.spool.jsonl`, converted from the captures by `convert_t2.py` in the same directory).
+
+| Type | Keys kept in `data` |
+|---|---|
+| every `nextflow.*` | `runName`, `sessionId` |
+| `nextflow.onFlowCreate` | `nextflow`, `resume`, `workDir` |
+| `nextflow.onFlowBegin` | none more |
+| `nextflow.onFlowComplete` | `success`, `exitStatus`, `errorMessage` |
+| `nextflow.onProcessCreate`, `.onProcessTerminate` | `process`, `processId` |
+| `nextflow.onTaskPending`, `.onTaskSubmit`, `.onTaskStart`, `.onTaskComplete`, `.onTaskCached`, `.onFlowError` | `taskId`, `hash`, `name`, `process`, `tag`, `attempt`, `status`, `exitStatus`, `errorAction`, `cached`, `workDir`, `trace` (in T2, `onFlowError` had every one of them null) |
+| `trace` (the trace record) | `task_id`, `hash`, `native_id`, `process`, `tag`, `name`, `status`, `exit`, `module`, `container`, `cpus`, `time`, `disk`, `memory`, `attempt`, `submit`, `start`, `complete`, `duration`, `realtime`, `queue`, `%cpu`, `%mem`, `rss`, `vmem`, `peak_rss`, `peak_vmem`, `rchar`, `wchar`, `syscr`, `syscw`, `read_bytes`, `write_bytes`, `vol_ctxt`, `inv_ctxt`, `workdir`, `scratch`, `error_action`, `cpu_model`, `accelerator`, `accelerator_type`; values are strings, numbers or null |
+| `nextflow.onFilePublish` | `source`, `target`, `labels` |
+| `snakemake.log` (a record with no event) | `level` |
+| `snakemake.workflow_started` | `workflow_id`, `snakemake_version`, `rundir`, `host`, `user` (identity, for display only, inbox #55 (a)) |
+| `snakemake.run_info` | `stats` (rule → job count, and `total`) |
+| `snakemake.resources_info` | `cores` |
+| `snakemake.rulegraph` | `rulegraph` |
+| `snakemake.job_info` | `jobid`, `rule_name`, `wildcards`, `input`, `output`, `log`, `benchmark`, `reason`, `is_checkpoint`, `is_handover`, `local`, `priority`, `threads`, `resources` |
+| `snakemake.job_started` | `jobs` |
+| `snakemake.job_finished` | `job_id` |
+| `snakemake.job_error` | `jobid`, `rule_name`, `input`, `output`, `log` |
+| `snakemake.shellcmd` | none: the record is kept, its content is not |
+| `snakemake.progress` | `done`, `total` |
+| `snakemake.error` | `exception`, `msg` (the error text, which can quote the failed command: T2 saw it; the run's failure message comes from it) |
+
+Never stored, whoever sends them: `script`, `env`, `homeDir`, `commandLine`, `configText`, Snakemake's `cmd` and `shellcmd`, and a rule's `message` text (P1 Assumption 3) *(assumed — pending Thomas, inbox #55 (a); his 2026-10-29 dashboard answer asks why not send them as Tower does, and is not a decision yet)*. Other Snakemake events (group jobs, for example) are not in the list, so they are dropped as unknown; whether 0.0.1's runs emit any is **[to be validated]**.
+
+**Dropped and counted, never executed.** Each line is untrusted input (dev-env §15.3 req. 6). The reader validates the envelope, then the type's allow-list; a line that is not JSON, fails either, has an unknown type, is over `MAX_LINE_BYTES`, lies past `MAX_FILE_BYTES`, names another run, or sits in a file that is a symbolic link, is dropped and counted by reason (`invalid`, `line_too_large`, `file_too_large`, `wrong_run`, `symlink`); the next line is read. The counters are stored with the reader's cursor (P1 Assumption 11). Nothing in an event is executed, evaluated or opened as a path.
