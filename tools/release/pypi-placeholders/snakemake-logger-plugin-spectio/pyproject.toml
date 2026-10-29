@@ -1,0 +1,17 @@
+[project]
+name = "snakemake-logger-plugin-spectio"
+version = "0.0.0"
+description = "Snakemake logger plugin that writes run events as JSON lines for Spectio (early release)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.11"
+classifiers = ["Development Status :: 2 - Pre-Alpha", "Framework :: Snakemake"]
+dependencies = ["snakemake-interface-logger-plugins>=2.0,<3"]
+
+[project.urls]
+Repository = "https://github.com/weber8thomas/spectio"
+Documentation = "https://weber8thomas.github.io/spectio/"
+
+[build-system]
+requires = ["uv_build>=0.9,<0.12"]
+build-backend = "uv_build"

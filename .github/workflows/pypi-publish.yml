@@ -1,0 +1,70 @@
+name: pypi-publish
+
+# Publishes one PyPI project with trusted publishing, started by hand (docs/developer/claim-package-names.md).
+# For now it builds the name-holding packages under tools/release/pypi-placeholders/ (dev-environment-and-testing.md §12).
+# PyPI's trusted publisher is registered against this file name, so keep it a top-level workflow named pypi-publish.yml.
+on:
+  workflow_dispatch:
+    inputs:
+      project:
+        description: PyPI project to publish
+        required: true
+        type: choice
+        options: [spectio, spectio-open, snakemake-logger-plugin-spectio]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pypi-publish-${{ inputs.project }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: {persist-credentials: false}
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with: {enable-cache: false}
+      - name: Build, check and smoke-test
+        env:
+          PROJECT: ${{ inputs.project }}
+        run: |
+          case "$PROJECT" in
+            spectio|spectio-open|snakemake-logger-plugin-spectio) ;;
+            *) echo "::error::Unknown project: $PROJECT"; exit 1 ;;
+          esac
+          uv build --out-dir dist "tools/release/pypi-placeholders/$PROJECT"
+          uvx twine check --strict dist/*
+          uv venv --python 3.12 /tmp/smoke
+          uv pip install --python /tmp/smoke/bin/python dist/*.whl
+          if [ "$PROJECT" = snakemake-logger-plugin-spectio ]; then
+            /tmp/smoke/bin/python -c "from snakemake_logger_plugin_spectio import LogHandler, LogHandlerSettings"
+          else
+            /tmp/smoke/bin/"$PROJECT" --version
+          fi
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi-${{ inputs.project }}
+      url: https://pypi.org/p/${{ inputs.project }}
+    permissions:
+      id-token: write # trusted publishing; only this job gets it
+    steps:
+      - uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
+        with:
+          name: dist
+          path: dist/
+      - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+        with:
+          skip-existing: true
