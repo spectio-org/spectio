@@ -8,6 +8,8 @@ strict: true
 # A local Excalifont.ttf, ignored by version control (tools/diagrams/FONT-LICENSE.md), never goes into the site.
 exclude_docs: |
   fonts/*.ttf
+  # read by the Snakemake plugin catalogue from the root of main, not part of the site
+  /intro.md
 
 theme:
   name: material
