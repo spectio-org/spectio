@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-29T23:30:00Z",
+  "updated_at": "2026-10-29T22:42:00Z",
   "current_wave": "W5",
   "steps": {
     "F1": {
@@ -515,12 +515,17 @@
     },
     "P2": {
       "wave": "W5",
-      "status": "running",
+      "status": "done",
       "attempts": 0,
-      "started_at": "2026-10-29T23:30:00Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "",
+      "started_at": "2026-10-29T22:18:00Z",
+      "finished_at": "2026-10-29T22:42:00Z",
+      "outputs": [
+        "docs/plans/P2-execution.md",
+        "docs/progress/W5/P2.md",
+        "tools/diagrams/p2_lanes.py",
+        "docs/decisions/log.md"
+      ],
+      "notes": "one general-purpose agent with writing-plans: one short execution guide over P1 (Thomas narrowed P2 at the GO; log entry added), 8 milestone sections, review tracks, gaps G1-G7, 8 notes for P1; inbox #72, #73 assumed (a); doc review approve 11/14 with 8 required changes applied (incl. new figure p2_lanes); next: P3",
       "base": "7ba905a017a6418476e46443439a58fa9a71b169"
     },
     "P3": {
