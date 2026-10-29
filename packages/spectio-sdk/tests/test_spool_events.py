@@ -79,11 +79,13 @@ def all_keys(value: Any) -> set[str]:
 
 def test_t2_fixtures_validate() -> None:
     # Every converted line of the T2 bridge captures parses, envelope and data.
+    # The captures carry script, env, cmd and shellcmd: none survives parse_data.
     lines = list(fixture_lines("*.spool.jsonl"))
     assert len(lines) > 2000
     for line in lines:
         assert len(line.encode()) <= MAX_LINE_BYTES
-        parse_data(SpoolEvent.model_validate_json(line))
+        dumped = parse_data(SpoolEvent.model_validate_json(line)).model_dump()
+        assert not DENYLIST & all_keys(dumped), line[:200]
 
 
 def test_one_spool_file_per_bridge_capture() -> None:
@@ -161,13 +163,6 @@ def test_command_fields_never_survive(type_: str, data: dict[str, Any]) -> None:
     dumped = parse_data(make_event(type_, **data)).model_dump()
     assert not DENYLIST & all_keys(dumped)
     assert "export K=v" not in repr(dumped)
-
-
-def test_denylisted_fields_dropped_from_real_captures() -> None:
-    # The T2 captures carry script, env, cmd and shellcmd: none survives parse_data.
-    for line in fixture_lines("*.spool.jsonl"):
-        dumped = parse_data(SpoolEvent.model_validate_json(line)).model_dump()
-        assert not DENYLIST & all_keys(dumped), line[:200]
 
 
 def raw_command_values(value: Any, key: str = "") -> Iterator[str]:

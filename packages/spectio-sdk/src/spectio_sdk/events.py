@@ -138,10 +138,6 @@ TraceValue = str | SignedInt64 | float | None
 class NextflowTrace(_Data):
     """The trace record, without `script` and `env`."""
 
-    model_config = ConfigDict(
-        extra="ignore", frozen=True, strict=True, allow_inf_nan=False, populate_by_name=True
-    )
-
     task_id: TraceValue = None
     hash: TraceValue = None
     native_id: TraceValue = None
