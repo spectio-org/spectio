@@ -871,3 +871,10 @@ Step page: [FONT1](../progress/W4/FONT1.md).
 - **Changed:** [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Access, the state file, trust boundaries, req. 8, Names and pins) and its table row; [architecture §6](../specs/architecture-plugins-and-packaging.md#6-code-layout) (the `spectio-open/` row removed, `spectio open` under `spectio/`); [MVP 0.0.1](../specs/mvp-0.0.1.md) §1; [P1](../plans/P1-walking-skeleton.md) Goal, Global Constraints, M5, Task 24 and Done when; board `LiteStates`; figures `mvp001_cluster`, `p1_skeleton` and `name-claim`; the claim guide; `.github/workflows/pypi-publish.yml` (two projects); `tools/release/pypi-placeholders/spectio-open/` removed; inbox #15 and #66.
 
 Step page: [OPEN1](../progress/W4/OPEN1.md).
+
+## 2026-10-29 — CI runs on pushes to `main` only
+
+- **Context.** `ci.yml` and `claude-config.yml` ran on every PR and on pushes to `main` and `autopilot/integration`. The promotion PR from `autopilot/integration` to `main` stays open, so each merge into integration ran both workflows twice on the same commit: once for the push, once for the PR update.
+- **Decided (Thomas, 2026-10-29):** "oui ok" to Claude's recommendation: drop `autopilot/integration` from the `push` triggers of both workflows.
+- **Changed:** both workflows, and the workflow table of [dev-env §11](../specs/dev-environment-and-testing.md#11-ci-workflows).
+- **Cost:** a push used to run the synthetic scenarios whatever changed; a PR runs them only when their paths changed. Integration no longer gets that full run before `main`: it comes on the push to `main`, and nightly. Every PR into integration, and the promotion PR, still run all of `ci.yml` and `claude-config.yml`.
