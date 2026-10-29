@@ -1087,3 +1087,4 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - (c) (a) for the publish-related calls only (`pending_deployments`, `dispatches`, and `gh workflow run pypi-publish*`), keeping `gh run rerun`. Cost: rules that match command text can be sidestepped by other spellings.
 - **Recommendation:** (a): the autopilot rarely needs these commands, and a publish should always start from a person.
 - **Blocked:** nothing; the first run of `pypi-publish.yml` should wait for this answer.
+- **Update (Thomas, 2026-10-29):** no required reviewer on the `pypi-*` environments ("pas grave si on publie, on fera des patchs"). Option (b) no longer applies: without the reviewer, starting the workflow on `main` is enough to publish, so the choice is between (a) or (c) and no rule at all.

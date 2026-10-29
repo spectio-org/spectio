@@ -36,13 +36,12 @@ GitHub facts below were read on 2026-10-29 in [Deployments and environments](htt
 
 1. **Protect `main` first.** Branch protection on `main` with code-owner review ([autopilot §8](../playbooks/autopilot.md), inbox #8) is a prerequisite: the workflow and `tools/release/` are code-owned (`.github/CODEOWNERS`), and only protection makes that review binding. Do not run the workflow before it is set.
 2. **The workflow reaches `main` through the promotion PR.** This change merges into `autopilot/integration`; "To trigger the `workflow_dispatch` event, your workflow must be in the default branch" (Manually running a workflow), so **Run workflow** appears only after the integration branch is promoted to `main`. The `publish` job also runs only from `main` (`if: github.ref == 'refs/heads/main'`).
-3. **Create the three environments before the first run** (Settings, Environments): `pypi-spectio`, `pypi-spectio-open` and `pypi-snakemake-logger-plugin-spectio`. "Running a workflow that references an environment that does not exist will create an environment with the referenced name … the newly created environment will not have any protection rules or secrets configured" (Managing environments), so a missing environment would publish with no approval. For each environment:
-    - **Required reviewers:** Thomas. "Only one of the required reviewers needs to approve the job for it to proceed" (Deployments and environments), so no agent's or bot's account is a reviewer, and none is a repository admin.
+3. **Create the three environments before the first run** (Settings, Environments): `pypi-spectio`, `pypi-spectio-open` and `pypi-snakemake-logger-plugin-spectio`. "Running a workflow that references an environment that does not exist will create an environment with the referenced name … the newly created environment will not have any protection rules or secrets configured" (Managing environments), so a missing environment would publish from any branch. For each environment:
+    - **Required reviewers:** none. Thomas, 2026-10-29: "pas grave si on publie, on fera des patchs" (no harm if something gets published, we will release patches). A run publishes with no approval step.
     - **Deployment branches and tags:** "Selected branches and tags", with the one rule `main`.
     - **Allow administrators to bypass configured protection rules:** unticked. "By default, administrators can bypass the protection rules" (Deployments and environments).
-    - **Prevent self-review:** leave it off while Thomas is the only reviewer and starts the run himself; it stops "users who initiate a deployment" from approving it (Deployments and environments).
-    - No agent session holds a token of the reviewer's account with `actions:write` or the right to approve deployments: such a token could start the workflow and approve its own run.
     - Then open the environment page and check that it lists these rules.
+    - **What guards a publish, then:** only what reaches `main` can be published, so `main`'s protection (step 1) is the guard. Anyone, or any agent session, that can start a workflow on `main` with Thomas's account can publish; [inbox #71](../reviews/inbox.md#71-deny-agent-sessions-the-commands-that-start-or-approve-a-publish) decides whether agent sessions may. A released file cannot be replaced, only followed by a new version, or yanked.
 
 ### 2.3 On pypi.org: one pending publisher per name
 
@@ -61,7 +60,7 @@ For each name, **Your account**, then **Publishing** (`/manage/account/publishin
 
 ### 2.4 Run the workflow
 
-Actions, **pypi-publish**, **Run workflow** on `main`, pick the project, run, then approve the deployment to `pypi-<project>`. Three jobs:
+Actions, **pypi-publish**, **Run workflow** on `main`, pick the project, run. Three jobs:
 - `build` runs only uv (its download checked against `UV_SHA256`) and the pinned `uv_build` backend: `uv build`, records the files' sha256 sums as a job output, then uploads `dist/`. No third-party checker runs in the job that produces the files;
 - `smoke` works on a downloaded copy: `twine check --strict`, the wheel's file list against `wheel-contents.txt`, then installs the wheel and runs `tools/release/pypi-placeholders/smoke.py` (the CLI's `--version`; for the logger, one event written as valid JSON, a symlink, a FIFO, a hard link or another user's file refused, a loose file tightened to 0600). It runs third-party code while the run's artifact token is live, so `publish` does not trust the artifact on its name alone;
 - `publish` needs both, runs only from `main`, and alone gets `id-token: write`; it checks the downloaded files against the build job's sums and count, then uploads them with `pypa/gh-action-pypi-publish` v1.14.3. Tool versions are pinned in `dev/versions.env`. The project is created, owned by the account that added the pending publisher, when the workflow exchanges its GitHub token, before any file is uploaded (`oidc/views.py:208-294`). Repeat for the other two names, then check `https://pypi.org/p/<name>`.
