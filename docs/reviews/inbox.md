@@ -449,6 +449,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** each finding's recommended option, as listed.
 - **Blocked:** nothing; a different answer reverts the assumed spec text.
+- **Note, 2026-10-29:** Mantine 7 stays, for depictio's Paper look, rewritten in Spectio rather than shared for now ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes), ui-spec §7).
 
 ### #30 · Assumed: UI boards, review screens and the documentation system
 
@@ -531,6 +532,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Blocked:** checking §12.7 (overlays), api §5 `POST /workflows` and the inline `gates` value of SR-087, architecture §7.3 extras, the install line in `mvp-0.0.1.md`.
 - **Note (2026-10-27, cut revised):** gates and QC checks are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so the overlay, the `--gates FILE` and the MultiQC install questions (SR-057, SR-058) no longer block 0.0.1. How a workflow is registered for launch from the UI (SR-056) still applies to 0.0.1.
 - **Answer (Thomas, 2026-10-27, dashboard):** no gating in the MVP or 0.0.1, as in the revised cut. SR-056 (how a workflow is registered for launch from the UI) still applies to 0.0.1 and stays open. *Handled for gates; SR-056 open.*
+- **Note, 2026-10-29:** SR-056 is decided for P1: engine buttons pre-selected from the pipeline's files, a path or a Git repository and revision, no catalogue ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes), P1 Assumption 2).
 
 ### #35 · Engines and the in-process runner on a laptop
 

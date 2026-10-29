@@ -24,7 +24,7 @@ Scope: web UI of Spectio (formerly drafted as Ductio / Perspectio). Companion do
 | **Environments** | Where runs execute | Compute environments, runners, executors/backends, storage, software deployment (conda / Apptainer / Docker / modules), credentials |
 | **Administration** | Instance administration (admins only; personal settings live in Profile) | depictio's four groups: People (users, groups, service accounts) · Content (projects, workflows, environments) · Activity (background tasks *(assumed — pending Thomas, inbox #29)*, runners, events & webhooks, logs, health, audit log) · Instance (branding, plugins, AI & agents, notifications, backups, maintenance, settings). Details: [`admin-and-operations.md`](admin-and-operations.md) |
 
-Shell (depictio Glass model): a grid filling the viewport.
+Shell (depictio's Paper chrome, id `glass`; 2026-10-29, §7): a grid filling the viewport.
 - **Top bar** across the full width: animated logo (home), breadcrumbs, project switcher (shown on Overview, Runs, Review, Launch and Workflows; hidden on Environments, Administration and Profile, and hidden while there is a single project ([`api-and-data-model.md`](api-and-data-model.md) §6)), search (⌘K), notifications (bell with the unread count; its panel lists in-app notifications, each deep-linking to a run or gate; `GET /me/notifications`, [`api-and-data-model.md`](api-and-data-model.md) §5) *(assumed — pending Thomas, inbox #17)*, Administration (admins only), **colour mode** (only here), avatar → Profile.
 - **Sidebar** below it, full remaining height: head with "WORKSPACE" and the **fold button** (PanelLeftClose / PanelLeftOpen, as in depictio); one 56 px item per menu with a 25 px line icon in the menu's colour; active item tinted; Review shows its count; footer with runners status and server status. Folds to a 92 px icon rail (labels hidden, counts become badges).
 - **Content** scrolls on its own; the shell never scrolls.
@@ -344,8 +344,8 @@ Spectio keeps the depictio UI model so a user moving between the two apps finds 
 
 **Taken as is**
 - Mantine 7 and the depictio theme setup (`brandTheme.ts`), with Spectio's palette ("Dawn (light)") swapped in through tokens.
-- *(Thomas, 2026-10-29, [log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes))* The look is depictio's **Paper** chrome, its default since October 2026 (id `glass`, `depictio/viewer/src/chrome/variants/glass/glass.ts:11-22` at depictio `b49af8b`), not Classic. Spectio rewrites it in its own code; a library shared with depictio may come later.
-- The "glass" shell: floating top bar with breadcrumbs, search (⌘K), notifications, theme toggle and avatar; foldable sidebar with a "Workspace" eyebrow and server status in its foot; bottom tab bar on phones.
+- *(Thomas, 2026-10-29, [log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes))* The look is depictio's **Paper** chrome (id `glass`), its default at depictio `b49af8b` (2026-10-28: `depictio/viewer/src/chrome/variants/glass/glass.ts:11-22`, `index.ts:32`), not Classic. Spectio rewrites it in its own code; a library shared with depictio may come later.
+- The Paper shell (id `glass`): floating top bar with breadcrumbs, search (⌘K), notifications, theme toggle and avatar; foldable sidebar with a "Workspace" eyebrow and server status in its foot; bottom tab bar on phones.
 - Page head: tinted 48 px icon tile, Outfit h1, one-line description, primary action on the right.
 - List pattern: table / rows toggle (`ViewPicker`) *(assumed — pending Thomas, inbox #29)*, toolbar with search, group, sort, `FilterPopover` with removable chips, view state in the URL ("Share view").
 - Iconify + lucide icon set; Mantine Table for lists; AG Grid only for large data (tasks, samplesheets).
@@ -360,6 +360,7 @@ Spectio keeps the depictio UI model so a user moving between the two apps finds 
 **How to share code**
 - depictio's `depictio-react-core` is private and source-only, and its shell lives in `viewer/src`. Extract a small design-system package `@depictio/ui` (theme, tokens, AppShell, PageHead, ViewPicker, FilterPopover, EmptyState) consumed by both apps; each app passes its own palette and nav.
 - Until the package exists, Spectio vendors a copy of these components with a header pointing to the depictio source commit.
+- *Note 2026-10-29 ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes)):* for now Spectio rewrites these components in its own code, with no vendored copy and no `@depictio/ui` package; a shared library may come later.
 - depictio already has workflow models (`workflows.py`, `run_info.py`, `JobState`) and engine logos in `public/logos/workflows/`. Spectio's run states map onto `JobState`, and "Open in depictio" passes the run ID so depictio can link a dashboard to it.
 
 ## 8. Workflow metadata used by the UI
