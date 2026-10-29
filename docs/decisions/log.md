@@ -882,5 +882,5 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Options:** (a) a root `docs/intro.md` in this repository, kept out of the MkDocs site; (b) a separate repository for the bridge, as most loggers have (snkmt, panoptes, prometheus, rich), which splits the bridge from the monorepo layout of [architecture §6](../specs/architecture-plugins-and-packaging.md) and changes the `Repository` URL only with a new release.
 - **Decided (Claude, 2026-10-29, reversible):** (a). One file, no new repository; (b) stays open if the bridge ever moves out.
 - **Changed:** `docs/intro.md`, `exclude_docs` in `mkdocs.yml`, [Claim the package names](../developer/claim-package-names.md) §3 and §4.
-- **Still needed:** the logger is not on PyPI yet (pypi.org answers 404, checked 2026-10-29). Its pending publisher must be fixed and the workflow run (Thomas); the page appears the day after.
+- **Published:** Thomas ran the publish workflow on 2026-10-29 (run 40902016093). `snakemake-logger-plugin-spectio` `0.0.0` is on PyPI with `Repository: https://github.com/spectio-org/spectio` (JSON API, checked 2026-10-29). The catalogue lists it at its next daily rebuild; its page carries this text once `docs/intro.md` reaches `main`.
 
