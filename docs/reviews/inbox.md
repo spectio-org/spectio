@@ -1014,7 +1014,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Your part:** claim the plugin ID `nf-spectio` in the registry and the three PyPI names, and say whether the §12 default holds for the bridges.
 - **Assumed:** none. Task 26 stops at the dry run.
 - **Blocked:** the merge of the terminal-runs guide of P1 Task 25 (until then it installs the copies bundled in the wheel), and the first real release of the bridges. The rest of P1 is not blocked.
-- **Status 2026-10-29:** the procedure is checked and written down in [Claim the package names](../developer/claim-package-names.md): claim `nf-spectio` on the registry (an approved claim holds it, no release), then for each PyPI name add a pending publisher and run `pypi-publish.yml` at once, since a pending publisher alone holds nothing ([verification](verification-2026-10-29-names.md), FC-314 to FC-317). Two choices are yours: the provider string typed in the registry claim, and the placeholder version (`0.0.0` proposed). Also open: the Snakemake catalogue reads `docs/intro.md` at the root of this repository, where `docs/` is the MkDocs site, so the logger's catalogue page needs a home (verification, open point 9). *Still open until the four names are held.*
+- **Status 2026-10-29:** the procedure is checked and written down in [Claim the package names](../developer/claim-package-names.md): claim `nf-spectio` on the registry (an approved claim should hold it with no release; inferred from the docs, refusal of a second claimant not stated), then for each PyPI name add a pending publisher and run `pypi-publish.yml` at once, since a pending publisher alone holds nothing ([verification](verification-2026-10-29-names.md), FC-314 to FC-317). Two choices are yours: the provider string typed in the registry claim, and the placeholder version (`0.0.0` proposed). Also open: the Snakemake catalogue reads `docs/intro.md` at the root of this repository, where `docs/` is the MkDocs site, so the logger's catalogue page needs a home (verification, open point 9). *Still open until the four names are held.*
 
 ### #67 · Assumed: the engine setup is documented, not automated, in 0.0.1
 
@@ -1074,3 +1074,13 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** the assumed options.
 - **Blocked:** nothing; P1 plans with them.
 
+### #71 · Deny agent sessions the commands that start or approve a publish
+
+- **Covers:** [Claim the package names](../developer/claim-package-names.md) §2.2 and §4; `.github/workflows/pypi-publish.yml`; `.claude/settings.json` (permissions, CODEOWNERS); [autopilot §4](../playbooks/autopilot.md) (permissions).
+- **Context:** the name-claim review (SEC-1, [record](code/NAMES.md)) found that the only guard on a PyPI publish is the `pypi-*` environments' required reviewer. An agent session holding a token of the reviewer's account with `actions:write`, or the right to approve deployments, could start the workflow and approve its own run. `.claude/settings.json` denies force-push and branch deletion today, not these commands. Claude does not change its own permissions.
+- **Options:**
+  - (a) add deny rules for `gh workflow run *`, `gh api *pending_deployments*`, `gh api */dispatches*` and `gh run rerun *` to `.claude/settings.json` (and `tools/autopilot/claude-settings.json`). Cost: the autopilot can no longer re-run a failed CI job with `gh run rerun` or start a workflow by hand; a person does it;
+  - (b) no deny rules; rely on the environments' required reviewer, admin bypass off, and no agent token with `actions:write`. Cost: one misconfigured token is enough to publish;
+  - (c) (a) for the publish-related calls only (`pending_deployments`, `dispatches`, and `gh workflow run pypi-publish*`), keeping `gh run rerun`. Cost: rules that match command text can be sidestepped by other spellings.
+- **Recommendation:** (a): the autopilot rarely needs these commands, and a publish should always start from a person.
+- **Blocked:** nothing; the first run of `pypi-publish.yml` should wait for this answer.

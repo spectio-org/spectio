@@ -41,6 +41,7 @@ GitHub facts below were read on 2026-10-29 in [Deployments and environments](htt
     - **Deployment branches and tags:** "Selected branches and tags", with the one rule `main`.
     - **Allow administrators to bypass configured protection rules:** unticked. "By default, administrators can bypass the protection rules" (Deployments and environments).
     - **Prevent self-review:** leave it off while Thomas is the only reviewer and starts the run himself; it stops "users who initiate a deployment" from approving it (Deployments and environments).
+    - No agent session holds a token of the reviewer's account with `actions:write` or the right to approve deployments: such a token could start the workflow and approve its own run.
     - Then open the environment page and check that it lists these rules.
 
 ### 2.3 On pypi.org: one pending publisher per name
@@ -61,9 +62,9 @@ For each name, **Your account**, then **Publishing** (`/manage/account/publishin
 ### 2.4 Run the workflow
 
 Actions, **pypi-publish**, **Run workflow** on `main`, pick the project, run, then approve the deployment to `pypi-<project>`. Three jobs:
-- `build` builds the package with `uv build`, records the sha256 of each file and uploads them before any checker is installed, then runs `twine check --strict`, checks every classifier against the pinned `trove-classifiers` and compares the wheel's file list with `wheel-contents.txt`;
-- `smoke` checks the sums, installs the wheel and runs `tools/release/pypi-placeholders/smoke.py` (the CLI's `--version`; for the logger, one event written as valid JSON, and a symlinked log file refused);
-- `publish` checks the sums again; it alone gets `id-token: write`, and uploads with `pypa/gh-action-pypi-publish` v1.14.3. Tool versions are pinned in `dev/versions.env`. The project is created, owned by the account that added the pending publisher, when the workflow exchanges its GitHub token, before any file is uploaded (`oidc/views.py:208-294`). Repeat for the other two names, then check `https://pypi.org/p/<name>`.
+- `build` runs only uv and the pinned `uv_build` backend: `uv build`, then uploads `dist/`. No third-party checker runs in the job that produces the files;
+- `smoke` works on a downloaded copy and feeds nothing to `publish`: `twine check --strict`, the wheel's file list against `wheel-contents.txt`, then installs the wheel and runs `tools/release/pypi-placeholders/smoke.py` (the CLI's `--version`; for the logger, one event written as valid JSON, a symlink, a hard link or another user's file refused, a loose file tightened to 0600);
+- `publish` needs both, runs only from `main`, and alone gets `id-token: write`; it uploads the build job's files with `pypa/gh-action-pypi-publish` v1.14.3. Tool versions are pinned in `dev/versions.env`. The project is created, owned by the account that added the pending publisher, when the workflow exchanges its GitHub token, before any file is uploaded (`oidc/views.py:208-294`). Repeat for the other two names, then check `https://pypi.org/p/<name>`.
 
 After the first run, the pending publisher becomes a normal trusted publisher on that project; later releases use the same workflow file and environment ([dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases)).
 
@@ -89,6 +90,6 @@ If the workflow cannot run (the promotion is not merged, the Actions minutes are
 
 ## 4. Open points
 
-- **Agent permissions (SEC-1, Thomas decides).** The security review proposes that `.claude/settings.json` deny `gh workflow run`, `gh api …/pending_deployments`, `gh api …/dispatches` and `gh run rerun`, so no agent session can start or approve a publish. Claude does not edit its own permissions; until Thomas decides, the environments' required reviewer (§2.2) is the guard.
+- **Agent permissions (SEC-1, Thomas decides, [inbox #71](../reviews/inbox.md#71-deny-agent-sessions-the-commands-that-start-or-approve-a-publish)).** The security review proposes that `.claude/settings.json` deny `gh workflow run`, `gh api …/pending_deployments`, `gh api …/dispatches` and `gh run rerun`, so no agent session can start or approve a publish. Claude does not edit its own permissions; until Thomas decides, the environments' required reviewer (§2.2) is the guard.
 - **Where the logger's catalogue page lives.** A root `docs/intro.md` kept out of the MkDocs nav, or a separate repository for the bridge ([verification](../reviews/verification-2026-10-29-names.md), open point 9).
 - **Choices:** the placeholder version (`0.0.0` proposed) and the registry provider string.

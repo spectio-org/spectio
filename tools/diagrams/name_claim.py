@@ -6,12 +6,13 @@ Writes docs/assets/diagrams/name-claim_{light,dark}.{svg,png}.
 Every fact comes from docs/reviews/verification-2026-10-29-names.md (FC-314 to FC-317) and
 .github/workflows/pypi-publish.yml:
 - registry.nextflow.io: sign in through Seqera, My plugins, Claim a plugin with a name and a provider;
-  the claim waits as PENDING REVIEW until an admin approves it; an approved claim holds the ID with no
-  release (nextflow docs/plugins/plugin-registry.mdx:14-40, docs/guides/gradle-plugin.mdx:107-111);
+  the claim waits as PENDING REVIEW until an admin approves it; an approved claim should hold the ID with no
+  release, inferred (nextflow docs/plugins/plugin-registry.mdx:14-40, docs/guides/gradle-plugin.mdx:107-111);
 - pypi.org: a pending publisher does not hold the name; the project exists, owned by the account that
   registered the publisher, the first time the workflow exchanges its token, before any upload
   (warehouse creating-a-project-through-oidc.md:28-35, oidc/views.py:208-294); at most 3 pending;
-- the workflow: build job without id-token, publish job in environment pypi-<project> with id-token.
+- the workflow: build runs only uv; smoke checks and installs a copy; publish, from main only, runs in
+  environment pypi-<project> and alone has id-token.
 """
 
 from __future__ import annotations
@@ -44,10 +45,10 @@ def build(theme: Theme) -> Sketch:
     s.text(630, top + 198, "how long: not documented", size=13.5, anchor="start", colour=t.dim)
     s.arrow(950, top + 155, 1070, top + 155, colour=t.dim)
     s.tick(1100, top + 150, size=10)
-    s.text(1125, top + 156, "approved: the ID is held", size=16, anchor="start", colour=t.good, weight="bold")
-    s.text(1125, top + 182, "no release needed, no placeholder", size=13.5, anchor="start", colour=t.dim)
+    s.text(1125, top + 156, "approved: the ID should be held", size=16, anchor="start", colour=t.good, weight="bold")
+    s.text(1125, top + 182, "inferred from the docs; no release needed", size=13.5, anchor="start", colour=t.dim)
     s.text(1125, top + 204, "access token only at the first release", size=13.5, anchor="start", colour=t.dim)
-    s.step(W / 2, top + 280, 1, "the claim, not a release, holds `nf-spectio`")
+    s.step(W / 2, top + 280, 1, "the claim, not a release, makes `nf-spectio` yours")
 
     # Lane 2: PyPI through the workflow
     top = 470
@@ -63,10 +64,10 @@ def build(theme: Theme) -> Sketch:
     s.arrow(420, top + 160, 520, top + 160, colour=t.dim)
     s.button(540, top + 100, 200, "Run workflow", fill="work")
     s.text(540, top + 160, "GitHub Actions, on `main`", size=13.5, anchor="start", colour=t.dim)
-    s.pipeline(540, top + 190, ("build", "publish"), w=110)
-    s.lock(800, top + 256, 11, fill="docs")
-    s.text(818, top + 261, "`id-token` in publish only", size=13, anchor="start", colour=t.dim)
-    s.arrow(820, top + 160, 1070, top + 160, colour=t.dim)
+    s.pipeline(540, top + 190, ("build", "smoke", "publish"), w=110)
+    s.lock(820, top + 256, 11, fill="docs")
+    s.text(838, top + 261, "`id-token` in publish only", size=13, anchor="start", colour=t.dim)
+    s.arrow(940, top + 160, 1070, top + 160, colour=t.dim)
     s.tick(1100, top + 155, size=10)
     s.text(1125, top + 161, "token exchange: the project exists", size=16, anchor="start", colour=t.good,
            weight="bold")
