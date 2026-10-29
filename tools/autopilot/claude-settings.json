@@ -33,7 +33,12 @@
       "Bash(git push --force *)",
       "Bash(git push -f *)",
       "Bash(git push --force-with-lease *)",
-      "Bash(git branch -D *)"
+      "Bash(git branch -D *)",
+      "Bash(gh workflow run *)",
+      "Bash(gh api *pending_deployments*)",
+      "Bash(gh api *dispatches*)",
+      "Bash(gh run rerun *)",
+      "mcp__github__actions_run_trigger"
     ]
   },
   "statusLine": {

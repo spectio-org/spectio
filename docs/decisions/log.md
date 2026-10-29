@@ -833,3 +833,11 @@ Step page: [APPLY8](../progress/W4/APPLY8.md).
 - **Decided (Thomas, 2026-10-29):** a dedicated organization, not depictio's: "mais du coup spectio devient un sous ensemble de depictio alors que cela ne fais pas la mm chose" (Spectio would become a subset of depictio although it does something different). The name `spectio` was taken; Thomas transferred the repository to `spectio-org` and added the three PyPI pending publishers with that owner.
 - **Changed:** the `Repository` URL and the notice of the three `0.0.0` packages in `tools/release/pypi-placeholders/` now point to `github.com/spectio-org/spectio`; their `Documentation` URL is removed, because GitHub Pages was never deployed (`weber8thomas.github.io/spectio/` answers 404, checked 2026-10-29) and a released file cannot be changed. The owner in [Claim the package names](../developer/claim-package-names.md) §2.3, [dev-env §12](../specs/dev-environment-and-testing.md#12-versioning-and-releases) and figure `name-claim`. Inbox #9 is updated.
 - **Not changed yet:** other links to `github.com/weber8thomas/spectio` in the site and records; GitHub redirects them while no new repository takes that name.
+
+## 2026-10-29 — Agent sessions may not start or approve a PyPI publish
+
+- **Context.** Inbox #71 (SEC-1 of the name-claim review). With no required reviewer on the `pypi-*` environments, starting `pypi-publish.yml` on `main` is enough to publish, and agent sessions act with Thomas's account.
+- **Decided (Thomas, 2026-10-29):** "accept recommendation ; deny", then "non recommendation était a": option (a), the recommendation written in the inbox. Both settings files deny `gh workflow run *`, `gh api *pending_deployments*`, `gh api *dispatches*`, `gh run rerun *` and the GitHub MCP tool `mcp__github__actions_run_trigger` (it can start and re-run any workflow).
+- **Cost:** the autopilot can no longer re-run a failed CI job or start a workflow by hand; Thomas does it.
+- **Limit:** the Bash rules match command text, so another spelling can get past them; the rule that Claude never publishes still applies.
+- **Changed:** `.claude/settings.json`, `tools/autopilot/claude-settings.json`, [autopilot §4](../playbooks/autopilot.md#4-permissions-to-add-yourself), inbox #71.

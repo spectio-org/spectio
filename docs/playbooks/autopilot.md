@@ -111,11 +111,15 @@ Agents may not change their own permission rules, so add these yourself. You can
     ],
     "deny": [
       "Bash(git push --force *)", "Bash(git push -f *)", "Bash(git push origin main *)",
-      "Bash(git branch -D *)"
+      "Bash(git branch -D *)",
+      "Bash(gh workflow run *)", "Bash(gh api *pending_deployments*)",
+      "Bash(gh api *dispatches*)", "Bash(gh run rerun *)", "mcp__github__actions_run_trigger"
     ]
   }
 }
 ```
+
+The last five rules keep agent sessions from starting, re-running or approving any workflow run, and so a PyPI publish ([inbox #71](../reviews/inbox.md#71-deny-agent-sessions-the-commands-that-start-or-approve-a-publish), option (a), Thomas, 2026-10-29). The GitHub MCP tool `mcp__github__actions_run_trigger` is denied whole because it can start and re-run any workflow. The autopilot can no longer re-run a failed CI job: Thomas does it. The Bash rules match command text, so another spelling can get past them.
 
 For the budget governor (§6), also add the status-line tap and the limit hook:
 
