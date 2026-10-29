@@ -1,6 +1,6 @@
 # Code review · NAMES, the PyPI name-claim workflow and packages
 
-Branch `autopilot/pypi-name-claim`, range `925ddb0..0ca035f` (first round), 2026-10-29. `code-reviewer`, `security-reviewer` and `doc-reviewer` ran in parallel on `0ca035f`; the coordinator accepted every finding. The code fixes are in `ce2f660`; the docs fixes are in the commit after it. No `code-simplifier` pass: CR-005, the reviewer's simplify finding, was applied by hand. The step's page is [Progress · NAMES](../../progress/W4/NAMES.md).
+Branch `autopilot/pypi-name-claim`, range `925ddb0..0ca035f` (first round), 2026-10-29. `code-reviewer`, `security-reviewer` and `doc-reviewer` ran in parallel on `0ca035f`; the coordinator accepted every finding. The code fixes are in `ce2f660` and `1ad7e3e` (the file count skips `dist/.gitignore`, which `uv build` writes); the docs fixes are in `44da735`. No `code-simplifier` pass: CR-005, the reviewer's simplify finding, was applied by hand. The step's page is [Progress · NAMES](../../progress/W4/NAMES.md).
 
 ```text
 CODE  step=NAMES  review=changes b/M/m=0/1/4  security=changes b/M/m=0/1/5  rounds=1  simplify=CR-005 by hand  tests=pass
