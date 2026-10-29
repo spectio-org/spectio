@@ -18,7 +18,7 @@ were added: ``gate``, ``runner``, ``hpc_node``, ``k8s_pod``, ``pipeline``,
 The look
 --------
 Excalidraw's: every stroke is drawn twice along a jittered bezier and text is
-set in Virgil. Text in `backticks` is set in monospace, because handwriting
+set in Excalifont. Text in `backticks` is set in monospace, because handwriting
 mangles code. Jitter comes from a fixed seed, so re-running a figure writes a
 byte-identical file and a diff shows only real changes.
 
@@ -39,11 +39,12 @@ from pathlib import Path
 from xml.sax.saxutils import escape
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
-VIRGIL_TTF = Path(os.environ.get("SPECTIO_VIRGIL_TTF", REPO_ROOT / "docs" / "fonts" / "Virgil.ttf"))
+SKETCH_TTF = Path(os.environ.get("SPECTIO_SKETCH_TTF", REPO_ROOT / "docs" / "fonts" / "Excalifont.ttf"))
 OUT_DIR = REPO_ROOT / "docs" / "assets" / "diagrams"
 
-# The bundled face first, so the PNG render does not depend on installed fonts.
-FONT = "Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive"
+# The bundled face first, so the PNG render does not depend on installed fonts. Where it is
+# missing (an SVG seen without the font) a plain sans follows, never a novelty face.
+FONT = "Excalifont, ui-sans-serif, system-ui, sans-serif"
 MONO = "ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace"
 
 _CODE = re.compile(r"`([^`]+)`")
@@ -708,14 +709,14 @@ class Sketch:
 
 
 def _png_host_page(svg: str) -> str:
-    """An HTML shell that inlines the SVG and declares the bundled Virgil.
+    """An HTML shell that inlines the SVG and declares the bundled Excalifont.
 
     An <img>-embedded SVG cannot see an @font-face, and a file:// SVG renders
     with whatever fonts are installed, so the PNG is taken from this page.
     """
-    face = ""
-    if VIRGIL_TTF.exists():
-        face = f"@font-face{{font-family:'Virgil';src:url('{VIRGIL_TTF.resolve().as_uri()}') format('truetype');}}"
+    if not SKETCH_TTF.exists():
+        raise SystemExit(f"{SKETCH_TTF} is missing: set SPECTIO_SKETCH_TTF (tools/diagrams/FONT-LICENSE.md), or pass --no-png")
+    face = f"@font-face{{font-family:'Excalifont';src:url('{SKETCH_TTF.resolve().as_uri()}') format('truetype');}}"
     return (
         "<!doctype html><meta charset='utf-8'><style>"
         f"{face}html,body{{margin:0;padding:0}}svg{{display:block}}</style><body>{svg}</body>"

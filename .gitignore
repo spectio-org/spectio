@@ -24,7 +24,7 @@ docs/research/data/pipelines.json
 .autopilot/budget.json
 .autopilot/limit-hit.json
 
-# fonts with an unconfirmed licence (tools/diagrams/FONT-LICENSE.md): set SPECTIO_VIRGIL_TTF or place them locally
+# fonts with an unconfirmed licence (tools/diagrams/FONT-LICENSE.md): set SPECTIO_SKETCH_TTF or place them locally
 docs/fonts/*.ttf
 
 # GIF previews for PR bodies, generated on demand (tools/media/combo.py)

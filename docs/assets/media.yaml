@@ -290,7 +290,7 @@ media:
     outputs: [docs/assets/casts/t2-engine-events.cast]
   - id: dev-toolchain
     kind: diagram
-    # PNGs need the local Virgil font (SPECTIO_VIRGIL_TTF), not committed (inbox #1)
+    # PNGs need the local Excalifont font (SPECTIO_SKETCH_TTF), not committed (inbox #1)
     generator: python3 tools/diagrams/dev_toolchain.py
     outputs:
       - docs/assets/diagrams/dev_toolchain_light.svg

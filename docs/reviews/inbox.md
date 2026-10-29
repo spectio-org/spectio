@@ -13,6 +13,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - (c) keep the font local only (`SPECTIO_VIRGIL_TTF`), so CI renders SVG only and PNGs are rendered locally.
 - **Recommendation:** (a), with (c) until then. **Assumed:** (c), so the font is not committed.
 - **Answer (Thomas, 2026-10-26):** Virgil is set aside for now. Read as (c): the font stays local and is not committed, and figures are rendered locally. *Handled.*
+- **Note (2026-10-29):** the figures now use Excalifont (option (b), Thomas's choice of font), still local only ([decision log](../decisions/log.md#2026-10-29-the-hand-drawn-figures-switch-from-virgil-to-excalifont)).
 
 ### #2 · Install telemetry: opt-in (current) or opt-out like depictio?
 

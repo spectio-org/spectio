@@ -1,11 +1,11 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1640" height="820" viewBox="0 0 1640 820">
   <rect width="1640" height="820" fill="#ffffff"/>
-  <text x="40.0" y="52.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="27" fill="#1e1e1e" text-anchor="start" font-weight="normal">UILITE · the 0.0.1 run detail: stage cards no API served, then stages with their processes</text>
-  <text x="40.0" y="80.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Thomas, 2026-10-28: "les 2 dans 0.0.1" · ui-spec.md §4.4 note of 2026-10-28</text>
+  <text x="40.0" y="52.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="27" fill="#1e1e1e" text-anchor="start" font-weight="normal">UILITE · the 0.0.1 run detail: stage cards no API served, then stages with their processes</text>
+  <text x="40.0" y="80.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Thomas, 2026-10-28: "les 2 dans 0.0.1" · ui-spec.md §4.4 note of 2026-10-28</text>
   <rect x="40.0" y="96.0" width="760.0" height="650.0" rx="4" fill="#f1f3f5" fill-opacity="0.5"/>
-  <text x="60.0" y="124.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="22" fill="#1e1e1e" text-anchor="start" font-weight="normal">before</text>
+  <text x="60.0" y="124.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="22" fill="#1e1e1e" text-anchor="start" font-weight="normal">before</text>
   <rect x="840.0" y="96.0" width="760.0" height="650.0" rx="4" fill="#ebfbee" fill-opacity="0.3"/>
-  <text x="860.0" y="124.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="22" fill="#1e1e1e" text-anchor="start" font-weight="normal">after</text>
+  <text x="860.0" y="124.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="22" fill="#1e1e1e" text-anchor="start" font-weight="normal">after</text>
   <rect x="70.0" y="144.0" width="470.0" height="560.0" rx="6" fill="#ffffff"/>
   <path d="M69.4,143.9 C225.4,142.8 383.6,143.0 539.9,143.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M69.2,143.6 C226.3,145.1 382.2,143.0 539.4,144.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
@@ -19,9 +19,9 @@
   <circle cx="86.0" cy="158.0" r="4.5" fill="#ff8787"/>
   <circle cx="101.0" cy="158.0" r="4.5" fill="#ffd43b"/>
   <circle cx="116.0" cy="158.0" r="4.5" fill="#69db7c"/>
-  <text x="136.0" y="163.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">127.0.0.1:8765/runs/…</text>
-  <text x="90.0" y="204.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="16" fill="#1e1e1e" text-anchor="start" font-weight="bold">rnaseq-2026-10-25 · Running</text>
-  <text x="90.0" y="226.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">stage 3 of 4 · 812 / 1,248 tasks</text>
+  <text x="136.0" y="163.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">127.0.0.1:8765/runs/…</text>
+  <text x="90.0" y="204.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="start" font-weight="bold">rnaseq-2026-10-25 · Running</text>
+  <text x="90.0" y="226.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">stage 3 of 4 · 812 / 1,248 tasks</text>
   <rect x="86.0" y="240.0" width="438.0" height="32.0" rx="6" fill="#ffffff"/>
   <path d="M85.9,240.5 C233.5,238.4 377.7,240.2 524.3,240.0" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M85.6,239.5 C230.4,241.6 377.6,239.6 523.4,239.4" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
@@ -31,7 +31,7 @@
   <path d="M523.8,271.8 C379.1,273.2 232.9,272.5 85.9,272.6" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M85.7,272.5 C86.8,260.0 85.2,249.3 86.2,239.2" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M85.2,271.3 C86.8,261.7 85.9,249.2 86.6,239.9" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="98.0" y="260.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">1 Preprocessing</text>
+  <text x="98.0" y="260.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">1 Preprocessing</text>
   <rect x="290.0" y="251.0" width="150.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="290.0" y="251.0" width="150.0" height="10.0" rx="4" fill="#d0bfff" fill-opacity="1"/>
   <rect x="86.0" y="280.0" width="438.0" height="32.0" rx="6" fill="#ffffff"/>
@@ -43,7 +43,7 @@
   <path d="M524.6,311.5 C379.2,312.9 232.5,312.3 86.7,311.5" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M85.3,311.7 C87.2,301.3 86.7,292.2 85.4,279.7" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M85.9,311.4 C85.2,301.8 87.1,289.9 85.3,279.5" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="98.0" y="300.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">2 Alignment &amp; QC</text>
+  <text x="98.0" y="300.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">2 Alignment &amp; QC</text>
   <rect x="290.0" y="291.0" width="150.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="290.0" y="291.0" width="150.0" height="10.0" rx="4" fill="#d0bfff" fill-opacity="1"/>
   <rect x="86.0" y="320.0" width="438.0" height="32.0" rx="6" fill="#ffffff"/>
@@ -55,7 +55,7 @@
   <path d="M523.4,351.6 C377.3,351.7 230.4,351.6 86.5,351.5" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M85.6,351.4 C86.7,340.7 86.4,331.7 86.7,319.7" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M85.6,352.5 C86.9,340.5 87.5,332.0 85.5,320.5" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="98.0" y="340.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">3 Quantification</text>
+  <text x="98.0" y="340.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">3 Quantification</text>
   <rect x="290.0" y="331.0" width="150.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="290.0" y="331.0" width="94.0" height="10.0" rx="4" fill="#d0bfff" fill-opacity="1"/>
   <rect x="86.0" y="360.0" width="438.0" height="32.0" rx="6" fill="#ffffff"/>
@@ -67,38 +67,38 @@
   <path d="M524.3,392.1 C378.6,392.1 233.1,392.6 86.7,392.2" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M86.6,391.3 C87.2,381.5 85.0,370.8 86.7,360.2" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M86.1,391.4 C85.8,380.9 86.2,371.8 85.8,359.4" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="98.0" y="380.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">4 Reporting</text>
+  <text x="98.0" y="380.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">4 Reporting</text>
   <rect x="290.0" y="371.0" width="150.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
-  <text x="90.0" y="440.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="bold">Processes</text>
-  <text x="90.0" y="466.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">Process</text>
-  <text x="320.0" y="466.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">Stage</text>
-  <text x="520.0" y="466.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">Done</text>
-  <text x="90.0" y="494.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">SALMON_QUANT</text>
-  <text x="320.0" y="494.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">3 · Quantification</text>
-  <text x="520.0" y="494.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">48</text>
-  <text x="90.0" y="524.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">SUBREAD_FEATURECOUNTS</text>
-  <text x="320.0" y="524.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">3 · Quantification</text>
-  <text x="520.0" y="524.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">140</text>
-  <text x="90.0" y="554.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">STAR_ALIGN</text>
-  <text x="320.0" y="554.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">2 · Alignment &amp; QC</text>
-  <text x="520.0" y="554.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">48</text>
-  <text x="90.0" y="584.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">QUALIMAP_RNASEQ</text>
-  <text x="320.0" y="584.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">2 · Alignment &amp; QC</text>
-  <text x="520.0" y="584.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">48</text>
-  <text x="90.0" y="614.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">TRIMGALORE</text>
-  <text x="320.0" y="614.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">1 · Preprocessing</text>
-  <text x="520.0" y="614.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">96</text>
-  <text x="90.0" y="644.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">FASTQC</text>
-  <text x="320.0" y="644.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">1 · Preprocessing</text>
-  <text x="520.0" y="644.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">96</text>
-  <text x="560.0" y="200.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">stage cards named by hand:</text>
-  <text x="560.0" y="222.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">no endpoint served them</text>
-  <text x="560.0" y="244.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">(the API had /processes only)</text>
-  <text x="560.0" y="330.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">"stage 3 of 4" reads as</text>
-  <text x="560.0" y="352.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">one stage at a time</text>
-  <text x="560.0" y="470.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">processes in a separate</text>
-  <text x="560.0" y="492.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">table, a Stage column</text>
-  <text x="560.0" y="514.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">of labels; 6 of 14 shown</text>
+  <text x="90.0" y="440.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="bold">Processes</text>
+  <text x="90.0" y="466.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">Process</text>
+  <text x="320.0" y="466.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">Stage</text>
+  <text x="520.0" y="466.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">Done</text>
+  <text x="90.0" y="494.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">SALMON_QUANT</text>
+  <text x="320.0" y="494.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">3 · Quantification</text>
+  <text x="520.0" y="494.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">48</text>
+  <text x="90.0" y="524.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">SUBREAD_FEATURECOUNTS</text>
+  <text x="320.0" y="524.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">3 · Quantification</text>
+  <text x="520.0" y="524.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">140</text>
+  <text x="90.0" y="554.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">STAR_ALIGN</text>
+  <text x="320.0" y="554.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">2 · Alignment &amp; QC</text>
+  <text x="520.0" y="554.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">48</text>
+  <text x="90.0" y="584.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">QUALIMAP_RNASEQ</text>
+  <text x="320.0" y="584.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">2 · Alignment &amp; QC</text>
+  <text x="520.0" y="584.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">48</text>
+  <text x="90.0" y="614.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">TRIMGALORE</text>
+  <text x="320.0" y="614.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">1 · Preprocessing</text>
+  <text x="520.0" y="614.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">96</text>
+  <text x="90.0" y="644.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">FASTQC</text>
+  <text x="320.0" y="644.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">1 · Preprocessing</text>
+  <text x="520.0" y="644.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">96</text>
+  <text x="560.0" y="200.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">stage cards named by hand:</text>
+  <text x="560.0" y="222.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">no endpoint served them</text>
+  <text x="560.0" y="244.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">(the API had /processes only)</text>
+  <text x="560.0" y="330.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">"stage 3 of 4" reads as</text>
+  <text x="560.0" y="352.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">one stage at a time</text>
+  <text x="560.0" y="470.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">processes in a separate</text>
+  <text x="560.0" y="492.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">table, a Stage column</text>
+  <text x="560.0" y="514.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">of labels; 6 of 14 shown</text>
   <rect x="860.0" y="144.0" width="530.0" height="560.0" rx="6" fill="#ffffff"/>
   <path d="M860.6,144.5 C1037.3,145.1 1212.9,145.5 1390.3,143.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M860.6,144.8 C1035.3,142.7 1212.2,144.6 1390.0,144.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
@@ -112,49 +112,49 @@
   <circle cx="876.0" cy="158.0" r="4.5" fill="#ff8787"/>
   <circle cx="891.0" cy="158.0" r="4.5" fill="#ffd43b"/>
   <circle cx="906.0" cy="158.0" r="4.5" fill="#69db7c"/>
-  <text x="926.0" y="163.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">127.0.0.1:8765/runs/…</text>
-  <text x="880.0" y="204.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="16" fill="#1e1e1e" text-anchor="start" font-weight="bold">rnaseq-2026-10-25 · Running</text>
-  <text x="880.0" y="226.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">3 of 8 stages done · 4 running · 524 / 803 tasks</text>
-  <text x="878.0" y="258.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
+  <text x="926.0" y="163.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">127.0.0.1:8765/runs/…</text>
+  <text x="880.0" y="204.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="16" fill="#1e1e1e" text-anchor="start" font-weight="bold">rnaseq-2026-10-25 · Running</text>
+  <text x="880.0" y="226.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">3 of 8 stages done · 4 running · 524 / 803 tasks</text>
+  <text x="878.0" y="258.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
   <path d="M896.2,252.9 C897.2,254.4 898.2,256.6 900.0,257.6" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M900.0,257.9 C903.0,254.6 905.2,250.5 908.3,247.2" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="916.0" y="258.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Prepare genome references + …</text>
+  <text x="916.0" y="258.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Prepare genome references + …</text>
   <rect x="1110.0" y="242.0" width="62.0" height="22.0" rx="4" fill="#e7f5ff" fill-opacity="1"/>
   <path d="M1109.8,241.8 C1131.6,241.7 1152.0,241.9 1171.6,241.6" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1171.6,242.3 C1172.9,250.2 1171.6,257.3 1171.7,263.9" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1172.1,263.6 C1150.6,264.9 1130.1,265.0 1109.8,264.0" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1110.1,263.5 C1110.8,257.6 1109.6,249.2 1109.8,242.1" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
-  <text x="1141.0" y="258.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
+  <text x="1141.0" y="258.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
   <rect x="1180.0" y="249.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="1180.0" y="249.0" width="56.0" height="10.0" rx="4" fill="#d0bfff" fill-opacity="1"/>
-  <text x="1372.0" y="258.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">9 of 9 · Done</text>
-  <text x="878.0" y="290.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
+  <text x="1372.0" y="258.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">9 of 9 · Done</text>
+  <text x="878.0" y="290.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
   <path d="M895.9,285.2 C897.8,286.1 898.8,287.8 900.2,289.5" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M899.7,290.1 C902.7,286.2 904.8,283.2 907.7,279.2" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="916.0" y="290.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Fastq qc trim filter setstr…</text>
+  <text x="916.0" y="290.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Fastq qc trim filter setstr…</text>
   <rect x="1110.0" y="274.0" width="62.0" height="22.0" rx="4" fill="#e7f5ff" fill-opacity="1"/>
   <path d="M1109.8,274.2 C1130.0,274.0 1150.7,273.1 1172.3,274.0" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1171.6,273.9 C1172.3,281.5 1172.9,288.9 1172.0,295.9" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1172.3,296.4 C1152.1,295.4 1131.4,297.0 1110.5,296.0" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1110.4,296.5 C1110.0,288.5 1110.8,282.0 1110.4,273.7" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
-  <text x="1141.0" y="290.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
+  <text x="1141.0" y="290.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
   <rect x="1180.0" y="281.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="1180.0" y="281.0" width="56.0" height="10.0" rx="4" fill="#d0bfff" fill-opacity="1"/>
-  <text x="1372.0" y="290.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">205 of 205 · Done</text>
-  <text x="878.0" y="322.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
+  <text x="1372.0" y="290.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">205 of 205 · Done</text>
+  <text x="878.0" y="322.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
   <path d="M895.9,316.8 C896.9,318.2 898.9,319.8 900.2,321.7" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M900.3,321.6 C902.1,317.9 905.6,314.8 908.3,311.0" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="916.0" y="322.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Align star + Quantify bam s…</text>
+  <text x="916.0" y="322.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Align star + Quantify bam s…</text>
   <rect x="1110.0" y="306.0" width="62.0" height="22.0" rx="4" fill="#e7f5ff" fill-opacity="1"/>
   <path d="M1109.9,306.0 C1129.9,305.6 1150.9,306.5 1172.2,305.7" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1172.2,306.3 C1172.6,313.7 1172.5,319.9 1172.1,328.0" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1171.7,328.0 C1150.8,328.7 1131.5,328.8 1110.3,328.3" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1110.0,327.5 C1110.7,321.6 1109.4,312.4 1110.5,305.8" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
-  <text x="1141.0" y="322.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
+  <text x="1141.0" y="322.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
   <rect x="1180.0" y="313.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="1180.0" y="313.0" width="56.0" height="10.0" rx="4" fill="#d0bfff" fill-opacity="1"/>
-  <text x="1372.0" y="322.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">145 of 145 · Done</text>
-  <text x="878.0" y="354.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">⌄</text>
+  <text x="1372.0" y="322.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">145 of 145 · Done</text>
+  <text x="878.0" y="354.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">⌄</text>
   <path d="M896.0,343.0 L908.0,343.0 L902.0,349.0 Z" fill="#fff9db" stroke="none"/>
   <path d="M896.2,343.0 C900.4,342.5 904.4,342.5 907.8,342.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M908.4,343.0 C906.4,344.8 904.0,347.3 901.7,349.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
@@ -163,30 +163,30 @@
   <path d="M902.1,349.0 C903.7,351.4 906.7,352.4 908.1,355.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M908.2,355.0 C903.9,355.8 899.7,355.4 896.2,354.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M895.8,355.1 C897.4,353.4 899.2,351.5 901.7,348.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="916.0" y="354.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Bam markduplicates picard</text>
+  <text x="916.0" y="354.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Bam markduplicates picard</text>
   <rect x="1110.0" y="338.0" width="62.0" height="22.0" rx="4" fill="#e7f5ff" fill-opacity="1"/>
   <path d="M1110.5,338.3 C1131.4,338.9 1151.3,338.0 1171.7,338.2" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1172.3,338.5 C1171.4,345.3 1172.5,352.5 1172.1,360.0" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1172.2,360.2 C1151.6,360.6 1129.9,361.0 1110.4,360.3" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1109.8,359.8 C1110.8,351.7 1110.7,346.3 1109.7,338.4" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
-  <text x="1141.0" y="354.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
+  <text x="1141.0" y="354.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
   <rect x="1180.0" y="345.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="1180.0" y="345.0" width="44.8" height="10.0" rx="4" fill="#a5d8ff" fill-opacity="1"/>
-  <text x="1372.0" y="354.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">96 of 120 · Running</text>
-  <text x="932.0" y="386.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">PICARD_MARKDUPLICATES</text>
+  <text x="1372.0" y="354.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">96 of 120 · Running</text>
+  <text x="932.0" y="386.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">PICARD_MARKDUPLICATES</text>
   <rect x="1180.0" y="377.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="1180.0" y="377.0" width="56.0" height="10.0" rx="4" fill="#d0bfff" fill-opacity="1"/>
-  <text x="1372.0" y="386.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">20 of 20 · Done</text>
-  <text x="932.0" y="412.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">SAMTOOLS_INDEX</text>
+  <text x="1372.0" y="386.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">20 of 20 · Done</text>
+  <text x="932.0" y="412.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">SAMTOOLS_INDEX</text>
   <rect x="1180.0" y="403.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="1180.0" y="403.0" width="56.0" height="10.0" rx="4" fill="#d0bfff" fill-opacity="1"/>
-  <text x="1372.0" y="412.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">20 of 20 · Done</text>
-  <text x="932.0" y="438.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">SAMTOOLS_STATS</text>
+  <text x="1372.0" y="412.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">20 of 20 · Done</text>
+  <text x="932.0" y="438.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">SAMTOOLS_STATS</text>
   <rect x="1180.0" y="429.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="1180.0" y="429.0" width="44.8" height="10.0" rx="4" fill="#a5d8ff" fill-opacity="1"/>
-  <text x="1372.0" y="438.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">16 of 20 · Running</text>
-  <text x="932.0" y="464.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">… 3 more processes</text>
-  <text x="878.0" y="494.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
+  <text x="1372.0" y="438.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">16 of 20 · Running</text>
+  <text x="932.0" y="464.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">… 3 more processes</text>
+  <text x="878.0" y="494.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
   <path d="M896.0,483.0 L908.0,483.0 L902.0,489.0 Z" fill="#fff9db" stroke="none"/>
   <path d="M895.7,482.9 C899.4,482.5 903.3,483.1 907.7,483.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M907.8,482.7 C906.1,484.6 904.0,487.2 901.7,488.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
@@ -195,17 +195,17 @@
   <path d="M902.1,489.0 C904.6,490.6 906.3,493.6 908.2,494.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M907.6,494.9 C904.6,495.7 899.5,494.6 896.1,495.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M896.1,495.3 C897.6,492.6 899.5,490.2 901.8,489.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="916.0" y="494.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Bam qc rnaseq</text>
+  <text x="916.0" y="494.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Bam qc rnaseq</text>
   <rect x="1110.0" y="478.0" width="62.0" height="22.0" rx="4" fill="#e7f5ff" fill-opacity="1"/>
   <path d="M1110.3,478.2 C1130.3,478.2 1151.6,478.5 1171.9,478.3" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1172.2,478.4 C1171.4,484.4 1172.3,493.7 1171.6,499.8" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1171.6,500.2 C1151.8,500.5 1130.5,499.7 1109.9,499.6" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1110.3,500.0 C1110.5,492.6 1109.5,485.9 1110.3,477.6" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
-  <text x="1141.0" y="494.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
+  <text x="1141.0" y="494.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
   <rect x="1180.0" y="485.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="1180.0" y="485.0" width="10.9" height="10.0" rx="4" fill="#a5d8ff" fill-opacity="1"/>
-  <text x="1372.0" y="494.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">46 of 236 · Running</text>
-  <text x="878.0" y="526.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
+  <text x="1372.0" y="494.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">46 of 236 · Running</text>
+  <text x="878.0" y="526.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
   <path d="M896.0,515.0 L908.0,515.0 L902.0,521.0 Z" fill="#fff9db" stroke="none"/>
   <path d="M896.0,515.1 C900.2,515.2 904.3,515.6 907.9,514.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M907.9,514.8 C906.3,517.3 904.8,518.7 901.9,521.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
@@ -214,17 +214,17 @@
   <path d="M902.1,521.0 C903.6,522.4 906.6,525.5 908.0,526.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M907.7,526.9 C904.7,527.0 899.9,526.7 895.7,526.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M896.0,526.9 C898.1,525.5 900.6,522.4 902.4,521.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="916.0" y="526.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Bedtools genomecov fw + …</text>
+  <text x="916.0" y="526.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Bedtools genomecov fw + …</text>
   <rect x="1110.0" y="510.0" width="62.0" height="22.0" rx="4" fill="#e7f5ff" fill-opacity="1"/>
   <path d="M1109.6,510.0 C1130.3,509.5 1151.3,509.9 1172.4,510.3" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1172.4,509.7 C1172.6,516.7 1171.7,525.5 1171.8,531.5" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1172.1,532.0 C1151.5,532.9 1130.9,532.1 1109.9,532.4" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1109.9,532.1 C1109.8,524.0 1110.3,517.9 1109.6,509.9" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
-  <text x="1141.0" y="526.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
+  <text x="1141.0" y="526.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
   <rect x="1180.0" y="517.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="1180.0" y="517.0" width="1.8" height="10.0" rx="4" fill="#a5d8ff" fill-opacity="1"/>
-  <text x="1372.0" y="526.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">2 of 62 · Running</text>
-  <text x="878.0" y="558.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
+  <text x="1372.0" y="526.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">2 of 62 · Running</text>
+  <text x="878.0" y="558.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
   <path d="M896.0,547.0 L908.0,547.0 L902.0,553.0 Z" fill="#fff9db" stroke="none"/>
   <path d="M896.2,547.2 C899.8,547.6 903.6,546.4 907.7,546.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M908.1,547.3 C905.3,549.6 904.7,551.6 901.7,552.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
@@ -233,17 +233,17 @@
   <path d="M901.8,553.2 C903.6,554.8 905.7,556.9 907.9,559.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M907.7,559.0 C904.3,559.3 899.5,559.2 895.9,559.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M896.4,559.3 C897.7,557.4 900.7,555.1 901.9,552.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="916.0" y="558.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Quantify pseudo alignment</text>
+  <text x="916.0" y="558.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Quantify pseudo alignment</text>
   <rect x="1110.0" y="542.0" width="62.0" height="22.0" rx="4" fill="#e7f5ff" fill-opacity="1"/>
   <path d="M1110.4,542.2 C1130.9,542.7 1151.5,541.8 1172.5,541.6" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1171.9,541.6 C1172.4,549.8 1171.7,556.7 1172.5,563.9" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1171.6,564.4 C1152.1,563.1 1130.1,563.4 1110.1,564.0" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1110.0,564.1 C1109.7,556.2 1110.5,548.8 1110.0,541.9" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
-  <text x="1141.0" y="558.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
+  <text x="1141.0" y="558.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
   <rect x="1180.0" y="549.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
   <rect x="1180.0" y="549.0" width="47.0" height="10.0" rx="4" fill="#a5d8ff" fill-opacity="1"/>
-  <text x="1372.0" y="558.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">21 of 25 · Running</text>
-  <text x="878.0" y="590.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
+  <text x="1372.0" y="558.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">21 of 25 · Running</text>
+  <text x="878.0" y="590.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#5c5c5c" text-anchor="start" font-weight="normal">›</text>
   <path d="M896.0,579.0 L908.0,579.0 L902.0,585.0 Z" fill="#fff9db" stroke="none"/>
   <path d="M896.4,578.9 C899.3,579.7 904.6,578.4 908.0,579.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M908.1,579.0 C905.2,580.7 904.3,583.7 902.3,585.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
@@ -252,30 +252,30 @@
   <path d="M902.4,585.0 C904.2,587.5 906.4,589.6 908.3,591.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M907.8,590.8 C904.3,590.9 899.7,591.8 895.9,591.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M895.8,591.1 C897.5,588.9 899.6,587.7 902.3,584.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="916.0" y="590.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Report</text>
+  <text x="916.0" y="590.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">Report</text>
   <rect x="1110.0" y="574.0" width="62.0" height="22.0" rx="4" fill="#e7f5ff" fill-opacity="1"/>
   <path d="M1109.8,574.4 C1130.6,574.7 1151.9,574.5 1172.1,573.7" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1172.0,573.8 C1172.2,581.7 1171.7,588.9 1172.1,595.5" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1172.2,595.9 C1151.7,595.5 1130.6,595.3 1110.4,596.3" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
   <path d="M1109.5,596.1 C1110.4,588.1 1109.1,580.6 1109.7,574.4" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round"/>
-  <text x="1141.0" y="590.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
+  <text x="1141.0" y="590.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="11" fill="#1e1e1e" text-anchor="middle" font-weight="normal">Detected</text>
   <rect x="1180.0" y="581.0" width="56.0" height="10.0" rx="4" fill="#dee2e6" fill-opacity="1"/>
-  <text x="1372.0" y="590.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">0 of 1 · Pending</text>
-  <text x="880.0" y="630.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">a process in no stage → "Not in a stage";</text>
-  <text x="880.0" y="650.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">no stage → the flat list, "No stages for this pipeline"</text>
-  <text x="1406.0" y="200.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">stages in order, each with</text>
-  <text x="1406.0" y="222.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">its word, n of m tasks and</text>
-  <text x="1406.0" y="244.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Declared or Detected</text>
-  <text x="1406.0" y="330.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">state words (§4.4 note):</text>
-  <text x="1406.0" y="354.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">Pending → not_started</text>
-  <text x="1406.0" y="376.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">Running → running</text>
-  <text x="1406.0" y="398.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">Done → completed</text>
-  <text x="1406.0" y="420.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">Failed → failed</text>
-  <text x="1406.0" y="442.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">Not run → skipped</text>
-  <text x="1406.0" y="500.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">processes keyed by</text>
-  <text x="1406.0" y="522.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">fully qualified name, shown</text>
-  <text x="1406.0" y="544.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">by its last segment</text>
-  <text x="1406.0" y="600.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">how stages are found:</text>
-  <text x="1406.0" y="622.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">ui-spec §5.1.1 (APPLY6)</text>
-  <text x="40.0" y="786.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Sources: design/ui-canvas/LiteRunDetail.dc.html at 1abd5dd (before) and after this step; ui-spec §4.4 note 2026-10-28; P1 Assumption 6, Tasks 18 and 20; stages from the stage detector's expected output (rnaseq-3.27.0_star_salmon_detected.json) · tools/diagrams/uilite_stages.py</text>
+  <text x="1372.0" y="590.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">0 of 1 · Pending</text>
+  <text x="880.0" y="630.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">a process in no stage → "Not in a stage";</text>
+  <text x="880.0" y="650.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">no stage → the flat list, "No stages for this pipeline"</text>
+  <text x="1406.0" y="200.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">stages in order, each with</text>
+  <text x="1406.0" y="222.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">its word, n of m tasks and</text>
+  <text x="1406.0" y="244.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Declared or Detected</text>
+  <text x="1406.0" y="330.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">state words (§4.4 note):</text>
+  <text x="1406.0" y="354.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">Pending → not_started</text>
+  <text x="1406.0" y="376.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">Running → running</text>
+  <text x="1406.0" y="398.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">Done → completed</text>
+  <text x="1406.0" y="420.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">Failed → failed</text>
+  <text x="1406.0" y="442.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#5c5c5c" text-anchor="start" font-weight="normal">Not run → skipped</text>
+  <text x="1406.0" y="500.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">processes keyed by</text>
+  <text x="1406.0" y="522.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">fully qualified name, shown</text>
+  <text x="1406.0" y="544.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">by its last segment</text>
+  <text x="1406.0" y="600.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="normal">how stages are found:</text>
+  <text x="1406.0" y="622.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">ui-spec §5.1.1 (APPLY6)</text>
+  <text x="40.0" y="786.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Sources: design/ui-canvas/LiteRunDetail.dc.html at 1abd5dd (before) and after this step; ui-spec §4.4 note 2026-10-28; P1 Assumption 6, Tasks 18 and 20; stages from the stage detector's expected output (rnaseq-3.27.0_star_salmon_detected.json) · tools/diagrams/uilite_stages.py</text>
 </svg>
