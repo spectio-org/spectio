@@ -136,6 +136,7 @@ nav:
           - "R8: depictio drift": reviews/R8-depictio.md
           - "R9: landscape": reviews/R9-landscape.md
           - "R11: documentation": reviews/R11-docs.md
+          - "Nextflow attach verification": reviews/verification-2026-10-29-nextflow-attach.md
       - Decisions:
           - How decisions are recorded: decisions/README.md
           - Decision log: decisions/log.md

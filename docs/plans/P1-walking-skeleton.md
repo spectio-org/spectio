@@ -41,7 +41,7 @@ Decisions taken in place of Thomas, who was not available for brainstorming. Eac
 14. **Engines and their settings.** `spectio init` records how to run each engine: the `nextflow` and `snakemake` found on the login shell's `PATH`, or an explicit command (a full path, or `module load … && nextflow`), in `spectio.toml` `[engines]`. The task partition and account for the engines' SLURM executors are unset by default and configurable in `[slurm]`; the Nextflow head's heap is `NXF_OPTS=-Xmx2g` by default, configurable. The head watch (PID and exit file) runs every 5 s. *(assumed — pending Thomas)*
 15. **Head end state.** While the PID check of [schedulers §3.1.1](../specs/schedulers-and-monitoring.md) matches, the head is alive; after that, `head.exit` gives its exit code, and a head gone with no `head.exit` (killed, or a login-node reboot) exited unknown. A head that ended with no terminal engine event within 60 s makes the run `failed`, class `head_lost` or `engine_fault` ([api §7.1](../specs/api-and-data-model.md)). *(assumed — pending Thomas, inbox #40)*
 16. **Snakemake mapping** (api §7.2 says **[to be validated]**). `job_info` creates the task (rule + wildcards) and an attempt; `job_started` gives `running` (Snakemake reports no separate submit); `job_finished` gives `succeeded`; `job_error` gives `failed`. A `job_started` on the same `jobid` after a failure opens attempt n + 1 ([T2](../research/spike-engine-events-2026-10-28.md)). A Snakemake launch succeeds when the head exits 0 and no `error` record arrived. A Nextflow launch ends on `onFlowComplete.success`. *(assumed — pending Thomas)*
-17. **Bridge delivery.** `nf-spectio` is unpacked into `$NXF_HOME/plugins/nf-spectio-<ver>/`, as [architecture §7.3](../specs/architecture-plugins-and-packaging.md) says. The Snakemake logger is copied to `<launch>/.spectio/pylib/` and put on `PYTHONPATH`, so compute nodes read it from the run directory. *(assumed — pending Thomas)*
+17. **Bridge delivery.** `nf-spectio` is unpacked into `$NXF_HOME/plugins/nf-spectio-<ver>/`, as [architecture §7.3](../specs/architecture-plugins-and-packaging.md) says, and enabled by `NXF_PLUGINS_DEFAULT=nf-spectio@<ver>` in the head script, not `-plugins` (inbox #69, decided 2026-10-29). The Snakemake logger is copied to `<launch>/.spectio/pylib/` and put on `PYTHONPATH`, so compute nodes read it from the run directory. *(assumed — pending Thomas)*
 18. **Minimal tenancy.** `spectio init` creates one principal (the Unix user), one project `default`, one environment (kind `slurm`, or `local` with `--local`) and its runner row. There are no groups. Every tenant row keeps `project_id` ([`mvp-0.0.1.md`](../specs/mvp-0.0.1.md) §4). *(assumed — pending Thomas)*
 19. **Where the tests run.** The Playwright smoke runs against `spectio serve` on the local executor on the CI runner. The sind end-to-end tests drive the HTTP API from inside the submitter node, as a browser behind a tunnel would. *(assumed — pending Thomas)*
 20. **Ultra-simple screens.** The launch form has no stepper, no review step and no file checks. Logs are the head stdout and stderr and the engine run log, last 64 KiB; per-task logs come later. Sessions last until the server restarts. *(assumed — pending Thomas)* *Reversed in part 2026-10-28 (Thomas: "Je veux également que ça soit possible de voir les logs globaux et les lots et stout err log sh et autres de chaque job si possible via workdir", [log](../decisions/log.md#2026-10-28-001-shows-each-jobs-files-and-gains-resume-failure-summary-results-copy-and-resources)): each job's own files and its work directory are in 0.0.1 (Task 28), with the failure summary, Resume, results, the copy actions and resources (Tasks 29 to 32); the run logs keep the last 64 KiB.*
@@ -323,6 +323,8 @@ def test_init_records_engine_commands(fakebin):  # nextflow on the login shell's
                                                 # --nextflow "module load X && nextflow" → kept as given
 def test_doctor_reports_engines(fakebin):  # "ok nextflow 26.10.4 /…/nextflow", "fail snakemake not found on PATH"
 def test_doctor_reports_fs_and_sqlite(tmp_path): ...  # db dir on nfs4 (fake mounts) → fail; SQLite version line
+def test_doctor_nxf_plugins_default(monkeypatch): ...  # unset → "ok" with the one-shot line for terminal runs; "false"
+                                                # or a list without nf-spectio → warn (architecture §13.8, inbox #69)
 def test_init_defaults_unattended(tmp_path, monkeypatch):  # no flags, stdin closed → no prompt; data dir, db dir
                                                 # and runs root take their defaults; spectio.toml records them
 ```
@@ -356,8 +358,10 @@ def test_init_defaults_unattended(tmp_path, monkeypatch):  # no flags, stdin clo
 ```python
 def test_head_script_shell_metacharacters(tmp_path):  # location "/p/a b'$(x)", param "x\n$(rm -rf ~)" →
                                                       # `bash -n` OK; the value only in params.json; no "$(rm" in head.sh
-def test_head_script_nextflow_args():   # "-params-file", "-plugins nf-spectio@0.0.1", "-c .spectio/spectio.config"
-                                        # note 2026-10-28: how nf-spectio is loaded is open, inbox #69; mechanism unchanged
+def test_head_script_nextflow_args():   # "-params-file", "-c .spectio/spectio.config", export NXF_PLUGINS_DEFAULT=nf-spectio@0.0.1,
+                                        # no "-plugins" (inbox #69, decided 2026-10-29)
+def test_nfcore_style_pins_kept(nf_run): ...  # engines: a pipeline declaring nf-schema@2.7.2 → the run resolves both
+                                        # nf-schema@2.7.2 and nf-spectio@0.0.1 (FC-318; no registry release of nf-spectio)
 def test_head_script_snakemake_args():  # "--logger spectio", "--configfile", PYTHONPATH=<launch>/.spectio/pylib
 def test_engine_missing_and_too_old(fakebin):  # no nextflow → class engine_missing; "24.10.0" → engine_version,
                                                # message names the path and the version
@@ -372,7 +376,7 @@ def test_head_env_cleared(tmp_path, monkeypatch): ...  # SPECTIO_SERVER_X=1 in t
 ```
 
 - [ ] **Step 2:** `uv run pytest packages/spectio/tests/test_headscript.py packages/spectio/tests/test_local_launcher.py -v`: FAIL.
-- [ ] **Step 3:** implement Assumptions 13 and 17. Bridges come from `bridge_dir() -> Path` (`importlib.resources` in an installed wheel, Task 21; `$SPECTIO_BRIDGES_DIR` pointing at the Task 6 and 7 build output in a checkout). Nextflow: write `.spectio/spectio.config` (`process.executor = 'slurm'` and `queue` on a SLURM environment) and unpack `nf-spectio` into `$NXF_HOME/plugins`. Snakemake: pass `--executor slurm` on SLURM, plus `--workflow-profile <location>/profiles/<p>` when a profile is given, plus the environment's `extra_args`. Run directories are `<runs_root>/<run_id>/{launch,work}`.
+- [ ] **Step 3:** implement Assumptions 13 and 17. Bridges come from `bridge_dir() -> Path` (`importlib.resources` in an installed wheel, Task 21; `$SPECTIO_BRIDGES_DIR` pointing at the Task 6 and 7 build output in a checkout). Nextflow: write `.spectio/spectio.config` (`process.executor = 'slurm'` and `queue` on a SLURM environment) and unpack `nf-spectio` into `$NXF_HOME/plugins`; the head script exports `NXF_PLUGINS_DEFAULT=nf-spectio@<ver>`, never passes `-plugins` (0.0.1 has no `k8s` executor, so the `nf-k8s` addition of §13.8 is not built here) ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal), inbox #69 decided 2026-10-29). Snakemake: pass `--executor slurm` on SLURM, plus `--workflow-profile <location>/profiles/<p>` when a profile is given, plus the environment's `extra_args`. Run directories are `<runs_root>/<run_id>/{launch,work}`.
 - [ ] **Step 4:** the same command PASSES.
 - [ ] **Step 5: Commit** `feat(runner): head script, local launcher and runner loop`.
 
@@ -858,7 +862,7 @@ def test_stdlib_only(): ...                                # every import in spe
 
 **Files:**
 - Modify: `engine-bridges/nf-spectio/src/spectio/SpectioPlugin.groovy` and `engine-bridges/snakemake-logger-plugin-spectio/snakemake_logger_plugin_spectio/__init__.py` (run ID, spool file names, pointer, the fd-relative writes of req. 12), `packages/spectio/src/spectio/runner/loop.py` (scan when `observed/` changes), `packages/spectio-server/src/spectio_server/rebuild.py` (read the pointers), `packages/spectio-server/src/spectio_server/api/{cancel.py,logs.py}` (422 on a `cli-observed` run, [api §5.1](../specs/api-and-data-model.md) note; the log checks of req. 12), `web/src/runs/{RunsPage.tsx,RunDetailPage.tsx}` (the "started from a terminal" mark; no Cancel), `tools/docs/check.py` (install lines pin versions), `mkdocs.yml`
-- Create: `packages/spectio/src/spectio/runner/observed.py`, `docs/guides/runs-from-a-terminal.md` (the setup of architecture §13.8; merged only once the names are claimed, inbox #66; how `nf-spectio` is loaded is open, [inbox #69](../reviews/inbox.md#69-nf-spectio-is-enabled-in-a-way-that-breaks-nf-core-runs-or-drops-the-bridge), note 2026-10-28)
+- Create: `packages/spectio/src/spectio/runner/observed.py`, `docs/guides/runs-from-a-terminal.md` (the setup of architecture §13.8: for Nextflow the one-shot `NXF_PLUGINS_DEFAULT=nf-spectio@<ver> nextflow run …`, the shell-profile `export` as opt-in, and the Seqera Platform Head job variable; merged only once the names are claimed, inbox #66; [inbox #69](../reviews/inbox.md#69-nf-spectio-is-enabled-in-a-way-that-breaks-nf-core-runs-or-drops-the-bridge) decided 2026-10-29)
 - Test: `packages/spectio/tests/test_observed.py`; the bridge tests of Tasks 6 and 7
 
 **Interfaces:**
