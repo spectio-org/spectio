@@ -91,6 +91,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
   - (c) stay under `weber8thomas` until 0.1.0.
 - **Recommendation:** (a) or (b), decided before 0.1.0, with the names reserved then. **Assumed:** (c).
 - **Answer (Thomas, 2026-10-26):** (c) for now; to be moved later. *Handled.*
+- **Update (Thomas, 2026-10-29):** (a). The repository moved to the `spectio-org` organization (`spectio` was taken) before the first PyPI upload, so the trusted publishers and the `0.0.0` packages use it ([decision log](../decisions/log.md#2026-10-29-the-repository-moves-to-the-spectio-org-organization)). *Decided.*
 
 ### #10 · Create the Cloudflare account and the two secrets (dev previews)
 
@@ -1014,6 +1015,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Your part:** claim the plugin ID `nf-spectio` in the registry and the three PyPI names, and say whether the §12 default holds for the bridges.
 - **Assumed:** none. Task 26 stops at the dry run.
 - **Blocked:** the merge of the terminal-runs guide of P1 Task 25 (until then it installs the copies bundled in the wheel), and the first real release of the bridges. The rest of P1 is not blocked.
+- **Status 2026-10-29:** the procedure is checked and written down in [Claim the package names](../developer/claim-package-names.md): claim `nf-spectio` on the registry (an approved claim should hold it with no release; inferred from the docs, refusal of a second claimant not stated), then for each PyPI name add a pending publisher and run `pypi-publish.yml` at once, since a pending publisher alone holds nothing ([verification](verification-2026-10-29-names.md), FC-314 to FC-317). Two choices are yours: the provider string typed in the registry claim, and the placeholder version (`0.0.0` proposed). Also open: the Snakemake catalogue reads `docs/intro.md` at the root of this repository, where `docs/` is the MkDocs site, so the logger's catalogue page needs a home (verification, open point 9). *Still open until the four names are held.*
 
 ### #67 · Assumed: the engine setup is documented, not automated, in 0.0.1
 
@@ -1056,6 +1058,8 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a): one way for launched and terminal runs, no configuration parsing, and checked on a real nf-core pipeline, with the caveat that its list form is undocumented. `spectio doctor` could warn when a `plugins` block in `$NXF_HOME/config` names `nf-spectio`.
 - **Assumed:** none: the specs still say `-plugins`, and this changes how the bridge is enabled.
 - **Blocked:** P1 Task 9 for real nf-core pipelines, and the Nextflow part of the Task 25 guide. The synthetic tests are not blocked.
+- **Answer (Thomas, 2026-10-29, session):** "Ok pour ta recommandation pour la question 2", the recommendation after the [attach verification](verification-2026-10-29-nextflow-attach.md) (FC-318 to FC-321): (a), narrowed. `nf-spectio` is enabled only by `NXF_PLUGINS_DEFAULT=nf-spectio@<ver>` set per run in the environment, never through `-plugins`, `-c`, a config file or a profile. Runs Spectio launches: the head script exports it, adding `nf-k8s` only on Nextflow 25.10.x with the `k8s` executor (object-store work directories start their plugin lazily). Runs started from a terminal: the one-shot prefix `NXF_PLUGINS_DEFAULT=nf-spectio@<ver> nextflow run …` is the documented way, a shell-profile `export` is opt-in, and `spectio doctor` checks it. Seqera Platform: a Head job variable of the compute environment, or an `export` in the pre-run script; `nf-tower` is still added. Weblog is not used. 0.0.1 needs no registry release: Spectio places the pinned plugin in `$NXF_PLUGINS_DIR`. The risk (the code's merge contradicts the Nextflow docs) is covered by the `nextflow-edge.yml` check and an upstream issue, drafted in the verification. Applied the same day ([decision log](../decisions/log.md#2026-10-29-nf-spectio-is-enabled-with-nxf_plugins_default-set-per-run)). *Decided.*
+- **Assumed from the decision** (spec review of the apply, SR-422, SR-423, SR-426) *(assumed from the decision — pending Thomas)*: the shell-profile export is opt-in, offered by `spectio login` with default no, and written as one marked block to `~/.bashrc` or `~/.zshrc`; Spectio itself deposits the wheel's jar in `$NXF_PLUGINS_DIR/nf-spectio-<ver>/` (`spectio init`); `spectio doctor` fails loudly when the variable names a version whose directory is missing ([architecture §13.8](../specs/architecture-plugins-and-packaging.md#138-runs-started-from-a-terminal)). Overrule any of the three here.
 
 ### #70 · Assumed: what the job file viewer shows, and Spectio calling `sacct`
 
@@ -1069,7 +1073,18 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - `.command.run`: (a) shown with every `export` value replaced by `«hidden»`; (b) shown as it is; (c) not shown. **Assumed:** (a), so the `#SBATCH` header stays readable;
   - Snakemake job command: (a) not stored, the drawer shows the rule logs and the SLURM log only; (b) store `shellcmd` and show it as the job's script. **Assumed:** (a);
   - SLURM logs: (a) runs Spectio launches keep every job's SLURM log; (b) the plugin's default. **Assumed:** (a); the logs live in the run directory;
-  - `sacct`: (a) once per failed Nextflow attempt, and in batches of 100 at most once a minute for Snakemake resources, with `[slurm] accounting = false` to turn it off; (b) only for failed jobs; (c) never. **Assumed:** (a), **[to be validated]** with the EMBL cluster admins.
+  - `sacct`: (a) one limiter for the whole server (one call in flight, at most one call a minute, at most 100 job IDs per call), Nextflow failures fetched when first opened and batched like Snakemake resources, never during an index rebuild, with `[slurm] accounting = false` to turn it off (dev-env §15.3 req. 15, revised by SEC-153); (b) only for failed jobs; (c) never. **Assumed:** (a), **[to be validated]** with the EMBL cluster admins.
 - **Recommendation:** the assumed options.
 - **Blocked:** nothing; P1 plans with them.
 
+### #71 · Deny agent sessions the commands that start or approve a publish
+
+- **Covers:** [Claim the package names](../developer/claim-package-names.md) §2.2 and §4; `.github/workflows/pypi-publish.yml`; `.claude/settings.json` (permissions, CODEOWNERS); [autopilot §4](../playbooks/autopilot.md) (permissions).
+- **Context:** the name-claim review (SEC-1, [record](code/NAMES.md)) found that the only guard on a PyPI publish is the `pypi-*` environments' required reviewer. An agent session holding a token of the reviewer's account with `actions:write`, or the right to approve deployments, could start the workflow and approve its own run. `.claude/settings.json` denies force-push and branch deletion today, not these commands. Claude does not change its own permissions.
+- **Options:**
+  - (a) add deny rules for `gh workflow run *`, `gh api *pending_deployments*`, `gh api */dispatches*` and `gh run rerun *` to `.claude/settings.json` (and `tools/autopilot/claude-settings.json`). Cost: the autopilot can no longer re-run a failed CI job with `gh run rerun` or start a workflow by hand; a person does it;
+  - (b) no deny rules; rely on the environments' required reviewer, admin bypass off, and no agent token with `actions:write`. Cost: one misconfigured token is enough to publish;
+  - (c) (a) for the publish-related calls only (`pending_deployments`, `dispatches`, and `gh workflow run pypi-publish*`), keeping `gh run rerun`. Cost: rules that match command text can be sidestepped by other spellings.
+- **Recommendation:** (a): the autopilot rarely needs these commands, and a publish should always start from a person.
+- **Blocked:** nothing; the first run of `pypi-publish.yml` should wait for this answer.
+- **Update (Thomas, 2026-10-29):** no required reviewer on the `pypi-*` environments ("pas grave si on publie, on fera des patchs"). Option (b) no longer applies: without the reviewer, starting the workflow on `main` is enough to publish, so the choice is between (a) or (c) and no rule at all.

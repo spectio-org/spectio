@@ -96,6 +96,7 @@ nav:
   - Developer:
       - developer/index.md
       - Documentation map: map.md
+      - Claim the package names: developer/claim-package-names.md
       - Glossary: glossary.md
       - Progress:
           - progress/index.md
@@ -128,6 +129,7 @@ nav:
           - "R1: consistency": reviews/R1-consistency.md
           - "R2: open validations": reviews/R2-open-validations.md
           - "R2: verification table": reviews/verification-2026-10-26.md
+          - "Name-claim verification": reviews/verification-2026-10-29-names.md
           - "R3: journeys": reviews/R3-journeys.md
           - "R6: API contract": reviews/R6-contract.md
           - "R4: constraints": reviews/R4-constraints.md
@@ -136,6 +138,7 @@ nav:
           - "R8: depictio drift": reviews/R8-depictio.md
           - "R9: landscape": reviews/R9-landscape.md
           - "R11: documentation": reviews/R11-docs.md
+          - "Nextflow attach verification": reviews/verification-2026-10-29-nextflow-attach.md
       - Decisions:
           - How decisions are recorded: decisions/README.md
           - Decision log: decisions/log.md
