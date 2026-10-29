@@ -39,6 +39,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
 - **Answer with:** `done` when added.
 - **Status (2026-10-26):** a ready file is in `tools/autopilot/claude-settings.json` (the current `.claude/settings.json` plus the rules of `autopilot.md` §4; `git push origin main` is not denied, per #3). An agent may not write `.claude/settings.json` itself (refused as self-modification). Copy it with `cp tools/autopilot/claude-settings.json .claude/settings.json` and commit.
 - **Answer (Thomas, 2026-10-26):** the file was copied to `.claude/settings.json` on `main` (`7dd8488`), at Thomas's request. The permissions themselves are to be discussed again. *Open.*
+- **Answer (Thomas, 2026-10-29T12:50:30.531Z, dashboard):** what still needs to be done ? *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #5 · Clean git history before the repository is shared
 
@@ -714,6 +715,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
     - `nf-k8s` installed by bootstrap with a sha256;
     - `bootstrap.sh --only` in `pipelines-k8s.yml`.
   - The spec rule (dev-env §1) is accepted in TRIAGE3. The code waits for the same follow-up step as (a) of #46.
+- **Answer (Thomas, 2026-10-29T12:50:59.176Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ## T1 (2026-10-27)
 
@@ -747,6 +749,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a), applied to §12.3 through `/apply-findings`; ui-spec and synthesis then link to §12.3 instead of restating it.
 - **Assumed:** none. §12.3 is unchanged until then.
 - **Blocked:** nothing.
+- **Answer (Thomas, 2026-10-29T12:53:08.948Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ## D6 (2026-10-27)
 
@@ -765,6 +768,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b), since it unblocks CI rendering without waiting on a third party; (c) until then. Nothing is sent to Excalidraw without Thomas.
 - **Assumed:** (c), unchanged from #1.
 - **Blocked:** byte-identical PNG rendering in CI (a deferred part of D6).
+- **Answer (Thomas, 2026-10-29T12:53:45.870Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #50 · D6 was built in a minimal version: the rest needs a follow-up step
 
@@ -779,6 +783,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b): nothing deferred blocks W3 or W4; mike and `shared_images.py` are due at the first versioned docs.
 - **Assumed:** none. The autopilot does not edit `pipeline.yaml`.
 - **Blocked:** nothing.
+- **Answer (Thomas, 2026-10-29T12:54:20.758Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ## T3 / T4 (2026-10-28)
 
@@ -798,6 +803,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Update (2026-10-28, 09:50):** spike `t4-ci` ran T4's whole scope on GitHub-hosted runners in 2 push iterations: kind and Kueue, the synthetic pipeline with `-profile k8s` on Nextflow 26.10.4 and 25.10.9 (65/65 tasks each), a real `OOMKilled`, Workloads waiting for quota, both §4 ServiceAccounts. One loop takes 4–5 minutes. The fixtures came back from the job log, and this session could also download full logs and an artifact, contrary to the context above ([note on branch `spike/t4-ci`](https://github.com/weber8thomas/spectio/blob/spike/t4-ci/docs/research/spike-t4-ci-2026-10-28.md)). Spike `t3-ci` (sind `slurm-site`) is still running.
 - **Assumed:** (b), CI-driven, *assumed — pending Thomas, inbox #51*. Thomas cannot answer before 14:00 and asked the autopilot to go on and keep only critical decisions for later (session, 2026-10-28 09:45). (b) is reversible: the profiles and fixtures are the same on his machine, only the place where the loop runs changes. T4 starts CI-driven; T3 starts once spike `t3-ci` shows sind works on a runner.
 - **Blocked:** nothing while (b) holds.
+- **Answer (Thomas, 2026-10-29T12:55:10.850Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ## Direction (2026-10-28)
 
@@ -840,6 +846,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a): least privilege, measured, and CI catches the next missing call.
 - **Assumed:** none (reserved).
 - **Blocked:** schedulers §4 RBAC text. Nothing in 0.0.1. The fact part of SPK-T4-02 (drop "[to be validated on k8s-mini]" for `pods: create`) can be applied now.
+- **Answer (Thomas, 2026-10-29T12:56:15.003Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #54 · Kubernetes work namespace: task-pod tokens and a shared namespace
 
@@ -855,6 +862,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a). It matches "one runner per user" of #14 (a). Turning the task token off costs nothing and could be written now.
 - **Assumed:** none (reserved).
 - **Blocked:** architecture §7.5 runner sub-chart; schedulers §4. Nothing in 0.0.1.
+- **Answer (Thomas, 2026-10-29T12:56:47.149Z, dashboard):** K8S to be discussed later *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #55 · What engine events may carry: task `script` and `env`, user, host and command line
 
@@ -872,6 +880,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a). The UI can still show the command (read on demand), and nothing that may hold a secret leaves the cluster by default.
 - **Assumed:** none (reserved).
 - **Blocked:** architecture §13.5 wording; the payload rules of api §14 (inbox #36 apply pass).
+- **Answer (Thomas, 2026-10-29T12:57:57.029Z, dashboard):** why not like tower ? what justify not sending script and env ? *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #56 · Assumed: the state of a task still open when the run ends
 
@@ -930,6 +939,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a). It keeps "runs as the user" from the CLI transport, and a stolen runner token is worth one user's jobs for a short time.
 - **Assumed:** none (reserved).
 - **Blocked:** schedulers §3.3 slurmrestd row. Nothing in 0.0.1.
+- **Answer (Thomas, 2026-10-29T12:58:21.973Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #60 · Assumed: who builds the deferred SLURM coverage
 
@@ -1000,6 +1010,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Note 2026-10-28 (SEC-141):** also to check on EMBL storage: whether inherited NFSv4 ACLs widen the 0700 and 0600 modes that Spectio and the bridges set **[to be validated]** ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 12).
 - **Blocked:** nothing in CI; the real-cluster checks of P1 Tasks 8 and 24 confirm the temporary directory.
 - **Note 2026-10-29 (Thomas):** he does not know which directory is node-local on the login nodes; an agent tests it later on a real EMBL login node, with whether BeeGFS locks are safe for SQLite **[to be validated]** ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes)). (d) stays assumed.
+- **Answer (Thomas, 2026-10-29T13:00:16.436Z, dashboard):** Runners will have their sqllite independtly of the server at the end ? For the MVP I guess we can start simple and keep the sqlite in the home folder of people (backed up drives ; tier1) *Open (needs Thomas's confirmation in a session or commit).*
 
 
 ## Runs started from a terminal (2026-10-28)
