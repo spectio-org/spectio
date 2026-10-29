@@ -2,7 +2,7 @@
 
 ## Excalifont (since 2026-10-29)
 
-Thomas, 2026-10-29: "font utilisé pour diagram n'est pas bonne ; prends en une autre"; from six candidates rendered on the same figure, he chose Excalifont, Excalidraw's own successor to Virgil. Its advance widths are close to Virgil's (39.65 against 39.83 em for a sample line), so the figures kept their layout.
+Thomas, 2026-10-29: "font utilisé pour diagram n'est pas bonne ; prends en une autre"; from six candidates rendered on the same figure, he chose Excalifont, Excalidraw's own successor to Virgil. Its widths are close to Virgil's (the summed advance widths of "The quick brown fox jumps over the lazy dog", without kerning, are 22.02 em against Virgil's 22.16), so the figures kept their layout.
 
 **The file.** The font is **not committed**, as Virgil was not (inbox #1). `docs/fonts/*.ttf` is git-ignored; each contributor sets `SPECTIO_SKETCH_TTF` or puts the file at `docs/fonts/Excalifont.ttf`. `sketch.py` stops instead of writing a PNG when the file is missing. To make it:
 

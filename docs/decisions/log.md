@@ -840,3 +840,5 @@ Step page: [APPLY8](../progress/W4/APPLY8.md).
 - **Decided (Thomas, 2026-10-29):** Excalifont, Excalidraw's own successor to Virgil.
 - **Changed:** `tools/diagrams/sketch.py` reads `SPECTIO_SKETCH_TTF` (default `docs/fonts/Excalifont.ttf`) in place of `SPECTIO_VIRGIL_TTF`, falls back to a plain sans instead of a novelty face, and stops before writing a PNG when the font file is missing. All 32 figures are re-rendered. `tools/diagrams/FONT-LICENSE.md` gives the source, its sha256 and the licence statements; [documentation-system §1 and §3](../specs/documentation-system.md) follow.
 - **Not changed:** the font stays uncommitted, as inbox #1 decided for Virgil. Excalidraw states OFL-1.1 for Excalifont, but the file carries no licence record **[to be validated]**; committing it stays Thomas's call.
+
+Step page: [FONT1](../progress/W4/FONT1.md).

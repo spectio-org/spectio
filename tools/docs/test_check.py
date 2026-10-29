@@ -4,6 +4,7 @@ import contextlib
 import importlib.util
 import io
 import pathlib
+import subprocess
 import tempfile
 import unittest
 
@@ -64,6 +65,50 @@ class ProgressHookOutput(unittest.TestCase):
         self.assertEqual(check.built_page(pathlib.PurePosixPath("roadmap/index.md")), "roadmap/index.html")
         self.assertEqual(check.built_page(pathlib.PurePosixPath("roadmap/plan.md")), "roadmap/plan/index.html")
         self.assertEqual(check.built_page(pathlib.PurePosixPath("index.md")), "index.html")
+
+
+class MediaBudget(unittest.TestCase):
+    """A new file counts in full against the budget, a changed one only by how much it grew."""
+
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.root, self.saved = pathlib.Path(self.tmp.name), (check.ROOT, check.PR_MEDIA_MAX)
+        check.ROOT, check.PR_MEDIA_MAX = self.root, 1000
+        self.git("init", "-q", "-b", "base")
+        self.commit({"fig.png": 3000})
+        self.git("checkout", "-q", "-b", "pr")
+        check.failures.clear()
+
+    def tearDown(self):
+        check.ROOT, check.PR_MEDIA_MAX = self.saved
+        self.tmp.cleanup()
+        check.failures.clear()
+
+    def git(self, *args):
+        subprocess.run(["git", "-c", "user.name=t", "-c", "user.email=t@t", *args], cwd=self.root, check=True)
+
+    def commit(self, files):
+        for name, size in files.items():
+            (self.root / name).write_bytes(b"x" * size)
+        self.git("add", "-A")
+        self.git("commit", "-qm", "c")
+
+    def run_check(self):
+        with contextlib.redirect_stdout(io.StringIO()):
+            check.check_media_budget("base")
+        return [f for f in check.failures if f.startswith("media:")]
+
+    def test_rerendered_file_of_the_same_size_costs_nothing(self):
+        self.commit({"fig.png": 2900})
+        self.assertEqual(self.run_check(), [])
+
+    def test_growth_of_a_changed_file_counts(self):
+        self.commit({"fig.png": 4500})
+        self.assertEqual(len(self.run_check()), 1)
+
+    def test_new_file_counts_in_full(self):
+        self.commit({"new.png": 1500})
+        self.assertEqual(len(self.run_check()), 1)
 
 
 class Annotation(unittest.TestCase):

@@ -157,11 +157,19 @@ def _duration(p: pathlib.Path) -> float | None:
 
 
 def check_media_budget(base: str) -> None:
-    """New or changed media against the base branch: at most 5 MB per PR."""
-    r = subprocess.run(["git", "diff", "--name-only", "--diff-filter=AM", f"{base}...HEAD"],
-                       cwd=ROOT, capture_output=True, text=True)
-    media = [f for f in r.stdout.split() if pathlib.Path(f).suffix.lower() in MEDIA_EXT and not f.startswith("design/")]
-    total = sum((ROOT / f).stat().st_size for f in media if (ROOT / f).exists())
+    """Media growth against the base branch: at most 5 MB per PR. A new file counts in full,
+    a changed one by how much it grew, so re-rendering figures in place costs nothing."""
+    def git(*args: str) -> str:
+        return subprocess.run(["git", *args], cwd=ROOT, capture_output=True, text=True).stdout
+
+    fork = git("merge-base", base, "HEAD").strip()
+    total = 0
+    for line in git("diff", "--name-status", "--diff-filter=AM", f"{base}...HEAD").splitlines():
+        status, f = line.split("\t", 1)
+        if pathlib.Path(f).suffix.lower() not in MEDIA_EXT or f.startswith("design/") or not (ROOT / f).exists():
+            continue
+        old = int(git("cat-file", "-s", f"{fork}:{f}")) if status == "M" else 0
+        total += max(0, (ROOT / f).stat().st_size - old)
     if total > PR_MEDIA_MAX:
         fail("media", f"this change adds {total / 2**20:.1f} MB of media (max 5 MB per PR)")
     print(f"media budget: {total / 2**20:.2f} MB new or changed against {base}")
