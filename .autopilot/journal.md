@@ -385,3 +385,7 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 23:50 Promotion PR spectio-org/spectio#74 (P3 Task 1) opened into main; merge once every check passes. Dashboard rebuilt from the repository, XSS check ok.
 - 23:57 Promotion PR spectio-org/spectio#74 merged into main, merge `3dff1c6`, every check green on `c451d37` (product, docs-gate, pr-body, pipelines-synthetic and pipelines-real, security, preview, frontmatter). Dashboard republished (version 30).
 - Tick 14 ends here: budget estimate 34.4 % of the week (stop at 40 %), 3.5 points of room, and a P1 task costs about 5. Next tick: P3 Tasks 2 and 3 (give Task 3 SEC-P3T1-04 and the fresh-environment import check), board gaps G1/G2/G3a. Waiting on Thomas: confirm the 11 dashboard answers; #72, #73, #74 (assumed).
+
+## 2026-10-30 00:00 → — tick 15 (/goal, plain /autopilot)
+
+- 00:00 Sync clean. Dashboard answers: 2 new documents (#52, #71), both for handled entries, ignored. Budget check `go` (fits 1; estimate 34.4 %, room 3.5 pt). P3 Task 2 (SQLite store) dispatched on `autopilot/P3-t02`, base `fbbf55d`; the budget is re-checked before review.
