@@ -7,7 +7,7 @@
 
 <p align="center">
   <b>Launch, monitor and relaunch your Nextflow and Snakemake runs, on your own cluster.</b><br>
-  Open-source run manager for HPC and Kubernetes, part of the <a href="https://github.com/depictio/depictio">depictio</a> platform.
+  Open-source run manager for HPC and Kubernetes. A project of its own, which will connect to <a href="https://github.com/depictio/depictio">depictio</a> later.
 </p>
 
 <p align="center">
