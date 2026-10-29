@@ -1111,3 +1111,21 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Blocked:** nothing; the first run of `pypi-publish.yml` should wait for this answer.
 - **Update (Thomas, 2026-10-29):** no required reviewer on the `pypi-*` environments ("pas grave si on publie, on fera des patchs"). Option (b) no longer applies: without the reviewer, starting the workflow on `main` is enough to publish, so the choice is between (a) or (c) and no rule at all.
 - **Answer (Thomas, 2026-10-29):** first (a) ("accept recommendation ; deny", then "non recommendation était a"); then, on reading that the GitHub MCP tool would be denied whole, re-runs of CI included: no rule today ("je veux rester en mode autopilot et autonomie max"; "part la dessus ; pas besoin de blocage auj"). Claude still never starts the publish workflow on its own. To revisit before the first release with real code ([log](../decisions/log.md#2026-10-29-agent-sessions-may-start-workflows-including-a-pypi-publish-for-now)). *Handled.*
+
+## P2 (2026-10-29)
+
+### #72 · Assumed: the Paper shell in 0.0.1 leaves out search, notifications and the avatar
+
+- **Covers:** [P2 §10.1 G1 and §10.5 G4](../plans/P2-execution.md#101-g1-paper-chrome-on-the-shared-lite-board-components); [ui-spec §7](../specs/ui-spec.md#7-consistency-with-depictio-reuse-plan); [P1](../plans/P1-walking-skeleton.md) Assumption 24.
+- **Context:** the GO (2026-10-29, change 5) makes depictio's Paper chrome Spectio's look. Paper's top bar has search (⌘K), notifications and a user avatar. 0.0.1 has no users and no search, so these would be empty controls.
+- **Options and what was assumed:** (a) leave the three out of the 0.0.1 shell, keeping the floating top bar, breadcrumbs, theme toggle, foldable sidebar and phone tab bar; (b) show them disabled, as placeholders. **Assumed:** (a).
+- **Recommendation:** (a): controls that do nothing are noise and break the keyboard rules (every control must act).
+- **Blocked:** nothing; G1 and G4 proceed with (a).
+
+### #73 · Assumed: `spectio init --local` refuses to run off Linux
+
+- **Covers:** [P2 §10.7 G6](../plans/P2-execution.md#107-g6-local-mode-init-doctor-and-start-text); [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Local mode); [P1](../plans/P1-walking-skeleton.md) Assumption 23.
+- **Context:** the GO (2026-10-29, change 4) says local mode starts with Linux ("Démarre avec linux"). On macOS, `init --local` could either stop or go on with a warning.
+- **Options and what was assumed:** (a) refuse with exit 2 and "Local mode needs Linux in 0.0.1"; (b) warn and go on, untested. **Assumed:** (a); it is easy to relax later, while (b) would ship an untested path.
+- **Recommendation:** (a).
+- **Blocked:** nothing; G6 proceeds with (a).
