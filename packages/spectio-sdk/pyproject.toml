@@ -1,0 +1,11 @@
+[project]
+name = "spectio-sdk"
+version = "0.0.1"
+description = "Spectio's interfaces and event schemas, shared by the runner, the server and plugins"
+license = "MIT"
+requires-python = ">=3.11"
+dependencies = ["pydantic>=2.7,<3"]
+
+[build-system]
+requires = ["uv_build==0.11.32"]  # = UV_VERSION in dev/versions.env
+build-backend = "uv_build"

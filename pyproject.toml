@@ -1,0 +1,83 @@
+# The uv workspace of Spectio's Python packages (docs/specs/architecture-plugins-and-packaging.md §6).
+# The root is not a package: it only holds the members, the dev tools and their settings.
+[project]
+name = "spectio-workspace"
+version = "0.0.0"
+requires-python = ">=3.11"
+dependencies = ["spectio-sdk", "spectio", "spectio-server"]
+
+[dependency-groups]
+dev = [
+  "import-linter>=2.1",
+  "mypy>=1.13",
+  "pytest>=8.3",
+  "ruff>=0.8",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["packages/*"]
+
+[tool.uv.sources]
+spectio-sdk = { workspace = true }
+spectio = { workspace = true }
+spectio-server = { workspace = true }
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+# The product code and its fixture tools only; the design-phase tooling keeps its own conventions.
+include = ["packages/**/*.py", "tests/fixtures/engine-events/*.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "S", "RUF", "TID251"]
+
+# Dynamic imports would get around the import-linter contracts below (SEC-P3T1-06); the ban
+# applies to the runner package only (per-file-ignores). ruff does not resolve `__import__`:
+# packages/spectio/tests/test_static_imports.py refuses it.
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"importlib.import_module".msg = "the runner imports statically, so that lint-imports sees it"
+"importlib.__import__".msg = "the runner imports statically, so that lint-imports sees it"
+"importlib.util.spec_from_file_location".msg = "the runner imports statically, so that lint-imports sees it"
+"runpy".msg = "the runner imports statically, so that lint-imports sees it"
+
+[tool.ruff.lint.isort]
+known-first-party = ["spectio", "spectio_sdk", "spectio_server"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["S101", "S603", "TID251"]
+"packages/spectio-sdk/**" = ["TID251"]
+"packages/spectio-server/**" = ["TID251"]
+"tests/fixtures/**" = ["TID251"]
+
+[tool.mypy]
+strict = true
+plugins = ["pydantic.mypy"]
+
+[tool.pytest.ini_options]
+testpaths = ["packages"]
+addopts = ["--import-mode=importlib"]
+
+[tool.importlinter]
+root_packages = ["spectio", "spectio_server", "spectio_sdk"]
+include_external_packages = true
+
+[[tool.importlinter.contracts]]
+name = "The runner never imports the server (architecture §6)"
+type = "forbidden"
+source_modules = ["spectio"]
+forbidden_modules = ["spectio_server"]
+
+[[tool.importlinter.contracts]]
+name = "spectio has no FastAPI and no SQLAlchemy (architecture §6)"
+type = "forbidden"
+source_modules = ["spectio"]
+forbidden_modules = ["fastapi", "sqlalchemy"]
+
+[[tool.importlinter.contracts]]
+name = "spectio-sdk imports neither spectio, spectio_server, FastAPI nor SQLAlchemy (architecture §6)"
+type = "forbidden"
+source_modules = ["spectio_sdk"]
+forbidden_modules = ["spectio", "spectio_server", "fastapi", "sqlalchemy"]
