@@ -2,6 +2,8 @@
 
 *Draft, 2026-10-28. Waiting for Thomas: [inbox #52](../reviews/inbox.md). Nothing here is decided, and no product code is written until he answers.*
 
+*Note 2026-10-29: Thomas answered #52 with option (b) and gave the GO for P1, M1 to M8 ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes)).*
+
 ## Goal
 
 This is the smallest Spectio that runs end to end on one machine. It launches a Nextflow or Snakemake run, receives the engine's events as they happen, stores the run's state, and serves that state through a small API and the CLI. It is built on what W3 already proved, so that the first questions of the product are answered by running code, not by more specs:

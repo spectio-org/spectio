@@ -122,6 +122,7 @@ nav:
           - Triage policy: playbooks/triage-policy.md
           - Next phase (step prompts): playbooks/next-phase.md
           - "P1: walking-skeleton plan": plans/P1-walking-skeleton.md
+          - "P2: execution guide": plans/P2-execution.md
       - Reviews:
           - Format: reviews/README.md
           - Inbox (questions for Thomas): reviews/inbox.md

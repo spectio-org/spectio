@@ -237,6 +237,8 @@ gh variable set AUTOMERGE_MAIN --body false   # set to true to let CI merge into
 
 ## 9. Code review in the loop
 
+*Note 2026-10-29 (inbox #52 (b), [log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes)):* tooling and test-only changes need tests and one review; product code and security boundaries keep the full `review-code` below. `CLAUDE.md` still states the stricter rule until Thomas edits it.
+
 Every step that changes code, a `build` step or a spike whose code a later step reuses, goes through the `review-code` (`.claude/skills/review-code/SKILL.md`) skill. It runs after the exit check and before the docs (§7).
 
 1. **`code-reviewer`** reads only the step's prompt, the owning spec, the diff `base..HEAD` and the worker's report. It checks requirement fit, correctness, tests, and the Karpathy guidelines: simplicity first, surgical changes. It returns `approve`, `changes` or `block`. In parallel, **`security-reviewer`** reviews the same diff for every step, whatever it touches (Thomas, 2026-10-27); a step is done only when both approve, and security blockers and majors are always fixed.

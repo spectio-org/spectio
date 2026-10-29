@@ -39,6 +39,7 @@ The autopilot adds entries here; answer inline with `Answer: <option>` (and a se
 - **Answer with:** `done` when added.
 - **Status (2026-10-26):** a ready file is in `tools/autopilot/claude-settings.json` (the current `.claude/settings.json` plus the rules of `autopilot.md` §4; `git push origin main` is not denied, per #3). An agent may not write `.claude/settings.json` itself (refused as self-modification). Copy it with `cp tools/autopilot/claude-settings.json .claude/settings.json` and commit.
 - **Answer (Thomas, 2026-10-26):** the file was copied to `.claude/settings.json` on `main` (`7dd8488`), at Thomas's request. The permissions themselves are to be discussed again. *Open.*
+- **Answer (Thomas, 2026-10-29T12:50:30.531Z, dashboard):** what still needs to be done ? *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #5 · Clean git history before the repository is shared
 
@@ -449,6 +450,7 @@ APPLY1 applies the accepted and assumed findings of R1 to R11 and leaves the sec
 - **Recommendation:** (a).
 - **Assumed:** each finding's recommended option, as listed.
 - **Blocked:** nothing; a different answer reverts the assumed spec text.
+- **Note, 2026-10-29:** Mantine 7 stays, for depictio's Paper look, rewritten in Spectio rather than shared for now ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes), ui-spec §7).
 
 ### #30 · Assumed: UI boards, review screens and the documentation system
 
@@ -531,6 +533,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Blocked:** checking §12.7 (overlays), api §5 `POST /workflows` and the inline `gates` value of SR-087, architecture §7.3 extras, the install line in `mvp-0.0.1.md`.
 - **Note (2026-10-27, cut revised):** gates and QC checks are no longer in 0.0.1 ([log](../decisions/log.md#2026-10-27-001-revised-on-the-cluster-no-gates-a-token-link)), so the overlay, the `--gates FILE` and the MultiQC install questions (SR-057, SR-058) no longer block 0.0.1. How a workflow is registered for launch from the UI (SR-056) still applies to 0.0.1.
 - **Answer (Thomas, 2026-10-27, dashboard):** no gating in the MVP or 0.0.1, as in the revised cut. SR-056 (how a workflow is registered for launch from the UI) still applies to 0.0.1 and stays open. *Handled for gates; SR-056 open.*
+- **Note, 2026-10-29:** SR-056 is decided for P1: engine buttons pre-selected from the pipeline's files, a path or a Git repository and revision, no catalogue ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes), P1 Assumption 2).
 
 ### #35 · Engines and the in-process runner on a laptop
 
@@ -712,6 +715,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
     - `nf-k8s` installed by bootstrap with a sha256;
     - `bootstrap.sh --only` in `pipelines-k8s.yml`.
   - The spec rule (dev-env §1) is accepted in TRIAGE3. The code waits for the same follow-up step as (a) of #46.
+- **Answer (Thomas, 2026-10-29T12:50:59.176Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ## T1 (2026-10-27)
 
@@ -745,6 +749,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (a), applied to §12.3 through `/apply-findings`; ui-spec and synthesis then link to §12.3 instead of restating it.
 - **Assumed:** none. §12.3 is unchanged until then.
 - **Blocked:** nothing.
+- **Answer (Thomas, 2026-10-29T12:53:08.948Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ## D6 (2026-10-27)
 
@@ -763,6 +768,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b), since it unblocks CI rendering without waiting on a third party; (c) until then. Nothing is sent to Excalidraw without Thomas.
 - **Assumed:** (c), unchanged from #1.
 - **Blocked:** byte-identical PNG rendering in CI (a deferred part of D6).
+- **Answer (Thomas, 2026-10-29T12:53:45.870Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #50 · D6 was built in a minimal version: the rest needs a follow-up step
 
@@ -777,6 +783,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Recommendation:** (b): nothing deferred blocks W3 or W4; mike and `shared_images.py` are due at the first versioned docs.
 - **Assumed:** none. The autopilot does not edit `pipeline.yaml`.
 - **Blocked:** nothing.
+- **Answer (Thomas, 2026-10-29T12:54:20.758Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ## T3 / T4 (2026-10-28)
 
@@ -796,6 +803,7 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Update (2026-10-28, 09:50):** spike `t4-ci` ran T4's whole scope on GitHub-hosted runners in 2 push iterations: kind and Kueue, the synthetic pipeline with `-profile k8s` on Nextflow 26.10.4 and 25.10.9 (65/65 tasks each), a real `OOMKilled`, Workloads waiting for quota, both §4 ServiceAccounts. One loop takes 4–5 minutes. The fixtures came back from the job log, and this session could also download full logs and an artifact, contrary to the context above ([note on branch `spike/t4-ci`](https://github.com/weber8thomas/spectio/blob/spike/t4-ci/docs/research/spike-t4-ci-2026-10-28.md)). Spike `t3-ci` (sind `slurm-site`) is still running.
 - **Assumed:** (b), CI-driven, *assumed — pending Thomas, inbox #51*. Thomas cannot answer before 14:00 and asked the autopilot to go on and keep only critical decisions for later (session, 2026-10-28 09:45). (b) is reversible: the profiles and fixtures are the same on his machine, only the place where the loop runs changes. T4 starts CI-driven; T3 starts once spike `t3-ci` shows sind works on a runner.
 - **Blocked:** nothing while (b) holds.
+- **Answer (Thomas, 2026-10-29T12:55:10.850Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ## Direction (2026-10-28)
 
@@ -816,6 +824,8 @@ APPLY2 applies the accepted and assumed findings of R3 and R6 and leaves the sec
 - **Assumed:** none. It changes the plan and a `CLAUDE.md` rule, which are Thomas's. The autopilot does not edit `pipeline.yaml` and writes no product code until he answers.
 - **Blocked:** nothing yet; T3 and T4 go on.
 - **Note, 2026-10-28 13:35 UTC:** Thomas asked to run T6 and to go on with what can move; the pipeline continues in its order (T6, then R10 and P1) under the narrowed 0.0.1 ([log](../decisions/log.md#2026-10-28-001-narrowed-launch-and-monitor-an-ultra-simple-ui)). #52 stays open.
+- **Answer (Thomas, 2026-10-29):** "52 option b, ne sur complique pas". Option (b): `review-code` for product code and security boundaries, tests and one review for tooling ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes)). *Handled.*
+
 
 ## TRIAGE3 (2026-10-28)
 
@@ -836,6 +846,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a): least privilege, measured, and CI catches the next missing call.
 - **Assumed:** none (reserved).
 - **Blocked:** schedulers §4 RBAC text. Nothing in 0.0.1. The fact part of SPK-T4-02 (drop "[to be validated on k8s-mini]" for `pods: create`) can be applied now.
+- **Answer (Thomas, 2026-10-29T12:56:15.003Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #54 · Kubernetes work namespace: task-pod tokens and a shared namespace
 
@@ -851,6 +862,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a). It matches "one runner per user" of #14 (a). Turning the task token off costs nothing and could be written now.
 - **Assumed:** none (reserved).
 - **Blocked:** architecture §7.5 runner sub-chart; schedulers §4. Nothing in 0.0.1.
+- **Answer (Thomas, 2026-10-29T12:56:47.149Z, dashboard):** K8S to be discussed later *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #55 · What engine events may carry: task `script` and `env`, user, host and command line
 
@@ -868,6 +880,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a). The UI can still show the command (read on demand), and nothing that may hold a secret leaves the cluster by default.
 - **Assumed:** none (reserved).
 - **Blocked:** architecture §13.5 wording; the payload rules of api §14 (inbox #36 apply pass).
+- **Answer (Thomas, 2026-10-29T12:57:57.029Z, dashboard):** why not like tower ? what justify not sending script and env ? *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #56 · Assumed: the state of a task still open when the run ends
 
@@ -926,6 +939,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a). It keeps "runs as the user" from the CLI transport, and a stolen runner token is worth one user's jobs for a short time.
 - **Assumed:** none (reserved).
 - **Blocked:** schedulers §3.3 slurmrestd row. Nothing in 0.0.1.
+- **Answer (Thomas, 2026-10-29T12:58:21.973Z, dashboard):** accept the recommendation. *Open (needs Thomas's confirmation in a session or commit).*
 
 ### #60 · Assumed: who builds the deferred SLURM coverage
 
@@ -995,6 +1009,9 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Assumed:** (d) *(assumed — pending Thomas)*; [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Where data lives), [architecture §7.2](../specs/architecture-plugins-and-packaging.md) (dated note), P1 Assumption 21, [log 2026-10-28](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index). Still to confirm: which temporary directory is node-local on the EMBL login nodes, and how often it is purged **[to be validated]**; whether `/tmp` is polyinstantiated per user there (`pam_namespace`), and the age rules of `systemd-tmpfiles` for it **[to be validated]**.
 - **Note 2026-10-28 (SEC-141):** also to check on EMBL storage: whether inherited NFSv4 ACLs widen the 0700 and 0600 modes that Spectio and the bridges set **[to be validated]** ([dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 12).
 - **Blocked:** nothing in CI; the real-cluster checks of P1 Tasks 8 and 24 confirm the temporary directory.
+- **Note 2026-10-29 (Thomas):** he does not know which directory is node-local on the login nodes; an agent tests it later on a real EMBL login node, with whether BeeGFS locks are safe for SQLite **[to be validated]** ([log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes)). (d) stays assumed.
+- **Answer (Thomas, 2026-10-29T13:00:16.436Z, dashboard):** Runners will have their sqllite independtly of the server at the end ? For the MVP I guess we can start simple and keep the sqlite in the home folder of people (backed up drives ; tier1) *Open (needs Thomas's confirmation in a session or commit).*
+
 
 ## Runs started from a terminal (2026-10-28)
 
@@ -1020,6 +1037,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Status 2026-10-29:** the procedure is checked and written down in [Claim the package names](../developer/claim-package-names.md): claim `nf-spectio` on the registry (an approved claim should hold it with no release; inferred from the docs, refusal of a second claimant not stated), then for each PyPI name add a pending publisher and run `pypi-publish.yml` at once, since a pending publisher alone holds nothing ([verification](verification-2026-10-29-names.md), FC-314 to FC-317). Two choices are yours: the provider string typed in the registry claim, and the placeholder version (`0.0.0` proposed). Also open: the Snakemake catalogue reads `docs/intro.md` at the root of this repository, where `docs/` is the MkDocs site, so the logger's catalogue page needs a home (verification, open point 9). *Still open until the four names are held.*
 - **Status 2026-10-29, later:** Thomas claimed `nf-spectio` on the registry, provider `spectio-org` as advised (to confirm), description "Bridge between Nextflow and Spectio: reports run, process and task events to Spectio so runs can be monitored, gated and steered from one place. Adds itself next to a pipeline's own plugins, without replacing them."; the claim waits for an admin. The three PyPI pending publishers exist with owner `spectio-org`, and `pypi-publish.yml` is on `main` since PR #58 (`3025f03`); the names are held once Thomas has run it for each project.
 - **Status 2026-10-29, later still:** `spectio-open` is dropped (Thomas: "oui go pour ceci"; the laptop command is `spectio open`, [log](../decisions/log.md#2026-10-29-the-laptop-command-becomes-spectio-open-in-the-spectio-package)); three names remain, so "the three PyPI names" in Your part now means two: `spectio` and `snakemake-logger-plugin-spectio`. `spectio` is published (`0.0.0`, run 40890545225). The `snakemake-logger-plugin-spectio` run failed with `invalid-publisher`: the claims GitHub sent were right, so its pending publisher on pypi.org does not match (owner `spectio-org`, repository `spectio`, workflow `pypi-publish.yml`, environment `pypi-snakemake-logger-plugin-spectio`); Thomas checks it and runs the workflow again. `nf-spectio` waits for the registry admins.
+- **Answer (Thomas, 2026-10-29):** the three names are held. The registry admins approved the `nf-spectio` claim. `snakemake-logger-plugin-spectio` `0.0.0` is published (run 40902016093), with `Repository: https://github.com/spectio-org/spectio`; the Snakemake catalogue lists it from its next daily rebuild ([log](../decisions/log.md#2026-10-29-the-snakemake-catalogue-reads-docsintromd-from-this-repository)). The claim's provider is `spectio-org` (Thomas: "Oui spectio-org"), so `nf-spectio`'s Gradle build sets `nextflowPlugin.provider = 'spectio-org'`. The §12 default holds for the bridges (Thomas: "ok pour 2"). *Handled.*
 
 ### #67 · Assumed: the engine setup is documented, not automated, in 0.0.1
 
@@ -1093,3 +1111,29 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Blocked:** nothing; the first run of `pypi-publish.yml` should wait for this answer.
 - **Update (Thomas, 2026-10-29):** no required reviewer on the `pypi-*` environments ("pas grave si on publie, on fera des patchs"). Option (b) no longer applies: without the reviewer, starting the workflow on `main` is enough to publish, so the choice is between (a) or (c) and no rule at all.
 - **Answer (Thomas, 2026-10-29):** first (a) ("accept recommendation ; deny", then "non recommendation était a"); then, on reading that the GitHub MCP tool would be denied whole, re-runs of CI included: no rule today ("je veux rester en mode autopilot et autonomie max"; "part la dessus ; pas besoin de blocage auj"). Claude still never starts the publish workflow on its own. To revisit before the first release with real code ([log](../decisions/log.md#2026-10-29-agent-sessions-may-start-workflows-including-a-pypi-publish-for-now)). *Handled.*
+
+## P2 (2026-10-29)
+
+### #72 · Assumed: the Paper shell in 0.0.1 leaves out search, notifications and the avatar
+
+- **Covers:** [P2 §10.1 G1 and §10.5 G4](../plans/P2-execution.md#101-g1-paper-chrome-on-the-shared-lite-board-components); [ui-spec §7](../specs/ui-spec.md#7-consistency-with-depictio-reuse-plan); [P1](../plans/P1-walking-skeleton.md) Assumption 24.
+- **Context:** the GO (2026-10-29, change 5) makes depictio's Paper chrome Spectio's look. Paper's top bar has search (⌘K), notifications and a user avatar. 0.0.1 has no users and no search, so these would be empty controls.
+- **Options and what was assumed:** (a) leave the three out of the 0.0.1 shell, keeping the floating top bar, breadcrumbs, theme toggle, foldable sidebar and phone tab bar; (b) show them disabled, as placeholders. **Assumed:** (a).
+- **Recommendation:** (a): controls that do nothing are noise and break the keyboard rules (every control must act).
+- **Blocked:** nothing; G1 and G4 proceed with (a).
+
+### #73 · Assumed: `spectio init --local` refuses to run off Linux
+
+- **Covers:** [P2 §10.7 G6](../plans/P2-execution.md#107-g6-local-mode-init-doctor-and-start-text); [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Local mode); [P1](../plans/P1-walking-skeleton.md) Assumption 23.
+- **Context:** the GO (2026-10-29, change 4) says local mode starts with Linux ("Démarre avec linux"). On macOS, `init --local` could either stop or go on with a warning.
+- **Options and what was assumed:** (a) refuse with exit 2 and "Local mode needs Linux in 0.0.1"; (b) warn and go on, untested. **Assumed:** (a); it is easy to relax later, while (b) would ship an untested path.
+- **Recommendation:** (a).
+- **Blocked:** nothing; G6 proceeds with (a).
+
+### #74 · Assumed: the budget counts 1 point of the weekly window per 10 USD of API-equivalent tokens
+
+- **Covers:** [autopilot §6](../playbooks/autopilot.md) (budget governor); `tools/autopilot/budget.py`; `.autopilot/budget.json`.
+- **Context:** this cloud session has no status line, so the governor has only the manual reading (28 % at the start of tick 14, stop at 40 %) and would answer `go` forever. P3 is 32 tasks, far more than the 12 points.
+- **Options and what was assumed:** (a) estimate: each tick prices its tokens (from `tools/dashboard/usage.py`) at the Opus 4.x list prices (5 / 25 USD per million input / output, 6.25 cache write, 0.50 cache read) and records it with `record-cost`, at a prior of 0.1 point per USD (`--pct-per-usd 0.1`) **[to be validated]**; (b) stop and wait for a reading after every step. **Assumed:** (a), with the ratio kept on the safe side.
+- **Recommendation:** read `/usage` when you wake up and write the percentage here; the next tick calibrates the ratio (`budget.py start --now <pct>`).
+- **Blocked:** nothing.

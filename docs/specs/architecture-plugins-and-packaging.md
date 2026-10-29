@@ -279,7 +279,7 @@ spectio/
 └─ templates/plugin/     Copier template used by `spectio plugin new`
 ```
 
-The web UI stays on Mantine 7, depictio's major (`viewer/package.json:29` `^7.14.0` at depictio `0d1aa0a`), although upstream is at 9.x (`@mantine/core` 9.7.4 on 2026-10-25), so that `depictio-react-core` can be reused (decision log, "Name and branding"). *(assumed — pending Thomas, inbox #29)*
+The web UI stays on Mantine 7, depictio's major (`viewer/package.json:29` `^7.14.0` at depictio `0d1aa0a`), although upstream is at 9.x (`@mantine/core` 9.7.4 on 2026-10-25), so that `depictio-react-core` can be reused (decision log, "Name and branding"). *(assumed — pending Thomas, inbox #29)* *Revised 2026-10-29 (Thomas, [log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes)):* Mantine 7 is kept for depictio's Paper look, which Spectio rewrites in its own code rather than importing `depictio-react-core`; a shared library may come later.
 
 **Built-ins are modules, not distributions.** The built-in plugins of §2 ship as modules of `spectio` (runner side) or `spectio-server` (server side) and register their entry points there, so `uv tool install spectio` is enough on a login node and `spectio[server]` is enough for a server. Each auth or backend extra pulls its plugin distribution: `spectio[oidc]` → `spectio-plugin-oidc`, `[saml]` → `spectio-plugin-saml`, `[s3]` → `spectio-plugin-s3`, `[redis]` → `spectio-plugin-redis`, `[celery]` → `spectio-plugin-celery`. *(assumed — pending Thomas, inbox #29)*
 
