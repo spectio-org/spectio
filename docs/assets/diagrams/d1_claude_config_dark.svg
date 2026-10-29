@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1640" height="790" viewBox="0 0 1640 790">
   <rect width="1640" height="790" fill="#1f2129"/>
-  <text x="40.0" y="52.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="27" fill="#e3e3e3" text-anchor="start" font-weight="normal">D1 · Agents and skills: what loads, and the check that keeps it so</text>
-  <text x="40.0" y="80.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Claude Code 2.1.311 · tools/claude/check_frontmatter.py · .github/workflows/claude-config.yml</text>
+  <text x="40.0" y="52.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="27" fill="#e3e3e3" text-anchor="start" font-weight="normal">D1 · Agents and skills: what loads, and the check that keeps it so</text>
+  <text x="40.0" y="80.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Claude Code 2.1.311 · tools/claude/check_frontmatter.py · .github/workflows/claude-config.yml</text>
   <rect x="30.0" y="110.0" width="520.0" height="560.0" rx="4" fill="#282b33" fill-opacity="0.5"/>
   <path d="M56.0,139.0 L107.0,139.0 L116.0,130.0 L149.0,130.0 L158.0,139.0 L206.0,139.0 L206.0,200.0 L56.0,200.0 Z" fill="#363020" stroke="none"/>
   <path d="M56.1,139.2 C72.8,138.5 89.3,139.8 107.1,138.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
@@ -12,8 +12,8 @@
   <path d="M205.9,139.2 C206.7,158.9 205.3,180.0 206.0,199.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M205.9,200.2 C155.0,199.3 105.9,200.5 56.0,200.4" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M55.5,200.4 C56.3,179.3 55.3,158.5 56.4,139.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="131.0" y="174.5" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#e3e3e3" text-anchor="middle" font-weight="normal">.claude/</text>
-  <text x="56.0" y="238.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="normal">agents/ · 14 files</text>
+  <text x="131.0" y="174.5" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#e3e3e3" text-anchor="middle" font-weight="normal">.claude/</text>
+  <text x="56.0" y="238.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="normal">agents/ · 14 files</text>
   <path d="M56.0,254.0 L88.0,254.0 L100.0,266.0 L100.0,310.0 L56.0,310.0 Z" fill="#24303d" stroke="none"/>
   <path d="M56.1,254.2 C66.0,254.3 76.7,254.6 88.1,253.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M88.2,254.1 C92.6,258.7 95.6,261.9 99.9,266.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
@@ -154,7 +154,7 @@
   <path d="M472.1,335.7 C475.5,336.7 479.9,335.6 484.0,336.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M445.0,343.7 C456.4,343.8 467.3,344.0 478.1,343.7" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
   <path d="M444.9,353.2 C456.3,353.4 467.3,353.5 478.1,353.3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
-  <text x="56.0" y="420.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="normal">skills/ · 22 folders</text>
+  <text x="56.0" y="420.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="normal">skills/ · 22 folders</text>
   <path d="M56.0,445.0 L71.6,445.0 L74.4,436.0 L84.5,436.0 L87.3,445.0 L102.0,445.0 L102.0,470.0 L56.0,470.0 Z" fill="#2b2938" stroke="none"/>
   <path d="M55.7,444.7 C60.9,445.5 65.4,444.8 71.2,445.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M71.5,444.5 C71.8,441.1 73.7,439.6 74.8,435.9" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
@@ -353,9 +353,9 @@
   <path d="M392.3,541.3 C393.0,549.6 392.4,558.5 392.3,566.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M391.5,566.5 C377.1,565.7 361.9,566.0 345.9,565.5" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M346.0,565.6 C346.0,557.9 345.8,548.8 345.8,541.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="56.0" y="600.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">18 in Claude's skill list (violet)</text>
-  <text x="56.0" y="622.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">4 slash-only: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">disable-model-invocation: true</tspan> (yellow)</text>
-  <text x="290.0" y="690.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">1 · a headless run loaded all of them</text>
+  <text x="56.0" y="600.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">18 in Claude's skill list (violet)</text>
+  <text x="56.0" y="622.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">4 slash-only: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">disable-model-invocation: true</tspan> (yellow)</text>
+  <text x="290.0" y="690.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">1 · a headless run loaded all of them</text>
   <rect x="580.0" y="110.0" width="470.0" height="560.0" rx="4" fill="#2b2938" fill-opacity="0.3"/>
   <path d="M666.0,168.0 L665.3,173.8 L663.4,179.3 L660.3,184.2 L656.2,188.3 L651.3,191.4 L645.8,193.3 L640.0,194.0 L634.2,193.3 L628.7,191.4 L623.8,188.3 L619.7,184.2 L616.6,179.3 L614.7,173.8 L614.0,168.0 L614.7,162.2 L616.6,156.7 L619.7,151.8 L623.8,147.7 L628.7,144.6 L634.2,142.7 L640.0,142.0 L645.8,142.7 L651.3,144.6 L656.2,147.7 L660.3,151.8 L663.4,156.7 L665.3,162.2 Z" fill="#24272f" stroke="none"/>
   <path d="M665.9,168.0 C665.8,169.7 665.8,172.0 665.5,173.9" fill="none" stroke="#e3e3e3" stroke-width="2.2" stroke-linecap="round"/>
@@ -387,23 +387,23 @@
   <path d="M663.4,156.7 C664.3,158.4 664.8,160.3 665.5,162.3" fill="none" stroke="#e3e3e3" stroke-width="2.2" stroke-linecap="round"/>
   <path d="M665.3,162.2 C665.2,164.1 665.8,166.2 665.9,168.1" fill="none" stroke="#e3e3e3" stroke-width="2.2" stroke-linecap="round"/>
   <path d="M658.6,186.9 C667.4,194.6 675.3,203.8 684.2,212.3" fill="none" stroke="#e3e3e3" stroke-width="5" stroke-linecap="round"/>
-  <text x="690.0" y="160.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="18" fill="#e3e3e3" text-anchor="start" font-weight="normal">check_frontmatter.py</text>
-  <text x="690.0" y="182.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">PyYAML, rules from the Claude Code docs</text>
+  <text x="690.0" y="160.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="18" fill="#e3e3e3" text-anchor="start" font-weight="normal">check_frontmatter.py</text>
+  <text x="690.0" y="182.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">PyYAML, rules from the Claude Code docs</text>
   <path d="M609.1,250.3 C610.3,252.3 612.1,253.8 613.6,255.6" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M613.4,255.3 C616.5,251.8 619.6,247.4 623.0,242.7" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="636.0" y="256.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">---</tspan> on line 1, closed, parses, a mapping</text>
+  <text x="636.0" y="256.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">---</tspan> on line 1, closed, parses, a mapping</text>
   <path d="M609.3,290.1 C610.3,291.4 611.7,293.4 613.7,295.6" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M613.5,295.9 C617.0,290.8 619.6,287.5 623.2,282.8" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="636.0" y="296.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">agent <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">name</tspan>: set, unique, no <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">:</tspan>, no leading <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">-</tspan></text>
+  <text x="636.0" y="296.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">agent <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">name</tspan>: set, unique, no <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">:</tspan>, no leading <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">-</tspan></text>
   <path d="M609.1,330.1 C610.1,332.1 612.4,333.9 613.7,335.8" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M613.9,335.5 C616.4,331.9 619.8,327.7 622.9,323.1" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="636.0" y="336.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">description</tspan> on every agent and skill</text>
+  <text x="636.0" y="336.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">description</tspan> on every agent and skill</text>
   <path d="M609.2,370.1 C610.1,372.4 612.6,374.1 613.9,375.4" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M613.6,375.7 C617.2,371.4 620.1,366.7 622.9,363.0" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="636.0" y="376.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">only documented fields</text>
+  <text x="636.0" y="376.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">only documented fields</text>
   <path d="M608.9,410.0 C610.8,411.5 612.3,413.5 613.7,415.5" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M613.8,415.5 C617.1,410.9 620.4,407.6 623.1,403.3" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="636.0" y="416.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">a <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">SKILL.md</tspan> in every skill folder</text>
+  <text x="636.0" y="416.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">a <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">SKILL.md</tspan> in every skill folder</text>
   <path d="M552.0,390.7 C567.7,391.0 585.1,388.3 600.2,390.9" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M551.3,389.4 C568.6,388.6 584.5,391.7 600.3,390.6" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M600.0,390.0 C596.5,387.2 592.5,385.5 587.5,383.8" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
@@ -425,40 +425,40 @@
   <text x="618.0" y="556.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#e3e3e3" xml:space="preserve">in .claude: 0 problem(s)</text>
   <text x="618.0" y="577.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#e3e3e3" xml:space="preserve">$ echo $?</text>
   <text x="618.0" y="598.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#e3e3e3" xml:space="preserve">0             (1 on a broken fixture)</text>
-  <text x="815.0" y="690.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">2 · CI: claude-config on every PR</text>
+  <text x="815.0" y="690.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">2 · CI: claude-config on every PR</text>
   <rect x="1080.0" y="110.0" width="530.0" height="560.0" rx="4" fill="#382c22" fill-opacity="0.25"/>
-  <text x="1104.0" y="148.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="18" fill="#e3e3e3" text-anchor="start" font-weight="normal">the same broken fixtures</text>
-  <text x="1104.0" y="170.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">✓ caught (exit 1) · ✗ missed (exit 0)</text>
-  <text x="1430.0" y="214.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="middle" font-weight="bold">validate</text>
-  <text x="1540.0" y="214.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="middle" font-weight="bold">check</text>
-  <text x="1104.0" y="262.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">unclosed quote in the YAML</text>
+  <text x="1104.0" y="148.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="18" fill="#e3e3e3" text-anchor="start" font-weight="normal">the same broken fixtures</text>
+  <text x="1104.0" y="170.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">✓ caught (exit 1) · ✗ missed (exit 0)</text>
+  <text x="1430.0" y="214.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#e3e3e3" text-anchor="middle" font-weight="bold">validate</text>
+  <text x="1540.0" y="214.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#e3e3e3" text-anchor="middle" font-weight="bold">check</text>
+  <text x="1104.0" y="262.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">unclosed quote in the YAML</text>
   <path d="M1421.0,257.0 C1423.5,258.9 1425.4,261.5 1427.2,263.9" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1427.0,264.0 C1430.5,258.3 1435.3,253.5 1438.9,248.1" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1531.1,256.9 C1533.4,259.5 1535.2,261.2 1537.1,264.1" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1536.9,264.1 C1541.2,259.0 1544.9,252.8 1548.8,248.0" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="1104.0" y="318.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">name: [broken</tspan> (PyYAML rejects it)</text>
+  <text x="1104.0" y="318.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">name: [broken</tspan> (PyYAML rejects it)</text>
   <path d="M1420.2,303.0 C1425.8,310.5 1432.1,316.7 1439.8,322.6" fill="none" stroke="#ff8787" stroke-width="2" stroke-linecap="round"/>
   <path d="M1420.3,323.0 C1426.0,316.4 1432.7,309.8 1440.0,302.7" fill="none" stroke="#ff8787" stroke-width="2" stroke-linecap="round"/>
   <path d="M1531.0,312.8 C1533.0,315.0 1534.9,317.4 1537.2,320.4" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1537.2,320.0 C1541.5,315.2 1544.4,309.0 1549.2,304.0" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="1104.0" y="374.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">agent with no <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">description</tspan></text>
+  <text x="1104.0" y="374.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">agent with no <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">description</tspan></text>
   <path d="M1421.3,368.9 C1422.7,371.5 1425.1,373.7 1426.8,376.1" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1427.0,376.2 C1431.1,370.3 1434.5,365.4 1439.0,359.7" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1530.8,368.7 C1533.3,371.5 1535.0,374.0 1537.2,376.2" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1537.1,376.4 C1540.8,370.5 1544.6,364.9 1548.8,360.3" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="1104.0" y="430.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">agent with no <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">name</tspan> (does not load)</text>
+  <text x="1104.0" y="430.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">agent with no <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.8">name</tspan> (does not load)</text>
   <path d="M1419.7,415.1 C1426.7,421.7 1433.8,427.4 1439.6,435.4" fill="none" stroke="#ff8787" stroke-width="2" stroke-linecap="round"/>
   <path d="M1420.6,435.1 C1426.1,427.8 1433.0,420.7 1440.0,415.4" fill="none" stroke="#ff8787" stroke-width="2" stroke-linecap="round"/>
   <path d="M1531.2,424.8 C1533.5,427.1 1534.9,429.4 1537.2,432.2" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1536.8,432.2 C1541.0,427.0 1544.9,421.8 1548.8,416.0" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="1104.0" y="486.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">unknown field, e.g. a typo</text>
+  <text x="1104.0" y="486.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">unknown field, e.g. a typo</text>
   <path d="M1419.4,470.8 C1426.9,477.7 1433.5,485.4 1440.6,490.6" fill="none" stroke="#ff8787" stroke-width="2" stroke-linecap="round"/>
   <path d="M1420.2,491.4 C1426.9,483.8 1433.8,478.3 1439.5,471.1" fill="none" stroke="#ff8787" stroke-width="2" stroke-linecap="round"/>
   <path d="M1530.8,480.7 C1533.5,483.7 1535.1,485.7 1536.9,488.2" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1536.8,488.3 C1541.4,482.4 1545.2,477.2 1549.1,471.8" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="1104.0" y="548.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">--strict</tspan> passed the three crossed fixtures</text>
-  <text x="1104.0" y="570.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">with exit 0; the sub-agents docs say an agent</text>
-  <text x="1104.0" y="592.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">with no <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">name</tspan> is skipped silently at load time</text>
-  <text x="1345.0" y="690.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">3 · so CI uses the small check</text>
-  <text x="40.0" y="760.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Sources: docs/progress/W3/D1.md (Evidence) · https://code.claude.com/docs/en/sub-agents.md and skills.md, read 2026-10-27 · tools/diagrams/d1_claude_config.py</text>
+  <text x="1104.0" y="548.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">--strict</tspan> passed the three crossed fixtures</text>
+  <text x="1104.0" y="570.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">with exit 0; the sub-agents docs say an agent</text>
+  <text x="1104.0" y="592.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">with no <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">name</tspan> is skipped silently at load time</text>
+  <text x="1345.0" y="690.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">3 · so CI uses the small check</text>
+  <text x="40.0" y="760.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Sources: docs/progress/W3/D1.md (Evidence) · https://code.claude.com/docs/en/sub-agents.md and skills.md, read 2026-10-27 · tools/diagrams/d1_claude_config.py</text>
 </svg>

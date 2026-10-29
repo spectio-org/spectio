@@ -170,7 +170,7 @@ for p, txt in docs.items():
             if full in tracked and inside(full) and f.suffix.lower() in MIME:
                 if full not in imgs:
                     # a sketch.py figure ships an SVG next to its PNG, about half the size: embed that (16 MB page limit);
-                    # inside <img> the SVG cannot load the Virgil font and falls back to cursive or serif, a deliberate trade-off
+                    # inside <img> the SVG cannot load Excalifont and falls back to a plain sans, a deliberate trade-off
                     svg = f.with_suffix(".svg")
                     if f.suffix.lower() == ".png" and svg.as_posix() in tracked:
                         f = svg

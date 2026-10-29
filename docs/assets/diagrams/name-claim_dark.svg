@@ -1,13 +1,13 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" viewBox="0 0 1600 900">
   <rect width="1600" height="900" fill="#1f2129"/>
-  <text x="50.0" y="58.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="27" fill="#e3e3e3" text-anchor="start" font-weight="normal">Claiming the four names: what holds a name, and when</text>
-  <text x="50.0" y="86.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="15.5" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">nf-spectio</tspan> on the Nextflow registry · <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">spectio</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">spectio-open</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">snakemake-logger-plugin-spectio</tspan> on PyPI</text>
+  <text x="50.0" y="58.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="27" fill="#e3e3e3" text-anchor="start" font-weight="normal">Claiming the four names: what holds a name, and when</text>
+  <text x="50.0" y="86.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15.5" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">nf-spectio</tspan> on the Nextflow registry · <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">spectio</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">spectio-open</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">snakemake-logger-plugin-spectio</tspan> on PyPI</text>
   <rect x="40.0" y="130.0" width="1520.0" height="300.0" rx="4" fill="#282b33" fill-opacity="0.5"/>
   <path d="M39.8,130.4 C545.8,129.9 1052.8,129.9 1560.1,130.2" fill="none" stroke="#9aa0ac" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M1560.3,129.6 C1560.9,230.0 1559.9,329.3 1559.9,429.7" fill="none" stroke="#9aa0ac" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M1560.3,430.5 C1053.8,429.9 546.7,430.1 39.9,430.4" fill="none" stroke="#9aa0ac" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M39.8,430.0 C40.4,330.4 41.0,229.4 39.8,129.8" fill="none" stroke="#9aa0ac" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
-  <text x="60.0" y="162.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="bold">Nextflow plugin registry · by hand, once</text>
+  <text x="60.0" y="162.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="bold">Nextflow plugin registry · by hand, once</text>
   <rect x="70.0" y="190.0" width="330.0" height="190.0" rx="6" fill="#24272f"/>
   <path d="M70.5,189.8 C179.0,191.3 291.5,191.2 399.7,189.8" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M70.2,190.1 C178.5,188.8 289.9,189.7 399.4,190.6" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
@@ -21,11 +21,11 @@
   <circle cx="86.0" cy="204.0" r="4.5" fill="#ff8787"/>
   <circle cx="101.0" cy="204.0" r="4.5" fill="#ffd43b"/>
   <circle cx="116.0" cy="204.0" r="4.5" fill="#69db7c"/>
-  <text x="136.0" y="209.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">registry.nextflow.io</text>
-  <text x="90.0" y="270.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">Log in through Seqera</text>
-  <text x="90.0" y="296.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">My plugins, Claim a plugin</text>
-  <text x="90.0" y="322.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">name <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">nf-spectio</tspan></text>
-  <text x="90.0" y="348.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">provider = future <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">provider</tspan></text>
+  <text x="136.0" y="209.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">registry.nextflow.io</text>
+  <text x="90.0" y="270.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">Log in through Seqera</text>
+  <text x="90.0" y="296.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">My plugins, Claim a plugin</text>
+  <text x="90.0" y="322.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">name <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">nf-spectio</tspan></text>
+  <text x="90.0" y="348.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">provider = future <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">provider</tspan></text>
   <path d="M420.8,285.7 C458.3,283.1 498.5,284.6 540.1,284.3" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M419.8,284.5 C461.7,284.1 500.1,285.2 540.8,284.2" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M539.6,285.2 C535.6,283.2 531.3,279.7 527.7,278.3" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
@@ -38,25 +38,25 @@
   <path d="M600.4,280.1 C604.7,285.4 609.9,289.7 614.0,294.3" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M614.3,294.0 C605.0,294.1 595.7,294.1 586.3,294.0" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M585.9,293.8 C591.2,288.6 596.0,284.1 600.3,280.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="630.0" y="280.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="16" fill="#e3e3e3" text-anchor="start" font-weight="bold">PENDING REVIEW</text>
-  <text x="630.0" y="306.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">an admin approves the claim, once</text>
-  <text x="630.0" y="328.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">how long: not documented</text>
+  <text x="630.0" y="280.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="16" fill="#e3e3e3" text-anchor="start" font-weight="bold">PENDING REVIEW</text>
+  <text x="630.0" y="306.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">an admin approves the claim, once</text>
+  <text x="630.0" y="328.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">how long: not documented</text>
   <path d="M950.7,284.6 C989.7,283.3 1029.9,286.5 1071.0,284.6" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M949.6,285.2 C991.8,283.4 1028.2,285.5 1070.0,284.4" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1070.1,284.8 C1066.7,281.9 1061.4,280.8 1057.4,278.1" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1070.3,285.4 C1066.5,287.0 1061.2,290.1 1057.7,292.1" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1090.0,280.1 C1092.1,283.1 1095.0,285.5 1096.8,287.8" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1096.5,287.7 C1101.7,282.3 1106.1,276.4 1109.9,270.2" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="1125.0" y="286.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="16" fill="#69db7c" text-anchor="start" font-weight="bold">approved: the ID should be held</text>
-  <text x="1125.0" y="312.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">inferred from the docs; no release needed</text>
-  <text x="1125.0" y="334.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">access token only at the first release</text>
-  <text x="800.0" y="410.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">1 · the claim, not a release, makes <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="16.7">nf-spectio</tspan> yours</text>
+  <text x="1125.0" y="286.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="16" fill="#69db7c" text-anchor="start" font-weight="bold">approved: the ID should be held</text>
+  <text x="1125.0" y="312.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">inferred from the docs; no release needed</text>
+  <text x="1125.0" y="334.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">access token only at the first release</text>
+  <text x="800.0" y="410.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">1 · the claim, not a release, makes <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="16.7">nf-spectio</tspan> yours</text>
   <rect x="40.0" y="470.0" width="1520.0" height="340.0" rx="4" fill="#282b33" fill-opacity="0.5"/>
   <path d="M39.8,469.7 C547.6,469.5 1053.1,469.0 1560.1,470.1" fill="none" stroke="#9aa0ac" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M1560.1,469.9 C1560.8,582.6 1559.6,696.1 1560.1,809.5" fill="none" stroke="#9aa0ac" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M1559.7,810.0 C1052.8,810.0 547.1,810.6 39.7,810.1" fill="none" stroke="#9aa0ac" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M40.4,809.5 C40.8,696.0 39.1,583.0 39.6,469.9" fill="none" stroke="#9aa0ac" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
-  <text x="60.0" y="502.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="bold">PyPI · one name at a time, at most 3 pending</text>
+  <text x="60.0" y="502.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="17" fill="#e3e3e3" text-anchor="start" font-weight="bold">PyPI · one name at a time, at most 3 pending</text>
   <rect x="70.0" y="530.0" width="330.0" height="200.0" rx="6" fill="#24272f"/>
   <path d="M69.7,530.8 C179.7,531.2 288.4,531.4 400.3,529.5" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M70.4,529.7 C179.0,531.5 289.2,529.4 400.7,529.4" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
@@ -70,17 +70,17 @@
   <circle cx="86.0" cy="544.0" r="4.5" fill="#ff8787"/>
   <circle cx="101.0" cy="544.0" r="4.5" fill="#ffd43b"/>
   <circle cx="116.0" cy="544.0" r="4.5" fill="#69db7c"/>
-  <text x="136.0" y="549.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">pypi.org, Publishing</text>
-  <text x="90.0" y="610.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">pending publisher:</text>
-  <text x="90.0" y="636.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">spectio-org</tspan> / <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">spectio</tspan></text>
-  <text x="90.0" y="662.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">pypi-publish.yml</tspan></text>
-  <text x="90.0" y="688.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">environment <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">pypi-&lt;project&gt;</tspan></text>
+  <text x="136.0" y="549.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">pypi.org, Publishing</text>
+  <text x="90.0" y="610.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">pending publisher:</text>
+  <text x="90.0" y="636.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">spectio-org</tspan> / <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">spectio</tspan></text>
+  <text x="90.0" y="662.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">pypi-publish.yml</tspan></text>
+  <text x="90.0" y="688.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">environment <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">pypi-&lt;project&gt;</tspan></text>
   <path d="M110.0,748.0 L122.0,769.6 L98.0,769.6 Z" fill="#363020" stroke="none"/>
   <path d="M109.7,747.8 C114.1,754.4 118.3,762.1 121.9,769.2" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M121.9,770.0 C113.5,769.8 106.0,769.9 97.9,769.2" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M98.4,770.0 C101.6,762.0 106.7,754.5 110.2,747.9" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="110.0" y="767.2" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14.399999999999999" fill="#ffa94d" text-anchor="middle" font-weight="bold">!</text>
-  <text x="130.0" y="765.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="14" fill="#ff8787" text-anchor="start" font-weight="normal">holds nothing yet</text>
+  <text x="110.0" y="767.2" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14.399999999999999" fill="#ffa94d" text-anchor="middle" font-weight="bold">!</text>
+  <text x="130.0" y="765.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#ff8787" text-anchor="start" font-weight="normal">holds nothing yet</text>
   <path d="M420.0,629.2 C455.1,631.1 486.2,630.1 520.7,629.1" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M419.1,629.8 C451.7,630.9 487.4,630.8 520.8,629.5" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M519.7,630.0 C515.3,627.3 512.5,625.0 507.7,623.3" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
@@ -94,8 +94,8 @@
   <path d="M739.9,599.6 C674.4,601.4 605.4,599.5 540.5,599.7" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M539.6,599.8 C539.3,590.0 540.6,580.5 540.6,570.5" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M540.6,600.7 C539.4,591.1 538.5,580.6 540.4,569.6" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="640.0" y="590.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#e3e3e3" text-anchor="middle" font-weight="bold">Run workflow</text>
-  <text x="540.0" y="630.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">GitHub Actions, on <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">main</tspan></text>
+  <text x="640.0" y="590.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#e3e3e3" text-anchor="middle" font-weight="bold">Run workflow</text>
+  <text x="540.0" y="630.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">GitHub Actions, on <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">main</tspan></text>
   <rect x="540.0" y="660.0" width="110.0" height="34.0" rx="6" fill="#382c22"/>
   <path d="M540.5,660.4 C578.1,660.4 613.9,660.0 650.6,659.9" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M539.4,659.9 C576.1,659.6 612.7,658.7 649.9,660.4" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
@@ -105,7 +105,7 @@
   <path d="M649.4,694.1 C614.6,694.7 577.0,694.2 539.9,693.5" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M540.0,693.7 C540.2,681.1 539.7,672.9 540.3,660.4" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M540.6,694.5 C539.5,681.2 541.3,670.9 540.4,660.8" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="595.0" y="682.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#e3e3e3" text-anchor="middle" font-weight="normal">build</text>
+  <text x="595.0" y="682.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="middle" font-weight="normal">build</text>
   <rect x="672.0" y="660.0" width="110.0" height="34.0" rx="6" fill="#382c22"/>
   <path d="M671.7,660.5 C708.5,660.5 744.0,660.1 782.0,659.5" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M671.7,659.4 C708.0,659.8 745.1,660.2 782.7,659.3" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
@@ -115,7 +115,7 @@
   <path d="M781.7,694.6 C746.5,695.1 709.2,694.3 671.5,694.3" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M671.3,693.8 C672.3,683.4 671.3,672.3 672.3,660.7" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M672.4,694.0 C672.5,682.0 672.6,671.1 671.7,660.2" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="727.0" y="682.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#e3e3e3" text-anchor="middle" font-weight="normal">smoke</text>
+  <text x="727.0" y="682.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="middle" font-weight="normal">smoke</text>
   <path d="M652.6,677.7 C657.9,677.1 663.0,675.4 668.6,676.3" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M652.4,676.2 C657.9,677.2 662.8,676.3 669.0,677.0" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M668.6,677.1 C665.7,674.5 661.0,673.3 656.5,670.0" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
@@ -129,7 +129,7 @@
   <path d="M914.4,693.6 C876.3,694.1 841.8,693.9 803.3,694.1" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M803.6,693.8 C804.4,683.3 804.2,671.1 803.2,660.4" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M804.4,693.8 C802.8,683.1 804.0,671.8 803.3,660.4" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="859.0" y="682.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#e3e3e3" text-anchor="middle" font-weight="normal">publish</text>
+  <text x="859.0" y="682.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="middle" font-weight="normal">publish</text>
   <path d="M784.2,677.4 C789.9,675.4 795.8,675.4 801.9,677.1" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M785.8,676.9 C790.6,676.9 797.2,678.8 800.4,676.7" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M800.5,676.6 C796.1,674.7 793.0,672.6 788.3,670.1" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
@@ -137,16 +137,16 @@
   <path d="M814.7,722.7 V717.8 a5.3,5.3 0 0 1 10.6,0 V722.7" fill="none" stroke="#e3e3e3" stroke-width="1.6" stroke-linecap="round"/>
   <rect x="811.8" y="722.7" width="16.5" height="12.1" rx="2.5" fill="#2b2938" stroke="#e3e3e3" stroke-width="1.5"/>
   <circle cx="820.0" cy="728.8" r="1.6" fill="#e3e3e3"/>
-  <text x="838.0" y="731.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.4">id-token</tspan> in publish only</text>
+  <text x="838.0" y="731.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.4">id-token</tspan> in publish only</text>
   <path d="M939.1,629.7 C983.2,631.3 1027.7,629.3 1069.1,630.6" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M940.7,630.5 C984.6,628.1 1025.3,631.8 1069.7,630.9" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1070.0,629.9 C1065.6,628.0 1061.3,624.8 1057.7,623.0" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1070.2,630.5 C1066.2,631.3 1062.5,634.6 1057.7,636.5" fill="none" stroke="#9aa0ac" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M1090.2,625.2 C1091.8,627.3 1094.2,629.9 1096.8,632.8" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1096.4,633.1 C1100.8,626.6 1105.3,621.2 1109.8,614.7" fill="none" stroke="#69db7c" stroke-width="2.4" stroke-linecap="round"/>
-  <text x="1125.0" y="631.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="16" fill="#69db7c" text-anchor="start" font-weight="bold">token exchange: the project exists</text>
-  <text x="1125.0" y="657.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">owned by Thomas, then <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">0.0.0</tspan> uploads</text>
-  <text x="1125.0" y="679.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">someone else first: publisher dropped</text>
-  <text x="800.0" y="790.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">2 · only the workflow run holds a PyPI name</text>
-  <text x="1550.0" y="884.0" font-family="Virgil, Virgil GS, Excalifont, Comic Sans MS, Bradley Hand, cursive" font-size="12.5" fill="#9aa0ac" text-anchor="end" font-weight="normal">source: docs/reviews/verification-2026-10-29-names.md · .github/workflows/pypi-publish.yml</text>
+  <text x="1125.0" y="631.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="16" fill="#69db7c" text-anchor="start" font-weight="bold">token exchange: the project exists</text>
+  <text x="1125.0" y="657.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">owned by Thomas, then <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">0.0.0</tspan> uploads</text>
+  <text x="1125.0" y="679.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">someone else first: publisher dropped</text>
+  <text x="800.0" y="790.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#e3e3e3" text-anchor="middle" font-weight="normal">2 · only the workflow run holds a PyPI name</text>
+  <text x="1550.0" y="884.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="end" font-weight="normal">source: docs/reviews/verification-2026-10-29-names.md · .github/workflows/pypi-publish.yml</text>
 </svg>
