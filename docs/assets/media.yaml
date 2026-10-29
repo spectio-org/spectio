@@ -318,6 +318,14 @@ media:
       - docs/assets/diagrams/p1_skeleton_dark.svg
       - docs/assets/diagrams/p1_skeleton_light.png
       - docs/assets/diagrams/p1_skeleton_dark.png
+  - id: p2-lanes
+    kind: diagram
+    generator: python3 tools/diagrams/p2_lanes.py
+    outputs:
+      - docs/assets/diagrams/p2_lanes_light.svg
+      - docs/assets/diagrams/p2_lanes_dark.svg
+      - docs/assets/diagrams/p2_lanes_light.png
+      - docs/assets/diagrams/p2_lanes_dark.png
   - id: nextflow-attach
     kind: diagram
     generator: python3 tools/diagrams/nextflow_attach.py
