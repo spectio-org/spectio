@@ -6,6 +6,7 @@ import os
 import signal
 import socket
 import stat
+import time
 import tracemalloc
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,7 @@ from spectio_sdk.events import (
     MAX_FILE_BYTES,
     MAX_LINE_BYTES,
     MAX_SPOOL_FILES,
+    SpoolEvent,
 )
 
 RUN_ID = "run_01K8T2F1XTVRES000000000000"
@@ -442,7 +444,7 @@ def test_req6_event_node_cap(events_dir: Path) -> None:
     )
     batch = read(events_dir)
     assert [e.seq for e in batch.events] == [1]
-    assert batch.drops == {"invalid": 1}
+    assert batch.drops == {"too_complex": 1}
 
 
 def test_req6_event_depth_cap(events_dir: Path) -> None:
@@ -459,7 +461,7 @@ def test_req6_event_depth_cap(events_dir: Path) -> None:
     )
     batch = read(events_dir)
     assert [e.seq for e in batch.events] == [1]
-    assert batch.drops == {"invalid": 1}
+    assert batch.drops == {"too_complex": 1}
 
 
 def test_req6_read_stops_at_max_bytes(events_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -612,3 +614,98 @@ def test_read_error_retried_next_read(events_dir: Path, monkeypatch: pytest.Monk
     assert batch.cursor[NF] == 0
     failing = False
     assert [e.seq for e in read(events_dir, batch.cursor).events] == [1]
+
+
+# --- Round 2 -------------------------------------------------------------------------------
+
+
+def test_file_gone_after_listing_skipped_silently(events_dir: Path) -> None:
+    # An admitted file that is gone (or goes between the listing and the open): no drop.
+    write(events_dir / "nf-spectio-1-0002.jsonl", line(2))
+    batch = read(events_dir, {NF: 10})
+    assert [e.seq for e in batch.events] == [2]
+    assert not batch.drops
+    assert batch.cursor[NF] == 10
+
+
+@pytest.mark.parametrize(
+    "cursor",
+    [
+        {NF: -5},
+        {NF: 1.5},
+        {NF: "x"},
+        {NF: True},
+        {NF: MAX_FILE_BYTES + 1},
+        {"../outside.jsonl": 0},
+        {"#0123456789abcdef": 0},
+        {"#excess": -3},
+    ],
+)
+def test_bad_cursor_values_refused(events_dir: Path, cursor: dict[str, Any]) -> None:
+    write(events_dir / NF, line(1))
+    write(events_dir.parent.parent / "outside.jsonl", line(9))
+    batch = read(events_dir, cursor)
+    assert batch.drops["bad_cursor"] == 1
+    key = next(iter(cursor))
+    assert batch.cursor[key] == (0 if key == "#excess" else REFUSED)
+    assert all(e.seq != 9 for e in batch.events)
+
+
+@pytest.mark.parametrize(
+    "budget", [{"max_bytes": 10}, {"max_bytes": MAX_LINE_BYTES}, {"max_lines": 0}]
+)
+def test_budgets_too_small_refused(events_dir: Path, budget: dict[str, int]) -> None:
+    with pytest.raises(ValueError):
+        read_spool(events_dir.parent.parent, RUN_ID, 1, {}, **budget)
+
+
+def test_admitted_files_read_past_the_listing_cap(
+    events_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    names = [f"nf-spectio-1-{i:04d}.jsonl" for i in range(1, 6)]
+    for i, name in enumerate(names, 1):
+        write(events_dir / name, line(i))
+    first = read(events_dir)
+    monkeypatch.setattr(spool, "MAX_DIR_ENTRIES", 2)
+    for i, name in enumerate(names, 11):
+        write(events_dir / name, line(i))
+    batch = read(events_dir, first.cursor)
+    assert [e.seq for e in batch.events] == [11, 12, 13, 14, 15]
+
+
+def test_too_complex_line_not_parsed(events_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def no_parse(*_: Any, **__: Any) -> None:
+        raise AssertionError("parsed")
+
+    write(events_dir / NF, line(1, x=[0] * (3 * MAX_EVENT_NODES)))
+    monkeypatch.setattr(SpoolEvent, "model_validate_json", no_parse)
+    assert read(events_dir).drops == {"too_complex": 1}
+
+
+def test_worst_read_is_fast(events_dir: Path) -> None:
+    big = b"".join(nested_line(i, MAX_LINE_BYTES) for i in range(40))
+    for i in range(1, 5):
+        write(events_dir / f"nf-spectio-1-{i:04d}.jsonl", big)
+    start = time.perf_counter()
+    batch = read(events_dir)
+    assert time.perf_counter() - start < 1.0
+    assert batch.drops["too_complex"] > 20
+
+
+def test_file_gone_between_listing_and_open(
+    events_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write(events_dir / NF, line(1))
+    write(events_dir / "nf-spectio-1-0002.jsonl", line(2))
+    real_stat = os.stat
+
+    def gone(path: Any, *, dir_fd: int | None = None, follow_symlinks: bool = True) -> Any:
+        if path == NF:
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
+        return real_stat(path, dir_fd=dir_fd, follow_symlinks=follow_symlinks)
+
+    monkeypatch.setattr(os, "stat", gone)
+    batch = read(events_dir)
+    assert [e.seq for e in batch.events] == [2]
+    assert not batch.drops
+    assert batch.cursor[NF] == 0

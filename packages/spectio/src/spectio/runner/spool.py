@@ -56,26 +56,28 @@ def read_spool(
 ) -> SpoolBatch:
     """Read at most `max_lines` lines and `max_bytes` bytes past `cursor`, in file name order.
 
-    The caller owns `launch_dir` and the path to it (Task 10 builds it from the run directory it
-    checked, req. 10); this reader checks `.spectio` and `events` below it. It raises
-    PermissionError when either is not a private directory of the user, and OSError when either
-    is a symlink or not a directory; it returns an empty batch when either is missing (nothing
-    written yet). A file that cannot be read is dropped and counted (`unreadable`, or
-    `read_error` and retried by the next read); it never stops the other files.
+    The caller owns `launch_dir` and the path to it: the runner loop (P1 Task 9) and the boot
+    rebuild (Task 11), which checks the run directory (req. 10). This reader checks `.spectio`
+    and `events` below it. It raises PermissionError when either is not a private directory of
+    the user, and OSError when either is a symlink or not a directory; it returns an empty batch
+    when either is missing (nothing written yet). A file that cannot be read is dropped and
+    counted (`unreadable`, or `read_error` and retried by the next read); a file that is gone is
+    skipped; neither stops the other files. Raises ValueError when `max_lines` is under 1 or
+    `max_bytes` cannot hold one line.
     """
+    if max_lines < 1 or max_bytes <= MAX_LINE_BYTES:
+        raise ValueError("max_lines must be at least 1 and max_bytes more than MAX_LINE_BYTES")
     events: list[SpoolEvent] = []
     drops: Counter[str] = Counter()
-    new = dict(cursor)
+    new = _checked(cursor, drops)
     dir_fd = _open_events_dir(launch_dir)
     if dir_fd is None:
         return SpoolBatch(events, new, drops)
     try:
-        for name in _admit(dir_fd, launch_n, cursor, new, drops):
+        for name in _admit(dir_fd, launch_n, new, drops):
             if max_lines <= 0 or max_bytes <= 0:
                 break
             offset = new[name]
-            if offset == REFUSED:
-                continue
             try:
                 fd = _open_regular(dir_fd, name)
                 if isinstance(fd, str):
@@ -88,6 +90,8 @@ def read_spool(
                     lines, new[name], used = _lines(fd, offset, end, max_lines, max_bytes)
                 finally:
                     os.close(fd)
+            except FileNotFoundError:
+                continue  # gone since the listing, or since an earlier read
             except OSError as e:
                 reason = _REFUSALS.get(e.errno or 0)
                 drops[reason or "read_error"] += 1
@@ -108,6 +112,30 @@ def read_spool(
     finally:
         os.close(dir_fd)
     return SpoolBatch(events, new, drops)
+
+
+def _checked(cursor: dict[str, int], drops: Counter[str]) -> dict[str, int]:
+    """A copy of the cursor in which every value fits its key; others are counted and reset.
+
+    A spool file name maps to REFUSED or an offset up to MAX_FILE_BYTES, a name hash to REFUSED,
+    and EXCESS to a count. A wrong value is never trusted: its file is refused (a count is reset).
+    """
+    checked = {}
+    for key, value in cursor.items():
+        if type(value) is not int:  # a bool is an int, and is refused here
+            valid = False
+        elif key == EXCESS:
+            valid = value >= 0
+        elif key.startswith("#"):
+            valid = value == REFUSED
+        else:
+            in_range = value == REFUSED or 0 <= value <= MAX_FILE_BYTES
+            valid = in_range and SPOOL_FILE_NAME.fullmatch(key) is not None
+        if not valid:
+            drops["bad_cursor"] += 1
+            value = 0 if key == EXCESS else REFUSED
+        checked[key] = value
+    return checked
 
 
 def _open_events_dir(launch_dir: Path) -> int | None:
@@ -131,20 +159,18 @@ def _private_dir(path: Path | str, dir_fd: int | None = None) -> int:
     return fd
 
 
-def _admit(
-    dir_fd: int, launch_n: int, cursor: dict[str, int], new: dict[str, int], drops: Counter[str]
-) -> list[str]:
-    """This launch's spool file names to read, in name order; count the other names once.
+def _admit(dir_fd: int, launch_n: int, new: dict[str, int], drops: Counter[str]) -> list[str]:
+    """This launch's spool files to read, in name order; count the other names once.
 
     Only this launch's names get a slot, up to MAX_SPOOL_FILES. A name outside the grammar is
     kept as a short hash (never the name itself), up to MAX_BAD_NAMES. What finds no slot, and a
     listing cut at MAX_DIR_ENTRIES, is excess: `cursor[EXCESS]` holds the most seen, so that
     only an increase is counted.
     """
+    seen = new.get(EXCESS, 0)
     files = sum(not key.startswith("#") for key in new)
     bad = len(new) - files - (EXCESS in new)
     excess = 0
-    names = []
     with os.scandir(dir_fd) as entries:
         for i, entry in enumerate(entries):
             if i == MAX_DIR_ENTRIES:
@@ -159,11 +185,9 @@ def _admit(
                 else "#" + hashlib.sha256(os.fsencode(entry.name)).hexdigest()[:16]
             )
             if key in new:
-                if match:
-                    names.append(key)
-            elif match and files < MAX_SPOOL_FILES:
+                continue
+            if match and files < MAX_SPOOL_FILES:
                 new[key] = 0
-                names.append(key)
                 files += 1
             elif not match and bad < MAX_BAD_NAMES:
                 drops["bad_name"] += 1
@@ -171,10 +195,13 @@ def _admit(
                 bad += 1
             else:
                 excess += 1
-    if excess > cursor.get(EXCESS, 0):
-        drops["too_many_files"] += excess - cursor.get(EXCESS, 0)
+    if excess > seen:
+        drops["too_many_files"] += excess - seen
         new[EXCESS] = excess
-    return sorted(names)
+    # From the cursor, not the listing: a cut listing may miss a file admitted earlier.
+    return sorted(
+        key for key, offset in new.items() if not key.startswith("#") and offset != REFUSED
+    )
 
 
 def _open_regular(dir_fd: int, name: str) -> int | str:
@@ -257,6 +284,11 @@ def _too_large(data: Any) -> bool:
 
 def _event(raw: bytes, run_id: str, launch_n: int) -> SpoolEvent | str:
     """The event with its allow-listed data only, or the reason the line is dropped."""
+    # Cheap bound before parsing: a value adds at most two of "[", "{" and ",", and the envelope
+    # under 16. Commas inside strings count too, so this only refuses far past the cap (the
+    # largest T2 line has 91 of them).
+    if raw.count(b"[") + raw.count(b"{") + raw.count(b",") > 2 * (MAX_EVENT_NODES + 16):
+        return "too_complex"
     try:
         event = SpoolEvent.model_validate_json(raw)
     except ValidationError:
@@ -266,7 +298,7 @@ def _event(raw: bytes, run_id: str, launch_n: int) -> SpoolEvent | str:
     if event.launch != launch_n:
         return "wrong_launch"
     if _too_large(event.data):
-        return "invalid"
+        return "too_complex"
     try:
         data = parse_data(event).model_dump(mode="json", by_alias=True, exclude_unset=True)
     except (ValidationError, UnknownEventType):

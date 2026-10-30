@@ -100,7 +100,7 @@ jobs:
           # --no-cache: uv would reuse a wheel built from older sources of the same version.
           fresh() {
             uv venv --quiet --python "$PYTHON_VERSION" "$tmp/$1"
-            uv export --frozen --no-dev --no-emit-workspace --package "$1" -o "$tmp/$1.txt"
+            uv export --quiet --frozen --no-dev --no-emit-workspace --package "$1" -o "$tmp/$1.txt"
             uv pip install --no-cache --python "$tmp/$1/bin/python" --require-hashes -r "$tmp/$1.txt"
             uv pip install --no-cache --python "$tmp/$1/bin/python" --no-deps "${@:2}"
           }
