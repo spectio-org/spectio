@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-30T10:02:00Z",
+  "updated_at": "2026-10-30T12:30:00Z",
   "current_wave": "W5",
   "steps": {
     "F1": {
@@ -535,8 +535,8 @@
       "started_at": "2026-10-29T22:50:00Z",
       "finished_at": null,
       "outputs": [],
-      "notes": "P3 runs across ticks, one P1 task per branch autopilot/P3-<task> (P2 \u00a70). Done: Task 1 (PR #73, squash 622caa0), Task 2 (PR #75, squash 7d90633), Task 3 (PR #77, squash 51d6348), Task 4 (PR #79, squash 6dc5cce), Task 5 (PR #81, squash ce415cd). Next: Task 6 (then 7), as the p3-task workflow, board gaps G1/G2/G3a. Deferred to Task 5: SEC-P3T1-08, -11; to Task 6: SEC-P3T1-09 (see journal 2026-10-29 tick 14). FU-P3-02 (inbox #72 b): disabled search, notifications and avatar placeholders in the Paper shell. Follow-ups from Task 3: CR-P3T3-08 (unended lines starve the byte budget); Task 9 must create .spectio and events 0700 and walk req. 10 (SEC-P3T3-09).",
-      "base": "ce415cdd4b1f28776e4874058281f937d4c4f2c7"
+      "notes": "P3 runs across ticks, one P1 task per branch autopilot/P3-<task> (P2 \u00a70). Done: Task 1 (PR #73, squash 622caa0), Task 2 (PR #75, squash 7d90633), Task 3 (PR #77, squash 51d6348), Task 4 (PR #79, squash 6dc5cce), Task 5 (PR #81, squash ce415cd), Task 6 (PR #83, squash b7586f8). Next: Task 7, as the p3-task workflow, board gaps G1/G2/G3a. Deferred to Task 5: SEC-P3T1-08, -11; to Task 6: SEC-P3T1-09 (see journal 2026-10-29 tick 14). FU-P3-02 (inbox #72 b): disabled search, notifications and avatar placeholders in the Paper shell. Follow-ups from Task 3: CR-P3T3-08 (unended lines starve the byte budget); Task 9 must create .spectio and events 0700 and walk req. 10 (SEC-P3T3-09).",
+      "base": "b7586f84883ab8be944b885128e3ecb476dc400a"
     },
     "R11": {
       "wave": "W1",

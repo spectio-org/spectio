@@ -137,9 +137,11 @@ Changed pages: see git diff --stat ${A.base}..HEAD -- docs tools/diagrams. PR bo
     { label: `doc-reviewer ${r + 1}`, phase: 'Docs', agentType: 'doc-reviewer', schema: DOCREVIEW })
   if (docReview.verdict === 'block') return { status: 'blocked', reason: 'doc-reviewer block', docReview, rounds, build }
   if (!docReview.required_changes.length) break
-  if (r === 2) return { status: 'blocked', reason: 'two doc revisions without approval', docReview, rounds, build }
+  if (r === 2 && docReview.verdict !== 'approve') return { status: 'blocked', reason: 'two doc revisions without approval', docReview, rounds, build }
   await agent(`In the worktree ${wt} (branch ${branch}), make these required doc changes, rerun tools/docs/check.py and mkdocs build --strict, update docs-pr-body.md if affected, commit:\n${docReview.required_changes.join('\n')}\n${trailer}`,
     { label: `doc fix ${r + 1}`, phase: 'Docs', agentType: 'doc-writer' })
+  // An approve whose last required changes were just applied ends the loop (P3-t06 stopped on one stale line).
+  if (r === 2) break
 }
 
 return { status: 'done', step: A.step, branch, worktree: wt, prBody: `${wt}/docs-pr-body.md`, build, rounds: rounds.length, simplify, docs, docReview }
