@@ -257,6 +257,7 @@ launches = Table(
     Column("started_at", UTCDateTime()),
     Column("exited_at", UTCDateTime()),
     Column("exit_code", Integer),
+    Column("culprit_attempt_id", String),  # the launch's first TERMINATE failure (api §7.2)
     UniqueConstraint("run_id", "n"),
 )
 

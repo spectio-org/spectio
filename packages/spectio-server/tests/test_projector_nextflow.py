@@ -569,7 +569,9 @@ def test_first_terminate_in_a_batch_is_the_culprit(
     )
     with engine.connect() as conn:
         first = conn.execute(select(tasks.c.id).where(tasks.c.tag == "S01")).scalar_one()
+        classes = conn.execute(select(attempts.c.failure_class)).scalars().all()
     assert run_row(engine).failure["task_id"] == first
+    assert classes == ["tool_error", "tool_error"]  # each attempt is classified (CR-P3T04-08)
 
 
 # --- Head reports and cancel (api §7.1, P1 Assumption 15) ----------------------------------

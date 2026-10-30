@@ -16,7 +16,7 @@ from sqlalchemy import insert, select, update
 from spectio_sdk.events import NextflowFlowComplete, NextflowFlowCreate, NextflowTask
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import TERMINAL, Projection, failure_json
-from spectio_server.store.schema import attempts, runs, tasks
+from spectio_server.store.schema import attempts, launches, runs, tasks
 
 HOOK_STATES = {
     "onTaskPending": "pending",
@@ -67,8 +67,8 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
     values: dict[str, Any] = {"state": state}
     if state == "failed":
         values["ignored"] = data.errorAction == "IGNORE"
-        if data.errorAction == "TERMINATE" and _culprit(p) is None:
-            values["failure_class"] = "tool_error"  # set once: events arrive in seq order
+        if data.errorAction == "TERMINATE":
+            values["failure_class"] = "tool_error"
     if (code := _exit(data)) is not None:
         values["exit"] = code
     row = p.conn.execute(
@@ -77,9 +77,10 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
         )
     ).one_or_none()
     if row is None:
+        attempt_id = new_id("att")
         p.conn.execute(
             insert(attempts).values(
-                id=new_id("att"),
+                id=attempt_id,
                 created_at=p.now,
                 task_id=task_id,
                 n=n,
@@ -88,9 +89,16 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
             )
         )
     elif _RANK.get(state, 3) > _RANK.get(row.state, 3):
-        p.conn.execute(update(attempts).where(attempts.c.id == row.id).values(**values))
+        attempt_id = row.id
+        p.conn.execute(update(attempts).where(attempts.c.id == attempt_id).values(**values))
     else:
         return  # a late event of a lower or equal rank: logged, no change
+    if state == "failed" and data.errorAction == "TERMINATE":  # the first one: seq order
+        p.conn.execute(
+            update(launches)
+            .where(launches.c.id == p.launch_id, launches.c.culprit_attempt_id.is_(None))
+            .values(culprit_attempt_id=attempt_id)
+        )
     p.sync_tasks([task_id])
 
 
@@ -150,22 +158,13 @@ def _flow_complete(p: Projection, data: NextflowFlowComplete) -> None:
         p.move("failed", _failure(p, data.errorMessage or ""))
 
 
-def _culprit(p: Projection) -> Any:
-    """The launch's attempt of class `tool_error`: only its first TERMINATE failure gets one."""
-    return p.conn.execute(
-        select(attempts.c.task_id, attempts.c.n)
-        .join(tasks, tasks.c.id == attempts.c.task_id)
-        .where(
-            tasks.c.run_id == p.run_id,
-            attempts.c.launch_n == p.launch_n,
-            attempts.c.failure_class == "tool_error",
-        )
-    ).one_or_none()
-
-
 def _failure(p: Projection, message: str) -> dict[str, Any]:
-    """`tool_error` from the first attempt whose `errorAction` is TERMINATE, else `engine_fault`."""
-    culprit = _culprit(p)
+    """`tool_error` from the launch's culprit, its first TERMINATE failure, else `engine_fault`."""
+    culprit = p.conn.execute(
+        select(attempts.c.task_id, attempts.c.n)
+        .join(launches, launches.c.culprit_attempt_id == attempts.c.id)
+        .where(launches.c.id == p.launch_id)
+    ).one_or_none()
     if culprit is None:
         return failure_json("engine_fault", message)
     return failure_json("tool_error", message, culprit.task_id, culprit.n)
