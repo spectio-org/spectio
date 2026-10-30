@@ -86,10 +86,10 @@ class Projection:
             )
         )
 
-    def move(self, to: str, failure: dict[str, Any] | None = None) -> bool:
+    def move(self, to: str, failure: dict[str, Any] | None = None) -> None:
         """Move the run to `to` if api §7.1 allows it from its state; log the change."""
         if to not in _NEXT.get(self.state, ()):
-            return False
+            return
         values: dict[str, Any] = {"state": to, "state_changed_at": self.now}
         if self.state == "queued" and to == "running":
             values["started_at"] = self.now
@@ -100,7 +100,6 @@ class Projection:
         self.conn.execute(update(runs).where(runs.c.id == self.run_id).values(**values))
         self.log("spectio.run.state_changed", {"from": self.state, "to": to}, source="projector")
         self.state = to
-        return True
 
     def end_launch(self, to: str = "aborted", failure_class: str | None = None) -> None:
         """Close this launch's open attempts: `aborted` (api §7.2), or `failed` when the head is
