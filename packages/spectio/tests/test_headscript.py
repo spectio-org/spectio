@@ -2,10 +2,13 @@
 and 4). The head script runs a stub engine through the login shell, which records its argument
 list and its environment in the launch directory."""
 
+import contextlib
 import json
 import os
 import shlex
 import shutil
+import signal
+import stat
 import subprocess
 import time
 from collections.abc import Callable
@@ -348,6 +351,52 @@ def test_unpack_refuses_an_untrusted_copy(home: Path, bridges: Path, planted: st
         copy.write_text("")
     with pytest.raises(PermissionError, match=r"nf-spectio-0\.0\.1"):
         unpack_nf_spectio({"NXF_HOME": str(home / "nxf")})
+
+
+def test_unpack_private_under_umask_002(home: Path, bridges: Path) -> None:
+    """CR-P3T09-R5-01, SEC-P3T09-R5-01: under umask 002, from a bridge copy at 0775 with a file
+    at 0664, the unpacked copy has no group or other write bit, so the next call keeps it."""
+    source = bridges / "nf-spectio-0.0.1"
+    for path in (source, *source.rglob("*")):
+        path.chmod(0o775 if path.is_dir() else 0o664)
+    env = {"NXF_HOME": str(home / "nxf")}
+    old = os.umask(0o002)
+    try:
+        copy = unpack_nf_spectio(env)
+        assert unpack_nf_spectio(env) == copy
+    finally:
+        os.umask(old)
+    for path in (copy, *copy.rglob("*")):
+        assert not os.lstat(path).st_mode & 0o022, path
+    assert stat.S_IMODE(os.lstat(copy.parent).st_mode) == 0o700  # made new here
+
+
+def test_unpack_refuses_a_symlink_in_the_bridge(home: Path, bridges: Path) -> None:
+    """CR-P3T09-R5-01: the bundled copy holds no symlink; one is refused, not copied."""
+    (bridges / "nf-spectio-0.0.1" / "link").symlink_to("/etc")
+    with pytest.raises(PermissionError, match="symlink"):
+        unpack_nf_spectio({"NXF_HOME": str(home / "nxf")})
+    assert not (home / "nxf" / "plugins" / "nf-spectio-0.0.1").exists()
+
+
+def test_login_timeout_bounded_by_a_detached_child(
+    home: Path, login: Callable[..., None], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3T09-R5-04: a child that left the group and holds the pipes (`setsid sleep 600 &`
+    in the login profile) does not hold run_login past its timeout and a short wait."""
+    monkeypatch.setattr(loginshell, "TIMEOUT_S", 1)
+    login(Path("/usr/bin"), Path("/bin"))
+    pid_file = home / "detached.pid"
+    with (home / ".bash_profile").open("a") as f:
+        f.write(f"setsid sleep 600 & echo $! > {shlex.quote(str(pid_file))}\n")
+    started = time.monotonic()
+    try:
+        done = loginshell.run_login("sleep 30")
+        assert done.returncode == 124
+        assert time.monotonic() - started < 15
+    finally:
+        with contextlib.suppress(OSError, ValueError):
+            os.kill(int(pid_file.read_text()), signal.SIGKILL)
 
 
 def test_login_timeout_kills_the_group(

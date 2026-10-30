@@ -15,8 +15,9 @@ _MARK = "\x1espectio\t"  # tells our lines from what the user's profile prints
 
 def run_login(script: str, *args: str) -> subprocess.CompletedProcess[str]:
     """`bash -lc script spectio args…`; `args` reach the script as "$@", never as shell words.
-    A timeout gives return code 124, as timeout(1) does, and kills the command's whole process
-    group, so that nothing it started keeps running (SEC-P3T08-04)."""
+        A timeout gives return code 124, as timeout(1) does, and kills the command's whole process
+        group, so that nothing it started keeps running (SEC-P3T08-04); a child that left the group
+    and holds the pipes delays it by a few seconds at most (SEC-P3T09-R5-04)."""
     bash = shutil.which("bash") or "/bin/bash"
     env = {k: os.environ[k] for k in KEEP if k in os.environ}
     argv = [bash, "-lc", script, "spectio", *args]
@@ -34,7 +35,13 @@ def run_login(script: str, *args: str) -> subprocess.CompletedProcess[str]:
         except subprocess.TimeoutExpired:
             with contextlib.suppress(ProcessLookupError):  # it ended just then
                 os.killpg(proc.pid, signal.SIGKILL)
-            proc.communicate()
+            try:
+                proc.communicate(timeout=5)
+            except subprocess.TimeoutExpired:  # a child that left the group holds the pipes
+                for pipe in (proc.stdout, proc.stderr):
+                    if pipe is not None:
+                        pipe.close()
+                proc.wait(timeout=5)
             return subprocess.CompletedProcess(argv, 124, "", f"timed out after {TIMEOUT_S} s")
     return subprocess.CompletedProcess(argv, proc.returncode, out, err)
 

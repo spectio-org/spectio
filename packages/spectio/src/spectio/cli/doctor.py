@@ -11,7 +11,12 @@ import typer
 
 from spectio.config import NF_SPECTIO_VERSION, Settings, config_path
 from spectio.loginshell import run_login, which
-from spectio.runner.engines import NEXTFLOW_VERSION, SNAKEMAKE_VERSION, nf_plugin_copy
+from spectio.runner.engines import (
+    NEXTFLOW_VERSION,
+    SNAKEMAKE_VERSION,
+    existing_copy,
+    nf_plugin_copy,
+)
 
 Result = tuple[str, str, str]  # status, check, detail
 _JAVA = re.compile(r'version "([0-9]+)(?:\.([0-9]+))?')
@@ -76,9 +81,13 @@ def _nxf_plugins(env: Mapping[str, str]) -> Result:
         result = ("warn", check, f"{value} has no nf-spectio: runs from a terminal are not seen")
     elif ours != [want]:
         result = ("warn", check, f"names {', '.join(ours)}, not {want}")
-    elif not copy.is_dir():
-        return "fail", check, f"names {want} but {copy} is missing: run spectio init"
     else:
+        try:  # the launcher's own check of the copy (CR-P3T09-R5-02)
+            present = existing_copy(copy)
+        except OSError as exc:
+            return "fail", check, str(exc)
+        if not present:
+            return "fail", check, f"names {want} but {copy} is missing: run spectio init"
         result = ("ok", check, value)
     try:
         text = (nxf_home / "config").read_text(errors="replace")

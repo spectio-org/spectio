@@ -215,3 +215,17 @@ def test_doctor_relative_plugins_dir(
     code, lines = doctor(capsys, configured(home, fakebin, executor="local"))
     assert code == 1
     assert line(lines, "nxf_plugins_default").startswith("fail")
+
+
+def test_doctor_refuses_an_untrusted_copy(
+    home: Path, fakebin: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3T09-R5-02: doctor checks the copy as the launcher does: a group-writable copy is a
+    `fail` with the launcher's message."""
+    copy = home / ".nextflow" / "plugins" / "nf-spectio-0.0.1"
+    copy.mkdir(parents=True)
+    copy.chmod(0o775)
+    monkeypatch.setenv("NXF_PLUGINS_DEFAULT", "nf-spectio@0.0.1")
+    code, lines = doctor(capsys, configured(home, fakebin, executor="local"))
+    found = line(lines, "nxf_plugins_default")
+    assert code == 1 and found.startswith("fail") and "only you can write" in found, found

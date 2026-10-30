@@ -110,7 +110,7 @@ def nf_plugin_copy(env: Mapping[str, str]) -> Path:
     return plugins / NF_SPECTIO_DIR
 
 
-def _existing_copy(dest: Path) -> bool:
+def existing_copy(dest: Path) -> bool:
     """Whether a copy is there; raises PermissionError when it is not a real directory of this
     user's that group and others cannot write, since every head loads it (SEC-P3T09-06)."""
     try:
@@ -125,20 +125,32 @@ def _existing_copy(dest: Path) -> bool:
     return True
 
 
+def _make_private(tree: Path) -> None:
+    """Clear the group and other write bits copytree kept from the bridge (under umask 002 the
+    copy would be refused at the next launch: CR-P3T09-R5-01); refuse a symlink in it."""
+    for top, dirs, names in os.walk(tree):
+        for path in (Path(top), *(Path(top, n) for n in (*dirs, *names))):
+            st = os.lstat(path)
+            if stat.S_ISLNK(st.st_mode):
+                raise PermissionError(f"the bundled nf-spectio holds a symlink: {path.name}")
+            os.chmod(path, stat.S_IMODE(st.st_mode) & ~0o022)
+
+
 def unpack_nf_spectio(env: Mapping[str, str] | None = None) -> Path:
     """Copy the bundled nf-spectio into the plugins directory; an existing copy of the same
     version is kept as it is, so a second call changes nothing (architecture §13.8)."""
     dest = nf_plugin_copy(os.environ if env is None else env)
-    if _existing_copy(dest):
+    if existing_copy(dest):
         return dest
     source = bridge(NF_SPECTIO_DIR)
-    dest.parent.mkdir(parents=True, exist_ok=True)
+    dest.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     tmp = dest.with_name(f".{dest.name}.{secrets.token_hex(8)}")
     shutil.copytree(source, tmp, symlinks=True)
     try:
+        _make_private(tmp)
         tmp.rename(dest)
     except OSError:
         shutil.rmtree(tmp)
-        if not _existing_copy(dest):  # not merely a copy made at the same time
+        if not existing_copy(dest):  # not merely a copy made at the same time
             raise
     return dest
