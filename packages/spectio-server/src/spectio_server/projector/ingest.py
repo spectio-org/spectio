@@ -99,8 +99,9 @@ def apply_head_report(conn: Connection, launch_id: str, report: HeadReport) -> N
     could not start, or a head that ended with no terminal engine event (`head_lost`,
     `engine_fault`), whose open attempts then fail with class `head_lost`. A head that ends
     while the run is `cancelling` makes it `cancelled`. A Snakemake head's exit code ends its
-    launch (P1 Assumption 16). A terminal run does not move, and the engine's own end
-    (`head_state` set by `onFlowComplete`) is kept.
+    launch (P1 Assumption 16), even when the report also carries a `head_lost` or `engine_fault`
+    failure: a Snakemake head never writes a terminal engine event (CR-P3T05-01). A terminal
+    run does not move, and the engine's own end (`head_state` set by `onFlowComplete`) is kept.
     """
     p = Projection.load(conn, launch_id)
     values: dict[str, Any] = {}
@@ -121,14 +122,19 @@ def apply_head_report(conn: Connection, launch_id: str, report: HeadReport) -> N
     if p.state == "cancelling" and report.ended:
         p.end_launch()
         p.move("cancelled")
+    elif (
+        report.ended
+        and report.exit_code is not None
+        and (failure is None or failure.class_ in HEAD_FAILURES)
+        and snakemake.drives(p)
+    ):  # a Snakemake head never writes a terminal event: its exit code wins (CR-P3T05-01)
+        snakemake.head_exit(p, report.exit_code)
     elif failure is not None and p.state in ("queued", "running"):
         if failure.class_ in HEAD_FAILURES:
             p.end_launch("failed", "head_lost")
         else:
             p.end_launch()
         p.move("failed", failure_json(failure.class_, failure.message, failure.task_id))
-    elif report.ended and report.exit_code is not None and snakemake.drives(p):
-        snakemake.head_exit(p, report.exit_code)
     elif report.state == "running" and not report.ended:
         p.move("running")
     p.finish()

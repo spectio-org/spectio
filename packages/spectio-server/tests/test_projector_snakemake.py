@@ -9,6 +9,7 @@ import json
 import shutil
 from collections import Counter
 from collections.abc import Iterator
+from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -18,7 +19,7 @@ from sqlalchemy import Connection, Engine, insert, select, update
 from sqlalchemy import event as sa_event
 
 from spectio.runner.spool import read_spool
-from spectio.runner.types import HeadReport, SpoolBatch
+from spectio.runner.types import Failure, HeadReport, SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server.projector.ingest import apply_head_report, ingest
 from spectio_server.store.db import open_db
@@ -357,6 +358,28 @@ def test_cancelling_ends_cancelled_on_head_exit(engine: Engine, writer: Writer) 
 def test_exit_zero_without_events_succeeds(engine: Engine, writer: Writer) -> None:
     head(writer, exited(0))  # "Nothing to be done" can come with no job at all
     assert run_row(engine).state == "succeeded"
+
+
+@pytest.mark.parametrize("class_", ["engine_fault", "head_lost"])
+def test_exit_code_wins_over_a_head_failure(engine: Engine, writer: Writer, class_: str) -> None:
+    # A runner that sets `failure` because no terminal engine event came (CR-P3T05-01).
+    report = replace(exited(0), failure=Failure(class_, "no terminal engine event"))
+    head(writer, report)
+    assert (run_row(engine).state, run_row(engine).failure) == ("succeeded", None)
+
+
+def test_exit_code_with_a_head_failure_keeps_the_tool_error(
+    tmp_path: Path, engine: Engine, writer: Writer
+) -> None:
+    replay(tmp_path, writer, TOOLERR)
+    head(writer, replace(exited(1), failure=Failure("engine_fault", "no terminal engine event")))
+    assert run_row(engine).failure["class"] == "tool_error"
+
+
+def test_launch_error_with_an_exit_code_still_fails(engine: Engine, writer: Writer) -> None:
+    head(writer, replace(exited(0), failure=Failure("engine_missing", "snakemake not found")))
+    run = run_row(engine)
+    assert (run.state, run.failure["class"]) == ("failed", "engine_missing")
 
 
 # --- Security (SEC-P3T1-08, SEC-P3T1-11) ---------------------------------------------------
