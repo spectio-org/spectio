@@ -40,6 +40,10 @@ jobs:
         run: uv tool install "snakemake==$VERSION" --with "snakemake-executor-plugin-slurm==2.8.0"
       - name: Unit tests (golden fixtures)
         run: uv run --with pyyaml==6.0.3 python -m unittest tests/pipelines/synthetic/test_golden.py
+      - name: nf-spectio writes the spool (P1 Task 6)
+        # Builds the plugin against this Nextflow and runs it on the synthetic pipeline (local executor).
+        if: matrix.engine == 'nextflow'
+        run: uv run --locked pytest packages/spectio/tests/test_bridge_nextflow.py -v -m engines
       - name: Run scenarios
         # --golden check: task outcomes must match golden/<engine>-<version>/. A missing directory, an unreadable
         # engine version or a missing fixture for a PR scenario fails the job; only nightly scenarios may have none.

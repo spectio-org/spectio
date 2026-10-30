@@ -58,7 +58,9 @@ plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]
 testpaths = ["packages"]
-addopts = ["--import-mode=importlib"]
+# Engine tests need Java and a real engine: `pytest -m engines` runs them (a later -m wins).
+addopts = ["--import-mode=importlib", "-m", "not engines"]
+markers = ["engines: runs a real workflow engine (pipelines-synthetic.yml)"]
 
 [tool.importlinter]
 root_packages = ["spectio", "spectio_server", "spectio_sdk"]

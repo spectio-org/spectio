@@ -35,7 +35,7 @@ jobs:
           if [ "$EVENT" = pull_request ]; then
             git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
             touched() { grep -qE "$1" "$RUNNER_TEMP/changed.txt" && echo true || echo false; }
-            synthetic=$(touched '^(tests/pipelines/synthetic/|\.github/workflows/(pipelines-synthetic|ci)\.yml$)')
+            synthetic=$(touched '^(tests/pipelines/synthetic/|engine-bridges/nf-spectio/|packages/spectio/tests/test_bridge_nextflow\.py$|\.github/workflows/(pipelines-synthetic|ci)\.yml$)')
             real=$(touched '^(tests/pipelines/real/|\.github/workflows/(pipelines-real|ci)\.yml$)')
           else
             # Pushes to main: the synthetic scenarios always; the corpus runs nightly.
