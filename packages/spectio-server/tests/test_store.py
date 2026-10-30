@@ -14,7 +14,7 @@ from pathlib import Path
 import pytest
 from alembic.autogenerate import compare_metadata
 from alembic.migration import MigrationContext
-from sqlalchemy import Connection, Engine, func, insert, select
+from sqlalchemy import CheckConstraint, Connection, Engine, func, insert, inspect, select
 from sqlalchemy.exc import IntegrityError, StatementError
 
 from spectio_server.store import db, schema
@@ -96,6 +96,14 @@ def test_mountinfo_unreadable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -
         open_db(tmp_path, mountinfo=missing)  # fail closed on Linux
     monkeypatch.setattr(sys, "platform", "darwin")
     assert db.fs_type(tmp_path, mountinfo=missing) == "unknown"
+
+
+def test_mountinfo_empty_refused_on_linux(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    empty = tmp_path / "empty-mountinfo"
+    empty.write_text("")
+    monkeypatch.setattr(sys, "platform", "linux")
+    with pytest.raises(UnsafeDatabase, match="file system"):
+        open_db(tmp_path, mountinfo=empty)
 
 
 @pytest.mark.parametrize("version", ["3.45.0", "3.51.2", "3.50.6", "3.44.5", "3.43.9"])
@@ -218,8 +226,22 @@ def test_run_state_check_constraint(writer: Writer) -> None:
 
 
 def test_migration_matches_schema(engine: Engine) -> None:
+    def norm(sql: str) -> str:
+        return " ".join(sql.split())
+
     with engine.connect() as conn:
         assert compare_metadata(MigrationContext.configure(conn), schema.metadata) == []
+        inspector = inspect(conn)
+        for table in schema.metadata.sorted_tables:  # compare_metadata skips CHECK constraints
+            stored = {
+                c["name"]: norm(c["sqltext"]) for c in inspector.get_check_constraints(table.name)
+            }
+            declared = {
+                c.name: norm(str(c.sqltext))
+                for c in table.constraints
+                if isinstance(c, CheckConstraint)
+            }
+            assert stored == declared, table.name
 
 
 def _mode(path: Path) -> int:
@@ -259,6 +281,34 @@ def test_open_db_refuses_unsafe_paths(
         open_db(db_dir)
 
 
+@pytest.mark.parametrize("sticky", [False, True])
+def test_open_db_checks_parents(tmp_path: Path, sticky: bool) -> None:
+    # OpenSSH StrictModes: a parent writable by others is refused unless it is sticky.
+    parent = private_dir(tmp_path / "parent")
+    parent.chmod(0o1777 if sticky else 0o777)
+    db_dir = private_dir(parent / "d")
+    if sticky:
+        open_db(db_dir)[0].dispose()
+    else:
+        with pytest.raises(UnsafeDatabase, match="parent"):
+            open_db(db_dir)
+
+
+@pytest.mark.parametrize("swap", ["directory", "file"])
+def test_swapped_database_refused_on_connect(tmp_path: Path, swap: str) -> None:
+    db_dir = private_dir(tmp_path / "d")
+    eng, _ = open_db(db_dir)
+    eng.dispose()  # the next connection is a new one
+    if swap == "directory":
+        db_dir.rename(tmp_path / "old")
+        private_dir(db_dir)
+    else:
+        (db_dir / db.DB_FILE).rename(db_dir / "old.db")
+    os.close(os.open(db_dir / db.DB_FILE, os.O_CREAT | os.O_WRONLY, 0o600))
+    with pytest.raises(UnsafeDatabase, match="replaced"):
+        eng.connect()
+
+
 def test_open_db_path_is_not_a_url(tmp_path: Path) -> None:
     db_dir = private_dir(tmp_path / "a%41?mode=ro#x")
     open_db(db_dir)[0].dispose()
@@ -296,6 +346,40 @@ def test_default_db_dir_base(
     assert ("TMPDIR" in caplog.text) == (base != "sticky")
 
 
+@pytest.mark.parametrize("system_tmp_safe", [True, False])
+def test_default_db_dir_without_tmpdir(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+    system_tmp_safe: bool,
+) -> None:
+    system_tmp = private_dir(tmp_path / "system-tmp")
+    if not system_tmp_safe:
+        system_tmp.chmod(0o777)
+    monkeypatch.setattr(db, "SYSTEM_TMP", system_tmp)
+    monkeypatch.delenv("TMPDIR", raising=False)
+    with caplog.at_level(logging.WARNING):
+        if system_tmp_safe:
+            assert default_db_dir() == system_tmp / f"spectio-{os.getuid()}"
+        else:
+            with pytest.raises(UnsafeDatabase, match="--db-dir"):
+                default_db_dir()
+    assert caplog.text == ""  # warn only when a TMPDIR that was set is refused
+
+
+@pytest.mark.parametrize("owner", ["root", "self", "other"])
+def test_sticky_base_needs_a_trusted_owner(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, owner: str
+) -> None:
+    # The real user owns `base`; it plays root, the user itself, or a third party.
+    base = private_dir(tmp_path / "base")
+    base.chmod(0o1777)
+    real = os.getuid()
+    uid = real if owner == "self" else real + 1000
+    monkeypatch.setattr(db, "ROOT_UID", real if owner == "root" else real + 2000)
+    assert db._safe_base(base, uid) == (owner != "other")
+
+
 @pytest.mark.parametrize("squat", ["symlink", "other_uid", "mode_0755"])
 def test_db_dir_squatted_falls_back(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, caplog: pytest.LogCaptureFixture, squat: str
@@ -305,6 +389,7 @@ def test_db_dir_squatted_falls_back(
     if squat == "other_uid":  # the real user plays the squatter of a fake uid's path
         uid += 1000
         monkeypatch.setattr(os, "getuid", lambda: uid)
+        monkeypatch.setattr(db, "ROOT_UID", os.lstat(tmp_path).st_uid)  # the base's owner is root
         tmp_path.chmod(0o1700)  # a sticky base, as /tmp, which the fake uid does not own
     squatted = tmp_path / f"spectio-{uid}"
     target = tmp_path / "target"

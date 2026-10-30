@@ -13,6 +13,7 @@ import sqlite3
 import stat
 import sys
 import tempfile
+from collections.abc import Callable
 from contextlib import closing
 from pathlib import Path
 from typing import Any
@@ -28,6 +29,7 @@ DB_FILE = "spectio.db"  # the file name is ours: the specs name only the directo
 MOUNTINFO = Path("/proc/self/mountinfo")
 SYSTEM_TMP = Path("/tmp")  # noqa: S108 - the base of last resort, checked like any other
 BUSY_TIMEOUT_MS = 5000
+ROOT_UID = 0
 
 # Network and cluster file systems, where SQLite locking and WAL are unsafe (architecture §7.2),
 # plus autofs: an automount point that did not mount is no proof of a local disk.
@@ -63,7 +65,8 @@ def fs_type(path: Path, mountinfo: Path = MOUNTINFO) -> str:
     `stat` first, which triggers an automount; then the last mount whose device is the path's
     `st_dev` (the top of a stack of mounts). When no device matches (btrfs subvolumes report
     their own), the last of the longest mount points that contain the path decides. Without a
-    mountinfo table: refused on Linux (fail closed), "unknown" and accepted elsewhere (macOS).
+    usable mountinfo table: refused on Linux (fail closed), "unknown" and accepted elsewhere
+    (macOS).
     """
     st = os.stat(path)
     try:
@@ -85,7 +88,12 @@ def fs_type(path: Path, mountinfo: Path = MOUNTINFO) -> str:
         point = Path(_unescape(fields[4]))
         if real.is_relative_to(point) and len(point.parts) >= best:
             by_point, best = kind, len(point.parts)
-    return by_dev or by_point
+    if by_dev is None:
+        log.debug("no mount has device %s; the mount point of %s decides: %s", dev, real, by_point)
+    kind = by_dev or by_point
+    if kind == "unknown" and sys.platform == "linux":
+        raise UnsafeDatabase(f"{mountinfo} names no mount for {path}: cannot check the file system")
+    return kind
 
 
 def _private_dir(path: Path, uid: int) -> tuple[bool, int | None]:
@@ -106,18 +114,33 @@ def _private_dir(path: Path, uid: int) -> tuple[bool, int | None]:
     return same and st.st_uid == uid and not stat.S_IMODE(st.st_mode) & 0o077, st.st_uid
 
 
+def _trusted(st: os.stat_result, uid: int) -> bool:
+    """OpenSSH's StrictModes rule: owned by root or `uid`, and not writable by group or others
+    unless sticky (as /tmp)."""
+    sticky = bool(st.st_mode & stat.S_ISVTX)
+    return st.st_uid in (ROOT_UID, uid) and (sticky or not st.st_mode & 0o022)
+
+
 def _safe_base(base: Path, uid: int) -> bool:
-    """An absolute directory that is sticky, or owned by `uid` and not writable by others."""
+    """An absolute directory that passes `_trusted`."""
     if not base.is_absolute():
         return False
     try:
         st = os.stat(base)
     except OSError:
         return False
-    mode = st.st_mode
-    return stat.S_ISDIR(mode) and (
-        bool(mode & stat.S_ISVTX) or (st.st_uid == uid and not mode & 0o022)
-    )
+    return stat.S_ISDIR(st.st_mode) and _trusted(st, uid)
+
+
+def _check_parents(db_dir: Path, uid: int) -> None:
+    """Refuse `db_dir` if any parent lets another user swap it (`_trusted`, up to /)."""
+    for parent in Path(os.path.realpath(db_dir)).parents:
+        st = os.lstat(parent)
+        if not _trusted(st, uid):
+            raise UnsafeDatabase(
+                f"parent {parent} of {db_dir} is owned by uid {st.st_uid} or writable by others "
+                "without the sticky bit: another user could replace the database directory"
+            )
 
 
 def default_db_dir() -> Path:
@@ -125,12 +148,23 @@ def default_db_dir() -> Path:
     `mkdtemp` directory is used instead (dev-environment-and-testing.md §15.3, Where data lives).
     """
     uid = os.getuid()
-    base = Path(os.environ.get("TMPDIR") or SYSTEM_TMP)
-    if not _safe_base(base, uid):
-        log.warning(
-            "TMPDIR %s is not absolute, or is writable by others; using %s", base, SYSTEM_TMP
+    base = SYSTEM_TMP
+    tmpdir = os.environ.get("TMPDIR")
+    if tmpdir:
+        if _safe_base(Path(tmpdir), uid):
+            base = Path(tmpdir)
+        else:
+            log.warning(
+                "TMPDIR %s is not absolute, or fails the owner and mode rule of a shared "
+                "directory (root or this user, sticky if writable by others); using %s",
+                tmpdir,
+                SYSTEM_TMP,
+            )
+    if base == SYSTEM_TMP and not _safe_base(SYSTEM_TMP, uid):
+        raise UnsafeDatabase(
+            f"{SYSTEM_TMP} fails the owner and mode rule of a shared directory; "
+            "choose the database directory with --db-dir"
         )
-        base = SYSTEM_TMP
     path = base / f"spectio-{uid}"
     try:
         os.mkdir(path, 0o700)
@@ -164,11 +198,30 @@ def _check_private_file(path: Path, uid: int) -> None:
         )
 
 
-def _on_connect(dbapi_connection: sqlite3.Connection, _record: Any) -> None:
-    # Let SQLAlchemy, not pysqlite, emit BEGIN (SQLAlchemy's pysqlite transaction recipe).
-    dbapi_connection.isolation_level = None
-    dbapi_connection.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
-    dbapi_connection.execute("PRAGMA foreign_keys=ON")
+def _pin(path: Path) -> tuple[int, int]:
+    st = os.lstat(path)
+    return st.st_dev, st.st_ino
+
+
+def _on_connect(pins: dict[Path, tuple[int, int]]) -> Callable[[sqlite3.Connection, Any], None]:
+    """The connect hook: refuse the connection if the checked directory or database file was
+    replaced since `open_db`, then set the per-connection pragmas."""
+
+    def on_connect(dbapi_connection: sqlite3.Connection, _record: Any) -> None:
+        for path, pin in pins.items():
+            try:
+                same = _pin(path) == pin
+            except OSError:
+                same = False
+            if not same:
+                dbapi_connection.close()
+                raise UnsafeDatabase(f"{path} was replaced since open_db checked it")
+        # Let SQLAlchemy, not pysqlite, emit BEGIN (SQLAlchemy's pysqlite transaction recipe).
+        dbapi_connection.isolation_level = None
+        dbapi_connection.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
+        dbapi_connection.execute("PRAGMA foreign_keys=ON")
+
+    return on_connect
 
 
 def _on_begin(conn: Connection) -> None:
@@ -200,6 +253,7 @@ def open_db(db_dir: Path, mountinfo: Path = MOUNTINFO) -> tuple[Engine, bool]:
         raise UnsafeDatabase(
             f"{db_dir} must be a directory of this user with mode 0700 (owner uid {owner})"
         )
+    _check_parents(db_dir, uid)
     kind = fs_type(db_dir, mountinfo)
     if kind in NETWORK_FS:
         raise UnsafeDatabase(
@@ -211,14 +265,18 @@ def open_db(db_dir: Path, mountinfo: Path = MOUNTINFO) -> tuple[Engine, bool]:
         os.close(os.open(path, os.O_CREAT | os.O_EXCL | os.O_WRONLY | os.O_NOFOLLOW, 0o600))
     except FileExistsError:
         pass
+    # Advisory only: SQLite opens these files again by name and follows symlinks. What makes
+    # them hold is the private directory under trusted parents, and the pins checked on every
+    # new connection.
     for file in (path, Path(f"{path}-wal"), Path(f"{path}-shm")):
         _check_private_file(file, uid)
+    pins = {db_dir: _pin(db_dir), path: _pin(path)}
     with closing(sqlite3.connect(path)) as raw:
         if raw.execute("PRAGMA page_count").fetchone()[0] == 0:
             # auto_vacuum only takes effect on an empty database; WAL mode is persistent.
             raw.execute("PRAGMA auto_vacuum=INCREMENTAL")
             raw.execute("PRAGMA journal_mode=WAL")
     engine = create_engine(URL.create("sqlite+pysqlite", database=str(path)))
-    event.listen(engine, "connect", _on_connect)
+    event.listen(engine, "connect", _on_connect(pins))
     event.listen(engine, "begin", _on_begin)
     return engine, _migrate(engine)
