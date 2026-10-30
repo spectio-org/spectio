@@ -1,0 +1,44 @@
+# Step P3 Task 8: spectio init, then spectio doctor, run for real from the repository's .venv.
+# The cast's temporary directory is a demo HOME (shown as ~), with a demo TMPDIR inside it
+# (shown as $TMPDIR). nextflow and snakemake are two fake scripts in ~/bin, put on the login
+# shell's PATH by ~/.bash_profile, since init and doctor find engines through `bash -l`; they
+# only print a version. No sbatch here, so doctor fails that line and exits 1.
+# Needs `uv sync` first (the .venv of the checkout).
+title: "P3 Task 8: spectio init and spectio doctor in a demo home (fake engines, no sbatch)"
+cols: 112
+rows: 30
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: tmp
+env:
+  HOME: "{workdir}"
+  TMPDIR: "{workdir}/.tmp"
+  PATH: "{repo}/.venv/bin:$PATH"
+setup:
+  - |
+    chmod 700 .
+    mkdir -m 700 .tmp
+    mkdir bin
+    printf '#!/bin/sh\necho "nextflow version 26.10.4 (fake, for this cast)"\n' > bin/nextflow
+    printf '#!/bin/sh\necho "9.27.1"\n' > bin/snakemake
+    chmod +x bin/nextflow bin/snakemake
+    echo 'export PATH="$HOME/bin:$PATH"' > .bash_profile
+replace:  # applied in order, after the two {workdir} keys, which cast.py puts first
+  "{workdir}/": "~/"
+  "{workdir}": "~"
+  "~/.tmp": "$TMPDIR"
+steps:
+  - comment: "1. init: every option has a default, so nothing prompts"
+  - run: "spectio init"
+  - pause: 0.6
+  - comment: "what init recorded: no db_dir, the default is found again at each start"
+  - run: "cat ~/.spectio/spectio.toml"
+  - pause: 1.0
+  - clear: true
+  - comment: "2. doctor: one line per check. No sbatch on this machine, so exit 1"
+  - run: "spectio doctor"
+    expect_exit: 1
+  - pause: 0.6
+  - run: "stat -c '%a %n' ~/.spectio ~/.spectio/spectio.toml $TMPDIR/spectio-*"
+  - pause: 1.5
