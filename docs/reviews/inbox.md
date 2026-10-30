@@ -1215,3 +1215,27 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a).
 - **Applied (2026-10-30, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a): rules 1 to 5 are in the specs above, marked assumed. Owed to the next `/apply-findings`: P1 Task 4's Interfaces line, and the wording of `review-code` step 4.
 - **Blocked:** nothing. Task 18 should read api §7 `summary`, not the plan's names, until the plan changes.
+
+### #79 · Assumed: run start and end times come from the engine, not from the ingest clock
+
+- **Covers:** [api §7](../specs/api-and-data-model.md#7-database-schema) (`runs.started_at`, `runs.ended_at`), §8.2; P1 Tasks 4, 11 and 18. Found by the spike `first-look` (branch `spike/first-look`, `docs/research/2026-10-30-first-look-spike.md`).
+- **Context:** the projector stamps `runs.started_at` and `ended_at` with the server clock, once per batch (`packages/spectio-server/src/spectio_server/projector/runs.py`). A run read in one batch shows a duration of 0 s although its events span minutes; a server restart or the boot rebuild (P1 Task 11) collapses durations the same way. No spec says which clock fills these columns.
+- **Options:**
+  - (a) the engine's event time (`onFlowBegin` / `onFlowComplete` `instant`, Snakemake record time), with the ingest time kept separately for staleness;
+  - (b) the ingest clock, as built, and durations from the event log at read time;
+  - (c) the head report's times (P1 Task 9).
+- **Recommendation:** (a): it survives a rebuild and matches what the engine reports.
+- **Assumed:** (a), applied in the next code change that touches the projector (follow-up FU-P3-04, for Task 5 or Task 18 at the latest), under the standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30).
+- **Blocked:** nothing.
+
+### #80 · Assumed: a visible slice earlier in the P1 order
+
+- **Covers:** [P1 plan](../plans/P1-walking-skeleton.md) task order; [P2 §0](../plans/P2-execution.md).
+- **Context:** on 2026-10-30 Thomas asked to see and check a working prototype as soon as possible. In the plan's order the first real screens come with Tasks 19–20, after the six "served safely" tasks 11–16.
+- **Options:**
+  - (a) after M1 (Tasks 5–7), build Tasks 8–9, then 11, 17, 18, 19 and 20 in a local-only mode (bind 127.0.0.1, no token link), then Tasks 12–16 before any release or any non-loopback bind; no task is dropped;
+  - (b) keep the plan's order, and keep the throwaway `spike/first-look` demo for showing progress;
+  - (c) (a), and also Task 10 (tmux) before the UI.
+- **Recommendation:** (a): the screens come about six tasks earlier, and the security tasks still gate every release. It changes the order only, not the scope or the security posture of what ships.
+- **Assumed:** (a), pending Thomas. Until it is applied in the plan, Tasks 5–7 run as planned (they come first in both orders).
+- **Blocked:** nothing.

@@ -1,6 +1,6 @@
 {
   "pipeline_version": 1,
-  "updated_at": "2026-10-30T07:46:46Z",
+  "updated_at": "2026-10-30T09:05:00Z",
   "current_wave": "W5",
   "steps": {
     "F1": {
@@ -338,7 +338,7 @@
         "docs/reviews/code/T1.md",
         "weber8thomas/spectio#21 (squash 4cb00c1)"
       ],
-      "notes": "rnaseq/sarek gate stop-and-resume not run: deferred to the nightly corpus, inbox #47 (assumed). Gate-target rule vs checking-scenarios §12.3: inbox #48. Open: CR-07, CR-08, SEC-T1-01/02/03/06/07 (06 before T3). CI: Snakemake engine fault lost-retry-at-checkpoint-update hit twice in a row in oom_fatal on 712c3bc; one re-run green.",
+      "notes": "rnaseq/sarek gate stop-and-resume not run: deferred to the nightly corpus, inbox #47 (assumed). Gate-target rule vs checking-scenarios \u00a712.3: inbox #48. Open: CR-07, CR-08, SEC-T1-01/02/03/06/07 (06 before T3). CI: Snakemake engine fault lost-retry-at-checkpoint-update hit twice in a row in oom_fatal on 712c3bc; one re-run green.",
       "base": "cc00b25fb782251b4f2ba4326a5d64395df61181"
     },
     "T2": {
@@ -382,7 +382,7 @@
         "docs/specs/dev-environment-and-testing.md",
         "tools/diagrams/t3_sind_slurm.py"
       ],
-      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); from spike t3-ci (run 40670286528); PR weber8thomas/spectio#35 squash e2c7d41; CODE review=approve 1/2/12, security=approve 0/0/7, rounds=2; doc review approve 13/14; pipelines-slurm green on 646a6eb; follow-ups PR weber8thomas/spectio#39 squash 7242408 (positive control for slurmrestd, test_fixture.py in ci-ok, redacted errors; review round 3 approve 0/0/4 + 0/0/4)",
+      "notes": "CI-driven (inbox #51 (b), assumed \u2014 pending Thomas); from spike t3-ci (run 40670286528); PR weber8thomas/spectio#35 squash e2c7d41; CODE review=approve 1/2/12, security=approve 0/0/7, rounds=2; doc review approve 13/14; pipelines-slurm green on 646a6eb; follow-ups PR weber8thomas/spectio#39 squash 7242408 (positive control for slurmrestd, test_fixture.py in ci-ok, redacted errors; review round 3 approve 0/0/4 + 0/0/4)",
       "base": "89fb4f38c6fa0b8837f53bd81a86ec7a778043a0"
     },
     "T4": {
@@ -402,7 +402,7 @@
         "docs/reviews/code/T4.md",
         "docs/research/spike-t4-ci-2026-10-28.md"
       ],
-      "notes": "CI-driven (inbox #51 (b), assumed — pending Thomas); PR #33 squash db7eb7f; pipelines-k8s green on 007683c (run 40674240654); review 3 rounds approve; doc 14/14; 10 spec differences + SEC-T4-03/05 for TRIAGE3",
+      "notes": "CI-driven (inbox #51 (b), assumed \u2014 pending Thomas); PR #33 squash db7eb7f; pipelines-k8s green on 007683c (run 40674240654); review 3 rounds approve; doc 14/14; 10 spec differences + SEC-T4-03/05 for TRIAGE3",
       "base": "504bc62ecdda2ba01316b10e9b5a1b35c214dabf"
     },
     "T5": {
@@ -436,7 +436,7 @@
         "docs/progress/W3/T6.md",
         "docs/reviews/code/T6.md"
       ],
-      "notes": "worker in a separate cloud session (session_01MF8RxLya2qysy5qS11CEqD), branch autopilot/T6; narrowed to a minimal skeleton by Thomas's MVP decision of 2026-10-28 (no side-by-side report against the boards); PR weber8thomas/spectio#45 squash e956025, every check green on 84b5331; code review approve after 3 rounds (0/1/6 fixed), security approve (0/0/5, SEC-T6-05 → inbox #63), simplifier no change, doc review approve 13/14; deferred: side-by-side board report, tier-4 journeys"
+      "notes": "worker in a separate cloud session (session_01MF8RxLya2qysy5qS11CEqD), branch autopilot/T6; narrowed to a minimal skeleton by Thomas's MVP decision of 2026-10-28 (no side-by-side report against the boards); PR weber8thomas/spectio#45 squash e956025, every check green on 84b5331; code review approve after 3 rounds (0/1/6 fixed), security approve (0/0/5, SEC-T6-05 \u2192 inbox #63), simplifier no change, doc review approve 13/14; deferred: side-by-side board report, tier-4 journeys"
     },
     "TRIAGE3": {
       "wave": "W3",
@@ -486,7 +486,7 @@
         "tools/diagrams/r10_synthesis.py",
         "docs/reviews/inbox.md (#62)"
       ],
-      "notes": "synthesis by one general-purpose agent (450 findings, 123 open, 12 touch the narrowed 0.0.1, 7 decided); GO for P1, code after P1 under C1–C4; decisions D0–D4 for Thomas (#52, #61, #34, #55, #62); doc review changes 10/14 then approve 13/14; committed directly on integration (docs only)",
+      "notes": "synthesis by one general-purpose agent (450 findings, 123 open, 12 touch the narrowed 0.0.1, 7 decided); GO for P1, code after P1 under C1\u2013C4; decisions D0\u2013D4 for Thomas (#52, #61, #34, #55, #62); doc review changes 10/14 then approve 13/14; committed directly on integration (docs only)",
       "base": "b217a1efc4eb822c828de351516cace3df0cd3fa"
     },
     "P1": {
@@ -500,7 +500,7 @@
         "docs/progress/W4/P1.md",
         "tools/diagrams/p1_skeleton.py"
       ],
-      "notes": "one general-purpose agent with writing-plans; 5 milestones, 23 tasks, 20 assumptions pending Thomas; all 13 R10 §3a rows and the seven §15.3 requirements mapped to tasks; doc review approve 11/14 with 4 required changes applied (four session-free routes, D3 storage test, api §5 owner on tasks 12 and 17, T6 dependency); next: GO (human gate)"
+      "notes": "one general-purpose agent with writing-plans; 5 milestones, 23 tasks, 20 assumptions pending Thomas; all 13 R10 \u00a73a rows and the seven \u00a715.3 requirements mapped to tasks; doc review approve 11/14 with 4 required changes applied (four session-free routes, D3 storage test, api \u00a75 owner on tasks 12 and 17, T6 dependency); next: GO (human gate)"
     },
     "GO": {
       "wave": "W4",
@@ -535,8 +535,8 @@
       "started_at": "2026-10-29T22:50:00Z",
       "finished_at": null,
       "outputs": [],
-      "notes": "P3 runs across ticks, one P1 task per branch autopilot/P3-<task> (P2 §0). Done: Task 1 (PR #73, squash 622caa0), Task 2 (PR #75, squash 7d90633), Task 3 (PR #77, squash 51d6348). Next: Task 4 (then 5, 6, 7), as the p3-task workflow, board gaps G1/G2/G3a. Deferred to Task 5: SEC-P3T1-08, -11; to Task 6: SEC-P3T1-09 (see journal 2026-10-29 tick 14). FU-P3-02 (inbox #72 b): disabled search, notifications and avatar placeholders in the Paper shell. Follow-ups from Task 3: CR-P3T3-08 (unended lines starve the byte budget); Task 9 must create .spectio and events 0700 and walk req. 10 (SEC-P3T3-09).",
-      "base": "7027a6649b7955c77b8c8c5f62bab03f2d54149c"
+      "notes": "P3 runs across ticks, one P1 task per branch autopilot/P3-<task> (P2 \u00a70). Done: Task 1 (PR #73, squash 622caa0), Task 2 (PR #75, squash 7d90633), Task 3 (PR #77, squash 51d6348), Task 4 (PR #79, squash 6dc5cce). Next: Task 5 (then 6, 7), as the p3-task workflow, board gaps G1/G2/G3a. Deferred to Task 5: SEC-P3T1-08, -11; to Task 6: SEC-P3T1-09 (see journal 2026-10-29 tick 14). FU-P3-02 (inbox #72 b): disabled search, notifications and avatar placeholders in the Paper shell. Follow-ups from Task 3: CR-P3T3-08 (unended lines starve the byte budget); Task 9 must create .spectio and events 0700 and walk req. 10 (SEC-P3T3-09).",
+      "base": "6dc5cce49bc1e47dad684fafe2695b33dfcd63b4"
     },
     "R11": {
       "wave": "W1",
