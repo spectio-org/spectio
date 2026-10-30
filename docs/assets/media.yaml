@@ -358,3 +358,11 @@ media:
       - docs/assets/diagrams/p3-t03-spool-reader_dark.svg
       - docs/assets/diagrams/p3-t03-spool-reader_light.png
       - docs/assets/diagrams/p3-t03-spool-reader_dark.png
+  - id: p3-t04-projector
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t04_projector.py
+    outputs:
+      - docs/assets/diagrams/p3-t04-projector_light.svg
+      - docs/assets/diagrams/p3-t04-projector_dark.svg
+      - docs/assets/diagrams/p3-t04-projector_light.png
+      - docs/assets/diagrams/p3-t04-projector_dark.png

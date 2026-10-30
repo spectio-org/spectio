@@ -257,6 +257,7 @@ launches = Table(
     Column("started_at", UTCDateTime()),
     Column("exited_at", UTCDateTime()),
     Column("exit_code", Integer),
+    Column("culprit_attempt_id", String),  # the launch's first TERMINATE failure (api §7.2)
     UniqueConstraint("run_id", "n"),
 )
 
@@ -283,8 +284,10 @@ tasks = Table(
     Column("run_id", String, ForeignKey("runs.id"), nullable=False),
     Column("process_or_rule", String, nullable=False),
     Column("tag", String),
+    Column("name", String),  # Nextflow's task name: the key of an untagged task (inbox #77)
     Column("state", String, nullable=False),
     _check("tasks", "state", TASK_STATES),
+    Index("ix_tasks_run_key", "run_id", "process_or_rule", "tag", "name"),  # the projector's key
 )
 
 attempts = Table(
@@ -301,6 +304,7 @@ attempts = Table(
     Column("resources", Json),
     _check("attempts", "state", ATTEMPT_STATES),
     _check("attempts", "failure_class", FAILURE_CLASSES, nullable=True),
+    UniqueConstraint("task_id", "launch_n", "n", name="uq_attempts_key"),  # api §8.2
 )
 
 events = Table(

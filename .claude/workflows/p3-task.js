@@ -96,10 +96,16 @@ const defects = verdicts.flatMap(v => v.findings).filter(f => f.severity === 'mi
 if (defects.length) {
   const before = build.head
   build = await fix(defects, 'post-approval defects')
-  const post = await review(`${before}..HEAD`)
-  rounds.push(post)
-  const bad = post.filter(Boolean).flatMap(v => v.findings).filter(f => f.severity === 'blocker' || f.severity === 'major')
-  if (bad.length || post.some(v => !v || v.verdict !== 'approve')) return { status: 'blocked', reason: 'the post-approval fixes did not pass review', rounds, build }
+  // A post-approval fix can regress: its blockers and majors are fixed and that range re-reviewed, twice at most.
+  for (let k = 0; ; k++) {
+    const post = await review(`${before}..HEAD`)
+    rounds.push(post)
+    if (post.some(v => !v)) throw new Error('a reviewer returned nothing')
+    const bad = post.flatMap(v => v.findings).filter(f => f.severity === 'blocker' || f.severity === 'major')
+    if (!bad.length) break
+    if (k === 2) return { status: 'blocked', reason: 'the post-approval fixes did not pass review', rounds, build }
+    build = await fix(bad, `post-approval regression ${k + 1}`)
+  }
 }
 
 phase('Simplify')
