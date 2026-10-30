@@ -25,7 +25,14 @@ from spectio_server.rebuild import rebuild_index
 from spectio_server.serve import Booted, ServeError, boot, start_text, started
 from spectio_server.sink import StoreSink
 from spectio_server.store.db import DB_FILE, open_db
-from spectio_server.store.schema import events, launches, run_inputs, runner_commands, runs
+from spectio_server.store.schema import (
+    events,
+    launches,
+    run_inputs,
+    runner_commands,
+    runs,
+    workflows,
+)
 from spectio_server.store.writer import Writer
 
 FIXTURES = Path(__file__).resolve().parents[3] / "tests" / "fixtures" / "engine-events"
@@ -408,8 +415,30 @@ def test_rebuild_one_engine_per_location(settings: Settings, writer: Writer) -> 
         created_at=datetime(2026, 10, 30, tzinfo=UTC),
     )
     write_run_manifest(paths.run_dir, manifest)
+    git = "https://github.com/example/pipeline.git"
+    for n, revision in ((3, "v1.0"), (4, None)):  # a git workflow, with and without a revision
+        paths = make_run_dirs(root, run_id(n))
+        workflow = Workflow(location=git, engine="nextflow", revision=revision)
+        write_run_manifest(
+            paths.run_dir, manifest.model_copy(update={"run_id": run_id(n), "workflow": workflow})
+        )
     found = rebuild_index(writer, root)
-    assert (found.added, found.skipped) == (1, 1)
+    assert (found.added, found.skipped) == (3, 1)
+    sources = writer.submit(
+        lambda c: c.execute(select(workflows.c.source).where(workflows.c.location == git)).all()
+    ).result()
+    assert [r.source for r in sources] == ["git"]  # one row, whatever the revision
+
+
+def test_rebuild_failed_launch_without_message(settings: Settings, writer: Writer) -> None:
+    root = settings.runs_root
+    failed = make_run(root, run_id(1))
+    write_private(
+        failed / ".spectio" / "launch-failed.json", json.dumps({"class": "engine_missing"})
+    )
+    rebuild_index(writer, root)
+    failure = writer.submit(lambda c: c.execute(select(runs.c.failure)).scalar_one()).result()
+    assert failure["message"] == "The launch failed (index rebuilt)."
 
 
 def test_sink_leases_once_until_the_lease_ends(settings: Settings, writer: Writer) -> None:

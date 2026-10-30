@@ -152,7 +152,7 @@ def _state(found: _Found) -> tuple[str, dict[str, Any] | None]:
         class_ = found.failed.get("class")
         return "failed", failure_json(
             class_ if class_ in LAUNCH_CLASSES else "launch_error",
-            str(found.failed.get("message"))[:4096],
+            str(found.failed.get("message") or "The launch failed (index rebuilt).")[:4096],
         )
     if found.native_id is None:
         if found.cancelled:
@@ -173,7 +173,8 @@ def _add(conn: Connection, runs_root: Path, found: _Found) -> None:
     now = datetime.now(UTC)
     mine = {"created_by": _first(conn, principals)}
     project = _first(conn, projects)
-    source = "git" if m.workflow.revision else "local"
+    # local workflows are absolute paths (plan D2); a git one may have no revision
+    source = "local" if m.workflow.location.startswith("/") else "git"
     workflow = conn.execute(
         select(workflows.c.id, workflows.c.engine).where(
             workflows.c.project_id == project,
