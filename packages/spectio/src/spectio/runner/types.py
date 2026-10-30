@@ -46,7 +46,10 @@ class HeadReport:
     `state` is the head's own state as the launcher sees it (`running` while it lives);
     `ended` is true once it has exited. `failure` is set when the launch could not start, or the
     head ended with no terminal engine event: the runner decides the class (`launch_error`,
-    `engine_missing`, `engine_version`, `head_lost`, `engine_fault`).
+    `engine_missing`, `engine_version`, `head_lost`, `engine_fault`). A Snakemake head never
+    writes a terminal engine event: for a Snakemake launch the runner reports the exit code and
+    leaves `failure` None, and sets it (`head_lost`) only when the exit code is unknown. The
+    projector lets a known exit code win over `head_lost` / `engine_fault` (CR-P3T05-01).
     """
 
     state: HeadState

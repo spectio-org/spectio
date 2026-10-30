@@ -283,6 +283,17 @@ def test_replay_is_idempotent(tmp_path: Path, engine: Engine, writer: Writer) ->
         assert conn.execute(select(func.count()).select_from(events)).scalar_one() == first.last_seq
 
 
+def test_run_times_come_from_the_engine(tmp_path: Path, engine: Engine, writer: Writer) -> None:
+    # onFlowBegin and onFlowComplete times, not the ingest clock (inbox #79, FU-P3-04).
+    fixture = "nextflow-26.10.4_plugin_flaky.spool.jsonl"
+    lines = [json.loads(x) for x in (FIXTURES / fixture).read_text().splitlines()]
+    when = {e["type"]: datetime.fromisoformat(e["time"]) for e in lines}
+    replay(tmp_path, writer, fixture)
+    run = run_row(engine)
+    assert run.started_at == when["nextflow.onFlowBegin"]
+    assert run.ended_at == when["nextflow.onFlowComplete"]
+
+
 def test_terminal_state_never_moves_back(tmp_path: Path, engine: Engine, writer: Writer) -> None:
     replay(tmp_path, writer, "nextflow-26.10.4_plugin_flaky.spool.jsonl")
     late = task(1, "onTaskStart", process="MAKE_READS", tag="S01")
