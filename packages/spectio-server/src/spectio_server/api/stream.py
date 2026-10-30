@@ -18,6 +18,7 @@ import logging
 import threading
 from collections.abc import AsyncIterator
 from dataclasses import dataclass, field
+from typing import Any
 
 from fastapi import APIRouter, Request
 from fastapi.responses import StreamingResponse
@@ -48,6 +49,7 @@ class Stream:
     engine: Engine
     queue_size: int = QUEUE_SIZE
     subscribers: set[Subscriber] = field(default_factory=set)
+    clients: int = 0  # open connections, dropped ones included: the cap counts these
     _pending: Changes = field(default_factory=dict)
     _lock: threading.Lock = field(default_factory=threading.Lock)
     _pump: "asyncio.Task[None] | None" = None
@@ -70,6 +72,15 @@ class Stream:
 
     def unsubscribe(self, sub: Subscriber) -> None:
         self.subscribers.discard(sub)
+
+    def open(self) -> Subscriber:
+        """A new connection: it holds a slot of the cap until `close`, even once dropped."""
+        self.clients += 1
+        return self.subscribe()
+
+    def close(self, sub: Subscriber) -> None:
+        self.unsubscribe(sub)
+        self.clients -= 1
 
     async def flush(self) -> None:
         """Send one frame per run changed since the last flush."""
@@ -119,24 +130,35 @@ class Stream:
                 log.exception("stream flush failed")
 
 
+class _Response(StreamingResponse):
+    """Frees the connection's slot when the response ends, even if its body never starts."""
+
+    def __init__(self, stream: Stream, sub: Subscriber, body: AsyncIterator[str]) -> None:
+        super().__init__(
+            body, media_type="text/event-stream", headers={"Cache-Control": "no-store"}
+        )
+        self.stream, self.sub = stream, sub
+
+    async def __call__(self, scope: Any, receive: Any, send: Any) -> None:
+        try:
+            await super().__call__(scope, receive, send)
+        finally:
+            self.stream.close(self.sub)
+
+
 @router.get("/events/stream", response_class=StreamingResponse)
 async def events_stream(request: Request) -> StreamingResponse:
     stream: Stream = request.app.state.stream
-    if len(stream.subscribers) >= MAX_CLIENTS:
+    if stream.clients >= MAX_CLIENTS:
         raise Problem(429, "rate-limited", "Too many streams", "Close another Spectio tab.")
+    sub = stream.open()  # no `await` since the check: concurrent opens cannot both pass it
 
     async def frames() -> AsyncIterator[str]:
-        sub = stream.subscribe()  # here, so that the `finally` always runs
-        try:
-            yield KEEP_ALIVE
-            while not sub.dropped:
-                try:
-                    yield await asyncio.wait_for(sub.queue.get(), KEEP_ALIVE_S)
-                except TimeoutError:
-                    yield KEEP_ALIVE
-        finally:
-            stream.unsubscribe(sub)
+        yield KEEP_ALIVE
+        while not sub.dropped:
+            try:
+                yield await asyncio.wait_for(sub.queue.get(), KEEP_ALIVE_S)
+            except TimeoutError:
+                yield KEEP_ALIVE
 
-    return StreamingResponse(
-        frames(), media_type="text/event-stream", headers={"Cache-Control": "no-store"}
-    )
+    return _Response(stream, sub, frames())

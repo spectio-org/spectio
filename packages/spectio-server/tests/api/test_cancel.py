@@ -14,7 +14,8 @@ from spectio.runner.engines import EngineInfo
 from spectio.runner.loop import RunnerLoop
 from spectio.runner.types import HeadReport, LaunchRef, LaunchSpec
 from spectio_server.sink import StoreSink
-from spectio_server.store.schema import events, runner_commands, runs
+from spectio_server.store.runs import first as first_row
+from spectio_server.store.schema import events, principals, runner_commands, runs
 from spectio_server.store.writer import Writer
 
 from .conftest import add_run
@@ -48,6 +49,17 @@ def test_cancel_states(authed_client: TestClient, writer: Writer, settings: Sett
         )
     ).result()
     assert changes == [{"from": "queued", "to": "cancelling"}]
+    actor = writer.submit(
+        lambda c: (
+            c.execute(
+                select(events.c.source, events.c.actor_kind, events.c.actor_principal_id).where(
+                    events.c.type == "spectio.run.state_changed"
+                )
+            ).one(),
+            first_row(c, principals),
+        )
+    ).result()
+    assert actor[0] == ("api", "person", actor[1])  # who cancelled (SEC-P3T18-01)
 
     done = "run_01K8T2F1XTVRES000000000202"
     add_run(writer, settings, done, "c", "cancelled")

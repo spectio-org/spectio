@@ -91,8 +91,9 @@ class Projection:
             )
         )
 
-    def move(self, to: str, failure: dict[str, Any] | None = None) -> None:
-        """Move the run to `to` if api §7.1 allows it from its state; log the change."""
+    def move(self, to: str, failure: dict[str, Any] | None = None, **columns: Any) -> None:
+        """Move the run to `to` if api §7.1 allows it from its state; log the change, with the
+        event's `columns` (`source`, `actor_kind`, …; default source `projector`)."""
         if to not in _NEXT.get(self.state, ()):
             return
         values: dict[str, Any] = {"state": to, "state_changed_at": self.now}
@@ -104,7 +105,8 @@ class Projection:
         if failure is not None:
             values["failure"] = failure
         self.conn.execute(update(runs).where(runs.c.id == self.run_id).values(**values))
-        self.log("spectio.run.state_changed", {"from": self.state, "to": to}, source="projector")
+        payload = {"from": self.state, "to": to}
+        self.log("spectio.run.state_changed", payload, **{"source": "projector", **columns})
         self.state = to
 
     def set_started(self) -> None:

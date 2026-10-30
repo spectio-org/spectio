@@ -171,3 +171,61 @@ def test_stream_keep_alive(served: str, monkeypatch: pytest.MonkeyPatch) -> None
     ):
         seen = frames(response)
         assert [next(seen), next(seen)] == [("", "keep-alive"), ("", "keep-alive")]
+
+
+def test_new_run_sends_a_delta(served: str, writer: Writer, settings: Settings) -> None:
+    """A run just inserted (`insert_run`, used by `POST /runs` and the rebuild) sends a frame,
+    before any head report (CR-P3T18-01)."""
+    with (
+        httpx2.Client(base_url=served, timeout=10) as http,
+        http.stream("GET", STREAM) as response,
+    ):
+        seen = frames(response)
+        assert next(seen) == ("", "keep-alive")
+        add_run(writer, settings, RUN, "new", "queued")
+        kind, data = next(f for f in seen if f[0])
+    assert kind == "spectio.run.delta"
+    assert json.loads(data)["run_id"] == RUN
+
+
+def test_client_cap_holds_under_concurrent_opens(
+    served: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Opens that arrive together cannot pass the cap (CR-P3T18-02, SEC-P3T18-02), and a closed
+    stream frees its slot."""
+    from spectio_server.api import stream as stream_mod
+
+    async def scenario() -> tuple[Counter[int], int]:
+        async with httpx2.AsyncClient(base_url=served, timeout=10) as http:
+
+            async def one() -> tuple[int, Any]:
+                response = await http.send(http.build_request("GET", STREAM), stream=True)
+                return response.status_code, response
+
+            opened = await asyncio.gather(*(one() for _ in range(40)))
+            codes = Counter(code for code, _ in opened)
+            for _, response in opened:
+                await response.aclose()
+            await asyncio.sleep(0.2)  # the server sees the closes
+            again = await http.send(http.build_request("GET", STREAM), stream=True)
+            await again.aclose()
+            return codes, again.status_code
+
+    codes, again = asyncio.run(scenario())
+    assert codes == Counter({200: stream_mod.MAX_CLIENTS, 429: 40 - stream_mod.MAX_CLIENTS})
+    assert again == 200
+
+
+def test_dropped_client_still_counts(writer: Writer, settings: Settings) -> None:
+    """A slow client dropped from the fan-out keeps its slot until its connection ends."""
+    stream = Stream(writer.engine, queue_size=1)
+
+    async def scenario() -> tuple[int, int]:
+        sub = stream.open()
+        sub.queue.put_nowait("x")
+        stream._publish("y")  # full: dropped from the fan-out
+        held = stream.clients
+        stream.close(sub)
+        return held, stream.clients
+
+    assert asyncio.run(scenario()) == (1, 0)

@@ -71,3 +71,26 @@ def test_unusable_schema_is_422(authed_client: TestClient, tmp_path: Path, schem
 
 def test_no_api_text_names_no_missing_host_check() -> None:
     assert "Host" not in NO_API and "CSRF" not in NO_API
+
+
+def test_deeply_nested_body_is_a_422_problem(authed_client: TestClient) -> None:
+    response = authed_client.post(
+        RUNS, content="[" * 500_000, headers={"Content-Type": "application/json"}
+    )
+    assert response.status_code == 422, response.text
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["type"] == "/problems/validation-failed"
+    assert response.json()["errors"][0]["field"] == "body"
+
+
+def test_wrong_method_is_a_problem(authed_client: TestClient) -> None:
+    response = authed_client.put(RUNS, json={})
+    assert response.status_code == 405, response.text
+    assert response.headers["content-type"].startswith("application/problem+json")
+    assert response.json()["status"] == 405
+
+
+def test_unknown_path_is_a_problem(authed_client: TestClient) -> None:
+    response = authed_client.get("/api/v1/nothing-here")
+    assert response.status_code == 404, response.text
+    assert response.json()["type"] == "/problems/not-found"

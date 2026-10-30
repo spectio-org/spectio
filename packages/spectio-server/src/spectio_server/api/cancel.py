@@ -43,7 +43,8 @@ def _cancel(conn: Connection, run_id: str) -> int:
         .limit(1)
     ).scalar_one()
     p = Projection.load(conn, launch_id)
-    p.move("cancelling")
+    person = first(conn, principals)  # the one principal of 0.0.1 (sign-in: P1 Task 16)
+    p.move("cancelling", source="api", actor_kind="person", actor_principal_id=person)
     p.finish()
     conn.execute(
         insert(runner_commands).values(
@@ -54,7 +55,7 @@ def _cancel(conn: Connection, run_id: str) -> int:
             payload={},
             state="pending",
             created_at=p.now,
-            created_by=first(conn, principals),
+            created_by=person,
         )
     )
     return 202
