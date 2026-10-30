@@ -79,7 +79,7 @@ def build(theme: Theme) -> Sketch:
 
     # 3 -- the parents
     x = COL[2]
-    chain = (("`/`", "root"), ("`tmp`", "root, sticky"), ("`spectio-<uid>`", "this user"))
+    chain = (("`/`", "root"), ("`tmp`", "root, sticky"))
     for i, (name, owner) in enumerate(chain):
         fx = x + i * 112
         s.folder(fx, ROW1 + 20, 84, 60, fill="neutral" if i < 2 else "done")
