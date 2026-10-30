@@ -1,5 +1,7 @@
 """The read API and the run logs (P1 Task 18; api §5 notes of 2026-10-28, §7; arch §13.7)."""
 
+import base64
+import json
 import os
 import socket
 from datetime import UTC, datetime, timedelta
@@ -332,3 +334,10 @@ def test_logs_confined(
 @pytest.mark.parametrize("bad", ["%00", "a" * 300])
 def test_logs_bad_run_id(authed_client: TestClient, bad: str) -> None:
     problem(authed_client.get(f"{RUNS}/{bad}/logs", params={"source": "engine"}), 404, "not-found")
+
+
+@pytest.mark.parametrize("value", [["2026-10-30T08:00:00", "run_x"], [1, 2], {"a": 1}, "x"])
+def test_forged_cursor_is_422(authed_client: TestClient, value: object) -> None:
+    """A cursor is opaque: one this server did not give is a 422, never a 500."""
+    cursor = base64.urlsafe_b64encode(json.dumps(value).encode()).decode()
+    problem(authed_client.get(RUNS, params={"cursor": cursor}), 422, "validation-failed")

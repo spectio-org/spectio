@@ -177,7 +177,12 @@ def _decode(cursor: str, timestamp: bool) -> tuple[Any, str]:
         value, id_ = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
         if not isinstance(id_, str):
             raise ValueError("no ID")
-        return (datetime.fromisoformat(value) if timestamp else str(value)), id_
+        if not timestamp:
+            return str(value), id_
+        at = datetime.fromisoformat(value)
+        if at.utcoffset() is None:  # the store takes aware times only
+            raise ValueError("naive")
+        return at, id_
     except (ValueError, TypeError, binascii.Error):
         raise Invalid("cursor", "not a cursor this server gave") from None
 
