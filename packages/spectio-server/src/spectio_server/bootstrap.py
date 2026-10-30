@@ -94,22 +94,20 @@ def db_checks(
         found.append(("warn", "db_dir", f"{db_dir} is missing: the next start rebuilds it"))
         return found
     private, owner = _private_dir(db_dir, os.getuid())
-    if not private and fallback:
+    if not private:
+        who = f"(owner {_owner(owner)})"
         found.append(
             (
                 "warn",
                 "db_dir",
-                f"{db_dir} is not a private directory of this user (owner {_owner(owner)}): "
+                f"{db_dir} is not a private directory of this user {who}: "
                 "the next start uses a mkdtemp directory",
             )
-        )
-        return found
-    if not private:
-        found.append(
-            (
+            if fallback
+            else (
                 "fail",
                 "db_dir",
-                f"{db_dir} must be a directory of this user with mode 0700 (owner {_owner(owner)})",
+                f"{db_dir} must be a directory of this user with mode 0700 {who}",
             )
         )
         return found
