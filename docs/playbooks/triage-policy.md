@@ -29,7 +29,7 @@ Findings that are not auto-accepted go to `docs/reviews/inbox.md`. Each entry ha
 - a question with two or three options and a recommended one;
 - what is blocked until it is answered.
 
-When the recommended option is reversible and only affects docs, the autopilot **assumes** it and continues. It marks the decision `assumed — pending Thomas` in the spec and the log, so nothing waits on Thomas unless it must. Steps that depend on an unanswered irreversible or reserved question stay `waiting_human`.
+When the recommended option is reversible, the autopilot **assumes** it and continues (standing rule, Thomas, 2026-10-30, [autopilot §10](autopilot.md#10-unattended-mode-thomas-2026-10-30); before that, only when it affected docs alone). It marks the decision `assumed — pending Thomas` in the spec and the log, so nothing waits on Thomas unless it must. Steps that depend on an unanswered irreversible or reserved question stay `waiting_human`.
 
 When Thomas answers in the inbox (`Answer: B`), the next autopilot tick:
 - applies the answer;

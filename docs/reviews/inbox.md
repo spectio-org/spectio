@@ -1121,6 +1121,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Options and what was assumed:** (a) leave the three out of the 0.0.1 shell, keeping the floating top bar, breadcrumbs, theme toggle, foldable sidebar and phone tab bar; (b) show them disabled, as placeholders. **Assumed:** (a).
 - **Recommendation:** (a): controls that do nothing are noise and break the keyboard rules (every control must act).
 - **Blocked:** nothing; G1 and G4 proceed with (a).
+- **Answer (Thomas, 2026-10-30, session):** (b) show search, notifications and the avatar as disabled placeholders. This reverses the assumed (a), which P2 shipped: follow-up FU-P3-02 adds them to the shell as native `<button disabled>` controls with their names, so they stay readable but never take focus or act. *Handled.*
 
 ### #73 · Assumed: `spectio init --local` refuses to run off Linux
 
@@ -1129,6 +1130,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Options and what was assumed:** (a) refuse with exit 2 and "Local mode needs Linux in 0.0.1"; (b) warn and go on, untested. **Assumed:** (a); it is easy to relax later, while (b) would ship an untested path.
 - **Recommendation:** (a).
 - **Blocked:** nothing; G6 proceeds with (a).
+- **Answer (Thomas, 2026-10-30, session):** (a) confirmed. *Handled.*
 
 ### #74 · Assumed: the budget counts 1 point of the weekly window per 10 USD of API-equivalent tokens
 
@@ -1137,6 +1139,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Options and what was assumed:** (a) estimate: each tick prices its tokens (from `tools/dashboard/usage.py`) at the Opus 4.x list prices (5 / 25 USD per million input / output, 6.25 cache write, 0.50 cache read) and records it with `record-cost`, at a prior of 0.1 point per USD (`--pct-per-usd 0.1`) **[to be validated]**; (b) stop and wait for a reading after every step. **Assumed:** (a), with the ratio kept on the safe side.
 - **Recommendation:** read `/usage` when you wake up and write the percentage here; the next tick calibrates the ratio (`budget.py start --now <pct>`).
 - **Blocked:** nothing.
+- **Answer (Thomas, 2026-10-30, session):** `/usage` reads 31 %; the stop stays at 40 %. Ticks 14 and 15 recorded 98.3 USD for 3 points (28 % to 31 %), so the ratio is recalibrated to 0.031 point per USD (`budget.py start --weekly 9 --now 31 --pct-per-usd 0.031`). The prior of 0.1 overestimated about threefold. *Handled.*
 
 ### #75 · P3 Task 2 store: spec changes owed, and four review rounds
 
@@ -1157,3 +1160,23 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   **Assumed:** (a) for the spec changes. For the rounds, nothing changes until Thomas decides; the skill text is not edited.
 - **Recommendation:** (a).
 - **Blocked:** nothing; Task 2 merges with the rules in code and tests.
+- **Answer (Thomas, 2026-10-30, session):** (a). The spec changes go to the next `/apply-findings`; `review-code` now allows rounds past two while a security blocker or major is open. The spec changes stay owed. *Partly handled.*
+
+### #76 · Assumed: the spool reader's bounds and private directories
+
+- **Covers:** [api §14.1](../specs/api-and-data-model.md#141-driven-runs-001); [P3-M1 Task 3](../progress/W5/P3-M1.md); [code review record](code/P3-t03.md); [P1 Task 9](../plans/P1-walking-skeleton.md#task-9-head-script-local-launcher-and-the-runner-loop).
+- **Context:** the review of the spool reader (P3 Task 3) set bounds that no earlier decision fixes:
+  - per read: 2 MiB of bytes and 5000 lines;
+  - per launch: 1024 spool files, 16 384 directory entries looked at, 64 bad names remembered;
+  - per event: 4096 values and depth 32 in `data`. A Snakemake event over this, such as the rule graph of a very large workflow or a gather rule with thousands of inputs, is dropped as `too_complex` **[to be validated against real large workflows]**.
+
+  It also requires `.spectio` and `.spectio/events` to be private directories of the user (0700). Otherwise every read raises `PermissionError`, so the bridges and P1 Task 9 must create them so (follow-up).
+
+  Process: the review ran a third round, on the minor fixes made after both reviewers approved. That is outside the two-round rule; the #75 exception covers only an open security blocker or major.
+- **Options and what was assumed:**
+  - (a) keep these bounds and the 0700 rule, and raise a bound when a real workflow hits it;
+  - (b) larger bounds now (for example 8 MiB per read: on `35fb19e` the worker's worst-case test input, lines at the node cap, peaked at 177 MiB traced by `tracemalloc` with an 8 MiB budget, against 45 MiB at 2 MiB, as reported in its round-1 hand-back; the security reviewer's own probe on `bd206f6` peaked at 11.1 MiB, [record](code/P3-t03.md)).
+
+  **Assumed:** (a). For the rounds: a review of minor fixes after approval counts as allowed, and is said in the record.
+- **Recommendation:** (a). For the rounds, either allow one review of post-approval fixes in `review-code`, or have the orchestrator check minor fixes after approval without a review.
+- **Blocked:** nothing.

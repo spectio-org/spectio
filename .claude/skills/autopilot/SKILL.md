@@ -90,7 +90,7 @@ Give every worker:
 **Verify each finished step:**
 1. Check that the expected `writes` exist and are non-empty.
 2. Run the step's `exit_check` (or the wave's, once its last step finishes) and show its output.
-3. **Code.** For a step whose diff changes code (every `build`, and a `spike` whose code is reused), run the `review-code` skill: independent `code-reviewer` and `security-reviewer` in parallel, at most two fix rounds with the worker, then a behaviour-preserving `code-simplifier` pass, with the tests re-run each time. A step is `done` only when both reviewers `approve` (security blockers and majors fixed) and tests pass; two failed rounds make it `blocked` with an inbox entry. Then re-run the `exit_check`. Steps that change only docs, specs or boards skip this.
+3. **Code.** For a step whose diff changes code (every `build`, and a `spike` whose code is reused), run the `review-code` skill: independent `code-reviewer` and `security-reviewer` in parallel, at most two fix rounds with the worker (more while a security blocker or major is open, `review-code` step 4), then a behaviour-preserving `code-simplifier` pass, with the tests re-run each time. A step is `done` only when both reviewers `approve` (security blockers and majors fixed) and tests pass; two failed rounds, with no security finding open, make it `blocked` with an inbox entry. Then re-run the `exit_check`. Steps that change only docs, specs or boards skip this.
 4. **Docs.** Run the `write-docs` skill for the step (Progress page, owning spec, figures, media, docs gate, independent `doc-reviewer` pass). A step is `done` only with gate `pass` and review `approve` (`docs/specs/documentation-system.md` §3.3).
 5. **Integrate.**
    - **With a remote:** push `autopilot/<step-id>` and open a PR into the integration branch, with the body from `write-docs`. Then run `gh pr merge --auto --squash`; GitHub merges it once the required checks pass.
@@ -123,6 +123,14 @@ Append to `.autopilot/journal.md`:
 - what is now waiting on Thomas.
 
 Snapshot this session's token usage: `python3 tools/dashboard/usage.py .autopilot/usage` (`tools/dashboard/README.md`). If it fails, note it in the journal and go on. Then update `state.json` (`updated_at`, `current_wave`) and commit the three files (two if `usage.py` failed).
+
+## 4b. Unattended mode (Thomas, 2026-10-30)
+
+Follow `docs/playbooks/autopilot.md` §10:
+- never ask Thomas in the session; write the question to the inbox and apply the recommendation (`triage-policy.md`), except for the reserved items, which stay `waiting_human`;
+- run each P3 task as the saved workflow `p3-task` (args: `step`, `task`, `base`, `title`, `extra`, `session`, `font`), then push, open the PR, merge, promote;
+- write little in the session: one line per merge, blockers, and §5's status lines at the end;
+- keep the run going with `send_later` check-ins (CI on an open PR, the next tick) until the budget check answers `stop`, nothing is ready or a human gate is reached.
 
 ## 5. Report (always, last)
 
