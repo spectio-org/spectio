@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 504,
-    "cache_write": 517588,
-    "cache_read": 45106919,
-    "output": 96854
+    "input": 524,
+    "cache_write": 533747,
+    "cache_read": 46651057,
+    "output": 101446
    },
-   "calls": 215,
+   "calls": 222,
    "model": "claude-opus-5-5",
    "start": "2026-10-29T22:16:54.188Z",
-   "end": "2026-10-30T00:13:46.433Z",
+   "end": "2026-10-30T00:19:42.149Z",
    "id": "66130bd5-0ed7-5086-a906-6640d809ba00",
    "kind": "main",
    "type": "session",
@@ -35,6 +35,23 @@
   },
   {
    "tokens": {
+    "input": 20,
+    "cache_write": 62562,
+    "cache_read": 361895,
+    "output": 16735
+   },
+   "calls": 10,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-30T00:14:11.298Z",
+   "end": "2026-10-30T00:17:08.486Z",
+   "id": "a21eaa2990c4fb593",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security re-review P3 Task 2",
+   "workflow": null
+  },
+  {
+   "tokens": {
     "input": 40,
     "cache_write": 82242,
     "cache_read": 1086857,
@@ -48,6 +65,23 @@
    "kind": "subagent",
    "type": "doc-reviewer",
    "label": "Doc review of P2 step",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 20,
+    "cache_write": 50507,
+    "cache_read": 300228,
+    "output": 13173
+   },
+   "calls": 10,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-30T00:14:11.288Z",
+   "end": "2026-10-30T00:16:25.222Z",
+   "id": "a268471f62602539c",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code re-review P3 Task 2",
    "workflow": null
   },
   {
@@ -120,15 +154,15 @@
   },
   {
    "tokens": {
-    "input": 120,
-    "cache_write": 191998,
-    "cache_read": 8156507,
-    "output": 64736
+    "input": 138,
+    "cache_write": 215643,
+    "cache_read": 9793159,
+    "output": 78632
    },
-   "calls": 58,
+   "calls": 66,
    "model": "claude-opus-5-5",
    "start": "2026-10-29T23:58:38.785Z",
-   "end": "2026-10-30T00:13:37.596Z",
+   "end": "2026-10-30T00:19:40.308Z",
    "id": "a798614269b129e89",
    "kind": "subagent",
    "type": "general-purpose",
