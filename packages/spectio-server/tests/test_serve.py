@@ -398,6 +398,9 @@ def test_serve_decides_the_api_once(settings: Settings, monkeypatch: pytest.Monk
         assert app.state.no_api is None  # the routers are mounted: no catch-all 404
         assert all(getattr(r, "path", "") != "/api/v1/{path:path}" for r in app.routes)
         assert "shared" not in start_text(settings, "node1", "alice", server.no_api)
+        config = server.uvicorn.config
+        assert config.access_log is False  # a query string can hold a location (FU-P3-17)
+        assert config.timeout_graceful_shutdown == 5  # an event stream never holds a stop
 
 
 def test_serve_slurm_start_text_and_no_runner(
