@@ -10,6 +10,7 @@ database; the caller stores the batch in one transaction.
 
 import errno
 import hashlib
+import logging
 import os
 import stat
 from collections import Counter
@@ -30,6 +31,10 @@ from spectio_sdk.events import (
     UnknownEventType,
     parse_data,
 )
+
+log = logging.getLogger(__name__)
+
+SPOOL_REFUSED = "spool_refused"  # a drop reason: `.spectio` or `events` was refused whole
 
 CHUNK_BYTES = 1048576  # read at a time: the line buffer holds at most this plus MAX_LINE_BYTES
 MAX_READ_BYTES = 2097152  # bytes one read takes from the files, skipped ones included
@@ -111,6 +116,22 @@ def read_spool(
     finally:
         os.close(dir_fd)
     return SpoolBatch(events, new, drops)
+
+
+def try_read_spool(
+    launch_dir: Path, run_id: str, launch_n: int, cursor: dict[str, int], max_lines: int = 5000
+) -> SpoolBatch:
+    """`read_spool` for the runner loop and the boot rebuild, which must not stop on one run.
+
+    When `.spectio` or `events` is refused (not a private directory of the user, a symlink, not
+    a directory) or cannot be opened, the read is counted once as `spool_refused`, logged, and
+    the cursor is kept as it is: the next read tries again.
+    """
+    try:
+        return read_spool(launch_dir, run_id, launch_n, cursor, max_lines)
+    except OSError as exc:  # PermissionError included
+        log.warning("spool of %s launch %d not read: %s", run_id, launch_n, exc)
+        return SpoolBatch([], dict(cursor), Counter({SPOOL_REFUSED: 1}))
 
 
 def _checked(cursor: dict[str, int], launch_n: int, drops: Counter[str]) -> dict[str, int]:
