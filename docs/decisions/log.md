@@ -1005,3 +1005,13 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
   - [api §8.3](../specs/api-and-data-model.md#83-live-streams-sse): the in-process stream, its frames, slow clients and the cap of 32 open connections (#87 rule 7).
 - **Not yet applied:** api §7 (`workflow_versions.version`, `run_stages` without `gate_id`, `tasks.stage_id`) and P1 Task 18's interface, at the next `/apply-findings`.
 - **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions): follow-ups FU-P3-19 (the flaky-test question), FU-P3-20 (stream and refusal hardening) and FU-P3-21 (a typed OpenAPI document and the task cursor, before Task 19).
+
+## 2026-10-30 — The 0.0.1 screens and launch form, written into dev-env §15.3 and ui-spec §4.6 (P3 Task 19, inbox #88)
+
+- **Context.** P3 Task 19 built the screens under `web/` and the launch form ([P1 Task 19](../plans/P1-walking-skeleton.md#task-19-ui-shell-and-launch-form)) before sign-in, in the order of inbox #80 (a). The plan serves `web/dist` "behind the session", which does not exist yet. P1's Process says the owning spec changes in the same PR.
+- **Applied (assumed — standing rule, [inbox #88](../reviews/inbox.md#88-assumed-the-001-screens-and-launch-form-in-the-local-only-order) (a); [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** one new requirement and one dated note. No section number changed.
+  - [Dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 17 (new): the screens are served only where the API is mounted, four routes and `/assets/<name>` only, with a CSP and `nosniff` (#88 rules 1 to 3).
+  - [ui-spec §4.6](../specs/ui-spec.md#46-launch-and-relaunch), note 2026-10-30: the 0.0.1 form as built: one Launch button that stays focusable with its reason, Revision only for a repository, an edit forgets the loaded pipeline and the engine (#88 rule 6).
+- **Reserved, not assumed:** whether a session-less API, and now the screens, may be served at all before Tasks 12 to 16 (inbox #86).
+- **Not yet applied:** P1 Task 19's interface (the stack versions, the extra files, the UI tests), at the next `/apply-findings`.
+- **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions): follow-up FU-P3-22 (screen-serving hardening); FU-P3-21 moves to P1 Task 20 (#88 rule 4).
