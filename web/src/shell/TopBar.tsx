@@ -14,11 +14,20 @@ const SECTIONS: Record<string, { label: string; to: To }> = {
   launch: { label: "Launch", to: "/launch" },
 };
 
+/** The router decodes the path but leaves %25, %5C and malformed sequences such as %E0 as they are. */
+function label(segment: string): string {
+  try {
+    return decodeURIComponent(segment);
+  } catch {
+    return segment;
+  }
+}
+
 /** Home > section > item, from the path; every crumb but the last is a link. */
 export function crumbsFor(pathname: string): Crumb[] {
   const crumbs: Crumb[] = [{ label: "Home", to: "/" }];
   for (const segment of pathname.split("/").filter(Boolean)) {
-    crumbs.push(SECTIONS[segment] ?? { label: decodeURIComponent(segment) });
+    crumbs.push(SECTIONS[segment] ?? { label: label(segment) });
   }
   return crumbs.map((crumb, i) => (i === crumbs.length - 1 ? { label: crumb.label } : crumb));
 }

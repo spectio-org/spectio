@@ -127,3 +127,9 @@ test("breadcrumbs follow the route", async () => {
   expect(await within(crumbs).findByText("Launch")).toHaveAttribute("aria-current", "page");
   expect(within(crumbs).queryByRole("link", { name: "Runs" })).toBeNull();
 });
+
+test("a malformed percent sequence keeps the shell (CR-P3G4-01)", async () => {
+  app("/runs/%E0");
+  const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
+  expect(within(crumbs).getByText("%E0")).toHaveAttribute("aria-current", "page");
+});
