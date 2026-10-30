@@ -147,7 +147,7 @@ def test_doctor_nxf_plugins_default(
     if nxf_config is not None:
         (nxf_home / "config").write_text(nxf_config)
     if copy:
-        (nxf_home / "plugins" / "nf-spectio-0.0.1").mkdir()
+        (nxf_home / "plugins" / "nf-spectio-0.0.1").mkdir(mode=0o700)  # as unpacked
     _, lines = doctor(capsys, configured(home, fakebin, executor="local"))
     found = line(lines, "nxf_plugins_default")
     assert found.split()[0] == expected, found

@@ -451,7 +451,8 @@ def spool_line(run_id: str, seq: int, hook: str) -> str:
 def test_loop_launches_reads_spool_and_ends(runs_root: Path, launcher: LocalLauncher) -> None:
     line = spool_line("RUN", 1, "onFlowCreate").replace('"RUN"', '"%s"')
     spool = '"$SPECTIO_SPOOL_DIR/nf-spectio-1-0001.jsonl"'
-    body = f'printf {shlex.quote(line + chr(10))} "$SPECTIO_RUN_ID" > {spool}; exit 0'
+    # umask 077: the bridges create spool files 0600 whatever the umask, as this stub must
+    body = f'umask 077; printf {shlex.quote(line + chr(10))} "$SPECTIO_RUN_ID" > {spool}; exit 0'
     engine = stub_engine(runs_root.parent / "bin", body)
     sink = FakeSink()
     loop = make_loop(sink, runs_root, engine, launcher)
