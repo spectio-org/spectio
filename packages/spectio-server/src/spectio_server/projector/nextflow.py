@@ -67,8 +67,8 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
     values: dict[str, Any] = {"state": state}
     if state == "failed":
         values["ignored"] = data.errorAction == "IGNORE"
-        if data.errorAction == "TERMINATE":
-            values["failure_class"] = "tool_error"
+        if data.errorAction == "TERMINATE" and _culprit(p) is None:
+            values["failure_class"] = "tool_error"  # set once: events arrive in seq order
     if (code := _exit(data)) is not None:
         values["exit"] = code
     row = p.conn.execute(
@@ -150,9 +150,9 @@ def _flow_complete(p: Projection, data: NextflowFlowComplete) -> None:
         p.move("failed", _failure(p, data.errorMessage or ""))
 
 
-def _failure(p: Projection, message: str) -> dict[str, Any]:
-    """`tool_error` from the attempt whose `errorAction` is TERMINATE, else `engine_fault`."""
-    culprit = p.conn.execute(
+def _culprit(p: Projection) -> Any:
+    """The launch's attempt of class `tool_error`: only its first TERMINATE failure gets one."""
+    return p.conn.execute(
         select(attempts.c.task_id, attempts.c.n)
         .join(tasks, tasks.c.id == attempts.c.task_id)
         .where(
@@ -160,9 +160,12 @@ def _failure(p: Projection, message: str) -> dict[str, Any]:
             attempts.c.launch_n == p.launch_n,
             attempts.c.failure_class == "tool_error",
         )
-        .order_by(attempts.c.created_at, attempts.c.id)
-        .limit(1)
     ).one_or_none()
+
+
+def _failure(p: Projection, message: str) -> dict[str, Any]:
+    """`tool_error` from the first attempt whose `errorAction` is TERMINATE, else `engine_fault`."""
+    culprit = _culprit(p)
     if culprit is None:
         return failure_json("engine_fault", message)
     return failure_json("tool_error", message, culprit.task_id, culprit.n)

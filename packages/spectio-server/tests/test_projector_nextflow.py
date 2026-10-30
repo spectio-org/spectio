@@ -554,6 +554,24 @@ def test_failure_without_terminate_is_engine_fault(engine: Engine, writer: Write
     }
 
 
+def test_first_terminate_in_a_batch_is_the_culprit(
+    engine: Engine, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Ids that sort backwards, so a tie on created_at cannot fall back on id order (CR-P3T04-07).
+    countdown = iter(range(999, 0, -1))
+    monkeypatch.setattr(nextflow_projector, "new_id", lambda prefix: f"{prefix}_{next(countdown)}")
+    fail: dict[str, Any] = {"trace": {"status": "FAILED"}, "errorAction": "TERMINATE"}
+    ingest_events(
+        writer,
+        task(1, "onTaskComplete", tag="S01", **fail),
+        task(2, "onTaskComplete", tag="S02", **fail),
+        event(3, "onFlowComplete", success=False, errorMessage="boom"),
+    )
+    with engine.connect() as conn:
+        first = conn.execute(select(tasks.c.id).where(tasks.c.tag == "S01")).scalar_one()
+    assert run_row(engine).failure["task_id"] == first
+
+
 # --- Head reports and cancel (api §7.1, P1 Assumption 15) ----------------------------------
 
 
