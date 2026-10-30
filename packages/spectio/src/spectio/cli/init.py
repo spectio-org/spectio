@@ -69,14 +69,12 @@ def _runs_root(settings: Settings) -> Path:
 
 def _free_port(preferred: int) -> int:
     """`preferred` if it is free on 127.0.0.1, else a port the system picks (P1 Assumption 10)."""
-    for port in (preferred, 0):
-        with socket.socket() as sock:
-            try:
-                sock.bind(("127.0.0.1", port))
-            except OSError:
-                continue
-            return int(sock.getsockname()[1])
-    raise InitError("no free port on 127.0.0.1")  # pragma: no cover - port 0 always binds
+    with socket.socket() as sock:
+        try:
+            sock.bind(("127.0.0.1", preferred))
+        except OSError:
+            sock.bind(("127.0.0.1", 0))
+        return int(sock.getsockname()[1])
 
 
 def _engines(settings: Settings) -> dict[str, Any]:
