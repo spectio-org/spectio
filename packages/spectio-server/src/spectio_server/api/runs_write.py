@@ -19,7 +19,7 @@ from typing import Any, Literal, cast
 from fastapi import APIRouter, Request, Response
 from jsonschema import validators
 from jsonschema.exceptions import SchemaError
-from pydantic import BaseModel, ConfigDict, Field, JsonValue
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, field_validator
 from referencing import Registry
 from referencing.exceptions import Unresolvable
 from sqlalchemy import Connection, insert
@@ -42,6 +42,8 @@ from spectio_server.store.writer import Writer
 
 router = APIRouter()
 
+MAX_DEPTH = 32  # of the params (FU-P3-17)
+
 
 class WorkflowIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
@@ -61,6 +63,26 @@ class LaunchIn(BaseModel):
     profiles: list[str] = Field(default_factory=list, max_length=20)
     params: dict[str, JsonValue] = Field(default_factory=dict)
 
+    @field_validator("params")
+    @classmethod
+    def _shallow(cls, params: dict[str, JsonValue]) -> dict[str, JsonValue]:
+        if _depth(params) > MAX_DEPTH:
+            raise ValueError(f"nested deeper than {MAX_DEPTH} levels")
+        return params
+
+
+def _depth(value: JsonValue) -> int:
+    """How deep `value` nests, iteratively: a deep value never reaches the recursion limit."""
+    deepest, todo = 0, [(value, 1)]
+    while todo:
+        item, depth = todo.pop()
+        deepest = max(deepest, depth)
+        if isinstance(item, dict):
+            todo.extend((v, depth + 1) for v in item.values())
+        elif isinstance(item, list):
+            todo.extend((v, depth + 1) for v in item)
+    return deepest
+
 
 def _check(body: LaunchIn) -> None:
     if body.name is not None:
@@ -78,14 +100,16 @@ def _check_params(found: Found, params: dict[str, Any]) -> None:
     registry replaces jsonschema's default one, which fetches; one that cannot resolve is a 422."""
     if found.schema is None or found.schema_source == "inferred":
         return
+    if not isinstance(found.schema.get("$schema", ""), str):
+        raise Invalid("params", "the pipeline's schema cannot be used: $schema is not a URI")
     cls = validators.validator_for(found.schema, default=validators.Draft7Validator)
     try:
         cls.check_schema(found.schema)
         errors = sorted(
             cls(found.schema, registry=Registry()).iter_errors(params), key=lambda e: list(e.path)
         )
-    except (SchemaError, Unresolvable) as exc:
-        reason = exc.message if isinstance(exc, SchemaError) else str(exc)
+    except (SchemaError, Unresolvable, RecursionError) as exc:  # `{"$ref": "#"}` recurses
+        reason = exc.message if isinstance(exc, SchemaError) else type(exc).__name__
         raise Invalid("params", f"the pipeline's schema cannot be used: {reason}") from None
     found_errors = []
     for error in errors:
@@ -141,9 +165,7 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     writer: Writer = request.app.state.writer
     try:
         writer.submit(
-            lambda conn: _insert(
-                conn, manifest, resolved.source, found.name, payload, now, runs_root
-            )
+            lambda conn: _insert(conn, manifest, resolved.source, found, payload, now, runs_root)
         ).result()
     except BaseException:
         shutil.rmtree(paths.run_dir, ignore_errors=True)  # no run directory without its row
@@ -171,7 +193,7 @@ def _insert(
     conn: Connection,
     m: RunManifest,
     source: str,
-    workflow_name: str,
+    found: Found,
     payload: dict[str, Any],
     now: datetime,
     runs_root: Path,
@@ -185,7 +207,8 @@ def _insert(
             now=now,
             state="queued",
             origin="ui",
-            workflow_name=workflow_name,
+            workflow_name=found.name,
+            workflow_version=found.version,
         )
     except EngineConflict as exc:
         raise Invalid(

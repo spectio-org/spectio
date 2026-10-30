@@ -655,3 +655,33 @@ def test_redelivered_launch_after_a_cancel_with_no_native_id(
     )
     assert ("cmd_cancel", True, None) in sink.acks
     assert sink.last(ref.launch_id).exit_code == 143
+
+
+def test_snakemake_end_skips_the_spool_grace(runs_root: Path, launcher: LocalLauncher) -> None:
+    """FU-P3-14 (CR-P3T09-04): with the default spool grace (60 s), a Snakemake head that exits
+    with a code ends its launch at the poll that sees it, after one more read of its spool, so
+    the events it wrote just before it exited are ingested first."""
+    line = spool_line("RUN", 1, "x").replace('"RUN"', '"%s"')
+    line = line.replace('"nf-spectio/0.0.1"', '"snakemake-logger-spectio/0.0.1"')
+    line = line.replace('"nextflow.x"', '"snakemake.log"')
+    spool = '"$SPECTIO_SPOOL_DIR/snakemake-logger-spectio-1-0001.jsonl"'
+    body = f'umask 077; sleep 0.5; printf {shlex.quote(line + chr(10))} "$SPECTIO_RUN_ID" > {spool}'
+    logger = runs_root.parent / "bridges" / "snakemake_logger_plugin_spectio"  # Task 7's place
+    logger.mkdir()
+    (logger / "__init__.py").write_text("")
+    version = 'case "$1" in --version) echo 9.27.1; exit 0;; esac\n'
+    engine = stub_engine(runs_root.parent / "bin", version + body + "; exit 0")
+    sink = FakeSink()
+    settings = Settings(
+        runs_root=runs_root,
+        executor="local",
+        engines=EngineOpts(snakemake_cmd=shlex.quote(str(engine))),
+    )
+    loop = RunnerLoop(sink, launcher, settings, tick_s=0.05, end_grace_s=60)
+    ref = sink.launch(runs_root, RUN_A)
+    sink.launches[ref.launch_id] = ref = replace(ref, engine="snakemake")
+    sink.commands[-1] = replace(sink.commands[-1], launch=ref)
+    run_until(loop, lambda: ref.launch_id not in sink.launches, timeout=30)
+    report = sink.last(ref.launch_id)
+    assert (report.ended, report.exit_code, report.failure) == (True, 0, None), report
+    assert [len(b.events) for _, b in sink.batches if b.events] == [1]  # read before the end

@@ -284,6 +284,8 @@ def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
             port=settings.port,
             lifespan="off",
             proxy_headers=False,  # every client is on loopback: never trust X-Forwarded-*
+            access_log=False,  # a query string can hold a location or a token (FU-P3-17)
+            timeout_graceful_shutdown=5,  # an open event stream never holds a stop (Task 18)
         )
         server = Started(sock, uvicorn.Server(config), booted, api.state.no_api)
         if booted.loop is not None:

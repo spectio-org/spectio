@@ -1,4 +1,4 @@
-"""The FastAPI app of `spectio serve` (P1 Tasks 11 and 17).
+"""The FastAPI app of `spectio serve` (P1 Tasks 11, 17 and 18).
 
 Sign-in (P1 Tasks 12 to 16: token link, session) is not built yet, so the API is served in local
 mode only (`spectio init --local`): on a SLURM environment, where other
@@ -6,7 +6,8 @@ users share the login node and its loopback port, every `/api/v1` path answers 4
 reason (inbox #86). In local mode too, the API is left unmounted on a machine that looks like
 a cluster node or a shared one (`shared_host`, SEC-P3T17-06): kind `local` is a configuration
 value, which can be set on a login node. The Host allow-list and the write checks (dev-env §15.3
-req. 4 and 7) run on every request already (`api.browser`). The generated docs stay off.
+req. 4 and 7) run on every request already (`api.browser`). The generated docs stay off: the
+OpenAPI document is a file, `openapi/0.0.1.json`, written from `app.openapi()` (Task 18).
 """
 
 import os
@@ -19,7 +20,16 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from spectio.config import Settings
-from spectio_server.api import browser, problems, runs_write, workflows
+from spectio_server.api import (
+    browser,
+    cancel,
+    logs,
+    problems,
+    runs_read,
+    runs_write,
+    stream,
+    workflows,
+)
 from spectio_server.store.writer import Writer
 
 PLACEHOLDER = (
@@ -29,7 +39,7 @@ PLACEHOLDER = (
 API = "/api/v1"
 NO_API = (
     "The API is served in local mode only (spectio init --local) until sign-in is built: "
-    "P1 Tasks 12 to 16 (token link, session, CSRF and Host checks)."
+    "P1 Tasks 12 to 16 (token link and session)."
 )
 
 SLURM_CONF_FILE = Path("/etc/slurm/slurm.conf")
@@ -79,7 +89,13 @@ def no_api_reason(settings: Settings) -> str | None:
 
 
 def create_app(settings: Settings, writer: Writer) -> FastAPI:
-    app = FastAPI(title="Spectio", docs_url=None, redoc_url=None, openapi_url=None)
+    app = FastAPI(
+        title="Spectio",
+        version=version("spectio"),
+        docs_url=None,
+        redoc_url=None,
+        openapi_url=None,
+    )
     app.state.settings = settings
     app.state.writer = writer
     app.state.engine_versions = workflows.engine_versions(settings)
@@ -94,8 +110,10 @@ def create_app(settings: Settings, writer: Writer) -> FastAPI:
     reason = no_api_reason(settings)  # one scan: the start text reads it back (CR-P3T17-04)
     app.state.no_api = reason
     if reason is None:
-        app.include_router(workflows.router, prefix=API)
-        app.include_router(runs_write.router, prefix=API)
+        app.state.stream = stream.Stream(writer.engine)
+        writer.on_commit = app.state.stream.notify  # the writer thread, after each commit
+        for module in (workflows, runs_write, runs_read, logs, cancel, stream):
+            app.include_router(module.router, prefix=API)
     else:
 
         @app.api_route(API + "/{path:path}", methods=["GET", "POST", "PUT", "PATCH", "DELETE"])

@@ -2,11 +2,15 @@
 
 Each submitted function runs in its own `BEGIN IMMEDIATE` transaction, so a write never has to
 upgrade a read lock (the cause of SQLITE_BUSY), and writes run one at a time, in submit order.
+A job notes the runs and tasks it changed with `note_change`; once its transaction commits, the
+writer thread hands them to `on_commit` (the live stream of P1 Task 18), which must not block.
+Readers open their own connections on `engine`.
 """
 
+import logging
 import queue
 import threading
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from concurrent.futures import Future
 from typing import Any, TypeVar
 
@@ -15,10 +19,21 @@ from sqlalchemy import Connection, Engine
 T = TypeVar("T")
 
 _Job = tuple[Callable[[Connection], Any], "Future[Any]"]
+Changes = dict[str, set[str]]  # run ID → the IDs of its tasks that changed
+_CHANGES = "spectio.changes"
+
+log = logging.getLogger(__name__)
+
+
+def note_change(conn: Connection, run_id: str, task_ids: Iterable[str] = ()) -> None:
+    """Record, in the current transaction, that this run (and these tasks) changed."""
+    conn.info.setdefault(_CHANGES, {}).setdefault(run_id, set()).update(task_ids)
 
 
 class Writer:
     def __init__(self, engine: Engine) -> None:
+        self.engine = engine
+        self.on_commit: Callable[[Changes], None] | None = None
         self._jobs: queue.Queue[_Job | None] = queue.Queue()
         self._lock = threading.Lock()
         self._closed = False
@@ -45,6 +60,13 @@ class Writer:
             self._jobs.put(None)
         self._thread.join()
 
+    def _committed(self, changes: Changes | None) -> None:
+        if changes and self.on_commit is not None:
+            try:
+                self.on_commit(changes)
+            except Exception:  # a listener never stops the writer
+                log.exception("on_commit failed")
+
     def _run(self, engine: Engine) -> None:
         try:
             with engine.connect().execution_options(spectio_begin="IMMEDIATE") as conn:
@@ -56,11 +78,13 @@ class Writer:
                         with conn.begin():
                             result = fn(conn)
                     except Exception as exc:
+                        conn.info.pop(_CHANGES, None)
                         future.set_exception(exc)
                     except BaseException as exc:  # the thread dies: tell the caller first
                         future.set_exception(exc)
                         raise
                     else:
+                        self._committed(conn.info.pop(_CHANGES, None))
                         future.set_result(result)
         finally:
             # Whatever ended the thread, no caller waits forever on a job it will never run.
