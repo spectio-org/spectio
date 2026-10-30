@@ -2,6 +2,7 @@
 dev-env §15.3 req. 10 and 11). Heads run a stub engine through the login shell."""
 
 import json
+import logging
 import os
 import shlex
 import shutil
@@ -464,6 +465,8 @@ def test_loop_launches_reads_spool_and_ends(runs_root: Path, launcher: LocalLaun
     # Nextflow ended with no terminal engine event: the runner names the class (Assumption 15).
     assert last.ended and last.exit_code == 0
     assert last.failure is not None and last.failure.class_ == "engine_fault"
+    loop.tick()  # the launch is no longer active: the launcher forgets it (CR-P3T09-07)
+    assert not launcher._dirs and not launcher._procs and not launcher._warned
 
 
 def test_cancel_and_launch_failure_markers(runs_root: Path, launcher: LocalLauncher) -> None:
@@ -615,3 +618,18 @@ def test_unreadable_head_logged_once(runs_root: Path, caplog: pytest.LogCaptureF
     for _ in range(3):
         assert launcher.poll(["1"])["1"].state == "unknown"
     assert len([r for r in caplog.records if "not read" in r.getMessage()]) == 1
+
+
+def test_refused_adopt_logged_once(
+    runs_root: Path, launcher: LocalLauncher, caplog: pytest.LogCaptureFixture
+) -> None:
+    """CR-P3T09-09: an active launch whose adopt is refused (its directory is not the run's) is
+    logged once, not at every tick."""
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, runs_root.parent / "unused", launcher)
+    ref = LaunchRef("lch_x", RUN_A, 1, "nextflow", runs_root.parent / "elsewhere", "1.1")
+    sink.launches[ref.launch_id] = ref
+    for _ in range(3):
+        loop.tick()
+    logged = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+    assert len([m for m in logged if "spool" not in m]) == 1  # the spool's own: once too

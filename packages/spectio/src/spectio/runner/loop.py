@@ -93,6 +93,7 @@ class RunnerLoop:
         self.end_grace_s = end_grace_s  # how long an ended head waits for its spool
         self._known: set[str] = set()  # launches the launcher started or adopted
         self._refused: set[str] = set()  # launches whose refused spool is already counted
+        self._unadopted: set[str] = set()  # launches whose refused adopt is already logged
         self._last: dict[str, HeadReport] = {}
         self._ended_at: dict[str, float] = {}
 
@@ -107,7 +108,7 @@ class RunnerLoop:
     def tick(self) -> None:
         for ref in self.sink.active_launches():
             if ref.native_id and ref.launch_id not in self._known:
-                self._each(self._adopt, ref)  # after a restart
+                self._try_adopt(ref)  # after a restart
         for command in self.sink.lease_commands():
             self._command(command)
         launches = self.sink.active_launches()
@@ -129,8 +130,23 @@ class RunnerLoop:
         except Exception:
             log.exception("launch %s of %s", ref.launch_n, ref.run_id)
 
+    def _try_adopt(self, ref: LaunchRef) -> None:
+        """Adopt, and log a refusal once per launch, not at every tick (CR-P3T09-09)."""
+        try:
+            self._adopt(ref)
+        except Exception:
+            if ref.launch_id in self._unadopted:
+                log.debug("launch %s of %s still not adopted", ref.launch_n, ref.run_id)
+            else:
+                self._unadopted.add(ref.launch_id)
+                log.exception("launch %s of %s not adopted", ref.launch_n, ref.run_id)
+        else:
+            self._unadopted.discard(ref.launch_id)
+
     def _forget(self, active: set[str]) -> None:
-        for kept in (self._known, self._refused):
+        gone = [r.native_id for i, r in self._last.items() if i not in active and r.native_id]
+        self.launcher.forget(gone)  # CR-P3T09-07
+        for kept in (self._known, self._refused, self._unadopted):
             kept.intersection_update(active)
         for by_launch in (self._last, self._ended_at):
             for launch_id in by_launch.keys() - active:

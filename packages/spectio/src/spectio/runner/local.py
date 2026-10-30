@@ -16,6 +16,7 @@ import signal
 import socket
 import subprocess
 import time
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -171,6 +172,14 @@ class LocalLauncher:
         head = self._signal(native_id, signal.SIGTERM)
         if head is not None:
             self._kill_at[native_id] = (time.monotonic() + grace_s, head)
+
+    def forget(self, ids: Iterable[str]) -> None:
+        """The loop no longer watches these heads (CR-P3T09-07); a SIGKILL still due for one
+        is dropped with it."""
+        for native_id in ids:
+            for by_id in (self._dirs, self._procs, self._kill_at):
+                by_id.pop(native_id, None)
+            self._warned.discard(native_id)
 
     def _signal(
         self, native_id: str, sig: signal.Signals, only: HeadPid | None = None

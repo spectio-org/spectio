@@ -1,6 +1,7 @@
 """What the runner hands to the server; the runner never imports the server (architecture §6)."""
 
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal, Protocol
@@ -132,3 +133,6 @@ class Launcher(Protocol):
     def poll(self, ids: list[str]) -> dict[str, HeadReport]: ...
     def cancel(self, native_id: str, grace_s: int = 60) -> None: ...
     def adopt(self, launch: LaunchRef) -> HeadReport: ...
+    def forget(self, ids: Iterable[str]) -> None:
+        """Drop what is held for these heads: their launches are no longer active."""
+        ...
