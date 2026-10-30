@@ -69,20 +69,16 @@ def _spectio(spec: LaunchSpec) -> Path:
     return spec.launch_dir / ".spectio"
 
 
-def _profiles(spec: LaunchSpec) -> list[str]:
-    for name in spec.profiles:
-        if not PROFILE.fullmatch(name):
-            raise ValueError(f"profile name {name!r} is not allowed")
-    if spec.engine == "snakemake" and len(spec.profiles) > 1:
-        raise ValueError("a Snakemake launch takes one profile")
-    return spec.profiles
-
-
 def engine_args(spec: LaunchSpec) -> list[str]:
     """The engine's arguments after `engine_cmd`, each one word."""
     spectio = _spectio(spec)
     params = str(spectio / "params.json")
-    profiles = _profiles(spec)
+    profiles = spec.profiles
+    for name in profiles:
+        if not PROFILE.fullmatch(name):
+            raise ValueError(f"profile name {name!r} is not allowed")
+    if spec.engine == "snakemake" and len(profiles) > 1:
+        raise ValueError("a Snakemake launch takes one profile")
     if spec.engine == "nextflow":
         args = ["run", str(spec.location), "-params-file", params]
         args += ["-c", str(spectio / "spectio.config"), "-work-dir", str(spec.work_dir)]
