@@ -78,7 +78,7 @@ def _tenancy(conn: Connection, user: str, kind: str, config: dict[str, Any], ver
 
 
 def db_checks(
-    db_dir: Path, mountinfo: Path = MOUNTINFO, *, fallback: bool = False
+    db_dir: Path, mountinfo: Path | None = None, *, fallback: bool = False
 ) -> list[tuple[str, str, str]]:
     """`(status, check, detail)` for the SQLite library and the database directory: the
     network-file-system and 0700 checks (architecture §7.2), or a warning when it is missing,
@@ -114,7 +114,7 @@ def db_checks(
         )
         return found
     try:
-        kind = fs_type(db_dir, mountinfo)
+        kind = fs_type(db_dir, mountinfo or MOUNTINFO)
     except UnsafeDatabase as exc:
         found.append(("fail", "db_dir", str(exc)))
         return found

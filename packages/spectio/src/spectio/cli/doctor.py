@@ -113,11 +113,7 @@ def checks(
         except server.UnsafeDatabase as exc:
             results.append(("fail", "db_dir", str(exc)))
         else:
-            fallback = settings.db_dir is None
-            if mountinfo is None:
-                results += server.db_checks(db_dir, fallback=fallback)
-            else:
-                results += server.db_checks(db_dir, mountinfo, fallback=fallback)
+            results += server.db_checks(db_dir, mountinfo, fallback=settings.db_dir is None)
     here = socket.gethostname()
     if settings.host == here:
         results.append(("ok", "host", here))
