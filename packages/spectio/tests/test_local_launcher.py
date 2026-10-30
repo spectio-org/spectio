@@ -312,13 +312,15 @@ class FakeSink:
         return ref
 
 
-def make_loop(sink: FakeSink, runs_root: Path, engine: Path, launcher: LocalLauncher) -> RunnerLoop:
+def make_loop(
+    sink: FakeSink, runs_root: Path, engine: Path, launcher: LocalLauncher, end_grace_s: float = 0
+) -> RunnerLoop:
     settings = Settings(
         runs_root=runs_root,
         executor="local",
         engines=EngineOpts(nextflow_cmd=shlex.quote(str(engine))),
     )
-    return RunnerLoop(sink, launcher, settings, tick_s=0.05, end_grace_s=0)
+    return RunnerLoop(sink, launcher, settings, tick_s=0.05, end_grace_s=end_grace_s)
 
 
 def run_until(loop: RunnerLoop, pred: Callable[[], object], timeout: float = 20) -> None:
@@ -472,6 +474,23 @@ def test_cancel_before_the_head_starts(runs_root: Path, launcher: LocalLauncher)
     assert not launcher._dirs
     time.sleep(0.2)
     assert not (ref.launch_dir / "started").exists()
+
+
+def test_cancel_before_the_head_starts_skips_the_spool_grace(
+    runs_root: Path, launcher: LocalLauncher
+) -> None:
+    """CR-P3T09-03: with the default spool grace (60 s), a launch cancelled before its head
+    starts still ends in one tick: no engine ran, so there is no spool to wait for."""
+    engine = stub_engine(runs_root.parent / "bin", "exit 0")
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher, end_grace_s=60)
+    ref = sink.launch(runs_root, RUN_A)
+    sink.commands.insert(0, Command("cmd_cancel", "cancel", ref))
+    loop.tick()
+    assert ref.launch_id not in sink.launches
+    report = sink.last(ref.launch_id)
+    assert report.ended and report.failure is not None
+    assert report.failure.class_ == "head_lost"
 
 
 def test_cancel_with_a_stale_ref_after_the_launch(runs_root: Path, launcher: LocalLauncher) -> None:

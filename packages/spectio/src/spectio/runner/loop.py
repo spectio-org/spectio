@@ -175,8 +175,10 @@ class RunnerLoop:
         if started:  # delivered again after a restart: adopt, never start twice
             self._adopt(ref)
             return None
-        if cancelled:  # cancelled before its head started: it never starts (CR-P3T09-02)
-            self._report(ref, HeadReport("unknown", None, None, None, True, None))
+        if cancelled:  # cancelled before its head started: it never starts (CR-P3T09-02),
+            # and with a failure it skips the spool grace: no engine ran (CR-P3T09-03)
+            failure = Failure("head_lost", "Cancelled before its head started.")
+            self._report(ref, HeadReport("unknown", None, None, None, True, failure))
             return None
         try:
             payload = LaunchPayload.model_validate(command.payload)
