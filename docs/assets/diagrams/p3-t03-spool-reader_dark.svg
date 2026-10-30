@@ -649,7 +649,7 @@
   <circle cx="1129.0" cy="874.0" r="4.5" fill="#ffd43b"/>
   <circle cx="1143.0" cy="874.0" r="4.5" fill="#69db7c"/>
   <text x="1114.0" y="904.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#e3e3e3" xml:space="preserve">$ uv run --locked pytest -q \</text>
-  <text x="1114.0" y="925.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#e3e3e3" xml:space="preserve">    tests/test_spool_reader.py</text>
+  <text x="1114.0" y="925.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#e3e3e3" xml:space="preserve">    packages/spectio/tests/test_spool_reader.py</text>
   <text x="1114.0" y="946.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#e3e3e3" xml:space="preserve">all pass</text>
   <text x="1550.0" y="1008.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="end" font-weight="normal">source: spectio/runner/spool.py, spectio_sdk/events.py · api 14.1 · dev-env 15.3 req. 6 and 12 · P1 Task 3</text>
 </svg>

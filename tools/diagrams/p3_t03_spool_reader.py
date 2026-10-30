@@ -216,7 +216,7 @@ def build(theme: Theme) -> Sketch:
     s.text(100, by + 88, "any other read error: `read_error`, retried next time · a file gone since the listing:"
            " skipped", size=13.5, anchor="start")
     s.terminal(1100, by, 450, 110, ("$ uv run --locked pytest -q \\",
-                                     "    tests/test_spool_reader.py",
+                                     "    packages/spectio/tests/test_spool_reader.py",
                                      "all pass"), size=12.5)
 
     s.text(W - 50, H - 16, "source: spectio/runner/spool.py, spectio_sdk/events.py · api 14.1 · "

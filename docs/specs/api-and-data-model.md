@@ -615,7 +615,7 @@ Written 2026-10-29 (P1 Task 1, [decision log](../decisions/log.md#2026-10-29-api
 | `MAX_EVENT_DEPTH` | 32 levels | reader: the nesting of `data`, which is level 1 |
 | pre-parse bound | more than 2 × (4096 + 16) = 8224 of `[`, `{` and `,` in one line | reader: drops the line as `too_complex` before parsing it; commas inside strings count too, so it refuses only far past `MAX_EVENT_NODES` |
 
-The first three bounds are P1 Assumption 12 (inbox #28). The reader's bounds after them were set in the P3 Task 3 review ([record](../reviews/code/P3-t03.md)) *(assumed — pending Thomas)*. `MAX_SPOOL_FILES`, `MAX_EVENT_NODES` and `MAX_EVENT_DEPTH` are in `spectio_sdk.events`; the others are in `spectio.runner.spool`.
+The first three bounds are P1 Assumption 12 (inbox #28). The reader's bounds after them were set in the P3 Task 3 review ([record](../reviews/code/P3-t03.md)) *(assumed — pending Thomas, [inbox #76](../reviews/inbox.md#76-assumed-the-spool-readers-bounds-and-private-directories))*. `MAX_SPOOL_FILES`, `MAX_EVENT_NODES` and `MAX_EVENT_DEPTH` are in `spectio_sdk.events`; the others are in `spectio.runner.spool`.
 
 **Envelope.** Every line is an object with exactly these keys; any other key makes the line invalid. Unknown keys *inside* `data` are ignored instead (allow-lists, below), so a newer bridge still parses.
 
@@ -678,7 +678,7 @@ Never stored, whoever sends them and at any depth, including inside free-form va
 | `not_regular` | once per file | a directory, FIFO, socket or device |
 | `foreign_owner` | once per file | owned by another user |
 | `writable_by_others` | once per file | writable by group or others |
-| `unreadable` | once per file | the open fails with `EACCES` or `ENXIO` |
+| `unreadable` | once per file | an operation on the file (lstat, open, fstat, read) fails with `EACCES` or `ENXIO` |
 | `bad_name` | once per name | a name in `events/` outside the grammar, up to `MAX_BAD_NAMES` |
 | `too_many_files` | by its high-water mark | names past `MAX_SPOOL_FILES` or `MAX_BAD_NAMES`, or a listing cut at `MAX_DIR_ENTRIES`; only an increase over the most seen is counted |
 | `bad_cursor` | once per cursor entry | a cursor key that is neither a `#` key nor a spool file name of this launch (dropped), or a value out of range (reset: the file is refused, a count set to 0) |

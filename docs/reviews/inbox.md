@@ -1161,3 +1161,22 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a).
 - **Blocked:** nothing; Task 2 merges with the rules in code and tests.
 - **Answer (Thomas, 2026-10-30, session):** (a). The spec changes go to the next `/apply-findings`; `review-code` now allows rounds past two while a security blocker or major is open. The spec changes stay owed. *Partly handled.*
+
+### #76 · Assumed: the spool reader's bounds and private directories
+
+- **Covers:** [api §14.1](../specs/api-and-data-model.md#141-driven-runs-001); [P3-M1 Task 3](../progress/W5/P3-M1.md); [code review record](code/P3-t03.md); [P1 Task 9](../plans/P1-walking-skeleton.md#task-9-head-script-local-launcher-and-the-runner-loop).
+- **Context:** the review of the spool reader (P3 Task 3) set bounds that no earlier decision fixes:
+  - per read: 2 MiB of bytes and 5000 lines;
+  - per launch: 1024 spool files, 16 384 directory entries looked at, 64 bad names remembered;
+  - per event: 4096 values and depth 32 in `data`. A Snakemake event over this, such as the rule graph of a very large workflow or a gather rule with thousands of inputs, is dropped as `too_complex` **[to be validated against real large workflows]**.
+
+  It also requires `.spectio` and `.spectio/events` to be private directories of the user (0700). Otherwise every read raises `PermissionError`, so the bridges and P1 Task 9 must create them so (follow-up).
+
+  Process: the review ran a third round, on the minor fixes made after both reviewers approved. That is outside the two-round rule; the #75 exception covers only an open security blocker or major.
+- **Options and what was assumed:**
+  - (a) keep these bounds and the 0700 rule, and raise a bound when a real workflow hits it;
+  - (b) larger bounds now (for example 8 MiB per read: the security reviewer measured a 177 MiB peak at 8 MiB, against 45 MiB at 2 MiB).
+
+  **Assumed:** (a). For the rounds: a review of minor fixes after approval counts as allowed, and is said in the record.
+- **Recommendation:** (a). For the rounds, either allow one review of post-approval fixes in `review-code`, or have the orchestrator check minor fixes after approval without a review.
+- **Blocked:** nothing.
