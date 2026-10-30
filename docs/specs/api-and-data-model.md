@@ -99,6 +99,8 @@ The mapping from a problem to a CLI exit code is owned here; what each exit code
 | `forbidden` | 403 | 3 |
 | `unauthenticated` | 401 | 3 |
 
+*Note 2026-10-30 (0.0.1, P1 Task 18, FU-P3-17):* the 0.0.1 server sends two slugs beyond the catalogue above, from its write checks: `length-required` (411, a chunked write) and `request-too-large` (413, a write body over 1 MiB). The framework's own refusals are problem documents too. A body that cannot be parsed is `422 validation-failed` on the field `body`. An unknown path is `404 not-found`. Any other status with no slug here, such as `405`, gets `type: about:blank` with the status phrase as `title`, the default of [RFC 9457 §4.2.1](https://www.rfc-editor.org/rfc/rfc9457#section-4.2.1), and keeps its headers (a `405`'s `Allow`). The CLI exit codes of these three are not set yet. *(assumed — pending Thomas, [inbox #87](../reviews/inbox.md#87-assumed-the-001-read-api-logs-cancel-and-stream-in-the-local-only-order) rules 10 and 12)*
+
 ## 5. Endpoint catalogue (API v1)
 
 Paths under `/admin/*` are for system admins only and are specified in [`admin-and-operations.md`](admin-and-operations.md) §5. Everything a non-admin may call is at the root and specified here. *(assumed — pending Thomas, inbox #29)*
@@ -144,6 +146,18 @@ Paths under `/admin/*` are for system admins only and are specified in [`admin-a
 - Until sign-in (P1 Tasks 12 to 16), they are served only by a server whose environment is of kind `local`, and only on a machine that does not look like a cluster node or a shared one, as decided once at start (inbox #86 rule 1). Elsewhere every `/api/v1` path answers `404` with the reason, and the start text says so. Every request first passes the Host, cross-site and write checks of [dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 4 and 7 (`400`, `403`, `415`).
 
 *(assumed — pending Thomas, [inbox #86](../reviews/inbox.md#86-assumed-the-001-launch-api-served-in-local-mode-only-before-sign-in))*
+
+*Note 2026-10-30 (0.0.1 read API, P1 Task 18):* the subset of the note of 2026-10-28 is built, with these shapes:
+
+- The run, in `GET /runs` items and `GET /runs/{id}` (which adds `params`): `{id, name, state, origin, created_at, started_at, ended_at, workflow: {engine, engine_version, location, name, version}, profiles, failure, head, task_counts, summary: {tasks: {done, total, failed, cached}, last_failure}}`. `summary` follows §7, not P1's names: `total` is `tasks_expected` when set, else the sum of `task_counts`; `done` counts `succeeded`, `cached` and `stored`. `workflow.version` is the version inspect read at launch (`manifest.version`), `null` for Snakemake and for a rebuilt run; `workflow.engine_version` is `runs.engine_version`. `head` is `{session, node, alive, exit_code}`, `null` until the launch has a native ID; `alive` means "not reported ended".
+- Lists are `{items, next}`, `next` an opaque cursor; a cursor this server did not give is `422` on `cursor`. `GET /runs` sorts newest first by `created_at`, or by `ended_at` (ended runs only); `state` takes a comma-separated list; `q` is a name prefix compared as text. `GET /runs/{id}/tasks` (`state=`, `process=`) and `/processes` follow first-seen order, the order of the task IDs, which are monotonic within the process.
+- `GET /version` returns `{version, node, runs_root, account, executor}`.
+- `GET /runs/{id}/logs?source=head-out|head-err|engine` returns the last 64 KiB as `text/plain; charset=utf-8`. The engine log is `.nextflow.log`, or the newest regular `.snakemake/log/*.log`. The launch directory comes from the runs root and the run ID, must be private, and each part below it is opened with `O_NOFOLLOW`; a symlink, a missing file or anything but a regular file is `404 log-not-found`. The owner of the file is not checked yet (dev-env §15.3 req. 12; follow-up FU-P3-20).
+- `POST /runs/{id}:cancel` moves `queued` or `running` to `cancelling` and queues a `cancel` command for the last launch: `202` with the run. A run already `cancelling` or terminal answers `200`, unchanged; a `cli-observed` run `422 not-in-this-version`. The `spectio.run.state_changed` event has `source: api`, `actor_kind: person` and the principal.
+- `GET /events/stream`: [§8.3](#83-live-streams-sse), note 2026-10-30.
+- Until sign-in, these routes have no session, as for the note above: same `no_api` decision, same Host, cross-site and write checks; `:cancel` is a write. P1 Task 16 turns each into a `401` without a session.
+
+*(assumed — pending Thomas, [inbox #87](../reviews/inbox.md#87-assumed-the-001-read-api-logs-cancel-and-stream-in-the-local-only-order))*
 
 ### Example: launch from a LIMS
 ```http
@@ -494,6 +508,16 @@ Why: `sqlite3` calls are synchronous; measured in R4, 200 000 events take 7.2 s 
 Why: at 1–10 k events/s for one run, applying every event in every watching tab freezes it; over HTTP/1.1 a browser allows only 6 SSE connections ([MDN EventSource](https://developer.mozilla.org/en-US/docs/Web/API/EventSource)); with an HPA, every rollout or scale-down reconnects every stream at once.
 
 Note 2026-10-28: 0.0.1 keeps live refresh over SSE, rather than polling, for the runs list and the run detail *(decided — Thomas, 2026-10-28; [decision log](../decisions/log.md#2026-10-28-001-live-refresh-over-sse-sqlite-as-a-rebuildable-index))*. One stream per browser, behind the session cookie ([`dev-environment-and-testing.md`](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) §15.3 req. 2 and 3).
+
+Note 2026-10-30 (0.0.1 stream, P1 Task 18):
+
+- **In-process.** After each commit, the writer thread hands the runs and tasks the commit changed to the stream, which only records them. A new run counts as a change. Once a second, one pump on the event loop sends one `spectio.run.delta` per changed run.
+- **Frames:** a strict subset of §8.5, `{run_id, seq_through, counts, changed: {tasks}}`, with no `id:` line and no `Last-Event-ID` replay; a client refetches on reconnect. `: keep-alive` opens each stream and follows 15 s without a frame.
+- **Slow clients.** Each client has a queue of 64 frames; a client that falls behind is dropped and its stream ends.
+- **Cap.** At most 32 open connections per process, else `429 rate-limited`. A connection holds its slot from the check to the end of its response, also once dropped, so opens that arrive together cannot pass the cap.
+- **Not yet:** the session of req. 2 (P1 Task 16), a filter per subscriber (every subscriber gets every run's delta, one Unix user in 0.0.1), and a size bound on `changed.tasks` (follow-up FU-P3-20).
+
+*(assumed — pending Thomas, [inbox #87](../reviews/inbox.md#87-assumed-the-001-read-api-logs-cancel-and-stream-in-the-local-only-order) rule 7)*
 
 ### 8.4 Event retention and raw payloads
 

@@ -24,6 +24,7 @@ import shutil
 import signal
 import stat
 import subprocess
+import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
@@ -42,6 +43,7 @@ router = APIRouter()
 
 GIT_SCHEMES: tuple[str, ...] = ("https", "ssh")  # api §5; a test adds "file" for a local repo
 GIT_TIMEOUT_S = 300
+MAX_LOCATION = 4096  # characters (FU-P3-17)
 GITHUB = "https://github.com"
 SHORT_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_][A-Za-z0-9._-]{0,99}")
 URL_CHARS = re.compile(r"[A-Za-z0-9._~:/@+-]+")  # no space, quote, `%`, `?`, `#` or backslash
@@ -84,8 +86,13 @@ class Found:
 
 
 def refuse_control(field: str, value: str) -> None:
-    if any(ord(c) < 32 or 127 <= ord(c) < 160 for c in value):
-        raise Invalid(field, "must not hold control characters")
+    """Control characters, and the format and separator ones (Cf, Zl, Zp: bidi overrides,
+    zero-width spaces, line separators) that hide or reorder text (FU-P3-17)."""
+    if any(
+        ord(c) < 32 or 127 <= ord(c) < 160 or unicodedata.category(c) in ("Cf", "Zl", "Zp")
+        for c in value
+    ):
+        raise Invalid(field, "must not hold control, format or separator characters")
 
 
 # --- Locations -------------------------------------------------------------------------------
@@ -137,10 +144,16 @@ def check_revision(revision: str | None) -> str:
 
 def resolve(data_dir: Path, location: str, revision: str | None) -> Resolved:
     """Check a location (fields `location`, `revision`) and fetch it when it is Git."""
+    if len(location) > MAX_LOCATION:
+        raise Invalid("location", f"longer than {MAX_LOCATION} characters")
     refuse_control("location", location)
     if location.startswith("/"):
         directory = Path(location)
-        if not directory.is_dir() or not os.access(directory, os.R_OK | os.X_OK):
+        try:
+            readable = directory.is_dir() and os.access(directory, os.R_OK | os.X_OK)
+        except OSError:  # a name too long, among others
+            readable = False
+        if not readable:
             raise Invalid("location", f"{location} is not a directory this account can read")
         return Resolved(str(directory), None, "local", directory, directory.name)
     url, parts = git_url(location)
@@ -252,11 +265,13 @@ def _read(root: Path, *parts: str) -> str | None:
         fd = _open(root, *parts)
     except OSError:  # missing, a symlink (ELOOP), not a directory
         return None
-    if not stat.S_ISREG(os.fstat(fd).st_mode):
-        os.close(fd)
-        return None
-    with os.fdopen(fd, "rb") as f:
-        raw = f.read(MAX_FILE + 1)
+    with os.fdopen(fd, "rb") as f:  # closes the descriptor whatever happens next
+        try:
+            if not stat.S_ISREG(os.fstat(fd).st_mode):
+                return None
+            raw = f.read(MAX_FILE + 1)
+        except OSError as exc:  # an I/O error after the open (FU-P3-17)
+            raise ValueError(f"{parts[-1]} cannot be read: {exc.strerror}") from None
     if len(raw) > MAX_FILE:
         raise ValueError(f"{parts[-1]} is larger than {MAX_FILE} bytes")
     return raw.decode()

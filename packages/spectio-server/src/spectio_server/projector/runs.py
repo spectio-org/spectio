@@ -14,7 +14,7 @@ when set, else that sum.
 """
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
@@ -22,6 +22,7 @@ from sqlalchemy import Connection, func, insert, select, update
 
 from spectio_server.ids import new_id
 from spectio_server.store.schema import attempts, events, launches, runs, tasks
+from spectio_server.store.writer import note_change
 
 TERMINAL = frozenset({"succeeded", "failed", "cancelled"})
 OPEN_ATTEMPT_STATES = ("pending", "submitted", "running")
@@ -54,6 +55,7 @@ class Projection:
     last_seq: int
     now: datetime
     event_time: datetime | None = None  # the engine's time of the event being projected
+    changed: set[str] = field(default_factory=set)  # tasks created or moved, for the stream
 
     @classmethod
     def load(cls, conn: Connection, launch_id: str) -> "Projection":
@@ -89,8 +91,9 @@ class Projection:
             )
         )
 
-    def move(self, to: str, failure: dict[str, Any] | None = None) -> None:
-        """Move the run to `to` if api §7.1 allows it from its state; log the change."""
+    def move(self, to: str, failure: dict[str, Any] | None = None, **columns: Any) -> None:
+        """Move the run to `to` if api §7.1 allows it from its state; log the change, with the
+        event's `columns` (`source`, `actor_kind`, …; default source `projector`)."""
         if to not in _NEXT.get(self.state, ()):
             return
         values: dict[str, Any] = {"state": to, "state_changed_at": self.now}
@@ -102,7 +105,8 @@ class Projection:
         if failure is not None:
             values["failure"] = failure
         self.conn.execute(update(runs).where(runs.c.id == self.run_id).values(**values))
-        self.log("spectio.run.state_changed", {"from": self.state, "to": to}, source="projector")
+        payload = {"from": self.state, "to": to}
+        self.log("spectio.run.state_changed", payload, **{"source": "projector", **columns})
         self.state = to
 
     def set_started(self) -> None:
@@ -140,6 +144,7 @@ class Projection:
         if found is not None:
             return str(found)
         task_id = new_id("tsk")
+        self.changed.add(task_id)
         self.conn.execute(
             insert(tasks).values(
                 id=task_id,
@@ -179,6 +184,7 @@ class Projection:
             .scalar_subquery()
         )
         ids = list(task_ids)
+        self.changed.update(ids)
         for i in range(0, len(ids), IN_CHUNK):
             chunk = tasks.c.id.in_(ids[i : i + IN_CHUNK])
             self.conn.execute(update(tasks).where(chunk, last.is_not(None)).values(state=last))
@@ -207,3 +213,4 @@ class Projection:
                 updated_at=self.now,
             )
         )
+        note_change(self.conn, self.run_id, self.changed)

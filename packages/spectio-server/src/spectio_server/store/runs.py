@@ -23,6 +23,7 @@ from spectio_server.store.schema import (
     workflow_versions,
     workflows,
 )
+from spectio_server.store.writer import note_change
 
 
 class EngineConflict(ValueError):
@@ -51,6 +52,7 @@ def insert_run(
     state: str,
     origin: str | None = None,
     workflow_name: str | None = None,
+    workflow_version: str | None = None,
     failure: dict[str, Any] | None = None,
     native_id: str | None = None,
 ) -> str:
@@ -85,7 +87,11 @@ def insert_run(
     version_id, launch_id = new_id("wfv"), new_id("lch")
     conn.execute(
         insert(workflow_versions).values(
-            id=version_id, workflow_id=workflow_id, revision=m.workflow.revision, **mine
+            id=version_id,
+            workflow_id=workflow_id,
+            revision=m.workflow.revision,
+            version=workflow_version,
+            **mine,
         )
     )
     paths = run_paths(runs_root, m.run_id)
@@ -105,6 +111,7 @@ def insert_run(
             **{**mine, "created_at": m.created_at},
         )
     )
+    note_change(conn, m.run_id)  # a new run is a change for the stream (CR-P3T18-01)
     conn.execute(
         insert(run_inputs).values(
             id=new_id("rin"), run_id=m.run_id, version=1, kind="params", content=m.params, **mine

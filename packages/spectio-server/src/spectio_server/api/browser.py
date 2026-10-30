@@ -7,7 +7,8 @@
   `Referer` other than this loopback origin, is refused with 403. A `GET` such as inspect clones
   a repository, so another site's `<img src>` must not reach it.
 - **Writes** (req. 7): a method other than `GET` and `HEAD` needs `Origin` equal to
-  `http://<Host>` (403), and a body of type `application/json` (415).
+  `http://<Host>` (403), and a body of type `application/json` (415), with a `Content-Length`
+  (411) of at most 1 MiB (413; FU-P3-17).
 """
 
 from collections.abc import Awaitable, Callable
@@ -18,6 +19,14 @@ from fastapi import FastAPI, Request, Response
 from spectio_server.api.problems import problem
 
 LOOPBACK = frozenset({"127.0.0.1", "localhost", "[::1]"})
+MAX_BODY = 1048576
+
+
+def _netloc(url: str) -> str | None:
+    try:
+        return urlsplit(url).netloc.lower()
+    except ValueError:  # `http://[`: malformed, so not this origin
+        return None
 
 
 def _name(host: str) -> str:
@@ -38,7 +47,7 @@ def refusal(request: Request) -> Response | None:
     if (
         request.headers.get("sec-fetch-site") in ("cross-site", "same-site")
         or (origin is not None and origin.lower() != same)
-        or (referer is not None and f"http://{urlsplit(referer).netloc.lower()}" != same)
+        or (referer is not None and f"http://{_netloc(referer)}" != same)
     ):
         return problem(
             403, "cross-site", "Cross-site request", "Requests from other sites are refused."
@@ -47,14 +56,18 @@ def refusal(request: Request) -> Response | None:
         return None
     if origin is None:
         return problem(403, "cross-site", "Origin required", "A write needs an Origin header.")
-    has_body = (
-        request.headers.get("content-length", "0") != "0" or "transfer-encoding" in request.headers
-    )
+    length = request.headers.get("content-length")
+    if "transfer-encoding" in request.headers:
+        return problem(411, "length-required", "Length required", "Send a Content-Length.")
     media = request.headers.get("content-type", "").split(";")[0].strip().lower()
-    if has_body and media != "application/json":
+    if length not in (None, "0") and media != "application/json":
         return problem(
             415, "unsupported-media-type", "Unsupported media type", "Send application/json."
         )
+    if length is not None and not (
+        length.isascii() and length.isdigit() and int(length) <= MAX_BODY
+    ):
+        return problem(413, "request-too-large", "Request too large", f"At most {MAX_BODY} bytes.")
     return None
 
 

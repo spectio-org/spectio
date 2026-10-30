@@ -271,9 +271,14 @@ class RunnerLoop:
 
     def _report(self, ref: LaunchRef, report: HeadReport) -> None:
         if report.ended and report.failure is None:
-            first = self._ended_at.setdefault(ref.launch_id, time.monotonic())
-            if time.monotonic() - first < self.end_grace_s:
-                return  # its last events may still be in the spool (Assumption 15)
+            if ref.engine == "snakemake" and report.exit_code is not None:
+                # its exit code ends the launch (Assumption 16): the head is gone, so one more
+                # read drains its spool, with no grace to wait (FU-P3-14, CR-P3T09-04)
+                self._read(ref)
+            else:
+                first = self._ended_at.setdefault(ref.launch_id, time.monotonic())
+                if time.monotonic() - first < self.end_grace_s:
+                    return  # its last events may still be in the spool (Assumption 15)
             report = ended_failure(ref.engine, report)
         if self._last.get(ref.launch_id) == report:
             return
