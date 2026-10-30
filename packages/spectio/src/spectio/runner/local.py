@@ -92,6 +92,7 @@ class LocalLauncher:
         self._dirs: dict[str, Path] = {}  # native ID → launch directory
         self._procs: dict[str, subprocess.Popen[bytes]] = {}  # the heads this one started
         self._kill_at: dict[str, float] = {}  # native ID → when SIGKILL follows SIGTERM
+        self._warned: set[str] = set()  # heads whose unreadable files are already logged
 
     def submit(self, spec: LaunchSpec) -> str:
         head = write_launch_files(spec)
@@ -173,8 +174,11 @@ class LocalLauncher:
                 return HeadReport("running", native_id, node, None, False, None)
             done = _read(launch_dir, "head.exit", _EXIT_LINE)  # after the PID check: no race
         except (OSError, ValueError) as exc:
-            log.warning("head %s of %s not read: %r", native_id, launch_dir, exc)
+            if native_id not in self._warned:  # once per head, not once per tick
+                self._warned.add(native_id)
+                log.warning("head %s of %s not read: %r", native_id, launch_dir, exc)
             return HeadReport("unknown", native_id, None, None, False, None)
+        self._warned.discard(native_id)
         if done is not None:
             return HeadReport("exited", native_id, node, int(done[1]), True, None)
         if head is None and proc is not None:

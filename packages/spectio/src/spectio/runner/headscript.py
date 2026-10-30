@@ -27,8 +27,14 @@ ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # The outer script: {launch}, {inner} and {keep} are quoted by `render_head_script`. Both
 # shells trap INT and TERM (a trap, not an ignored signal, which the engine would inherit), so
 # that the engine gets Ctrl-C and SIGTERM while they wait for it, and head.exit is written only
-# once it has ended. `tee` ignores both, so that the engine's last words still reach head.out.
+# once it has ended. A `.spectio/cancel` there once head.pid is written stops the engine from
+# ever starting (CR-P3T09-02). `tee` ignores both, so that the engine's last words still
+# reach head.out.
+# The head files are made under `umask 077`, so they are 0600 whatever the inherited umask
+# (`read_small` refuses a group-writable file: CR-P3T09-01, SEC-P3T09-01); the engine gets the
+# inherited umask back, and the login profile may change it.
 _HEAD = """#!/usr/bin/env bash
+um=$(umask); umask 077
 # Spectio head script: run {run_id}, launch {launch_n}. Written by Spectio at each launch.
 cd -- {launch} || exit 1
 trap : INT TERM
@@ -38,9 +44,13 @@ printf '%s %s %s %s %s\\n' "$$" "${{f[2]}}" "${{f[19]}}" \\
 mv -f .spectio/head.pid.tmp .spectio/head.pid
 keep=()
 for v in {keep}; do [ -n "${{!v+x}}" ] && keep+=("$v=${{!v}}"); done
-env -i "${{keep[@]}}" bash -l -c {inner} spectio-head 2>&1 |
-  (trap '' INT TERM; exec tee .spectio/head.out)
-code=${{PIPESTATUS[0]}}
+if [ -e .spectio/cancel ]; then
+  code=143  # cancelled before the engine ran
+else
+  (umask "$um"; exec env -i "${{keep[@]}}" bash -l -c {inner} spectio-head) 2>&1 |
+    (trap '' INT TERM; exec tee .spectio/head.out)
+  code=${{PIPESTATUS[0]}}
+fi
 printf '%s %s\\n' "$code" "$(date +%s)" > .spectio/head.exit.tmp
 mv -f .spectio/head.exit.tmp .spectio/head.exit
 exit "$code"

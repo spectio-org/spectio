@@ -46,6 +46,7 @@ from spectio.runner.types import (
 log = logging.getLogger(__name__)
 
 LAUNCH_FAILED = "launch-failed.json"
+CANCEL = "cancel"
 LAUNCH_CLASSES = frozenset({"launch_error", "engine_missing", "engine_version"})
 
 
@@ -161,6 +162,7 @@ class RunnerLoop:
             with private_dir(root, ref.run_id, "launch", ".spectio") as fd:
                 failed = _read_json(fd, LAUNCH_FAILED)
                 started = _exists(fd, "head.pid") or _exists(fd, "head.exit")
+                cancelled = _exists(fd, CANCEL)
         except (OSError, ValueError) as exc:
             return self._fail(ref, "launch_error", str(exc))
         if failed is not None:  # delivered again after a failed launch: the same failure
@@ -172,6 +174,9 @@ class RunnerLoop:
             return failure.message
         if started:  # delivered again after a restart: adopt, never start twice
             self._adopt(ref)
+            return None
+        if cancelled:  # cancelled before its head started: it never starts (CR-P3T09-02)
+            self._report(ref, HeadReport("unknown", None, None, None, True, None))
             return None
         try:
             payload = LaunchPayload.model_validate(command.payload)
@@ -216,16 +221,22 @@ class RunnerLoop:
         return failure.message
 
     def _cancel(self, ref: LaunchRef) -> str | None:
-        """The marker `.spectio/cancel` first, then the launcher's interrupt (Assumption 4)."""
-        if ref.native_id is None:
-            return "the head has not started"
+        """The marker `.spectio/cancel` first, then the launcher's interrupt (Assumption 4).
+        Before the head has started, the marker alone: `_launch` then starts none, and a head
+        started in this lease checks it before the engine runs (CR-P3T09-02)."""
         root = self.settings.runs_root
+        last = self._last.get(ref.launch_id)
+        native_id = ref.native_id or (last.native_id if last else None)
+        if native_id is None:
+            make_run_dirs(root, ref.run_id)
         check_launch_dir(root, ref.run_id, ref.launch_dir)
         with private_dir(root, ref.run_id, "launch", ".spectio") as fd:
-            write_file(fd, "cancel", json.dumps({"time": _now()}).encode())
+            write_file(fd, CANCEL, json.dumps({"time": _now()}).encode())
+        if native_id is None:
+            return None
         if ref.launch_id not in self._known:
             self._adopt(ref)
-        self.launcher.cancel(ref.native_id)
+        self.launcher.cancel(native_id)
         return None
 
     # --- Heads and spools ------------------------------------------------------------------

@@ -147,6 +147,33 @@ def test_adopt_head_gone_without_exit_file(runs_root: Path, launcher: LocalLaunc
     assert report.ended and report.exit_code is None and report.state == "unknown"
 
 
+@pytest.mark.parametrize("umask", [0o002, 0o000])
+def test_head_files_private_whatever_the_umask(runs_root: Path, umask: int) -> None:
+    """CR-P3T09-01, SEC-P3T09-01: under a umask of 002 (user-private groups) or 000, the head
+    files are 0600, so the launch, a cancel and an adopt still read them."""
+    body = "trap 'exit 143' TERM; touch started; while :; do sleep 0.05; done"
+    engine = stub_engine(runs_root.parent / "bin", body)
+    old = os.umask(umask)
+    launcher = LocalLauncher()
+    try:
+        spec = spec_for(runs_root, engine)
+        native_id = launcher.submit(spec)
+        wait_for((spec.launch_dir / "started").exists)
+        assert launcher.poll([native_id])[native_id].state == "running"
+        assert LocalLauncher().adopt(ref_for(spec, native_id)).state == "running"
+        launcher.cancel(native_id, grace_s=30)
+        report = ended(launcher, native_id)
+        assert report.state == "exited" and report.exit_code == 143
+        spectio_dir = spec.launch_dir / ".spectio"
+        for name in ("head.pid", "head.exit", "head.out", "head.err"):
+            assert mode(spectio_dir / name) == 0o600, name
+    finally:
+        os.umask(old)
+        for native_id in list(launcher._dirs):
+            launcher.cancel(native_id, grace_s=0)
+            launcher.poll([native_id])
+
+
 def test_run_manifest_written(runs_root: Path) -> None:
     manifest = RunManifest(
         run_id=RUN_A,
@@ -425,3 +452,50 @@ def test_loop_refuses_a_launch_dir_off_the_runs_root(
     loop.tick()
     assert [b.drops for _, b in sink.batches] == [{SPOOL_REFUSED: 1}]
     assert not elsewhere.exists()
+
+
+def test_cancel_before_the_head_starts(runs_root: Path, launcher: LocalLauncher) -> None:
+    """CR-P3T09-02: a cancel leased with the launch (no native ID yet) is acked, and the launch
+    that follows starts no head and ends with none."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; exit 0")
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher)
+    ref = sink.launch(runs_root, RUN_A)
+    sink.commands.insert(0, Command("cmd_cancel", "cancel", ref))  # the stale ref, before it
+    loop.tick()
+    assert ("cmd_cancel", True, None) in sink.acks
+    assert ("cmd_" + RUN_A[4:], True, None) in sink.acks
+    assert (ref.launch_dir / ".spectio" / "cancel").is_file()
+    assert not (ref.launch_dir / ".spectio" / "head.sh").exists()
+    report = sink.last(ref.launch_id)
+    assert report.ended and report.native_id is None
+    assert not launcher._dirs
+    time.sleep(0.2)
+    assert not (ref.launch_dir / "started").exists()
+
+
+def test_cancel_with_a_stale_ref_after_the_launch(runs_root: Path, launcher: LocalLauncher) -> None:
+    """CR-P3T09-02: a launch and then a cancel in one lease, the cancel's ref still without a
+    native ID: the head just started is cancelled, and its engine never runs."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; sleep 30")
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher)
+    ref = sink.launch(runs_root, RUN_A)
+    sink.commands.append(Command("cmd_cancel", "cancel", ref))
+    run_until(loop, lambda: ref.launch_id not in sink.launches)
+    assert ("cmd_cancel", True, None) in sink.acks
+    assert sink.last(ref.launch_id).exit_code == 143
+    assert not (ref.launch_dir / "started").exists()
+
+
+def test_unreadable_head_logged_once(runs_root: Path, caplog: pytest.LogCaptureFixture) -> None:
+    """SEC-P3T09-01: a refused head.pid is logged once per head, not at every poll."""
+    spec = spec_for(runs_root, runs_root.parent / "unused")
+    pid_file = spec.launch_dir / ".spectio" / "head.pid"
+    pid_file.write_text(head_pid_line(os.getpid()))
+    pid_file.chmod(0o620)
+    launcher = LocalLauncher()
+    launcher.adopt(ref_for(spec, "1"))
+    for _ in range(3):
+        assert launcher.poll(["1"])["1"].state == "unknown"
+    assert len([r for r in caplog.records if "not read" in r.getMessage()]) == 1
