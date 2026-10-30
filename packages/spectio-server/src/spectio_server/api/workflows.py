@@ -234,10 +234,10 @@ def _open(root: Path, *parts: str) -> int:
     return fd
 
 
-def _regular(root: Path, *parts: str) -> bool:
-    """Whether `root/parts…` is a regular file inside `root`, reached through no symlink."""
+def _regular(root: Path, rel: str) -> bool:
+    """Whether `root/rel` is a regular file inside `root`, reached through no symlink."""
     try:
-        fd = _open(root, *parts)
+        fd = _open(root, *rel.split("/"))
     except OSError:
         return False
     try:
@@ -346,7 +346,7 @@ def snakemake_profiles(root: Path) -> list[str]:
     finally:
         os.close(fd)
     # `_open` reaches config.yaml only through real directories: symlinks and files drop out
-    return sorted(n for n in names if _regular(root, "profiles", n, "config.yaml"))
+    return sorted(n for n in names if _regular(root, f"profiles/{n}/config.yaml"))
 
 
 def _type(value: Any) -> dict[str, Any]:
@@ -378,12 +378,15 @@ def _object(value: Any, name: str) -> dict[str, Any]:
     return value
 
 
+def entry_files(directory: Path) -> list[str]:
+    """The ENTRY_FILES that are regular files in `directory`, reached through no symlink."""
+    return [f for names in ENTRY_FILES.values() for f in names if _regular(directory, f)]
+
+
 def inspect_dir(directory: Path, default_name: str) -> Found:
     """What the launch form needs from a pipeline directory. Raises Invalid (`location`) when
     a schema or config file cannot be read."""
-    files = [
-        f for names in ENTRY_FILES.values() for f in names if _regular(directory, *f.split("/"))
-    ]
+    files = entry_files(directory)
     engines = [e for e, names in ENTRY_FILES.items() if set(names) & set(files)]
     engine = engines[0] if len(engines) == 1 else None  # both or neither: no guess
     try:

@@ -30,7 +30,7 @@ from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import (
     ENTRY_FILES,
     Found,
-    _regular,
+    entry_files,
     inspect_dir,
     refuse_control,
     resolve,
@@ -110,7 +110,7 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     except Invalid as exc:
         raise exc.under("workflow") from None
     files = ENTRY_FILES[engine]
-    if not any(_regular(resolved.directory, *f.split("/")) for f in files):
+    if not set(files) & set(entry_files(resolved.directory)):
         names = " or ".join(files)
         raise Invalid("workflow.engine", f"no {names} in this pipeline: is it a {engine} one?")
     try:
