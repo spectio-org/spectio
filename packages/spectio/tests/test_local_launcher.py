@@ -121,8 +121,9 @@ def test_local_launch_exit_file(runs_root: Path, launcher: LocalLauncher) -> Non
     code, epoch = (spectio_dir / "head.exit").read_text().split()
     assert code == "3" and abs(int(epoch) - time.time()) < 60
     assert "out" in (spectio_dir / "head.out").read_text()
-    pid, pgid, *_ = (spectio_dir / "head.pid").read_text().split()
-    assert pid == pgid == native_id  # setsid: the head leads its own group
+    pid, pgid, start, *_ = (spectio_dir / "head.pid").read_text().split()
+    assert pid == pgid  # setsid: the head leads its own group
+    assert native_id == f"{pid}.{start}"  # unique per process, not a bare PID (SEC-P3T09-04)
 
 
 def test_adopt_after_restart(runs_root: Path, launcher: LocalLauncher) -> None:
@@ -242,10 +243,11 @@ def test_cancel_never_signals_other_boot_id(runs_root: Path, wrong: str) -> None
         pid_file.write_text(line)
         pid_file.chmod(0o600)
         launcher = LocalLauncher()
-        report = launcher.adopt(ref_for(spec, str(sleeper.pid)))
+        report = launcher.adopt(ref_for(spec))
         assert report.ended and report.exit_code is None  # not our head: gone, exit unknown
-        launcher.cancel(str(sleeper.pid), grace_s=0)
-        launcher.poll([str(sleeper.pid)])
+        assert report.native_id is not None
+        launcher.cancel(report.native_id, grace_s=0)
+        launcher.poll([report.native_id])
         time.sleep(0.2)
         assert sleeper.poll() is None  # never signalled
     finally:
@@ -266,7 +268,6 @@ def test_stale_kill_never_reaches_a_later_head(
         ["/bin/bash", "-c", script], stdout=subprocess.PIPE, start_new_session=True
     )
     assert head.stdout is not None and head.stdout.readline() == b"ready\n"
-    native_id = str(head.pid)
     starts = {"now": "111"}
     monkeypatch.setattr(
         "spectio.runner.local._process",
@@ -278,17 +279,75 @@ def test_stale_kill_never_reaches_a_later_head(
             pid_file.write_text(head_pid_line(head.pid, start=start))
             pid_file.chmod(0o600)
         launcher = LocalLauncher()
-        assert launcher.adopt(ref_for(spec_a, native_id)).state == "running"
-        launcher.cancel(native_id, grace_s=0)  # SIGTERM to A, SIGKILL due at the next poll
+        id_a, id_b = f"{head.pid}.111", f"{head.pid}.222"
+        assert launcher.adopt(ref_for(spec_a, id_a)).state == "running"
+        launcher.cancel(id_a, grace_s=0)  # SIGTERM to A, SIGKILL due at the next poll
         starts["now"] = "222"  # A exits, and B starts with A's PID
-        assert launcher.adopt(ref_for(spec_b, native_id)).state == "running"
-        report = launcher.poll([native_id])[native_id]
+        assert launcher.adopt(ref_for(spec_b, id_b)).state == "running"
+        reports = launcher.poll([id_a, id_b])
         time.sleep(0.2)
         assert head.poll() is None  # B never got A's SIGKILL
-        assert report.state == "running"
+        assert reports[id_b].state == "running"
     finally:
         head.kill()
         head.communicate()
+
+
+def test_reused_pid_keeps_two_launches_apart(runs_root: Path) -> None:
+    """SEC-P3T09-04, CR-P3T09-08: launch A's head has ended, its launch still active (the spool
+    grace), and launch B's head has A's PID. A cancel of A signals nothing in B's group, and a
+    poll reports A and B apart. PID reuse is simulated: A's head.pid names B's PID with an
+    earlier start time, and A's head.exit is there."""
+    spec_a = spec_for(runs_root, runs_root.parent / "unused", RUN_A)
+    spec_b = spec_for(runs_root, runs_root.parent / "unused", RUN_B)
+    head_b = subprocess.Popen([SLEEP, "30"], start_new_session=True)
+    try:
+        for spec, name, text in (
+            (spec_a, "head.pid", head_pid_line(head_b.pid, start="1")),
+            (spec_a, "head.exit", "0 1\n"),
+            (spec_b, "head.pid", head_pid_line(head_b.pid)),
+        ):
+            path = spec.launch_dir / ".spectio" / name
+            path.write_text(text)
+            path.chmod(0o600)
+        launcher = LocalLauncher()
+        id_a = launcher.adopt(ref_for(spec_a)).native_id
+        id_b = launcher.adopt(ref_for(spec_b)).native_id
+        assert id_a and id_b and id_a != id_b
+        launcher.cancel(id_a, grace_s=0)
+        reports = launcher.poll([id_a, id_b])
+        time.sleep(0.2)
+        assert head_b.poll() is None  # never signalled
+        assert (reports[id_a].state, reports[id_a].exit_code) == ("exited", 0)
+        assert reports[id_b].state == "running" and not reports[id_b].ended
+    finally:
+        head_b.kill()
+        head_b.wait()
+
+
+def test_never_signals_a_group_the_head_does_not_lead(runs_root: Path) -> None:
+    """SEC-P3T09-08: a local head leads its own group; a head.pid whose group is another's
+    (head.sh started by hand in a shell's job) is never signalled, and reported unknown."""
+    spec = spec_for(runs_root, runs_root.parent / "unused")
+    leader = subprocess.Popen([SLEEP, "30"], process_group=0)
+    member = subprocess.Popen([SLEEP, "30"], process_group=leader.pid)
+    try:
+        pid_file = spec.launch_dir / ".spectio" / "head.pid"
+        pid_file.write_text(head_pid_line(member.pid))  # its group is the leader's
+        pid_file.chmod(0o600)
+        fields = pid_file.read_text().split()
+        native_id = f"{fields[0]}.{fields[2]}"
+        launcher = LocalLauncher()
+        report = launcher.adopt(ref_for(spec, native_id))
+        assert report.state == "unknown" and not report.ended
+        launcher.cancel(native_id, grace_s=0)
+        launcher.poll([native_id])
+        time.sleep(0.2)
+        assert leader.poll() is None and member.poll() is None
+    finally:
+        for proc in (member, leader):
+            proc.kill()
+            proc.wait()
 
 
 def test_cancel_term_then_kill(runs_root: Path, launcher: LocalLauncher) -> None:

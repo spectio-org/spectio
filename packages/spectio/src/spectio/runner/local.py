@@ -47,13 +47,18 @@ def _boot_id() -> str:
     return Path("/proc/sys/kernel/random/boot_id").read_text().strip()
 
 
-def _process(pid: int) -> tuple[int, str] | None:
-    """The process group and start time of a live process, or None (gone, or a zombie)."""
+def _stat(pid: int) -> list[str] | None:
+    """The fields of `/proc/<pid>/stat` after the command name, or None (no such process)."""
     try:
-        fields = Path(f"/proc/{pid}/stat").read_text().rsplit(") ", 1)[1].split()
+        return Path(f"/proc/{pid}/stat").read_text().rsplit(") ", 1)[1].split()
     except (OSError, IndexError):
         return None
-    return None if fields[0] == "Z" else (int(fields[2]), fields[19])
+
+
+def _process(pid: int) -> tuple[int, str] | None:
+    """The process group and start time of a live process, or None (gone, or a zombie)."""
+    fields = _stat(pid)
+    return None if fields is None or fields[0] == "Z" else (int(fields[2]), fields[19])
 
 
 def _read(launch_dir: Path, name: str, pattern: re.Pattern[str]) -> re.Match[str] | None:
@@ -85,8 +90,16 @@ def alive(head: HeadPid) -> bool:
     )
 
 
+def _is_head(head: HeadPid, native_id: str) -> bool:
+    """Whether head.pid names the head with this native ID, `<pid>.<start time>`: unique per
+    process, so that a head that reuses an ended head's PID is never taken for it (SEC-P3T09-04,
+    CR-P3T09-08). A local head leads its own group (setsid): a head.pid whose group is another's
+    is not one of ours, and that group is never signalled (SEC-P3T09-08)."""
+    return f"{head.pid}.{head.start}" == native_id and head.pgid == head.pid
+
+
 class LocalLauncher:
-    """Implements `Launcher`; a head's native ID is its PID."""
+    """Implements `Launcher`; a head's native ID is `<pid>.<start time>`."""
 
     def __init__(self) -> None:
         self._dirs: dict[str, Path] = {}  # native ID → launch directory
@@ -114,7 +127,13 @@ class LocalLauncher:
             )
         finally:
             os.close(err)
-        native_id = str(proc.pid)
+        # The start time of the process that writes `$$` to head.pid: the child is not reaped
+        # yet, so its /proc entry is there, even as a zombie.
+        fields = _stat(proc.pid)
+        if fields is None:
+            proc.kill()
+            raise OSError(f"head {proc.pid} has no /proc entry")
+        native_id = f"{proc.pid}.{fields[19]}"
         self._dirs[native_id] = spec.launch_dir
         self._procs[native_id] = proc
         return native_id
@@ -129,7 +148,7 @@ class LocalLauncher:
                 return HeadReport("unknown", None, None, None, False, None)
             if head is None:
                 return HeadReport("unknown", None, None, None, True, None)  # never started
-            native_id = str(head.pid)
+            native_id = f"{head.pid}.{head.start}"
         self._dirs[native_id] = launch.launch_dir
         return self._report(native_id)
 
@@ -163,7 +182,7 @@ class LocalLauncher:
         except (KeyError, OSError, ValueError) as exc:
             log.warning("head %s not signalled: %r", native_id, exc)
             return None
-        if head is None or str(head.pid) != native_id or not alive(head):
+        if head is None or not _is_head(head, native_id) or not alive(head):
             return None
         if only is not None and head != only:
             return None
@@ -180,8 +199,8 @@ class LocalLauncher:
             return HeadReport("unknown", native_id, None, None, False, None)
         try:
             head = read_head_pid(launch_dir)
-            if head is not None and str(head.pid) != native_id:
-                raise ValueError(f"head.pid names PID {head.pid}, not {native_id}")
+            if head is not None and not _is_head(head, native_id):
+                raise ValueError(f"head.pid does not name head {native_id}, leading its group")
             if head is not None and head.host != socket.gethostname():
                 # Another machine's head cannot be checked: never ended from here.
                 return HeadReport("unknown", native_id, head.host, None, False, None)
