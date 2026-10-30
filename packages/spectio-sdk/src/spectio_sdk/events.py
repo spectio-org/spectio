@@ -25,6 +25,8 @@ MAX_LINE_BYTES = 65536  # one line, without its "\n"
 ROTATE_BYTES = 33554432  # the writer opens the next file before passing it
 MAX_FILE_BYTES = 67108864  # the reader ignores anything past it in one file
 MAX_SPOOL_FILES = 1024  # files the reader takes per launch; the rest are skipped and counted
+MAX_EVENT_NODES = 4096  # JSON values in one event's `data`, itself included
+MAX_EVENT_DEPTH = 32  # nesting of `data`, which is depth 1
 
 # A driven run's spool file: <producer>-<launch>-<nnnn>.jsonl, nnnn from 0001 (§14.1).
 SPOOL_FILE_NAME = re.compile(

@@ -1,17 +1,27 @@
 """The spool reader: dev-env §15.3 req. 6, api-and-data-model.md §14.1 (P1 Task 3)."""
 
+import errno
 import json
 import os
 import signal
 import socket
+import stat
+import tracemalloc
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from spectio.runner.spool import read_spool
-from spectio.runner.types import SpoolBatch
-from spectio_sdk.events import MAX_FILE_BYTES, MAX_LINE_BYTES, MAX_SPOOL_FILES
+from spectio.runner import spool
+from spectio.runner.spool import CHUNK_BYTES, MAX_BAD_NAMES, MAX_READ_BYTES, read_spool
+from spectio.runner.types import REFUSED, SpoolBatch
+from spectio_sdk.events import (
+    MAX_EVENT_DEPTH,
+    MAX_EVENT_NODES,
+    MAX_FILE_BYTES,
+    MAX_LINE_BYTES,
+    MAX_SPOOL_FILES,
+)
 
 RUN_ID = "run_01K8T2F1XTVRES000000000000"
 OTHER_RUN = "run_01K8T2F1XTVRES000000000001"
@@ -36,9 +46,14 @@ def line(n: int, *, run: str = RUN_ID, launch: int = 1, **data: Any) -> bytes:
 
 @pytest.fixture
 def events_dir(tmp_path: Path) -> Path:
-    path = tmp_path / ".spectio" / "events"
-    path.mkdir(parents=True)
-    return path
+    return private_events_dir(tmp_path)
+
+
+def private_events_dir(launch_dir: Path) -> Path:
+    """`.spectio/events` as the runner makes it: 0700 directories of the user (req. 12)."""
+    (launch_dir / ".spectio").mkdir(mode=0o700)
+    (launch_dir / ".spectio" / "events").mkdir(mode=0o700)
+    return launch_dir / ".spectio" / "events"
 
 
 def write(path: Path, *chunks: bytes) -> None:
@@ -102,10 +117,10 @@ def test_req6_file_cap(events_dir: Path) -> None:
     filler = b"x" * (MAX_FILE_BYTES - len(first) - len(across) // 2 - 1) + b"\n"
     write(events_dir / NF, first, filler, across, line(3))
     assert (events_dir / NF).stat().st_size > MAX_FILE_BYTES
-    batch = read(events_dir, max_lines=10)
+    batch = read(events_dir, max_lines=10, max_bytes=2 * MAX_FILE_BYTES)
     assert ids(batch) == [json.loads(first)["id"]]
     assert batch.drops == {"line_too_large": 1, "file_too_large": 1}
-    assert batch.cursor == {NF: MAX_FILE_BYTES}
+    assert batch.cursor == {NF: REFUSED}
     # Counted once: a later read, after more appends, ignores the file.
     write(events_dir / NF, line(4))
     again = read(events_dir, batch.cursor)
@@ -229,13 +244,13 @@ def test_directory_named_as_spool_file_refused(events_dir: Path) -> None:
 def test_symlinked_spool_directory_refused(tmp_path: Path) -> None:
     # `.spectio` or `events` swapped for a symlink: the reader never follows it.
     elsewhere = tmp_path / "elsewhere"
-    (elsewhere / "events").mkdir(parents=True)
-    write(elsewhere / "events" / NF, line(1))
+    elsewhere.mkdir()
+    write(private_events_dir(elsewhere) / NF, line(1))
     launch_a, launch_b = tmp_path / "a", tmp_path / "b"
     launch_a.mkdir()
-    (launch_a / ".spectio").symlink_to(elsewhere)
-    (launch_b / ".spectio").mkdir(parents=True)
-    (launch_b / ".spectio" / "events").symlink_to(elsewhere / "events")
+    (launch_a / ".spectio").symlink_to(elsewhere / ".spectio")
+    (launch_b / ".spectio").mkdir(mode=0o700, parents=True)
+    (launch_b / ".spectio" / "events").symlink_to(elsewhere / ".spectio" / "events")
     for launch_dir in (launch_a, launch_b):
         with pytest.raises(OSError):
             read_spool(launch_dir, RUN_ID, 1, {})
@@ -265,9 +280,38 @@ def test_bad_file_names_skipped_and_counted_once(events_dir: Path) -> None:
     batch = read(events_dir)
     assert batch.events == []
     assert batch.drops == {"bad_name": len(bad) + 1}
-    # Every cursor key can be stored as UTF-8 text.
-    for key in batch.cursor:
-        key.encode()
+    assert_safe_keys(batch.cursor)
+    assert not read(events_dir, batch.cursor).drops
+
+
+def assert_safe_keys(cursor: dict[str, int]) -> None:
+    # Keys are stored as text: a spool file name of this launch, or a short ASCII key of ours.
+    for key in cursor:
+        assert key.isascii() and key.isprintable() and len(key) <= 64, key
+
+
+def test_junk_names_leave_the_slots_to_spool_files(events_dir: Path) -> None:
+    for i in range(MAX_SPOOL_FILES):
+        write(events_dir / f"junk-\x1b[31m-{i}", b"x\n")
+    write(events_dir / NF, line(1))
+    batch = read(events_dir)
+    assert len(batch.events) == 1
+    assert batch.drops == {
+        "bad_name": MAX_BAD_NAMES,
+        "too_many_files": MAX_SPOOL_FILES - MAX_BAD_NAMES,
+    }
+    assert_safe_keys(batch.cursor)
+    assert len(batch.cursor) <= MAX_BAD_NAMES + 2
+    assert not read(events_dir, batch.cursor).drops
+
+
+def test_directory_listing_cap(events_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(spool, "MAX_DIR_ENTRIES", 5)
+    for i in range(1, 11):
+        write(events_dir / f"nf-spectio-1-{i:04d}.jsonl", line(i))
+    batch = read(events_dir)
+    assert len(batch.events) == 5
+    assert batch.drops == {"too_many_files": 1}
     assert not read(events_dir, batch.cursor).drops
 
 
@@ -287,11 +331,12 @@ def test_spool_file_cap(events_dir: Path) -> None:
     batch = read(events_dir, max_lines=10 * MAX_SPOOL_FILES)
     assert len(batch.events) == MAX_SPOOL_FILES
     assert batch.drops == {"too_many_files": 3}
-    # Counted once, and the cursor stays bounded.
+    # Each file is counted once, and the cursor stays bounded.
+    assert not read(events_dir, batch.cursor).drops
     write(events_dir / f"nf-spectio-1-{MAX_SPOOL_FILES + 4:04d}.jsonl", line(9999))
     again = read(events_dir, batch.cursor, max_lines=10 * MAX_SPOOL_FILES)
     assert again.events == []
-    assert not again.drops
+    assert again.drops == {"too_many_files": 1}
     assert len(again.cursor) <= MAX_SPOOL_FILES + 1
 
 
@@ -315,8 +360,22 @@ def test_req6_file_cap_counted_after_the_lines_before_it(events_dir: Path) -> No
     batch = read(events_dir, max_lines=1)
     assert len(batch.events) == 1
     assert not batch.drops
-    rest = read(events_dir, batch.cursor)
+    rest = read(events_dir, batch.cursor, max_bytes=2 * MAX_FILE_BYTES)
     assert rest.drops == {"line_too_large": 1, "file_too_large": 1}
+
+
+def test_req6_file_of_exactly_max_bytes_counted_when_it_grows(events_dir: Path) -> None:
+    first = line(1)
+    filler = b"x" * (MAX_FILE_BYTES - len(first) - 1) + b"\n"
+    write(events_dir / NF, first, filler)
+    assert (events_dir / NF).stat().st_size == MAX_FILE_BYTES
+    batch = read(events_dir, max_bytes=2 * MAX_FILE_BYTES)
+    assert batch.drops == {"line_too_large": 1}
+    write(events_dir / NF, line(2))
+    grown = read(events_dir, batch.cursor)
+    assert grown.events == []
+    assert grown.drops == {"file_too_large": 1}
+    assert not read(events_dir, grown.cursor).drops
 
 
 def test_socket_refused(events_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -363,3 +422,193 @@ def test_fifo_swapped_in_after_the_check_refused(events_dir: Path) -> None:
         signal.alarm(0)
         signal.signal(signal.SIGALRM, previous)
     assert batch.drops == {"not_regular": 1}
+
+
+# --- Budgets per read (SEC-P3T3-01) --------------------------------------------------------
+
+
+def nested_line(n: int, size: int) -> bytes:
+    """A line of at most `size` bytes, its "\\n" apart, holding a long list of empty lists."""
+    head = line(n, x=[])[: -len(b"]}}\n")]
+    return head + b"[]," * ((size - len(head) - 5) // 3) + b"[]]}}\n"
+
+
+def test_req6_event_node_cap(events_dir: Path) -> None:
+    # `data`, `taskId`, `x` and its items: exactly MAX_EVENT_NODES values, then one more.
+    write(
+        events_dir / NF,
+        line(1, x=[None] * (MAX_EVENT_NODES - 3)),
+        line(2, x=[None] * (MAX_EVENT_NODES - 2)),
+    )
+    batch = read(events_dir)
+    assert [e.seq for e in batch.events] == [1]
+    assert batch.drops == {"invalid": 1}
+
+
+def test_req6_event_depth_cap(events_dir: Path) -> None:
+    def nested(depth: int) -> Any:  # `data` is depth 1, the value of `x` depth 2
+        value: Any = None
+        for _ in range(depth - 2):
+            value = [value]
+        return value
+
+    write(
+        events_dir / NF,
+        line(1, x=nested(MAX_EVENT_DEPTH)),
+        line(2, x=nested(MAX_EVENT_DEPTH + 1)),
+    )
+    batch = read(events_dir)
+    assert [e.seq for e in batch.events] == [1]
+    assert batch.drops == {"invalid": 1}
+
+
+def test_req6_read_stops_at_max_bytes(events_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # Files with no "\n" at all: one read consumes no more than its byte budget.
+    for i in range(1, 4):
+        with (events_dir / f"nf-spectio-1-{i:04d}.jsonl").open("wb") as f:
+            f.truncate(MAX_FILE_BYTES)
+    read_bytes = 0
+    real_pread = os.pread
+
+    def counting_pread(fd: int, n: int, offset: int) -> bytes:
+        nonlocal read_bytes
+        data = real_pread(fd, n, offset)
+        read_bytes += len(data)
+        return data
+
+    monkeypatch.setattr(os, "pread", counting_pread)
+    batch = read(events_dir)
+    assert read_bytes <= MAX_READ_BYTES
+    assert sum(batch.cursor.values()) <= MAX_READ_BYTES
+    assert batch.drops == {"line_too_large": 1}
+    # The next read goes on from there.
+    after = read(events_dir, batch.cursor)
+    assert sum(after.cursor.values()) > sum(batch.cursor.values())
+    # A budget that is not a whole number of chunks.
+    read_bytes = 0
+    read(events_dir, max_bytes=CHUNK_BYTES + 12345)
+    assert read_bytes == CHUNK_BYTES + 12345
+
+
+@pytest.mark.parametrize("kept", [False, True])
+def test_req6_memory_bounded_on_nested_lines(events_dir: Path, kept: bool) -> None:
+    if kept:
+        # Events at the node cap in a free-form field that the allow-list keeps, all returned.
+        event = json.loads(line(1))
+        event.update(producer="snakemake-logger-spectio/0.0.1", type="snakemake.rulegraph")
+        event["data"] = {"rulegraph": {"r": [[]] * (MAX_EVENT_NODES - 3)}}
+        one = json.dumps(event, separators=(",", ":")).encode() + b"\n"
+        write(events_dir / NF, one * (2 * MAX_READ_BYTES // len(one)))
+    else:
+        # Lines at the line cap, each holding the most JSON nodes it can, in several files.
+        big = b"".join(nested_line(i, MAX_LINE_BYTES) for i in range(40))
+        for i in range(1, 5):
+            write(events_dir / f"nf-spectio-1-{i:04d}.jsonl", big)
+    tracemalloc.start()
+    try:
+        batch = read(events_dir)
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
+    assert batch.drops if not kept else len(batch.events) > 100
+    assert not (kept and batch.drops)
+    assert peak < 64 * 2**20, f"peak {peak / 2**20:.0f} MiB"
+
+
+# --- Owner and mode (SEC-P3T3-02) ----------------------------------------------------------
+
+
+def other_owner(monkeypatch: pytest.MonkeyPatch, kind: int) -> None:
+    """fstat reports another owner for every inode of this kind (S_IFREG or S_IFDIR)."""
+    real_fstat = os.fstat
+
+    def fstat(fd: int) -> os.stat_result:
+        st = real_fstat(fd)
+        if stat.S_IFMT(st.st_mode) != kind:
+            return st
+        fields = list(st[:10])
+        fields[4] = st.st_uid + 1
+        return os.stat_result(fields)
+
+    monkeypatch.setattr(os, "fstat", fstat)
+
+
+def test_req12_file_of_another_owner_refused(
+    events_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write(events_dir / NF, line(1))
+    other_owner(monkeypatch, stat.S_IFREG)
+    batch = read(events_dir)
+    assert batch.events == []
+    assert batch.drops == {"foreign_owner": 1}
+    assert batch.cursor == {NF: REFUSED}
+
+
+def test_req12_file_writable_by_others_refused(events_dir: Path) -> None:
+    write(events_dir / NF, line(1))
+    (events_dir / NF).chmod(0o664)
+    write(events_dir / "nf-spectio-1-0002.jsonl", line(2))
+    (events_dir / "nf-spectio-1-0002.jsonl").chmod(0o602)
+    batch = read(events_dir)
+    assert batch.events == []
+    assert batch.drops == {"writable_by_others": 2}
+
+
+@pytest.mark.parametrize("opened", [".spectio", ".spectio/events"])
+def test_req12_open_spool_directory_refused(tmp_path: Path, opened: str) -> None:
+    write(private_events_dir(tmp_path) / NF, line(1))
+    (tmp_path / opened).chmod(0o777)
+    with pytest.raises(PermissionError):
+        read_spool(tmp_path, RUN_ID, 1, {})
+
+
+def test_req12_spool_directory_of_another_owner_refused(
+    events_dir: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    write(events_dir / NF, line(1))
+    other_owner(monkeypatch, stat.S_IFDIR)
+    with pytest.raises(PermissionError):
+        read(events_dir)
+
+
+# --- One bad file never stops the reader (CR-P3T3-01, SEC-P3T3-03) -------------------------
+
+
+@pytest.mark.parametrize("error", [errno.EACCES, errno.ENXIO, errno.ENOTDIR])
+def test_unreadable_file_refused_and_the_next_one_read(
+    events_dir: Path, monkeypatch: pytest.MonkeyPatch, error: int
+) -> None:
+    write(events_dir / NF, line(1))
+    write(events_dir / "nf-spectio-1-0002.jsonl", line(2))
+    real_open = os.open
+
+    def failing_open(path: Any, flags: int, mode: int = 0o777, *, dir_fd: int | None = None) -> int:
+        if path == NF:
+            raise OSError(error, os.strerror(error), path)
+        return real_open(path, flags, mode, dir_fd=dir_fd)
+
+    monkeypatch.setattr(os, "open", failing_open)
+    batch = read(events_dir)
+    assert [e.seq for e in batch.events] == [2]
+    assert batch.drops == {"unreadable": 1}
+    assert batch.cursor[NF] == REFUSED
+
+
+def test_read_error_retried_next_read(events_dir: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    write(events_dir / NF, line(1))
+    write(events_dir / "nf-spectio-1-0002.jsonl", line(2))
+    real_pread = os.pread
+    failing = True
+
+    def flaky_pread(fd: int, n: int, offset: int) -> bytes:
+        if failing and os.readlink(f"/proc/self/fd/{fd}").endswith(NF):
+            raise OSError(errno.EIO, os.strerror(errno.EIO))
+        return real_pread(fd, n, offset)
+
+    monkeypatch.setattr(os, "pread", flaky_pread)
+    batch = read(events_dir)
+    assert [e.seq for e in batch.events] == [2]
+    assert batch.drops == {"read_error": 1}
+    assert batch.cursor[NF] == 0
+    failing = False
+    assert [e.seq for e in read(events_dir, batch.cursor).events] == [1]
