@@ -45,6 +45,7 @@ class Shot:
     caption: str
     clicks: tuple[str, ...] = ()  # CSS selectors clicked before the capture
     themes: tuple[str, ...] = ("light",)  # boards: light only for now
+    live: tuple[str, ...] | None = None  # a live page: steps of live.js; `board` is its path
 
 
 REGISTRY: dict[str, Shot] = {
@@ -63,6 +64,11 @@ REGISTRY: dict[str, Shot] = {
         Shot("lite-launch", "LiteLaunch", 1440, 1180, "0.0.1: launching a pipeline from its directory, the form built from nextflow_schema.json, here prefilled from an earlier run"),
         Shot("lite-runs", "LiteRuns", 1440, 1180, "0.0.1: every run with its state, workflow, tasks, start and duration"),
         Shot("lite-run-detail-phone", "MLiteRunDetail", 390, 844, "0.0.1: the same run on a phone"),
+        # Live: from a running `spectio serve` at $SPECTIO_URL, with the synthetic Nextflow pipeline
+        # copied to $SPECTIO_DEMO_PIPELINE (a path free of forbidden terms, fixtures.yaml).
+        Shot("app-launch", "/launch", 1440, 1000, "0.0.1, live: the launch form with the synthetic Nextflow pipeline loaded",
+             live=("fill:Pipeline=$SPECTIO_DEMO_PIPELINE", "click:Load", "wait:no parameter schema",
+                   "click:Add a parameter", "fill:Name, row 1=outdir", "fill:Value, row 1=results")),
     )
 }
 
@@ -71,13 +77,21 @@ def render(shot: Shot, theme: str) -> Path | None:
     if theme not in shot.themes:
         print(f"skip {shot.name} [{theme}]: board has no {theme} variant")
         return None
+    if shot.live is not None and "SPECTIO_URL" not in os.environ:
+        print(f"skip {shot.name}: a live shot needs SPECTIO_URL (a running spectio serve)")
+        return None
     OUT.mkdir(parents=True, exist_ok=True)
     out = OUT / f"{shot.name}_{theme}.webp"
     with tempfile.TemporaryDirectory() as tmp, sanitize.sanitised_boards(BOARDS) as boards:
         png, text = Path(tmp) / "shot.png", Path(tmp) / "page.txt"
-        cmd = ["node", "--require", str(Path(__file__).resolve().parent / "page_text.js"),
-               str(REPO / "tools/canvas/render.js"), str(boards / f"{shot.board}.dc.html"),
-               str(shot.width), str(shot.height), str(png), *shot.clicks]
+        preload = ["node", "--require", str(Path(__file__).resolve().parent / "page_text.js")]
+        if shot.live is None:
+            cmd = [*preload, str(REPO / "tools/canvas/render.js"), str(boards / f"{shot.board}.dc.html"),
+                   str(shot.width), str(shot.height), str(png), *shot.clicks]
+        else:  # the page text is checked as it is shown: a live page is never rewritten
+            # live.js reads $SPECTIO_URL and expands $VARS in the steps itself: no environment value goes into argv
+            cmd = [*preload, str(Path(__file__).resolve().parent / "live.js"), shot.board,
+                   str(shot.width), str(shot.height), str(png), *shot.live]
         subprocess.run(cmd, check=True, capture_output=True, cwd=REPO,
                        env={**os.environ, "SPECTIO_PAGE_TEXT": str(text)})
         found = sanitize.leaks(text.read_text(encoding="utf-8"))
@@ -104,7 +118,7 @@ def main() -> None:
 
     if a.cmd == "list":
         for s in REGISTRY.values():
-            print(f"{s.name:20} {s.board + '.dc.html':24} {s.width}x{s.height}  {'/'.join(s.themes):10} {s.caption}")
+            print(f"{s.name:20} {s.board if s.live else s.board + '.dc.html':24} {s.width}x{s.height}  {'/'.join(s.themes):10} {s.caption}")
         return
     shots = REGISTRY.values() if a.all else [REGISTRY[a.shot]]
     themes = ("light", "dark") if a.theme == "both" else (a.theme,)

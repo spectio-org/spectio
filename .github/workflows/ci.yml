@@ -110,6 +110,28 @@ jobs:
           "$tmp/spectio/bin/python" -I -c "$check" spectio spectio_server fastapi sqlalchemy
       - run: uv run --locked pytest
 
+  web:
+    # The screens under web/ (P1 Task 19): Vitest, then the Vite build, on the Node of dev/versions.env.
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    defaults:
+      run:
+        working-directory: web
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: {persist-credentials: false}
+      - name: Read the Node pin (dev/versions.env, §1)
+        id: pins
+        run: grep '^NODE_VERSION=' ../dev/versions.env | sed 's/^NODE_VERSION=/node=/' >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: {node-version: "${{ steps.pins.outputs.node }}"}
+      # npm ci checks each package's integrity hash against package-lock.json; no install script runs.
+      - run: npm ci --no-audit --no-fund --ignore-scripts
+      - run: npm test
+      - run: npm run build
+
   pipelines-synthetic:
     needs: changes
     if: needs.changes.outputs.synthetic == 'true'
@@ -127,7 +149,7 @@ jobs:
   ci-ok:
     # Skipped jobs count as passing; only failure or cancelled fails (pattern: depictio depictio-ci.yaml:3144-3174).
     if: always()
-    needs: [changes, security, unit, product, pipelines-synthetic, pipelines-real]
+    needs: [changes, security, unit, product, web, pipelines-synthetic, pipelines-real]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions: {}
