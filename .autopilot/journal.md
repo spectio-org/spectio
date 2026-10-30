@@ -393,3 +393,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Follow-ups: the `fs_type` docstring overstates what `stat` triggers (automount; stat(2), Linux ≥ 4.11), to fix in a later code change; plan Task 4 vs api §7 run summary names (`task_counts`), for Task 4.
 - 00:58 Budget check: `stop` (estimate 37.8 %, room 0.2 pt of 12). No new step. Promotion PR spectio-org/spectio#76 (P3 Task 2) opened into main; merge once every check passes. Next tick: P3 Task 3 (spool reader; give it SEC-P3T1-04 and the fresh-environment import check), then Tasks 4–7, board gaps G1/G2/G3a. Waiting on Thomas: a `/usage` reading to recalibrate the estimate (inbox #74), the 11 dashboard answers to confirm, #72–#75.
 - 01:05 Promotion PR spectio-org/spectio#76 merged into main, merge `6394a5f`, every check green on `62b94f9`. Dashboard republished (version 31). Tick 15 ends on the budget `stop`.
+
+## 2026-10-30 — tick 16
+
+- Thomas answered in the session: #72 (b) placeholders, reverses the shipped (a), follow-up FU-P3-02; #73 (a) confirmed; #74 `/usage` 31 %, stop at 40 %; #75 (a), rounds past two allowed while a security finding is open (skills and autopilot §5 updated). Decision log entry 2026-10-30.
+- Budget restarted: `budget.py start --weekly 9 --now 31 --pct-per-usd 0.031` (98.3 USD recorded for 3 points since 28 %). Check: `go`, room 7.0.
+- The repository moved to `spectio-org/spectio`; the old URL redirects, fetch and push work.

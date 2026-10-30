@@ -916,3 +916,11 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **CI:** a `product` job in `ci.yml` (uv sync, ruff, mypy, import-linter, pytest), in `ci-ok`'s `needs`; [dev-env §11](../specs/dev-environment-and-testing.md#11-ci-workflows), `ci.yml` row.
 - **Not written:** the network part of §14 (batch post, acknowledgement, version header, heartbeat, credential), which waits for inbox #11.
 - **After review round 1 (same day):** `source_seq` is monotonic per (run, launch, producer), in api §8.2 and architecture §13.1 too; `snakemake.error` keeps its text with the quoted command hidden; envelope and data values are strict (64-bit integers, RFC 3339 time strings, no NaN, no NUL); `rule_msg` named among the fields never stored.
+
+## 2026-10-30 — Paper shell placeholders, and review rounds past two for security (inbox #72, #73, #75)
+
+- **Context.** Thomas answered inbox #72, #73 and #75 in the session on 2026-10-30.
+- **Decided (Thomas, 2026-10-30):**
+  - #72 (b): the 0.0.1 Paper shell shows search, notifications and the avatar as disabled placeholders. This reverses the assumed (a) that P2 shipped; follow-up FU-P3-02 adds them.
+  - #73 (a) confirmed: `spectio init --local` refuses to run off Linux in 0.0.1.
+  - #75 (a): `review-code` allows fix rounds past two while a security blocker or major is open. Applied in the `review-code` and `autopilot` skills and [autopilot §5](../playbooks/autopilot.md). The spec changes listed in #75 stay owed to the next `/apply-findings`.
