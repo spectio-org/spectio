@@ -45,8 +45,10 @@ Every fact comes from branch autopilot/P3-t05 at 0f9fcf9 (BASE 85bc086):
   class tool_error, attempt_n 3, message "WorkflowError: At least one job did not complete
   successfully."
 - Fixed during review and named in the figure: CR-P3T05-01, -02, -03 (majors) and SEC-P3T1-11,
-  from docs/reviews/code/P3-t05.md. The minors left open are listed without IDs, since the IDs
-  are reused across rounds in the review rounds.
+  from docs/reviews/code/P3-t05.md. The items left open are listed without finding IDs, since
+  the IDs are reused across rounds in the review rounds; the snakemake.error msg leak (tracebacks
+  and Snakefile source lines reach runs.failure.message, api 14.1) is named by its follow-up,
+  FU-P3-05.
 """
 
 from __future__ import annotations
@@ -55,7 +57,7 @@ import math
 
 from sketch import Sketch, Theme, main_for
 
-W, H = 1600, 1310
+W, H = 1600, 1350
 COL = (50, 355, 660, 965, 1270)  # five columns, 280 wide, 25 apart
 CW = 280
 ROW = 410  # the pictograms of the steps
@@ -324,7 +326,8 @@ def build(theme: Theme) -> Sketch:
          "SEC-P3T1-11"),
         ("`reason`: cut after the label", "Params have changed since last execution,",
          "its detail quoted a shell command · CR-P3T05-03"),
-        ("`error` `msg`: a quoted `Command` hidden", "other quoting forms to be validated", ""),
+        ("`error` `msg`: only a quoted `Command` hidden", "tracebacks and Snakefile source lines",
+         "still stored, a known leak · FU-P3-05"),
         ("`msg` of `log`, `shellcmd`, `job_error`", "not in the allow-list, dropped at parse", ""),
     )
     iy = LOW + 112
@@ -338,14 +341,15 @@ def build(theme: Theme) -> Sketch:
 
     iy += 8
     s.warning(px0 + 8, iy - 4, size=9)
-    s.text(px0 + 24, iy, "left open, minor, in the review record:", size=13, anchor="start")
-    note(s, px0 + 24, iy + 22, ("spool times trusted within 1970 to 9999",
+    s.text(px0 + 24, iy, "left open, in the review record:", size=13, anchor="start")
+    note(s, px0 + 24, iy + 22, ("`error` `msg` leak, first-line cut: FU-P3-05",
+                                "spool times trusted within 1970 to 9999",
                                 "routed by type prefix, not the run's engine",
                                 "`head_exit` reads the run's events,",
                                 "not only the launch's"))
 
     s.prefix_key(50, H - 40, ("CR", "SEC"))
-    s.text(W - 50, H - 16, "source: spectio_server/projector snakemake.py, ingest.py, runs.py · spectio_sdk/events.py · "
+    s.text(W - 50, H - 16, "source: spectio_server/projector/snakemake.py, ingest.py, runs.py · spectio_sdk/events.py · "
            "tests/fixtures/engine-events, replayed 2026-10-30 · P1 Task 5", size=12.5, anchor="end",
            colour=t.dim)
     return s
