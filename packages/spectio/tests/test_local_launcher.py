@@ -253,6 +253,44 @@ def test_cancel_never_signals_other_boot_id(runs_root: Path, wrong: str) -> None
         sleeper.wait()
 
 
+def test_stale_kill_never_reaches_a_later_head(
+    runs_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3T09-02: launch A is cancelled and exits; launch B's head gets the same PID (so the
+    same native ID); the poll after A's grace leaves B alive. PID reuse is simulated: one
+    process that ignores TERM plays both heads, told apart by their recorded start times."""
+    spec_a = spec_for(runs_root, runs_root.parent / "unused", RUN_A)
+    spec_b = spec_for(runs_root, runs_root.parent / "unused", RUN_B)
+    script = "trap '' TERM; echo ready; exec sleep 30"
+    head = subprocess.Popen(
+        ["/bin/bash", "-c", script], stdout=subprocess.PIPE, start_new_session=True
+    )
+    assert head.stdout is not None and head.stdout.readline() == b"ready\n"
+    native_id = str(head.pid)
+    starts = {"now": "111"}
+    monkeypatch.setattr(
+        "spectio.runner.local._process",
+        lambda pid: (head.pid, starts["now"]) if pid == head.pid and starts["now"] else None,
+    )
+    try:
+        for spec, start in ((spec_a, "111"), (spec_b, "222")):
+            pid_file = spec.launch_dir / ".spectio" / "head.pid"
+            pid_file.write_text(head_pid_line(head.pid, start=start))
+            pid_file.chmod(0o600)
+        launcher = LocalLauncher()
+        assert launcher.adopt(ref_for(spec_a, native_id)).state == "running"
+        launcher.cancel(native_id, grace_s=0)  # SIGTERM to A, SIGKILL due at the next poll
+        starts["now"] = "222"  # A exits, and B starts with A's PID
+        assert launcher.adopt(ref_for(spec_b, native_id)).state == "running"
+        report = launcher.poll([native_id])[native_id]
+        time.sleep(0.2)
+        assert head.poll() is None  # B never got A's SIGKILL
+        assert report.state == "running"
+    finally:
+        head.kill()
+        head.communicate()
+
+
 def test_cancel_term_then_kill(runs_root: Path, launcher: LocalLauncher) -> None:
     body = "trap '' TERM; touch started; while :; do sleep 0.05; done"
     spec = spec_for(runs_root, stub_engine(runs_root.parent / "bin", body))

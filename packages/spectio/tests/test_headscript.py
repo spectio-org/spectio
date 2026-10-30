@@ -145,6 +145,22 @@ def test_head_script_nextflow_args(home: Path, bridges: Path) -> None:
     assert "plugins" not in (spectio_dir / "spectio.config").read_text()  # inbox #69
 
 
+def test_engine_finds_the_unpacked_nf_spectio(
+    home: Path, bridges: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3T09-03: the login profile exports another NXF_HOME and spec.env is empty, as in
+    production; the engine is still pointed at the plugins directory nf-spectio was unpacked to,
+    never at one without it (where Nextflow would look the name up in the registry)."""
+    monkeypatch.setenv("NXF_HOME", str(home / "server-nxf"))
+    with (home / ".bash_profile").open("a") as f:
+        f.write(f"export NXF_HOME={shlex.quote(str(home / 'login-nxf'))}\n")
+    spec = make_spec(home / "runs", engine_cmd=shlex.quote(str(stub_engine(home / "bin"))))
+    assert run_head(spec).returncode == 0
+    plugins = Path(exported(spec)["NXF_PLUGINS_DIR"])
+    assert plugins == home / "server-nxf" / "plugins"
+    assert (plugins / "nf-spectio-0.0.1" / "classes" / "META-INF" / "MANIFEST.MF").is_file()
+
+
 def test_nextflow_config_on_slurm(home: Path, bridges: Path) -> None:
     spec = make_spec(home / "runs", slurm=SlurmOpts(partition="htc", account="lab'x"))
     write_launch_files(spec)
@@ -297,8 +313,7 @@ def test_nfcore_style_pins_kept(
     spec = make_spec(
         tmp_path / "runs",
         engine_cmd=shlex.quote(nextflow),
-        location=pipeline,
-        env={"NXF_HOME": str(nxf_home)},
+        location=pipeline,  # no spec.env: the production loop passes none (SEC-P3T09-03)
     )
     done = run_head(spec)
     out = (spec.launch_dir / ".spectio" / "head.out").read_text()

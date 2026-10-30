@@ -91,7 +91,9 @@ class LocalLauncher:
     def __init__(self) -> None:
         self._dirs: dict[str, Path] = {}  # native ID → launch directory
         self._procs: dict[str, subprocess.Popen[bytes]] = {}  # the heads this one started
-        self._kill_at: dict[str, float] = {}  # native ID → when SIGKILL follows SIGTERM
+        # native ID → when SIGKILL follows SIGTERM, and the head SIGTERM went to: SIGKILL goes
+        # to that head only, never to a later one that reuses its PID (SEC-P3T09-02)
+        self._kill_at: dict[str, tuple[float, HeadPid]] = {}
         self._warned: set[str] = set()  # heads whose unreadable files are already logged
 
     def submit(self, spec: LaunchSpec) -> str:
@@ -134,28 +136,40 @@ class LocalLauncher:
     def poll(self, ids: list[str]) -> dict[str, HeadReport]:
         now = time.monotonic()
         for native_id in ids:
-            if self._kill_at.get(native_id, now + 1) <= now:
+            due = self._kill_at.get(native_id)
+            if due is not None and due[0] <= now:
                 del self._kill_at[native_id]
-                self._signal(native_id, signal.SIGKILL)
-        return {native_id: self._report(native_id) for native_id in ids}
+                self._signal(native_id, signal.SIGKILL, due[1])
+        reports = {native_id: self._report(native_id) for native_id in ids}
+        for native_id, report in reports.items():
+            if report.ended:
+                self._kill_at.pop(native_id, None)
+        return reports
 
     def cancel(self, native_id: str, grace_s: int = 60) -> None:
         """SIGTERM to the head's process group now, SIGKILL at the first poll after the grace
         period if it still lives (Assumption 4, local executor)."""
-        if self._signal(native_id, signal.SIGTERM):
-            self._kill_at[native_id] = time.monotonic() + grace_s
+        head = self._signal(native_id, signal.SIGTERM)
+        if head is not None:
+            self._kill_at[native_id] = (time.monotonic() + grace_s, head)
 
-    def _signal(self, native_id: str, sig: signal.Signals) -> bool:
+    def _signal(
+        self, native_id: str, sig: signal.Signals, only: HeadPid | None = None
+    ) -> HeadPid | None:
+        """Signal the head's group if `head.pid` names a live head with this native ID (and is
+        `only`, when given); returns the head signalled."""
         try:
             head = read_head_pid(self._dirs[native_id])
         except (KeyError, OSError, ValueError) as exc:
             log.warning("head %s not signalled: %r", native_id, exc)
-            return False
+            return None
         if head is None or str(head.pid) != native_id or not alive(head):
-            return False
+            return None
+        if only is not None and head != only:
+            return None
         with contextlib.suppress(ProcessLookupError):
             os.killpg(head.pgid, sig)
-        return True
+        return head
 
     def _report(self, native_id: str) -> HeadReport:
         launch_dir = self._dirs.get(native_id)
@@ -166,6 +180,8 @@ class LocalLauncher:
             return HeadReport("unknown", native_id, None, None, False, None)
         try:
             head = read_head_pid(launch_dir)
+            if head is not None and str(head.pid) != native_id:
+                raise ValueError(f"head.pid names PID {head.pid}, not {native_id}")
             if head is not None and head.host != socket.gethostname():
                 # Another machine's head cannot be checked: never ended from here.
                 return HeadReport("unknown", native_id, head.host, None, False, None)

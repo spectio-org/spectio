@@ -17,7 +17,7 @@ from pathlib import Path
 
 from spectio.config import NF_SPECTIO_VERSION
 from spectio.loginshell import KEEP
-from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, unpack_nf_spectio
+from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, nf_plugin_copy, unpack_nf_spectio
 from spectio.runner.rundir import private_dir, write_file
 from spectio.runner.types import LaunchSpec
 
@@ -106,6 +106,9 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
     }
     if spec.engine == "nextflow":
         env["NXF_PLUGINS_DEFAULT"] = f"nf-spectio@{NF_SPECTIO_VERSION}"  # never -plugins (#69)
+        # Where `write_launch_files` unpacks nf-spectio, whatever NXF_HOME the login profile
+        # sets: the engine never looks for it elsewhere, nor in the registry (SEC-P3T09-03).
+        env["NXF_PLUGINS_DIR"] = str(nf_plugin_copy({**os.environ, **spec.env}).parent)
         env["NXF_ANSI_LOG"] = "false"
         if spec.nxf_opts:
             env["NXF_OPTS"] = spec.nxf_opts
