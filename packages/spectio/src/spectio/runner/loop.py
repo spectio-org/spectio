@@ -190,6 +190,10 @@ class RunnerLoop:
             return failure.message
         if started:  # delivered again after a restart: adopt, never start twice
             self._adopt(ref)
+            last = self._last.get(ref.launch_id)
+            if cancelled and last is not None and last.native_id and not last.ended:
+                # a cancel that came with no native ID only wrote the marker (CR-P3T09-04 r2)
+                self.launcher.cancel(last.native_id)
             return None
         if cancelled:  # cancelled before its head started: it never starts (CR-P3T09-02),
             # and with a failure it skips the spool grace: no engine ran (CR-P3T09-03)

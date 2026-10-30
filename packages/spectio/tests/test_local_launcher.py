@@ -633,3 +633,24 @@ def test_refused_adopt_logged_once(
         loop.tick()
     logged = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
     assert len([m for m in logged if "spool" not in m]) == 1  # the spool's own: once too
+
+
+def test_redelivered_launch_after_a_cancel_with_no_native_id(
+    runs_root: Path, launcher: LocalLauncher
+) -> None:
+    """CR-P3T09-04 (r2): the server lost the native ID (it stopped between submit and the
+    report); after a restart, a cancel with no native ID only writes the marker, and the launch
+    delivered again adopts the running head and cancels it."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; while :; do sleep 0.05; done")
+    sink = FakeSink()
+    ref = sink.launch(runs_root, RUN_A)
+    command = sink.commands[0]
+    run_until(make_loop(sink, runs_root, engine, launcher), (ref.launch_dir / "started").exists)
+    sink.launches[ref.launch_id] = ref  # no native ID
+    sink.commands = [Command("cmd_cancel", "cancel", ref), command]
+    run_until(
+        make_loop(sink, runs_root, engine, LocalLauncher()),
+        lambda: ref.launch_id not in sink.launches,
+    )
+    assert ("cmd_cancel", True, None) in sink.acks
+    assert sink.last(ref.launch_id).exit_code == 143
