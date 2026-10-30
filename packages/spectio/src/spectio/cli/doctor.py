@@ -108,12 +108,16 @@ def checks(
     except ImportError:
         results.append(("warn", "db_dir", "spectio[server] is not installed: no database checks"))
     else:
-        if settings.db_dir is None:
-            results.append(("fail", "db_dir", "none recorded: run spectio init"))
-        elif mountinfo is None:
-            results += server.db_checks(settings.db_dir)
+        try:
+            db_dir = settings.db_dir or server.preferred_db_dir()  # not created here
+        except server.UnsafeDatabase as exc:
+            results.append(("fail", "db_dir", str(exc)))
         else:
-            results += server.db_checks(settings.db_dir, mountinfo)
+            fallback = settings.db_dir is None
+            if mountinfo is None:
+                results += server.db_checks(db_dir, fallback=fallback)
+            else:
+                results += server.db_checks(db_dir, mountinfo, fallback=fallback)
     here = socket.gethostname()
     if settings.host == here:
         results.append(("ok", "host", here))

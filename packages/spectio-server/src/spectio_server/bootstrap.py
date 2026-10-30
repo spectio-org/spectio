@@ -23,11 +23,12 @@ from spectio_server.store.db import (
     default_db_dir,
     fs_type,
     open_db,
+    preferred_db_dir,
 )
 from spectio_server.store.schema import environments, principals, projects, runners
 from spectio_server.store.writer import Writer
 
-__all__ = ["UnsafeDatabase", "db_checks", "default_db_dir", "init_store"]
+__all__ = ["UnsafeDatabase", "db_checks", "default_db_dir", "init_store", "preferred_db_dir"]
 
 
 def init_store(db_dir: Path, *, user: str, kind: str, config: dict[str, Any], version: str) -> bool:
@@ -75,10 +76,13 @@ def _tenancy(conn: Connection, user: str, kind: str, config: dict[str, Any], ver
     return True
 
 
-def db_checks(db_dir: Path, mountinfo: Path = MOUNTINFO) -> list[tuple[str, str, str]]:
+def db_checks(
+    db_dir: Path, mountinfo: Path = MOUNTINFO, *, fallback: bool = False
+) -> list[tuple[str, str, str]]:
     """`(status, check, detail)` for the SQLite library and the database directory: the
     network-file-system and 0700 checks (architecture §7.2), or a warning when it is missing,
-    since the next start rebuilds it (P1 Assumption 21)."""
+    since the next start rebuilds it (P1 Assumption 21). `fallback`: `db_dir` is the default,
+    so a squatted one is a warning, since the next start uses a `mkdtemp` directory (§15.3)."""
     found = []
     try:
         check_sqlite_version(sqlite3.sqlite_version)
@@ -89,6 +93,16 @@ def db_checks(db_dir: Path, mountinfo: Path = MOUNTINFO) -> list[tuple[str, str,
         found.append(("warn", "db_dir", f"{db_dir} is missing: the next start rebuilds it"))
         return found
     private, owner = _private_dir(db_dir, os.getuid())
+    if not private and fallback:
+        found.append(
+            (
+                "warn",
+                "db_dir",
+                f"{db_dir} is not a private directory of this user (owner uid {owner}): "
+                "the next start uses a mkdtemp directory",
+            )
+        )
+        return found
     if not private:
         found.append(
             (

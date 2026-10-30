@@ -34,7 +34,8 @@ def _private_dir(path: Path) -> None:
     st = os.stat(path)
     if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o022:
         raise InitError(
-            f"{path} must be a directory of yours that others cannot write (chmod go-w)"
+            f"{path} must be a directory of yours that others cannot write "
+            f"(owner uid {st.st_uid}, mode {stat.S_IMODE(st.st_mode):o})"
         )
 
 
@@ -109,12 +110,13 @@ def _init(settings: Settings) -> None:
     for path in (config_path().parent, settings.data_dir):
         _private_dir(path)
     try:
+        # The default is resolved again at each start and never recorded, so that its mkdtemp
+        # fallback still applies once the temporary directory is purged (dev-env §15.3).
         db_dir = settings.db_dir or server.default_db_dir()
         if settings.db_dir:
             _private_dir(db_dir)
         settings = settings.model_copy(
             update={
-                "db_dir": db_dir,
                 "port": settings.port
                 if "port" in settings.model_fields_set
                 else _free_port(DEFAULT_PORT),

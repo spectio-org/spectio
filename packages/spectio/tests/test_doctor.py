@@ -185,3 +185,23 @@ def test_doctor_host_pin_and_config(
     code, lines = doctor(capsys, settings)
     assert code == 1
     assert line(lines, "config").startswith("fail config ")
+
+
+def test_doctor_default_db_dir(
+    home: Path, fakebin: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    # db_dir unset (SEC-P3T08-01): doctor resolves the default without creating it
+    settings = configured(home, fakebin, executor="local", db_dir=None)
+    default = Path(os.environ["TMPDIR"]) / f"spectio-{os.getuid()}"
+    code, lines = doctor(capsys, settings)
+    assert code == 0, lines
+    assert line(lines, "db_dir") == f"warn db_dir {default} is missing: the next start rebuilds it"
+    assert not default.exists()
+    default.mkdir(mode=0o755)  # squatted: the next start falls back to mkdtemp
+    code, lines = doctor(capsys, settings)
+    assert code == 0, lines
+    assert line(lines, "db_dir").startswith(f"warn db_dir {default} is not a private directory")
+    assert f"owner uid {os.getuid()}" in line(lines, "db_dir")
+    default.chmod(0o700)
+    code, lines = doctor(capsys, settings, mountinfo=mountinfo(default, "ext4"))
+    assert line(lines, "db_dir") == f"ok db_dir {default} (ext4, 0700)"

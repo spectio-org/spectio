@@ -63,7 +63,7 @@ class EngineOpts(_Model):
     nextflow_cmd: str | None = None
     snakemake_cmd: str | None = None
     nxf_opts: str = "-Xmx2g"
-    extra_args: list[str] = []
+    extra_args: dict[Literal["nextflow", "snakemake"], list[str]] = {}  # per engine
 
 
 class RunnerOpts(_Model):
@@ -83,7 +83,8 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_ENGINES_NEXTFLOW_CMD": ("engines", "nextflow_cmd"),
     "SPECTIO_ENGINES_SNAKEMAKE_CMD": ("engines", "snakemake_cmd"),
     "SPECTIO_ENGINES_NXF_OPTS": ("engines", "nxf_opts"),
-    "SPECTIO_ENGINES_EXTRA_ARGS": ("engines", "extra_args"),
+    "SPECTIO_ENGINES_EXTRA_ARGS_NEXTFLOW": ("engines", "extra_args", "nextflow"),
+    "SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE": ("engines", "extra_args", "snakemake"),
     "SPECTIO_RUNNER_HEAD_WATCH_S": ("runner", "head_watch_s"),
     "SPECTIO_RUNNER_SPOOL_S": ("runner", "spool_s"),
 }
@@ -104,7 +105,7 @@ class _FlatEnv(PydanticBaseSettingsSource):
             node = found
             for key in keys[:-1]:
                 node = node.setdefault(key, {})
-            node[keys[-1]] = shlex.split(value) if keys[-1] == "extra_args" else value
+            node[keys[-1]] = shlex.split(value) if "extra_args" in keys else value
         return found
 
 
@@ -112,7 +113,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(extra="forbid")
 
     data_dir: AbsPath = Field(default_factory=default_data_dir)
-    db_dir: AbsPath | None = None  # unset: spectio init records default_db_dir()
+    db_dir: AbsPath | None = None  # unset: default_db_dir() at each start (§15.3 fallback)
     runs_root: AbsPath = Field(default_factory=lambda: Path.home() / "spectio-runs")
     port: int = Field(DEFAULT_PORT, ge=1, le=65535)
     executor: Literal["slurm", "local"] = "slurm"  # local: P1 Assumption 23
@@ -135,6 +136,8 @@ class Settings(BaseSettings):
 
 
 def _toml_value(value: Any) -> str:
+    if isinstance(value, dict):  # an inline table; its keys are bare (engine names)
+        return "{" + ", ".join(f"{k} = {_toml_value(v)}" for k, v in value.items()) + "}"
     if isinstance(value, list):
         return "[" + ", ".join(_toml_value(v) for v in value) + "]"
     if isinstance(value, int | float):

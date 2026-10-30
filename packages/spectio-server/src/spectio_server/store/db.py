@@ -162,10 +162,9 @@ def _check_parents(db_dir: Path, uid: int) -> None:
             )
 
 
-def default_db_dir() -> Path:
-    """`$TMPDIR` (or /tmp)/spectio-<uid>, 0700; a squatted path is left as it is and a fresh
-    `mkdtemp` directory is used instead (dev-environment-and-testing.md §15.3, Where data lives).
-    """
+def preferred_db_dir() -> Path:
+    """`$TMPDIR` (or /tmp)/spectio-<uid>, without creating it: the path `default_db_dir` tries
+    first, for doctor."""
     uid = os.getuid()
     base = SYSTEM_TMP
     tmpdir = os.environ.get("TMPDIR")
@@ -184,7 +183,16 @@ def default_db_dir() -> Path:
             f"{SYSTEM_TMP} fails the owner and mode rule of a shared directory; "
             "choose the database directory with --db-dir"
         )
-    path = base / f"spectio-{uid}"
+    return base / f"spectio-{uid}"
+
+
+def default_db_dir() -> Path:
+    """`preferred_db_dir()`, 0700; a squatted path is left as it is and a fresh `mkdtemp`
+    directory is used instead (dev-environment-and-testing.md §15.3, Where data lives).
+    """
+    uid = os.getuid()
+    path = preferred_db_dir()
+    base = path.parent
     try:
         os.mkdir(path, 0o700)
     except FileExistsError:

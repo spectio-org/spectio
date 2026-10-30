@@ -2,6 +2,7 @@
 of P1 Assumption 18."""
 
 import os
+import shutil
 import socket
 import stat
 import sys
@@ -47,13 +48,18 @@ def mode(path: Path) -> int:
     return stat.S_IMODE(os.stat(path).st_mode)
 
 
+def default_db() -> Path:
+    """The default database directory of the `home` fixture: `$TMPDIR/spectio-<uid>`."""
+    return Path(os.environ["TMPDIR"]) / f"spectio-{os.getuid()}"
+
+
 def test_init_creates_one_environment(home: Path, fakebin: Path) -> None:
     runs_root = home / "runs"
     runs_root.mkdir(mode=0o700)
     for _ in range(2):  # a second init adds nothing
         result = init("--runs-root", str(runs_root))
         assert result.exit_code == 0, result.output
-    found = rows(Path(recorded()["db_dir"]))
+    found = rows(default_db())
     assert {name: len(r) for name, r in found.items()} == {
         "principals": 1,
         "projects": 1,
@@ -105,11 +111,11 @@ def test_init_defaults_unattended(home: Path, fakebin: Path) -> None:
     result = init()
     assert result.exit_code == 0, result.output
     config = recorded()
-    data_dir, db_dir = home / ".spectio", Path(os.environ["TMPDIR"]) / f"spectio-{os.getuid()}"
+    data_dir, db_dir = home / ".spectio", default_db()
     runs_root = home / "spectio-runs"
     assert config_path() == data_dir / "spectio.toml"
     assert config["data_dir"] == str(data_dir)
-    assert config["db_dir"] == str(db_dir)
+    assert "db_dir" not in config  # resolved at each start, not pinned (§15.3 fallback)
     assert config["runs_root"] == str(runs_root)
     assert config["executor"] == "slurm"
     assert config["host"] == socket.gethostname()
@@ -154,7 +160,7 @@ def test_init_local_environment(home: Path, fakebin: Path) -> None:
     config = recorded()
     assert config["executor"] == "local"
     assert "slurm" not in config  # no [slurm] options written
-    (env,) = rows(Path(config["db_dir"]))["environments"]
+    (env,) = rows(default_db())["environments"]
     assert env.kind == "local"
     result = init("--local", "--partition", "short")
     assert result.exit_code == 2
@@ -186,11 +192,11 @@ def test_settings_layers(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     assert Settings().port == 9000
     monkeypatch.setenv("SPECTIO_PORT", "9001")
     monkeypatch.setenv("SPECTIO_SLURM_ACCOUNT", "env")
-    monkeypatch.setenv("SPECTIO_ENGINES_EXTRA_ARGS", "--keep-going --cores 'a b'")
+    monkeypatch.setenv("SPECTIO_ENGINES_EXTRA_ARGS_SNAKEMAKE", "--keep-going --cores 'a b'")
     settings = Settings()
     assert settings.port == 9001
     assert (settings.slurm.partition, settings.slurm.account) == ("toml", "env")
-    assert settings.engines.extra_args == ["--keep-going", "--cores", "a b"]
+    assert settings.engines.extra_args == {"snakemake": ["--keep-going", "--cores", "a b"]}
     flagged = Settings(port=9002, slurm={"partition": "flag"})
     assert flagged.port == 9002
     assert (flagged.slurm.partition, flagged.slurm.account) == ("flag", "env")
@@ -208,3 +214,35 @@ def test_bad_config_refused(home: Path, fakebin: Path) -> None:
         doctor = CliRunner().invoke(app, ["doctor"])
         assert doctor.exit_code == 1
         assert doctor.output.startswith("fail config ")
+
+
+def test_extra_args_per_engine_round_trip(home: Path, fakebin: Path) -> None:
+    # the spectio.toml of P1 Task 22: Snakemake-only flags, kept away from Nextflow
+    flags = ["--slurm-init-seconds-before-status-checks", "5"]
+    config_path().parent.mkdir(mode=0o700)
+    config_path().write_text(f"engines.extra_args.snakemake = {flags!r}\n".replace("'", '"'))
+    result = init()
+    assert result.exit_code == 0, result.output
+    assert recorded()["engines"]["extra_args"] == {"snakemake": flags}
+    assert Settings().engines.extra_args == {"snakemake": flags}
+    config_path().write_text('engines.extra_args.cromwell = ["-x"]\n')
+    assert init().exit_code == 2  # an engine 0.0.1 does not run
+
+
+def test_init_squatted_default_db_dir(home: Path, fakebin: Path) -> None:
+    # SEC-P3T08-01: the default is resolved at each init, so the mkdtemp fallback still applies
+    assert init().exit_code == 0
+    squatted = default_db()
+    shutil.rmtree(squatted)  # the node-local temporary directory was purged
+    squatted.mkdir(mode=0o755)  # and another user took the path
+    if os.getuid() == 0:
+        os.chown(squatted, 4242, 4242)
+    result = init()
+    assert result.exit_code == 0, result.output
+    used = [p for p in squatted.parent.iterdir() if p.name.startswith(f"{squatted.name}-")]
+    assert len(used) == 1 and mode(used[0]) == 0o700
+    assert (used[0] / DB_FILE).exists()
+    assert "db_dir" not in recorded()
+    explicit = init("--db-dir", str(squatted))  # chosen explicitly: refused, naming the owner
+    assert explicit.exit_code == 2
+    assert f"owner uid {os.stat(squatted).st_uid}" in explicit.output
