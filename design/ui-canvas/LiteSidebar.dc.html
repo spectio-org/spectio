@@ -43,7 +43,7 @@ body{margin:0}
       <div style="flex-grow: 1;"></div>
       <div style="height: 1px; background: #EEEFF5; margin: 0 4px 6px;"></div>
       <div style="display: flex; flex-direction: column; align-items: {{footAlign}}; gap: 6px; font-size: 12.5px; padding: 0 4px;">
-        <span style="display: flex; align-items: center; gap: 8px; padding: 6px {{pillPad}}; border-radius: 999px; background: #E8F6EF; color: #157A4B; font-weight: 600;"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63; flex-shrink: 0;"></span><span class="{{txtClass}}">Spectio 0.0.1 · online</span></span>
+        <span style="display: flex; align-items: center; gap: {{pillGap}}; padding: 6px {{pillPad}}; border-radius: 999px; background: #E8F6EF; color: #157A4B; font-weight: 600;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#1F9D63" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M5 12l5 5 9-10"/></svg><span class="{{txtClass}}">Spectio 0.0.1 · online</span><sc-if value="{{folded}}" hint-placeholder-val="{{false}}"><span aria-hidden="true">on</span></sc-if></span>
         <span class="{{txtClass}}" style="padding: 0 12px; color: #4D5065; line-height: 1.45;">SLURM · server on {{node}} · your account {{account}}</span>
       </div>
     </nav>
@@ -54,7 +54,7 @@ body{margin:0}
 class Component extends DCLogic {
 renderVals() {
   const active = this.props.active ?? 'runs';
-  // Folded: an 88 px rail of icons; labels stay in the accessibility tree (sp-sr), so no link loses its name.
+  // Folded: a 92 px rail (ui-spec §2) of icons; labels stay in the accessibility tree (sp-sr), so no link loses its name.
   const open = !this.props.collapsed;
   const defs = [
     ['home', 'Home', 'LiteHome.dc.html', 'M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z', '#5A4FCF', '#F2F1FB'],
@@ -69,11 +69,11 @@ renderVals() {
       countSize: open ? '24px' : '18px', countPad: open ? '7px' : '5px', countFont: open ? '12.5px' : '11px',
       countPos: open ? '' : 'position: absolute; top: 5px; right: 5px;' };
   });
-  return { items, open, w: open ? '236px' : '88px', node: 'login1', account: 'amartin',
+  return { items, open, w: open ? '236px' : '92px', folded: !open, node: 'login1', account: 'amartin',
     expandedAttr: open ? 'true' : 'false', foldLabel: open ? 'Fold the sidebar' : 'Unfold the sidebar',
     foldIcon: open ? 'M4 5h16v14H4z M9 5v14 M16 10l-2 2 2 2' : 'M4 5h16v14H4z M9 5v14 M14 10l2 2-2 2',
     headJustify: open ? 'space-between' : 'center', headPad: open ? '12px' : '0',
-    footAlign: open ? 'stretch' : 'center', pillPad: open ? '12px' : '8px', txtClass: open ? '' : 'sp-sr' };
+    footAlign: open ? 'stretch' : 'center', pillPad: open ? '12px' : '6px', pillGap: open ? '8px' : '3px', txtClass: open ? '' : 'sp-sr' };
 }
 }
 </script>

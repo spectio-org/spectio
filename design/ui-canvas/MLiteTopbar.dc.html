@@ -21,21 +21,23 @@ body{margin:0}
 .mk{width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#33364A;text-decoration:none;flex-shrink:0}
 .mk:focus-visible{outline:2px solid #7750D4;outline-offset:-2px}
 button.mk{border:none;background:transparent;padding:0;cursor:pointer;font:inherit}
-.mk-off{width:36px;color:#6E7287;cursor:not-allowed}
+.mk-off{color:#6E7287;cursor:not-allowed}
+.mk-narrow-hide{width:40px}
+@media (max-width: 389px){.mk-narrow-hide{display:none !important}}
 .mk-off svg{opacity:.7}
 </style>
 </helmet>
 <div style="width: 100%; height: {{h}}; box-sizing: border-box; padding: 0 12px; display: flex; flex-direction: column; background: rgba(255,255,255,0.94); box-shadow: 0 1px 0 rgba(15,16,32,0.08); font-family: 'Inter', system-ui, sans-serif; color: #0F1020;">
   <div style="height: 48px; display: flex; align-items: center; gap: 4px;">
-    <a class="spx-home" href="MLiteHome.dc.html" aria-label="Spectio home" style="gap: 7px; min-height: 44px; align-items: center;">
+    <a class="spx-home" href="MLiteHome.dc.html" style="gap: 7px; min-height: 44px; align-items: center;">
       <svg width="34" height="17" viewBox="0 0 200 100" aria-hidden="true" style="overflow: visible; align-self: center; margin-top: -2px;"><path class="spx-b" style="--r: 67.5deg;" fill="#5A4FCF" d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/><path class="spx-b" style="--r: 22.5deg;" fill="#8B5CF6" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/><path class="spx-b" style="--r: -22.5deg;" fill="#EC5F87" d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/><path class="spx-b" style="--r: -67.5deg;" fill="#F9A947" d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/></svg>
       <span class="spx-word" style="font-size: 20px;">Spectio</span>
     </a>
     <span style="flex-grow: 1;"></span>
-    <span aria-label="Server on login1, online" role="img" style="display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 8px; border-radius: 13px; background: #E8F6EF; color: #157A4B; font-size: 12px; font-weight: 600; flex-shrink: 0;"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 4px; background: #1F9D63;"></span><span aria-hidden="true">login1</span></span>
+    <span aria-label="Server on login1, online" role="img" style="display: flex; align-items: center; gap: 5px; height: 26px; padding: 0 8px; border-radius: 13px; background: #E8F6EF; color: #157A4B; font-size: 12px; font-weight: 600; flex-shrink: 1; min-width: 0;"><span aria-hidden="true" style="width: 7px; height: 7px; border-radius: 4px; background: #1F9D63; flex-shrink: 0;"></span><span aria-hidden="true" style="min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">login1</span></span>
     <span style="display: flex; align-items: center; gap: 0; flex-shrink: 0;">
-      <button type="button" class="mk mk-off" disabled aria-label="Search (not in 0.0.1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg></button>
-      <button type="button" class="mk mk-off" disabled aria-label="Notifications (not in 0.0.1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0"/></svg></button>
+      <button type="button" class="mk mk-off mk-narrow-hide" disabled aria-label="Search (not in 0.0.1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg></button>
+      <button type="button" class="mk mk-off mk-narrow-hide" disabled aria-label="Notifications (not in 0.0.1)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0"/></svg></button>
       <button type="button" class="mk" role="switch" aria-checked="false" aria-label="Dark theme"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg></button>
       <button type="button" class="mk mk-off" disabled aria-label="Account (not in 0.0.1)"><span style="width: 30px; height: 30px; box-sizing: border-box; border-radius: 15px; background: #F7F7FB; border: 1px dashed #B7BACB; display: flex; align-items: center; justify-content: center;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0"/></svg></span></button>
     </span>
