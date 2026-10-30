@@ -15,6 +15,8 @@
 package spectio
 
 import groovy.json.JsonOutput
+import java.nio.ByteBuffer
+import java.nio.channels.FileChannel
 import java.nio.charset.StandardCharsets
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
@@ -119,8 +121,13 @@ class Spool {
         try {
             queue.offer(STOP, 5, TimeUnit.SECONDS)
             thread.join(10000)
-            if (dropped.get())
-                writer.error("${dropped.get()} events dropped: the queue was full")
+            // A writer stuck in I/O holds the writer's monitor: waiting on it would keep the
+            // head from exiting, and closing under it would let it open a new file (SEC-P3T06-02).
+            if (thread.alive) {
+                System.err.println("nf-spectio: close: the writer thread is still running; ${dropped.get()} events dropped")
+                return
+            }
+            writer.finish(dropped.get())
             writer.close()
         } catch (Throwable e) {
             System.err.println("nf-spectio: close: $e")
@@ -144,10 +151,9 @@ class SpoolWriter {
     private final long launch
     private final long rotateBytes
     private final SecureRandom random = new SecureRandom()
-    private OutputStream out
+    private FileChannel out
     private Path path
     private long size
-    private boolean torn  // a failed write may have left a line with no newline in `path`
     private int index
     private long seq
     private int errors
@@ -171,21 +177,23 @@ class SpoolWriter {
             }
             if (out == null || size + bytes.length > rotateBytes)
                 next()
-            if (torn) {  // end the torn line: the reader counts it as invalid
-                out.write(10)
-                size++
-                torn = false
-            }
-            out.write(bytes)
+            final buf = ByteBuffer.wrap(bytes)
+            while (buf.hasRemaining())
+                out.write(buf)
             size += bytes.length
             seq++
         } catch (Throwable e) {
             // A failed write (ENOSPC, EFBIG, a quota) does not rotate: a new file per event
             // would burn the indexes and the reader's file cap (CR-P3T06-01). Reopen only
-            // when the file itself is gone.
+            // when the file itself is gone. The partial line is cut off, so `size` stays exact and
+            // no torn line is left behind by a later rotation (CR-P3T06-02).
             error("$type: not written: $e")
             if (out != null) {
-                torn = true
+                try {
+                    out.truncate(size)
+                } catch (Throwable ignored) {
+                    close()
+                }
                 if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
                     close()
             }
@@ -197,7 +205,7 @@ class SpoolWriter {
     private void next() {
         close()
         if (path != null && size == 0 && Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
-            out = Files.newOutputStream(path, StandardOpenOption.WRITE, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS)
+            out = open(path)
             return
         }
         Files.createDirectories(dir, PRIVATE_DIR)
@@ -214,10 +222,13 @@ class SpoolWriter {
             index++
             path = candidate
             size = 0
-            torn = false
-            out = Files.newOutputStream(path, StandardOpenOption.WRITE, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS)
+            out = open(path)
             return
         }
+    }
+
+    private static FileChannel open(Path p) {
+        FileChannel.open(p, StandardOpenOption.WRITE, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS)
     }
 
     synchronized void close() {
@@ -230,13 +241,27 @@ class SpoolWriter {
 
     /** One line in bridge.err, at most MAX_ERROR_LINES of them; never throws. */
     synchronized void error(String message) {
-        if (errors++ >= MAX_ERROR_LINES)
-            return
+        if (errors++ < MAX_ERROR_LINES)
+            log(message)
+    }
+
+    /** The close-time lines, past the cap (CR-P3T06-04). */
+    synchronized void finish(long dropped) {
+        if (errors > MAX_ERROR_LINES)
+            log("${errors - MAX_ERROR_LINES} further errors not logged")
+        if (dropped)
+            log("$dropped events dropped: the queue was full")
+    }
+
+    private void log(String message) {
         try {
             try {
                 Files.createFile(errFile, PRIVATE_FILE)
             } catch (FileAlreadyExistsException ignored) {
             }
+            // A FIFO or device in its place would block the open forever (SEC-P3T06-02).
+            if (!Files.isRegularFile(errFile, LinkOption.NOFOLLOW_LINKS))
+                throw new IOException("$errFile is not a regular file")
             final line = "${Instant.now()} nf-spectio: $message\n".toString().getBytes(StandardCharsets.UTF_8)
             Files.write(errFile, line, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS)
         } catch (Throwable e) {

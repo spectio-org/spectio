@@ -287,15 +287,22 @@ w.write('nextflow.onFlowBegin', 1793172224454L, [runName: 'last'])
 
 
 def run_writer(
-    nextflow: str, tmp_path: Path, spool: Path, script: str = WRITER_SCRIPT, ulimit_kb: int = 0
-) -> None:
+    nextflow: str,
+    tmp_path: Path,
+    spool: Path,
+    script: str = WRITER_SCRIPT,
+    ulimit_kb: int = 0,
+    timeout: float | None = None,
+) -> subprocess.CompletedProcess[str]:
     jar = build(nextflow, "--classpath")
     build(nextflow, str(tmp_path / "plugin"))
     classes = tmp_path / "plugin" / "nf-spectio-0.0.1" / "classes"
     cmd = ["java", "-cp", f"{jar}:{classes}", "groovy.ui.GroovyMain", "-e", script]
     if ulimit_kb:  # bash's `ulimit -f` counts 1024-byte blocks; the JVM ignores SIGXFSZ (EFBIG)
         cmd = ["bash", "-c", f'ulimit -f {ulimit_kb} && exec "$@"', "bash", *cmd]
-    subprocess.run([*cmd, str(spool), RUN_ID], check=True)
+    return subprocess.run(
+        [*cmd, str(spool), RUN_ID], check=True, capture_output=True, text=True, timeout=timeout
+    )
 
 
 def test_writer_rotates_and_drops_long_lines(nextflow: str, tmp_path: Path) -> None:
@@ -341,3 +348,78 @@ def test_writer_does_not_rotate_on_a_failed_write(nextflow: str, tmp_path: Path)
     assert batch.events
     assert [ev.seq for ev in batch.events] == list(range(1, len(batch.events) + 1))
     assert "too_many_files" not in batch.drops
+
+
+TORN_THEN_ROTATE_SCRIPT = """
+def w = new spectio.SpoolWriter(java.nio.file.Paths.get(args[0]), args[1], 1L, 17000L)
+100.times { w.write('nextflow.onFlowBegin', 1793172224454L, [runName: 'r' * 100]) }
+w.write('nextflow.onFlowBegin', 1793172224454L, [runName: 'b' * 2000])
+w.write('nextflow.onFlowBegin', 1793172224454L, [runName: 'last'])
+"""
+
+
+def test_writer_truncates_a_failed_write(nextflow: str, tmp_path: Path) -> None:
+    """CR-P3T06-02: a write cut short by EFBIG (`ulimit -f 16`, files rotate at 17000 bytes) is
+    truncated away, so a rotation right after it leaves no unterminated line behind."""
+    spool = tmp_path / "launch" / ".spectio" / "events"
+    run_writer(nextflow, tmp_path, spool, TORN_THEN_ROTATE_SCRIPT, ulimit_kb=16)
+    assert "not written" in (spool.parent / "bridge.err").read_text()
+    files = sorted(spool.iterdir())
+    assert len(files) == 2, [f.name for f in files]
+    for f in files:
+        assert f.read_bytes().endswith(b"\n"), f.name
+
+    batch = read_spool(spool.parent.parent, RUN_ID, 1, {})
+    assert batch.drops == Counter()
+    assert [ev.seq for ev in batch.events] == list(range(1, len(batch.events) + 1))
+    assert batch.events[-1].data["runName"] == "last"
+
+
+ERROR_CAP_SCRIPT = """
+def w = new spectio.SpoolWriter(java.nio.file.Paths.get(args[0]), args[1], 1L, 1048576L)
+150.times { w.error("e$it") }
+w.finish(7L)
+"""
+
+
+def test_error_cap_keeps_the_summary(nextflow: str, tmp_path: Path) -> None:
+    """CR-P3T06-04: past MAX_ERROR_LINES, one line counts the rest, and the queue-full summary
+    is still written."""
+    spool = tmp_path / "launch" / ".spectio" / "events"
+    spool.parent.mkdir(mode=0o700, parents=True)
+    run_writer(nextflow, tmp_path, spool, ERROR_CAP_SCRIPT)
+    lines = (spool.parent / "bridge.err").read_text().splitlines()
+    assert len(lines) == 102
+    assert lines[99].endswith("nf-spectio: e99")
+    assert lines[100].endswith("50 further errors not logged")
+    assert lines[101].endswith("7 events dropped: the queue was full")
+
+
+FIFO_SCRIPT = """
+def w = new spectio.SpoolWriter(java.nio.file.Paths.get(args[0]), args[1], 1L, 1048576L)
+new spectio.Spool(w).enqueue('nextflow.onFlowBegin', [runName: 'x' * 70000])
+"""
+
+STUCK_WRITER_SCRIPT = """
+def w = new spectio.SpoolWriter(java.nio.file.Paths.get(args[0]), args[1], 1L, 1048576L) {
+    synchronized void write(String type, long ms, Map data) { Thread.sleep(Long.MAX_VALUE) }
+}
+new spectio.Spool(w).enqueue('nextflow.onFlowBegin', [:])
+"""
+
+
+def test_bridge_err_fifo_does_not_hang_the_head(nextflow: str, tmp_path: Path) -> None:
+    """SEC-P3T06-02: bridge.err is a FIFO; the error goes to stderr and the JVM exits."""
+    spool = tmp_path / "launch" / ".spectio" / "events"
+    spool.parent.mkdir(mode=0o700, parents=True)
+    os.mkfifo(spool.parent / "bridge.err", 0o600)
+    done = run_writer(nextflow, tmp_path, spool, FIFO_SCRIPT, timeout=30)
+    assert "line over" in done.stderr
+
+
+def test_stuck_writer_does_not_hang_the_head(nextflow: str, tmp_path: Path) -> None:
+    """SEC-P3T06-02: a writer thread that never returns holds its monitor; the shutdown hook
+    gives up after its join timeout instead of waiting on the monitor forever."""
+    spool = tmp_path / "launch" / ".spectio" / "events"
+    done = run_writer(nextflow, tmp_path, spool, STUCK_WRITER_SCRIPT, timeout=30)
+    assert "nf-spectio: close: the writer thread is still running" in done.stderr
