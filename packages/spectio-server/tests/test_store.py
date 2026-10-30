@@ -294,6 +294,36 @@ def test_open_db_checks_parents(tmp_path: Path, sticky: bool) -> None:
             open_db(db_dir)
 
 
+def test_symlink_inside_db_dir_is_resolved_once(tmp_path: Path) -> None:
+    # SEC-P3T2-13: `shared/` is writable by others and holds `link -> good`; the database must
+    # live at the resolved path, so that flipping the link changes nothing.
+    shared = private_dir(tmp_path / "shared")
+    shared.chmod(0o777)
+    good, evil = private_dir(tmp_path / "good"), private_dir(tmp_path / "evil")
+    private_dir(good / "d")
+    private_dir(evil / "d")
+    (shared / "link").symlink_to(good)
+    eng, _ = open_db(shared / "link" / "d")
+    assert eng.url.database == str(good / "d" / db.DB_FILE)
+    (shared / "link").unlink()
+    (shared / "link").symlink_to(evil)
+    eng.dispose()
+    with eng.connect() as conn:  # still the good database
+        assert conn.exec_driver_sql("SELECT count(*) FROM sqlite_master").scalar()
+    eng.dispose()
+    assert not (evil / "d" / db.DB_FILE).exists()
+
+
+def test_overflow_uid_is_named(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # A user namespace without a root mapping shows unmapped owners as the overflow uid.
+    db_dir = private_dir(tmp_path / "d")
+    real = os.getuid()
+    monkeypatch.setattr(db, "_overflow_uid", lambda: real)
+    monkeypatch.setattr(os, "getuid", lambda: real + 1000)
+    with pytest.raises(UnsafeDatabase, match="user namespace without a root mapping"):
+        open_db(db_dir)
+
+
 @pytest.mark.parametrize("swap", ["directory", "file"])
 def test_swapped_database_refused_on_connect(tmp_path: Path, swap: str) -> None:
     db_dir = private_dir(tmp_path / "d")
