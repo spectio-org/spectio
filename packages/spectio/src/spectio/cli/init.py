@@ -15,6 +15,7 @@ import typer
 
 from spectio.config import DEFAULT_PORT, EngineOpts, Settings, config_path, write_config
 from spectio.loginshell import which
+from spectio.runner.engines import unpack_nf_spectio
 
 
 class InitError(Exception):
@@ -158,3 +159,7 @@ def _init(settings: Settings) -> None:
         raise InitError(str(exc)) from exc
     path = write_config(settings)
     typer.echo(f"Wrote {path}; database in {db_dir}; runs under {runs_root}; port {settings.port}")
+    try:  # the copy that runs started from a terminal load (architecture §13.8)
+        typer.echo(f"nf-spectio in {unpack_nf_spectio()}")
+    except OSError as exc:
+        typer.echo(f"warning: nf-spectio not unpacked: {exc}")

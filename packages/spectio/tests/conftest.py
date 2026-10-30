@@ -65,3 +65,9 @@ def tools(home: Path) -> Callable[..., Path]:
 def fakebin(tools: Callable[..., Path]) -> Path:
     """nextflow, snakemake, java and tmux on the login PATH; no sbatch."""
     return tools("nextflow", "snakemake", "java", "tmux")
+
+
+@pytest.fixture
+def login(home: Path) -> Callable[..., None]:
+    """`login(*dirs)`: the login shell's PATH becomes exactly `dirs`."""
+    return lambda *dirs: login_path(home, *dirs)
