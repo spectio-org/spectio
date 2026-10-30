@@ -20,7 +20,7 @@ Do not start writing product code unless the task explicitly says so. The work i
 - it triages findings with `docs/playbooks/triage-policy.md`;
 - it commits to `autopilot/integration` and appends to `.autopilot/journal.md`.
 
-Budget: `/autopilot --budget 30%w` (a share of the weekly window) or `--budget until-exhausted`; headless, `tools/autopilot/run.sh --weekly 30`. See `docs/playbooks/autopilot.md` §6. To run the whole pipeline, drive it with `/goal` (see `docs/playbooks/autopilot.md`). Questions for Thomas go to `docs/reviews/inbox.md`. For now Claude may merge the promotion PR into `main` once its checks pass (Thomas, inbox #3, 2026-10-26). Never force-push, delete branches, or edit statuses in `pipeline.yaml`.
+Budget: `/autopilot --budget 30%w` (a share of the weekly window) or `--budget until-exhausted`; headless, `tools/autopilot/run.sh --weekly 30`. See `docs/playbooks/autopilot.md` §6. To run the whole pipeline, drive it with `/goal` (see `docs/playbooks/autopilot.md`). Questions for Thomas go to `docs/reviews/inbox.md`; in unattended mode (Thomas, 2026-10-30, `docs/playbooks/autopilot.md` §10) the recommendation is applied at once and nothing is asked in the session, except the reserved items of `triage-policy.md`. For now Claude may merge the promotion PR into `main` once its checks pass (Thomas, inbox #3, 2026-10-26). Never force-push, delete branches, or edit statuses in `pipeline.yaml`.
 
 ## Rules
 

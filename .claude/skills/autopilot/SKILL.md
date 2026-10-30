@@ -124,6 +124,14 @@ Append to `.autopilot/journal.md`:
 
 Snapshot this session's token usage: `python3 tools/dashboard/usage.py .autopilot/usage` (`tools/dashboard/README.md`). If it fails, note it in the journal and go on. Then update `state.json` (`updated_at`, `current_wave`) and commit the three files (two if `usage.py` failed).
 
+## 4b. Unattended mode (Thomas, 2026-10-30)
+
+Follow `docs/playbooks/autopilot.md` §10:
+- never ask Thomas in the session; write the question to the inbox and apply the recommendation (`triage-policy.md`), except for the reserved items, which stay `waiting_human`;
+- run each P3 task as the saved workflow `p3-task` (args: `step`, `task`, `base`, `title`, `extra`, `session`, `font`), then push, open the PR, merge, promote;
+- write little in the session: one line per merge, blockers, and §5's status lines at the end;
+- keep the run going with `send_later` check-ins (CI on an open PR, the next tick) until the budget check answers `stop`, nothing is ready or a human gate is reached.
+
 ## 5. Report (always, last)
 
 Refresh the dashboard when the Artifact tool is available (not in headless `run.sh`). Build and publish only:

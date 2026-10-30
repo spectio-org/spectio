@@ -246,3 +246,17 @@ Every step that changes code, a `build` step or a spike whose code a later step 
 3. **`code-simplifier`** then shrinks the step's own diff without changing behaviour, re-running the step's tests. A failed simplification is reverted and never blocks the step.
 
 The step's `base` commit is recorded in `state.json` when it starts. Findings go to `docs/reviews/code/<step>.md` (prefix `CR-`), and the `CODE` report line goes into the Progress page. In W5, subagent-driven-development already reviews each task. The task reviewer gets the Karpathy guidelines as global constraints, and `review-code` runs once on the whole branch before it is finished (P3 in [`next-phase.md`](next-phase.md)).
+
+## 10. Unattended mode (Thomas, 2026-10-30)
+
+Thomas, in the session of 2026-10-30: the autopilot should depend only on its own recommendations, run quietly in the session, and keep writing specs, docs and figures in the background. [Decision log](../decisions/log.md#2026-10-30-unattended-mode-standing-rule-quiet-session-one-workflow-per-p3-task).
+
+1. **Standing rule: recommendations are applied.** Every question the autopilot would ask goes to `docs/reviews/inbox.md` with options and a recommendation, and the recommendation is applied at once, marked *(assumed — standing rule, inbox #n)*. Nothing is asked in the session. Thomas reviews the inbox when he wants and his answer reverts what it contradicts (`triage-policy.md`). Only these still stop and wait: the human gates of `pipeline.yaml` (`GO`), irreversible actions, money, legal effect, and commitments of other people (`triage-policy.md`, "Reserved for Thomas"). The "Never" list of the goal is unchanged.
+2. **Quiet session.** In the session the autopilot writes only:
+   - one line when a step or task merges (PR, squash sha);
+   - a blocker, with what it needs;
+   - at the end of a run, the two status lines of `ready.py` and what waits on Thomas.
+
+   Progress, findings and fixes go to the journal, the Progress pages and the review records, as before. A reminder that the session has been silent is answered in one line.
+3. **One workflow per P3 task.** Each P3 task runs as the saved workflow `.claude/workflows/p3-task.js`: build in its own worktree (test-driven), `code-reviewer` and `security-reviewer` in parallel with the fix rounds of §9, defects among the minors fixed after approval and re-reviewed once, `code-simplifier`, then `doc-writer` and `diagram-artist` in parallel and `doc-reviewer` with up to two revisions. The orchestrator then pushes, opens the PR, merges when CI is green, promotes to `main`, records cost and state, and starts the next task while the budget check answers `go`.
+4. **Chaining without a `/goal`.** A cloud session cannot type `/goal` for itself. The orchestrator keeps the run going with self check-ins (`send_later`): one to re-check CI on an open PR, one to start the next tick when a tick ends with work ready and budget left. It stops when the budget check answers `stop`, nothing is ready, or a human gate is reached, and says so once.

@@ -924,3 +924,9 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
   - #72 (b): the 0.0.1 Paper shell shows search, notifications and the avatar as disabled placeholders. This reverses the assumed (a) that P2 shipped; follow-up FU-P3-02 adds them.
   - #73 (a) confirmed: `spectio init --local` refuses to run off Linux in 0.0.1.
   - #75 (a): `review-code` allows fix rounds past two while a security blocker or major is open. Applied in the `review-code` and `autopilot` skills and [autopilot §5](../playbooks/autopilot.md). The spec changes listed in #75 stay owed to the next `/apply-findings`.
+
+## 2026-10-30 — Unattended mode: standing rule, quiet session, one workflow per P3 task
+
+- **Context.** Thomas, in the session: he wants to depend only on Claude's recommendations, not to be asked during a night run, a quieter session with specs, docs and figures still written, one workflow per task, and the run kept going by Claude.
+- **Decided (Thomas, 2026-10-30):** [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30). The recommendation of every inbox question is applied at once, except the reserved items of the triage policy (human gates, irreversible actions, money, legal effect, commitments of others). Each P3 task runs as the saved workflow `.claude/workflows/p3-task.js`. The session stays quiet. Self check-ins keep the run going.
+- **Applied under it:** inbox #76 (a), and its process point: after approval, defects among the minors are fixed and re-reviewed once (`review-code` step 4).
