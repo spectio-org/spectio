@@ -1,0 +1,30 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.org/synthetic/nextflow_schema.json",
+  "title": "synthetic pipeline parameters (nf-core shape, draft 2020-12)",
+  "type": "object",
+  "$defs": {
+    "input_output_options": {
+      "title": "Input/output",
+      "type": "object",
+      "required": ["outdir"],
+      "properties": {
+        "input": {"type": "string", "format": "file-path", "description": "Samplesheet"},
+        "outdir": {"type": "string", "default": "results"}
+      }
+    },
+    "options": {
+      "title": "Options",
+      "type": "object",
+      "properties": {
+        "chunks": {"type": "integer", "default": 0, "minimum": 0},
+        "fail_mode": {"type": "string", "enum": ["none", "exit", "flaky"], "default": "none"},
+        "seed": {"type": "integer", "default": 42, "hidden": true}
+      }
+    }
+  },
+  "allOf": [
+    {"$ref": "#/$defs/input_output_options"},
+    {"$ref": "#/$defs/options"}
+  ]
+}

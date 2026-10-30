@@ -1,0 +1,17 @@
+$schema: "http://json-schema.org/draft-07/schema#"
+description: synthetic pipeline configuration (Snakemake config schema)
+type: object
+properties:
+  outdir:
+    type: string
+    default: results
+  chunks:
+    type: integer
+    minimum: 0
+    default: 0
+  fail_mode:
+    type: string
+    enum: [none, exit, flaky]
+    default: none
+required:
+  - outdir

@@ -15,7 +15,10 @@ directory holds decides the row:
 Every directory is walked under §15.3 req. 10 (`rundir.private_dir`): a symlink, another user's
 directory, a loose one or a name that is not a run ID is skipped and counted. The manifest is
 parsed strictly (`extra="forbid"`), its run ID must be the directory's name, and every path is
-derived from the run ID. Per-boot caps bound the work; what is left waits for the next boot.
+derived from the run ID. A Git location must meet the import rule of the launch endpoint
+(`api.workflows.git_url`), or the run is skipped and counted. The rebuild writes no runner
+command: only `POST /runs` launches. Per-boot caps bound the work; what is left waits for the
+next boot.
 """
 
 import json
@@ -27,7 +30,7 @@ from functools import partial
 from pathlib import Path
 from typing import Any
 
-from sqlalchemy import Connection, insert, select
+from sqlalchemy import Connection, select
 
 from spectio.runner.local import read_head_pid
 from spectio.runner.loop import CANCEL, LAUNCH_CLASSES, LAUNCH_FAILED
@@ -41,18 +44,11 @@ from spectio.runner.rundir import (
     read_small,
     run_paths,
 )
-from spectio_server.ids import new_id
+from spectio_server.api.problems import Invalid
+from spectio_server.api.workflows import check_revision, git_url
 from spectio_server.projector.runs import failure_json
-from spectio_server.store.schema import (
-    environments,
-    launches,
-    principals,
-    projects,
-    run_inputs,
-    runs,
-    workflow_versions,
-    workflows,
-)
+from spectio_server.store.runs import insert_run
+from spectio_server.store.schema import runs
 from spectio_server.store.writer import Writer
 
 log = logging.getLogger(__name__)
@@ -161,92 +157,25 @@ def _state(found: _Found) -> tuple[str, dict[str, Any] | None]:
     return ("cancelling" if found.cancelled else "queued"), None
 
 
-def _first(conn: Connection, table: Any) -> str:
-    found = conn.execute(select(table.c.id).order_by(table.c.created_at).limit(1)).scalar()
-    if found is None:
-        raise RuntimeError(f"no {table.name} row: the boot creates them first")
-    return str(found)
-
-
 def _add(conn: Connection, runs_root: Path, found: _Found) -> None:
     m = found.manifest
-    now = datetime.now(UTC)
-    mine = {"created_by": _first(conn, principals)}
-    project = _first(conn, projects)
     # local workflows are absolute paths (plan D2); a git one may have no revision
     source = "local" if m.workflow.location.startswith("/") else "git"
-    workflow = conn.execute(
-        select(workflows.c.id, workflows.c.engine).where(
-            workflows.c.project_id == project,
-            workflows.c.source == source,
-            workflows.c.location == m.workflow.location,
-        )
-    ).one_or_none()
-    if workflow is not None and workflow.engine != m.workflow.engine:
-        # one workflows row per location (api §7), and its engine is the runs' (P1 Task 17)
-        raise ValueError(f"{m.workflow.location} is already a {workflow.engine} workflow")
-    if workflow is not None:
-        workflow_id = workflow.id
-    else:
-        workflow_id = new_id("wfl")
-        conn.execute(
-            insert(workflows).values(
-                id=workflow_id,
-                project_id=project,
-                location=m.workflow.location,
-                source=source,
-                engine=m.workflow.engine,
-                created_at=now,
-                **mine,
-            )
-        )
-    version_id = new_id("wfv")
-    conn.execute(
-        insert(workflow_versions).values(
-            id=version_id,
-            workflow_id=workflow_id,
-            revision=m.workflow.revision,
-            created_at=now,
-            **mine,
-        )
-    )
+    if source == "git":  # the import rule of the launch endpoint (SEC-P3T11-01 (r3))
+        try:
+            git_url(m.workflow.location)
+            if m.workflow.revision is not None:
+                check_revision(m.workflow.revision)
+        except Invalid as exc:
+            raise ValueError(f"git location refused: {exc}") from None
     state, failure = _state(found)
-    paths = run_paths(runs_root, m.run_id)
-    conn.execute(
-        insert(runs).values(
-            id=m.run_id,
-            project_id=project,
-            workflow_version_id=version_id,
-            environment_id=_first(conn, environments),
-            name=m.name,
-            state=state,
-            state_changed_at=now,
-            failure=failure,
-            launch_dir=str(paths.launch_dir),
-            work_dir=str(paths.work_dir),
-            created_at=m.created_at,
-            **mine,
-        )
-    )
-    conn.execute(
-        insert(run_inputs).values(
-            id=new_id("rin"),
-            run_id=m.run_id,
-            version=1,
-            kind="params",
-            content=m.params,
-            created_at=now,
-            **mine,
-        )
-    )
-    conn.execute(
-        insert(launches).values(
-            id=new_id("lch"),
-            run_id=m.run_id,
-            n=1,
-            launch_dir=str(paths.launch_dir),
-            head_native_id=found.native_id,
-            created_at=now,
-            **mine,
-        )
+    insert_run(
+        conn,
+        m,
+        source=source,
+        runs_root=runs_root,
+        now=datetime.now(UTC),
+        state=state,
+        failure=failure,
+        native_id=found.native_id,
     )
