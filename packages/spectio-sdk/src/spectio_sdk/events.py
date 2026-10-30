@@ -311,6 +311,13 @@ class SnakemakeJobInfo(_Data):
     threads: Int64 | None = None
     resources: dict[str, JsonValue] = {}
 
+    @field_validator("resources")
+    @classmethod
+    def _drop_slurm_extra(cls, value: dict[str, JsonValue]) -> dict[str, JsonValue]:
+        # Raw sbatch flags: snakemake-executor-plugin-slurm 2.8.0 appends them to the sbatch call
+        # (submit_string.py:206-207), so they may carry what `--export` passes (SEC-P3T1-11).
+        return {k: v for k, v in value.items() if k != "slurm_extra"}
+
 
 class SnakemakeJobStarted(_Data):
     jobs: list[Int64]

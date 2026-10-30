@@ -203,6 +203,13 @@ def test_wildcard_names_kept_as_declared() -> None:
     assert parse_data(ev).model_dump()["wildcards"] == wildcards
 
 
+def test_slurm_extra_never_kept() -> None:
+    # The SLURM executor plugin appends `slurm_extra` raw to the sbatch call (SEC-P3T1-11).
+    resources = {"mem_mb": 512, "slurm_extra": "--export=ALL,TOKEN=s3cret"}
+    ev = make_event("snakemake.job_info", jobid=1, rule_name="a", resources=resources)
+    assert parse_data(ev).model_dump()["resources"] == {"mem_mb": 512}
+
+
 def raw_command_values(value: Any, key: str = "") -> Iterator[str]:
     """Raw command text in a capture: denylisted values and quoted `Command '...'` text."""
     if isinstance(value, dict):

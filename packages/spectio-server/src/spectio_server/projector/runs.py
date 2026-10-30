@@ -2,7 +2,9 @@
 
 A `Projection` is one transaction's view of a run and the launch being projected. It allocates
 `seq` (api §8.2), moves the run along the transitions 0.0.1 uses, never out of a terminal state,
-and writes the summary when the transaction ends.
+and writes the summary when the transaction ends. A run's start and end times are the engine's
+time of the event that moved it, and the ingest clock only when no engine event did (a head
+report): a replay or a rebuild keeps the durations (inbox #79).
 
 The run summary of P1 Task 4 maps to the columns of api §7 `runs`: its `counts` (state → n,
 over the run's tasks) is `runs.task_counts`; `tasks_expected` is `runs.tasks_expected`, set by
@@ -51,6 +53,7 @@ class Projection:
     head_state: str | None
     last_seq: int
     now: datetime
+    event_time: datetime | None = None  # the engine's time of the event being projected
 
     @classmethod
     def load(cls, conn: Connection, launch_id: str) -> "Projection":
@@ -91,15 +94,63 @@ class Projection:
         if to not in _NEXT.get(self.state, ()):
             return
         values: dict[str, Any] = {"state": to, "state_changed_at": self.now}
+        at = self.event_time or self.now
         if self.state == "queued" and to == "running":
-            values["started_at"] = self.now
+            values["started_at"] = at
         if to in TERMINAL:
-            values["ended_at"] = self.now
+            values["ended_at"] = at
         if failure is not None:
             values["failure"] = failure
         self.conn.execute(update(runs).where(runs.c.id == self.run_id).values(**values))
         self.log("spectio.run.state_changed", {"from": self.state, "to": to}, source="projector")
         self.state = to
+
+    def set_started(self) -> None:
+        """The engine says the workflow began (`onFlowBegin`, `workflow_started`): its time is
+        the run's start, even when a head report started the run first."""
+        if self.event_time is not None:
+            self.conn.execute(
+                update(runs).where(runs.c.id == self.run_id).values(started_at=self.event_time)
+            )
+
+    def pin_engine_version(self, version: str | None) -> None:
+        """`runs.engine_version`, pinned at the first launch that reports it (api §7)."""
+        if version:
+            self.conn.execute(
+                update(runs)
+                .where(runs.c.id == self.run_id, runs.c.engine_version.is_(None))
+                .values(engine_version=version)
+            )
+
+    def task_id(self, process: str, tag: str | None, name: str | None) -> str:
+        """The task of this process + tag (+ name when untagged) in the run, created on first
+        sight (synthesis §2ter)."""
+        if tag is not None:
+            match = tasks.c.tag == tag
+        else:
+            match = tasks.c.tag.is_(None) & (
+                tasks.c.name.is_(None) if name is None else tasks.c.name == name
+            )
+        found = self.conn.execute(
+            select(tasks.c.id).where(
+                tasks.c.run_id == self.run_id, tasks.c.process_or_rule == process, match
+            )
+        ).scalar_one_or_none()
+        if found is not None:
+            return str(found)
+        task_id = new_id("tsk")
+        self.conn.execute(
+            insert(tasks).values(
+                id=task_id,
+                created_at=self.now,
+                run_id=self.run_id,
+                process_or_rule=process,
+                tag=tag,
+                name=name,
+                state="not_scheduled",
+            )
+        )
+        return task_id
 
     def end_launch(self, to: str = "aborted", failure_class: str | None = None) -> None:
         """Close this launch's open attempts: `aborted` (api §7.2), or `failed` when the head is

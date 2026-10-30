@@ -16,7 +16,7 @@ from sqlalchemy import insert, select, update
 from spectio_sdk.events import NextflowFlowComplete, NextflowFlowCreate, NextflowTask
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import TERMINAL, Projection, failure_json
-from spectio_server.store.schema import attempts, launches, runs, tasks
+from spectio_server.store.schema import attempts, launches
 
 HOOK_STATES = {
     "onTaskPending": "pending",
@@ -34,6 +34,8 @@ def project(p: Projection, hook: str, data: BaseModel) -> None:
     """Project one `nextflow.<hook>` event, already logged."""
     if isinstance(data, NextflowFlowCreate) and hook == "onFlowCreate":
         _flow_create(p, data)
+    elif hook == "onFlowBegin":
+        p.set_started()
     elif isinstance(data, NextflowTask) and hook != "onFlowError":  # onFlowError has no task
         if p.state not in TERMINAL:  # a late task event is logged only (api §8.2)
             _task(p, hook, data)
@@ -44,12 +46,7 @@ def project(p: Projection, hook: str, data: BaseModel) -> None:
 def _flow_create(p: Projection, data: NextflowFlowCreate) -> None:
     if data.sessionId:
         p.set_launch(engine_session_id=data.sessionId)
-    if data.nextflow:  # pinned at the first launch (api §7 `runs.engine_version`)
-        p.conn.execute(
-            update(runs)
-            .where(runs.c.id == p.run_id, runs.c.engine_version.is_(None))
-            .values(engine_version=data.nextflow)
-        )
+    p.pin_engine_version(data.nextflow)
 
 
 def _task(p: Projection, hook: str, data: NextflowTask) -> None:
@@ -62,7 +59,7 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
         state = HOOK_STATES.get(hook)
     if state is None:
         return
-    task_id = _task_id(p, data.process, data.tag, data.name)
+    task_id = p.task_id(data.process, data.tag, data.name)
     n = data.attempt or 1
     values: dict[str, Any] = {"state": state}
     terminated = state == "failed" and data.errorAction == "TERMINATE"
@@ -101,36 +98,6 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
             .values(culprit_attempt_id=attempt_id)
         )
     p.sync_tasks([task_id])
-
-
-def _task_id(p: Projection, process: str, tag: str | None, name: str | None) -> str:
-    """The task of this process + tag (+ name when untagged) in the run, created on first sight."""
-    if tag is not None:
-        match = tasks.c.tag == tag
-    else:
-        match = tasks.c.tag.is_(None) & (
-            tasks.c.name.is_(None) if name is None else tasks.c.name == name
-        )
-    found = p.conn.execute(
-        select(tasks.c.id).where(
-            tasks.c.run_id == p.run_id, tasks.c.process_or_rule == process, match
-        )
-    ).scalar_one_or_none()
-    if found is not None:
-        return str(found)
-    task_id = new_id("tsk")
-    p.conn.execute(
-        insert(tasks).values(
-            id=task_id,
-            created_at=p.now,
-            run_id=p.run_id,
-            process_or_rule=process,
-            tag=tag,
-            name=name,
-            state="not_scheduled",
-        )
-    )
-    return task_id
 
 
 def _exit(data: NextflowTask) -> int | None:
