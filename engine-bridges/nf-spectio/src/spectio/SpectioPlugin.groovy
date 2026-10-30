@@ -145,7 +145,9 @@ class SpoolWriter {
     private final long rotateBytes
     private final SecureRandom random = new SecureRandom()
     private OutputStream out
+    private Path path
     private long size
+    private boolean torn  // a failed write may have left a line with no newline in `path`
     private int index
     private long seq
     private int errors
@@ -169,32 +171,51 @@ class SpoolWriter {
             }
             if (out == null || size + bytes.length > rotateBytes)
                 next()
+            if (torn) {  // end the torn line: the reader counts it as invalid
+                out.write(10)
+                size++
+                torn = false
+            }
             out.write(bytes)
             size += bytes.length
             seq++
         } catch (Throwable e) {
+            // A failed write (ENOSPC, EFBIG, a quota) does not rotate: a new file per event
+            // would burn the indexes and the reader's file cap (CR-P3T06-01). Reopen only
+            // when the file itself is gone.
             error("$type: not written: $e")
-            close()
+            if (out != null) {
+                torn = true
+                if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+                    close()
+            }
         }
     }
 
-    /** Open the next file that does not exist yet, never one another writer made. */
+    /** Open the next file that does not exist yet, never one another writer made; reopen the
+     *  current file instead while it is still empty. */
     private void next() {
         close()
+        if (path != null && size == 0 && Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
+            out = Files.newOutputStream(path, StandardOpenOption.WRITE, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS)
+            return
+        }
         Files.createDirectories(dir, PRIVATE_DIR)
         while (true) {
             if (index >= 9999)
                 throw new IOException('no spool file index left')
-            final path = dir.resolve(String.format('nf-spectio-%d-%04d.jsonl', launch, index + 1))
+            final candidate = dir.resolve(String.format('nf-spectio-%d-%04d.jsonl', launch, index + 1))
             try {
-                Files.createFile(path, PRIVATE_FILE)
+                Files.createFile(candidate, PRIVATE_FILE)
             } catch (FileAlreadyExistsException ignored) {
                 index++
                 continue
             }
             index++
-            out = Files.newOutputStream(path, StandardOpenOption.WRITE, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS)
+            path = candidate
             size = 0
+            torn = false
+            out = Files.newOutputStream(path, StandardOpenOption.WRITE, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS)
             return
         }
     }

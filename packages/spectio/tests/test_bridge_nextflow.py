@@ -286,11 +286,15 @@ w.write('nextflow.onFlowBegin', 1793172224454L, [runName: 'last'])
 """
 
 
-def run_writer(nextflow: str, tmp_path: Path, spool: Path) -> None:
+def run_writer(
+    nextflow: str, tmp_path: Path, spool: Path, script: str = WRITER_SCRIPT, ulimit_kb: int = 0
+) -> None:
     jar = build(nextflow, "--classpath")
     build(nextflow, str(tmp_path / "plugin"))
     classes = tmp_path / "plugin" / "nf-spectio-0.0.1" / "classes"
-    cmd = ["java", "-cp", f"{jar}:{classes}", "groovy.ui.GroovyMain", "-e", WRITER_SCRIPT]
+    cmd = ["java", "-cp", f"{jar}:{classes}", "groovy.ui.GroovyMain", "-e", script]
+    if ulimit_kb:  # bash's `ulimit -f` counts 1024-byte blocks; the JVM ignores SIGXFSZ (EFBIG)
+        cmd = ["bash", "-c", f'ulimit -f {ulimit_kb} && exec "$@"', "bash", *cmd]
     subprocess.run([*cmd, str(spool), RUN_ID], check=True)
 
 
@@ -314,3 +318,26 @@ def test_writer_rotates_and_drops_long_lines(nextflow: str, tmp_path: Path) -> N
     batch = read_spool(spool.parent.parent, RUN_ID, 1, {})
     assert len(batch.events) == 201
     assert batch.drops == Counter()
+
+
+FULL_DISK_SCRIPT = """
+def w = new spectio.SpoolWriter(java.nio.file.Paths.get(args[0]), args[1], 1L, 1048576L)
+2000.times { w.write('nextflow.onFlowBegin', 1793172224454L, [runName: 'r' * 100]) }
+w.write('nextflow.onFlowComplete', 1793172224454L, [success: true])
+"""
+
+
+def test_writer_does_not_rotate_on_a_failed_write(nextflow: str, tmp_path: Path) -> None:
+    """CR-P3T06-01: under `ulimit -f` every write past the limit fails (EFBIG): one file, not
+    one new file per event, so the reader never counts the launch's files as too_many_files."""
+    spool = tmp_path / "launch" / ".spectio" / "events"
+    run_writer(nextflow, tmp_path, spool, FULL_DISK_SCRIPT, ulimit_kb=16)
+    files = sorted(spool.iterdir())
+    assert 1 <= len(files) <= 2, [f.name for f in files]
+    assert files[0].name == "nf-spectio-1-0001.jsonl"
+    assert "not written" in (spool.parent / "bridge.err").read_text()
+
+    batch = read_spool(spool.parent.parent, RUN_ID, 1, {})
+    assert batch.events
+    assert [ev.seq for ev in batch.events] == list(range(1, len(batch.events) + 1))
+    assert "too_many_files" not in batch.drops
