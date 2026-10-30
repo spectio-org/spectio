@@ -27,9 +27,14 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
   <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" hint-size="390px,48px"></dc-import></div>
   <main style="position: absolute; top: 48px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
-    <div style="display: flex; flex-direction: column; gap: 2px; padding: 4px 2px;">
-      <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 24px;">Good morning</h1>
-      <span style="font-size: 13.5px; color: #4D5065; line-height: 1.4;">4 runs running, 1 queued and 1 cancelling · live, updated 4 s ago</span>
+    <div style="display: flex; align-items: center; gap: 12px; padding: 4px 2px;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #E7E5F8; color: #423B97; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z"/></svg>
+      </span>
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 24px;">Good morning</h1>
+        <span style="font-size: 13.5px; color: #4D5065; line-height: 1.4;">4 running, 1 queued, 1 cancelling · live, updated 4 s ago</span>
+      </div>
     </div>
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
       <a href="MLiteRuns.dc.html" aria-label="4 runs running, show them" style="text-decoration: none; color: inherit; border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), inset 0 3px 0 #3B82F6;"><span style="display: flex; align-items: center; gap: 6px; font-size: 12.5px; font-weight: 600; color: #1D5FC9;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span><span style="font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">4</span></a>

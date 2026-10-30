@@ -25,8 +25,17 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
 </style>
 </helmet>
 <div style="width: 390px; height: 844px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
-  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="Runs" sub="15 runs · 6 active · live, updated 4 s ago" hint-size="390px,104px"></dc-import></div>
-  <main style="position: absolute; top: 104px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" hint-size="390px,48px"></dc-import></div>
+  <main style="position: absolute; top: 48px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(100px + env(safe-area-inset-bottom)); scroll-padding-bottom: 100px; box-sizing: border-box; display: flex; flex-direction: column; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 12px; padding: 4px 2px;">
+      <span style="width: 48px; height: 48px; border-radius: 15px; background: #ECE7FC; color: #6344B2; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" aria-hidden="true"><path d="M5 4l14 8-14 8z"/></svg>
+      </span>
+      <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 24px;">Runs</h1>
+        <span style="font-size: 13.5px; color: #4D5065; line-height: 1.4;">15 runs · 6 active · live, updated 4 s ago</span>
+      </div>
+    </div>
     <label style="display: flex; align-items: center; gap: 8px; height: 44px; padding: 0 14px; border-radius: 14px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.09); color: #6E7287;">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg>
       <input type="search" placeholder="Filter by run name" aria-label="Filter runs by run name" style="border: none; outline: none; background: transparent; font: 15px 'Inter', sans-serif; color: #0F1020; flex-grow: 1; min-width: 0;">
