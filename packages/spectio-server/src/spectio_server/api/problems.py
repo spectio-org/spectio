@@ -32,6 +32,18 @@ class Invalid(Exception):
         return Invalid.many([{**e, "field": f"{prefix}.{e['field']}"} for e in self.errors])
 
 
+class Problem(Exception):
+    """A request the API answers with this problem (api §4.1 catalogue)."""
+
+    def __init__(self, status: int, slug: str, title: str, detail: str) -> None:
+        super().__init__(detail)
+        self.status, self.slug, self.title, self.detail = status, slug, title, detail
+
+
+def not_found(detail: str, slug: str = "not-found") -> Problem:
+    return Problem(404, slug, "Not found", detail)
+
+
 def problem(status: int, slug: str, title: str, detail: str, **extra: Any) -> JSONResponse:
     body = {"type": f"/problems/{slug}", "title": title, "status": status, "detail": detail}
     return JSONResponse({**body, **extra}, status_code=status, media_type=PROBLEM_JSON)
@@ -45,6 +57,10 @@ def _field(loc: tuple[int | str, ...]) -> str:
 
 
 def install(app: FastAPI) -> None:
+    @app.exception_handler(Problem)
+    def known(request: Request, exc: Problem) -> JSONResponse:
+        return problem(exc.status, exc.slug, exc.title, exc.detail)
+
     @app.exception_handler(Invalid)
     def invalid(request: Request, exc: Invalid) -> JSONResponse:
         detail = "; ".join(f"{e['field']}: {e['message']}" for e in exc.errors)

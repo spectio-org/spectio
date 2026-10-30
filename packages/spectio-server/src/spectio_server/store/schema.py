@@ -125,6 +125,8 @@ FAILURE_CLASSES = (
     "engine_version",
     "input_check",
 )
+STAGE_SOURCES = ("declared", "detected")
+STAGE_STATES = ("not_started", "running", "awaiting_review", "completed", "failed", "skipped")
 RUN_ORIGINS = ("ui", "api", "wes", "cli-observed", "cli-adopted")
 COMMAND_STATES = ("pending", "leased", "acked", "done", "failed")
 WORKFLOW_SOURCES = ("git", "nf-core", "catalog", "crate", "local")
@@ -195,6 +197,7 @@ workflow_versions = Table(
     Column("commit", String),
     Column("key", String),
     Column("params_schema", Json),
+    Column("version", String),  # the version the pipeline declares, read at launch (inbox #87)
 )
 
 runs = Table(
@@ -286,6 +289,7 @@ tasks = Table(
     Column("tag", String),
     Column("name", String),  # Nextflow's task name: the key of an untagged task (inbox #77)
     Column("state", String, nullable=False),
+    Column("stage_id", String),  # a `run_stages.stage_id`, or none (P1 Task 27 sets it)
     _check("tasks", "state", TASK_STATES),
     Index("ix_tasks_run_key", "run_id", "process_or_rule", "tag", "name"),  # the projector's key
 )
@@ -325,6 +329,25 @@ events = Table(
     UniqueConstraint("run_id", "event_id"),
     Index("ix_events_run_seq", "run_id", "seq"),
     _check("events", "actor_kind", ACTOR_KINDS, nullable=True),
+)
+
+# api §7 `run_stages`, without `gate_id` (no gates in 0.0.1): P1 Task 27 fills it, Task 18 reads it.
+run_stages = Table(
+    "run_stages",
+    metadata,
+    *_base(),
+    Column("run_id", String, ForeignKey("runs.id"), nullable=False),
+    Column("stage_id", String, nullable=False),
+    Column("position", Integer, nullable=False),
+    Column("name", String),
+    Column("source", String, nullable=False),
+    Column("state", String, nullable=False),
+    Column("task_counts", Json),
+    Column("started_at", UTCDateTime()),
+    Column("ended_at", UTCDateTime()),
+    UniqueConstraint("run_id", "stage_id"),
+    _check("run_stages", "source", STAGE_SOURCES),
+    _check("run_stages", "state", STAGE_STATES),
 )
 
 # The spool cursor and drop counts of a launch (P1 Assumption 11), written in the ingest

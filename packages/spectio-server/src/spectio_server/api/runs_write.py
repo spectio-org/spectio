@@ -141,9 +141,7 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     writer: Writer = request.app.state.writer
     try:
         writer.submit(
-            lambda conn: _insert(
-                conn, manifest, resolved.source, found.name, payload, now, runs_root
-            )
+            lambda conn: _insert(conn, manifest, resolved.source, found, payload, now, runs_root)
         ).result()
     except BaseException:
         shutil.rmtree(paths.run_dir, ignore_errors=True)  # no run directory without its row
@@ -171,7 +169,7 @@ def _insert(
     conn: Connection,
     m: RunManifest,
     source: str,
-    workflow_name: str,
+    found: Found,
     payload: dict[str, Any],
     now: datetime,
     runs_root: Path,
@@ -185,7 +183,8 @@ def _insert(
             now=now,
             state="queued",
             origin="ui",
-            workflow_name=workflow_name,
+            workflow_name=found.name,
+            workflow_version=found.version,
         )
     except EngineConflict as exc:
         raise Invalid(

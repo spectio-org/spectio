@@ -14,7 +14,7 @@ when set, else that sum.
 """
 
 from collections.abc import Iterable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 
@@ -22,6 +22,7 @@ from sqlalchemy import Connection, func, insert, select, update
 
 from spectio_server.ids import new_id
 from spectio_server.store.schema import attempts, events, launches, runs, tasks
+from spectio_server.store.writer import note_change
 
 TERMINAL = frozenset({"succeeded", "failed", "cancelled"})
 OPEN_ATTEMPT_STATES = ("pending", "submitted", "running")
@@ -54,6 +55,7 @@ class Projection:
     last_seq: int
     now: datetime
     event_time: datetime | None = None  # the engine's time of the event being projected
+    changed: set[str] = field(default_factory=set)  # tasks created or moved, for the stream
 
     @classmethod
     def load(cls, conn: Connection, launch_id: str) -> "Projection":
@@ -140,6 +142,7 @@ class Projection:
         if found is not None:
             return str(found)
         task_id = new_id("tsk")
+        self.changed.add(task_id)
         self.conn.execute(
             insert(tasks).values(
                 id=task_id,
@@ -179,6 +182,7 @@ class Projection:
             .scalar_subquery()
         )
         ids = list(task_ids)
+        self.changed.update(ids)
         for i in range(0, len(ids), IN_CHUNK):
             chunk = tasks.c.id.in_(ids[i : i + IN_CHUNK])
             self.conn.execute(update(tasks).where(chunk, last.is_not(None)).values(state=last))
@@ -207,3 +211,4 @@ class Projection:
                 updated_at=self.now,
             )
         )
+        note_change(self.conn, self.run_id, self.changed)

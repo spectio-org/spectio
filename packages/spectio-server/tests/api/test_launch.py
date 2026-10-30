@@ -359,7 +359,9 @@ def test_git_clone_argv(authed_client: TestClient, fake_git: FakeGit, settings: 
     assert (target / "v2.1" / "main.nf").is_file()
 
 
-def test_git_commit_is_fetched(authed_client: TestClient, fake_git: FakeGit) -> None:
+def test_git_commit_is_fetched(
+    authed_client: TestClient, fake_git: FakeGit, monkeypatch: pytest.MonkeyPatch
+) -> None:
     sha = "0123456789abcdef0123456789abcdef01234567"
     url = "https://github.com/lab/pipeline"
 
@@ -371,7 +373,7 @@ def test_git_commit_is_fetched(authed_client: TestClient, fake_git: FakeGit) -> 
             (Path(argv[argv.index("-C") + 1]) / "main.nf").write_text("\n")
         return subprocess.CompletedProcess(argv, 0, "", "")
 
-    wf.run_git = fetch  # restored by the fixture's monkeypatch
+    monkeypatch.setattr(wf, "run_git", fetch)
     response = authed_client.get(INSPECT, params={"location": url, "revision": sha})
     assert response.status_code == 200, response.text
     verbs = [
@@ -620,9 +622,8 @@ def test_inspect_symlink_out_of_tree_not_read(
     response = authed_client.get(INSPECT, params={"location": repo.as_uri(), "revision": "v1"})
     assert (clone / "config" / "config.yaml").read_text().startswith("oauth_token")  # it escapes
     assert "gho_SECRET" not in response.text
-    assert response.status_code in (200, 422), response.text
-    if response.status_code == 200:
-        assert response.json()["schema_source"] == "none"
+    assert response.status_code == 200, response.text  # the links count as absent
+    assert response.json()["schema_source"] == "none"
 
 
 def test_inspect_symlinked_directory_not_followed(
