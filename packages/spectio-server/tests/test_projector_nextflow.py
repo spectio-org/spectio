@@ -18,6 +18,7 @@ from sqlalchemy import Connection, Engine, func, insert, select, update
 from spectio.runner.spool import read_spool, try_read_spool
 from spectio.runner.types import Failure, HeadReport, SpoolBatch
 from spectio_sdk.events import SpoolEvent
+from spectio_server.projector import nextflow as nextflow_projector
 from spectio_server.projector.ingest import apply_head_report, ingest, load_cursor
 from spectio_server.store.db import open_db
 from spectio_server.store.schema import (
@@ -380,6 +381,69 @@ def test_ignored_failure(engine: Engine, writer: Writer) -> None:
     assert tuple(row) == ("failed", True, 3)
 
 
+def test_untagged_instances_of_one_process_are_distinct_tasks(
+    engine: Engine, writer: Writer
+) -> None:
+    # Untagged instances are keyed on Nextflow's task `name` (CR-P3T04-02; inbox #77).
+    done: dict[str, Any] = {"trace": {"status": "COMPLETED"}}
+    ingest_events(
+        writer,
+        task(1, "onTaskStart", process="MERGE", tag=None, name="MERGE (1)"),
+        task(2, "onTaskStart", process="MERGE", tag=None, name="MERGE (2)"),
+        task(3, "onTaskComplete", process="MERGE", tag=None, name="MERGE (1)", **done),
+        task(4, "onTaskComplete", process="MERGE", tag=None, name="MERGE (2)", **done),
+    )
+    with engine.connect() as conn:
+        rows = conn.execute(select(tasks.c.name, tasks.c.tag, tasks.c.state)).all()
+    assert sorted(tuple(r) for r in rows) == [
+        ("MERGE (1)", None, "succeeded"),
+        ("MERGE (2)", None, "succeeded"),
+    ]
+    assert run_row(engine).task_counts == {"succeeded": 2}
+
+
+def test_req6_malformed_trace_exit_dropped(engine: Engine, writer: Writer) -> None:
+    # A string `trace.exit` that is not a plain int64 is no exit code (SEC-P3T04-01).
+    evs = [
+        task(i, "onTaskComplete", tag=f"S{i}", trace={"status": "FAILED", "exit": raw})
+        for i, raw in enumerate(["\u00b2", "--5", "9" * 30], start=1)
+    ]
+    ingest_events(writer, *evs, cursor={NF_FILE: 999})
+    with engine.connect() as conn:
+        assert load_cursor(conn, LAUNCH_ID) == {NF_FILE: 999}
+        exits = conn.execute(select(attempts.c.state, attempts.c.exit)).all()
+    assert [tuple(r) for r in exits] == [("failed", None)] * 3
+
+
+def test_projection_error_drops_one_event_only(
+    engine: Engine, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # One event whose projection raises is dropped and counted; the batch commits (§15.3 req. 6).
+    real = nextflow_projector.project
+
+    def project(p: Any, hook: str, data: Any) -> None:
+        if getattr(data, "tag", None) == "BAD":
+            raise OverflowError("boom")
+        real(p, hook, data)
+
+    monkeypatch.setattr(nextflow_projector, "project", project)
+    ingest_events(
+        writer,
+        task(1, "onTaskStart", tag="BAD"),
+        task(2, "onTaskStart", tag="S02"),
+        cursor={NF_FILE: 999},
+    )
+    with engine.connect() as conn:
+        assert load_cursor(conn, LAUNCH_ID) == {NF_FILE: 999}
+        drops = conn.execute(select(spool_drops.c.reason, spool_drops.c.count)).all()
+        logged = conn.execute(select(events.c.event_id)).scalars().all()
+    assert [tuple(d) for d in drops] == [("projection_error", 1)]
+    assert attempt_states(engine) == [("ALIGN", "S02", 1, "running")]
+    assert "evt_x1" not in logged and "evt_x2" in logged
+    run = run_row(engine)
+    assert run.state == "running" and run.projected_seq == run.last_seq == len(logged)
+
+
 def test_failure_without_terminate_is_engine_fault(engine: Engine, writer: Writer) -> None:
     ingest_events(writer, event(1, "onFlowComplete", success=False, errorMessage="boom"))
     run = run_row(engine)
@@ -495,6 +559,14 @@ def test_head_report_after_the_end_changes_no_state(engine: Engine, writer: Writ
         launch = conn.execute(select(launches).where(launches.c.id == LAUNCH_ID)).one()
     assert launch.head_state == "succeeded"  # the engine's end is kept
     assert launch.exit_code == 0
+
+
+def test_head_end_before_flow_complete_still_succeeds(engine: Engine, writer: Writer) -> None:
+    # The head report can land before the engine's onFlowComplete (CR-P3T04-01).
+    ingest_events(writer, task(1, "onTaskStart"))
+    head(writer, report(state="exited", ended=True, exit_code=0))
+    ingest_events(writer, event(2, "onFlowComplete", success=True))
+    assert run_row(engine).state == "succeeded"
 
 
 def test_exited_at_is_set_once(engine: Engine, writer: Writer) -> None:

@@ -2,6 +2,7 @@
 
 from collections import Counter
 from dataclasses import dataclass
+from typing import Literal
 
 from spectio_sdk.events import SpoolEvent
 
@@ -34,17 +35,21 @@ class Failure:
     task_id: str | None = None
 
 
+# The launcher's states of a head; never the engine's `succeeded` / `failed` (CR-P3T04-01).
+HeadState = Literal["starting", "running", "exited", "unknown"]
+
+
 @dataclass(frozen=True)
 class HeadReport:
     """What the runner saw of a launch's head process (schedulers §3.1.1, P1 Assumption 15).
 
-    `state` is the head's own state as the launcher names it (`running` while it lives);
+    `state` is the head's own state as the launcher sees it (`running` while it lives);
     `ended` is true once it has exited. `failure` is set when the launch could not start, or the
     head ended with no terminal engine event: the runner decides the class (`launch_error`,
     `engine_missing`, `engine_version`, `head_lost`, `engine_fault`).
     """
 
-    state: str
+    state: HeadState
     native_id: str | None
     node: str | None
     exit_code: int | None

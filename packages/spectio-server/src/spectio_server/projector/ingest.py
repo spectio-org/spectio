@@ -38,7 +38,10 @@ def ingest(conn: Connection, launch_id: str, batch: SpoolBatch) -> None:
     An event already in the log (same run, same event ID) is skipped. Its data is checked
     against the allow-list again before it is stored, so a forbidden field never reaches the
     log whoever built the batch (P1 Assumption 3); data that fails is dropped and counted
-    `invalid`. Raises ValueError, and writes nothing, when an event is of another run or launch.
+    `invalid`. Each event is logged and projected in its own savepoint: one whose projection
+    raises is rolled back, dropped and counted `projection_error`, so it never holds back the
+    cursor (dev-env §15.3 req. 6). Raises ValueError, and writes nothing, when an event is of
+    another run or launch.
     """
     p = Projection.load(conn, launch_id)
     if any(e.run != p.run_id or e.launch != p.launch_n for e in batch.events):
@@ -54,18 +57,27 @@ def ingest(conn: Connection, launch_id: str, batch: SpoolBatch) -> None:
         except (ValidationError, UnknownEventType):
             drops["invalid"] += 1
             continue
-        p.log(
-            f"spectio.engine.{event.type}",
-            data.model_dump(mode="json", by_alias=True, exclude_unset=True),
-            event_id=event.id,
-            source=event.producer,
-            source_seq=event.seq,
-            engine_time=event.time,
-        )
-        p.move("running")  # the first engine event starts a queued run (api §7.1)
-        engine, hook = event.type.split(".", 1)
-        if engine == "nextflow":
-            nextflow.project(p, hook, data)
+        kept = (p.last_seq, p.state, p.head_state)
+        savepoint = conn.begin_nested()
+        try:
+            p.log(
+                f"spectio.engine.{event.type}",
+                data.model_dump(mode="json", by_alias=True, exclude_unset=True),
+                event_id=event.id,
+                source=event.producer,
+                source_seq=event.seq,
+                engine_time=event.time,
+            )
+            p.move("running")  # the first engine event starts a queued run (api §7.1)
+            engine, hook = event.type.split(".", 1)
+            if engine == "nextflow":
+                nextflow.project(p, hook, data)
+        except Exception:
+            savepoint.rollback()
+            p.last_seq, p.state, p.head_state = kept
+            drops["projection_error"] += 1
+            continue
+        savepoint.commit()
     _store_cursor(conn, launch_id, batch.cursor, drops)
     p.finish()
 

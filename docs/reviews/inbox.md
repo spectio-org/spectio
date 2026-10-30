@@ -1180,3 +1180,16 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   **Assumed:** (a). For the rounds: a review of minor fixes after approval counts as allowed, and is said in the record.
 - **Recommendation:** (a). For the rounds, either allow one review of post-approval fixes in `review-code`, or have the orchestrator check minor fixes after approval without a review.
 - **Blocked:** nothing.
+
+### #77 · Assumed: an untagged Nextflow task is keyed by its task name
+
+- **Covers:** [synthesis §2ter](../specs/synthesis.md#2ter-advanced-scenarios-what-each-engine-exposes-code-read-on-23102026); [api §7](../specs/api-and-data-model.md) `tasks`; [P1 Task 4](../plans/P1-walking-skeleton.md); review finding CR-P3T04-02.
+- **Context:** synthesis §2ter keys a Nextflow task by process + tag **[to be validated]**. With no tag, every instance of one process (common for per-sample processes in user pipelines) collapses into one task, and their attempts collide on (task, launch, attempt 1): the second instance's events are dropped and `task_counts` undercounts. The T2 fixtures have one untagged instance per process, so they do not show it.
+- **Options and what was assumed:**
+  - (a) key an untagged task on process + Nextflow's task `name` (`PROC (n)`), stored in a new nullable `tasks.name` column (migration `0002`). That `name` stays the same across retries, and across a resume for the cross-launch task row of api §7, is **[to be validated]**; the index `n` may not be stable on resume.
+  - (b) key on the task `hash` (stable across resume for a cached task, but it changes when the inputs change, and a retry keeps it **[to be validated]**).
+  - (c) keep process + tag and accept the collapse.
+
+  **Assumed:** (a) in P3 Task 4. The next `/apply-findings` pass records the key in synthesis §2ter and adds `tasks.name` to api §7.
+- **Recommendation:** (a), checked against a resume of an untagged pipeline in the next engine spike.
+- **Blocked:** nothing.

@@ -1,10 +1,13 @@
 """The Nextflow mapping of api §7.2, and the run's end on `onFlowComplete` (§7.1, §8.2).
 
-A task is keyed by process + tag (synthesis §2ter); an attempt by its task, the launch and the
-engine's `attempt` number. Attempt states only move forward. `handler.status` is never read:
+A task is keyed by process + tag (synthesis §2ter), or by process + Nextflow's task `name` when it
+has no tag, so untagged instances of one process stay apart (that the name is stable across
+retries is [to be validated], inbox #77); an attempt by its task, the launch and the engine's
+`attempt` number. Attempt states only move forward. `handler.status` is never read:
 `onTaskComplete` takes its state from the trace record's `status` (api §7.2).
 """
 
+import re
 from typing import Any
 
 from pydantic import BaseModel
@@ -12,7 +15,7 @@ from sqlalchemy import insert, select, update
 
 from spectio_sdk.events import NextflowFlowComplete, NextflowFlowCreate, NextflowTask
 from spectio_server.ids import new_id
-from spectio_server.projector.runs import ENGINE_ENDED, TERMINAL, Projection, failure_json
+from spectio_server.projector.runs import TERMINAL, Projection, failure_json
 from spectio_server.store.schema import attempts, runs, tasks
 
 HOOK_STATES = {
@@ -23,6 +26,8 @@ HOOK_STATES = {
 }
 TRACE_STATES = {"COMPLETED": "succeeded", "FAILED": "failed", "ABORTED": "aborted"}
 _RANK = {"pending": 0, "submitted": 1, "running": 2}  # every end state ranks 3 (api §7.2)
+_INT = re.compile(r"-?[0-9]{1,19}")  # ASCII digits only: `str.isdigit` also takes "²"
+_INT64 = range(-(2**63), 2**63)
 
 
 def project(p: Projection, hook: str, data: BaseModel) -> None:
@@ -57,7 +62,7 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
         state = HOOK_STATES.get(hook)
     if state is None:
         return
-    task_id = _task_id(p, data.process, data.tag)
+    task_id = _task_id(p, data.process, data.tag, data.name)
     n = data.attempt or 1
     values: dict[str, Any] = {"state": state}
     if state == "failed":
@@ -89,9 +94,14 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
     p.sync_tasks(task_id)
 
 
-def _task_id(p: Projection, process: str, tag: str | None) -> str:
-    """The task of this process + tag in the run, created on first sight."""
-    match = tasks.c.tag.is_(None) if tag is None else tasks.c.tag == tag
+def _task_id(p: Projection, process: str, tag: str | None, name: str | None) -> str:
+    """The task of this process + tag (+ name when untagged) in the run, created on first sight."""
+    if tag is not None:
+        match = tasks.c.tag == tag
+    else:
+        match = tasks.c.tag.is_(None) & (
+            tasks.c.name.is_(None) if name is None else tasks.c.name == name
+        )
     found = p.conn.execute(
         select(tasks.c.id).where(
             tasks.c.run_id == p.run_id, tasks.c.process_or_rule == process, match
@@ -107,6 +117,7 @@ def _task_id(p: Projection, process: str, tag: str | None) -> str:
             run_id=p.run_id,
             process_or_rule=process,
             tag=tag,
+            name=name,
             state="not_scheduled",
         )
     )
@@ -119,14 +130,15 @@ def _exit(data: NextflowTask) -> int | None:
     raw = data.trace.exit if data.trace else None
     if isinstance(raw, int):
         return raw
-    if isinstance(raw, str) and raw.lstrip("-").isdigit():
+    if isinstance(raw, str) and _INT.fullmatch(raw) and int(raw) in _INT64:
         return int(raw)
     return None
 
 
 def _flow_complete(p: Projection, data: NextflowFlowComplete) -> None:
-    """The launch's end. A second completion of the same launch is logged only (api §8.2)."""
-    if p.state in TERMINAL or p.head_state in ENGINE_ENDED:
+    """The launch's end. A second completion of the same launch is logged only (api §8.2): the
+    first always leaves the run terminal, since ingest has already moved it out of `queued`."""
+    if p.state in TERMINAL:
         return
     p.set_launch(head_state="succeeded" if data.success else "failed")
     p.end_launch()

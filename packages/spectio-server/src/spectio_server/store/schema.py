@@ -283,6 +283,7 @@ tasks = Table(
     Column("run_id", String, ForeignKey("runs.id"), nullable=False),
     Column("process_or_rule", String, nullable=False),
     Column("tag", String),
+    Column("name", String),  # Nextflow's task name: the key of an untagged task (inbox #77)
     Column("state", String, nullable=False),
     _check("tasks", "state", TASK_STATES),
 )
