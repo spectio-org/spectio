@@ -16,10 +16,9 @@ from sqlalchemy.exc import OperationalError
 from spectio.runner.types import HeadReport, SpoolBatch
 from spectio_sdk.events import UnknownEventType, parse_data
 from spectio_server.projector import nextflow
-from spectio_server.projector.runs import ENGINE_ENDED, Projection, failure_json
+from spectio_server.projector.runs import ENGINE_ENDED, IN_CHUNK, Projection, failure_json
 from spectio_server.store.schema import events, launches, spool_cursors, spool_drops
 
-_IN_CHUNK = 500  # event IDs per `IN (…)`, well under SQLite's bound-parameter limit
 # Classes of a head that ended with no terminal engine event: its open attempts failed (§7.1).
 HEAD_FAILURES = frozenset({"head_lost", "engine_fault"})
 
@@ -131,8 +130,8 @@ def apply_head_report(conn: Connection, launch_id: str, report: HeadReport) -> N
 
 def _logged(conn: Connection, run_id: str, event_ids: list[str]) -> set[str]:
     found: set[str] = set()
-    for i in range(0, len(event_ids), _IN_CHUNK):
-        chunk = event_ids[i : i + _IN_CHUNK]
+    for i in range(0, len(event_ids), IN_CHUNK):
+        chunk = event_ids[i : i + IN_CHUNK]
         found.update(
             conn.execute(
                 select(events.c.event_id).where(

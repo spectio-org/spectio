@@ -23,7 +23,7 @@ from spectio_server.store.schema import attempts, events, launches, runs, tasks
 
 TERMINAL = frozenset({"succeeded", "failed", "cancelled"})
 OPEN_ATTEMPT_STATES = ("pending", "submitted", "running")
-_IN_CHUNK = 500  # task IDs per `IN (…)`, well under SQLite's bound-parameter limit
+IN_CHUNK = 500  # IDs per `IN (…)`, well under SQLite's bound-parameter limit
 # The engine's own end of a launch, kept in `launches.head_state` (api §8.2: the first wins).
 ENGINE_ENDED = frozenset({"succeeded", "failed"})
 # The transitions of api §7.1 that 0.0.1 uses.
@@ -127,8 +127,8 @@ class Projection:
             .scalar_subquery()
         )
         ids = list(task_ids)
-        for i in range(0, len(ids), _IN_CHUNK):
-            chunk = tasks.c.id.in_(ids[i : i + _IN_CHUNK])
+        for i in range(0, len(ids), IN_CHUNK):
+            chunk = tasks.c.id.in_(ids[i : i + IN_CHUNK])
             self.conn.execute(update(tasks).where(chunk, last.is_not(None)).values(state=last))
 
     def set_launch(self, **values: Any) -> None:
