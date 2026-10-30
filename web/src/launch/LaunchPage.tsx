@@ -68,6 +68,7 @@ function toErrors(errors: FieldError[], keys: string[]): Errors {
 
 function paramValue(field: Field, value: string | boolean | undefined): unknown {
   if (field.type === "boolean") return value === (field.default === true) ? undefined : value;
+  if (field.type === "enum") return value ? field.options?.find((o) => String(o) === value) : undefined;
   const text = typeof value === "string" ? value.trim() : "";
   if (text === "") return undefined;
   if (field.type === "integer" || field.type === "number") {
@@ -120,6 +121,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
     set(value);
     setLoading(false);
     setLoaded(null);
+    setEngine(null);
     setErrors({});
   }
 
@@ -432,7 +434,7 @@ function ParamField({
           required={field.required}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.currentTarget.value)}
-          data={[{ value: "", label: shown ? `(${shown})` : "(not set)" }, ...(field.options ?? [])]}
+          data={[{ value: "", label: shown ? `(${shown})` : "(not set)" }, ...(field.options ?? []).map(String)]}
         />
       );
     case "json":

@@ -13,7 +13,7 @@ export interface Field {
   required: boolean;
   default: unknown;
   help: string | null;
-  options?: string[];
+  options?: unknown[]; // the raw enum values: an integer enum sends integers (CR-P3T19-02)
 }
 
 export interface Section {
@@ -26,7 +26,7 @@ const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !
 const SIMPLE = ["string", "integer", "number", "boolean"];
 
 function field(key: string, prop: Obj, required: boolean): Field {
-  const enumValues = Array.isArray(prop.enum) ? prop.enum.map(String) : null;
+  const enumValues = Array.isArray(prop.enum) ? prop.enum : null;
   const type = enumValues
     ? "enum"
     : SIMPLE.includes(prop.type as string)

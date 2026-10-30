@@ -115,6 +115,23 @@ test("an edit of the Pipeline field cancels the inspect in flight", async () => 
   expect(signal?.aborted).toBe(true);
   expect(screen.getByRole("button", { name: "Load" })).not.toHaveAttribute("aria-busy", "true");
   expect(screen.queryByRole("alert")).toBeNull(); // a cancel is not an error
+  await userEvent.clear(pipeline());
+  await load();
+  await userEvent.type(pipeline(), "2"); // an edit after a load forgets its guess too (CR-P3T19-01)
+  for (const name of ["Nextflow", "Snakemake"]) {
+    expect(screen.getByRole("button", { name })).toHaveAttribute("aria-pressed", "false");
+  }
+});
+
+test("an integer enum is sent as its integer, not its text (CR-P3T19-02)", async () => {
+  const onLaunched = page();
+  const schema = { type: "object", properties: { level: { type: "integer", enum: [1, 2] } } };
+  await load({ ...INSPECTED, schema });
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /^level/ }), "2");
+  fetchMock.mockResolvedValueOnce(json(201, { id: "run_1", name: "rnaseq-x", state: "queued" }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
+  expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body)).params).toEqual({ level: 2 });
 });
 
 test("a 422 of inspect lands on the Pipeline field", async () => {
