@@ -84,7 +84,7 @@ def build(theme: Theme) -> Sketch:
     s = Sketch(W, H, theme, seed=61)
     t = theme
     s.heading(50, 58, "P3 Task 6 · `nf-spectio` writes the spool, and never fails the run",
-              "`engine-bridges/nf-spectio`, api 14.1, architecture 13.1 and 13.3 · the hooks only enqueue; "
+              "`engine-bridges/nf-spectio`, api 14.1, architecture 13.3 and 13.4 · the hooks only enqueue; "
               "one writer thread appends; the JVM's shutdown ends the stream")
 
     # 1 -- the hooks -------------------------------------------------------------------------

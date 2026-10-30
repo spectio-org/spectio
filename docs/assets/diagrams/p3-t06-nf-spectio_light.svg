@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1280" viewBox="0 0 1600 1280">
   <rect width="1600" height="1280" fill="#ffffff"/>
   <text x="50.0" y="58.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="27" fill="#1e1e1e" text-anchor="start" font-weight="normal">P3 Task 6 · <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="23.8">nf-spectio</tspan> writes the spool, and never fails the run</text>
-  <text x="50.0" y="86.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15.5" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">engine-bridges/nf-spectio</tspan>, api 14.1, architecture 13.1 and 13.3 · the hooks only enqueue; one writer thread appends; the JVM's shutdown ends the stream</text>
+  <text x="50.0" y="86.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15.5" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">engine-bridges/nf-spectio</tspan>, api 14.1, architecture 13.3 and 13.4 · the hooks only enqueue; one writer thread appends; the JVM's shutdown ends the stream</text>
   <path d="M56.0,134.0 L122.0,134.0 L122.0,226.0 L56.0,226.0 Z" fill="#f1f3f5" stroke="none"/>
   <path d="M55.9,134.2 C78.0,134.1 100.5,133.7 122.0,133.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M122.3,134.2 C121.8,164.4 121.5,195.5 122.1,225.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
