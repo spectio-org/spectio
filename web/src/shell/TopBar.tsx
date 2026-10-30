@@ -116,7 +116,7 @@ export function TopBar({ phone, server, down }: Props) {
           <span className="sp-word">Spectio</span>
         </Link>
         <span className="sp-grow" />
-        <span className="sp-node" role="img" aria-label={node} data-down={!server || undefined}>
+        <span className="sp-node" role="img" aria-label={node} data-down={!!down || undefined}>
           <span className="sp-dot" aria-hidden="true" />
           <span aria-hidden="true">{server?.node ?? (down ? "offline" : "…")}</span>
         </span>

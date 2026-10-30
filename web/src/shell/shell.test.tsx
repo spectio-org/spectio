@@ -133,3 +133,11 @@ test("a malformed percent sequence keeps the shell (CR-P3G4-01)", async () => {
   const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
   expect(within(crumbs).getByText("%E0")).toHaveAttribute("aria-current", "page");
 });
+
+test("the phone node pill stays neutral while connecting (CR-P3G4-02)", async () => {
+  viewport(390);
+  vi.stubGlobal("fetch", vi.fn(() => new Promise<Response>(() => {})));
+  app();
+  const pill = await screen.findByRole("img", { name: "Connecting" });
+  expect(pill).not.toHaveAttribute("data-down");
+});
