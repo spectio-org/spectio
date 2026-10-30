@@ -14,3 +14,5 @@
 {"at": 1793350357.1965706, "usd": 6.0, "kind": "spike", "step": "first-look"}
 {"at": 1793354419.5895174, "usd": 35.0, "kind": "build", "step": "P3-t05"}
 {"at": 1793363077.5424762, "usd": 60.0, "kind": "build", "step": "P3-t06"}
+{"at": 1793374852.8430274, "usd": 50.0, "kind": "build", "step": "P3-t08"}
+{"at": 1793374852.893611, "usd": 20.0, "kind": "build", "step": "P3-G1"}

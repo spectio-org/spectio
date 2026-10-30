@@ -4,7 +4,15 @@ version = "0.0.1"
 description = "Spectio's CLI and runner (no FastAPI, no SQLAlchemy: architecture §6)"
 license = "MIT"
 requires-python = ">=3.11"
-dependencies = ["spectio-sdk"]
+dependencies = [
+    "pydantic>=2.7,<3",
+    "pydantic-settings>=2.6,<3",
+    "spectio-sdk",
+    "typer>=0.15,<1",
+]
+
+[project.scripts]
+spectio = "spectio.cli.main:app"
 
 [tool.uv.sources]
 spectio-sdk = { workspace = true }

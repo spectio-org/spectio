@@ -382,3 +382,16 @@ media:
       - docs/assets/diagrams/p3-t06-nf-spectio_dark.svg
       - docs/assets/diagrams/p3-t06-nf-spectio_light.png
       - docs/assets/diagrams/p3-t06-nf-spectio_dark.png
+  - id: p3-t08-init-doctor
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t08_init_doctor.py
+    outputs:
+      - docs/assets/diagrams/p3-t08-init-doctor_light.svg
+      - docs/assets/diagrams/p3-t08-init-doctor_dark.svg
+      - docs/assets/diagrams/p3-t08-init-doctor_light.png
+      - docs/assets/diagrams/p3-t08-init-doctor_dark.png
+  - id: spectio-init-doctor
+    kind: cast
+    # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines
+    generator: python3 tools/media/cast.py tools/media/casts/spectio-init-doctor.yaml
+    outputs: [docs/assets/casts/spectio-init-doctor.cast]

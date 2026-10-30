@@ -19,27 +19,87 @@ a{color:#4D5065}a:hover{color:#0F1020}
 .spx-home{display:flex;align-items:flex-end;text-decoration:none;color:#0F1020;flex-shrink:0;border-radius:8px}
 .spx-home:focus-visible{outline:2px solid #7750D4;outline-offset:4px}
 .spx-word{font-family:'Outfit',sans-serif;font-weight:600;line-height:.74;letter-spacing:-.035em}
+.tb-crumbs{display:flex;align-items:center;gap:6px;margin:0;padding:0;list-style:none;min-width:0;white-space:nowrap}
+.tb-crumbs li{display:flex;align-items:center;gap:6px;flex-shrink:0}
+.tb-crumbs li:last-child{flex-shrink:1;min-width:0}
+.tb-gap{display:none !important}
+.tb-search-icon{display:none !important}
+@media (max-width: 999px){
+  .tb-mid{display:none !important}
+  .tb-gap{display:flex !important}
+  .tb-search-wide{display:none !important}
+  .tb-search-icon{display:flex !important}
+}
+.tb-crumbs a{color:#4D5065;text-decoration:none;border-radius:6px;padding:2px 4px}
+.tb-crumbs a:hover{color:#0F1020;text-decoration:underline}
+.tb-crumbs a:focus-visible{outline:2px solid #7750D4;outline-offset:1px}
+.tb-key{width:40px;height:40px;border:none;border-radius:12px;background:transparent;color:#33364A;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;padding:0}
+.tb-key:hover{background:#F1F2F6}
+.tb-key:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.tb-off{cursor:not-allowed;color:#6E7287}
+.tb-off svg{opacity:.7}
+.tb-off:hover{background:transparent}
 </style>
 </helmet>
 <div style="width: 100%; min-width: 320px; box-sizing: border-box; padding: 10px; font-family: 'Inter', system-ui, sans-serif; color: #0F1020;">
-  <header style="min-height: 56px; box-sizing: border-box; background: #FFFFFF; border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 1px 2px rgba(15,16,32,0.05), 0 10px 28px -18px rgba(15,16,32,0.18); padding: 8px 16px; display: flex; align-items: center; gap: 14px; flex-wrap: wrap;">
+  <header style="min-height: 56px; box-sizing: border-box; background: #FFFFFF; border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 1px 2px rgba(15,16,32,0.05), 0 10px 28px -18px rgba(15,16,32,0.18); padding: 8px 10px 8px 16px; display: flex; align-items: center; gap: 10px;">
     <a class="spx-home" href="LiteHome.dc.html" style="gap: 9px;">
       <svg width="44" height="22" viewBox="0 0 200 100" aria-hidden="true" style="overflow: visible; margin-bottom: 1px;"><path class="spx-b" style="--r: 67.5deg;" fill="#5A4FCF" d="M86.09 94.24L4.17 94.24A96 96 0 0 1 28.17 36.31Z"/><path class="spx-b" style="--r: 22.5deg;" fill="#8B5CF6" d="M94.24 86.09L36.31 28.17A96 96 0 0 1 94.24 4.17Z"/><path class="spx-b" style="--r: -22.5deg;" fill="#EC5F87" d="M105.76 86.09L105.76 4.17A96 96 0 0 1 163.69 28.17Z"/><path class="spx-b" style="--r: -67.5deg;" fill="#F9A947" d="M113.91 94.24L171.83 36.31A96 96 0 0 1 195.83 94.24Z"/></svg>
       <span class="spx-word" style="font-size: 23px;">Spectio</span>
     </a>
-    <span aria-hidden="true" style="width: 1px; height: 22px; background: #DFE1EA;"></span>
-    <nav aria-label="Breadcrumb" style="font-size: 14px; color: #4D5065; flex-grow: 1; min-width: 0;"><span style="display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{crumbs}}</span></nav>
-    <span style="display: flex; align-items: center; gap: 8px; height: 34px; padding: 0 12px; border-radius: 10px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #DFE1EA; color: #22253A; font-size: 13px; font-weight: 500; white-space: nowrap;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#2F7FA8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v6H4z M4 13h16v6H4z M8 8h.01 M8 16h.01"/></svg>
-      SLURM · server on {{node}}
-    </span>
+    <span aria-hidden="true" style="width: 1px; height: 22px; background: #DFE1EA; margin: 0 4px; flex-shrink: 0;"></span>
+    <nav aria-label="Breadcrumb" style="font-size: 14px; color: #4D5065; flex: 1 1 auto; min-width: 0; overflow: hidden;">
+      <ol class="tb-crumbs">
+        <sc-for list="{{crumbs}}" as="c" hint-placeholder-count="2">
+          <li class="{{c.cls}}">
+            <sc-if value="{{c.sep}}" hint-placeholder-val="{{false}}"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#9A9DB0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M9 6l6 6-6 6"/></svg></sc-if>
+            <sc-if value="{{c.href}}" hint-placeholder-val="{{true}}"><a href="{{c.href}}">{{c.label}}</a></sc-if>
+            <sc-if value="{{c.plain}}" hint-placeholder-val="{{false}}"><span style="padding: 2px 4px;">{{c.label}}</span></sc-if>
+            <sc-if value="{{c.gap}}" hint-placeholder-val="{{false}}"><span aria-hidden="true" style="padding: 2px 4px;">…</span></sc-if>
+            <sc-if value="{{c.last}}" hint-placeholder-val="{{false}}"><span aria-current="page" style="display: block; min-width: 0; color: #0F1020; font-weight: 600; overflow: hidden; text-overflow: ellipsis; padding: 2px 4px;">{{c.label}}</span></sc-if>
+          </li>
+        </sc-for>
+      </ol>
+    </nav>
+    <button type="button" class="tb-key tb-off tb-search-icon" disabled aria-label="Search (not in 0.0.1)">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg>
+    </button>
+    <button type="button" class="tb-off tb-search-wide" disabled aria-label="Search (not in 0.0.1)" style="display: flex; align-items: center; gap: 8px; height: 38px; width: 240px; padding: 0 10px 0 12px; border: none; border-radius: 11px; background: #F7F7FB; box-shadow: inset 0 0 0 1px #DFE1EA; font: 400 13px 'Inter', sans-serif; flex-shrink: 0;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" aria-hidden="true"><path d="M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4"/></svg>
+      <span style="flex-grow: 1; text-align: left; color: #4D5065;">Search (not in 0.0.1)</span>
+      <span style="font-size: 11px; border: 1px solid #DFE1EA; border-radius: 6px; padding: 1px 6px;">⌘K</span>
+    </button>
+    <button type="button" class="tb-key tb-off" disabled aria-label="Notifications (not in 0.0.1)">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0"/></svg>
+    </button>
+    <button type="button" class="tb-key" role="switch" aria-checked="false" aria-label="Dark theme">
+      <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z"/></svg>
+    </button>
+    <button type="button" class="tb-off" disabled aria-label="Account (not in 0.0.1)" style="width: 36px; height: 36px; padding: 0; border-radius: 18px; background: #F7F7FB; border: 1px dashed #B7BACB; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-left: 2px;">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z M4 21a8 8 0 0 1 16 0"/></svg>
+    </button>
   </header>
 </div>
 </x-dc>
 <script type="text/x-dc" data-dc-script data-props='{"crumbs":{"editor":"text","default":"Runs"},"$preview":{"width":1440,"height":76}}'>
 class Component extends DCLogic {
 renderVals() {
-  return { crumbs: this.props.crumbs ?? 'Runs', node: 'login1' };
+  // "Runs / rnaseq-2026-10-25 / Tasks" becomes Home > Runs > rnaseq-2026-10-25 > Tasks; every crumb but the last is a link.
+  const pages = { Home: 'LiteHome.dc.html', Runs: 'LiteRuns.dc.html', Launch: 'LiteLaunch.dc.html',
+    'rnaseq-2026-10-25': 'LiteRunDetail.dc.html', 'wgs-cohort-12': 'LiteRunFailed.dc.html',
+    'strandseq-hg002-p01': 'LiteRunDetailSnakemake.dc.html', 'rnaseq-pilot-hand': 'LiteRunObserved.dc.html' };
+  const parts = (this.props.crumbs ?? 'Runs').split(' / ').filter(Boolean);
+  if (parts[0] !== 'Home') parts.unshift('Home');
+  // Below 1000 px the crumbs between Runs and the last one fold into "…" (tb-mid, tb-gap); an unmapped crumb is plain text.
+  const crumbs = [];
+  parts.forEach((label, i) => {
+    const last = i === parts.length - 1;
+    const mid = i >= 2 && !last;
+    if (mid && i === 2) crumbs.push({ label: '…', sep: true, gap: true, cls: 'tb-gap', href: '', plain: false, last: false });
+    const href = last ? '' : (pages[label] || '');
+    crumbs.push({ label, sep: i > 0, last, href, plain: !last && !href, gap: false, cls: mid ? 'tb-mid' : '' });
+  });
+  return { crumbs };
 }
 }
 </script>
