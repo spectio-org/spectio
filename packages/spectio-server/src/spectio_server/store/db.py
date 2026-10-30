@@ -13,7 +13,6 @@ import sqlite3
 import stat
 import sys
 import tempfile
-from collections.abc import Callable
 from contextlib import closing
 from pathlib import Path
 from typing import Any
@@ -235,20 +234,6 @@ def _check_pins(pins: dict[Path, tuple[int, int]], conn: sqlite3.Connection) -> 
             raise UnsafeDatabase(f"{path} was replaced since open_db checked it")
 
 
-def _on_connect(pins: dict[Path, tuple[int, int]]) -> Callable[[sqlite3.Connection, Any], None]:
-    """The connect hook: refuse the connection if the checked directory or database file was
-    replaced since `open_db`, then set the per-connection pragmas."""
-
-    def on_connect(dbapi_connection: sqlite3.Connection, _record: Any) -> None:
-        _check_pins(pins, dbapi_connection)
-        # Let SQLAlchemy, not pysqlite, emit BEGIN (SQLAlchemy's pysqlite transaction recipe).
-        dbapi_connection.isolation_level = None
-        dbapi_connection.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
-        dbapi_connection.execute("PRAGMA foreign_keys=ON")
-
-    return on_connect
-
-
 def _on_begin(conn: Connection) -> None:
     # The writer asks for BEGIN IMMEDIATE (writer.py); readers keep a deferred BEGIN.
     immediate = conn.get_execution_options().get("spectio_begin") == "IMMEDIATE"
@@ -310,7 +295,15 @@ def open_db(db_dir: Path, mountinfo: Path = MOUNTINFO) -> tuple[Engine, bool]:
             # auto_vacuum only takes effect on an empty database; WAL mode is persistent.
             raw.execute("PRAGMA auto_vacuum=INCREMENTAL")
             raw.execute("PRAGMA journal_mode=WAL")
+
+    def on_connect(dbapi_connection: sqlite3.Connection, _record: Any) -> None:
+        _check_pins(pins, dbapi_connection)
+        # Let SQLAlchemy, not pysqlite, emit BEGIN (SQLAlchemy's pysqlite transaction recipe).
+        dbapi_connection.isolation_level = None
+        dbapi_connection.execute(f"PRAGMA busy_timeout={BUSY_TIMEOUT_MS}")
+        dbapi_connection.execute("PRAGMA foreign_keys=ON")
+
     engine = create_engine(URL.create("sqlite+pysqlite", database=str(path)))
-    event.listen(engine, "connect", _on_connect(pins))
+    event.listen(engine, "connect", on_connect)
     event.listen(engine, "begin", _on_begin)
     return engine, _migrate(engine)
