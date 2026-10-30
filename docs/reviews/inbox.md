@@ -1180,3 +1180,38 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   **Assumed:** (a). For the rounds: a review of minor fixes after approval counts as allowed, and is said in the record.
 - **Recommendation:** (a). For the rounds, either allow one review of post-approval fixes in `review-code`, or have the orchestrator check minor fixes after approval without a review.
 - **Blocked:** nothing.
+
+### #77 · Assumed: an untagged Nextflow task is keyed by its task name
+
+- **Covers:** [synthesis §2ter](../specs/synthesis.md#2ter-advanced-scenarios-what-each-engine-exposes-code-read-on-23102026); [api §7](../specs/api-and-data-model.md) `tasks`; [P1 Task 4](../plans/P1-walking-skeleton.md); review finding CR-P3T04-02.
+- **Context:** synthesis §2ter keys a Nextflow task by process + tag **[to be validated]**. With no tag, every instance of one process (common for per-sample processes in user pipelines) collapses into one task, and their attempts collide on (task, launch, attempt 1): the second instance's events are dropped and `task_counts` undercounts. The T2 fixtures have one untagged instance per process, so they do not show it.
+- **Options and what was assumed:**
+  - (a) key an untagged task on process + Nextflow's task `name` (`PROC (n)`), stored in a new nullable `tasks.name` column (migration `0002`). That `name` stays the same across retries, and across a resume for the cross-launch task row of api §7, is **[to be validated]**; the index `n` may not be stable on resume.
+  - (b) key on the task `hash` (stable across resume for a cached task, but it changes when the inputs change, and a retry keeps it **[to be validated]**).
+  - (c) keep process + tag and accept the collapse.
+
+  **Assumed:** (a) in P3 Task 4. The next `/apply-findings` pass records the key in synthesis §2ter and adds `tasks.name` to api §7. *(2026-10-30: P3 Task 4's docs wrote both instead, since P1's Process says the owning spec changes in the same PR.)*
+- **Recommendation:** (a), checked against a resume of an untagged pipeline in the next engine spike.
+- **Applied (2026-10-30, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), in [synthesis §2ter](../specs/synthesis.md#2ter-advanced-scenarios-what-each-engine-exposes-code-read-on-23102026) and [api §7](../specs/api-and-data-model.md#7-database-schema) `tasks`, still marked assumed. The resume check stays open.
+- **Blocked:** nothing.
+
+### #78 · Assumed: the projector's rules, and a fifth review round
+
+- **Covers:** [api §7](../specs/api-and-data-model.md#7-database-schema) (`runs.failure`, `launches`, `summary`), [§7.2](../specs/api-and-data-model.md#72-task-and-attempt-states), [§14.1](../specs/api-and-data-model.md#141-driven-runs-001); [P1 Task 4](../plans/P1-walking-skeleton.md#task-4-projector-run-state-and-nextflow-mapping); [P3-M1 Task 4](../progress/W5/P3-M1.md#task-4-projector-run-state-and-nextflow-mapping); [code review record](code/P3-t04.md).
+- **Context:** the projector (P3 Task 4) decided five rules that no spec or earlier decision fixed. Its review also ran five rounds.
+  1. **The culprit.** api §7 names "the attempt whose `errorAction` is `TERMINATE`", but not which one when there are several. The code blames the launch's first in `seq` order and keeps it in a new `launches.culprit_attempt_id`; with none, the class is `engine_fault`.
+  2. **Classes of other failures.** A `FAILED` attempt with `TERMINATE` gets `tool_error`; with `RETRY` or `IGNORE` it gets no class until the classification of schedulers §3.5 (P1 Tasks 28–29).
+  3. **`launches.head_state`.** The launcher's values are `starting`, `running`, `exited` and `unknown`; the engine's own end (`succeeded`, `failed`) is kept against a later head report (CR-P3T04-01).
+  4. **`summary.tasks.total`.** `tasks_expected` when set, else the sum of `task_counts`; no `tasks_total` column. P1 Task 4's Interfaces line still names `tasks_total` and `counts` (CR-P3T04-07 (r1), CR-P3T04-06 (r3)), and Task 18 builds `summary` from them.
+  5. **An event whose projection raises** is rolled back with its log row, logged with its traceback, and counted `projection_error`; the cursor moves past it (SEC-P3T04-02 (r2)). A database `OperationalError` instead rolls back the whole batch.
+
+  Process: two fix rounds, approval in round 3, then one post-approval minor fix (`08ee6fb`) that regressed (round 4, a major), fixed (`0ce1726`) and reviewed again (round 5). `review-code` step 4 says "one more review" after approval; the `p3-task` workflow (`85a5a84`) allows a regression to be fixed and re-reviewed, up to three times.
+- **Options and what was assumed:**
+  - (a) keep the five rules as built, marked assumed in the specs; the P1 Task 4 Interfaces line changes in the next `/apply-findings` pass; `review-code` step 4 gets the workflow's wording;
+  - (b) for rule 5, keep the event row and roll back only its projection. This breaks `projected_seq == last_seq` (P1 Assumption 11) and needs a marker for an event logged but not projected;
+  - (c) for rule 1, blame the last `TERMINATE` failure, or list them all in `runs.failure`.
+
+  **Assumed:** (a). For rule 5, the spool line is not lost: in 0.0.1 the database is an index rebuilt from the spool files (P1 Task 11), so the event stays in its source.
+- **Recommendation:** (a).
+- **Applied (2026-10-30, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a): rules 1 to 5 are in the specs above, marked assumed. Owed to the next `/apply-findings`: P1 Task 4's Interfaces line, and the wording of `review-code` step 4.
+- **Blocked:** nothing. Task 18 should read api §7 `summary`, not the plan's names, until the plan changes.

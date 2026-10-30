@@ -858,6 +858,7 @@ version = "0.0.1"
 source = { editable = "packages/spectio-server" }
 dependencies = [
     { name = "alembic" },
+    { name = "spectio" },
     { name = "spectio-sdk" },
     { name = "sqlalchemy" },
 ]
@@ -865,6 +866,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "alembic", specifier = ">=1.13,<2" },
+    { name = "spectio", editable = "packages/spectio" },
     { name = "spectio-sdk", editable = "packages/spectio-sdk" },
     { name = "sqlalchemy", specifier = ">=2.0,<3" },
 ]
