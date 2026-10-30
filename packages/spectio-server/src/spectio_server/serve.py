@@ -15,8 +15,9 @@ The start, in order, each refusal a `ServeError` (exit 2) before anything is lef
    then one runner tick (adopt the heads, replay the spools), the runner thread and uvicorn.
 
 Local-only build (inbox #80 (a)): heads start with the local launcher only. On a SLURM
-environment the runner loop is not started until the tmux launcher (P1 Task 10). There is no
-token link and no server key yet (P1 Task 12).
+environment the runner loop is not started until the tmux launcher (P1 Task 10), and the API is
+not served until sign-in (P1 Tasks 12 to 16, inbox #86). There is no token link and no server
+key yet (P1 Task 12).
 """
 
 import fcntl
@@ -102,6 +103,7 @@ def start_text(settings: Settings, node: str, user: str) -> str:
             f"2. Then open this page:  {page}",
             "Runs are not launched or watched on a SLURM environment until the tmux launcher "
             "(P1 Task 10).",
+            "The API is served in local mode only until sign-in (P1 Tasks 12 to 16).",
         ]
     lines.append("Sign-in comes with P1 Task 12: until then this build is local-only.")
     return "\n".join(lines)
@@ -273,7 +275,7 @@ def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
             raise ServeError(str(exc)) from exc
         stack.callback(booted.close)
         config = uvicorn.Config(
-            create_app(settings),
+            create_app(settings, booted.writer),
             host=LOOPBACK,
             port=settings.port,
             lifespan="off",

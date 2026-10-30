@@ -15,7 +15,10 @@ directory holds decides the row:
 Every directory is walked under §15.3 req. 10 (`rundir.private_dir`): a symlink, another user's
 directory, a loose one or a name that is not a run ID is skipped and counted. The manifest is
 parsed strictly (`extra="forbid"`), its run ID must be the directory's name, and every path is
-derived from the run ID. Per-boot caps bound the work; what is left waits for the next boot.
+derived from the run ID. A Git location must meet the import rule of the launch endpoint
+(`api.workflows.git_url`), or the run is skipped and counted. The rebuild writes no runner
+command: only `POST /runs` launches. Per-boot caps bound the work; what is left waits for the
+next boot.
 """
 
 import json
@@ -41,6 +44,8 @@ from spectio.runner.rundir import (
     read_small,
     run_paths,
 )
+from spectio_server.api.problems import Invalid
+from spectio_server.api.workflows import check_revision, git_url
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import failure_json
 from spectio_server.store.schema import (
@@ -175,6 +180,13 @@ def _add(conn: Connection, runs_root: Path, found: _Found) -> None:
     project = _first(conn, projects)
     # local workflows are absolute paths (plan D2); a git one may have no revision
     source = "local" if m.workflow.location.startswith("/") else "git"
+    if source == "git":  # the import rule of the launch endpoint (SEC-P3T11-01 (r3))
+        try:
+            git_url(m.workflow.location)
+            if m.workflow.revision is not None:
+                check_revision(m.workflow.revision)
+        except Invalid as exc:
+            raise ValueError(f"git location refused: {exc}") from None
     workflow = conn.execute(
         select(workflows.c.id, workflows.c.engine).where(
             workflows.c.project_id == project,
