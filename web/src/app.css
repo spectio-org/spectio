@@ -1,0 +1,126 @@
+/* The thin shell of P1 Task 19; G4 replaces it with the Paper shell and its tokens. */
+:root {
+  --tabbar-h: 56px;
+  --sidebar-w: 200px;
+}
+body {
+  margin: 0;
+  background: var(--mantine-color-body);
+}
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--mantine-color-default-border);
+}
+.layout {
+  display: flex;
+  min-height: calc(100vh - 53px);
+}
+.sidebar {
+  flex: 0 0 var(--sidebar-w);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 16px 8px;
+  border-right: 1px solid var(--mantine-color-default-border);
+}
+.content {
+  flex: 1;
+  min-width: 0;
+  padding: 16px 24px 32px;
+}
+.nav-link {
+  padding: 8px 12px;
+  border-radius: 6px;
+  color: var(--mantine-color-text);
+  text-decoration: none;
+}
+.nav-link:hover,
+.nav-link:focus-visible {
+  background: var(--mantine-color-gray-1);
+}
+.nav-link[data-status="active"] {
+  font-weight: 600;
+  background: var(--mantine-color-gray-1);
+}
+.tabbar {
+  display: none;
+}
+.param-section {
+  border: 0;
+  margin: 0 0 16px;
+  padding: 0;
+}
+.param-section legend {
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.facts {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 12px;
+  margin: 0;
+  font-size: var(--mantine-font-size-sm);
+}
+.facts dt {
+  color: var(--mantine-color-dimmed);
+}
+.facts dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* The aside is sticky only when it fits: at most the viewport's height, with its own scroll
+   (UX-G2-17). */
+.launch-grid {
+  display: grid;
+  gap: 16px;
+}
+@media (min-width: 1200px) {
+  .launch-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+  .launch-aside {
+    position: sticky;
+    top: 8px;
+    max-height: calc(100vh - 16px);
+    overflow-y: auto;
+  }
+}
+
+/* Phone: a tab bar at the foot, and the launch bar pinned just above it, not over it. */
+@media (max-width: 767px) {
+  .sidebar {
+    display: none;
+  }
+  .content {
+    padding: 16px 16px calc(var(--tabbar-h) + 96px);
+  }
+  .tabbar {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--tabbar-h);
+    background: var(--mantine-color-body);
+    border-top: 1px solid var(--mantine-color-default-border);
+    z-index: 3;
+  }
+  .launch-bar {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: var(--tabbar-h);
+    padding: 8px 16px;
+    background: var(--mantine-color-body);
+    border-top: 1px solid var(--mantine-color-default-border);
+    z-index: 2;
+  }
+}

@@ -54,6 +54,12 @@ media:
       - docs/assets/shots/lite-launch_light.webp
       - docs/assets/shots/lite-runs_light.webp
       - docs/assets/shots/lite-run-detail-phone_light.webp
+  - id: app-launch
+    kind: screenshot
+    # live: needs a running `spectio serve` (SPECTIO_URL) and the synthetic Nextflow pipeline
+    # copied to a path free of forbidden terms (SPECTIO_DEMO_PIPELINE), tools/media/README.md
+    generator: python3 tools/media/shots.py run --shot app-launch --theme light
+    outputs: [docs/assets/shots/app-launch_light.webp]
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
