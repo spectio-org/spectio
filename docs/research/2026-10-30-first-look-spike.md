@@ -2,9 +2,9 @@
 
 **Question.** Can the code merged so far (P1 Tasks 1–4: the spool event contract, the spool reader, the SQLite store and the projector) run end to end and show a runs list and a run detail in a browser, today, with no Nextflow and no bridge?
 
-**Answer in one line.** **Yes.** Synthetic `nf-spectio` spools pass the real `read_spool` with zero drops; the real projector writes runs, tasks and attempts into a real migrated SQLite store; a 400-line throwaway page shows a succeeded run with a retried task, a failed run with its culprit, and a live run that moves every 3 seconds until it succeeds. Four findings on the projector and the data model are listed [below](#findings).
+**Answer in one line (part 1).** **Yes.** Synthetic `nf-spectio` spools pass the real `read_spool` with zero drops; the real projector writes runs, tasks and attempts into a real migrated SQLite store; a 400-line throwaway page shows a succeeded run with a retried task, a failed run with its culprit, and a live run that moves every 3 seconds until it succeeds. Four findings on the projector and the data model are listed [below](#findings).
 
-This is a spike, not product code. No spec, plan, inbox entry or `pipeline.yaml` status was changed.
+This is a spike, not product code. No spec, plan, inbox entry or `pipeline.yaml` status was changed. [Part 2](#part-2-a-real-nextflow-launched-from-the-page) (same day) replaces the synthetic events with a real Nextflow run and the spike T2 plugin, launched from the page or the shell.
 
 ## Setup
 
@@ -62,10 +62,72 @@ No bug blocked the flow: every event was accepted, projected and kept in order, 
 
 ```bash
 git fetch origin spike/first-look && git checkout spike/first-look
-uv run python spikes/first-look/demo.py            # then open http://127.0.0.1:8765/
-uv run python spikes/first-look/demo.py --port 9000 --period 1   # faster live run
+uv run python spikes/first-look/demo.py --synthetic            # then open http://127.0.0.1:8765/
+uv run python spikes/first-look/demo.py --synthetic --port 9000  # another port
 uv run python spikes/first-look/make_spool.py /tmp/fl            # spools only, no server
 node spikes/first-look/shoot.js 8765               # screenshots, with the demo running
 ```
 
 In a Codespace, run the same `uv run` command in the terminal; Codespaces forwards a port that a process opens on localhost and offers to open it in the browser **[to be validated]** (not tried in this spike). Each start creates a fresh `/tmp/spectio-first-look-*` directory (or under `$TMPDIR`) and prints its path; nothing in the repository is written.
+
+## Part 2: a real Nextflow, launched from the page
+
+**Question.** Thomas asked for a script or README an agent can follow to start the service locally, run a lightweight dummy Nextflow pipeline (not nf-core), see the result, and launch it from the UI. Does the merged code hold up against real engine events?
+
+**Answer in one line.** **Yes**, with three new findings. A real `nextflow run` (26.10.4) with the spike T2 plugin, launched from a "New run" form, goes through the real `read_spool`, projector and store with zero drops; a 3-sample run ends `succeeded` (10 / 10 tasks) and a run with an injected failure ends `failed` with the right culprit, retry and aborted task.
+
+### What was built
+
+On `spike/first-look`, after merging `origin/autopilot/integration` (so the final Task 4 code of `6dc5cce` is in):
+
+| File | What it does |
+|---|---|
+| `spikes/first-look/run-local.sh` | downloads the Nextflow `26.10.4` `-dist` launcher (sha256 from `dev/versions.env`), builds the plugin into a private `NXF_HOME`, runs `uv sync`, starts the demo; `--cli` registers a run with `POST /api/launches` and runs Nextflow from the shell |
+| `spikes/first-look/launch.py` | registers a run (project, run and launch rows), starts `nextflow run nf/main.nf -plugins nf-spectio@0.0.1` with `SPECTIO_ENDPOINT` set, reports the head with `apply_head_report`, and appends each plugin POST as one spool line through `convert_t2.convert_line` |
+| `spikes/first-look/nf/main.nf` | FASTQC → TRIM → ALIGN per sample, then MULTIQC; sleeps 3 s per task; `--fail` makes ALIGN of the last sample exit 1 on both attempts (`errorStrategy` retry once, then terminate) |
+| `spikes/first-look/nf-spectio/` | the prototype plugin of spike T2 (`spike/engine-events` at `3b4f654`), unchanged |
+| `spikes/first-look/launch-ui.js` | Playwright: fills the form, waits for the end of each run, takes the screenshots |
+| `spikes/first-look/AGENT.md` | the brief: prerequisites, commands, expected output, cleanup, troubleshooting, what is real |
+
+The demo binds 127.0.0.1 only. The form's `POST /runs` needs a `Host` of `127.0.0.1:<port>` or `localhost:<port>`, an `Origin` equal to it and no cross-site `Sec-Fetch-Site`; the plugin posts to `/spectio/events/<token>`, a 32-character random token per launch; `POST /api/launches` takes JSON with no `Origin` only. Checked with curl: a foreign `Origin`, `Origin: null`, no `Origin`, a foreign `Host` and `Sec-Fetch-Site: cross-site` all get 403; an unknown token gets 404.
+
+### What was run (in a Claude Code cloud container, 2026-10-30)
+
+- OpenJDK 21.0.12, uv 0.11.32; Nextflow `26.10.4 build 14435` downloaded from `https://github.com/nextflow-io/nextflow/releases/download/v26.10.4/nextflow-26.10.4-dist`, sha256 `2cbda6e7…fdec4` as pinned in `dev/versions.env`. The plugin compiled in about 1 s with the Groovy compiler inside that jar.
+- `run-local.sh` from an empty `$SPECTIO_FIRST_LOOK_HOME`, then `node spikes/first-look/launch-ui.js 8765`: run 1 (3 samples) `succeeded`, run 2 (2 samples, "Fail a task") `failed`, in 35 s in all.
+- `run-local.sh --cli --samples 2`: Nextflow output in the shell (`[SUCCESS] completed=7 failed=0`), the run `succeeded` on the page with origin `cli-observed`.
+- `demo.py --nextflow /bin/false`: the head exits 1 with no events and the run ends `failed · engine_fault` through `apply_head_report`. With an empty plugin directory Nextflow stops with `Plugin with id nf-spectio not found in any repository`.
+- `demo.py --synthetic` without `--nextflow`: part 1's three runs, the form replaced by a note.
+
+| Check | Run 1 (3 samples) | Run 2 (2 samples, failure) |
+|---|---|---|
+| Events (store seq) | 53, drops none | 42, drops none |
+| `runs.state`, `task_counts` | `succeeded`, `{succeeded: 10}` | `failed`, `{aborted: 1, failed: 1, succeeded: 5}` |
+| Attempts | one per task, `exit 0` | `ALIGN (S02)`: `#1 failed · exit 1`, `#2 failed · exit 1 · tool_error`; `MULTIQC` `#1 aborted` |
+| `runs.failure` | none | `{class: tool_error, task: ALIGN (S02), attempt_n: 2, message: "injected failure"}` |
+| `launches` | `head_state succeeded`, `exit_code 0`, head pid | `head_state failed`, `exit_code 1` (the engine's end kept over the head's `exited`) |
+| Allow-list | no `script` or `env` key in any stored payload | same |
+
+Screenshots in `spikes/first-look/shots/`: `launch-form.png`, `live-run.png` (run 1 with FASTQC done and TRIM running), `run-done.png`, `run-failed.png`, `runs-local.png`.
+
+### Findings (part 2)
+
+5. **Running and aborted attempts store exit 2147483647.** Nextflow's trace record carries `exit: "2147483647"` (Java `Integer.MAX_VALUE`, the task's "no exit status yet") on `onTaskPending`, `onTaskSubmit` and `onTaskStart`, and on the `onTaskComplete` of an aborted task. The T2 plugin already maps the task's own `exitStatus` of that value to `null`, but the projector falls back to `trace.exit` when `exitStatus` is null (`_exit`, `packages/spectio-server/src/spectio_server/projector/nextflow.py:136`), so `attempts.exit` is 2147483647 for every running attempt and for the aborted MULTIQC. The T2 spool fixtures hide this: `normalise.py --slim` drops the trace from the three non-final hooks, and only one fixture line (`nextflow-25.10.9_plugin_toolerr`, an aborted COMPARE) carries the value. Suggested fix, for a review: treat 2147483647 as no exit in `_exit`, and add a fixture with the full trace. The demo shows the stored value as `exit 2147483647 (none yet)`.
+6. **`runs.failure.message` is the failing task's stderr.** On 26.10.4, `onFlowComplete.errorMessage` (from `session.workflowMetadata.errorMessage`) was `injected failure`, the text the tool wrote to stderr, and the projector stores it as the failure message (capped at 4096 characters). Snakemake's error text has its command hidden (`_hide_command`), Nextflow's has no such step. Whatever a tool prints on stderr, a token included, reaches `runs.failure` and every reader of the run. Worth a look in the security review of the allow-lists (api §14.1) **[to be validated]** on a real tool error with a longer stderr.
+7. **The order spike T2 reported holds, and the projector copes.** `onFlowComplete` (success false) came before `onFlowError` (no task data), and MULTIQC got `onTaskPending` after the failure and nothing more; the projector ended the run on `onFlowComplete`, logged `onFlowError` only, and closed MULTIQC `aborted`. Store `seq` differs from the plugin's `seq` because the projector logs its own `spectio.run.state_changed` events in the same sequence: fine, but a reader that compares the two must not assume they match.
+
+Part 1's finding 1 (run times from the ingest clock) is milder live: `started_at` is when the head report moved the run to `running` (09:02:05 for run 1, its first engine event at 09:02:07) and, with a read every second, `ended_at` is within a second of the last engine event. It still applies to any spool read after the fact.
+
+### What is still not real
+
+The server and its security (P1 Tasks 11–16), the launch API (Task 17), the head launcher (no head script, no tmux, no scheduler; a `subprocess.Popen` stands in), and the Task 6 `nf-spectio`: the prototype plugin of T2 posts each event over HTTP and the demo writes the spool, where the Task 6 plugin is to write the spool itself. A run launched with `--cli` gets no head report: nothing watches that process, so its state comes from engine events only.
+
+### Commands (part 2)
+
+```bash
+git fetch origin spike/first-look && git checkout spike/first-look
+spikes/first-look/run-local.sh                     # http://127.0.0.1:8765/, "New run"
+spikes/first-look/run-local.sh --cli --samples 2 --fail
+node spikes/first-look/launch-ui.js 8765           # with the demo running: launch two runs, screenshots
+rm -rf ~/.cache/spectio-first-look                 # clean up
+```

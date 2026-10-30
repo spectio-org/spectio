@@ -1,17 +1,22 @@
-"""Spike first-look: synthetic spools -> real read_spool -> real projector -> real SQLite -> a page.
+"""Spike first-look: spool -> real read_spool -> real projector -> real SQLite -> a page.
 
-    uv run python spikes/first-look/demo.py [--port 8765] [--period 3]
+    uv run python spikes/first-look/demo.py --nextflow PATH [--port 8765] [--synthetic]
 
-Writes three runs (make_spool.py) under a fresh private temp directory, opens a real store there
-(open_db, migrations), and every `--period` seconds reads each launch's spool with the real
-reader and ingests it through the real writer and projector. One run keeps growing until it
-ends. The page on http://127.0.0.1:<port>/ is read-only, and shows only what the database holds.
-Throwaway: no auth, no launch, no head report, no API (see docs/research/2026-10-30-first-look-spike.md).
+Opens a real store (open_db, migrations) in a fresh private directory and serves, on
+http://127.0.0.1:<port>/ only, a runs list, a run detail and a "New run" form. The form (or
+`POST /api/launches` from a shell, see run-local.sh --cli) registers a run and starts a real
+`nextflow run` of the dummy pipeline nf/main.nf with the spike T2 plugin nf-spectio 0.0.1, whose
+POSTs this server appends to the launch's spool (launch.py). Every `--period` seconds each
+launch's spool is read with the real reader and ingested through the real writer and projector;
+the pages show only what the database holds. `--synthetic` adds the part 1 runs of make_spool.py.
+Throwaway: no auth, no head script, no product API (docs/research/2026-10-30-first-look-spike.md).
 """
 
 import argparse
 import html
+import json
 import re
+import signal
 import sys
 import tempfile
 import threading
@@ -20,15 +25,15 @@ from collections import Counter, defaultdict
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
+from urllib.parse import parse_qs
 
 from sqlalchemy import Engine, func, insert, select
 
+import launch as lx
 from make_spool import Run, build, follow
-from spectio.runner.spool import read_spool
-from spectio_server.projector.ingest import ingest, load_cursor
 from spectio_server.store.db import open_db
-from spectio_server.store.schema import (attempts, environments, events, launches, projects,
-                                         runs, spool_drops, tasks, workflow_versions, workflows)
+from spectio_server.store.schema import (attempts, events, launches, runs, spool_drops, tasks,
+                                         workflow_versions, workflows)
 from spectio_server.store.writer import Writer
 
 ACTIVE = {"queued", "running", "cancelling"}
@@ -44,48 +49,39 @@ def esc(value: object) -> str:
 # -- ingest --------------------------------------------------------------------------------
 
 
-def seed(writer: Writer, runs_: list[Run]) -> dict[str, str]:
-    """What the launch API (P1 Task 17) would write: project, workflows, queued runs, launches."""
+def seed(writer: Writer, registry: lx.Registry, runs_: list[Run]) -> None:
+    """The part 1 synthetic runs: their workflows, queued runs and launches (as Task 17 would)."""
     now = datetime.now(UTC)
-    launch_ids = {r.id: f"lch_{r.id[4:]}" for r in runs_}
+    names = sorted({r.workflow for r in runs_})
 
     def fn(conn):
-        conn.execute(insert(projects).values(id="prj_demo", owning_group_id="grp_demo",
-                                             created_at=now, name="demo"))
-        conn.execute(insert(environments).values(id="env_local", kind="local", created_at=now))
-        for i, wf in enumerate(sorted({r.workflow for r in runs_})):
+        for i, wf in enumerate(names):
             conn.execute(insert(workflows).values(id=f"wfl_{i}", project_id="prj_demo",
                                                   source="local", location=f"/w/{wf}", name=wf,
                                                   engine="nextflow", created_at=now))
             conn.execute(insert(workflow_versions).values(id=f"wfv_{i}", workflow_id=f"wfl_{i}",
                                                           revision="0.1.0", created_at=now))
-        wfv = {wf: f"wfv_{i}" for i, wf in enumerate(sorted({r.workflow for r in runs_}))}
         for r in runs_:
             conn.execute(insert(runs).values(
-                id=r.id, project_id="prj_demo", workflow_version_id=wfv[r.workflow],
-                environment_id="env_local", name=r.name, state="queued", origin="ui",
-                launch_dir=str(r.launch_dir), created_at=now))
-            conn.execute(insert(launches).values(id=launch_ids[r.id], run_id=r.id, n=1,
+                id=r.id, project_id="prj_demo",
+                workflow_version_id=f"wfv_{names.index(r.workflow)}", environment_id="env_local",
+                name=r.name, state="queued", origin="ui", launch_dir=str(r.launch_dir),
+                created_at=now))
+            conn.execute(insert(launches).values(id=f"lch_{r.id[4:]}", run_id=r.id, n=1,
                                                  launch_dir=str(r.launch_dir), created_at=now))
 
     writer.submit(fn).result()
-    return launch_ids
+    for r in runs_:
+        registry.add(lx.Launch(r.id, f"lch_{r.id[4:]}", r.launch_dir))
 
 
-def poll(writer: Writer, runs_: list[Run], launch_ids: dict[str, str], period: float) -> None:
+def poll(writer: Writer, registry: lx.Registry, period: float) -> None:
     """The runner loop's job (P1 Task 9), reduced: read each spool, ingest it in one transaction."""
     while True:
-        for r in runs_:
-            lid = launch_ids[r.id]
-
-            def fn(conn, r=r, lid=lid):
-                batch = read_spool(r.launch_dir, r.id, 1, load_cursor(conn, lid))
-                ingest(conn, lid, batch)
-                return len(batch.events)
-
-            n = writer.submit(fn).result()
+        for launch in registry.all():
+            n = writer.submit(lambda conn, x=launch: lx.ingest_once(conn, x)).result()
             if n:
-                print(f"ingested {n:3d} events of {r.name}", flush=True)
+                print(f"ingested {n:3d} events of {launch.run_id}", flush=True)
         time.sleep(period)
 
 
@@ -125,6 +121,18 @@ def tally(counts: dict | None) -> tuple[int, int, int, int]:
     c = Counter(counts or {})
     return (sum(c[s] for s in DONE), c["running"] + c["submitted"], c["failed"],
             sum(c.values()))
+
+
+NO_EXIT = 2**31 - 1  # Nextflow's "no exit status yet" (Integer.MAX_VALUE)
+
+
+def exit_text(code: int | None) -> str:
+    """The stored exit; the projector keeps Nextflow's no-exit value as is (finding, part 2)."""
+    if code is None:
+        return ""
+    if code == NO_EXIT:
+        return f' · <span class="amber">exit {code} (none yet)</span>'
+    return f" · exit {code}"
 
 
 def state_badge(state: str, sub: str = "") -> str:
@@ -189,6 +197,16 @@ padding:1px 7px;margin:0 4px 2px 0}
 .log{background:#16161f;color:#a7f3d0;font:12px/1.6 ui-monospace,Menlo,monospace;padding:12px 16px;
 margin:0;white-space:pre;overflow-x:auto}
 .grid2{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:16px}
+.newrun{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:flex-end;padding:16px 20px}
+.newrun label{display:flex;flex-direction:column;gap:4px;font-size:12.5px;color:var(--mute)}
+.newrun input,.newrun select{font:inherit;color:var(--ink);padding:7px 10px;border:1px solid var(--line);
+border-radius:8px;background:#fff}.newrun input[type=number]{width:90px}
+.newrun label.chk{flex-direction:row;align-items:center;gap:8px;color:var(--ink);font-size:14px;
+padding-bottom:8px}.newrun button{font:inherit;font-weight:600;color:#fff;background:var(--acc);
+border:0;border-radius:8px;padding:9px 18px;cursor:pointer}
+.newrun button:focus-visible,.newrun input:focus-visible,.newrun select:focus-visible{
+outline:2px solid var(--acc);outline-offset:2px}
+.note{padding:14px 20px;color:var(--mute)}
 @media(max-width:900px){nav,.pill{display:none}.wrap{margin:0 16px 16px}.facts{grid-template-columns:1fr 1fr}
 .grid2{display:block}.hide-sm{display:none}}
 """
@@ -200,12 +218,27 @@ def page(title: str, crumb: str, body: str, live: bool) -> bytes:
 <meta name="viewport" content="width=device-width,initial-scale=1">{refresh}
 <title>{esc(title)}</title><style>{CSS}</style></head><body>
 <header class="top"><a class="logo" href="/">Spect<b>io</b></a><span class="crumb">{crumb}</span>
-<span class="pill">spike first-look · synthetic spool · local store</span></header>
+<span class="pill">spike first-look · local only · not the product</span></header>
 <div class="wrap"><nav><a class="on" href="/">Runs</a></nav><main>{body}</main></div>
 </body></html>""".encode()
 
 
-def runs_page(engine: Engine) -> bytes:
+NEW_RUN = """<div class="card"><h2>New run</h2>
+<form method="post" action="/runs" class="newrun">
+<label for="f-pipeline">Pipeline<select id="f-pipeline" name="pipeline">
+<option value="dummy">first-look/dummy 0.1.0 · Nextflow, local executor</option></select></label>
+<label for="f-name">Run name<input id="f-name" name="name" placeholder="automatic" maxlength="40"
+pattern="[A-Za-z0-9._\\-]*"></label>
+<label for="f-samples">Samples<input id="f-samples" type="number" name="samples" min="1" max="12"
+value="3" required></label>
+<label class="chk" for="f-fail"><input id="f-fail" type="checkbox" name="fail" value="1">
+Fail a task (ALIGN of the last sample, retried once)</label>
+<button type="submit">Launch run</button></form></div>"""
+NO_LAUNCH = """<div class="card"><h2>New run</h2><p class="note">Launching is off: start the demo
+with <code>--nextflow PATH</code> (run-local.sh does).</p></div>"""
+
+
+def runs_page(engine: Engine, can_launch: bool) -> bytes:
     with engine.connect() as conn:
         rows = run_rows(conn)
     active = sum(r.state in ACTIVE for r in rows)
@@ -233,13 +266,14 @@ def runs_page(engine: Engine) -> bytes:
 <td class="num hide-sm">{r.last_seq}</td></tr>""")
     body = f"""<h1>Runs</h1><p class="lead">{len(rows)} runs · {active} active · projected from
 the spool into SQLite{' · live, refreshes every 3 s' if active else ''}</p>
+{NEW_RUN if can_launch else NO_LAUNCH}
 <div class="card"><table><tr><th>Run</th><th>State</th><th class="hide-sm">Workflow</th><th class="num">Tasks
 </th><th class="hide-sm">Engine start (UTC)</th><th class="hide-sm">Engine span</th>
 <th class="num hide-sm">Events</th></tr>{''.join(trs)}</table></div>"""
     return page("Runs · Spectio", "Runs", body, active > 0)
 
 
-def detail_page(engine: Engine, run_id: str) -> bytes | None:
+def detail_page(engine: Engine, run_id: str, head: lx.Launch | None) -> bytes | None:
     with engine.connect() as conn:
         r = next((x for x in run_rows(conn) if x.id == run_id), None)
         if r is None:
@@ -278,8 +312,9 @@ def detail_page(engine: Engine, run_id: str) -> bytes | None:
     if r.retried:
         chips += f'<span class="chip c-retried">{r.retried} retried</span>'
     f = r.failure or {}
-    failure = (f"{esc(f.get('class'))} · {esc(names.get(f.get('task_id'), '—'))} attempt "
-               f"{esc(f.get('attempt_n'))}<div class='sub'>{esc(f.get('message'))}</div>"
+    culprit = (f" · {esc(names.get(f['task_id'], '—'))} attempt {esc(f.get('attempt_n'))}"
+               if f.get("task_id") else "")
+    failure = (f"{esc(f.get('class'))}{culprit}<div class='sub'>{esc(f.get('message'))}</div>"
                if f else "—")
     facts = [("Pipeline", f"{esc(r.workflow)} {esc(r.revision)}"),
              ("Engine", f"Nextflow {esc(r.engine_version or '?')}"),
@@ -287,9 +322,10 @@ def detail_page(engine: Engine, run_id: str) -> bytes | None:
              ("Engine span", fmt_span(r.t0, r.t1)),
              ("Run started · ended (store clock)",
               f"{fmt_time(r.started_at)} · {fmt_time(r.ended_at)}"),
-             ("Head state (launch 1)", esc(lch.head_state or "—")),
+             ("Head state · exit (launch 1)", f"{esc(lch.head_state or '—')} · "
+              f"{esc(lch.exit_code if lch.exit_code is not None else '—')}"),
              ("Engine session", f'<span class="id">{esc(lch.engine_session_id)}</span>'),
-             ("Exit code", esc(lch.exit_code if lch.exit_code is not None else "—")),
+             ("Origin · head pid", f"{esc(r.origin)} · {esc(lch.head_native_id or '—')}"),
              ("Launch directory", f'<span class="id">{esc(r.launch_dir)}</span>'),
              ("Events · projected seq", f"{r.last_seq} · {r.projected_seq}"),
              ("Spool drops", esc(", ".join(f"{k} {v}" for k, v in drops) or "none")),
@@ -303,7 +339,8 @@ def detail_page(engine: Engine, run_id: str) -> bytes | None:
         d = sum(c[s] for s in DONE)
         pct = int(100 * d / n) if n else 0
         st = ("failed" if c["failed"] else "not started" if n == 0 else "succeeded" if d == n else
-              "running" if c["running"] or c["submitted"] else "pending")
+              "running" if c["running"] or c["submitted"] else
+              "aborted" if c["aborted"] and not c["pending"] else "pending")
         proc_rows.append(f"""<tr><td><b class="id" style="color:var(--ink)">{esc(p)}</b></td>
 <td><span class="st st-{st.replace(' ', '-')}">{st.capitalize()}</span></td>
 <td><span class="prog"><i style="width:{pct}%"></i></span>{d} / {n}</td>
@@ -319,7 +356,7 @@ def detail_page(engine: Engine, run_id: str) -> bytes | None:
                 continue
             atts = "".join(
                 f'<span class="att st-{esc(a.state)}">#{a.n} {esc(a.state)}'
-                f'{f" · exit {a.exit}" if a.exit is not None else ""}'
+                f'{exit_text(a.exit)}'
                 f'{f" · {esc(a.failure_class)}" if a.failure_class else ""}</span>'
                 for a in rows_ if a.n is not None)
             task_rows.append(f"""<tr><td>{esc(rows_[0].name)}</td>
@@ -330,6 +367,9 @@ def detail_page(engine: Engine, run_id: str) -> bytes | None:
         f"{e.seq:>4}  {fmt_time(e.engine_time)}  {esc(e.type.rsplit('.', 1)[-1]):<20}"
         f"  {esc(e.payload.get('name') or e.payload.get('process') or e.payload.get('to') or '')}"
         for e in log)
+    out = lx.tail(head) if head and head.token else ""
+    head_html = (f'<div class="card"><h2>Head output · nextflow.out</h2><pre class="log">'
+                 f'{esc(out)}</pre></div>' if out else "")
     state = esc(r.state)
     body = f"""<div class="card"><div class="head {state}"><h1 style="margin:0">{esc(r.name)}
 <span class="id">{esc(r.id)}</span></h1>
@@ -344,48 +384,138 @@ def detail_page(engine: Engine, run_id: str) -> bytes | None:
 {''.join(proc_rows)}</table></div>
 <div class="card"><h2>Tasks and attempts</h2><table><tr><th>Task</th><th>State</th>
 <th>Attempts (launch 1)</th></tr>{''.join(task_rows)}</table></div></div>
-<div><div class="card"><h2>Event log · last 12</h2><pre class="log">{log_lines}</pre></div></div>
+<div><div class="card"><h2>Event log · last 12</h2><pre class="log">{log_lines}</pre></div>
+{head_html}</div>
 </div>"""
     return page(f"{r.name} · Spectio", f'<a href="/">Runs</a> / {esc(r.name)}', body,
                 r.state in ACTIVE)
 
 
-def serve(engine: Engine, port: int) -> None:
+NAME = re.compile(r"[A-Za-z0-9._-]{0,40}")
+
+
+def launch_params(get) -> tuple[str, int, bool]:
+    """name, samples, fail from a form or a JSON body; raises ValueError."""
+    samples = int(get("samples", "3"))
+    name = str(get("name", "") or "")
+    if not 1 <= samples <= 12 or not NAME.fullmatch(name):
+        raise ValueError("samples must be 1..12, name [A-Za-z0-9._-]{0,40}")
+    fail = get("fail", "") in ("1", "on", True)
+    name = name or f"dummy-{samples}s{'-fail' if fail else ''}-{datetime.now(UTC):%H%M%S}"
+    return name, samples, fail
+
+
+def serve(engine: Engine, writer: Writer, registry: lx.Registry, runs_root: Path,
+          nextflow: str | None, port: int) -> None:
+    hosts = {f"127.0.0.1:{port}", f"localhost:{port}"}
+
     class Handler(BaseHTTPRequestHandler):
+        def send(self, code: int, body: bytes = b"", ctype: str = "text/plain; charset=utf-8",
+                 location: str | None = None) -> None:
+            self.send_response(code)
+            self.send_header("Content-Type", ctype)
+            self.send_header("Content-Length", str(len(body)))
+            if location:
+                self.send_header("Location", location)
+            self.end_headers()
+            self.wfile.write(body)
+
         def do_GET(self) -> None:  # noqa: N802
             m = re.fullmatch(r"/runs/(run_[0-9A-Z]{26})", self.path)
-            out = runs_page(engine) if self.path == "/" else (
-                detail_page(engine, m[1]) if m else None)
-            self.send_response(200 if out else 404)
-            self.send_header("Content-Type", "text/html; charset=utf-8")
-            self.end_headers()
-            self.wfile.write(out or b"not found")
+            out = runs_page(engine, nextflow is not None) if self.path == "/" else (
+                detail_page(engine, m[1], registry.by_run(m[1])) if m else None)
+            self.send(200 if out else 404, out or b"not found", "text/html; charset=utf-8")
+
+        def do_POST(self) -> None:  # noqa: N802
+            host, origin = self.headers.get("Host", ""), self.headers.get("Origin")
+            size = int(self.headers.get("Content-Length") or 0)
+            if host not in hosts:  # also stops DNS rebinding
+                return self.send(403, b"unexpected Host")
+            if not 0 <= size <= lx.MAX_POST_BYTES:
+                return self.send(413, b"too large")
+            raw = self.rfile.read(size)
+            if m := re.fullmatch(r"/spectio/events/([A-Za-z0-9_-]{32})", self.path):
+                launch = registry.by_token(m[1])
+                if origin is not None or launch is None:  # the plugin, never a browser
+                    return self.send(404, b"no such launch")
+                try:
+                    lx.receive(launch, raw)
+                except ValueError:  # json errors included
+                    return self.send(400, b"not an nf-spectio event")
+                return self.send(200, b"{}", "application/json")
+            if self.path == "/runs":  # the New run form: same-origin browser POST only
+                same = origin == f"http://{host}" and \
+                    self.headers.get("Sec-Fetch-Site", "same-origin") == "same-origin"
+                if not same:
+                    return self.send(403, b"cross-origin launch refused")
+                if nextflow is None:
+                    return self.send(503, b"launching is off: start the demo with --nextflow")
+                form = parse_qs(raw.decode("utf-8", "replace"))
+                try:
+                    name, samples, fail = launch_params(lambda k, d: form.get(k, [d])[0])
+                except ValueError as e:
+                    return self.send(400, str(e).encode())
+                launch = lx.register(writer, runs_root, name, "ui")
+                registry.add(launch)
+                lx.start(writer, launch, nextflow, self.endpoint(launch), samples, fail)
+                return self.send(303, location=f"/runs/{launch.run_id}")
+            if self.path == "/api/launches":  # run-local.sh --cli: a shell, never a browser
+                if origin is not None or self.headers.get("Content-Type") != "application/json":
+                    return self.send(403, b"JSON from a non-browser client only")
+                try:
+                    body = json.loads(raw)
+                    name, samples, fail = launch_params(lambda k, d: body.get(k, d))
+                except (ValueError, AttributeError, TypeError) as e:
+                    return self.send(400, str(e).encode())
+                launch = lx.register(writer, runs_root, name, "cli-observed")
+                registry.add(launch)
+                reply = {"run_id": launch.run_id, "launch_dir": str(launch.launch_dir),
+                         "endpoint": self.endpoint(launch),
+                         "page": f"http://{host}/runs/{launch.run_id}",
+                         "args": lx.nextflow_args("nextflow", samples, fail)[1:]}
+                return self.send(201, json.dumps(reply).encode(), "application/json")
+            return self.send(404, b"not found")
+
+        def endpoint(self, launch: lx.Launch) -> str:
+            return f"http://127.0.0.1:{port}/spectio/events/{launch.token}"
 
         def log_message(self, *args) -> None:
             pass
 
+    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)  # loopback only
     print(f"open http://127.0.0.1:{port}/", flush=True)
-    ThreadingHTTPServer(("127.0.0.1", port), Handler).serve_forever()
+    server.serve_forever()
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     parser.add_argument("--port", type=int, default=8765)
-    parser.add_argument("--period", type=float, default=3.0, help="seconds between reads")
+    parser.add_argument("--period", type=float, default=1.0, help="seconds between reads")
+    parser.add_argument("--nextflow", help="Nextflow launcher; without it the form is off")
+    parser.add_argument("--synthetic", action="store_true", help="add the part 1 synthetic runs")
+    parser.add_argument("--data", type=Path, help="data directory (default: a fresh temp one)")
     args = parser.parse_args()
-    root = Path(tempfile.mkdtemp(prefix="spectio-first-look-"))  # 0700
-    (root / "db").mkdir(mode=0o700)
+    root = args.data or Path(tempfile.mkdtemp(prefix="spectio-first-look-"))  # 0700
+    root.mkdir(mode=0o700, parents=True, exist_ok=True)
+    for d in ("db", "runs"):
+        (root / d).mkdir(mode=0o700, exist_ok=True)
     print(f"data in {root}", flush=True)
-    runs_, live, rest = build(root / "runs")
     engine, _ = open_db(root / "db")
     writer = Writer(engine)
-    launch_ids = seed(writer, runs_)
-    threading.Thread(target=poll, args=(writer, runs_, launch_ids, args.period),
-                     daemon=True).start()
-    threading.Thread(target=follow, args=(live, rest, args.period), daemon=True).start()
+    registry = lx.Registry()
+    lx.base_rows(writer)
+    if args.synthetic:
+        runs_, live, rest = build(root / "synthetic")
+        seed(writer, registry, runs_)
+        threading.Thread(target=follow, args=(live, rest, 3.0), daemon=True).start()
+    threading.Thread(target=poll, args=(writer, registry, args.period), daemon=True).start()
+    signal.signal(signal.SIGTERM, signal.default_int_handler)  # stop as on Ctrl-C
     try:
-        serve(engine, args.port)
+        serve(engine, writer, registry, root / "runs", args.nextflow, args.port)
     except KeyboardInterrupt:
+        for launch in registry.all():  # the heads this demo started stop with it
+            if launch.proc and launch.proc.poll() is None:
+                launch.proc.terminate()
         sys.exit(0)
 
 
