@@ -42,7 +42,7 @@ from spectio.config import LOOPBACK, Settings
 from spectio.runner.local import LocalLauncher
 from spectio.runner.loop import RunnerLoop
 from spectio.runner.rundir import open_private, private_dir, read_small, write_file
-from spectio_server.app import create_app
+from spectio_server.app import create_app, no_api_reason
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.rebuild import Rebuilt, rebuild_index
 from spectio_server.sink import StoreSink
@@ -96,6 +96,9 @@ def start_text(settings: Settings, node: str, user: str) -> str:
     lines = [f"Spectio {version('spectio')} is running on {node}, port {port}."]
     if settings.executor == "local":
         lines.append(f"Open this page in a browser on this machine:  {page}")
+        reason = no_api_reason(settings)  # a shared machine (SEC-P3T17-06)
+        if reason is not None:
+            lines.append(reason)
     else:
         lines += [
             f"1. On your laptop, open a tunnel:  ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} "

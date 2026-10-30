@@ -14,6 +14,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from spectio.config import Settings
+from spectio_server import app as app_mod
 from spectio_server.app import create_app
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.store.db import open_db
@@ -76,3 +77,9 @@ def git_repo(tmp_path: Path) -> Path:
     git("commit", "-q", "-m", "first", cwd=repo)
     git("tag", "v1.0", cwd=repo)
     return repo
+
+
+@pytest.fixture(autouse=True)
+def lone_host(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The API tests run as on one person's machine, whatever the test host is (SEC-P3T17-06)."""
+    monkeypatch.setattr(app_mod, "shared_host", lambda: None)

@@ -1,6 +1,7 @@
 """`GET /workflows:inspect` and `POST /runs` (P1 Task 17, Assumption 2; G5 of P2 §10.6)."""
 
 import json
+import os
 import shutil
 import subprocess
 import time
@@ -18,7 +19,9 @@ from spectio.runner.engines import EngineInfo
 from spectio.runner.loop import LaunchPayload
 from spectio.runner.rundir import read_run_manifest, run_paths
 from spectio.runner.types import HeadReport, LaunchSpec
+from spectio_server import app as app_mod
 from spectio_server.api import workflows as wf
+from spectio_server.serve import start_text
 from spectio_server.sink import StoreSink
 from spectio_server.store.schema import (
     launches,
@@ -30,7 +33,7 @@ from spectio_server.store.schema import (
 )
 from spectio_server.store.writer import Writer
 
-from .conftest import ENGINE_VERSIONS, client_for
+from .conftest import ENGINE_VERSIONS, client_for, git
 
 DATA = Path(__file__).resolve().parents[1] / "data"
 INSPECT = "/api/v1/workflows:inspect"
@@ -465,6 +468,20 @@ def test_api_absent_off_local(settings: Settings, writer: Writer, synthetic: Pat
     assert table(writer, runs) == []
 
 
+def test_api_absent_on_shared_host(
+    settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(app_mod, "shared_host", lambda: "sinfo on PATH")
+    assert settings.executor == "local"
+    client = client_for(settings, writer)
+    response = client.get(INSPECT, params={"location": "/srv/pipeline"})
+    assert response.status_code == 404
+    assert "sinfo on PATH" in response.json()["detail"]
+    assert "Tasks 12 to 16" in response.json()["detail"]
+    text = start_text(settings, "login1", "alice")
+    assert "sinfo on PATH" in text and "Tasks 12 to 16" in text
+
+
 class RecordingLauncher:
     """Starts nothing: records the spec the runner would hand to a launcher."""
 
@@ -560,3 +577,64 @@ def test_launch_schema_remote_ref_not_fetched(
     assert time.monotonic() - started < 5
     assert fields(response) == ["params"]
     assert "TOP-SECRET-VALUE" not in response.text
+
+
+def test_inspect_symlink_out_of_tree_not_read(
+    authed_client: TestClient,
+    tmp_path: Path,
+    settings: Settings,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A Git clone whose schema and config files are symlinks out of the tree: none of them is
+    read, so none of the target's bytes reaches the response (SEC-P3T17-05)."""
+    monkeypatch.setattr(wf, "GIT_SCHEMES", ("https", "ssh", "file"))
+    secrets_dir = tmp_path / "elsewhere"
+    secrets_dir.mkdir()
+    token = secrets_dir / "hosts.json"
+    token.write_text(json.dumps({"oauth_token": "gho_SECRET"}))
+    (secrets_dir / "config.yaml").write_text("oauth_token: gho_SECRET\n")
+    (secrets_dir / "nextflow.config").write_text("manifest { name = 'gho_SECRET' }\n")
+    repo = tmp_path / "repos" / "lab" / "links"
+    clone = settings.data_dir / "pipelines" / "local" / Path(*repo.parts[1:]) / "v1"
+
+    def rel(target: Path, link: str) -> str:  # relative to where the link sits in the clone
+        return os.path.relpath(target, (clone / link).parent)
+
+    links = {
+        "nextflow.config": rel(secrets_dir / "nextflow.config", "nextflow.config"),
+        "nextflow_schema.json": str(token),  # absolute
+        "config.schema.yaml": rel(token, "config.schema.yaml"),
+        "workflow/schemas/config.schema.yaml": str(token),
+        "config/config.yaml": rel(secrets_dir / "config.yaml", "config/config.yaml"),
+    }
+    repo.mkdir(parents=True)
+    (repo / "main.nf").write_text("\n")
+    for name, target in links.items():
+        (repo / name).parent.mkdir(parents=True, exist_ok=True)
+        (repo / name).symlink_to(target)
+    git("init", "-q", "-b", "main", cwd=repo)
+    git("add", ".", cwd=repo)
+    git("commit", "-q", "-m", "links", cwd=repo)
+    git("tag", "v1", cwd=repo)
+
+    response = authed_client.get(INSPECT, params={"location": repo.as_uri(), "revision": "v1"})
+    assert (clone / "config" / "config.yaml").read_text().startswith("oauth_token")  # it escapes
+    assert "gho_SECRET" not in response.text
+    assert response.status_code in (200, 422), response.text
+    if response.status_code == 200:
+        assert response.json()["schema_source"] == "none"
+
+
+def test_inspect_symlinked_directory_not_followed(
+    authed_client: TestClient, tmp_path: Path
+) -> None:
+    """A `config` directory that is a symlink out of the tree is not walked (SEC-P3T17-05)."""
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "config.yaml").write_text("oauth_token: gho_SECRET\n")
+    root = pipeline(tmp_path, "Snakefile")
+    (root / "config").symlink_to(outside)
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 200, response.text
+    assert response.json()["schema_source"] == "none"
+    assert "gho_SECRET" not in response.text

@@ -22,6 +22,7 @@ import re
 import secrets
 import shutil
 import signal
+import stat
 import subprocess
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -215,13 +216,35 @@ def fetch(data_dir: Path, url: str, parts: tuple[str, ...], revision: str) -> Pa
 # --- What a directory holds ------------------------------------------------------------------
 
 
-def _read(path: Path) -> str | None:
-    if not path.is_file():
+def _read(root: Path, *parts: str) -> str | None:
+    """`root/parts…` when it is a regular file inside `root`, else None. Each part is opened
+    from the descriptor of the one before, with O_NOFOLLOW: a symlink, in the tree or out of
+    it, is taken as absent, so a cloned repository cannot make inspect read the user's other
+    files (SEC-P3T17-05, the walk of dev-env §15.3 req. 13)."""
+    try:
+        fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
+    except OSError:
         return None
-    with path.open("rb") as f:
-        raw = f.read(MAX_FILE + 1)
+    try:
+        for part in parts[:-1]:
+            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+            os.close(fd)
+            fd = child
+        child = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+        os.close(fd)
+        fd = child
+        if not stat.S_ISREG(os.fstat(fd).st_mode):
+            return None
+        with os.fdopen(fd, "rb") as f:
+            fd = -1  # closed by the file object
+            raw = f.read(MAX_FILE + 1)
+    except OSError:  # missing, a symlink (ELOOP), not a directory
+        return None
+    finally:
+        if fd >= 0:
+            os.close(fd)
     if len(raw) > MAX_FILE:
-        raise ValueError(f"{path.name} is larger than {MAX_FILE} bytes")
+        raise ValueError(f"{parts[-1]} is larger than {MAX_FILE} bytes")
     return raw.decode()
 
 
@@ -263,7 +286,7 @@ def _block(text: str, name: str) -> str | None:
 def nextflow_config(root: Path) -> tuple[str | None, str | None, list[str]]:
     """The manifest's name and version and the profiles' names, read from `nextflow.config`
     without running it; `includeConfig` files are not followed (best effort)."""
-    text = _read(root / "nextflow.config")
+    text = _read(root, "nextflow.config")
     if text is None:
         return None, None, []
     strings: list[str] = []
@@ -310,14 +333,14 @@ def _type(value: Any) -> dict[str, Any]:
 
 
 def schema_of(root: Path) -> tuple[dict[str, Any] | None, SchemaSource]:
-    text = _read(root / "nextflow_schema.json")
+    text = _read(root, "nextflow_schema.json")
     if text is not None:
         return _object(json.loads(text), "nextflow_schema.json"), "nextflow_schema.json"
     for rel in SMK_SCHEMAS:
-        text = _read(root / rel)
+        text = _read(root, *rel.split("/"))
         if text is not None:
             return _object(load_yaml(text), rel), "config.schema.yaml"
-    text = _read(root / "config" / "config.yaml")
+    text = _read(root, "config", "config.yaml")
     if text is not None:
         config = _object(load_yaml(text), "config/config.yaml")
         props = {str(k): _type(v) for k, v in config.items()}
