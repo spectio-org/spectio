@@ -14,34 +14,48 @@
 body{margin:0}
 .sp-item:hover{background:#F7F7FB}
 .sp-item:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.sp-fold{width:36px;height:36px;border:none;padding:0;border-radius:11px;background:transparent;box-shadow:inset 0 0 0 1px #DFE1EA;color:#4D5065;display:flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0}
+.sp-fold:hover{background:#F1F2F6;color:#0F1020}
+.sp-fold:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.sp-sr{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
 </style>
 </helmet>
 <div style="height: 100%; min-height: 560px; font-family: 'Inter', system-ui, sans-serif; color: #0F1020;">
-  <div style="width: 236px; height: 100%; box-sizing: border-box; padding: 0 10px 10px;">
+  <div style="width: {{w}}; height: 100%; box-sizing: border-box; padding: 0 10px 10px;">
     <nav aria-label="Main" style="height: 100%; box-sizing: border-box; background: #FFFFFF; border-radius: 22px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11), 0 1px 2px rgba(15,16,32,0.05), 0 10px 28px -18px rgba(15,16,32,0.18); padding: 14px 12px 12px; display: flex; flex-direction: column; gap: 6px; overflow: hidden;">
+      <div style="display: flex; align-items: center; justify-content: {{headJustify}}; min-height: 36px; padding: 0 0 0 {{headPad}}; margin-bottom: 4px;">
+        <sc-if value="{{open}}" hint-placeholder-val="{{true}}"><span style="font-size: 11px; font-weight: 600; letter-spacing: 0.08em; color: #4D5065;">WORKSPACE</span></sc-if>
+        <button type="button" class="sp-fold" aria-expanded="{{expandedAttr}}" aria-controls="lite-nav-items" aria-label="{{foldLabel}}">
+          <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{foldIcon}}"/></svg>
+        </button>
+      </div>
+      <div id="lite-nav-items" style="display: flex; flex-direction: column; gap: 6px;">
       <sc-for list="{{items}}" as="it" hint-placeholder-count="3">
-        <a class="sp-item" href="{{it.href}}" aria-current="{{it.cur}}" style="position: relative; display: flex; align-items: center; gap: 14px; min-height: 56px; padding: 0 16px; border-radius: 16px; text-decoration: none; color: {{it.fg}}; background: {{it.bg}};">
+        <a class="sp-item" href="{{it.href}}" aria-current="{{it.cur}}" style="position: relative; display: flex; align-items: center; justify-content: {{it.justify}}; gap: 14px; min-height: 56px; padding: 0 {{it.pad}}; border-radius: 16px; text-decoration: none; color: {{it.fg}}; background: {{it.bg}};">
           <svg width="25" height="25" viewBox="0 0 24 24" fill="none" stroke="{{it.color}}" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="{{it.icon}}"/></svg>
-          <span style="flex-grow: 1; font-size: 16px; font-weight: 500; white-space: nowrap;">{{it.label}}</span>
+          <span class="{{it.labelClass}}" style="flex-grow: 1; font-size: 16px; font-weight: 500; white-space: nowrap;">{{it.label}}</span>
           <sc-if value="{{it.hasCount}}" hint-placeholder-val="{{false}}">
-            <span aria-label="{{it.countLabel}}" style="min-width: 24px; height: 24px; padding: 0 7px; box-sizing: border-box; border-radius: 12px; background: #EAF2FE; color: #1D5FC9; font-size: 12.5px; font-weight: 600; display: flex; align-items: center; justify-content: center;">{{it.count}}</span>
+            <span style="min-width: {{it.countSize}}; height: {{it.countSize}}; padding: 0 {{it.countPad}}; box-sizing: border-box; border-radius: 12px; background: #EAF2FE; color: #1D5FC9; font-size: {{it.countFont}}; font-weight: 600; display: flex; align-items: center; justify-content: center; {{it.countPos}}"><span aria-hidden="true">{{it.count}}</span><span class="sp-sr">{{it.countLabel}}</span></span>
           </sc-if>
         </a>
       </sc-for>
+      </div>
       <div style="flex-grow: 1;"></div>
       <div style="height: 1px; background: #EEEFF5; margin: 0 4px 6px;"></div>
-      <div style="display: flex; flex-direction: column; align-items: stretch; gap: 6px; font-size: 12.5px; padding: 0 4px;">
-        <span style="display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 999px; background: #E8F6EF; color: #157A4B; font-weight: 600;"><span style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63; flex-shrink: 0;"></span>Spectio 0.0.1 · online</span>
-        <span style="padding: 0 12px; color: #4D5065; line-height: 1.45;">Server on {{node}} · your account {{account}}</span>
+      <div style="display: flex; flex-direction: column; align-items: {{footAlign}}; gap: 6px; font-size: 12.5px; padding: 0 4px;">
+        <span style="display: flex; align-items: center; gap: 8px; padding: 6px {{pillPad}}; border-radius: 999px; background: #E8F6EF; color: #157A4B; font-weight: 600;"><span aria-hidden="true" style="width: 8px; height: 8px; border-radius: 4px; background: #1F9D63; flex-shrink: 0;"></span><span class="{{txtClass}}">Spectio 0.0.1 · online</span></span>
+        <span class="{{txtClass}}" style="padding: 0 12px; color: #4D5065; line-height: 1.45;">SLURM · server on {{node}} · your account {{account}}</span>
       </div>
     </nav>
   </div>
 </div>
 </x-dc>
-<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","runs","launch"],"default":"runs"},"$preview":{"width":236,"height":900}}'>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","runs","launch"],"default":"runs"},"collapsed":{"editor":"boolean","default":false},"$preview":{"width":236,"height":900}}'>
 class Component extends DCLogic {
 renderVals() {
   const active = this.props.active ?? 'runs';
+  // Folded: an 88 px rail of icons; labels stay in the accessibility tree (sp-sr), so no link loses its name.
+  const open = !this.props.collapsed;
   const defs = [
     ['home', 'Home', 'LiteHome.dc.html', 'M4 13h7V4H4z M13 20h7v-9h-7z M13 4h7v5h-7z M4 20h7v-5H4z', '#5A4FCF', '#F2F1FB'],
     ['runs', 'Runs', 'LiteRuns.dc.html', 'M5 4l14 8-14 8z', '#7750D4', '#F6F2FE'],
@@ -49,9 +63,17 @@ renderVals() {
   ];
   const items = defs.map(([id, label, href, icon, color, tint]) => {
     const on = id === active;
-    return { label, href, icon, color, cur: on ? 'page' : 'false', bg: on ? tint : 'transparent', fg: on ? '#0F1020' : '#22253A', hasCount: id === 'runs', count: 6, countLabel: '6 active runs' };
+    return { label, href, icon, color, cur: on ? 'page' : 'false', bg: on ? tint : 'transparent', fg: on ? '#0F1020' : '#22253A',
+      hasCount: id === 'runs', count: 6, countLabel: ', 6 active runs',
+      justify: open ? 'flex-start' : 'center', pad: open ? '16px' : '0', labelClass: open ? '' : 'sp-sr',
+      countSize: open ? '24px' : '18px', countPad: open ? '7px' : '5px', countFont: open ? '12.5px' : '11px',
+      countPos: open ? '' : 'position: absolute; top: 5px; right: 5px;' };
   });
-  return { items, node: 'login1', account: 'amartin' };
+  return { items, open, w: open ? '236px' : '88px', node: 'login1', account: 'amartin',
+    expandedAttr: open ? 'true' : 'false', foldLabel: open ? 'Fold the sidebar' : 'Unfold the sidebar',
+    foldIcon: open ? 'M4 5h16v14H4z M9 5v14 M16 10l-2 2 2 2' : 'M4 5h16v14H4z M9 5v14 M14 10l2 2-2 2',
+    headJustify: open ? 'space-between' : 'center', headPad: open ? '12px' : '0',
+    footAlign: open ? 'stretch' : 'center', pillPad: open ? '12px' : '8px', txtClass: open ? '' : 'sp-sr' };
 }
 }
 </script>
