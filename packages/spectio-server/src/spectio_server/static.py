@@ -17,6 +17,7 @@ from fastapi import FastAPI
 from fastapi.responses import Response
 
 from spectio_server.api.problems import not_found
+from spectio_server.api.workflows import _open
 
 # TODO(P1 Task 21): the wheel ships the screens as package data; read them from there first.
 DIST = Path(__file__).resolve().parents[4] / "web" / "dist"
@@ -42,23 +43,16 @@ NOT_BUILT = (
 
 
 def read(root: Path, *parts: str) -> bytes | None:
-    """A regular file under `root`, reached through no symlink, or None."""
-    flags = os.O_RDONLY | os.O_NOFOLLOW | os.O_CLOEXEC
+    """A regular file under `root`, reached through no symlink (`root` included), or None."""
     try:
-        fd = os.open(root, flags | os.O_DIRECTORY)
+        fd = _open(root.parent, root.name, *parts)
     except OSError:
         return None
-    try:
-        for part in parts[:-1]:
-            fd, old = os.open(part, flags | os.O_DIRECTORY, dir_fd=fd), fd
-            os.close(old)
-        file = os.open(parts[-1], flags | os.O_NONBLOCK, dir_fd=fd)  # a FIFO does not block
-        with os.fdopen(file, "rb") as f:
-            return f.read() if stat.S_ISREG(os.fstat(f.fileno()).st_mode) else None
-    except OSError:
-        return None
-    finally:
-        os.close(fd)
+    with os.fdopen(fd, "rb") as f:
+        try:
+            return f.read() if stat.S_ISREG(os.fstat(fd).st_mode) else None
+        except OSError:
+            return None
 
 
 def built(dist: Path) -> bool:
