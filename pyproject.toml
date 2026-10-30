@@ -66,8 +66,9 @@ markers = ["engines: runs a real workflow engine (pipelines-synthetic.yml)"]
 root_packages = ["spectio", "spectio_server", "spectio_sdk"]
 include_external_packages = true
 
-# The CLI commands that need the server (P1 Task 8: init, doctor) import one module of it,
-# spectio_server.bootstrap, inside the command, so that `spectio` alone still imports and runs;
+# The CLI commands that need the server (P1 Task 8: init, doctor; Task 11: serve) import one
+# module of it each, spectio_server.bootstrap or spectio_server.serve, inside the command, so
+# that `spectio` alone still imports and runs;
 # these are the only edges the two contracts below ignore. The runner never reaches them: it
 # may not import the CLI (third contract).
 [[tool.importlinter.contracts]]
@@ -78,6 +79,7 @@ forbidden_modules = ["spectio_server"]
 ignore_imports = [
   "spectio.cli.init -> spectio_server.bootstrap",
   "spectio.cli.doctor -> spectio_server.bootstrap",
+  "spectio.cli.serve -> spectio_server.serve",
 ]
 
 [[tool.importlinter.contracts]]
@@ -88,6 +90,7 @@ forbidden_modules = ["fastapi", "sqlalchemy"]
 ignore_imports = [
   "spectio.cli.init -> spectio_server.bootstrap",
   "spectio.cli.doctor -> spectio_server.bootstrap",
+  "spectio.cli.serve -> spectio_server.serve",
 ]
 
 [[tool.importlinter.contracts]]

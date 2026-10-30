@@ -398,8 +398,22 @@ media:
       - docs/assets/diagrams/p3-t09-head-loop_dark.svg
       - docs/assets/diagrams/p3-t09-head-loop_light.png
       - docs/assets/diagrams/p3-t09-head-loop_dark.png
+  - id: p3-t11-serve
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t11_serve.py
+    outputs:
+      - docs/assets/diagrams/p3-t11-serve_light.svg
+      - docs/assets/diagrams/p3-t11-serve_dark.svg
+      - docs/assets/diagrams/p3-t11-serve_light.png
+      - docs/assets/diagrams/p3-t11-serve_dark.png
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines
     generator: python3 tools/media/cast.py tools/media/casts/spectio-init-doctor.yaml
     outputs: [docs/assets/casts/spectio-init-doctor.cast]
+  - id: spectio-serve
+    kind: cast
+    # the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines,
+    # under the demo host name demo-hpc-login1 (its own UTS namespace: root or user namespaces)
+    generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-serve.yaml'
+    outputs: [docs/assets/casts/spectio-serve.cast]

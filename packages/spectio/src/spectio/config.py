@@ -25,6 +25,7 @@ from pydantic_settings import (
 
 NF_SPECTIO_VERSION = "0.0.1"  # the nf-spectio the wheel carries (engine-bridges/nf-spectio)
 DEFAULT_PORT = 8080  # architecture §7.3
+LOOPBACK = "127.0.0.1"  # the only address 0.0.1 listens on (dev-env §15.3 req. 1)
 
 
 def default_data_dir() -> Path:
@@ -67,6 +68,13 @@ class EngineOpts(_Model):
     extra_args: dict[Literal["nextflow", "snakemake"], list[str]] = {}  # per engine
 
 
+class ServerOpts(_Model):
+    """`host` exists only so that a value other than 127.0.0.1 is refused by name: `spectio
+    serve` aborts on it (dev-env §15.3 req. 1); there is no `--host` flag."""
+
+    host: str = LOOPBACK
+
+
 class RunnerOpts(_Model):
     head_watch_s: Seconds = 5
     spool_s: Seconds = 2
@@ -79,6 +87,7 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_RUNS_ROOT": ("runs_root",),
     "SPECTIO_PORT": ("port",),
     "SPECTIO_EXECUTOR": ("executor",),
+    "SPECTIO_SERVER_HOST": ("server", "host"),
     "SPECTIO_SLURM_PARTITION": ("slurm", "partition"),
     "SPECTIO_SLURM_ACCOUNT": ("slurm", "account"),
     "SPECTIO_ENGINES_NEXTFLOW_CMD": ("engines", "nextflow_cmd"),
@@ -119,6 +128,7 @@ class Settings(BaseSettings):
     port: int = Field(DEFAULT_PORT, ge=1024, le=65535)
     executor: Literal["slurm", "local"] = "slurm"  # local: P1 Assumption 23
     host: str | None = None  # the login node spectio init ran on (the host pin)
+    server: ServerOpts = ServerOpts()
     slurm: SlurmOpts = SlurmOpts()
     engines: EngineOpts = EngineOpts()
     runner: RunnerOpts = RunnerOpts()
@@ -149,8 +159,10 @@ def _toml_value(value: Any) -> str:
 
 
 def render_toml(settings: Settings) -> str:
-    """`spectio.toml` for `settings`: unset values left out, and no `[slurm]` in local mode."""
+    """`spectio.toml` for `settings`: unset values left out, no `[server]`, and no `[slurm]` in
+    local mode."""
     data = settings.model_dump(mode="json", exclude_none=True)
+    del data["server"]  # its one allowed value is the default (dev-env §15.3 req. 1)
     if settings.executor == "local":
         del data["slurm"]
     top = [f"{k} = {_toml_value(v)}" for k, v in data.items() if not isinstance(v, dict)]
