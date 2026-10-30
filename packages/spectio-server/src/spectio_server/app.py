@@ -8,6 +8,9 @@ a cluster node or a shared one (`shared_host`, SEC-P3T17-06): kind `local` is a 
 value, which can be set on a login node. The Host allow-list and the write checks (dev-env §15.3
 req. 4 and 7) run on every request already (`api.browser`). The generated docs stay off: the
 OpenAPI document is a file, `openapi/0.0.1.json`, written from `app.openapi()` (Task 18).
+
+The screens (`web/dist`, Task 19) follow the API's rule: served at `/` when the API is mounted,
+else `/` stays this plain page and says why (`static`). TODO(P1 Task 16): behind the session.
 """
 
 import os
@@ -20,6 +23,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from spectio.config import Settings
+from spectio_server import static
 from spectio_server.api import (
     browser,
     cancel,
@@ -34,7 +38,8 @@ from spectio_server.store.writer import Writer
 
 PLACEHOLDER = (
     "Spectio {version} is running.\n"
-    "Sign-in comes with P1 Task 12 and the screens with Task 19: this build is local-only.\n"
+    "Sign-in comes with P1 Task 12: this build is local-only.\n"
+    "{why}\n"
 )
 API = "/api/v1"
 NO_API = (
@@ -88,7 +93,7 @@ def no_api_reason(settings: Settings) -> str | None:
     return None
 
 
-def create_app(settings: Settings, writer: Writer) -> FastAPI:
+def create_app(settings: Settings, writer: Writer, web_dir: Path = static.DIST) -> FastAPI:
     app = FastAPI(
         title="Spectio",
         version=version("spectio"),
@@ -99,16 +104,21 @@ def create_app(settings: Settings, writer: Writer) -> FastAPI:
     app.state.settings = settings
     app.state.writer = writer
     app.state.engine_versions = workflows.engine_versions(settings)
-    page = PLACEHOLDER.format(version=version("spectio"))
     problems.install(app)
     browser.install(app)  # Host allow-list, cross-site and write checks (§15.3 req. 4, 7)
 
-    @app.get("/", response_class=PlainTextResponse)
-    def home() -> str:
-        return page
-
     reason = no_api_reason(settings)  # one scan: the start text reads it back (CR-P3T17-04)
     app.state.no_api = reason
+    if reason is None and static.built(web_dir):
+        static.install(app, web_dir)
+    else:
+        why = static.NOT_BUILT if reason is None else f"{reason} The screens are served with it."
+        page = PLACEHOLDER.format(version=version("spectio"), why=why)
+
+        @app.get("/", response_class=PlainTextResponse, include_in_schema=False)
+        def home() -> str:
+            return page
+
     if reason is None:
         app.state.stream = stream.Stream(writer.engine)
         writer.on_commit = app.state.stream.notify  # the writer thread, after each commit

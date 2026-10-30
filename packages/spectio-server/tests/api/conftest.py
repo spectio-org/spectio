@@ -49,8 +49,9 @@ def writer(settings: Settings) -> Iterator[Writer]:
     engine.dispose()
 
 
-def client_for(settings: Settings, writer: Writer) -> TestClient:
-    app = create_app(settings, writer)
+def client_for(settings: Settings, writer: Writer, web_dir: Path | None = None) -> TestClient:
+    """`web_dir` is the built screens (P1 Task 19); none by default, so `/` is the plain page."""
+    app = create_app(settings, writer, web_dir=web_dir or Path("/nonexistent/web/dist"))
     app.state.engine_versions = lambda: dict(ENGINE_VERSIONS)  # no login shell in the tests
     origin = f"http://127.0.0.1:{settings.port}"  # what a browser on the loopback sends (req. 4, 7)
     return TestClient(app, base_url=origin, headers={"Origin": origin})
