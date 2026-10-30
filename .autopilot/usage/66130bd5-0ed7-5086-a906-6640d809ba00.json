@@ -2,15 +2,15 @@
  "agents": [
   {
    "tokens": {
-    "input": 524,
-    "cache_write": 533747,
-    "cache_read": 46651057,
-    "output": 101446
+    "input": 550,
+    "cache_write": 549549,
+    "cache_read": 48797023,
+    "output": 105464
    },
-   "calls": 222,
+   "calls": 231,
    "model": "claude-opus-5-5",
    "start": "2026-10-29T22:16:54.188Z",
-   "end": "2026-10-30T00:19:42.149Z",
+   "end": "2026-10-30T00:24:52.141Z",
    "id": "66130bd5-0ed7-5086-a906-6640d809ba00",
    "kind": "main",
    "type": "session",
@@ -154,15 +154,49 @@
   },
   {
    "tokens": {
-    "input": 138,
-    "cache_write": 215643,
-    "cache_read": 9793159,
-    "output": 78632
+    "input": 10,
+    "cache_write": 23623,
+    "cache_read": 89705,
+    "output": 7786
    },
-   "calls": 66,
+   "calls": 5,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-30T00:20:03.888Z",
+   "end": "2026-10-30T00:21:24.224Z",
+   "id": "a664a3a1781d799c8",
+   "kind": "subagent",
+   "type": "code-reviewer",
+   "label": "Code verify round 3 Task 2",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 26,
+    "cache_write": 37899,
+    "cache_read": 361501,
+    "output": 14238
+   },
+   "calls": 12,
+   "model": "claude-opus-5-5",
+   "start": "2026-10-30T00:20:03.897Z",
+   "end": "2026-10-30T00:24:48.770Z",
+   "id": "a69a3e426d1bd34d1",
+   "kind": "subagent",
+   "type": "security-reviewer",
+   "label": "Security verify round 3 Task 2",
+   "workflow": null
+  },
+  {
+   "tokens": {
+    "input": 162,
+    "cache_write": 229088,
+    "cache_read": 12258681,
+    "output": 85857
+   },
+   "calls": 77,
    "model": "claude-opus-5-5",
    "start": "2026-10-29T23:58:38.785Z",
-   "end": "2026-10-30T00:19:40.308Z",
+   "end": "2026-10-30T00:23:46.448Z",
    "id": "a798614269b129e89",
    "kind": "subagent",
    "type": "general-purpose",
