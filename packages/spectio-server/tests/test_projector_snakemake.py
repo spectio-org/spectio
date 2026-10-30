@@ -20,7 +20,7 @@ from sqlalchemy import event as sa_event
 
 from spectio.runner.spool import read_spool
 from spectio.runner.types import Failure, HeadReport, SpoolBatch
-from spectio_sdk.events import SpoolEvent
+from spectio_sdk.events import DATA_MODELS, SnakemakeJobInfo, SpoolEvent, parse_data
 from spectio_server.projector.ingest import apply_head_report, ingest
 from spectio_server.store.db import open_db
 from spectio_server.store.schema import (
@@ -42,6 +42,7 @@ SMK_FILE = "snakemake-logger-spectio-1-0001.jsonl"
 NOW = datetime(2026, 10, 30, tzinfo=UTC)
 FLAKY = "snakemake-9.27.1_checkpoint_flaky_retry.spool.jsonl"
 TOOLERR = "snakemake-9.27.1_tool_error.spool.jsonl"
+TOOLERR_RERUN = "snakemake-9.27.1_tool_error_rerun.spool.jsonl"
 
 
 @pytest.fixture
@@ -258,6 +259,21 @@ def test_start_from_a_head_report_is_replaced_by_the_engine_time(
     assert run_row(engine).started_at == datetime(2026, 10, 28, 7, 0, 1, tzinfo=UTC)
 
 
+def test_a_later_launch_keeps_the_first_start(engine: Engine, writer: Writer) -> None:
+    # api §7: started_at is the first queued -> running; the duration covers all launches.
+    ingest_events(writer, event(1, "workflow_started", time="2026-10-28T07:00:01Z"))
+    writer.submit(
+        lambda conn: conn.execute(
+            insert(launches).values(id="lch_2", run_id=RUN_ID, n=2, created_at=NOW)
+        )
+    ).result()
+    second = event(2, "workflow_started", time="2026-10-28T09:00:00Z").model_copy(
+        update={"launch": 2, "id": "evt_s2b"}
+    )
+    writer.submit(lambda conn: ingest(conn, "lch_2", SpoolBatch([second], {}, Counter()))).result()
+    assert run_row(engine).started_at == datetime(2026, 10, 28, 7, 0, 1, tzinfo=UTC)
+
+
 # --- The mapping (P1 Assumption 16) --------------------------------------------------------
 
 
@@ -401,6 +417,28 @@ def test_failure_message_hides_a_quoted_command(engine: Engine, writer: Writer) 
     assert failure["class"] == "tool_error"
     assert "s3cret" not in failure["message"]
     assert failure["message"].endswith("Command «hidden» returned non-zero exit status 1.")
+
+
+@pytest.mark.parametrize("fixture", [FLAKY, TOOLERR, TOOLERR_RERUN])
+def test_no_parsed_record_holds_the_fixture_shell_text(fixture: str) -> None:
+    # SEC-P3T1-08: every free-text field the allow-list keeps (error.msg, job_info.reason) is
+    # checked on real records; log and job_error `msg` are not in the allow-list.
+    kept = []
+    for line in (FIXTURES / fixture).read_text().splitlines():
+        ev = SpoolEvent.model_validate(json.loads(line))
+        if ev.type in DATA_MODELS:
+            kept.append(json.dumps(parse_data(ev).model_dump(mode="json")))
+    assert kept
+    assert not [k for k in kept if "synth.py" in k or "SPECTIO_ATTEMPT" in k]
+
+
+def test_params_changed_reason_keeps_the_label_only() -> None:
+    reason = (
+        "Missing output files: a.tsv; Params have changed since last execution: "
+        "before: 'export TOKEN=s3cret; run' now: 'true' "
+    )
+    info = SnakemakeJobInfo.model_validate({"jobid": 1, "rule_name": "r", "reason": reason})
+    assert info.reason == "Missing output files: a.tsv; Params have changed since last execution"
 
 
 def test_snakemake_queries_use_indexes(engine: Engine, writer: Writer) -> None:

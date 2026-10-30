@@ -293,6 +293,9 @@ class SnakemakeRulegraph(_Data):
     rulegraph: dict[str, JsonValue] = {}
 
 
+_PARAMS_CHANGED = "Params have changed since last execution"
+
+
 class SnakemakeJobInfo(_Data):
     _verbatim_keys = frozenset({"wildcards"})  # a wildcard may be named `env` (SEC-P3T1-12)
 
@@ -310,6 +313,17 @@ class SnakemakeJobInfo(_Data):
     priority: SignedInt64 | None = None
     threads: Int64 | None = None
     resources: dict[str, JsonValue] = {}
+
+    @field_validator("reason")
+    @classmethod
+    def _cut_params_detail(cls, value: str | None) -> str | None:
+        # The detail quotes the params' values before and now, which can be a shell command
+        # with `export` values (SEC-P3T1-08; fixture snakemake-9.27.1_tool_error_rerun). It is
+        # cut, and everything after it: the quoted values may hold the "; " separator.
+        if value is None:
+            return None
+        head, marker, _ = value.partition(_PARAMS_CHANGED)
+        return head + marker
 
     @field_validator("resources")
     @classmethod

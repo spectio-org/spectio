@@ -107,8 +107,9 @@ class Projection:
 
     def set_started(self) -> None:
         """The engine says the workflow began (`onFlowBegin`, `workflow_started`): its time is
-        the run's start, even when a head report started the run first."""
-        if self.event_time is not None:
+        the run's start, even when a head report started the run first. Only the first
+        launch's: a later launch (Continue, resume) keeps it, as api §7 counts all launches."""
+        if self.event_time is not None and self.launch_n == 1:
             self.conn.execute(
                 update(runs).where(runs.c.id == self.run_id).values(started_at=self.event_time)
             )
