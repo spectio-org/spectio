@@ -66,17 +66,35 @@ markers = ["engines: runs a real workflow engine (pipelines-synthetic.yml)"]
 root_packages = ["spectio", "spectio_server", "spectio_sdk"]
 include_external_packages = true
 
+# The CLI commands that need the server (P1 Task 8: init, doctor) import one module of it,
+# spectio_server.bootstrap, inside the command, so that `spectio` alone still imports and runs;
+# these are the only edges the two contracts below ignore. The runner never reaches them: it
+# may not import the CLI (third contract).
 [[tool.importlinter.contracts]]
 name = "The runner never imports the server (architecture §6)"
 type = "forbidden"
 source_modules = ["spectio"]
 forbidden_modules = ["spectio_server"]
+ignore_imports = [
+  "spectio.cli.init -> spectio_server.bootstrap",
+  "spectio.cli.doctor -> spectio_server.bootstrap",
+]
 
 [[tool.importlinter.contracts]]
 name = "spectio has no FastAPI and no SQLAlchemy (architecture §6)"
 type = "forbidden"
 source_modules = ["spectio"]
 forbidden_modules = ["fastapi", "sqlalchemy"]
+ignore_imports = [
+  "spectio.cli.init -> spectio_server.bootstrap",
+  "spectio.cli.doctor -> spectio_server.bootstrap",
+]
+
+[[tool.importlinter.contracts]]
+name = "The runner never imports the CLI, the only importer of the server"
+type = "forbidden"
+source_modules = ["spectio.runner", "spectio.config", "spectio.loginshell"]
+forbidden_modules = ["spectio.cli"]
 
 [[tool.importlinter.contracts]]
 name = "spectio-sdk imports neither spectio, spectio_server, FastAPI nor SQLAlchemy (architecture §6)"
