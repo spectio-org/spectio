@@ -58,11 +58,15 @@ class StoreSink:
         )
 
     def active_launches(self) -> list[LaunchRef]:
-        """The launches of every run that has not ended."""
+        """The launches of every run that has not ended, and of every head not yet reported
+        ended: a run can end (its engine's own end, a cancel) before its head, which the runner
+        keeps watching, or `forget` would drop a SIGKILL still due (CR-P3T09-R5-03)."""
+        head_left = launches.c.head_native_id.is_not(None) & launches.c.exited_at.is_(None)
+        active = or_(runs.c.state.not_in(TERMINAL), head_left)
         return self._do(
             lambda conn: [
                 ref
-                for row in conn.execute(_launch_query().where(runs.c.state.not_in(TERMINAL)))
+                for row in conn.execute(_launch_query().where(active))
                 if (ref := self._ref(row)) is not None
             ]
         )

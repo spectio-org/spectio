@@ -1,0 +1,8 @@
+outdir: results
+chunks: 0
+scale: 1.5
+dry: false
+samples: [a, b]
+resources:
+  mem_mb: 512
+nothing: null

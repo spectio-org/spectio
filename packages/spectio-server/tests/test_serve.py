@@ -14,12 +14,15 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from fastapi import FastAPI
 from sqlalchemy import func, insert, select, update
 from typer.testing import CliRunner
 
 from spectio.cli.main import app
 from spectio.config import Settings
 from spectio.runner.rundir import RunManifest, Workflow, make_run_dirs, write_run_manifest
+from spectio.runner.types import HeadReport
+from spectio_server import app as app_mod
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.rebuild import rebuild_index
 from spectio_server.serve import Booted, ServeError, boot, start_text, started
@@ -375,11 +378,26 @@ def test_cli_refusal_exits_2(settings: Settings) -> None:
 
 
 def test_serve_local_start_text(settings: Settings) -> None:
-    text = start_text(settings, "node1", "alice")
+    text = start_text(settings, "node1", "alice", None)  # the API decision is the caller's
     assert f"http://127.0.0.1:{settings.port}/" in text
     assert "on this machine" in text
     assert "ssh -N -L" not in text
     assert "P1 Task 12" in text  # no token link yet: local-only (inbox #80)
+    assert "shared" not in text
+    assert "looks shared" in start_text(settings, "node1", "alice", "This machine looks shared")
+
+
+def test_serve_decides_the_api_once(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The mounted routers and the start text come from one scan (CR-P3T17-04)."""
+    answers = iter([None, "a process of uid 1001 runs here"])  # a user logs in meanwhile
+    monkeypatch.setattr(app_mod, "shared_host", lambda: next(answers))
+    with started(settings) as server:
+        assert server.no_api is None
+        app = server.uvicorn.config.app
+        assert isinstance(app, FastAPI)
+        assert app.state.no_api is None  # the routers are mounted: no catch-all 404
+        assert all(getattr(r, "path", "") != "/api/v1/{path:path}" for r in app.routes)
+        assert "shared" not in start_text(settings, "node1", "alice", server.no_api)
 
 
 def test_serve_slurm_start_text_and_no_runner(
@@ -387,10 +405,11 @@ def test_serve_slurm_start_text_and_no_runner(
 ) -> None:
     slurm = settings.model_copy(update={"executor": "slurm"})
     port = settings.port
-    text = start_text(slurm, "login1", "alice")
+    text = start_text(slurm, "login1", "alice", None)
     assert f"ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} alice@login1" in text
     assert f"http://127.0.0.1:{port}/" in text
     assert "P1 Task 10" in text
+    assert "Tasks 12 to 16" in text  # no API off local mode (inbox #86)
     assert slurm.db_dir is not None
     with caplog.at_level(logging.WARNING):
         booted = boot(slurm, slurm.db_dir)
@@ -503,3 +522,62 @@ def test_missing_data_dir_refused(settings: Settings) -> None:
     settings.data_dir.rename(settings.data_dir.with_name("moved"))
     with pytest.raises(ServeError, match=str(settings.data_dir)), started(settings):
         pass
+
+
+def test_launch_active_until_the_ended_report(settings: Settings, writer: Writer) -> None:
+    """CR-P3T09-R5-03: a launch whose run has ended stays active while its head has not been
+    reported ended, so that the runner never forgets a SIGKILL still due."""
+    root = settings.runs_root
+    head_files(make_run(root, run_id(1)), code=None)
+    rebuild_index(writer, root)
+    writer.submit(lambda c: c.execute(update(runs).values(state="cancelled"))).result()
+    sink = StoreSink(writer, root)
+    (active,) = sink.active_launches()  # the run is terminal, its head not reported ended
+    sink.head_report(
+        active.launch_id, HeadReport("running", active.native_id, None, None, False, None)
+    )
+    assert [r.launch_id for r in sink.active_launches()] == [active.launch_id]
+    ended = HeadReport("exited", active.native_id, None, 0, True, None)
+    sink.head_report(active.launch_id, ended)
+    assert sink.active_launches() == []
+
+
+@pytest.mark.parametrize(
+    ("location", "added"),
+    [
+        ("https://github.com/nf-core/rnaseq", 1),
+        ("ssh://git@gitlab.example.org/lab/pipeline.git", 1),
+        ("ext::sh -c touch% /tmp/pwned", 0),
+        ("file:///srv/git/pipeline.git", 0),
+        ("https://user:token@github.com/nf-core/rnaseq", 0),
+        ("relative/../dir", 0),
+    ],
+)
+def test_rebuild_git_location_import_rule(
+    settings: Settings, writer: Writer, location: str, added: int
+) -> None:
+    """SEC-P3T11-01 (r3): a rebuilt git location meets the import rule of the launch endpoint."""
+    root = settings.runs_root
+    paths = make_run_dirs(root, run_id(1))
+    manifest = RunManifest(
+        run_id=run_id(1),
+        name="from git",
+        workflow=Workflow(location=location, engine="nextflow", revision="v1"),
+        params={},
+        profiles=[],
+        created_at=datetime(2026, 10, 30, tzinfo=UTC),
+    )
+    write_run_manifest(paths.run_dir, manifest)
+    found = rebuild_index(writer, root)
+    assert (found.added, found.skipped) == (added, 1 - added)
+
+
+def test_rebuilt_queued_run_is_never_launched(settings: Settings, writer: Writer) -> None:
+    """SEC-P3T11-07: the rebuild writes no `launch` command; only the endpoint does."""
+    root = settings.runs_root
+    head_files(make_run(root, run_id(1)), code=None)
+    make_run(root, run_id(2))  # a manifest with no head: never launched from disk
+    rebuild_index(writer, root)
+    assert StoreSink(writer, root).lease_commands() == []
+    commands = writer.submit(lambda c: c.execute(select(runner_commands)).all()).result()
+    assert commands == []
