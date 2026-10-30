@@ -239,9 +239,11 @@ def load_yaml(text: str) -> Any:
 
 
 # An unterminated string or comment runs to the end, so no position is scanned twice
-# (SEC-P3T17-03: a rescan per quote was quadratic).
+# (SEC-P3T17-03: a rescan per quote was quadratic); a final lone backslash is part of it
+# (CR-P3T17-03).
 _TOKENS = re.compile(
-    r"'(?:\\.|[^'\\])*(?:'|\Z)|\"(?:\\.|[^\"\\])*(?:\"|\Z)|/\*.*?(?:\*/|\Z)|//[^\n]*", re.S
+    r"'(?:\\.|[^'\\])*+(?:'|\\?\Z)|\"(?:\\.|[^\"\\])*+(?:\"|\\?\Z)|/\*.*?(?:\*/|\Z)|//[^\n]*",
+    re.S,
 )
 
 
@@ -282,7 +284,9 @@ def nextflow_config(root: Path) -> tuple[str | None, str | None, list[str]]:
         return strings[int(m.group(1))] if m else None
 
     profiles, depth = [], 0
-    for m in re.finditer(r"([A-Za-z_][\w-]*)\s*\{|\{|\}", _block(code, "profiles") or ""):
+    for m in re.finditer(
+        r"(?<![\w-])([A-Za-z_][\w-]*+)\s*+\{|\{|\}", _block(code, "profiles") or ""
+    ):
         if m.group(0) == "}":
             depth -= 1
             continue

@@ -513,10 +513,24 @@ def test_launch_reaches_the_runner(
 # --- Untrusted pipeline files (SEC-P3T17-03, SEC-P3T17-04) -----------------------------------
 
 
-def test_inspect_unterminated_strings_linear(authed_client: TestClient, tmp_path: Path) -> None:
-    """A 1 MiB `'\\'\\'…` nextflow.config: each quote used to rescan to the end (quadratic)."""
+_N = (wf.MAX_FILE - 40) // 2
+
+
+@pytest.mark.parametrize(
+    "tail",
+    [
+        "'" + "\\'" * _N,
+        '"' + '\\"' * _N + "\\",  # a lone final backslash defeated the `\\Z` alternative
+        "profiles {\n" + "a" * (2 * _N) + "\n}",  # a long word rescanned from each character
+    ],
+    ids=["single-quotes", "trailing-backslash", "profiles-word"],
+)
+def test_inspect_unterminated_strings_linear(
+    authed_client: TestClient, tmp_path: Path, tail: str
+) -> None:
+    """A 1 MiB nextflow.config built to make the tokenizer or the profiles scan quadratic."""
     root = pipeline(tmp_path, "main.nf")
-    text = "manifest { name = 'x' }\n'" + "\\'" * ((wf.MAX_FILE - 30) // 2)
+    text = "manifest { name = 'x' }\n" + tail
     assert len(text) <= wf.MAX_FILE
     (root / "nextflow.config").write_text(text)
     started = time.monotonic()
