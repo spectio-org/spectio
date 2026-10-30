@@ -23,6 +23,14 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
 .cx-sum{font-family:'Inter',sans-serif;font-weight:400}
 .cx-btn[aria-expanded="true"] .cx-sum{display:none}
 .cx-btn[aria-expanded="true"] .cx-chev{transform:rotate(180deg)}
+input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-allowed}
+.eng{height:40px;padding:0 14px;border-radius:10px;border:1px solid #C4C7D4;background:#FFFFFF;color:#22253A;font:600 13px 'Inter',sans-serif;display:flex;align-items:center;gap:8px;cursor:pointer}
+.eng:hover{border-color:#9A9DB0}
+.eng[aria-pressed="true"]{background:#F4F1FD;border-color:#7750D4;box-shadow:inset 0 0 0 1px #7750D4;color:#4D368B}
+.eng .tick{display:none}.eng[aria-pressed="true"] .tick{display:block}
+.btn-go{height:44px;padding:0 22px;border:none;border-radius:12px;background:#7750D4;color:#FFFFFF;font:600 14px 'Inter',sans-serif;cursor:pointer;flex-shrink:0}
+.btn-go:disabled{background:#C4C7D4;cursor:not-allowed}
+.btn-load{flex-shrink:0;height:38px;padding:0 16px;border-radius:10px;border:none;background:#F6F2FE;color:#4D368B;font:600 13px 'Inter',sans-serif;cursor:pointer}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -30,27 +38,48 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
   <div style="min-height: 0; display: flex; flex-direction: column;"><dc-import name="LiteSidebar" active="launch" hint-size="236px,100%" style="display: block; flex: 1 1 auto; min-height: 0;"></dc-import></div>
     <main style="min-height: 0; overflow: auto; min-width: 0; padding: 8px 24px 32px 14px; box-sizing: border-box; display: flex; flex-direction: column; gap: 16px;">
 
-      <div style="display: flex; flex-direction: column; gap: 2px;">
-        <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Launch a workflow</h1>
-        <span style="font-size: 14px; color: #4D5065;">Type the path of a pipeline directory your account can read. Spectio detects the engine and builds the form from the pipeline's schema.</span>
+      <div style="display: flex; align-items: center; gap: 16px; flex-wrap: wrap;">
+        <span style="width: 48px; height: 48px; border-radius: 15px; background: #FDF2F5; color: #A54666; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12 M7 8l5-5 5 5 M5 21h14"/></svg>
+        </span>
+        <div style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 2px;">
+          <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Launch a workflow</h1>
+          <span style="font-size: 14px; color: #4D5065;">A directory or a Git repository: Spectio guesses the engine and builds the form from its schema.</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end;">
+          <span id="launch-why" role="status" style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">Fill the required field: samples</span>
+          <button type="button" class="btn-go" disabled aria-describedby="launch-why launch-what">Launch</button>
+        </div>
       </div>
 
-      <section class="cx" style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 20px;"><h2 id="h-pipeline" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><span style="min-width: 0;">Pipeline</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">rna-seq-star-deseq2 · Snakemake 9.27.1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1"><div style="display: flex; flex-direction: column; gap: 14px; margin-top: 8px;">
+      <section class="cx" style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 20px;"><h2 id="h-pipeline" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><span style="min-width: 0;">Pipeline</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">rna-seq-star-deseq2 v2.1.2 · Snakemake · slurm</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1"><div style="display: flex; flex-direction: column; gap: 14px; margin-top: 8px;">
         
-        <div style="display: flex; flex-direction: column; gap: 5px;">
-          <label for="f-location" style="font-size: 13px; font-weight: 600;">Pipeline directory (absolute path)</label>
-          <span style="display: flex; gap: 8px;">
-            <input id="f-location" value="/g/demo-lab/pipelines/rna-seq-star-deseq2" spellcheck="false" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; flex: 1 1 auto;">
-            <button type="button" style="flex-shrink: 0; height: 38px; padding: 0 16px; border-radius: 10px; border: none; background: #F6F2FE; color: #4D368B; font: 600 13px 'Inter', sans-serif; cursor: pointer;">Load</button>
-          </span>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start;">
+          <div style="flex: 999 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+            <label for="f-location" style="font-size: 13px; font-weight: 600;">Pipeline</label>
+            <input id="f-location" value="snakemake-workflows/rna-seq-star-deseq2" spellcheck="false" aria-describedby="f-location-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span id="f-location-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">An absolute path your account can read, a GitHub or nf-core name such as nf-core/rnaseq, or an https:// or ssh URL.</span>
+          </div>
+          <div style="flex: 1 1 220px; max-width: 260px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+            <label for="f-revision" style="font-size: 13px; font-weight: 600;">Revision <span style="font-weight: 400; color: #4D5065;">(Git only)</span></label>
+            <input id="f-revision" value="v2.1.2" spellcheck="false" aria-describedby="f-revision-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span id="f-revision-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">Tag, branch or commit.</span>
+          </div>
+          <button type="button" class="btn-load" style="margin-top: 24px;">Load</button>
         </div>
         <div role="status" style="display: flex; align-items: center; gap: 12px; border-radius: 12px; background: #F7F7FB; padding: 10px 12px; flex-wrap: wrap;">
-          <span style="width: 36px; height: 36px; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="22" height="22" alt="" style="display: block; object-fit: contain;"></span>
-          <span style="flex: 1 1 300px; display: flex; flex-direction: column; gap: 1px; min-width: 0;">
-            <span style="font-size: 14px; font-weight: 600;">rna-seq-star-deseq2 · Snakemake 9.27.1</span>
-            <span style="font-size: 12.5px; color: #4D5065;">workflow/Snakefile found · no version declared · form from workflow/schemas/config.schema.yaml</span>
+          <span style="width: 36px; height: 36px; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4D5065" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3v12 M18 9a3 3 0 1 0 0-.01 M6 21a3 3 0 1 0 0-.01 M18 9a9 9 0 0 1-9 9"/></svg></span>
+          <span style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+            <span style="font-size: 14px; font-weight: 600;">rna-seq-star-deseq2 · v2.1.2</span>
+            <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">Git repository https://github.com/snakemake-workflows/rna-seq-star-deseq2, fetched once for this revision · workflow/Snakefile found · form from workflow/schemas/config.schema.yaml</span>
           </span>
           <span style="font-size: 12.5px; font-weight: 600; color: #157A4B; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Loaded</span>
+        </div>
+        <div role="group" aria-labelledby="f-eng-l" style="display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap;">
+          <span id="f-eng-l" style="font-size: 13px; font-weight: 600; flex: 0 0 64px;">Engine</span>
+          <button type="button" class="eng" aria-pressed="false" aria-describedby="f-eng-why"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="16" height="16" alt="" style="display: block; object-fit: contain;">Nextflow</button>
+          <button type="button" class="eng" aria-pressed="true" aria-describedby="f-eng-why"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="16" height="16" alt="" style="display: block; object-fit: contain;">Snakemake</button>
+          <span id="f-eng-why" style="font-size: 12.5px; color: #4D5065;">Guessed from workflow/Snakefile · change it if the guess is wrong</span>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
           <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -141,7 +170,7 @@ input[aria-invalid="true"]{border-color:#DC3B3B;box-shadow:0 0 0 1px #DC3B3B}
               </div>
             </details>
           </sc-for>
-          <span style="font-size: 11.5px; color: #6E7287;">Data: keys, types and defaults shaped on the rna-seq-star-deseq2 config.schema.yaml [to be validated]; paths, values and the login node are fixture data.</span>
+          <span style="font-size: 11.5px; color: #6E7287;">Data: keys, types and defaults shaped on the rna-seq-star-deseq2 config.schema.yaml [to be validated]; the revision v2.1.2, paths, values, the login node and the two states below are fixture data.</span>
         </div></div></section>
 </section>
 
@@ -166,13 +195,74 @@ trimming:
   activate: true</pre>
             <span style="font-size: 11.5px; color: #A6A9BA;">Only values you set · written to the run directory and passed with --configfile</span>
           </div></div></section>
-          <div style="display: flex; flex-direction: column; gap: 6px;">
-            <button type="button" disabled aria-describedby="launch-why" style="height: 46px; border: none; border-radius: 12px; background: #C4C7D4; color: #FFFFFF; font: 600 14px 'Inter', sans-serif;">Launch</button>
-            <span id="launch-why" role="status" style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">Fill the required field: samples</span>
-          </div>
-          <span style="font-size: 12px; color: #4D5065;">Spectio does not check that files exist: the engine reads them when the run starts.</span>
+          <span id="launch-what" style="font-size: 12px; color: #4D5065;">Launch, at the top of the page, starts the engine in a new tmux session on login1. Spectio checks that workflow/Snakefile exists, not your data files: the engine reads them when the run starts.</span>
         </aside>
       </div>
+
+      <section aria-labelledby="h-states" style="border-top: 1px dashed #C4C7D4; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
+        <div style="display: flex; flex-direction: column; gap: 2px;">
+          <h2 id="h-states" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Pipeline section: other states</h2>
+          <span style="font-size: 12.5px; color: #4D5065;">Drawn side by side for the review; the page shows one state at a time. The engine guess: main.nf means Nextflow, Snakefile or workflow/Snakefile means Snakemake; both or neither, no guess.</span>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 14px; align-items: start;">
+        <section aria-labelledby="s1-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+          <h3 id="s1-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">No guess: neither file found</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start;">
+          <div style="flex: 999 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+            <label for="s1-location" style="font-size: 13px; font-weight: 600;">Pipeline</label>
+            <input id="s1-location" value="/g/demo-lab/pipelines/rnaseq-scripts" spellcheck="false" aria-describedby="s1-location-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span id="s1-location-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">An absolute path your account can read, a GitHub or nf-core name such as nf-core/rnaseq, or an https:// or ssh URL.</span>
+          </div>
+          <div style="flex: 1 1 220px; max-width: 260px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+            <label for="s1-revision" style="font-size: 13px; font-weight: 600;">Revision <span style="font-weight: 400; color: #4D5065;">(Git only)</span></label>
+            <input id="s1-revision" placeholder="tag, branch or commit" disabled spellcheck="false" aria-describedby="s1-revision-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span id="s1-revision-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">Read as a directory: there is no revision to give.</span>
+          </div>
+          <button type="button" class="btn-load" aria-describedby="s1-h" style="margin-top: 24px;">Load</button>
+        </div>
+        <div role="status" style="display: flex; align-items: center; gap: 12px; border-radius: 12px; background: #FEF7EC; padding: 10px 12px; flex-wrap: wrap;">
+          <span style="width: 36px; height: 36px; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg></span>
+          <span style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+            <span style="font-size: 14px; font-weight: 600;">rnaseq-scripts</span>
+            <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">A directory on this machine · no main.nf, no Snakefile, no workflow/Snakefile: Spectio does not guess. Launch checks that the chosen engine's file exists, so check the path.</span>
+          </span>
+          
+        </div>
+        <div role="group" aria-labelledby="s1-eng-l s1-h" style="display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap;">
+          <span id="s1-eng-l" style="font-size: 13px; font-weight: 600; flex: 0 0 64px;">Engine</span>
+          <button type="button" class="eng" aria-pressed="false" aria-describedby="s1-eng-why"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="16" height="16" alt="" style="display: block; object-fit: contain;">Nextflow</button>
+          <button type="button" class="eng" aria-pressed="false" aria-describedby="s1-eng-why"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="16" height="16" alt="" style="display: block; object-fit: contain;">Snakemake</button>
+          <span id="s1-eng-why" style="font-size: 12.5px; font-weight: 600; color: #8F5806;">No guess: choose the engine</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid #ECEDF2; padding-top: 12px;">
+          <button type="button" class="btn-go" disabled aria-describedby="s1-go-why s1-h" style="height: 40px;">Launch</button>
+          <span id="s1-go-why" style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">Choose the engine</span>
+        </div>
+        </section>
+        <section aria-labelledby="s2-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+          <h3 id="s2-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Refused: a revision that starts with -</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start;">
+          <div style="flex: 999 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+            <label for="s2-location" style="font-size: 13px; font-weight: 600;">Pipeline</label>
+            <input id="s2-location" value="snakemake-workflows/rna-seq-star-deseq2" spellcheck="false" aria-describedby="s2-location-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span id="s2-location-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">An absolute path your account can read, a GitHub or nf-core name such as nf-core/rnaseq, or an https:// or ssh URL.</span>
+          </div>
+          <div style="flex: 1 1 220px; max-width: 260px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+            <label for="s2-revision" style="font-size: 13px; font-weight: 600;">Revision <span style="font-weight: 400; color: #4D5065;">(Git only)</span></label>
+            <input id="s2-revision" value="--upload-pack=x" spellcheck="false" aria-describedby="s2-revision-help s2-revision-err" aria-invalid="true" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span id="s2-revision-err" style="font-size: 12.5px; font-weight: 600; color: #B02A2A; line-height: 1.45;">Refused: a revision cannot start with -. Type a tag, branch or commit.</span>
+            <span id="s2-revision-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">Tag, branch or commit.</span>
+          </div>
+          <button type="button" class="btn-load" aria-describedby="s2-h" style="margin-top: 24px;">Load</button>
+        </div>
+        <span style="font-size: 12.5px; color: #4D5065;">Nothing was fetched or loaded. The same rule refuses a file:// or ext:: URL in the Pipeline field.</span>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid #ECEDF2; padding-top: 12px;">
+          <button type="button" class="btn-go" disabled aria-describedby="s2-go-why s2-h" style="height: 40px;">Launch</button>
+          <span id="s2-go-why" style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">Load a pipeline first</span>
+        </div>
+        </section>
+        </div>
+      </section>
     </main>
 </div>
 </x-dc>
