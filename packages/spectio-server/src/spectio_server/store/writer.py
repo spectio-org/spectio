@@ -46,15 +46,27 @@ class Writer:
         self._thread.join()
 
     def _run(self, engine: Engine) -> None:
-        with engine.connect().execution_options(spectio_begin="IMMEDIATE") as conn:
-            while (job := self._jobs.get()) is not None:
-                fn, future = job
-                if not future.set_running_or_notify_cancel():
-                    continue
-                try:
-                    with conn.begin():
-                        result = fn(conn)
-                except Exception as exc:
-                    future.set_exception(exc)
-                else:
-                    future.set_result(result)
+        try:
+            with engine.connect().execution_options(spectio_begin="IMMEDIATE") as conn:
+                while (job := self._jobs.get()) is not None:
+                    fn, future = job
+                    if not future.set_running_or_notify_cancel():
+                        continue
+                    try:
+                        with conn.begin():
+                            result = fn(conn)
+                    except Exception as exc:
+                        future.set_exception(exc)
+                    except BaseException as exc:  # the thread dies: tell the caller first
+                        future.set_exception(exc)
+                        raise
+                    else:
+                        future.set_result(result)
+        finally:
+            # Whatever ended the thread, no caller waits forever on a job it will never run.
+            with self._lock:
+                self._closed = True
+            while not self._jobs.empty():
+                left = self._jobs.get_nowait()
+                if left is not None and left[1].set_running_or_notify_cancel():
+                    left[1].set_exception(RuntimeError("writer stopped"))

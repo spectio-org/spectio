@@ -5,6 +5,8 @@ through the ORM type, CHECK constraints instead of enums. Each table keeps only 
 api §7 that P1 uses; later tasks add the others by migration.
 """
 
+import re
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import (
@@ -13,12 +15,14 @@ from sqlalchemy import (
     CheckConstraint,
     Column,
     DateTime,
+    Dialect,
     ForeignKey,
     Index,
     Integer,
     MetaData,
     String,
     Table,
+    TypeDecorator,
     UniqueConstraint,
 )
 from sqlalchemy.dialects.postgresql import JSONB
@@ -28,31 +32,56 @@ metadata = MetaData()
 Json = JSON().with_variant(JSONB(), "postgresql")  # TEXT with JSON1 on SQLite
 
 
-def _in(column: str, values: tuple[str, ...]) -> str:
-    return f"{column} IN ({', '.join(repr(v) for v in values)})"
+class UTCDateTime(TypeDecorator[datetime]):
+    """A timestamp that is UTC both ways: an aware value is converted to UTC on write (a naive
+    one is refused), and a value read back carries `tzinfo=UTC` (SQLite stores none)."""
+
+    impl = DateTime(timezone=True)
+    cache_ok = True
+
+    def process_bind_param(self, value: datetime | None, dialect: Dialect) -> datetime | None:
+        if value is None:
+            return None
+        if value.utcoffset() is None:
+            raise ValueError(f"naive datetime {value!r}: pass a timezone-aware value")
+        return value.astimezone(UTC)
+
+    def process_result_value(self, value: datetime | None, dialect: Dialect) -> datetime | None:
+        if value is None:
+            return None
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
+
+
+_ENUM_VALUE = re.compile(r"[a-z_-]+")
 
 
 def _check(table: str, column: str, values: tuple[str, ...], nullable: bool = False) -> Any:
-    sql = _in(column, values)
+    """A CHECK constraint `column IN (values)`; the values are spliced into SQL, so each must
+    be a plain lower-case word."""
+    bad = [v for v in values if not _ENUM_VALUE.fullmatch(v)]
+    if bad:
+        raise ValueError(f"CHECK values must match [a-z_-]+: {bad}")
+    sql = f"{column} IN ({', '.join(repr(v) for v in values)})"
     return CheckConstraint(
         f"{column} IS NULL OR {sql}" if nullable else sql, name=f"ck_{table}_{column}"
     )
 
 
 def _base() -> list[Any]:
-    """id, created_at, created_by: on every table (api §7). created_by is null for the first
-    principal and for rows the system writes itself."""
+    """id, created_at, created_by: on every table (api §7). created_by is nullable only so
+    that the first principal, `system`, can exist; every other row names its creator, the
+    `system` principal for the rows Spectio writes itself."""
     return [
         Column("id", String, primary_key=True),
-        Column("created_at", DateTime(timezone=True), nullable=False),
+        Column("created_at", UTCDateTime(), nullable=False),
         Column("created_by", String, ForeignKey("principals.id")),
     ]
 
 
 def _mutable() -> list[Any]:
     return [
-        Column("updated_at", DateTime(timezone=True)),
-        Column("deleted_at", DateTime(timezone=True)),
+        Column("updated_at", UTCDateTime()),
+        Column("deleted_at", UTCDateTime()),
     ]
 
 
@@ -100,7 +129,7 @@ RUN_ORIGINS = ("ui", "api", "wes", "cli-observed", "cli-adopted")
 COMMAND_STATES = ("pending", "leased", "acked", "done", "failed")
 WORKFLOW_SOURCES = ("git", "nf-core", "catalog", "crate", "local")
 RUN_INPUT_KINDS = ("params", "params_resolved", "samplesheet", "manifest", "resources")
-PRINCIPAL_KINDS = ("user", "service", "agent")
+PRINCIPAL_KINDS = ("user", "service", "agent", "runner", "system")  # api §6
 ACTOR_KINDS = ("person", "agent", "service", "cli")
 
 principals = Table(
@@ -109,7 +138,7 @@ principals = Table(
     *_base(),
     Column("kind", String, nullable=False),
     Column("display_name", String),
-    Column("disabled_at", DateTime(timezone=True)),
+    Column("disabled_at", UTCDateTime()),
     _check("principals", "kind", PRINCIPAL_KINDS),
 )
 
@@ -139,7 +168,7 @@ runners = Table(
     Column("environment_id", String, ForeignKey("environments.id"), nullable=False),
     Column("principal_id", String, ForeignKey("principals.id")),
     Column("version", String),
-    Column("last_heartbeat_at", DateTime(timezone=True)),
+    Column("last_heartbeat_at", UTCDateTime()),
     Column("status", String),
 )
 
@@ -178,9 +207,9 @@ runs = Table(
     Column("environment_id", String, ForeignKey("environments.id"), nullable=False),
     Column("name", String),
     Column("state", String, nullable=False),
-    Column("state_changed_at", DateTime(timezone=True)),
-    Column("started_at", DateTime(timezone=True)),
-    Column("ended_at", DateTime(timezone=True)),
+    Column("state_changed_at", UTCDateTime()),
+    Column("started_at", UTCDateTime()),
+    Column("ended_at", UTCDateTime()),
     Column("flags", Json),
     Column("failure", Json),
     Column("cancel_reason", String),
@@ -225,8 +254,8 @@ launches = Table(
     Column("engine_session_id", String),
     Column("head_native_id", String),
     Column("head_state", String),
-    Column("started_at", DateTime(timezone=True)),
-    Column("exited_at", DateTime(timezone=True)),
+    Column("started_at", UTCDateTime()),
+    Column("exited_at", UTCDateTime()),
     Column("exit_code", Integer),
     UniqueConstraint("run_id", "n"),
 )
@@ -242,7 +271,7 @@ runner_commands = Table(
     Column("payload", Json),
     Column("idempotency_key", String),
     Column("state", String, nullable=False),
-    Column("lease_until", DateTime(timezone=True)),
+    Column("lease_until", UTCDateTime()),
     Column("attempts", Integer, nullable=False, server_default="0"),
     _check("runner_commands", "state", COMMAND_STATES),
 )
@@ -284,8 +313,8 @@ events = Table(
     Column("type", String, nullable=False),
     Column("source", String),
     Column("source_seq", Integer),
-    Column("engine_time", DateTime(timezone=True)),
-    Column("received_at", DateTime(timezone=True)),
+    Column("engine_time", UTCDateTime()),
+    Column("received_at", UTCDateTime()),
     Column("actor_principal_id", String, ForeignKey("principals.id")),
     Column("actor_kind", String),
     Column("payload", Json),

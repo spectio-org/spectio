@@ -3,7 +3,7 @@
 
 Revision ID: 0001
 Revises: none
-Create Date: 2026-10-30 00:03:15.831142
+Create Date: 2026-10-30 00:12:03.955275
 """
 
 from collections.abc import Sequence
@@ -28,7 +28,9 @@ def upgrade() -> None:
         sa.Column("kind", sa.String(), nullable=False),
         sa.Column("display_name", sa.String(), nullable=True),
         sa.Column("disabled_at", sa.DateTime(timezone=True), nullable=True),
-        sa.CheckConstraint("kind IN ('user', 'service', 'agent')", name="ck_principals_kind"),
+        sa.CheckConstraint(
+            "kind IN ('user', 'service', 'agent', 'runner', 'system')", name="ck_principals_kind"
+        ),
         sa.ForeignKeyConstraint(
             ["created_by"],
             ["principals.id"],
