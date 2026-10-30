@@ -1137,3 +1137,23 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Options and what was assumed:** (a) estimate: each tick prices its tokens (from `tools/dashboard/usage.py`) at the Opus 4.x list prices (5 / 25 USD per million input / output, 6.25 cache write, 0.50 cache read) and records it with `record-cost`, at a prior of 0.1 point per USD (`--pct-per-usd 0.1`) **[to be validated]**; (b) stop and wait for a reading after every step. **Assumed:** (a), with the ratio kept on the safe side.
 - **Recommendation:** read `/usage` when you wake up and write the percentage here; the next tick calibrates the ratio (`budget.py start --now <pct>`).
 - **Blocked:** nothing.
+
+### #75 · P3 Task 2 store: spec changes owed, and four review rounds
+
+- **Covers:** [P3-M1 Task 2](../progress/W5/P3-M1.md#differences-from-the-plans-interface-cr-p3t2-08); [code review record](code/P3-t02.md); [P1 Task 2](../plans/P1-walking-skeleton.md#task-2-sqlite-store-and-its-discipline); [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts); [architecture §7.2](../specs/architecture-plugins-and-packaging.md#72-infrastructure-per-deployment).
+- **Context:** the review of the SQLite store decided rules in code that no spec states yet:
+  - the parent walk (owner root or the user; not writable by group or others unless sticky);
+  - the canonical path, resolved once;
+  - the device and inode pins, re-checked on every connection;
+  - the `$TMPDIR` base rule;
+  - `autofs` refused, and fail closed on Linux when mountinfo is unreadable or unmatched;
+  - the plan's interface: `mountinfo=` replaces `mounts=`, plus the preconditions of `open_db`.
+
+  Extending the refused file system list (SEC-P3T2-04) is also owed; the list lives only in P1 Task 2 today. The review ran four rounds where `review-code` allows two before the step is `blocked`, so that two security majors (SEC-P3T2-09, SEC-P3T2-13) were fixed in the step.
+- **Options and what was assumed:**
+  - (a) the next `/apply-findings` pass writes these rules into dev-env §15.3 and architecture §7.2 (which takes the refused list), and updates P1 Task 2's interface. Rounds past two stay allowed while a security major is open, and the skill says so.
+  - (b) the same spec changes, but keep the two-round limit strict: block the step and ask.
+
+  **Assumed:** (a) for the spec changes. For the rounds, nothing changes until Thomas decides; the skill text is not edited.
+- **Recommendation:** (a).
+- **Blocked:** nothing; Task 2 merges with the rules in code and tests.

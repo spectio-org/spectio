@@ -342,3 +342,11 @@ media:
       - docs/assets/diagrams/p3-t01-spool_dark.svg
       - docs/assets/diagrams/p3-t01-spool_light.png
       - docs/assets/diagrams/p3-t01-spool_dark.png
+  - id: p3-t02-store
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t02_store.py
+    outputs:
+      - docs/assets/diagrams/p3-t02-store_light.svg
+      - docs/assets/diagrams/p3-t02-store_dark.svg
+      - docs/assets/diagrams/p3-t02-store_light.png
+      - docs/assets/diagrams/p3-t02-store_dark.png
