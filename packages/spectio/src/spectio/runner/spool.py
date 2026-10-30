@@ -68,7 +68,7 @@ def read_spool(
         raise ValueError("max_lines must be at least 1 and max_bytes more than MAX_LINE_BYTES")
     events: list[SpoolEvent] = []
     drops: Counter[str] = Counter()
-    new = _checked(cursor, drops)
+    new = _checked(cursor, launch_n, drops)
     dir_fd = _open_events_dir(launch_dir)
     if dir_fd is None:
         return SpoolBatch(events, new, drops)
@@ -113,14 +113,19 @@ def read_spool(
     return SpoolBatch(events, new, drops)
 
 
-def _checked(cursor: dict[str, int], drops: Counter[str]) -> dict[str, int]:
-    """A copy of the cursor in which every value fits its key; others are counted and reset.
+def _checked(cursor: dict[str, int], launch_n: int, drops: Counter[str]) -> dict[str, int]:
+    """A copy of the cursor in which every key and value is one the reader writes.
 
-    A spool file name maps to REFUSED or an offset up to MAX_FILE_BYTES, a name hash to REFUSED,
-    and EXCESS to a count. A wrong value is never trusted: its file is refused (a count is reset).
+    A spool file name of this launch maps to REFUSED or an offset up to MAX_FILE_BYTES, a name
+    hash to REFUSED, and EXCESS to a count. Any other key is dropped; a wrong value is reset (its
+    file refused, a count set to 0). Either is counted once, as the next cursor no longer has it.
     """
     checked = {}
     for key, value in cursor.items():
+        match = SPOOL_FILE_NAME.fullmatch(key)
+        if not key.startswith("#") and (match is None or int(match[2]) != launch_n):
+            drops["bad_cursor"] += 1
+            continue
         if type(value) is not int:  # a bool is an int, and is refused here
             valid = False
         elif key == EXCESS:
@@ -128,8 +133,7 @@ def _checked(cursor: dict[str, int], drops: Counter[str]) -> dict[str, int]:
         elif key.startswith("#"):
             valid = value == REFUSED
         else:
-            in_range = value == REFUSED or 0 <= value <= MAX_FILE_BYTES
-            valid = in_range and SPOOL_FILE_NAME.fullmatch(key) is not None
+            valid = value == REFUSED or 0 <= value <= MAX_FILE_BYTES
         if not valid:
             drops["bad_cursor"] += 1
             value = 0 if key == EXCESS else REFUSED
