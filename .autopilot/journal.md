@@ -401,3 +401,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - The repository moved to `spectio-org/spectio`; the old URL redirects, fetch and push work.
 - 07:47 P3 Task 3 (spool reader) merged: PR #77, squash `51d6348`. review-code: 3 rounds (round 3 on post-approval minor fixes, inbox #76), CODE `review=approve 0/1/13 security=approve 0/2/9 simplify=changed -2/+1 tests=pass`; docs: doc-reviewer approve 13/14 after one revision. Closed SEC-P3T1-04 and SEC-P3T1-06. New inbox #76 (assumed a). Follow-ups: CR-P3T3-08; Task 9 creates `.spectio`/`events` 0700 (SEC-P3T3-09).
 - 07:42 Unattended mode set up at Thomas's request (autopilot §10, decision log 2026-10-30): recommendations applied, quiet session, saved workflow `p3-task` per task, self check-ins.
+- 08:01 Promotion PR #78 merged into `main` (`ebcee14`), every check passed. P3 Task 4 runs as workflow `p3-task`.
