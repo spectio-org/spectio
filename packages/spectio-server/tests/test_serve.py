@@ -238,22 +238,33 @@ def writer(settings: Settings) -> Iterator[Writer]:
     yield from _writer(settings)
 
 
-def test_rebuild_skips_symlinked_foreign_or_loose_dirs(settings: Settings, writer: Writer) -> None:
+NEEDS_ROOT = pytest.mark.skipif(os.geteuid() != 0, reason="chown to another uid needs root")
+
+
+def test_rebuild_skips_symlinked_or_loose_dirs(settings: Settings, writer: Writer) -> None:
     root = settings.runs_root
     make_run(root, run_id(1))  # the one good run
     make_run(root, run_id(9))
     (root / run_id(2)).symlink_to(root / run_id(9))  # a symlink to a good run
-    make_run(root, run_id(3))
-    os.chown(root / run_id(3), 12345, 12345)  # another user's
     make_run(root, run_id(4))
     (root / run_id(4)).chmod(0o755)  # loose
     (root / "not-a-run").mkdir(mode=0o700)  # a bad name
     found = rebuild_index(writer, root)
-    assert (found.added, found.skipped, found.deferred) == (2, 4, 0)  # runs 1 and 9
+    assert (found.added, found.skipped, found.deferred) == (2, 3, 0)  # runs 1 and 9
     assert set(writer.submit(lambda c: list(c.execute(select(runs.c.id)).scalars())).result()) == {
         run_id(1),
         run_id(9),
     }
+
+
+@NEEDS_ROOT
+def test_rebuild_skips_foreign_dir(settings: Settings, writer: Writer) -> None:
+    root = settings.runs_root
+    make_run(root, run_id(1))
+    make_run(root, run_id(3))
+    os.chown(root / run_id(3), 12345, 12345)  # another user's
+    found = rebuild_index(writer, root)
+    assert (found.added, found.skipped) == (1, 1)
 
 
 def test_rebuild_run_id_must_match_dir(settings: Settings, writer: Writer) -> None:
@@ -297,7 +308,10 @@ def test_runs_root_loose_refused(settings: Settings) -> None:
     settings.runs_root.chmod(0o770)
     with pytest.raises(ServeError, match="runs root"), started(settings):
         pass
-    settings.runs_root.chmod(0o700)
+
+
+@NEEDS_ROOT
+def test_runs_root_foreign_refused(settings: Settings) -> None:
     os.chown(settings.runs_root, 12345, 12345)
     with pytest.raises(ServeError, match="runs root"), started(settings):
         pass
