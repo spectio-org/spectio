@@ -29,7 +29,14 @@ from spectio_server.store.db import (
 from spectio_server.store.schema import environments, principals, projects, runners
 from spectio_server.store.writer import Writer
 
-__all__ = ["UnsafeDatabase", "db_checks", "default_db_dir", "init_store", "preferred_db_dir"]
+__all__ = [
+    "UnsafeDatabase",
+    "db_checks",
+    "default_db_dir",
+    "ensure_tenancy",
+    "init_store",
+    "preferred_db_dir",
+]
 
 
 def init_store(db_dir: Path, *, user: str, kind: str, config: dict[str, Any], version: str) -> bool:
@@ -39,13 +46,17 @@ def init_store(db_dir: Path, *, user: str, kind: str, config: dict[str, Any], ve
     engine, _ = open_db(db_dir)
     writer = Writer(engine)
     try:
-        return writer.submit(lambda conn: _tenancy(conn, user, kind, config, version)).result()
+        return writer.submit(
+            lambda conn: ensure_tenancy(conn, user, kind, config, version)
+        ).result()
     finally:
         writer.close()
         engine.dispose()
 
 
-def _tenancy(conn: Connection, user: str, kind: str, config: dict[str, Any], version: str) -> bool:
+def ensure_tenancy(
+    conn: Connection, user: str, kind: str, config: dict[str, Any], version: str
+) -> bool:
     env_id = conn.execute(
         select(environments.c.id).order_by(environments.c.created_at).limit(1)
     ).scalar()

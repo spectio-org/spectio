@@ -7,6 +7,7 @@ import typer
 
 from spectio.cli.doctor import run_doctor
 from spectio.cli.init import run_init
+from spectio.cli.serve import run_serve
 from spectio.config import Settings
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
@@ -51,3 +52,13 @@ def doctor() -> None:
         typer.echo(f"fail config {exc}")
         raise typer.Exit(1) from exc
     raise typer.Exit(run_doctor(settings))
+
+
+@app.command()
+def serve(
+    force: Annotated[
+        bool, Opt("--force", help="Start even if server.json names a server on another node")
+    ] = False,
+) -> None:
+    """Start the server on 127.0.0.1, at the port spectio init recorded."""
+    raise typer.Exit(run_serve(force))
