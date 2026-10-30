@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import time
 from collections.abc import Callable
+from dataclasses import replace
 from pathlib import Path
 
 import pytest
@@ -21,7 +22,7 @@ from spectio.runner.engines import (
     check_engine,
     unpack_nf_spectio,
 )
-from spectio.runner.headscript import render_head_script, write_launch_files
+from spectio.runner.headscript import engine_args, render_head_script, write_launch_files
 from spectio.runner.rundir import make_run_dirs
 from spectio.runner.types import LaunchSpec
 
@@ -192,11 +193,75 @@ def test_head_script_snakemake_args(home: Path, bridges: Path) -> None:
     assert args[args.index("--configfile") + 1] == str(spectio_dir / "params.json")
     assert args[args.index("--executor") + 1] == "slurm"
     assert args[args.index("--workflow-profile") + 1] == str(location / "profiles" / "slurm")
-    assert args[args.index("--default-resources") + 1] == "slurm_partition=htc"
+    # The profile owns resources and concurrency (CR-P3T09-04, CR-P3T09-06).
+    assert not {"--default-resources", "--jobs", "--cores"} & set(args)
     env = exported(spec)
     assert env["PYTHONPATH"] == str(spectio_dir / "pylib")
     assert (spectio_dir / "pylib" / "snakemake_logger_plugin_spectio" / "__init__.py").is_file()
     assert "NXF_PLUGINS_DEFAULT" not in env
+
+
+def snakemake_spec(home: Path, **kw: object) -> LaunchSpec:
+    location = home / "pipeline"
+    (location / "workflow").mkdir(parents=True, exist_ok=True)
+    (location / "workflow" / "Snakefile").write_text("")
+    engine = shlex.quote(str(stub_engine(home / "bin")))
+    return make_spec(home / "runs", engine="snakemake", engine_cmd=engine, location=location, **kw)
+
+
+@pytest.mark.parametrize(
+    ("slurm", "added"),
+    [(None, ["--cores", "all"]), (SlurmOpts(partition="htc"), ["--jobs", "100"])],
+)
+def test_snakemake_concurrency_without_a_profile(
+    home: Path, bridges: Path, slurm: SlurmOpts | None, added: list[str]
+) -> None:
+    """CR-P3T09-04: Snakemake 9 refuses to run without --cores (local) or --jobs (SLURM); with
+    no workflow profile and no such option in extra_args, the head passes one."""
+    spec = snakemake_spec(home, slurm=slurm)
+    assert run_head(spec).returncode == 0
+    args = argv(spec)
+    flag = args.index(added[0])
+    assert args[flag : flag + 2] == added
+    assert not {"--cores", "--jobs"} - {added[0]} & set(args)
+    if slurm is not None:  # no profile: Spectio's partition and account apply
+        assert args[args.index("--default-resources") + 1] == "slurm_partition=htc"
+    for given in (["-j", "8"], ["--cores=2"], ["-c4"], ["--jobs", "3"]):
+        args = engine_args(replace(spec, extra_args=given))
+        assert args[-len(given) :] == given and added[0] not in args[: -len(given)]
+
+
+def test_workflow_profile_keeps_its_default_resources(home: Path, bridges: Path) -> None:
+    """CR-P3T09-06: `--default-resources` on the command line would replace the profile's whole
+    `default-resources` (its `runtime` here); with a profile, none is passed."""
+    profile = home / "pipeline" / "profiles" / "slurm"
+    profile.mkdir(parents=True)
+    (profile / "config.yaml").write_text("jobs: 5\ndefault-resources:\n  runtime: 5\n")
+    spec = snakemake_spec(home, profiles=["slurm"], slurm=SlurmOpts(partition="htc", account="lab"))
+    args = engine_args(spec)
+    assert args[args.index("--workflow-profile") + 1] == str(profile)
+    assert not {"--default-resources", "--jobs", "--cores"} & set(args)
+
+
+def test_pythonpath_prepended_to_the_login_profiles(home: Path, bridges: Path) -> None:
+    """CR-P3T09-05: a PYTHONPATH the login profile (or a module) sets is kept, after pylib."""
+    with (home / ".bash_profile").open("a") as f:
+        f.write("export PYTHONPATH=/x\n")
+    spec = snakemake_spec(home)
+    assert run_head(spec).returncode == 0
+    pylib = spec.launch_dir / ".spectio" / "pylib"
+    assert exported(spec)["PYTHONPATH"] == f"{pylib}:/x"
+
+
+@pytest.mark.parametrize(
+    "bad", [{"run_id": "run_x\ntouch /tmp/p"}, {"run_id": "x"}, {"launch_n": 0}]
+)
+def test_head_script_refuses_a_bad_run_id(
+    home: Path, bridges: Path, bad: dict[str, object]
+) -> None:
+    """CR-P3T09-10, SEC-P3T09-07: the run ID and launch number go into a comment of head.sh."""
+    with pytest.raises(ValueError, match=r"run ID|launch number"):
+        render_head_script(make_spec(home / "runs", **bad))
 
 
 @pytest.mark.parametrize("profile", ["../x", "a,b", "", "-x"])

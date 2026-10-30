@@ -18,11 +18,19 @@ from pathlib import Path
 from spectio.config import NF_SPECTIO_VERSION
 from spectio.loginshell import KEEP
 from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, nf_plugin_copy, unpack_nf_spectio
-from spectio.runner.rundir import private_dir, write_file
+from spectio.runner.rundir import RUN_ID, private_dir, write_file
 from spectio.runner.types import LaunchSpec
 
 PROFILE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}")  # never a path, a comma or an option
 ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
+# Snakemake 9 refuses to run without --cores (local) or --jobs (remote executors):
+# CR-P3T09-04, verified on 9.27.1 (docs/reviews/code/P3-t09.md). With no workflow profile and
+# no such option in extra_args, the head passes `--cores all` (as rna-seq-kallisto-sleuth's CI
+# does, docs/research/corpus-and-ci-2026-10-26.md) or `--jobs SLURM_JOBS`: Spectio's own cap on
+# the jobs in the queue at once, twice the synthetic profile's `jobs: 50`
+# (tests/pipelines/synthetic/snakemake/profiles/slurm/config.yaml); whether sites' per-user
+# limits (MaxSubmitJobs) want less is [to be validated].
+SLURM_JOBS = 100
 
 # The outer script: {launch}, {inner} and {keep} are quoted by `render_head_script`. Both
 # shells trap INT and TERM (a trap, not an ignored signal, which the engine would inherit), so
@@ -88,13 +96,25 @@ def engine_args(spec: LaunchSpec) -> list[str]:
         args += ["--configfile", params, "--logger", "spectio"]
         if spec.slurm is not None:
             args += ["--executor", "slurm"]
-            slurm = {"partition": spec.slurm.partition, "account": spec.slurm.account}
-            resources = [f"slurm_{key}={value}" for key, value in slurm.items() if value]
-            if resources:
-                args += ["--default-resources", *resources]
         if profiles:
+            # The profile owns resources and concurrency: `--default-resources` here would
+            # replace its whole `default-resources` (CR-P3T09-06), so [slurm] partition and
+            # account apply only to a launch without a profile.
             args += ["--workflow-profile", str(spec.location / "profiles" / profiles[0])]
+        else:
+            if spec.slurm is not None:
+                slurm = {"partition": spec.slurm.partition, "account": spec.slurm.account}
+                resources = [f"slurm_{key}={value}" for key, value in slurm.items() if value]
+                if resources:
+                    args += ["--default-resources", *resources]
+            if not any(_sets_concurrency(arg) for arg in spec.extra_args):
+                args += ["--cores", "all"] if spec.slurm is None else ["--jobs", str(SLURM_JOBS)]
     return args + spec.extra_args
+
+
+def _sets_concurrency(arg: str) -> bool:
+    """`--cores`, `--jobs`, `-c` or `-j`, with or without its value attached."""
+    return arg.split("=", 1)[0] in ("--cores", "--jobs") or arg[:2] in ("-c", "-j")
 
 
 def engine_env(spec: LaunchSpec) -> dict[str, str]:
@@ -112,8 +132,6 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
         env["NXF_ANSI_LOG"] = "false"
         if spec.nxf_opts:
             env["NXF_OPTS"] = spec.nxf_opts
-    else:
-        env["PYTHONPATH"] = str(_spectio(spec) / "pylib")
     env.update(spec.env)
     for name in env:
         if not ENV_NAME.fullmatch(name):
@@ -122,12 +140,20 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
 
 
 def render_head_script(spec: LaunchSpec) -> str:
+    # Both go into a comment line of head.sh (CR-P3T09-10, SEC-P3T09-07).
+    if not RUN_ID.fullmatch(spec.run_id):
+        raise ValueError(f"{spec.run_id!r} is not a run ID")
+    if type(spec.launch_n) is not int or spec.launch_n < 1:
+        raise ValueError(f"{spec.launch_n!r} is not a launch number")
     exports = " ".join(f"{k}={shlex.quote(v)}" for k, v in engine_env(spec).items())
     command = " ".join([spec.engine_cmd, *map(shlex.quote, engine_args(spec))])
     inner = (
-        f"trap : INT TERM\ncd -- {shlex.quote(str(spec.launch_dir))} || exit 1\n"
-        f"export {exports}\n{command}\n"
+        f"trap : INT TERM\ncd -- {shlex.quote(str(spec.launch_dir))} || exit 1\nexport {exports}\n"
     )
+    if spec.engine == "snakemake":  # in front of the login profile's own (CR-P3T09-05)
+        pylib = shlex.quote(str(_spectio(spec) / "pylib"))
+        inner += f"export PYTHONPATH={pylib}${{PYTHONPATH:+:$PYTHONPATH}}\n"
+    inner += f"{command}\n"
     return _HEAD.format(
         run_id=spec.run_id,
         launch_n=spec.launch_n,
