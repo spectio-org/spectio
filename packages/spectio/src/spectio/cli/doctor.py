@@ -11,10 +11,14 @@ import typer
 
 from spectio.config import NF_SPECTIO_VERSION, Settings, config_path
 from spectio.loginshell import run_login, which
+from spectio.runner.engines import (
+    NEXTFLOW_VERSION,
+    SNAKEMAKE_VERSION,
+    existing_copy,
+    nf_plugin_copy,
+)
 
 Result = tuple[str, str, str]  # status, check, detail
-_VERSION = re.compile(r"version ([0-9][0-9.]*)")  # as engine-bridges/nf-spectio/build.sh reads it
-_SEMVER = re.compile(r"([0-9]+\.[0-9]+(?:\.[0-9]+)?)")
 _JAVA = re.compile(r'version "([0-9]+)(?:\.([0-9]+))?')
 _PLUGINS_BLOCK = re.compile(r"\bplugins\s*\{[^}]*nf-spectio", re.DOTALL)
 
@@ -59,10 +63,10 @@ def _nxf_plugins(env: Mapping[str, str]) -> Result:
     """The check of architecture §13.8 (spectio doctor): the variable that enables nf-spectio."""
     check, want = "nxf_plugins_default", f"nf-spectio@{NF_SPECTIO_VERSION}"
     nxf_home = Path(env.get("NXF_HOME") or Path.home() / ".nextflow")
-    copy = (
-        Path(env.get("NXF_PLUGINS_DIR") or nxf_home / "plugins")
-        / f"nf-spectio-{NF_SPECTIO_VERSION}"
-    )
+    try:
+        copy = nf_plugin_copy(env)
+    except ValueError as exc:  # a relative NXF_HOME or NXF_PLUGINS_DIR (SEC-P3T09-05)
+        return "fail", check, str(exc)
     value = env.get("NXF_PLUGINS_DEFAULT")
     ours = [p.strip() for p in (value or "").split(",") if p.strip().split("@")[0] == "nf-spectio"]
     if value is None:
@@ -77,9 +81,13 @@ def _nxf_plugins(env: Mapping[str, str]) -> Result:
         result = ("warn", check, f"{value} has no nf-spectio: runs from a terminal are not seen")
     elif ours != [want]:
         result = ("warn", check, f"names {', '.join(ours)}, not {want}")
-    elif not copy.is_dir():
-        return "fail", check, f"names {want} but {copy} is missing: run spectio init"
     else:
+        try:  # the launcher's own check of the copy (CR-P3T09-R5-02)
+            present = existing_copy(copy)
+        except OSError as exc:
+            return "fail", check, str(exc)
+        if not present:
+            return "fail", check, f"names {want} but {copy} is missing: run spectio init"
         result = ("ok", check, value)
     try:
         text = (nxf_home / "config").read_text(errors="replace")
@@ -122,8 +130,8 @@ def checks(
     else:
         results.append(("warn", "host", f"this is {here}; spectio init recorded {settings.host}"))
     engines = settings.engines
-    results.append(_engine("nextflow", engines.nextflow_cmd, "-version", _VERSION))
-    results.append(_engine("snakemake", engines.snakemake_cmd, "--version", _SEMVER))
+    results.append(_engine("nextflow", engines.nextflow_cmd, "-version", NEXTFLOW_VERSION))
+    results.append(_engine("snakemake", engines.snakemake_cmd, "--version", SNAKEMAKE_VERSION))
     results.append(_java())
     results += _tools(settings.executor == "local")
     results.append(_nxf_plugins(env))

@@ -124,13 +124,14 @@ def try_read_spool(
     """`read_spool` for the runner loop and the boot rebuild, which must not stop on one run.
 
     When `.spectio` or `events` is refused (not a private directory of the user, a symlink, not
-    a directory) or cannot be opened, the read is counted once as `spool_refused`, logged, and
-    the cursor is kept as it is: the next read tries again.
+    a directory) or cannot be opened, the read is counted as `spool_refused` and the cursor is
+    kept as it is: the next read tries again. The caller counts and logs it once per refusal
+    (CR-P3T04-05), so this logs at debug level only.
     """
     try:
         return read_spool(launch_dir, run_id, launch_n, cursor, max_lines)
     except OSError as exc:  # PermissionError included
-        log.warning("spool of %s launch %d not read: %s", run_id, launch_n, exc)
+        log.debug("spool of %s launch %d not read: %r", run_id, launch_n, exc)
         return SpoolBatch([], dict(cursor), Counter({SPOOL_REFUSED: 1}))
 
 
