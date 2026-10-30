@@ -1406,3 +1406,18 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a). (b) costs a templated `index.html` and a rewrite of every layout prop for a risk (style injection) that needs an HTML injection first, which React's escaping blocks; (c) is worth it once Task 20 adds the read routes.
 - **Assumed (2026-10-30, standing rule, inbox #80):** (a), pending Thomas. The reserved question of #86 (serving a session-less API, and now the screens, at all) is unchanged and still Thomas's. Rules 1 to 3 are written into [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 17 and rule 6 into the [ui-spec §4.6 note of 2026-10-30](../specs/ui-spec.md#46-launch-and-relaunch); rule 5's stack is P1 Task 19's interface, for the next `/apply-findings`. Open from the review: follow-up FU-P3-22 ([P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions)).
 - **Blocked:** nothing.
+
+### #89 · Assumed: the Paper shell in `web/` (G4)
+
+- **Covers:** [P2 §10.5 G4](../plans/P2-execution.md#105-g4-the-paper-shell-in-web); [ui-spec §7](../specs/ui-spec.md#7-consistency-with-depictio-reuse-plan) and [§4.11](../specs/ui-spec.md#411-phone-and-tablet); inbox [#88](#88-assumed-the-001-screens-and-launch-form-in-the-local-only-order) rule 8.
+- **Context:** G4 rewrites Task 19's thin shell as the Paper shell in `web/src/shell/`, after the G1 boards. It took these rules:
+  1. **Tokens.** `theme.ts` holds the scales and role tokens of `design/tokens/spectio-tokens.css` and emits them as `--sp-*` variables through Mantine's `cssVariablesResolver`, light and dark. A few roles are not in the tokens file and were added: `surface-bar`, `ok-*` and `down-*` (the succeeded and failed state colours, for server status), the section tints (light from the boards; dark as 14–16 % of the section colour), and `shadow`.
+  2. **Scheme.** The default is `auto` (the system's scheme) until the reader presses the theme switch; the choice is kept in `localStorage` (`spectio-color-scheme`) by Mantine's manager, which wraps each access in try/catch. No inline script sets the scheme before the first paint (the CSP forbids it), so a dark choice can show light for one frame.
+  3. **Theme toggle.** A native `<button role="switch" aria-checked>` named "Dark theme", as on the G1 boards.
+  4. **Layout by `matchMedia`, not CSS alone.** Phone (< 768 px) renders the tab bar and no sidebar; tablet (768–1199 px) starts with the sidebar folded to the rail; the reader's own fold then wins until reload.
+  5. **Fonts.** Inter and Outfit are named but not shipped: the CSP allows fonts from this origin only, and no font package was added; browsers without them fall back to `system-ui`.
+  6. **Carried for Task 20:** `.sp-table [data-wide]` hides a column below 1100 px (UX-G3a-05: mark Started with it); `.sp-page-title` and `.sp-page-sub` wrap instead of an ellipsis (UX-G3a-06: the phone run title and state line). The phone top bar's title row and back chevron come with Task 20's run detail.
+- **Options:** (a) keep rules 1 to 6; (b) self-host Inter and Outfit now (`@fontsource`, two pinned packages); (c) default to light instead of `auto`.
+- **Recommendation:** (a). (b) is worth doing with Task 21's packaging; (c) ignores the reader's system setting.
+- **Assumed (2026-10-30, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), pending Thomas.
+- **Blocked:** nothing.

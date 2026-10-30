@@ -58,8 +58,13 @@ media:
     kind: screenshot
     # live: needs a running `spectio serve` (SPECTIO_URL) and the synthetic Nextflow pipeline
     # copied to a path free of forbidden terms (SPECTIO_DEMO_PIPELINE), tools/media/README.md
-    generator: python3 tools/media/shots.py run --shot app-launch --theme light
-    outputs: [docs/assets/shots/app-launch_light.webp]
+    generator: python3 tools/media/shots.py run --shot app-launch --theme both
+    outputs: [docs/assets/shots/app-launch_light.webp, docs/assets/shots/app-launch_dark.webp]
+  - id: app-launch-phone
+    kind: screenshot
+    # live, as app-launch, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-launch-phone --theme both
+    outputs: [docs/assets/shots/app-launch-phone_light.webp, docs/assets/shots/app-launch-phone_dark.webp]
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
