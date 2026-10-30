@@ -1,0 +1,62 @@
+# Step P3 Task 11: spectio init --local, spectio serve, a second serve refused, and the clean stop,
+# run for real from the repository's .venv.
+# The cast's temporary directory is a demo HOME (shown as ~), with a demo TMPDIR inside it
+# (shown as $TMPDIR). nextflow and snakemake are two fake scripts in ~/bin, put on the login
+# shell's PATH by ~/.bash_profile (init finds engines through `bash -l`); they only print a version.
+# The host name is a demo one: run the generator in its own UTS namespace (needs root or
+# unprivileged user namespaces), as docs/assets/media.yaml does:
+#   unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-serve.yaml'
+# The first serve runs in the background with its output in two files, since each step's output
+# is captured; the stop reads its PID from ~/.spectio/server.json. Port 18080, not the default 8080,
+# so the cast does not clash with a server already on the machine.
+# init's warning that the nf-spectio bridge is not unpacked is dropped: the bridges are not built
+# for this cast, and serve does not use them.
+# Needs `uv sync` first (the .venv of the checkout).
+title: "P3 Task 11: spectio serve on 127.0.0.1 in a demo home (one server per node, clean stop)"
+cols: 140
+rows: 30
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: tmp
+env:
+  HOME: "{workdir}"
+  TMPDIR: "{workdir}/.tmp"
+  PATH: "{repo}/.venv/bin:$PATH"
+setup:
+  - |
+    chmod 700 .
+    mkdir -m 700 .tmp
+    mkdir bin
+    printf '#!/bin/sh\necho "nextflow version 26.10.4 (fake, for this cast)"\n' > bin/nextflow
+    printf '#!/bin/sh\necho "9.27.1"\n' > bin/snakemake
+    chmod +x bin/nextflow bin/snakemake
+    echo 'export PATH="$HOME/bin:$PATH"' > .bash_profile
+replace:  # applied in order, after the two {workdir} keys, which cast.py puts first
+  "{workdir}/": "~/"
+  "{workdir}": "~"
+  "~/.tmp": "$TMPDIR"
+steps:
+  - comment: "1. init in local mode, on a port of its own"
+  - run: "spectio init --local --port 18080"
+    drop: "^warning: nf-spectio not unpacked"
+  - pause: 0.8
+  - clear: true
+  - comment: "2. serve, in the background: the start text names the node, the port and the page"
+  - run: "spectio serve > serve.out 2> serve.err &"
+  - run: "sleep 3; cat serve.out"
+  - pause: 1.0
+  - run: "curl -s http://127.0.0.1:18080/"
+  - pause: 0.6
+  - run: "cat ~/.spectio/server.json"
+  - pause: 1.0
+  - comment: "3. a second serve on the same node is refused, exit 2"
+  - run: "spectio serve"
+    expect_exit: 2
+  - pause: 1.2
+  - clear: true
+  - comment: "4. SIGTERM is a clean stop: server.json is removed"
+  - run: "kill -TERM $(jq .pid ~/.spectio/server.json); sleep 2; ls ~/.spectio"
+  - pause: 0.6
+  - run: "tail -n 3 serve.err"
+  - pause: 1.5

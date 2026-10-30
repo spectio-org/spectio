@@ -411,3 +411,9 @@ media:
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines
     generator: python3 tools/media/cast.py tools/media/casts/spectio-init-doctor.yaml
     outputs: [docs/assets/casts/spectio-init-doctor.cast]
+  - id: spectio-serve
+    kind: cast
+    # the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines,
+    # under the demo host name demo-hpc-login1 (its own UTS namespace: root or user namespaces)
+    generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-serve.yaml'
+    outputs: [docs/assets/casts/spectio-serve.cast]
