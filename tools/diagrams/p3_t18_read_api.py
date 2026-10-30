@@ -269,10 +269,9 @@ def build(theme: Theme) -> Sketch:
         ("no session and no `can` check yet; every run goes to every tab", "R1 SEC-07, Task 16"),
         ("the log reader does not check the file's owner; Task 25 needs it", "R1 SEC-05"),
         ("a delta frame has no size bound: a large scatter, 32 slow tabs", "R1 SEC-03"),
-        ("a time bound on schema patterns, moved on with no owner", "R1 SEC-06, CR-04"),
+        ("a time bound on schema patterns, now FU-P3-20", "R1 SEC-06, CR-04"),
         ("the OpenAPI snapshot is untyped, and holds the package version", "R1 CR-03"),
         ("the task cursor repeats the ID: a cursor format to decide", "R1 CR-05"),
-        ("`about:blank` for 405 is written in a docstring, not the inbox", "R2 CR-03"),
         ("the cap test needs ASGI 2.3; under 2.4 a close is seen late", "R2 CR-04"),
         ("a status outside `HTTPStatus` would be a 500, unreachable today", "R2 SEC-05"),
     )
