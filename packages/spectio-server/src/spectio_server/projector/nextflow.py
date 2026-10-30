@@ -65,10 +65,11 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
     task_id = _task_id(p, data.process, data.tag, data.name)
     n = data.attempt or 1
     values: dict[str, Any] = {"state": state}
+    terminated = state == "failed" and data.errorAction == "TERMINATE"
     if state == "failed":
         values["ignored"] = data.errorAction == "IGNORE"
-        if data.errorAction == "TERMINATE":
-            values["failure_class"] = "tool_error"
+    if terminated:
+        values["failure_class"] = "tool_error"
     if (code := _exit(data)) is not None:
         values["exit"] = code
     row = p.conn.execute(
@@ -93,7 +94,7 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
         p.conn.execute(update(attempts).where(attempts.c.id == attempt_id).values(**values))
     else:
         return  # a late event of a lower or equal rank: logged, no change
-    if state == "failed" and data.errorAction == "TERMINATE":  # the first one: seq order
+    if terminated:  # the first one: seq order
         p.conn.execute(
             update(launches)
             .where(launches.c.id == p.launch_id, launches.c.culprit_attempt_id.is_(None))
