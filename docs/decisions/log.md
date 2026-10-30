@@ -985,3 +985,13 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
   - [Schedulers §3.1.1](../specs/schedulers-and-monitoring.md#311-local-launcher-detach-adopt-exit), Detach (rule 7): no `systemd-run --user --scope` in 0.0.1.
 - **Not written into a spec:** rules 1 and 2 (no runner loop on a SLURM environment, no `--detach`) are build order, closed by P1 Task 10. P1 Task 11's interface changes are listed for the next `/apply-findings` pass on [P3-M3](../progress/W5/P3-M3.md#differences-from-the-plans-interface-task-11).
 - **Open:** see [P3-M3](../progress/W5/P3-M3.md#findings-and-open-questions). The spec's `launch_error` for a run that never had a head is kept; the code follows at follow-up FU-P3-15. The state-file limits go to P1 Task 15, and the session and Host checks to Tasks 12 and 14.
+
+## 2026-10-30 — The 0.0.1 launch API, written into api §5 and dev-env §15.3 (P3 Task 17, inbox #86)
+
+- **Context.** P3 Task 17 built `GET /workflows:inspect` and `POST /runs` ([P1 Task 17](../plans/P1-walking-skeleton.md#task-17-launch-api)) before sign-in (Tasks 12 to 16), in the order of inbox #80 (a). Its review found that the first data routes cannot wait for Tasks 14 and 16: with no Host allow-list and no Origin check, any web page could launch a pipeline through DNS rebinding (CR-P3T17-01, SEC-P3T17-01). P1's Process says the owning spec changes in the same PR.
+- **Applied (assumed — standing rule, [inbox #86](../reviews/inbox.md#86-assumed-the-001-launch-api-served-in-local-mode-only-before-sign-in) (a) for rules 2 to 10; [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** three dated notes. No section number changed.
+  - [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), note 2026-10-30: the two endpoints, their 0.0.1 shapes and errors, that a symlinked pipeline file counts as absent, and where the API is not served.
+  - [Dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 4: enforced from Task 17, `400`.
+  - Dev-env §15.3 req. 7: enforced from Task 17, `403` and `415`, with a cross-site stand-in for the session cookie that fails open for a `GET`.
+- **Reserved, not assumed:** whether a local-mode API with no session may be served at all before Tasks 12 to 16 (inbox #86, security posture). Rule 1 stays as built until Thomas decides.
+- **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions): follow-ups FU-P3-17 (API input hardening), FU-P3-18 (Git fetch hardening) and FU-P3-19 (API test hygiene). P1 Task 17's interface changes are listed for the next `/apply-findings` pass.
