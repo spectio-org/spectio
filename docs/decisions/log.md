@@ -995,3 +995,13 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
   - Dev-env §15.3 req. 7: enforced from Task 17, `403` and `415`, with a cross-site stand-in for the session cookie that fails open for a `GET`.
 - **Reserved, not assumed:** whether a local-mode API with no session may be served at all before Tasks 12 to 16 (inbox #86, security posture). Rule 1 stays as built until Thomas decides.
 - **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions): follow-ups FU-P3-17 (API input hardening), FU-P3-18 (Git fetch hardening) and FU-P3-19 (API test hygiene). P1 Task 17's interface changes are listed for the next `/apply-findings` pass.
+
+## 2026-10-30 — The 0.0.1 read API, logs, cancel and stream, written into api §4.1, §5 and §8.3 (P3 Task 18, inbox #87)
+
+- **Context.** P3 Task 18 built the read routes, the log tail, `:cancel` and `GET /events/stream` ([P1 Task 18](../plans/P1-walking-skeleton.md#task-18-read-api-logs-and-cancel)) before sign-in, in the order of inbox #80 (a), behind the gate of #86. Its review fixed a stream cap that concurrent opens could pass, a Cancel logged with no actor, and refusals that were not problem documents (CR-P3T18-02, SEC-P3T18-01, SEC-P3T18-04, round 1). P1's Process says the owning spec changes in the same PR.
+- **Applied (assumed — standing rule, [inbox #87](../reviews/inbox.md#87-assumed-the-001-read-api-logs-cancel-and-stream-in-the-local-only-order) (a); [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** three dated notes. No section number changed.
+  - [api §4.1](../specs/api-and-data-model.md#41-wire-conventions): the slugs `length-required` (411) and `request-too-large` (413), and the framework's refusals: `422` on `body`, `404 not-found`, `about:blank` for a status with no slug (#87 rules 10 and 12).
+  - [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), note of Task 18: the run's 0.0.1 shape, lists and cursors, `/version`, the log tail and its confinement, `:cancel` and its actor (#87 rules 3, 4, 6, 8, 9, 11, 13).
+  - [api §8.3](../specs/api-and-data-model.md#83-live-streams-sse): the in-process stream, its frames, slow clients and the cap of 32 open connections (#87 rule 7).
+- **Not yet applied:** api §7 (`workflow_versions.version`, `run_stages` without `gate_id`, `tasks.stage_id`) and P1 Task 18's interface, at the next `/apply-findings`.
+- **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions): follow-ups FU-P3-19 (the flaky-test question), FU-P3-20 (stream and refusal hardening) and FU-P3-21 (a typed OpenAPI document and the task cursor, before Task 19).
