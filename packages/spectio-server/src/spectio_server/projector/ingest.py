@@ -5,11 +5,13 @@ events to the log, projects them, and stores the cursor and the drop counts; the
 `projected_seq` therefore always equals its `last_seq`. Event IDs make a replay a no-op.
 """
 
+import logging
 from collections import Counter
 from typing import Any
 
 from pydantic import ValidationError
 from sqlalchemy import Connection, select, update
+from sqlalchemy.exc import OperationalError
 
 from spectio.runner.types import HeadReport, SpoolBatch
 from spectio_sdk.events import UnknownEventType, parse_data
@@ -20,6 +22,8 @@ from spectio_server.store.schema import events, launches, spool_cursors, spool_d
 _IN_CHUNK = 500  # event IDs per `IN (…)`, well under SQLite's bound-parameter limit
 # Classes of a head that ended with no terminal engine event: its open attempts failed (§7.1).
 HEAD_FAILURES = frozenset({"head_lost", "engine_fault"})
+
+log = logging.getLogger(__name__)
 
 
 def load_cursor(conn: Connection, launch_id: str) -> dict[str, int]:
@@ -40,8 +44,9 @@ def ingest(conn: Connection, launch_id: str, batch: SpoolBatch) -> None:
     log whoever built the batch (P1 Assumption 3); data that fails is dropped and counted
     `invalid`. Each event is logged and projected in its own savepoint: one whose projection
     raises is rolled back, dropped and counted `projection_error`, so it never holds back the
-    cursor (dev-env §15.3 req. 6). Raises ValueError, and writes nothing, when an event is of
-    another run or launch.
+    cursor (dev-env §15.3 req. 6), and is logged with its traceback. A database
+    `OperationalError` (disk full, I/O error) propagates, so the batch rolls back and the cursor
+    stays. Raises ValueError, and writes nothing, when an event is of another run or launch.
     """
     p = Projection.load(conn, launch_id)
     if any(e.run != p.run_id or e.launch != p.launch_n for e in batch.events):
@@ -72,7 +77,10 @@ def ingest(conn: Connection, launch_id: str, batch: SpoolBatch) -> None:
             engine, hook = event.type.split(".", 1)
             if engine == "nextflow":
                 nextflow.project(p, hook, data)
+        except OperationalError:
+            raise  # a storage fault: the whole batch rolls back and the cursor stays
         except Exception:
+            log.exception("event %s of %s not projected", event.id, p.run_id)
             savepoint.rollback()
             p.last_seq, p.state, p.head_state = kept
             drops["projection_error"] += 1

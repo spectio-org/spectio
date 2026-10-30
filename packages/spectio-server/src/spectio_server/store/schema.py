@@ -286,6 +286,7 @@ tasks = Table(
     Column("name", String),  # Nextflow's task name: the key of an untagged task (inbox #77)
     Column("state", String, nullable=False),
     _check("tasks", "state", TASK_STATES),
+    Index("ix_tasks_run_key", "run_id", "process_or_rule", "tag", "name"),  # the projector's key
 )
 
 attempts = Table(
@@ -302,6 +303,7 @@ attempts = Table(
     Column("resources", Json),
     _check("attempts", "state", ATTEMPT_STATES),
     _check("attempts", "failure_class", FAILURE_CLASSES, nullable=True),
+    UniqueConstraint("task_id", "launch_n", "n", name="uq_attempts_key"),  # api §8.2
 )
 
 events = Table(

@@ -5,6 +5,7 @@ ingested through the one writer (Task 2).
 """
 
 import json
+import logging
 import shutil
 from collections import Counter
 from collections.abc import Iterator
@@ -14,12 +15,15 @@ from typing import Any
 
 import pytest
 from sqlalchemy import Connection, Engine, func, insert, select, update
+from sqlalchemy import event as sa_event
+from sqlalchemy.exc import IntegrityError, OperationalError
 
 from spectio.runner.spool import read_spool, try_read_spool
 from spectio.runner.types import Failure, HeadReport, SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server.projector import nextflow as nextflow_projector
 from spectio_server.projector.ingest import apply_head_report, ingest, load_cursor
+from spectio_server.projector.runs import Projection
 from spectio_server.store.db import open_db
 from spectio_server.store.schema import (
     attempts,
@@ -416,7 +420,10 @@ def test_req6_malformed_trace_exit_dropped(engine: Engine, writer: Writer) -> No
 
 
 def test_projection_error_drops_one_event_only(
-    engine: Engine, writer: Writer, monkeypatch: pytest.MonkeyPatch
+    engine: Engine,
+    writer: Writer,
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     # One event whose projection raises is dropped and counted; the batch commits (§15.3 req. 6).
     real = nextflow_projector.project
@@ -427,12 +434,17 @@ def test_projection_error_drops_one_event_only(
         real(p, hook, data)
 
     monkeypatch.setattr(nextflow_projector, "project", project)
-    ingest_events(
-        writer,
-        task(1, "onTaskStart", tag="BAD"),
-        task(2, "onTaskStart", tag="S02"),
-        cursor={NF_FILE: 999},
-    )
+    with caplog.at_level(logging.ERROR, logger="spectio_server.projector.ingest"):
+        ingest_events(
+            writer,
+            task(1, "onTaskStart", tag="BAD"),
+            task(2, "onTaskStart", tag="S02"),
+            cursor={NF_FILE: 999},
+        )
+    # The dropped event leaves a log line with its traceback (CR-P3T04-04).
+    [record] = caplog.records
+    assert record.getMessage() == f"event evt_x1 of {RUN_ID} not projected"
+    assert record.exc_info is not None and record.exc_info[0] is OverflowError
     with engine.connect() as conn:
         assert load_cursor(conn, LAUNCH_ID) == {NF_FILE: 999}
         drops = conn.execute(select(spool_drops.c.reason, spool_drops.c.count)).all()
@@ -442,6 +454,92 @@ def test_projection_error_drops_one_event_only(
     assert "evt_x1" not in logged and "evt_x2" in logged
     run = run_row(engine)
     assert run.state == "running" and run.projected_seq == run.last_seq == len(logged)
+
+
+def test_storage_error_rolls_back_the_batch(
+    engine: Engine, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # A database fault is no projection error: the batch rolls back, the cursor stays
+    # (CR-P3T04-04).
+    real = nextflow_projector.project
+
+    def project(p: Any, hook: str, data: Any) -> None:
+        if getattr(data, "tag", None) == "BAD":
+            raise OperationalError("UPDATE …", {}, Exception("disk I/O error"))
+        real(p, hook, data)
+
+    monkeypatch.setattr(nextflow_projector, "project", project)
+    with pytest.raises(OperationalError):
+        ingest_events(
+            writer,
+            task(1, "onTaskStart", tag="S01"),
+            task(2, "onTaskStart", tag="BAD"),
+            cursor={NF_FILE: 999},
+        )
+    with engine.connect() as conn:
+        assert load_cursor(conn, LAUNCH_ID) == {}
+        assert conn.execute(select(func.count()).select_from(events)).scalar_one() == 0
+        assert conn.execute(select(func.count()).select_from(spool_drops)).scalar_one() == 0
+    assert attempt_states(engine) == []
+
+
+def test_attempt_key_is_unique(engine: Engine, writer: Writer) -> None:
+    # api §8.2: one attempt per task, launch and attempt number (CR-P3T04-03).
+    ingest_events(writer, task(1, "onTaskStart"))
+
+    def duplicate(conn: Connection) -> None:
+        row = conn.execute(select(attempts)).one()._asdict()
+        conn.execute(insert(attempts).values({**row, "id": "att_dup"}))
+
+    with pytest.raises(IntegrityError):
+        writer.submit(duplicate).result()
+
+
+def test_projector_queries_use_indexes(engine: Engine, writer: Writer) -> None:
+    # No projector query scans the whole tasks or attempts table (CR-P3T04-03).
+    seen: list[tuple[str, Any]] = []
+
+    def record(conn: Any, cursor: Any, sql: str, params: Any, ctx: Any, many: bool) -> None:
+        if not many and ("tasks" in sql or "attempts" in sql):
+            seen.append((sql, params))
+
+    sa_event.listen(engine, "before_cursor_execute", record)
+    try:
+        ingest_events(writer, task(1, "onTaskStart"), task(2, "onTaskStart", tag=None, name="M"))
+        head(writer, report(state="exited", ended=True, failure=Failure("head_lost", "gone", None)))
+        ingest_events(writer, event(3, "onFlowComplete", success=False))
+    finally:
+        sa_event.remove(engine, "before_cursor_execute", record)
+    scans = []
+    with engine.connect() as conn:
+        for sql, params in seen:
+            plan = conn.exec_driver_sql(f"EXPLAIN QUERY PLAN {sql}", params).all()
+            scans += [(sql, row[-1]) for row in plan if row[-1] in ("SCAN tasks", "SCAN attempts")]
+    assert seen and scans == []
+
+
+def test_end_launch_syncs_only_the_tasks_it_changed(
+    engine: Engine, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # CR-P3T04-03: closing a launch re-reads the state of the tasks it closed, not the run's.
+    ingest_events(
+        writer,
+        task(1, "onTaskStart"),
+        task(2, "onTaskComplete", tag="S02", trace={"status": "COMPLETED"}),
+    )
+    synced: list[list[str]] = []
+    real = Projection.sync_tasks
+
+    def spy(self: Projection, task_ids: Any) -> None:
+        synced.append(sorted(task_ids))
+        real(self, task_ids)
+
+    monkeypatch.setattr(Projection, "sync_tasks", spy)
+    head(writer, report(state="exited", ended=True, failure=Failure("head_lost", "gone", None)))
+    with engine.connect() as conn:
+        s01 = conn.execute(select(tasks.c.id).where(tasks.c.tag == "S01")).scalar_one()
+    assert synced == [[s01]]
+    assert run_row(engine).task_counts == {"failed": 1, "succeeded": 1}
 
 
 def test_failure_without_terminate_is_engine_fault(engine: Engine, writer: Writer) -> None:

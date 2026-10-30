@@ -91,7 +91,7 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
         p.conn.execute(update(attempts).where(attempts.c.id == row.id).values(**values))
     else:
         return  # a late event of a lower or equal rank: logged, no change
-    p.sync_tasks(task_id)
+    p.sync_tasks([task_id])
 
 
 def _task_id(p: Projection, process: str, tag: str | None, name: str | None) -> str:
