@@ -332,7 +332,7 @@ class SpectioObserver implements TraceObserverV2 {
         final out = [:]
         for (String k : TRACE_KEYS) {
             if (store.containsKey(k))
-                out[k] = k == 'exit' && str(store[k]) == NO_EXIT.toString() ? null : str(store[k])
+                out[k] = str(k == 'exit' ? exit(store[k]) : store[k])
         }
         return out
     }
