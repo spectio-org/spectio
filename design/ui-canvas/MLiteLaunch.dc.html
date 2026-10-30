@@ -132,15 +132,19 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
         <div role="group" aria-labelledby="s1-eng-l s1-h" style="display: flex; flex-direction: column; gap: 6px;">
           <span id="s1-eng-l" style="font-size: 13.5px; font-weight: 600;">Engine</span>
           <span style="display: flex; gap: 8px;"><button type="button" class="eng" aria-pressed="false" aria-describedby="s1-eng-why"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="16" height="16" alt="" style="display: block; object-fit: contain;">Nextflow</button><button type="button" class="eng" aria-pressed="false" aria-describedby="s1-eng-why"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="16" height="16" alt="" style="display: block; object-fit: contain;">Snakemake</button></span>
-          <span id="s1-eng-why" style="font-size: 12.5px; font-weight: 600; color: #8F5806;">No guess: choose the engine. Launch stays off until you do.</span>
+          <span id="s1-eng-why" style="font-size: 12.5px; font-weight: 600; color: #8F5806;">No guess: choose the engine.</span>
+        </div>
+        <div role="group" aria-label="Pinned launch bar, as drawn in this state" style="display: flex; align-items: center; gap: 12px; border-top: 1px solid #ECEDF2; padding-top: 10px;">
+          <span id="s1-go-why" style="flex-grow: 1; min-width: 0; font-size: 12.5px; font-weight: 600; color: #B02A2A; line-height: 1.35;">Choose the engine</span>
+          <button type="button" disabled aria-describedby="s1-go-why s1-h" style="height: 48px; padding: 0 22px; border-radius: 14px; border: none; background: #C4C7D4; color: #FFFFFF; font: 600 15px 'Inter', sans-serif; flex-shrink: 0; cursor: not-allowed;">Launch</button>
         </div>
     </section>
     <section aria-labelledby="s2-h" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
         <h3 id="s2-h" style="margin: 0; font-size: 14px; font-weight: 600;">Refused: a file:// URL</h3>
         <div style="display: flex; flex-direction: column; gap: 5px;">
           <label for="s2-location" style="font-size: 13.5px; font-weight: 600;">Pipeline</label>
-          <input id="s2-location" value="file:///g/demo-lab/pipelines/nf-core-rnaseq_3.27.0" spellcheck="false" aria-invalid="true" aria-describedby="s2-location-help s2-location-err" style="font: 15px 'Inter', sans-serif; border-radius: 12px; border: 1px solid #C4C7D4; padding: 10px 12px; background: #FFFFFF; color: #0F1020; box-sizing: border-box; width: 100%; min-height: 44px; font-family: 'JetBrains Mono', monospace; font-size: 13px; border-color: #DC3B3B; box-shadow: 0 0 0 1px #DC3B3B;">
-          <span id="s2-location-err" style="font-size: 12.5px; font-weight: 600; color: #B02A2A; line-height: 1.4;">Refused: https:// or ssh only, so file:// and ext:: are refused. For a directory here, type its absolute path.</span>
+          <input id="s2-location" value="file:///g/demo-lab/pipelines/nf-core-rnaseq_3.27.0" spellcheck="false" aria-invalid="true" aria-describedby="s2-location-err s2-location-help" style="font: 15px 'Inter', sans-serif; border-radius: 12px; border: 1px solid #C4C7D4; padding: 10px 12px; background: #FFFFFF; color: #0F1020; box-sizing: border-box; width: 100%; min-height: 44px; font-family: 'JetBrains Mono', monospace; font-size: 13px; border-color: #DC3B3B; box-shadow: 0 0 0 1px #DC3B3B;">
+          <span id="s2-location-err" role="alert" style="font-size: 12.5px; font-weight: 600; color: #B02A2A; line-height: 1.4;">Refused: Git repositories are fetched over https:// or ssh only, so file:// and ext:: are refused. For a directory here, type its absolute path.</span>
           <span id="s2-location-help" style="font-size: 12px; color: #4D5065; line-height: 1.4;">An absolute path, a GitHub or nf-core name, or an https:// or ssh URL.</span>
         </div>
         <div style="display: flex; flex-direction: column; gap: 5px;">

@@ -31,6 +31,7 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 .btn-go{height:44px;padding:0 22px;border:none;border-radius:12px;background:#7750D4;color:#FFFFFF;font:600 14px 'Inter',sans-serif;cursor:pointer;flex-shrink:0}
 .btn-go:disabled{background:#C4C7D4;cursor:not-allowed}
 .btn-load{flex-shrink:0;height:38px;padding:0 16px;border-radius:10px;border:none;background:#F6F2FE;color:#4D368B;font:600 13px 'Inter',sans-serif;cursor:pointer}
+@media (min-width: 1200px){.launch-aside{position:sticky;top:8px}}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -65,12 +66,11 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
             <input id="f-location" value="/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0" spellcheck="false" aria-describedby="f-location-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
             <span id="f-location-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">An absolute path your account can read, a GitHub or nf-core name such as nf-core/rnaseq, or an https:// or ssh URL.</span>
           </div>
-          <div style="flex: 1 1 220px; max-width: 260px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+          <div style="flex: 1 1 300px; max-width: 360px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
             <label for="f-revision" style="font-size: 13px; font-weight: 600;">Revision <span style="font-weight: 400; color: #4D5065;">(Git only)</span></label>
-            <input id="f-revision" placeholder="tag, branch or commit" disabled spellcheck="false" aria-describedby="f-revision-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span style="display: flex; gap: 8px; min-width: 0;"><input id="f-revision" placeholder="tag, branch or commit" disabled spellcheck="false" aria-describedby="f-revision-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; flex: 1 1 auto; min-width: 0;"><button type="button" class="btn-load">Load</button></span>
             <span id="f-revision-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">Read as a directory: there is no revision to give.</span>
           </div>
-          <button type="button" class="btn-load" style="margin-top: 24px;">Load</button>
         </div>
         <div role="status" style="display: flex; align-items: center; gap: 12px; border-radius: 12px; background: #F7F7FB; padding: 10px 12px; flex-wrap: wrap;">
           <span style="width: 36px; height: 36px; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="22" height="22" alt="" style="display: block; object-fit: contain;"></span>
@@ -84,7 +84,7 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
           <span id="f-eng-l" style="font-size: 13px; font-weight: 600; flex: 0 0 64px;">Engine</span>
           <button type="button" class="eng" aria-pressed="true" aria-describedby="f-eng-why"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="16" height="16" alt="" style="display: block; object-fit: contain;">Nextflow</button>
           <button type="button" class="eng" aria-pressed="false" aria-describedby="f-eng-why"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="16" height="16" alt="" style="display: block; object-fit: contain;">Snakemake</button>
-          <span id="f-eng-why" style="font-size: 12.5px; color: #4D5065;">Guessed from main.nf · change it if the guess is wrong</span>
+          <span id="f-eng-why" style="font-size: 12.5px; color: #4D5065;">Nextflow, as in rnaseq-2026-10-25 · change it if it is wrong</span>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px;">
           <div style="display: flex; flex-direction: column; gap: 5px;">
@@ -172,11 +172,11 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
               </div>
             </details>
           </sc-for>
-          <span style="font-size: 11.5px; color: #6E7287;">Data: groups, parameter names, help texts and defaults from nf-core/rnaseq 3.27.0 nextflow_schema.json (a1fcddd: 136 parameters, 22 of them hidden; the first three of each group are drawn); paths, values, the login node and the two states below are fixture data.</span>
+          <span style="font-size: 11.5px; color: #6E7287;">Data: groups, parameter names, help texts and defaults from nf-core/rnaseq 3.27.0 nextflow_schema.json (a1fcddd: 136 parameters, 22 of them hidden; the first three of each group are drawn); paths, values, the login node and the states below are fixture data.</span>
         </div></div></section>
 </section>
 
-        <aside style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+        <aside class="launch-aside" style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
           <section class="cx" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><h2 id="h-where" style="margin: 0; font-size: 15px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-3" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><span style="min-width: 0;">Where it runs</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">SLURM · login1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-3"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
             
             <dl style="margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
@@ -196,14 +196,15 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 }</pre>
             <span style="font-size: 11.5px; color: #A6A9BA;">Only values you set · written to the run directory and passed with -params-file</span>
           </div></div></section>
-          <span id="launch-what" style="font-size: 12px; color: #4D5065;">Launch, at the top of the page, starts the engine in a new tmux session on login1 and opens the run page. The run shows Queued until the engine has started.</span>
+          <button type="button" class="btn-go" aria-describedby="launch-what" style="height: 46px;">Launch</button>
+          <span id="launch-what" style="font-size: 12px; color: #4D5065;">Starts the engine in a new tmux session on login1 and opens the run page. The run shows Queued until the engine has started.</span>
         </aside>
       </div>
 
       <section aria-labelledby="h-states" style="border-top: 1px dashed #C4C7D4; padding-top: 18px; display: flex; flex-direction: column; gap: 12px;">
         <div style="display: flex; flex-direction: column; gap: 2px;">
           <h2 id="h-states" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Pipeline section: other states</h2>
-          <span style="font-size: 12.5px; color: #4D5065;">Drawn side by side for the review; the page shows one state at a time. The engine guess: main.nf means Nextflow, Snakefile or workflow/Snakefile means Snakemake; both or neither, no guess.</span>
+          <span style="font-size: 12.5px; color: #4D5065;">Drawn side by side for the review; the page shows one state at a time. The engine guess: main.nf means Nextflow, Snakefile or workflow/Snakefile means Snakemake; both or neither, no guess. Errors are announced when Load is pressed (role="alert").</span>
         </div>
         <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 14px; align-items: start;">
         <section aria-labelledby="s1-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
@@ -214,12 +215,11 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
             <input id="s1-location" value="/g/demo-lab/pipelines/rnaseq-ports" spellcheck="false" aria-describedby="s1-location-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
             <span id="s1-location-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">An absolute path your account can read, a GitHub or nf-core name such as nf-core/rnaseq, or an https:// or ssh URL.</span>
           </div>
-          <div style="flex: 1 1 220px; max-width: 260px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+          <div style="flex: 1 1 300px; max-width: 360px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
             <label for="s1-revision" style="font-size: 13px; font-weight: 600;">Revision <span style="font-weight: 400; color: #4D5065;">(Git only)</span></label>
-            <input id="s1-revision" placeholder="tag, branch or commit" disabled spellcheck="false" aria-describedby="s1-revision-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span style="display: flex; gap: 8px; min-width: 0;"><input id="s1-revision" placeholder="tag, branch or commit" disabled spellcheck="false" aria-describedby="s1-revision-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; flex: 1 1 auto; min-width: 0;"><button type="button" class="btn-load" aria-describedby="s1-h">Load</button></span>
             <span id="s1-revision-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">Read as a directory: there is no revision to give.</span>
           </div>
-          <button type="button" class="btn-load" aria-describedby="s1-h" style="margin-top: 24px;">Load</button>
         </div>
         <div role="status" style="display: flex; align-items: center; gap: 12px; border-radius: 12px; background: #FEF7EC; padding: 10px 12px; flex-wrap: wrap;">
           <span style="width: 36px; height: 36px; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#8F5806" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg></span>
@@ -240,21 +240,53 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
           <span id="s1-go-why" style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">Choose the engine</span>
         </div>
         </section>
+        <section aria-labelledby="s3-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
+          <h3 id="s3-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Guess overruled: Snakemake chosen, no Snakefile here</h3>
+        <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start;">
+          <div style="flex: 999 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+            <label for="s3-location" style="font-size: 13px; font-weight: 600;">Pipeline</label>
+            <input id="s3-location" value="/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0" spellcheck="false" aria-describedby="s3-location-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span id="s3-location-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">An absolute path your account can read, a GitHub or nf-core name such as nf-core/rnaseq, or an https:// or ssh URL.</span>
+          </div>
+          <div style="flex: 1 1 300px; max-width: 360px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+            <label for="s3-revision" style="font-size: 13px; font-weight: 600;">Revision <span style="font-weight: 400; color: #4D5065;">(Git only)</span></label>
+            <span style="display: flex; gap: 8px; min-width: 0;"><input id="s3-revision" placeholder="tag, branch or commit" disabled spellcheck="false" aria-describedby="s3-revision-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; flex: 1 1 auto; min-width: 0;"><button type="button" class="btn-load" aria-describedby="s3-h">Load</button></span>
+            <span id="s3-revision-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">Read as a directory: there is no revision to give.</span>
+          </div>
+        </div>
+        <div role="status" style="display: flex; align-items: center; gap: 12px; border-radius: 12px; background: #F7F7FB; padding: 10px 12px; flex-wrap: wrap;">
+          <span style="width: 36px; height: 36px; border-radius: 11px; background: #FFFFFF; box-shadow: inset 0 0 0 1px #DFE1EA; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><img src="/_blob/b04c0e1634ffbccff3a43d65ce1316d4" width="22" height="22" alt="" style="display: block; object-fit: contain;"></span>
+          <span style="flex: 1 1 220px; display: flex; flex-direction: column; gap: 1px; min-width: 0;">
+            <span style="font-size: 14px; font-weight: 600;">nf-core/rnaseq 3.27.0</span>
+            <span style="font-size: 12.5px; color: #4D5065; line-height: 1.45;">A directory on this machine · main.nf found · no Snakefile, no workflow/Snakefile</span>
+          </span>
+          <span style="font-size: 12.5px; font-weight: 600; color: #157A4B; display: flex; align-items: center; gap: 6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>Loaded</span>
+        </div>
+        <div role="group" aria-labelledby="s3-eng-l s3-h" style="display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap;">
+          <span id="s3-eng-l" style="font-size: 13px; font-weight: 600; flex: 0 0 64px;">Engine</span>
+          <button type="button" class="eng" aria-pressed="false" aria-describedby="s3-eng-why"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="16" height="16" alt="" style="display: block; object-fit: contain;">Nextflow</button>
+          <button type="button" class="eng" aria-pressed="true" aria-describedby="s3-eng-why"><svg class="tick" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg><img src="/_blob/7a35665829f51132cb3bcb9a4c3e638c" width="16" height="16" alt="" style="display: block; object-fit: contain;">Snakemake</button>
+          <span id="s3-eng-why" style="font-size: 12.5px; font-weight: 600; color: #8F5806;">workflow/Snakefile not found: Launch will refuse. Guessed: Nextflow (main.nf)</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid #ECEDF2; padding-top: 12px;">
+          <button type="button" class="btn-go" disabled aria-describedby="s3-go-why s3-h" style="height: 40px;">Launch</button>
+          <span id="s3-go-why" style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">No Snakefile in this directory: press Nextflow or check the path</span>
+        </div>
+        </section>
         <section aria-labelledby="s2-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px; min-width: 0;">
           <h3 id="s2-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Refused: a file:// URL</h3>
         <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start;">
           <div style="flex: 999 1 280px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
             <label for="s2-location" style="font-size: 13px; font-weight: 600;">Pipeline</label>
-            <input id="s2-location" value="file:///g/demo-lab/pipelines/nf-core-rnaseq_3.27.0" spellcheck="false" aria-describedby="s2-location-help s2-location-err" aria-invalid="true" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
-            <span id="s2-location-err" style="font-size: 12.5px; font-weight: 600; color: #B02A2A; line-height: 1.45;">Refused: Git repositories are fetched over https:// or ssh only, so file:// and ext:: are refused. For a directory on this machine, type its absolute path.</span>
+            <input id="s2-location" value="file:///g/demo-lab/pipelines/nf-core-rnaseq_3.27.0" spellcheck="false" aria-describedby="s2-location-err s2-location-help" aria-invalid="true" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+            <span id="s2-location-err" role="alert" style="font-size: 12.5px; font-weight: 600; color: #B02A2A; line-height: 1.45;">Refused: Git repositories are fetched over https:// or ssh only, so file:// and ext:: are refused. For a directory on this machine, type its absolute path.</span>
             <span id="s2-location-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">An absolute path your account can read, a GitHub or nf-core name such as nf-core/rnaseq, or an https:// or ssh URL.</span>
           </div>
-          <div style="flex: 1 1 220px; max-width: 260px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
-            <label for="s2-revision" style="font-size: 13px; font-weight: 600;">Revision <span style="font-weight: 400; color: #4D5065;">(Git only)</span></label>
-            <input id="s2-revision" value="3.27.0" spellcheck="false" aria-describedby="s2-revision-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px;">
+          <div style="flex: 1 1 300px; max-width: 360px; min-width: 0; display: flex; flex-direction: column; gap: 5px;">
+            <label for="s2-revision" style="font-size: 13px; font-weight: 600;">Revision <span aria-hidden="true" style="color: #B02A2A;">*</span> <span style="font-weight: 400; color: #4D5065;">(Git only)</span></label>
+            <span style="display: flex; gap: 8px; min-width: 0;"><input id="s2-revision" value="3.27.0" required aria-required="true" spellcheck="false" aria-describedby="s2-revision-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12.5px; flex: 1 1 auto; min-width: 0;"><button type="button" class="btn-load" aria-describedby="s2-h">Load</button></span>
             <span id="s2-revision-help" style="font-size: 12px; color: #4D5065; line-height: 1.45;">Tag, branch or commit.</span>
           </div>
-          <button type="button" class="btn-load" aria-describedby="s2-h" style="margin-top: 24px;">Load</button>
         </div>
         <span style="font-size: 12.5px; color: #4D5065;">Nothing was fetched or loaded: the engine and the form appear once a pipeline loads.</span>
         <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border-top: 1px solid #ECEDF2; padding-top: 12px;">
