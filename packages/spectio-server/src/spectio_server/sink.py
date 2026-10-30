@@ -10,7 +10,7 @@ import logging
 from collections.abc import Callable
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Any, TypeVar, cast
+from typing import Any, TypeVar, cast, get_args
 
 from sqlalchemy import Connection, Row, and_, or_, select, update
 
@@ -30,7 +30,7 @@ from spectio_server.store.writer import Writer
 log = logging.getLogger(__name__)
 
 LEASE = timedelta(seconds=60)
-ENGINES = ("nextflow", "snakemake")
+ENGINES = get_args(Engine)
 
 T = TypeVar("T")
 
