@@ -390,3 +390,8 @@ media:
       - docs/assets/diagrams/p3-t08-init-doctor_dark.svg
       - docs/assets/diagrams/p3-t08-init-doctor_light.png
       - docs/assets/diagrams/p3-t08-init-doctor_dark.png
+  - id: spectio-init-doctor
+    kind: cast
+    # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines
+    generator: python3 tools/media/cast.py tools/media/casts/spectio-init-doctor.yaml
+    outputs: [docs/assets/casts/spectio-init-doctor.cast]
