@@ -42,7 +42,6 @@ _REFUSALS = {
     errno.ELOOP: "symlink",  # swapped for a symlink since the lstat
     errno.EACCES: "unreadable",
     errno.ENXIO: "unreadable",  # a socket
-    errno.ENOTDIR: "unreadable",
 }
 
 

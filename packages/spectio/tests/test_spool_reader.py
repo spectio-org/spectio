@@ -576,7 +576,7 @@ def test_req12_spool_directory_of_another_owner_refused(
 # --- One bad file never stops the reader (CR-P3T3-01, SEC-P3T3-03) -------------------------
 
 
-@pytest.mark.parametrize("error", [errno.EACCES, errno.ENXIO, errno.ENOTDIR])
+@pytest.mark.parametrize("error", [errno.EACCES, errno.ENXIO])
 def test_unreadable_file_refused_and_the_next_one_read(
     events_dir: Path, monkeypatch: pytest.MonkeyPatch, error: int
 ) -> None:
