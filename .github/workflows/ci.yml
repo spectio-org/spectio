@@ -84,8 +84,9 @@ jobs:
       - run: uv run --locked mypy packages
       - run: uv run --locked lint-imports
       - name: Import contracts in a fresh environment (SEC-P3T1-06)
-        # Each package installed with only what it declares: importing every module must neither
-        # need nor load a forbidden package (lint-imports sees only the static imports).
+        # Each package installed with only what it declares, at the versions and hashes of uv.lock:
+        # importing every module must neither need nor load a forbidden package (lint-imports
+        # sees only the static imports).
         run: |
           . dev/versions.env
           check='import importlib, importlib.util, pkgutil, sys
@@ -94,13 +95,19 @@ jobs:
               importlib.import_module(info.name)
           found = [b for b in banned if b in sys.modules or importlib.util.find_spec(b)]
           sys.exit(f"{root} pulls in {found}" if found else None)'
+          tmp=$(mktemp -d)
+          # fresh <package> <dirs>: a venv with the package's locked dependencies, then <dirs>.
           # --no-cache: uv would reuse a wheel built from older sources of the same version.
           fresh() {
-            uv run --no-cache --isolated --no-project --python "$PYTHON_VERSION" \
-              --with ./packages/spectio-sdk "$@"
+            uv venv --quiet --python "$PYTHON_VERSION" "$tmp/$1"
+            uv export --frozen --no-dev --no-emit-workspace --package "$1" -o "$tmp/$1.txt"
+            uv pip install --no-cache --python "$tmp/$1/bin/python" --require-hashes -r "$tmp/$1.txt"
+            uv pip install --no-cache --python "$tmp/$1/bin/python" --no-deps "${@:2}"
           }
-          fresh python -I -c "$check" spectio_sdk spectio spectio_server fastapi sqlalchemy
-          fresh --with ./packages/spectio python -I -c "$check" spectio spectio_server fastapi sqlalchemy
+          fresh spectio-sdk ./packages/spectio-sdk
+          "$tmp/spectio-sdk/bin/python" -I -c "$check" spectio_sdk spectio spectio_server fastapi sqlalchemy
+          fresh spectio ./packages/spectio-sdk ./packages/spectio
+          "$tmp/spectio/bin/python" -I -c "$check" spectio spectio_server fastapi sqlalchemy
       - run: uv run --locked pytest
 
   pipelines-synthetic:
