@@ -958,3 +958,12 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
   - Rule 4: `Plugin-Requires: >=25.04.0` with no upper bound, in a dated note of [architecture §13.4](../specs/architecture-plugins-and-packaging.md#134-supported-engine-versions); the 25.04.8 CI leg is follow-up FU-P3-11.
 - **Also:** `exitStatus` and `trace.exit` of 2147483647 ("no exit status yet") are never sent (FU-P3-07, api §14.1); [dev-env §11](../specs/dev-environment-and-testing.md#11-ci-workflows) says `pipelines-synthetic.yml` runs the bridge's engine tests.
 - **Open:** see [P3-M1](../progress/W5/P3-M1.md#findings-and-open-questions): FU-P3-09 to FU-P3-11, and the writer's confinement for P1 Task 25.
+
+## 2026-10-30 — spectio init and doctor written into architecture §7.3 and dev-env §15.3 (inbox #83)
+
+- **Context.** P3 Task 8 built `spectio init` and `spectio doctor` ([P1 Task 8](../plans/P1-walking-skeleton.md#task-8-spectio-init-and-spectio-doctor)). Its code decides where `spectio.toml` lives, which architecture §7.3 states otherwise, and how `init` treats the data directory and the default database directory, which no spec fixed. P1's Process says the owning spec changes in the same PR.
+- **Applied (standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30); still assumed, pending Thomas):**
+  - [inbox #83](../reviews/inbox.md#83-assumed-where-spectiotoml-lives-the-first-principal-and-the-0700-rule-of-spectio-init) (a) rule 1: `spectio.toml` is `$SPECTIO_CONFIG`, else `~/.spectio/spectio.toml`, in a dated note of [architecture §7.3](../specs/architecture-plugins-and-packaging.md#73-python-bundle), with the 0.0.1 settings and `extra_args` per engine; a second note there lists what the 0.0.1 `spectio doctor` checks.
+  - Rule 2: the first principal is the Unix user, its own creator, until follow-up FU-P3-03 adds the `system` principal.
+  - Rules 3 and 4: the default database directory is never recorded, and the data directory (and a separate config directory) must be a real 0700 directory of the user, in two dated notes of [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), Where data lives.
+- **Open:** see [P3-M2](../progress/W5/P3-M2.md#findings-and-open-questions): FU-P3-12 and FU-P3-13, the config file's owner and mode for P1 Task 15, and the state file for P1 Task 11.
