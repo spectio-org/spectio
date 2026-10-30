@@ -599,13 +599,23 @@ This section owns the ingest contract: what the engine bridges (`nf-spectio`, `s
 
 Written 2026-10-29 (P1 Task 1, [decision log](../decisions/log.md#2026-10-29-api-14-driven-run-part-written-inbox-36-a)). In 0.0.1 the bridges only append to a spool in the launch directory; the runner inside `spectio serve` reads it from the shared file system and nothing posts over the network ([`dev-environment-and-testing.md`](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) §15.3 req. 6; architecture §13.1). The numbers are *(assumed — pending Thomas, inbox #28)* (P1 Assumption 12); `spectio_sdk.events` implements this section and its tests are `packages/spectio-sdk/tests/test_spool_events.py`.
 
-**Files.** A driven bridge reads `SPECTIO_RUN_ID`, `SPECTIO_LAUNCH_N` and `SPECTIO_SPOOL_DIR` (`<launch dir>/.spectio/events/`) from the head script, and writes `<producer>-<launch>-<nnnn>.jsonl` there: `<producer>` is the bridge name of the envelope, `<launch>` the launch number, `<nnnn>` a four-digit index from `0001`. The naming for runs started from a terminal is architecture §13.8. Files are UTF-8 and append-only, one JSON object per line, each line ended by `\n`; a last line without its `\n` is still being written, and the reader waits for it. Readers take the files in name order.
+**Files.** A driven bridge reads `SPECTIO_RUN_ID`, `SPECTIO_LAUNCH_N` and `SPECTIO_SPOOL_DIR` (`<launch dir>/.spectio/events/`) from the head script, and writes `<producer>-<launch>-<nnnn>.jsonl` there: `<producer>` is the bridge name of the envelope, `<launch>` the launch number, `<nnnn>` a four-digit index from `0001`. The reader accepts exactly `(nf-spectio|snakemake-logger-spectio)-<launch>-<nnnn>.jsonl`, with `<launch>` 1 to 19 digits and no leading zero, and `<nnnn>` four digits other than `0000` (`SPOOL_FILE_NAME` in `spectio_sdk.events`). The naming for runs started from a terminal is architecture §13.8; the 0.0.1 reader does not accept it yet, so such files are counted `bad_name` (open point for P1 Task 28, [Progress · P3 M1](../progress/W5/P3-M1.md#findings-and-open-questions)). Files are UTF-8 and append-only, one JSON object per line, each line ended by `\n`; a last line without its `\n` is still being written, and the reader waits for it until it passes `MAX_LINE_BYTES`. Readers take the files in name order.
 
 | Bound | Value | Who applies it |
 |---|---|---|
 | `MAX_LINE_BYTES`: one line, without its `\n` | 65 536 bytes | writer: never writes a longer line; reader: drops a longer one |
 | `ROTATE_BYTES` | 33 554 432 bytes (32 MiB) | writer: opens `<nnnn + 1>` when the next line would take the file past it |
 | `MAX_FILE_BYTES` | 67 108 864 bytes (64 MiB) | reader: ignores everything past it in one file |
+| `MAX_SPOOL_FILES` | 1024 files | reader: the spool files of one launch it takes; the others are counted `too_many_files` |
+| `MAX_DIR_ENTRIES` | 16 384 entries (16 × `MAX_SPOOL_FILES`) | reader: the directory entries one read looks at in `events/` |
+| `MAX_BAD_NAMES` | 64 names | reader: names outside the grammar counted one by one as `bad_name`; later ones count `too_many_files` |
+| `MAX_READ_BYTES` | 2 097 152 bytes (2 MiB) | reader: the bytes one read takes from the files, skipped bytes included (the default of `max_bytes`) |
+| `max_lines` | 5000 lines | reader: the lines one read returns or drops (the default) |
+| `MAX_EVENT_NODES` | 4096 JSON values | reader: the values in one event's `data`, `data` itself included |
+| `MAX_EVENT_DEPTH` | 32 levels | reader: the nesting of `data`, which is level 1 |
+| pre-parse bound | more than 2 × (4096 + 16) = 8224 of `[`, `{` and `,` in one line | reader: drops the line as `too_complex` before parsing it; commas inside strings count too, so it refuses only far past `MAX_EVENT_NODES` |
+
+The first three bounds are P1 Assumption 12 (inbox #28). The reader's bounds after them were set in the P3 Task 3 review ([record](../reviews/code/P3-t03.md)) *(assumed — pending Thomas)*. `MAX_SPOOL_FILES`, `MAX_EVENT_NODES` and `MAX_EVENT_DEPTH` are in `spectio_sdk.events`; the others are in `spectio.runner.spool`.
 
 **Envelope.** Every line is an object with exactly these keys; any other key makes the line invalid. Unknown keys *inside* `data` are ignored instead (allow-lists, below), so a newer bridge still parses.
 
@@ -650,6 +660,39 @@ Values are checked as strictly in `data` as in the envelope: integers are JSON i
 
 Never stored, whoever sends them and at any depth, including inside free-form values (`resources`, `rulegraph`); `wildcards` names are kept as the rule declares them: `script`, `env`, `homeDir`, `commandLine`, `configText`, Snakemake's `cmd` and `shellcmd`, and a rule's message text, `rule_msg` (P1 Assumption 3) *(assumed — pending Thomas, inbox #55 (a); his 2026-10-29 dashboard answer asks why not send them as Tower does, and is not a decision yet)*. Deny-listing is by exact key name only: `resources` values are stored as the rule declares them, and the Snakemake SLURM plugin's `slurm_extra` resource may carry raw `sbatch` flags **[to be validated]**; how it is handled is left to P1 Task 5. Other Snakemake events (group jobs, for example) are not in the list, so they are dropped as unknown; whether 0.0.1's runs emit any is **[to be validated]**.
 
-**Dropped and counted, never executed.** Each line is untrusted input (dev-env §15.3 req. 6). The reader validates the envelope, then the type's allow-list; a line that is not JSON, fails either, has an unknown type, is over `MAX_LINE_BYTES`, lies past `MAX_FILE_BYTES`, names another run, or sits in a file that is a symbolic link, is dropped and counted by reason (`invalid`, `line_too_large`, `file_too_large`, `wrong_run`, `symlink`); the next line is read. The counters are stored with the reader's cursor (P1 Assumption 11). Nothing in an event is executed or evaluated; paths in events are untrusted and are used only as names confined under a run root ([dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 13).
+**Dropped and counted, never executed.** Each line is untrusted input (dev-env §15.3 req. 6). The reader validates the envelope, then the type's allow-list. A line or a file that fails a check is dropped and counted by reason, and the next one is read. The counters are stored with the reader's cursor (P1 Assumption 11). Nothing in an event is executed or evaluated; paths in events are untrusted and are used only as names confined under a run root ([dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 13). *Reader rules below written 2026-10-30, from the code and review of P1 Task 3 (CR-P3T3-05, SEC-P3T3-07); the reader is `spectio.runner.spool.read_spool`, its tests `packages/spectio/tests/test_spool_reader.py`.*
+
+- **Confinement.** The caller checks the launch directory and the path to it (req. 10): the runner loop (P1 Task 9) and the boot rebuild (P1 Task 11). The reader opens `<launch dir>/.spectio`, then `events` relative to it, each with `O_DIRECTORY|O_NOFOLLOW`, and checks each with `fstat`: owned by the user, no group or other bits, as req. 10 checks a run directory. Whoever creates them must therefore create them at 0700; otherwise every read raises `PermissionError`. Each spool file is opened by name relative to the `events` descriptor, never by path: `lstat` first (a symlink or a FIFO is never opened), then `O_RDONLY|O_NOFOLLOW|O_NONBLOCK`, then `fstat` again. It must be a regular file of the user, not writable by group or others. A directory or file swapped for a symlink after a check is never followed.
+- **Which files.** Only names of the grammar above, for the launch being read. Another launch's files are ignored and not counted. At most `MAX_SPOOL_FILES` files and `MAX_DIR_ENTRIES` directory entries are taken, in name order. A file already in the cursor is read even when a cut listing misses it.
+- **Each read** returns at most `max_lines` lines and takes at most `max_bytes` bytes. One read is cheap even on hostile files: the security reviewer measured a worst read of 0.86 s and a traced peak of 11.1 MiB, against 788 MiB for 500 lines before the byte budget ([record](../reviews/code/P3-t03.md)).
+
+| Reason | Counted | When |
+|---|---|---|
+| `invalid` | per line | not JSON, the envelope fails, the type is unknown, or `data` fails its allow-list model |
+| `too_complex` | per line | `data` holds more than `MAX_EVENT_NODES` values or is deeper than `MAX_EVENT_DEPTH`, or the line passes the pre-parse bound |
+| `line_too_large` | per line | longer than `MAX_LINE_BYTES`; an unended line is counted once, as soon as it passes the cap, and reading goes on after its `\n` |
+| `wrong_run` | per line | `run` is not the run being read |
+| `wrong_launch` | per line | `launch` is not the launch being read |
+| `file_too_large` | once per file | the file passes `MAX_FILE_BYTES`; counted after the lines before the cap are read |
+| `symlink` | once per file | the spool file is a symbolic link, also one swapped in after the `lstat` |
+| `not_regular` | once per file | a directory, FIFO, socket or device |
+| `foreign_owner` | once per file | owned by another user |
+| `writable_by_others` | once per file | writable by group or others |
+| `unreadable` | once per file | the open fails with `EACCES` or `ENXIO` |
+| `bad_name` | once per name | a name in `events/` outside the grammar, up to `MAX_BAD_NAMES` |
+| `too_many_files` | by its high-water mark | names past `MAX_SPOOL_FILES` or `MAX_BAD_NAMES`, or a listing cut at `MAX_DIR_ENTRIES`; only an increase over the most seen is counted |
+| `bad_cursor` | once per cursor entry | a cursor key that is neither a `#` key nor a spool file name of this launch (dropped), or a value out of range (reset: the file is refused, a count set to 0) |
+| `read_error` | on each read | any other `OSError` on a file; the file is retried by the next read |
+
+Not counted: a file gone since the listing (skipped), and another launch's file. The read stops and raises instead in three cases: `PermissionError` when `.spectio` or `events` is not a private directory of the user; `OSError` when either is a symlink or not a directory; `ValueError` when `max_lines` is under 1 or `max_bytes` cannot hold one line. When `.spectio` or `events` is missing, the read returns an empty batch: nothing is written yet.
+
+**The cursor.** A read returns `SpoolBatch(events, cursor, drops)`; the caller stores the three in one transaction. The cursor maps each spool file name to the bytes read from it (0 to `MAX_FILE_BYTES`), or to `REFUSED` (−1): the file is never read again and its drop is already counted, which is how a file-level drop is counted once. Keys that start with `#` are the reader's own:
+
+- `#` and the first 16 hex characters of the SHA-256 of a name outside the grammar, mapped to `REFUSED`; the name itself is never stored;
+- `#excess`, the most names found with no slot, already counted as `too_many_files`.
+
+The cursor that comes in is checked first, and anything the reader would not write is counted `bad_cursor`.
+
+**What a user sees.** A Snakemake event with more than about 4096 values in its `data` is dropped as `too_complex`: for example the `snakemake.rulegraph` of a very large workflow, or the `snakemake.job_info` of a gather rule with thousands of inputs. The run then lacks that event, and its drop count shows it. Whether real large workflows reach this cap is **[to be validated against real large workflows]**.
 
 Step page: [Progress · P3 M1](../progress/W5/P3-M1.md).
