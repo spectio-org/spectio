@@ -1,6 +1,7 @@
 """Fixtures of the API tests (P1 Tasks 17 and 18).
 
-`authed_client` is a plain TestClient for now: sign-in (P1 Tasks 12 to 16) is not built, and the
+`authed_client` is a TestClient on `http://127.0.0.1:<port>` with that Origin (dev-env §15.3 req. 4
+and 7), with no session for now: sign-in (P1 Tasks 12 to 16) is not built, and the
 API is served in local mode only (inbox #86). Task 16 makes this fixture sign in, and the tests
 that use it keep their name.
 """
@@ -37,7 +38,8 @@ def writer(settings: Settings) -> Iterator[Writer]:
 def client_for(settings: Settings, writer: Writer) -> TestClient:
     app = create_app(settings, writer)
     app.state.engine_versions = lambda: dict(ENGINE_VERSIONS)  # no login shell in the tests
-    return TestClient(app)
+    origin = f"http://127.0.0.1:{settings.port}"  # what a browser on the loopback sends (req. 4, 7)
+    return TestClient(app, base_url=origin, headers={"Origin": origin})
 
 
 @pytest.fixture

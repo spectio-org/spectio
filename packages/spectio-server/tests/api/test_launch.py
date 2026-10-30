@@ -3,6 +3,7 @@
 import json
 import shutil
 import subprocess
+import time
 from pathlib import Path
 from typing import Any
 
@@ -507,3 +508,41 @@ def test_launch_reaches_the_runner(
     )
     (row,) = table(writer, runs)
     assert row.state == "running"  # the head report of the started head
+
+
+# --- Untrusted pipeline files (SEC-P3T17-03, SEC-P3T17-04) -----------------------------------
+
+
+def test_inspect_unterminated_strings_linear(authed_client: TestClient, tmp_path: Path) -> None:
+    """A 1 MiB `'\\'\\'…` nextflow.config: each quote used to rescan to the end (quadratic)."""
+    root = pipeline(tmp_path, "main.nf")
+    text = "manifest { name = 'x' }\n'" + "\\'" * ((wf.MAX_FILE - 30) // 2)
+    assert len(text) <= wf.MAX_FILE
+    (root / "nextflow.config").write_text(text)
+    started = time.monotonic()
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert time.monotonic() - started < 1, "the tokenizer is not linear"
+    assert response.status_code == 200, response.text
+    assert response.json()["name"] == "x"
+
+
+@pytest.mark.parametrize("ref", ["file", "http://127.0.0.1:1/x"])
+def test_launch_schema_remote_ref_not_fetched(
+    authed_client: TestClient, tmp_path: Path, ref: str
+) -> None:
+    """A `$ref` in the pipeline's schema is never retrieved: no local file, no request."""
+    secret = tmp_path / "secret.json"
+    secret.write_text(json.dumps({"enum": ["TOP-SECRET-VALUE"]}))
+    target = secret.as_uri() if ref == "file" else ref
+    root = pipeline(tmp_path, "main.nf")
+    schema = {
+        "$schema": "https://json-schema.org/draft/2020-12/schema",
+        "type": "object",
+        "properties": {"x": {"$ref": target}},
+    }
+    (root / "nextflow_schema.json").write_text(json.dumps(schema))
+    started = time.monotonic()
+    response = launch(authed_client, str(root), "nextflow", params={"x": "a"})
+    assert time.monotonic() - started < 5
+    assert fields(response) == ["params"]
+    assert "TOP-SECRET-VALUE" not in response.text

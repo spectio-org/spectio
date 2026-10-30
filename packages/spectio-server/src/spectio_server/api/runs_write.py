@@ -20,8 +20,9 @@ from fastapi import APIRouter, Request, Response
 from jsonschema import validators
 from jsonschema.exceptions import SchemaError
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
+from referencing import Registry
 from referencing.exceptions import Unresolvable
-from sqlalchemy import Connection, insert, select
+from sqlalchemy import Connection, insert
 
 from spectio.runner.headscript import PROFILE
 from spectio.runner.rundir import RunManifest, Workflow, run_paths, write_run_manifest
@@ -29,23 +30,13 @@ from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import (
     ENTRY_FILES,
     Found,
-    Resolved,
     inspect_dir,
     refuse_control,
     resolve,
 )
 from spectio_server.ids import new_id
-from spectio_server.store.schema import (
-    environments,
-    launches,
-    principals,
-    projects,
-    run_inputs,
-    runner_commands,
-    runs,
-    workflow_versions,
-    workflows,
-)
+from spectio_server.store.runs import EngineConflict, first, insert_run
+from spectio_server.store.schema import principals, runner_commands
 from spectio_server.store.writer import Writer
 
 router = APIRouter()
@@ -82,13 +73,16 @@ def _check(body: LaunchIn) -> None:
 
 def _check_params(found: Found, params: dict[str, Any]) -> None:
     """Validate against the pipeline's own schema (draft 7 or 2020-12, from its `$schema`).
-    Remote `$ref`s are not fetched: the `referencing` library retrieves none by default."""
+    No `$ref` is retrieved (no file, no URL: api §5, Imports are untrusted input): an empty
+    registry replaces jsonschema's default one, which fetches; one that cannot resolve is a 422."""
     if found.schema is None or found.schema_source == "inferred":
         return
     cls = validators.validator_for(found.schema, default=validators.Draft7Validator)
     try:
         cls.check_schema(found.schema)
-        errors = sorted(cls(found.schema).iter_errors(params), key=lambda e: list(e.path))
+        errors = sorted(
+            cls(found.schema, registry=Registry()).iter_errors(params), key=lambda e: list(e.path)
+        )
     except (SchemaError, Unresolvable) as exc:
         reason = exc.message if isinstance(exc, SchemaError) else str(exc)
         raise Invalid("params", f"the pipeline's schema cannot be used: {reason}") from None
@@ -146,7 +140,9 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     writer: Writer = request.app.state.writer
     try:
         writer.submit(
-            lambda conn: _insert(conn, manifest, resolved, found.name, payload, now, runs_root)
+            lambda conn: _insert(
+                conn, manifest, resolved.source, found.name, payload, now, runs_root
+            )
         ).result()
     except BaseException:
         shutil.rmtree(paths.run_dir, ignore_errors=True)  # no run directory without its row
@@ -170,80 +166,32 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     }
 
 
-def _first(conn: Connection, table: Any) -> str:
-    return str(conn.execute(select(table.c.id).order_by(table.c.created_at).limit(1)).scalar_one())
-
-
 def _insert(
     conn: Connection,
     m: RunManifest,
-    resolved: Resolved,
+    source: str,
     workflow_name: str,
     payload: dict[str, Any],
     now: datetime,
     runs_root: Path,
 ) -> None:
-    mine = {"created_at": now, "created_by": _first(conn, principals)}
-    project = _first(conn, projects)
-    engine = m.workflow.engine
-    workflow = conn.execute(
-        select(workflows.c.id, workflows.c.engine).where(
-            workflows.c.project_id == project,
-            workflows.c.source == resolved.source,
-            workflows.c.location == resolved.location,
+    try:
+        launch_id = insert_run(
+            conn,
+            m,
+            source=source,
+            runs_root=runs_root,
+            now=now,
+            state="queued",
+            origin="ui",
+            workflow_name=workflow_name,
         )
-    ).one_or_none()
-    if workflow is not None and workflow.engine != engine:
+    except EngineConflict as exc:
         raise Invalid(
             "workflow.engine",
-            f"this pipeline was launched with {workflow.engine} before; "
+            f"this pipeline was launched with {exc.engine} before; "
             "a location keeps one engine in 0.0.1",
-        )
-    workflow_id = workflow.id if workflow is not None else new_id("wfl")
-    if workflow is None:
-        conn.execute(
-            insert(workflows).values(
-                id=workflow_id,
-                project_id=project,
-                name=workflow_name,
-                location=resolved.location,
-                source=resolved.source,
-                engine=engine,
-                **mine,
-            )
-        )
-    version_id, launch_id = new_id("wfv"), new_id("lch")
-    conn.execute(
-        insert(workflow_versions).values(
-            id=version_id, workflow_id=workflow_id, revision=resolved.revision, **mine
-        )
-    )
-    paths = run_paths(runs_root, m.run_id)
-    conn.execute(
-        insert(runs).values(
-            id=m.run_id,
-            project_id=project,
-            workflow_version_id=version_id,
-            environment_id=_first(conn, environments),
-            name=m.name,
-            state="queued",
-            state_changed_at=now,
-            origin="ui",
-            launch_dir=str(paths.launch_dir),
-            work_dir=str(paths.work_dir),
-            **mine,
-        )
-    )
-    conn.execute(
-        insert(run_inputs).values(
-            id=new_id("rin"), run_id=m.run_id, version=1, kind="params", content=m.params, **mine
-        )
-    )
-    conn.execute(
-        insert(launches).values(
-            id=launch_id, run_id=m.run_id, n=1, launch_dir=str(paths.launch_dir), **mine
-        )
-    )
+        ) from None
     conn.execute(
         insert(runner_commands).values(
             id=new_id("cmd"),
@@ -252,6 +200,7 @@ def _insert(
             kind="launch",
             payload=payload,
             state="pending",
-            **mine,
+            created_at=now,
+            created_by=first(conn, principals),
         )
     )

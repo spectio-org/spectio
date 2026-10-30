@@ -1,9 +1,10 @@
 """The FastAPI app of `spectio serve` (P1 Tasks 11 and 17).
 
-Sign-in (P1 Tasks 12 to 16: token link, session, CSRF, Host allow-list) is not built yet, so the
-API is served in local mode only (`spectio init --local`): on a SLURM environment, where other
+Sign-in (P1 Tasks 12 to 16: token link, session) is not built yet, so the API is served in local
+mode only (`spectio init --local`): on a SLURM environment, where other
 users share the login node and its loopback port, every `/api/v1` path answers 404 with the
-reason (inbox #86). The generated docs stay off.
+reason (inbox #86). The Host allow-list and the write checks (dev-env §15.3 req. 4 and 7) run on
+every request already (`api.browser`). The generated docs stay off.
 """
 
 from importlib.metadata import version
@@ -12,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from spectio.config import Settings
-from spectio_server.api import problems, runs_write, workflows
+from spectio_server.api import browser, problems, runs_write, workflows
 from spectio_server.store.writer import Writer
 
 PLACEHOLDER = (
@@ -33,6 +34,7 @@ def create_app(settings: Settings, writer: Writer) -> FastAPI:
     app.state.engine_versions = workflows.engine_versions(settings)
     page = PLACEHOLDER.format(version=version("spectio"))
     problems.install(app)
+    browser.install(app)  # Host allow-list, cross-site and write checks (§15.3 req. 4, 7)
 
     @app.get("/", response_class=PlainTextResponse)
     def home() -> str:

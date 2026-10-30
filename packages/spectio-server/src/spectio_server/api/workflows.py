@@ -238,7 +238,11 @@ def load_yaml(text: str) -> Any:
     return _jsonable(yaml.safe_load(text))
 
 
-_TOKENS = re.compile(r"'(?:\\.|[^'\\])*'|\"(?:\\.|[^\"\\])*\"|/\*.*?\*/|//[^\n]*", re.S)
+# An unterminated string or comment runs to the end, so no position is scanned twice
+# (SEC-P3T17-03: a rescan per quote was quadratic).
+_TOKENS = re.compile(
+    r"'(?:\\.|[^'\\])*(?:'|\Z)|\"(?:\\.|[^\"\\])*(?:\"|\Z)|/\*.*?(?:\*/|\Z)|//[^\n]*", re.S
+)
 
 
 def _block(text: str, name: str) -> str | None:
