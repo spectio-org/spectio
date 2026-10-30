@@ -302,3 +302,31 @@ def test_init_privileged_port_refused(home: Path, fakebin: Path) -> None:
     result = init("--port", "80")
     assert result.exit_code == 2, result.output
     assert not config_path().exists()
+
+
+def test_init_unpacks_nf_spectio(
+    home: Path, fakebin: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """architecture §13.8, The plugin copy: init unpacks the bundled nf-spectio, idempotently."""
+    bridges = tmp_path / "bridges"
+    (bridges / "nf-spectio-0.0.1" / "classes").mkdir(parents=True)
+    (bridges / "nf-spectio-0.0.1" / "classes" / "x.class").write_text("v1")
+    monkeypatch.setenv("SPECTIO_BRIDGES_DIR", str(bridges))
+    monkeypatch.setenv("NXF_HOME", str(home / "nxf"))
+    assert init().exit_code == 0
+    copy = home / "nxf" / "plugins" / "nf-spectio-0.0.1"
+    assert (copy / "classes" / "x.class").read_text() == "v1"
+    before = sorted((p.relative_to(copy), p.stat().st_mtime_ns) for p in copy.rglob("*"))
+    (bridges / "nf-spectio-0.0.1" / "classes" / "x.class").write_text("v2")
+    assert init().exit_code == 0
+    assert sorted((p.relative_to(copy), p.stat().st_mtime_ns) for p in copy.rglob("*")) == before
+    assert sorted(p.name for p in copy.parent.iterdir()) == ["nf-spectio-0.0.1"]
+
+
+def test_init_without_bridges_warns(
+    home: Path, fakebin: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("SPECTIO_BRIDGES_DIR", str(tmp_path / "none"))
+    result = init()
+    assert result.exit_code == 0, result.output
+    assert "warning: nf-spectio not unpacked" in result.output

@@ -390,6 +390,14 @@ media:
       - docs/assets/diagrams/p3-t08-init-doctor_dark.svg
       - docs/assets/diagrams/p3-t08-init-doctor_light.png
       - docs/assets/diagrams/p3-t08-init-doctor_dark.png
+  - id: p3-t09-head-loop
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t09_head_loop.py
+    outputs:
+      - docs/assets/diagrams/p3-t09-head-loop_light.svg
+      - docs/assets/diagrams/p3-t09-head-loop_dark.svg
+      - docs/assets/diagrams/p3-t09-head-loop_light.png
+      - docs/assets/diagrams/p3-t09-head-loop_dark.png
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines

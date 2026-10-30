@@ -147,7 +147,7 @@ def test_doctor_nxf_plugins_default(
     if nxf_config is not None:
         (nxf_home / "config").write_text(nxf_config)
     if copy:
-        (nxf_home / "plugins" / "nf-spectio-0.0.1").mkdir()
+        (nxf_home / "plugins" / "nf-spectio-0.0.1").mkdir(mode=0o700)  # as unpacked
     _, lines = doctor(capsys, configured(home, fakebin, executor="local"))
     found = line(lines, "nxf_plugins_default")
     assert found.split()[0] == expected, found
@@ -205,3 +205,27 @@ def test_doctor_default_db_dir(
     default.chmod(0o700)
     code, lines = doctor(capsys, settings, mountinfo=mountinfo(default, "ext4"))
     assert line(lines, "db_dir") == f"ok db_dir {default} (ext4, 0700)"
+
+
+def test_doctor_relative_plugins_dir(
+    home: Path, fakebin: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3T09-05: a relative NXF_HOME is a `fail`, not a crash."""
+    monkeypatch.setenv("NXF_HOME", "nxf")
+    code, lines = doctor(capsys, configured(home, fakebin, executor="local"))
+    assert code == 1
+    assert line(lines, "nxf_plugins_default").startswith("fail")
+
+
+def test_doctor_refuses_an_untrusted_copy(
+    home: Path, fakebin: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3T09-R5-02: doctor checks the copy as the launcher does: a group-writable copy is a
+    `fail` with the launcher's message."""
+    copy = home / ".nextflow" / "plugins" / "nf-spectio-0.0.1"
+    copy.mkdir(parents=True)
+    copy.chmod(0o775)
+    monkeypatch.setenv("NXF_PLUGINS_DEFAULT", "nf-spectio@0.0.1")
+    code, lines = doctor(capsys, configured(home, fakebin, executor="local"))
+    found = line(lines, "nxf_plugins_default")
+    assert code == 1 and found.startswith("fail") and "only you can write" in found, found
