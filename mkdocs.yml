@@ -167,5 +167,6 @@ nav:
           - "Spike t3-ci: sind SLURM on CI runners": research/spike-t3-ci-2026-10-28.md
           - "Spike t4-ci: kind and Kueue on CI runners": research/spike-t4-ci-2026-10-28.md
           - "Spike: stage detection": research/spike-stage-detection-2026-10-28.md
+          - "Spike first-look: the merged code in a browser": research/2026-10-30-first-look-spike.md
   - Roadmap: roadmap/index.md
   - Changelog: changelog/index.md
