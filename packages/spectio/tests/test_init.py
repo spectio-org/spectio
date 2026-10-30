@@ -2,6 +2,7 @@
 of P1 Assumption 18."""
 
 import os
+import pwd
 import shutil
 import socket
 import stat
@@ -246,3 +247,58 @@ def test_init_squatted_default_db_dir(home: Path, fakebin: Path) -> None:
     explicit = init("--db-dir", str(squatted))  # chosen explicitly: refused, naming the owner
     assert explicit.exit_code == 2
     assert f"owner uid {os.stat(squatted).st_uid}" in explicit.output
+
+
+def test_init_local_from_env_refused_off_linux(home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # CR-P3T08-02: local mode from SPECTIO_EXECUTOR, not the flag
+    monkeypatch.setattr(sys, "platform", "darwin")
+    monkeypatch.setenv("SPECTIO_EXECUTOR", "local")
+    result = init()
+    assert result.exit_code == 2
+    assert "Local mode needs Linux in 0.0.1" in result.output
+    assert not (home / ".spectio").exists()
+
+
+def test_init_refuses_open_or_symlinked_data_dir(home: Path, fakebin: Path) -> None:
+    # SEC-P3T08-02: ~/.spectio must be 0700 (dev-env §15.3 req. 5), checked without following
+    data_dir = home / ".spectio"
+    data_dir.mkdir(mode=0o700)
+    data_dir.chmod(0o755)
+    result = init()
+    assert result.exit_code == 2, result.output
+    assert f"chmod 700 {data_dir}" in result.output and "mode 755" in result.output
+    assert not config_path().exists()
+    data_dir.rmdir()
+    elsewhere = home / "elsewhere"
+    elsewhere.mkdir(mode=0o700)
+    data_dir.symlink_to(elsewhere)
+    result = init()
+    assert result.exit_code == 2, result.output
+    assert not (elsewhere / "spectio.toml").exists()
+
+
+def test_principal_is_the_uid_not_the_environment(
+    home: Path, fakebin: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # SEC-P3T08-04: the principal is the Unix user (P1 Assumption 18), whatever USER says
+    for name in ("LOGNAME", "USER", "LNAME", "USERNAME"):
+        monkeypatch.setenv(name, "mallory")
+    assert init().exit_code == 0
+    (user,) = rows(default_db())["principals"]
+    assert user.display_name == pwd.getpwuid(os.getuid()).pw_name
+
+
+def test_init_value_outside_the_bmp_round_trips(home: Path, fakebin: Path) -> None:
+    # SEC-P3T08-05: no surrogate-pair escapes, which TOML rejects
+    command = "nf\U0001f600"
+    result = init("--nextflow", command)
+    assert result.exit_code == 0, result.output
+    assert Settings().engines.nextflow_cmd == command
+    assert init().exit_code == 0  # the file still loads
+
+
+def test_init_privileged_port_refused(home: Path, fakebin: Path) -> None:
+    # SEC-P3T08-06: spectio open accepts 1024-65535 only (dev-env §15.3 req. 8)
+    result = init("--port", "80")
+    assert result.exit_code == 2, result.output
+    assert not config_path().exists()

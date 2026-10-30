@@ -1,8 +1,8 @@
 """`spectio init` (P1 Task 8): the data directory, `spectio.toml` and the rows of P1
 Assumption 18. Every option has a default, so that `spectio open` can run it unattended."""
 
-import getpass
 import os
+import pwd
 import shlex
 import socket
 import stat
@@ -21,9 +21,10 @@ class InitError(Exception):
     """A refusal; the message says why and what to do."""
 
 
-def _private_dir(path: Path) -> None:
+def _private_dir(path: Path, *, strict: bool = False) -> None:
     """Create `path` with mode 0700, or accept an existing directory of this user that others
-    cannot write; never tightened."""
+    cannot write; never tightened. `strict`: a real directory (no symlink followed) with no
+    group or other bits (dev-env §15.3 req. 5)."""
     try:
         os.mkdir(path, 0o700)
         return
@@ -31,6 +32,23 @@ def _private_dir(path: Path) -> None:
         pass
     except FileNotFoundError as exc:
         raise InitError(f"{path}: its parent directory does not exist") from exc
+    if strict:
+        try:
+            fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
+        except OSError as exc:
+            raise InitError(
+                f"{path} must be a real directory, not a symlink or a file: {exc.strerror}"
+            ) from exc
+        try:
+            st = os.fstat(fd)
+        finally:
+            os.close(fd)
+        if st.st_uid != os.getuid() or st.st_mode & 0o077:
+            raise InitError(
+                f"{path} must be a directory of yours with mode 0700 (owner uid {st.st_uid}, "
+                f"mode {stat.S_IMODE(st.st_mode):o}): chmod 700 {path}"
+            )
+        return
     st = os.stat(path)
     if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o022:
         raise InitError(
@@ -75,12 +93,17 @@ def _engines(settings: Settings) -> dict[str, Any]:
     return engines
 
 
+def _unix_user() -> str:
+    """The principal's name: the uid's, never the environment's (P1 Assumption 18)."""
+    try:
+        return pwd.getpwuid(os.getuid()).pw_name
+    except KeyError:
+        return str(os.getuid())
+
+
 def run_init(local: bool, **flags: Any) -> int:
     """`flags`: data_dir, db_dir, runs_root, port, partition, account, nextflow, snakemake;
     None means not given."""
-    if local and sys.platform != "linux":  # inbox #73 (a)
-        typer.echo("Local mode needs Linux in 0.0.1", err=True)
-        return 2
     given: dict[str, Any] = {k: v for k, v in flags.items() if v is not None}
     slurm = {k: given.pop(k) for k in ("partition", "account") if k in given}
     engines = {f"{k}_cmd": given.pop(k) for k in ("nextflow", "snakemake") if k in given}
@@ -92,6 +115,8 @@ def run_init(local: bool, **flags: Any) -> int:
         given["engines"] = engines
     try:
         settings = Settings(**given)
+        if settings.executor == "local" and sys.platform != "linux":  # inbox #73 (a)
+            raise InitError("Local mode needs Linux in 0.0.1")
         if settings.executor == "local" and slurm:
             raise InitError("--partition and --account need a SLURM environment, not --local")
         _init(settings)
@@ -108,7 +133,7 @@ def _init(settings: Settings) -> None:
         raise InitError("the server package is missing: install spectio[server]") from exc
     runs_root = _runs_root(settings)
     for path in (config_path().parent, settings.data_dir):
-        _private_dir(path)
+        _private_dir(path, strict=True)
     try:
         # The default is resolved again at each start and never recorded, so that its mkdtemp
         # fallback still applies once the temporary directory is purged (dev-env §15.3).
@@ -126,7 +151,7 @@ def _init(settings: Settings) -> None:
         )
         server.init_store(
             db_dir,
-            user=getpass.getuser(),
+            user=_unix_user(),
             kind=settings.executor,
             config={"runs_root": str(runs_root)},
             version=version("spectio"),

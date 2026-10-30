@@ -10,6 +10,7 @@ import json
 import os
 import secrets
 import shlex
+import tomllib
 from pathlib import Path
 from typing import Annotated, Any, Literal
 
@@ -115,7 +116,7 @@ class Settings(BaseSettings):
     data_dir: AbsPath = Field(default_factory=default_data_dir)
     db_dir: AbsPath | None = None  # unset: default_db_dir() at each start (§15.3 fallback)
     runs_root: AbsPath = Field(default_factory=lambda: Path.home() / "spectio-runs")
-    port: int = Field(DEFAULT_PORT, ge=1, le=65535)
+    port: int = Field(DEFAULT_PORT, ge=1024, le=65535)
     executor: Literal["slurm", "local"] = "slurm"  # local: P1 Assumption 23
     host: str | None = None  # the login node spectio init ran on (the host pin)
     slurm: SlurmOpts = SlurmOpts()
@@ -142,8 +143,9 @@ def _toml_value(value: Any) -> str:
         return "[" + ", ".join(_toml_value(v) for v in value) + "]"
     if isinstance(value, int | float):
         return repr(value)
-    # A JSON string is a TOML basic string, but for DEL, which TOML wants escaped.
-    return json.dumps(str(value)).replace("\x7f", "\\u007f")
+    # A JSON string is a TOML basic string, but for DEL, which TOML wants escaped; not
+    # ensure_ascii, whose surrogate pairs TOML rejects (SEC-P3T08-05).
+    return json.dumps(str(value), ensure_ascii=False).replace("\x7f", "\\u007f")
 
 
 def render_toml(settings: Settings) -> str:
@@ -163,11 +165,13 @@ def render_toml(settings: Settings) -> str:
 def write_config(settings: Settings, path: Path | None = None) -> Path:
     """Write `spectio.toml` atomically, mode 0600, in a directory that must exist."""
     path = path or config_path()
+    text = render_toml(settings)
+    tomllib.loads(text)  # a render that would not load never replaces the file
     tmp = path.with_name(f".{path.name}.{secrets.token_hex(8)}")
     fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(render_toml(settings))
+            f.write(text)
             f.flush()
             os.fsync(f.fileno())
         os.replace(tmp, path)

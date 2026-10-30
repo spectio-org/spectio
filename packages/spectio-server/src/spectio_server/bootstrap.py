@@ -18,6 +18,7 @@ from spectio_server.store.db import (
     MOUNTINFO,
     NETWORK_FS,
     UnsafeDatabase,
+    _owner,
     _private_dir,
     check_sqlite_version,
     default_db_dir,
@@ -98,7 +99,7 @@ def db_checks(
             (
                 "warn",
                 "db_dir",
-                f"{db_dir} is not a private directory of this user (owner uid {owner}): "
+                f"{db_dir} is not a private directory of this user (owner {_owner(owner)}): "
                 "the next start uses a mkdtemp directory",
             )
         )
@@ -108,7 +109,7 @@ def db_checks(
             (
                 "fail",
                 "db_dir",
-                f"{db_dir} must be a directory of this user with mode 0700 (owner uid {owner})",
+                f"{db_dir} must be a directory of this user with mode 0700 (owner {_owner(owner)})",
             )
         )
         return found

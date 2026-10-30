@@ -17,6 +17,7 @@ from alembic.migration import MigrationContext
 from sqlalchemy import CheckConstraint, Connection, Engine, func, insert, inspect, select
 from sqlalchemy.exc import IntegrityError, StatementError
 
+from spectio_server.bootstrap import db_checks
 from spectio_server.store import db, schema
 from spectio_server.store.db import UnsafeDatabase, default_db_dir, open_db
 from spectio_server.store.schema import (
@@ -322,6 +323,9 @@ def test_overflow_uid_is_named(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(os, "getuid", lambda: real + 1000)
     with pytest.raises(UnsafeDatabase, match="user namespace without a root mapping"):
         open_db(db_dir)
+    # CR-P3T08-03: doctor names it the same way
+    ((status, _, detail),) = [c for c in db_checks(db_dir) if c[1] == "db_dir"]
+    assert status == "fail" and "user namespace without a root mapping" in detail
 
 
 @pytest.mark.parametrize("swap", ["directory", "file"])
