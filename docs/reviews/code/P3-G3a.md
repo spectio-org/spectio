@@ -10,13 +10,15 @@ Board review of `autopilot/P3-G3a`, base `531112f`, 2026-10-30. The step is [P2 
 **Reviewers.** Two passes:
 
 - a self-check against the `ux-reviewer` brief (`.claude/agents/ux-reviewer.md`), run by the worker session, which had no tool to start a sub-agent (findings UX-G3a-01 to -07);
-- an independent `ux-reviewer` run started by the coordinator on `127fc46` (findings UX-G3a-08 to -13). Its renders are in `/tmp/claude-0/g3a-review/`.
+- an independent `ux-reviewer` run started by the coordinator: round 1 on `127fc46` (findings UX-G3a-08 to -13), round 2 on `235c52c` (finding UX-G3a-14). It rendered the boards with `node tools/canvas/render.js design/ui-canvas/<Board>.dc.html <width> <height> <png>`: desktop at 1440, 1024 and 900 px, phone at 390 × 844.
+
+The docs (this record and the G3a parts of the P3-M4 Progress page) were reviewed by an independent `doc-reviewer`: **approve**, 11/14.
 
 | Round | Head | Reviewer | Verdict |
 |---|---|---|---|
-| self | the restyle, before its fixes | worker, `ux-reviewer` brief | **changes** (0 blockers, 0 majors, 3 minors), fixed in `127fc46` |
-| 1 | `127fc46` | `ux-reviewer`, independent | **changes** (0 blockers, 1 major, 5 minors), fixed in the fix-round commit |
-| 2 | the fix-round commit | `ux-reviewer`, independent | to do (coordinator) |
+| self | the restyle, before its fixes | worker, `ux-reviewer` brief | **changes**: it found UX-G3a-01 to -07. -01 to -03 were fixed in `127fc46`, -04 was withdrawn, -05 to -07 are open |
+| 1 | `127fc46` | `ux-reviewer`, independent | **changes** (0 blockers, 1 major, 5 minors), fixed in `235c52c` |
+| 2 | `235c52c` | `ux-reviewer`, independent | **approve** (0 blockers, 0 majors, 1 new minor, UX-G3a-14) |
 
 **What was rendered and looked at.**
 
@@ -124,7 +126,7 @@ No overlap, clipping or empty list was seen.
     - Cancel run and Copy are wrapped in one `<div style="display:flex;gap:12px;margin-left:auto;flex-shrink:0">`. `LiteRunObserved` already had a group; it now carries the same style.
     - The tile has `align-self: flex-start` on the four run boards.
     - At 900 px, the group wraps under the text as one unit, on the right.
-- **Status:** applied.
+- **Status:** applied in `235c52c`.
 
 ### UX-G3a-10 · minor · A long run name could overflow the run head
 
@@ -162,6 +164,7 @@ No overlap, clipping or empty list was seen.
 ## For the next `/apply-findings`
 
 - **ui-spec §4.11:** the tablet range, 768–1199 px, has a folded sidebar, but the desktop boards do not draw it.
+- **UX-G3a-14, ui-spec §4.11:** on the phone, Home shows its greeting as a body page head (tile, h1, live counts) and the top bar carries no title. Every other top-level page keeps the title and subtitle in the compact top bar.
 - **Tile tints:** a page-head tile takes `-100` of its section colour on the grey phone page (`#F7F7FB`), and `-50` on white. This is a rule for `design/tokens/spectio-tokens.css` or ui-spec §7.
 
 ## The `crumbs` props (UX-G1-11 follow-up)
