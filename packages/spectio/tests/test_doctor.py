@@ -205,3 +205,13 @@ def test_doctor_default_db_dir(
     default.chmod(0o700)
     code, lines = doctor(capsys, settings, mountinfo=mountinfo(default, "ext4"))
     assert line(lines, "db_dir") == f"ok db_dir {default} (ext4, 0700)"
+
+
+def test_doctor_relative_plugins_dir(
+    home: Path, fakebin: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3T09-05: a relative NXF_HOME is a `fail`, not a crash."""
+    monkeypatch.setenv("NXF_HOME", "nxf")
+    code, lines = doctor(capsys, configured(home, fakebin, executor="local"))
+    assert code == 1
+    assert line(lines, "nxf_plugins_default").startswith("fail")

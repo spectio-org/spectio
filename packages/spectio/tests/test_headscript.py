@@ -20,6 +20,7 @@ from spectio.runner.engines import (
     EngineMissing,
     EngineTooOld,
     check_engine,
+    nf_plugin_copy,
     unpack_nf_spectio,
 )
 from spectio.runner.headscript import engine_args, render_head_script, write_launch_files
@@ -317,6 +318,36 @@ def test_unpack_is_idempotent(home: Path, bridges: Path) -> None:
     assert unpack_nf_spectio(env) == copy
     assert manifest.read_text() == "kept"  # an existing copy is never replaced
     assert unpack_nf_spectio({**env, "NXF_PLUGINS_DIR": str(home / "pd")}).parent == home / "pd"
+
+
+def test_plugins_dir_is_absolute(home: Path) -> None:
+    """SEC-P3T09-05: `~` is expanded, and a relative directory, which the server and the head
+    (in the launch directory) would read differently, is refused."""
+    copy = "nf-spectio-0.0.1"
+    assert nf_plugin_copy({"NXF_PLUGINS_DIR": "~/p"}) == home / "p" / copy
+    assert nf_plugin_copy({"NXF_HOME": "~/n"}) == home / "n" / "plugins" / copy
+    for env in ({"NXF_HOME": "nxf"}, {"NXF_PLUGINS_DIR": "p"}):
+        with pytest.raises(ValueError, match="absolute"):
+            nf_plugin_copy(env)
+
+
+@pytest.mark.parametrize("planted", ["symlink", "group-writable", "file"])
+def test_unpack_refuses_an_untrusted_copy(home: Path, bridges: Path, planted: str) -> None:
+    """SEC-P3T09-06: an existing nf-spectio copy is kept only if it is a real directory of the
+    user's that group and others cannot write; every head loads it."""
+    plugins = home / "nxf" / "plugins"
+    plugins.mkdir(parents=True)
+    copy = plugins / "nf-spectio-0.0.1"
+    if planted == "symlink":
+        (home / "elsewhere").mkdir()
+        copy.symlink_to(home / "elsewhere")
+    elif planted == "group-writable":
+        copy.mkdir()
+        copy.chmod(0o775)
+    else:
+        copy.write_text("")
+    with pytest.raises(PermissionError, match=r"nf-spectio-0\.0\.1"):
+        unpack_nf_spectio({"NXF_HOME": str(home / "nxf")})
 
 
 def test_login_timeout_kills_the_group(

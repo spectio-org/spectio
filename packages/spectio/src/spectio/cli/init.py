@@ -161,5 +161,5 @@ def _init(settings: Settings) -> None:
     typer.echo(f"Wrote {path}; database in {db_dir}; runs under {runs_root}; port {settings.port}")
     try:  # the copy that runs started from a terminal load (architecture §13.8)
         typer.echo(f"nf-spectio in {unpack_nf_spectio()}")
-    except OSError as exc:
+    except (OSError, ValueError) as exc:
         typer.echo(f"warning: nf-spectio not unpacked: {exc}")

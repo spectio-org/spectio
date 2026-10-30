@@ -11,6 +11,7 @@ import re
 import secrets
 import shlex
 import shutil
+import stat
 from collections.abc import Mapping
 from dataclasses import dataclass
 from importlib.resources import files
@@ -96,16 +97,39 @@ def bridge(name: str) -> Path:
 
 
 def nf_plugin_copy(env: Mapping[str, str]) -> Path:
-    """`$NXF_PLUGINS_DIR/nf-spectio-<ver>` (default `$NXF_HOME/plugins`, architecture §13.8)."""
-    nxf_home = Path(env.get("NXF_HOME") or Path.home() / ".nextflow")
-    return Path(env.get("NXF_PLUGINS_DIR") or nxf_home / "plugins") / NF_SPECTIO_DIR
+    """`$NXF_PLUGINS_DIR/nf-spectio-<ver>` (default `$NXF_HOME/plugins`, architecture §13.8),
+    with `~` expanded. Raises ValueError on a relative directory: the server and the head, which
+    runs in the launch directory, would read it differently (SEC-P3T09-05)."""
+    nxf_home = Path(env.get("NXF_HOME") or Path.home() / ".nextflow").expanduser()
+    plugins = Path(env.get("NXF_PLUGINS_DIR") or nxf_home / "plugins").expanduser()
+    if not plugins.is_absolute():
+        raise ValueError(
+            f"the Nextflow plugins directory {plugins} (NXF_PLUGINS_DIR or NXF_HOME) "
+            "is not an absolute path"
+        )
+    return plugins / NF_SPECTIO_DIR
+
+
+def _existing_copy(dest: Path) -> bool:
+    """Whether a copy is there; raises PermissionError when it is not a real directory of this
+    user's that group and others cannot write, since every head loads it (SEC-P3T09-06)."""
+    try:
+        st = os.lstat(dest)
+    except FileNotFoundError:
+        return False
+    if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.geteuid() or st.st_mode & 0o022:
+        raise PermissionError(
+            f"{dest} is not a directory of yours that only you can write "
+            f"(owner uid {st.st_uid}, mode {stat.filemode(st.st_mode)}): remove it"
+        )
+    return True
 
 
 def unpack_nf_spectio(env: Mapping[str, str] | None = None) -> Path:
     """Copy the bundled nf-spectio into the plugins directory; an existing copy of the same
     version is kept as it is, so a second call changes nothing (architecture §13.8)."""
     dest = nf_plugin_copy(os.environ if env is None else env)
-    if dest.is_dir():
+    if _existing_copy(dest):
         return dest
     source = bridge(NF_SPECTIO_DIR)
     dest.parent.mkdir(parents=True, exist_ok=True)
@@ -115,6 +139,6 @@ def unpack_nf_spectio(env: Mapping[str, str] | None = None) -> Path:
         tmp.rename(dest)
     except OSError:
         shutil.rmtree(tmp)
-        if not dest.is_dir():  # not merely a copy made at the same time
+        if not _existing_copy(dest):  # not merely a copy made at the same time
             raise
     return dest

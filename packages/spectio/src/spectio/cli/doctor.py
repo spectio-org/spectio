@@ -58,7 +58,10 @@ def _nxf_plugins(env: Mapping[str, str]) -> Result:
     """The check of architecture §13.8 (spectio doctor): the variable that enables nf-spectio."""
     check, want = "nxf_plugins_default", f"nf-spectio@{NF_SPECTIO_VERSION}"
     nxf_home = Path(env.get("NXF_HOME") or Path.home() / ".nextflow")
-    copy = nf_plugin_copy(env)
+    try:
+        copy = nf_plugin_copy(env)
+    except ValueError as exc:  # a relative NXF_HOME or NXF_PLUGINS_DIR (SEC-P3T09-05)
+        return "fail", check, str(exc)
     value = env.get("NXF_PLUGINS_DEFAULT")
     ours = [p.strip() for p in (value or "").split(",") if p.strip().split("@")[0] == "nf-spectio"]
     if value is None:
