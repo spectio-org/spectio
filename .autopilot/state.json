@@ -1,596 +1,596 @@
 {
-  "pipeline_version": 1,
-  "updated_at": "2026-10-30T12:30:00Z",
-  "current_wave": "W5",
-  "steps": {
-    "F1": {
-      "wave": "W0",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-24T00:00:00Z",
-      "finished_at": "2026-10-26T00:00:00Z",
-      "outputs": [],
-      "notes": "done interactively with Thomas"
-    },
-    "F2": {
-      "wave": "W0",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T00:00:00Z",
-      "finished_at": "2026-10-26T00:00:00Z",
-      "outputs": [],
-      "notes": "done interactively with Thomas"
-    },
-    "F3": {
-      "wave": "W0",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T00:00:00Z",
-      "finished_at": "2026-10-26T00:00:00Z",
-      "outputs": [],
-      "notes": "done interactively with Thomas"
-    },
-    "F4": {
-      "wave": "W0",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T00:00:00Z",
-      "finished_at": "2026-10-26T00:00:00Z",
-      "outputs": [],
-      "notes": "done interactively with Thomas"
-    },
-    "F5": {
-      "wave": "W0",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T00:00:00Z",
-      "finished_at": "2026-10-26T00:00:00Z",
-      "outputs": [],
-      "notes": "done interactively with Thomas"
-    },
-    "F6": {
-      "wave": "W0",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T00:00:00Z",
-      "finished_at": "2026-10-26T00:00:00Z",
-      "outputs": [],
-      "notes": "done interactively with Thomas"
-    },
-    "F7": {
-      "wave": "W0",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T00:00:00Z",
-      "finished_at": "2026-10-26T00:00:00Z",
-      "outputs": [],
-      "notes": "done interactively with Thomas"
-    },
-    "R1": {
-      "wave": "W1",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T21:08:59Z",
-      "finished_at": "2026-10-27T00:01:48Z",
-      "outputs": [
-        "docs/reviews/R1-consistency.md",
-        "docs/progress/W1/R1.md"
-      ],
-      "notes": "docs gate pass; doc-reviewer approve 14/14"
-    },
-    "R2": {
-      "wave": "W1",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T21:08:59Z",
-      "finished_at": "2026-10-27T00:01:48Z",
-      "outputs": [
-        "docs/reviews/verification-2026-10-26.md",
-        "docs/reviews/R2-open-validations.md",
-        "docs/progress/W1/R2.md"
-      ],
-      "notes": "docs gate pass; doc-reviewer approve 12/14"
-    },
-    "R4": {
-      "wave": "W1",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T21:08:59Z",
-      "finished_at": "2026-10-27T00:01:48Z",
-      "outputs": [
-        "docs/reviews/R4-constraints.md",
-        "docs/progress/W1/R4.md"
-      ],
-      "notes": "docs gate pass; doc-reviewer approve 13/14"
-    },
-    "R5": {
-      "wave": "W1",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T21:08:59Z",
-      "finished_at": "2026-10-27T00:01:48Z",
-      "outputs": [
-        "docs/reviews/R5-security.md",
-        "docs/progress/W1/R5.md"
-      ],
-      "notes": "docs gate pass; doc-reviewer approve 13/14"
-    },
-    "R7": {
-      "wave": "W1",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T21:08:59Z",
-      "finished_at": "2026-10-27T00:01:48Z",
-      "outputs": [
-        "docs/reviews/R7-ui.md",
-        "docs/progress/W1/R7.md"
-      ],
-      "notes": "docs gate pass; doc-reviewer approve 14/14"
-    },
-    "R8": {
-      "wave": "W1",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T21:08:59Z",
-      "finished_at": "2026-10-27T00:01:48Z",
-      "outputs": [
-        "docs/reviews/R8-depictio.md",
-        "docs/progress/W1/R8.md"
-      ],
-      "notes": "docs gate pass; doc-reviewer approve 13/14"
-    },
-    "R9": {
-      "wave": "W1",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T21:08:59Z",
-      "finished_at": "2026-10-27T00:01:48Z",
-      "outputs": [
-        "docs/reviews/R9-landscape.md",
-        "docs/research/landscape-2026-10-26.md",
-        "docs/progress/W1/R9.md"
-      ],
-      "notes": "docs gate pass; doc-reviewer approve 13/14"
-    },
-    "D2": {
-      "wave": "W1",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-26T21:08:59Z",
-      "finished_at": "2026-10-27T00:01:48Z",
-      "outputs": [
-        "docs/research/spike-cloud-env-2026-10-26.md",
-        "branch spike/cloud-env @217a92c",
-        "docs/progress/W1/D2.md"
-      ],
-      "notes": "docs gate pass; doc-reviewer approve 12/14"
-    },
-    "TRIAGE1": {
-      "wave": "W2",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T00:24:17Z",
-      "finished_at": "2026-10-27T06:20:36Z",
-      "outputs": [
-        "docs/reviews/*.md (statuses)",
-        "docs/reviews/inbox.md #11-#31",
-        "docs/progress/W2/TRIAGE1.md"
-      ],
-      "notes": "320 findings: 163 accepted, 4 rejected, 153 inbox (88 assumed); R12 included; docs gate pass; doc-reviewer approve 12/14"
-    },
-    "APPLY1": {
-      "wave": "W2",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T08:12:26Z",
-      "finished_at": "2026-10-27T09:32:00Z",
-      "outputs": [
-        "docs/specs/*.md (13 specs)",
-        "docs/decisions/log.md",
-        "docs/reviews/*.md (APPLY1 statuses)",
-        "docs/progress/W2/APPLY1.md"
-      ],
-      "notes": "232 findings in 9 rounds: 60 applied, 148 partly, 24 not applied; 43 agents, 0 errors; docs gate pass; doc-reviewer approve 11/14"
-    },
-    "R3": {
-      "wave": "W2",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T10:06:17Z",
-      "finished_at": "2026-10-27T10:49:11Z",
-      "outputs": [
-        "docs/reviews/R3-journeys.md",
-        "docs/progress/W2/R3.md"
-      ],
-      "notes": "",
-      "base": "0e5c85d"
-    },
-    "R6": {
-      "wave": "W2",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T10:06:17Z",
-      "finished_at": "2026-10-27T10:49:11Z",
-      "outputs": [
-        "docs/reviews/R6-contract.md",
-        "docs/progress/W2/R6.md"
-      ],
-      "notes": "",
-      "base": "0e5c85d"
-    },
-    "TRIAGE2": {
-      "wave": "W2",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T10:59:18Z",
-      "finished_at": "2026-10-27T11:16:29Z",
-      "outputs": [
-        "docs/reviews/R3-journeys.md (statuses)",
-        "docs/reviews/R6-contract.md (statuses)",
-        "docs/reviews/inbox.md #32-#40",
-        "docs/progress/W2/TRIAGE2.md"
-      ],
-      "notes": "61 findings: 21 accepted, 0 rejected, 40 inbox (33 assumed); docs gate pass; doc-reviewer approve 12/14",
-      "base": "050a5c5c848679f8618c25c7dddf5c6b5d1afe3d"
-    },
-    "APPLY2": {
-      "wave": "W2",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T11:18:06Z",
-      "finished_at": "2026-10-27T12:06:00Z",
-      "outputs": [
-        "docs/specs (10 specs)",
-        "docs/decisions/log.md",
-        "docs/reviews/R3-journeys.md",
-        "docs/reviews/R6-contract.md",
-        "docs/progress/W2/APPLY2.md",
-        "docs/assets/diagrams/apply2_specs_*",
-        "docs/assets/diagrams/apply2_relaunch_*"
-      ],
-      "notes": "54/61 findings applied (7 full, 47 partly), 7 waiting; doc-review approve 13/14",
-      "base": "8e655ea7c0e1001c771680c50765b5cee791305b"
-    },
-    "D1": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T14:26:56Z",
-      "finished_at": "2026-10-27T15:01:00Z",
-      "outputs": [
-        "tools/claude/check_frontmatter.py",
-        ".github/workflows/claude-config.yml",
-        "CLAUDE.md",
-        "docs/progress/W3/D1.md",
-        "docs/reviews/code/D1.md"
-      ],
-      "notes": "PR weber8thomas/spectio#14 squash 74fd447 (media.yaml conflict resolved by merge 3a14c73); CODE review=approve 0/0/2, security=approve 0/0/3, rounds=1; doc-review approve 14/14; open: SEC-D1-03, claude-config as required check, PyYAML hash pin",
-      "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
-    },
-    "D3": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T14:26:56Z",
-      "finished_at": "2026-10-27T15:46:00Z",
-      "outputs": [
-        "dev/versions.env",
-        "dev/lib.sh",
-        "dev/bootstrap.sh",
-        "dev/doctor.sh",
-        "dev/snakemake.lock.txt",
-        "dev/npm/package-lock.json",
-        ".github/workflows/dev-env.yml",
-        "docs/progress/W3/D3.md",
-        "docs/reviews/code/D3.md"
-      ],
-      "notes": "PR weber8thomas/spectio#15 squash fc19981; exit_check bash dev/doctor.sh exit 0 (2 skipped, cgroup v1); CODE review=approve 0/0/5, security=approve 0/1/4 (SEC-D3-01 fixed), rounds=2, simplify -1/+0; doc-review approve 13/14; inbox #41-#44",
-      "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
-    },
-    "D4": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T14:26:56Z",
-      "finished_at": "2026-10-27T16:29:00Z",
-      "outputs": [
-        ".github/workflows/ci.yml",
-        ".github/workflows/security.yml",
-        ".github/workflows/claude-review.yml",
-        "tools/ci/security.sh",
-        ".github/CODEOWNERS",
-        ".gitleaks.toml",
-        ".gitleaksignore",
-        ".github/zizmor.yml",
-        "docs/progress/W3/D4.md",
-        "docs/reviews/code/D4.md"
-      ],
-      "notes": "PR weber8thomas/spectio#16 squash 6a6338b; test command ZIZMOR_OFFLINE=true bash tools/ci/security.sh all exit 0 (online zizmor needs a GitHub token, 401 here); CODE review=approve, security=approve, rounds=3, simplify nochange; doc-review approve 14/14; pipelines-real kept out of ci-ok until T7 (5 corpus jobs red, also red on main); nf-core Slack webhook redacted from fixtures, still in history (inbox #5, #27)",
-      "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
-    },
-    "D5": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T14:26:56Z",
-      "finished_at": "2026-10-27T14:58:00Z",
-      "outputs": [
-        ".github/workflows/previews.yml",
-        "docs/progress/W3/D5.md",
-        "docs/reviews/code/D5.md",
-        "docs/specs/dev-environment-and-testing.md"
-      ],
-      "notes": "PR weber8thomas/spectio#13 squash 5eb2542; CODE review=approve 0/0/2, security=approve 0/0/2, rounds=2; doc-review approve 12/14; hand items for Thomas (CLOUDFLARE_* secret names, Codespaces live check, wave-approved label)",
-      "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
-    },
-    "T1": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T21:41:03Z",
-      "finished_at": "2026-10-27T23:01:36Z",
-      "outputs": [
-        "tests/pipelines/synthetic/golden/ (44 fixtures: nextflow-26.10.4, 25.10.9, 25.04.8, snakemake-9.27.1)",
-        "tests/pipelines/synthetic/run_scenarios.py (--golden record|check)",
-        "tests/pipelines/synthetic/test_golden.py",
-        "docs/research/spike-t1-fixture-workflows-2026-10-27.md",
-        "docs/progress/W3/T1.md",
-        "docs/reviews/code/T1.md",
-        "weber8thomas/spectio#21 (squash 4cb00c1)"
-      ],
-      "notes": "rnaseq/sarek gate stop-and-resume not run: deferred to the nightly corpus, inbox #47 (assumed). Gate-target rule vs checking-scenarios \u00a712.3: inbox #48. Open: CR-07, CR-08, SEC-T1-01/02/03/06/07 (06 before T3). CI: Snakemake engine fault lost-retry-at-checkpoint-update hit twice in a row in oom_fatal on 712c3bc; one re-run green.",
-      "base": "cc00b25fb782251b4f2ba4326a5d64395df61181"
-    },
-    "T2": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-28T07:14:46Z",
-      "finished_at": "2026-10-28T07:52:00Z",
-      "outputs": [
-        "PR weber8thomas/spectio#25, squash afc2e9c",
-        "spike branch spike/engine-events @3b4f654 (code stays there)",
-        "docs/research/spike-engine-events-2026-10-28.md",
-        "docs/progress/W3/T2.md",
-        "spikes/engine-events/fixtures/ (15 JSONL, 2.6 MB)",
-        "tools/diagrams/t2_engine_events.py + docs/assets/diagrams/t2-engine-events_*",
-        "docs/assets/casts/t2-engine-events.cast"
-      ],
-      "notes": "Snakemake 9.27.1 logger plugin yes; Tower capture on Nextflow 26.10.4 and 25.10.9 yes; first nf-spectio (TraceObserverV2) next to nf-tower: same run 6/6. 24 differences with the specs for TRIAGE3. Doc review changes 10/14, then approve 13/14.",
-      "base": "35f2514dde99e0c76be48bc391db48e3ecc8ee05"
-    },
-    "T3": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-28T10:46:00Z",
-      "finished_at": "2026-10-28T12:15:00Z",
-      "outputs": [
-        ".github/workflows/pipelines-slurm.yml",
-        "dev/slurm/cluster.sh",
-        "dev/slurm/env.sh",
-        "dev/slurm/mini.yaml",
-        "dev/slurm/site.yaml",
-        "tests/slurm/scenarios.sh",
-        "tests/slurm/fixture.py",
-        "tests/slurm/rest_get.py",
-        "tests/slurm/test_fixture.py",
-        "tests/fixtures/slurm/slurm-26.05.5/",
-        "docs/research/spike-t3-ci-2026-10-28.md",
-        "docs/progress/W3/T3.md",
-        "docs/reviews/code/T3.md",
-        "docs/specs/dev-environment-and-testing.md",
-        "tools/diagrams/t3_sind_slurm.py"
-      ],
-      "notes": "CI-driven (inbox #51 (b), assumed \u2014 pending Thomas); from spike t3-ci (run 40670286528); PR weber8thomas/spectio#35 squash e2c7d41; CODE review=approve 1/2/12, security=approve 0/0/7, rounds=2; doc review approve 13/14; pipelines-slurm green on 646a6eb; follow-ups PR weber8thomas/spectio#39 squash 7242408 (positive control for slurmrestd, test_fixture.py in ci-ok, redacted errors; review round 3 approve 0/0/4 + 0/0/4)",
-      "base": "89fb4f38c6fa0b8837f53bd81a86ec7a778043a0"
-    },
-    "T4": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 1,
-      "started_at": "2026-10-28T09:53:26Z",
-      "finished_at": "2026-10-28T10:56:00Z",
-      "outputs": [
-        "dev/k8s/cluster.sh",
-        "dev/k8s/base.yaml",
-        "dev/k8s/kueue-queues.yaml",
-        "tests/k8s/",
-        "tests/fixtures/k8s/",
-        ".github/workflows/pipelines-k8s.yml",
-        "docs/progress/W3/T4.md",
-        "docs/reviews/code/T4.md",
-        "docs/research/spike-t4-ci-2026-10-28.md"
-      ],
-      "notes": "CI-driven (inbox #51 (b), assumed \u2014 pending Thomas); PR #33 squash db7eb7f; pipelines-k8s green on 007683c (run 40674240654); review 3 rounds approve; doc 14/14; 10 spec differences + SEC-T4-03/05 for TRIAGE3",
-      "base": "504bc62ecdda2ba01316b10e9b5a1b35c214dabf"
-    },
-    "T5": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-28T12:00:04Z",
-      "finished_at": "2026-10-28T13:05:00Z",
-      "outputs": [
-        "dev/scenario.py",
-        "dev/k8s/cluster.sh",
-        "tests/scenarios/",
-        "tests/scenarios/parallel.sh",
-        ".github/workflows/scenarios.yml",
-        "docs/progress/W3/T5.md",
-        "docs/reviews/code/T5.md",
-        "docs/specs/dev-environment-and-testing.md",
-        "tools/diagrams/t5_scenarios.py"
-      ],
-      "notes": "CI-driven (inbox #52 (b) would move T5 after the walking skeleton; built under the current plan); PR weber8thomas/spectio#41 squash 90ec099, every check green on aa05608 (scenarios.yml four in parallel, pipelines-k8s mini+kueue); review round 1 changes, round 2 changes (CR-8 blocker fixed in cf655ec), round 3 changes (CR-13 major, CR-14 minor), fixed in PR weber8thomas/spectio#43 (squash aaff4e0, every check green on 5158f4c); round 4 approve 0/0/2 (CR-15 fixed, CR-16 recorded); doc review approve 12/14"
-    },
-    "T6": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-28T13:37:16Z",
-      "finished_at": "2026-10-28T14:25:00Z",
-      "outputs": [
-        "tests/e2e/",
-        ".github/workflows/e2e.yml",
-        "docs/progress/W3/T6.md",
-        "docs/reviews/code/T6.md"
-      ],
-      "notes": "worker in a separate cloud session (session_01MF8RxLya2qysy5qS11CEqD), branch autopilot/T6; narrowed to a minimal skeleton by Thomas's MVP decision of 2026-10-28 (no side-by-side report against the boards); PR weber8thomas/spectio#45 squash e956025, every check green on 84b5331; code review approve after 3 rounds (0/1/6 fixed), security approve (0/0/5, SEC-T6-05 \u2192 inbox #63), simplifier no change, doc review approve 13/14; deferred: side-by-side board report, tier-4 journeys"
-    },
-    "TRIAGE3": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-28T11:20:00Z",
-      "finished_at": "2026-10-28T12:04:00Z",
-      "outputs": [
-        "docs/reviews/spikes.md",
-        "docs/reviews/inbox.md",
-        "tools/triage/check_t2.py",
-        "tools/triage/check_t3.py"
-      ],
-      "notes": "69 findings (T2 27, T3 20, T4 17, T7 5): 44 accepted, 8 rejected, 3 applied by T3, 14 inbox (#53-#60; 4 assumed, 9 reserved); commit efb00cf on autopilot/APPLY3, merged with APPLY3 in PR #40 (08ecc94)"
-    },
-    "APPLY3": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-28T12:04:00Z",
-      "finished_at": "2026-10-28T12:34:00Z",
-      "outputs": [
-        "docs/specs/schedulers-and-monitoring.md",
-        "docs/specs/api-and-data-model.md",
-        "docs/specs/dev-environment-and-testing.md",
-        "docs/specs/architecture-plugins-and-packaging.md",
-        "docs/specs/checking-scenarios.md",
-        "docs/specs/synthesis.md",
-        "docs/specs/ui-spec.md",
-        "docs/decisions/log.md",
-        "docs/decisions/0001-nextflow-through-nf-spectio.md",
-        "docs/reviews/spikes.md",
-        "docs/progress/W3/APPLY3.md",
-        "tools/diagrams/apply3_specs.py"
-      ],
-      "notes": "PR weber8thomas/spectio#40 squash 08ecc94 (with TRIAGE3); 42 applied, 5 partly, 2 by PR #36; assumed #56 #57 #58 #60; reserved #53 #54 #55 #59 #46; doc review approve 12/14"
-    },
-    "R10": {
-      "wave": "W4",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-28T13:45:00Z",
-      "finished_at": "2026-10-28T14:35:00Z",
-      "outputs": [
-        "docs/reviews/R10-synthesis.md",
-        "docs/progress/W4/R10.md",
-        "tools/diagrams/r10_synthesis.py",
-        "docs/reviews/inbox.md (#62)"
-      ],
-      "notes": "synthesis by one general-purpose agent (450 findings, 123 open, 12 touch the narrowed 0.0.1, 7 decided); GO for P1, code after P1 under C1\u2013C4; decisions D0\u2013D4 for Thomas (#52, #61, #34, #55, #62); doc review changes 10/14 then approve 13/14; committed directly on integration (docs only)",
-      "base": "b217a1efc4eb822c828de351516cace3df0cd3fa"
-    },
-    "P1": {
-      "wave": "W4",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-28T14:10:00Z",
-      "finished_at": "2026-10-28T14:40:00Z",
-      "outputs": [
-        "docs/plans/P1-walking-skeleton.md",
-        "docs/progress/W4/P1.md",
-        "tools/diagrams/p1_skeleton.py"
-      ],
-      "notes": "one general-purpose agent with writing-plans; 5 milestones, 23 tasks, 20 assumptions pending Thomas; all 13 R10 \u00a73a rows and the seven \u00a715.3 requirements mapped to tasks; doc review approve 11/14 with 4 required changes applied (four session-free routes, D3 storage test, api \u00a75 owner on tasks 12 and 17, T6 dependency); next: GO (human gate)"
-    },
-    "GO": {
-      "wave": "W4",
-      "status": "done",
-      "attempts": 0,
-      "started_at": null,
-      "finished_at": "2026-10-29T19:00:00Z",
-      "outputs": [
-        "docs/decisions/log.md"
-      ],
-      "notes": "GO (Thomas, 2026-10-29): whole P1, M1 to M8, with five changes: EMBL allows long-running processes and SSH tunnels; inbox #52 (b); engine buttons with a guess, path or Git source; local mode on Linux; depictio's Paper look on Mantine 7, rewritten. Log 2026-10-29 'GO for the whole P1 plan, with five changes'."
-    },
-    "P2": {
-      "wave": "W5",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-29T22:18:00Z",
-      "finished_at": "2026-10-29T22:42:00Z",
-      "outputs": [
-        "docs/plans/P2-execution.md",
-        "docs/progress/W5/P2.md",
-        "tools/diagrams/p2_lanes.py",
-        "docs/decisions/log.md"
-      ],
-      "notes": "one general-purpose agent with writing-plans: one short execution guide over P1 (Thomas narrowed P2 at the GO; log entry added), 8 milestone sections, review tracks, gaps G1-G7, 8 notes for P1; inbox #72, #73 assumed (a); doc review approve 11/14 with 8 required changes applied (incl. new figure p2_lanes); next: P3",
-      "base": "7ba905a017a6418476e46443439a58fa9a71b169"
-    },
-    "P3": {
-      "wave": "W5",
-      "status": "running",
-      "attempts": 0,
-      "started_at": "2026-10-29T22:50:00Z",
-      "finished_at": null,
-      "outputs": [],
-      "notes": "P3 runs across ticks, one P1 task per branch autopilot/P3-<task> (P2 \u00a70). Done: Task 1 (PR #73, squash 622caa0), Task 2 (PR #75, squash 7d90633), Task 3 (PR #77, squash 51d6348), Task 4 (PR #79, squash 6dc5cce), Task 5 (PR #81, squash ce415cd), Task 6 (PR #83, squash b7586f8). Next: Task 7, as the p3-task workflow, board gaps G1/G2/G3a. Deferred to Task 5: SEC-P3T1-08, -11; to Task 6: SEC-P3T1-09 (see journal 2026-10-29 tick 14). FU-P3-02 (inbox #72 b): disabled search, notifications and avatar placeholders in the Paper shell. Follow-ups from Task 3: CR-P3T3-08 (unended lines starve the byte budget); Task 9 must create .spectio and events 0700 and walk req. 10 (SEC-P3T3-09).",
-      "base": "b7586f84883ab8be944b885128e3ecb476dc400a"
-    },
-    "R11": {
-      "wave": "W1",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T00:02:11Z",
-      "finished_at": "2026-10-27T00:23:15Z",
-      "outputs": [
-        "docs/reviews/R11-docs.md",
-        "docs/progress/W1/R11.md"
-      ],
-      "notes": "docs gate pass; doc-reviewer approve 13/14"
-    },
-    "T7": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T17:47:37Z",
-      "finished_at": "2026-10-27T21:28:00Z",
-      "outputs": [
-        ".github/workflows/ci.yml",
-        ".github/workflows/pipelines-real.yml",
-        "tests/pipelines/real/corpus.yaml",
-        "tests/pipelines/real/run_corpus.py",
-        "tests/pipelines/real/runner_probe.sh",
-        "tests/pipelines/real/test_run_corpus.py",
-        "docs/research/corpus-ci-2026-10-27.md",
-        "docs/progress/W3/T7.md",
-        "docs/reviews/code/T7.md",
-        "docs/specs/dev-environment-and-testing.md"
-      ],
-      "notes": "PR weber8thomas/spectio#19 squash 761d845; CODE review=approve 0/0/2, security=approve 0/0/6, rounds=1; doc-review approve 11/14; light PR tier (inbox #45 answered); final CI run 40584542402 green incl. pipelines-real; inbox #46 open; follow-up PR weber8thomas/spectio#36 squash 613c89c: one -resume retry for a failed Nextflow entry, public limits 13 GB (SPK-T7-02, SPK-T7-05); SPK-T7-03 Nextflow pin read from dev/versions.env: PR weber8thomas/spectio#38 squash 3bafe3e (CODE review=approve 0/0/2, security=approve 0/0/1)",
-      "base": "cddb67ba7d33e729ee80093edbd93b1ae098c6a1"
-    },
-    "D6": {
-      "wave": "W3",
-      "status": "done",
-      "attempts": 0,
-      "started_at": "2026-10-27T23:15:19Z",
-      "finished_at": "2026-10-27T23:42:27Z",
-      "outputs": [
-        "tools/docs/check.py",
-        "tools/docs/test_check.py",
-        ".github/workflows/docs.yml",
-        "mkdocs.yml",
-        "tools/diagrams/FONT-LICENSE.md",
-        "tools/diagrams/d6_progress_hook_check.py",
-        "docs/fonts/OFL.txt",
-        "docs/progress/W3/D6.md",
-        "docs/reviews/code/D6.md",
-        "PR #23 (b67ace9)"
-      ],
-      "notes": "minimal version on Thomas's request (tick 9); deferred parts in inbox #50; Virgil licence conflict inbox #49",
-      "base": "99826d2a7df2e278df36dd1d0c804683596a7e63"
-    }
+ "pipeline_version": 1,
+ "updated_at": "2026-10-30T15:50:00Z",
+ "current_wave": "W5",
+ "steps": {
+  "F1": {
+   "wave": "W0",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-24T00:00:00Z",
+   "finished_at": "2026-10-26T00:00:00Z",
+   "outputs": [],
+   "notes": "done interactively with Thomas"
+  },
+  "F2": {
+   "wave": "W0",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T00:00:00Z",
+   "finished_at": "2026-10-26T00:00:00Z",
+   "outputs": [],
+   "notes": "done interactively with Thomas"
+  },
+  "F3": {
+   "wave": "W0",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T00:00:00Z",
+   "finished_at": "2026-10-26T00:00:00Z",
+   "outputs": [],
+   "notes": "done interactively with Thomas"
+  },
+  "F4": {
+   "wave": "W0",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T00:00:00Z",
+   "finished_at": "2026-10-26T00:00:00Z",
+   "outputs": [],
+   "notes": "done interactively with Thomas"
+  },
+  "F5": {
+   "wave": "W0",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T00:00:00Z",
+   "finished_at": "2026-10-26T00:00:00Z",
+   "outputs": [],
+   "notes": "done interactively with Thomas"
+  },
+  "F6": {
+   "wave": "W0",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T00:00:00Z",
+   "finished_at": "2026-10-26T00:00:00Z",
+   "outputs": [],
+   "notes": "done interactively with Thomas"
+  },
+  "F7": {
+   "wave": "W0",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T00:00:00Z",
+   "finished_at": "2026-10-26T00:00:00Z",
+   "outputs": [],
+   "notes": "done interactively with Thomas"
+  },
+  "R1": {
+   "wave": "W1",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T21:08:59Z",
+   "finished_at": "2026-10-27T00:01:48Z",
+   "outputs": [
+    "docs/reviews/R1-consistency.md",
+    "docs/progress/W1/R1.md"
+   ],
+   "notes": "docs gate pass; doc-reviewer approve 14/14"
+  },
+  "R2": {
+   "wave": "W1",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T21:08:59Z",
+   "finished_at": "2026-10-27T00:01:48Z",
+   "outputs": [
+    "docs/reviews/verification-2026-10-26.md",
+    "docs/reviews/R2-open-validations.md",
+    "docs/progress/W1/R2.md"
+   ],
+   "notes": "docs gate pass; doc-reviewer approve 12/14"
+  },
+  "R4": {
+   "wave": "W1",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T21:08:59Z",
+   "finished_at": "2026-10-27T00:01:48Z",
+   "outputs": [
+    "docs/reviews/R4-constraints.md",
+    "docs/progress/W1/R4.md"
+   ],
+   "notes": "docs gate pass; doc-reviewer approve 13/14"
+  },
+  "R5": {
+   "wave": "W1",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T21:08:59Z",
+   "finished_at": "2026-10-27T00:01:48Z",
+   "outputs": [
+    "docs/reviews/R5-security.md",
+    "docs/progress/W1/R5.md"
+   ],
+   "notes": "docs gate pass; doc-reviewer approve 13/14"
+  },
+  "R7": {
+   "wave": "W1",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T21:08:59Z",
+   "finished_at": "2026-10-27T00:01:48Z",
+   "outputs": [
+    "docs/reviews/R7-ui.md",
+    "docs/progress/W1/R7.md"
+   ],
+   "notes": "docs gate pass; doc-reviewer approve 14/14"
+  },
+  "R8": {
+   "wave": "W1",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T21:08:59Z",
+   "finished_at": "2026-10-27T00:01:48Z",
+   "outputs": [
+    "docs/reviews/R8-depictio.md",
+    "docs/progress/W1/R8.md"
+   ],
+   "notes": "docs gate pass; doc-reviewer approve 13/14"
+  },
+  "R9": {
+   "wave": "W1",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T21:08:59Z",
+   "finished_at": "2026-10-27T00:01:48Z",
+   "outputs": [
+    "docs/reviews/R9-landscape.md",
+    "docs/research/landscape-2026-10-26.md",
+    "docs/progress/W1/R9.md"
+   ],
+   "notes": "docs gate pass; doc-reviewer approve 13/14"
+  },
+  "D2": {
+   "wave": "W1",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-26T21:08:59Z",
+   "finished_at": "2026-10-27T00:01:48Z",
+   "outputs": [
+    "docs/research/spike-cloud-env-2026-10-26.md",
+    "branch spike/cloud-env @217a92c",
+    "docs/progress/W1/D2.md"
+   ],
+   "notes": "docs gate pass; doc-reviewer approve 12/14"
+  },
+  "TRIAGE1": {
+   "wave": "W2",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T00:24:17Z",
+   "finished_at": "2026-10-27T06:20:36Z",
+   "outputs": [
+    "docs/reviews/*.md (statuses)",
+    "docs/reviews/inbox.md #11-#31",
+    "docs/progress/W2/TRIAGE1.md"
+   ],
+   "notes": "320 findings: 163 accepted, 4 rejected, 153 inbox (88 assumed); R12 included; docs gate pass; doc-reviewer approve 12/14"
+  },
+  "APPLY1": {
+   "wave": "W2",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T08:12:26Z",
+   "finished_at": "2026-10-27T09:32:00Z",
+   "outputs": [
+    "docs/specs/*.md (13 specs)",
+    "docs/decisions/log.md",
+    "docs/reviews/*.md (APPLY1 statuses)",
+    "docs/progress/W2/APPLY1.md"
+   ],
+   "notes": "232 findings in 9 rounds: 60 applied, 148 partly, 24 not applied; 43 agents, 0 errors; docs gate pass; doc-reviewer approve 11/14"
+  },
+  "R3": {
+   "wave": "W2",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T10:06:17Z",
+   "finished_at": "2026-10-27T10:49:11Z",
+   "outputs": [
+    "docs/reviews/R3-journeys.md",
+    "docs/progress/W2/R3.md"
+   ],
+   "notes": "",
+   "base": "0e5c85d"
+  },
+  "R6": {
+   "wave": "W2",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T10:06:17Z",
+   "finished_at": "2026-10-27T10:49:11Z",
+   "outputs": [
+    "docs/reviews/R6-contract.md",
+    "docs/progress/W2/R6.md"
+   ],
+   "notes": "",
+   "base": "0e5c85d"
+  },
+  "TRIAGE2": {
+   "wave": "W2",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T10:59:18Z",
+   "finished_at": "2026-10-27T11:16:29Z",
+   "outputs": [
+    "docs/reviews/R3-journeys.md (statuses)",
+    "docs/reviews/R6-contract.md (statuses)",
+    "docs/reviews/inbox.md #32-#40",
+    "docs/progress/W2/TRIAGE2.md"
+   ],
+   "notes": "61 findings: 21 accepted, 0 rejected, 40 inbox (33 assumed); docs gate pass; doc-reviewer approve 12/14",
+   "base": "050a5c5c848679f8618c25c7dddf5c6b5d1afe3d"
+  },
+  "APPLY2": {
+   "wave": "W2",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T11:18:06Z",
+   "finished_at": "2026-10-27T12:06:00Z",
+   "outputs": [
+    "docs/specs (10 specs)",
+    "docs/decisions/log.md",
+    "docs/reviews/R3-journeys.md",
+    "docs/reviews/R6-contract.md",
+    "docs/progress/W2/APPLY2.md",
+    "docs/assets/diagrams/apply2_specs_*",
+    "docs/assets/diagrams/apply2_relaunch_*"
+   ],
+   "notes": "54/61 findings applied (7 full, 47 partly), 7 waiting; doc-review approve 13/14",
+   "base": "8e655ea7c0e1001c771680c50765b5cee791305b"
+  },
+  "D1": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T14:26:56Z",
+   "finished_at": "2026-10-27T15:01:00Z",
+   "outputs": [
+    "tools/claude/check_frontmatter.py",
+    ".github/workflows/claude-config.yml",
+    "CLAUDE.md",
+    "docs/progress/W3/D1.md",
+    "docs/reviews/code/D1.md"
+   ],
+   "notes": "PR weber8thomas/spectio#14 squash 74fd447 (media.yaml conflict resolved by merge 3a14c73); CODE review=approve 0/0/2, security=approve 0/0/3, rounds=1; doc-review approve 14/14; open: SEC-D1-03, claude-config as required check, PyYAML hash pin",
+   "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
+  },
+  "D3": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T14:26:56Z",
+   "finished_at": "2026-10-27T15:46:00Z",
+   "outputs": [
+    "dev/versions.env",
+    "dev/lib.sh",
+    "dev/bootstrap.sh",
+    "dev/doctor.sh",
+    "dev/snakemake.lock.txt",
+    "dev/npm/package-lock.json",
+    ".github/workflows/dev-env.yml",
+    "docs/progress/W3/D3.md",
+    "docs/reviews/code/D3.md"
+   ],
+   "notes": "PR weber8thomas/spectio#15 squash fc19981; exit_check bash dev/doctor.sh exit 0 (2 skipped, cgroup v1); CODE review=approve 0/0/5, security=approve 0/1/4 (SEC-D3-01 fixed), rounds=2, simplify -1/+0; doc-review approve 13/14; inbox #41-#44",
+   "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
+  },
+  "D4": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T14:26:56Z",
+   "finished_at": "2026-10-27T16:29:00Z",
+   "outputs": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/security.yml",
+    ".github/workflows/claude-review.yml",
+    "tools/ci/security.sh",
+    ".github/CODEOWNERS",
+    ".gitleaks.toml",
+    ".gitleaksignore",
+    ".github/zizmor.yml",
+    "docs/progress/W3/D4.md",
+    "docs/reviews/code/D4.md"
+   ],
+   "notes": "PR weber8thomas/spectio#16 squash 6a6338b; test command ZIZMOR_OFFLINE=true bash tools/ci/security.sh all exit 0 (online zizmor needs a GitHub token, 401 here); CODE review=approve, security=approve, rounds=3, simplify nochange; doc-review approve 14/14; pipelines-real kept out of ci-ok until T7 (5 corpus jobs red, also red on main); nf-core Slack webhook redacted from fixtures, still in history (inbox #5, #27)",
+   "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
+  },
+  "D5": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T14:26:56Z",
+   "finished_at": "2026-10-27T14:58:00Z",
+   "outputs": [
+    ".github/workflows/previews.yml",
+    "docs/progress/W3/D5.md",
+    "docs/reviews/code/D5.md",
+    "docs/specs/dev-environment-and-testing.md"
+   ],
+   "notes": "PR weber8thomas/spectio#13 squash 5eb2542; CODE review=approve 0/0/2, security=approve 0/0/2, rounds=2; doc-review approve 12/14; hand items for Thomas (CLOUDFLARE_* secret names, Codespaces live check, wave-approved label)",
+   "base": "69c46adf1d25d873d1bec6bf6c6acb3022ca45b4"
+  },
+  "T1": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T21:41:03Z",
+   "finished_at": "2026-10-27T23:01:36Z",
+   "outputs": [
+    "tests/pipelines/synthetic/golden/ (44 fixtures: nextflow-26.10.4, 25.10.9, 25.04.8, snakemake-9.27.1)",
+    "tests/pipelines/synthetic/run_scenarios.py (--golden record|check)",
+    "tests/pipelines/synthetic/test_golden.py",
+    "docs/research/spike-t1-fixture-workflows-2026-10-27.md",
+    "docs/progress/W3/T1.md",
+    "docs/reviews/code/T1.md",
+    "weber8thomas/spectio#21 (squash 4cb00c1)"
+   ],
+   "notes": "rnaseq/sarek gate stop-and-resume not run: deferred to the nightly corpus, inbox #47 (assumed). Gate-target rule vs checking-scenarios \u00a712.3: inbox #48. Open: CR-07, CR-08, SEC-T1-01/02/03/06/07 (06 before T3). CI: Snakemake engine fault lost-retry-at-checkpoint-update hit twice in a row in oom_fatal on 712c3bc; one re-run green.",
+   "base": "cc00b25fb782251b4f2ba4326a5d64395df61181"
+  },
+  "T2": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-28T07:14:46Z",
+   "finished_at": "2026-10-28T07:52:00Z",
+   "outputs": [
+    "PR weber8thomas/spectio#25, squash afc2e9c",
+    "spike branch spike/engine-events @3b4f654 (code stays there)",
+    "docs/research/spike-engine-events-2026-10-28.md",
+    "docs/progress/W3/T2.md",
+    "spikes/engine-events/fixtures/ (15 JSONL, 2.6 MB)",
+    "tools/diagrams/t2_engine_events.py + docs/assets/diagrams/t2-engine-events_*",
+    "docs/assets/casts/t2-engine-events.cast"
+   ],
+   "notes": "Snakemake 9.27.1 logger plugin yes; Tower capture on Nextflow 26.10.4 and 25.10.9 yes; first nf-spectio (TraceObserverV2) next to nf-tower: same run 6/6. 24 differences with the specs for TRIAGE3. Doc review changes 10/14, then approve 13/14.",
+   "base": "35f2514dde99e0c76be48bc391db48e3ecc8ee05"
+  },
+  "T3": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-28T10:46:00Z",
+   "finished_at": "2026-10-28T12:15:00Z",
+   "outputs": [
+    ".github/workflows/pipelines-slurm.yml",
+    "dev/slurm/cluster.sh",
+    "dev/slurm/env.sh",
+    "dev/slurm/mini.yaml",
+    "dev/slurm/site.yaml",
+    "tests/slurm/scenarios.sh",
+    "tests/slurm/fixture.py",
+    "tests/slurm/rest_get.py",
+    "tests/slurm/test_fixture.py",
+    "tests/fixtures/slurm/slurm-26.05.5/",
+    "docs/research/spike-t3-ci-2026-10-28.md",
+    "docs/progress/W3/T3.md",
+    "docs/reviews/code/T3.md",
+    "docs/specs/dev-environment-and-testing.md",
+    "tools/diagrams/t3_sind_slurm.py"
+   ],
+   "notes": "CI-driven (inbox #51 (b), assumed \u2014 pending Thomas); from spike t3-ci (run 40670286528); PR weber8thomas/spectio#35 squash e2c7d41; CODE review=approve 1/2/12, security=approve 0/0/7, rounds=2; doc review approve 13/14; pipelines-slurm green on 646a6eb; follow-ups PR weber8thomas/spectio#39 squash 7242408 (positive control for slurmrestd, test_fixture.py in ci-ok, redacted errors; review round 3 approve 0/0/4 + 0/0/4)",
+   "base": "89fb4f38c6fa0b8837f53bd81a86ec7a778043a0"
+  },
+  "T4": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 1,
+   "started_at": "2026-10-28T09:53:26Z",
+   "finished_at": "2026-10-28T10:56:00Z",
+   "outputs": [
+    "dev/k8s/cluster.sh",
+    "dev/k8s/base.yaml",
+    "dev/k8s/kueue-queues.yaml",
+    "tests/k8s/",
+    "tests/fixtures/k8s/",
+    ".github/workflows/pipelines-k8s.yml",
+    "docs/progress/W3/T4.md",
+    "docs/reviews/code/T4.md",
+    "docs/research/spike-t4-ci-2026-10-28.md"
+   ],
+   "notes": "CI-driven (inbox #51 (b), assumed \u2014 pending Thomas); PR #33 squash db7eb7f; pipelines-k8s green on 007683c (run 40674240654); review 3 rounds approve; doc 14/14; 10 spec differences + SEC-T4-03/05 for TRIAGE3",
+   "base": "504bc62ecdda2ba01316b10e9b5a1b35c214dabf"
+  },
+  "T5": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-28T12:00:04Z",
+   "finished_at": "2026-10-28T13:05:00Z",
+   "outputs": [
+    "dev/scenario.py",
+    "dev/k8s/cluster.sh",
+    "tests/scenarios/",
+    "tests/scenarios/parallel.sh",
+    ".github/workflows/scenarios.yml",
+    "docs/progress/W3/T5.md",
+    "docs/reviews/code/T5.md",
+    "docs/specs/dev-environment-and-testing.md",
+    "tools/diagrams/t5_scenarios.py"
+   ],
+   "notes": "CI-driven (inbox #52 (b) would move T5 after the walking skeleton; built under the current plan); PR weber8thomas/spectio#41 squash 90ec099, every check green on aa05608 (scenarios.yml four in parallel, pipelines-k8s mini+kueue); review round 1 changes, round 2 changes (CR-8 blocker fixed in cf655ec), round 3 changes (CR-13 major, CR-14 minor), fixed in PR weber8thomas/spectio#43 (squash aaff4e0, every check green on 5158f4c); round 4 approve 0/0/2 (CR-15 fixed, CR-16 recorded); doc review approve 12/14"
+  },
+  "T6": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-28T13:37:16Z",
+   "finished_at": "2026-10-28T14:25:00Z",
+   "outputs": [
+    "tests/e2e/",
+    ".github/workflows/e2e.yml",
+    "docs/progress/W3/T6.md",
+    "docs/reviews/code/T6.md"
+   ],
+   "notes": "worker in a separate cloud session (session_01MF8RxLya2qysy5qS11CEqD), branch autopilot/T6; narrowed to a minimal skeleton by Thomas's MVP decision of 2026-10-28 (no side-by-side report against the boards); PR weber8thomas/spectio#45 squash e956025, every check green on 84b5331; code review approve after 3 rounds (0/1/6 fixed), security approve (0/0/5, SEC-T6-05 \u2192 inbox #63), simplifier no change, doc review approve 13/14; deferred: side-by-side board report, tier-4 journeys"
+  },
+  "TRIAGE3": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-28T11:20:00Z",
+   "finished_at": "2026-10-28T12:04:00Z",
+   "outputs": [
+    "docs/reviews/spikes.md",
+    "docs/reviews/inbox.md",
+    "tools/triage/check_t2.py",
+    "tools/triage/check_t3.py"
+   ],
+   "notes": "69 findings (T2 27, T3 20, T4 17, T7 5): 44 accepted, 8 rejected, 3 applied by T3, 14 inbox (#53-#60; 4 assumed, 9 reserved); commit efb00cf on autopilot/APPLY3, merged with APPLY3 in PR #40 (08ecc94)"
+  },
+  "APPLY3": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-28T12:04:00Z",
+   "finished_at": "2026-10-28T12:34:00Z",
+   "outputs": [
+    "docs/specs/schedulers-and-monitoring.md",
+    "docs/specs/api-and-data-model.md",
+    "docs/specs/dev-environment-and-testing.md",
+    "docs/specs/architecture-plugins-and-packaging.md",
+    "docs/specs/checking-scenarios.md",
+    "docs/specs/synthesis.md",
+    "docs/specs/ui-spec.md",
+    "docs/decisions/log.md",
+    "docs/decisions/0001-nextflow-through-nf-spectio.md",
+    "docs/reviews/spikes.md",
+    "docs/progress/W3/APPLY3.md",
+    "tools/diagrams/apply3_specs.py"
+   ],
+   "notes": "PR weber8thomas/spectio#40 squash 08ecc94 (with TRIAGE3); 42 applied, 5 partly, 2 by PR #36; assumed #56 #57 #58 #60; reserved #53 #54 #55 #59 #46; doc review approve 12/14"
+  },
+  "R10": {
+   "wave": "W4",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-28T13:45:00Z",
+   "finished_at": "2026-10-28T14:35:00Z",
+   "outputs": [
+    "docs/reviews/R10-synthesis.md",
+    "docs/progress/W4/R10.md",
+    "tools/diagrams/r10_synthesis.py",
+    "docs/reviews/inbox.md (#62)"
+   ],
+   "notes": "synthesis by one general-purpose agent (450 findings, 123 open, 12 touch the narrowed 0.0.1, 7 decided); GO for P1, code after P1 under C1\u2013C4; decisions D0\u2013D4 for Thomas (#52, #61, #34, #55, #62); doc review changes 10/14 then approve 13/14; committed directly on integration (docs only)",
+   "base": "b217a1efc4eb822c828de351516cace3df0cd3fa"
+  },
+  "P1": {
+   "wave": "W4",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-28T14:10:00Z",
+   "finished_at": "2026-10-28T14:40:00Z",
+   "outputs": [
+    "docs/plans/P1-walking-skeleton.md",
+    "docs/progress/W4/P1.md",
+    "tools/diagrams/p1_skeleton.py"
+   ],
+   "notes": "one general-purpose agent with writing-plans; 5 milestones, 23 tasks, 20 assumptions pending Thomas; all 13 R10 \u00a73a rows and the seven \u00a715.3 requirements mapped to tasks; doc review approve 11/14 with 4 required changes applied (four session-free routes, D3 storage test, api \u00a75 owner on tasks 12 and 17, T6 dependency); next: GO (human gate)"
+  },
+  "GO": {
+   "wave": "W4",
+   "status": "done",
+   "attempts": 0,
+   "started_at": null,
+   "finished_at": "2026-10-29T19:00:00Z",
+   "outputs": [
+    "docs/decisions/log.md"
+   ],
+   "notes": "GO (Thomas, 2026-10-29): whole P1, M1 to M8, with five changes: EMBL allows long-running processes and SSH tunnels; inbox #52 (b); engine buttons with a guess, path or Git source; local mode on Linux; depictio's Paper look on Mantine 7, rewritten. Log 2026-10-29 'GO for the whole P1 plan, with five changes'."
+  },
+  "P2": {
+   "wave": "W5",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-29T22:18:00Z",
+   "finished_at": "2026-10-29T22:42:00Z",
+   "outputs": [
+    "docs/plans/P2-execution.md",
+    "docs/progress/W5/P2.md",
+    "tools/diagrams/p2_lanes.py",
+    "docs/decisions/log.md"
+   ],
+   "notes": "one general-purpose agent with writing-plans: one short execution guide over P1 (Thomas narrowed P2 at the GO; log entry added), 8 milestone sections, review tracks, gaps G1-G7, 8 notes for P1; inbox #72, #73 assumed (a); doc review approve 11/14 with 8 required changes applied (incl. new figure p2_lanes); next: P3",
+   "base": "7ba905a017a6418476e46443439a58fa9a71b169"
+  },
+  "P3": {
+   "wave": "W5",
+   "status": "running",
+   "attempts": 0,
+   "started_at": "2026-10-29T22:50:00Z",
+   "finished_at": null,
+   "outputs": [],
+   "notes": "P3 runs across ticks, one P1 task per branch autopilot/P3-<task> (P2 \u00a70). Done: Task 1 (PR #73, squash 622caa0), Task 2 (PR #75, squash 7d90633), Task 3 (PR #77, squash 51d6348), Task 4 (PR #79, squash 6dc5cce), Task 5 (PR #81, squash ce415cd), Task 6 (PR #83, squash b7586f8), G1 (PR #85, squash 531112f), Task 8 (PR #86, squash ba1a9db). Running: Task 9 (workflow p3-task), G2, G3a. Next (inbox #80, local-only): Task 11, Task 17 (+G5 API), 18, 19 (+G5 UI), G4, Task 20; Task 7 after Task 20. Deferred to Task 9: SEC-P3T3-09 (rest), CR-P3T04-11; to G3a: UX-G1-12, -13; to /apply-findings: UX-G1-09.",
+   "base": "b7586f84883ab8be944b885128e3ecb476dc400a"
+  },
+  "R11": {
+   "wave": "W1",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T00:02:11Z",
+   "finished_at": "2026-10-27T00:23:15Z",
+   "outputs": [
+    "docs/reviews/R11-docs.md",
+    "docs/progress/W1/R11.md"
+   ],
+   "notes": "docs gate pass; doc-reviewer approve 13/14"
+  },
+  "T7": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T17:47:37Z",
+   "finished_at": "2026-10-27T21:28:00Z",
+   "outputs": [
+    ".github/workflows/ci.yml",
+    ".github/workflows/pipelines-real.yml",
+    "tests/pipelines/real/corpus.yaml",
+    "tests/pipelines/real/run_corpus.py",
+    "tests/pipelines/real/runner_probe.sh",
+    "tests/pipelines/real/test_run_corpus.py",
+    "docs/research/corpus-ci-2026-10-27.md",
+    "docs/progress/W3/T7.md",
+    "docs/reviews/code/T7.md",
+    "docs/specs/dev-environment-and-testing.md"
+   ],
+   "notes": "PR weber8thomas/spectio#19 squash 761d845; CODE review=approve 0/0/2, security=approve 0/0/6, rounds=1; doc-review approve 11/14; light PR tier (inbox #45 answered); final CI run 40584542402 green incl. pipelines-real; inbox #46 open; follow-up PR weber8thomas/spectio#36 squash 613c89c: one -resume retry for a failed Nextflow entry, public limits 13 GB (SPK-T7-02, SPK-T7-05); SPK-T7-03 Nextflow pin read from dev/versions.env: PR weber8thomas/spectio#38 squash 3bafe3e (CODE review=approve 0/0/2, security=approve 0/0/1)",
+   "base": "cddb67ba7d33e729ee80093edbd93b1ae098c6a1"
+  },
+  "D6": {
+   "wave": "W3",
+   "status": "done",
+   "attempts": 0,
+   "started_at": "2026-10-27T23:15:19Z",
+   "finished_at": "2026-10-27T23:42:27Z",
+   "outputs": [
+    "tools/docs/check.py",
+    "tools/docs/test_check.py",
+    ".github/workflows/docs.yml",
+    "mkdocs.yml",
+    "tools/diagrams/FONT-LICENSE.md",
+    "tools/diagrams/d6_progress_hook_check.py",
+    "docs/fonts/OFL.txt",
+    "docs/progress/W3/D6.md",
+    "docs/reviews/code/D6.md",
+    "PR #23 (b67ace9)"
+   ],
+   "notes": "minimal version on Thomas's request (tick 9); deferred parts in inbox #50; Virgil licence conflict inbox #49",
+   "base": "99826d2a7df2e278df36dd1d0c804683596a7e63"
   }
+ }
 }
