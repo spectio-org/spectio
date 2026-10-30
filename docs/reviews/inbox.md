@@ -1417,7 +1417,8 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   4. **Layout by `matchMedia`, not CSS alone.** Phone (< 768 px) renders the tab bar and no sidebar; tablet (768–1199 px) starts with the sidebar folded to the rail; the reader's own fold then wins until reload.
   5. **Fonts.** Inter and Outfit are named but not shipped: the CSP allows fonts from this origin only, and no font package was added; browsers without them fall back to `system-ui`.
   6. **Carried for Task 20:** `.sp-table [data-wide]` hides a column below 1100 px (UX-G3a-05: mark Started with it); `.sp-page-title` and `.sp-page-sub` wrap instead of an ellipsis (UX-G3a-06: the phone run title and state line). The phone top bar's title row and back chevron come with Task 20's run detail.
-- **Options:** (a) keep rules 1 to 6; (b) self-host Inter and Outfit now (`@fontsource`, two pinned packages); (c) default to light instead of `auto`.
+  7. **The server's node, desktop and tablet** *(added by the docs commit, CR-P3G4-04 r1)*. Task 19's top bar showed "server on <node>"; the Paper top bar does not, as on `LiteTopbar` (G1). The node is in the sidebar foot only. On the folded tablet rail that text is for screen readers only, so a sighted reader at 768–1199 px unfolds the sidebar to see it.
+- **Options:** (a) keep rules 1 to 7; (b) self-host Inter and Outfit now (`@fontsource`, two pinned packages); (c) default to light instead of `auto`.
 - **Recommendation:** (a). (b) is worth doing with Task 21's packaging; (c) ignores the reader's system setting.
-- **Assumed (2026-10-30, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), pending Thomas.
+- **Assumed (2026-10-30, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), pending Thomas. Rules 1 to 5 and 7 are written into the [ui-spec §7 note of 2026-10-30](../specs/ui-spec.md#7-consistency-with-depictio-reuse-plan) by the docs commit. Open from the review: [P3-M4 · G4](../progress/W5/P3-M4.md#findings-and-open-questions).
 - **Blocked:** nothing.
