@@ -340,12 +340,12 @@ def snakemake_profiles(root: Path) -> list[str]:
     except OSError:  # missing or a symlink
         return []
     try:
-        if not stat.S_ISDIR(os.fstat(fd).st_mode):
-            return []
-        with os.scandir(fd) as entries:
-            names = [e.name for e in entries if e.is_dir(follow_symlinks=False)]
+        names = os.listdir(fd)
+    except NotADirectoryError:
+        return []
     finally:
         os.close(fd)
+    # `_open` reaches config.yaml only through real directories: symlinks and files drop out
     return sorted(n for n in names if _regular(root, "profiles", n, "config.yaml"))
 
 
