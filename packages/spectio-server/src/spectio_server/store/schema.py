@@ -344,3 +344,13 @@ spool_drops = Table(
     Column("reason", String, primary_key=True),
     Column("count", Integer, nullable=False),
 )
+
+# The task of each Snakemake `jobid` in a launch: `job_finished` and `job_error` carry the jobid
+# only (P1 Task 5). Written in the ingest transaction.
+snakemake_jobs = Table(
+    "snakemake_jobs",
+    metadata,
+    Column("launch_id", String, ForeignKey("launches.id"), primary_key=True),
+    Column("jobid", Integer, primary_key=True),
+    Column("task_id", String, ForeignKey("tasks.id"), nullable=False),
+)
