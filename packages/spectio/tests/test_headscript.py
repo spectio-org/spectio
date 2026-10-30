@@ -255,14 +255,14 @@ def test_pythonpath_prepended_to_the_login_profiles(home: Path, bridges: Path) -
 
 
 @pytest.mark.parametrize(
-    "bad", [{"run_id": "run_x\ntouch /tmp/p"}, {"run_id": "x"}, {"launch_n": 0}]
+    ("field", "value"), [("run_id", "run_x\ntouch /tmp/p"), ("run_id", "x"), ("launch_n", 0)]
 )
 def test_head_script_refuses_a_bad_run_id(
-    home: Path, bridges: Path, bad: dict[str, object]
+    home: Path, bridges: Path, field: str, value: object
 ) -> None:
     """CR-P3T09-10, SEC-P3T09-07: the run ID and launch number go into a comment of head.sh."""
     with pytest.raises(ValueError, match=r"run ID|launch number"):
-        render_head_script(make_spec(home / "runs", **bad))
+        render_head_script(make_spec(home / "runs", "nextflow", **{field: value}))
 
 
 @pytest.mark.parametrize("profile", ["../x", "a,b", "", "-x"])
