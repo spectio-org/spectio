@@ -1175,7 +1175,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   Process: the review ran a third round, on the minor fixes made after both reviewers approved. That is outside the two-round rule; the #75 exception covers only an open security blocker or major.
 - **Options and what was assumed:**
   - (a) keep these bounds and the 0700 rule, and raise a bound when a real workflow hits it;
-  - (b) larger bounds now (for example 8 MiB per read: the security reviewer measured a 177 MiB peak at 8 MiB, against 45 MiB at 2 MiB).
+  - (b) larger bounds now (for example 8 MiB per read: on `35fb19e` the worker's worst-case test input, lines at the node cap, peaked at 177 MiB traced by `tracemalloc` with an 8 MiB budget, against 45 MiB at 2 MiB, as reported in its round-1 hand-back; the security reviewer's own probe on `bd206f6` peaked at 11.1 MiB, [record](code/P3-t03.md)).
 
   **Assumed:** (a). For the rounds: a review of minor fixes after approval counts as allowed, and is said in the record.
 - **Recommendation:** (a). For the rounds, either allow one review of post-approval fixes in `review-code`, or have the orchestrator check minor fixes after approval without a review.
