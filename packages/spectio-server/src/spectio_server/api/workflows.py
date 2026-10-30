@@ -216,33 +216,47 @@ def fetch(data_dir: Path, url: str, parts: tuple[str, ...], revision: str) -> Pa
 # --- What a directory holds ------------------------------------------------------------------
 
 
-def _read(root: Path, *parts: str) -> str | None:
-    """`root/parts…` when it is a regular file inside `root`, else None. Each part is opened
-    from the descriptor of the one before, with O_NOFOLLOW: a symlink, in the tree or out of
-    it, is taken as absent, so a cloned repository cannot make inspect read the user's other
-    files (SEC-P3T17-05, the walk of dev-env §15.3 req. 13)."""
+def _open(root: Path, *parts: str) -> int:
+    """A descriptor on `root/parts…`, each part opened from the descriptor of the one before
+    with O_NOFOLLOW: a symlink, in the tree or out of it, raises OSError (ELOOP), so a cloned
+    repository cannot point inspect at the user's other files (SEC-P3T17-05, SEC-P3T17-08,
+    the walk of dev-env §15.3 req. 13)."""
+    fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
     try:
-        fd = os.open(root, os.O_RDONLY | os.O_DIRECTORY)
-    except OSError:
-        return None
-    try:
-        for part in parts[:-1]:
-            child = os.open(part, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW, dir_fd=fd)
+        for i, part in enumerate(parts):
+            flags = os.O_NOFOLLOW | (os.O_DIRECTORY if i < len(parts) - 1 else os.O_NONBLOCK)
+            child = os.open(part, os.O_RDONLY | flags, dir_fd=fd)
             os.close(fd)
             fd = child
-        child = os.open(parts[-1], os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK, dir_fd=fd)
+    except OSError:
         os.close(fd)
-        fd = child
-        if not stat.S_ISREG(os.fstat(fd).st_mode):
-            return None
-        with os.fdopen(fd, "rb") as f:
-            fd = -1  # closed by the file object
-            raw = f.read(MAX_FILE + 1)
+        raise
+    return fd
+
+
+def _regular(root: Path, *parts: str) -> bool:
+    """Whether `root/parts…` is a regular file inside `root`, reached through no symlink."""
+    try:
+        fd = _open(root, *parts)
+    except OSError:
+        return False
+    try:
+        return stat.S_ISREG(os.fstat(fd).st_mode)
+    finally:
+        os.close(fd)
+
+
+def _read(root: Path, *parts: str) -> str | None:
+    """`root/parts…` when it is a regular file inside `root` (see `_open`), else None."""
+    try:
+        fd = _open(root, *parts)
     except OSError:  # missing, a symlink (ELOOP), not a directory
         return None
-    finally:
-        if fd >= 0:
-            os.close(fd)
+    if not stat.S_ISREG(os.fstat(fd).st_mode):
+        os.close(fd)
+        return None
+    with os.fdopen(fd, "rb") as f:
+        raw = f.read(MAX_FILE + 1)
     if len(raw) > MAX_FILE:
         raise ValueError(f"{parts[-1]} is larger than {MAX_FILE} bytes")
     return raw.decode()
@@ -321,8 +335,18 @@ def nextflow_config(root: Path) -> tuple[str | None, str | None, list[str]]:
 
 def snakemake_profiles(root: Path) -> list[str]:
     """The profiles the head can use: `profiles/<name>/config.yaml` (P1 Task 9)."""
-    found = (root / "profiles").glob("*/config.yaml")
-    return sorted(p.parent.name for p in found if p.is_file())
+    try:
+        fd = _open(root, "profiles")
+    except OSError:  # missing or a symlink
+        return []
+    try:
+        if not stat.S_ISDIR(os.fstat(fd).st_mode):
+            return []
+        with os.scandir(fd) as entries:
+            names = [e.name for e in entries if e.is_dir(follow_symlinks=False)]
+    finally:
+        os.close(fd)
+    return sorted(n for n in names if _regular(root, "profiles", n, "config.yaml"))
 
 
 def _type(value: Any) -> dict[str, Any]:
@@ -357,7 +381,9 @@ def _object(value: Any, name: str) -> dict[str, Any]:
 def inspect_dir(directory: Path, default_name: str) -> Found:
     """What the launch form needs from a pipeline directory. Raises Invalid (`location`) when
     a schema or config file cannot be read."""
-    files = [f for names in ENTRY_FILES.values() for f in names if (directory / f).is_file()]
+    files = [
+        f for names in ENTRY_FILES.values() for f in names if _regular(directory, *f.split("/"))
+    ]
     engines = [e for e, names in ENTRY_FILES.items() if set(names) & set(files)]
     engine = engines[0] if len(engines) == 1 else None  # both or neither: no guess
     try:

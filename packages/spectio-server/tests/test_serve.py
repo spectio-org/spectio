@@ -14,6 +14,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+from fastapi import FastAPI
 from sqlalchemy import func, insert, select, update
 from typer.testing import CliRunner
 
@@ -21,6 +22,7 @@ from spectio.cli.main import app
 from spectio.config import Settings
 from spectio.runner.rundir import RunManifest, Workflow, make_run_dirs, write_run_manifest
 from spectio.runner.types import HeadReport
+from spectio_server import app as app_mod
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.rebuild import rebuild_index
 from spectio_server.serve import Booted, ServeError, boot, start_text, started
@@ -376,11 +378,26 @@ def test_cli_refusal_exits_2(settings: Settings) -> None:
 
 
 def test_serve_local_start_text(settings: Settings) -> None:
-    text = start_text(settings, "node1", "alice")
+    text = start_text(settings, "node1", "alice", None)  # the API decision is the caller's
     assert f"http://127.0.0.1:{settings.port}/" in text
     assert "on this machine" in text
     assert "ssh -N -L" not in text
     assert "P1 Task 12" in text  # no token link yet: local-only (inbox #80)
+    assert "shared" not in text
+    assert "looks shared" in start_text(settings, "node1", "alice", "This machine looks shared")
+
+
+def test_serve_decides_the_api_once(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
+    """The mounted routers and the start text come from one scan (CR-P3T17-04)."""
+    answers = iter([None, "a process of uid 1001 runs here"])  # a user logs in meanwhile
+    monkeypatch.setattr(app_mod, "shared_host", lambda: next(answers))
+    with started(settings) as server:
+        assert server.no_api is None
+        app = server.uvicorn.config.app
+        assert isinstance(app, FastAPI)
+        assert app.state.no_api is None  # the routers are mounted: no catch-all 404
+        assert all(getattr(r, "path", "") != "/api/v1/{path:path}" for r in app.routes)
+        assert "shared" not in start_text(settings, "node1", "alice", server.no_api)
 
 
 def test_serve_slurm_start_text_and_no_runner(
@@ -388,7 +405,7 @@ def test_serve_slurm_start_text_and_no_runner(
 ) -> None:
     slurm = settings.model_copy(update={"executor": "slurm"})
     port = settings.port
-    text = start_text(slurm, "login1", "alice")
+    text = start_text(slurm, "login1", "alice", None)
     assert f"ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} alice@login1" in text
     assert f"http://127.0.0.1:{port}/" in text
     assert "P1 Task 10" in text

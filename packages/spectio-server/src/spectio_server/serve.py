@@ -42,7 +42,7 @@ from spectio.config import LOOPBACK, Settings
 from spectio.runner.local import LocalLauncher
 from spectio.runner.loop import RunnerLoop
 from spectio.runner.rundir import open_private, private_dir, read_small, write_file
-from spectio_server.app import create_app, no_api_reason
+from spectio_server.app import create_app
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.rebuild import Rebuilt, rebuild_index
 from spectio_server.sink import StoreSink
@@ -77,6 +77,7 @@ class Started:
     sock: socket.socket
     uvicorn: uvicorn.Server
     booted: Booted
+    no_api: str | None  # why the API is not served, as create_app decided (CR-P3T17-04)
     stop: threading.Event = field(default_factory=threading.Event)
 
     def run(self) -> None:
@@ -90,15 +91,14 @@ def _user() -> str:
         return str(os.getuid())
 
 
-def start_text(settings: Settings, node: str, user: str) -> str:
+def start_text(settings: Settings, node: str, user: str, no_api: str | None) -> str:
     port = settings.port
     page = f"http://127.0.0.1:{port}/"
     lines = [f"Spectio {version('spectio')} is running on {node}, port {port}."]
     if settings.executor == "local":
         lines.append(f"Open this page in a browser on this machine:  {page}")
-        reason = no_api_reason(settings)  # a shared machine (SEC-P3T17-06)
-        if reason is not None:
-            lines.append(reason)
+        if no_api is not None:  # a shared machine (SEC-P3T17-06)
+            lines.append(no_api)
     else:
         lines += [
             f"1. On your laptop, open a tunnel:  ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} "
@@ -277,14 +277,15 @@ def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
         except (UnsafeDatabase, OSError) as exc:  # a missing data directory, among others
             raise ServeError(str(exc)) from exc
         stack.callback(booted.close)
+        api = create_app(settings, booted.writer)
         config = uvicorn.Config(
-            create_app(settings, booted.writer),
+            api,
             host=LOOPBACK,
             port=settings.port,
             lifespan="off",
             proxy_headers=False,  # every client is on loopback: never trust X-Forwarded-*
         )
-        server = Started(sock, uvicorn.Server(config), booted)
+        server = Started(sock, uvicorn.Server(config), booted, api.state.no_api)
         if booted.loop is not None:
             thread = threading.Thread(
                 target=booted.loop.run, args=(server.stop,), name="spectio-runner"
@@ -307,7 +308,7 @@ def serve(settings: Settings, *, force: bool = False) -> None:
     signal.signal(signal.SIGTERM, _stop)
     try:
         with started(settings, force=force) as server:
-            print(start_text(settings, socket.gethostname(), _user()), flush=True)
+            print(start_text(settings, socket.gethostname(), _user(), server.no_api), flush=True)
             server.run()
     except KeyboardInterrupt:
         pass

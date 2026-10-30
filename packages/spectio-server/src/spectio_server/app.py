@@ -91,7 +91,8 @@ def create_app(settings: Settings, writer: Writer) -> FastAPI:
     def home() -> str:
         return page
 
-    reason = no_api_reason(settings)
+    reason = no_api_reason(settings)  # one scan: the start text reads it back (CR-P3T17-04)
+    app.state.no_api = reason
     if reason is None:
         app.include_router(workflows.router, prefix=API)
         app.include_router(runs_write.router, prefix=API)

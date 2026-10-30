@@ -478,7 +478,7 @@ def test_api_absent_on_shared_host(
     assert response.status_code == 404
     assert "sinfo on PATH" in response.json()["detail"]
     assert "Tasks 12 to 16" in response.json()["detail"]
-    text = start_text(settings, "login1", "alice")
+    text = start_text(settings, "login1", "alice", client.app.state.no_api)  # type: ignore[attr-defined]
     assert "sinfo on PATH" in text and "Tasks 12 to 16" in text
 
 
@@ -628,13 +628,36 @@ def test_inspect_symlink_out_of_tree_not_read(
 def test_inspect_symlinked_directory_not_followed(
     authed_client: TestClient, tmp_path: Path
 ) -> None:
-    """A `config` directory that is a symlink out of the tree is not walked (SEC-P3T17-05)."""
+    """A `config` or `profiles` directory or an entry file that is a symlink out of the tree
+    is not followed (SEC-P3T17-05, SEC-P3T17-08)."""
     outside = tmp_path / "outside"
-    outside.mkdir()
+    (outside / "secretproj").mkdir(parents=True)
+    (outside / "secretproj" / "config.yaml").write_text("\n")
     (outside / "config.yaml").write_text("oauth_token: gho_SECRET\n")
+    (outside / "main.nf").write_text("\n")
     root = pipeline(tmp_path, "Snakefile")
     (root / "config").symlink_to(outside)
+    (root / "profiles").symlink_to(outside)
+    (root / "main.nf").symlink_to(outside / "main.nf")
     response = authed_client.get(INSPECT, params={"location": str(root)})
     assert response.status_code == 200, response.text
-    assert response.json()["schema_source"] == "none"
+    body = response.json()
+    assert body["schema_source"] == "none"
     assert "gho_SECRET" not in response.text
+    assert body["engine_files"] == ["Snakefile"] and body["profiles"] == []
+    refused = launch(authed_client, str(root), "nextflow")
+    assert refused.status_code == 422 and fields(refused) == ["workflow.engine"]
+
+
+def test_inspect_symlinked_profile_not_listed(authed_client: TestClient, tmp_path: Path) -> None:
+    """A profile directory or its config.yaml that is a symlink is not a profile."""
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "config.yaml").write_text("\n")
+    root = pipeline(tmp_path, "Snakefile", "profiles/local/config.yaml")
+    (root / "profiles" / "linked").symlink_to(outside)
+    (root / "profiles" / "file").mkdir()
+    (root / "profiles" / "file" / "config.yaml").symlink_to(outside / "config.yaml")
+    response = authed_client.get(INSPECT, params={"location": str(root)})
+    assert response.status_code == 200, response.text
+    assert response.json()["profiles"] == ["local"]
