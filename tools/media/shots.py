@@ -89,10 +89,9 @@ def render(shot: Shot, theme: str) -> Path | None:
             cmd = [*preload, str(REPO / "tools/canvas/render.js"), str(boards / f"{shot.board}.dc.html"),
                    str(shot.width), str(shot.height), str(png), *shot.clicks]
         else:  # the page text is checked as it is shown: a live page is never rewritten
-            url = os.environ["SPECTIO_URL"].rstrip("/") + shot.board
-            steps = [os.path.expandvars(step) for step in shot.live]
-            cmd = [*preload, str(Path(__file__).resolve().parent / "live.js"), url,
-                   str(shot.width), str(shot.height), str(png), *steps]
+            # live.js reads $SPECTIO_URL and expands $VARS in the steps itself: no environment value goes into argv
+            cmd = [*preload, str(Path(__file__).resolve().parent / "live.js"), shot.board,
+                   str(shot.width), str(shot.height), str(png), *shot.live]
         subprocess.run(cmd, check=True, capture_output=True, cwd=REPO,
                        env={**os.environ, "SPECTIO_PAGE_TEXT": str(text)})
         found = sanitize.leaks(text.read_text(encoding="utf-8"))

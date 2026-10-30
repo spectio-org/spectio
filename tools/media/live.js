@@ -1,11 +1,14 @@
 // Capture a page of a running Spectio (`spectio serve`), after a few steps (P1 Task 19).
-//   node tools/media/live.js <url> <width> <height> <out.png> [step…]
+//   SPECTIO_URL=http://… node tools/media/live.js <route> <width> <height> <out.png> [step…]
+// $NAME in a step is replaced by that environment variable.
 // Steps: fill:<label>=<value> (the field whose accessible name starts with <label>),
 // click:<button name>, wait:<visible text>. Run through shots.py, which preloads page_text.js
 // for the hygiene check.
 const path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [path.resolve(__dirname, '../canvas'), process.cwd()] }));
-const [,, url, W, H, out, ...steps] = process.argv;
+const [,, route, W, H, out, ...raw] = process.argv;
+const url = process.env.SPECTIO_URL.replace(/\/+$/, '') + route;
+const steps = raw.map((s) => s.replace(/\$(\w+)/g, (m, name) => process.env[name] ?? m));
 (async () => {
   const browser = await chromium.launch();
   const page = await browser.newPage({ viewport: { width: +W, height: +H }, colorScheme: 'light' });
