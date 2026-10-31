@@ -129,6 +129,34 @@ test("with stages, the stage list and the header line", async () => {
   expect(screen.queryByText(/No stages for this pipeline/)).toBeNull();
 });
 
+test("the stages note says why declared stages were not applied, (P1 Task 27)", async () => {
+  const note = "2 lab overlays match this run (a.spectio.yml, b.spectio.yml): none was applied.";
+  detail({ summary: { tasks: { done: 0, total: 0, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" } }, {
+    [URL_]: { ...run(), params: {}, stages_note: note },
+  });
+  app(`/runs/${ID}`);
+  expect(await screen.findByRole("note")).toHaveTextContent(note);
+  expect(screen.getByText(/No stages for this pipeline/)).toBeInTheDocument();
+});
+
+test("the stages note over detected stages", async () => {
+  const note = "The stages of spectio.yml were not applied: NFCORE:QC matches 2 stages.";
+  detail({}, {
+    [URL_]: { ...run(), params: {}, stages_note: note },
+    [`${URL_}/stages`]: { items: [{ id: "detected:1", position: 1, name: "QC", source: "detected", state: "running", task_counts: {} }] },
+  });
+  app(`/runs/${ID}`);
+  expect(await screen.findByRole("note")).toHaveTextContent(note);
+  expect(screen.getByText("Detected")).toBeInTheDocument();
+});
+
+test("no stages note when the run has none", async () => {
+  detail();
+  app(`/runs/${ID}`);
+  await screen.findByText(/No stages for this pipeline/);
+  expect(screen.queryByRole("note")).toBeNull();
+});
+
 test("on a failed run the tasks filter starts at failed", async () => {
   const mock = detail({ state: "failed", ended_at: "2026-10-31T08:00:00+00:00" });
   app(`/runs/${ID}`);
@@ -241,7 +269,7 @@ test("UX-PAR-25/16: a failed run opens on Why it failed, never blank, with a way
     ended_at: "2026-10-31T08:00:00+00:00",
     failure: { class: "tool_error", message: "", task_id: null, attempt_n: 1 },
     head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1 },
-    summary: { tasks: { done: 24, total: 32, failed: 2, cached: 0 }, last_failure: null },
+    summary: { tasks: { done: 24, total: 32, failed: 2, cached: 0 }, last_failure: null, stage_mode: "quarters" },
   }, { [`${URL_}/logs?source=head-err`]: () => new Response("line 1\nError in rule x\n") });
   app(`/runs/${ID}`);
   const why = await screen.findByRole("region", { name: "Why it failed" });
@@ -564,7 +592,7 @@ test("P3-parD: Why it failed names the task that failed first; its process opens
     state: "failed",
     ended_at: "2026-10-31T08:00:00+00:00",
     failure: { class: "tool_error", message: "", task_id: "tsk_1", attempt_n: 1 },
-    summary: { tasks: { done: 24, total: 32, failed: 1, cached: 0 }, last_failure: null },
+    summary: { tasks: { done: 24, total: 32, failed: 1, cached: 0 }, last_failure: null, stage_mode: "quarters" },
   });
   app(`/runs/${ID}`);
   const why = await screen.findByRole("region", { name: "Why it failed" });
@@ -601,7 +629,7 @@ test("P3-parD: First to fail follows the failed tasks' pages to find the task (C
       state: "failed",
       ended_at: "2026-10-31T08:00:00+00:00",
       failure: { class: "tool_error", message: "", task_id: "tsk_9", attempt_n: 1 },
-      summary: { tasks: { done: 24, total: 80, failed: 60, cached: 0 }, last_failure: null },
+      summary: { tasks: { done: 24, total: 80, failed: 60, cached: 0 }, last_failure: null, stage_mode: "quarters" },
     },
     {
       [`${URL_}/tasks?state=failed&limit=50&cursor=p2`]: {

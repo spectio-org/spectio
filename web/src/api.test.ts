@@ -23,12 +23,12 @@ const run = {
   failure: null,
   head: { session: null, node: "", alive: false, exit_code: null },
   task_counts: {},
-  summary: { tasks: { done: 0, total: 0, failed: 0, cached: 0 }, last_failure: null },
+  summary: { tasks: { done: 0, total: 0, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" },
 } satisfies Run;
 
 const SAMPLES: Record<string, object> = {
   Run: run,
-  RunDetail: { ...run, params: {} } satisfies RunDetail,
+  RunDetail: { ...run, params: {}, stages_note: null } satisfies RunDetail,
   WorkflowRef: run.workflow,
   Head: run.head,
   RunSummary: run.summary,

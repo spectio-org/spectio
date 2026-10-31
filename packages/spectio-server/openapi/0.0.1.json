@@ -381,6 +381,17 @@
             "title": "Profiles",
             "type": "array"
           },
+          "stages_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stages Note"
+          },
           "started_at": {
             "anyOf": [
               {
@@ -435,7 +446,8 @@
           "head",
           "task_counts",
           "summary",
-          "params"
+          "params",
+          "stages_note"
         ],
         "title": "RunDetail",
         "type": "object"
@@ -484,13 +496,23 @@
             ],
             "title": "Last Failure"
           },
+          "stage_mode": {
+            "enum": [
+              "declared",
+              "detected",
+              "quarters"
+            ],
+            "title": "Stage Mode",
+            "type": "string"
+          },
           "tasks": {
             "$ref": "#/components/schemas/TaskSummary"
           }
         },
         "required": [
           "tasks",
-          "last_failure"
+          "last_failure",
+          "stage_mode"
         ],
         "title": "RunSummary",
         "type": "object"
@@ -1159,7 +1181,7 @@
     },
     "/api/v1/runs/{run_id}/processes": {
       "get": {
-        "description": "One item per process or rule, in first-seen order (the order of its first task's ID).",
+        "description": "One item per process or rule: those the projector recorded (`onProcessCreate`, the rule\nfiles at the freeze, a first task), in that order, with the stage they froze with; then any\nknown from tasks only (a database from before P1 Task 27), in their first task's order.",
         "operationId": "list_processes_api_v1_runs__run_id__processes_get",
         "parameters": [
           {

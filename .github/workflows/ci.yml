@@ -174,7 +174,7 @@ jobs:
         run: |
           SPECTIO_ENGINES_NEXTFLOW_CMD=$(command -v nextflow)
           export SPECTIO_ENGINES_NEXTFLOW_CMD
-          bash tests/e2e/serve-local.sh --port 8765 > "$RUNNER_TEMP/serve.log" 2>&1 &
+          bash tests/e2e/serve-local.sh --port 8765 --seed-stages > "$RUNNER_TEMP/serve.log" 2>&1 &
           for _ in $(seq 1 300); do
             curl -fsS -o /dev/null http://127.0.0.1:8765/api/v1/version && exit 0
             sleep 1
@@ -186,6 +186,7 @@ jobs:
           CI: "true"
           SPECTIO_E2E_BASE_URL: http://127.0.0.1:8765
           SPECTIO_E2E_ENGINES: "1"
+          SPECTIO_E2E_SEEDED: "1"
         run: npx --no-install playwright test skeleton.spec.ts --project desktop --project phone
       - name: Keep the report and the server log
         if: always()

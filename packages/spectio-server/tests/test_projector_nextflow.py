@@ -316,7 +316,7 @@ def test_seq_without_gaps_and_projected(tmp_path: Path, engine: Engine, writer: 
         seqs = conn.execute(select(events.c.seq).order_by(events.c.seq)).scalars().all()
     assert seqs == list(range(1, run.last_seq + 1))
     assert run.projected_seq == run.last_seq
-    assert run.last_seq == 293 + 2  # every spool line, then two state changes
+    assert run.last_seq == 293 + 3  # every spool line, two state changes, the stages frozen
 
 
 def test_first_event_starts_the_run(engine: Engine, writer: Writer) -> None:

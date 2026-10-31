@@ -128,7 +128,9 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
         loop = None
         if settings.executor == "local":
             loop = RunnerLoop(
-                StoreSink(writer, settings.runs_root),
+                StoreSink(
+                    writer, settings.runs_root, settings.data_dir / "overlays", settings.data_dir
+                ),
                 LocalLauncher(),
                 settings,
                 tick_s=settings.runner.spool_s,

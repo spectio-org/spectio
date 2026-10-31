@@ -62,6 +62,7 @@ class TaskSummary(BaseModel):
 class RunSummary(BaseModel):
     tasks: TaskSummary
     last_failure: dict[str, JsonValue] | None
+    stage_mode: Literal["declared", "detected", "quarters"]  # api §7 (P1 Task 27)
 
 
 class Run(BaseModel):
@@ -82,6 +83,7 @@ class Run(BaseModel):
 
 class RunDetail(Run):
     params: dict[str, JsonValue]
+    stages_note: str | None  # why declared stages were not applied (P1 Task 27)
 
 
 class RunList(BaseModel):
