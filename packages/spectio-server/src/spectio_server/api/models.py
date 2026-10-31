@@ -144,3 +144,37 @@ class Task(BaseModel):
 class TaskList(BaseModel):
     items: list[Task]
     next: str | None
+
+
+FileKind = Literal[
+    "script",
+    "wrapper",
+    "stdout",
+    "stderr",
+    "job_log",
+    "exit",
+    "marker",
+    "trace",
+    "rule_log",
+    "slurm_log",
+]
+FileState = Literal["present", "not_yet", "absent", "deleted_after_success", "cleaned"]
+
+
+class TaskFile(BaseModel):
+    """One file of an attempt (P1 Task 28): `size` and `mtime` (ISO 8601) only when `present`."""
+
+    name: str
+    kind: FileKind
+    size: int | None
+    mtime: str | None
+    state: FileState
+    note: str | None
+
+
+class TaskFiles(BaseModel):
+    task_id: str
+    attempt: int
+    work_dir: str | None  # Nextflow: the task's work directory; Snakemake: the launch directory
+    native_id: str | None  # the executor's job ID (SLURM), when known
+    files: list[TaskFile]

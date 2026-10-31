@@ -8,6 +8,8 @@ import signal
 import socket
 import subprocess
 import sys
+import threading
+import time
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -24,6 +26,7 @@ from spectio.runner.rundir import RunManifest, Workflow, make_run_dirs, write_ru
 from spectio.runner.types import HeadReport
 from spectio_server import app as app_mod
 from spectio_server.bootstrap import ensure_tenancy
+from spectio_server.files.pool import Stalled
 from spectio_server.rebuild import rebuild_index
 from spectio_server.serve import Booted, ServeError, boot, start_text, started
 from spectio_server.sink import StoreSink
@@ -228,6 +231,33 @@ def test_boot_reconciles_missing_runs(settings: Settings) -> None:
         assert set(found) == {run_id(1), run_id(2)}
         assert all(r.state == "succeeded" for r in found.values())
     finally:
+        booted.close()
+
+
+def test_boot_freeze_pool_apart(settings: Settings) -> None:
+    """The freeze reads in its own pool: routes that fill theirs never starve it
+    (SEC-P3T28-06)."""
+    assert settings.db_dir is not None
+    booted = boot(settings, settings.db_dir)
+    release = threading.Event()
+    readers = [
+        threading.Thread(target=lambda: booted.files.run(lambda: release.wait(10), 10))
+        for _ in range(20)
+    ]
+    try:
+        assert booted.loop is not None and isinstance(booted.loop.sink, StoreSink)
+        pool = booted.loop.sink.sources.pool
+        assert pool is booted.stage_files and pool is not booted.files
+        for reader in readers:
+            reader.start()
+        time.sleep(0.2)
+        with pytest.raises(Stalled):  # every route slot is held
+            booted.files.run(lambda: None, 1)
+        assert pool.run(lambda: "read", 1) == "read"
+    finally:
+        release.set()
+        for reader in readers:
+            reader.join(5)
         booted.close()
 
 

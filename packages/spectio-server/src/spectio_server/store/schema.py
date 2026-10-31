@@ -306,6 +306,11 @@ attempts = Table(
     Column("exit", Integer),
     Column("failure_class", String),
     Column("resources", Json),
+    # Where its files are (P1 Task 28), each kept only under a root of the run (req. 13): the
+    # Nextflow work directory, the executor's job ID, the Snakemake log paths [{path, kind}].
+    Column("work_dir", String),
+    Column("native_id", String),
+    Column("logs", Json),
     _check("attempts", "state", ATTEMPT_STATES),
     _check("attempts", "failure_class", FAILURE_CLASSES, nullable=True),
     UniqueConstraint("task_id", "launch_n", "n", name="uq_attempts_key"),  # api §8.2

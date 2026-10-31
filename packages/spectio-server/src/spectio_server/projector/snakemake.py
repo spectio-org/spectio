@@ -27,8 +27,10 @@ from spectio_sdk.events import (
     SnakemakeJobInfo,
     SnakemakeProgress,
     SnakemakeRunInfo,
+    SnakemakeSlurmSubmitted,
     SnakemakeWorkflowStarted,
 )
+from spectio_server.files.taskfiles import launch_rel, log_kind, native_id
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import (
     OPEN_ATTEMPT_STATES,
@@ -67,8 +69,11 @@ def project(p: Projection, data: BaseModel) -> None:
         _job_info(p, data)
     elif isinstance(data, SnakemakeJobFinished):
         _job_end(p, data.job_id, "succeeded")
+    elif isinstance(data, SnakemakeSlurmSubmitted):
+        _submitted(p, data)
     elif isinstance(data, SnakemakeJobError):
-        _job_end(p, data.jobid, "failed")
+        aux = data.aux.external_jobid if data.aux else None
+        _job_end(p, data.jobid, "failed", data.log, aux)
 
 
 def drives(p: Projection) -> bool:
@@ -120,31 +125,83 @@ def _job_info(p: Projection, data: SnakemakeJobInfo) -> None:
             n=1 if last is None else last.n + 1,
             launch_n=p.launch_n,
             state="running",
+            logs=_logs(p, [], data.log),
         )
     )
     p.sync_tasks([task_id])
 
 
-def _job_end(p: Projection, jobid: int, state: str) -> None:
+def _logs(p: Projection, kept: list[dict[str, str]], paths: list[str]) -> list[dict[str, str]]:
+    """`kept` and the paths of `paths` that resolve in the launch directory (req. 13), each
+    once, with its kind; the others are counted, not kept."""
+    roots = p.roots()
+    found = list(kept)
+    if roots is None:
+        return found
+    for path in paths:
+        rel = launch_rel(roots.launch_dir, path)
+        if rel is None:
+            p.dropped["path_outside_run"] += 1
+        elif all(log["path"] != str(rel) for log in found):
+            found.append({"path": str(rel), "kind": log_kind(rel)})
+    return found
+
+
+def _open_attempt(p: Projection, jobid: int) -> Any:
+    """The last attempt of the job's task, when it is still open; None otherwise."""
     task_id = p.conn.execute(
         select(snakemake_jobs.c.task_id).where(
             snakemake_jobs.c.launch_id == p.launch_id, snakemake_jobs.c.jobid == jobid
         )
     ).scalar_one_or_none()
     if task_id is None:
-        return  # an unknown job: logged, no change
+        return None  # an unknown job: logged, no change
     last = _last_attempt(p, task_id)
     if last is None or last.state not in OPEN_ATTEMPT_STATES:
-        return  # a job already ended: logged, no change
-    p.conn.execute(update(attempts).where(attempts.c.id == last.id).values(state=state))
+        return None  # a job already ended: logged, no change
+    return last
+
+
+def _where(p: Projection, last: Any, paths: list[str], job: str | int | None) -> dict[str, Any]:
+    """The attempt's new `logs` and `native_id`, from an event's paths and SLURM job ID."""
+    values: dict[str, Any] = {"logs": _logs(p, last.logs or [], paths)}
+    if job is not None:
+        if (found := native_id(job)) is not None:
+            values["native_id"] = found
+        else:
+            p.dropped["bad_native_id"] += 1
+    return values
+
+
+def _submitted(p: Projection, data: SnakemakeSlurmSubmitted) -> None:
+    """The SLURM job ID and log path of a submitted job (the logger plugin's reading of the
+    executor's info text, P1 Task 7)."""
+    last = _open_attempt(p, data.jobid)
+    if last is not None:
+        values = _where(p, last, [data.log] if data.log else [], data.external_jobid)
+        p.conn.execute(update(attempts).where(attempts.c.id == last.id).values(**values))
+
+
+def _job_end(
+    p: Projection,
+    jobid: int,
+    state: str,
+    paths: list[str] | None = None,
+    job: str | int | None = None,
+) -> None:
+    last = _open_attempt(p, jobid)
+    if last is None:
+        return
+    values = _where(p, last, paths or [], job)
+    p.conn.execute(update(attempts).where(attempts.c.id == last.id).values(state=state, **values))
     if state == "failed":  # on Snakemake, the culprit is the launch's last failed job
         p.set_launch(culprit_attempt_id=last.id)
-    p.sync_tasks([task_id])
+    p.sync_tasks([last.task_id])
 
 
 def _last_attempt(p: Projection, task_id: str) -> Any:
     return p.conn.execute(
-        select(attempts.c.id, attempts.c.n, attempts.c.state)
+        select(attempts.c.id, attempts.c.n, attempts.c.state, attempts.c.task_id, attempts.c.logs)
         .where(attempts.c.task_id == task_id, attempts.c.launch_n == p.launch_n)
         .order_by(attempts.c.n.desc())
         .limit(1)

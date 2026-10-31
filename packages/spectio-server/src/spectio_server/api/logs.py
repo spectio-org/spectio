@@ -1,71 +1,76 @@
-"""`GET /runs/{id}/logs?source=`: the last 64 KiB of a run log (P1 Task 18; api §5; arch §13.7).
+"""`GET /runs/{id}/logs?source=`: the last 64 KiB of a run log (P1 Tasks 18 and 28; api §5;
+architecture §13.7).
 
 Sources: `head-out` and `head-err` (`.spectio/head.out`, `.spectio/head.err`), and `engine`, the
-engine's run log: `.nextflow.log`, or the newest `.snakemake/log/*.log`. The launch directory is
-derived from the runs root and the run ID, never read from a row (dev-env §15.3 req. 10), and
-must be private (`rundir.private_dir`). Below it, each path part is opened from the descriptor of
-the one before with O_NOFOLLOW, so no symlink is followed, in the tree or out of it: the walk is
-the real-path check of P1 Task 18 Step 3, made at open time (checking-scenarios §11.1). Only a
-regular file is read; anything else is `404 log-not-found`.
+engine's run log: for Nextflow, `.spectio/nextflow.log`, where the head script points
+`NXF_LOG_FILE` (P1 Task 28), else `.nextflow.log` (a run launched before, or one from a terminal,
+`cli-observed`, which keeps its own); for Snakemake, the newest `.snakemake/log/*.log`. The launch
+directory is derived from the runs root and the run ID, never read from a row (dev-env §15.3
+req. 10), and must be private. Below it, the read is the confined walk of `files.confine`
+(checking-scenarios §11.1): no symlink is followed, only a regular file of the user is read, and
+it runs in the file pool with a timeout (req. 13). Anything refused or missing is
+`404 log-not-found`; a file system that does not answer is `503 runner-offline`. Escape
+sequences are removed from the text.
 """
 
-import os
-import stat
+from pathlib import Path, PurePosixPath
 from typing import Literal
 
 from fastapi import APIRouter, Request
 from fastapi.responses import PlainTextResponse
 
-from spectio.runner.rundir import private_dir
-from spectio_server.api.problems import not_found
+from spectio_server.api.problems import Problem, not_found
 from spectio_server.api.runs_read import read, run_row
+from spectio_server.api.taskfiles import HEADERS, READ_TIMEOUT_S
+from spectio_server.files.confine import (
+    TAIL,
+    NotAllowed,
+    NotFound,
+    Root,
+    list_confined,
+    open_confined,
+)
+from spectio_server.files.confine import tail as tail_of
+from spectio_server.files.pool import Stalled
+from spectio_server.files.redact import strip_escapes
+from spectio_server.files.taskfiles import run_root
 
 router = APIRouter()
 
-TAIL = 65536
 HEAD_FILES = {"head-out": "head.out", "head-err": "head.err"}
-HEADERS = {"X-Content-Type-Options": "nosniff", "Cache-Control": "no-store"}
-_NO_FOLLOW = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK  # a FIFO does not block the open
+SPECTIO_LOG = PurePosixPath(".spectio/nextflow.log")
+NEXTFLOW_LOG = PurePosixPath(".nextflow.log")
+SMK_LOGS = PurePosixPath(".snakemake/log")
+MAX_SMK_LOGS = 1000  # entries of `.snakemake/log` looked at
 
 
-def _open(dir_fd: int, *parts: str, directory: bool = False) -> int:
-    """`parts` below `dir_fd`, each opened with O_NOFOLLOW; raises OSError."""
-    fd = os.dup(dir_fd)
-    try:
-        for i, part in enumerate(parts):
-            last = i == len(parts) - 1
-            flags = _NO_FOLLOW | (os.O_DIRECTORY if directory or not last else 0)
-            child = os.open(part, flags, dir_fd=fd)
-            os.close(fd)
-            fd = child
-    except OSError:
-        os.close(fd)
-        raise
-    return fd
+def _newest_log(launch: Root) -> PurePosixPath:
+    """The newest regular `*.log` of `.snakemake/log`; NotFound when there is none."""
+    found = list_confined(launch, SMK_LOGS, MAX_SMK_LOGS)
+    logs = [e for e in found.entries if e.type == "file" and e.name.endswith(".log")]
+    if not logs:
+        raise NotFound("no Snakemake log yet")
+    newest = max(logs, key=lambda e: (e.mtime or 0, e.name))
+    return SMK_LOGS / newest.name
 
 
-def _newest_log(dir_fd: int) -> str:
-    """The newest regular `*.log` in `.snakemake/log`; raises FileNotFoundError when none."""
-    log_fd = _open(dir_fd, ".snakemake", "log", directory=True)
-    try:
-        found = []
-        for name in os.listdir(log_fd):
-            if name.endswith(".log"):
-                st = os.stat(name, dir_fd=log_fd, follow_symlinks=False)
-                if stat.S_ISREG(st.st_mode):
-                    found.append((st.st_mtime_ns, name))
-    finally:
-        os.close(log_fd)
-    if not found:
-        raise FileNotFoundError("no Snakemake log yet")
-    return max(found)[1]
-
-
-def _tail(fd: int) -> bytes:
-    st = os.fstat(fd)
-    if not stat.S_ISREG(st.st_mode):
-        raise FileNotFoundError("not a regular file")
-    return os.pread(fd, TAIL, max(0, st.st_size - TAIL))
+def _read(runs_root: Path, run_id: str, engine: str | None, origin: str | None, source: str) -> str:
+    with run_root(runs_root, run_id, "launch") as launch:
+        if source in HEAD_FILES:
+            candidates = [PurePosixPath(".spectio", HEAD_FILES[source])]
+        elif engine == "nextflow":
+            own = origin != "cli-observed"
+            candidates = [SPECTIO_LOG, NEXTFLOW_LOG] if own else [NEXTFLOW_LOG]
+        else:
+            candidates = [_newest_log(launch)]
+        for i, rel in enumerate(candidates):
+            try:
+                with open_confined(launch, rel) as f:
+                    return strip_escapes(tail_of(f, TAIL).decode("utf-8", "replace"))
+            except NotFound:
+                if i == len(candidates) - 1:
+                    raise
+    raise NotFound(source)  # not reached: there is always one candidate
 
 
 @router.get("/runs/{run_id}/logs", response_class=PlainTextResponse)
@@ -73,23 +78,14 @@ def run_log(
     request: Request, run_id: str, source: Literal["head-out", "head-err", "engine"] = "engine"
 ) -> PlainTextResponse:
     with read(request) as conn:
-        engine = run_row(conn, run_id).engine
+        row = run_row(conn, run_id)
+    runs_root = request.app.state.settings.runs_root
     try:
-        with private_dir(request.app.state.settings.runs_root, run_id, "launch") as launch_fd:
-            if source in HEAD_FILES:
-                parts: tuple[str, ...] = (".spectio", HEAD_FILES[source])
-            elif engine == "nextflow":
-                parts = (".nextflow.log",)
-            else:
-                parts = (".snakemake", "log", _newest_log(launch_fd))
-            fd = _open(launch_fd, *parts)
-            try:
-                data = _tail(fd)
-            finally:
-                os.close(fd)
-    except (OSError, ValueError) as exc:  # missing, a symlink (ELOOP), not private, not a file
-        reason = exc.strerror if isinstance(exc, OSError) and exc.strerror else str(exc)
-        raise not_found(f"no {source} log for this run: {reason}", "log-not-found") from None
-    return PlainTextResponse(
-        data.decode("utf-8", "replace"), media_type="text/plain; charset=utf-8", headers=HEADERS
-    )
+        text = request.app.state.files.run(
+            lambda: _read(runs_root, run_id, row.engine, row.origin, source), READ_TIMEOUT_S
+        )
+    except Stalled as exc:
+        raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
+    except (NotAllowed, NotFound, OSError) as exc:  # missing, a symlink, not private, not a file
+        raise not_found(f"no {source} log for this run: {exc}", "log-not-found") from None
+    return PlainTextResponse(text, media_type="text/plain; charset=utf-8", headers=HEADERS)

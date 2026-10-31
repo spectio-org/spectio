@@ -730,6 +730,135 @@
         "title": "Task",
         "type": "object"
       },
+      "TaskFile": {
+        "description": "One file of an attempt (P1 Task 28): `size` and `mtime` (ISO 8601) only when `present`.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "script",
+              "wrapper",
+              "stdout",
+              "stderr",
+              "job_log",
+              "exit",
+              "marker",
+              "trace",
+              "rule_log",
+              "slurm_log"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "mtime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mtime"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "state": {
+            "enum": [
+              "present",
+              "not_yet",
+              "absent",
+              "deleted_after_success",
+              "cleaned"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "size",
+          "mtime",
+          "state",
+          "note"
+        ],
+        "title": "TaskFile",
+        "type": "object"
+      },
+      "TaskFiles": {
+        "properties": {
+          "attempt": {
+            "title": "Attempt",
+            "type": "integer"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/TaskFile"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "native_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Native Id"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "work_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Dir"
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt",
+          "work_dir",
+          "native_id",
+          "files"
+        ],
+        "title": "TaskFiles",
+        "type": "object"
+      },
       "TaskList": {
         "properties": {
           "items": {
@@ -1440,6 +1569,126 @@
           }
         },
         "summary": "Runs Summary"
+      }
+    },
+    "/api/v1/tasks/{task_id}/attempts/{n}/files": {
+      "get": {
+        "operationId": "task_files_api_v1_tasks__task_id__attempts__n__files_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "n",
+            "required": true,
+            "schema": {
+              "title": "N",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskFiles"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Task Files"
+      }
+    },
+    "/api/v1/tasks/{task_id}/attempts/{n}/files/{name}": {
+      "get": {
+        "operationId": "task_file_api_v1_tasks__task_id__attempts__n__files__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "n",
+            "required": true,
+            "schema": {
+              "title": "N",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tail",
+            "required": false,
+            "schema": {
+              "default": 65536,
+              "maximum": 1048576,
+              "minimum": 1,
+              "title": "Tail",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "download",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Download",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Task File"
       }
     },
     "/api/v1/version": {
