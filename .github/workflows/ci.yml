@@ -169,7 +169,11 @@ jobs:
           npm --prefix tests/e2e ci --no-audit --no-fund --ignore-scripts
           (cd tests/e2e && npx --no-install playwright install --with-deps chromium)
       - name: Start Spectio (local mode)
+        # The head runs the engine through the login shell (bash -l), whose PATH lacks setup-nextflow's
+        # directory: name the binary, as the local exit check does.
         run: |
+          SPECTIO_ENGINES_NEXTFLOW_CMD=$(command -v nextflow)
+          export SPECTIO_ENGINES_NEXTFLOW_CMD
           bash tests/e2e/serve-local.sh --port 8765 > "$RUNNER_TEMP/serve.log" 2>&1 &
           for _ in $(seq 1 300); do
             curl -fsS -o /dev/null http://127.0.0.1:8765/api/v1/version && exit 0
