@@ -11,7 +11,8 @@ globs overlap on this run's names is refused, and detection is used.
 Every process or rule seen before the freeze takes the stage whose `match` matches it; one first
 seen after it has none (`tasks.stage_id` null). The files read are the server user's: overlays
 and their directory must be its own and not writable by others (`read_small`), at most
-`MAX_SPEC_BYTES` and parsed with `yaml.safe_load`; the pipeline's files go through
+`MAX_SPEC_BYTES` and parsed with `yaml.safe_load`, an overlay or a `spectio.yml` with no alias
+(SEC-P3T27-02); the pipeline's directory is the one the launch ran in, and its files go through
 `detect_smk.read_confined` (dev-env §15.3 req. 12).
 """
 
@@ -24,6 +25,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import yaml
+from pydantic import ValidationError
 from sqlalchemy import Row, func, insert, select, update
 
 from spectio.runner.rundir import private_dir, read_small
@@ -43,6 +45,7 @@ from spectio_server.store.schema import (
     events,
     run_processes,
     run_stages,
+    runner_commands,
     runs,
     tasks,
     workflow_versions,
@@ -72,12 +75,23 @@ class StageSources:
     runs_root: Path | None
 
 
+class _NoAliasLoader(yaml.SafeLoader):
+    """`yaml.SafeLoader` that refuses aliases: a few hundred bytes of nested aliases stand for
+    billions of items (SEC-P3T27-02), and a `spectio.yml` has no use for them."""
+
+    def compose_node(self, parent: Any, index: Any) -> Any:
+        if self.check_event(yaml.AliasEvent):
+            raise yaml.YAMLError("aliases are not read in a spectio.yml")
+        return super().compose_node(parent, index)
+
+
 def parse_spectio_yml(data: bytes) -> SpectioFile:
-    """A `spectio.yml` of 0.0.1: `workflow` and `stages` only. Raises ValueError."""
+    """A `spectio.yml` of 0.0.1: `workflow` and `stages` only. Raises ValueError, whose text
+    never holds the file's content."""
     if len(data) > MAX_SPEC_BYTES:
         raise ValueError(f"larger than {MAX_SPEC_BYTES} bytes")
     try:
-        value = yaml.safe_load(data)
+        value = yaml.load(data, Loader=_NoAliasLoader)  # noqa: S506 (a SafeLoader)
     except yaml.YAMLError as exc:
         raise ValueError(f"not YAML: {str(exc)[:200]}") from None
     except RecursionError:  # a deeply nested document (CR-P3T27-02, SEC-P3T27-01)
@@ -87,7 +101,11 @@ def parse_spectio_yml(data: bytes) -> SpectioFile:
     extra = sorted(str(k)[:40] for k in value if k not in ("workflow", "stages"))
     if extra:
         raise ValueError(f"keys not read in 0.0.1: {', '.join(extra[:5])}")
-    return SpectioFile.model_validate(value)  # a ValidationError is a ValueError
+    try:
+        return SpectioFile.model_validate(value)
+    except ValidationError as exc:  # its str() formats the input (SEC-P3T27-02)
+        said = "; ".join(f"{e['loc']}: {e['msg']}" for e in exc.errors(include_input=False))
+        raise ValueError(f"not a spectio.yml: {said[:300]}") from None
 
 
 def find_overlay(
@@ -135,16 +153,16 @@ def find_overlay(
 class _Run:
     engine: str | None
     source: str
-    location: str
     name: str | None
     version: str | None
+    root: Path | None  # the pipeline directory the launch ran in
 
     @property
-    def root(self) -> Path | None:
-        """The pipeline directory, for a local workflow."""
-        if self.source != "local" or not self.location.startswith("/"):
+    def dir_name(self) -> str | None:
+        """The pipeline directory's name: a Git copy is `<…>/<repository>/<revision>`."""
+        if self.root is None:
             return None
-        return Path(os.path.realpath(self.location))
+        return self.root.parent.name if self.source == "git" else self.root.name
 
 
 def _run(p: "Projection") -> _Run:
@@ -160,7 +178,22 @@ def _run(p: "Projection") -> _Run:
         .join(runs, runs.c.workflow_version_id == workflow_versions.c.id)
         .where(runs.c.id == p.run_id)
     ).one()
-    return _Run(row.engine, row.source, row.location, row.name, row.version)
+    # The launch command's `location` is the directory `POST /runs` resolved: for Git, the
+    # fetched copy, where `workflows.location` is the URL (CR-P3T27-03). A run with no launch
+    # command (from a terminal) has its local location.
+    payload = p.conn.execute(
+        select(runner_commands.c.payload)
+        .where(runner_commands.c.run_id == p.run_id, runner_commands.c.kind == "launch")
+        .order_by(runner_commands.c.created_at)
+        .limit(1)
+    ).scalar()
+    where = payload.get("location") if isinstance(payload, dict) else None
+    if where is None and row.source == "local":
+        where = row.location
+    root = None
+    if isinstance(where, str) and where.startswith("/"):
+        root = Path(os.path.realpath(where))
+    return _Run(row.engine, row.source, row.name, row.version, root)
 
 
 def frozen(p: "Projection") -> bool:
@@ -220,7 +253,7 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
         log.exception("run %s: no detected stages", p.run_id)
     key = run.name
     if smk:
-        key = None if run.root is None else run.root.name  # the pipeline directory's name
+        key = run.dir_name
     try:
         stages, source, note = _declared(p, run, key, universe)
     except Exception:

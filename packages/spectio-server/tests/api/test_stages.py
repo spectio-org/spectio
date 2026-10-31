@@ -9,6 +9,7 @@ the rnaseq preview events (`events/`), turned into spool events as `nf-spectio` 
 import json
 import logging
 import os
+import time
 from collections import Counter
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
@@ -31,7 +32,7 @@ from spectio_server.stages.detect_nf import detect_nextflow
 from spectio_server.stages.detect_smk import detect_snakemake, read_rules_txt
 from spectio_server.stages.freeze import StageSources, find_overlay, parse_spectio_yml
 from spectio_server.store.db import open_db
-from spectio_server.store.schema import run_processes, run_stages, tasks
+from spectio_server.store.schema import run_processes, run_stages, runner_commands, tasks
 from spectio_server.store.writer import Writer
 
 from .conftest import add_run, client_for
@@ -599,6 +600,69 @@ def test_freeze_survives_deep_yaml(
     assert {r.source for r in rows} <= {"detected"}
 
 
+def alias_bomb(levels: int = 10) -> bytes:
+    """Nine-fold aliases, `levels` deep: a few hundred bytes that stand for 9**levels items
+    (SEC-P3T27-02)."""
+    lines = ["workflow:", "  l0: &l0 [x, x, x, x, x, x, x, x, x]"]
+    for n in range(1, levels):
+        lines.append(f"  l{n}: &l{n} [{', '.join([f'*l{n - 1}'] * 9)}]")
+    lines.append(f"stages: *l{levels - 1}")
+    return ("\n".join(lines) + "\n").encode()
+
+
+@pytest.mark.parametrize("engine", ["nextflow", "snakemake"])
+def test_freeze_refuses_yaml_aliases(
+    settings: Settings, writer: Writer, overlays: Path, tmp_path: Path, engine: str
+) -> None:
+    """An alias bomb in an overlay or a `spectio.yml` is refused at once: no anchors are read,
+    and the freeze is still recorded (SEC-P3T27-02)."""
+    bomb = alias_bomb()
+    assert len(bomb) < 1024
+    began = time.monotonic()
+    with pytest.raises(ValueError, match="alias"):
+        parse_spectio_yml(bomb)
+    assert time.monotonic() - began < 1
+    run_id = f"run_01K8T27BMB{engine[0].upper()}{'0' * 15}"
+    launch_id = add_run(writer, settings, run_id, "bomb", "running", engine=engine)
+    pipeline = tmp_path / "pipeline"
+    pipeline.mkdir()
+    (pipeline / "spectio.yml").write_bytes(bomb)
+    (pipeline / "Snakefile").write_text("rule a:\n    shell: 'true'\n")
+    (overlays / "bomb.spectio.yml").write_bytes(bomb)
+    (overlays / "bomb.spectio.yml").chmod(0o600)
+    writer.submit(
+        lambda c: c.execute(text("UPDATE workflows SET location = :l"), {"l": str(pipeline)})
+    ).result()
+    if engine == "nextflow":
+        found = [nf_event(1, {"hook": "onFlowBegin"}, run_id)]
+    else:
+        found = [smk_event(1, run_id, "workflow_started", {"snakemake_version": "9.27.1"})]
+    run = partial(
+        ingest,
+        launch_id=launch_id,
+        batch=SpoolBatch(found, {}, Counter()),
+        sources=StageSources(overlays, settings.runs_root),
+    )
+    began = time.monotonic()
+    writer.submit(run).result()
+    assert time.monotonic() - began < 1
+    logged = writer.submit(
+        lambda c: set(
+            c.execute(text("SELECT type FROM events WHERE run_id = :r"), {"r": run_id}).scalars()
+        )
+    ).result()
+    assert "spectio.stages.frozen" in logged
+
+
+def test_validation_error_logged_without_input(caplog: pytest.LogCaptureFixture) -> None:
+    """A file that fails validation is logged by field and message, never by its content
+    (SEC-P3T27-02): `str()` of a ValidationError formats the input."""
+    secret = "x" * 50 + "INPUT-NOT-LOGGED"
+    with pytest.raises(ValueError) as caught:
+        parse_spectio_yml(f"stages: [{{id: a, name: A, match: 3, other: {secret}}}]".encode())
+    assert "INPUT-NOT-LOGGED" not in str(caught.value)
+
+
 # --- Snakemake freeze ------------------------------------------------------------------------
 
 
@@ -702,6 +766,60 @@ def test_snakemake_main_outside_pipeline(
         lambda c: c.execute(select(run_stages).where(run_stages.c.run_id == run_id)).all()
     ).result()
     assert rows == []
+
+
+@pytest.mark.parametrize("with_overlay", [False, True])
+def test_snakemake_freeze_git_workflow(
+    settings: Settings, writer: Writer, overlays: Path, tmp_path: Path, with_overlay: bool
+) -> None:
+    """A workflow imported from Git: its location is the URL, so the pipeline directory is the
+    fetched copy the launch ran in (the launch command's `location`); the overlay key is the
+    repository's name, not the revision's (CR-P3T27-03)."""
+    run_id = f"run_01K8T27G1T{int(with_overlay)}{'0' * 15}"
+    launch_id = add_run(writer, settings, run_id, "mosaic", "running", engine="snakemake")
+    built = mosaicatcher_tree(tmp_path / "built").parents[1]
+    fetched = tmp_path / "pipelines" / "github.com" / "lab" / "mosaicatcher-pipeline" / "v2.5.1"
+    fetched.parent.mkdir(parents=True)
+    built.rename(fetched)
+    url = "https://github.com/lab/mosaicatcher-pipeline"
+
+    def as_git(c: Any) -> None:
+        c.execute(text("UPDATE workflows SET source = 'git', location = :l"), {"l": url})
+        c.execute(
+            runner_commands.insert().values(
+                id=f"cmd_{run_id}",
+                created_at=T0,
+                run_id=run_id,
+                launch_id=launch_id,
+                kind="launch",
+                payload={"location": str(fetched), "profiles": [], "params": {}},
+                state="pending",
+            )
+        )
+
+    writer.submit(as_git).result()
+    if with_overlay:
+        write_overlay(
+            overlays,
+            "m.spectio.yml",
+            "workflow: {name: lab/mosaicatcher-pipeline, engine: snakemake}",
+        )
+    main = fetched / "workflow" / "Snakefile"
+    events = [smk_event(1, run_id, "workflow_started", {"snakefile_main": str(main)})]
+    run = partial(
+        ingest,
+        launch_id=launch_id,
+        batch=SpoolBatch(events, {}, Counter()),
+        sources=StageSources(overlays, settings.runs_root),
+    )
+    writer.submit(run).result()
+    rows = writer.submit(
+        lambda c: c.execute(select(run_stages).where(run_stages.c.run_id == run_id)).all()
+    ).result()
+    if with_overlay:
+        assert rows and {r.source for r in rows} == {"declared"}
+    else:
+        assert len(rows) == 8 and {r.source for r in rows} == {"detected"}
 
 
 # --- An older database -----------------------------------------------------------------------
