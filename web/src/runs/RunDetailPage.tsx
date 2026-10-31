@@ -312,7 +312,6 @@ export function RunDetailPage({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
-  const cancelButton = useRef<HTMLButtonElement>(null);
   const title = useRef<HTMLHeadingElement>(null);
 
   const load = useCallback(() => {
@@ -377,7 +376,7 @@ export function RunDetailPage({ id }: { id: string }) {
           {cancelError && <p role="alert">Cancel failed: {cancelError}</p>}
         </div>
         {canCancel && (
-          <Button ref={cancelButton} color="red" variant="outline" onClick={() => setAsking(true)}>
+          <Button color="red" variant="outline" onClick={() => setAsking(true)}>
             Cancel run
           </Button>
         )}
