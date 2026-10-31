@@ -65,6 +65,26 @@ media:
     # live, as app-launch, at 390 x 844
     generator: python3 tools/media/shots.py run --shot app-launch-phone --theme both
     outputs: [docs/assets/shots/app-launch-phone_light.webp, docs/assets/shots/app-launch-phone_dark.webp]
+  - id: app-home
+    kind: screenshot
+    # live, as app-launch, after a finished run of the synthetic pipeline (profile test)
+    generator: python3 tools/media/shots.py run --shot app-home --theme light
+    outputs: [docs/assets/shots/app-home_light.webp]
+  - id: app-runs
+    kind: screenshot
+    # live, as app-home
+    generator: python3 tools/media/shots.py run --shot app-runs --theme light
+    outputs: [docs/assets/shots/app-runs_light.webp]
+  - id: app-run-detail
+    kind: screenshot
+    # live, as app-home; SPECTIO_DEMO_RUN is the finished run's ID
+    generator: python3 tools/media/shots.py run --shot app-run-detail --theme light
+    outputs: [docs/assets/shots/app-run-detail_light.webp]
+  - id: app-run-detail-phone
+    kind: screenshot
+    # live, as app-run-detail, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-run-detail-phone --theme light
+    outputs: [docs/assets/shots/app-run-detail-phone_light.webp]
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
