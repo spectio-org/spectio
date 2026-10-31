@@ -125,10 +125,9 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
   const repo = location.trim() !== "" && !location.trim().startsWith("/");
   const github = SHORT_NAME.test(location.trim()) ? `https://github.com/${location.trim()}` : null;
   const skipped: string[] = [];
-  // the form's shape follows the engine chosen, or guessed: Snakemake maps become dotted sections
-  // (CR-P3PARB-02). Values typed under the other shape stay, unsent, until the engine goes back.
-  const formEngine = engine ?? (loaded ? guessEngine(loaded.engine_files) : null);
-  const sections = schemaFields(loaded?.schema ?? null, skipped, formEngine === "snakemake");
+  // the form's shape follows the engine (guessed at load, then chosen): Snakemake maps become dotted
+  // sections (CR-P3PARB-02). Values typed under the other shape stay, unsent, until the engine goes back.
+  const sections = schemaFields(loaded?.schema ?? null, skipped, engine === "snakemake");
   const fields = sections.flatMap((s) => s.fields);
   const keys = fields.map((f) => f.key);
   const grouped = !!loaded?.schema && ("$defs" in loaded.schema || "definitions" in loaded.schema);
