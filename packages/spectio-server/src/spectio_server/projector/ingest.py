@@ -65,7 +65,7 @@ def ingest(
         except (ValidationError, UnknownEventType):
             drops["invalid"] += 1
             continue
-        kept = (p.last_seq, p.state, p.head_state)
+        kept = (p.last_seq, p.state, p.head_state, Counter(p.dropped))
         p.event_time = event.time
         savepoint = conn.begin_nested()
         try:
@@ -88,10 +88,11 @@ def ingest(
         except Exception:
             log.exception("event %s of %s not projected", event.id, p.run_id)
             savepoint.rollback()
-            p.last_seq, p.state, p.head_state = kept
+            p.last_seq, p.state, p.head_state, p.dropped = kept
             drops["projection_error"] += 1
             continue
         savepoint.commit()
+    drops.update(p.dropped)  # paths from events not kept (P1 Task 28, req. 13)
     _store_cursor(conn, launch_id, batch.cursor, drops)
     p.finish()
 

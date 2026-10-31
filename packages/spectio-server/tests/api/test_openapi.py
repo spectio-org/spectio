@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 from spectio.config import Settings
 from spectio_server import app as app_mod
 from spectio_server.api import models
+from spectio_server.files import taskfiles
 from spectio_server.store.schema import RUN_ORIGINS, RUN_STATES, STAGE_STATES, TASK_STATES
 from spectio_server.store.writer import Writer
 
@@ -49,6 +50,7 @@ MODELS = {
     ("/api/v1/runs/{run_id}/processes", "get", "200"): "ProcessList",
     ("/api/v1/runs/{run_id}/stages", "get", "200"): "StageList",
     ("/api/v1/runs/{run_id}/tasks", "get", "200"): "TaskList",
+    ("/api/v1/tasks/{task_id}/attempts/{n}/files", "get", "200"): "TaskFiles",
 }
 
 
@@ -74,3 +76,5 @@ def test_model_enums_match_the_store() -> None:
     assert get_args(models.TaskState) == TASK_STATES
     assert get_args(models.StageState) == STAGE_STATES
     assert get_args(models.RunOrigin) == RUN_ORIGINS
+    assert get_args(models.FileKind) == get_args(taskfiles.Kind)
+    assert get_args(models.FileState) == get_args(taskfiles.State)

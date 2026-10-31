@@ -293,6 +293,7 @@ class SpectioObserver implements TraceObserverV2 {
         'queue', '%cpu', '%mem', 'rss', 'vmem', 'peak_rss', 'peak_vmem', 'rchar', 'wchar', 'syscr', 'syscw',
         'read_bytes', 'write_bytes', 'vol_ctxt', 'inv_ctxt', 'workdir', 'scratch', 'error_action',
         'cpu_model', 'accelerator', 'accelerator_type']
+    static final List<String> WHERE_KEYS = ['native_id', 'workdir']
 
     private final Spool spool
     private volatile Session session
@@ -321,16 +322,18 @@ class SpectioObserver implements TraceObserverV2 {
                       tag: str(t?.config?.tag), attempt: num(t?.config?.attempt), status: str(h?.status),
                       exitStatus: exit(t?.exitStatus), errorAction: str(t?.errorAction),
                       cached: t?.cached instanceof Boolean ? t.cached : null, workDir: str(t?.workDir)]
-        if (withTrace)
-            data.trace = trace(ev?.trace?.store)
+        // Every task event carries the work directory and the executor's job ID (P1 Task 28):
+        // the trace record of the other hooks is cut to those two (TaskHandler.groovy:218,
+        // GridTaskHandler.groovy:528, nextflow v26.10.4).
+        data.trace = trace(ev?.trace?.store, withTrace ? TRACE_KEYS : WHERE_KEYS)
         return data
     }
 
-    private static Map trace(Map store) {
+    private static Map trace(Map store, List<String> keys) {
         if (store == null)
             return null
         final out = [:]
-        for (String k : TRACE_KEYS) {
+        for (String k : keys) {
             if (store.containsKey(k))
                 out[k] = str(k == 'exit' ? exit(store[k]) : store[k])
         }
@@ -377,5 +380,7 @@ class SpectioObserver implements TraceObserverV2 {
         emit('onFilePublish') { [source: str(e?.source), target: str(e?.target), labels: e?.labels?.collect { str(it) }] }
     }
 
-    @Override boolean enableMetrics() { false }
+    // True: the task wrapper writes .command.trace, so the trace record has realtime, %cpu and
+    // peak_rss (Session.groovy:545, BashWrapperBuilder.groovy:633-636, v26.10.4; P1 Task 28).
+    @Override boolean enableMetrics() { true }
 }

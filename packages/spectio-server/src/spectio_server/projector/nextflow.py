@@ -19,6 +19,7 @@ from spectio_sdk.events import (
     NextflowProcess,
     NextflowTask,
 )
+from spectio_server.files.taskfiles import native_id, task_work_rel
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import TERMINAL, Projection, failure_json
 from spectio_server.stages import freeze
@@ -81,6 +82,7 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
         values["failure_class"] = "tool_error"
     if (code := _exit(data)) is not None:
         values["exit"] = code
+    values.update(_where(p, data))
     row = p.conn.execute(
         select(attempts.c.id, attempts.c.state).where(
             attempts.c.task_id == task_id, attempts.c.launch_n == p.launch_n, attempts.c.n == n
@@ -110,6 +112,27 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
             .values(culprit_attempt_id=attempt_id)
         )
     p.sync_tasks([task_id])
+
+
+def _where(p: Projection, data: NextflowTask) -> dict[str, str]:
+    """The attempt's work directory and job ID, when the event has them: the work directory
+    only when it is a task directory of the run's (req. 13); another is counted, not kept."""
+    found: dict[str, str] = {}
+    trace = data.trace
+    workdir = data.workDir or (trace.workdir if trace else None)
+    roots = p.roots()
+    if isinstance(workdir, str) and roots is not None:
+        if task_work_rel(roots.work_dir, workdir) is not None:
+            found["work_dir"] = workdir
+        else:
+            p.dropped["path_outside_run"] += 1
+    raw = trace.native_id if trace else None
+    if raw is not None:
+        if (job := native_id(raw)) is not None:
+            found["native_id"] = job
+        else:
+            p.dropped["bad_native_id"] += 1
+    return found
 
 
 def _exit(data: NextflowTask) -> int | None:

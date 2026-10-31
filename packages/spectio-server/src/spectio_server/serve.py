@@ -44,6 +44,7 @@ from spectio.runner.loop import RunnerLoop
 from spectio.runner.rundir import open_private, private_dir, read_small, write_file
 from spectio_server.app import create_app
 from spectio_server.bootstrap import ensure_tenancy
+from spectio_server.files.pool import FilePool
 from spectio_server.rebuild import Rebuilt, rebuild_index
 from spectio_server.sink import StoreSink
 from spectio_server.store.db import UnsafeDatabase, _require_private_dir, default_db_dir, open_db
@@ -66,6 +67,7 @@ class Booted:
     new: bool  # the database was just created
     rebuilt: Rebuilt
     loop: RunnerLoop | None  # None on a SLURM environment (P1 Task 10)
+    files: FilePool  # every read of a run's files: the routes' and the freeze's (req. 13)
 
     def close(self) -> None:
         self.writer.close()
@@ -123,13 +125,18 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
                 conn, _user(), settings.executor, config, version("spectio")
             )
         ).result()
+        files = FilePool()
         rebuilt = rebuild_index(writer, settings.runs_root)
         log.info("index %s: %d runs added", "rebuilt" if new else "reconciled", rebuilt.added)
         loop = None
         if settings.executor == "local":
             loop = RunnerLoop(
                 StoreSink(
-                    writer, settings.runs_root, settings.data_dir / "overlays", settings.data_dir
+                    writer,
+                    settings.runs_root,
+                    settings.data_dir / "overlays",
+                    settings.data_dir,
+                    files,
                 ),
                 LocalLauncher(),
                 settings,
@@ -148,7 +155,7 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
         writer.close()
         engine.dispose()
         raise
-    return Booted(engine, writer, new, rebuilt, loop)
+    return Booted(engine, writer, new, rebuilt, loop, files)
 
 
 def _lock(db_dir: Path) -> int:
@@ -279,7 +286,7 @@ def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
         except (UnsafeDatabase, OSError) as exc:  # a missing data directory, among others
             raise ServeError(str(exc)) from exc
         stack.callback(booted.close)
-        api = create_app(settings, booted.writer)
+        api = create_app(settings, booted.writer, files=booted.files)
         config = uvicorn.Config(
             api,
             host=LOOPBACK,

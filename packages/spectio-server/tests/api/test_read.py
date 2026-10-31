@@ -15,6 +15,7 @@ from sqlalchemy import update
 from spectio.config import Settings
 from spectio.runner.rundir import make_run_dirs, run_paths
 from spectio_server.app import NO_API
+from spectio_server.files.redact import strip_escapes
 from spectio_server.store.schema import launches
 from spectio_server.store.writer import Writer
 
@@ -296,7 +297,8 @@ def test_logs_tail_and_sources(
     assert out.status_code == 200, out.text
     assert out.headers["content-type"] == "text/plain; charset=utf-8"
     assert out.headers["x-content-type-options"] == "nosniff"
-    assert out.content == head[-65536:].decode("utf-8", "replace").encode()
+    # control characters and escape sequences removed (dev-env §15.3 req. 13, P1 Task 28)
+    assert out.text == strip_escapes(head[-65536:].decode("utf-8", "replace"))
     assert authed_client.get(f"{RUNS}/{rid(1)}/logs", params={"source": "head-err"}).text == "err\n"
     assert (
         authed_client.get(f"{RUNS}/{rid(1)}/logs", params={"source": "engine"}).text

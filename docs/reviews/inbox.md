@@ -1471,3 +1471,18 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (b), at the next change of `stages/freeze.py` (follow-up FU-P3-30). The author's file is a source the lab did not dispute, and (b) is a local change in `_declared`. (a) stays until then: it shows a note, loses no data and is easy to undo.
 - **Assumed (2026-10-31, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 6 as built; rule 7 as built until FU-P3-30 applies (b). Rules 1 to 3 and 7 are written into the [checking-scenarios §12.7 note](../specs/checking-scenarios.md#127-overlays) of 2026-10-31, rules 4 and 5 into the [ui-spec §5.1.1 note](../specs/ui-spec.md#511-detected-stages), rule 6 into [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1) and [§7](../specs/api-and-data-model.md#7-database-schema). P1 Task 27's interface is not edited: its differences are listed on [P3-M7](../progress/W5/P3-M7.md#differences-from-the-plans-interface-task-27).
 - **Blocked:** nothing.
+
+### #94 · Assumed: each job's files as built (P3 Task 28)
+
+- **Covers:** [P1 Task 28](../plans/P1-walking-skeleton.md#task-28-each-jobs-files-and-the-work-directory); [architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine), [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1) (note of 2026-10-28, Job files) and [§14.1](../specs/api-and-data-model.md#141-driven-runs-001), [dev-env §15.3 req. 13](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), [checking-scenarios §11.1](../specs/checking-scenarios.md#111-how-files-reach-a-check); SEC-P3T27-03.
+- **Context:** the specs say what is served and how it is checked, but not some things the code had to choose. Step P3-t28 took these rules:
+  1. **Attempt `n`.** The attempt with that number in the task's latest launch that has one.
+  2. **Range.** `Content-Range` counts the file's bytes while the body has escape sequences removed; for `.command.run`, the first 1 MiB is hidden whole and the range counts the hidden text. A range past the end is `422`.
+  3. **The file pool.** 4 threads and 16 waiting jobs, apart from the writer; 5 s for a job file, 10 s for the stage freeze's sources (which closes SEC-P3T27-03), then `503 runner-offline` or no stages.
+  4. **Paths from events.** Kept only below a root of the run, by their text against the configured runs root (no `realpath`); others are counted `path_outside_run`, a bad job ID `bad_native_id`. Every directory of the walk must be the user's.
+  5. **Snakemake's SLURM job.** A new spool type, `snakemake.slurm_submitted` (`jobid`, `external_jobid`, `log`), and `job_error.aux.external_jobid`; the logger plugin's side waits for P1 Task 7 (follow-up FU-P3-31).
+  6. **The listing.** Also carries `task_id`, `attempt` and `native_id`; `mtime` is ISO 8601.
+- **Options for rule 4:** (a) keep the text test: no link is followed to decide, but a site whose runs root is reached through a symlink may see Nextflow report the resolved path, and its work directories are then not stored; (b) compare against both the configured path and its `realpath`, taken once at start.
+- **Recommendation:** (a) until `slurm-mini` (P1 Task 22) and the EMBL check show what Nextflow reports; then (b) if needed, a local change in `files.taskfiles.task_work_rel`.
+- **Assumed (2026-10-31, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 6 as built, written into the notes of 2026-10-31 in api §5 and §14.1, architecture §13.7 and dev-env §15.3 req. 13.
+- **Blocked:** nothing.

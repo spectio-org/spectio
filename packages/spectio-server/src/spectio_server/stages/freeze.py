@@ -14,6 +14,11 @@ and their directory must be its own and not writable by others (`read_small`), a
 `MAX_SPEC_BYTES` and parsed with `yaml.safe_load`, an overlay or a `spectio.yml` with no alias
 (SEC-P3T27-02); the pipeline's directory is the one the launch ran in, and its files go through
 `detect_smk.read_confined` (dev-env §15.3 req. 12).
+
+Those reads run in the file pool when the server gives one (`StageSources.pool`), never on the
+writer's thread: a source that has not answered within `FREEZE_TIMEOUT_S` gives no stages, with a
+note, and the events go on (dev-env §15.3 req. 13, SEC-P3T27-03). The database is read before
+and written after, on the writer.
 """
 
 import logging
@@ -34,6 +39,7 @@ from spectio.runner.rundir import private_dir, read_small
 from spectio_sdk.stages import SpectioFile, applies
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import git_url
+from spectio_server.files.pool import FilePool, Stalled
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import IN_CHUNK, Projection
 from spectio_server.stages.assign import Overlap, StageDef, assign
@@ -65,6 +71,7 @@ MAX_SPEC_BYTES = 65536  # an overlay, a `spectio.yml` or a `meta.yml`
 MAX_OVERLAYS = 100  # files read from the overlays directory, in name order
 MAX_SCOPES = 200  # subworkflows whose `meta.yml` is looked for
 DONE = ("succeeded", "cached", "stored")
+FREEZE_TIMEOUT_S = 10.0  # the stage sources of one run, read in the file pool
 
 
 @dataclass(frozen=True)
@@ -76,6 +83,7 @@ class StageSources:
     overlays: Path | None
     runs_root: Path | None
     data_dir: Path | None = None
+    pool: FilePool | None = None  # where the files are read; None: on the caller's thread
 
 
 class _NoAliasLoader(yaml.SafeLoader):
@@ -184,7 +192,19 @@ class _Run:
         return self.root.parent.name if self.source == "git" else self.root.name
 
 
-def _run(p: "Projection") -> _Run:
+@dataclass(frozen=True)
+class _RunRow:
+    """What the database says of the run's workflow, read on the writer."""
+
+    engine: str | None
+    source: str
+    name: str | None
+    version: str | None
+    where: str | None  # the directory the launch ran in, when the database names it
+    git: tuple[str, str | None] | None  # a Git workflow's URL and revision, to find its copy
+
+
+def _run_row(p: "Projection") -> _RunRow:
     row = p.conn.execute(
         select(
             workflows.c.engine,
@@ -211,24 +231,32 @@ def _run(p: "Projection") -> _Run:
     where = payload.get("location") if isinstance(payload, dict) else None
     if where is None and row.source == "local":
         where = row.location
-    elif where is None and row.source == "git":
-        where = _git_copy(p, row.location, row.revision)
+    git = (row.location, row.revision) if where is None and row.source == "git" else None
+    where = where if isinstance(where, str) else None
+    return _RunRow(row.engine, row.source, row.name, row.version, where, git)
+
+
+def _run(sources: StageSources | None, row: _RunRow) -> _Run:
+    """The run with its pipeline directory, resolved on disk (in the file pool)."""
+    where = row.where
+    if where is None and row.git is not None:
+        where = _git_copy(sources, *row.git)
     root = None
-    if isinstance(where, str) and where.startswith("/"):
+    if where is not None and where.startswith("/"):
         root = Path(os.path.realpath(where))
     return _Run(row.engine, row.source, row.name, row.version, root)
 
 
-def _git_copy(p: "Projection", location: str, revision: str | None) -> str | None:
+def _git_copy(sources: StageSources | None, location: str, revision: str | None) -> str | None:
     """`<data dir>/pipelines/<parts…>/<revision>`, the directory `api.workflows.fetch` writes,
     when it is one."""
-    if p.sources is None or p.sources.data_dir is None or revision is None:
+    if sources is None or sources.data_dir is None or revision is None:
         return None
     try:
         _, parts = git_url(location)
     except Invalid:
         return None
-    copy = p.sources.data_dir.joinpath("pipelines", *parts, quote(revision, safe=""))
+    copy = sources.data_dir.joinpath("pipelines", *parts, quote(revision, safe=""))
     try:
         return str(copy) if copy.is_dir() else None
     except OSError:  # a revision too long for a file name: no copy, never a lost event
@@ -277,29 +305,20 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
     """Freeze the run's stages, once (api §7 `run_stages`)."""
     if frozen(p):
         return
-    run = _run(p)
-    # A source that fails gives no stages, never a failed ingest (CR-P3T27-02, SEC-P3T27-01):
-    # the readers touch no database, so a fault here leaves the transaction as it was.
-    smk = run.engine == "snakemake"
-    universe = [] if smk else _names(p)
-    detected: list[StageDef] = []
+    row = _run_row(p)
+    names = [] if row.engine == "snakemake" else _names(p)
+    sources, run_id = p.sources, p.run_id
+
+    def job() -> _Found:
+        return _sources(sources, run_id, row, names, snakefile_main)
+
+    pool = None if sources is None else sources.pool
     try:
-        if smk:
-            universe, detected = _snakemake(p, run, snakefile_main)
-        else:
-            detected = detect_nextflow(universe, run.name, _meta(run, universe))
-    except Exception:
-        log.exception("run %s: no detected stages", p.run_id)
-    key = run.name
-    if smk:
-        key = run.dir_name
-    try:
-        stages, source, note = _declared(p, run, key, universe)
-    except Exception:
-        log.exception("run %s: no declared stages", p.run_id)
-        stages, source, note = [], None, None
-    if not stages:
-        stages, source = detected, None
+        universe, stages, source, note = job() if pool is None else pool.run(job, FREEZE_TIMEOUT_S)
+    except Stalled as exc:
+        log.warning("run %s: stage sources not read: %s", p.run_id, exc)
+        universe, stages, source = names, [], None
+        note = "The stage sources were not read in time (the file system did not answer)."
     for n, stage in enumerate(stages, 1):
         p.conn.execute(
             insert(run_stages).values(
@@ -342,13 +361,48 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
     p.log(FROZEN, {"mode": mode, "source": source, "note": note}, source="projector")
 
 
+_Found = tuple[list[str], list[StageDef], str | None, str | None]
+
+
+def _sources(
+    sources: StageSources | None,
+    run_id: str,
+    row: _RunRow,
+    names: list[str],
+    snakefile_main: str | None,
+) -> _Found:
+    """The run's names, its stages, the file they come from and a note: every file read of the
+    freeze, and no database (it runs in the file pool)."""
+    run = _run(sources, row)
+    # A source that fails gives no stages, never a failed ingest (CR-P3T27-02, SEC-P3T27-01).
+    smk = run.engine == "snakemake"
+    universe = names
+    detected: list[StageDef] = []
+    try:
+        if smk:
+            universe, detected = _snakemake(sources, run_id, run, snakefile_main)
+        else:
+            detected = detect_nextflow(universe, run.name, _meta(run, universe))
+    except Exception:
+        log.exception("run %s: no detected stages", run_id)
+    key = run.dir_name if smk else run.name
+    try:
+        stages, source, note = _declared(sources, run_id, run, key, universe)
+    except Exception:
+        log.exception("run %s: no declared stages", run_id)
+        stages, source, note = [], None, None
+    if not stages:
+        stages, source = detected, None
+    return universe, stages, source, note
+
+
 def _declared(
-    p: "Projection", run: _Run, key: str | None, universe: list[str]
+    sources: StageSources | None, run_id: str, run: _Run, key: str | None, universe: list[str]
 ) -> tuple[list[StageDef], str | None, str | None]:
     """The declared stages that apply, the file they come from, and a note for the run detail."""
     found, note, file = None, None, None
-    if p.sources is not None and p.sources.overlays is not None and run.engine:
-        found, note = find_overlay(p.sources.overlays, run.engine, key, run.version)
+    if sources is not None and sources.overlays is not None and run.engine:
+        found, note = find_overlay(sources.overlays, run.engine, key, run.version)
         file = "a lab overlay"
     if found is None and note is None:
         found, file = _own_file(run), "spectio.yml"
@@ -361,7 +415,7 @@ def _declared(
         for name in universe:
             assign(stages, name)
     except Overlap as exc:
-        log.warning("run %s: %s refused: %s", p.run_id, file, exc)
+        log.warning("run %s: %s refused: %s", run_id, file, exc)
         return [], None, f"The stages of {file} were not applied: {exc}."
     return stages, file, None
 
@@ -404,11 +458,11 @@ def _meta(run: _Run, names: list[str]) -> dict[str, str]:
 
 
 def _snakemake(
-    p: "Projection", run: _Run, snakefile_main: str | None
+    sources: StageSources | None, run_id: str, run: _Run, snakefile_main: str | None
 ) -> tuple[list[str], list[StageDef]]:
     """The run's rules (from `rules.txt` when the head wrote it, else from the rule files) and
     the detected stages."""
-    defined = _rules_txt(p)
+    defined = _rules_txt(sources, run_id)
     main = _main_snakefile(run, snakefile_main)
     if main is None:
         return defined or [], []
@@ -442,17 +496,17 @@ def _main_snakefile(run: _Run, snakefile_main: str | None) -> Path | None:
     return main
 
 
-def _rules_txt(p: "Projection") -> list[str] | None:
+def _rules_txt(sources: StageSources | None, run_id: str) -> list[str] | None:
     """`.spectio/rules.txt`, written by the head from `snakemake --list-rules` (P1 Task 9)."""
-    if p.sources is None or p.sources.runs_root is None:
+    if sources is None or sources.runs_root is None:
         return None
     try:
-        with private_dir(p.sources.runs_root, p.run_id, "launch", ".spectio") as fd:
+        with private_dir(sources.runs_root, run_id, "launch", ".spectio") as fd:
             data = read_small(fd, "rules.txt")
     except FileNotFoundError:
         return None  # no launch directory: a run from a terminal, or a rebuilt one
     except (OSError, ValueError) as exc:
-        log.warning("run %s: rules.txt not read: %s", p.run_id, exc)
+        log.warning("run %s: rules.txt not read: %s", run_id, exc)
         return None
     return None if data is None else read_rules_txt(data)
 
@@ -507,7 +561,7 @@ def _ended(
     by_stage: dict[str, list[Row[Any]]] = {}
     for proc in procs:
         by_stage.setdefault(proc.stage_id, []).append(proc)
-    if _run(p).engine != "snakemake":
+    if _run_row(p).engine != "snakemake":  # the database only: this runs on the writer
         return {s: all(x.ended for x in found) for s, found in by_stage.items()}
     done: dict[str, int] = dict(
         p.conn.execute(
