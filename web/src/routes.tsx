@@ -10,7 +10,7 @@ import {
 import { HomePage } from "./home/HomePage";
 import { LaunchPage } from "./launch/LaunchPage";
 import { NotFound, RunDetailPage } from "./runs/RunDetailPage";
-import { RunsPage } from "./runs/RunsPage";
+import { RunsPage, runsSearch } from "./runs/RunsPage";
 import { AppShell } from "./shell/AppShell";
 
 // The four routes of 0.0.1 (mvp-0.0.1 §1) in the Paper shell (G4): home, the runs list and the
@@ -35,7 +35,7 @@ function NotFoundRoute() {
 const root = createRootRoute({ component: AppShell, notFoundComponent: NotFoundRoute });
 const routes = [
   createRoute({ getParentRoute: () => root, path: "/", component: HomePage }),
-  createRoute({ getParentRoute: () => root, path: "/runs", component: RunsPage }),
+  createRoute({ getParentRoute: () => root, path: "/runs", component: RunsPage, validateSearch: runsSearch }),
   createRoute({ getParentRoute: () => root, path: "/launch", component: LaunchRoute }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id", component: RunRoute }),
 ];

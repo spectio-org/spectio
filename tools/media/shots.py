@@ -84,6 +84,9 @@ REGISTRY: dict[str, Shot] = {
              live=("wait:65 / 65 tasks",)),
         Shot("app-run-detail-phone", "/runs/$SPECTIO_DEMO_RUN", 390, 844, "0.0.1, live: the same run on a phone",
              live=("wait:65 / 65 tasks",)),
+        Shot("app-run-detail-failed", "/runs/$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
+             "0.0.1, live: a failed run of the synthetic Nextflow pipeline, why it failed, open and folded sections",
+             live=("wait:Why it failed",)),
     )
 }
 

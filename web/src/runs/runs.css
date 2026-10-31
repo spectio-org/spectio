@@ -1,28 +1,51 @@
-/* Home, the runs list and the run detail (P1 Task 20): plain tables, no chart. The rail takes the
-   colour of ui-spec §3.1; the word takes a darker shade of it, for text contrast. */
+/* Home, the runs list and the run detail (P1 Task 20; UI parity A). A state's colour is its tone
+   (data-tone, stateWord.ts `tone`), read from the --sp-state-* tokens that theme.ts emits for
+   light and dark (UX-PAR-05): the rail and icon take the base, the word takes -fg, a tint -bg. */
 .sp-runs {
-  --sp-st-queued: var(--sp-ink-400);
-  --sp-st-running: #3b82f6;
-  --sp-st-review: #d9890b;
-  --sp-st-paused: #8b5cf6;
-  --sp-st-succeeded: #1f9d63;
-  --sp-st-failed: #dc3b3b;
-  --sp-st-cancelled: var(--sp-ink-500);
-  --sp-tx-running: #1d4ed8;
-  --sp-tx-review: #8a5a00;
-  --sp-tx-paused: var(--sp-violet-700);
-  --sp-tx-succeeded: var(--sp-ok-fg);
-  --sp-tx-failed: var(--sp-down-fg);
-  --sp-tx-neutral: var(--sp-text-secondary);
   display: flex;
   flex-direction: column;
   gap: 20px;
   min-width: 0;
 }
-[data-mantine-color-scheme="dark"] .sp-runs {
-  --sp-tx-running: #93b4fb;
-  --sp-tx-review: #f4c06a;
-  --sp-tx-paused: var(--sp-violet-300);
+[data-tone] {
+  --tone: var(--sp-state-queued);
+  --tone-fg: var(--sp-state-queued-fg);
+  --tone-bg: var(--sp-state-queued-bg);
+}
+[data-tone="running"] {
+  --tone: var(--sp-state-running);
+  --tone-fg: var(--sp-state-running-fg);
+  --tone-bg: var(--sp-state-running-bg);
+}
+[data-tone="review"] {
+  --tone: var(--sp-state-review);
+  --tone-fg: var(--sp-state-review-fg);
+  --tone-bg: var(--sp-state-review-bg);
+}
+[data-tone="paused"] {
+  --tone: var(--sp-state-paused);
+  --tone-fg: var(--sp-state-paused-fg);
+  --tone-bg: var(--sp-state-paused-bg);
+}
+[data-tone="succeeded"] {
+  --tone: var(--sp-state-succeeded);
+  --tone-fg: var(--sp-state-succeeded-fg);
+  --tone-bg: var(--sp-state-succeeded-bg);
+}
+[data-tone="failed"] {
+  --tone: var(--sp-state-failed);
+  --tone-fg: var(--sp-state-failed-fg);
+  --tone-bg: var(--sp-state-failed-bg);
+}
+[data-tone="cancelled"] {
+  --tone: var(--sp-state-cancelled);
+  --tone-fg: var(--sp-state-cancelled-fg);
+  --tone-bg: var(--sp-state-cancelled-bg);
+}
+[data-tone="cached"] {
+  --tone: var(--sp-state-cached);
+  --tone-fg: var(--sp-state-cached-fg);
+  --tone-bg: var(--sp-state-cached-bg);
 }
 
 .sp-state {
@@ -30,48 +53,15 @@
   align-items: center;
   gap: 5px;
   font-weight: 600;
-  color: var(--sp-tx-neutral);
+  color: var(--tone-fg);
 }
-.sp-state[data-state="running"] {
-  color: var(--sp-tx-running);
+.sp-state svg {
+  color: var(--tone);
 }
-.sp-state[data-state="awaiting_review"] {
-  color: var(--sp-tx-review);
-}
-.sp-state[data-state="pausing"],
-.sp-state[data-state="paused"] {
-  color: var(--sp-tx-paused);
-}
-.sp-state[data-state="succeeded"] {
-  color: var(--sp-tx-succeeded);
-}
-.sp-state[data-state="failed"] {
-  color: var(--sp-tx-failed);
-}
-
-/* A 4 px state rail on the left edge of a row or card. */
-[data-rail] {
-  box-shadow: inset 4px 0 0 var(--sp-st-queued);
-}
-[data-rail="running"] {
-  box-shadow: inset 4px 0 0 var(--sp-st-running);
-}
-[data-rail="awaiting_review"] {
-  box-shadow: inset 4px 0 0 var(--sp-st-review);
-}
-[data-rail="pausing"],
-[data-rail="paused"] {
-  box-shadow: inset 4px 0 0 var(--sp-st-paused);
-}
-[data-rail="succeeded"] {
-  box-shadow: inset 4px 0 0 var(--sp-st-succeeded);
-}
-[data-rail="failed"] {
-  box-shadow: inset 4px 0 0 var(--sp-st-failed);
-}
-[data-rail="cancelling"],
-[data-rail="cancelled"] {
-  box-shadow: inset 4px 0 0 var(--sp-st-cancelled);
+/* Queued and pending read as plain text, the icon says the state (LiteRuns). */
+.sp-state[data-tone="queued"],
+.sp-state[data-tone="cancelled"] {
+  color: var(--sp-text-primary);
 }
 
 .sp-head {
@@ -111,8 +101,7 @@
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
 }
-.sp-card h2,
-.sp-section h2 {
+.sp-card h2 {
   margin: 0 0 10px;
   font-family: var(--sp-font-display);
   font-size: 18px;
@@ -142,12 +131,9 @@
 }
 .sp-table td {
   padding: 10px 14px;
-  vertical-align: top;
+  vertical-align: middle;
   border-bottom: 1px solid var(--sp-line-divider);
   overflow-wrap: break-word;
-}
-.sp-facts td {
-  overflow-wrap: anywhere;
 }
 .sp-table tr:last-child td {
   border-bottom: 0;
@@ -182,10 +168,8 @@
   font-size: 12.5px;
   color: var(--sp-text-muted);
 }
-.sp-bad {
-  display: block;
-  font-size: 12.5px;
-  color: var(--sp-down-fg);
+.sp-bad-inline {
+  color: var(--sp-state-failed-fg);
 }
 .sp-chip {
   display: inline-block;
@@ -197,6 +181,13 @@
   color: var(--sp-text-secondary);
   background: var(--sp-surface-sunken);
   white-space: nowrap;
+}
+.sp-chip[data-tone] {
+  color: var(--tone-fg);
+  background: var(--tone-bg);
+}
+.sp-chip svg {
+  vertical-align: -2px;
 }
 
 .sp-filters {
@@ -248,7 +239,7 @@
 
 .sp-cards {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 12px;
   margin: 0;
   padding: 0;
@@ -301,7 +292,6 @@
   flex: 0 0 auto;
   text-align: right;
 }
-.sp-section > a,
 .sp-link {
   display: inline-block;
   margin-top: 8px;
@@ -330,10 +320,41 @@
   align-items: center;
   padding: 12px 16px;
   cursor: pointer;
+  list-style: none;
 }
-.sp-stage > summary .sp-grow {
-  flex: 1 1 200px;
-  font-weight: 600;
+.sp-stage > summary::-webkit-details-marker {
+  display: none;
+}
+.sp-stage-n {
+  width: 18px;
+  color: var(--sp-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+.sp-stage-name {
+  flex: 1 1 260px;
+  min-width: 0;
+}
+.sp-stage-name .sp-chip {
+  margin-left: 6px;
+}
+.sp-stage > summary > .sp-state {
+  flex: 0 0 110px;
+}
+.sp-stage > summary > .sp-done {
+  flex: 0 0 200px;
+}
+/* The chevron turns when the stage is open: the open or closed cue (UX-PAR-24). */
+.sp-chev {
+  display: flex;
+  color: var(--sp-text-faint);
+  transition: transform 0.15s;
+}
+.sp-stage[open] > summary .sp-chev {
+  transform: rotate(180deg);
+}
+.sp-stage > .sp-table-wrap {
+  border-radius: 0 0 12px 12px;
+  box-shadow: inset 0 1px 0 var(--sp-line-divider);
 }
 .sp-log {
   max-height: 480px;
@@ -345,8 +366,13 @@
   font-size: 12.5px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  color: #e6e7f0;
-  background: #171a2e;
+  color: var(--sp-code-text);
+  background: var(--sp-surface-code);
+}
+.sp-code.sp-log-tail {
+  white-space: pre;
+  overflow-wrap: normal;
+  overflow-x: auto;
 }
 .sp-actions {
   display: flex;
@@ -365,6 +391,378 @@
   font-weight: 600;
 }
 
+/* UI parity A (docs/reviews/ui-parity-0.0.1.md): marks, rows, the run header, the Summary's
+   aside, bars and the Tasks and Logs tabs, after LiteHome, LiteRuns and LiteRunDetail. */
+.sp-pipeline {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.sp-version {
+  color: var(--sp-text-muted);
+}
+.sp-search-field {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--sp-line-input);
+  border-radius: 10px;
+  color: var(--sp-text-muted);
+  background: var(--sp-surface-raised);
+}
+.sp-search-field input[type="search"] {
+  flex: 1 1 auto;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: var(--sp-text-primary);
+  background: none;
+}
+.sp-search-field:focus-within {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 1px;
+}
+.sp-search-field input:focus-visible {
+  outline: none;
+}
+.sp-foot-line {
+  margin: 0;
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+}
+.sp-link-end {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+  margin: 0 0 8px;
+  font-size: 13px;
+  text-decoration: none;
+}
+.sp-link-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 0;
+  border: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--sp-text-link);
+  font-size: 13px;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+}
+.sp-link-button:hover {
+  text-decoration: underline;
+}
+
+/* Home: count cards are links; rows carry the mark (LiteHome). */
+.sp-cards li {
+  padding: 0;
+}
+.sp-cards li > a {
+  display: block;
+  padding: 14px 16px 14px 20px;
+  border-radius: 14px;
+  color: inherit;
+  text-decoration: none;
+}
+.sp-cards li > a:hover strong {
+  text-decoration: underline;
+}
+.sp-cards strong {
+  margin: 2px 0;
+}
+.sp-row {
+  align-items: center;
+}
+.sp-list li.sp-row > :first-child {
+  flex: 0 0 auto;
+}
+.sp-list li.sp-row > span:nth-last-child(2) {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.sp-ended {
+  gap: 0;
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--sp-shadow);
+}
+.sp-list.sp-ended li[data-rail] {
+  border-radius: 0;
+  box-shadow: inset 4px 0 0 var(--tone), inset 0 -1px 0 var(--sp-line-divider);
+}
+.sp-ended-state {
+  width: 120px;
+}
+.sp-quick {
+  display: grid;
+  gap: 8px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-quick li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 8px 12px;
+  font-size: 14px;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--sp-line-border);
+}
+.sp-quick .sp-mono {
+  font-size: 12px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.sp-where {
+  display: grid;
+  gap: 10px;
+  margin: 4px 0 0;
+  padding: 0 0 0 18px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--sp-text-secondary);
+}
+.sp-where li::marker {
+  color: var(--sp-text-faint);
+}
+.sp-where strong {
+  color: var(--sp-text-primary);
+}
+
+/* The run header shared by every tab (LiteRunDetail; UX-PAR-19, 21 and 22). */
+.sp-run-head {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 22px 20px 16px;
+}
+.sp-run-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 12px 18px;
+}
+.sp-mark-tile {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: var(--sp-surface-mark); /* the marks sit on white, in both schemes (ui-spec §4.3) */
+  box-shadow: 0 0 0 1px var(--sp-line-border);
+}
+.sp-title-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.sp-run-head h1 {
+  margin: 0;
+  font-family: var(--sp-font-display);
+  font-size: 30px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+.sp-run-head > .sp-foldsec {
+  padding-top: 12px;
+  border-top: 1px solid var(--sp-line-divider);
+}
+.sp-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px 24px;
+  margin: 0;
+}
+.sp-facts dt {
+  font-size: 12.5px;
+  color: var(--sp-text-muted);
+}
+.sp-facts dd {
+  margin: 2px 0 0;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.sp-chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--sp-line-divider);
+}
+.sp-chips-label {
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+}
+
+/* Summary: the main column and the aside, side by side from 1200 px (UX-PAR-23). */
+.sp-detail-grid {
+  display: grid;
+  gap: 20px;
+}
+@media (min-width: 1200px) {
+  .sp-detail-grid {
+    grid-template-columns: minmax(0, 1fr) 320px;
+    align-items: start;
+  }
+}
+.sp-aside {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+.sp-intro,
+.sp-legend {
+  margin: 0 0 10px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--sp-text-secondary);
+}
+.sp-legend {
+  margin: 8px 0 0;
+}
+.sp-code {
+  margin: 8px 0;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-family: var(--sp-font-mono);
+  font-size: 12.5px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  color: var(--sp-code-text);
+  background: var(--sp-surface-code);
+}
+.sp-params {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  font-size: 13px;
+}
+.sp-params div {
+  display: flex;
+  gap: 8px;
+}
+.sp-params dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Bars: "n of m" with an indigo bar when done, running blue otherwise (UX-PAR-24). */
+.sp-done {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.sp-bar {
+  display: inline-block;
+  width: 72px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 3px;
+  overflow: hidden;
+  background: var(--sp-surface-sunken);
+}
+.sp-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 3px;
+  background: var(--sp-state-running);
+}
+.sp-bar[data-full="true"] > span {
+  background: var(--sp-indigo-500);
+}
+.sp-table td[data-running] {
+  font-weight: 600;
+  color: var(--sp-state-running-fg);
+}
+
+/* Why it failed (LiteRunFailed; UX-PAR-25). */
+.sp-why {
+  padding: 14px 16px 14px 20px;
+  border-radius: 14px;
+  background: var(--sp-surface-raised);
+}
+.sp-card.sp-why,
+.sp-why[data-rail] {
+  box-shadow: inset 4px 0 0 var(--tone), var(--sp-shadow);
+}
+.sp-why-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 10px;
+  margin: 0;
+}
+.sp-why-message {
+  margin: 6px 0;
+  font-size: 13.5px;
+  color: var(--sp-text-secondary);
+  overflow-wrap: anywhere;
+}
+
+/* Tasks and Logs tabs (LiteRunTasks, LiteRunLogs; UX-PAR-26, 27). */
+.sp-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--sp-text-secondary);
+}
+.sp-select select {
+  height: 40px;
+  min-width: 0;
+  max-width: 360px;
+  padding: 0 10px;
+  border: 1px solid var(--sp-line-input);
+  border-radius: 10px;
+  font: inherit;
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-raised);
+}
+.sp-task strong {
+  font-weight: 600;
+}
+.sp-task strong .sp-mono {
+  font-size: 13px;
+  color: var(--sp-text-primary);
+}
+.sp-log span[data-tone="failed"],
+.sp-log-tail span[data-tone="failed"] {
+  color: var(--sp-code-failed);
+}
+.sp-log span[data-tone="review"],
+.sp-log-tail span[data-tone="review"] {
+  color: var(--sp-code-review);
+}
+.sp-note {
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-subtle);
+}
+
 /* Phone (ui-spec §4.11): a smaller title, a full-width Cancel, and the process table keeps its
    name, state, done and failed columns. */
 @media (max-width: 767.98px) {
@@ -381,4 +779,19 @@
   .sp-table td {
     padding: 8px 10px;
   }
+}
+
+/* A 4 px state rail on the left edge of a row or card. It composes with the card's own shadow in
+   one rule, more specific than the card rules and after them, so they cannot drop it (UX-PAR-04). */
+[data-rail] {
+  box-shadow: inset 4px 0 0 var(--tone);
+}
+.sp-card[data-rail],
+.sp-cards li[data-rail],
+.sp-list li[data-rail] {
+  box-shadow: inset 4px 0 0 var(--tone), var(--sp-shadow);
+}
+/* The run header: a 4 px bar across the top (LiteRunDetail). */
+.sp-card.sp-run-head[data-rail] {
+  box-shadow: inset 0 4px 0 var(--tone), var(--sp-shadow);
 }

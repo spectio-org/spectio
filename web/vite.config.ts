@@ -7,5 +7,5 @@ import { defineConfig } from "vite";
 export default defineConfig({
   plugins: [react()],
   build: { outDir: "dist", emptyOutDir: true, assetsInlineLimit: 0 },
-  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test-setup.ts"], css: false },
+  test: { environment: "jsdom", globals: true, setupFiles: ["./src/test-setup.ts"], css: { include: [/runs\.css/] } },
 });

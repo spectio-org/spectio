@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import { Icon, NAV } from "./Sidebar";
+import { Icon } from "../icons";
+import { NAV } from "./Sidebar";
 
 /** The phone's bottom tab bar (MLiteTabbar, G1): a floating paper bar, icon over name, on an
  * opaque backdrop that also covers the bottom inset (ui-spec §4.11). */
@@ -11,7 +12,7 @@ export function TabBar() {
           <Link
             key={item.to}
             to={item.to}
-            activeOptions={{ exact: true }}
+            activeOptions={{ exact: item.exact }}
             className="sp-tab"
             data-section={item.section}
           >
