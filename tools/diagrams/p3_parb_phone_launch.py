@@ -179,9 +179,13 @@ def phones(s: Sketch) -> None:
         if cy + 40 < scr.bottom - 4:
             card(s, scr.x + 6, cy, scr.w - 12, rail)
 
-    # after: Home, count cards 2 by 2
+    # after: Home, count cards 2 by 2; no title row, its greeting stays in the page (ui-spec 4.11 note)
     scr = s.phone(PX[2], PY, PW, PH)
-    y = title_row(s, scr, topbar(s, scr), "Home")
+    y = topbar(s, scr)
+    bar(s, scr.x + 8, y + 8, 22, 22, "done", amount=0.2)
+    s.text(scr.x + 36, y + 20, "Good morning", size=12.5, anchor="start", weight="bold")
+    stroke(s, scr.x + 36, y + 30, scr.x + 120, width=1.1)
+    y += 34
     cw = (scr.w - 18) / 2
     for k, (word, fill) in enumerate((("Running", "input"), ("Queued", "neutral"),
                                       ("Failed", "problem"), ("Succeeded", "done"))):
@@ -242,8 +246,8 @@ def phones(s: Sketch) -> None:
     captions = (
         ("before: Runs", "five columns squeezed", "36 px targets, no title"),
         ("after: Runs", "stacked run cards, 10", "pills scroll sideways"),
-        ("Home", "count cards 2 by 2, 10", "its lists as cards"),
-        ("Launch", "fold heads 44 px, 09", "a full-width Launch, 34"),
+        ("Home", "count cards 2 by 2, 10", "its greeting in the page"),
+        ("Launch", "fold heads 44 px, 09", "a full-width Launch, 09"),
         ("the run", "Back to Runs, 44 px, 08", "the title is the h1"),
     )
     for x, rows in zip(PX, captions):
