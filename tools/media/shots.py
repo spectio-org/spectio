@@ -48,8 +48,10 @@ class Shot:
     live: tuple[str, ...] | None = None  # a live page: steps of live.js; `board` is its path
 
 
-APP_LAUNCH = ("fill:Pipeline=$SPECTIO_DEMO_PIPELINE", "click:Load", "wait:no parameter schema",
-              "click:Add a parameter", "fill:Name, row 1=outdir", "fill:Value, row 1=results")
+# P3 UI parity D: the pipeline is picked from "Try a test pipeline" (the server's recent runs), and the
+# copy's nextflow_schema.json builds the form; before, the path was typed and a parameter added by hand.
+APP_LAUNCH = ("wait:Try a test pipeline", "click:Use spectio/synthetic-scenarios, $SPECTIO_DEMO_PIPELINE",
+              "wait:form from nextflow_schema.json")
 
 # The synthetic Snakemake pipeline (tests/pipelines/synthetic/snakemake) copied to
 # $SPECTIO_DEMO_SMK_PIPELINE, with a config/config.yaml of the Snakefile's own defaults plus a nested
@@ -76,7 +78,8 @@ REGISTRY: dict[str, Shot] = {
         Shot("lite-run-detail-phone", "MLiteRunDetail", 390, 844, "0.0.1: the same run on a phone"),
         # Live: from a running `spectio serve` at $SPECTIO_URL, with the synthetic Nextflow pipeline
         # copied to $SPECTIO_DEMO_PIPELINE (a path free of forbidden terms, fixtures.yaml).
-        Shot("app-launch", "/launch", 1440, 1000, "0.0.1, live: the launch form with the synthetic Nextflow pipeline loaded",
+        Shot("app-launch", "/launch", 1440, 1000,
+             "0.0.1, live: the launch form, the synthetic Nextflow pipeline picked from Try a test pipeline and loaded",
              themes=("light", "dark"), live=APP_LAUNCH),
         Shot("app-launch-phone", "/launch", 390, 844, "0.0.1, live: the same launch form on a phone, from its top",
              themes=("light", "dark"), live=APP_LAUNCH + ("top:",)),
@@ -95,17 +98,23 @@ REGISTRY: dict[str, Shot] = {
              live=APP_LAUNCH_SMK),
         Shot("app-run-detail", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
              "0.0.1, live: a finished run of the synthetic Nextflow pipeline, its processes and facts",
-             live=("wait:65 / 65 tasks",)),
+             themes=("light", "dark"), live=("wait:65 / 65 tasks",)),
         Shot("app-run-detail-phone", "/runs/$SPECTIO_DEMO_RUN", 390, 844, "0.0.1, live: the same run on a phone",
              live=("wait:65 / 65 tasks",)),
         Shot("app-run-detail-failed", "/runs/$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
-             "0.0.1, live: a failed run of the synthetic Nextflow pipeline, why it failed, open and folded sections",
-             live=("wait:Why it failed",)),
+             "0.0.1, live: a failed run of the synthetic Nextflow pipeline, why it failed and the first task to fail",
+             themes=("light", "dark"), live=("wait:Why it failed", "wait:First to fail")),
+        # P3 UI parity D: the process sheet (LiteTaskFiles), opened from a process name on the same run.
+        # `open:` waits for the sheet's slide-in to settle.
+        Shot("app-run-process", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
+             "0.0.1, live: the sheet of one process, its counts, Open in Tasks and its tasks",
+             themes=("light", "dark"), live=("wait:65 / 65 tasks", "open:Open process ALIGN", "wait:Open in Tasks")),
         # P3 UI parity C: the Logs tab of the same failed run, on the head's output, where Nextflow
-        # writes the failed task's error.
+        # writes the failed task's error. P3 UI parity D: searched for MERGE, four matches in that log.
         Shot("app-run-logs", "/runs/$SPECTIO_DEMO_FAILED_RUN?tab=logs&source=head-out", 1440, 1180,
-             "0.0.1, live: the Logs tab of a failed run, its source buttons, File row, tools and viewer",
-             themes=("light", "dark"), live=("wait:Download last 64 KiB", "wait:Command error")),
+             "0.0.1, live: the Logs tab of a failed run, searched: marked matches, the counter and the level buttons",
+             themes=("light", "dark"), live=("wait:Download last 64 KiB", "wait:Command error",
+                                             "fill:Search the head output=MERGE", "wait:1 / 4")),
     )
 }
 

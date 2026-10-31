@@ -57,7 +57,8 @@ media:
   - id: app-launch
     kind: screenshot
     # live: needs a running `spectio serve` (SPECTIO_URL) and the synthetic Nextflow pipeline
-    # copied to a path free of forbidden terms (SPECTIO_DEMO_PIPELINE), tools/media/README.md
+    # copied to a path free of forbidden terms (SPECTIO_DEMO_PIPELINE), tools/media/README.md;
+    # since UI parity D it is picked from Try a test pipeline, so the server must have run it once
     generator: python3 tools/media/shots.py run --shot app-launch --theme both
     outputs: [docs/assets/shots/app-launch_light.webp, docs/assets/shots/app-launch_dark.webp]
   - id: app-launch-phone
@@ -93,8 +94,8 @@ media:
   - id: app-run-detail
     kind: screenshot
     # live, as app-home; SPECTIO_DEMO_RUN is the finished run's ID
-    generator: python3 tools/media/shots.py run --shot app-run-detail --theme light
-    outputs: [docs/assets/shots/app-run-detail_light.webp]
+    generator: python3 tools/media/shots.py run --shot app-run-detail --theme both
+    outputs: [docs/assets/shots/app-run-detail_light.webp, docs/assets/shots/app-run-detail_dark.webp]
   - id: app-run-detail-phone
     kind: screenshot
     # live, as app-run-detail, at 390 x 844
@@ -103,11 +104,17 @@ media:
   - id: app-run-detail-failed
     kind: screenshot
     # live, as app-run-detail; SPECTIO_DEMO_FAILED_RUN is a run launched with fail_mode=exit fail_process=MERGE
-    generator: python3 tools/media/shots.py run --shot app-run-detail-failed --theme light
-    outputs: [docs/assets/shots/app-run-detail-failed_light.webp]
+    generator: python3 tools/media/shots.py run --shot app-run-detail-failed --theme both
+    outputs: [docs/assets/shots/app-run-detail-failed_light.webp, docs/assets/shots/app-run-detail-failed_dark.webp]
+  - id: app-run-process
+    kind: screenshot
+    # live, as app-run-detail: the sheet of process ALIGN, opened from its name (P3 UI parity D)
+    generator: python3 tools/media/shots.py run --shot app-run-process --theme both
+    outputs: [docs/assets/shots/app-run-process_light.webp, docs/assets/shots/app-run-process_dark.webp]
   - id: app-run-logs
     kind: screenshot
-    # live, as app-run-detail-failed: its Logs tab on the head's output (?tab=logs&source=head-out)
+    # live, as app-run-detail-failed: its Logs tab on the head's output (?tab=logs&source=head-out),
+    # searched for MERGE (four matches, P3 UI parity D)
     generator: python3 tools/media/shots.py run --shot app-run-logs --theme both
     outputs: [docs/assets/shots/app-run-logs_light.webp, docs/assets/shots/app-run-logs_dark.webp]
   - id: budget-loop
