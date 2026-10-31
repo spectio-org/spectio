@@ -87,6 +87,7 @@ nav:
   - Home: index.md
   - Installation: installation/index.md
   - Usage: usage/index.md
+  - Try the demo: /demo/
   - Features:
       - features/index.md
       - Runs: features/runs.md

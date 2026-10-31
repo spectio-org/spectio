@@ -100,6 +100,22 @@ jobs:
           SPECTIO_PREVIEW: ${{ steps.alias.outputs.alias }}
         run: uvx --with mkdocs-material mkdocs build --strict -d site
 
+      # The public read-only demo of the screens at /demo/: recorded answers of a demo server, no live API
+      # (web/src/demo/stub.ts, tools/media/record_demo.py).
+      - name: Read the Node pin (dev/versions.env, §1)
+        id: pins
+        run: |
+          . dev/versions.env
+          echo "node=$NODE_VERSION" >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: {node-version: "${{ steps.pins.outputs.node }}"}  # no `cache:` input: no cache
+      - name: Build the demo into site/demo
+        # npm ci checks each package's integrity hash; no install script runs.
+        run: |
+          npm --prefix web ci --no-audit --no-fund --ignore-scripts
+          npm --prefix web run build:demo
+          cp -R web/dist-demo site/demo
+
       - name: Skip notice (no Cloudflare secrets yet)
         if: steps.cf.outputs.has != 'true'
         run: echo "::notice::CLOUDFLARE_API_TOKEN / CLOUDFLARE_ACCOUNT_ID are not set in the 'previews' environment; the site was built but not deployed."
@@ -153,6 +169,7 @@ jobs:
           done
           curl -fsS "$URL/versions/" -o /dev/null
           curl -fsS "$URL/progress/" -o /dev/null
+          curl -fsS "$URL/demo/" -o /dev/null
           echo "Preview OK: $URL (alias $ALIAS_URL)"
 
       - name: Comment the links on the PR

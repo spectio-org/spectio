@@ -368,6 +368,21 @@ The earlier design (a tailnet VM behind Tailscale Funnel) is replaced; see the d
 
 The front-end has a build flag that replaces the API with fixtures generated from the OpenAPI and the demo dataset (MSW). That build is static, so every UI iteration can be published on Cloudflare Pages and compared side by side with no backend at all. The real backend stays covered by tiers 2–4 and by Codespaces.
 
+**Note (2026-10-31, step P3-demo; [Progress](../progress/W5/P3-M4.md#public-demo-p3-demo)).** Thomas asked for the real 0.0.1 screens online, to click through without a clone (2026-10-31, [decision log](../decisions/log.md#2026-10-31-a-public-read-only-demo-of-the-001-screens-at-demo-written-into-dev-env-73-p3-demo)). 0.0.1 builds it like this, in place of MSW and generated fixtures:
+
+1. **A build mode, not a flag at run time.** `npm --prefix web run build:demo` (`vite --mode demo`) writes `web/dist-demo` with relative asset paths and hash routing (`#/runs/…`), so deep links and reloads work under a sub-path of a static host. The normal `npm run build` holds none of the demo: `web/scripts/check-dist.mjs` fails on a recorded run ID or a demo text in `web/dist`.
+2. **Recorded answers, not generated ones.** `tools/media/record_demo.py` records the `GET` answers of a demo `spectio serve` (account `alice`, node `login1`, `/g/demo-lab`) into `web/demo/fixtures.json`, which is committed and public. It writes nothing when the hygiene check of `tools/media/fixtures.yaml`, the recorder's host name or its kernel release hits, or above 1.5 MB. The recipe is in [`tools/media/README.md`](https://github.com/spectio-org/spectio/blob/main/tools/media/README.md), "The public demo".
+3. **What the page answers** (`web/src/demo/stub.ts`, which replaces `fetch` and `EventSource`):
+    - a recorded path and query: its answer. The runs list and a run's tasks are filtered and paged as the server does;
+    - any write: `403` with the slug `read-only-demo` and "Read-only demo: launching and cancelling are disabled", which the Launch button shows as its disabled reason;
+    - a path that was not recorded, or another origin: `404`. Inspecting a pipeline that was not recorded: `422` on `location`, naming the three recorded ones *(assumed — standing rule; the brief said `404`, CR-P3DEMO-03 r1)*;
+    - the live stream opens and stays quiet. Open raw opens the log text shown, as a `blob:` URL.
+4. **Times.** Every time in the JSON answers moves by one offset, so that the newest run ended an hour before the page was opened. The log texts keep their recorded times. The banner says so.
+5. **A banner on every page:** "Demo: recorded data from a test server, read-only", that the times are moved, and that `nf-core/demo` is a renamed copy of the synthetic test pipeline, not an nf-core pipeline; a link to the docs. It wraps at every width; the sticky sidebar takes its measured height off its own (`--sp-demo-banner-h`).
+6. **Where.** `previews.yml` builds it after the MkDocs build and copies it to `site/demo`, so it is at `https://spectio.pages.dev/demo/` once on `main`, and at `/demo/` of every PR preview. No page of the docs may be at `docs/demo.md` or `docs/demo/`: MkDocs would then create `site/demo/` and the copy would land in `site/demo/dist-demo/` (CR-P3DEMO-01 r1).
+
+Open before it is relied on (follow-up FU-P3-28): no CSP or `_headers` for `/demo/` (only the stub keeps requests in the page, SEC-P3DEMO-04 r1); the npm tree runs in the job that later holds `CLOUDFLARE_API_TOKEN` (SEC-P3DEMO-03 r1); no CI job runs `tools/media/test_record_demo.py`.
+
 ### 7.4 The public instance (from the public beta)
 
 - **Where.** On EMBL's Kubernetes, with the Helm chart, as depictio does: a self-hosted runner inside EMBL, `workflow_dispatch` only, behind a GitHub environment with a required reviewer.
