@@ -507,3 +507,7 @@ One entry per tick: time, steps started and finished, verification results, tria
 - UI parity D (Thomas's demo feedback): stage, process and task sheets on the run page (Open in Tasks with `?tab=tasks&process=`, an honest note on what Tasks 28 and 29 add), chip filters, First to fail, searchable logs with a level filter, Try a test pipeline in Launch, real parameter schemas for the synthetic Nextflow and Snakemake pipelines; clickability inventory on P3-M4. UI only, no API change.
 - Workflow p3-task in 2 review rounds (code approve 0/0/9, security approve 0/0/3), simplifier one change, doc-reviewer approve 13 (round 3). SAST 0 findings. The media tooling commit (`24f7cae`) came after review-code: reviewed by the orchestrator, no finding.
 - pr-body first ran on the placeholder body; my failed-jobs re-run then cancelled the edit and label runs (same concurrency group); the label run re-run passed. Every check green on 9909ae9; squash 37d3244 (`Release-As: 0.0.1`). Cost recorded: 45 USD. Open minors in FU-P3-28. Demo server serves the parD build. Next: promotion, then P1 Task 27.
+
+## 2026-10-31 · Promotion #113 merged: UI parity D on main
+
+- Integration promoted to `main` by merge commit 4dfbee5 (label `screenshots`; every check green on 855786c). P1 Task 27 (stages) is building (workflow wf_8609c03e-ad3, base 855786c). PR #111 still waits for Thomas.
