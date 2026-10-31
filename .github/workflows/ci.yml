@@ -132,6 +132,67 @@ jobs:
       - run: npm test
       - run: npm run build
 
+  e2e-local:
+    # The Playwright smoke of P1 Task 20 (tests/e2e/skeleton.spec.ts) against a real `spectio serve` in local
+    # mode (tests/e2e/serve-local.sh), with Nextflow for the tests that launch, cancel and follow a run.
+    # Not in ci-ok's needs until it has proven reliable on CI (inbox #90): a red run here does not block a PR.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with: {persist-credentials: false}
+      - name: Read the pins (dev/versions.env, §1)
+        id: pins
+        run: |
+          . dev/versions.env
+          { echo "node=$NODE_VERSION"; echo "nextflow=$NEXTFLOW_VERSION"; } >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: {node-version: "${{ steps.pins.outputs.node }}"}
+      - uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6.8.0
+        with:
+          version: "0.11.32" # = UV_VERSION in dev/versions.env
+          checksum: aab924fd522efd06f1c5f3b93a243864fc453132c94b2dc49f1371b528a4b967 # = UV_SHA256
+          enable-cache: false
+      - uses: nf-core/setup-nextflow@893c28b667aedeba26e37f296d260ccc5bc4d914 # v3.0.1
+        with:
+          version: ${{ steps.pins.outputs.nextflow }}
+      - name: Install the workspace, the screens and Playwright's Chromium
+        # npm ci checks each package's integrity hash; no install script runs. The Chromium download is not
+        # hashed by us (§1), as in e2e.yml.
+        run: |
+          . dev/versions.env
+          uv sync --locked --python "$PYTHON_VERSION"
+          npm --prefix web ci --no-audit --no-fund --ignore-scripts
+          npm --prefix web run build
+          npm --prefix tests/e2e ci --no-audit --no-fund --ignore-scripts
+          (cd tests/e2e && npx --no-install playwright install --with-deps chromium)
+      - name: Start Spectio (local mode)
+        run: |
+          bash tests/e2e/serve-local.sh --port 8765 > "$RUNNER_TEMP/serve.log" 2>&1 &
+          for _ in $(seq 1 300); do
+            curl -fsS -o /dev/null http://127.0.0.1:8765/api/v1/version && exit 0
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/serve.log"; exit 1
+      - name: Smoke, desktop and phone
+        working-directory: tests/e2e
+        env:
+          CI: "true"
+          SPECTIO_E2E_BASE_URL: http://127.0.0.1:8765
+          SPECTIO_E2E_ENGINES: "1"
+        run: npx --no-install playwright test skeleton.spec.ts --project desktop --project phone
+      - name: Keep the report and the server log
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: e2e-local-report
+          path: |
+            tests/e2e/playwright-report/
+            ${{ runner.temp }}/serve.log
+          retention-days: 14
+
   pipelines-synthetic:
     needs: changes
     if: needs.changes.outputs.synthetic == 'true'
