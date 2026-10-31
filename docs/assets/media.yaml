@@ -75,6 +75,21 @@ media:
     # live, as app-home
     generator: python3 tools/media/shots.py run --shot app-runs --theme light
     outputs: [docs/assets/shots/app-runs_light.webp]
+  - id: app-home-phone
+    kind: screenshot
+    # live, as app-home, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-home-phone --theme light
+    outputs: [docs/assets/shots/app-home-phone_light.webp]
+  - id: app-runs-phone
+    kind: screenshot
+    # live, as app-home, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-runs-phone --theme light
+    outputs: [docs/assets/shots/app-runs-phone_light.webp]
+  - id: app-launch-snakemake
+    kind: screenshot
+    # live, as app-launch, with SPECTIO_DEMO_SMK_PIPELINE (tools/media/README.md, live shots: config.yaml with a nested map `ref`), at 1440 x 1380
+    generator: python3 tools/media/shots.py run --shot app-launch-snakemake --theme light
+    outputs: [docs/assets/shots/app-launch-snakemake_light.webp]
   - id: app-run-detail
     kind: screenshot
     # live, as app-home; SPECTIO_DEMO_RUN is the finished run's ID
