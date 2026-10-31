@@ -467,3 +467,56 @@ def test_nfcore_style_pins_kept(
     assert (nxf_home / "plugins" / "nf-schema-2.7.2").is_dir()
     spool = list((spec.launch_dir / ".spectio" / "events").glob("nf-spectio-1-*.jsonl"))
     assert spool and spool[0].stat().st_size > 0, out
+
+
+LISTING_STUB = """#!/bin/bash
+for a in "$@"; do
+  if [ "$a" = --list-rules ]; then
+    printf '%s\\0' "$@" > list-argv.out
+    [ -n "$LIST_FAILS" ] && { echo partial; exit 1; }
+    printf 'all\\ncount_reads (Count reads)\\n'; exit 0
+  fi
+done
+printf '%s\\0' "$@" > argv.out
+exit 0
+"""
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_snakemake_head_writes_rules_txt(home: Path, bridges: Path, fails: bool) -> None:
+    """The head writes `.spectio/rules.txt` from `snakemake --list-rules` with the launch's
+    configuration (P1 Task 27), 0600; a failing listing leaves none, says so on stderr and
+    never stops the run."""
+    spec = snakemake_spec(home, extra_args=["--config", "x=1"])
+    stub_engine(home / "bin", LISTING_STUB)
+    if fails:
+        spec = replace(spec, env={"LIST_FAILS": "1"})
+    assert run_head(spec).returncode == 0
+    spectio_dir = spec.launch_dir / ".spectio"
+    listed = (spec.launch_dir / "list-argv.out").read_text().split("\0")[:-1]
+    assert listed == [
+        "--snakefile",
+        str(spec.location / "workflow" / "Snakefile"),
+        "--directory",
+        str(spec.launch_dir),
+        "--configfile",
+        str(spectio_dir / "params.json"),
+        "--config",
+        "x=1",
+        "--list-rules",
+    ]
+    assert "--logger" not in listed
+    assert "--list-rules" not in argv(spec)  # the run itself
+    rules = spectio_dir / "rules.txt"
+    assert not (spectio_dir / "rules.txt.tmp").exists()
+    if fails:
+        assert not rules.exists()
+        assert "--list-rules failed" in (spectio_dir / "head.out").read_text()
+    else:
+        assert rules.read_text() == "all\ncount_reads (Count reads)\n"
+        assert stat.S_IMODE(rules.stat().st_mode) == 0o600
+
+
+def test_nextflow_head_lists_no_rules(home: Path, bridges: Path) -> None:
+    spec = make_spec(home / "runs", engine_cmd=shlex.quote(str(stub_engine(home / "bin"))))
+    assert "--list-rules" not in render_head_script(spec)

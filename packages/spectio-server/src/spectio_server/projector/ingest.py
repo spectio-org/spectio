@@ -17,6 +17,7 @@ from spectio.runner.types import HeadReport, SpoolBatch
 from spectio_sdk.events import UnknownEventType, parse_data
 from spectio_server.projector import nextflow, snakemake
 from spectio_server.projector.runs import ENGINE_ENDED, IN_CHUNK, Projection, failure_json
+from spectio_server.stages.freeze import StageSources
 from spectio_server.store.schema import events, launches, spool_cursors, spool_drops
 
 # Classes of a head that ended with no terminal engine event: its open attempts failed (§7.1).
@@ -35,7 +36,9 @@ def load_cursor(conn: Connection, launch_id: str) -> dict[str, int]:
     return {file: offset for file, offset in rows}
 
 
-def ingest(conn: Connection, launch_id: str, batch: SpoolBatch) -> None:
+def ingest(
+    conn: Connection, launch_id: str, batch: SpoolBatch, sources: StageSources | None = None
+) -> None:
     """Log and project the batch's new events, then store its cursor and drops.
 
     An event already in the log (same run, same event ID) is skipped. Its data is checked
@@ -48,6 +51,7 @@ def ingest(conn: Connection, launch_id: str, batch: SpoolBatch) -> None:
     stays. Raises ValueError, and writes nothing, when an event is of another run or launch.
     """
     p = Projection.load(conn, launch_id)
+    p.sources = sources
     if any(e.run != p.run_id or e.launch != p.launch_n for e in batch.events):
         raise ValueError(f"the batch holds an event of another run or launch than {launch_id}")
     seen = _logged(conn, p.run_id, [e.id for e in batch.events])

@@ -25,12 +25,15 @@ from spectio.config import Settings
 from spectio.runner.rundir import RUN_ID
 from spectio_server.api import models
 from spectio_server.api.problems import Invalid, not_found
+from spectio_server.stages.freeze import FROZEN as STAGES_FROZEN
 from spectio_server.store.schema import (
     RUN_STATES,
     TASK_STATES,
     attempts,
+    events,
     launches,
     run_inputs,
+    run_processes,
     run_stages,
     runner_commands,
     runs,
@@ -100,7 +103,21 @@ def _profiles(conn: Connection, run_ids: list[str]) -> dict[str, list[str]]:
     return {r.run_id: list((r.payload or {}).get("profiles", [])) for r in rows}
 
 
-def run_json(row: Row[Any], profiles: list[str]) -> dict[str, Any]:
+def _stage_modes(conn: Connection, run_ids: list[str]) -> dict[str, str]:
+    """`summary.stage_mode` (api §7): `declared` or `detected` from the run's frozen stages,
+    `quarters` when it has none (the progress bar's four quarters, ui-spec §5.1.1)."""
+    found: dict[str, str] = {}
+    for run_id, source in conn.execute(
+        select(run_stages.c.run_id, run_stages.c.source)
+        .where(run_stages.c.run_id.in_(run_ids))
+        .distinct()
+    ):
+        if found.get(run_id) != "declared":
+            found[run_id] = source
+    return found
+
+
+def run_json(row: Row[Any], profiles: list[str], stage_mode: str | None = None) -> dict[str, Any]:
     counts: dict[str, int] = row.task_counts or {}
     total = row.tasks_expected if row.tasks_expected is not None else sum(counts.values())
     head = None
@@ -139,6 +156,7 @@ def run_json(row: Row[Any], profiles: list[str]) -> dict[str, Any]:
                 "cached": counts.get("cached", 0),
             },
             "last_failure": row.failure,
+            "stage_mode": stage_mode or "quarters",
         },
     }
 
@@ -155,14 +173,20 @@ def run_row(conn: Connection, run_id: str) -> Row[Any]:
 
 def run_detail(conn: Connection, run_id: str) -> dict[str, Any]:
     row = run_row(conn, run_id)
-    found = run_json(row, _profiles(conn, [run_id]).get(run_id, []))
+    found = run_json(
+        row, _profiles(conn, [run_id]).get(run_id, []), _stage_modes(conn, [run_id]).get(run_id)
+    )
+    frozen = conn.execute(
+        select(events.c.payload).where(events.c.run_id == run_id, events.c.type == STAGES_FROZEN)
+    ).scalar()
+    note = (frozen or {}).get("note")
     params = conn.execute(
         select(run_inputs.c.content)
         .where(run_inputs.c.run_id == run_id, run_inputs.c.kind == "params")
         .order_by(run_inputs.c.version.desc())
         .limit(1)
     ).scalar()
-    return {**found, "params": params or {}}
+    return {**found, "params": params or {}, "stages_note": note if isinstance(note, str) else None}
 
 
 # --- Cursors: base64url of [sort value, id], or of the id alone when it is the sort key -----
@@ -247,8 +271,9 @@ def list_runs(
     query = _page(query, key, runs.c.id, cursor, limit, descending=True, timestamp=True)
     with read(request) as conn:
         rows = conn.execute(query).all()
-        profiles = _profiles(conn, [r.id for r in rows[:limit]])
-    items = [run_json(r, profiles.get(r.id, [])) for r in rows[:limit]]
+        page = [r.id for r in rows[:limit]]
+        profiles, modes = _profiles(conn, page), _stage_modes(conn, page)
+    items = [run_json(r, profiles.get(r.id, []), modes.get(r.id)) for r in rows[:limit]]
     last = rows[limit - 1] if len(rows) > limit else None
     next_ = None if last is None else _encode([getattr(last, key.name).isoformat(), last.id])
     return {"items": items, "next": next_}
@@ -286,12 +311,19 @@ def get_run(request: Request, run_id: str) -> dict[str, Any]:
 
 @router.get("/runs/{run_id}/processes", response_model=models.ProcessList)
 def list_processes(request: Request, run_id: str) -> dict[str, Any]:
-    """One item per process or rule, in first-seen order (the order of its first task's ID)."""
+    """One item per process or rule: those the projector recorded (`onProcessCreate`, the rule
+    files at the freeze, a first task), in that order, with the stage they froze with; then any
+    known from tasks only (a database from before P1 Task 27), in their first task's order."""
     with read(request) as conn:
         run_row(conn, run_id)
         mine = tasks.c.run_id == run_id
-        order = conn.execute(
-            select(tasks.c.process_or_rule, func.min(tasks.c.id), func.max(tasks.c.stage_id))
+        known = conn.execute(
+            select(run_processes.c.name, run_processes.c.stage_id)
+            .where(run_processes.c.run_id == run_id)
+            .order_by(run_processes.c.position)
+        ).all()
+        from_tasks = conn.execute(
+            select(tasks.c.process_or_rule, func.max(tasks.c.stage_id))
             .where(mine)
             .group_by(tasks.c.process_or_rule)
             .order_by(func.min(tasks.c.id))
@@ -312,6 +344,9 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     by_process: dict[str, dict[str, int]] = {}
     for process, state, n in counts:
         by_process.setdefault(process, {})[state] = n
+    order: dict[str, str | None] = dict(known)
+    for process, stage_id in from_tasks:
+        order.setdefault(process, stage_id)
     return {
         "items": [
             {
@@ -320,7 +355,7 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
                 "counts": by_process.get(process, {}),
                 "retries": retries.get(process, 0),
             }
-            for process, _, stage_id in order
+            for process, stage_id in order.items()
         ]
     }
 

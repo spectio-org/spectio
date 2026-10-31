@@ -22,12 +22,14 @@ from .conftest import add_run
 
 RUNS = "/api/v1/runs"
 T0 = datetime(2026, 10, 30, 8, 0, tzinfo=UTC)
+# `onProcessCreate` order (P1 Task 27), no longer the first task's: QC_REPORT is created before
+# SPLIT, though its first task comes after ALIGN's.
 FLAKY_PROCESSES = [
     "MAKE_READS",
     "QC_STATS",
+    "QC_REPORT",
     "SPLIT",
     "ALIGN",
-    "QC_REPORT",
     "MERGE",
     "COMPARE",
     "FINAL_REPORT",

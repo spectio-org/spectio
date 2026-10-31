@@ -13,6 +13,10 @@ import { resolveTarget } from './base-url';
 const target = resolveTarget(process.env);
 const ENGINES = process.env.SPECTIO_E2E_ENGINES === '1';
 const NEEDS_ENGINES = 'needs Nextflow: set SPECTIO_E2E_ENGINES=1 (CI job e2e-local)';
+// The run tests/e2e/seed_stages.py writes (serve-local.sh --seed-stages): P1 Task 27.
+const SEEDED = 'run_01K8T27SEEDED0000000000000';
+const IS_SEEDED = process.env.SPECTIO_E2E_SEEDED === '1';
+const NEEDS_SEED = 'needs the seeded rnaseq run: serve-local.sh --seed-stages and SPECTIO_E2E_SEEDED=1';
 const SYNTHETIC = join(__dirname, '..', 'pipelines', 'synthetic');
 const RUN = 'run_01JBC6Q4ZK7M8N2P3R5S7T9V1W';
 
@@ -45,8 +49,8 @@ function mockRun(over: object = {}) {
     profiles: ['test'], failure: null,
     head: { session: `spectio-${RUN}`, node: 'login1', alive: true, exit_code: null },
     task_counts: { succeeded: 24, running: 3 },
-    summary: { tasks: { done: 24, total: 27, failed: 0, cached: 0 }, last_failure: null },
-    params: {}, ...over,
+    summary: { tasks: { done: 24, total: 27, failed: 0, cached: 0 }, last_failure: null, stage_mode: 'quarters' },
+    params: {}, stages_note: null, ...over,
   };
 }
 
@@ -118,6 +122,33 @@ test('the detail shows the flat list with no stage, and the stages when /stages 
   await expect(page.getByText('1 of 2 stages done · 1 running')).toBeVisible();
   await expect(page.getByRole(processes, { name: 'Processes of Align' })).toBeVisible(); // the running stage is open
   await expect(page.getByText('No stages for this pipeline')).toHaveCount(0);
+});
+
+test('a run of the synthetic happy shows no stage, only its processes (P1 Task 27)', async ({ page, request }, info) => {
+  test.skip(!ENGINES, NEEDS_ENGINES);
+  test.setTimeout(180_000);
+  const id = await launch(request, ['test']);
+  await reach(request, id, ['succeeded']);
+  expect((await (await request.get(`/api/v1/runs/${id}/stages`)).json()).items).toEqual([]);
+  await page.goto(`/runs/${id}`);
+  await expect(page.getByText('No stages for this pipeline: processes as the engine reports them.')).toBeVisible();
+  await expect(page.getByRole(info.project.name === 'phone' ? 'list' : 'table', { name: 'Processes' })).toBeVisible();
+});
+
+test('a seeded rnaseq run shows 8 detected stages above its processes (P1 Task 27)', async ({ page, request }) => {
+  test.skip(!IS_SEEDED, NEEDS_SEED);
+  await reach(request, SEEDED, ['succeeded']);
+  const run = await (await request.get(`/api/v1/runs/${SEEDED}`)).json();
+  expect(run.summary.stage_mode).toBe('detected');
+  const stages = (await (await request.get(`/api/v1/runs/${SEEDED}/stages`)).json()).items;
+  expect(stages.map((s: { id: string }) => s.id)).toEqual([1, 2, 3, 4, 5, 6, 7, 8].map((n) => `detected:${n}`));
+  await page.goto(`/runs/${SEEDED}`);
+  await expect(page.getByText('0 of 8 stages done · 0 running')).toBeVisible(); // a preview: no task ran
+  const section = page.getByRole('region', { name: 'Stages' });
+  await expect(section.getByText(/^8 stages, in order/)).toBeVisible();
+  await expect(section.locator('.sp-stage')).toHaveCount(8); // all 67 processes are in a stage: no "Not in a stage"
+  await expect(section.getByText('Detected', { exact: true })).toHaveCount(8);
+  await expect(section.getByText('Report', { exact: true })).toBeVisible();
 });
 
 test('cancel a running Snakemake run → Cancelled', async () => {

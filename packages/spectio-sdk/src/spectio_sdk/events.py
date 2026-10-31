@@ -279,6 +279,7 @@ class SnakemakeWorkflowStarted(_Data):
     rundir: str | None = None
     host: str | None = None
     user: str | None = None
+    snakefile_main: str | None = None  # the main Snakefile's path (P1 Task 27)
 
 
 class SnakemakeRunInfo(_Data):

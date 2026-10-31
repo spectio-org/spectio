@@ -1,6 +1,6 @@
 # Stage fixtures: example pipelines for declared and detected stages
 
-Golden inputs and outputs for the stage detection of [ui-spec §5.1.1](../../../../docs/specs/ui-spec.md) and P1 Task 27. They come from the [stage-detection spike](../../../../docs/research/spike-stage-detection-2026-10-28.md) (branch `spike/stage-detection`, `spikes/stage-detection/out/` and `overlays/`), captured on 2026-10-28 with Nextflow 26.10.4 (`-preview`) and Snakemake 9.27.1. No test reads them yet.
+Golden inputs and outputs for the stage detection of [ui-spec §5.1.1](../../../../docs/specs/ui-spec.md) and P1 Task 27. They come from the [stage-detection spike](../../../../docs/research/spike-stage-detection-2026-10-28.md) (branch `spike/stage-detection`, `spikes/stage-detection/out/` and `overlays/`), captured on 2026-10-28 with Nextflow 26.10.4 (`-preview`) and Snakemake 9.27.1. `packages/spectio-server/tests/api/test_stages.py` reads them (Task 27).
 
 | Path | What | Pipeline and pin |
 |---|---|---|
@@ -15,3 +15,5 @@ Golden inputs and outputs for the stage detection of [ui-spec §5.1.1](../../../
 | `overlays/*.spectio.yml` | four example lab overlays, `stages[]` only, display only, in the [checking-scenarios §12.1](../../../../docs/specs/checking-scenarios.md) shape | nf-core/rnaseq, sarek, methylseq; mosaicatcher-pipeline |
 
 The expected files are the spike's output, not a specification: Task 27 may change a stage name or a merge, and then updates the file in the same commit with the reason. The overlays match every name of their fixture, with no overlap (spike `out/overlays_vs_detected.txt`).
+
+Changed by Task 27 (2026-10-31): in both rnaseq files, the description of "Bam qc rnaseq" was `"|"`, the YAML block marker of `description: |` that the spike's line parser kept; the server reads `meta.yml` with `yaml.safe_load`, and the fixtures hold no source to read the text from, so it is now `null`.
