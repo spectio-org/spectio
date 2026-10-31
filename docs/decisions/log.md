@@ -1036,3 +1036,15 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Reserved, not assumed:** whether a session-less API and screens may be served at all before Tasks 12 to 16 (inbox #86).
 - **Not yet applied:** P1 Task 20's interface and P1 Assumption 7 (one stream per browser; the code opens one per tab), at the next `/apply-findings`.
 - **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions): follow-up FU-P3-24 (runs screens and `serve-local.sh`), SEC-P3T20-02 (r1) added to FU-P3-20.
+
+## 2026-10-31 — UI parity A: the shell, Home, the runs list and the run detail, written into ui-spec §4.2 to §4.4 and §7 (P3 parity A, inbox #91)
+
+- **Context.** Thomas looked at the screenshots of the 0.0.1 screens and said that many defined things were missing, such as collapsible sections with light icons and the engine logos (2026-10-31, `.autopilot/journal.md`). The `ux-reviewer` audit [`ui-parity-0.0.1.md`](../reviews/ui-parity-0.0.1.md) found 34 gaps. Step P3-parA fixed UX-PAR-01 to 07, 11 to 27 and 29 within what the 0.0.1 API serves. The audit left the phone and Launch findings (UX-PAR-08 to 10, 30 to 34) to step B, and UX-PAR-28 to P1 Tasks 30 and 32.
+- **Applied (assumed — standing rule, [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30); the marks: [inbox #91](../reviews/inbox.md#91-assumed-which-mark-a-pipeline-shows-no-nf-core-mark-yet-and-where-the-logos-come-from) (a)):** four dated notes. No section number changed.
+    - [ui-spec §7](../specs/ui-spec.md#7-consistency-with-depictio-reuse-plan), note 2026-10-31: run-state tokens and tones, the active item on child pages, the active-run badge, the page-head tile and `FoldSection`.
+    - [ui-spec §4.2](../specs/ui-spec.md#42-overview), note 2026-10-31: Home's subtitle, linked count cards, rows with a mark and a context that is never blank, and "Where your runs go".
+    - [ui-spec §4.3](../specs/ui-spec.md#43-runs-table-and-rows), note 2026-10-31: the engine's mark only, with no nf-core mark until the server sets a pipeline's origin (#91 rule 1); the `state` and `q` filters in the URL; the head, toolbar, footer and Tasks cell.
+    - [ui-spec §4.4](../specs/ui-spec.md#44-run-detail), note 2026-10-31: the engine's words, one header with facts and task chips on every tab, Why it failed, stages with bars, the Summary aside, the Tasks and Logs tabs, and the executor's own Cancel sentence. The "toggled sections" leave the Task 20 note's "Not built" line.
+- **Not decided here:** the nf-core mark and the logos' upstream source and terms (inbox #91, question for Thomas; the provenance is **[to be validated]**).
+- **Not yet applied:** the audit's board updates (LiteCancelDialog's confirm label, the LiteLaunch note), at the next `/apply-findings`.
+- **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions), follow-up FU-P3-25.

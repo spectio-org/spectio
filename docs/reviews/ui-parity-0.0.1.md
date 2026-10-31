@@ -54,7 +54,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
   - Add one `PipelineMark`. It shows nf-core only under a stated rule, for example "manifest name `^nf-core/` and, for a Git location, the repository is `github.com/nf-core/<name>`"; otherwise it shows the engine mark. Ask Thomas for the rule, or add `workflow.nf_core: bool` to the API, as an inbox question.
   - Place the marks as the boards do: one mark per workflow.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the engine's mark on every screen of this step (`EngineMark.tsx`); no nf-core mark ([inbox #91](inbox.md#91-assumed-which-mark-a-pipeline-shows-no-nf-core-mark-yet-and-where-the-logos-come-from), assumed); ui-spec §4.3 note "UI parity A". The Pipeline fact has no mark (CR-P3PARA-03, open); Launch's marks go to step B
 
 ### UX-PAR-02 · major · No collapsible section anywhere: no light line icon, no summary when folded, no chevron
 
@@ -64,7 +64,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** no data is needed. The summaries come from data the screens already hold.
 - **Proposal:** add one `<FoldSection id icon title summary defaultOpen>` component in `web/src/shell/`. Its toggle is a native `<button aria-expanded aria-controls>` inside the `h2`; it uses a lucide-style 1.6-stroke icon in a 26–30 px tile on `--sp-surface-subtle`. It hides the summary while open and turns the chevron 180°, and it remembers its state in `localStorage` per screen. Use it for every section listed above, with the default-open rule of UX-318.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): `FoldSection.tsx` on Home and the run detail; ui-spec §7 note 2026-10-31. Launch's groups go to step B (UX-PAR-30)
 
 ### UX-PAR-03 · minor · The page-head icon tile is missing on Home, Runs and Launch
 
@@ -74,7 +74,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** none needed.
 - **Proposal:** add a `PageHead({section, icon, title, sub, action})` component. It reuses `NAV[i].icon` and `--sp-section-<s>` with `--sp-section-<s>-bg`, which `theme.ts:57-62` already emits.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): `PageHead.tsx` on Home, Runs and Launch
 
 ### UX-PAR-04 · major · The state rail disappears on Home cards, Home rows and the run header (CSS specificity)
 
@@ -96,7 +96,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 
   Give the run header the top-bar variant (`inset 0 4px 0 var(--rail)`), as on the board. Add a computed-style test.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the rail and the card shadow in one `box-shadow`; `rail.test.tsx` (CR-P3PARA-05, open: the test relies on rule order)
 
 ### UX-PAR-05 · major · Run-state colours are hard-coded and drift from `spectio-tokens.css`; dark mode keeps the light rails
 
@@ -110,7 +110,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** none needed.
 - **Proposal:** emit `--sp-state-<s>`, `--sp-state-<s>-fg` and `--sp-state-<s>-bg` for the 8 states, light and dark, from `theme.ts`. Make `runs.css` read only those.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): `--sp-state-*` tokens, light and dark, in `theme.ts`; ui-spec §7 note 2026-10-31. Four role tokens are not in `spectio-tokens.css` yet (CR-P3PARA-06, open)
 
 ### UX-PAR-06 · major · On a run's page, the Runs item is not active, and the "Runs" crumb is marked as the current page
 
@@ -120,7 +120,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** none needed.
 - **Proposal:** use `exact: true` for Home only and fuzzy matching for Runs and Launch, in the sidebar and the tab bar. Give crumb links `activeOptions={{ exact: true }}`, or set `aria-current` by hand, and add a test that checks exactly one `aria-current="page"` per nav on `/runs/$id`.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): Runs and Launch active on their child pages, crumb links exact
 
 ### UX-PAR-07 · minor · Sidebar: no active-run count badge, and the status pill has a dot instead of a check icon
 
@@ -130,7 +130,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** the count can be served from `GET /runs:summary?group_by=state`, summing the `ACTIVE` keys. The shell would need one summary fetch, refreshed on stream frames.
 - **Proposal:** add the badge, with its count also in screen-reader text, and use the check icon in the pill. The red pill already handles the "Server not reached" state.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the active-run badge, with screen-reader text, and the check icon
 
 ### UX-PAR-08 · major · Phone: the top bar's second row, with the back arrow, the page title as `h1` and the subtitle, is missing
 
@@ -178,7 +178,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** can be served from `GET /version` (`version`, `node`, `account`, `executor`, `runs_root`). The wording must follow the executor: with `local`, the heads are not tmux sessions on a login node.
 - **Proposal:** add the card through `useServer()`, with executor-specific text for Heads and Tasks.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): "Where your runs go" from `GET /version`; ui-spec §4.2 note "UI parity A"
 
 ### UX-PAR-12 · minor · Count cards have no detail line and are not links
 
@@ -188,7 +188,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** the detail lines can be served from the lists Home already loads: active `origin`, and the newest ended run by state. The links need the Runs filter in the URL (`/runs?state=failed`), which `RunsPage.tsx:54` keeps in component state only.
 - **Proposal:** put the Runs filter and `q` in the URL search params, make each card a link to them, and add the detail line.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): detail lines, and cards that link to `/runs?state=`; the `state` and `q` filters in the URL (`q` in `ac5ae2c`, CR-P3PARA-01); zero cards stay hidden
 
 ### UX-PAR-13 · minor · The subtitle wording differs
 
@@ -197,7 +197,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** can be served from the summary groups.
 - **Proposal:** list the active states that have a non-zero count, as the board does, and read "No run is active" at zero.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the active states with runs, or "No run is active"
 
 ### UX-PAR-14 · minor · Active and recent rows: layout, failure context and the terminal marker
 
@@ -209,7 +209,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** the terminal marker can be served from `origin`. The failed context can be served as `failure.class` with the message. "exit N · PROCESS (tag)" is **not** servable from `Run`: `failure` has `task_id`, but no process, tag or exit code.
 - **Proposal:** match the board's grid. Fall back as in UX-PAR-16. Ask P1 Task 29 to add `process`, `tag` and `exit_code` to `failure`, or to `summary.last_failure`.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the layout, the terminal marker and the class fallback; "exit N · PROCESS (tag)" stays for P1 Task 29
 
 ### UX-PAR-15 · minor · Your pipelines: not links, no mark
 
@@ -217,7 +217,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **Evidence:** ui-spec §4.2, note 2026-10-31: "Your pipelines, … as text (launching from one with the form prefilled waits for Copy to a new launch, §4.6)". This excludes the links on purpose. The board asks only for the directory to be filled in, which needs no `:launch-template`.
 - **Proposal:** add the mark now (UX-PAR-01). For the link, ask Thomas through the inbox whether `/launch?location=<dir>` (location only, then Load) may come before Copy to a new launch.
 - **Found by:** ux-reviewer
-- **Status:** open (links deliberately left out)
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the mark; the links stay out on purpose
 
 ---
 
@@ -231,7 +231,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** `failure.class` can be served, and so can `summary.tasks.failed`.
 - **Proposal:** when the message is empty, show "<class word> · <n> failed" ("tool error · 2 tasks failed"). Otherwise show "<class word> · <message>", clamped to two lines. This needs a class-word map (`tool_error` → "tool error", `head_lost` → "head lost", `engine_fault` → "engine error"). Same fix on Home (UX-PAR-14).
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): `failureText`: "<class word> · <message>" or "<class word> · n tasks failed", never blank
 
 ### UX-PAR-17 · minor · Workflow and Tasks cells: the version's line and Snakemake wording
 
@@ -242,7 +242,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
   - "n retried" **cannot**: `Run.summary.tasks` has no retries.
 - **Proposal:** put the version inline and use the engine word. Leave "retried" until `summary.tasks.retried` exists.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): "jobs", "known so far" and the inline version; "n retried" stays for when `summary.tasks` has retries
 
 ### UX-PAR-18 · minor · Small differences in the head, toolbar and footer
 
@@ -255,7 +255,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** can be served from `/version` and from the summary total.
 - **Proposal:** add these. Keep "of N" only while the active filter's total is known from `runs:summary`; ui-spec §4.11 says to show a count only when a total exists.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): where heads run, the icons, and the "n of N runs · newest first" footer
 
 ---
 
@@ -267,7 +267,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** all of it can be served (`ended_at`, `summary.tasks.failed`).
 - **Proposal:** match the board's order, and add "ended <when>" on terminal runs.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the board's order, and "ended <when>" on an ended run
 
 ### UX-PAR-20 · major · Snakemake runs are described in Nextflow words
 
@@ -277,7 +277,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** can be served from `workflow.engine`.
 - **Proposal:** add one `words(engine)` helper: `{unit: "task" | "job", group: "process" | "rule"}`. Use it on Runs, Home and the run detail.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): `words(engine)` on Runs, Home and the run detail; some accessible names still say Tasks (CR-P3PARA-07, open)
 
 ### UX-PAR-21 · major · Facts: the layout, where they sit, their labels and missing rows
 
@@ -302,7 +302,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** all of it can be served. The run directory is `runs_root/<id>` from `/version` for driven runs, and absent for `cli-observed`. The executor comes from `/version`.
 - **Proposal:** move the facts into the shared header (it becomes `RunHeader.tsx`, the file P1 Task 32 already plans), as a grid in a `FoldSection`, with the board's labels, `NAMES[engine]` and the missing rows.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): `RunHeader.tsx`: facts as a folding grid in the header that every tab shares; ui-spec §4.4 note "UI parity A"
 
 ### UX-PAR-22 · major · Task count chips: no label, no state tint, zeros hidden, no retried count
 
@@ -310,7 +310,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** can be served: `task_counts`, and retried as the sum of `processes[].retries`.
 - **Proposal:** show a fixed set (succeeded, running, pending including submitted, failed always, retried, then any other non-zero state). Each chip uses its `--sp-state-*-bg` and `-fg` tint (UX-PAR-05), with a "Tasks" label before the row. The same row goes on the phone header card.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): tinted chips with a label, failed and retried always
 
 ### UX-PAR-23 · major · The Summary aside is missing
 
@@ -330,7 +330,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
   - **Results and reports cannot** be served: no route, P1 Task 31.
 - **Proposal:** add the aside at 1200 px and wider, stacked under the main column below that, with the four servable cards. Results waits for Task 31.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the head by hand, the log tail, the head ended and Parameters; Results and reports stay for P1 Task 31. The tail's "Empty." is in `ac5ae2c`; its level tint does not show (CR-P3PARA-04, open). The copied commands are not quoted (SEC-P3PARA-01, open)
 
 ### UX-PAR-24 · major · Stage rows and the process table lose state colour and icons, progress bars and context
 
@@ -348,7 +348,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** can be served from the counts in `/stages` and `/processes`.
 - **Proposal:** add a `StageWord` and `ProcessWord` component (icon and word, colour from the tokens); a 72 px bar using `--sp-indigo-500` when done and `--sp-state-running` when running, with the value as text beside it; an explicit chevron in the summary; the intro and the legend.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): stage rows and the process table with state words, tones and bars, the intro and the legend
 
 ### UX-PAR-25 · major · A failed run has no "Why it failed" section
 
@@ -359,7 +359,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
   - The per-job cards **cannot**: they need SLURM state and reason, memory and time asked and used, and the last lines, which come in P1 Tasks 29 and 32.
 - **Proposal:** add the section now with the run-level part, open first on failed runs. Leave a slot for the job cards of Task 32.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the run-level part; the per-job cards stay for P1 Tasks 29 and 32
 
 ### UX-PAR-26 · major · Tasks tab: the filters, the state display and live refresh
 
@@ -378,7 +378,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
   - The columns Attempt, SLURM job, Exit, Duration, CPUs, CPU %, Memory, Peak memory, Time limit and Files **cannot**: `Task` lacks them (P1 Tasks 28, 29 and 32).
 - **Proposal:** use segmented `<button aria-pressed>` filters, mirroring the Runs filters, with counts (Retried waits for the API). Use the last segment of the process name in options, with the count. Add a task-state word with icon and rail, refetch on frames while the run is active, and add the count line.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the filters with counts, the state words, the rails and live refresh; the Retried filter and the other columns stay for P1 Tasks 28, 29 and 32
 
 ### UX-PAR-27 · minor · Logs tab: nothing open by default, and Reload, Download, the description and the job-files line are missing
 
@@ -393,7 +393,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
   - **The file path cannot**: `/logs` returns text only. Deriving it on the client from `runs_root` and `.spectio/<engine>.log` would hard-code a layout. Add the path to the API in P1 Task 32.
 - **Proposal:** add the servable parts now, and the path with Task 32.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the engine log open by default, Reload, Download (attached anchor in `ac5ae2c`, CR-P3PARA-08) and the footer; the file path stays for P1 Task 32
 
 ### UX-PAR-28 · minor · Header actions: the Copy menu, Resume and Copy to a new launch
 
@@ -415,7 +415,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** the counts can be served from `task_counts`. The escalation text must follow the executor: tmux Ctrl-C with SLURM; process-group signals with the local executor (`runner/local.py:108`, `headscript.py:37`).
 - **Proposal:** add the run-specific sentence and an executor-specific box. Change the board's confirm label to "Cancel the run" when the findings are applied.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parA, 2026-10-31, `28a241c`): the run's sentence and the executor's box; the board's label waits for `/apply-findings`
 
 ---
 
