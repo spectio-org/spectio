@@ -690,6 +690,25 @@ def test_head_report_after_the_end_changes_no_state(engine: Engine, writer: Writ
     assert launch.exit_code == 0
 
 
+@pytest.mark.parametrize("state", ["running", "cancelling"])
+def test_head_end_in_the_spool_grace_records_the_end_only(
+    engine: Engine, writer: Writer, state: str
+) -> None:
+    """P3-parB: while the runner waits for an ended head's last spool events (the end grace), it
+    reports the end with `final=False`: the launch records its exit, so the run no longer reads
+    "head alive", and the run does not move until the final report."""
+    ingest_events(writer, task(1, "onTaskStart"))
+    set_state(writer, state)
+    head(writer, report(state="exited", ended=True, exit_code=0, final=False))
+    assert run_row(engine).state == state
+    assert attempt_states(engine) == [("ALIGN", "S01", 1, "running")]
+    with engine.connect() as conn:
+        launch = conn.execute(select(launches).where(launches.c.id == LAUNCH_ID)).one()
+    assert launch.exited_at is not None and launch.exit_code == 0
+    head(writer, report(state="exited", ended=True, exit_code=0))
+    assert run_row(engine).state == ("cancelled" if state == "cancelling" else "running")
+
+
 def test_head_end_before_flow_complete_still_succeeds(engine: Engine, writer: Writer) -> None:
     # The head report can land before the engine's onFlowComplete (CR-P3T04-01).
     ingest_events(writer, task(1, "onTaskStart"))

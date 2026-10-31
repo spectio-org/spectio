@@ -118,6 +118,9 @@ def apply_head_report(conn: Connection, launch_id: str, report: HeadReport) -> N
             .where(launches.c.id == launch_id, launches.c.exited_at.is_(None))
             .values(exited_at=p.now)
         )
+    if not report.final:  # in the runner's end grace: the end is recorded, the run waits
+        p.finish()
+        return
     failure = report.failure
     if p.state == "cancelling" and report.ended:
         p.end_launch()
