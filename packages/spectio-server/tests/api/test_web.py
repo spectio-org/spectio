@@ -108,6 +108,14 @@ def test_symlinked_assets_dir_not_followed(
     )
 
 
+def test_screens_isolate_referrer_and_opener(web: TestClient) -> None:
+    # SEC-P3T19-03: run pages carry run IDs in their URL and may link out (Task 20).
+    for path in ("/", "/runs/run_01K8T2F1XTVRES000000000000", "/assets/index-AbC1.js"):
+        r = web.get(path)
+        assert r.headers["referrer-policy"] == "no-referrer", path
+        assert r.headers["cross-origin-opener-policy"] == "same-origin", path
+
+
 def test_fifo_not_opened(web: TestClient, dist: Path) -> None:
     os.mkfifo(dist / "assets" / "pipe.js")
     assert web.get("/assets/pipe.js").status_code == 404  # and the request does not hang

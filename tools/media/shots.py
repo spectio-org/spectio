@@ -44,9 +44,12 @@ class Shot:
     height: int
     caption: str
     clicks: tuple[str, ...] = ()  # CSS selectors clicked before the capture
-    themes: tuple[str, ...] = ("light",)  # boards: light only for now
+    themes: tuple[str, ...] = ("light",)  # boards: light only for now; live screens: both
     live: tuple[str, ...] | None = None  # a live page: steps of live.js; `board` is its path
 
+
+APP_LAUNCH = ("fill:Pipeline=$SPECTIO_DEMO_PIPELINE", "click:Load", "wait:no parameter schema",
+              "click:Add a parameter", "fill:Name, row 1=outdir", "fill:Value, row 1=results")
 
 REGISTRY: dict[str, Shot] = {
     s.name: s
@@ -67,8 +70,9 @@ REGISTRY: dict[str, Shot] = {
         # Live: from a running `spectio serve` at $SPECTIO_URL, with the synthetic Nextflow pipeline
         # copied to $SPECTIO_DEMO_PIPELINE (a path free of forbidden terms, fixtures.yaml).
         Shot("app-launch", "/launch", 1440, 1000, "0.0.1, live: the launch form with the synthetic Nextflow pipeline loaded",
-             live=("fill:Pipeline=$SPECTIO_DEMO_PIPELINE", "click:Load", "wait:no parameter schema",
-                   "click:Add a parameter", "fill:Name, row 1=outdir", "fill:Value, row 1=results")),
+             themes=("light", "dark"), live=APP_LAUNCH),
+        Shot("app-launch-phone", "/launch", 390, 844, "0.0.1, live: the same launch form on a phone",
+             themes=("light", "dark"), live=APP_LAUNCH),
     )
 }
 
@@ -93,7 +97,7 @@ def render(shot: Shot, theme: str) -> Path | None:
             cmd = [*preload, str(Path(__file__).resolve().parent / "live.js"), shot.board,
                    str(shot.width), str(shot.height), str(png), *shot.live]
         subprocess.run(cmd, check=True, capture_output=True, cwd=REPO,
-                       env={**os.environ, "SPECTIO_PAGE_TEXT": str(text)})
+                       env={**os.environ, "SPECTIO_PAGE_TEXT": str(text), "SPECTIO_THEME": theme})
         found = sanitize.leaks(text.read_text(encoding="utf-8"))
         if found:
             sys.exit(f"{shot.name}: forbidden term visible in the rendered page: {found}")

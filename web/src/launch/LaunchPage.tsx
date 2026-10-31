@@ -287,7 +287,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
               </Button>
             </Group>
             {loaded && (
-              <Paper bg="var(--mantine-color-gray-0)" p="sm" mt="sm">
+              <Paper bg="var(--sp-surface-subtle)" p="sm" mt="sm">
                 <Text fw={600}>
                   {loaded.name}
                   {loaded.version ? ` ${loaded.version}` : ""}
@@ -470,8 +470,9 @@ function KeyValueRows({ rows, onChange }: { rows: Row[]; onChange: (rows: Row[])
   return (
     <Stack gap="xs">
       {rows.map((row, i) => (
-        <Group key={i} gap="xs" align="flex-end" wrap="nowrap">
+        <Group key={i} gap="xs" align="flex-end" wrap="wrap">
           <TextInput
+            style={{ flex: "1 1 140px" }}
             label={`Name, row ${i + 1}`}
             value={row.key}
             onChange={(e) => set(i, { ...row, key: e.currentTarget.value })}
@@ -479,7 +480,7 @@ function KeyValueRows({ rows, onChange }: { rows: Row[]; onChange: (rows: Row[])
             autoComplete="off"
           />
           <TextInput
-            style={{ flex: 1 }}
+            style={{ flex: "2 1 180px" }}
             label={`Value, row ${i + 1}`}
             value={row.value}
             onChange={(e) => set(i, { ...row, value: e.currentTarget.value })}

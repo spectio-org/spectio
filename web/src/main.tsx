@@ -5,10 +5,11 @@ import { RouterProvider } from "@tanstack/react-router";
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 import { router } from "./routes";
+import { providerProps } from "./shell/theme";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <MantineProvider>
+    <MantineProvider {...providerProps}>
       <RouterProvider router={router} />
     </MantineProvider>
   </StrictMode>,
