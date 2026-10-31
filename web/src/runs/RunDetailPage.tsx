@@ -22,6 +22,7 @@ import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
 import { FoldSection } from "../shell/FoldSection";
+import { usePhone } from "../shell/layout";
 import { RunHeader } from "./RunHeader";
 import { Word, runName } from "./RunState";
 import {
@@ -73,7 +74,38 @@ function Bar({ done, all }: { done: number; all: number }) {
   );
 }
 
+/** On the phone, one card per process (MLiteRunDetail; UX-PAR-10): name and state word, the
+ * bar, then the counts the table has in columns. */
+function ProcessCards({ processes, ended, label, w }: { processes: Process[]; ended: boolean; label: string; w: Words }) {
+  return (
+    <ul className="sp-cards-list" aria-label={label}>
+      {processes.map((p) => {
+        const all = total(p.counts);
+        const done = sum(p.counts, "succeeded", "cached", "stored");
+        const word = processWord(p.counts, ended);
+        return (
+          <li key={p.process} className="sp-row-card" data-rail="" data-tone={tone(word)}>
+            <span className="sp-row-card-top">
+              <ProcessName name={p.process} />
+              <Word state={word} word={word} />
+            </span>
+            <span className="sp-done">
+              <Bar done={done} all={all} /> {done} / {all} {w.units}
+            </span>
+            <span className="sp-muted">
+              {sum(p.counts, "running")} running · {sum(p.counts, "pending", "submitted")} pending ·{" "}
+              {sum(p.counts, "failed")} failed · {p.retries} retried
+            </span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
 function ProcessTable({ processes, ended, label, w }: { processes: Process[]; ended: boolean; label: string; w: Words }) {
+  const phone = usePhone();
+  if (phone) return <ProcessCards processes={processes} ended={ended} label={label} w={w} />;
   return (
     <div className="sp-table-wrap">
       <table className="sp-table" aria-label={label}>
@@ -81,7 +113,7 @@ function ProcessTable({ processes, ended, label, w }: { processes: Process[]; en
           <tr>
             <th scope="col">{w.Group}, first-seen order</th>
             <th scope="col">State</th>
-            <th scope="col">{w.units[0].toUpperCase() + w.units.slice(1)} done</th>
+            <th scope="col">{w.Units} done</th>
             <th scope="col" className="sp-num" data-narrow="">Running</th>
             <th scope="col" className="sp-num" data-narrow="">Pending</th>
             <th scope="col" className="sp-num">Failed</th>
@@ -214,7 +246,7 @@ function WhyItFailed({ run, onTasks }: { run: RunDetail; onTasks: () => void }) 
   const failure = run.failure as { class?: unknown; message?: unknown } | null;
   const kind = typeof failure?.class === "string" ? failure.class : null;
   const message = typeof failure?.message === "string" ? failure.message.trim() : "";
-  const { unit, units } = words(run.workflow.engine);
+  const { unit, units, Units } = words(run.workflow.engine);
   const failed = run.summary.tasks.failed;
   const headline = failed > 0 ? `${plural(failed, unit, units)} failed, and the run stopped` : kind ? `The run stopped: ${classWord(kind)}` : "The run stopped";
   return (
@@ -222,7 +254,7 @@ function WhyItFailed({ run, onTasks }: { run: RunDetail; onTasks: () => void }) 
       {failed > 0 && (
         <p className="sp-link-end">
           <button type="button" className="sp-link-button" onClick={onTasks}>
-            Tasks, filtered to Failed <Icon path={ICONS.arrowRight} size={13} />
+            {Units}, filtered to Failed <Icon path={ICONS.arrowRight} size={13} />
           </button>
         </p>
       )}
@@ -391,6 +423,7 @@ function TasksPanel({
 }) {
   const id = run.id;
   const w = words(run.workflow.engine);
+  const phone = usePhone();
   const [process, setProcess] = useState("");
   const [shown, setShown] = useState<Shown | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -431,9 +464,9 @@ function TasksPanel({
   const count = (states: string[] | null) => (states ? sum(counts, ...states) : total(counts));
   const tasks = shown?.rows ?? null;
   return (
-    <section className="sp-runs" aria-label={w.units === "jobs" ? "Jobs" : "Tasks"}>
+    <section className="sp-runs" aria-label={w.Units}>
       <div className="sp-filters">
-        <div className="sp-segments" role="group" aria-label="Show tasks">
+        <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
           {TASK_FILTERS.map((f, i) => (
             <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
               {f.label}
@@ -462,12 +495,29 @@ function TasksPanel({
       {error && <p role="alert">The {w.units} could not be read: {error}</p>}
       {tasks === null && !error && <p className="sp-muted">Loading the {w.units}…</p>}
       {tasks?.length === 0 && <p className="sp-empty">No {w.unit} matches these filters.</p>}
-      {!!tasks?.length && (
+      {!!tasks?.length && phone && (
+        <ul className="sp-cards-list" aria-label={w.Units}>
+          {tasks.map((t) => (
+            <li key={t.id} className="sp-row-card sp-task" data-rail="" data-tone={tone(t.state)}>
+              <span className="sp-row-card-top">
+                <span>
+                  <strong>
+                    <ProcessName name={t.process} />
+                  </strong>
+                  {(t.tag ?? t.name) && <> ({t.tag ?? t.name})</>}
+                </span>
+                <Word state={t.state} word={taskWord(t.state)} />
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+      {!!tasks?.length && !phone && (
         <div className="sp-table-wrap">
-          <table className="sp-table" aria-label="Tasks">
+          <table className="sp-table" aria-label={w.Units}>
             <thead>
               <tr>
-                <th scope="col">{w.units === "jobs" ? "Job" : "Task"}</th>
+                <th scope="col">{w.Unit}</th>
                 <th scope="col">State</th>
               </tr>
             </thead>
@@ -640,6 +690,7 @@ function CancelDialog({ run, server, opened, onClose, onConfirm }: { run: RunDet
 export function RunDetailPage({ id }: { id: string }) {
   const valid = RUN_ID.test(id);
   const server = useServer();
+  const phone = usePhone();
   const [run, setRun] = useState<RunDetail | null>(null);
   const [processes, setProcesses] = useState<Process[]>([]);
   const [stages, setStages] = useState<Stage[]>([]);
@@ -703,6 +754,7 @@ export function RunDetailPage({ id }: { id: string }) {
     setTab("logs");
   };
   const w = words(run.workflow.engine);
+  const params = Object.keys(run.params).length;
 
   return (
     <div className="sp-runs">
@@ -721,7 +773,7 @@ export function RunDetailPage({ id }: { id: string }) {
       <Tabs value={tab} onChange={setTab} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="summary">Summary</Tabs.Tab>
-          <Tabs.Tab value="tasks">{w.units === "jobs" ? "Jobs" : "Tasks"}</Tabs.Tab>
+          <Tabs.Tab value="tasks">{w.Units}</Tabs.Tab>
           <Tabs.Tab value="parameters">Parameters</Tabs.Tab>
           <Tabs.Tab value="logs">Logs</Tabs.Tab>
         </Tabs.List>
@@ -738,8 +790,12 @@ export function RunDetailPage({ id }: { id: string }) {
           <TasksPanel run={run} processes={processes} filter={filter} setFilter={setTaskFilter} />
         </Tabs.Panel>
         <Tabs.Panel value="parameters" pt="md">
-          {Object.keys(run.params).length === 0 ? (
+          {params === 0 ? (
             <p className="sp-empty">No parameters were set at launch.</p>
+          ) : phone ? (
+            <div className="sp-card">
+              <ParamsList params={run.params} />
+            </div>
           ) : (
             <div className="sp-table-wrap">
               <table className="sp-table" aria-label="Parameters">

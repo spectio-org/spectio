@@ -413,7 +413,8 @@ def test_login_timeout_kills_the_group(
     while time.monotonic() < deadline:
         try:
             state = Path(f"/proc/{pid}/stat").read_text().rsplit(") ", 1)[1][0]
-        except FileNotFoundError:
+        except (FileNotFoundError, ProcessLookupError):
+            # Gone: reaped before the open (ENOENT) or between the open and the read (ESRCH).
             return
         if state == "Z":
             return

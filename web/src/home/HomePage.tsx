@@ -6,11 +6,12 @@ import { type Run, type RunState, type ServerVersion, type Summary, listRuns, ru
 import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { failureText, Pipeline, RunLink, StateWord, runName, stateContext, tasksText } from "../runs/RunState";
-import { NoRuns } from "../runs/RunsPage";
-import { ACTIVE, isTerminal, plural, tone, when, words } from "../runs/stateWord";
+import { NoRuns, RunCard } from "../runs/RunsPage";
+import { ACTIVE, executorLabel, isTerminal, plural, tone, when, words } from "../runs/stateWord";
 import { useServer } from "../server";
 import { EngineMark } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
+import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
 
 const CARD_ORDER: RunState[] = ["running", "queued", "cancelling", "failed", "succeeded", "cancelled"];
@@ -67,7 +68,7 @@ function endedContext(run: Run): string {
 /** Where heads, tasks and run directories are, from `GET /version` (UX-PAR-11). */
 function WhereRunsGo({ server }: { server: ServerVersion }) {
   const local = server.executor === "local";
-  const executor = server.executor.toUpperCase();
+  const executor = executorLabel(server.executor);
   return (
     <FoldSection id="home-where" screen="home" icon={ICONS.server} title="Where your runs go" summary={`${server.node} · ${executor}`} card>
       <ul className="sp-where">
@@ -96,6 +97,7 @@ function WhereRunsGo({ server }: { server: ServerVersion }) {
  * the pipeline directories of the recent runs and where runs go, refreshed from the stream. */
 export function HomePage() {
   const server = useServer();
+  const phone = usePhone();
   const [summary, setSummary] = useState<Summary | null>(null);
   const [active, setActive] = useState<Run[]>([]);
   const [ended, setEnded] = useState<Run[]>([]);
@@ -187,6 +189,12 @@ export function HomePage() {
                 </Link>
                 {active.length === 0 ? (
                   <p className="sp-muted">No run is active.</p>
+                ) : phone ? (
+                  <ul className="sp-run-cards" aria-label="Active runs">
+                    {active.map((run) => (
+                      <RunCard key={run.id} run={run} />
+                    ))}
+                  </ul>
                 ) : (
                   <ul className="sp-list">
                     {active.map((run) => (
@@ -211,6 +219,12 @@ export function HomePage() {
               <FoldSection id="home-ended" screen="home" icon={ICONS.history} title="Finished recently" summary={`${ended.length} runs`}>
                 {ended.length === 0 ? (
                   <p className="sp-muted">No run has ended yet.</p>
+                ) : phone ? (
+                  <ul className="sp-run-cards" aria-label="Finished recently">
+                    {ended.map((run) => (
+                      <RunCard key={run.id} run={run} />
+                    ))}
+                  </ul>
                 ) : (
                   <ul className="sp-list sp-ended">
                     {ended.map((run) => (

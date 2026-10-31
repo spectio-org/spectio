@@ -140,7 +140,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** none needed. The title and subtitle come from the page, as the crumb does (`usePageCrumb`).
 - **Proposal:** extend `CrumbContext` to carry `{title, sub, back}`. Render the second row on the phone with a 44 px back link, named "Back to Runs", and make that title the page's `h1`. On the phone, the in-content title becomes a non-heading or is hidden.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parB, 2026-10-31, `20f2de9`): the phone top bar's second row (`shell/layout.tsx`), with the page title as the `h1`, its subtitle, and a 44 px link named "Back to Runs" on a run; Home keeps its greeting in the page; ui-spec §4.11 note "UI parity B"
 
 ### UX-PAR-09 · major · Phone touch targets are 36 px, below the 44 px rule
 
@@ -150,7 +150,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** none needed.
 - **Proposal:** add a phone theme override, `Button` with `size="md"` and a 44 px minimum height under `[data-layout=phone]`. Make the pinned Launch full width at 48 px, as on MLiteLaunch.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parB, 2026-10-31, `20f2de9`, `d898847`): buttons, inputs, tabs and fold heads 44 px on the phone; the pinned Launch full width at 48 px
 
 ### UX-PAR-10 · major · Phone: tables where the boards and the spec ask for stacked cards
 
@@ -164,7 +164,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** none needed. The cards use the same fields.
 - **Proposal:** on `data-layout=phone`, render `RunCard` lists instead of `<table>`, show the facts as label and value rows, and show stages and processes as cards with bars. Make the segment row scroll sideways (`flex-wrap: nowrap; overflow-x: auto`), and lay the Home cards out two by two.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parB, 2026-10-31, `20f2de9`): run cards on the runs list and Home, process, task and parameter cards on the run, facts as rows, count cards two by two, segments that scroll sideways; ui-spec §4.3 and §4.11 notes "UI parity B". The folding "ACTIVE · n" group is not built (CR-P3PARB-02 r1, follow-up FU-P3-26)
 
 ---
 
@@ -434,7 +434,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** can be served: `fa_icon`, `description` and `format` are in `Inspected.schema`, and "changed" compares the field's value with its default on the client.
 - **Proposal:** extend `Section` with `{description, icon}`, map `fa_icon` names to a small set of lucide paths with a neutral fallback, and render the groups with `FoldSection` (UX-PAR-02).
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parB, 2026-10-31, `d898847`): each group a `FoldSection` with a line icon from `fa_icon` (`groupIcon`), description, counts and status, open on an issue or a change; ui-spec §4.6 note "UI parity B". The field hints sit above the input (CR-P3PARB-06 r1, FU-P3-26)
 
 ### UX-PAR-31 · major · Snakemake: a nested config map renders as one JSON textarea, not as a group of fields
 
@@ -444,7 +444,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** can be served: the `properties` of nested objects are in `Inspected.schema`.
 - **Proposal:** for a schema without `$defs`, make each top-level `type: object` with `properties` its own section, with dotted keys (`ref.species`). Rebuild the nested object on submit, and keep `json` only for arrays and free-form maps. The 422 field mapping (`formKey`) must accept dotted names.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parB, 2026-10-31, `d898847`, `614b81f`): for Snakemake only, nested maps as sections of dotted keys, rebuilt on submit, a map with one value set sent whole; `formKey` maps `params.ref.release`; a Nextflow map stays one JSON field
 
 ### UX-PAR-32 · major · No params.json or config.yaml preview
 
@@ -454,7 +454,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** can be served on the client: it is the `params` object that `submit()` builds (`LaunchPage.tsx:187-192`).
 - **Proposal:** add a folding preview card, a `<pre>` of the params built through one shared function so the preview and the request cannot differ. Show YAML for Snakemake.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parB, 2026-10-31, `d898847`, `35ed465`): the preview in the aside, built by the same `buildParams` as the request; YAML for Snakemake
 
 ### UX-PAR-33 · minor · Pipeline card and "Where it runs": smaller differences
 
@@ -466,7 +466,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** all of it can be served (`/version`, `Inspected`).
 - **Proposal:** add these, and use one `executorLabel()` helper in both places.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parB, 2026-10-31, `d898847`): the Loaded card's mark and status, the engine's profile hint, the Engine and Tasks rows and the closing line of "Where it runs", `executorLabel()` in the aside, the sidebar foot, Home and the run's facts
 
 ### UX-PAR-34 · minor · Phone: the pinned Launch bar has no summary
 
@@ -474,7 +474,7 @@ A parity audit of the built Spectio 0.0.1 screens (`web/src`, branch `autopilot/
 - **API:** can be served on the client.
 - **Proposal:** show the summary when Launch is enabled and the reason when it is not, in the same slot, linked by `aria-describedby`.
 - **Found by:** ux-reviewer
-- **Status:** open
+- **Status:** applied (P3-parB, 2026-10-31, `d898847`): the summary or the reason above the 48 px Launch, named by `aria-describedby`
 
 ---
 

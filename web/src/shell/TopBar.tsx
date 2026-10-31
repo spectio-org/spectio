@@ -102,27 +102,33 @@ interface Props {
   server: ServerVersion | null;
   down: string | null;
   crumb: string | null;
+  /** Receives the phone's title row, where a page puts its h1 (UX-PAR-08). */
+  titleRow: (row: HTMLElement | null) => void;
 }
 
 /** The floating top bar of the Paper shell (LiteTopbar), or its compact phone form (MLiteTopbar). */
-export function TopBar({ phone, server, down, crumb }: Props) {
+export function TopBar({ phone, server, down, crumb, titleRow }: Props) {
   if (phone) {
     const node = server ? `Server on ${server.node}, online` : down ? "Server not reached" : "Connecting";
     return (
       <header className="sp-mtopbar">
-        <Link to="/" className="sp-home" aria-label="Spectio, home">
-          <Mark width={34} />
-          <span className="sp-word">Spectio</span>
-        </Link>
-        <span className="sp-grow" />
-        <span className="sp-node" role="img" aria-label={node} data-down={!!down || undefined}>
-          <span className="sp-dot" aria-hidden="true" />
-          <span aria-hidden="true">{server?.node ?? (down ? "offline" : "…")}</span>
-        </span>
-        <Placeholder name="Search" path={SEARCH} className="sp-key sp-narrow-hide" />
-        <Placeholder name="Notifications" path={BELL} className="sp-key sp-narrow-hide" />
-        <ThemeSwitch />
-        <Placeholder name="Account" path={PERSON} className="sp-key sp-avatar" />
+        <div className="sp-mtopbar-row">
+          <Link to="/" className="sp-home" aria-label="Spectio, home">
+            <Mark width={34} />
+            <span className="sp-word">Spectio</span>
+          </Link>
+          <span className="sp-grow" />
+          <span className="sp-node" role="img" aria-label={node} data-down={!!down || undefined}>
+            <span className="sp-dot" aria-hidden="true" />
+            <span aria-hidden="true">{server?.node ?? (down ? "offline" : "…")}</span>
+          </span>
+          <Placeholder name="Search" path={SEARCH} className="sp-key sp-narrow-hide" />
+          <Placeholder name="Notifications" path={BELL} className="sp-key sp-narrow-hide" />
+          <ThemeSwitch />
+          <Placeholder name="Account" path={PERSON} className="sp-key sp-avatar" />
+        </div>
+        {/* The page's title row (PhoneTitle); hidden while empty, as on Home (MLiteHome). */}
+        <div className="sp-mtitle" ref={titleRow} />
       </header>
     );
   }

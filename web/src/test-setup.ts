@@ -17,6 +17,12 @@ window.matchMedia ??= (query: string) =>
     dispatchEvent: () => false,
   }) as MediaQueryList;
 
+// A test that sets a viewport (testing.tsx `viewport`) gets the plain one back afterwards.
+const plainMatchMedia = window.matchMedia;
+afterEach(() => {
+  window.matchMedia = plainMatchMedia;
+});
+
 globalThis.ResizeObserver ??= class {
   observe() {}
   unobserve() {}

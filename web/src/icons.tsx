@@ -8,6 +8,7 @@ export const ICONS = {
   launch: "M12 3v12 M7 8l5-5 5 5 M5 21h14",
   chevronDown: "M6 9l6 6 6-6",
   chevronRight: "M9 6l6 6-6 6",
+  chevronLeft: "M15 6l-6 6 6 6",
   arrowRight: "M5 12h14 M13 6l6 6-6 6",
   check: "M5 12l5 5 9-10",
   cross: "M6 6l12 12 M18 6L6 18",
@@ -28,6 +29,10 @@ export const ICONS = {
   server: "M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01",
   copy: "M9 9h11v11H9z M5 15H4V4h11v1",
   download: "M12 4v11 M7 10l5 5 5-5 M5 20h14",
+  dna: "M7 3c0 6 10 6 10 12s-10 6-10 6 M17 3c0 6-10 6-10 12s10 6 10 6 M9 7h6 M9 17h6",
+  scissors: "M6 9a3 3 0 1 0 0-.01 M6 18a3 3 0 1 0 0-.01 M8.5 7.5L20 18 M8.5 16.5L20 6",
+  skip: "M5 5l8 7-8 7z M13 5l6 7-6 7",
+  chart: "M4 20h16 M7 16v-5 M12 16V7 M17 16v-8",
   reload: "M20 11a8 8 0 1 0-2.3 5.7 M20 4v7h-7",
 } as const;
 
@@ -47,4 +52,34 @@ export function Icon({ path, size = 24, stroke = 1.8 }: { path: string; size?: n
       <path d={path} />
     </svg>
   );
+}
+
+// nf-core groups name a Font Awesome icon (`fa_icon`); Spectio draws a few of them as its own line
+// icons and every other one as the neutral sliders (UX-PAR-30). No icon font is loaded.
+const GROUP_ICONS: Record<string, string> = {
+  folder: ICONS.folder,
+  "folder-open": ICONS.folder,
+  "file-import": ICONS.file,
+  dna: ICONS.dna,
+  cut: ICONS.scissors,
+  scissors: ICONS.scissors,
+  "fast-forward": ICONS.skip,
+  cog: ICONS.sliders,
+  cogs: ICONS.sliders,
+  wrench: ICONS.sliders,
+  microchip: ICONS.server,
+  server: ICONS.server,
+  database: ICONS.server,
+  terminal: ICONS.terminal,
+  "chart-bar": ICONS.chart,
+  question: ICONS.info,
+  "question-circle": ICONS.info,
+  info: ICONS.info,
+  "info-circle": ICONS.info,
+};
+
+/** The line icon of a schema group's `fa_icon` ("fas fa-folder-open"), or the neutral one. */
+export function groupIcon(faIcon: string | null): string {
+  const name = faIcon?.match(/fa-([a-z-]+)\s*$/)?.[1];
+  return (name && Object.hasOwn(GROUP_ICONS, name) && GROUP_ICONS[name]) || ICONS.sliders; // SEC-P3PARB-02
 }
