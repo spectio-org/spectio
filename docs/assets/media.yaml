@@ -541,6 +541,14 @@ media:
       - docs/assets/diagrams/p3-pard-sheets-search_dark.svg
       - docs/assets/diagrams/p3-pard-sheets-search_light.png
       - docs/assets/diagrams/p3-pard-sheets-search_dark.png
+  - id: p3-t27-stages-freeze
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t27_stages_freeze.py
+    outputs:
+      - docs/assets/diagrams/p3-t27-stages-freeze_light.svg
+      - docs/assets/diagrams/p3-t27-stages-freeze_dark.svg
+      - docs/assets/diagrams/p3-t27-stages-freeze_light.png
+      - docs/assets/diagrams/p3-t27-stages-freeze_dark.png
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines
