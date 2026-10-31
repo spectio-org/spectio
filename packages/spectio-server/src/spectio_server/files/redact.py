@@ -8,8 +8,8 @@ body is read as shell too: Nextflow writes the container environment as `export`
 assignment word:
 
 - at the start of a simple command (`FOO=bar cmd`, a `beforeScript` assignment,
-  `SINGULARITYENV_X=…`, `APPTAINERENV_X=…`);
-- after `export`, `declare`, `local`, `readonly`, `typeset` and `env`;
+  `SINGULARITYENV_X=…`, `APPTAINERENV_X=…`), an array value `NAME=(…)` included;
+- after `export`, `declare`, `local`, `readonly`, `typeset` and `env`, the word quoted or not;
 - after `-e` or `--env`, or in `--env=NAME=value` (Docker, Podman), the word quoted or not.
 
 Each becomes `NAME=«hidden»`. It fails closed: from the line where the lexer meets something it
@@ -191,8 +191,8 @@ class _Lexer:
                 j = newline + 1
             try:
                 inner = _redact(self.s[body:j])
-            except _Unreadable as exc:
-                raise _Unreadable(body + exc.pos) from None
+            except _Unreadable:  # hide the whole body, not just from the failing line
+                raise _Unreadable(body) from None
             self.edits.append((body, j, inner))
             self.i = min(end + 1, len(self.s))
         self.heredocs = []
@@ -231,6 +231,9 @@ class _Lexer:
             else:
                 start = self.i
                 self.i = self._word()
+                if self.s.startswith("(", self.i) and _ASSIGN.fullmatch(self.s, start, self.i):
+                    # an array value `NAME=(…)`: the `=` stands in for `$`, same nesting rules
+                    self.i = self._dollar(self.i - 1)
                 raw = self.s[start : self.i]
                 if redirect:
                     redirect = False
@@ -255,7 +258,7 @@ class _Lexer:
         if raw.startswith("--env="):
             self._hide(start + len("--env="), raw[len("--env=") :])
         elif at_start or declaring:
-            self._hide(start, raw, quoted=False)
+            self._hide(start, raw, quoted=not at_start)
         elif prev in _ENV_FLAGS:
             self._hide(start, raw)
 

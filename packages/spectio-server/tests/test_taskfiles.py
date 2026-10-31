@@ -169,6 +169,9 @@ def test_req13_redact_lexer() -> None:
         "export ANSI=$'a\\nb\\'c'\n"
         "export SINGLE='it''s'\n"
         'FOO=bar BAZ="q" some_tool --flag=value\n'
+        "export \"QUOTED=dq1\" 'SQ=sq1'\n"
+        "declare -a arr=(sec1 'sec 2' \"$(echo ')')\")\n"
+        "arr+=(sec3)\n"
         "echo after\n"
     )
     served = redact_command_run(text)
@@ -177,6 +180,9 @@ def test_req13_redact_lexer() -> None:
         f"export ANSI={HIDDEN}\n"
         f"export SINGLE={HIDDEN}\n"
         f"FOO={HIDDEN} BAZ={HIDDEN} some_tool --flag=value\n"
+        f"export QUOTED={HIDDEN} SQ={HIDDEN}\n"
+        f"declare -a arr={HIDDEN}\n"
+        f"arr+={HIDDEN}\n"
         "echo after\n"
     )
 
@@ -209,6 +215,12 @@ def test_req13_redact_fails_closed() -> None:
     assert served == f"echo one\n{HIDDEN}\n{HIDDEN}\n{HIDDEN}\n"
     unterminated_heredoc = 'echo one\ncat << EOF\nexport X="y"\n'
     assert "y" not in redact_command_run(unterminated_heredoc).replace("«hidden»", "")
+    open_quote_in_heredoc = (
+        'echo one\ncat << EOF\nexport A="va1"\nexport B=vb2\nexport C="open\nEOF\necho two\n'
+    )
+    served = redact_command_run(open_quote_in_heredoc)
+    assert "va1" not in served and "vb2" not in served, served
+    assert served.startswith("echo one\ncat << EOF\n")
 
 
 # --- Nextflow: states ---------------------------------------------------------------------
