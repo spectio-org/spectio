@@ -4,7 +4,8 @@
   "description": "The Spectio screens (P1 Task 19): React, Vite, Mantine 7, TanStack Router. Built into web/dist, which spectio serve serves at /.",
   "type": "module",
   "scripts": {
-    "build": "tsc --noEmit && vite build",
+    "build": "tsc --noEmit && vite build && node scripts/check-dist.mjs",
+    "build:demo": "tsc --noEmit && vite build --mode demo",
     "test": "vitest run"
   },
   "dependencies": {

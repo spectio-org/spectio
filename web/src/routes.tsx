@@ -2,6 +2,7 @@ import {
   type RouterHistory,
   createRootRoute,
   createRoute,
+  createHashHistory,
   createRouter,
   useNavigate,
   useParams,
@@ -42,9 +43,10 @@ const routes = [
 
 const routeTree = root.addChildren(routes);
 
-/** The app's router; tests pass a memory history. */
+/** The app's router; tests pass a memory history. The public demo is static files under a
+ * sub-path, whose host answers unknown paths with the docs' 404: it routes by the hash. */
 export const createAppRouter = (history?: RouterHistory) => createRouter({ routeTree, history });
-export const router = createAppRouter();
+export const router = createAppRouter(import.meta.env.MODE === "demo" ? createHashHistory() : undefined);
 
 declare module "@tanstack/react-router" {
   interface Register {

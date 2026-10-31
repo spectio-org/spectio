@@ -110,6 +110,12 @@ media:
     # live, as app-run-detail-failed: its Logs tab on the head's output (?tab=logs&source=head-out)
     generator: python3 tools/media/shots.py run --shot app-run-logs --theme both
     outputs: [docs/assets/shots/app-run-logs_light.webp, docs/assets/shots/app-run-logs_dark.webp]
+  - id: demo-runs
+    kind: screenshot
+    # the public demo (npm --prefix web run build:demo), web/dist-demo copied to <dir>/demo and served with
+    # `python3 -m http.server` from <dir>; SPECTIO_URL=http://127.0.0.1:<port>/demo. The times depend on the capture time.
+    generator: python3 tools/media/shots.py run --shot demo-runs --theme light
+    outputs: [docs/assets/shots/demo-runs_light.webp]
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
@@ -526,6 +532,14 @@ media:
       - docs/assets/diagrams/p3-parc-launch-logs_dark.svg
       - docs/assets/diagrams/p3-parc-launch-logs_light.png
       - docs/assets/diagrams/p3-parc-launch-logs_dark.png
+  - id: p3-demo-static-demo
+    kind: diagram
+    generator: python3 tools/diagrams/p3_demo_static_demo.py
+    outputs:
+      - docs/assets/diagrams/p3-demo-static-demo_light.svg
+      - docs/assets/diagrams/p3-demo-static-demo_dark.svg
+      - docs/assets/diagrams/p3-demo-static-demo_light.png
+      - docs/assets/diagrams/p3-demo-static-demo_dark.png
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines

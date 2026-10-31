@@ -7,7 +7,8 @@ This folder holds the scripts that produce every recording and screenshot in the
 | Terminal casts (asciinema v2) | `cast.py` | `casts/*.yaml` | `docs/assets/casts/<name>.cast` |
 | Screenshots (WebP) | `shots.py` | `REGISTRY` in the script | `docs/assets/shots/<name>_<theme>.webp` |
 | Terminal and browser side by side | `combo.py` | `combos/*.yaml` | `docs/assets/media/<name>.mp4`; the GIF preview goes to `tools/media/out/` (PR bodies, not committed) |
-| Demo-data hygiene | `fixtures.yaml`, `sanitize.py` | — | used by the three scripts above |
+| The public demo's recorded API | `record_demo.py` | a running demo `spectio serve` | `web/demo/fixtures.json` (committed), built into `/demo/` of the docs site |
+| Demo-data hygiene | `fixtures.yaml`, `sanitize.py` | — | used by the four scripts above |
 | Churn guard | `check_churn.sh` | — | pre-commit or CI |
 
 **Requirements:**
@@ -97,6 +98,37 @@ python3 tools/media/combo.py tools/media/combos/gate-review.yaml --html-only   #
 </video>
 ```
 A PR body cannot play a video, so it uses the GIF from `tools/media/out/` instead (generated on demand, never committed, so the PR stays under the 5 MB media budget). The poster is a shot, not the GIF. The video is at most 30 s: `speed` in the YAML plays the cast faster, and `combo.py` fails above 30 s.
+
+## The public demo: `record_demo.py`
+
+The demo at `https://spectio.pages.dev/demo/` (and `/demo/` of every PR preview) is the real web UI built with `npm --prefix web run build:demo`, whose API is answered from `web/demo/fixtures.json` (`web/src/demo/stub.ts`): reads only, writes refused, no request leaves the page. The file is public, so it holds demo data only. To record it again:
+
+1. Start the demo server as for the live shots: the account `alice`, the node name `login1` in its own UTS namespace, `HOME=/g/demo-lab`, the config `/g/demo-lab/data/spectio.toml` and the venv `/opt/spectio-demo-venv` (with this checkout's packages on `PYTHONPATH` to serve this branch's API):
+
+    ```bash
+    P=$PWD/packages; unshare --uts bash -c "hostname login1 && exec setpriv --reuid=alice --regid=alice --init-groups \
+        env -i HOME=/g/demo-lab SPECTIO_CONFIG=/g/demo-lab/data/spectio.toml \
+        PYTHONPATH=$P/spectio/src:$P/spectio-sdk/src:$P/spectio-server/src PATH=/opt/spectio-demo-venv/bin:/usr/bin:/bin \
+        bash -c 'cd /g/demo-lab && exec spectio serve'"
+    ```
+
+2. Launch the runs the demo shows (the 2026-10-31 recording has five: two plain runs of the synthetic Nextflow copy, one failed in `MERGE` with `fail_mode=exit` and `fail_process=MERGE`, `variant-calling-batch-3`, `cohort-2026-scale` with 2069 tasks, and one run of `/g/demo-lab/pipelines/nf-core-demo`, a copy of the synthetic pipeline whose `manifest.name` is `nf-core/demo`: a demo copy, not an nf-core pipeline). The pipelines to inspect are `synthetic`, `synthetic-smk` and `nf-core-demo` under `/g/demo-lab/pipelines` (set up as for the live shots above).
+3. Record, then rebuild:
+
+    ```bash
+    python3 tools/media/record_demo.py --base http://127.0.0.1:8766   # -> web/demo/fixtures.json: 41 answers, 773205 bytes
+    npm --prefix web run build:demo                                    # -> web/dist-demo
+    ```
+
+What it records: `/version`, `/runs:summary?group_by=state`, the whole runs list, and per run the run, its processes, stages, every task, and the three logs (`head-out`, `head-err`, `engine`; the server's last 64 KiB of each). Lists are stored whole, so the stub filters and pages them as the server does. Before the check, Nextflow's `System: Linux <release>` banner line is cut to `System: Linux` (SEC-P3DEMO-02). The script refuses to write when `sanitize.leaks` (this file's `forbidden` terms), the recorder's own host name or its own kernel release hits, or when the file would pass 1.5 MB. The guard knows only the recorder's machine: a server on another host is not covered (SEC-P3DEMO-06). `python3 -m unittest tools/media/test_record_demo.py` checks the committed file; no CI job runs it yet (FU-P3-28). The stub moves every time in the JSON answers so that the newest run ended an hour before the page was opened; the banner says so, and the log texts keep their recorded times.
+
+The demo's screenshot (`demo-runs`) is taken from the built demo served statically under `/demo/`:
+
+```bash
+rm -rf /tmp/demo-root/demo && mkdir -p /tmp/demo-root && cp -R web/dist-demo /tmp/demo-root/demo
+(cd /tmp/demo-root && python3 -m http.server 8903 --bind 127.0.0.1) &
+SPECTIO_URL=http://127.0.0.1:8903/demo python3 tools/media/shots.py run --shot demo-runs --theme light
+```
 
 ## Demo-data hygiene: `fixtures.yaml`
 
