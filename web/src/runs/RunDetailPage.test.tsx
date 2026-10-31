@@ -421,6 +421,15 @@ test("P3-parC: the tab and the log source are in the URL: a log view can be link
   await waitFor(() => expect(router.state.location.search).toEqual({}));
 });
 
+test("P3-parC: the picked log source is kept across a tab switch (CR-P3PARC-02)", async () => {
+  detail({}, { [`${URL_}/logs?source=head-err`]: () => new Response("boom\n") });
+  app(`/runs/${ID}?tab=logs`);
+  await userEvent.click(await screen.findByRole("button", { name: "Head errors" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Summary" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
+  expect(await screen.findByRole("button", { name: "Head errors" })).toHaveAttribute("aria-pressed", "true");
+});
+
 test("P3-parC: an unknown tab or source in the URL falls back to the Summary and the engine log", async () => {
   const mock = detail();
   app(`/runs/${ID}?tab=nope&source=%2Fetc%2Fpasswd`);

@@ -785,8 +785,13 @@ export function RunDetailPage({ id }: { id: string }) {
   const navigate = useNavigate({ from: "/runs/$id" });
   const tab: Tab = search.tab ?? "summary";
   const logSource = search.source ?? "engine";
+  // the last picked log source, so Logs reopens on it after another tab
+  const lastSource = useRef(logSource);
   const go = useCallback(
-    (to: Tab, source?: LogSource) => navigate({ search: runSearch({ tab: to, source }), replace: true }),
+    (to: Tab, source?: LogSource) => {
+      if (to === "logs") lastSource.current = source ?? lastSource.current;
+      return navigate({ search: runSearch({ tab: to, source: lastSource.current }), replace: true });
+    },
     [navigate],
   );
   const [taskFilter, setTaskFilter] = useState<number | null>(null);
@@ -866,7 +871,7 @@ export function RunDetailPage({ id }: { id: string }) {
       />
       <CancelDialog run={run} server={server} opened={asking} onClose={() => setAsking(false)} onConfirm={confirm} />
 
-      <Tabs value={tab} onChange={(t) => go(TABS.find((x) => x === t) ?? "summary", logSource)} keepMounted={false}>
+      <Tabs value={tab} onChange={(t) => go(TABS.find((x) => x === t) ?? "summary")} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="summary">Summary</Tabs.Tab>
           <Tabs.Tab value="tasks">{w.Units}</Tabs.Tab>
