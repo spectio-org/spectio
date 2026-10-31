@@ -173,6 +173,19 @@ test("UX-PAR-12: the state filter lives in the URL, so Home's cards can link to 
   await waitFor(() => expect(router.state.location.search).toEqual({ state: "active" }));
 });
 
+test("UX-PAR-12: the name filter lives in the URL too, next to the state filter", async () => {
+  const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [failed], next: null } });
+  const router = app("/runs?state=failed&q=sar");
+  expect(await screen.findByRole("searchbox", { name: "Filter by run name" })).toHaveValue("sar");
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?state=failed&q=sar&limit=50"));
+  await userEvent.type(screen.getByRole("searchbox", { name: "Filter by run name" }), "ek");
+  await waitFor(() => expect(router.state.location.search).toEqual({ state: "failed", q: "sarek" }));
+  await userEvent.click(screen.getByRole("button", { name: /^All/ }));
+  await waitFor(() => expect(router.state.location.search).toEqual({ q: "sarek" }));
+  await userEvent.clear(screen.getByRole("searchbox", { name: "Filter by run name" }));
+  await waitFor(() => expect(router.state.location.search).toEqual({}));
+});
+
 test("UX-PAR-18: the footer counts the rows shown against the filter's total", async () => {
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: "abc" } });
   app("/runs");

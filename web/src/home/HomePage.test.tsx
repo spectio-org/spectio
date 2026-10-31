@@ -32,6 +32,7 @@ test("home shows the count cards, the active runs, the runs that ended and the p
   expect(await within(pipelines).findByText("/g/demo-lab/pipelines/plate-qc")).toBeInTheDocument();
   expect(within(pipelines).getByText("/g/demo-lab/pipelines/rnaseq")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Launch a workflow" })).toHaveAttribute("href", "/launch");
+  expect(within(active).getByRole("link", { name: "All runs" })).toHaveAttribute("href", "/runs");
 });
 
 test('home with no run reads "No runs yet."', async () => {

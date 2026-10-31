@@ -18,10 +18,13 @@ export const FILTERS: { key: string; label: string; states: string[] | null }[] 
   { key: "cancelled", label: "Cancelled", states: ["cancelled"] },
 ];
 
-/** The `/runs` search params: a known filter key, or none. */
-export function runsSearch(search: Record<string, unknown>): { state?: string } {
-  const state = search.state;
-  return typeof state === "string" && FILTERS.some((f) => f.key === state && f.key !== "all") ? { state } : {};
+/** The `/runs` search params: a known filter key, or none, and the name filter when set. */
+export function runsSearch(search: Record<string, unknown>): { state?: string; q?: string } {
+  const { state, q } = search;
+  return {
+    ...(typeof state === "string" && FILTERS.some((f) => f.key === state && f.key !== "all") ? { state } : {}),
+    ...(typeof q === "string" && q !== "" ? { q } : {}),
+  };
 }
 
 /** Where heads run, by the server's executor: tmux sessions on the login node, or processes on
@@ -88,11 +91,13 @@ export function RunsPage() {
   const search = useSearch({ from: "/runs" });
   const navigate = useNavigate({ from: "/runs" });
   const filter = Math.max(0, FILTERS.findIndex((f) => f.key === search.state));
-  const setFilter = (i: number) =>
-    navigate({ search: FILTERS[i].states ? { state: FILTERS[i].key } : {}, replace: true });
+  const q = search.q ?? "";
+  // Each change keeps the other param: the name filter lands 250 ms after typing, a click may come between.
+  const setSearch = (change: { state?: string; q?: string }) =>
+    navigate({ search: (prev) => runsSearch({ ...prev, ...change }), replace: true });
+  const setFilter = (i: number) => setSearch({ state: FILTERS[i].states ? FILTERS[i].key : undefined });
   const server = useServer();
-  const [typed, setTyped] = useState("");
-  const [q, setQ] = useState("");
+  const [typed, setTyped] = useState(q);
   const [list, setList] = useState<List | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -102,7 +107,7 @@ export function RunsPage() {
     document.title = "Runs · Spectio";
   }, []);
   useEffect(() => {
-    const timer = setTimeout(() => setQ(typed.trim()), 250);
+    const timer = setTimeout(() => setSearch({ q: typed.trim() }), 250);
     return () => clearTimeout(timer);
   }, [typed]);
 

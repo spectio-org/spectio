@@ -250,6 +250,44 @@ test("UX-PAR-23: the Summary aside opens the head by hand and tails the engine l
   expect(params).toHaveAttribute("aria-expanded", "false");
 });
 
+test("the log tail of an ended run reads Empty., and its lines carry the level tint", async () => {
+  detail({ state: "succeeded", ended_at: "2026-10-31T08:00:00+00:00" }, { [`${URL_}/logs?source=engine`]: () => new Response("") });
+  app(`/runs/${ID}`);
+  const log = await screen.findByRole("region", { name: "Engine log · last lines" });
+  expect(await within(log).findByText("Empty.")).toBeInTheDocument();
+});
+
+test("the log tail tints its lines by level, as the Logs tab does", async () => {
+  detail({}, { [`${URL_}/logs?source=engine`]: () => new Response("all good\nWARN slow disk\nERROR boom\n") });
+  app(`/runs/${ID}`);
+  const log = await screen.findByRole("region", { name: "Engine log · last lines" });
+  expect(await within(log).findByText("ERROR boom")).toHaveAttribute("data-tone", "failed");
+  expect(within(log).getByText("WARN slow disk")).toHaveAttribute("data-tone", "review");
+  expect(within(log).getByText("all good")).not.toHaveAttribute("data-tone");
+});
+
+test("Download attaches its anchor to the page and revokes the URL after the click", async () => {
+  detail();
+  const revoke = vi.fn();
+  Object.assign(URL, { createObjectURL: () => "blob:x", revokeObjectURL: revoke });
+  const attached: boolean[] = [];
+  const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
+    attached.push(document.body.contains(this));
+  });
+  try {
+    app(`/runs/${ID}`);
+    await userEvent.click(await screen.findByRole("tab", { name: "Logs" }));
+    await screen.findByText(/N E X T F L O W/, { selector: "span" });
+    screen.getByRole("button", { name: "Download last 64 KiB" }).click();
+    expect(attached).toEqual([true]);
+    expect(document.querySelector("a[download]")).toBeNull();
+    expect(revoke).not.toHaveBeenCalled();
+    await waitFor(() => expect(revoke).toHaveBeenCalledWith("blob:x"));
+  } finally {
+    click.mockRestore();
+  }
+});
+
 test("UX-PAR-23: with the local executor the head has no terminal: its process instead", async () => {
   detail({ head: { session: "18823.3644058", node: "login1", alive: true, exit_code: null } });
   app(`/runs/${ID}`);

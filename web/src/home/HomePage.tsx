@@ -182,7 +182,7 @@ export function HomePage() {
           <div className="sp-home-grid">
             <div className="sp-runs">
               <FoldSection id="home-active" screen="home" icon={ICONS.pulse} title="Active runs" summary={`${active.length} active`}>
-                <Link to="/runs" search={{ state: "active" }} className="sp-link sp-link-end">
+                <Link to="/runs" className="sp-link sp-link-end">
                   All runs <Icon path={ICONS.arrowRight} size={14} />
                 </Link>
                 {active.length === 0 ? (

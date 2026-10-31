@@ -281,20 +281,20 @@ function HeadByHand({ run, server }: { run: RunDetail; server: ServerVersion | n
 }
 
 /** The last lines of a log, read once when the section opens. */
-function LogTail({ id, source, onAll }: { id: string; source: LogSource; onAll: (s: LogSource) => void }) {
+function LogTail({ id, source, ended, onAll }: { id: string; source: LogSource; ended: boolean; onAll: (s: LogSource) => void }) {
   const [text, setText] = useState<string | null>(null);
   useEffect(() => {
     const controller = new AbortController();
     getLog(id, source, controller.signal)
-      .then((t) => setText(t.trimEnd().split("\n").slice(-6).join("\n") || "Empty so far."))
+      .then((t) => setText(t.trimEnd().split("\n").slice(-6).join("\n") || (ended ? "Empty." : "Empty so far.")))
       .catch((e: ApiError) => controller.signal.aborted || setText(e.status === 404 ? "Not written yet." : `Could not read it: ${e.message}`));
     return () => controller.abort();
-  }, [id, source]);
+  }, [id, source, ended]);
   const label = LOGS.find((l) => l.source === source)!.label;
   return (
     <>
       <pre className="sp-code sp-log-tail" tabIndex={0} aria-label={`${label}, last lines`}>
-        {text ?? "Loading…"}
+        {text === null ? "Loading…" : <LogLines text={text} />}
       </pre>
       <button type="button" className="sp-link-button" onClick={() => onAll(source)}>
         All logs: head output, head errors, engine log <Icon path={ICONS.arrowRight} size={13} />
@@ -334,7 +334,7 @@ function SummaryAside({ run, server, onLogs }: { run: RunDetail; server: ServerV
         title={failed ? "Head errors · last lines" : "Engine log · last lines"}
         card
       >
-        <LogTail id={run.id} source={failed ? "head-err" : "engine"} onAll={onLogs} />
+        <LogTail id={run.id} source={failed ? "head-err" : "engine"} ended={isTerminal(run.state)} onAll={onLogs} />
       </FoldSection>
       {head && !head.alive && run.origin !== "cli-observed" && (
         <FoldSection
@@ -514,6 +514,16 @@ const DESCRIPTIONS: Record<LogSource, (engine: string) => string> = {
 /** A log line's level, as a secondary tint: the level word is in the text already. */
 const level = (line: string) => (/\bERROR\b|\bError\b|exception/.test(line) ? "failed" : /\bWARN|\bretry/i.test(line) ? "review" : undefined);
 
+/** A log's lines, each tinted by its level. */
+function LogLines({ text }: { text: string }) {
+  return text.split("\n").map((line, i) => (
+    <span key={i} data-tone={level(line)}>
+      {line}
+      {"\n"}
+    </span>
+  ));
+}
+
 function LogsPanel({ run, source, setSource }: { run: RunDetail; source: LogSource; setSource: (s: LogSource) => void }) {
   const [text, setText] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
@@ -531,8 +541,11 @@ function LogsPanel({ run, source, setSource }: { run: RunDetail; source: LogSour
     const a = document.createElement("a");
     a.href = url;
     a.download = `${runName(run)}-${source}.log`;
+    // Attached, and revoked after the click: Firefox and some Safari versions drop the download otherwise.
+    document.body.append(a);
     a.click();
-    URL.revokeObjectURL(url);
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
   };
   return (
     <section className="sp-runs" aria-label="Logs">
@@ -555,14 +568,7 @@ function LogsPanel({ run, source, setSource }: { run: RunDetail; source: LogSour
         </Button>
       </div>
       <pre className="sp-log" aria-label={label}>
-        {text === null
-          ? "Loading…"
-          : text.split("\n").map((line, i) => (
-              <span key={i} data-tone={level(line)}>
-                {line}
-                {"\n"}
-              </span>
-            ))}
+        {text === null ? "Loading…" : <LogLines text={text} />}
       </pre>
       <p className="sp-muted">
         {run.workflow.engine === "snakemake"
