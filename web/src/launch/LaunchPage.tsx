@@ -125,7 +125,10 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
   const repo = location.trim() !== "" && !location.trim().startsWith("/");
   const github = SHORT_NAME.test(location.trim()) ? `https://github.com/${location.trim()}` : null;
   const skipped: string[] = [];
-  const sections = schemaFields(loaded?.schema ?? null, skipped, engine === "snakemake");
+  // the form's shape follows the engine chosen, or guessed: Snakemake maps become dotted sections
+  // (CR-P3PARB-02). Values typed under the other shape stay, unsent, until the engine goes back.
+  const formEngine = engine ?? (loaded ? guessEngine(loaded.engine_files) : null);
+  const sections = schemaFields(loaded?.schema ?? null, skipped, formEngine === "snakemake");
   const fields = sections.flatMap((s) => s.fields);
   const keys = fields.map((f) => f.key);
   const grouped = !!loaded?.schema && ("$defs" in loaded.schema || "definitions" in loaded.schema);
@@ -373,7 +376,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
               )}
               {skipped.length > 0 && (
                 <Text size="sm" c="dimmed" mb="sm">
-                  {`Not in the form: ${skipped.join(", ")}. Spectio refuses these key names; set them in the pipeline's own config.`}
+                  {`Not in the form: ${skipped.join(", ")}. These keys are unsafe or repeat another key's dotted name; set them in the pipeline's own config.`}
                 </Text>
               )}
               <Stack gap="sm">
