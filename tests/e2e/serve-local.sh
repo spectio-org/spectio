@@ -42,16 +42,22 @@ fi
 home=$(mktemp -d "${TMPDIR:-/tmp}/spectio-local.XXXXXX")
 chmod 700 "$home"
 server=""
-# The heads of the runs under $home still alive: "pid" per line. head.pid holds PID, process
-# group, start time; a head leads its own group (setsid), and the start time guards against a
-# reused PID (as spectio.runner.local does).
+# The heads of the runs under $home still alive: "pid" per line. The launch directories are
+# untrusted (spec §15.3 req. 10 to 12): head.pid is parsed as strictly as spectio.runner.local
+# parses it (_PID_LINE), a symlink is refused, and a PID is named only when it is above 1, leads
+# its own group (setsid) both in the file and in /proc, is on this boot, and has the start time
+# of the file (not a reused PID). stop() signals the group each PID leads.
 heads() {
-  local file pid pgid start s f
+  local file line pid pgid start boot s f
   for file in "$home"/runs/*/launch/.spectio/head.pid; do
-    [ -f "$file" ] && read -r pid pgid start _ < "$file" || continue
-    [ "$pid" = "$pgid" ] && s=$(cat "/proc/$pid/stat" 2>/dev/null) || continue
+    [ -f "$file" ] && [ ! -L "$file" ] || continue
+    read -r line < "$file" || continue
+    [[ $line =~ ^([1-9][0-9]{0,9})\ ([1-9][0-9]{0,9})\ ([0-9]{1,20})\ ([0-9a-f-]{36})\ [A-Za-z0-9._-]{1,255}$ ]] || continue
+    pid=${BASH_REMATCH[1]} pgid=${BASH_REMATCH[2]} start=${BASH_REMATCH[3]} boot=${BASH_REMATCH[4]}
+    [ "$pid" -gt 1 ] && [ "$pid" = "$pgid" ] && [ "$boot" = "$(</proc/sys/kernel/random/boot_id)" ] || continue
+    s=$(cat "/proc/$pid/stat" 2>/dev/null) || continue
     s=${s##*) }; read -r -a f <<< "$s"
-    if [ "${f[0]}" != Z ] && [ "${f[19]}" = "$start" ]; then echo "$pid"; fi
+    if [ "${f[0]}" != Z ] && [ "${f[2]}" = "$pid" ] && [ "${f[19]}" = "$start" ]; then echo "$pid"; fi
   done
 }
 stop() {
