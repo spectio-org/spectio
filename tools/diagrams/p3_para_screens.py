@@ -37,8 +37,10 @@ Every fact comes from branch autopilot/P3-parA at 7a4811c2 (base 2785941f):
 - a55c74d4 (CR-P3PARA-10, .sp-section selectors dropped) and 7a4811c2 (CR-P3PARA-11, one `sum` in
   stateWord.ts instead of three): the simplifier, 12 lines out, 8 in;
 - the review rounds, from the step's worker report of 2026-10-31 (review record P3-parA):
-  R1 CR approve 01 to 13, SEC approve 01; fixed CR-01, 02, 04, 08 in ac5ae2ca and CR-10, 11 by the
-  simplifier. R2 CR approve 09 and 10, SEC approve with none; none fixed. IDs repeat across rounds.
+  R1 CR approve 01 to 13, SEC approve 01; fixed CR-01, 02, 04 (the tint in part), 08 in ac5ae2ca,
+  CR-10, 11 by the simplifier and CR-09 in the docs commit 2b4ef44 (tools/media/README.md:54
+  documents SPECTIO_DEMO_FAILED_RUN), 7 of 14 ("Fixes by round" of the record); CR-04's tail tint
+  stays open. R2 CR approve 09 and 10, SEC approve with none; none fixed. IDs repeat across rounds.
   Gate: vitest 89 passed, tsc and vite build clean; pytest 511 passed, ruff, mypy, lint-imports.
 """
 
@@ -59,9 +61,11 @@ FIX = 912  # before and after
 LOW = 1216  # the review rounds
 
 
-# (round, fixed in ac5ae2ca, fixed by the simplifier, left open, CR verdict, SEC verdict)
-ROUNDS = (("R1", 4, 2, 8, "approve", "approve"),
-          ("R2", 0, 0, 2, "approve", "approve"))
+# (round, (fixed in ac5ae2ca, by the simplifier, in the docs commit, left open), CR verdict, SEC verdict)
+ROUNDS = (("R1", (4, 2, 1, 7), "approve", "approve"),
+          ("R2", (0, 0, 0, 2), "approve", "approve"))
+KINDS = (("done", "fixed, `ac5ae2ca`", 90), ("docs", "fixed, simplifier", 240),
+         ("input", "fixed, docs commit", 390), ("neutral", "minor, left open", 550))  # (fill, legend, x)
 
 
 def lines(s: Sketch, x: float, y: float, rows: tuple[str, ...], *, size: float = 13.5) -> None:
@@ -377,21 +381,24 @@ def build(theme: Theme) -> Sketch:
     s.text(50, LOW + 22, "code-reviewer and security-reviewer in parallel, then the simplifier",
            size=13.5, anchor="start", colour=t.dim)
     cell, rh = 22, 40
-    for i, (rnd, fixed, simp, left, cr, sec) in enumerate(ROUNDS):
+    for i, (rnd, counts, cr, sec) in enumerate(ROUNDS):
         y = LOW + 48 + i * rh
         s.text(50, y + 16, rnd, size=15, anchor="start", weight="bold")
-        groups = tuple((n, fill, "") for n, fill in ((fixed, "done"), (simp, "docs"), (left, "neutral")) if n)
+        groups = tuple((n, fill, "") for n, (fill, _, _) in zip(counts, KINDS) if n)
         right = s.task_strip(90, y, groups, cell=cell, gap=3, h=22)
-        for k in range(fixed + simp):  # a tick in each fixed cell, so the cells read without colour
-            cx = 90 + k * (cell + 3) + (12 if k >= fixed else 0)
-            s.tick(cx + cell / 2, y + 11, size=5, width=1.8)
-        s.text(right + 4, y + 16, f"{fixed + simp + left}", size=14, anchor="start")
+        cx = 90.0
+        for n, (fill, _, _) in zip(counts, KINDS):
+            for _ in range(n):
+                if fill != "neutral":  # a tick in each fixed cell, so the cells read without colour
+                    s.tick(cx + cell / 2, y + 11, size=5, width=1.8)
+                cx += cell + 3
+            if n:
+                cx += 12
+        s.text(right + 4, y + 16, f"{sum(counts)}", size=14, anchor="start")
         s.text(530, y + 16, f"CR {cr}, SEC {sec}", size=13.5, anchor="start")
         s.tick(712, y + 10, size=7)
     ly = LOW + 48 + 2 * rh + 6
-    for j, (fill, label) in enumerate((("done", "fixed, `ac5ae2ca`"), ("docs", "fixed by the simplifier"),
-                                       ("neutral", "minor, left open"))):
-        lx = 90 + j * 170
+    for fill, label, lx in KINDS:
         bar(s, lx, ly, 16, 16, fill, amount=0.3)
         if fill != "neutral":
             s.tick(lx + 8, ly + 8, size=5, width=1.8)
@@ -408,10 +415,10 @@ def build(theme: Theme) -> Sketch:
     s.text(bx + bw - 20, LOW + 14, "IDs repeat across rounds", size=12.5, anchor="end", colour=t.dim)
     open_items = (
         ("no mark beside the Pipeline fact", "R1 CR-P3PARA-03"),
+        ("the log tail: `data-tone` set, not tinted", "R1 CR-P3PARA-04, in part"),
         ("the rail test passes by rule order", "R1 CR-P3PARA-05"),
         ("four role tokens not in the token source", "R1 CR-P3PARA-06"),
         ("Nextflow words in Snakemake labels", "R1 CR-P3PARA-07"),
-        ("`SPECTIO_DEMO_FAILED_RUN` undocumented", "R1 CR-P3PARA-09"),
         ("simplify: WhyItFailed repeats `failureText`", "R1 CR-P3PARA-12"),
         ("simplify: `TONES` mixes states and words", "R1 CR-P3PARA-13"),
         ("copied shell lines are not quoted", "R1 SEC-P3PARA-01"),
