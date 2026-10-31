@@ -563,21 +563,27 @@
   <path d="M1217.0,1510.6 C1224.4,1510.5 1232.1,1510.1 1240.0,1510.3" fill="none" stroke="#585e6b" stroke-width="1.2" stroke-linecap="round"/>
   <text x="1260.0" y="1498.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">nextflow_schema.json</tspan></text>
   <text x="1260.0" y="1516.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">config.schema.yaml</tspan></text>
-  <text x="1170.0" y="1548.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">the same four groups for both engines:</text>
-  <circle cx="1176.0" cy="1569.0" r="3.5" fill="#e3e3e3"/>
-  <text x="1186.0" y="1574.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">Input/output options</text>
-  <text x="1340.0" y="1574.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">input, outdir</text>
+  <text x="1170.0" y="1548.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">the same four groups, each engine's own keys:</text>
+  <text x="1186.0" y="1572.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="bold">Nextflow</text>
+  <text x="1386.0" y="1572.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="bold">Snakemake</text>
   <circle cx="1176.0" cy="1591.0" r="3.5" fill="#e3e3e3"/>
-  <text x="1186.0" y="1596.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">Scenario</text>
-  <text x="1340.0" y="1596.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">chunks, scale, seed</text>
-  <circle cx="1176.0" cy="1613.0" r="3.5" fill="#e3e3e3"/>
-  <text x="1186.0" y="1618.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">Failure injection</text>
-  <text x="1340.0" y="1618.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">fail_mode, fail_process,</text>
-  <text x="1186.0" y="1640.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal"></text>
-  <text x="1340.0" y="1640.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">fail_sample, fail_gb</text>
-  <circle cx="1176.0" cy="1657.0" r="3.5" fill="#e3e3e3"/>
-  <text x="1186.0" y="1662.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">Resources</text>
-  <text x="1340.0" y="1662.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">time_limit_s, python_image</text>
+  <text x="1186.0" y="1596.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">Input/output options</text>
+  <text x="1186.0" y="1615.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">input, outdir</text>
+  <text x="1386.0" y="1615.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">samples, outdir</text>
+  <circle cx="1176.0" cy="1635.0" r="3.5" fill="#e3e3e3"/>
+  <text x="1186.0" y="1640.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">Scenario</text>
+  <text x="1186.0" y="1659.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">chunks, scale, seed</text>
+  <text x="1386.0" y="1659.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">chunks, scale, seed</text>
+  <circle cx="1176.0" cy="1679.0" r="3.5" fill="#e3e3e3"/>
+  <text x="1186.0" y="1684.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">Failure injection</text>
+  <text x="1186.0" y="1703.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">fail_mode, fail_process,</text>
+  <text x="1186.0" y="1722.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">fail_sample, fail_gb</text>
+  <text x="1386.0" y="1703.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">fail_mode, fail_rule,</text>
+  <text x="1386.0" y="1722.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">fail_sample, fail_gb</text>
+  <circle cx="1176.0" cy="1742.0" r="3.5" fill="#e3e3e3"/>
+  <text x="1186.0" y="1747.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">Resources</text>
+  <text x="1186.0" y="1766.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">time_limit_s, python_image</text>
+  <text x="1386.0" y="1766.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11" font-weight="normal" fill="#9aa0ac" xml:space="preserve">time_limit_s</text>
   <text x="215.0" y="1718.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="16" fill="#e3e3e3" text-anchor="middle" font-weight="normal">1 · Home: open one in Launch</text>
   <text x="50.0" y="1746.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">/launch?location=</tspan> opens Launch on it</text>
   <text x="50.0" y="1765.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal"></text>

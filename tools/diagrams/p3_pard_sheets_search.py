@@ -31,7 +31,8 @@ Every fact comes from branch autopilot/P3-parD at 846f4621 (base 5ce1f893):
   focused; routes.tsx launchSearch, /launch?location=; HomePage.tsx "Your pipelines" rows are links
   to /launch?location=;
 - tests/pipelines/synthetic/nextflow/nextflow_schema.json and
-  tests/pipelines/synthetic/snakemake/workflow/schemas/config.schema.yaml: the groups and keys drawn;
+  tests/pipelines/synthetic/snakemake/workflow/schemas/config.schema.yaml: the groups and each
+  engine's keys drawn (Snakemake names them samples and fail_rule; its Resources has time_limit_s only);
   test_launch.py asserts the four group titles for both engines;
 - 2a45be98 (R1 CR-P3PARD-01, -04, -05, -06, each with a test written first): focusTasks;
   splitLines; First to fail follows page.next, up to 5 pages of 50; Load more's `loading` guard,
@@ -491,16 +492,25 @@ def schema(s: Sketch, x: float, y: float) -> None:
     s.page(x, y + 16, 34, 44, fill="docs", lines=3)
     s.page(x + 42, y + 16, 34, 44, fill="docs", lines=3)
     lines(s, x + 90, y + 34, ("`nextflow_schema.json`", "`config.schema.yaml`"), size=12.5, first=False, step=18)
-    s.text(x, y + 84, "the same four groups for both engines:", size=12.5, anchor="start", colour=t.dim)
-    groups = (("Input/output options", "input, outdir"), ("Scenario", "chunks, scale, seed"),
-              ("Failure injection", "fail_mode, fail_process,"), ("", "fail_sample, fail_gb"),
-              ("Resources", "time_limit_s, python_image"))
-    for i, (g, keys) in enumerate(groups):
-        gy = y + 110 + i * 22
-        if g:
-            s.dot(x + 6, gy - 5, 3.5, colour=t.ink)
+    s.text(x, y + 84, "the same four groups, each engine's own keys:", size=12.5, anchor="start",
+           colour=t.dim)
+    nx, sx = x + 16, x + 216
+    s.text(nx, y + 108, "Nextflow", size=12, anchor="start", weight="bold", colour=t.dim)
+    s.text(sx, y + 108, "Snakemake", size=12, anchor="start", weight="bold", colour=t.dim)
+    groups = (("Input/output options", ("input, outdir",), ("samples, outdir",)),
+              ("Scenario", ("chunks, scale, seed",), ("chunks, scale, seed",)),
+              ("Failure injection", ("fail_mode, fail_process,", "fail_sample, fail_gb"),
+               ("fail_mode, fail_rule,", "fail_sample, fail_gb")),
+              ("Resources", ("time_limit_s, python_image",), ("time_limit_s",)))
+    gy = y + 132
+    for g, nf, smk in groups:
+        s.dot(x + 6, gy - 5, 3.5, colour=t.ink)
         s.text(x + 16, gy, g, size=12.5, anchor="start")
-        mono(s, x + 170, gy, keys.replace(",", ","), size=11, colour=t.dim)
+        for i, keys in enumerate(nf):
+            mono(s, nx, gy + 19 * (i + 1), keys, size=11, colour=t.dim)
+        for i, keys in enumerate(smk):
+            mono(s, sx, gy + 19 * (i + 1), keys, size=11, colour=t.dim)
+        gy += 19 * (max(len(nf), len(smk)) + 1) + 6
 
 
 def launch(s: Sketch) -> None:
