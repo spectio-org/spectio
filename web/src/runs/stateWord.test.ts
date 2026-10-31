@@ -83,3 +83,23 @@ test("durations and times read as on the boards", () => {
   expect(when(new Date(2026, 8, 1, 6, 5).toISOString(), now)).toBe("2026-09-01 06:05");
   expect(when(null, now)).toBe("—");
 });
+
+test("UX-PAR-16: a failed run's context is never blank", async () => {
+  const { stateContext } = await import("./RunState");
+  const { run } = await import("../testing");
+  const failed = (failure: unknown, failedTasks = 2) =>
+    stateContext(run({ state: "failed", failure, summary: { tasks: { done: 3, total: 5, failed: failedTasks, cached: 0 }, last_failure: null } }) as never);
+  expect(failed({ class: "tool_error", message: "" })).toBe("tool error · 2 tasks failed");
+  expect(failed({ class: "head_lost", message: "" }, 0)).toBe("head lost");
+  expect(failed({ class: "tool_error", message: "exit 1 · DEEPVARIANT (NA12878)" })).toBe("tool error · exit 1 · DEEPVARIANT (NA12878)");
+  expect(failed(null, 0)).toBe("failed");
+  const snake = run({ state: "failed", failure: { class: "engine_fault", message: "" }, workflow: { engine: "snakemake" }, summary: { tasks: { done: 1, total: 2, failed: 1, cached: 0 }, last_failure: null } });
+  expect(stateContext(snake as never)).toBe("engine error · 1 job failed");
+});
+
+test("UX-PAR-20: Snakemake runs read jobs and rules", async () => {
+  const { words } = await import("./stateWord");
+  expect(words("snakemake")).toMatchObject({ unit: "job", units: "jobs", group: "rule", groups: "rules", Group: "Rule" });
+  expect(words("nextflow")).toMatchObject({ unit: "task", units: "tasks", group: "process", Groups: "Processes" });
+  expect(words(null).units).toBe("tasks");
+});

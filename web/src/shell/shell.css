@@ -456,3 +456,150 @@ body {
     display: none;
   }
 }
+
+/* UI parity A (docs/reviews/ui-parity-0.0.1.md). */
+
+/* The Runs item's count of active runs (LiteSidebar; UX-PAR-07): a pill open, a corner badge on
+   the rail. */
+.sp-nav-item {
+  position: relative;
+}
+.sp-badge {
+  margin-left: auto;
+  min-width: 22px;
+  padding: 1px 7px;
+  box-sizing: border-box;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  text-align: center;
+  color: var(--sp-state-running-fg);
+  background: var(--sp-state-running-bg);
+}
+.sp-sidebar[data-open="false"] .sp-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 18px;
+  padding: 0 5px;
+  font-size: 11px;
+}
+
+/* Page head (ui-spec §7; UX-PAR-03): a tinted 48 px tile in the section's colour. */
+.sp-head-main {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  min-width: 0;
+}
+.sp-head-tile {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+}
+.sp-head-tile[data-section="home"] {
+  color: var(--sp-section-home);
+  background: var(--sp-section-home-bg);
+}
+.sp-head-tile[data-section="runs"] {
+  color: var(--sp-section-runs);
+  background: var(--sp-section-runs-bg);
+}
+.sp-head-tile[data-section="launch"] {
+  color: var(--sp-section-launch);
+  background: var(--sp-section-launch-bg);
+}
+
+/* Engine marks (ui-spec §4.3; UX-PAR-01): on white, never recoloured. */
+.sp-engine-mark {
+  flex-shrink: 0;
+  object-fit: contain;
+}
+[data-mantine-color-scheme="dark"] .sp-engine-mark {
+  padding: 2px;
+  border-radius: 5px;
+  background: var(--sp-surface-mark);
+}
+
+/* Folding sections (ui-spec §4.4 UX-318; UX-PAR-02), as the boards' .cx-btn. */
+.sp-foldsec {
+  min-width: 0;
+}
+.sp-fold-head,
+.sp-foldsec .sp-fold-head {
+  margin: 0;
+  font-family: inherit;
+  font-size: inherit;
+  font-weight: inherit;
+}
+.sp-fold-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 40px;
+  box-sizing: border-box;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+}
+.sp-fold-tile {
+  width: 30px;
+  height: 30px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  color: var(--sp-text-secondary);
+  background: var(--sp-surface-subtle);
+  box-shadow: inset 0 0 0 1px var(--sp-line-hairline);
+}
+.sp-fold-title {
+  min-width: 0;
+  font-family: var(--sp-font-display);
+  font-size: 20px;
+  font-weight: 600;
+}
+.sp-card .sp-fold-title {
+  font-family: var(--sp-font-body);
+  font-size: 15px;
+}
+.sp-card .sp-fold-tile {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+}
+.sp-fold-sum {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 12.5px;
+  font-weight: 400;
+  color: var(--sp-text-secondary);
+}
+.sp-fold-chev {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--sp-text-faint);
+  transition: transform 0.15s;
+}
+.sp-foldsec[data-open="true"] > .sp-fold-head .sp-fold-chev {
+  transform: rotate(180deg);
+}
+.sp-fold-body {
+  padding-top: 8px;
+}
+.sp-card.sp-foldsec {
+  padding: 14px 16px;
+}

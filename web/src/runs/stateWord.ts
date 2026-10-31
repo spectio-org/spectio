@@ -15,19 +15,96 @@ const RUN_WORDS: Record<RunState, string> = {
 };
 
 export const runWord = (state: RunState): string => RUN_WORDS[state] ?? state;
+
+/** The run states that count as active (api §7.1). */
+export const ACTIVE: string[] = ["queued", "running", "pausing", "paused", "awaiting_review", "cancelling"];
+
+/** The eight colour families of `--sp-state-*` (design/tokens/spectio-tokens.css). */
+export type Tone = "queued" | "running" | "review" | "paused" | "succeeded" | "failed" | "cancelled" | "cached";
+
+const TONES: Record<string, Tone> = {
+  running: "running",
+  Running: "running",
+  awaiting_review: "review",
+  "Awaiting review": "review",
+  pausing: "paused",
+  paused: "paused",
+  succeeded: "succeeded",
+  completed: "succeeded",
+  Done: "succeeded",
+  failed: "failed",
+  Failed: "failed",
+  cancelling: "cancelled",
+  cancelled: "cancelled",
+  aborted: "cancelled",
+  skipped: "cancelled",
+  Stopped: "cancelled",
+  "Not run": "cancelled",
+  cached: "cached",
+  stored: "cached",
+};
+
+/** The tone of a run, stage or task state, or of a stage or process word; queued otherwise
+ * (pending, submitted, not started, not scheduled). */
+export const tone = (state: string): Tone => TONES[state] ?? "queued";
+
+const TASK_WORDS: Record<string, string> = {
+  pending: "Pending",
+  submitted: "Submitted",
+  running: "Running",
+  succeeded: "Succeeded",
+  failed: "Failed",
+  cached: "Cached",
+  stored: "Stored",
+  aborted: "Aborted",
+  not_scheduled: "Not scheduled",
+};
+export const taskWord = (state: string): string => TASK_WORDS[state] ?? state;
+
+/** The engine's own words (UX-PAR-20): Snakemake has jobs and rules, Nextflow tasks and processes. */
+export function words(engine: string | null) {
+  return engine === "snakemake"
+    ? { unit: "job", units: "jobs", group: "rule", groups: "rules", Group: "Rule", Groups: "Rules" }
+    : { unit: "task", units: "tasks", group: "process", groups: "processes", Group: "Process", Groups: "Processes" };
+}
+
+/** "1 task", "3 jobs". */
+export const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
+
+const CLASS_WORDS: Record<string, string> = {
+  oom: "out of memory",
+  timeout: "time limit",
+  preempted: "preempted",
+  node_failure: "node failure",
+  cancelled_external: "cancelled outside Spectio",
+  image: "image error",
+  tool_error: "tool error",
+  engine_fault: "engine error",
+  head_lost: "head lost",
+  launch_error: "launch error",
+  engine_missing: "engine missing",
+  engine_version: "engine version",
+  input_check: "input check",
+};
+/** The words of a failure class (the store's `failure_class` values). */
+export const classWord = (value: string): string => CLASS_WORDS[value] ?? value.replace(/_/g, " ");
+
+const ENGINE_NAMES: Record<string, string> = { nextflow: "Nextflow", snakemake: "Snakemake" };
+/** "Nextflow", "Snakemake"; an unknown engine as the API names it. */
+export const engineName = (engine: string | null): string => (engine ? (ENGINE_NAMES[engine] ?? engine) : "—");
 export const isTerminal = (state: RunState): boolean =>
   state === "succeeded" || state === "failed" || state === "cancelled";
 
-const n = (counts: Counts, ...states: string[]) => states.reduce((sum, s) => sum + (counts[s] ?? 0), 0);
+export const sum = (counts: Counts, ...states: string[]) => states.reduce((n, s) => n + (counts[s] ?? 0), 0);
 
 /** A process or rule has no stored state: its word comes from its task counts. `ended`: the run
  * is terminal, so what had not finished is Stopped and what never started is Not run. */
 export function processWord(counts: Counts, ended: boolean): string {
-  if (n(counts, "failed") > 0) return "Failed";
+  if (sum(counts, "failed") > 0) return "Failed";
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
-  const done = n(counts, "succeeded", "cached", "stored");
+  const done = sum(counts, "succeeded", "cached", "stored");
   if (total > 0 && done === total) return "Done";
-  if (n(counts, "succeeded", "cached", "stored", "running", "aborted") === 0) {
+  if (sum(counts, "succeeded", "cached", "stored", "running", "aborted") === 0) {
     return ended ? "Not run" : "Pending";
   }
   return ended ? "Stopped" : "Running";
@@ -40,7 +117,7 @@ export function stageWord(stage: Stage, ended: boolean): string {
     case "completed":
       return "Done";
     case "failed":
-      return n(stage.task_counts, "failed") > 0 ? "Failed" : "Stopped";
+      return sum(stage.task_counts, "failed") > 0 ? "Failed" : "Stopped";
     case "skipped":
       return "Not run";
     case "running":
