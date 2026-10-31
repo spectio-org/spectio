@@ -455,3 +455,7 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Workflow done (2 review rounds, doc-reviewer approve 12/14). Fixed by hand after it: the log-tail tint (`36a7af2`, CR-P3PARA-04). The five live shots were retaken by media-capture (`d7ab57d`). SAST: 0 findings.
 - PR #105 into integration, label `screenshots`, subscribed. Cost recorded: 70 USD (ceiling lifted by Thomas for this fix).
 - Seen in the retake: the Head fact reads "Alive" on ended runs. To be checked in step B (brief in the scratchpad).
+
+## 2026-10-31 · P3-parA merged (#105, squash 5d5ec8d)
+
+- CI green on d7ab57d (pr-body re-ran green on the real body). Next: the promotion of integration to main, then step B (phone and Launch) from base 5d5ec8d+.
