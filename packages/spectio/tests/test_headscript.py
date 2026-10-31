@@ -474,6 +474,7 @@ for a in "$@"; do
   if [ "$a" = --list-rules ]; then
     printf '%s\\0' "$@" > list-argv.out
     [ -n "$LIST_FAILS" ] && { echo partial; exit 1; }
+    [ -n "$LIST_SLEEPS" ] && "$LIST_SLEEPS" 30
     printf 'all\\ncount_reads (Count reads)\\n'; exit 0
   fi
 done
@@ -515,6 +516,30 @@ def test_snakemake_head_writes_rules_txt(home: Path, bridges: Path, fails: bool)
     else:
         assert rules.read_text() == "all\ncount_reads (Count reads)\n"
         assert stat.S_IMODE(rules.stat().st_mode) == 0o600
+
+
+def test_cancel_during_the_listing(home: Path, bridges: Path) -> None:
+    """CR-P3T27-01: a Cancel while `--list-rules` runs (the runner writes `.spectio/cancel`,
+    then signals the group) stops the listing and the engine never starts; head.exit is 143."""
+    spec = replace(snakemake_spec(home), env={"LIST_SLEEPS": shutil.which("sleep") or "/bin/sleep"})
+    stub_engine(home / "bin", LISTING_STUB)
+    head = write_launch_files(spec)
+    proc = subprocess.Popen([BASH, str(head)], start_new_session=True)
+    spectio_dir = spec.launch_dir / ".spectio"
+    try:
+        deadline = time.monotonic() + 20
+        while not (spec.launch_dir / "list-argv.out").exists():
+            assert time.monotonic() < deadline, "the listing never started"
+            time.sleep(0.05)
+        time.sleep(0.3)
+        (spectio_dir / "cancel").write_text("")
+        os.killpg(proc.pid, signal.SIGTERM)
+        assert proc.wait(timeout=15) == 143
+    finally:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(proc.pid, signal.SIGKILL)
+    assert not (spec.launch_dir / "argv.out").exists()
+    assert (spectio_dir / "head.exit").read_text().split()[0] == "143"
 
 
 def test_nextflow_head_lists_no_rules(home: Path, bridges: Path) -> None:

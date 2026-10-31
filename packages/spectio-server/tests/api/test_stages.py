@@ -45,6 +45,7 @@ NEXTFLOW = {
     "methylseq-4.2.0_bwameth": ("nf-core/methylseq", 15, 5),
 }
 MOSAICATCHER = "mosaicatcher-v2.5.1"
+NEXTFLOW_KEY = "rnaseq-3.27.0_star_salmon"
 HAPPY = ["MAKE_READS", "QC_STATS", "QC_REPORT", "SPLIT", "ALIGN", "MERGE", "COMPARE"]
 HAPPY += ["FINAL_REPORT"]  # the synthetic pipeline of dev-env §10.1, in creation order
 RNASEQ_RUN = "run_01K8T27STAGES0000000000000"
@@ -541,6 +542,61 @@ def test_stages_note_when_two_overlays_match(
     run = client_for(settings, writer).get(f"/api/v1/runs/{RNASEQ_RUN}").json()
     assert run["summary"]["stage_mode"] == "detected"
     assert "a.spectio.yml" in run["stages_note"] and "b.spectio.yml" in run["stages_note"]
+
+
+DEEP = b"[" * 60000  # a RecursionError in `yaml.safe_load`, under MAX_SPEC_BYTES
+
+
+@pytest.mark.parametrize("engine", ["nextflow", "snakemake"])
+def test_freeze_survives_deep_yaml(
+    settings: Settings, writer: Writer, overlays: Path, tmp_path: Path, engine: str
+) -> None:
+    """A deeply nested overlay, `spectio.yml` or `meta.yml` gives no declared stages, never a
+    failed ingest: the start event is projected and the freeze is recorded (CR-P3T27-02,
+    SEC-P3T27-01)."""
+    with pytest.raises(ValueError, match="nested too deep"):
+        parse_spectio_yml(DEEP)
+    run_id = f"run_01K8T27DEEP{engine[0].upper()}00000000000000"
+    launch_id = add_run(writer, settings, run_id, "deep", "running", engine=engine)
+    pipeline = tmp_path / "pipeline"
+    (pipeline / "subworkflows" / "nf-core" / "nfcore_rnaseq").mkdir(parents=True)
+    (pipeline / "subworkflows" / "nf-core" / "nfcore_rnaseq" / "meta.yml").write_bytes(DEEP)
+    (pipeline / "spectio.yml").write_bytes(DEEP)
+    (pipeline / "Snakefile").write_text("rule a:\n    shell: 'true'\n")
+    (overlays / "deep.spectio.yml").write_bytes(DEEP)
+    writer.submit(
+        lambda c: c.execute(text("UPDATE workflows SET location = :l"), {"l": str(pipeline)})
+    ).result()
+    if engine == "nextflow":
+        procs = [{"hook": "onProcessCreate", "process": n} for n in names(NEXTFLOW_KEY)]
+        found = [nf_event(i, b, run_id) for i, b in enumerate([*procs, {"hook": "onFlowBegin"}], 1)]
+        start = "spectio.engine.nextflow.onFlowBegin"
+    else:
+        found = [smk_event(1, run_id, "workflow_started", {"snakemake_version": "9.27.1"})]
+        start = "spectio.engine.snakemake.workflow_started"
+    run = partial(
+        ingest,
+        launch_id=launch_id,
+        batch=SpoolBatch(found, {}, Counter()),
+        sources=StageSources(overlays, settings.runs_root),
+    )
+    writer.submit(run).result()
+    logged, started = writer.submit(
+        lambda c: (
+            set(
+                c.execute(
+                    text("SELECT type FROM events WHERE run_id = :r"), {"r": run_id}
+                ).scalars()
+            ),
+            c.execute(text("SELECT started_at FROM runs WHERE id = :r"), {"r": run_id}).scalar(),
+        )
+    ).result()
+    assert start in logged and "spectio.stages.frozen" in logged
+    assert started is not None
+    rows = writer.submit(
+        lambda c: c.execute(select(run_stages).where(run_stages.c.run_id == run_id)).all()
+    ).result()
+    assert {r.source for r in rows} <= {"detected"}
 
 
 # --- Snakemake freeze ------------------------------------------------------------------------

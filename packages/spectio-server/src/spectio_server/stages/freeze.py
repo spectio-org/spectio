@@ -80,6 +80,8 @@ def parse_spectio_yml(data: bytes) -> SpectioFile:
         value = yaml.safe_load(data)
     except yaml.YAMLError as exc:
         raise ValueError(f"not YAML: {str(exc)[:200]}") from None
+    except RecursionError:  # a deeply nested document (CR-P3T27-02, SEC-P3T27-01)
+        raise ValueError("nested too deep") from None
     if not isinstance(value, dict):
         raise ValueError("not a mapping")
     extra = sorted(str(k)[:40] for k in value if k not in ("workflow", "stages"))
@@ -204,14 +206,26 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
     if frozen(p):
         return
     run = _run(p)
-    if run.engine == "snakemake":
-        universe, detected = _snakemake(p, run, snakefile_main)
+    # A source that fails gives no stages, never a failed ingest (CR-P3T27-02, SEC-P3T27-01):
+    # the readers touch no database, so a fault here leaves the transaction as it was.
+    smk = run.engine == "snakemake"
+    universe = [] if smk else _names(p)
+    detected: list[StageDef] = []
+    try:
+        if smk:
+            universe, detected = _snakemake(p, run, snakefile_main)
+        else:
+            detected = detect_nextflow(universe, run.name, _meta(run, universe))
+    except Exception:
+        log.exception("run %s: no detected stages", p.run_id)
+    key = run.name
+    if smk:
         key = None if run.root is None else run.root.name  # the pipeline directory's name
-    else:
-        universe = _names(p)
-        detected = detect_nextflow(universe, run.name, _meta(run, universe))
-        key = run.name
-    stages, source, note = _declared(p, run, key, universe)
+    try:
+        stages, source, note = _declared(p, run, key, universe)
+    except Exception:
+        log.exception("run %s: no declared stages", p.run_id)
+        stages, source, note = [], None, None
     if not stages:
         stages, source = detected, None
     for n, stage in enumerate(stages, 1):
@@ -309,7 +323,7 @@ def _meta(run: _Run, names: list[str]) -> dict[str, str]:
             try:
                 text = read_confined(root, path, MAX_SPEC_BYTES)
                 value = None if text is None else yaml.safe_load(text)
-            except (Unsafe, OSError, yaml.YAMLError):
+            except (Unsafe, OSError, yaml.YAMLError, RecursionError):
                 continue
             if isinstance(value, dict) and isinstance(value.get("description"), str):
                 found[scope] = " ".join(value["description"].split())[:2000]
@@ -348,7 +362,7 @@ def _main_snakefile(run: _Run, snakefile_main: str | None) -> Path | None:
         main = Path(snakefile_main)
     else:
         main = root / "workflow" / "Snakefile"
-        if not main.is_file():
+        if not os.path.isfile(main):  # never raises (SEC-P3T27-01)
             main = root / "Snakefile"
     if not main.is_absolute() or not Path(os.path.realpath(main)).is_relative_to(root):
         log.warning("%s is not in the pipeline directory %s: no detected stages", main, root)

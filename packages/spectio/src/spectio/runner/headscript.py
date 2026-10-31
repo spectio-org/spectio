@@ -39,11 +39,15 @@ SLURM_JOBS = 100
 # `timeout`, `mv` and `rm` are taken from the server's PATH: the login profile may set one
 # without them.
 LIST_RULES_S = 120
+# `--foreground` keeps the listing in the head's process group, so a Cancel's signal reaches
+# it; the cancel marker, written before the signal, is checked again after it, so the engine
+# never starts once the run is cancelled (CR-P3T27-01).
 _LIST_RULES = (
-    "(umask 077; {timeout} {s} {command} > .spectio/rules.txt.tmp 2>/dev/null) &&\n"
+    "(umask 077; {timeout} --foreground {s} {command} > .spectio/rules.txt.tmp 2>/dev/null) &&\n"
     "  {mv} -f .spectio/rules.txt.tmp .spectio/rules.txt ||\n"
     "  {{ {rm} -f .spectio/rules.txt.tmp; echo 'spectio: snakemake --list-rules failed:"
     " stages from the rule files' >&2; }}\n"
+    "[ -e .spectio/cancel ] && exit 143\n"
 )
 
 # The outer script: {launch}, {inner} and {keep} are quoted by `render_head_script`. Both
