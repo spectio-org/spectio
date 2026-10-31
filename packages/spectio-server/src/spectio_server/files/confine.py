@@ -24,10 +24,8 @@ import errno
 import os
 import posixpath
 import stat
-from collections.abc import Iterator
-from contextlib import contextmanager
 from dataclasses import dataclass
-from pathlib import Path, PurePosixPath
+from pathlib import PurePosixPath
 from typing import BinaryIO, Literal
 
 TAIL = 65536  # the bytes a read returns by default
@@ -83,16 +81,6 @@ def safe_rel(name: str) -> PurePosixPath:
     ):
         raise NotAllowed("not a name this server serves")
     return PurePosixPath(*parts)
-
-
-@contextmanager
-def opened_root(path: Path) -> Iterator[Root]:
-    """A root, opened as configured (the runs root's own path is trusted, req. 10)."""
-    fd = os.open(path, _DIR & ~os.O_NOFOLLOW)
-    try:
-        yield Root(fd, PurePosixPath(path))
-    finally:
-        os.close(fd)
 
 
 def _mine(fd: int, what: str) -> os.stat_result:
