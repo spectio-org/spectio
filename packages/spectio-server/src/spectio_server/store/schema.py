@@ -350,6 +350,24 @@ run_stages = Table(
     _check("run_stages", "state", STAGE_STATES),
 )
 
+# The processes (Nextflow) or rules (Snakemake) of a run, in first-seen order, with their stage:
+# Nextflow's from `onProcessCreate`, Snakemake's from the rule files read when the stages freeze,
+# and any other from its first task (P1 Task 27). `ended`: `onProcessTerminate` was seen;
+# `jobs_planned`: the rule's jobs in Snakemake's last `run_info`. Not in api §7, which keys
+# processes by name only: the stage of a process with no task yet needs a row.
+run_processes = Table(
+    "run_processes",
+    metadata,
+    *_base(),
+    Column("run_id", String, ForeignKey("runs.id"), nullable=False),
+    Column("name", String, nullable=False),
+    Column("position", Integer, nullable=False),
+    Column("stage_id", String),
+    Column("ended", Boolean, nullable=False, server_default="0"),
+    Column("jobs_planned", Integer),
+    UniqueConstraint("run_id", "name"),
+)
+
 # The spool cursor and drop counts of a launch (P1 Assumption 11), written in the ingest
 # transaction. Keyed by their natural key, so no id / created_at / created_by.
 spool_cursors = Table(

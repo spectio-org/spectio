@@ -13,9 +13,15 @@ from typing import Any
 from pydantic import BaseModel
 from sqlalchemy import insert, select, update
 
-from spectio_sdk.events import NextflowFlowComplete, NextflowFlowCreate, NextflowTask
+from spectio_sdk.events import (
+    NextflowFlowComplete,
+    NextflowFlowCreate,
+    NextflowProcess,
+    NextflowTask,
+)
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import TERMINAL, Projection, failure_json
+from spectio_server.stages import freeze
 from spectio_server.store.schema import attempts, launches
 
 HOOK_STATES = {
@@ -36,6 +42,12 @@ def project(p: Projection, hook: str, data: BaseModel) -> None:
         _flow_create(p, data)
     elif hook == "onFlowBegin":
         p.set_started()
+        freeze.freeze(p)
+    elif isinstance(data, NextflowProcess) and data.process:
+        if hook == "onProcessCreate":
+            p.process(data.process)
+        elif hook == "onProcessTerminate":
+            freeze.process_ended(p, data.process)
     elif isinstance(data, NextflowTask) and hook != "onFlowError":  # onFlowError has no task
         if p.state not in TERMINAL:  # a late task event is logged only (api §8.2)
             _task(p, hook, data)

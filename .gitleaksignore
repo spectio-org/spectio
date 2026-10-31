@@ -10,3 +10,5 @@ b3c49ea193732fe40e304b381ba6f35fb8514317:tests/fixtures/megatests/mag/pipeline_i
 b3c49ea193732fe40e304b381ba6f35fb8514317:tests/fixtures/megatests/rnafusion/pipeline_info/params_2026-06-02_07-06-48.json:slack-webhook-url:62
 b3c49ea193732fe40e304b381ba6f35fb8514317:tests/fixtures/megatests/methylseq/pipeline_info/params_2025-12-12_10-50-22.json:slack-webhook-url:71
 b3c49ea193732fe40e304b381ba6f35fb8514317:tests/fixtures/megatests/smrnaseq/pipeline_info/params_2026-01-07_13-43-43.json:slack-webhook-url:57
+# P3-t27: a fixture name ("rnaseq-3.27.0_star_salmon") in a constant then called NEXTFLOW_KEY, renamed RNASEQ_FIXTURE; not a secret
+38a0946ee05be79f598f4880f8993dc6c5900417:packages/spectio-server/tests/api/test_stages.py:generic-api-key:48

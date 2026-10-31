@@ -26,6 +26,7 @@ from spectio_sdk.events import (
     SnakemakeJobFinished,
     SnakemakeJobInfo,
     SnakemakeProgress,
+    SnakemakeRunInfo,
     SnakemakeWorkflowStarted,
 )
 from spectio_server.ids import new_id
@@ -35,6 +36,7 @@ from spectio_server.projector.runs import (
     Projection,
     failure_json,
 )
+from spectio_server.stages import freeze
 from spectio_server.store.schema import (
     attempts,
     events,
@@ -54,6 +56,9 @@ def project(p: Projection, data: BaseModel) -> None:
     if isinstance(data, SnakemakeWorkflowStarted):
         p.set_started()
         p.pin_engine_version(data.snakemake_version)
+        freeze.freeze(p, data.snakefile_main)
+    elif isinstance(data, SnakemakeRunInfo):
+        freeze.plan_jobs(p, data.stats)
     elif isinstance(data, SnakemakeProgress):  # the total grows past each checkpoint
         p.conn.execute(update(runs).where(runs.c.id == p.run_id).values(tasks_expected=data.total))
     elif p.state in TERMINAL:  # a late job event is logged only (api §8.2)

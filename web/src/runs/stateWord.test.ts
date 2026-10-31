@@ -88,12 +88,12 @@ test("UX-PAR-16: a failed run's context is never blank", async () => {
   const { stateContext } = await import("./RunState");
   const { run } = await import("../testing");
   const failed = (failure: unknown, failedTasks = 2) =>
-    stateContext(run({ state: "failed", failure, summary: { tasks: { done: 3, total: 5, failed: failedTasks, cached: 0 }, last_failure: null } }) as never);
+    stateContext(run({ state: "failed", failure, summary: { tasks: { done: 3, total: 5, failed: failedTasks, cached: 0 }, last_failure: null, stage_mode: "quarters" } }) as never);
   expect(failed({ class: "tool_error", message: "" })).toBe("tool error · 2 tasks failed");
   expect(failed({ class: "head_lost", message: "" }, 0)).toBe("head lost");
   expect(failed({ class: "tool_error", message: "exit 1 · DEEPVARIANT (NA12878)" })).toBe("tool error · exit 1 · DEEPVARIANT (NA12878)");
   expect(failed(null, 0)).toBe("failed");
-  const snake = run({ state: "failed", failure: { class: "engine_fault", message: "" }, workflow: { engine: "snakemake" }, summary: { tasks: { done: 1, total: 2, failed: 1, cached: 0 }, last_failure: null } });
+  const snake = run({ state: "failed", failure: { class: "engine_fault", message: "" }, workflow: { engine: "snakemake" }, summary: { tasks: { done: 1, total: 2, failed: 1, cached: 0 }, last_failure: null, stage_mode: "quarters" } });
   expect(stateContext(snake as never)).toBe("engine error · 1 job failed");
 });
 

@@ -98,12 +98,16 @@ export interface Run {
   summary: {
     tasks: { done: number; total: number; failed: number; cached: number };
     last_failure: { [key: string]: Json } | null;
+    /** Where the run's stages come from; `quarters` when it has none (api §7, P1 Task 27). */
+    stage_mode: "declared" | "detected" | "quarters";
   };
 }
 
 /** Schema `RunDetail`: `GET /runs/{id}` and `POST /runs/{id}:cancel`. */
 export interface RunDetail extends Run {
   params: { [key: string]: Json };
+  /** Why declared stages were not applied: two matching overlays, overlapping globs. */
+  stages_note: string | null;
 }
 
 export interface Page<T> {

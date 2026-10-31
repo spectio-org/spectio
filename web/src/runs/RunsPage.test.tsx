@@ -141,7 +141,7 @@ test("UX-PAR-01, inbox #91 (b): each row shows its pipeline's mark: nf-core for 
     id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V4Z",
     name: "plate-qc-a",
     workflow: { engine: "snakemake", engine_version: "9.27.1", location: "/g/demo-lab/pipelines/plate-qc", name: "plate-qc", version: null },
-    summary: { tasks: { done: 31, total: 96, failed: 0, cached: 0 }, last_failure: null },
+    summary: { tasks: { done: 31, total: 96, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" },
   });
   serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), snake], next: null } });
   app("/runs");

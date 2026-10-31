@@ -98,7 +98,7 @@
    "NFCORE_RNASEQ:RNASEQ:BAM_QC_RNASEQ:BAM_RSEQC:RSEQC_READDISTRIBUTION",
    "NFCORE_RNASEQ:RNASEQ:BAM_QC_RNASEQ:BAM_RSEQC:RSEQC_READDUPLICATION"
   ],
-  "description": "|",
+  "description": null,
   "attached_processes": []
  },
  {
