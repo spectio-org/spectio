@@ -70,3 +70,50 @@ The counts add up the three rounds of each reviewer. The one `simplify` finding 
 | CR-P3DEMO-07 (r3) | minor | Same gap as CR-P3DEMO-04 (r2). | **open**: FU-P3-29 |
 | SEC-P3DEMO-03 (r3) | minor | Same gap as SEC-P3DEMO-05 (r2), with the published URLs named. | **open**: FU-P3-29 |
 | SEC-P3DEMO-04 (r3) | minor | The engine logs still describe the sandbox: the Ubuntu 24.04 JDK build, `CPUs: 4 - Mem: 13.4 GB`, and the locale. No credential, no internal host name: hardening only. | **open**: FU-P3-29 |
+
+## Refresh round after UI parity D (2026-10-31)
+
+The branch `autopilot/P3-demo-pub` (PR #111) was brought up to date with `autopilot/integration` after UI parity D (#112). The merge is `c2a312c` and the new recording is `1959ca8`; [P3-M4 · Public demo](../../progress/W5/P3-M4.md#public-demo-p3-demo) has the numbers. The round reviews the diff `c2a312c..1959ca8`:
+
+- `web/demo/fixtures.json`: 48 answers, 931 286 bytes, six runs;
+- `web/src/demo/stub.test.ts`: 9 new cases;
+- `web/src/demo/demo.test.tsx`: 1 new case and 1 changed case;
+- `tools/media/README.md`: the recipe's numbers and its sixth run.
+
+`stub.ts` and `record_demo.py` are unchanged.
+
+**How it was reviewed.** The session that did the refresh had no tool to start subagents. So the two passes were made in that session, one after the other, against `.claude/agents/code-reviewer.md` and `.claude/agents/security-reviewer.md`. They are **not independent**. For the security pass, the decoded bodies of every answer were searched for:
+
+- host names other than `login1` and `localhost`;
+- paths outside `/g/demo-lab`, and `/home/`, `/tmp/`, `/opt/`, `/usr/`, `site-packages`, `.venv`;
+- e-mail addresses, IP addresses, `PATH=` and `HOME=`;
+- `token`, `password`, `Bearer`, and the kernel release.
+
+The only matches were the `nf-…@version` plugin names, the JDK version, the account `alice`, and the Nextflow secrets store path `/g/demo-lab/.nextflow/secrets/store.json` (a path, no content). Thomas may ask for an independent pass before he merges.
+
+| Round | Head | code-reviewer | security-reviewer |
+|---|---|---|---|
+| 4 (refresh) | `1959ca8` | **approve** (3 minors), not independent | **approve** (1 minor), not independent |
+
+| Id | Severity | Finding | Status |
+|---|---|---|---|
+| CR-P3DEMO-01 (r4) | minor | The recording's tests name what this recording holds: at least six runs, the failed run's ID, and a run with `fail_mode=flaky` and `chunks=6`. A recording taken again without that run fails them. | accepted: they check that the demo still covers the parameters and the process sheets; `tools/media/README.md` names the runs to launch |
+| CR-P3DEMO-02 (r4) | minor | The demo chunk grew from about 830 kB to 995 kB with the recording. | **open**: CR-P3DEMO-05 (r1), FU-P3-29 |
+| CR-P3DEMO-03 (r4) | minor | `stub.ts` needed no new path: UI parity D's requests are the filters and pages it already served. The change is tests only, and they would fail if the filtering or paging broke. | no action |
+| SEC-P3DEMO-01 (r4) | minor | The new run adds two more engine logs with the JDK build, `CPUs`, `Mem` and `Encoding` lines. | **open**: SEC-P3DEMO-04 (r3), FU-P3-29 |
+
+Gate at `1959ca8`:
+
+```bash
+cd web && npx vitest run      # 20 files, 203 tests passed
+cd web && npx tsc --noEmit    # exit 0
+npm --prefix web run build    # dist: 6 files, none of the demo (9 needles)
+npm --prefix web run build:demo
+uv run pytest -q              # 511 passed, 15 deselected
+python3 -m unittest tools/media/test_record_demo.py   # Ran 3 tests, OK
+bash tools/ci/security.sh sast                        # 0 findings
+```
+
+```text
+CODE  step=P3-demo-refresh  review=approve b/M/m=0/0/3  security=approve b/M/m=0/0/1  rounds=1  simplify=none  tests=pass
+```
