@@ -7,7 +7,7 @@ import { toYaml } from "../launch/schemaFields";
 import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PhoneTitle, usePhone } from "../shell/layout";
-import { type CopyItem, CopyMenu } from "./CopyMenu";
+import { type CopyItem, CopyButton, CopyMenu } from "./CopyMenu";
 import { StateWord, failureText, runName, tasksText } from "./RunState";
 import { duration, engineName, executorLabel, isTerminal, plural, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
@@ -16,14 +16,15 @@ import { duration, engineName, executorLabel, isTerminal, plural, shortId, stage
 // line, Cancel and Copy, then the facts and the task counts. P1 Task 32 adds Resume, Copy to a
 // new launch and Copy's "Command" here.
 
-/** The chips under the facts: the states with tasks, failed and retried always (UX-PAR-22). */
-export function taskChips(run: RunDetail, processes: Process[]): { label: string; n: number; tone: string }[] {
+/** The chips under the facts: the states with tasks, failed and retried always (UX-PAR-22). A chip
+ * with a `filter` (a Tasks tab filter's label) opens the Tasks tab on it (P3-parD). */
+export function taskChips(run: RunDetail, processes: Process[]): { label: string; n: number; tone: string; filter?: string }[] {
   const c = run.task_counts;
   const chips = [
-    { label: "succeeded", n: sum(c, "succeeded"), tone: "succeeded", always: false },
-    { label: "running", n: sum(c, "running"), tone: "running", always: false },
-    { label: "pending", n: sum(c, "pending", "submitted"), tone: "queued", always: false },
-    { label: "failed", n: sum(c, "failed"), tone: "failed", always: true },
+    { label: "succeeded", n: sum(c, "succeeded"), tone: "succeeded", always: false, filter: "Succeeded" },
+    { label: "running", n: sum(c, "running"), tone: "running", always: false, filter: "Running" },
+    { label: "pending", n: sum(c, "pending", "submitted"), tone: "queued", always: false, filter: "Pending" },
+    { label: "failed", n: sum(c, "failed"), tone: "failed", always: true, filter: "Failed" },
     { label: "retried", n: processes.reduce((n, p) => n + p.retries, 0), tone: "review", always: true },
     { label: "cached", n: sum(c, "cached", "stored"), tone: "cached", always: false },
     { label: "aborted", n: sum(c, "aborted"), tone: "cancelled", always: false },
@@ -91,7 +92,13 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
     ["Head", headWord(run)],
     ["Login node", run.head?.node ?? server?.node ?? "—"],
     ["Exit code", run.head?.exit_code != null ? String(run.head.exit_code) : ended ? "—" : "— (still running)"],
-    ["Pipeline directory", <span className="sp-mono">{w.location}</span>],
+    [
+      "Pipeline directory",
+      <span className="sp-copy-line">
+        <span className="sp-mono">{w.location}</span>
+        <CopyButton text={w.location} label="Copy" name="Copy the pipeline directory" />
+      </span>,
+    ],
     ["Run directory", <span className="sp-mono">{runDirectory(run, server) ?? "—"}</span>],
     ["Executor", server ? executorLabel(server.executor) : "—"],
     ["Failure", run.state === "failed" ? failureText(run) : "—"],
@@ -117,9 +124,11 @@ interface Props {
   canCancel: boolean;
   onCancel: () => void;
   cancelError: string | null;
+  /** A count chip pressed: the Tasks tab filter it names. */
+  onChip: (filter: string) => void;
 }
 
-export function RunHeader({ run, stages, processes, server, titleRef, canCancel, onCancel, cancelError }: Props) {
+export function RunHeader({ run, stages, processes, server, titleRef, canCancel, onCancel, cancelError, onChip }: Props) {
   const phone = usePhone();
   const ended = isTerminal(run.state);
   const { unit, units, Units } = words(run.workflow.engine);
@@ -196,11 +205,25 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
       <div className="sp-chips-row">
         <span className="sp-chips-label">{Units}</span>
         <ul className="sp-counts" aria-label={`${Units} by state`}>
-          {taskChips(run, processes).map((chip) => (
-            <li key={chip.label} className="sp-chip" data-tone={chip.tone}>
-              {chip.n} {chip.label}
-            </li>
-          ))}
+          {taskChips(run, processes).map((chip) =>
+            chip.filter ? (
+              <li key={chip.label}>
+                <button
+                  type="button"
+                  className="sp-chip sp-chip-button"
+                  data-tone={chip.tone}
+                  aria-label={`Show the ${plural(chip.n, `${chip.label} ${unit}`, `${chip.label} ${units}`)}`}
+                  onClick={() => onChip(chip.filter!)}
+                >
+                  {chip.n} {chip.label}
+                </button>
+              </li>
+            ) : (
+              <li key={chip.label} className="sp-chip" data-tone={chip.tone}>
+                {chip.n} {chip.label}
+              </li>
+            ),
+          )}
         </ul>
       </div>
     </header>

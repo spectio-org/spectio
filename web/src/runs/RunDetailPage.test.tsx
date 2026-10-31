@@ -535,3 +535,49 @@ test("P3-parC: the note under the viewer leads to the Tasks tab", async () => {
   await userEvent.click(await screen.findByRole("button", { name: /open a task in Tasks/ }));
   expect(screen.getByRole("tab", { name: "Tasks" })).toHaveAttribute("aria-selected", "true");
 });
+
+// P3-parD: what looked interactive works (the clickability inventory).
+
+test("P3-parD: a task count chip opens the Tasks tab filtered on its state; one without a filter stays text", async () => {
+  const mock = detail();
+  app(`/runs/${ID}`);
+  const chips = within(await runHeader()).getByRole("list", { name: "Tasks by state" });
+  expect(within(chips).queryByRole("button", { name: /retried/ })).toBeNull();
+  expect(within(chips).getByText("1 retried")).toBeInTheDocument();
+  await userEvent.click(within(chips).getByRole("button", { name: "Show the 3 running tasks" }));
+  expect(screen.getByRole("tab", { name: "Tasks" })).toHaveAttribute("aria-selected", "true");
+  const filters = await screen.findByRole("group", { name: "Show tasks" });
+  expect(within(filters).getByRole("button", { name: /Running/ })).toHaveAttribute("aria-pressed", "true");
+  await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/tasks?state=running&limit=50`));
+});
+
+test("P3-parD: the Facts' pipeline directory has a Copy button", async () => {
+  detail();
+  app(`/runs/${ID}`);
+  await runHeader();
+  await userEvent.click(screen.getByRole("button", { name: "Copy the pipeline directory" }));
+  expect(await navigator.clipboard.readText()).toBe("/g/demo-lab/pipelines/rnaseq");
+});
+
+test("P3-parD: Why it failed names the task that failed first; its process opens its detail", async () => {
+  const mock = detail({
+    state: "failed",
+    ended_at: "2026-10-31T08:00:00+00:00",
+    failure: { class: "tool_error", message: "", task_id: "tsk_1", attempt_n: 1 },
+    summary: { tasks: { done: 24, total: 32, failed: 1, cached: 0 }, last_failure: null },
+  });
+  app(`/runs/${ID}`);
+  const why = await screen.findByRole("region", { name: "Why it failed" });
+  const open = await within(why).findByRole("button", { name: "Open process NFCORE:RNASEQ:ALIGN" });
+  expect(within(why).getByText(/First to fail/)).toHaveTextContent("First to fail: ALIGN (S01)");
+  expect(fetched(mock)).toContain(`${URL_}/tasks?state=failed&limit=50`);
+  await userEvent.click(open);
+  expect(await screen.findByRole("dialog", { name: "ALIGN" })).toBeInTheDocument();
+});
+
+test("P3-parD: the Logs tab's viewer has the search and the level filter", async () => {
+  detail();
+  app(`/runs/${ID}?tab=logs`);
+  expect(await screen.findByRole("searchbox", { name: "Search the engine log" })).toBeInTheDocument();
+  expect(screen.getByRole("group", { name: "Show lines" })).toBeInTheDocument();
+});

@@ -1050,3 +1050,140 @@
 .sp-log-tail span[data-tone="progress"] {
   color: var(--sp-code-progress);
 }
+
+/* UI parity D (P3-parD): stages, processes and tasks open a detail sheet; count chips and the
+   pipeline directory act; the log viewer searches and filters by level. */
+.sp-open {
+  font-size: inherit;
+  color: var(--sp-text-link);
+}
+.sp-open strong,
+.sp-open .sp-mono {
+  color: inherit;
+}
+.sp-chip-button {
+  border: 0;
+  font-family: inherit;
+  cursor: pointer;
+}
+.sp-chip-button:hover {
+  text-decoration: underline;
+}
+.sp-chip-button:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 1px;
+}
+.sp-copy-line {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-width: 0;
+}
+.sp-copy-line .sp-mono {
+  overflow-wrap: anywhere;
+}
+.sp-why-first {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+.sp-sheet {
+  display: grid;
+  gap: 12px;
+}
+.sp-sheet:focus {
+  outline: none;
+}
+.sp-sheet:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 4px;
+}
+.sp-sheet-title {
+  font-size: 18px;
+  font-weight: 700;
+}
+.sp-sheet-name {
+  margin: 0;
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+  overflow-wrap: anywhere;
+}
+.sp-sheet .sp-sub {
+  margin: 0;
+}
+.sp-sheet-h {
+  margin: 8px 0 0;
+  font-size: 15px;
+}
+.sp-sheet-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--sp-line-border);
+}
+.sp-sheet-list li + li {
+  box-shadow: inset 0 1px 0 var(--sp-line-divider);
+}
+.sp-sheet-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  padding: 8px 12px;
+  border: 0;
+  font: inherit;
+  font-size: 14px;
+  color: inherit;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+}
+.sp-sheet-row:hover {
+  background: var(--sp-surface-subtle);
+}
+.sp-sheet-row:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: -2px;
+}
+.sp-sheet-row .sp-chip {
+  margin: 0;
+}
+.sp-sheet-facts {
+  grid-template-columns: 1fr 1fr;
+}
+.sp-log-search {
+  margin-bottom: 8px;
+}
+.sp-log-count {
+  min-width: 64px;
+  font-variant-numeric: tabular-nums;
+}
+.sp-log-search .sp-segments button[data-tone] {
+  color: var(--tone-fg);
+}
+/* the viewer is dark in both schemes: a match is dark text on the code palette's amber, the
+   current one also outlined */
+.sp-log mark {
+  border-radius: 3px;
+  color: var(--sp-surface-code);
+  background: var(--sp-code-review);
+}
+.sp-log mark[data-current] {
+  background: var(--sp-code-ok);
+  outline: 2px solid var(--sp-code-text);
+  outline-offset: 1px;
+}
+.sp-quick-link {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  color: inherit;
+  text-decoration: none;
+}
+.sp-quick-link:hover .sp-pipeline span {
+  text-decoration: underline;
+}

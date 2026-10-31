@@ -112,7 +112,10 @@ def test_inspect_detects_engines(authed_client: TestClient, synthetic: Path) -> 
     body = nf.json()
     assert body["engine"] == "nextflow"
     assert body["engine_files"] == ["main.nf"]
-    assert body["schema_source"] == "none" and body["schema"] is None
+    # its nf-core-style schema, four groups (P3-parD)
+    assert body["schema_source"] == "nextflow_schema.json"
+    groups = [g["title"] for g in body["schema"]["$defs"].values()]
+    assert groups == ["Input/output options", "Scenario", "Failure injection", "Resources"]
     assert (body["name"], body["version"]) == ("spectio/synthetic-scenarios", "0.1.0")
     assert {"local", "slurm", "test"} <= set(body["profiles"])
     assert body["engine_version"] == ENGINE_VERSIONS["nextflow"]
@@ -124,6 +127,8 @@ def test_inspect_detects_engines(authed_client: TestClient, synthetic: Path) -> 
     assert smk["engine_files"] == ["workflow/Snakefile"]
     assert smk["profiles"] == ["local", "slurm"]
     assert smk["version"] is None  # Snakemake declares none [to be validated]
+    assert smk["schema_source"] == "config.schema.yaml"  # workflow/schemas/ (P3-parD)
+    assert [g["title"] for g in smk["schema"]["$defs"].values()] == groups
     assert smk["engine_version"] == ENGINE_VERSIONS["snakemake"]
 
 

@@ -97,3 +97,22 @@ export function CopyMenu({ items, fullWidth = false }: { items: CopyItem[]; full
     </span>
   );
 }
+
+/** One Copy button for `text`; a status line beside it says it was copied, or why not. */
+export function CopyButton({ text, label, name }: { text: string; label: string; name: string }) {
+  const [said, setSaid] = useState<string | null>(null);
+  const copy = () =>
+    copyText(text)
+      .then(() => setSaid("Copied"))
+      .catch(() => setSaid("Could not copy: select the text instead"));
+  return (
+    <span className="sp-actions">
+      <Button variant="light" size="xs" aria-label={name} onClick={copy}>
+        {label}
+      </Button>
+      <span role="status" className="sp-muted">
+        {said}
+      </span>
+    </span>
+  );
+}
