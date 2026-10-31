@@ -515,3 +515,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 ## 2026-10-31 · Thomas's notes for later, in todo.md
 
 - `todo.md` (new, repo root): the real logo in the header, smooth sidebar and folds, client-side parameter validation in Launch, required or optional on each row. Thomas: the two Launch items go **with P1 Task 32** ("avec 32"); its brief must include them. Logo and animations: not assigned yet.
+
+## 2026-10-31 · P3-t27: PR #114 merged
+
+- P1 Task 27, milestone M7: stages declared or detected, frozen once at the run's first start event (lab overlay, else `spectio.yml`, else detection), above the processes or rules list; `run_processes` (migration 0005), `summary.stage_mode`, `stages_note`; the Snakemake head writes `.spectio/rules.txt`. Workflow p3-task in 4 rounds (code approve 1/2/16, security approve 0/2/16), simplifier -12/+7, doc-reviewer approve 13.
+- After the workflow, by the orchestrator, tests first (`e45b288`): an overlong Git revision no longer drops the start event; YAML tags and `%TAG` prefixes are masked in errors and logs. Inbox #93 and FU-P3-30 (renumbered, `6419bfc`) to stay apart from the demo's #92 and FU-P3-29.
+- CI: gitleaks took the test constant `NEXTFLOW_KEY` (a fixture name) for a key, and P3-M7 still linked the `-inbox-92` anchor. Fixed in `531482a` (constant renamed, fingerprint of `38a0946` in `.gitleaksignore`, anchor). Every check green, `e2e-local --seed-stages` included; squash c8c6678 (`Release-As: 0.0.1`). Cost recorded: 55 USD. The live shot `app-run-stages` is not taken (FU-P3-30). Demo server stopped at its 2 h limit. Next: promotion, then P1 Task 28.
