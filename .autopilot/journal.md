@@ -511,3 +511,7 @@ One entry per tick: time, steps started and finished, verification results, tria
 ## 2026-10-31 · Promotion #113 merged: UI parity D on main
 
 - Integration promoted to `main` by merge commit 4dfbee5 (label `screenshots`; every check green on 855786c). P1 Task 27 (stages) is building (workflow wf_8609c03e-ad3, base 855786c). PR #111 still waits for Thomas.
+
+## 2026-10-31 · Thomas's notes for later, in todo.md
+
+- `todo.md` (new, repo root): the real logo in the header, smooth sidebar and folds, client-side parameter validation in Launch, required or optional on each row. Thomas: the two Launch items go **with P1 Task 32** ("avec 32"); its brief must include them. Logo and animations: not assigned yet.
