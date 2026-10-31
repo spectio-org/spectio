@@ -106,15 +106,12 @@ def _profiles(conn: Connection, run_ids: list[str]) -> dict[str, list[str]]:
 def _stage_modes(conn: Connection, run_ids: list[str]) -> dict[str, str]:
     """`summary.stage_mode` (api §7): `declared` or `detected` from the run's frozen stages,
     `quarters` when it has none (the progress bar's four quarters, ui-spec §5.1.1)."""
-    found: dict[str, str] = {}
-    for run_id, source in conn.execute(
+    rows = conn.execute(
         select(run_stages.c.run_id, run_stages.c.source)
         .where(run_stages.c.run_id.in_(run_ids))
         .distinct()
-    ):
-        if found.get(run_id) != "declared":
-            found[run_id] = source
-    return found
+    )
+    return {r.run_id: r.source for r in rows}  # one source per run: the freeze writes one
 
 
 def run_json(row: Row[Any], profiles: list[str], stage_mode: str | None = None) -> dict[str, Any]:
