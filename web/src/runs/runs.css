@@ -101,8 +101,7 @@
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
 }
-.sp-card h2,
-.sp-section h2 {
+.sp-card h2 {
   margin: 0 0 10px;
   font-family: var(--sp-font-display);
   font-size: 18px;
@@ -293,7 +292,6 @@
   flex: 0 0 auto;
   text-align: right;
 }
-.sp-section > a,
 .sp-link {
   display: inline-block;
   margin-top: 8px;
