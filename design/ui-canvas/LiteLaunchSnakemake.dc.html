@@ -32,6 +32,12 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 .btn-go:disabled{background:#C4C7D4;cursor:not-allowed}
 .btn-load{flex-shrink:0;height:38px;padding:0 16px;border-radius:10px;border:none;background:#F6F2FE;color:#4D368B;font:600 13px 'Inter',sans-serif;cursor:pointer}
 @media (min-width: 1200px){.launch-aside{position:sticky;top:8px}}
+/* One parameter per line (Thomas, 2026-10-31): the name with its type, default and state, the input, the help under it. */
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:5px 12px;padding:10px 0;border-top:1px solid #EEEFF5}
+.prow > *{grid-column:1 / -1}
+.prow > label,.prow > .pname{grid-column:1}
+.prow > .pmeta{grid-column:2;grid-row:1;font-size:12px;color:#6E7287;text-align:right}
+.plist{display:flex;flex-direction:column}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -108,17 +114,19 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
               <span style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">1 required field empty</span>
               <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
             </summary>
-            <div style="padding: 4px 16px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 12px;">
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div class="plist" style="padding: 4px 16px 16px; ">
+              <div class="prow">
                 <label for="p-samples" style="font-size: 13px; font-weight: 600;">samples <span style="color: #B02A2A;" aria-hidden="true">*</span></label>
+                <span class="pmeta">string</span>
                 <input id="p-samples" type="text" placeholder="/g/demo-lab/…/config/samples.tsv" required aria-required="true" aria-invalid="true" aria-describedby="p-samples-err" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">
                 <span id="p-samples-err" style="font-size: 12px; font-weight: 600; color: #B02A2A;">Required. Type the path of samples.tsv.</span>
-                <span style="font-size: 12px; color: #4D5065;">Path to the sample sheet (TSV). string</span>
+                <span style="font-size: 12px; color: #4D5065;">Path to the sample sheet (TSV).</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div class="prow">
                 <label for="p-units" style="font-size: 13px; font-weight: 600;">units <span style="color: #B02A2A;" aria-hidden="true">*</span></label>
+                <span class="pmeta">string</span>
                 <input id="p-units" type="text" value="/g/demo-lab/rnaseq/kd-screen/config/units.tsv" required aria-required="true" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">
-                <span style="font-size: 12px; color: #4D5065;">Path to the unit sheet (TSV). string</span>
+                <span style="font-size: 12px; color: #4D5065;">Path to the unit sheet (TSV).</span>
               </div>
             </div>
           </details>
@@ -128,21 +136,24 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
               <span style="font-size: 12.5px; font-weight: 600; color: #4D5065;">defaults</span>
               <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
             </summary>
-            <div style="padding: 4px 16px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 12px;">
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div class="plist" style="padding: 4px 16px 16px; ">
+              <div class="prow">
                 <label for="p-species" style="font-size: 13px; font-weight: 600;">species</label>
+                <span class="pmeta">string</span>
                 <input id="p-species" type="text" value="homo_sapiens">
-                <span style="font-size: 12px; color: #4D5065;">Ensembl species name. string</span>
+                <span style="font-size: 12px; color: #4D5065;">Ensembl species name.</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div class="prow">
                 <label for="p-release" style="font-size: 13px; font-weight: 600;">release</label>
+                <span class="pmeta">integer</span>
                 <input id="p-release" type="number" value="113">
-                <span style="font-size: 12px; color: #4D5065;">Ensembl release. integer</span>
+                <span style="font-size: 12px; color: #4D5065;">Ensembl release.</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div class="prow">
                 <label for="p-build" style="font-size: 13px; font-weight: 600;">build</label>
+                <span class="pmeta">string</span>
                 <input id="p-build" type="text" value="GRCh38">
-                <span style="font-size: 12px; color: #4D5065;">Genome build. string</span>
+                <span style="font-size: 12px; color: #4D5065;">Genome build.</span>
               </div>
             </div>
           </details>
@@ -152,10 +163,10 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
               <span style="font-size: 12.5px; font-weight: 600; color: #8F5806;">1 changed</span>
               <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
             </summary>
-            <div style="padding: 4px 16px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 12px;">
-              <div style="display: flex; flex-direction: column; gap: 5px; justify-content: center;">
-                <span style="display: flex; align-items: center; gap: 8px;"><input id="p-trim" type="checkbox" checked style="width: 16px; height: 16px; margin: 0; accent-color: #7750D4;"><label for="p-trim" style="font-size: 13px; font-weight: 600;">activate</label></span>
-                <span style="font-size: 12px; color: #4D5065;">changed · default false · boolean</span>
+            <div class="plist" style="padding: 4px 16px 16px; ">
+              <div class="prow">
+                <span class="pname" style="display: flex; align-items: center; gap: 8px;"><input id="p-trim" type="checkbox" checked style="width: 16px; height: 16px; margin: 0; accent-color: #7750D4;"><label for="p-trim" style="font-size: 13px; font-weight: 600;">activate</label></span>
+                <span class="pmeta">boolean · changed · default false</span>
               </div>
             </div>
           </details>
@@ -166,7 +177,7 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
                 <span style="font-size: 12.5px; color: #6E7287;">{{c.state}}</span>
                 <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
               </summary>
-              <div style="padding: 2px 16px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+              <div class="plist" style="padding: 2px 16px 16px; ">
                 <sc-for list="{{c.fields}}" as="f" hint-placeholder-count="3"><label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">{{f.k}}<input value="{{f.v}}" placeholder="{{f.p}}"><span style="font-weight: 400; font-size: 12px; color: #4D5065;">{{f.h}}</span></label></sc-for>
               </div>
             </details>

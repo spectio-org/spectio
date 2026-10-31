@@ -2,7 +2,7 @@ import "./runs.css";
 import { Link } from "@tanstack/react-router";
 import type { Run, RunState } from "../api";
 import { Icon } from "../icons";
-import { EngineMark } from "../shell/EngineMark";
+import { PipelineMark } from "../shell/EngineMark";
 import { type Tone, classWord, plural, runWord, shortId, tone, words } from "./stateWord";
 
 // The icons of ui-spec §3.1, one per tone: clock, play, flag, pause, check, cross, slash.
@@ -82,13 +82,13 @@ export function RunLink({ run }: { run: Run }) {
 export const tasksText = (run: Run): string =>
   run.summary.tasks.total ? `${run.summary.tasks.done} / ${run.summary.tasks.total}` : "—";
 
-/** The run's pipeline: its engine's mark, the name and the version, muted, on one line. The mark's
- * text is the engine's name, which the line does not show (UX-PAR-01). */
+/** The run's pipeline: its mark (nf-core for an nf-core/ name, else the engine's; inbox #91), the
+ * name and the version, muted, on one line (UX-PAR-01). */
 export function Pipeline({ run, size = 20 }: { run: Run; size?: number }) {
   const w = run.workflow;
   return (
     <span className="sp-pipeline">
-      <EngineMark engine={w.engine} size={size} />
+      <PipelineMark engine={w.engine} name={w.name} size={size} />
       <span>
         {w.name ?? w.location}
         {w.version && <span className="sp-version"> {w.version}</span>}

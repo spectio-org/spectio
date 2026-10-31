@@ -3,16 +3,18 @@ import type { ReactNode, Ref } from "react";
 import type { Process, RunDetail, ServerVersion, Stage } from "../api";
 import { ICONS } from "../icons";
 import { LiveStatus } from "../live";
-import { EngineMark } from "../shell/EngineMark";
+import { toYaml } from "../launch/schemaFields";
+import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PhoneTitle, usePhone } from "../shell/layout";
+import { type CopyItem, CopyMenu } from "./CopyMenu";
 import { StateWord, failureText, runName, tasksText } from "./RunState";
 import { duration, engineName, executorLabel, isTerminal, plural, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
 // The run header that every tab of the run shares (ui-spec §4.4 run tools note; LiteRunDetail;
 // UX-PAR-19, 21 and 22): the state bar, the engine's mark tile, the name and short ID, the state
-// line, Cancel, then the facts and the task counts. P1 Task 32 adds Copy, Resume and Copy to a
-// new launch here.
+// line, Cancel and Copy, then the facts and the task counts. P1 Task 32 adds Resume, Copy to a
+// new launch and Copy's "Command" here.
 
 /** The chips under the facts: the states with tasks, failed and retried always (UX-PAR-22). */
 export function taskChips(run: RunDetail, processes: Process[]): { label: string; n: number; tone: string }[] {
@@ -28,6 +30,29 @@ export function taskChips(run: RunDetail, processes: Process[]): { label: string
     { label: "not scheduled", n: sum(c, "not_scheduled"), tone: "cancelled", always: false },
   ];
   return chips.filter((chip) => chip.always || chip.n > 0);
+}
+
+/** A driven run's directory, runs_root/<run id> (runner/rundir.py); a run from a terminal has its
+ * own, which the API does not serve. */
+export function runDirectory(run: RunDetail, server: ServerVersion | null): string | null {
+  return run.origin !== "cli-observed" && server ? `${server.runs_root}/${run.id}` : null;
+}
+
+/** What Copy offers for this run (LiteRunActions B, H): its config as the engine reads it, its
+ * directory when known, its ID. */
+export function copyItems(run: RunDetail, server: ServerVersion | null): CopyItem[] {
+  const items: CopyItem[] = [];
+  if (Object.keys(run.params).length) {
+    items.push(
+      run.workflow.engine === "snakemake"
+        ? { label: "Config (config.yaml)", what: "the config", text: toYaml(run.params) }
+        : { label: "Config (params.json)", what: "the params", text: `${JSON.stringify(run.params, null, 2)}\n` },
+    );
+  }
+  const directory = runDirectory(run, server);
+  if (directory) items.push({ label: "Run directory", what: "the run directory", text: directory });
+  items.push({ label: "Run ID", what: "the run ID", text: run.id });
+  return items;
 }
 
 function headWord(run: RunDetail): string {
@@ -47,9 +72,9 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
   const facts: [string, ReactNode][] = [
     [
       "Pipeline",
-      // the mark names the engine, which this fact does not write (CR-P3PARA-03)
+      // the pipeline's mark: nf-core for an nf-core/ name, else the engine's (inbox #91)
       <span className="sp-pipeline">
-        <EngineMark engine={w.engine} size={18} />
+        <PipelineMark engine={w.engine} name={w.name} size={18} />
         <span>{pipeline}</span>
       </span>,
     ],
@@ -67,11 +92,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
     ["Login node", run.head?.node ?? server?.node ?? "—"],
     ["Exit code", run.head?.exit_code != null ? String(run.head.exit_code) : ended ? "—" : "— (still running)"],
     ["Pipeline directory", <span className="sp-mono">{w.location}</span>],
-    [
-      "Run directory",
-      // A driven run's directory is runs_root/<run id> (runner/rundir.py); a run from a terminal has its own.
-      <span className="sp-mono">{run.origin !== "cli-observed" && server ? `${server.runs_root}/${run.id}` : "—"}</span>,
-    ],
+    ["Run directory", <span className="sp-mono">{runDirectory(run, server) ?? "—"}</span>],
     ["Executor", server ? executorLabel(server.executor) : "—"],
     ["Failure", run.state === "failed" ? failureText(run) : "—"],
   ];
@@ -129,9 +150,9 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
       {/* The phone: the name and state line in the top bar, with the way back (MLiteRunDetail; UX-PAR-08). */}
       <PhoneTitle title={runName(run)} sub={state} back={{ to: "/runs", label: "Runs" }} titleRef={titleRef} />
       <div className="sp-run-top">
-        {w.engine && (
+        {markFor(w.engine, w.name) && (
           <span className="sp-mark-tile">
-            <EngineMark engine={w.engine} size={24} />
+            <PipelineMark engine={w.engine} name={w.name} size={26} />
           </span>
         )}
         {phone ? (
@@ -159,11 +180,14 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
             </p>
           </div>
         )}
-        {canCancel && (
-          <Button color="red" variant="outline" onClick={onCancel}>
-            Cancel run
-          </Button>
-        )}
+        <div className="sp-run-actions">
+          {canCancel && (
+            <Button color="red" variant="outline" onClick={onCancel}>
+              Cancel run
+            </Button>
+          )}
+          <CopyMenu items={copyItems(run, server)} fullWidth={phone} />
+        </div>
       </div>
       {cancelError && <p role="alert">Cancel failed: {cancelError}</p>}
       <FoldSection id="facts" screen="run" icon={ICONS.info} title="Facts" summary={summary} defaultOpen={!phone}>
