@@ -489,3 +489,10 @@ One entry per tick: time, steps started and finished, verification results, tria
 ## 2026-10-31 · Promotion #110 merged: UI parity C on main
 
 - Integration promoted to `main` by merge commit 00b900d (label `screenshots`; every check green on 4c4e3ba, `e2e-local` included). P3-demo (public read-only demo at `/demo/`) is building; its PR changes `previews.yml` and waits for Thomas's review.
+
+## 2026-10-31 · P3-demo: PR #111 open, waits for Thomas
+
+- Public read-only demo of the 0.0.1 screens at `/demo/` (Thomas: "oui ajoute cela"): `build:demo` answers the API from `web/demo/fixtures.json` (recorded by `tools/media/record_demo.py`, 41 answers, 773 kB, demo data only), writes refused with a reason, banner, hash routing; `previews.yml` publishes it on `main` and PR previews.
+- Workflow p3-task done in 3 review rounds (code approve 0/1/10, security approve 0/0/9), simplifier one rule, doc-reviewer approve 13. SAST 0 findings.
+- An early commit (`f769837`, local only) held the sandbox's kernel build in the recording (SEC-P3DEMO-07). Inbox #92 (b): the PR comes from `autopilot/P3-demo-pub`, one commit with the reviewed tree (`eedd124`); `autopilot/P3-demo` stays local, nothing force-pushed or deleted.
+- PR #111 into integration, label `screenshots`. Not auto-merged: it changes `.github/workflows/previews.yml`; Thomas reviews and merges it. Cost recorded: 40 USD. Thomas asked to stop after this workflow: no subscription, no check-in, no further step.
