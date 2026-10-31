@@ -307,7 +307,7 @@ def logos(s: Sketch) -> None:
     rows = (("nf-core/rnaseq", "nextflow", "nf-core", "nf-core: the name starts with `nf-core/`"),
             ("lab/chipseq", "nextflow", "nextflow", "Nextflow, the engine's"),
             ("lab/variants", "snakemake", "snakemake", "Snakemake, the engine's"),
-            ("any name", "unknown", None, "none; Launch shows a folder icon"))
+            ("another name", "unknown", None, "none; Launch shows a folder icon"))
     for i, (name, engine, key, says) in enumerate(rows):
         y = y0 + 44 + i * 54
         s.text(50, y, f"`{name}`", size=14, anchor="start")
