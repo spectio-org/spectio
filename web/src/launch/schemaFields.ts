@@ -34,6 +34,11 @@ type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 const SIMPLE = ["string", "integer", "number", "boolean"];
 const text = (v: unknown) => (typeof v === "string" ? v : null);
+/** Keys from the pipeline are data: these would reach `Object.prototype` (SEC-P3PARB-01). */
+const UNSAFE = new Set(["__proto__", "constructor", "prototype"]);
+/** A record's own value only: an inherited `toString` or `constructor` is not a value. */
+export const own = <T>(record: Record<string, T>, key: string): T | undefined =>
+  Object.hasOwn(record, key) ? record[key] : undefined;
 
 /** A value's schema, as the server infers it from config/config.yaml (`workflows.py` `_type`). */
 function inferred(value: unknown): Obj {
@@ -77,35 +82,39 @@ function field(path: string[], prop: Obj, required: boolean): Field {
   };
 }
 
-/** The fields of a map, its nested maps flattened to dotted keys when `nest`. */
-function fields(group: Obj, prefix: string[], nest: boolean): Field[] {
+/** The fields of a map, its nested maps flattened to dotted keys when `nest`. An unsafe key is
+ * left out and its dotted path pushed to `skipped`, for the form to name. */
+function fields(group: Obj, prefix: string[], nest: boolean, skipped: string[]): Field[] {
   const required = Array.isArray(group.required) ? group.required : [];
   const props = propertiesOf(group) ?? {};
   const parentDefault = isObj(group.default) ? group.default : {};
   return Object.entries(props).flatMap(([key, p]) => {
-    if (!isObj(p) || p.hidden === true) return [];
-    const prop = p.default === undefined && key in parentDefault ? { ...p, default: parentDefault[key] } : p;
     const path = [...prefix, key];
-    if (nest && propertiesOf(prop)) return fields(prop, path, true);
+    if (UNSAFE.has(key)) {
+      skipped.push(path.join("."));
+      return [];
+    }
+    if (!isObj(p) || p.hidden === true) return [];
+    const prop = p.default === undefined && Object.hasOwn(parentDefault, key) ? { ...p, default: parentDefault[key] } : p;
+    if (nest && propertiesOf(prop)) return fields(prop, path, true, skipped);
     return [field(path, prop, required.includes(key))];
   });
 }
 
-const section = (title: string, group: Obj, prefix: string[], nest: boolean): Section => ({
-  title,
-  description: text(group.description),
-  icon: text(group.fa_icon),
-  fields: fields(group, prefix, nest),
-});
-
-export function schemaFields(schema: JSONSchema | null): Section[] {
+export function schemaFields(schema: JSONSchema | null, skipped: string[] = []): Section[] {
+  const section = (title: string, group: Obj, prefix: string[], nest: boolean): Section => ({
+    title,
+    description: text(group.description),
+    icon: text(group.fa_icon),
+    fields: fields(group, prefix, nest, skipped),
+  });
   if (!schema) return [];
   const defs = isObj(schema.$defs) ? schema.$defs : isObj(schema.definitions) ? schema.definitions : null;
   const sections: Section[] = [];
   if (defs) {
     const refs = (Array.isArray(schema.allOf) ? schema.allOf : [])
       .map((a) => (isObj(a) && typeof a.$ref === "string" ? a.$ref.split("/").pop() : undefined))
-      .filter((name): name is string => !!name && name in defs);
+      .filter((name): name is string => !!name && Object.hasOwn(defs, name));
     const names = [...new Set([...refs, ...Object.keys(defs)])];
     for (const name of names) {
       const group = defs[name];
@@ -116,7 +125,7 @@ export function schemaFields(schema: JSONSchema | null): Section[] {
   }
   if (!isObj(schema.properties)) return [];
   const props = schema.properties;
-  const maps = Object.keys(props).filter((k) => isObj(props[k]) && propertiesOf(props[k] as Obj));
+  const maps = Object.keys(props).filter((k) => !UNSAFE.has(k) && isObj(props[k]) && propertiesOf(props[k] as Obj));
   const top = { ...schema, properties: Object.fromEntries(Object.entries(props).filter(([k]) => !maps.includes(k))) };
   sections.push({ ...section("Parameters", top, [], false), description: null, icon: null });
   for (const key of maps) {
@@ -161,12 +170,13 @@ export function isChanged(field: Field, value: string | boolean | undefined): bo
 /** The params of `POST /runs`: only the values set, nested maps rebuilt from dotted keys, then the
  * name and value rows of a pipeline with no schema. */
 export function buildParams(fields: Field[], values: Values, rows: Row[]): Record<string, unknown> {
-  const params: Record<string, unknown> = {};
+  // null-prototype maps: a key named `__proto__` is an own key, never Object.prototype
+  const params: Record<string, unknown> = Object.create(null);
   for (const field of fields) {
-    const value = paramValue(field, values[field.key]);
+    const value = paramValue(field, own(values, field.key));
     if (value === undefined) continue;
     let at = params;
-    for (const part of field.path.slice(0, -1)) at = (at[part] ??= {}) as Record<string, unknown>;
+    for (const part of field.path.slice(0, -1)) at = (at[part] ??= Object.create(null)) as Record<string, unknown>;
     at[field.path[field.path.length - 1]] = value;
   }
   for (const row of rows) if (row.key.trim()) params[row.key.trim()] = row.value;

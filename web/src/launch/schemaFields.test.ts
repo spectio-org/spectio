@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildParams, schemaFields, toYaml } from "./schemaFields";
+import { buildParams, isChanged, own, schemaFields, toYaml } from "./schemaFields";
 
 // The nf-core shape: groups under $defs (draft 2020-12) or definitions (draft 7), in allOf order.
 const nfDefs = {
@@ -120,5 +120,42 @@ describe("schemaFields", () => {
     ).toBe(
       'units: "/g/x units.tsv"\nref:\n  species: homo_sapiens\n  release: 113\n"on": true\ntags:\n  - a\n  - "1"\nnone: {}\n"n": null\n',
     );
+  });
+});
+
+// SEC-P3PARB-01: schema and config keys come from the pipeline. `__proto__`, `constructor` and
+// `prototype` are refused (and named), never written through, so Object.prototype stays clean.
+describe("untrusted keys", () => {
+  // JSON.parse makes `__proto__` an own key, as the inspect response does
+  const schema = JSON.parse(`{
+    "type": "object",
+    "properties": {
+      "__proto__": { "type": "object", "properties": { "polluted": { "type": "string" } } },
+      "constructor": { "type": "object", "default": { "prototype": { "polluted": "yes" } } },
+      "toString": { "type": "boolean" },
+      "ok": { "type": "string" }
+    }
+  }`);
+
+  test("the keys are skipped and named, Object.prototype stays clean", () => {
+    const skipped: string[] = [];
+    const fields = schemaFields(schema, skipped).flatMap((s) => s.fields);
+    expect(fields.map((f) => f.key)).toEqual(["toString", "ok"]);
+    expect(skipped).toEqual(["__proto__", "constructor"]);
+    const params = buildParams(fields, { ok: "a" }, [{ key: "__proto__", value: "x" }]);
+    expect(JSON.stringify(params)).toBe('{"ok":"a","__proto__":"x"}');
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  test("a nested map path cannot reach Object.prototype", () => {
+    const field = { key: "__proto__.polluted", path: ["__proto__", "polluted"], label: "", type: "string" as const, required: false, default: undefined, help: null, format: null };
+    expect(() => buildParams([field], { "__proto__.polluted": "yes" }, [])).not.toThrow();
+    expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+  });
+
+  test("an inherited name in the values is not a value", () => {
+    const [toString] = schemaFields(schema).flatMap((s) => s.fields);
+    expect(buildParams([toString], {}, [])).toEqual({});
+    expect(isChanged(toString, own({}, "toString"))).toBe(false);
   });
 });

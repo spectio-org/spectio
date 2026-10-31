@@ -327,3 +327,11 @@ test("UX-PAR-34: on the phone the pinned bar says why Launch waits, then what it
   expect(launch()).not.toHaveAttribute("aria-disabled");
   expect(launch()).toHaveAccessibleDescription("nf-core/rnaseq 3.27.0 · Nextflow · docker · 1 value changed");
 });
+
+test("SEC-P3PARB-01: a schema key Launch refuses is named, not dropped silently", async () => {
+  page();
+  const schema = JSON.parse('{"type":"object","properties":{"__proto__":{"type":"string"},"depth":{"type":"integer"}}}');
+  await load({ ...INSPECTED, schema });
+  expect(screen.getByRole("textbox", { name: /^depth/ })).toBeInTheDocument();
+  expect(screen.getByText(/Not in the form: __proto__/)).toBeInTheDocument();
+});

@@ -37,6 +37,7 @@ import {
   type Values,
   buildParams,
   isChanged,
+  own,
   schemaFields,
   toYaml,
 } from "./schemaFields";
@@ -123,11 +124,12 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
 
   const repo = location.trim() !== "" && !location.trim().startsWith("/");
   const github = SHORT_NAME.test(location.trim()) ? `https://github.com/${location.trim()}` : null;
-  const sections = schemaFields(loaded?.schema ?? null);
+  const skipped: string[] = [];
+  const sections = schemaFields(loaded?.schema ?? null, skipped);
   const fields = sections.flatMap((s) => s.fields);
   const keys = fields.map((f) => f.key);
   const grouped = !!loaded?.schema && ("$defs" in loaded.schema || "definitions" in loaded.schema);
-  const changed = fields.filter((f) => isChanged(f, values[f.key])).length + rows.filter((r) => r.key.trim()).length;
+  const changed = fields.filter((f) => isChanged(f, own(values, f.key))).length + rows.filter((r) => r.key.trim()).length;
 
   /** An edit of Pipeline or Revision cancels the inspect in flight and forgets the last one. */
   function edit(set: (v: string) => void, value: string) {
@@ -188,10 +190,10 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
       return `No ${ENGINE_FILES[engine].join(" or ")} in this directory: press ${other} or check the path`;
     }
     const missing = fields.find(
-      (f) => f.required && f.type !== "boolean" && String(values[f.key] ?? "").trim() === "",
+      (f) => f.required && f.type !== "boolean" && String(own(values, f.key) ?? "").trim() === "",
     );
     if (missing) return `Fill the required field: ${missing.key}`;
-    const badJson = fields.find((f) => f.type === "json" && jsonError(values[f.key]));
+    const badJson = fields.find((f) => f.type === "json" && jsonError(own(values, f.key)));
     if (badJson) return `${badJson.key} is not valid JSON`;
     if (sending) return "Launching…";
     return null;
@@ -369,6 +371,11 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
                   {`One section per ${grouped ? "schema group" : "map of the config, its keys dotted"} · ${changed === 1 ? "1 value differs from its default" : `${changed} values differ from their defaults`}`}
                 </Text>
               )}
+              {skipped.length > 0 && (
+                <Text size="sm" c="dimmed" mb="sm">
+                  {`Not in the form: ${skipped.join(", ")}. Spectio refuses these key names; set them in the pipeline's own config.`}
+                </Text>
+              )}
               <Stack gap="sm">
                 {sections.length === 1 && (
                   <ParamGrid
@@ -481,8 +488,8 @@ function ParamGroup({
   onChange: (key: string, value: string | boolean) => void;
 }) {
   const required = section.fields.filter((f) => f.required && f.type !== "boolean");
-  const empty = required.filter((f) => String(values[f.key] ?? "").trim() === "").length;
-  const changed = section.fields.filter((f) => isChanged(f, values[f.key])).length;
+  const empty = required.filter((f) => String(own(values, f.key) ?? "").trim() === "").length;
+  const changed = section.fields.filter((f) => isChanged(f, own(values, f.key))).length;
   const failed = section.fields.some((f) => errors[`params.${f.key}`]);
   const status = [
     empty
@@ -540,7 +547,7 @@ function ParamGrid({
         <ParamField
           key={field.key}
           field={field}
-          value={values[field.key]}
+          value={own(values, field.key)}
           error={errors[`params.${field.key}`]}
           onChange={(v) => onChange(field.key, v)}
         />
