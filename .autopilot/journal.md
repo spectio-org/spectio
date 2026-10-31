@@ -449,3 +449,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-10-31 02:10 · P3 Task 20 merged: PR #103, squash `b98e39d` (footer `Release-As: 0.0.1`), every check green on `4cd5e1c`, `e2e-local` included. Promotion to main next; then the guide and the four screenshots for Thomas.
 - 2026-10-31 02:13 · promotion #104 merged into main (merge `1f49c75`): P3 Task 20. `pipelines-synthetic / snakemake 9.27.1` failed once on `oom_fatal` (known engine fault `lost-retry-at-checkpoint-update`, code the PR does not touch) and passed on its one re-run. Goal reached: Spectio 0.0.1 testable locally with its UI (`bash tests/e2e/serve-local.sh`); guide and screenshots sent to Thomas. Next in order: Task 7 (Snakemake logger). Pending Thomas: inbox #86 (reserved, security posture of local-only mode), #90 (assumed rules of Task 20).
 - 2026-10-31 02:40 · Thomas: the built screens miss defined items (collapsible sections with light icons, engine logos); fix them, ceiling lifted for this fix. `ux-reviewer` parity audit: 34 findings (20 major, 14 minor), `docs/reviews/ui-parity-0.0.1.md` (`2785941`). Step A (shell, Home, runs, run detail) dispatched: workflow `p3-task` run `wf_65294dbd-444`, branch `autopilot/P3-parA`. Step B (phone PAR-08/09/10/34, Launch PAR-30..33) follows.
+
+## 2026-10-31 · P3-parA: PR #105 opened
+
+- Workflow done (2 review rounds, doc-reviewer approve 12/14). Fixed by hand after it: the log-tail tint (`36a7af2`, CR-P3PARA-04). The five live shots were retaken by media-capture (`d7ab57d`). SAST: 0 findings.
+- PR #105 into integration, label `screenshots`, subscribed. Cost recorded: 70 USD (ceiling lifted by Thomas for this fix).
+- Seen in the retake: the Head fact reads "Alive" on ended runs. To be checked in step B (brief in the scratchpad).
