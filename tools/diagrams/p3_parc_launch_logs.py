@@ -40,7 +40,7 @@ Every fact comes from branch autopilot/P3-parC at 089adc38 (base f6c09fa3):
 - packages/spectio-server/src/spectio_server/api/logs.py:27, the raw response headers;
 - the review rounds and the checks, from the step's worker, reviewer and simplifier reports:
   R1 CR changes (01 major, 02 to 05 minor, 06 simplify, 07 minor), SEC approve (01, 02 minor);
-  R2 CR approve (01 to 05 minor), SEC approve (01, 02 minor); R3 approve, approve, no finding;
+  R2 CR approve (02 to 04 minor, 05 simplify), SEC approve (01, 02 minor); R3 approve, approve, no finding;
   simplifier 089adc38, whitespace only; pytest 511 passed, vitest 140 of 140, tsc clean.
 - 045e3991, the docs commit: R1 CR-P3PARC-07 fixed (inbox #91, rule 1 and the Assumed line marked
   superseded); R2 CR-P3PARC-03 recorded in the ui-spec §4.4 note "UI parity C" (docs/reviews/code/P3-parC.md).
@@ -70,7 +70,7 @@ TINT = {"failed": "#F59A9A", "review": "#F5C779", "ok": "#7FD3AA", "progress": "
 ROUNDS = (
     ("R1", "changes", (("M", True), ("m", True), ("m", False), ("m", False), ("m", False),
                        ("s", True), ("m", True)), "approve", (("m", False), ("m", False))),
-    ("R2", "approve", (("m", False), ("m", True), ("m", False), ("m", False), ("m", False)),
+    ("R2", "approve", (("m", True), ("m", False), ("m", False), ("s", False)),
      "approve", (("m", False), ("m", False))),
     ("R3", "approve", (), "approve", ()),
 )
@@ -515,8 +515,9 @@ def rounds(s: Sketch) -> None:
         s.text(x0 + 26 + k * 130, ky, word, size=13, anchor="start")
     s.tick(x0 + 400, ky - 5, size=6, colour=t.good)
     s.text(x0 + 414, ky, "fixed on the branch", size=13, anchor="start")
-    lines(s, x0, ky + 30, ("IDs restart in each round: R2's 02 is R1's 02 again; R2's 05 repeats R1's 06,",
-                           "whose indentation part 089adc38 fixed; open minors: docs/reviews/code/P3-parC.md"), size=12.5,
+    lines(s, x0, ky + 30, ("IDs restart in each round; R2's cells are 02 to 05: 02 is R1's 02 again, and 05",
+                           "repeats R1's 06, whose indentation part 089adc38 fixed; the rest: docs/reviews/code/P3-parC.md"),
+          size=12.5,
           first=False)
     s.terminal(800, S4 + 20, 750, 190, (
         "simplifier, 089adc38: the Pipeline section's indentation,",
