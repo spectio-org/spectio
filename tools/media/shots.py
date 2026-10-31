@@ -73,6 +73,17 @@ REGISTRY: dict[str, Shot] = {
              themes=("light", "dark"), live=APP_LAUNCH),
         Shot("app-launch-phone", "/launch", 390, 844, "0.0.1, live: the same launch form on a phone",
              themes=("light", "dark"), live=APP_LAUNCH),
+        # P1 Task 20: the same serve, after one run of the synthetic pipeline with profile `test` has
+        # finished; $SPECTIO_DEMO_RUN is its ID.
+        Shot("app-home", "/", 1440, 1000, "0.0.1, live: Home, with the count cards, the runs that ended and the pipelines",
+             live=("wait:Finished recently",)),
+        Shot("app-runs", "/runs", 1440, 1000, "0.0.1, live: the runs list with its state filters",
+             live=("wait:Duration",)),
+        Shot("app-run-detail", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
+             "0.0.1, live: a finished run of the synthetic Nextflow pipeline, its processes and facts",
+             live=("wait:65 / 65 tasks",)),
+        Shot("app-run-detail-phone", "/runs/$SPECTIO_DEMO_RUN", 390, 844, "0.0.1, live: the same run on a phone",
+             live=("wait:65 / 65 tasks",)),
     )
 }
 

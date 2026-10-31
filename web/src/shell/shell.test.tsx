@@ -121,7 +121,9 @@ test("breadcrumbs follow the route", async () => {
   const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
   expect(within(crumbs).getByRole("link", { name: "Home" })).toHaveAttribute("href", "/");
   expect(within(crumbs).getByRole("link", { name: "Runs" })).toHaveAttribute("href", "/runs");
-  expect(within(crumbs).getByText("run_01K8T2F1XT")).toHaveAttribute("aria-current", "page");
+  // The URL's text is not a label (SEC-P3G4-02): a run's crumb is "Run" until its name loads.
+  expect(within(crumbs).getByText("Run")).toHaveAttribute("aria-current", "page");
+  expect(within(crumbs).queryByText("run_01K8T2F1XT")).toBeNull();
 
   await router.navigate({ to: "/launch" });
   expect(await within(crumbs).findByText("Launch")).toHaveAttribute("aria-current", "page");
@@ -131,7 +133,7 @@ test("breadcrumbs follow the route", async () => {
 test("a malformed percent sequence keeps the shell (CR-P3G4-01)", async () => {
   app("/runs/%E0");
   const crumbs = await screen.findByRole("navigation", { name: "Breadcrumb" });
-  expect(within(crumbs).getByText("%E0")).toHaveAttribute("aria-current", "page");
+  expect(within(crumbs).getByText("Run")).toHaveAttribute("aria-current", "page");
 });
 
 test("the phone node pill stays neutral while connecting (CR-P3G4-02)", async () => {

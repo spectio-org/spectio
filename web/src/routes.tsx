@@ -1,4 +1,3 @@
-import { Stack, Text, Title } from "@mantine/core";
 import {
   type RouterHistory,
   createRootRoute,
@@ -6,25 +5,16 @@ import {
   createRouter,
   useNavigate,
   useParams,
+  useRouterState,
 } from "@tanstack/react-router";
-import { useEffect } from "react";
+import { HomePage } from "./home/HomePage";
 import { LaunchPage } from "./launch/LaunchPage";
+import { NotFound, RunDetailPage } from "./runs/RunDetailPage";
+import { RunsPage } from "./runs/RunsPage";
 import { AppShell } from "./shell/AppShell";
 
-// The four routes of 0.0.1 (mvp-0.0.1 §1) in the Paper shell (G4).
-// Home, the runs list and the run detail come with P1 Task 20.
-
-function Later({ title }: { title: string }) {
-  useEffect(() => {
-    document.title = `${title} · Spectio`;
-  }, [title]);
-  return (
-    <Stack gap="xs">
-      <Title order={1}>{title}</Title>
-      <Text c="dimmed">This screen comes with P1 Task 20.</Text>
-    </Stack>
-  );
-}
+// The four routes of 0.0.1 (mvp-0.0.1 §1) in the Paper shell (G4): home, the runs list and the
+// run detail (P1 Task 20), and the launch form (Task 19).
 
 function LaunchRoute() {
   const navigate = useNavigate();
@@ -33,13 +23,19 @@ function LaunchRoute() {
 
 function RunRoute() {
   const { id } = useParams({ from: "/runs/$id" });
-  return <Later title={`Run ${id}`} />;
+  // A malformed id (/runs/%E0) reaches the page as it is; the page shows its not-found state.
+  return <RunDetailPage key={id} id={id} />;
 }
 
-const root = createRootRoute({ component: AppShell });
+function NotFoundRoute() {
+  const pathname = useRouterState({ select: (s) => s.location.pathname });
+  return <NotFound run={pathname.startsWith("/runs/")} />;
+}
+
+const root = createRootRoute({ component: AppShell, notFoundComponent: NotFoundRoute });
 const routes = [
-  createRoute({ getParentRoute: () => root, path: "/", component: () => <Later title="Home" /> }),
-  createRoute({ getParentRoute: () => root, path: "/runs", component: () => <Later title="Runs" /> }),
+  createRoute({ getParentRoute: () => root, path: "/", component: HomePage }),
+  createRoute({ getParentRoute: () => root, path: "/runs", component: RunsPage }),
   createRoute({ getParentRoute: () => root, path: "/launch", component: LaunchRoute }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id", component: RunRoute }),
 ];

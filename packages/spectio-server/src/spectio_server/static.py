@@ -1,6 +1,7 @@
 """The screens: the built `web/dist` (P1 Task 19), served at `/` beside the API.
 
-Only the four screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}`) answer `index.html`, and
+Only the four screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}`) answer `index.html` (to
+`GET` and `HEAD`), and
 only `/assets/<name>` answers a file: one plain name, a known web type, opened under `dist`
 with `O_NOFOLLOW` at each step, so no symlink is followed and no path leaves the directory.
 Hashed assets are cached for a year, `index.html` is revalidated, and every answer carries a
@@ -44,7 +45,8 @@ HEADERS = {
     "Cross-Origin-Opener-Policy": "same-origin",
 }
 NOT_BUILT = (
-    "The screens are not built: run `npm --prefix web ci && npm --prefix web run build`, "
+    "The screens are not built: run "
+    "`npm --prefix web ci --ignore-scripts && npm --prefix web run build`, "
     "then start spectio serve again."
 )
 
@@ -75,9 +77,9 @@ def install(app: FastAPI, dist: Path) -> None:
         return Response(page, media_type="text/html; charset=utf-8", headers=headers)
 
     for route in ROUTES:
-        app.add_api_route(route, index, methods=["GET"], include_in_schema=False)
+        app.add_api_route(route, index, methods=["GET", "HEAD"], include_in_schema=False)
 
-    @app.get("/assets/{name}", include_in_schema=False)
+    @app.api_route("/assets/{name}", methods=["GET", "HEAD"], include_in_schema=False)
     def asset(name: str) -> Response:
         media = TYPES.get(Path(name).suffix)
         body = read(dist, "assets", name) if ASSET.fullmatch(name) and media else None

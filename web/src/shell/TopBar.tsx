@@ -14,27 +14,22 @@ const SECTIONS: Record<string, { label: string; to: To }> = {
   launch: { label: "Launch", to: "/launch" },
 };
 
-/** The router decodes the path but leaves %25, %5C and malformed sequences such as %E0 as they are. */
-function label(segment: string): string {
-  try {
-    return decodeURIComponent(segment);
-  } catch {
-    return segment;
-  }
-}
-
-/** Home > section > item, from the path; every crumb but the last is a link. */
-export function crumbsFor(pathname: string): Crumb[] {
+/** Home > section > item, from the path; every crumb but the last is a link. The URL's own text
+ * is never shown (SEC-P3G4-02): an item reads `item`, the page's label (a run's name from the
+ * API), else "Run" under /runs, else "Not found". */
+export function crumbsFor(pathname: string, item: string | null = null): Crumb[] {
   const crumbs: Crumb[] = [{ label: "Home", to: "/" }];
+  let previous = "";
   for (const segment of pathname.split("/").filter(Boolean)) {
-    crumbs.push(SECTIONS[segment] ?? { label: label(segment) });
+    crumbs.push(SECTIONS[segment] ?? { label: item ?? (previous === "runs" ? "Run" : "Not found") });
+    previous = segment;
   }
   return crumbs.map((crumb, i) => (i === crumbs.length - 1 ? { label: crumb.label } : crumb));
 }
 
-function Breadcrumbs() {
+function Breadcrumbs({ item }: { item: string | null }) {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
-  const crumbs = crumbsFor(pathname);
+  const crumbs = crumbsFor(pathname, item);
   return (
     <nav aria-label="Breadcrumb" className="sp-crumbs">
       <ol>
@@ -103,10 +98,11 @@ interface Props {
   phone: boolean;
   server: ServerVersion | null;
   down: string | null;
+  crumb: string | null;
 }
 
 /** The floating top bar of the Paper shell (LiteTopbar), or its compact phone form (MLiteTopbar). */
-export function TopBar({ phone, server, down }: Props) {
+export function TopBar({ phone, server, down, crumb }: Props) {
   if (phone) {
     const node = server ? `Server on ${server.node}, online` : down ? "Server not reached" : "Connecting";
     return (
@@ -134,7 +130,7 @@ export function TopBar({ phone, server, down }: Props) {
         <span className="sp-word">Spectio</span>
       </Link>
       <span className="sp-rule" aria-hidden="true" />
-      <Breadcrumbs />
+      <Breadcrumbs item={crumb} />
       <button type="button" className="sp-search" disabled aria-label="Search (not in 0.0.1)">
         <Icon path={SEARCH} size={16} />
         <span className="sp-search-text">Search (not in 0.0.1)</span>

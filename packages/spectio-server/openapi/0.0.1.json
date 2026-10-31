@@ -14,6 +14,49 @@
         "title": "HTTPValidationError",
         "type": "object"
       },
+      "Head": {
+        "description": "The last launch's head; `session` is null for a run started from a terminal.",
+        "properties": {
+          "alive": {
+            "title": "Alive",
+            "type": "boolean"
+          },
+          "exit_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Code"
+          },
+          "node": {
+            "title": "Node",
+            "type": "string"
+          },
+          "session": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Session"
+          }
+        },
+        "required": [
+          "session",
+          "node",
+          "alive",
+          "exit_code"
+        ],
+        "title": "Head",
+        "type": "object"
+      },
       "JsonValue": {},
       "LaunchIn": {
         "additionalProperties": false,
@@ -55,6 +98,670 @@
           "workflow"
         ],
         "title": "LaunchIn",
+        "type": "object"
+      },
+      "Process": {
+        "properties": {
+          "counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Counts",
+            "type": "object"
+          },
+          "process": {
+            "title": "Process",
+            "type": "string"
+          },
+          "retries": {
+            "title": "Retries",
+            "type": "integer"
+          },
+          "stage_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Id"
+          }
+        },
+        "required": [
+          "process",
+          "stage_id",
+          "counts",
+          "retries"
+        ],
+        "title": "Process",
+        "type": "object"
+      },
+      "ProcessList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Process"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "ProcessList",
+        "type": "object"
+      },
+      "Run": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure"
+          },
+          "head": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Head"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ui",
+                  "api",
+                  "wes",
+                  "cli-observed",
+                  "cli-adopted"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          },
+          "profiles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Profiles",
+            "type": "array"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "running",
+              "pausing",
+              "paused",
+              "awaiting_review",
+              "cancelling",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/RunSummary"
+          },
+          "task_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Task Counts",
+            "type": "object"
+          },
+          "workflow": {
+            "$ref": "#/components/schemas/WorkflowRef"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "state",
+          "origin",
+          "created_at",
+          "started_at",
+          "ended_at",
+          "workflow",
+          "profiles",
+          "failure",
+          "head",
+          "task_counts",
+          "summary"
+        ],
+        "title": "Run",
+        "type": "object"
+      },
+      "RunDetail": {
+        "properties": {
+          "created_at": {
+            "title": "Created At",
+            "type": "string"
+          },
+          "ended_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ended At"
+          },
+          "failure": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Failure"
+          },
+          "head": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Head"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "origin": {
+            "anyOf": [
+              {
+                "enum": [
+                  "ui",
+                  "api",
+                  "wes",
+                  "cli-observed",
+                  "cli-adopted"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Origin"
+          },
+          "params": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Params",
+            "type": "object"
+          },
+          "profiles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Profiles",
+            "type": "array"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "running",
+              "pausing",
+              "paused",
+              "awaiting_review",
+              "cancelling",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/RunSummary"
+          },
+          "task_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Task Counts",
+            "type": "object"
+          },
+          "workflow": {
+            "$ref": "#/components/schemas/WorkflowRef"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "state",
+          "origin",
+          "created_at",
+          "started_at",
+          "ended_at",
+          "workflow",
+          "profiles",
+          "failure",
+          "head",
+          "task_counts",
+          "summary",
+          "params"
+        ],
+        "title": "RunDetail",
+        "type": "object"
+      },
+      "RunList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Run"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          }
+        },
+        "required": [
+          "items",
+          "next"
+        ],
+        "title": "RunList",
+        "type": "object"
+      },
+      "RunSummary": {
+        "properties": {
+          "last_failure": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "$ref": "#/components/schemas/JsonValue"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Failure"
+          },
+          "tasks": {
+            "$ref": "#/components/schemas/TaskSummary"
+          }
+        },
+        "required": [
+          "tasks",
+          "last_failure"
+        ],
+        "title": "RunSummary",
+        "type": "object"
+      },
+      "ServerVersion": {
+        "properties": {
+          "account": {
+            "title": "Account",
+            "type": "string"
+          },
+          "executor": {
+            "title": "Executor",
+            "type": "string"
+          },
+          "node": {
+            "title": "Node",
+            "type": "string"
+          },
+          "runs_root": {
+            "title": "Runs Root",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version",
+          "node",
+          "runs_root",
+          "account",
+          "executor"
+        ],
+        "title": "ServerVersion",
+        "type": "object"
+      },
+      "Stage": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "position": {
+            "title": "Position",
+            "type": "integer"
+          },
+          "source": {
+            "enum": [
+              "declared",
+              "detected"
+            ],
+            "title": "Source",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "not_started",
+              "running",
+              "awaiting_review",
+              "completed",
+              "failed",
+              "skipped"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "task_counts": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Task Counts",
+            "type": "object"
+          }
+        },
+        "required": [
+          "id",
+          "position",
+          "name",
+          "source",
+          "state",
+          "task_counts"
+        ],
+        "title": "Stage",
+        "type": "object"
+      },
+      "StageList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Stage"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "StageList",
+        "type": "object"
+      },
+      "Summary": {
+        "properties": {
+          "groups": {
+            "items": {
+              "$ref": "#/components/schemas/SummaryGroup"
+            },
+            "title": "Groups",
+            "type": "array"
+          }
+        },
+        "required": [
+          "groups"
+        ],
+        "title": "Summary",
+        "type": "object"
+      },
+      "SummaryGroup": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "key": {
+            "title": "Key",
+            "type": "string"
+          }
+        },
+        "required": [
+          "key",
+          "count"
+        ],
+        "title": "SummaryGroup",
+        "type": "object"
+      },
+      "Task": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "process": {
+            "title": "Process",
+            "type": "string"
+          },
+          "stage_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stage Id"
+          },
+          "state": {
+            "enum": [
+              "pending",
+              "submitted",
+              "running",
+              "succeeded",
+              "failed",
+              "cached",
+              "stored",
+              "aborted",
+              "not_scheduled"
+            ],
+            "title": "State",
+            "type": "string"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          }
+        },
+        "required": [
+          "id",
+          "process",
+          "tag",
+          "name",
+          "state",
+          "stage_id"
+        ],
+        "title": "Task",
+        "type": "object"
+      },
+      "TaskList": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/Task"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
+          }
+        },
+        "required": [
+          "items",
+          "next"
+        ],
+        "title": "TaskList",
+        "type": "object"
+      },
+      "TaskSummary": {
+        "properties": {
+          "cached": {
+            "title": "Cached",
+            "type": "integer"
+          },
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "failed": {
+            "title": "Failed",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "done",
+          "total",
+          "failed",
+          "cached"
+        ],
+        "title": "TaskSummary",
         "type": "object"
       },
       "ValidationError": {
@@ -129,6 +836,67 @@
           "engine"
         ],
         "title": "WorkflowIn",
+        "type": "object"
+      },
+      "WorkflowRef": {
+        "properties": {
+          "engine": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine"
+          },
+          "engine_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine Version"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Version"
+          }
+        },
+        "required": [
+          "engine",
+          "engine_version",
+          "location",
+          "name",
+          "version"
+        ],
+        "title": "WorkflowRef",
         "type": "object"
       }
     }
@@ -238,9 +1006,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response List Runs Api V1 Runs Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/RunList"
                 }
               }
             },
@@ -317,9 +1083,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Get Run Api V1 Runs  Run Id  Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/RunDetail"
                 }
               }
             },
@@ -413,9 +1177,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response List Processes Api V1 Runs  Run Id  Processes Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ProcessList"
                 }
               }
             },
@@ -454,9 +1216,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response List Stages Api V1 Runs  Run Id  Stages Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/StageList"
                 }
               }
             },
@@ -559,9 +1319,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response List Tasks Api V1 Runs  Run Id  Tasks Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/TaskList"
                 }
               }
             },
@@ -600,9 +1358,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Cancel Run Api V1 Runs  Run Id  Cancel Post",
-                  "type": "object"
+                  "$ref": "#/components/schemas/RunDetail"
                 }
               }
             },
@@ -644,9 +1400,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Runs Summary Api V1 Runs Summary Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/Summary"
                 }
               }
             },
@@ -674,9 +1428,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "additionalProperties": true,
-                  "title": "Response Server Version Api V1 Version Get",
-                  "type": "object"
+                  "$ref": "#/components/schemas/ServerVersion"
                 }
               }
             },
