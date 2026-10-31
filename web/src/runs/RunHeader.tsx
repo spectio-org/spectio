@@ -6,14 +6,12 @@ import { LiveStatus } from "../live";
 import { EngineMark } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { StateWord, failureText, runName, tasksText } from "./RunState";
-import { duration, engineName, isTerminal, plural, shortId, stagesLine, tone, when, words } from "./stateWord";
+import { duration, engineName, isTerminal, plural, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
 // The run header that every tab of the run shares (ui-spec §4.4 run tools note; LiteRunDetail;
 // UX-PAR-19, 21 and 22): the state bar, the engine's mark tile, the name and short ID, the state
 // line, Cancel, then the facts and the task counts. P1 Task 32 adds Copy, Resume and Copy to a
 // new launch here.
-
-const sum = (counts: Record<string, number>, ...states: string[]) => states.reduce((n, s) => n + (counts[s] ?? 0), 0);
 
 /** The chips under the facts: the states with tasks, failed and retried always (UX-PAR-22). */
 export function taskChips(run: RunDetail, processes: Process[]): { label: string; n: number; tone: string }[] {

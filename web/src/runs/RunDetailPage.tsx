@@ -31,6 +31,7 @@ import {
   plural,
   processWord,
   stageWord,
+  sum,
   taskWord,
   tone,
   words,
@@ -46,7 +47,6 @@ const LOGS: { source: LogSource; label: string }[] = [
 
 type Words = ReturnType<typeof words>;
 
-const sum = (counts: Record<string, number>, ...states: string[]) => states.reduce((n, s) => n + (counts[s] ?? 0), 0);
 const total = (counts: Record<string, number>) => Object.values(counts).reduce((a, b) => a + b, 0);
 const lastSegment = (name: string) => name.split(":").pop() ?? name;
 

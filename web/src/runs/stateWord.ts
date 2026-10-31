@@ -95,16 +95,16 @@ export const engineName = (engine: string | null): string => (engine ? (ENGINE_N
 export const isTerminal = (state: RunState): boolean =>
   state === "succeeded" || state === "failed" || state === "cancelled";
 
-const n = (counts: Counts, ...states: string[]) => states.reduce((sum, s) => sum + (counts[s] ?? 0), 0);
+export const sum = (counts: Counts, ...states: string[]) => states.reduce((n, s) => n + (counts[s] ?? 0), 0);
 
 /** A process or rule has no stored state: its word comes from its task counts. `ended`: the run
  * is terminal, so what had not finished is Stopped and what never started is Not run. */
 export function processWord(counts: Counts, ended: boolean): string {
-  if (n(counts, "failed") > 0) return "Failed";
+  if (sum(counts, "failed") > 0) return "Failed";
   const total = Object.values(counts).reduce((a, b) => a + b, 0);
-  const done = n(counts, "succeeded", "cached", "stored");
+  const done = sum(counts, "succeeded", "cached", "stored");
   if (total > 0 && done === total) return "Done";
-  if (n(counts, "succeeded", "cached", "stored", "running", "aborted") === 0) {
+  if (sum(counts, "succeeded", "cached", "stored", "running", "aborted") === 0) {
     return ended ? "Not run" : "Pending";
   }
   return ended ? "Stopped" : "Running";
@@ -117,7 +117,7 @@ export function stageWord(stage: Stage, ended: boolean): string {
     case "completed":
       return "Done";
     case "failed":
-      return n(stage.task_counts, "failed") > 0 ? "Failed" : "Stopped";
+      return sum(stage.task_counts, "failed") > 0 ? "Failed" : "Stopped";
     case "skipped":
       return "Not run";
     case "running":
