@@ -505,6 +505,14 @@ media:
       - docs/assets/diagrams/p3-para-screens_dark.svg
       - docs/assets/diagrams/p3-para-screens_light.png
       - docs/assets/diagrams/p3-para-screens_dark.png
+  - id: p3-parb-phone-launch
+    kind: diagram
+    generator: python3 tools/diagrams/p3_parb_phone_launch.py
+    outputs:
+      - docs/assets/diagrams/p3-parb-phone-launch_light.svg
+      - docs/assets/diagrams/p3-parb-phone-launch_dark.svg
+      - docs/assets/diagrams/p3-parb-phone-launch_light.png
+      - docs/assets/diagrams/p3-parb-phone-launch_dark.png
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines
