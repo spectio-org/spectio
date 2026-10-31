@@ -32,6 +32,8 @@ from typing import BinaryIO, Literal
 
 TAIL = 65536  # the bytes a read returns by default
 MAX_READ = 1048576  # the most one read or one Range response returns
+NAME_MAX = 255  # bytes in one path component (Linux `NAME_MAX`)
+PATH_MAX = 4096  # bytes in a whole name (Linux `PATH_MAX`)
 
 _DIR = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 _FILE = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC
@@ -69,11 +71,16 @@ class Listing:
 
 def safe_rel(name: str) -> PurePosixPath:
     """`name` as a relative path of plain components; raises NotAllowed for an absolute path, an
-    empty, `.` or `..` component, or a control character (NUL included)."""
+    empty, `.` or `..` component, a control character (NUL included), or a name longer than
+    `NAME_MAX` bytes a component or `PATH_MAX` bytes in all (SEC-P3T28-04)."""
     if not name or name.startswith("/") or any(ord(c) < 0x20 or ord(c) == 0x7F for c in name):
         raise NotAllowed("not a name this server serves")
     parts = name.split("/")
     if any(part in ("", ".", "..") for part in parts):
+        raise NotAllowed("not a name this server serves")
+    if len(name.encode(errors="surrogatepass")) > PATH_MAX or any(
+        len(part.encode(errors="surrogatepass")) > NAME_MAX for part in parts
+    ):
         raise NotAllowed("not a name this server serves")
     return PurePosixPath(*parts)
 

@@ -5,6 +5,7 @@ The attempts come from synthetic engine events ingested through the projector, a
 would, with paths under the run's directories (`make_run_dirs`).
 """
 
+import errno
 import threading
 import time
 from collections import Counter
@@ -141,6 +142,39 @@ def test_not_written_yet(nf_task: NfTask) -> None:
 def test_binary_415(nf_task: NfTask) -> None:
     (nf_task.dir / ".command.out").write_bytes(b"BAM\x00" + b"x" * 100)
     problem(nf_task.get(".command.out"), 415, "binary-file")
+
+
+def test_req13_deep_wrapper_served_hidden(nf_task: NfTask) -> None:
+    """A `.command.run` nested 2000 deep is served, every line hidden: not a 500
+    (SEC-P3T28-04)."""
+    (nf_task.dir / ".command.run").write_text("X=" + "$(" * 2000 + ")" * 2000 + "\necho\n")
+    found = nf_task.get(".command.run")
+    assert found.status_code == 200, found.text
+    assert found.text == "«hidden»\n«hidden»\n"
+
+
+@pytest.mark.parametrize(
+    ("code", "status", "slug"),
+    [
+        (errno.ENAMETOOLONG, 404, "log-not-found"),
+        (errno.EIO, 503, "runner-offline"),
+        (errno.ESTALE, 503, "runner-offline"),
+    ],
+)
+def test_req13_os_errors_mapped(
+    nf_task: NfTask, monkeypatch: pytest.MonkeyPatch, code: int, status: int, slug: str
+) -> None:
+    """Any other `OSError` of a read or a listing is a problem with a fixed text, never a 500
+    or the path (SEC-P3T28-04)."""
+
+    def failing(*args: Any, **kwargs: Any) -> Any:
+        raise OSError(code, "secret detail", "/secret/path")
+
+    monkeypatch.setattr(api_taskfiles, "read_task_file", failing)
+    monkeypatch.setattr(api_taskfiles, "list_task_files", failing)
+    for found in (nf_task.get(".command.err"), nf_task.get()):
+        problem(found, status, slug)
+        assert "secret" not in found.text
 
 
 def test_req13_name_outside_allow_list_422(nf_task: NfTask) -> None:

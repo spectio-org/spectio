@@ -14,6 +14,7 @@ counts the file's bytes, while the body has its escape sequences removed (and, f
 `.command.run`, counts the bytes of the hidden text): assumed, inbox #94.
 """
 
+import errno
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -91,6 +92,9 @@ def _attempt(request: Request, task_id: str, n: int) -> AttemptFiles:
     return found
 
 
+_OFFLINE = frozenset({errno.EIO, errno.ESTALE})  # a mount that failed, not a missing file
+
+
 def _in_pool(request: Request, job: Any) -> Any:
     try:
         return request.app.state.files.run(job, READ_TIMEOUT_S)
@@ -104,6 +108,12 @@ def _in_pool(request: Request, job: Any) -> Any:
         raise Problem(422, "file-not-allowed", "File not allowed", str(exc)) from None
     except NotFound as exc:
         raise not_found(str(exc), "log-not-found") from None
+    except OSError as exc:  # fixed text: never the path or the system's message (SEC-P3T28-04)
+        if exc.errno in _OFFLINE:
+            raise Problem(
+                503, "runner-offline", "File system not answering", "the file system failed"
+            ) from None
+        raise not_found("the file could not be read", "log-not-found") from None
 
 
 def _iso(mtime: float | None) -> str | None:

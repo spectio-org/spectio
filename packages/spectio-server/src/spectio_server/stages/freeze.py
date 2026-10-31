@@ -15,10 +15,11 @@ and their directory must be its own and not writable by others (`read_small`), a
 (SEC-P3T27-02); the pipeline's directory is the one the launch ran in, and its files go through
 `detect_smk.read_confined` (dev-env §15.3 req. 12).
 
-Those reads run in the file pool when the server gives one (`StageSources.pool`), never on the
-writer's thread: a source that has not answered within `FREEZE_TIMEOUT_S` gives no stages, with a
-note, and the events go on (dev-env §15.3 req. 13, SEC-P3T27-03). The database is read before
-and written after, on the writer.
+Those reads run in a file pool when the server gives one (`StageSources.pool`: the freeze's
+own, apart from the routes', so their reads never fill it, SEC-P3T28-06), never on the writer's
+thread: a source that has not answered within `FREEZE_TIMEOUT_S` gives no stages, with a note,
+and the events go on (dev-env §15.3 req. 13, SEC-P3T27-03). The database is read before and
+written after, on the writer.
 """
 
 import logging
@@ -72,6 +73,10 @@ MAX_OVERLAYS = 100  # files read from the overlays directory, in name order
 MAX_SCOPES = 200  # subworkflows whose `meta.yml` is looked for
 DONE = ("succeeded", "cached", "stored")
 FREEZE_TIMEOUT_S = 10.0  # the stage sources of one run, read in the file pool
+# The freeze's own pool (SEC-P3T28-06): the writer runs one freeze at a time, so a stalled one
+# holds it `FREEZE_TIMEOUT_S` at most; once each of these threads is stuck, a freeze is refused
+# at once and gives no stages.
+FREEZE_WORKERS = 2
 
 
 @dataclass(frozen=True)

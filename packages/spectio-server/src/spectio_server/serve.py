@@ -47,6 +47,7 @@ from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.files.pool import FilePool
 from spectio_server.rebuild import Rebuilt, rebuild_index
 from spectio_server.sink import StoreSink
+from spectio_server.stages.freeze import FREEZE_WORKERS
 from spectio_server.store.db import UnsafeDatabase, _require_private_dir, default_db_dir, open_db
 from spectio_server.store.writer import Writer
 
@@ -67,7 +68,8 @@ class Booted:
     new: bool  # the database was just created
     rebuilt: Rebuilt
     loop: RunnerLoop | None  # None on a SLURM environment (P1 Task 10)
-    files: FilePool  # every read of a run's files: the routes' and the freeze's (req. 13)
+    files: FilePool  # the routes' reads of a run's files (req. 13)
+    stage_files: FilePool  # the freeze's: route reads never take its slots (SEC-P3T28-06)
 
     def close(self) -> None:
         self.writer.close()
@@ -125,7 +127,7 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
                 conn, _user(), settings.executor, config, version("spectio")
             )
         ).result()
-        files = FilePool()
+        files, stage_files = FilePool(), FilePool(FREEZE_WORKERS, 0)
         rebuilt = rebuild_index(writer, settings.runs_root)
         log.info("index %s: %d runs added", "rebuilt" if new else "reconciled", rebuilt.added)
         loop = None
@@ -136,7 +138,7 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
                     settings.runs_root,
                     settings.data_dir / "overlays",
                     settings.data_dir,
-                    files,
+                    stage_files,
                 ),
                 LocalLauncher(),
                 settings,
@@ -155,7 +157,7 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
         writer.close()
         engine.dispose()
         raise
-    return Booted(engine, writer, new, rebuilt, loop, files)
+    return Booted(engine, writer, new, rebuilt, loop, files, stage_files)
 
 
 def _lock(db_dir: Path) -> int:

@@ -242,6 +242,19 @@ def test_req13_redact_fails_closed() -> None:
     assert served.startswith("echo one\ncat << EOF\n")
 
 
+def test_req13_redact_deep_nesting_hidden() -> None:
+    """Constructs nested past `MAX_NESTING` are unreadable: hidden from their line, never a
+    `RecursionError` (SEC-P3T28-04)."""
+    for opener, closer in (("$(", ")"), ("${", "}"), ('"${', '}"')):
+        deep = "X=" + opener * 2000 + "v" + closer * 2000
+        served = redact_command_run(f"echo one\n{deep}\necho two\n")
+        assert served == f"echo one\n{HIDDEN}\n{HIDDEN}\n", opener
+    heredocs = "".join(f"cat << E{n}\n" for n in range(300)) + "export X=y\n"
+    heredocs += "".join(f"E{n}\n" for n in reversed(range(300)))
+    served = redact_command_run(heredocs)
+    assert "y" not in served.replace(HIDDEN, "") and "export" not in served
+
+
 # --- Nextflow: states ---------------------------------------------------------------------
 
 
@@ -392,6 +405,17 @@ def test_req13_forged_paths_dropped(smk_run: SmkRun, settings: Settings) -> None
     assert attempt.native_id == "1"  # the forged ID of event 3 is not kept
     assert drops["path_outside_run"] == 4
     assert drops["bad_native_id"] == 1
+
+
+def test_req13_long_log_names_dropped(smk_run: SmkRun) -> None:
+    """A recorded name the file system cannot open (a component over 255 bytes, or over 4096
+    bytes in all) is dropped by the projector, never served as a 500 (SEC-P3T28-04)."""
+    long_part = f"logs/{'a' * 300}.log"
+    long_path = "/".join(["d" * 200] * 21)
+    absolute = str(smk_run.launch_dir / long_part)
+    drops = smk_run.ingest(job_info(1, 1, log=[long_part, long_path, absolute, SMK_LOG]))
+    assert smk_run.attempt().logs == ((SMK_LOG, "rule_log"),)
+    assert drops["path_outside_run"] == 3
 
 
 def test_req13_forged_nextflow_workdir_dropped(settings: Settings, writer: Writer) -> None:  # noqa: F811

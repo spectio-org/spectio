@@ -13,7 +13,8 @@ assignment word:
 - after `-e` or `--env`, or in `--env=NAME=value` (Docker, Podman), the word quoted or not.
 
 Each becomes `NAME=«hidden»`. It fails closed: from the line where the lexer meets something it
-cannot read (a quote or a here-document left open), every line is `«hidden»`. Values inside a
+cannot read (a quote or a here-document left open, or constructs nested more than `MAX_NESTING`
+deep), every line is `«hidden»`. Values inside a
 command substitution or a parameter expansion (`${X:+NAME=v}`) are not looked into; that the
 wrappers of every container engine fit these forms is [to be validated] (req. 13).
 """
@@ -21,6 +22,7 @@ wrappers of every container engine fit these forms is [to be validated] (req. 13
 import re
 
 HIDDEN = "«hidden»"
+MAX_NESTING = 64  # `$(`, `${`, `"` and here-documents inside one another (SEC-P3T28-04)
 
 # A name (with an optional array index) and `=` or `+=`, at the very start of a word.
 _ASSIGN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(\[[^\]\n]*\])?\+?=")
@@ -58,14 +60,20 @@ class _Unreadable(Exception):
 class _Lexer:
     """Words and operators of one shell text; `edits` collects (start, end, replacement)."""
 
-    def __init__(self, text: str, partial: bool = False) -> None:
+    def __init__(self, text: str, partial: bool = False, depth: int = 0) -> None:
         self.s = text
         self.partial = partial  # the text is cut: a here-document may end with it
+        self.depth = depth  # constructs open around the one being read
         self.i = 0
         self.edits: list[tuple[int, int, str]] = []
         self.heredocs: list[tuple[str, bool]] = []  # (delimiter, strip tabs) to read at newline
 
     # --- skipping nested constructs: each returns the index past its end ---
+
+    def _nest(self, i: int) -> None:
+        self.depth += 1
+        if self.depth > MAX_NESTING:
+            raise _Unreadable(i)
 
     def _closing(self, i: int, end: str) -> int:
         """Past the `end` that closes a construct whose body starts at `i` ('…' or $'…')."""
@@ -83,12 +91,14 @@ class _Lexer:
 
     def _double(self, i: int) -> int:
         """Past the `"` that closes a double-quoted text starting at `i` (after its `"`)."""
+        self._nest(i)
         j = i
         while j < len(self.s):
             c = self.s[j]
             if c == "\\":
                 j += 2
             elif c == '"':
+                self.depth -= 1
                 return j + 1
             elif c == "$" and self.s.startswith(("$(", "${"), j):
                 j = self._dollar(j)
@@ -111,6 +121,7 @@ class _Lexer:
 
     def _dollar(self, i: int) -> int:
         """Past `$(…)`, `$((…))` or `${…}` starting at `i` (its `$`)."""
+        self._nest(i)
         opener = self.s[i + 1]
         closer = ")" if opener == "(" else "}"
         depth, j = 1, i + 2
@@ -139,6 +150,7 @@ class _Lexer:
                 depth -= 1
                 j += 1
                 if depth == 0:
+                    self.depth -= 1
                     return j
             else:
                 j += 1
@@ -190,7 +202,7 @@ class _Lexer:
                     raise _Unreadable(body)
                 j = newline + 1
             try:
-                inner = _redact(self.s[body:j])
+                inner = _redact(self.s[body:j], self.depth + 1)
             except _Unreadable:  # hide the whole body, not just from the failing line
                 raise _Unreadable(body) from None
             self.edits.append((body, j, inner))
@@ -279,8 +291,10 @@ def _apply(text: str, edits: list[tuple[int, int, str]]) -> str:
     return "".join(out)
 
 
-def _redact(text: str) -> str:
-    lexer = _Lexer(text)
+def _redact(text: str, depth: int = 0) -> str:
+    if depth > MAX_NESTING:
+        raise _Unreadable(0)
+    lexer = _Lexer(text, depth=depth)
     lexer.run()
     if lexer.heredocs:  # a here-document whose body never started
         raise _Unreadable(lexer.i)
@@ -298,7 +312,7 @@ def redact_command_run(text: str) -> str:
         try:
             lexer.run()
             head = _apply(text[:line_start], lexer.edits)
-        except _Unreadable:  # not expected: that text was read once already; hide it all
+        except _Unreadable:  # a construct opened on an earlier line: hide it all
             head, line_start = "", 0
         rest = text[line_start:]
         lines = rest.count("\n") + (0 if rest.endswith("\n") or not rest else 1)
