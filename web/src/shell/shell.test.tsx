@@ -143,3 +143,38 @@ test("the phone node pill stays neutral while connecting (CR-P3G4-02)", async ()
   const pill = await screen.findByRole("img", { name: "Connecting" });
   expect(pill).not.toHaveAttribute("data-down");
 });
+
+test("UX-PAR-06: on a run's page, Runs is the active item and only the last crumb is current", async () => {
+  app("/runs/run_01K8T2F1XT");
+  const sidebar = await screen.findByRole("navigation", { name: "Main" });
+  expect(within(sidebar).getByRole("link", { name: /^Runs/ })).toHaveAttribute("aria-current", "page");
+  expect(within(sidebar).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
+  const crumbs = screen.getByRole("navigation", { name: "Breadcrumb" });
+  const current = crumbs.querySelectorAll('[aria-current="page"]');
+  expect(current).toHaveLength(1);
+  expect(current[0]).toHaveTextContent("Run");
+  expect(within(crumbs).getByRole("link", { name: "Runs" })).not.toHaveAttribute("aria-current");
+});
+
+test("UX-PAR-06: on the phone, the Runs tab stays active on a run's page", async () => {
+  viewport(390);
+  app("/runs/run_01K8T2F1XT");
+  const tabs = await screen.findByRole("navigation", { name: "Main" });
+  expect(within(tabs).getByRole("link", { name: /^Runs/ })).toHaveAttribute("aria-current", "page");
+  expect(within(tabs).getByRole("link", { name: "Home" })).not.toHaveAttribute("aria-current");
+});
+
+test("UX-PAR-07: the Runs item counts the active runs, also for a screen reader", async () => {
+  vi.stubGlobal(
+    "fetch",
+    vi.fn(async (input: RequestInfo | URL) => {
+      const body = String(input).includes("runs:summary")
+        ? { groups: [{ key: "running", count: 4 }, { key: "queued", count: 2 }, { key: "failed", count: 3 }] }
+        : VERSION;
+      return new Response(JSON.stringify(body), { status: 200 });
+    }),
+  );
+  app("/");
+  const sidebar = await screen.findByRole("navigation", { name: "Main" });
+  expect(await within(sidebar).findByRole("link", { name: "Runs, 6 active runs" })).toBeInTheDocument();
+});

@@ -1,7 +1,7 @@
 import { useComputedColorScheme, useMantineColorScheme } from "@mantine/core";
 import { Link, useRouterState } from "@tanstack/react-router";
 import type { ServerVersion } from "../api";
-import { Icon } from "./Sidebar";
+import { ICONS, Icon } from "../icons";
 
 type To = "/" | "/runs" | "/launch";
 interface Crumb {
@@ -35,9 +35,12 @@ function Breadcrumbs({ item }: { item: string | null }) {
       <ol>
         {crumbs.map((crumb, i) => (
           <li key={i}>
-            {i > 0 && <Icon path="M9 6l6 6-6 6" size={14} />}
+            {i > 0 && <Icon path={ICONS.chevronRight} size={14} />}
             {crumb.to ? (
-              <Link to={crumb.to}>{crumb.label}</Link>
+              // exact: a section crumb above the page is never "current" (UX-PAR-06)
+              <Link to={crumb.to} activeOptions={{ exact: true }}>
+                {crumb.label}
+              </Link>
             ) : (
               <span aria-current="page">{crumb.label}</span>
             )}
@@ -59,7 +62,7 @@ function Mark({ width }: { width: number }) {
   );
 }
 
-const SEARCH = "M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14z M20 20l-4-4";
+const SEARCH = ICONS.search;
 const BELL = "M6 8a6 6 0 1 1 12 0c0 7 3 8 3 8H3s3-1 3-8 M10 20a2 2 0 0 0 4 0";
 const MOON = "M20 14.5A8 8 0 0 1 9.5 4 8 8 0 1 0 20 14.5z";
 const SUN = "M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z M12 1v2 M12 21v2 M4.2 4.2l1.4 1.4 M18.4 18.4l1.4 1.4 M1 12h2 M21 12h2 M4.2 19.8l1.4-1.4 M18.4 5.6l1.4-1.4";

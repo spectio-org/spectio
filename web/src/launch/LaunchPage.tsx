@@ -23,6 +23,7 @@ import {
 } from "../api";
 import { useServer } from "../server";
 import { EngineButtons } from "./EngineButtons";
+import { PageHead } from "../shell/PageHead";
 import { guessEngine } from "./guessEngine";
 import { type Field, schemaFields } from "./schemaFields";
 
@@ -225,13 +226,11 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
 
   return (
     <Stack className="launch-page" gap="md">
-      <div>
-        <Title order={1}>Launch a workflow</Title>
-        <Text c="dimmed">
-          A directory or a Git repository: Spectio guesses the engine and builds the form from its
-          schema.
-        </Text>
-      </div>
+      <PageHead
+        section="launch"
+        title="Launch a workflow"
+        sub="A directory or a Git repository: Spectio guesses the engine and builds the form from its schema."
+      />
       <div className="launch-grid">
         <Stack gap="md">
           <Paper withBorder p="md" component="section" aria-labelledby="pipeline-title">

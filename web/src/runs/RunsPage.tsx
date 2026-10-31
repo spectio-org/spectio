@@ -1,19 +1,53 @@
 import { Button } from "@mantine/core";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
-import { type Page, type Run, type Summary, listRuns, runsSummary } from "../api";
+import { type Page, type Run, type ServerVersion, type Summary, listRuns, runsSummary } from "../api";
+import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
-import { RunLink, StateWord, stateContext, tasksText } from "./RunState";
-import { duration, shortId, when } from "./stateWord";
+import { useServer } from "../server";
+import { PageHead } from "../shell/PageHead";
+import { Pipeline, RunLink, StateWord, stateContext, tasksText } from "./RunState";
+import { ACTIVE, duration, isTerminal, shortId, tone, when } from "./stateWord";
 
-export const ACTIVE = ["queued", "running", "pausing", "paused", "awaiting_review", "cancelling"];
-const FILTERS: { label: string; states: string[] | null }[] = [
-  { label: "All", states: null },
-  { label: "Active", states: ACTIVE },
-  { label: "Failed", states: ["failed"] },
-  { label: "Succeeded", states: ["succeeded"] },
-  { label: "Cancelled", states: ["cancelled"] },
+/** The state filters; `key` is the `?state=` of the URL, so Home's cards link to one (UX-PAR-12). */
+export const FILTERS: { key: string; label: string; states: string[] | null }[] = [
+  { key: "all", label: "All", states: null },
+  { key: "active", label: "Active", states: ACTIVE },
+  { key: "failed", label: "Failed", states: ["failed"] },
+  { key: "succeeded", label: "Succeeded", states: ["succeeded"] },
+  { key: "cancelled", label: "Cancelled", states: ["cancelled"] },
 ];
+
+/** The `/runs` search params: a known filter key, or none. */
+export function runsSearch(search: Record<string, unknown>): { state?: string } {
+  const state = search.state;
+  return typeof state === "string" && FILTERS.some((f) => f.key === state && f.key !== "all") ? { state } : {};
+}
+
+/** Where heads run, by the server's executor: tmux sessions on the login node, or processes on
+ * this host with the local executor (P1 Task 9; tmux comes with Task 10). */
+export const headsWhere = (server: ServerVersion) =>
+  server.executor === "local" ? `heads run as processes on ${server.node}` : `heads in tmux sessions on ${server.node}`;
+
+/** Under the count: the engine's unit for Snakemake, "known so far" while a Nextflow run runs (its
+ * total grows as processes start), and the failed count (UX-PAR-17). */
+function TasksCell({ run }: { run: Run }) {
+  const failed = run.summary.tasks.failed;
+  const note =
+    run.workflow.engine === "snakemake" ? "jobs" : run.workflow.engine === "nextflow" && !isTerminal(run.state) && run.summary.tasks.total ? "known so far" : null;
+  return (
+    <>
+      {tasksText(run)}
+      {(failed > 0 || note) && (
+        <span className="sp-muted">
+          {failed > 0 && <span className="sp-bad-inline">{failed} failed</span>}
+          {failed > 0 && note && " · "}
+          {note && <span>{note}</span>}
+        </span>
+      )}
+    </>
+  );
+}
 const PAGE = 50;
 
 type List = { rows: Run[]; next: string | null };
@@ -51,7 +85,12 @@ export function NoRuns() {
 /** The runs list (ui-spec §4.3, 0.0.1 columns): state and name filters, Load more, refreshed
  * from the stream. */
 export function RunsPage() {
-  const [filter, setFilter] = useState(0);
+  const search = useSearch({ from: "/runs" });
+  const navigate = useNavigate({ from: "/runs" });
+  const filter = Math.max(0, FILTERS.findIndex((f) => f.key === search.state));
+  const setFilter = (i: number) =>
+    navigate({ search: FILTERS[i].states ? { state: FILTERS[i].key } : {}, replace: true });
+  const server = useServer();
   const [typed, setTyped] = useState("");
   const [q, setQ] = useState("");
   const [list, setList] = useState<List | null>(null);
@@ -109,32 +148,41 @@ export function RunsPage() {
 
   const total = count(summary, null);
   const filtered = filter !== 0 || q !== "";
+  // "of N" only while the filter's total is known from the summary (ui-spec §4.11).
+  const shownTotal = q === "" && summary ? count(summary, FILTERS[filter].states) : null;
   return (
     <div className="sp-runs">
-      <header className="sp-head">
-        <div>
-          <h1 className="sp-page-title">Runs</h1>
-          <p className="sp-sub sp-page-sub">
+      <PageHead
+        section="runs"
+        title="Runs"
+        sub={
+          <>
             <span>
               {total} {total === 1 ? "run" : "runs"}
             </span>
             <span>{count(summary, ACTIVE)} active</span>
+            {server && <span>{headsWhere(server)}</span>}
             <LiveStatus />
-          </p>
-        </div>
-        <Button component={Link} to="/launch">
-          Launch a workflow
-        </Button>
-      </header>
+          </>
+        }
+        action={
+          <Button component={Link} to="/launch">
+            Launch a workflow
+          </Button>
+        }
+      />
 
       <div className="sp-filters">
-        <input
-          type="search"
-          aria-label="Filter by run name"
-          placeholder="Filter by run name"
-          value={typed}
-          onChange={(e) => setTyped(e.currentTarget.value)}
-        />
+        <label className="sp-search-field">
+          <Icon path={ICONS.search} size={16} />
+          <input
+            type="search"
+            aria-label="Filter by run name"
+            placeholder="Filter by run name"
+            value={typed}
+            onChange={(e) => setTyped(e.currentTarget.value)}
+          />
+        </label>
         <div className="sp-segments" role="group" aria-label="Show runs">
           {FILTERS.map((f, i) => (
             <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
@@ -173,10 +221,14 @@ export function RunsPage() {
             <tbody>
               {runs.map((run) => (
                 <tr key={run.id}>
-                  <td data-rail={run.state}>
+                  <td data-rail="" data-tone={tone(run.state)}>
                     <RunLink run={run} />
                     <br />
-                    {run.origin === "cli-observed" && <span className="sp-chip">From a terminal</span>}
+                    {run.origin === "cli-observed" && (
+                      <span className="sp-chip">
+                        <Icon path={ICONS.terminal} size={12} /> From a terminal
+                      </span>
+                    )}
                     <span className="sp-id">{shortId(run.id)}</span>
                   </td>
                   <td>
@@ -184,14 +236,10 @@ export function RunsPage() {
                     <span className="sp-muted">{stateContext(run)}</span>
                   </td>
                   <td>
-                    {run.workflow.name ?? run.workflow.location}
-                    {run.workflow.version && <span className="sp-muted">{run.workflow.version}</span>}
+                    <Pipeline run={run} />
                   </td>
                   <td>
-                    {tasksText(run)}
-                    {run.summary.tasks.failed > 0 && (
-                      <span className="sp-bad">{run.summary.tasks.failed} failed</span>
-                    )}
+                    <TasksCell run={run} />
                   </td>
                   <td data-wide="">{when(run.started_at ?? run.created_at)}</td>
                   <td>{duration(run.started_at, run.ended_at)}</td>
@@ -200,6 +248,12 @@ export function RunsPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {!!runs?.length && (
+        <p className="sp-foot-line">
+          {shownTotal !== null ? `${runs.length} of ${shownTotal} runs` : `${runs.length} ${runs.length === 1 ? "run" : "runs"}`} ·
+          newest first
+        </p>
       )}
       {next && (
         <div>

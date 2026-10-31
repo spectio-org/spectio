@@ -31,6 +31,37 @@ const scaleVars = Object.fromEntries([
 
 const v = (token: string) => `var(--sp-${token})`;
 
+/** Run-state colours, rail · fg (text) · bg (tint), light then dark (spectio-tokens.css "Run
+ * states"); the screens read them through a tone, never a raw hex (UX-PAR-05). */
+const states = (rows: Record<string, [string, string, string]>) =>
+  Object.fromEntries(
+    Object.entries(rows).flatMap(([s, [rail, fg, bg]]) => [
+      [`state-${s}`, rail],
+      [`state-${s}-fg`, fg],
+      [`state-${s}-bg`, bg],
+    ]),
+  );
+const STATES_LIGHT = states({
+  queued: ["#6E7287", "#33364A", "#F1F2F6"],
+  running: ["#3B82F6", "#1D5FC9", "#EAF2FE"],
+  review: ["#D9890B", "#8F5806", "#FDF3E2"],
+  paused: ["#8B5CF6", "#6344B2", "#F1ECFE"],
+  succeeded: ["#1F9D63", "#157A4B", "#E8F6EF"],
+  failed: ["#DC3B3B", "#B02A2A", "#FCEBEB"],
+  cancelled: ["#4D5065", "#33364A", "#EEEFF5"],
+  cached: ["#8A8F98", "#4F5462", "#F1F2F4"],
+});
+const STATES_DARK = states({
+  queued: ["#9A9EB0", "#C4C7D4", "#22253A"],
+  running: ["#5B9BF8", "#9CC2FB", "#1A2747"],
+  review: ["#E9A23B", "#F5C779", "#33270F"],
+  paused: ["#A580F8", "#C8B2FB", "#261E45"],
+  succeeded: ["#34B27A", "#7FD3AA", "#14302A"],
+  failed: ["#EE5A5A", "#F59A9A", "#3A1A1F"],
+  cancelled: ["#6E7287", "#9A9EB0", "#1C1F33"],
+  cached: ["#8E92A8", "#B5B8C6", "#22253A"],
+});
+
 // Role tokens, light then dark (spectio-tokens.css, ":root" and ":root[data-theme=dark]").
 const LIGHT = {
   "surface-page": "#FFFFFF",
@@ -38,6 +69,13 @@ const LIGHT = {
   "surface-sunken": v("ink-50"),
   "surface-raised": "#FFFFFF",
   "surface-bar": "rgba(255,255,255,0.94)",
+  "surface-code": v("ink-900"),
+  // The code surface is dark in both schemes, so its text and level tints are fixed: the dark
+  // scheme's failed and review fg. Engine marks sit on white in both (ui-spec §4.3).
+  "code-text": v("ink-50"),
+  "code-failed": "#F59A9A",
+  "code-review": "#F5C779",
+  "surface-mark": "#FFFFFF",
   "line-hairline": "rgba(15,16,32,.11)",
   "line-divider": v("ink-50"),
   "line-border": v("ink-100"),
@@ -71,6 +109,11 @@ const DARK: typeof LIGHT = {
   "surface-sunken": "#0B0C18",
   "surface-raised": "#1D2036",
   "surface-bar": "rgba(29,32,54,0.94)",
+  "surface-code": "#0B0C18",
+  "code-text": v("ink-50"),
+  "code-failed": "#F59A9A",
+  "code-review": "#F5C779",
+  "surface-mark": "#FFFFFF",
   "line-hairline": "rgba(236,237,245,.12)",
   "line-divider": v("ink-700"),
   "line-border": v("ink-600"),
@@ -97,8 +140,8 @@ const DARK: typeof LIGHT = {
   shadow: "0 0 0 1px rgba(236,237,245,.12), 0 10px 28px -18px rgba(0,0,0,.6)",
 };
 
-const roles = (tokens: typeof LIGHT) => ({
-  ...Object.fromEntries(Object.entries(tokens).map(([k, value]) => [`--sp-${k}`, value])),
+const roles = (tokens: typeof LIGHT, stateTokens: Record<string, string>) => ({
+  ...Object.fromEntries(Object.entries({ ...tokens, ...stateTokens }).map(([k, value]) => [`--sp-${k}`, value])),
   // Mantine's own surfaces follow the same roles, so its inputs and buttons match the shell.
   "--mantine-color-body": v("surface-page"),
   "--mantine-color-text": v("text-primary"),
@@ -114,8 +157,8 @@ export const cssVariablesResolver: CSSVariablesResolver = () => ({
     "--sp-font-body": "'Inter', system-ui, sans-serif",
     "--sp-font-mono": "'JetBrains Mono', ui-monospace, monospace",
   },
-  light: roles(LIGHT),
-  dark: roles(DARK),
+  light: roles(LIGHT, STATES_LIGHT),
+  dark: roles(DARK, STATES_DARK),
 });
 
 export const theme = createTheme({

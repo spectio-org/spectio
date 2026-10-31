@@ -46,7 +46,7 @@ test("the table shows each run with its state word, a row label and the terminal
   expect(within(hand).getByText("From a terminal")).toBeInTheDocument();
   const bad = within(table).getByRole("link", { name: "Open run sarek-c" }).closest("tr")!;
   expect(within(bad).getByText("Failed")).toBeInTheDocument();
-  expect(within(bad).getByText("exit 1 · DEEPVARIANT (NA12878)")).toBeInTheDocument();
+  expect(within(bad).getByText("task failed · exit 1 · DEEPVARIANT (NA12878)")).toBeInTheDocument();
 });
 
 test("state filters are pressed buttons and the name filter asks for a prefix", async () => {
@@ -134,4 +134,48 @@ test("a stream frame refreshes the first page and keeps the rows Load more added
   expect(screen.getByRole("link", { name: "Open run rnaseq-a" })).toBeInTheDocument();
   await userEvent.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?limit=50&cursor=def"));
+});
+
+test("UX-PAR-01: each row shows its engine's mark, never the nf-core mark", async () => {
+  const snake = run({
+    id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V4Z",
+    name: "plate-qc-a",
+    workflow: { engine: "snakemake", engine_version: "9.27.1", location: "/g/demo-lab/pipelines/plate-qc", name: "plate-qc", version: null },
+    summary: { tasks: { done: 31, total: 96, failed: 0, cached: 0 }, last_failure: null },
+  });
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run(), snake], next: null } });
+  app("/runs");
+  const table = await screen.findByRole("table");
+  const nf = within(table).getByRole("link", { name: "Open run rnaseq-a" }).closest("tr")!;
+  const mark = within(nf).getByRole("img", { name: "Nextflow" });
+  expect(mark.getAttribute("src")).toMatch(/logo-nextflow/);
+  expect(Number(mark.getAttribute("width"))).toBeGreaterThanOrEqual(16);
+  expect(Number(mark.getAttribute("width"))).toBeLessThanOrEqual(24);
+  expect(within(table).queryByRole("img", { name: /nf-core/i })).toBeNull();
+  expect(document.querySelector('img[src*="nf-core"]')).toBeNull();
+  // The version sits on the name's line (UX-PAR-17), Nextflow's running total is "known so far".
+  expect(within(nf).getByText("nf-core/rnaseq").parentElement).toHaveTextContent("nf-core/rnaseq 3.27.0");
+  expect(within(nf).getByText("known so far")).toBeInTheDocument();
+  const sm = within(table).getByRole("link", { name: "Open run plate-qc-a" }).closest("tr")!;
+  expect(within(sm).getByRole("img", { name: "Snakemake" }).getAttribute("src")).toMatch(/logo-snakemake/);
+  expect(within(sm).getByText("jobs")).toBeInTheDocument(); // UX-PAR-20
+  expect(within(sm).getByText("3 jobs running")).toBeInTheDocument();
+});
+
+test("UX-PAR-12: the state filter lives in the URL, so Home's cards can link to it", async () => {
+  const mock = serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [failed], next: null } });
+  const router = app("/runs?state=failed");
+  expect(await screen.findByRole("button", { name: /^Failed/ })).toHaveAttribute("aria-pressed", "true");
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?state=failed&limit=50"));
+  await userEvent.click(screen.getByRole("button", { name: /^All/ }));
+  await waitFor(() => expect(router.state.location.search).toEqual({}));
+  await userEvent.click(screen.getByRole("button", { name: /^Active/ }));
+  await waitFor(() => expect(router.state.location.search).toEqual({ state: "active" }));
+});
+
+test("UX-PAR-18: the footer counts the rows shown against the filter's total", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [run()], next: "abc" } });
+  app("/runs");
+  expect(await screen.findByText("1 of 2 runs · newest first")).toBeInTheDocument();
+  expect(screen.getByRole("searchbox", { name: "Filter by run name" })).toBeInTheDocument();
 });
