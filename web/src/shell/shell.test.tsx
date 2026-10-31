@@ -4,6 +4,7 @@ import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { createAppRouter } from "../routes";
+import { viewport } from "../testing";
 import { THEME_KEY, providerProps } from "./theme";
 
 const VERSION = {
@@ -13,27 +14,6 @@ const VERSION = {
   account: "amartin",
   executor: "slurm",
 };
-
-// jsdom applies no CSS: the shell picks its layout with matchMedia, answered here for one width
-// and a light system scheme.
-function viewport(width: number) {
-  window.matchMedia = (query: string) => {
-    const max = /max-width:\s*([\d.]+)px/.exec(query);
-    const min = /min-width:\s*([\d.]+)px/.exec(query);
-    const matches =
-      (!!max || !!min) && (!max || width <= Number(max[1])) && (!min || width >= Number(min[1]));
-    return {
-      matches,
-      media: query,
-      onchange: null,
-      addListener: () => {},
-      removeListener: () => {},
-      addEventListener: () => {},
-      removeEventListener: () => {},
-      dispatchEvent: () => false,
-    } as MediaQueryList;
-  };
-}
 
 function app(path = "/") {
   const router = createAppRouter(createMemoryHistory({ initialEntries: [path] }));
@@ -45,7 +25,6 @@ function app(path = "/") {
   return router;
 }
 
-const original = window.matchMedia;
 beforeEach(() => {
   window.localStorage.clear();
   viewport(1440);
@@ -54,10 +33,7 @@ beforeEach(() => {
     vi.fn(async () => new Response(JSON.stringify(VERSION), { status: 200 })),
   );
 });
-afterEach(() => {
-  window.matchMedia = original;
-  vi.unstubAllGlobals();
-});
+afterEach(() => vi.unstubAllGlobals());
 
 test("theme toggle is a button and switches the scheme", async () => {
   app();

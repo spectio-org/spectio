@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { type ServerVersion, getVersion } from "../api";
 import { ServerContext } from "../server";
 import { CrumbContext } from "./crumb";
+import { LayoutContext } from "./layout";
 import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { TopBar } from "./TopBar";
@@ -34,20 +35,23 @@ export function AppShell() {
   const [chosen, setChosen] = useState<boolean | null>(null);
   const open = chosen ?? !tablet;
   const [crumb, setCrumb] = useState<string | null>(null);
+  const [titleRow, setTitleRow] = useState<HTMLElement | null>(null);
 
   return (
     <ServerContext.Provider value={server}>
       <CrumbContext.Provider value={setCrumb}>
-        <div className="sp-shell" data-layout={phone ? "phone" : tablet ? "tablet" : "desktop"}>
-          <TopBar phone={phone} server={server} down={down} crumb={crumb} />
-          <div className="sp-body">
-            {!phone && <Sidebar open={open} onFold={() => setChosen(!open)} server={server} down={down} />}
-            <main className="sp-main">
-              <Outlet />
-            </main>
+        <LayoutContext.Provider value={{ phone, titleRow: phone ? titleRow : null }}>
+          <div className="sp-shell" data-layout={phone ? "phone" : tablet ? "tablet" : "desktop"}>
+            <TopBar phone={phone} server={server} down={down} crumb={crumb} titleRow={setTitleRow} />
+            <div className="sp-body">
+              {!phone && <Sidebar open={open} onFold={() => setChosen(!open)} server={server} down={down} />}
+              <main className="sp-main">
+                <Outlet />
+              </main>
+            </div>
+            {phone && <TabBar />}
           </div>
-          {phone && <TabBar />}
-        </div>
+        </LayoutContext.Provider>
       </CrumbContext.Provider>
     </ServerContext.Provider>
   );

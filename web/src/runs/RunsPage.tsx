@@ -5,9 +5,10 @@ import { type Page, type Run, type ServerVersion, type Summary, listRuns, runsSu
 import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { useServer } from "../server";
+import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
 import { Pipeline, RunLink, StateWord, stateContext, tasksText } from "./RunState";
-import { ACTIVE, duration, isTerminal, shortId, tone, when } from "./stateWord";
+import { ACTIVE, duration, isTerminal, shortId, tone, when, words } from "./stateWord";
 
 /** The state filters; `key` is the `?state=` of the URL, so Home's cards link to one (UX-PAR-12). */
 export const FILTERS: { key: string; label: string; states: string[] | null }[] = [
@@ -32,12 +33,14 @@ export function runsSearch(search: Record<string, unknown>): { state?: string; q
 export const headsWhere = (server: ServerVersion) =>
   server.executor === "local" ? `heads run as processes on ${server.node}` : `heads in tmux sessions on ${server.node}`;
 
-/** Under the count: the engine's unit for Snakemake, "known so far" while a Nextflow run runs (its
- * total grows as processes start), and the failed count (UX-PAR-17). */
+/** "known so far" while a Nextflow run runs: its total grows as processes start (UX-PAR-17). */
+const knownSoFar = (run: Run) =>
+  run.workflow.engine === "nextflow" && !isTerminal(run.state) && !!run.summary.tasks.total;
+
+/** Under the count: the engine's unit for Snakemake, "known so far", and the failed count. */
 function TasksCell({ run }: { run: Run }) {
   const failed = run.summary.tasks.failed;
-  const note =
-    run.workflow.engine === "snakemake" ? "jobs" : run.workflow.engine === "nextflow" && !isTerminal(run.state) && run.summary.tasks.total ? "known so far" : null;
+  const note = run.workflow.engine === "snakemake" ? "jobs" : knownSoFar(run) ? "known so far" : null;
   return (
     <>
       {tasksText(run)}
@@ -51,6 +54,37 @@ function TasksCell({ run }: { run: Run }) {
     </>
   );
 }
+/** A run as a card, for the phone (MLiteRuns, MLiteHome; UX-PAR-10): the state and duration,
+ * the name, the pipeline with its mark and the tasks, then the context. */
+export function RunCard({ run }: { run: Run }) {
+  const { units } = words(run.workflow.engine);
+  return (
+    <li className="sp-run-card" data-rail="" data-tone={tone(run.state)}>
+      <span className="sp-run-card-top">
+        <StateWord state={run.state} />
+        <span>{duration(run.started_at, run.ended_at)}</span>
+      </span>
+      <RunLink run={run} />
+      <span className="sp-run-card-line">
+        <Pipeline run={run} size={16} />
+        <span>
+          {" · "}
+          {tasksText(run)} {units}
+          {knownSoFar(run) && " known so far"}
+        </span>
+      </span>
+      <span className="sp-run-card-line">
+        {run.origin === "cli-observed" && (
+          <span className="sp-chip">
+            <Icon path={ICONS.terminal} size={12} /> From a terminal
+          </span>
+        )}
+        <span>{stateContext(run)}</span>
+      </span>
+    </li>
+  );
+}
+
 const PAGE = 50;
 
 type List = { rows: Run[]; next: string | null };
@@ -97,6 +131,7 @@ export function RunsPage() {
     navigate({ search: (prev) => runsSearch({ ...prev, ...change }), replace: true });
   const setFilter = (i: number) => setSearch({ state: FILTERS[i].states ? FILTERS[i].key : undefined });
   const server = useServer();
+  const phone = usePhone();
   const [typed, setTyped] = useState(q);
   // The q this page last wrote: a q from elsewhere (a link that drops it) re-seeds the box, while
   // the page's own write never trims what the user is still typing (CR-P3PARA-09).
@@ -171,13 +206,14 @@ export function RunsPage() {
       <PageHead
         section="runs"
         title="Runs"
+        phoneBar="title-and-sub"
         sub={
           <>
             <span>
               {total} {total === 1 ? "run" : "runs"}
             </span>
             <span>{count(summary, ACTIVE)} active</span>
-            {server && <span>{headsWhere(server)}</span>}
+            {server && !phone && <span>{headsWhere(server)}</span>}
             <LiveStatus />
           </>
         }
@@ -219,7 +255,14 @@ export function RunsPage() {
       )}
       {runs === null && !error && <p className="sp-muted">Loading the runs…</p>}
       {runs?.length === 0 && (filtered ? <p className="sp-empty">No run matches these filters.</p> : <NoRuns />)}
-      {!!runs?.length && (
+      {!!runs?.length && phone && (
+        <ul className="sp-run-cards" aria-label="Runs">
+          {runs.map((run) => (
+            <RunCard key={run.id} run={run} />
+          ))}
+        </ul>
+      )}
+      {!!runs?.length && !phone && (
         <div className="sp-table-wrap">
           <table className="sp-table">
             <thead>
