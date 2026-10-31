@@ -89,7 +89,11 @@ describe("schemaFields", () => {
         free: { type: "object" },
       },
     };
-    const sections = schemaFields(smk);
+    // CR-P3PARB-02: Nextflow (no nest) keeps each map as one JSON field
+    expect(schemaFields(smk).flatMap((s) => s.fields).map((f) => [f.key, f.type])).toEqual([
+      ["samples", "string"], ["ref", "json"], ["pca", "json"], ["free", "json"],
+    ]);
+    const sections = schemaFields(smk, [], true);
     expect(sections.map((s) => s.title)).toEqual(["Parameters", "ref", "pca"]);
     expect(sections[0].fields.map((f) => [f.key, f.type])).toEqual([["samples", "string"], ["free", "json"]]);
     expect(sections[1].description).toBe("Reference genome");
@@ -105,13 +109,31 @@ describe("schemaFields", () => {
     expect(sections[2].fields[2].path).toEqual(["pca", "deep", "k"]);
   });
 
-  test("UX-PAR-31/32: the params rebuild nested maps from dotted keys, and only values set", () => {
-    const [ref] = schemaFields({
+  test("UX-PAR-31/32: the params rebuild nested maps from dotted keys; a map with one value set is sent whole", () => {
+    const schema = {
       type: "object",
-      properties: { ref: { type: "object", properties: { species: { type: "string" }, release: { type: "integer" } } } },
-    });
-    expect(buildParams(ref.fields, { "ref.release": "114", "ref.species": "" }, [])).toEqual({ ref: { release: 114 } });
+      properties: {
+        ref: { type: "object", properties: { species: { type: "string", default: "homo_sapiens" }, release: { type: "integer" }, build: { type: "string" } } },
+        pca: { type: "object", properties: { activate: { type: "boolean", default: false } } },
+      },
+    };
+    const [ref, pca] = schemaFields(schema, [], true);
+    const all = [...ref.fields, ...pca.fields];
+    // CR-P3PARB-04 r2: species goes at its default; build has none and stays out; pca is untouched
+    expect(buildParams(all, { "ref.release": "114", "ref.species": "" }, [])).toEqual({ ref: { species: "homo_sapiens", release: 114 } });
+    expect(buildParams(all, {}, [])).toEqual({});
     expect(buildParams([], {}, [{ key: " outdir ", value: "r" }, { key: "", value: "x" }])).toEqual({ outdir: "r" });
+  });
+
+  test("SEC-P3PARB-03: two fields with one dotted key keep the first, the second is named", () => {
+    const skipped: string[] = [];
+    const sections = schemaFields({ type: "object", properties: { "a.b": { type: "integer" }, a: { type: "object", default: { b: 2 } } } }, skipped, true);
+    expect(sections.flatMap((s) => s.fields).map((f) => f.path)).toEqual([["a.b"]]);
+    expect(skipped).toEqual(["a.b"]);
+  });
+
+  test("CR-P3PARB-03: a string with a leading dot is quoted, as PyYAML would read it as a float", () => {
+    expect(toYaml({ a: ".5", b: "._1", c: "./data" })).toBe('a: ".5"\nb: "._1"\nc: "./data"\n');
   });
 
   test("UX-PAR-32: the YAML of a config preview", () => {
@@ -145,6 +167,9 @@ describe("untrusted keys", () => {
     const params = buildParams(fields, { ok: "a" }, [{ key: "__proto__", value: "x" }]);
     expect(JSON.stringify(params)).toBe('{"ok":"a","__proto__":"x"}');
     expect(({} as Record<string, unknown>).polluted).toBeUndefined();
+    const nested: string[] = [];
+    expect(schemaFields(schema, nested, true).flatMap((s) => s.fields).map((f) => f.key)).toEqual(["toString", "ok"]);
+    expect(nested).toEqual(["__proto__", "constructor"]);
   });
 
   test("a nested map path cannot reach Object.prototype", () => {

@@ -295,10 +295,9 @@ test("Download attaches its anchor to the page and revokes the URL after the cli
     click.mockRestore();
     Object.assign(URL, { createObjectURL, revokeObjectURL });
   }
-});
-
-test("CR-P3PARA-10: the Download test leaves URL's own functions in place", () => {
-  expect(String(URL.createObjectURL)).not.toContain("blob:x");
+  // CR-P3PARA-10: the stubs do not outlive the test
+  expect(URL.createObjectURL).toBe(createObjectURL);
+  expect(URL.revokeObjectURL).toBe(revokeObjectURL);
 });
 
 test("UX-PAR-23: with the local executor the head has no terminal: its process instead", async () => {
@@ -330,4 +329,11 @@ test("UX-PAR-29: the Cancel dialog says what stops and how, for the server's exe
   const dialog = await screen.findByRole("dialog", { name: "Cancel this run?" });
   expect(within(dialog).getByText(/rnaseq-a has 3 running and 5 pending tasks; they will not finish/)).toBeInTheDocument();
   expect(within(dialog).getByText(/process group/)).toBeInTheDocument(); // VERSION.executor is local
+});
+
+test("P3-parB: a run that has ended but whose head end is not yet reported shows Head Ending, not Alive", async () => {
+  detail({ state: "succeeded", head: { session: "18823.3644058", node: "login1", alive: true, exit_code: null } });
+  app(`/runs/${ID}`);
+  expect(await screen.findByText("Ending")).toBeInTheDocument();
+  expect(screen.queryByText("Alive")).toBeNull();
 });

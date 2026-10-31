@@ -83,6 +83,9 @@
   color: var(--sp-text-secondary);
   font-size: 14px;
 }
+.sp-sub > * {
+  white-space: nowrap; /* a value wraps whole, never "8" over "s" (CR-P3PARB-02 r2) */
+}
 .sp-sub > * + *::before {
   /* a margin, not spaces: an inline-flex item (the state word) drops leading whitespace */
   content: "·";

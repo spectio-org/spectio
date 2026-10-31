@@ -125,7 +125,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
   const repo = location.trim() !== "" && !location.trim().startsWith("/");
   const github = SHORT_NAME.test(location.trim()) ? `https://github.com/${location.trim()}` : null;
   const skipped: string[] = [];
-  const sections = schemaFields(loaded?.schema ?? null, skipped);
+  const sections = schemaFields(loaded?.schema ?? null, skipped, engine === "snakemake");
   const fields = sections.flatMap((s) => s.fields);
   const keys = fields.map((f) => f.key);
   const grouped = !!loaded?.schema && ("$defs" in loaded.schema || "definitions" in loaded.schema);
@@ -387,7 +387,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
                 )}
                 {sections.length > 1 && sections.map((section, i) => (
                   <ParamGroup
-                    key={`${loaded.location}:${section.title}`}
+                    key={`${loaded.location}:${i}`}
                     id={`params-g${i}`}
                     section={section}
                     values={values}
@@ -575,7 +575,7 @@ function ParamsPreview({ engine, fields, values, rows }: { engine: Engine; field
       </Title>
       <Text size="sm" c="dimmed" mb="sm">
         {snakemake
-          ? "Only the values set. Spectio writes them to .spectio/params.json in the run directory, passed with --configfile; shown here as YAML."
+          ? "Only the values set, and a nested map whole once one of its values is set. Spectio writes them to .spectio/params.json in the run directory, passed with --configfile; shown here as YAML."
           : "Only the values set. Spectio writes them to .spectio/params.json in the run directory, passed with -params-file."}
       </Text>
       {text === null ? (

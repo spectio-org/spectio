@@ -101,12 +101,22 @@ function fields(group: Obj, prefix: string[], nest: boolean, skipped: string[]):
   });
 }
 
-export function schemaFields(schema: JSONSchema | null, skipped: string[] = []): Section[] {
-  const section = (title: string, group: Obj, prefix: string[], nest: boolean): Section => ({
+/** `nest` (Snakemake only, CR-P3PARB-02): a schema without groups gets one section per nested
+ * map; otherwise a map stays one JSON field. Two fields with the same dotted key (`a.b` and `a`→`b`)
+ * keep the first, and the second goes to `skipped` (SEC-P3PARB-03). */
+export function schemaFields(schema: JSONSchema | null, skipped: string[] = [], nest = false): Section[] {
+  const seen = new Set<string>();
+  const unique = (list: Field[]) =>
+    list.filter((f) => {
+      if (!seen.has(f.key)) return seen.add(f.key);
+      skipped.push(f.key);
+      return false;
+    });
+  const section = (title: string, group: Obj, prefix: string[], nested: boolean): Section => ({
     title,
     description: text(group.description),
     icon: text(group.fa_icon),
-    fields: fields(group, prefix, nest, skipped),
+    fields: unique(fields(group, prefix, nested, skipped)),
   });
   if (!schema) return [];
   const defs = isObj(schema.$defs) ? schema.$defs : isObj(schema.definitions) ? schema.definitions : null;
@@ -125,7 +135,7 @@ export function schemaFields(schema: JSONSchema | null, skipped: string[] = []):
   }
   if (!isObj(schema.properties)) return [];
   const props = schema.properties;
-  const maps = Object.keys(props).filter((k) => !UNSAFE.has(k) && isObj(props[k]) && propertiesOf(props[k] as Obj));
+  const maps = nest ? Object.keys(props).filter((k) => !UNSAFE.has(k) && isObj(props[k]) && propertiesOf(props[k] as Obj)) : [];
   const top = { ...schema, properties: Object.fromEntries(Object.entries(props).filter(([k]) => !maps.includes(k))) };
   sections.push({ ...section("Parameters", top, [], false), description: null, icon: null });
   for (const key of maps) {
@@ -168,12 +178,16 @@ export function isChanged(field: Field, value: string | boolean | undefined): bo
 }
 
 /** The params of `POST /runs`: only the values set, nested maps rebuilt from dotted keys, then the
- * name and value rows of a pipeline with no schema. */
+ * name and value rows of a pipeline with no schema. A nested map with one value set is sent whole,
+ * its other keys at their defaults: whether Snakemake merges a `--configfile` map key by key into
+ * the workflow's own is not checked (CR-P3PARB-04 r2), and a whole map is right either way. */
 export function buildParams(fields: Field[], values: Values, rows: Row[]): Record<string, unknown> {
   // null-prototype maps: a key named `__proto__` is an own key, never Object.prototype
   const params: Record<string, unknown> = Object.create(null);
+  const sent = new Map(fields.map((f) => [f, paramValue(f, own(values, f.key))]));
+  const touched = new Set(fields.filter((f) => f.path.length > 1 && sent.get(f) !== undefined).map((f) => f.path[0]));
   for (const field of fields) {
-    const value = paramValue(field, own(values, field.key));
+    const value = sent.get(field) ?? (touched.has(field.path[0]) && field.path.length > 1 ? field.default : undefined);
     if (value === undefined) continue;
     let at = params;
     for (const part of field.path.slice(0, -1)) at = (at[part] ??= Object.create(null)) as Record<string, unknown>;
@@ -185,7 +199,7 @@ export function buildParams(fields: Field[], values: Values, rows: Row[]): Recor
 
 // A string YAML reads back as itself, unquoted: no number, boolean or null look-alike (YAML 1.1,
 // as PyYAML reads it: yes, no, on, off too), no indicator or space.
-const PLAIN = /^[A-Za-z_/.][\w./@+-]*$/;
+const PLAIN = /^[A-Za-z_/][\w./@+-]*$/; // no leading '.': PyYAML reads ".5" as a float (CR-P3PARB-03)
 const RESERVED = /^(true|false|yes|no|y|n|on|off|null|~|\.inf|\.nan)$/i;
 const scalar = (v: unknown) =>
   typeof v === "string" ? (PLAIN.test(v) && !RESERVED.test(v) ? v : JSON.stringify(v)) : JSON.stringify(v ?? null);

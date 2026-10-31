@@ -81,5 +81,5 @@ const GROUP_ICONS: Record<string, string> = {
 /** The line icon of a schema group's `fa_icon` ("fas fa-folder-open"), or the neutral one. */
 export function groupIcon(faIcon: string | null): string {
   const name = faIcon?.match(/fa-([a-z-]+)\s*$/)?.[1];
-  return (name && GROUP_ICONS[name]) || ICONS.sliders;
+  return (name && Object.hasOwn(GROUP_ICONS, name) && GROUP_ICONS[name]) || ICONS.sliders; // SEC-P3PARB-02
 }

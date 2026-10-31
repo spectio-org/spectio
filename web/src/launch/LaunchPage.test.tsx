@@ -280,12 +280,12 @@ test("UX-PAR-31/32: a Snakemake nested map is a section of dotted keys, rebuilt 
   const release = within(ref).getByRole("textbox", { name: "ref.release" });
   await userEvent.type(release, "114");
   const preview = screen.getByLabelText("Config preview, as YAML", { selector: "pre" });
-  expect(preview.textContent).toBe("ref:\n  release: 114\n");
+  expect(preview.textContent).toBe("ref:\n  species: homo_sapiens\n  release: 114\n");
   fetchMock.mockResolvedValueOnce(json(422, { status: 422, errors: [{ field: "params.ref.release", message: "no such release" }] }));
   await userEvent.click(launch());
   await waitFor(() => expect(release).toHaveAttribute("aria-invalid", "true"));
   expect(release).toHaveAccessibleDescription(expect.stringContaining("no such release"));
-  expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body)).params).toEqual({ ref: { release: 114 } });
+  expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body)).params).toEqual({ ref: { species: "homo_sapiens", release: 114 } });
   expect(onLaunched).not.toHaveBeenCalled();
   expect(screen.getByText(/passed as --workflow-profile/)).toBeInTheDocument();
 });

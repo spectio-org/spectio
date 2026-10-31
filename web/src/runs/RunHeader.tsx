@@ -33,7 +33,10 @@ export function taskChips(run: RunDetail, processes: Process[]): { label: string
 function headWord(run: RunDetail): string {
   if (!run.head) return "Not started yet";
   if (run.origin === "cli-observed") return "Not checked (started from a terminal)";
-  return run.head.alive ? "Alive" : "Exited";
+  // the runner reports a head's end after its 60 s end grace (the spool may still hold events):
+  // until then a run that has ended has a head that is ending, not alive (P3-parB)
+  if (run.head.alive) return isTerminal(run.state) ? "Ending" : "Alive";
+  return "Exited";
 }
 
 function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }) {
