@@ -1024,3 +1024,15 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
     - [Dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 17: every screen answer also carries `Referrer-Policy: no-referrer` and `Cross-Origin-Opener-Policy: same-origin` (SEC-P3T19-03); the item leaves the req. 17 "Open" line.
 - **Not yet applied:** UX-G1-09 (ui-spec §2 and §4.11 still put the phone colour mode in More), at the next `/apply-findings`.
 - **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions).
+
+## 2026-10-31 — The 0.0.1 runs screens, written into ui-spec §4.2 to §4.4, api §5 and dev-env §6.1, §11 and §15.3 (P3 Task 20, inbox #90)
+
+- **Context.** P3 Task 20 built Home, the runs list, the run detail with Cancel, and the Playwright smoke ([P1 Task 20](../plans/P1-walking-skeleton.md#task-20-runs-list-run-detail-cancel-and-the-playwright-smoke)) before sign-in and before the Snakemake logger plugin, in the order of inbox #80 (a). Its smoke names a token link, a session cookie and a Snakemake cancel, none of which exist yet. P1's Process says the owning spec changes in the same PR.
+- **Applied (assumed — standing rule, [inbox #90](../reviews/inbox.md#90-assumed-the-001-runs-screens-cancel-and-the-playwright-smoke-in-the-local-only-order) (a); [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** three dated notes, one dated bullet, and three dev-env sections extended. No section number changed.
+    - [ui-spec §4.2](../specs/ui-spec.md#42-overview), [§4.3](../specs/ui-spec.md#43-runs-table-and-rows) and [§4.4](../specs/ui-spec.md#44-run-detail), notes 2026-10-31: Home, the list and the run detail as built; one stream per tab; the live status in each page's subtitle; the crumb from the API; not-found in the shell (#90 rules 5 to 7).
+    - [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), the note of Task 18: typed responses, `info.version` `0.0.1`, the one-ID task cursor (#90 rule 8).
+    - [Dev-env §6.1](../specs/dev-environment-and-testing.md#61-end-to-end-tests-testse2e): the 0.0.1 smoke and `serve-local.sh`; [§11](../specs/dev-environment-and-testing.md#11-ci-workflows): the `web` job of Task 19 and the `e2e-local` job, outside `ci-ok`; the unchecked Nextflow download under "Not pinned" (#90 rules 1 to 4).
+    - [Dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 17: the screens answer `HEAD`; the "not built" text says `--ignore-scripts`; the "Open" line keeps SEC-P3T19-01 only (#90 rule 9).
+- **Reserved, not assumed:** whether a session-less API and screens may be served at all before Tasks 12 to 16 (inbox #86).
+- **Not yet applied:** P1 Task 20's interface and P1 Assumption 7 (one stream per browser; the code opens one per tab), at the next `/apply-findings`.
+- **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions): follow-up FU-P3-24 (runs screens and `serve-local.sh`), SEC-P3T20-02 (r1) added to FU-P3-20.
