@@ -62,7 +62,8 @@
 .launch-param > * {
   grid-column: 1 / -1;
 }
-.launch-param > label {
+.launch-param > label,
+.launch-param > .launch-param-check {
   grid-column: 1;
 }
 .launch-param > .launch-param-meta {

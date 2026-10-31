@@ -420,3 +420,20 @@ test("P3-parC: a pipeline not named nf-core/ shows its engine's mark on the Load
   const card = screen.getByText("rnaseq 3.27.0").closest("[data-loaded]") as HTMLElement;
   expect(within(card).getByRole("img", { name: "Nextflow" })).toBeInTheDocument();
 });
+
+test("CR-P3PARC-01: a boolean is a row too: the name with its type, default and state, the help under it", async () => {
+  page();
+  const schema = {
+    type: "object",
+    properties: { skip_qc: { type: "boolean", default: false, description: "Skip the QC steps." } },
+  };
+  await load({ ...INSPECTED, schema });
+  const box = screen.getByRole("checkbox", { name: /^skip_qc/ });
+  const row = box.closest(".launch-param")!;
+  expect(row.querySelector(".launch-param-meta")).toHaveTextContent("boolean · default false");
+  expect(row.querySelector(".launch-param-help")).toHaveTextContent("Skip the QC steps.");
+  expect(box).toHaveAccessibleDescription("Skip the QC steps. · boolean · default false");
+  await userEvent.click(box);
+  expect(row.querySelector(".launch-param-meta")).toHaveTextContent("boolean · changed · default false");
+  expect(box).toHaveAccessibleDescription("Skip the QC steps. · boolean · changed · default false");
+});

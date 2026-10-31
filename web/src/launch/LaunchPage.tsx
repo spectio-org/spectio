@@ -10,7 +10,7 @@ import {
   TextInput,
   Textarea,
 } from "@mantine/core";
-import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
   ENGINE_FILES,
@@ -619,6 +619,7 @@ function ParamField({
   // it. The accessible description stays one text, "help · meta" (visually hidden); the visible
   // meta and help are its copy, hidden from assistive technology.
   const description = [field.help, meta].filter(Boolean).join(" · ") || undefined;
+  const descriptionId = useId();
   const inputContainer = (input: ReactNode) => (
     <>
       {meta && (
@@ -650,15 +651,30 @@ function ParamField({
   };
   switch (field.type) {
     case "boolean":
+      // The same row as the other fields (CR-P3PARC-01): Checkbox has no inputContainer and does
+      // not link its description to the input, so the row and the description are drawn here.
       return (
-        <Checkbox
-          className="launch-param"
-          label={field.label}
-          description={field.help ?? undefined}
-          error={error}
-          checked={typeof value === "boolean" ? value : field.default === true}
-          onChange={(e) => onChange(e.currentTarget.checked)}
-        />
+        <div className="launch-param">
+          <Checkbox
+            className="launch-param-check"
+            label={field.label}
+            aria-describedby={descriptionId}
+            error={error}
+            checked={typeof value === "boolean" ? value : field.default === true}
+            onChange={(e) => onChange(e.currentTarget.checked)}
+          />
+          <span id={descriptionId} className="sp-sr">
+            {description}
+          </span>
+          <span className="launch-param-meta" aria-hidden="true">
+            {meta}
+          </span>
+          {field.help && (
+            <span className="launch-param-help" aria-hidden="true">
+              {field.help}
+            </span>
+          )}
+        </div>
       );
     case "enum":
       return (
