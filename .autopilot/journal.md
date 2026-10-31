@@ -469,3 +469,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - Workflow stopped "blocked" after round 3 (code-reviewer changes, 1 major: the early head report cut the end grace). Fixed by hand: runner change reverted (7993752a), Head "Ending" on screen, round-3 minors and SEC-P3PARB-02/03 (614b81f5). Round 4 by hand: security approve, code changes (null major already fixed in dcec010e); round 5 code approve. Phone header overflow fixed (b092b7c3); shots retaken twice; doc-reviewer approve 12/14 with four changes applied.
 - PR #107 into integration, label `screenshots`, subscribed. Cost recorded: 60 USD (ceiling lifted for this fix).
+
+## 2026-10-31 · P3-parB: PR #107 merged
+
+- CI on b6a8ed0: `product` red in `test_login_timeout_kills_the_group`, not the PR's diff (no Python change): the timed-out sleep was reaped between the open and the read of `/proc/<pid>/stat` (ESRCH). Reproduced locally; 31caa89 treats ESRCH as gone, assertion unchanged. Comment on #107.
+- Required checks green on 31caa89 (`e2e-local` not required, inbox #90). Squash-merged as 640f543 (`Release-As: 0.0.1`). Unsubscribed, check-in deleted. Promotion to main next.
