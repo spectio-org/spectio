@@ -6,6 +6,18 @@ import { FakeEventSource, VERSION, app, fetched, json, run, serve, stubStream } 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
 
+/** A clipboard that keeps what was written (jsdom has none); `readText` reads the last. */
+beforeEach(() => {
+  let last = "";
+  Object.defineProperty(navigator, "clipboard", {
+    configurable: true,
+    value: { writeText: async (text: string) => void (last = text), readText: async () => last },
+  });
+});
+afterEach(() => {
+  Reflect.deleteProperty(navigator, "clipboard");
+});
+
 const ID = "run_01JBC6Q4ZK7M8N2P3R5S7T9V1W";
 const URL_ = `/api/v1/runs/${ID}`;
 const PROCESSES = {
@@ -336,4 +348,181 @@ test("P3-parB: a run that has ended but whose head end is not yet reported shows
   app(`/runs/${ID}`);
   expect(await screen.findByText("Ending")).toBeInTheDocument();
   expect(screen.queryByText("Alive")).toBeNull();
+});
+
+// P3-parC: the run detail against LiteRunDetail, LiteRunLogs and LiteRunActions.
+
+test("P3-parC: an nf-core/ pipeline shows the nf-core mark in the header tile and the Pipeline fact; the Engine fact keeps Nextflow's", async () => {
+  detail();
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(header.querySelector(".sp-mark-tile img")).toHaveAttribute("alt", "nf-core");
+  const pipeline = within(header).getByText("nf-core/rnaseq 3.27.0").closest("dd")!;
+  expect(within(pipeline).getByRole("img", { name: "nf-core" })).toBeInTheDocument();
+  const engine = within(header).getByText("Nextflow 26.10.4 · test").closest("dd")!;
+  expect(engine.querySelector("img")).toHaveAttribute("src", expect.stringContaining("logo-nextflow"));
+});
+
+test("P3-parC: Copy is a menu of native buttons: config, run directory and run ID; arrows move, Escape returns", async () => {
+  detail();
+  app(`/runs/${ID}`);
+  const copy = await screen.findByRole("button", { name: "Copy" });
+  expect(copy).toHaveAttribute("aria-haspopup", "menu");
+  expect(copy).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(copy);
+  expect(copy).toHaveAttribute("aria-expanded", "true");
+  const menu = screen.getByRole("menu", { name: "Copy" });
+  const items = within(menu).getAllByRole("menuitem");
+  expect(items.map((i) => i.textContent)).toEqual(["Config (params.json)", "Run directory", "Run ID"]);
+  expect(items.every((i) => i.tagName === "BUTTON")).toBe(true);
+  await waitFor(() => expect(items[0]).toHaveFocus());
+  await userEvent.keyboard("{ArrowDown}");
+  expect(items[1]).toHaveFocus();
+  await userEvent.keyboard("{ArrowUp}{ArrowUp}");
+  expect(items[2]).toHaveFocus(); // wraps
+  await userEvent.keyboard("{Escape}");
+  expect(screen.queryByRole("menu")).toBeNull();
+  expect(copy).toHaveFocus();
+
+  await userEvent.click(copy);
+  await userEvent.click(within(screen.getByRole("menu")).getByRole("menuitem", { name: "Run directory" }));
+  expect(await navigator.clipboard.readText()).toBe(`/scratch/amartin/spectio-runs/${ID}`);
+  expect(screen.getByText("Copied the run directory")).toHaveAttribute("role", "status");
+  expect(copy).toHaveFocus();
+  await userEvent.click(copy);
+  await userEvent.click(screen.getByRole("menuitem", { name: "Config (params.json)" }));
+  expect(JSON.parse(await navigator.clipboard.readText())).toEqual({ outdir: "results", depth: 3 });
+});
+
+test("P3-parC: a Snakemake run copies its config as config.yaml; a run from a terminal has no run directory to copy", async () => {
+  detail({
+    origin: "cli-observed",
+    workflow: { engine: "snakemake", engine_version: "9.27.1", location: "/g/demo-lab/pipelines/wgs", name: "wgs-germline", version: null },
+  });
+  app(`/runs/${ID}`);
+  await userEvent.click(await screen.findByRole("button", { name: "Copy" }));
+  const items = within(screen.getByRole("menu")).getAllByRole("menuitem");
+  expect(items.map((i) => i.textContent)).toEqual(["Config (config.yaml)", "Run ID"]);
+  await userEvent.click(items[0]);
+  expect(await navigator.clipboard.readText()).toBe("outdir: results\ndepth: 3\n");
+});
+
+test("P3-parC: the tab and the log source are in the URL: a log view can be linked and reloaded", async () => {
+  const mock = detail({}, { [`${URL_}/logs?source=head-err`]: () => new Response("boom\n") });
+  const router = app(`/runs/${ID}?tab=logs&source=head-err`);
+  expect(await screen.findByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("button", { name: "Head errors" })).toHaveAttribute("aria-pressed", "true");
+  await waitFor(() => expect(fetched(mock)).toContain(`${URL_}/logs?source=head-err`));
+  await userEvent.click(screen.getByRole("button", { name: "Engine log" }));
+  await waitFor(() => expect(router.state.location.search).toEqual({ tab: "logs", source: "engine" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Tasks" }));
+  await waitFor(() => expect(router.state.location.search).toEqual({ tab: "tasks" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Summary" }));
+  await waitFor(() => expect(router.state.location.search).toEqual({}));
+});
+
+test("P3-parC: an unknown tab or source in the URL falls back to the Summary and the engine log", async () => {
+  const mock = detail();
+  app(`/runs/${ID}?tab=nope&source=%2Fetc%2Fpasswd`);
+  expect(await screen.findByRole("tab", { name: "Summary" })).toHaveAttribute("aria-selected", "true");
+  await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
+  expect(screen.getByRole("button", { name: "Engine log" })).toHaveAttribute("aria-pressed", "true");
+  expect(fetched(mock).some((u) => u.includes("passwd"))).toBe(false);
+});
+
+test("P3-parC: the aside's All logs opens the Logs tab on the tail's source, with focus on the panel", async () => {
+  detail({
+    state: "failed",
+    ended_at: "2026-10-31T08:00:00+00:00",
+    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1 },
+  }, { [`${URL_}/logs?source=head-err`]: () => new Response("Error in rule x\n") });
+  const router = app(`/runs/${ID}`);
+  const tail = await screen.findByRole("region", { name: "Head errors · last lines" });
+  await userEvent.click(within(tail).getByRole("button", { name: /^All logs/ }));
+  expect(screen.getByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("button", { name: "Head errors" })).toHaveAttribute("aria-pressed", "true");
+  await waitFor(() => expect(screen.getByRole("tabpanel", { name: "Logs" })).toHaveFocus());
+  expect(router.state.location.search).toEqual({ tab: "logs", source: "head-err" });
+});
+
+test("P3-parC: the log's file on the server, with Copy; an Open raw link to the same text", async () => {
+  detail({}, { [`${URL_}/logs?source=head-out`]: () => new Response("hello\n") });
+  app(`/runs/${ID}?tab=logs&source=engine`);
+  const file = await screen.findByLabelText("File");
+  expect(file).toHaveTextContent(`/scratch/amartin/spectio-runs/${ID}/launch/.nextflow.log`);
+  await userEvent.click(screen.getByRole("button", { name: "Copy the engine log path" }));
+  expect(await navigator.clipboard.readText()).toBe(`/scratch/amartin/spectio-runs/${ID}/launch/.nextflow.log`);
+  const raw = screen.getByRole("link", { name: /^Open raw/ });
+  expect(raw).toHaveAttribute("href", `/api/v1/runs/${ID}/logs?source=engine`);
+  expect(raw).toHaveAttribute("target", "_blank");
+  expect(raw).toHaveAttribute("rel", expect.stringContaining("noopener"));
+  await userEvent.click(screen.getByRole("button", { name: "Head output" }));
+  expect(screen.getByLabelText("File")).toHaveTextContent(`/scratch/amartin/spectio-runs/${ID}/launch/.spectio/head.out`);
+  expect(screen.getByRole("link", { name: /^Open raw/ })).toHaveAttribute("href", `/api/v1/runs/${ID}/logs?source=head-out`);
+});
+
+test("P3-parC: Snakemake's engine log is the newest file of a directory", async () => {
+  detail({
+    workflow: { engine: "snakemake", engine_version: "9.27.1", location: "/g/wgs", name: "wgs", version: null },
+  });
+  app(`/runs/${ID}?tab=logs&source=engine`);
+  expect(await screen.findByLabelText("File")).toHaveTextContent(`/scratch/amartin/spectio-runs/${ID}/launch/.snakemake/log/`);
+  expect(screen.getByText(/the newest \.log there/)).toBeInTheDocument();
+});
+
+test("P3-parC: a run from a terminal has no File row", async () => {
+  detail({ origin: "cli-observed" });
+  app(`/runs/${ID}?tab=logs&source=engine`);
+  await screen.findByLabelText("Engine log", { selector: "pre" });
+  expect(screen.queryByLabelText("File")).toBeNull();
+});
+
+test("P3-parC: the viewer does not wrap, opens at its newest lines, and tints levels as the board does", async () => {
+  const top = Object.getOwnPropertyDescriptor(Element.prototype, "scrollTop")!;
+  const height = Object.getOwnPropertyDescriptor(Element.prototype, "scrollHeight")!;
+  Object.defineProperty(Element.prototype, "scrollHeight", { configurable: true, get: () => 900 });
+  Object.defineProperty(Element.prototype, "scrollTop", {
+    configurable: true,
+    get(this: { _top?: number }) {
+      return this._top ?? 0;
+    },
+    set(this: { _top?: number }, v: number) {
+      this._top = v;
+    },
+  });
+  try {
+    detail({}, {
+      [`${URL_}/logs?source=engine`]: () =>
+        new Response(
+          "Oct-25 07:40:12 [main] INFO  nextflow.cli.CmdRun - N E X T F L O W\n" +
+            "[88/f1d0e2] STAR_ALIGN (S04) completed\n" +
+            "retry 1/3 with memory 8 GB\n" +
+            "ERROR nextflow.processor.TaskProcessor - exit 137\n" +
+            "nextflow.Session - progress 524 / 803 tasks\n" +
+            "Finished job 12.\n",
+        ),
+    });
+    app(`/runs/${ID}?tab=logs&source=engine`);
+    const pre = await screen.findByLabelText("Engine log", { selector: "pre" });
+    await within(pre).findByText(/completed/);
+    expect(pre).toHaveClass("sp-nowrap");
+    expect(pre).toHaveAttribute("tabindex", "0");
+    await waitFor(() => expect(pre.scrollTop).toBe(900));
+    expect(within(pre).getByText(/N E X T F L O W/)).not.toHaveAttribute("data-tone");
+    expect(within(pre).getByText(/completed/)).toHaveAttribute("data-tone", "ok");
+    expect(within(pre).getByText(/Finished job/)).toHaveAttribute("data-tone", "ok");
+    expect(within(pre).getByText(/retry 1\/3/)).toHaveAttribute("data-tone", "review");
+    expect(within(pre).getByText(/exit 137/)).toHaveAttribute("data-tone", "failed");
+    expect(within(pre).getByText(/progress 524/)).toHaveAttribute("data-tone", "progress");
+  } finally {
+    Object.defineProperty(Element.prototype, "scrollTop", top);
+    Object.defineProperty(Element.prototype, "scrollHeight", height);
+  }
+});
+
+test("P3-parC: the note under the viewer leads to the Tasks tab", async () => {
+  detail();
+  app(`/runs/${ID}?tab=logs&source=engine`);
+  await userEvent.click(await screen.findByRole("button", { name: /open a task in Tasks/ }));
+  expect(screen.getByRole("tab", { name: "Tasks" })).toHaveAttribute("aria-selected", "true");
 });

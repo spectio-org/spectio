@@ -238,9 +238,12 @@ export function cancelRun(id: string): Promise<RunDetail> {
   return call(`${run(id)}:cancel`, { method: "POST" });
 }
 
+/** Where a run log's text is served: the same origin, text/plain (the Logs tab's Open raw). */
+export const logUrl = (id: string, source: LogSource) => `${API}${run(id)}/logs${query({ source })}`;
+
 /** The last 64 KiB of a run log, as text. */
 export async function getLog(id: string, source: LogSource, signal?: AbortSignal): Promise<string> {
-  const response = await fetch(`${API}${run(id)}/logs${query({ source })}`, { signal });
+  const response = await fetch(logUrl(id, source), { signal });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new ApiError(response.status, body?.detail ?? body?.title ?? `HTTP ${response.status}`);

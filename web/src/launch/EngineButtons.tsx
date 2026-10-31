@@ -1,6 +1,7 @@
 import { Button, Group, Text } from "@mantine/core";
 import type { ReactNode } from "react";
 import { ENGINES, type Engine } from "../api";
+import { EngineMark } from "../shell/EngineMark";
 
 const NAMES: Record<Engine, string> = { nextflow: "Nextflow", snakemake: "Snakemake" };
 
@@ -12,7 +13,8 @@ interface Props {
 }
 
 /** Two native toggle buttons, one pressed at most (Assumption 2; UX-G2-07). The pressed one
- * shows a check mark and a heavier variant, so the state is not shown by colour alone. */
+ * shows a check mark and a heavier variant, so the state is not shown by colour alone. Each shows
+ * its engine's mark beside its name, as on LiteLaunch (P3-parC). */
 export function EngineButtons({ value, onChange, note, error }: Props) {
   const describedBy = ["engine-note", error ? "engine-error" : ""].filter(Boolean).join(" ");
   return (
@@ -30,7 +32,10 @@ export function EngineButtons({ value, onChange, note, error }: Props) {
             leftSection={value === engine ? <span aria-hidden="true">✓</span> : null}
             onClick={() => onChange(engine)}
           >
-            {NAMES[engine]}
+            <span className="launch-engine-name">
+              <EngineMark engine={engine} size={16} named />
+              {NAMES[engine]}
+            </span>
           </Button>
         ))}
         <Text id="engine-note" size="sm" c="dimmed">

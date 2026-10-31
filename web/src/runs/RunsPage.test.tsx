@@ -136,7 +136,7 @@ test("a stream frame refreshes the first page and keeps the rows Load more added
   await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?limit=50&cursor=def"));
 });
 
-test("UX-PAR-01: each row shows its engine's mark, never the nf-core mark", async () => {
+test("UX-PAR-01, inbox #91 (b): each row shows its pipeline's mark: nf-core for an nf-core/ name, else the engine's", async () => {
   const snake = run({
     id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V4Z",
     name: "plate-qc-a",
@@ -147,12 +147,10 @@ test("UX-PAR-01: each row shows its engine's mark, never the nf-core mark", asyn
   app("/runs");
   const table = await screen.findByRole("table");
   const nf = within(table).getByRole("link", { name: "Open run rnaseq-a" }).closest("tr")!;
-  const mark = within(nf).getByRole("img", { name: "Nextflow" });
-  expect(mark.getAttribute("src")).toMatch(/logo-nextflow/);
+  const mark = within(nf).getByRole("img", { name: "nf-core" });
+  expect(mark.getAttribute("src")).toMatch(/logo-nf-core/);
   expect(Number(mark.getAttribute("width"))).toBeGreaterThanOrEqual(16);
   expect(Number(mark.getAttribute("width"))).toBeLessThanOrEqual(24);
-  expect(within(table).queryByRole("img", { name: /nf-core/i })).toBeNull();
-  expect(document.querySelector('img[src*="nf-core"]')).toBeNull();
   // The version sits on the name's line (UX-PAR-17), Nextflow's running total is "known so far".
   expect(within(nf).getByText("nf-core/rnaseq").parentElement).toHaveTextContent("nf-core/rnaseq 3.27.0");
   expect(within(nf).getByText("known so far")).toBeInTheDocument();
