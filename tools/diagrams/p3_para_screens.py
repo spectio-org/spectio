@@ -292,8 +292,9 @@ def build(theme: Theme) -> Sketch:
     s.step(x + cw / 2, STEP, 4, "the run, `/runs/id`")
     lines(s, x, TXT, ("one header on every tab: facts, task chips", "Why it failed opens first on a failed run",
                       "stages and processes with bars, 24", "an aside: log tails, the head by hand, 23"))
-    y = pin(s, x, PIN, "R1 CR-P3PARA-04", ("an ended run's tail said Empty so far,", "lines untinted, `ac5ae2ca`"),
-            fixed=True)
+    # fixed in part: the Empty. text is fixed, the tint is not, so it takes the open mark
+    y = pin(s, x, PIN, "R1 CR-P3PARA-04, in part", ("Empty. once ended, `ac5ae2ca`;",
+                                                   "the tail's lines still untinted"), fixed=False)
     y = pin(s, x, y, "R1 CR-P3PARA-08", ("Download clicked a detached anchor,", "`ac5ae2ca`"), fixed=True)
     y = pin(s, x, y, "R1 SEC-P3PARA-01", ("the copied `ssh` and `tmux attach` lines",
                                           "carry server values unquoted"), fixed=False)
@@ -434,7 +435,7 @@ def build(theme: Theme) -> Sketch:
         s.text(cx + 18, y + 16, fid, size=11.5, anchor="start", colour=t.dim)
 
     s.prefix_key(50, H - 40, ("CR", "SEC"))
-    s.text(50, H - 16, "a tick: fixed on the branch · a warning: left open · R1, R2: the round · "
+    s.text(50, H - 16, "a tick: fixed on the branch · a warning: left open or fixed in part · R1, R2: the round · "
            "a bare number: its UX-PAR finding", size=13, anchor="start", colour=t.dim)
     s.text(W - 50, H - 16, "source: web/src shell, home, runs at 7a4811c2 · review record P3-parA · "
            "ui-parity-0.0.1", size=12.5, anchor="end", colour=t.dim)
