@@ -464,7 +464,7 @@
   <text x="1390.0" y="594.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">4 · Cancel, behind a confirm</text>
   <text x="1220.0" y="624.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">queued or running, not from a terminal</text>
   <text x="1220.0" y="645.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Keep running has the focus</text>
-  <text x="1220.0" y="666.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">the head is interrupted in tmux</text>
+  <text x="1220.0" y="666.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">SIGTERM to the head's process group</text>
   <text x="1220.0" y="687.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">then the focus moves to the run title</text>
   <path d="M1220.8,723.1 C1223.1,725.5 1224.5,726.5 1225.4,728.8" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
   <path d="M1225.6,728.7 C1228.2,724.7 1232.2,720.0 1234.7,715.8" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
@@ -782,7 +782,7 @@
   <path d="M667.3,1391.4 C671.1,1385.9 674.7,1377.9 677.7,1372.1" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
   <text x="678.0" y="1389.6" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.2" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
   <text x="700.0" y="1389.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15" fill="#1e1e1e" text-anchor="start" font-weight="bold">left open after round 3, both approve</text>
-  <text x="1530.0" y="1389.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">IDs restart each round</text>
+  <text x="1530.0" y="1389.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">IDs repeat across rounds</text>
   <circle cx="676.0" cy="1414.0" r="2.6" fill="#5c5c5c"/>
   <text x="688.0" y="1419.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">an unrelated edit in <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.4">test_stream.py</tspan></text>
   <text x="1095.0" y="1419.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="end" font-weight="normal">R1 CR-P3T20-05</text>

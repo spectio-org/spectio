@@ -36,7 +36,7 @@ Every fact comes from branch autopilot/P3-t20 at 4a70188 (base b0e2edf):
 - the review rounds, from the step's worker report of 2026-10-31 (review record P3-t20):
   R1 CR approve 01 to 06, SEC approve 01 to 05; fixed: CR-01, 03, 04, SEC-01 in e6dc116, CR-02 in
   4a70188. R2 CR approve 05 to 08, SEC changes with SEC-02 major; fixed: SEC-02 in 2f30646.
-  R3 CR approve 05 to 08, SEC approve 03; none fixed. IDs restart each round. Simplifier: 2 lines
+  R3 CR approve 05 to 08, SEC approve 03; none fixed. IDs repeat across rounds. Simplifier: 2 lines
   out, 1 in; pytest 511 passed, vitest 63 of 63, before and after.
 """
 
@@ -223,7 +223,7 @@ def build(theme: Theme) -> Sketch:
     s.text(bx + 200, by + 164, "`POST :cancel` 202", size=11.5, colour=t.dim)
     s.step(x + CW / 2, STEP, 4, "Cancel, behind a confirm")
     lines(s, x, TXT, ("queued or running, not from a terminal", "Keep running has the focus",
-                      "the head is interrupted in tmux", "then the focus moves to the run title"))
+                      "SIGTERM to the head's process group", "then the focus moves to the run title"))
     pin(s, x, PIN, "R1 CR-P3T20-01", ("focus fell to the page body", "once Cancel was gone"), fixed=True)
     pin(s, x, PIN + 64, "R1 CR-P3T20-02", ("simplify: an unread ref, dropped",), fixed=True)
 
@@ -329,7 +329,7 @@ def build(theme: Theme) -> Sketch:
     s.warning(bx + 28, LOW + 8, size=11)
     s.text(bx + 50, LOW + 14, "left open after round 3, both approve", size=15, anchor="start",
            weight="bold")
-    s.text(bx + bw - 20, LOW + 14, "IDs restart each round", size=12.5, anchor="end", colour=t.dim)
+    s.text(bx + bw - 20, LOW + 14, "IDs repeat across rounds", size=12.5, anchor="end", colour=t.dim)
     open_items = (
         ("an unrelated edit in `test_stream.py`", "R1 CR-P3T20-05"),
         ("comments disagree on `/runs/%E0`", "R1 CR-P3T20-06"),
