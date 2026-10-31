@@ -663,6 +663,40 @@ def test_validation_error_logged_without_input(caplog: pytest.LogCaptureFixture)
     assert "INPUT-NOT-LOGGED" not in str(caught.value)
 
 
+@pytest.mark.parametrize(
+    "data",
+    [
+        b"stages:\n  - id: a\n    name: [MARKER-NOT-LOGGED\n",  # a syntax error on that line
+        b"workflow: {name: x}\nMARKER-NOT-LOGGED\nx: : y\n",
+        b"MARKER-NOT-LOGGED-\n-\n-: 1\nstages: []\n",
+    ],
+)
+def test_yaml_error_logged_without_content(
+    tmp_path: Path, caplog: pytest.LogCaptureFixture, data: bytes
+) -> None:
+    """A malformed or refused file is reported by line, column and problem, never by its text:
+    PyYAML's error quotes the offending line (SEC-P3T27-03)."""
+    with pytest.raises(ValueError) as caught:
+        parse_spectio_yml(data)
+    said = str(caught.value)
+    assert "MARKER" not in said and "\n" not in said
+    where = tmp_path / "overlays"
+    where.mkdir(mode=0o700)
+    (where / "bad.spectio.yml").write_bytes(data)
+    with caplog.at_level(logging.WARNING):
+        assert find_overlay(where, "nextflow", "x", None) == (None, None)
+    assert "not applied" in caplog.text and "MARKER" not in caplog.text
+
+
+def test_extra_key_reported_on_one_line() -> None:
+    """An extra key is named by its repr(), at most 40 characters: no newline reaches the log."""
+    with pytest.raises(ValueError) as caught:
+        parse_spectio_yml(b'stages: []\n"gates\\n\\x1b' + b"y" * 60 + b'": 1\n')
+    said = str(caught.value)
+    assert "gates" in said and "y" * 40 not in said
+    assert all(c.isprintable() for c in said)
+
+
 # --- Snakemake freeze ------------------------------------------------------------------------
 
 
@@ -768,14 +802,23 @@ def test_snakemake_main_outside_pipeline(
     assert rows == []
 
 
-@pytest.mark.parametrize("with_overlay", [False, True])
+@pytest.mark.parametrize(
+    ("with_overlay", "rebuilt"), [(False, False), (True, False), (False, True)]
+)
 def test_snakemake_freeze_git_workflow(
-    settings: Settings, writer: Writer, overlays: Path, tmp_path: Path, with_overlay: bool
+    settings: Settings,
+    writer: Writer,
+    overlays: Path,
+    tmp_path: Path,
+    with_overlay: bool,
+    rebuilt: bool,
 ) -> None:
     """A workflow imported from Git: its location is the URL, so the pipeline directory is the
     fetched copy the launch ran in (the launch command's `location`); the overlay key is the
-    repository's name, not the revision's (CR-P3T27-03)."""
-    run_id = f"run_01K8T27G1T{int(with_overlay)}{'0' * 15}"
+    repository's name, not the revision's (CR-P3T27-03). A run of a rebuilt index has no launch
+    command: the copy is the one `api.workflows.fetch` wrote for its URL and revision
+    (CR-P3T27-04)."""
+    run_id = f"run_01K8T27G1T{int(with_overlay)}{int(rebuilt)}{'0' * 14}"
     launch_id = add_run(writer, settings, run_id, "mosaic", "running", engine="snakemake")
     built = mosaicatcher_tree(tmp_path / "built").parents[1]
     fetched = tmp_path / "pipelines" / "github.com" / "lab" / "mosaicatcher-pipeline" / "v2.5.1"
@@ -785,6 +828,9 @@ def test_snakemake_freeze_git_workflow(
 
     def as_git(c: Any) -> None:
         c.execute(text("UPDATE workflows SET source = 'git', location = :l"), {"l": url})
+        c.execute(text("UPDATE workflow_versions SET revision = 'v2.5.1'"))
+        if rebuilt:
+            return
         c.execute(
             runner_commands.insert().values(
                 id=f"cmd_{run_id}",
@@ -810,7 +856,7 @@ def test_snakemake_freeze_git_workflow(
         ingest,
         launch_id=launch_id,
         batch=SpoolBatch(events, {}, Counter()),
-        sources=StageSources(overlays, settings.runs_root),
+        sources=StageSources(overlays, settings.runs_root, tmp_path),
     )
     writer.submit(run).result()
     rows = writer.submit(

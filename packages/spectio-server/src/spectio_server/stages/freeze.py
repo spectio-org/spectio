@@ -23,6 +23,7 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from urllib.parse import quote
 
 import yaml
 from pydantic import ValidationError
@@ -30,6 +31,8 @@ from sqlalchemy import Row, func, insert, select, update
 
 from spectio.runner.rundir import private_dir, read_small
 from spectio_sdk.stages import SpectioFile, applies
+from spectio_server.api.problems import Invalid
+from spectio_server.api.workflows import git_url
 from spectio_server.ids import new_id
 from spectio_server.stages.assign import Overlap, StageDef, assign
 from spectio_server.stages.detect_nf import detect_nextflow
@@ -68,11 +71,13 @@ IN_CHUNK = 500
 
 @dataclass(frozen=True)
 class StageSources:
-    """Where the server reads stage sources: the overlays directory (`~/.spectio/overlays`) and
-    the runs root, under which a launch's `.spectio/rules.txt` is."""
+    """Where the server reads stage sources: the overlays directory (`~/.spectio/overlays`),
+    the runs root, under which a launch's `.spectio/rules.txt` is, and the data directory, under
+    which a Git workflow's copy is (`api.workflows.fetch`)."""
 
     overlays: Path | None
     runs_root: Path | None
+    data_dir: Path | None = None
 
 
 class _NoAliasLoader(yaml.SafeLoader):
@@ -81,8 +86,22 @@ class _NoAliasLoader(yaml.SafeLoader):
 
     def compose_node(self, parent: Any, index: Any) -> Any:
         if self.check_event(yaml.AliasEvent):
-            raise yaml.YAMLError("aliases are not read in a spectio.yml")
+            raise yaml.MarkedYAMLError(problem="aliases are not read")
         return super().compose_node(parent, index)
+
+
+def _plain(text: str, cap: int = 80) -> str:
+    """`text` without control characters, at most `cap` characters."""
+    return "".join(c for c in text if c.isprintable())[:cap]
+
+
+def _yaml_problem(exc: yaml.YAMLError) -> str:
+    """Where and what, never the snippet of the line that PyYAML's `str()` quotes (SEC-P3T27-03)."""
+    said = _plain(getattr(exc, "problem", None) or type(exc).__name__)
+    mark = getattr(exc, "problem_mark", None)
+    if mark is not None:
+        said += f" (line {mark.line + 1}, column {mark.column + 1})"
+    return said
 
 
 def parse_spectio_yml(data: bytes) -> SpectioFile:
@@ -93,13 +112,13 @@ def parse_spectio_yml(data: bytes) -> SpectioFile:
     try:
         value = yaml.load(data, Loader=_NoAliasLoader)  # noqa: S506 (a SafeLoader)
     except yaml.YAMLError as exc:
-        raise ValueError(f"not YAML: {str(exc)[:200]}") from None
+        raise ValueError(f"not YAML: {_yaml_problem(exc)}") from None
     except RecursionError:  # a deeply nested document (CR-P3T27-02, SEC-P3T27-01)
         raise ValueError("nested too deep") from None
     if not isinstance(value, dict):
         raise ValueError("not a mapping")
-    extra = sorted(str(k)[:40] for k in value if k not in ("workflow", "stages"))
-    if extra:
+    extra = sorted(_plain(repr(k), 40) for k in value if k not in ("workflow", "stages"))
+    if extra:  # repr() and _plain: one line, whatever the key holds (SEC-P3T27-03)
         raise ValueError(f"keys not read in 0.0.1: {', '.join(extra[:5])}")
     try:
         return SpectioFile.model_validate(value)
@@ -173,6 +192,7 @@ def _run(p: "Projection") -> _Run:
             workflows.c.location,
             workflows.c.name,
             workflow_versions.c.version,
+            workflow_versions.c.revision,
         )
         .join(workflow_versions, workflow_versions.c.workflow_id == workflows.c.id)
         .join(runs, runs.c.workflow_version_id == workflow_versions.c.id)
@@ -180,7 +200,8 @@ def _run(p: "Projection") -> _Run:
     ).one()
     # The launch command's `location` is the directory `POST /runs` resolved: for Git, the
     # fetched copy, where `workflows.location` is the URL (CR-P3T27-03). A run with no launch
-    # command (from a terminal) has its local location.
+    # command (from a terminal, or of a rebuilt index) has its local location, or for Git the
+    # copy `fetch` wrote for its URL and revision, when there is one (CR-P3T27-04).
     payload = p.conn.execute(
         select(runner_commands.c.payload)
         .where(runner_commands.c.run_id == p.run_id, runner_commands.c.kind == "launch")
@@ -190,10 +211,25 @@ def _run(p: "Projection") -> _Run:
     where = payload.get("location") if isinstance(payload, dict) else None
     if where is None and row.source == "local":
         where = row.location
+    elif where is None and row.source == "git":
+        where = _git_copy(p, row.location, row.revision)
     root = None
     if isinstance(where, str) and where.startswith("/"):
         root = Path(os.path.realpath(where))
     return _Run(row.engine, row.source, row.name, row.version, root)
+
+
+def _git_copy(p: "Projection", location: str, revision: str | None) -> str | None:
+    """`<data dir>/pipelines/<parts…>/<revision>`, the directory `api.workflows.fetch` writes,
+    when it is one."""
+    if p.sources is None or p.sources.data_dir is None or revision is None:
+        return None
+    try:
+        _, parts = git_url(location)
+    except Invalid:
+        return None
+    copy = p.sources.data_dir.joinpath("pipelines", *parts, quote(revision, safe=""))
+    return str(copy) if copy.is_dir() else None
 
 
 def frozen(p: "Projection") -> bool:

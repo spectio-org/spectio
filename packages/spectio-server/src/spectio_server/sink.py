@@ -37,10 +37,16 @@ T = TypeVar("T")
 
 
 class StoreSink:
-    def __init__(self, writer: Writer, runs_root: Path, overlays: Path | None = None) -> None:
+    def __init__(
+        self,
+        writer: Writer,
+        runs_root: Path,
+        overlays: Path | None = None,
+        data_dir: Path | None = None,
+    ) -> None:
         self.writer = writer
         self.runs_root = runs_root
-        self.sources = StageSources(overlays, runs_root)  # stage sources (P1 Task 27)
+        self.sources = StageSources(overlays, runs_root, data_dir)  # stage sources (P1 Task 27)
 
     def _do(self, fn: Callable[[Connection], T]) -> T:
         return self.writer.submit(fn).result()
