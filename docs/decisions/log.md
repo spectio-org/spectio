@@ -1048,3 +1048,14 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Not decided here:** the nf-core mark and the logos' upstream source and terms (inbox #91, question for Thomas; the provenance is **[to be validated]**).
 - **Not yet applied:** the audit's board updates (LiteCancelDialog's confirm label, the LiteLaunch note), at the next `/apply-findings`.
 - **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions), follow-up FU-P3-25.
+
+## 2026-10-31 — UI parity B: the phone, the Launch form and the Head word, written into ui-spec §4.3, §4.4, §4.6 and §4.11 (P3 parity B)
+
+- **Context.** Step B of the parity work Thomas asked for on 2026-10-31 (see the UI parity A entry above). It takes the phone and Launch findings of the [audit](../reviews/ui-parity-0.0.1.md), UX-PAR-08 to 10 and 30 to 34, and the UI items of follow-up FU-P3-25. The UI parity A retake had also shown "Head: Alive" on runs that had ended: the runner reports a head's end only after its 60 s end grace, while the spool may still hold events. A runner change that reported it at once (`2f6809b5`) made the server stop reading an ended run's spool inside the grace, and was reverted (`7993752a`, CR-P3PARB-01 r3).
+- **Applied (assumed — standing rule, [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** four dated notes. No section number changed.
+    - [ui-spec §4.11](../specs/ui-spec.md#411-phone-and-tablet): the phone's title row with the `h1` and Back to Runs, 44 px targets, cards instead of tables, and the pinned Launch bar's summary or reason.
+    - [ui-spec §4.6](../specs/ui-spec.md#46-launch-and-relaunch): schema groups that fold with an icon and a status, Snakemake maps as dotted sections (Snakemake only; a map with one value set is sent whole), schema keys treated as data, the params preview built by the request's own function, the Loaded card and "Where it runs", one executor label.
+    - [ui-spec §4.4](../specs/ui-spec.md#44-run-detail): Head **Ending** for a terminal run whose head's end is not reported yet; the runner's end grace stays whole. The phone's run header.
+    - [ui-spec §4.3](../specs/ui-spec.md#43-runs-table-and-rows): one card per run on the phone.
+- **Not decided here:** whether Snakemake merges a `--configfile` map key by key, and whether Nextflow's `-params-file` merges a partial map (**[to be validated]**; the form relies on neither). Where Launch sits: the 2026-10-30 note keeps it at the foot of the aside, LiteLaunch puts it in the page head; reconciled at the next `/apply-findings`.
+- **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions), follow-up FU-P3-26 and what is left of FU-P3-25.

@@ -83,6 +83,16 @@
   color: var(--sp-text-secondary);
   font-size: 14px;
 }
+/* The run header's line of values: each value wraps whole, never "8" over "s", and the line
+   breaks between values (CR-P3PARB-02 r2; the spans have no space between them to break at). */
+.sp-run-head .sp-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+.sp-run-head .sp-sub > * {
+  white-space: nowrap;
+}
 .sp-sub > * + *::before {
   /* a margin, not spaces: an inline-flex item (the state word) drops leading whitespace */
   content: "·";
@@ -794,4 +804,125 @@
 /* The run header: a 4 px bar across the top (LiteRunDetail). */
 .sp-card.sp-run-head[data-rail] {
   box-shadow: inset 0 4px 0 var(--tone), var(--sp-shadow);
+}
+
+/* UI parity B: the phone's cards and rows instead of tables (ui-spec §4.11; MLiteRuns,
+   MLiteRunDetail, MLiteHome; UX-PAR-09 and 10). */
+.sp-run-cards,
+.sp-cards-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sp-run-card,
+.sp-row-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px 14px 12px 18px;
+  border-radius: 14px;
+  background: var(--sp-surface-raised);
+  font-size: 13px;
+  color: var(--sp-text-secondary);
+  overflow-wrap: anywhere;
+}
+.sp-run-card[data-rail],
+.sp-row-card[data-rail] {
+  box-shadow: inset 4px 0 0 var(--tone), var(--sp-shadow);
+}
+.sp-run-card-top,
+.sp-row-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+.sp-run-card .sp-run-link {
+  font-family: var(--sp-font-display);
+  font-size: 18px;
+  /* the name is the card's link: at least 44 px of hit area */
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  margin: -8px 0;
+}
+.sp-run-card-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 6px;
+}
+.sp-run-card-line .sp-chip {
+  margin: 0;
+}
+.sp-row-card .sp-mono {
+  color: var(--sp-text-primary);
+}
+.sp-run-pipeline {
+  display: block;
+  font-size: 15px;
+}
+
+@media (max-width: 767.98px) {
+  /* Segments scroll sideways rather than wrap. */
+  .sp-segments {
+    flex-wrap: nowrap;
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .sp-segments button {
+    flex-shrink: 0;
+    min-height: 44px;
+    white-space: nowrap;
+  }
+  .sp-search-field,
+  .sp-select select {
+    height: 44px;
+  }
+  .sp-select {
+    flex: 1 1 100%;
+  }
+  .sp-select select {
+    flex: 1 1 auto;
+    max-width: none;
+  }
+  /* Home: count cards two by two. */
+  .sp-cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  /* The run header: facts as label and value rows, Cancel full width. */
+  .sp-facts {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0;
+  }
+  .sp-facts > div {
+    display: grid;
+    grid-template-columns: 40% minmax(0, 1fr);
+    gap: 8px;
+    padding: 7px 0;
+    border-bottom: 1px solid var(--sp-line-divider);
+  }
+  .sp-facts dd {
+    margin: 0;
+  }
+  .sp-run-head {
+    padding: 18px 16px 14px;
+  }
+  /* The mark tile stays beside the pipeline's name (MLiteRunDetail). */
+  .sp-run-top > .sp-grow {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .sp-run-top > .mantine-Button-root {
+    width: 100%;
+  }
+  .sp-stage > summary > .sp-state,
+  .sp-stage > summary > .sp-done {
+    flex: 0 1 auto;
+  }
 }

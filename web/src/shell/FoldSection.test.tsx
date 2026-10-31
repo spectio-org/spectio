@@ -62,3 +62,16 @@ test("UX-PAR-02: storage that throws does not break the section", async () => {
     Storage.prototype.getItem = getItem;
   }
 });
+
+test("UX-PAR-30: a status stays beside the title open or folded, a description under it, and no screen means no memory", async () => {
+  render(
+    <FoldSection id="g0" icon={ICONS.folder} title="Input/output" sub="Where the data is · 2 parameters" status="1 changed" defaultOpen={false}>
+      <p>fields</p>
+    </FoldSection>,
+  );
+  const toggle = screen.getByRole("button", { name: "Input/output 1 changed" });
+  expect(toggle).toHaveAccessibleDescription("Where the data is · 2 parameters");
+  await userEvent.click(toggle);
+  expect(screen.getByRole("button", { name: "Input/output 1 changed" })).toHaveAttribute("aria-expanded", "true");
+  expect(window.localStorage.length).toBe(0);
+});

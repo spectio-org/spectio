@@ -75,6 +75,21 @@ media:
     # live, as app-home
     generator: python3 tools/media/shots.py run --shot app-runs --theme light
     outputs: [docs/assets/shots/app-runs_light.webp]
+  - id: app-home-phone
+    kind: screenshot
+    # live, as app-home, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-home-phone --theme light
+    outputs: [docs/assets/shots/app-home-phone_light.webp]
+  - id: app-runs-phone
+    kind: screenshot
+    # live, as app-home, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-runs-phone --theme light
+    outputs: [docs/assets/shots/app-runs-phone_light.webp]
+  - id: app-launch-snakemake
+    kind: screenshot
+    # live, as app-launch, with SPECTIO_DEMO_SMK_PIPELINE (tools/media/README.md, live shots: config.yaml with a nested map `ref`), at 1440 x 1380
+    generator: python3 tools/media/shots.py run --shot app-launch-snakemake --theme light
+    outputs: [docs/assets/shots/app-launch-snakemake_light.webp]
   - id: app-run-detail
     kind: screenshot
     # live, as app-home; SPECTIO_DEMO_RUN is the finished run's ID
@@ -490,6 +505,14 @@ media:
       - docs/assets/diagrams/p3-para-screens_dark.svg
       - docs/assets/diagrams/p3-para-screens_light.png
       - docs/assets/diagrams/p3-para-screens_dark.png
+  - id: p3-parb-phone-launch
+    kind: diagram
+    generator: python3 tools/diagrams/p3_parb_phone_launch.py
+    outputs:
+      - docs/assets/diagrams/p3-parb-phone-launch_light.svg
+      - docs/assets/diagrams/p3-parb-phone-launch_dark.svg
+      - docs/assets/diagrams/p3-parb-phone-launch_light.png
+      - docs/assets/diagrams/p3-parb-phone-launch_dark.png
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines

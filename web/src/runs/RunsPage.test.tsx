@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { FakeEventSource, app, fetched, json, run, serve, stubStream } from "../testing";
@@ -184,6 +184,23 @@ test("UX-PAR-12: the name filter lives in the URL too, next to the state filter"
   await waitFor(() => expect(router.state.location.search).toEqual({ q: "sarek" }));
   await userEvent.clear(screen.getByRole("searchbox", { name: "Filter by run name" }));
   await waitFor(() => expect(router.state.location.search).toEqual({}));
+});
+
+test("CR-P3PARA-09: the name box follows the URL when a link drops or changes q", async () => {
+  serve({ "/api/v1/runs:summary": SUMMARY, "/api/v1/runs": { items: [failed], next: null } });
+  const router = app("/runs?q=sar");
+  const box = await screen.findByRole("searchbox", { name: "Filter by run name" });
+  expect(box).toHaveValue("sar");
+  // The sidebar's Runs link goes to /runs, with no q: the box empties with the list.
+  await userEvent.click(within(screen.getByRole("navigation", { name: "Main" })).getByRole("link", { name: /^Runs/ }));
+  await waitFor(() => expect(box).toHaveValue(""));
+  act(() => void router.navigate({ to: "/runs", search: { q: "rna" } }));
+  await waitFor(() => expect(box).toHaveValue("rna"));
+  // Typing still lands in the URL, and a trailing space the user typed stays in the box.
+  await userEvent.type(box, "seq ");
+  await waitFor(() => expect(router.state.location.search).toEqual({ q: "rnaseq" }));
+  await new Promise((r) => setTimeout(r, 300));
+  expect(box).toHaveValue("rnaseq ");
 });
 
 test("UX-PAR-18: the footer counts the rows shown against the filter's total", async () => {

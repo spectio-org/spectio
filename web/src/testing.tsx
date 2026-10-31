@@ -88,7 +88,28 @@ export function stubStream() {
   vi.stubGlobal("EventSource", FakeEventSource);
 }
 
-/** The app at `path`, in its shell, at a desktop width. */
+/** jsdom applies no CSS: the shell picks its layout with matchMedia, answered here for one width
+ * (390: the phone, 1024: the tablet). test-setup.ts puts the plain answer back after each test. */
+export function viewport(width: number) {
+  window.matchMedia = (query: string) => {
+    const max = /max-width:\s*([\d.]+)px/.exec(query);
+    const min = /min-width:\s*([\d.]+)px/.exec(query);
+    const matches =
+      (!!max || !!min) && (!max || width <= Number(max[1])) && (!min || width >= Number(min[1]));
+    return {
+      matches,
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    } as MediaQueryList;
+  };
+}
+
+/** The app at `path`, in its shell, at a desktop width unless `viewport` said otherwise. */
 export function app(path: string) {
   const router = createAppRouter(createMemoryHistory({ initialEntries: [path] }));
   render(

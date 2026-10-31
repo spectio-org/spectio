@@ -100,11 +100,13 @@ test('home at / shows the count cards, the active runs and the runs that ended',
   await expect(page.getByRole('region', { name: 'Your pipelines' })).toContainText('/g/demo-lab/pipelines/rnaseq');
 });
 
-test('the detail shows the flat list with no stage, and the stages when /stages has items', async ({ page }) => {
+test('the detail shows the flat list with no stage, and the stages when /stages has items', async ({ page }, info) => {
+  // The phone shows the processes as stacked cards, not a table (UX-PAR-10).
+  const processes = info.project.name === 'phone' ? 'list' : 'table';
   await mockDetail(page, []);
   await page.goto(`/runs/${RUN}`);
   await expect(page.getByText('No stages for this pipeline: processes as the engine reports them.')).toBeVisible();
-  await expect(page.getByRole('table', { name: 'Processes' })).toBeVisible();
+  await expect(page.getByRole(processes, { name: 'Processes' })).toBeVisible();
 
   await page.unrouteAll();
   await mockDetail(page, [
@@ -113,7 +115,7 @@ test('the detail shows the flat list with no stage, and the stages when /stages 
   ]);
   await page.reload();
   await expect(page.getByText('1 of 2 stages done · 1 running')).toBeVisible();
-  await expect(page.getByRole('table', { name: 'Processes of Align' })).toBeVisible(); // the running stage is open
+  await expect(page.getByRole(processes, { name: 'Processes of Align' })).toBeVisible(); // the running stage is open
   await expect(page.getByText('No stages for this pipeline')).toHaveCount(0);
 });
 

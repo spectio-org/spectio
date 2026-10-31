@@ -357,15 +357,17 @@ body {
   position: sticky;
   top: 0;
   z-index: 3;
+  background: var(--sp-surface-bar);
+  box-shadow: 0 1px 0 var(--sp-line-hairline);
+  -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
+}
+.sp-mtopbar-row {
   height: 48px;
   display: flex;
   align-items: center;
   gap: 2px;
   padding: 0 12px;
-  background: var(--sp-surface-bar);
-  box-shadow: 0 1px 0 var(--sp-line-hairline);
-  -webkit-backdrop-filter: blur(14px);
-  backdrop-filter: blur(14px);
 }
 .sp-mtopbar .sp-home {
   gap: 7px;
@@ -588,6 +590,19 @@ body {
   font-weight: 400;
   color: var(--sp-text-secondary);
 }
+/* A status that shows open or folded, and a description under the head (UX-PAR-30). */
+.sp-fold-status {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 4px 10px;
+  font-size: 12.5px;
+  font-weight: 500;
+}
+.sp-fold-sub {
+  margin: 2px 0 0 36px;
+  font-size: 12.5px;
+}
 .sp-fold-chev {
   display: flex;
   flex-shrink: 0;
@@ -602,4 +617,55 @@ body {
 }
 .sp-card.sp-foldsec {
   padding: 14px 16px;
+}
+
+/* UI parity B (docs/reviews/ui-parity-0.0.1.md): the phone, after MLiteTopbar, MLiteRuns,
+   MLiteRunDetail, MLiteHome and MLiteLaunch (ui-spec §4.11). */
+
+/* The top bar's second row (UX-PAR-08): a 44 px back link, then the page's h1 and its subtitle.
+   Empty on Home, which keeps its greeting in the page. */
+.sp-mtitle {
+  display: flex;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 2px 16px 10px 8px;
+  border-top: 1px solid var(--sp-line-hairline);
+}
+.sp-mtitle:empty {
+  display: none;
+}
+.sp-mtitle-text {
+  min-width: 0;
+  padding: 8px 0 0 8px;
+}
+.sp-mtitle h1 {
+  margin: 0;
+  font-family: var(--sp-font-display);
+  font-size: 19px;
+  font-weight: 600;
+  line-height: 1.25;
+}
+.sp-mtitle .sp-sub {
+  margin-top: 2px;
+  font-size: 12px;
+}
+.sp-back {
+  color: var(--sp-text-primary);
+}
+
+/* Touch targets of at least 44 × 44 px (UX-PAR-09). Mantine sizes its buttons and inputs from
+   these variables, also in its dialogs, which sit outside the shell. */
+@media (max-width: 767.98px) {
+  :root:root {
+    --button-height-xs: 44px;
+    --button-height-sm: 44px;
+    --input-height-sm: 44px;
+  }
+  .sp-shell .mantine-Tabs-tab {
+    min-height: 44px;
+  }
+  .sp-fold-btn,
+  .sp-link-button {
+    min-height: 44px;
+  }
 }

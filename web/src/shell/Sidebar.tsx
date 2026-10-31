@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from "react";
 import { type ServerVersion, runsSummary } from "../api";
 import { ICONS, Icon } from "../icons";
 import { useFrames } from "../live";
-import { ACTIVE } from "../runs/stateWord";
+import { ACTIVE, executorLabel } from "../runs/stateWord";
 
 /** The 0.0.1 sections, with the icons and section colours of LiteSidebar and MLiteTabbar (G1).
  * Home is active on `/` only; Runs and Launch also on the pages under them (UX-PAR-06). */
@@ -86,7 +86,7 @@ export function Sidebar({ open, onFold, server, down }: Props) {
         </span>
         <span className={open ? "sp-foot-text" : "sp-sr"} role="status">
           {server
-            ? `${server.executor.toUpperCase()} · server on ${server.node} · your account ${server.account}`
+            ? `${executorLabel(server.executor)} · server on ${server.node} · your account ${server.account}`
             : down}
         </span>
       </div>
