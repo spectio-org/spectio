@@ -105,7 +105,9 @@ def engine_args(spec: LaunchSpec) -> list[str]:
     else:
         args = [*_snakemake_base(spec), "--logger", "spectio"]
         if spec.slurm is not None:
-            args += ["--executor", "slurm"]
+            # The SLURM plugin deletes a job's log when the job succeeds; kept, every job has
+            # its log while the run directory exists (architecture §13.7, `slurm.py:209-243`).
+            args += ["--executor", "slurm", "--slurm-keep-successful-logs"]
         if profiles:
             # The profile owns resources and concurrency: `--default-resources` here would
             # replace its whole `default-resources` (CR-P3T09-06), so [slurm] partition and
@@ -160,6 +162,9 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
         # sets: the engine never looks for it elsewhere, nor in the registry (SEC-P3T09-03).
         env["NXF_PLUGINS_DIR"] = str(nf_plugin_copy({**os.environ, **spec.env}).parent)
         env["NXF_ANSI_LOG"] = "false"
+        # One engine log per run: `.nextflow.log` rolls at each start in the same directory
+        # (architecture §13.7, `LoggerHelper.groovy:301-322`).
+        env["NXF_LOG_FILE"] = str(_spectio(spec) / "nextflow.log")
         if spec.nxf_opts:
             env["NXF_OPTS"] = spec.nxf_opts
     env.update(spec.env)
@@ -180,6 +185,8 @@ def render_head_script(spec: LaunchSpec) -> str:
     inner = (
         f"trap : INT TERM\ncd -- {shlex.quote(str(spec.launch_dir))} || exit 1\nexport {exports}\n"
     )
+    if spec.engine == "nextflow":  # `.command.log` never starts with the environment (req. 13)
+        inner += "unset NXF_DEBUG\n"
     if spec.engine == "snakemake":  # in front of the login profile's own (CR-P3T09-05)
         pylib = shlex.quote(str(_spectio(spec) / "pylib"))
         inner += f"export PYTHONPATH={pylib}${{PYTHONPATH:+:$PYTHONPATH}}\n"

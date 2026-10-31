@@ -13,6 +13,7 @@ the sum of `task_counts`, and the computed `summary.tasks.total` of api §7 is `
 when set, else that sum.
 """
 
+from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
@@ -20,6 +21,7 @@ from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Connection, func, insert, select, update
 
+from spectio.runner.rundir import RunPaths, run_paths
 from spectio_server.ids import new_id
 from spectio_server.store.schema import attempts, events, launches, run_processes, runs, tasks
 from spectio_server.store.writer import note_change
@@ -60,6 +62,14 @@ class Projection:
     event_time: datetime | None = None  # the engine's time of the event being projected
     changed: set[str] = field(default_factory=set)  # tasks created or moved, for the stream
     sources: "StageSources | None" = None  # where stage sources are read (P1 Task 27)
+    dropped: Counter[str] = field(default_factory=Counter)  # paths not kept (P1 Task 28)
+
+    def roots(self) -> RunPaths | None:
+        """The run's directories, from the runs root and the run ID (req. 10), or None when
+        the projection has no runs root: then no path from an event is kept."""
+        if self.sources is None or self.sources.runs_root is None:
+            return None
+        return run_paths(self.sources.runs_root, self.run_id)
 
     @classmethod
     def load(cls, conn: Connection, launch_id: str) -> "Projection":
