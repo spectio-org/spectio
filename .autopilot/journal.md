@@ -526,3 +526,7 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - Promotion PR #115 (integration → main, P1 Task 27), label `screenshots`; merged by merge commit once green.
 - P1 Task 28 (each job's files) launched: workflow wf_db098ce7-a4f, base 3a103a9. Scope set in the brief: Task 7 (Snakemake logger plugin) and Task 22 (`slurm-mini`) are not built, so the Snakemake side is server-only and fed by replayed events; the plugin changes go to Task 7 and the cluster check to Task 22. It also takes SEC-P3T27-03 (stage-source reads off the writer thread). Numbers reserved: inbox #94, FU-P3-31.
+
+## 2026-10-31 · Promotion #115 merged: P1 Task 27 on main
+
+- Integration promoted to `main` by merge commit a61b37c (every check green on 99aa36f). The first `pr-body` run lacked `## Evidence` in the body (fixed in the body); the first `ci-ok` failure was jobs cancelled by the newer push. P1 Task 28 is building (wf_db098ce7-a4f).
