@@ -64,8 +64,8 @@ export const taskWord = (state: string): string => TASK_WORDS[state] ?? state;
 /** The engine's own words (UX-PAR-20): Snakemake has jobs and rules, Nextflow tasks and processes. */
 export function words(engine: string | null) {
   return engine === "snakemake"
-    ? { unit: "job", units: "jobs", group: "rule", groups: "rules", Group: "Rule", Groups: "Rules" }
-    : { unit: "task", units: "tasks", group: "process", groups: "processes", Group: "Process", Groups: "Processes" };
+    ? { unit: "job", units: "jobs", Unit: "Job", Units: "Jobs", group: "rule", groups: "rules", Group: "Rule", Groups: "Rules" }
+    : { unit: "task", units: "tasks", Unit: "Task", Units: "Tasks", group: "process", groups: "processes", Group: "Process", Groups: "Processes" };
 }
 
 /** "1 task", "3 jobs". */

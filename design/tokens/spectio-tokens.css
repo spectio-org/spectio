@@ -23,6 +23,9 @@
   /* Surfaces */
   --sp-surface-page:#FFFFFF; --sp-surface-subtle:var(--sp-ink-0); --sp-surface-sunken:var(--sp-ink-50);
   --sp-surface-raised:#FFFFFF; --sp-surface-code:var(--sp-ink-900); --sp-surface-overlay:rgba(15,16,32,.45);
+  /* The code surface is dark in both schemes, so its text and level tints are fixed; engine marks sit on
+     white in both (ui-spec §4.3). Mirrored in web/src/shell/theme.ts (CR-P3PARA-06). */
+  --sp-code-text:var(--sp-ink-50); --sp-code-failed:#F59A9A; --sp-code-review:#F5C779; --sp-surface-mark:#FFFFFF;
   /* Lines */
   --sp-line-hairline:rgba(15,16,32,.11); --sp-line-divider:var(--sp-ink-50); --sp-line-border:var(--sp-ink-100);
   --sp-line-input:var(--sp-ink-200); --sp-line-focus:var(--sp-violet-600);

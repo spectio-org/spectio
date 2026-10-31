@@ -206,14 +206,21 @@ test("UX-PAR-20/21/22: a Snakemake run reads jobs and rules; facts sit in the he
   expect(within(header).getByText("wgs-germline (no version declared)")).toBeInTheDocument();
   expect(within(header).getAllByRole("img", { name: "Snakemake" }).length).toBeGreaterThan(0);
   expect(within(header).getByText(`/scratch/amartin/spectio-runs/${ID}`)).toBeInTheDocument();
-  const chips = within(header).getByRole("list", { name: "Tasks by state" });
+  const chips = within(header).getByRole("list", { name: "Jobs by state" }); // CR-P3PARA-07
   expect(within(chips).getByText("0 failed").closest("[data-tone]")).toHaveAttribute("data-tone", "failed");
   expect(within(chips).getByText("1 retried")).toBeInTheDocument();
   expect(screen.getByRole("table", { name: "Rules" })).toBeInTheDocument();
   expect(screen.getByRole("columnheader", { name: "Rule, first-seen order" })).toBeInTheDocument();
+  // CR-P3PARA-03: the engine's mark beside the Pipeline fact.
+  const pipeline = within(header).getByText("wgs-germline (no version declared)").closest("dd")!;
+  expect(within(pipeline).getByRole("img", { name: "Snakemake" })).toBeInTheDocument();
   // The facts stay on every tab.
   await userEvent.click(screen.getByRole("tab", { name: "Logs" }));
   expect(within(await runHeader()).getByText("Snakemake 9.27.1 · test")).toBeInTheDocument();
+  // CR-P3PARA-07: the Jobs tab names its filters and table in the engine's words.
+  await userEvent.click(screen.getByRole("tab", { name: "Jobs" }));
+  expect(screen.getByRole("group", { name: "Show jobs" })).toBeInTheDocument();
+  expect(await screen.findByRole("table", { name: "Jobs" })).toBeInTheDocument();
 });
 
 test("UX-PAR-25/16: a failed run opens on Why it failed, never blank, with a way to the failed tasks", async () => {
@@ -269,6 +276,7 @@ test("the log tail tints its lines by level, as the Logs tab does", async () => 
 test("Download attaches its anchor to the page and revokes the URL after the click", async () => {
   detail();
   const revoke = vi.fn();
+  const { createObjectURL, revokeObjectURL } = URL; // restored after the test (CR-P3PARA-10)
   Object.assign(URL, { createObjectURL: () => "blob:x", revokeObjectURL: revoke });
   const attached: boolean[] = [];
   const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(function (this: HTMLAnchorElement) {
@@ -285,7 +293,12 @@ test("Download attaches its anchor to the page and revokes the URL after the cli
     await waitFor(() => expect(revoke).toHaveBeenCalledWith("blob:x"));
   } finally {
     click.mockRestore();
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
   }
+});
+
+test("CR-P3PARA-10: the Download test leaves URL's own functions in place", () => {
+  expect(String(URL.createObjectURL)).not.toContain("blob:x");
 });
 
 test("UX-PAR-23: with the local executor the head has no terminal: its process instead", async () => {

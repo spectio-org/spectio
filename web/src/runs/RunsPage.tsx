@@ -98,6 +98,9 @@ export function RunsPage() {
   const setFilter = (i: number) => setSearch({ state: FILTERS[i].states ? FILTERS[i].key : undefined });
   const server = useServer();
   const [typed, setTyped] = useState(q);
+  // The q this page last wrote: a q from elsewhere (a link that drops it) re-seeds the box, while
+  // the page's own write never trims what the user is still typing (CR-P3PARA-09).
+  const written = useRef(q);
   const [list, setList] = useState<List | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -107,9 +110,17 @@ export function RunsPage() {
     document.title = "Runs · Spectio";
   }, []);
   useEffect(() => {
-    const timer = setTimeout(() => setSearch({ q: typed.trim() }), 250);
+    const timer = setTimeout(() => {
+      written.current = typed.trim();
+      setSearch({ q: written.current });
+    }, 250);
     return () => clearTimeout(timer);
   }, [typed]);
+  useEffect(() => {
+    if (q === written.current) return;
+    written.current = q;
+    setTyped(q);
+  }, [q]);
 
   // A response is dropped once the filters change (the query's signal is aborted), and a first
   // page once a newer one was asked for: an older response can land last.

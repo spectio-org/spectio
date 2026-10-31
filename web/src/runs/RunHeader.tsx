@@ -41,7 +41,14 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
   const engine = [engineName(w.engine), w.engine_version].filter(Boolean).join(" ");
   const pipeline = w.name ? (w.version ? `${w.name} ${w.version}` : `${w.name} (no version declared)`) : w.location;
   const facts: [string, ReactNode][] = [
-    ["Pipeline", pipeline],
+    [
+      "Pipeline",
+      // the mark names the engine, which this fact does not write (CR-P3PARA-03)
+      <span className="sp-pipeline">
+        <EngineMark engine={w.engine} size={18} />
+        <span>{pipeline}</span>
+      </span>,
+    ],
     [
       "Engine · profile",
       <span className="sp-pipeline">
@@ -89,7 +96,7 @@ interface Props {
 
 export function RunHeader({ run, stages, processes, server, titleRef, canCancel, onCancel, cancelError }: Props) {
   const ended = isTerminal(run.state);
-  const { unit, units } = words(run.workflow.engine);
+  const { unit, units, Units } = words(run.workflow.engine);
   const line = stagesLine(stages);
   const failed = run.summary.tasks.failed;
   const w = run.workflow;
@@ -135,8 +142,8 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
         <Facts run={run} server={server} />
       </FoldSection>
       <div className="sp-chips-row">
-        <span className="sp-chips-label">{units === "jobs" ? "Jobs" : "Tasks"}</span>
-        <ul className="sp-counts" aria-label="Tasks by state">
+        <span className="sp-chips-label">{Units}</span>
+        <ul className="sp-counts" aria-label={`${Units} by state`}>
           {taskChips(run, processes).map((chip) => (
             <li key={chip.label} className="sp-chip" data-tone={chip.tone}>
               {chip.n} {chip.label}

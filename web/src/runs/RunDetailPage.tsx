@@ -81,7 +81,7 @@ function ProcessTable({ processes, ended, label, w }: { processes: Process[]; en
           <tr>
             <th scope="col">{w.Group}, first-seen order</th>
             <th scope="col">State</th>
-            <th scope="col">{w.units[0].toUpperCase() + w.units.slice(1)} done</th>
+            <th scope="col">{w.Units} done</th>
             <th scope="col" className="sp-num" data-narrow="">Running</th>
             <th scope="col" className="sp-num" data-narrow="">Pending</th>
             <th scope="col" className="sp-num">Failed</th>
@@ -214,7 +214,7 @@ function WhyItFailed({ run, onTasks }: { run: RunDetail; onTasks: () => void }) 
   const failure = run.failure as { class?: unknown; message?: unknown } | null;
   const kind = typeof failure?.class === "string" ? failure.class : null;
   const message = typeof failure?.message === "string" ? failure.message.trim() : "";
-  const { unit, units } = words(run.workflow.engine);
+  const { unit, units, Units } = words(run.workflow.engine);
   const failed = run.summary.tasks.failed;
   const headline = failed > 0 ? `${plural(failed, unit, units)} failed, and the run stopped` : kind ? `The run stopped: ${classWord(kind)}` : "The run stopped";
   return (
@@ -222,7 +222,7 @@ function WhyItFailed({ run, onTasks }: { run: RunDetail; onTasks: () => void }) 
       {failed > 0 && (
         <p className="sp-link-end">
           <button type="button" className="sp-link-button" onClick={onTasks}>
-            Tasks, filtered to Failed <Icon path={ICONS.arrowRight} size={13} />
+            {Units}, filtered to Failed <Icon path={ICONS.arrowRight} size={13} />
           </button>
         </p>
       )}
@@ -431,9 +431,9 @@ function TasksPanel({
   const count = (states: string[] | null) => (states ? sum(counts, ...states) : total(counts));
   const tasks = shown?.rows ?? null;
   return (
-    <section className="sp-runs" aria-label={w.units === "jobs" ? "Jobs" : "Tasks"}>
+    <section className="sp-runs" aria-label={w.Units}>
       <div className="sp-filters">
-        <div className="sp-segments" role="group" aria-label="Show tasks">
+        <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
           {TASK_FILTERS.map((f, i) => (
             <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
               {f.label}
@@ -464,10 +464,10 @@ function TasksPanel({
       {tasks?.length === 0 && <p className="sp-empty">No {w.unit} matches these filters.</p>}
       {!!tasks?.length && (
         <div className="sp-table-wrap">
-          <table className="sp-table" aria-label="Tasks">
+          <table className="sp-table" aria-label={w.Units}>
             <thead>
               <tr>
-                <th scope="col">{w.units === "jobs" ? "Job" : "Task"}</th>
+                <th scope="col">{w.Unit}</th>
                 <th scope="col">State</th>
               </tr>
             </thead>
@@ -721,7 +721,7 @@ export function RunDetailPage({ id }: { id: string }) {
       <Tabs value={tab} onChange={setTab} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="summary">Summary</Tabs.Tab>
-          <Tabs.Tab value="tasks">{w.units === "jobs" ? "Jobs" : "Tasks"}</Tabs.Tab>
+          <Tabs.Tab value="tasks">{w.Units}</Tabs.Tab>
           <Tabs.Tab value="parameters">Parameters</Tabs.Tab>
           <Tabs.Tab value="logs">Logs</Tabs.Tab>
         </Tabs.List>
