@@ -340,6 +340,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
               <SimpleGrid cols={{ base: 1, sm: 2 }}>
                 <NativeSelect
                   label="Profile"
+                  inputWrapperOrder={["label", "input", "description", "error"]}
                   value={profile}
                   onChange={(e) => setProfile(e.currentTarget.value)}
                   data={[{ value: "", label: "(none)" }, ...(loaded?.profiles ?? [])]}
@@ -348,6 +349,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
                 />
                 <TextInput
                   label="Run name (optional)"
+                  inputWrapperOrder={["label", "input", "description", "error"]}
                   value={name}
                   onChange={(e) => setName(e.currentTarget.value)}
                   description="Left empty, Spectio names the run after the pipeline."
@@ -359,20 +361,27 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
           </Paper>
           {loaded && (
             <Paper withBorder p="md" component="section" aria-labelledby="params-title">
-              <Title order={2} size="h4" id="params-title">
+              <Title order={2} size="h4" id="params-title" mb="xs">
                 Parameters
               </Title>
-              {sections.length > 0 && (
+              {sections.length > 1 && (
                 <Text size="sm" c="dimmed" mb="sm">
-                  {`One section per ${grouped ? "schema group" : "map of the config"} · ${changed === 1 ? "1 value differs from its default" : `${changed} values differ from their defaults`}`}
+                  {`One section per ${grouped ? "schema group" : "map of the config, its keys dotted"} · ${changed === 1 ? "1 value differs from its default" : `${changed} values differ from their defaults`}`}
                 </Text>
               )}
               <Stack gap="sm">
-                {sections.map((section, i) => (
+                {sections.length === 1 && (
+                  <ParamGrid
+                    fields={sections[0].fields}
+                    values={values}
+                    errors={errors}
+                    onChange={(key, v) => setValues((old) => ({ ...old, [key]: v }))}
+                  />
+                )}
+                {sections.length > 1 && sections.map((section, i) => (
                   <ParamGroup
                     key={`${loaded.location}:${section.title}`}
                     id={`params-g${i}`}
-                    only={sections.length === 1}
                     section={section}
                     values={values}
                     errors={errors}
@@ -383,7 +392,6 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
               {sections.length === 0 && <KeyValueRows rows={rows} onChange={setRows} />}
             </Paper>
           )}
-          {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} />}
         </Stack>
         <Stack className="launch-aside" gap="md" component="aside" aria-label="Where it runs and launch">
           <Paper withBorder p="md">
@@ -425,6 +433,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
               to choose in 0.0.1.
             </Text>
           </Paper>
+          {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} />}
           <div className="launch-bar">
             <div className="launch-bar-row">
               <Button
@@ -456,19 +465,16 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
 }
 
 /** One schema group as a section that folds (UX-PAR-30): its icon, description and counts, and a
- * status that says what needs doing; open at first when it has an issue or a changed value, or is
- * the only one, and when the server finds an error in it. */
+ * status that says what needs doing; open at first when it has an issue or a changed value, and
+ * when the server finds an error in it. A form of one section shows its fields alone. */
 function ParamGroup({
   id,
-  only,
   section,
   values,
   errors,
   onChange,
 }: {
   id: string;
-  /** The form's only section: nothing to fold it away from. */
-  only: boolean;
   section: Section;
   values: Values;
   errors: Errors;
@@ -508,22 +514,38 @@ function ParamGroup({
           </span>
         </Fragment>
       ))}
-      defaultOpen={only || empty > 0 || changed > 0}
+      defaultOpen={empty > 0 || changed > 0}
       reveal={failed}
       card
     >
-      <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
-        {section.fields.map((field) => (
-          <ParamField
-            key={field.key}
-            field={field}
-            value={values[field.key]}
-            error={errors[`params.${field.key}`]}
-            onChange={(v) => onChange(field.key, v)}
-          />
-        ))}
-      </SimpleGrid>
+      <ParamGrid fields={section.fields} values={values} errors={errors} onChange={onChange} />
     </FoldSection>
+  );
+}
+
+function ParamGrid({
+  fields,
+  values,
+  errors,
+  onChange,
+}: {
+  fields: Field[];
+  values: Values;
+  errors: Errors;
+  onChange: (key: string, value: string | boolean) => void;
+}) {
+  return (
+    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+      {fields.map((field) => (
+        <ParamField
+          key={field.key}
+          field={field}
+          value={values[field.key]}
+          error={errors[`params.${field.key}`]}
+          onChange={(v) => onChange(field.key, v)}
+        />
+      ))}
+    </SimpleGrid>
   );
 }
 

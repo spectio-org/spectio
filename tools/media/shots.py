@@ -51,6 +51,11 @@ class Shot:
 APP_LAUNCH = ("fill:Pipeline=$SPECTIO_DEMO_PIPELINE", "click:Load", "wait:no parameter schema",
               "click:Add a parameter", "fill:Name, row 1=outdir", "fill:Value, row 1=results")
 
+# The synthetic Snakemake pipeline (tests/pipelines/synthetic/snakemake) copied to
+# $SPECTIO_DEMO_SMK_PIPELINE, with a config/config.yaml of the Snakefile's own defaults.
+APP_LAUNCH_SMK = ("fill:Pipeline=$SPECTIO_DEMO_SMK_PIPELINE", "click:Load", "wait:Config preview, as YAML",
+                  "fill:outdir=results-smk")
+
 REGISTRY: dict[str, Shot] = {
     s.name: s
     for s in (
@@ -79,6 +84,13 @@ REGISTRY: dict[str, Shot] = {
              live=("wait:Finished recently",)),
         Shot("app-runs", "/runs", 1440, 1000, "0.0.1, live: the runs list with its state filters",
              live=("wait:Duration",)),
+        Shot("app-home-phone", "/", 390, 844, "0.0.1, live: Home on a phone, its runs as cards",
+             live=("wait:Finished recently",)),
+        Shot("app-runs-phone", "/runs", 390, 844, "0.0.1, live: the runs list on a phone, one card per run",
+             live=("wait:Succeeded",)),
+        Shot("app-launch-snakemake", "/launch", 1440, 1000,
+             "0.0.1, live: the launch form with the synthetic Snakemake pipeline loaded, its config as YAML",
+             live=APP_LAUNCH_SMK),
         Shot("app-run-detail", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
              "0.0.1, live: a finished run of the synthetic Nextflow pipeline, its processes and facts",
              live=("wait:65 / 65 tasks",)),

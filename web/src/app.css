@@ -16,11 +16,14 @@
   background: var(--sp-surface-mark);
   box-shadow: inset 0 0 0 1px var(--sp-line-hairline);
 }
-.launch-loaded-status,
-.launch-engine {
+.launch-loaded-status {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+}
+.launch-engine .sp-engine-mark {
+  vertical-align: -3px;
+  margin-right: 6px;
 }
 .launch-loaded-status {
   flex-shrink: 0;
@@ -55,6 +58,8 @@
   font-family: var(--sp-font-mono);
   font-size: 12.5px;
   line-height: 1.5;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   color: var(--sp-code-text);
   background: var(--sp-surface-code);
 }
