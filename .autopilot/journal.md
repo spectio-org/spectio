@@ -496,3 +496,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Workflow p3-task done in 3 review rounds (code approve 0/1/10, security approve 0/0/9), simplifier one rule, doc-reviewer approve 13. SAST 0 findings.
 - An early commit (`f769837`, local only) held the sandbox's kernel build in the recording (SEC-P3DEMO-07). Inbox #92 (b): the PR comes from `autopilot/P3-demo-pub`, one commit with the reviewed tree (`eedd124`); `autopilot/P3-demo` stays local, nothing force-pushed or deleted.
 - PR #111 into integration, label `screenshots`. Not auto-merged: it changes `.github/workflows/previews.yml`; Thomas reviews and merges it. Cost recorded: 40 USD. Thomas asked to stop after this workflow: no subscription, no check-in, no further step.
+
+## 2026-10-31 · Thomas's demo feedback, order set
+
+- After the #111 preview, Thomas: stages and steps not clickable and no details, many elements not clickable, near-empty params, no test workflow in Launch, logs not searchable, no logs or out/err per process and task. Triage: UI-only items → P3-parD; per-task files, exit and resources need the API → P1 Tasks 28, 29 (and 27 stages, 32 screens). Thomas: "go" for P3-parD, then Tasks 27 → 28 → 29 → 32, then Task 7.
+- P3-parD launched (workflow wf_7a6b3bc5-80c, base 5ce1f89). PR #111 still waits for Thomas's review; its fixtures to be re-recorded after both merge.
