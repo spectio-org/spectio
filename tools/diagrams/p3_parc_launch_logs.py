@@ -42,6 +42,8 @@ Every fact comes from branch autopilot/P3-parC at 089adc38 (base f6c09fa3):
   R1 CR changes (01 major, 02 to 05 minor, 06 simplify, 07 minor), SEC approve (01, 02 minor);
   R2 CR approve (01 to 05 minor), SEC approve (01, 02 minor); R3 approve, approve, no finding;
   simplifier 089adc38, whitespace only; pytest 511 passed, vitest 140 of 140, tsc clean.
+- 045e3991, the docs commit: R1 CR-P3PARC-07 fixed (inbox #91, rule 1 and the Assumed line marked
+  superseded); R2 CR-P3PARC-03 recorded in the ui-spec §4.4 note "UI parity C" (docs/reviews/code/P3-parC.md).
 Illustrative, not from a run: the pipeline names lab/chipseq and lab/variants, and the parameters
 outdir and skip_trimming with their help lines.
 """
@@ -67,7 +69,7 @@ TINT = {"failed": "#F59A9A", "review": "#F5C779", "ok": "#7FD3AA", "progress": "
 # (round, CR verdict, CR cells, SEC verdict, SEC cells); a cell: severity letter, fixed on the branch
 ROUNDS = (
     ("R1", "changes", (("M", True), ("m", True), ("m", False), ("m", False), ("m", False),
-                       ("s", True), ("m", False)), "approve", (("m", False), ("m", False))),
+                       ("s", True), ("m", True)), "approve", (("m", False), ("m", False))),
     ("R2", "approve", (("m", False), ("m", True), ("m", False), ("m", False), ("m", False)),
      "approve", (("m", False), ("m", False))),
     ("R3", "approve", (), "approve", ()),
@@ -372,8 +374,9 @@ def copy_menu(s: Sketch, x: float, y: float) -> None:
                           "Snakemake: Config (config.yaml)",
                           "a run from a terminal: no Run directory"), size=13)
     pin(s, x, hy + 214, "R2 CR-P3PARC-03, minor, open",
-        ("the board says Parameters (params.json);", "nothing records the difference"), fixed=False)
-    pin(s, x, hy + 276, "R1 CR-P3PARC-04, minor, open",
+        ("the board says Parameters (params.json);", "recorded in ui-spec §4.4; the board",
+         "follows at the next /apply-findings"), fixed=False)
+    pin(s, x, hy + 296, "R1 CR-P3PARC-04, minor, open",
         ("the status line is `display:none` while empty,", "so Copied may go unannounced"), fixed=False)
 
 
