@@ -33,15 +33,7 @@ const levelOf = (tone: string | undefined): Level => (tone === "failed" ? "error
 const escape = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 
 /** One line, its matches marked; `current` is the index of the current match in `hits`, or -1. */
-const Line = memo(function Line({ text, tone, hits, size, current }: { text: string; tone?: string; hits?: number[]; size: number; current: number }) {
-  if (!hits) {
-    return (
-      <span data-tone={tone}>
-        {text}
-        {"\n"}
-      </span>
-    );
-  }
+const Line = memo(function Line({ text, tone, hits = [], size, current }: { text: string; tone?: string; hits?: number[]; size: number; current: number }) {
   const parts: ReactNode[] = [];
   let at = 0;
   hits.forEach((start, i) => {
