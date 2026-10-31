@@ -7,7 +7,7 @@ import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
 import { failureText, Pipeline, RunLink, StateWord, runName, stateContext, tasksText } from "../runs/RunState";
 import { NoRuns, RunCard } from "../runs/RunsPage";
-import { ACTIVE, isTerminal, plural, tone, when, words } from "../runs/stateWord";
+import { ACTIVE, executorLabel, isTerminal, plural, tone, when, words } from "../runs/stateWord";
 import { useServer } from "../server";
 import { EngineMark } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
@@ -68,7 +68,7 @@ function endedContext(run: Run): string {
 /** Where heads, tasks and run directories are, from `GET /version` (UX-PAR-11). */
 function WhereRunsGo({ server }: { server: ServerVersion }) {
   const local = server.executor === "local";
-  const executor = server.executor.toUpperCase();
+  const executor = executorLabel(server.executor);
   return (
     <FoldSection id="home-where" screen="home" icon={ICONS.server} title="Where your runs go" summary={`${server.node} · ${executor}`} card>
       <ul className="sp-where">

@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { schemaFields } from "./schemaFields";
+import { buildParams, schemaFields, toYaml } from "./schemaFields";
 
 // The nf-core shape: groups under $defs (draft 2020-12) or definitions (draft 7), in allOf order.
 const nfDefs = {
@@ -19,6 +19,8 @@ const nfDefs = {
     },
     input_output: {
       title: "Input/output",
+      description: "Where the data is.",
+      fa_icon: "fas fa-folder-open",
       type: "object",
       required: ["input"],
       properties: {
@@ -62,5 +64,61 @@ describe("schemaFields", () => {
     expect(section.fields.map((f) => [f.key, f.type, f.required])).toEqual([
       ["samples", "string", true], ["threads", "integer", false], ["ref", "json", false],
     ]);
+  });
+  test("UX-PAR-30: a group keeps its description and its fa_icon; a field its format", () => {
+    const [io, options] = schemaFields(nfDefs);
+    expect(io).toMatchObject({ title: "Input/output", description: "Where the data is.", icon: "fas fa-folder-open" });
+    expect(options).toMatchObject({ description: null, icon: null });
+    expect(io.fields[0]).toMatchObject({ format: "file-path", path: ["input"] });
+  });
+
+  test("UX-PAR-31: a nested map is a section of dotted keys, from its properties or its default", () => {
+    const smk = {
+      type: "object",
+      required: ["samples"],
+      properties: {
+        samples: { type: "string" },
+        ref: {
+          type: "object",
+          description: "Reference genome",
+          required: ["species"],
+          properties: { species: { type: "string", default: "homo_sapiens" }, release: { type: "integer", default: 113 } },
+        },
+        // inferred from config/config.yaml: an object with its value as default, no properties
+        pca: { type: "object", default: { activate: false, labels: ["condition"], deep: { k: 1 } } },
+        free: { type: "object" },
+      },
+    };
+    const sections = schemaFields(smk);
+    expect(sections.map((s) => s.title)).toEqual(["Parameters", "ref", "pca"]);
+    expect(sections[0].fields.map((f) => [f.key, f.type])).toEqual([["samples", "string"], ["free", "json"]]);
+    expect(sections[1].description).toBe("Reference genome");
+    expect(sections[1].fields.map((f) => [f.key, f.type, f.required, f.default])).toEqual([
+      ["ref.species", "string", true, "homo_sapiens"],
+      ["ref.release", "integer", false, 113],
+    ]);
+    expect(sections[2].fields.map((f) => [f.key, f.type, f.default])).toEqual([
+      ["pca.activate", "boolean", false],
+      ["pca.labels", "json", ["condition"]],
+      ["pca.deep.k", "integer", 1],
+    ]);
+    expect(sections[2].fields[2].path).toEqual(["pca", "deep", "k"]);
+  });
+
+  test("UX-PAR-31/32: the params rebuild nested maps from dotted keys, and only values set", () => {
+    const [ref] = schemaFields({
+      type: "object",
+      properties: { ref: { type: "object", properties: { species: { type: "string" }, release: { type: "integer" } } } },
+    });
+    expect(buildParams(ref.fields, { "ref.release": "114", "ref.species": "" }, [])).toEqual({ ref: { release: 114 } });
+    expect(buildParams([], {}, [{ key: " outdir ", value: "r" }, { key: "", value: "x" }])).toEqual({ outdir: "r" });
+  });
+
+  test("UX-PAR-32: the YAML of a config preview", () => {
+    expect(
+      toYaml({ units: "/g/x units.tsv", ref: { species: "homo_sapiens", release: 113 }, on: true, tags: ["a", "1"], none: {}, n: null }),
+    ).toBe(
+      'units: "/g/x units.tsv"\nref:\n  species: homo_sapiens\n  release: 113\n"on": true\ntags:\n  - a\n  - "1"\nnone: {}\n"n": null\n',
+    );
   });
 });

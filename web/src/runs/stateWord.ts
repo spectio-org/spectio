@@ -164,3 +164,7 @@ export function when(iso: string | null, now = new Date()): string {
   if (days > 0 && days < 7) return `${DAYS[at.getDay()]} ${time}`;
   return `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())} ${time}`;
 }
+
+const EXECUTORS: Record<string, string> = { slurm: "SLURM", local: "Local" };
+/** The server's executor as people write it (UX-PAR-33): "SLURM", "Local". */
+export const executorLabel = (executor: string): string => EXECUTORS[executor] ?? executor.toUpperCase();

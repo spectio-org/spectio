@@ -1,7 +1,9 @@
 import { MantineProvider } from "@mantine/core";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
+import { ICONS } from "../icons";
+import { LayoutContext } from "../shell/layout";
 import { LaunchPage } from "./LaunchPage";
 
 const INSPECTED = {
@@ -34,10 +36,12 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-function page(onLaunched = vi.fn()) {
+function page(onLaunched = vi.fn(), phone = false) {
   render(
     <MantineProvider>
-      <LaunchPage onLaunched={onLaunched} />
+      <LayoutContext.Provider value={{ phone, titleRow: null }}>
+        <LaunchPage onLaunched={onLaunched} />
+      </LayoutContext.Provider>
     </MantineProvider>,
   );
   return onLaunched;
@@ -189,4 +193,137 @@ test("both entry files: no guess, Launch says to choose the engine", async () =>
   await load({ ...INSPECTED, engine: null, engine_files: ["main.nf", "workflow/Snakefile"] });
   expect(screen.getByRole("button", { name: "Nextflow" })).toHaveAttribute("aria-pressed", "false");
   expect(launch()).toHaveAccessibleDescription("Choose the engine");
+});
+
+// An nf-core schema with two groups (LiteLaunch): one with a required field, one without.
+const NF_CORE = {
+  ...INSPECTED,
+  name: "nf-core/rnaseq",
+  schema: {
+    type: "object",
+    $defs: {
+      input_output_options: {
+        title: "Input/output options",
+        description: "Where the pipeline finds its data.",
+        fa_icon: "fas fa-folder-open",
+        required: ["input"],
+        properties: { input: { type: "string", format: "file-path", description: "The samplesheet." }, outdir: { type: "string" } },
+      },
+      alignment_options: {
+        title: "Alignment options",
+        fa_icon: "fas fa-dna",
+        properties: { min_mapped_reads: { type: "number", default: 5 }, aligner: { type: "string", enum: ["star", "hisat2"] } },
+      },
+      other: { title: "Other", fa_icon: "fas fa-unknown-thing", properties: { x: { type: "string" } } },
+    },
+    allOf: [{ $ref: "#/$defs/input_output_options" }, { $ref: "#/$defs/alignment_options" }, { $ref: "#/$defs/other" }],
+  },
+};
+const group = (name: RegExp) => screen.getByRole("region", { name });
+const toggle = (name: RegExp) => screen.getByRole("button", { name });
+
+test("UX-PAR-30: each schema group folds, with its icon, description, counts and status; issues open", async () => {
+  page();
+  await load(NF_CORE);
+  // A required field still empty: open, and says so.
+  const io = toggle(/^Input\/output options/);
+  expect(io).toHaveAttribute("aria-expanded", "true");
+  expect(io).toHaveAccessibleName("Input/output options 1 required field empty");
+  expect(io).toHaveAccessibleDescription("Where the pipeline finds its data. · 2 parameters · 1 required");
+  expect(group(/^Input\/output/).querySelector("path")).toHaveAttribute("d", ICONS.folder);
+  // Defaults only: folded, and an unknown fa_icon falls back to the neutral icon.
+  const align = toggle(/^Alignment options/);
+  expect(align).toHaveAttribute("aria-expanded", "false");
+  expect(align).toHaveAccessibleName("Alignment options defaults");
+  expect(group(/^Alignment/).querySelector("path")).toHaveAttribute("d", ICONS.dna);
+  expect(group(/^Other/).querySelector("path")).toHaveAttribute("d", ICONS.sliders);
+  expect(screen.getByText("One section per schema group · 0 values differ from their defaults")).toBeInTheDocument();
+  // Filled and changed: the status follows, the field's hint says so.
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
+  expect(io).toHaveAccessibleName("Input/output options 1 required · filled 1 changed");
+  expect(screen.getByRole("textbox", { name: /^input/ })).toHaveAccessibleDescription(
+    "The samplesheet. · string · file-path · changed · no default",
+  );
+  await userEvent.click(align);
+  await userEvent.type(screen.getByRole("textbox", { name: /^min_mapped_reads/ }), "10");
+  expect(align).toHaveAccessibleName("Alignment options 1 changed");
+  expect(screen.getByRole("textbox", { name: /^min_mapped_reads/ })).toHaveAccessibleDescription("number · changed · default 5");
+  expect(screen.getByText("One section per schema group · 2 values differ from their defaults")).toBeInTheDocument();
+});
+
+// A Snakemake config inferred from config/config.yaml (LiteLaunchSnakemake): a nested map is a
+// section of dotted keys.
+const SNAKEMAKE = {
+  ...INSPECTED,
+  name: "rna-seq-star-deseq2",
+  version: null,
+  engine: "snakemake",
+  engine_files: ["workflow/Snakefile"],
+  schema_source: "inferred",
+  profiles: ["slurm"],
+  schema: {
+    type: "object",
+    properties: {
+      samples: { type: "string", default: "config/samples.tsv" },
+      ref: { type: "object", default: { species: "homo_sapiens", release: 113 } },
+    },
+  },
+};
+
+test("UX-PAR-31/32: a Snakemake nested map is a section of dotted keys, rebuilt on submit; the preview is YAML", async () => {
+  const onLaunched = page();
+  fetchMock.mockResolvedValueOnce(json(200, SNAKEMAKE));
+  await userEvent.type(pipeline(), "/data/smk");
+  await userEvent.click(screen.getByRole("button", { name: "Load" }));
+  const ref = await screen.findByRole("region", { name: /^ref/ });
+  await userEvent.click(within(ref).getByRole("button", { name: /^ref/ }));
+  const release = within(ref).getByRole("textbox", { name: "ref.release" });
+  await userEvent.type(release, "114");
+  const preview = screen.getByLabelText("Config preview, as YAML", { selector: "pre" });
+  expect(preview.textContent).toBe("ref:\n  release: 114\n");
+  fetchMock.mockResolvedValueOnce(json(422, { status: 422, errors: [{ field: "params.ref.release", message: "no such release" }] }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(release).toHaveAttribute("aria-invalid", "true"));
+  expect(release).toHaveAccessibleDescription(expect.stringContaining("no such release"));
+  expect(JSON.parse(String(fetchMock.mock.calls[1][1]?.body)).params).toEqual({ ref: { release: 114 } });
+  expect(onLaunched).not.toHaveBeenCalled();
+  expect(screen.getByText(/passed as --workflow-profile/)).toBeInTheDocument();
+});
+
+test("UX-PAR-32: the params.json preview is exactly the params Launch sends", async () => {
+  const onLaunched = page();
+  await load(NF_CORE);
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
+  await userEvent.click(toggle(/^Alignment options/));
+  await userEvent.type(screen.getByRole("textbox", { name: /^min_mapped_reads/ }), "10");
+  const preview = screen.getByLabelText("params.json preview", { selector: "pre" });
+  fetchMock.mockResolvedValueOnce(json(201, { id: "run_1" }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
+  const sent = JSON.parse(String(fetchMock.mock.calls[1][1]?.body)).params;
+  expect(JSON.parse(preview.textContent!)).toEqual(sent);
+  expect(sent).toEqual({ input: "/data/s.csv", min_mapped_reads: 10 });
+  expect(screen.getByText(/passed with -params-file/)).toBeInTheDocument();
+  expect(screen.getByText(/passed as -profile/)).toBeInTheDocument();
+});
+
+test("UX-PAR-33: the Loaded card's status, and Where it runs names the engine and the tasks", async () => {
+  page();
+  await load(NF_CORE);
+  const card = screen.getByText("nf-core/rnaseq 3.27.0").closest("[data-loaded]")!;
+  expect(within(card as HTMLElement).getByText("Loaded")).toBeInTheDocument();
+  expect(within(card as HTMLElement).getByRole("img", { name: "Nextflow" })).toBeInTheDocument();
+  const where = screen.getByRole("complementary", { name: "Where it runs and launch" });
+  expect(within(where).getByText("Tasks")).toBeInTheDocument();
+  expect(within(where).getByText(/fixed for this server/)).toBeInTheDocument();
+});
+
+test("UX-PAR-34: on the phone the pinned bar says why Launch waits, then what it launches", async () => {
+  page(vi.fn(), true);
+  expect(launch()).toHaveAccessibleDescription("Load a pipeline first");
+  await load({ ...NF_CORE, profiles: ["docker"] });
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: /Profile/ }), "docker");
+  expect(launch()).not.toHaveAttribute("aria-disabled");
+  expect(launch()).toHaveAccessibleDescription("nf-core/rnaseq 3.27.0 · Nextflow · docker · 1 value changed");
 });

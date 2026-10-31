@@ -69,7 +69,7 @@ test("sidebar folds with a button[aria-expanded]", async () => {
     expect(within(sidebar).getByRole("link", { name })).toBeInTheDocument();
   }
   // The server's node from GET /version stays in the sidebar's foot.
-  expect(await within(sidebar).findByText(/server on login1/)).toBeInTheDocument();
+  expect(await within(sidebar).findByText(/^SLURM · server on login1/)).toBeInTheDocument();
 });
 
 test("the tablet rail is folded by default", async () => {

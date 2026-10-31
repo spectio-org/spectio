@@ -117,4 +117,7 @@ test("UX-PAR-11/12/13/16: subtitle words, linked cards with a detail line, a non
   const where = screen.getByRole("region", { name: "Where your runs go" });
   expect(await within(where).findByText("/scratch/amartin/spectio-runs")).toBeInTheDocument();
   expect(within(where).getByText(/Spectio 0.0.1 on login1, under your account amartin/)).toBeInTheDocument();
+  // UX-PAR-33: one executor label, here and in the sidebar's foot.
+  const sidebar = screen.getByRole("navigation", { name: "Main" });
+  expect(within(sidebar).getByText(/^Local · server on login1/)).toBeInTheDocument();
 });

@@ -103,3 +103,10 @@ test("UX-PAR-20: Snakemake runs read jobs and rules", async () => {
   expect(words("nextflow")).toMatchObject({ unit: "task", units: "tasks", group: "process", Groups: "Processes" });
   expect(words(null).units).toBe("tasks");
 });
+
+test("UX-PAR-33: one label for the server's executor", async () => {
+  const { executorLabel } = await import("./stateWord");
+  expect(executorLabel("slurm")).toBe("SLURM");
+  expect(executorLabel("local")).toBe("Local");
+  expect(executorLabel("pbs")).toBe("PBS");
+});

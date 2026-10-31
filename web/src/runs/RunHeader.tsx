@@ -7,7 +7,7 @@ import { EngineMark } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PhoneTitle, usePhone } from "../shell/layout";
 import { StateWord, failureText, runName, tasksText } from "./RunState";
-import { duration, engineName, isTerminal, plural, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
+import { duration, engineName, executorLabel, isTerminal, plural, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
 // The run header that every tab of the run shares (ui-spec §4.4 run tools note; LiteRunDetail;
 // UX-PAR-19, 21 and 22): the state bar, the engine's mark tile, the name and short ID, the state
@@ -69,7 +69,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
       // A driven run's directory is runs_root/<run id> (runner/rundir.py); a run from a terminal has its own.
       <span className="sp-mono">{run.origin !== "cli-observed" && server ? `${server.runs_root}/${run.id}` : "—"}</span>,
     ],
-    ["Executor", server ? server.executor.toUpperCase() : "—"],
+    ["Executor", server ? executorLabel(server.executor) : "—"],
     ["Failure", run.state === "failed" ? failureText(run) : "—"],
   ];
   return (
