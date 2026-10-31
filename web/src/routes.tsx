@@ -6,9 +6,11 @@ import {
   useNavigate,
   useParams,
   useRouterState,
+  useSearch,
 } from "@tanstack/react-router";
 import { HomePage } from "./home/HomePage";
 import { LaunchPage } from "./launch/LaunchPage";
+import { useRecentRuns } from "./launch/TryPipelines";
 import { NotFound, RunDetailPage, runSearch } from "./runs/RunDetailPage";
 import { RunsPage, runsSearch } from "./runs/RunsPage";
 import { AppShell } from "./shell/AppShell";
@@ -16,9 +18,16 @@ import { AppShell } from "./shell/AppShell";
 // The four routes of 0.0.1 (mvp-0.0.1 §1) in the Paper shell (G4): home, the runs list and the
 // run detail (P1 Task 20), and the launch form (Task 19).
 
+/** `/launch?location=<pipeline>`: Launch opens on that pipeline (Home's pipeline links). */
+export function launchSearch(search: Record<string, unknown>): { location?: string } {
+  return typeof search.location === "string" && search.location !== "" ? { location: search.location } : {};
+}
+
 function LaunchRoute() {
   const navigate = useNavigate();
-  return <LaunchPage onLaunched={(id) => navigate({ to: "/runs/$id", params: { id } })} />;
+  const { location } = useSearch({ from: "/launch" });
+  const recent = useRecentRuns();
+  return <LaunchPage onLaunched={(id) => navigate({ to: "/runs/$id", params: { id } })} recent={recent} initialLocation={location} />;
 }
 
 function RunRoute() {
@@ -36,7 +45,7 @@ const root = createRootRoute({ component: AppShell, notFoundComponent: NotFoundR
 const routes = [
   createRoute({ getParentRoute: () => root, path: "/", component: HomePage }),
   createRoute({ getParentRoute: () => root, path: "/runs", component: RunsPage, validateSearch: runsSearch }),
-  createRoute({ getParentRoute: () => root, path: "/launch", component: LaunchRoute }),
+  createRoute({ getParentRoute: () => root, path: "/launch", component: LaunchRoute, validateSearch: launchSearch }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id", component: RunRoute, validateSearch: runSearch }),
 ];
 
