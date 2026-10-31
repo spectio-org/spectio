@@ -83,8 +83,15 @@
   color: var(--sp-text-secondary);
   font-size: 14px;
 }
-.sp-sub > * {
-  white-space: nowrap; /* a value wraps whole, never "8" over "s" (CR-P3PARB-02 r2) */
+/* The run header's line of values: each value wraps whole, never "8" over "s", and the line
+   breaks between values (CR-P3PARB-02 r2; the spans have no space between them to break at). */
+.sp-run-head .sp-sub {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+.sp-run-head .sp-sub > * {
+  white-space: nowrap;
 }
 .sp-sub > * + *::before {
   /* a margin, not spaces: an inline-flex item (the state word) drops leading whitespace */
