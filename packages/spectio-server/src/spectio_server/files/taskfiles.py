@@ -318,7 +318,7 @@ def read_task_file(
     with ExitStack() as stack:
         if attempt.engine == "snakemake":
             root = stack.enter_context(run_root(attempt.runs_root, attempt.run_id, "launch"))
-            rel, work = safe_rel(name), None
+            rel = safe_rel(name)
         else:
             dir_rel = _work_rel(attempt)
             if dir_rel is None:
@@ -330,7 +330,7 @@ def read_task_file(
                 cls = NotFound if attempt.state in OPEN_STATES else Cleaned
                 raise cls(f"the work directory is {state}")
         try:
-            f = stack.enter_context(open_confined(root, rel, work=work))
+            f = stack.enter_context(open_confined(root, rel))  # job files: no link followed
         except NotFound:
             missing = _missing(attempt, name, kind)
             reason = {

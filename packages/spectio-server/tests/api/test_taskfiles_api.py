@@ -149,6 +149,18 @@ def test_req13_name_outside_allow_list_422(nf_task: NfTask) -> None:
         problem(nf_task.get(name), 422, "file-not-allowed")
 
 
+def test_req13_job_file_symlink_422(nf_task: NfTask) -> None:
+    other = nf_task.paths.work_dir / "de" / "fedcba9876543210fedcba98765432"
+    other.mkdir(parents=True)
+    (other / ".command.env").write_text("SECRET=1\n")
+    err = nf_task.dir / ".command.err"
+    err.unlink()
+    err.symlink_to(other / ".command.env")
+    problem(nf_task.get(".command.err"), 422, "file-not-allowed")
+    listed = {f["name"]: f for f in nf_task.get().json()["files"]}[".command.err"]
+    assert listed["note"].startswith("Not served")
+
+
 def test_req13_escape_sequences_removed(nf_task: NfTask) -> None:
     text = "\x1b[31mred\x1b[0m \x1b]8;;http://evil.example\x07link\x1b]8;;\x07 bell\x07 done\n"
     (nf_task.dir / ".command.err").write_text(text)

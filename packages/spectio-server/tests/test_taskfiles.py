@@ -153,6 +153,25 @@ def test_nf_allow_list(nf_workdir: NfTree) -> None:
             read_task_file(nf_workdir.attempt(), name)
 
 
+def test_req13_job_file_symlink_in_work_refused(nf_workdir: NfTree) -> None:
+    """A job file is never read through a link, even one into the run's work directory: the
+    read agrees with the listing (CR-P3T28-02, SEC-P3T28-02)."""
+    sibling = nf_workdir.work_root / "de" / "fedcba9876543210fedcba98765432"
+    sibling.mkdir(parents=True)
+    (sibling / ".command.env").write_text("SECRET=s1bl1ng\n")
+    err, sh = nf_workdir.task_dir / ".command.err", nf_workdir.task_dir / ".command.sh"
+    err.unlink()
+    err.symlink_to("../../de/fedcba9876543210fedcba98765432/.command.env")
+    sh.unlink()
+    sh.symlink_to(".command.run")
+    for name in (".command.err", ".command.sh"):
+        with pytest.raises(NotAllowed):
+            read_task_file(nf_workdir.attempt(), name)
+    notes = {f.name: f.note for f in list_task_files(nf_workdir.attempt())}
+    assert notes[".command.err"] and notes[".command.err"].startswith("Not served")
+    assert notes[".command.sh"] and notes[".command.sh"].startswith("Not served")
+
+
 def test_req13_command_run_redacted(nf_workdir: NfTree) -> None:
     served = read_task_file(nf_workdir.attempt(), ".command.run").text
     assert f"export TOKEN={HIDDEN}" in served
