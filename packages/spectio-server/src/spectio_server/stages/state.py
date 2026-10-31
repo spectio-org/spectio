@@ -2,7 +2,8 @@
 
 from collections.abc import Mapping
 
-TERMINAL = frozenset({"succeeded", "failed", "cancelled"})
+from spectio_server.projector.runs import TERMINAL
+
 STARTED = ("running", "succeeded", "failed", "cached", "stored", "aborted")
 OPEN = ("not_scheduled", "pending", "submitted", "running")
 

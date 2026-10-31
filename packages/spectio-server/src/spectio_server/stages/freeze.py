@@ -22,7 +22,7 @@ import stat
 from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import Any
 from urllib.parse import quote
 
 import yaml
@@ -34,6 +34,7 @@ from spectio_sdk.stages import SpectioFile, applies
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import git_url
 from spectio_server.ids import new_id
+from spectio_server.projector.runs import IN_CHUNK, Projection
 from spectio_server.stages.assign import Overlap, StageDef, assign
 from spectio_server.stages.detect_nf import detect_nextflow
 from spectio_server.stages.detect_smk import (
@@ -55,9 +56,6 @@ from spectio_server.store.schema import (
     workflows,
 )
 
-if TYPE_CHECKING:
-    from spectio_server.projector.runs import Projection
-
 log = logging.getLogger(__name__)
 
 FROZEN = "spectio.stages.frozen"
@@ -66,7 +64,6 @@ MAX_SPEC_BYTES = 65536  # an overlay, a `spectio.yml` or a `meta.yml`
 MAX_OVERLAYS = 100  # files read from the overlays directory, in name order
 MAX_SCOPES = 200  # subworkflows whose `meta.yml` is looked for
 DONE = ("succeeded", "cached", "stored")
-IN_CHUNK = 500
 
 
 @dataclass(frozen=True)
