@@ -46,7 +46,7 @@ NEXTFLOW = {
     "methylseq-4.2.0_bwameth": ("nf-core/methylseq", 15, 5),
 }
 MOSAICATCHER = "mosaicatcher-v2.5.1"
-NEXTFLOW_KEY = "rnaseq-3.27.0_star_salmon"
+RNASEQ_FIXTURE = "rnaseq-3.27.0_star_salmon"
 HAPPY = ["MAKE_READS", "QC_STATS", "QC_REPORT", "SPLIT", "ALIGN", "MERGE", "COMPARE"]
 HAPPY += ["FINAL_REPORT"]  # the synthetic pipeline of dev-env §10.1, in creation order
 RNASEQ_RUN = "run_01K8T27STAGES0000000000000"
@@ -569,7 +569,7 @@ def test_freeze_survives_deep_yaml(
         lambda c: c.execute(text("UPDATE workflows SET location = :l"), {"l": str(pipeline)})
     ).result()
     if engine == "nextflow":
-        procs = [{"hook": "onProcessCreate", "process": n} for n in names(NEXTFLOW_KEY)]
+        procs = [{"hook": "onProcessCreate", "process": n} for n in names(RNASEQ_FIXTURE)]
         found = [nf_event(i, b, run_id) for i, b in enumerate([*procs, {"hook": "onFlowBegin"}], 1)]
         start = "spectio.engine.nextflow.onFlowBegin"
     else:
