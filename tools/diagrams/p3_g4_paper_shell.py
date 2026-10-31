@@ -33,6 +33,11 @@ Every fact comes from branch autopilot/P3-G4 at 7c5737c8 (base 330ae6b2):
   IDs are numbered per round, so the same ID can name two findings: R1 CR-03 and R2 CR-02 are the
   node pill, fixed in 7c5737c8; R1 CR-01 and R1 SEC-01 are the malformed escape, fixed in 4e0d2868.
   The simplifier made no change (504 pytest passed).
+- after round 3, R2 CR-P3G4-05 and SEC-P3G4-01 (the app-launch shots named the capture host's
+  account root and host vm) are fixed: the four shots were retaken as the demo account alice on
+  the node name login1, and tools/media/fixtures.yaml forbids "account root" and the bare `vm`.
+- the desktop and tablet frames are at /launch, so crumbsFor gives Home, Launch, the page title is
+  Launch and the sidebar highlights Launch, as in the app-launch shot.
 """
 
 from __future__ import annotations
@@ -97,17 +102,21 @@ def nav_icon(s: Sketch, kind: str, cx: float, cy: float, *, size: float = 6) -> 
         s.line(cx - size, cy + size, cx + size, cy + size, amount=0.3, passes=1, width=1.4)
 
 
-def topbar(s: Sketch, x: float, y: float, w: float, crumb: str) -> None:
-    """LiteTopbar at half scale: 56 px tall, 10 px margins."""
+def topbar(s: Sketch, x: float, y: float, w: float, crumbs: tuple[str, ...]) -> None:
+    """LiteTopbar at half scale: 56 px tall, 10 px margins; `crumbs` as crumbsFor gives them."""
     bar(s, x + 5, y + 5, w - 10, 28, rx=9)
     mark(s, x + 20, y + 25, 10)
     s.text(x + 34, y + 24, "Spectio", size=12, anchor="start", weight="bold")
     s.line(x + 82, y + 12, x + 82, y + 26, amount=0.2, passes=1, colour=s.t.muted, width=1)
-    s.text(x + 90, y + 23, "Home", size=10.5, anchor="start", colour=s.t.dim)
-    chevron(s, x + 124, y + 19)
-    s.text(x + 132, y + 23, "Runs", size=10.5, anchor="start", colour=s.t.dim)
-    chevron(s, x + 168, y + 19)
-    s.text(x + 177, y + 23, crumb, size=10.5, anchor="start", weight="bold")
+    cx = x + 90
+    for i, crumb in enumerate(crumbs):
+        if i:
+            chevron(s, cx, y + 19)
+            cx += 8
+        last = i == len(crumbs) - 1
+        s.text(cx, y + 23, crumb, size=10.5, anchor="start", colour=s.t.ink if last else s.t.dim,
+               weight="bold" if last else "normal")
+        cx += len(crumb) * 6.3 + 8
     sx = x + w - 10 - 66 - 120
     s.rect(Box(sx, y + 10, 120, 18, "neutral"), rx=5, colour=s.t.muted)
     s.text(sx + 8, y + 23, "Search", size=10, anchor="start", colour=s.t.dim)
@@ -162,9 +171,9 @@ def build(theme: Theme) -> Sketch:
 
     # 1 -- desktop, 1440 px ----------------------------------------------------------------------
     x, w = 50, 720
-    s.browser(x, DEV_Y, w, DEV_H, url="1440 px · /runs/run_01K8T2F1XT")
+    s.browser(x, DEV_Y, w, DEV_H, url="1440 px · /launch")
     vy = DEV_Y + 28
-    topbar(s, x, vy, w, "run_01K8T2F1XT")
+    topbar(s, x, vy, w, ("Home", "Launch"))
     sidebar(s, x + 5, vy + 38, DEV_H - 28 - 43, open_=True)
     page(s, x + 140, vy + 64, w - 170)
     s.step(x + w / 2, CAP, 1, "desktop, 1200 px and up")
@@ -175,7 +184,7 @@ def build(theme: Theme) -> Sketch:
     # 2 -- tablet, 1024 px -----------------------------------------------------------------------
     x, w = 820, 512
     s.browser(x, DEV_Y, w, DEV_H, url="1024 px")
-    topbar(s, x, vy, w, "Launch")
+    topbar(s, x, vy, w, ("Home", "Launch"))
     sidebar(s, x + 5, vy + 38, DEV_H - 28 - 43, open_=False)
     page(s, x + 62, vy + 64, w - 90)
     s.step(x + w / 2, CAP, 2, "tablet, 768 to 1199 px")
@@ -286,8 +295,8 @@ def build(theme: Theme) -> Sketch:
     # (fixed on the branch?, major?) per finding, CR then SEC, as the worker report lists them
     rounds = (("R1", "CR changes, SEC approve", ((True, True), (False, False), (True, False), (False, False),
                                                  (False, False)), ((True, False),)),
-              ("R2", "both approve", ((True, False), (False, False), (False, False), (False, False)),
-               ((False, False), (False, False))),
+              ("R2", "both approve", ((True, False), (False, False), (False, False), (True, False)),
+               ((True, False), (False, False))),
               ("R3", "both approve", ((False, False),), ()))
     s.text(x + 44, REV + 28, "code-reviewer", size=12, anchor="start", colour=t.dim)
     s.text(x + 208, REV + 28, "security", size=12, anchor="start", colour=t.dim)
@@ -314,6 +323,8 @@ def build(theme: Theme) -> Sketch:
            anchor="start", colour=t.dim)
     s.text(x, ly + 50, "R1 CR-01 and SEC-01 the same escape fix · the simplifier changed nothing",
            size=13, anchor="start", colour=t.dim)
+    s.text(x, ly + 70, "R2 CR-05 and SEC-01 are one screenshot fix: retaken as alice on login1", size=13,
+           anchor="start", colour=t.dim)
 
     # left open ----------------------------------------------------------------------------------
     bx, bw = 700, 850
@@ -324,7 +335,6 @@ def build(theme: Theme) -> Sketch:
              ("the tablet rail hides the node text from sighted readers", "R1 CR-P3G4-04"),
              ("a long node name ends in an ellipsis, full name only in `aria-label`", "R1 CR-P3G4-05"),
              ("the phone pill is `role=img`, so a status change is not announced", "R2 CR-P3G4-04"),
-             ("the app-launch screenshot shows the capture server as root", "R2 CR-05, SEC-01"),
              ("any decoded path segment becomes the page crumb, no limit", "R2 SEC-P3G4-02"))
     for i, (what, ref) in enumerate(items):
         y = REV + 34 + i * 29
