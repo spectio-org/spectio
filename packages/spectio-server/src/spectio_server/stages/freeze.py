@@ -18,6 +18,7 @@ and their directory must be its own and not writable by others (`read_small`), a
 
 import logging
 import os
+import re
 import stat
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -93,8 +94,10 @@ def _plain(text: str, cap: int = 80) -> str:
 
 
 def _yaml_problem(exc: yaml.YAMLError) -> str:
-    """Where and what, never the snippet of the line that PyYAML's `str()` quotes (SEC-P3T27-03)."""
-    said = _plain(getattr(exc, "problem", None) or type(exc).__name__)
+    """Where and what, never the snippet of the line that PyYAML's `str()` quotes (SEC-P3T27-03),
+    nor the tag it quotes in `problem` (SEC-P3T27-04)."""
+    problem = getattr(exc, "problem", None) or type(exc).__name__
+    said = _plain(re.sub(r"'[^']*'", "'…'", problem))
     mark = getattr(exc, "problem_mark", None)
     if mark is not None:
         said += f" (line {mark.line + 1}, column {mark.column + 1})"
@@ -226,7 +229,10 @@ def _git_copy(p: "Projection", location: str, revision: str | None) -> str | Non
     except Invalid:
         return None
     copy = p.sources.data_dir.joinpath("pipelines", *parts, quote(revision, safe=""))
-    return str(copy) if copy.is_dir() else None
+    try:
+        return str(copy) if copy.is_dir() else None
+    except OSError:  # a revision too long for a file name: no copy, never a lost event
+        return None
 
 
 def frozen(p: "Projection") -> bool:

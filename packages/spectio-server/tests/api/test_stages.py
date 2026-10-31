@@ -669,6 +669,8 @@ def test_validation_error_logged_without_input(caplog: pytest.LogCaptureFixture)
         b"stages:\n  - id: a\n    name: [MARKER-NOT-LOGGED\n",  # a syntax error on that line
         b"workflow: {name: x}\nMARKER-NOT-LOGGED\nx: : y\n",
         b"MARKER-NOT-LOGGED-\n-\n-: 1\nstages: []\n",
+        b"stages: !MARKER-NOT-LOGGED x\n",  # a tag from the file (SEC-P3T27-04)
+        b"%TAG !e! tag:MARKER-NOT-LOGGED,2000:\n---\nstages: !e!x []\n",
     ],
 )
 def test_yaml_error_logged_without_content(
@@ -866,6 +868,46 @@ def test_snakemake_freeze_git_workflow(
         assert rows and {r.source for r in rows} == {"declared"}
     else:
         assert len(rows) == 8 and {r.source for r in rows} == {"detected"}
+
+
+def test_git_copy_name_too_long(
+    settings: Settings, writer: Writer, overlays: Path, tmp_path: Path
+) -> None:
+    """A rebuilt Git run whose revision makes the copy's path too long for the file system:
+    the start event is still projected, with no stages (`is_dir()` raises ENAMETOOLONG)."""
+    run_id = "run_01K8T27G1TNAME" + "0" * 12
+    launch_id = add_run(writer, settings, run_id, "mosaic", "running", engine="snakemake")
+
+    def as_git(c: Any) -> None:
+        c.execute(
+            text("UPDATE workflows SET source = 'git', location = :l"),
+            {"l": "https://github.com/lab/mosaicatcher-pipeline"},
+        )
+        c.execute(text("UPDATE workflow_versions SET revision = :r"), {"r": "v" * 300})
+
+    writer.submit(as_git).result()
+    # Another revision of the repository was fetched, so the lookup reaches the long name.
+    (tmp_path / "pipelines" / "github.com" / "lab" / "mosaicatcher-pipeline").mkdir(parents=True)
+    events = [smk_event(1, run_id, "workflow_started", {})]
+    run = partial(
+        ingest,
+        launch_id=launch_id,
+        batch=SpoolBatch(events, {}, Counter()),
+        sources=StageSources(overlays, settings.runs_root, tmp_path),
+    )
+    writer.submit(run).result()
+    kept = writer.submit(
+        lambda c: (
+            c.execute(text("SELECT type FROM events WHERE run_id = :r"), {"r": run_id})
+            .scalars()
+            .all()
+        )
+    ).result()
+    assert any(t.endswith(".workflow_started") for t in kept)
+    rows = writer.submit(
+        lambda c: c.execute(select(run_stages).where(run_stages.c.run_id == run_id)).all()
+    ).result()
+    assert rows == []
 
 
 # --- An older database -----------------------------------------------------------------------
