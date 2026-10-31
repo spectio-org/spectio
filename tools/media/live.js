@@ -3,7 +3,7 @@
 // $NAME in the route or a step is replaced by that environment variable; SPECTIO_THEME (light or dark) sets the
 // browser's colour scheme, which the screens follow until a theme is picked.
 // Steps: fill:<label>=<value> (the field whose accessible name starts with <label>),
-// click:<button name>, open:<start of a folded section's button name>, wait:<visible text>. Run through shots.py, which preloads page_text.js
+// click:<button name>, open:<start of a folded section's button name>, top (scroll to the top), wait:<visible text>. Run through shots.py, which preloads page_text.js
 // for the hygiene check.
 const path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [path.resolve(__dirname, '../canvas'), process.cwd()] }));
@@ -24,6 +24,9 @@ const steps = raw.map(expand);
       await page.getByRole('button', { name: arg, exact: true }).click();
     } else if (kind === 'open') {
       await page.getByRole('button', { name: new RegExp('^' + arg) }).click();
+      await page.waitForTimeout(500); // the section's open transition, so the chevron has settled
+    } else if (kind === 'top') {
+      await page.evaluate(() => window.scrollTo(0, 0));
     } else if (kind === 'wait') {
       await page.getByText(arg).first().waitFor({ timeout: 30000 });
     } else {

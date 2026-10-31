@@ -77,8 +77,8 @@ REGISTRY: dict[str, Shot] = {
         # copied to $SPECTIO_DEMO_PIPELINE (a path free of forbidden terms, fixtures.yaml).
         Shot("app-launch", "/launch", 1440, 1000, "0.0.1, live: the launch form with the synthetic Nextflow pipeline loaded",
              themes=("light", "dark"), live=APP_LAUNCH),
-        Shot("app-launch-phone", "/launch", 390, 844, "0.0.1, live: the same launch form on a phone",
-             themes=("light", "dark"), live=APP_LAUNCH),
+        Shot("app-launch-phone", "/launch", 390, 844, "0.0.1, live: the same launch form on a phone, from its top",
+             themes=("light", "dark"), live=APP_LAUNCH + ("top:",)),
         # P1 Task 20: the same serve, after one run of the synthetic pipeline with profile `test` has
         # finished; $SPECTIO_DEMO_RUN is its ID.
         Shot("app-home", "/", 1440, 1000, "0.0.1, live: Home, with the count cards, the runs that ended and the pipelines",
