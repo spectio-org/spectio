@@ -1,6 +1,6 @@
 import { screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { app, run, serve, stubStream } from "../testing";
+import { FakeEventSource, app, json, run, serve, stubStream } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -53,4 +53,27 @@ test("a finished run whose failure has no message ends its line without a separa
   const finished = await screen.findByRole("region", { name: "Finished recently" });
   const row = (await within(finished).findByRole("link", { name: "Open run fetch-geo-2610" })).closest("li")!;
   expect(within(row).getByText("plate-qc")).toBeInTheDocument();
+});
+
+test("an older refresh that lands last does not overwrite a newer one", async () => {
+  let calls = 0;
+  let release: () => void = () => {};
+  serve({
+    "/api/v1/runs:summary": { groups: [{ key: "running", count: 1 }] },
+    "/api/v1/runs?sort=-ended_at": { items: [], next: null },
+    "/api/v1/runs?state=": () => {
+      calls += 1;
+      if (calls > 1) return json(200, { items: [run({ name: "newer" })], next: null });
+      return new Promise<Response>((done) => (release = () => done(json(200, { items: [run({ name: "older" })], next: null }))));
+    },
+    "/api/v1/runs": { items: [], next: null },
+  });
+  app("/");
+  await screen.findByRole("list", { name: "Runs by state" }).catch(() => undefined);
+  FakeEventSource.last!.open();
+  const active = await screen.findByRole("region", { name: "Active runs" });
+  expect(await within(active).findByRole("link", { name: "Open run newer" })).toBeInTheDocument();
+  release();
+  await new Promise((r) => setTimeout(r, 50));
+  expect(within(active).queryByRole("link", { name: "Open run older" })).toBeNull();
 });

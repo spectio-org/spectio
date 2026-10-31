@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Try Spectio on this machine (P1 Task 20): `spectio init --local` in a fresh temporary directory,
 # then `spectio serve` in the foreground. Prints the address to open; Ctrl-C stops the server and
-# removes the directory. Builds web/dist first when it is missing.
+# the runs still active (their heads run in their own sessions and outlive `spectio serve` by
+# design), then removes the directory. Builds web/dist first when it is missing.
 #
 #   bash tests/e2e/serve-local.sh [--port N]
 #
@@ -9,7 +10,7 @@
 # only, in local mode, and serves the screens to anyone on this machine who opens the address.
 set -euo pipefail
 
-usage() { sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; }
 
 port=""
 while [ $# -gt 0 ]; do
@@ -41,6 +42,18 @@ fi
 home=$(mktemp -d "${TMPDIR:-/tmp}/spectio-local.XXXXXX")
 chmod 700 "$home"
 server=""
+# The heads of the runs under $home still alive: "pid" per line. head.pid holds PID, process
+# group, start time; a head leads its own group (setsid), and the start time guards against a
+# reused PID (as spectio.runner.local does).
+heads() {
+  local file pid pgid start s f
+  for file in "$home"/runs/*/launch/.spectio/head.pid; do
+    [ -f "$file" ] && read -r pid pgid start _ < "$file" || continue
+    [ "$pid" = "$pgid" ] && s=$(cat "/proc/$pid/stat" 2>/dev/null) || continue
+    s=${s##*) }; read -r -a f <<< "$s"
+    if [ "${f[0]}" != Z ] && [ "${f[19]}" = "$start" ]; then echo "$pid"; fi
+  done
+}
 stop() {
   trap - INT TERM EXIT
   if [ -n "$server" ] && kill -0 "$server" 2>/dev/null; then
@@ -48,6 +61,21 @@ stop() {
     echo "== Stopping the server"
     kill -TERM "$server" 2>/dev/null || true
     wait "$server" 2>/dev/null || true
+  fi
+  local live
+  live=$(heads)
+  if [ -n "$live" ]; then
+    echo "== Stopping the runs still active (SIGTERM to each head's process group)"
+    for pid in $live; do kill -TERM -- "-$pid" 2>/dev/null || true; done
+    for _ in $(seq 1 100); do
+      live=$(heads)
+      [ -z "$live" ] && break
+      sleep 0.1
+    done
+  fi
+  if [ -n "$live" ]; then
+    echo "serve-local: heads still running after 10 s, $home is kept: PIDs" $live >&2
+    return
   fi
   rm -rf "$home"
   echo "== Removed $home"
@@ -83,7 +111,7 @@ for _ in $(seq 1 100); do
 
   Spectio is running. Open $url
   Runs go under $home/runs. No sign-in link yet: the server answers on 127.0.0.1 only.
-  Press Ctrl-C to stop it; the temporary directory is removed.
+  Press Ctrl-C to stop it: runs still active are stopped, and the temporary directory is removed.
 
 EOF
     wait "$server"

@@ -313,6 +313,7 @@ export function RunDetailPage({ id }: { id: string }) {
   const [asking, setAsking] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const cancelButton = useRef<HTMLButtonElement>(null);
+  const title = useRef<HTMLHeadingElement>(null);
 
   const load = useCallback(() => {
     if (!valid) return;
@@ -351,6 +352,7 @@ export function RunDetailPage({ id }: { id: string }) {
       .then((r) => {
         setRun(r);
         setCancelError(null);
+        title.current?.focus(); // the Cancel button is gone once the run is cancelling
       })
       .catch((e: Error) => setCancelError(e.message));
   };
@@ -361,7 +363,9 @@ export function RunDetailPage({ id }: { id: string }) {
     <div className="sp-runs">
       <header className="sp-card sp-head" data-rail={run.state}>
         <div>
-          <h1 className="sp-page-title">{name}</h1>
+          <h1 ref={title} tabIndex={-1} className="sp-page-title">
+            {name}
+          </h1>
           <p className="sp-sub sp-page-sub">
             <span className="sp-id">{shortId(run.id)}</span>
             <StateWord state={run.state} />

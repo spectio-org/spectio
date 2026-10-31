@@ -63,6 +63,8 @@ test("Cancel asks first in a modal dialog, returns focus, then posts :cancel", a
   expect(cancelled.mock.calls[0][1]).toMatchObject({ method: "POST" });
   expect(await screen.findByText("Cancelling")).toBeInTheDocument();
   expect(screen.queryByRole("button", { name: "Cancel run" })).toBeNull();
+  await waitFor(() => expect(screen.getByRole("heading", { level: 1 })).toHaveFocus());
+  expect(document.activeElement).not.toBe(document.body);
 });
 
 test("no Cancel on a terminal run, nor on a run started from a terminal", async () => {

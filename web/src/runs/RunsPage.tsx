@@ -1,7 +1,7 @@
 import { Button } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
-import { type Run, type Summary, listRuns, runsSummary } from "../api";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { type Page, type Run, type Summary, listRuns, runsSummary } from "../api";
 import { LiveStatus, useFrames } from "../live";
 import { RunLink, StateWord, stateContext, tasksText } from "./RunState";
 import { duration, shortId, when } from "./stateWord";
@@ -15,6 +15,21 @@ const FILTERS: { label: string; states: string[] | null }[] = [
   { label: "Cancelled", states: ["cancelled"] },
 ];
 const PAGE = 50;
+
+type List = { rows: Run[]; next: string | null };
+
+// The list's order (sort=-created_at): newest first, then by ID.
+const older = (a: Run, b: Run) => a.created_at < b.created_at || (a.created_at === b.created_at && a.id < b.id);
+
+/** A refresh on a stream frame: the fresh first page, then the rows "Load more" added past it
+ * (older than its last row) and their cursor. */
+function refresh(shown: List | null, page: Page<Run>): List {
+  const fresh = page.items ?? [];
+  const last = fresh[fresh.length - 1];
+  const ids = new Set(fresh.map((r) => r.id));
+  const tail = shown && last && page.next ? shown.rows.filter((r) => !ids.has(r.id) && older(r, last)) : [];
+  return tail.length ? { rows: [...fresh, ...tail], next: shown!.next } : { rows: fresh, next: page.next ?? null };
+}
 
 const count = (summary: Summary | null, states: string[] | null) =>
   (summary?.groups ?? [])
@@ -39,8 +54,7 @@ export function RunsPage() {
   const [filter, setFilter] = useState(0);
   const [typed, setTyped] = useState("");
   const [q, setQ] = useState("");
-  const [runs, setRuns] = useState<Run[] | null>(null);
-  const [next, setNext] = useState<string | null>(null);
+  const [list, setList] = useState<List | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [error, setError] = useState<string | null>(null);
   const states = FILTERS[filter].states?.join(",");
@@ -53,31 +67,45 @@ export function RunsPage() {
     return () => clearTimeout(timer);
   }, [typed]);
 
-  // The first page, or as many rows as are shown (a refresh keeps what "Load more" added).
+  // A response is dropped once the filters change (the query's signal is aborted), and a first
+  // page once a newer one was asked for: an older response can land last.
+  const query = useRef(new AbortController());
+  const loads = useRef(0);
   const load = useCallback(
-    (shown = 0) => {
-      const limit = Math.min(200, Math.max(PAGE, shown));
-      Promise.all([listRuns({ state: states, q, limit }), runsSummary()])
+    (merge = false) => {
+      const { signal } = query.current;
+      const mine = ++loads.current;
+      const stale = () => signal.aborted || mine !== loads.current;
+      Promise.all([listRuns({ state: states, q, limit: PAGE }, signal), runsSummary(signal)])
         .then(([page, sum]) => {
-          setRuns(page.items ?? []);
-          setNext(page.next ?? null);
+          if (stale()) return;
+          setList((shown) => (merge ? refresh(shown, page) : { rows: page.items ?? [], next: page.next ?? null }));
           setSummary(sum);
           setError(null);
         })
-        .catch((e: Error) => setError(e.message));
+        .catch((e: Error) => stale() || setError(e.message));
     },
     [states, q],
   );
-  useEffect(() => load(), [load]);
-  useFrames(() => load(runs?.length ?? 0));
+  useEffect(() => {
+    const controller = new AbortController();
+    query.current = controller;
+    load();
+    return () => controller.abort();
+  }, [load]);
+  useFrames(() => load(true));
 
-  const more = () =>
-    listRuns({ state: states, q, limit: PAGE, cursor: next })
+  const runs = list?.rows ?? null;
+  const next = list?.next ?? null;
+  const more = () => {
+    const { signal } = query.current;
+    listRuns({ state: states, q, limit: PAGE, cursor: next }, signal)
       .then((page) => {
-        setRuns((shown) => [...(shown ?? []), ...(page.items ?? [])]);
-        setNext(page.next ?? null);
+        if (signal.aborted) return;
+        setList((shown) => ({ rows: [...(shown?.rows ?? []), ...(page.items ?? [])], next: page.next ?? null }));
       })
-      .catch((e: Error) => setError(e.message));
+      .catch((e: Error) => signal.aborted || setError(e.message));
+  };
 
   const total = count(summary, null);
   const filtered = filter !== 0 || q !== "";

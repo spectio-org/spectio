@@ -1,7 +1,7 @@
 import "../runs/runs.css";
 import { Button } from "@mantine/core";
 import { Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { type Run, type RunState, type Summary, listRuns, runsSummary } from "../api";
 import { LiveStatus, useFrames } from "../live";
 import { RunLink, StateWord, runName, stateContext, tasksText } from "../runs/RunState";
@@ -23,11 +23,13 @@ export function HomePage() {
   const [ended, setEnded] = useState<Run[]>([]);
   const [recent, setRecent] = useState<Run[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const loads = useRef(0); // only the latest refresh is shown: an older one can land last
 
   useEffect(() => {
     document.title = "Home · Spectio";
   }, []);
   const load = useCallback(() => {
+    const mine = ++loads.current;
     Promise.all([
       runsSummary(),
       listRuns({ state: ACTIVE.join(","), limit: 20 }),
@@ -35,13 +37,14 @@ export function HomePage() {
       listRuns({ limit: 50 }),
     ])
       .then(([sum, a, e, r]) => {
+        if (mine !== loads.current) return;
         setSummary(sum);
         setActive(a.items ?? []);
         setEnded(e.items ?? []);
         setRecent(r.items ?? []);
         setError(null);
       })
-      .catch((e: Error) => setError(e.message));
+      .catch((e: Error) => mine === loads.current && setError(e.message));
   }, []);
   useEffect(load, [load]);
   useFrames(load);

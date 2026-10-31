@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { FakeEventSource, app, fetched, run, serve, stubStream } from "../testing";
+import { FakeEventSource, app, fetched, json, run, serve, stubStream } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -94,4 +94,44 @@ test("a stream frame refetches the list; a lost stream reads Reconnecting…", a
   );
   stream.fail();
   expect(await screen.findByText("Reconnecting…")).toBeInTheDocument();
+});
+
+test("an older response that lands last does not overwrite the list of the pressed filter", async () => {
+  let release: () => void = () => {};
+  serve({
+    "/api/v1/runs:summary": SUMMARY,
+    "/api/v1/runs?state=failed": { items: [failed], next: null },
+    "/api/v1/runs": () => new Promise<Response>((done) => (release = () => done(json(200, { items: [run()], next: null })))),
+  });
+  app("/runs");
+  await userEvent.click(await screen.findByRole("button", { name: /^Failed/ }));
+  expect(await screen.findByRole("link", { name: "Open run sarek-c" })).toBeInTheDocument();
+  release();
+  await new Promise((r) => setTimeout(r, 50));
+  expect(screen.queryByRole("link", { name: "Open run rnaseq-a" })).toBeNull();
+  expect(screen.getByRole("link", { name: "Open run sarek-c" })).toBeInTheDocument();
+});
+
+test("a stream frame refreshes the first page and keeps the rows Load more added, and the cursor", async () => {
+  const older = run({ id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V0A", name: "old-b", created_at: "2026-10-30T07:40:00+00:00" });
+  const mock = serve({
+    "/api/v1/runs:summary": SUMMARY,
+    "/api/v1/runs?limit=50&cursor=abc": { items: [older], next: "def" },
+    "/api/v1/runs": { items: [run()], next: "abc" },
+  });
+  app("/runs");
+  await userEvent.click(await screen.findByRole("button", { name: "Load more" }));
+  expect(await screen.findByRole("link", { name: "Open run old-b" })).toBeInTheDocument();
+  const stream = FakeEventSource.last!;
+  stream.open();
+  const before = fetched(mock).filter((u) => u === "/api/v1/runs?limit=50").length;
+  stream.frame({ run_id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V1W" });
+  await waitFor(() => expect(fetched(mock).filter((u) => u === "/api/v1/runs?limit=50").length).toBeGreaterThan(before), {
+    timeout: 3000,
+  });
+  await new Promise((r) => setTimeout(r, 50));
+  expect(screen.getByRole("link", { name: "Open run old-b" })).toBeInTheDocument();
+  expect(screen.getByRole("link", { name: "Open run rnaseq-a" })).toBeInTheDocument();
+  await userEvent.click(screen.getByRole("button", { name: "Load more" }));
+  await waitFor(() => expect(fetched(mock)).toContain("/api/v1/runs?limit=50&cursor=def"));
 });
