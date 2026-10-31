@@ -459,6 +459,12 @@ Both engines produce byte-identical results (the counts matrix compared with `di
 
 These run against sind and kind in T3 and T4.
 
+*Note 2026-10-31, parameter schemas ([P3-M4 · UI parity D](../progress/W5/P3-M4.md#ui-parity-d-run-detail-sheets-searchable-logs-test-pipelines-in-launch); assumed — standing rule (unattended mode), [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30); the request: Thomas, 2026-10-31, "params quasi vides pour les wf"):* both twins describe the parameters they read, so the Launch form shows real groups:
+- `nextflow/nextflow_schema.json`, nf-core style (JSON Schema draft 2020-12, `$defs` groups with `fa_icon`), from `main.nf` and `nextflow.config`;
+- `snakemake/workflow/schemas/config.schema.yaml`, the same groups, from the Snakefile's `config.setdefault` keys. Only Spectio's inspect reads it; the Snakefile does not validate against it.
+
+The four groups are Input/output options, Scenario, Failure injection and Resources. `fail_mode` and the target process or rule are enums, so a launch with another value is refused with a `422`. The scenarios' behaviour is unchanged. No group sets a `maximum` yet, and `python_image` accepts any string (SEC-P3PARD-02, -03, follow-up FU-P3-28).
+
 ### 10.2 Real pipelines (`tests/pipelines/real/corpus.yaml`)
 
 Step pages: [F3](../progress/W0/F3.md), then [T7](../progress/W3/T7.md). Real pipelines run with their own test datasets. They are chosen to cover the scenario classes of [`checking-scenarios.md`](checking-scenarios.md) §1. Sources: `docs/research/corpus-and-ci-2026-10-26.md`. The CI results, the runner measurements and the reason for each tier move are in [corpus-ci-2026-10-27](../research/corpus-ci-2026-10-27.md).
