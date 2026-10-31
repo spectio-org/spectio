@@ -474,3 +474,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - CI on b6a8ed0: `product` red in `test_login_timeout_kills_the_group`, not the PR's diff (no Python change): the timed-out sleep was reaped between the open and the read of `/proc/<pid>/stat` (ESRCH). Reproduced locally; 31caa89 treats ESRCH as gone, assertion unchanged. Comment on #107.
 - Required checks green on 31caa89 (`e2e-local` not required, inbox #90). Squash-merged as 640f543 (`Release-As: 0.0.1`). Unsubscribed, check-in deleted. Promotion to main next.
+
+## 2026-10-31 · Promotion #108 merged: UI parity B on main
+
+- Integration promoted to `main` by merge commit 02f7917 (label `screenshots`; every check green, `e2e-local` included).
+- Thomas asked for a UI to check online without a clone: a read-only demo (the `web/` screens on API answers recorded from the demo server, 4 runs) published as a private claude.ai page. Built from a scratch copy of `web/`; nothing in the repository changed.
