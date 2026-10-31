@@ -479,3 +479,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - Integration promoted to `main` by merge commit 02f7917 (label `screenshots`; every check green, `e2e-local` included).
 - Thomas asked for a UI to check online without a clone: a read-only demo (the `web/` screens on API answers recorded from the demo server, 4 runs) published as a private claude.ai page. Built from a scratch copy of `web/`; nothing in the repository changed.
+
+## 2026-10-31 · P3-parC: PR #109 merged
+
+- Thomas's five points after the online demo: parameters one per line (overrides the boards' grid; boards updated), icon tiles on the Launch sections and Launch in the page head, the logos (inbox #91 answered: option b, `nf-core/…` names show the nf-core mark), run detail Copy menu, and the Logs tab (deep link `?tab=logs&source=`, File row, no-wrap viewer opened at the end, Open raw, tints).
+- Workflow p3-task done in 3 review rounds (code approve 0/1/8, security approve 0/0/4), simplifier whitespace only, doc-reviewer approve 13. SAST 0 findings. Ten live shots retaken plus the new `app-run-logs`. Checked live: a demo copy `nf-core/demo` (under `/g/demo-lab/pipelines/nf-core-demo`, not in the repo) shows the nf-core mark on the row, header and Pipeline fact.
+- `pr-body` red on the placeholder body, green after the real body. Every check green on dfc2c0b. Squash-merged as 5af7d47 (`Release-As: 0.0.1`). Cost recorded: 45 USD. Open: FU-P3-27 (raw log headers SEC-P3PARC-01, two screen-reader points, token file). Promotion next, then P3-demo.
