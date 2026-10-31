@@ -485,3 +485,7 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Thomas's five points after the online demo: parameters one per line (overrides the boards' grid; boards updated), icon tiles on the Launch sections and Launch in the page head, the logos (inbox #91 answered: option b, `nf-core/…` names show the nf-core mark), run detail Copy menu, and the Logs tab (deep link `?tab=logs&source=`, File row, no-wrap viewer opened at the end, Open raw, tints).
 - Workflow p3-task done in 3 review rounds (code approve 0/1/8, security approve 0/0/4), simplifier whitespace only, doc-reviewer approve 13. SAST 0 findings. Ten live shots retaken plus the new `app-run-logs`. Checked live: a demo copy `nf-core/demo` (under `/g/demo-lab/pipelines/nf-core-demo`, not in the repo) shows the nf-core mark on the row, header and Pipeline fact.
 - `pr-body` red on the placeholder body, green after the real body. Every check green on dfc2c0b. Squash-merged as 5af7d47 (`Release-As: 0.0.1`). Cost recorded: 45 USD. Open: FU-P3-27 (raw log headers SEC-P3PARC-01, two screen-reader points, token file). Promotion next, then P3-demo.
+
+## 2026-10-31 · Promotion #110 merged: UI parity C on main
+
+- Integration promoted to `main` by merge commit 00b900d (label `screenshots`; every check green on 4c4e3ba, `e2e-local` included). P3-demo (public read-only demo at `/demo/`) is building; its PR changes `previews.yml` and waits for Thomas's review.
