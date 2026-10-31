@@ -278,11 +278,8 @@ class RunnerLoop:
             else:
                 first = self._ended_at.setdefault(ref.launch_id, time.monotonic())
                 if time.monotonic() - first < self.end_grace_s:
-                    # its last events may still be in the spool (Assumption 15): say it has
-                    # ended, and decide the run's failure after the grace (P3-parB)
-                    report = replace(report, final=False)
-            if report.final:
-                report = ended_failure(ref.engine, report)
+                    return  # its last events may still be in the spool (Assumption 15)
+            report = ended_failure(ref.engine, report)
         if self._last.get(ref.launch_id) == report:
             return
         self._last[ref.launch_id] = report

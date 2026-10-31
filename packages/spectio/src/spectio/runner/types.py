@@ -53,9 +53,6 @@ class HeadReport:
     writes a terminal engine event: for a Snakemake launch the runner reports the exit code and
     leaves `failure` None, and sets it (`head_lost`) only when the exit code is unknown. The
     projector lets a known exit code win over `head_lost` / `engine_fault` (CR-P3T05-01).
-    `final` is False on an ended head's report sent during the end grace, while its last spool
-    events may still come: the projector records the end (the head is no longer alive) and
-    moves no run until the final report (P3-parB).
     """
 
     state: HeadState
@@ -64,7 +61,6 @@ class HeadReport:
     exit_code: int | None
     ended: bool
     failure: Failure | None
-    final: bool = True
 
 
 Engine = Literal["nextflow", "snakemake"]

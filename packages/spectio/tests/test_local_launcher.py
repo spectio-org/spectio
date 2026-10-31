@@ -396,7 +396,7 @@ class FakeSink:
         self.reports.append((launch_id, report))
         if report.native_id:
             self.launches[launch_id] = replace(self.launches[launch_id], native_id=report.native_id)
-        if report.ended and report.final:
+        if report.ended:
             del self.launches[launch_id]  # the run ends: no longer active
 
     def last(self, launch_id: str) -> HeadReport:
@@ -655,24 +655,6 @@ def test_redelivered_launch_after_a_cancel_with_no_native_id(
     )
     assert ("cmd_cancel", True, None) in sink.acks
     assert sink.last(ref.launch_id).exit_code == 143
-
-
-def test_nextflow_end_reported_during_the_spool_grace(
-    runs_root: Path, launcher: LocalLauncher
-) -> None:
-    """P3-parB: with the default spool grace (60 s), a Nextflow head that exits is reported
-    ended at the poll that sees it, with `final=False` and no failure, so the server records its
-    exit at once; the run's failure, if any, waits for the end of the grace."""
-    engine = stub_engine(runs_root.parent / "bin", "exit 0")
-    sink = FakeSink()
-    loop = make_loop(sink, runs_root, engine, launcher, end_grace_s=60)
-    ref = sink.launch(runs_root, RUN_A)
-    run_until(loop, lambda: any(r.ended for lid, r in sink.reports if lid == ref.launch_id))
-    report = sink.last(ref.launch_id)
-    assert (report.ended, report.final, report.exit_code, report.failure) == (True, False, 0, None)
-    assert ref.launch_id in sink.launches  # still watched: the grace goes on
-    loop.tick()
-    assert sink.last(ref.launch_id) == report  # sent once
 
 
 def test_snakemake_end_skips_the_spool_grace(runs_root: Path, launcher: LocalLauncher) -> None:
