@@ -282,110 +282,110 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
           </span>
         }
       />
-          <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card>
-            <Group align="flex-start" gap="sm" wrap="wrap">
-              <TextInput
-                style={{ flex: "999 1 280px" }}
-                label="Pipeline"
-                inputWrapperOrder={["label", "input", "description", "error"]}
-                value={location}
-                onChange={(e) => edit(setLocation, e.currentTarget.value)}
-                error={errors.location}
-                description={
+      <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card>
+        <Group align="flex-start" gap="sm" wrap="wrap">
+          <TextInput
+            style={{ flex: "999 1 280px" }}
+            label="Pipeline"
+            inputWrapperOrder={["label", "input", "description", "error"]}
+            value={location}
+            onChange={(e) => edit(setLocation, e.currentTarget.value)}
+            error={errors.location}
+            description={
+              <>
+                An absolute path your account can read, a GitHub or nf-core name such as
+                nf-core/rnaseq, or an https:// or ssh URL.
+                {github && (
                   <>
-                    An absolute path your account can read, a GitHub or nf-core name such as
-                    nf-core/rnaseq, or an https:// or ssh URL.
-                    {github && (
-                      <>
-                        <br />
-                        <span>Read as GitHub: {github}</span>
-                      </>
-                    )}
+                    <br />
+                    <span>Read as GitHub: {github}</span>
                   </>
-                }
-                spellCheck={false}
-                autoComplete="off"
-              />
-              {repo && (
-                <TextInput
-                  style={{ flex: "1 1 220px", maxWidth: 260 }}
-                  label="Revision"
-                  inputWrapperOrder={["label", "input", "description", "error"]}
-                  withAsterisk
-                  required
-                  value={revision}
-                  onChange={(e) => edit(setRevision, e.currentTarget.value)}
-                  error={errors.revision}
-                  description="Tag, branch or commit; required for a Git repository."
-                  spellCheck={false}
-                  autoComplete="off"
-                />
+                )}
+              </>
+            }
+            spellCheck={false}
+            autoComplete="off"
+          />
+          {repo && (
+            <TextInput
+              style={{ flex: "1 1 220px", maxWidth: 260 }}
+              label="Revision"
+              inputWrapperOrder={["label", "input", "description", "error"]}
+              withAsterisk
+              required
+              value={revision}
+              onChange={(e) => edit(setRevision, e.currentTarget.value)}
+              error={errors.revision}
+              description="Tag, branch or commit; required for a Git repository."
+              spellCheck={false}
+              autoComplete="off"
+            />
+          )}
+          <Button
+            type="button"
+            variant="default"
+            mt={24}
+            onClick={load}
+            aria-busy={loading || undefined}
+          >
+            {loading ? (repo ? "Fetching…" : "Loading…") : "Load"}
+          </Button>
+        </Group>
+        {loaded && (
+          <Paper bg="var(--sp-surface-subtle)" p="sm" mt="sm" className="launch-loaded" data-loaded>
+            <span className="launch-loaded-mark">
+              {markFor(guessed, loaded.name) ? (
+                <PipelineMark engine={guessed} name={loaded.name} size={24} />
+              ) : (
+                <Icon path={ICONS.folder} size={20} />
               )}
-              <Button
-                type="button"
-                variant="default"
-                mt={24}
-                onClick={load}
-                aria-busy={loading || undefined}
-              >
-                {loading ? (repo ? "Fetching…" : "Loading…") : "Load"}
-              </Button>
-            </Group>
-            {loaded && (
-              <Paper bg="var(--sp-surface-subtle)" p="sm" mt="sm" className="launch-loaded" data-loaded>
-                <span className="launch-loaded-mark">
-                  {markFor(guessed, loaded.name) ? (
-                    <PipelineMark engine={guessed} name={loaded.name} size={24} />
-                  ) : (
-                    <Icon path={ICONS.folder} size={20} />
-                  )}
-                </span>
-                <div className="sp-grow">
-                  <Text fw={600}>
-                    {loaded.name}
-                    {loaded.version ? ` ${loaded.version}` : ""}
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    {loaded.revision ? `A Git repository at ${loaded.revision}` : "A directory on this machine"}
-                    {loaded.engine_files.length ? ` · ${loaded.engine_files.join(", ")} found` : ""}
-                    {` · ${SOURCES[loaded.schema_source]}`}
-                  </Text>
-                </div>
-                <span className="launch-loaded-status">
-                  <Icon path={ICONS.check} size={14} stroke={2.4} />
-                  <span>Loaded</span>
-                </span>
-              </Paper>
-            )}
-            <Stack gap="md" mt="md">
-              <EngineButtons
-                value={engine}
-                onChange={(e) => setEngine(e)}
-                note={engineNote}
-                error={errors.engine}
-              />
-              <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <NativeSelect
-                  label="Profile"
-                  inputWrapperOrder={["label", "input", "description", "error"]}
-                  value={profile}
-                  onChange={(e) => setProfile(e.currentTarget.value)}
-                  data={[{ value: "", label: "(none)" }, ...(loaded?.profiles ?? [])]}
-                  description={engine ? PROFILE_HINTS[engine] : "From the pipeline's own configuration; passed to the engine as its profile."}
-                  error={errors.profile}
-                />
-                <TextInput
-                  label="Run name (optional)"
-                  inputWrapperOrder={["label", "input", "description", "error"]}
-                  value={name}
-                  onChange={(e) => setName(e.currentTarget.value)}
-                  description="Left empty, Spectio names the run after the pipeline."
-                  error={errors.name}
-                  autoComplete="off"
-                />
-              </SimpleGrid>
-            </Stack>
-          </FoldSection>
+            </span>
+            <div className="sp-grow">
+              <Text fw={600}>
+                {loaded.name}
+                {loaded.version ? ` ${loaded.version}` : ""}
+              </Text>
+              <Text size="sm" c="dimmed">
+                {loaded.revision ? `A Git repository at ${loaded.revision}` : "A directory on this machine"}
+                {loaded.engine_files.length ? ` · ${loaded.engine_files.join(", ")} found` : ""}
+                {` · ${SOURCES[loaded.schema_source]}`}
+              </Text>
+            </div>
+            <span className="launch-loaded-status">
+              <Icon path={ICONS.check} size={14} stroke={2.4} />
+              <span>Loaded</span>
+            </span>
+          </Paper>
+        )}
+        <Stack gap="md" mt="md">
+          <EngineButtons
+            value={engine}
+            onChange={(e) => setEngine(e)}
+            note={engineNote}
+            error={errors.engine}
+          />
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <NativeSelect
+              label="Profile"
+              inputWrapperOrder={["label", "input", "description", "error"]}
+              value={profile}
+              onChange={(e) => setProfile(e.currentTarget.value)}
+              data={[{ value: "", label: "(none)" }, ...(loaded?.profiles ?? [])]}
+              description={engine ? PROFILE_HINTS[engine] : "From the pipeline's own configuration; passed to the engine as its profile."}
+              error={errors.profile}
+            />
+            <TextInput
+              label="Run name (optional)"
+              inputWrapperOrder={["label", "input", "description", "error"]}
+              value={name}
+              onChange={(e) => setName(e.currentTarget.value)}
+              description="Left empty, Spectio names the run after the pipeline."
+              error={errors.name}
+              autoComplete="off"
+            />
+          </SimpleGrid>
+        </Stack>
+      </FoldSection>
       <div className="launch-grid">
         <Stack gap="md">
           {loaded && (
