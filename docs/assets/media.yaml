@@ -85,6 +85,11 @@ media:
     # live, as app-run-detail, at 390 x 844
     generator: python3 tools/media/shots.py run --shot app-run-detail-phone --theme light
     outputs: [docs/assets/shots/app-run-detail-phone_light.webp]
+  - id: app-run-detail-failed
+    kind: screenshot
+    # live, as app-run-detail; SPECTIO_DEMO_FAILED_RUN is a run launched with fail_mode=exit fail_process=MERGE
+    generator: python3 tools/media/shots.py run --shot app-run-detail-failed --theme light
+    outputs: [docs/assets/shots/app-run-detail-failed_light.webp]
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
