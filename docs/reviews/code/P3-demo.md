@@ -94,6 +94,7 @@ The only matches were the `nf-…@version` plugin names, the JDK version, the ac
 | Round | Head | code-reviewer | security-reviewer |
 |---|---|---|---|
 | 4 (refresh) | `1959ca8` | **approve** (3 minors), not independent | **approve** (1 minor), not independent |
+| 4b (refresh, independent) | `95b9926` | **approve** (4 minors), `code-reviewer` agent | **approve** (1 minor), `security-reviewer` agent: every decoded body of the 48 answers scanned, history checked for `f769837` |
 
 | Id | Severity | Finding | Status |
 |---|---|---|---|
@@ -101,6 +102,11 @@ The only matches were the `nf-…@version` plugin names, the JDK version, the ac
 | CR-P3DEMO-02 (r4) | minor | The demo chunk grew from about 830 kB to 995 kB with the recording. | **open**: CR-P3DEMO-05 (r1), FU-P3-29 |
 | CR-P3DEMO-03 (r4) | minor | `stub.ts` needed no new path: UI parity D's requests are the filters and pages it already served. The change is tests only, and they would fail if the filtering or paging broke. | no action |
 | SEC-P3DEMO-01 (r4) | minor | The new run adds two more engine logs with the JDK build, `CPUs`, `Mem` and `Encoding` lines. | **open**: SEC-P3DEMO-04 (r3), FU-P3-29 |
+| CR-P3DEMOREF-01 (r4b) | minor | UI parity D's follow-up "re-record #111's demo fixtures" stayed open after this refresh did it. | fixed: marked done in P3-M4 |
+| CR-P3DEMOREF-02 (r4b) | minor | Two recording tests were named as Launch tests but check only what the recording holds. | fixed: renamed "the recording holds …" |
+| CR-P3DEMOREF-03 (r4b) | minor | The `#/launch?location=` test passed whichever recorded pipeline loaded; the Try labels matched by prefix. | fixed: asserts the Pipeline field holds `synthetic-smk`; labels matched to the end |
+| CR-P3DEMOREF-04 (r4b) | minor | The figure still shows the first recording's numbers as if current. | fixed: a note under the figure points to the refresh paragraph |
+| SEC-P3DEMO-01 (r5) | minor | The local branch `autopilot/P3-demo` still holds `f769837` (the sandbox's kernel build) and nothing stops a push of it. | **open**: inbox #92 says it must never be pushed and asks Thomas to delete it after #111 merges (agents do not delete branches); a pre-push guard is in FU-P3-29 |
 
 Gate at `1959ca8`:
 

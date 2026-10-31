@@ -181,14 +181,14 @@ test("the recording: the failed run's first failed task is among its failed task
   expect(failed.items.map((t: { id: string }) => t.id)).toContain(run.failure.task_id);
 });
 
-test("the recording: a run launched with non-default parameters shows them", async () => {
+test("the recording holds a run launched with non-default parameters", async () => {
   const runs = (await get("/runs?limit=50").json()).items as { id: string }[];
   const params = await Promise.all(runs.map(async ({ id }) => (await get(`/runs/${id}`).json()).params as Record<string, unknown>));
   expect(params.some((p) => p.fail_mode === "flaky" && p.chunks === 6)).toBe(true);
 });
 
 test.each(["synthetic", "synthetic-smk", "nf-core-demo"])(
-  "the recording: /launch?location= loads %s, with the four parameter groups",
+  "the recording holds the inspection of %s, with the four parameter groups",
   async (name) => {
     const r = get(`/workflows:inspect?${new URLSearchParams({ location: `/g/demo-lab/pipelines/${name}` })}`);
     expect(r.status).toBe(200);

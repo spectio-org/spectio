@@ -114,9 +114,10 @@ test("a hash link /launch?location= loads that recorded pipeline; Try a test pip
     </MantineProvider>,
   );
   expect(await screen.findByRole("button", { name: /^Failure injection\b/ })).toBeInTheDocument();
+  expect(screen.getByRole("textbox", { name: /^Pipeline/ })).toHaveValue("/g/demo-lab/pipelines/synthetic-smk");
   const tries = within(await screen.findByRole("group", { name: "Try a test pipeline" })).getAllByRole("button");
   expect(tries.map((b) => b.getAttribute("aria-label"))).toEqual(
-    expect.arrayContaining([expect.stringContaining("/g/demo-lab/pipelines/synthetic"), expect.stringContaining("/g/demo-lab/pipelines/nf-core-demo")]),
+    expect.arrayContaining([expect.stringMatching(/\/g\/demo-lab\/pipelines\/synthetic$/), expect.stringMatching(/\/g\/demo-lab\/pipelines\/nf-core-demo$/)]),
   );
 });
 
