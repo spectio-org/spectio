@@ -17,15 +17,16 @@ The reviewers were `code-reviewer` and `security-reviewer`, independent and in p
 | 2 | `8c86467` (SEC-P3PARB-01 fixed) | **approve** (5 minors, 1 simplify) | **approve** (1 minor; SEC-P3PARB-01 recorded as fixed) |
 | 3 | `8c86467` (the fix round made no change) | **changes** (1 major, 5 minors, 2 simplify) | **approve** (2 minors) |
 | 4, by hand | `8c86467..614b81f` (the revert and the round-3 fixes) | **changes** (1 major, already fixed in `dcec010`; 3 minors) | **approve** (none) |
-| simplify | not run | its findings fixed by hand in `614b81f`, except CR-P3PARB-08 | |
+| 5 | `dcec010`, `db620dc`, `b092b7c` (the fixes after round 4) | **approve** (1 minor, also a simplify: CR-P3PARB-R5-01) | not run |
+| simplify | not run | its findings fixed by hand in `614b81f` and `e6de280`, except CR-P3PARB-08 | |
 
-Rounds 1 to 3 ran in the `review-code` workflow. It stopped with "two fix rounds without approval" (round 3's major). The step's prompt lifted the two-round ceiling for this fix, so round 4 was run by hand on the range of the revert and the round-3 fixes. `db620dc` (the round-4 minors, +5 −3) and `b092b7c` (the phone header line, +9 −2) came after round 4 and have no review of their own range: the PR's review covers them.
+Rounds 1 to 3 ran in the `review-code` workflow. It stopped with "two fix rounds without approval" (round 3's major). The step's prompt lifted the two-round ceiling for this fix, so round 4 was run by hand on the range of the revert and the round-3 fixes. Round 5 was a `code-reviewer` pass on the three commits after round 4: `dcec010`, `db620dc` (the round-4 minors, +5 −3) and `b092b7c` (the phone header line, +9 −2). It approved, with one finding, fixed in `e6de280` (+3 −4, a variable removed), which has had no review of its own. `security-reviewer` did not run in round 5; its last verdict is round 4's approve.
 
 **Finding IDs restart in each round**, so this record writes the round after an ID. CR-P3PARB-01 (r1), (r2) and (r3) are three findings about the same runner change; round 4's IDs carry `R4`.
 
 **Test-first.** Each fix commit adds or changes the test that pins it; the round-4 `code-reviewer` judged, for each round-3 fix, that its test would fail without it. `doc-writer` checked the smoke's phone change: the base's spec fails on the phone against the new build, and the new one passes ([P3-M4 Evidence](../../progress/W5/P3-M4.md#ui-parity-b-the-phone-the-launch-form-and-the-head-word_1)).
 
-Gate at `1eb483b`, from the worktree, re-run by `doc-writer`:
+Gate at `1eb483b`, from the worktree, re-run by `doc-writer`; vitest, `tsc` and the build re-run at `e6de280` with the same results (JS asset 429.06 kB, gzip 137.94 kB):
 
 ```bash
 uv run --locked pytest -q   # 511 passed, 15 deselected (no product Python file changed)
@@ -38,10 +39,10 @@ cd web && npm run build     # dist/index.html, two logo PNGs, one CSS and one JS
 The round-4 `security-reviewer` ran `bash tools/ci/security.sh sast` on its range: 79 rules on 193 files, 0 findings.
 
 ```text
-CODE  step=P3-parB  review=changes b/M/m=0/2/18  security=approve b/M/m=0/1/4  rounds=4  simplify=not-run -0/+0  tests=pass
+CODE  step=P3-parB  review=approve b/M/m=0/2/19  security=approve b/M/m=0/1/4  rounds=5  simplify=not-run -0/+0  tests=pass
 ```
 
-The counts add up the four rounds per reviewer, from each report's own count line. The four `simplify` findings are not counted. `review=changes` is round 4's verdict on `8c86467..614b81f`; its reviewer wrote that, with `dcec010` counted, no major remains and the verdict would be approve.
+The counts add up the five rounds of `code-reviewer` and the four of `security-reviewer`, from each report's own count line. The five `simplify` findings are not counted. `review=approve` is round 5's verdict. Round 4's was `changes` on `8c86467..614b81f`; its reviewer wrote that, with `dcec010` counted, no major remains and the verdict would be approve.
 
 ## Findings
 
@@ -75,8 +76,9 @@ The counts add up the four rounds per reviewer, from each report's own count lin
 | SEC-P3PARB-03 (r3) | minor | A top-level key `a.b` and a nested `a` → `b` share one form key, one React key and one 422 target. | fixed in `614b81f`: the second is skipped and named in the "Not in the form" notice, with a test |
 | CR-P3PARB-R4-01 | major | `buildParams` read `sent.get(field) ?? …`, so a JSON `null` typed in was treated as unset (inside a touched map, its default was sent), while "n values changed" still counted it. | fixed in `dcec010`: `set !== undefined`, with a nested-null test (the round-4 reviewer saw it) |
 | CR-P3PARB-R4-02 | minor | A duplicate dotted key now goes to `skipped`, but the notice said "Spectio refuses these key names". | fixed in `db620dc`: "These keys are unsafe or repeat another key's dotted name" |
-| CR-P3PARB-R4-03 | minor | The form's shape depends on the engine chosen: with no engine guessed it starts in the Nextflow shape, and values typed under one shape are hidden and unsent under the other. | fixed in part in `db620dc`: the shape follows the guessed engine until one is chosen. What is left, written in a comment (`LaunchPage.tsx:128-129`), goes to FU-P3-26 |
+| CR-P3PARB-R4-03 | minor | The form's shape depends on the engine chosen: with no engine guessed it starts in the Nextflow shape, and values typed under one shape are hidden and unsent under the other. | **not fixed**: follow-up FU-P3-26. `db620dc` made the shape follow `engine ?? guess`, which round 5 found always equals `engine` (CR-P3PARB-R5-01); `e6de280` dropped it. The behaviour is written in a comment, `LaunchPage.tsx:128-129` at `e6de280` |
 | CR-P3PARB-R4-04 | minor | The `fa-tostring` assertion in `icons.test.ts` tests nothing. | fixed in `db620dc`: dropped |
+| CR-P3PARB-R5-01 | minor (simplify) | `db620dc`'s `formEngine = engine ?? guess` never changed behaviour: `engine` is null only before a load or when the guess is null, so it always equals `engine`. R4-03 was therefore not fixed. | fixed in `e6de280`: `formEngine` dropped, the form reads `engine`; R4-03 goes whole to FU-P3-26 |
 
 ## Fixes by commit
 
@@ -87,8 +89,9 @@ The counts add up the four rounds per reviewer, from each report's own count lin
 | `614b81f` fix(web): P3-parB round 3 findings | CR-P3PARB-01 (r3) (Ending), -02 to -05 and -07 (r3), SEC-P3PARB-02 and -03 (r3), CR-P3PARB-04 (r2), -02 (r2), and the repeats CR-P3PARB-03 and -05 (r1, r2), SEC-P3PARB-02 (r1, r2) |
 | `dcec010` fix(web): a JSON null typed in a nested field is sent as null | CR-P3PARB-R4-01 |
 | `8c0f638` docs(media): P3-parB live shots retaken at db620dc | CR-P3PARB-06 (r2), CR-P3PARB-06 (r3) |
-| `db620dc` fix(web): P3-parB round 4 minors | CR-P3PARB-R4-02, -03 (in part), -04 |
+| `db620dc` fix(web): P3-parB round 4 minors | CR-P3PARB-R4-02, -04 (its change for -03 was dropped in `e6de280`) |
 | `b092b7c` fix(web): the phone run header's line wraps between values, not past the card | the overflow left by CR-P3PARB-02 (r2)'s first fix, seen while retaking the shots |
+| `e6de280` refactor(web): drop formEngine, which always equalled engine | CR-P3PARB-R5-01 |
 
 ## For the Progress page
 
