@@ -459,3 +459,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 ## 2026-10-31 · P3-parA merged (#105, squash 5d5ec8d)
 
 - CI green on d7ab57d (pr-body re-ran green on the real body). Next: the promotion of integration to main, then step B (phone and Launch) from base 5d5ec8d+.
+
+## 2026-10-31 · Promotion #106 merged (4ec5506)
+
+- UI parity A is on main. docs-gate first failed on the shot-churn guard (no `screenshots` label on the promotion PR); label added, green on re-run. Lesson: a promotion PR that carries rewritten shots needs the label too.
+- Step B running (workflow from base 4ce9112).
