@@ -80,7 +80,9 @@ test("Launch loads the nf-core demo copy from the recording, then gives the read
   );
   await userEvent.type(screen.getByRole("textbox", { name: /^Pipeline/ }), "/g/demo-lab/pipelines/nf-core-demo");
   await userEvent.click(screen.getByRole("button", { name: "Load" }));
-  await screen.findByText(/no parameter schema/);
+  for (const group of ["Input/output options", "Scenario", "Failure injection", "Resources"]) {
+    expect(await screen.findByRole("button", { name: new RegExp(`^${group}\\b`) })).toBeInTheDocument();
+  }
   const launch = screen.getAllByRole("button", { name: "Launch" }).at(-1)!;
   expect(launch).toHaveAttribute("aria-disabled", "true");
   expect(launch).toHaveAccessibleDescription(READ_ONLY);
@@ -101,6 +103,21 @@ test("a hash deep link opens the failed run's Logs; Open raw opens the shown tex
   const [blob] = vi.mocked(URL.createObjectURL).mock.calls.at(-1)! as [Blob];
   expect(blob.size).toBeGreaterThan(0);
   expect(blob.type).toBe("text/plain;charset=utf-8");
+});
+
+test("a hash link /launch?location= loads that recorded pipeline; Try a test pipeline lists the recorded ones", async () => {
+  window.location.hash = `#/launch?location=${encodeURIComponent("/g/demo-lab/pipelines/synthetic-smk")}`;
+  const router = createAppRouter(createHashHistory());
+  render(
+    <MantineProvider {...providerProps}>
+      <RouterProvider router={router} />
+    </MantineProvider>,
+  );
+  expect(await screen.findByRole("button", { name: /^Failure injection\b/ })).toBeInTheDocument();
+  const tries = within(await screen.findByRole("group", { name: "Try a test pipeline" })).getAllByRole("button");
+  expect(tries.map((b) => b.getAttribute("aria-label"))).toEqual(
+    expect.arrayContaining([expect.stringContaining("/g/demo-lab/pipelines/synthetic"), expect.stringContaining("/g/demo-lab/pipelines/nf-core-demo")]),
+  );
 });
 
 test("the demo build's router reads the route from the hash, so a static host can reload it", async () => {

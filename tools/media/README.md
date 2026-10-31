@@ -112,11 +112,11 @@ The demo at `https://spectio.pages.dev/demo/` (and `/demo/` of every PR preview)
         bash -c 'cd /g/demo-lab && exec spectio serve'"
     ```
 
-2. Launch the runs the demo shows (the 2026-10-31 recording has five: two plain runs of the synthetic Nextflow copy, one failed in `MERGE` with `fail_mode=exit` and `fail_process=MERGE`, `variant-calling-batch-3`, `cohort-2026-scale` with 2069 tasks, and one run of `/g/demo-lab/pipelines/nf-core-demo`, a copy of the synthetic pipeline whose `manifest.name` is `nf-core/demo`: a demo copy, not an nf-core pipeline). The pipelines to inspect are `synthetic`, `synthetic-smk` and `nf-core-demo` under `/g/demo-lab/pipelines` (set up as for the live shots above).
+2. Launch the runs the demo shows (the 2026-10-31 recording has five: two plain runs of the synthetic Nextflow copy, one failed in `MERGE` with `fail_mode=exit` and `fail_process=MERGE`, `variant-calling-batch-3`, `cohort-2026-scale` with 2069 tasks, and one run of `/g/demo-lab/pipelines/nf-core-demo`, a copy of the synthetic pipeline whose `manifest.name` is `nf-core/demo`: a demo copy, not an nf-core pipeline; the re-recording after UI parity D adds a sixth, `spectio/synthetic-scenarios-Q6GTTV`, launched with `chunks=6`, `scale=2`, `seed=7`, `fail_mode=flaky` and `fail_process=ALIGN`, so the Parameters tab shows values that are not the defaults). The pipelines to inspect are `synthetic`, `synthetic-smk` and `nf-core-demo` under `/g/demo-lab/pipelines` (set up as for the live shots above).
 3. Record, then rebuild:
 
     ```bash
-    python3 tools/media/record_demo.py --base http://127.0.0.1:8766   # -> web/demo/fixtures.json: 41 answers, 773205 bytes
+    python3 tools/media/record_demo.py --base http://127.0.0.1:8766   # -> web/demo/fixtures.json: 48 answers, 931286 bytes (2026-10-31, after UI parity D)
     npm --prefix web run build:demo                                    # -> web/dist-demo
     ```
 

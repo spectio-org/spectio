@@ -1,5 +1,6 @@
 import { afterEach, expect, test, vi } from "vitest";
 import { READ_ONLY, type Recorded, QuietEventSource, answer, install, shiftTimes } from "./stub";
+import raw from "../../demo/fixtures.json?raw";
 
 const page = (items: unknown[]) => JSON.stringify({ items, next: null });
 const ok = (body: string, type = "application/json") => ({ status: 200, type, body });
@@ -120,3 +121,78 @@ test("a list asked with no query answers the server's first page of 50, not the 
   expect(body.items).toHaveLength(50);
   expect(body.next).toBe("50");
 });
+
+// What UI parity D asks the API (P3-demo refresh): each request shape the screens send, answered
+// from the recorded lists as the server would (api/runs_read.py).
+
+test("a process's tasks, 50 a page with the cursor it gives (the process sheet's Load more)", async () => {
+  const many = Array.from({ length: 120 }, (_, i) => ({ id: `tsk_${String(i).padStart(3, "0")}`, process: i % 2 ? "ALIGN" : "QC", state: "succeeded" }));
+  const recorded = { "/runs/run_A/tasks": ok(page(many)) };
+  const get = (q: string) => answer(recorded, "GET", new URL(`https://x/api/v1/runs/run_A/tasks?${q}`)).json();
+  const first = await get("process=ALIGN&limit=50");
+  expect(first.items).toHaveLength(50);
+  expect(first.items.every((t: { process: string }) => t.process === "ALIGN")).toBe(true);
+  const second = await get(`process=ALIGN&limit=50&cursor=${first.next}`);
+  expect(second.items).toHaveLength(10);
+  expect(second.next).toBeNull();
+  expect(second.items[0].id).toBe("tsk_101"); // the 51st ALIGN task, after the first page's last
+  expect((await get("process=NONE&limit=50")).items).toEqual([]);
+});
+
+test("the failed tasks, as Why it failed looks up the first to fail, and the Tasks tab's state chips", async () => {
+  expect(await ids(at("/api/v1/runs/run_A/tasks?state=failed&limit=50"))).toEqual(["tsk_2"]);
+  expect(await ids(at("/api/v1/runs/run_A/tasks?state=failed,succeeded&process=MERGE&limit=50"))).toEqual(["tsk_2"]);
+});
+
+test("the recent runs Try a test pipeline reads: GET /runs?limit=50", async () => {
+  const body = await at("/api/v1/runs?limit=50").json();
+  expect(body.items.map((r: { id: string }) => r.id)).toEqual(["run_C", "run_B", "run_A"]);
+  expect(body.next).toBeNull();
+});
+
+// The same requests against the committed recording (web/demo/fixtures.json).
+const FIXTURES = JSON.parse(raw) as Recorded;
+const get = (path: string) => answer(FIXTURES, "GET", new URL(`https://spectio.pages.dev/api/v1${path}`));
+
+test("the recording: every process sheet of every run lists that process's tasks, page by page", async () => {
+  const runs = (await get("/runs?limit=50").json()).items as { id: string }[];
+  expect(runs.length).toBeGreaterThanOrEqual(6);
+  for (const { id } of runs) {
+    const processes = (await get(`/runs/${id}/processes`).json()).items as { process: string; counts: Record<string, number> }[];
+    for (const p of processes) {
+      let cursor: string | null = null;
+      let seen = 0;
+      do {
+        const query: URLSearchParams = new URLSearchParams({ process: p.process, limit: "50", ...(cursor ? { cursor } : {}) });
+        const body: { items: { process: string }[]; next: string | null } = await get(`/runs/${id}/tasks?${query}`).json();
+        expect(body.items.length).toBeLessThanOrEqual(50);
+        expect(body.items.every((t) => t.process === p.process)).toBe(true);
+        seen += body.items.length;
+        cursor = body.next;
+      } while (cursor);
+      expect(seen).toBe(Object.values(p.counts).reduce((a, b) => a + b, 0));
+    }
+  }
+});
+
+test("the recording: the failed run's first failed task is among its failed tasks", async () => {
+  const run = await get("/runs/run_01M68WEQRQPTPJ70JFS8VSQXHP").json();
+  const failed = await get("/runs/run_01M68WEQRQPTPJ70JFS8VSQXHP/tasks?state=failed&limit=50").json();
+  expect(failed.items.map((t: { id: string }) => t.id)).toContain(run.failure.task_id);
+});
+
+test("the recording: a run launched with non-default parameters shows them", async () => {
+  const runs = (await get("/runs?limit=50").json()).items as { id: string }[];
+  const params = await Promise.all(runs.map(async ({ id }) => (await get(`/runs/${id}`).json()).params as Record<string, unknown>));
+  expect(params.some((p) => p.fail_mode === "flaky" && p.chunks === 6)).toBe(true);
+});
+
+test.each(["synthetic", "synthetic-smk", "nf-core-demo"])(
+  "the recording: /launch?location= loads %s, with the four parameter groups",
+  async (name) => {
+    const r = get(`/workflows:inspect?${new URLSearchParams({ location: `/g/demo-lab/pipelines/${name}` })}`);
+    expect(r.status).toBe(200);
+    const schema = (await r.json()).schema as { $defs?: Record<string, { title: string }> };
+    expect(Object.values(schema.$defs ?? {}).map((d) => d.title)).toEqual(["Input/output options", "Scenario", "Failure injection", "Resources"]);
+  },
+);
