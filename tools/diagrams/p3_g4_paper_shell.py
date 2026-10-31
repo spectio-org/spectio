@@ -25,6 +25,8 @@ Every fact comes from branch autopilot/P3-G4 at 7c5737c8 (base 330ae6b2):
 - web/src/shell/theme.ts: THEME_KEY "spectio-color-scheme", localStorageColorSchemeManager,
   defaultColorScheme "auto"; role tokens of design/tokens/spectio-tokens.css as --sp-* variables;
 - web/src/shell/shell.test.tsx: VERSION node login1, executor slurm; the run id run_01K8T2F1XT;
+  the drawn foot follows the app-launch shot instead, "LOCAL · server on login1 · your account
+  alice": in 0.0.1 the screens are served only with executor local (inbox 86, dev-env §15.3 req. 17);
   "/runs/%E0" keeps the shell; widths 1440, 1024 and 390 px;
 - inbox 89 (docs/reviews/inbox.md): rules 1 to 6, assumed (a), pending Thomas;
 - the review rounds, from the step's worker report of 2026-10-30 (record docs/reviews/code/P3-G4.md):
@@ -141,7 +143,7 @@ def sidebar(s: Sketch, x: float, y: float, h: float, *, open_: bool) -> None:
     s.line(x + 6, y + h - 62, x + w - 6, y + h - 62, amount=0.3, passes=1, colour=s.t.muted, width=1)
     if open_:
         pill(s, x + 6, y + h - 54, w - 12, "0.0.1 online", "done", size=10.5, h=18)
-        s.text(x + 9, y + h - 20, "SLURM · server", size=9.5, anchor="start", colour=s.t.dim)
+        s.text(x + 9, y + h - 20, "LOCAL · server", size=9.5, anchor="start", colour=s.t.dim)
         s.text(x + 9, y + h - 8, "on login1", size=9.5, anchor="start", colour=s.t.dim)
     else:
         s.rect(Box(x + 8, y + h - 52, 20, 16, "done"), rx=8, colour=s.t.dim)
@@ -308,15 +310,18 @@ def build(theme: Theme) -> Sketch:
                 s.rect(Box(cx, y, 26, 26, "done" if fixed else "neutral"), rx=3,
                        colour=t.accent if major else None)
                 if major:
-                    s.text(cx + 13, y + 19, "M", size=13, weight="bold", colour=t.accent)
+                    s.text(cx + 9, y + 19, "M", size=13, weight="bold", colour=t.accent)
+                if fixed:
+                    s.tick(cx + (19 if major else 13), y + 12, size=4 if major else 6, width=2)
                 cx += 30
         s.text(x + 300, y + 18, verdict, size=13.5, anchor="start")
     ly = REV + 186
     s.rect(Box(x + 44, ly - 14, 18, 18, "done"), rx=3)
+    s.tick(x + 53, ly - 6, size=5, width=2)
     s.text(x + 70, ly, "fixed on the branch", size=12.5, anchor="start", colour=t.dim)
     s.rect(Box(x + 220, ly - 14, 18, 18, "neutral"), rx=3)
     s.text(x + 246, ly, "minor, left open", size=12.5, anchor="start", colour=t.dim)
-    s.rect(Box(x + 390, ly - 14, 18, 18, "done"), rx=3, colour=t.accent)
+    s.rect(Box(x + 390, ly - 14, 18, 18, "neutral"), rx=3, colour=t.accent)
     s.text(x + 399, ly, "M", size=11, weight="bold", colour=t.accent)
     s.text(x + 416, ly, "major", size=12.5, anchor="start", colour=t.dim)
     s.text(x, ly + 30, "IDs restart each round: R1 CR-03 and R2 CR-02 are the same pill fix,", size=13,
