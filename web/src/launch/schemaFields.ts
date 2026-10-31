@@ -187,7 +187,8 @@ export function buildParams(fields: Field[], values: Values, rows: Row[]): Recor
   const sent = new Map(fields.map((f) => [f, paramValue(f, own(values, f.key))]));
   const touched = new Set(fields.filter((f) => f.path.length > 1 && sent.get(f) !== undefined).map((f) => f.path[0]));
   for (const field of fields) {
-    const value = sent.get(field) ?? (touched.has(field.path[0]) && field.path.length > 1 ? field.default : undefined);
+    const set = sent.get(field); // a JSON null typed in is a value, not "unset"
+    const value = set !== undefined ? set : touched.has(field.path[0]) && field.path.length > 1 ? field.default : undefined;
     if (value === undefined) continue;
     let at = params;
     for (const part of field.path.slice(0, -1)) at = (at[part] ??= Object.create(null)) as Record<string, unknown>;

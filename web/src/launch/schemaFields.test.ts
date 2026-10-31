@@ -122,6 +122,8 @@ describe("schemaFields", () => {
     // CR-P3PARB-04 r2: species goes at its default; build has none and stays out; pca is untouched
     expect(buildParams(all, { "ref.release": "114", "ref.species": "" }, [])).toEqual({ ref: { species: "homo_sapiens", release: 114 } });
     expect(buildParams(all, {}, [])).toEqual({});
+    const [m] = schemaFields({ type: "object", properties: { m: { type: "object", properties: { j: { type: "array", default: [1] } } } } }, [], true);
+    expect(buildParams(m.fields, { "m.j": "null" }, [])).toEqual({ m: { j: null } }); // a typed null is a value
     expect(buildParams([], {}, [{ key: " outdir ", value: "r" }, { key: "", value: "x" }])).toEqual({ outdir: "r" });
   });
 
