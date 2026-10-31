@@ -54,6 +54,16 @@ def test_spa_routes_serve_index(web: TestClient) -> None:
         assert r.headers["x-content-type-options"] == "nosniff"
 
 
+def test_head_on_screens_and_assets(web: TestClient) -> None:
+    """A HEAD gets the GET's status and headers, no body (FU-P3-22: it was 405)."""
+    for path in ("/", "/runs", "/runs/run_01K8T2F1XTVRES000000000000", "/assets/index-AbC1.js"):
+        r = web.head(path)
+        assert r.status_code == 200, path
+        assert r.content == b""
+        assert "content-security-policy" in r.headers
+    assert web.head("/nope").status_code == 404
+
+
 def test_assets_types_and_cache(web: TestClient) -> None:
     types = {
         "index-AbC1.js": "text/javascript; charset=utf-8",
@@ -149,6 +159,6 @@ def test_missing_dist_says_how_to_build(settings: Settings, writer: Writer, tmp_
     r = missing.get("/")
     assert r.status_code == 200
     assert r.headers["content-type"].startswith("text/plain")
-    assert "npm --prefix web run build" in r.text
+    assert "npm --prefix web ci --ignore-scripts && npm --prefix web run build" in r.text
     assert missing.get("/launch").status_code == 404
     assert missing.get("/api/v1/version").status_code == 200  # the API does not need the screens

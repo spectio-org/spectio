@@ -15,7 +15,7 @@ from fastapi.testclient import TestClient
 from spectio.config import Settings
 from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
-from spectio_server.api.stream import Stream
+from spectio_server.api.stream import MAX_CLIENTS, Stream
 from spectio_server.app import NO_API, create_app
 from spectio_server.projector.ingest import ingest
 from spectio_server.store.writer import Writer
@@ -188,12 +188,9 @@ def test_new_run_sends_a_delta(served: str, writer: Writer, settings: Settings) 
     assert json.loads(data)["run_id"] == RUN
 
 
-def test_client_cap_holds_under_concurrent_opens(
-    served: str, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_client_cap_holds_under_concurrent_opens(served: str) -> None:
     """Opens that arrive together cannot pass the cap (CR-P3T18-02, SEC-P3T18-02), and a closed
     stream frees its slot."""
-    from spectio_server.api import stream as stream_mod
 
     async def scenario() -> tuple[Counter[int], int]:
         async with httpx2.AsyncClient(base_url=served, timeout=10) as http:
@@ -212,7 +209,7 @@ def test_client_cap_holds_under_concurrent_opens(
             return codes, again.status_code
 
     codes, again = asyncio.run(scenario())
-    assert codes == Counter({200: stream_mod.MAX_CLIENTS, 429: 40 - stream_mod.MAX_CLIENTS})
+    assert codes == Counter({200: MAX_CLIENTS, 429: 40 - MAX_CLIENTS})
     assert again == 200
 
 

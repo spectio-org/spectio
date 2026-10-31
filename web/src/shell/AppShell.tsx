@@ -4,6 +4,7 @@ import { Outlet } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { type ServerVersion, getVersion } from "../api";
 import { ServerContext } from "../server";
+import { CrumbContext } from "./crumb";
 import { Sidebar } from "./Sidebar";
 import { TabBar } from "./TabBar";
 import { TopBar } from "./TopBar";
@@ -32,19 +33,22 @@ export function AppShell() {
   // The reader's own fold wins over the breakpoint's default.
   const [chosen, setChosen] = useState<boolean | null>(null);
   const open = chosen ?? !tablet;
+  const [crumb, setCrumb] = useState<string | null>(null);
 
   return (
     <ServerContext.Provider value={server}>
-      <div className="sp-shell" data-layout={phone ? "phone" : tablet ? "tablet" : "desktop"}>
-        <TopBar phone={phone} server={server} down={down} />
-        <div className="sp-body">
-          {!phone && <Sidebar open={open} onFold={() => setChosen(!open)} server={server} down={down} />}
-          <main className="sp-main">
-            <Outlet />
-          </main>
+      <CrumbContext.Provider value={setCrumb}>
+        <div className="sp-shell" data-layout={phone ? "phone" : tablet ? "tablet" : "desktop"}>
+          <TopBar phone={phone} server={server} down={down} crumb={crumb} />
+          <div className="sp-body">
+            {!phone && <Sidebar open={open} onFold={() => setChosen(!open)} server={server} down={down} />}
+            <main className="sp-main">
+              <Outlet />
+            </main>
+          </div>
+          {phone && <TabBar />}
         </div>
-        {phone && <TabBar />}
-      </div>
+      </CrumbContext.Provider>
     </ServerContext.Provider>
   );
 }
