@@ -126,7 +126,7 @@ export function HomePage() {
                         <span>
                           <StateWord state={run.state} /> <RunLink run={run} />
                           <span className="sp-muted">
-                            {run.workflow.name ?? run.workflow.location} · {stateContext(run)}
+                            {[run.workflow.name ?? run.workflow.location, stateContext(run)].filter(Boolean).join(" · ")}
                           </span>
                         </span>
                         <span>{when(run.ended_at)}</span>

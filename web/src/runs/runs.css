@@ -94,7 +94,9 @@
   font-size: 14px;
 }
 .sp-sub > * + *::before {
-  content: " · ";
+  /* a margin, not spaces: an inline-flex item (the state word) drops leading whitespace */
+  content: "·";
+  margin: 0 0.4em;
   color: var(--sp-text-faint);
 }
 .sp-live[data-live="reconnecting"] {

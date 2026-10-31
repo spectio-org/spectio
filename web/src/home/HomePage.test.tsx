@@ -40,3 +40,17 @@ test('home with no run reads "No runs yet."', async () => {
   expect(await screen.findByText("No runs yet.")).toBeInTheDocument();
   expect(screen.queryByRole("region", { name: "Active runs" })).toBeNull();
 });
+
+test("a finished run whose failure has no message ends its line without a separator", async () => {
+  const failed = run({ ...ended, state: "failed", failure: { class: "tool_error", message: "", task_id: null, attempt_n: 1 } });
+  serve({
+    "/api/v1/runs:summary": { groups: [{ key: "failed", count: 1 }] },
+    "/api/v1/runs?sort=-ended_at": { items: [failed], next: null },
+    "/api/v1/runs?state=": { items: [], next: null },
+    "/api/v1/runs": { items: [failed], next: null },
+  });
+  app("/");
+  const finished = await screen.findByRole("region", { name: "Finished recently" });
+  const row = (await within(finished).findByRole("link", { name: "Open run fetch-geo-2610" })).closest("li")!;
+  expect(within(row).getByText("plate-qc")).toBeInTheDocument();
+});
