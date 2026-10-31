@@ -536,3 +536,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 - P1 Task 28, milestone M8 (new Progress page P3-M8): each attempt's files listed and served read-only through a confined fd-relative walk in a bounded file pool; `.command.run` redacted by a fail-closed lexer; escape sequences stripped; `attempts.work_dir`, `native_id`, `logs` kept only under the run's roots (migration 0006); head and nf-spectio changes. The stage freeze reads in its own 2-thread pool (SEC-P3T27-03 closed, 10 s writer bound stated).
 - Workflow p3-task in 4 rounds (code approve 0/2/14, security approve 1/1/20, the blocker and majors fixed), simplifier -13/+1, doc-reviewer approve 13. Orchestrator gate on 02c9c3d: 611 passed; SAST 0; gitleaks clean. Every check green; squash 9a23b34 (`Release-As: 0.0.1`). Cost recorded: 58 USD.
 - Out of scope, by the brief: the Snakemake plugin side (Task 7), the `slurm-mini` check (Task 22), the screens (Task 32). Inbox #94 (assumed), FU-P3-31. Next: promotion, then P1 Task 29.
+
+## 2026-10-31 · Promotion #117 merged: P1 Task 28 on main; P1 Task 29 launched
+
+- Integration promoted to `main` by merge commit eb450e1 (every check green on fdcf43b; two docs runs cancelled by the label run, their reruns green).
+- P1 Task 29 (failure summary and resources per job) launched: workflow wf_3d469739-e12, base fdcf43b. Same scope as Task 28: the Snakemake side server-only (plugin to Task 7), `sacct` through a fake on PATH (the `slurm-mini` check to Task 22); `log_tail` through Task 28's confined reader. Numbers reserved: inbox #95, FU-P3-32.
