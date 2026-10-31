@@ -29,6 +29,11 @@ forbidden:
   - '(?i)gmail'
   - '[\w.+-]+@(?!example\.org)[\w-]+(?:\.[\w-]+)*\.[A-Za-z]{2,}'
   - '/root\b'
+  # the capture host's own account and bare host name (live shots, CR-P3G4-05 / SEC-P3G4-01 r2):
+  # the account `root` as a page or a cast names it ("your account root", "user: root"); a bare
+  # `root` is product text ("no root", "Outputs root") and the React mount `id="root"`
+  - '(?i)\b(?:account|user(?:name)?)\W{0,3}root\b'
+  - '\bvm\b'
   - '/home/\w+'
   - '/tmp/claude'
   - '(?i)tailscale|\.ts\.net'

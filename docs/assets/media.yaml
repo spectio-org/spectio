@@ -58,8 +58,13 @@ media:
     kind: screenshot
     # live: needs a running `spectio serve` (SPECTIO_URL) and the synthetic Nextflow pipeline
     # copied to a path free of forbidden terms (SPECTIO_DEMO_PIPELINE), tools/media/README.md
-    generator: python3 tools/media/shots.py run --shot app-launch --theme light
-    outputs: [docs/assets/shots/app-launch_light.webp]
+    generator: python3 tools/media/shots.py run --shot app-launch --theme both
+    outputs: [docs/assets/shots/app-launch_light.webp, docs/assets/shots/app-launch_dark.webp]
+  - id: app-launch-phone
+    kind: screenshot
+    # live, as app-launch, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-launch-phone --theme both
+    outputs: [docs/assets/shots/app-launch-phone_light.webp, docs/assets/shots/app-launch-phone_dark.webp]
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
@@ -436,6 +441,14 @@ media:
       - docs/assets/diagrams/p3-t19-screens_dark.svg
       - docs/assets/diagrams/p3-t19-screens_light.png
       - docs/assets/diagrams/p3-t19-screens_dark.png
+  - id: p3-g4-paper-shell
+    kind: diagram
+    generator: python3 tools/diagrams/p3_g4_paper_shell.py
+    outputs:
+      - docs/assets/diagrams/p3-g4-paper-shell_light.svg
+      - docs/assets/diagrams/p3-g4-paper-shell_dark.svg
+      - docs/assets/diagrams/p3-g4-paper-shell_light.png
+      - docs/assets/diagrams/p3-g4-paper-shell_dark.png
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines

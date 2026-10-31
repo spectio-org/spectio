@@ -1015,3 +1015,12 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Reserved, not assumed:** whether a session-less API, and now the screens, may be served at all before Tasks 12 to 16 (inbox #86).
 - **Not yet applied:** P1 Task 19's interface (the stack versions, the extra files, the UI tests), at the next `/apply-findings`.
 - **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions): follow-up FU-P3-22 (screen-serving hardening); FU-P3-21 moves to P1 Task 20 (#88 rule 4).
+
+## 2026-10-30 — The 0.0.1 Paper shell, written into ui-spec §7; screen headers into dev-env §15.3 (P3 G4, inbox #89)
+
+- **Context.** P3 G4 ([P2 §10.5](../plans/P2-execution.md#105-g4-the-paper-shell-in-web)) replaced Task 19's thin shell with the Paper shell in `web/src/shell/`, after the G1 boards. It also fixed SEC-P3T19-03, which follow-up FU-P3-22 had due before P1 Task 20.
+- **Applied (assumed — standing rule, [inbox #89](../reviews/inbox.md#89-assumed-the-paper-shell-in-web-g4) (a); [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** one dated note and one requirement extended. No section number changed.
+    - [ui-spec §7](../specs/ui-spec.md#7-consistency-with-depictio-reuse-plan), note 2026-10-30: the 0.0.1 shell as built: tokens, scheme, layout by breakpoint, breadcrumbs from the path, where the server status shows, fonts not shipped (#89 rules 1 to 5 and 7).
+    - [Dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 17: every screen answer also carries `Referrer-Policy: no-referrer` and `Cross-Origin-Opener-Policy: same-origin` (SEC-P3T19-03); the item leaves the req. 17 "Open" line.
+- **Not yet applied:** UX-G1-09 (ui-spec §2 and §4.11 still put the phone colour mode in More), at the next `/apply-findings`.
+- **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions).

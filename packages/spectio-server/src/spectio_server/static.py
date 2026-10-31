@@ -5,7 +5,8 @@ only `/assets/<name>` answers a file: one plain name, a known web type, opened u
 with `O_NOFOLLOW` at each step, so no symlink is followed and no path leaves the directory.
 Hashed assets are cached for a year, `index.html` is revalidated, and every answer carries a
 CSP that allows only this origin and no inline script (Mantine sets inline styles, so styles
-allow them). `app.create_app` mounts these routes only with the API (inbox #80, #86).
+allow them), with `Referrer-Policy: no-referrer` and `Cross-Origin-Opener-Policy: same-origin`
+(SEC-P3T19-03). `app.create_app` mounts these routes only with the API (inbox #80, #86).
 """
 
 import os
@@ -35,7 +36,13 @@ CSP = (
     "img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; "
     "form-action 'self'; frame-ancestors 'none'"
 )
-HEADERS = {"Content-Security-Policy": CSP, "X-Content-Type-Options": "nosniff"}
+HEADERS = {
+    "Content-Security-Policy": CSP,
+    "X-Content-Type-Options": "nosniff",
+    # Run URLs carry run IDs: send no referrer out, and keep pages opened from here apart.
+    "Referrer-Policy": "no-referrer",
+    "Cross-Origin-Opener-Policy": "same-origin",
+}
 NOT_BUILT = (
     "The screens are not built: run `npm --prefix web ci && npm --prefix web run build`, "
     "then start spectio serve again."
