@@ -97,6 +97,8 @@ const GROUP_ICONS: Record<string, string> = {
   "question-circle": ICONS.info,
   info: ICONS.info,
   "info-circle": ICONS.info,
+  "exclamation-triangle": ICONS.alert,
+  bug: ICONS.alert,
 };
 
 /** The line icon of a schema group's `fa_icon` ("fas fa-folder-open"), or the neutral one. */

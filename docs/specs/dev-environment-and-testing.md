@@ -381,7 +381,7 @@ The front-end has a build flag that replaces the API with fixtures generated fro
 5. **A banner on every page:** "Demo: recorded data from a test server, read-only", that the times are moved, and that `nf-core/demo` is a renamed copy of the synthetic test pipeline, not an nf-core pipeline; a link to the docs. It wraps at every width; the sticky sidebar takes its measured height off its own (`--sp-demo-banner-h`).
 6. **Where.** `previews.yml` builds it after the MkDocs build and copies it to `site/demo`, so it is at `https://spectio.pages.dev/demo/` once on `main`, and at `/demo/` of every PR preview. No page of the docs may be at `docs/demo.md` or `docs/demo/`: MkDocs would then create `site/demo/` and the copy would land in `site/demo/dist-demo/` (CR-P3DEMO-01 r1).
 
-Open before it is relied on (follow-up FU-P3-28): no CSP or `_headers` for `/demo/` (only the stub keeps requests in the page, SEC-P3DEMO-04 r1); the npm tree runs in the job that later holds `CLOUDFLARE_API_TOKEN` (SEC-P3DEMO-03 r1); no CI job runs `tools/media/test_record_demo.py`.
+Open before it is relied on (follow-up FU-P3-29): no CSP or `_headers` for `/demo/` (only the stub keeps requests in the page, SEC-P3DEMO-04 r1); the npm tree runs in the job that later holds `CLOUDFLARE_API_TOKEN` (SEC-P3DEMO-03 r1); no CI job runs `tools/media/test_record_demo.py`.
 
 ### 7.4 The public instance (from the public beta)
 
@@ -473,6 +473,12 @@ Both engines produce byte-identical results (the counts matrix compared with `di
 - Snakemake `--workflow-profile profiles/slurm`.
 
 These run against sind and kind in T3 and T4.
+
+*Note 2026-10-31, parameter schemas ([P3-M4 · UI parity D](../progress/W5/P3-M4.md#ui-parity-d-run-detail-sheets-searchable-logs-test-pipelines-in-launch); assumed — standing rule (unattended mode), [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30); the request: Thomas, 2026-10-31, "params quasi vides pour les wf"):* both twins describe the parameters they read, so the Launch form shows real groups:
+- `nextflow/nextflow_schema.json`, nf-core style (JSON Schema draft 2020-12, `$defs` groups with `fa_icon`), from `main.nf` and `nextflow.config`;
+- `snakemake/workflow/schemas/config.schema.yaml`, the same groups, from the Snakefile's `config.setdefault` keys. Only Spectio's inspect reads it; the Snakefile does not validate against it.
+
+The four groups are Input/output options, Scenario, Failure injection and Resources. `fail_mode` and the target process or rule are enums, so a launch with another value is refused with a `422`. The scenarios' behaviour is unchanged. No group sets a `maximum` yet, and `python_image` accepts any string (SEC-P3PARD-02, -03, follow-up FU-P3-28).
 
 ### 10.2 Real pipelines (`tests/pipelines/real/corpus.yaml`)
 

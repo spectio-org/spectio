@@ -17,6 +17,7 @@ import {
   type Engine,
   type FieldError,
   type Inspected,
+  type Run,
   inspect,
   launch,
 } from "../api";
@@ -30,6 +31,7 @@ import { PageHead } from "../shell/PageHead";
 import { usePhone } from "../shell/layout";
 import { EngineButtons } from "./EngineButtons";
 import { guessEngine } from "./guessEngine";
+import { TryPipelines } from "./TryPipelines";
 import {
   type Field,
   type Row,
@@ -101,7 +103,17 @@ const PROFILE_HINTS: Record<Engine, string> = {
   snakemake: "From the pipeline's profiles/ directory · passed as --workflow-profile",
 };
 
-export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void }) {
+/** `recent`: the server's recent runs, for "Try a test pipeline" (null while they load: nothing
+ * shown). `initialLocation`: a pipeline to fill in and load at once (/launch?location=). */
+export function LaunchPage({
+  onLaunched,
+  recent = null,
+  initialLocation,
+}: {
+  onLaunched: (id: string) => void;
+  recent?: Run[] | null;
+  initialLocation?: string;
+}) {
   const server = useServer();
   const phone = usePhone();
   const [location, setLocation] = useState("");
@@ -116,6 +128,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
   const [errors, setErrors] = useState<Errors>({});
   const [sending, setSending] = useState(false);
   const inFlight = useRef<AbortController | null>(null);
+  const revisionField = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     document.title = "Launch a workflow · Spectio";
@@ -144,12 +157,14 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
     setErrors({});
   }
 
-  async function load() {
-    if (location.trim() === "") {
+  async function load(at = location, rev = revision) {
+    const where = at.trim();
+    const isRepo = where !== "" && !where.startsWith("/");
+    if (where === "") {
       setErrors({ location: "Give an absolute path or a repository." });
       return;
     }
-    if (repo && revision.trim() === "") {
+    if (isRepo && rev.trim() === "") {
       setErrors({ revision: "Give a tag, branch or commit." });
       return;
     }
@@ -159,7 +174,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
     setLoading(true);
     setErrors({});
     try {
-      const found = await inspect(location.trim(), repo ? revision.trim() : null, controller.signal);
+      const found = await inspect(where, isRepo ? rev.trim() : null, controller.signal);
       setLoaded(found);
       setEngine(guessEngine(found.engine_files));
       setProfile("");
@@ -179,6 +194,17 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
       }
     }
   }
+
+  /** A pipeline picked (Try a test pipeline, /launch?location=): filled in, and loaded when it is a
+   * directory; a repository waits for its revision. */
+  function pick(at: string) {
+    edit(setLocation, at);
+    if (at.startsWith("/")) void load(at, "");
+    else setTimeout(() => revisionField.current?.focus(), 0);
+  }
+  useEffect(() => {
+    if (initialLocation) pick(initialLocation);
+  }, [initialLocation]);
 
   function reason(): string | null {
     if (loading) return "Wait for the pipeline to load";
@@ -285,6 +311,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
         }
       />
       <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card>
+        <TryPipelines runs={recent} onPick={pick} />
         <Group align="flex-start" gap="sm" wrap="wrap">
           <TextInput
             style={{ flex: "999 1 280px" }}
@@ -311,6 +338,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
           {repo && (
             <TextInput
               style={{ flex: "1 1 220px", maxWidth: 260 }}
+              ref={revisionField}
               label="Revision"
               inputWrapperOrder={["label", "input", "description", "error"]}
               withAsterisk
@@ -327,7 +355,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
             type="button"
             variant="default"
             mt={24}
-            onClick={load}
+            onClick={() => load()}
             aria-busy={loading || undefined}
           >
             {loading ? (repo ? "Fetching…" : "Loading…") : "Load"}

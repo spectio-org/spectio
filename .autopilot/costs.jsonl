@@ -29,3 +29,5 @@
 {"at": 1793439830.4528506, "usd": 70.0, "kind": "build", "step": "P3-parA"}
 {"at": 1793446643.5617924, "usd": 60.0, "kind": "build", "step": "P3-parB"}
 {"at": 1793459905.719671, "usd": 45.0, "kind": "build", "step": "P3-parC"}
+{"at": 1793464508.3578699, "usd": 40.0, "kind": "build", "step": "P3-demo"}
+{"at": 1793474604.363445, "usd": 45.0, "kind": "build", "step": "P3-parD"}

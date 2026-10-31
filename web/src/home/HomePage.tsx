@@ -248,12 +248,19 @@ export function HomePage() {
             </div>
             <div className="sp-runs">
               <FoldSection id="home-pipelines" screen="home" icon={ICONS.route} title="Your pipelines" summary={`${pipelines.length} directories`} card>
-                <p className="sp-muted">Pipeline directories of your recent runs.</p>
+                <p className="sp-muted">Pipeline directories of your recent runs: open one in Launch.</p>
                 <ul className="sp-quick">
                   {pipelines.map((run) => (
                     <li key={run.workflow.location}>
-                      <Pipeline run={run} size={18} />
-                      <span className="sp-mono sp-muted">{run.workflow.location}</span>
+                      <Link
+                        to="/launch"
+                        search={{ location: run.workflow.location }}
+                        className="sp-quick-link"
+                        aria-label={`Launch ${run.workflow.name ?? run.workflow.location}, ${run.workflow.location}`}
+                      >
+                        <Pipeline run={run} size={18} />
+                        <span className="sp-mono sp-muted">{run.workflow.location}</span>
+                      </Link>
                     </li>
                   ))}
                 </ul>
