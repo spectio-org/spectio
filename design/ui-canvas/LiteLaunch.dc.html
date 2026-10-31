@@ -32,6 +32,12 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 .btn-go:disabled{background:#C4C7D4;cursor:not-allowed}
 .btn-load{flex-shrink:0;height:38px;padding:0 16px;border-radius:10px;border:none;background:#F6F2FE;color:#4D368B;font:600 13px 'Inter',sans-serif;cursor:pointer}
 @media (min-width: 1200px){.launch-aside{position:sticky;top:8px}}
+/* One parameter per line (Thomas, 2026-10-31): the name with its type, default and state, the input, the help under it. */
+.prow{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:baseline;gap:5px 12px;padding:10px 0;border-top:1px solid #EEEFF5}
+.prow > *{grid-column:1 / -1}
+.prow > label,.prow > .pname{grid-column:1}
+.prow > .pmeta{grid-column:2;grid-row:1;font-size:12px;color:#6E7287;text-align:right}
+.plist{display:flex;flex-direction:column}
 </style>
 </helmet>
 <div style="width: 100%; height: 100vh; min-height: 760px; box-sizing: border-box; background: #FFFFFF; color: #0F1020; font-family: 'Inter', system-ui, sans-serif; display: grid; grid-template-rows: auto minmax(0, 1fr); grid-template-columns: auto minmax(0, 1fr);">
@@ -112,27 +118,31 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
               <span style="font-size: 12.5px; font-weight: 600; color: #157A4B; white-space: nowrap;">2 required · filled</span><span style="font-size: 12.5px; font-weight: 600; color: #8F5806; white-space: nowrap;">2 changed</span>
               <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
             </summary>
-            <div style="padding: 4px 16px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 12px;">
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div class="plist" style="padding: 4px 16px 16px; ">
+              <div class="prow">
                 <label for="p-input" style="font-size: 13px; font-weight: 600;">input <span style="color: #B02A2A;" aria-hidden="true">*</span></label>
+                <span class="pmeta">string · file-path</span>
                 <input id="p-input" type="text" value="/g/demo-lab/rnaseq/liver-tc/samplesheet.csv" required aria-required="true" style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">
-                <span style="font-size: 12px; color: #4D5065;">Path to a comma-separated file with the samples. string · file-path</span>
+                <span style="font-size: 12px; color: #4D5065;">Path to a comma-separated file with the samples.</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div class="prow">
                 <label for="p-outdir" style="font-size: 13px; font-weight: 600;">outdir <span style="color: #B02A2A;" aria-hidden="true">*</span></label>
+                <span class="pmeta">string · directory-path</span>
                 <input id="p-outdir" type="text" value="/g/demo-lab/rnaseq/2026-10-25" required aria-required="true" aria-describedby="p-outdir-warn p-outdir-help" style="font-family: 'JetBrains Mono', monospace; font-size: 12px; box-shadow: inset 0 0 0 1px #D9890B;">
                 <span id="p-outdir-warn" style="font-size: 12.5px; color: #8F5806; font-weight: 600; line-height: 1.4;">Warning: same as rnaseq-2026-10-25. Change it to keep the two runs' results apart.</span>
-                <span id="p-outdir-help" style="font-size: 12px; color: #4D5065;">Where the results are saved. string · directory-path</span>
+                <span id="p-outdir-help" style="font-size: 12px; color: #4D5065;">Where the results are saved.</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div class="prow">
                 <label for="p-email" style="font-size: 13px; font-weight: 600;">email</label>
+                <span class="pmeta">string</span>
                 <input id="p-email" type="text" placeholder="you@example.org">
-                <span style="font-size: 12px; color: #4D5065;">Email address for the completion summary. string</span>
+                <span style="font-size: 12px; color: #4D5065;">Email address for the completion summary.</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div class="prow">
                 <label for="p-multiqc-title" style="font-size: 13px; font-weight: 600;">multiqc_title</label>
+                <span class="pmeta">string</span>
                 <input id="p-multiqc-title" type="text">
-                <span style="font-size: 12px; color: #4D5065;">Title of the MultiQC report. string</span>
+                <span style="font-size: 12px; color: #4D5065;">Title of the MultiQC report.</span>
               </div>
             </div>
           </details>
@@ -142,21 +152,22 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
               <span style="font-size: 12.5px; font-weight: 600; color: #8F5806;">2 changed</span>
               <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
             </summary>
-            <div style="padding: 4px 16px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px 12px;">
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+            <div class="plist" style="padding: 4px 16px 16px; ">
+              <div class="prow">
                 <label for="p-aligner" style="font-size: 13px; font-weight: 600;">aligner</label>
+                <span class="pmeta">enum · default star_salmon</span>
                 <select id="p-aligner"><option>star_salmon</option><option>star_rsem</option><option>hisat2</option></select>
-                <span style="font-size: 12px; color: #4D5065;">enum · default star_salmon</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div class="prow">
                 <label for="p-min-mapped" style="font-size: 13px; font-weight: 600;">min_mapped_reads</label>
+                <span class="pmeta">number · changed · default 5</span>
                 <input id="p-min-mapped" type="number" value="10">
-                <span style="font-size: 12px; color: #4D5065;">changed · default 5 · minimum % of uniquely mapped reads</span>
+                <span style="font-size: 12px; color: #4D5065;">Minimum % of uniquely mapped reads.</span>
               </div>
-              <div style="display: flex; flex-direction: column; gap: 5px;">
+              <div class="prow">
                 <label for="p-pseudo" style="font-size: 13px; font-weight: 600;">pseudo_aligner</label>
+                <span class="pmeta">enum · changed · no default</span>
                 <select id="p-pseudo"><option>salmon</option><option>kallisto</option></select>
-                <span style="font-size: 12px; color: #4D5065;">changed · no default · enum salmon, kallisto</span>
               </div>
             </div>
           </details>
@@ -167,7 +178,7 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
                 <span style="font-size: 12.5px; color: #6E7287;">{{c.state}}</span>
                 <svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg>
               </summary>
-              <div style="padding: 2px 16px 16px; display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px;">
+              <div class="plist" style="padding: 2px 16px 16px; ">
                 <sc-for list="{{c.fields}}" as="f" hint-placeholder-count="3"><label style="display: flex; flex-direction: column; gap: 5px; font-size: 13px; font-weight: 600;">{{f.k}}<input value="{{f.v}}" placeholder="{{f.p}}"><span style="font-weight: 400; font-size: 12px; color: #4D5065;">{{f.h}}</span></label></sc-for>
               </div>
             </details>

@@ -1,5 +1,5 @@
 import { Button, Modal, Tabs } from "@mantine/core";
-import { Link } from "@tanstack/react-router";
+import { Link, useNavigate, useSearch } from "@tanstack/react-router";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ApiError,
@@ -16,6 +16,7 @@ import {
   listProcesses,
   listStages,
   listTasks,
+  logUrl,
 } from "../api";
 import { ICONS, Icon } from "../icons";
 import { LiveStatus, useFrames } from "../live";
@@ -23,7 +24,8 @@ import { useServer } from "../server";
 import { usePageCrumb } from "../shell/crumb";
 import { FoldSection } from "../shell/FoldSection";
 import { usePhone } from "../shell/layout";
-import { RunHeader } from "./RunHeader";
+import { copyText } from "./CopyMenu";
+import { RunHeader, runDirectory } from "./RunHeader";
 import { Word, runName } from "./RunState";
 import {
   classWord,
@@ -45,6 +47,17 @@ const LOGS: { source: LogSource; label: string }[] = [
   { source: "head-err", label: "Head errors" },
   { source: "engine", label: "Engine log" },
 ];
+
+const TABS = ["summary", "tasks", "parameters", "logs"] as const;
+type Tab = (typeof TABS)[number];
+
+/** The run's URL keeps its tab, and the log source on Logs (?tab=logs&source=engine), so a view
+ * can be linked and reloaded; anything else falls back to the Summary and the engine log. */
+export function runSearch(search: Record<string, unknown>): { tab?: Exclude<Tab, "summary">; source?: LogSource } {
+  const tab = TABS.find((t) => t !== "summary" && t === search.tab) as Exclude<Tab, "summary"> | undefined;
+  if (tab !== "logs") return tab ? { tab } : {};
+  return { tab, source: LOGS.find((l) => l.source === search.source)?.source ?? "engine" };
+}
 
 type Words = ReturnType<typeof words>;
 
@@ -277,7 +290,7 @@ function WhyItFailed({ run, onTasks }: { run: RunDetail; onTasks: () => void }) 
 function CopyButton({ text, label, name }: { text: string; label: string; name: string }) {
   const [said, setSaid] = useState<string | null>(null);
   const copy = () =>
-    (navigator.clipboard?.writeText(text) ?? Promise.reject(new Error("no clipboard")))
+    copyText(text)
       .then(() => setSaid("Copied"))
       .catch(() => setSaid("Could not copy: select the text instead"));
   return (
@@ -325,7 +338,7 @@ function LogTail({ id, source, ended, onAll }: { id: string; source: LogSource; 
   const label = LOGS.find((l) => l.source === source)!.label;
   return (
     <>
-      <pre className="sp-code sp-log-tail" tabIndex={0} aria-label={`${label}, last lines`}>
+      <pre className="sp-code sp-log-tail sp-nowrap" tabIndex={0} aria-label={`${label}, last lines`}>
         {text === null ? "Loading…" : <LogLines text={text} />}
       </pre>
       <button type="button" className="sp-link-button" onClick={() => onAll(source)}>
@@ -561,8 +574,16 @@ const DESCRIPTIONS: Record<LogSource, (engine: string) => string> = {
   engine: (engine) => `${engine}'s log of this run`,
 };
 
-/** A log line's level, as a secondary tint: the level word is in the text already. */
-const level = (line: string) => (/\bERROR\b|\bError\b|exception/.test(line) ? "failed" : /\bWARN|\bretry/i.test(line) ? "review" : undefined);
+/** A log line's level, as a secondary tint (LiteRunLogs): the level word is in the text already.
+ * Errors, then warnings and retries, then a task or job done, then Nextflow's progress line; INFO
+ * keeps the viewer's text colour. */
+function level(line: string): string | undefined {
+  if (/\bERROR\b|\bError\b|exception/.test(line)) return "failed";
+  if (/\bWARN|\bretry/i.test(line)) return "review";
+  if (/\bcompleted\b|\bFinished job\b|\(100%\) done/.test(line)) return "ok";
+  if (/\bprogress \d/.test(line)) return "progress";
+  return undefined;
+}
 
 /** A log's lines, each tinted by its level. */
 function LogLines({ text }: { text: string }) {
@@ -574,9 +595,37 @@ function LogLines({ text }: { text: string }) {
   ));
 }
 
-function LogsPanel({ run, source, setSource }: { run: RunDetail; source: LogSource; setSource: (s: LogSource) => void }) {
+/** The log's file on the server, as the runner writes it under the run's launch directory
+ * (api/logs.py): known for a driven run only. Snakemake's engine log is the newest *.log of a
+ * directory, whose name the API does not serve. */
+function logFile(run: RunDetail, server: ServerVersion | null, source: LogSource): { path: string; note?: string } | null {
+  const directory = runDirectory(run, server);
+  if (!directory) return null;
+  const launch = `${directory}/launch`;
+  if (source === "head-out") return { path: `${launch}/.spectio/head.out` };
+  if (source === "head-err") return { path: `${launch}/.spectio/head.err` };
+  if (run.workflow.engine === "nextflow") return { path: `${launch}/.nextflow.log` };
+  if (run.workflow.engine === "snakemake") return { path: `${launch}/.snakemake/log/`, note: "the newest .log there" };
+  return null;
+}
+
+function LogsPanel({
+  run,
+  server,
+  source,
+  setSource,
+  onTasks,
+}: {
+  run: RunDetail;
+  server: ServerVersion | null;
+  source: LogSource;
+  setSource: (s: LogSource) => void;
+  onTasks: () => void;
+}) {
   const [text, setText] = useState<string | null>(null);
   const [reloads, setReloads] = useState(0);
+  const viewer = useRef<HTMLPreElement>(null);
+  const w = words(run.workflow.engine);
   useEffect(() => {
     const controller = new AbortController();
     setText(null);
@@ -585,7 +634,12 @@ function LogsPanel({ run, source, setSource }: { run: RunDetail; source: LogSour
       .catch((e: ApiError) => controller.signal.aborted || setText(e.status === 404 ? "Not written yet." : `Could not read it: ${e.message}`));
     return () => controller.abort();
   }, [run.id, source, reloads]);
+  // opened at the end: the newest lines
+  useEffect(() => {
+    if (text !== null && viewer.current) viewer.current.scrollTop = viewer.current.scrollHeight;
+  }, [text]);
   const label = LOGS.find((l) => l.source === source)!.label;
+  const file = logFile(run, server, source);
   const download = () => {
     const url = URL.createObjectURL(new Blob([text ?? ""], { type: "text/plain" }));
     const a = document.createElement("a");
@@ -598,8 +652,8 @@ function LogsPanel({ run, source, setSource }: { run: RunDetail; source: LogSour
     setTimeout(() => URL.revokeObjectURL(url), 0);
   };
   return (
-    <section className="sp-runs" aria-label="Logs">
-      <div className="sp-filters">
+    <section className="sp-runs sp-logs" aria-label="Logs">
+      <div className="sp-filters sp-log-tools">
         <div className="sp-segments" role="group" aria-label="Log">
           {LOGS.map((l) => (
             <button key={l.source} type="button" aria-pressed={source === l.source} onClick={() => setSource(l.source)}>
@@ -610,20 +664,48 @@ function LogsPanel({ run, source, setSource }: { run: RunDetail; source: LogSour
         <span className="sp-muted sp-grow">
           {DESCRIPTIONS[source](engineName(run.workflow.engine))} · last 64 KiB · loaded when you open it
         </span>
-        <Button variant="default" leftSection={<Icon path={ICONS.reload} size={15} />} onClick={() => setReloads((n) => n + 1)}>
-          Reload
-        </Button>
-        <Button variant="default" leftSection={<Icon path={ICONS.download} size={15} />} onClick={download} disabled={text === null}>
-          Download last 64 KiB
-        </Button>
+        <span className="sp-actions">
+          <Button variant="default" leftSection={<Icon path={ICONS.reload} size={15} />} onClick={() => setReloads((n) => n + 1)}>
+            Reload
+          </Button>
+          <Button variant="default" leftSection={<Icon path={ICONS.download} size={15} />} onClick={download} disabled={text === null}>
+            Download last 64 KiB
+          </Button>
+          <Button
+            component="a"
+            variant="default"
+            href={logUrl(run.id, source)}
+            target="_blank"
+            rel="noopener noreferrer"
+            leftSection={<Icon path={ICONS.externalLink} size={15} />}
+          >
+            Open raw<span className="sp-sr"> (opens in a new tab)</span>
+          </Button>
+        </span>
       </div>
-      <pre className="sp-log" aria-label={label}>
+      {file && (
+        <div className="sp-log-file">
+          <span id="log-file-label" className="sp-muted">
+            File
+          </span>
+          <code aria-labelledby="log-file-label">{file.path}</code>
+          {file.note && <span className="sp-muted">{file.note}</span>}
+          <CopyButton text={file.path} label="Copy" name={`Copy the ${label.toLowerCase()} path`} />
+        </div>
+      )}
+      <pre ref={viewer} className="sp-log sp-nowrap" tabIndex={0} aria-label={label}>
         {text === null ? "Loading…" : <LogLines text={text} />}
       </pre>
-      <p className="sp-muted">
-        {run.workflow.engine === "snakemake"
-          ? "Each job's own log, as its rule declares it, is not in these logs."
-          : "Each task's own files (.command.log, .command.err, .command.sh …) stay in its work directory, not in these logs."}
+      <p className="sp-log-note">
+        <Icon path={ICONS.file} size={15} stroke={1.6} />
+        <span>
+          {run.workflow.engine === "snakemake"
+            ? "Each job's own log, as its rule declares it, is not in these logs:"
+            : "Each task's own files (.command.log, .command.err, .command.sh …) stay in its work directory, not in these logs:"}{" "}
+          <button type="button" className="sp-link-button" onClick={onTasks}>
+            open a {w.unit} in {w.Units} <Icon path={ICONS.arrowRight} size={13} />
+          </button>
+        </span>
       </p>
     </section>
   );
@@ -698,10 +780,28 @@ export function RunDetailPage({ id }: { id: string }) {
   const [error, setError] = useState<string | null>(null);
   const [asking, setAsking] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
-  const [tab, setTab] = useState<string | null>("summary");
+  // the root route passes unknown keys through, so the page reads the search through runSearch too
+  const search = runSearch(useSearch({ from: "/runs/$id" }));
+  const navigate = useNavigate({ from: "/runs/$id" });
+  const tab: Tab = search.tab ?? "summary";
+  const logSource = search.source ?? "engine";
+  // the last picked log source, so Logs reopens on it after another tab
+  const lastSource = useRef(logSource);
+  const go = useCallback(
+    (to: Tab, source?: LogSource) => {
+      if (to === "logs") lastSource.current = source ?? lastSource.current;
+      return navigate({ search: runSearch({ tab: to, source: lastSource.current }), replace: true });
+    },
+    [navigate],
+  );
   const [taskFilter, setTaskFilter] = useState<number | null>(null);
-  const [logSource, setLogSource] = useState<LogSource>("engine");
   const title = useRef<HTMLHeadingElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+  const focusPanel = useRef(false);
+  useEffect(() => {
+    if (tab === "logs" && focusPanel.current) panel.current?.focus();
+    focusPanel.current = false;
+  }, [tab, logSource]);
 
   const load = useCallback(() => {
     if (!valid) return;
@@ -747,11 +847,12 @@ export function RunDetailPage({ id }: { id: string }) {
   const filter = taskFilter ?? (run.state === "failed" ? TASK_FILTERS.findIndex((f) => f.label === "Failed") : 0);
   const showFailedTasks = () => {
     setTaskFilter(TASK_FILTERS.findIndex((f) => f.label === "Failed"));
-    setTab("tasks");
+    go("tasks");
   };
+  // The Summary's log links open Logs on the same source, with focus on its panel.
   const showLogs = (source: LogSource) => {
-    setLogSource(source);
-    setTab("logs");
+    focusPanel.current = true;
+    go("logs", source);
   };
   const w = words(run.workflow.engine);
   const params = Object.keys(run.params).length;
@@ -770,7 +871,7 @@ export function RunDetailPage({ id }: { id: string }) {
       />
       <CancelDialog run={run} server={server} opened={asking} onClose={() => setAsking(false)} onConfirm={confirm} />
 
-      <Tabs value={tab} onChange={setTab} keepMounted={false}>
+      <Tabs value={tab} onChange={(t) => go(TABS.find((x) => x === t) ?? "summary")} keepMounted={false}>
         <Tabs.List>
           <Tabs.Tab value="summary">Summary</Tabs.Tab>
           <Tabs.Tab value="tasks">{w.Units}</Tabs.Tab>
@@ -781,7 +882,7 @@ export function RunDetailPage({ id }: { id: string }) {
           <div className="sp-detail-grid">
             <div className="sp-runs">
               {run.state === "failed" && <WhyItFailed run={run} onTasks={showFailedTasks} />}
-              <StagesOrProcesses run={run} stages={stages} processes={processes} onTasks={() => setTab("tasks")} />
+              <StagesOrProcesses run={run} stages={stages} processes={processes} onTasks={() => go("tasks")} />
             </div>
             <SummaryAside run={run} server={server} onLogs={showLogs} />
           </div>
@@ -817,8 +918,8 @@ export function RunDetailPage({ id }: { id: string }) {
             </div>
           )}
         </Tabs.Panel>
-        <Tabs.Panel value="logs" pt="md">
-          <LogsPanel run={run} source={logSource} setSource={setLogSource} />
+        <Tabs.Panel value="logs" pt="md" ref={panel} tabIndex={-1}>
+          <LogsPanel run={run} server={server} source={logSource} setSource={(s) => go("logs", s)} onTasks={() => go("tasks")} />
         </Tabs.Panel>
       </Tabs>
     </div>

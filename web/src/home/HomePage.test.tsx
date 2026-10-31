@@ -33,6 +33,13 @@ test("home shows the count cards, the active runs, the runs that ended and the p
   expect(within(pipelines).getByText("/g/demo-lab/pipelines/rnaseq")).toBeInTheDocument();
   expect(screen.getByRole("link", { name: "Launch a workflow" })).toHaveAttribute("href", "/launch");
   expect(within(active).getByRole("link", { name: "All runs" })).toHaveAttribute("href", "/runs");
+  // inbox #91 (b): the pipeline's mark, nf-core for an nf-core/ name, else the engine's (P3-parC)
+  const nf = within(active).getByRole("link", { name: "Open run rnaseq-a" }).closest("li")!;
+  expect(within(nf).getByRole("img", { name: "nf-core" })).toBeInTheDocument();
+  const sm = within(finished).getByRole("link", { name: "Open run fetch-geo-2610" }).closest("li")!;
+  expect(within(sm).getByRole("img", { name: "Snakemake" })).toBeInTheDocument();
+  expect(within(pipelines).getByRole("img", { name: "nf-core" })).toBeInTheDocument();
+  expect(within(pipelines).getByRole("img", { name: "Snakemake" })).toBeInTheDocument();
 });
 
 test('home with no run reads "No runs yet."', async () => {

@@ -54,8 +54,9 @@ APP_LAUNCH = ("fill:Pipeline=$SPECTIO_DEMO_PIPELINE", "click:Load", "wait:no par
 # The synthetic Snakemake pipeline (tests/pipelines/synthetic/snakemake) copied to
 # $SPECTIO_DEMO_SMK_PIPELINE, with a config/config.yaml of the Snakefile's own defaults plus a nested
 # map `ref` (tools/media/README.md, live shots). Its two sections are opened, one dotted field is set.
+# Since UI parity C the Parameters card folds too, so its first group is named with its status.
 APP_LAUNCH_SMK = ("fill:Pipeline=$SPECTIO_DEMO_SMK_PIPELINE", "click:Load", "wait:Config preview, as YAML",
-                  "open:Parameters", "open:ref", "fill:outdir=results-smk", "fill:ref.release=114")
+                  "open:Parameters defaults", "open:ref", "fill:outdir=results-smk", "fill:ref.release=114")
 
 REGISTRY: dict[str, Shot] = {
     s.name: s
@@ -100,6 +101,11 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-run-detail-failed", "/runs/$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
              "0.0.1, live: a failed run of the synthetic Nextflow pipeline, why it failed, open and folded sections",
              live=("wait:Why it failed",)),
+        # P3 UI parity C: the Logs tab of the same failed run, on the head's output, where Nextflow
+        # writes the failed task's error.
+        Shot("app-run-logs", "/runs/$SPECTIO_DEMO_FAILED_RUN?tab=logs&source=head-out", 1440, 1180,
+             "0.0.1, live: the Logs tab of a failed run, its source buttons, File row, tools and viewer",
+             themes=("light", "dark"), live=("wait:Download last 64 KiB", "wait:Command error")),
     )
 }
 

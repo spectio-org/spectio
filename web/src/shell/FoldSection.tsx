@@ -44,6 +44,8 @@ interface Props {
   reveal?: boolean;
   /** A card ("sp-card") or a plain section. */
   card?: boolean;
+  /** More classes on the section: "launch-preview-card", the dark preview card. */
+  className?: string;
   children: ReactNode;
 }
 
@@ -58,6 +60,7 @@ export function FoldSection({
   defaultOpen = true,
   reveal = false,
   card = false,
+  className,
   children,
 }: Props) {
   const [open, setOpen] = useState(() => (screen ? remembered(screen, id) : null) ?? defaultOpen);
@@ -69,7 +72,7 @@ export function FoldSection({
     if (screen) remember(screen, id, !open);
   };
   return (
-    <section className={card ? "sp-foldsec sp-card" : "sp-foldsec"} aria-labelledby={`${id}-title`} data-open={open}>
+    <section className={["sp-foldsec", card && "sp-card", className].filter(Boolean).join(" ")} aria-labelledby={`${id}-title`} data-open={open}>
       <h2 className="sp-fold-head">
         <button
           type="button"

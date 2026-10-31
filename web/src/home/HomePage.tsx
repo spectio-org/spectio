@@ -9,7 +9,7 @@ import { failureText, Pipeline, RunLink, StateWord, runName, stateContext, tasks
 import { NoRuns, RunCard } from "../runs/RunsPage";
 import { ACTIVE, executorLabel, isTerminal, plural, tone, when, words } from "../runs/stateWord";
 import { useServer } from "../server";
-import { EngineMark } from "../shell/EngineMark";
+import { PipelineMark } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { usePhone } from "../shell/layout";
 import { PageHead } from "../shell/PageHead";
@@ -199,7 +199,7 @@ export function HomePage() {
                   <ul className="sp-list">
                     {active.map((run) => (
                       <li key={run.id} data-rail="" data-tone={tone(run.state)} className="sp-row">
-                        <EngineMark engine={run.workflow.engine} size={22} />
+                        <PipelineMark engine={run.workflow.engine} name={run.workflow.name} size={22} />
                         <span>
                           <RunLink run={run} />
                           <span className="sp-muted">
@@ -232,7 +232,7 @@ export function HomePage() {
                         <span className="sp-ended-state">
                           <StateWord state={run.state} />
                         </span>
-                        <EngineMark engine={run.workflow.engine} size={20} />
+                        <PipelineMark engine={run.workflow.engine} name={run.workflow.name} size={20} />
                         <span>
                           <RunLink run={run} />
                           <span className="sp-muted">

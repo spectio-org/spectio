@@ -9,9 +9,8 @@ import {
   Text,
   TextInput,
   Textarea,
-  Title,
 } from "@mantine/core";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
   ENGINE_FILES,
@@ -24,7 +23,7 @@ import {
 import { ICONS, Icon, groupIcon } from "../icons";
 import { executorLabel, plural } from "../runs/stateWord";
 import { useServer } from "../server";
-import { EngineMark } from "../shell/EngineMark";
+import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PageHead } from "../shell/PageHead";
 import { usePhone } from "../shell/layout";
@@ -238,6 +237,20 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
           .filter(Boolean)
           .join(" · ")
       : null;
+  // One action in two places on a desktop (LiteLaunch: the page head and under the aside), one
+  // description; the phone has the pinned bar only.
+  const launchButton = (
+    <Button
+      type="button"
+      className="launch-button"
+      onClick={submit}
+      aria-disabled={why ? true : undefined}
+      data-disabled={why ? true : undefined}
+      aria-describedby={why || summary ? "launch-reason" : undefined}
+    >
+      Launch
+    </Button>
+  );
   const local = server?.executor === "local";
   const guessed = loaded && guessEngine(loaded.engine_files);
   const engineNote = !loaded
@@ -257,117 +270,126 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
         title="Launch a workflow"
         sub="A directory or a Git repository: Spectio guesses the engine and builds the form from its schema."
         phoneBar="title"
+        action={
+          <span className="launch-head">
+            {/* a visual copy of the reason under the aside's Launch, which describes both buttons */}
+            {why && (
+              <span className="launch-head-reason" aria-hidden="true">
+                {why}
+              </span>
+            )}
+            {launchButton}
+          </span>
+        }
       />
+      <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card>
+        <Group align="flex-start" gap="sm" wrap="wrap">
+          <TextInput
+            style={{ flex: "999 1 280px" }}
+            label="Pipeline"
+            inputWrapperOrder={["label", "input", "description", "error"]}
+            value={location}
+            onChange={(e) => edit(setLocation, e.currentTarget.value)}
+            error={errors.location}
+            description={
+              <>
+                An absolute path your account can read, a GitHub or nf-core name such as
+                nf-core/rnaseq, or an https:// or ssh URL.
+                {github && (
+                  <>
+                    <br />
+                    <span>Read as GitHub: {github}</span>
+                  </>
+                )}
+              </>
+            }
+            spellCheck={false}
+            autoComplete="off"
+          />
+          {repo && (
+            <TextInput
+              style={{ flex: "1 1 220px", maxWidth: 260 }}
+              label="Revision"
+              inputWrapperOrder={["label", "input", "description", "error"]}
+              withAsterisk
+              required
+              value={revision}
+              onChange={(e) => edit(setRevision, e.currentTarget.value)}
+              error={errors.revision}
+              description="Tag, branch or commit; required for a Git repository."
+              spellCheck={false}
+              autoComplete="off"
+            />
+          )}
+          <Button
+            type="button"
+            variant="default"
+            mt={24}
+            onClick={load}
+            aria-busy={loading || undefined}
+          >
+            {loading ? (repo ? "Fetching…" : "Loading…") : "Load"}
+          </Button>
+        </Group>
+        {loaded && (
+          <Paper bg="var(--sp-surface-subtle)" p="sm" mt="sm" className="launch-loaded" data-loaded>
+            <span className="launch-loaded-mark">
+              {markFor(guessed, loaded.name) ? (
+                <PipelineMark engine={guessed} name={loaded.name} size={24} />
+              ) : (
+                <Icon path={ICONS.folder} size={20} />
+              )}
+            </span>
+            <div className="sp-grow">
+              <Text fw={600}>
+                {loaded.name}
+                {loaded.version ? ` ${loaded.version}` : ""}
+              </Text>
+              <Text size="sm" c="dimmed">
+                {loaded.revision ? `A Git repository at ${loaded.revision}` : "A directory on this machine"}
+                {loaded.engine_files.length ? ` · ${loaded.engine_files.join(", ")} found` : ""}
+                {` · ${SOURCES[loaded.schema_source]}`}
+              </Text>
+            </div>
+            <span className="launch-loaded-status">
+              <Icon path={ICONS.check} size={14} stroke={2.4} />
+              <span>Loaded</span>
+            </span>
+          </Paper>
+        )}
+        <Stack gap="md" mt="md">
+          <EngineButtons
+            value={engine}
+            onChange={(e) => setEngine(e)}
+            note={engineNote}
+            error={errors.engine}
+          />
+          <SimpleGrid cols={{ base: 1, sm: 2 }}>
+            <NativeSelect
+              label="Profile"
+              inputWrapperOrder={["label", "input", "description", "error"]}
+              value={profile}
+              onChange={(e) => setProfile(e.currentTarget.value)}
+              data={[{ value: "", label: "(none)" }, ...(loaded?.profiles ?? [])]}
+              description={engine ? PROFILE_HINTS[engine] : "From the pipeline's own configuration; passed to the engine as its profile."}
+              error={errors.profile}
+            />
+            <TextInput
+              label="Run name (optional)"
+              inputWrapperOrder={["label", "input", "description", "error"]}
+              value={name}
+              onChange={(e) => setName(e.currentTarget.value)}
+              description="Left empty, Spectio names the run after the pipeline."
+              error={errors.name}
+              autoComplete="off"
+            />
+          </SimpleGrid>
+        </Stack>
+      </FoldSection>
       <div className="launch-grid">
         <Stack gap="md">
-          <Paper withBorder p="md" component="section" aria-labelledby="pipeline-title">
-            <Title order={2} size="h4" id="pipeline-title" mb="sm">
-              Pipeline
-            </Title>
-            <Group align="flex-start" gap="sm" wrap="wrap">
-              <TextInput
-                style={{ flex: "999 1 280px" }}
-                label="Pipeline"
-                inputWrapperOrder={["label", "input", "description", "error"]}
-                value={location}
-                onChange={(e) => edit(setLocation, e.currentTarget.value)}
-                error={errors.location}
-                description={
-                  <>
-                    An absolute path your account can read, a GitHub or nf-core name such as
-                    nf-core/rnaseq, or an https:// or ssh URL.
-                    {github && (
-                      <>
-                        <br />
-                        <span>Read as GitHub: {github}</span>
-                      </>
-                    )}
-                  </>
-                }
-                spellCheck={false}
-                autoComplete="off"
-              />
-              {repo && (
-                <TextInput
-                  style={{ flex: "1 1 220px", maxWidth: 260 }}
-                  label="Revision"
-                  inputWrapperOrder={["label", "input", "description", "error"]}
-                  withAsterisk
-                  required
-                  value={revision}
-                  onChange={(e) => edit(setRevision, e.currentTarget.value)}
-                  error={errors.revision}
-                  description="Tag, branch or commit; required for a Git repository."
-                  spellCheck={false}
-                  autoComplete="off"
-                />
-              )}
-              <Button
-                type="button"
-                variant="default"
-                mt={24}
-                onClick={load}
-                aria-busy={loading || undefined}
-              >
-                {loading ? (repo ? "Fetching…" : "Loading…") : "Load"}
-              </Button>
-            </Group>
-            {loaded && (
-              <Paper bg="var(--sp-surface-subtle)" p="sm" mt="sm" className="launch-loaded" data-loaded>
-                <span className="launch-loaded-mark">
-                  {guessed ? <EngineMark engine={guessed} size={24} /> : <Icon path={ICONS.folder} size={20} />}
-                </span>
-                <div className="sp-grow">
-                  <Text fw={600}>
-                    {loaded.name}
-                    {loaded.version ? ` ${loaded.version}` : ""}
-                  </Text>
-                  <Text size="sm" c="dimmed">
-                    {loaded.revision ? `A Git repository at ${loaded.revision}` : "A directory on this machine"}
-                    {loaded.engine_files.length ? ` · ${loaded.engine_files.join(", ")} found` : ""}
-                    {` · ${SOURCES[loaded.schema_source]}`}
-                  </Text>
-                </div>
-                <span className="launch-loaded-status">
-                  <Icon path={ICONS.check} size={14} stroke={2.4} />
-                  <span>Loaded</span>
-                </span>
-              </Paper>
-            )}
-            <Stack gap="md" mt="md">
-              <EngineButtons
-                value={engine}
-                onChange={(e) => setEngine(e)}
-                note={engineNote}
-                error={errors.engine}
-              />
-              <SimpleGrid cols={{ base: 1, sm: 2 }}>
-                <NativeSelect
-                  label="Profile"
-                  inputWrapperOrder={["label", "input", "description", "error"]}
-                  value={profile}
-                  onChange={(e) => setProfile(e.currentTarget.value)}
-                  data={[{ value: "", label: "(none)" }, ...(loaded?.profiles ?? [])]}
-                  description={engine ? PROFILE_HINTS[engine] : "From the pipeline's own configuration; passed to the engine as its profile."}
-                  error={errors.profile}
-                />
-                <TextInput
-                  label="Run name (optional)"
-                  inputWrapperOrder={["label", "input", "description", "error"]}
-                  value={name}
-                  onChange={(e) => setName(e.currentTarget.value)}
-                  description="Left empty, Spectio names the run after the pipeline."
-                  error={errors.name}
-                  autoComplete="off"
-                />
-              </SimpleGrid>
-            </Stack>
-          </Paper>
           {loaded && (
-            <Paper withBorder p="md" component="section" aria-labelledby="params-title">
-              <Title order={2} size="h4" id="params-title" mb="xs">
-                Parameters
-              </Title>
+            <FoldSection id="launch-params" icon={ICONS.sliders} title="Parameters">
               {sections.length > 1 && (
                 <Text size="sm" c="dimmed" mb="sm">
                   {`One section per ${grouped ? "schema group" : "map of the config, its keys dotted"} · ${changed === 1 ? "1 value differs from its default" : `${changed} values differ from their defaults`}`}
@@ -380,7 +402,7 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
               )}
               <Stack gap="sm">
                 {sections.length === 1 && (
-                  <ParamGrid
+                  <ParamRows
                     fields={sections[0].fields}
                     values={values}
                     errors={errors}
@@ -399,14 +421,11 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
                 ))}
               </Stack>
               {sections.length === 0 && <KeyValueRows rows={rows} onChange={setRows} />}
-            </Paper>
+            </FoldSection>
           )}
         </Stack>
         <Stack className="launch-aside" gap="md" component="aside" aria-label="Where it runs and launch">
-          <Paper withBorder p="md">
-            <Title order={2} size="h4" mb="sm">
-              Where it runs
-            </Title>
+          <FoldSection id="launch-where" icon={ICONS.server} title="Where it runs" card>
             <dl className="facts">
               <dt>Executor</dt>
               <dd>{server ? executorLabel(server.executor) : "…"}</dd>
@@ -441,20 +460,11 @@ export function LaunchPage({ onLaunched }: { onLaunched: (id: string) => void })
               The executor, the login node and the run directory are fixed for this server: there is nothing
               to choose in 0.0.1.
             </Text>
-          </Paper>
+          </FoldSection>
           {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} />}
           <div className="launch-bar">
             <div className="launch-bar-row">
-              <Button
-                type="button"
-                className="launch-button"
-                onClick={submit}
-                aria-disabled={why ? true : undefined}
-                data-disabled={why ? true : undefined}
-                aria-describedby={why || summary ? "launch-reason" : undefined}
-              >
-                Launch
-              </Button>
+              {launchButton}
               {(why || summary) && (
                 <Text id="launch-reason" size="sm" c="dimmed" className="launch-reason">
                   {why ?? summary}
@@ -527,12 +537,13 @@ function ParamGroup({
       reveal={failed}
       card
     >
-      <ParamGrid fields={section.fields} values={values} errors={errors} onChange={onChange} />
+      <ParamRows fields={section.fields} values={values} errors={errors} onChange={onChange} />
     </FoldSection>
   );
 }
 
-function ParamGrid({
+/** The parameters one per line (Thomas, 2026-10-31): each a full-width row. */
+function ParamRows({
   fields,
   values,
   errors,
@@ -544,7 +555,7 @@ function ParamGrid({
   onChange: (key: string, value: string | boolean) => void;
 }) {
   return (
-    <SimpleGrid cols={{ base: 1, sm: 2, lg: 3 }}>
+    <div className="launch-params">
       {fields.map((field) => (
         <ParamField
           key={field.key}
@@ -554,7 +565,7 @@ function ParamGrid({
           onChange={(v) => onChange(field.key, v)}
         />
       ))}
-    </SimpleGrid>
+    </div>
   );
 }
 
@@ -571,11 +582,8 @@ function ParamsPreview({ engine, fields, values, rows }: { engine: Engine; field
     text = null;
   }
   return (
-    <Paper withBorder p="md" component="section" aria-labelledby="preview-title">
-      <Title order={2} size="h4" id="preview-title">
-        {label}
-      </Title>
-      <Text size="sm" c="dimmed" mb="sm">
+    <FoldSection id="launch-preview" icon={ICONS.fileCode} title={label} card className="launch-preview-card">
+      <Text size="sm" className="launch-preview-note" mb="sm">
         {snakemake
           ? "Only the values set, and a nested map whole once one of its values is set. Spectio writes them to .spectio/params.json in the run directory, passed with --configfile; shown here as YAML."
           : "Only the values set. Spectio writes them to .spectio/params.json in the run directory, passed with -params-file."}
@@ -587,7 +595,7 @@ function ParamsPreview({ engine, fields, values, rows }: { engine: Engine; field
           {text}
         </pre>
       )}
-    </Paper>
+    </FoldSection>
   );
 }
 
@@ -604,33 +612,69 @@ function ParamField({
 }) {
   const shown = field.default === undefined ? "" : `default ${JSON.stringify(field.default)}`;
   const changed = isChanged(field, value);
-  const description =
-    [
-      field.help,
-      field.type === "json" ? "JSON" : field.type,
-      field.format,
-      changed ? "changed" : null,
-      changed ? shown || "no default" : shown,
-    ]
-      .filter(Boolean)
-      .join(" · ") || undefined;
+  const meta = [field.type === "json" ? "JSON" : field.type, field.format, changed ? "changed" : null, changed ? shown || "no default" : shown]
+    .filter(Boolean)
+    .join(" · ");
+  // One row (Thomas, 2026-10-31): the name with the meta on its line, the input, the help under
+  // it. The accessible description stays one text, "help · meta" (visually hidden); the visible
+  // meta and help are its copy, hidden from assistive technology.
+  const description = [field.help, meta].filter(Boolean).join(" · ") || undefined;
+  const descriptionId = useId();
+  const inputContainer = (input: ReactNode) => (
+    <>
+      {meta && (
+        <span className="launch-param-meta" aria-hidden="true">
+          {meta}
+        </span>
+      )}
+      <div className="launch-param-input">{input}</div>
+      {field.help && (
+        <span className="launch-param-help" aria-hidden="true">
+          {field.help}
+        </span>
+      )}
+    </>
+  );
   const placeholder =
     field.default === undefined || typeof field.default === "boolean"
       ? undefined
       : typeof field.default === "string"
         ? field.default
         : JSON.stringify(field.default);
-  const common = { label: field.label, description, error, withAsterisk: field.required };
+  const common = {
+    label: field.label,
+    description,
+    error,
+    withAsterisk: field.required,
+    inputContainer,
+    classNames: { root: "launch-param", description: "sp-sr" },
+  };
   switch (field.type) {
     case "boolean":
+      // The same row as the other fields (CR-P3PARC-01): Checkbox has no inputContainer and does
+      // not link its description to the input, so the row and the description are drawn here.
       return (
-        <Checkbox
-          label={field.label}
-          description={field.help ?? undefined}
-          error={error}
-          checked={typeof value === "boolean" ? value : field.default === true}
-          onChange={(e) => onChange(e.currentTarget.checked)}
-        />
+        <div className="launch-param">
+          <Checkbox
+            className="launch-param-check"
+            label={field.label}
+            aria-describedby={descriptionId}
+            error={error}
+            checked={typeof value === "boolean" ? value : field.default === true}
+            onChange={(e) => onChange(e.currentTarget.checked)}
+          />
+          <span id={descriptionId} className="sp-sr">
+            {description}
+          </span>
+          <span className="launch-param-meta" aria-hidden="true">
+            {meta}
+          </span>
+          {field.help && (
+            <span className="launch-param-help" aria-hidden="true">
+              {field.help}
+            </span>
+          )}
+        </div>
       );
     case "enum":
       return (

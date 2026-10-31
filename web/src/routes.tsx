@@ -9,7 +9,7 @@ import {
 } from "@tanstack/react-router";
 import { HomePage } from "./home/HomePage";
 import { LaunchPage } from "./launch/LaunchPage";
-import { NotFound, RunDetailPage } from "./runs/RunDetailPage";
+import { NotFound, RunDetailPage, runSearch } from "./runs/RunDetailPage";
 import { RunsPage, runsSearch } from "./runs/RunsPage";
 import { AppShell } from "./shell/AppShell";
 
@@ -37,7 +37,7 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/", component: HomePage }),
   createRoute({ getParentRoute: () => root, path: "/runs", component: RunsPage, validateSearch: runsSearch }),
   createRoute({ getParentRoute: () => root, path: "/launch", component: LaunchRoute }),
-  createRoute({ getParentRoute: () => root, path: "/runs/$id", component: RunRoute }),
+  createRoute({ getParentRoute: () => root, path: "/runs/$id", component: RunRoute, validateSearch: runSearch }),
 ];
 
 const routeTree = root.addChildren(routes);

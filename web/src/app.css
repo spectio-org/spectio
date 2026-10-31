@@ -46,7 +46,71 @@
   color: var(--sp-text-secondary);
   font-weight: 400;
 }
-/* The params preview (UX-PAR-32). */
+/* One parameter per line (Thomas, 2026-10-31): the name and its meta on one line, the input
+   full width, the help under it. */
+.launch-params > * + * {
+  border-top: 1px solid var(--sp-line-divider);
+}
+.launch-param {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  column-gap: 12px;
+  row-gap: 4px;
+  padding: 10px 0;
+}
+.launch-param > * {
+  grid-column: 1 / -1;
+}
+.launch-param > label,
+.launch-param > .launch-param-check {
+  grid-column: 1;
+}
+.launch-param > .launch-param-meta {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 12px;
+  color: var(--sp-text-secondary);
+  text-align: right;
+}
+.launch-param-help {
+  font-size: 12.5px;
+  line-height: 1.45;
+  color: var(--sp-text-secondary);
+}
+/* Launch in the page head, with its reason beside it (LiteLaunchSnakemake). */
+.launch-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.launch-head-reason {
+  max-width: 320px;
+  font-size: 13px;
+  text-align: right;
+  color: var(--sp-text-secondary);
+}
+/* The engine buttons' marks (LiteLaunch). */
+.launch-engine-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+/* The params preview (UX-PAR-32), on the board's dark card. */
+.launch-preview-card.sp-card {
+  color: var(--sp-code-text);
+  background: var(--sp-surface-code);
+}
+.launch-preview-card .sp-fold-tile {
+  color: var(--sp-code-text);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+.launch-preview-card .sp-fold-chev,
+.launch-preview-card .launch-preview-note {
+  color: var(--sp-code-text);
+  opacity: 0.8;
+}
 .launch-preview {
   margin: 0;
   padding: 12px 14px;
@@ -59,7 +123,7 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;
   color: var(--sp-code-text);
-  background: var(--sp-surface-code);
+  background: rgba(255, 255, 255, 0.04);
 }
 .launch-bar-row {
   display: flex;

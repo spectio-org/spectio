@@ -105,6 +105,11 @@ media:
     # live, as app-run-detail; SPECTIO_DEMO_FAILED_RUN is a run launched with fail_mode=exit fail_process=MERGE
     generator: python3 tools/media/shots.py run --shot app-run-detail-failed --theme light
     outputs: [docs/assets/shots/app-run-detail-failed_light.webp]
+  - id: app-run-logs
+    kind: screenshot
+    # live, as app-run-detail-failed: its Logs tab on the head's output (?tab=logs&source=head-out)
+    generator: python3 tools/media/shots.py run --shot app-run-logs --theme both
+    outputs: [docs/assets/shots/app-run-logs_light.webp, docs/assets/shots/app-run-logs_dark.webp]
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
@@ -513,6 +518,14 @@ media:
       - docs/assets/diagrams/p3-parb-phone-launch_dark.svg
       - docs/assets/diagrams/p3-parb-phone-launch_light.png
       - docs/assets/diagrams/p3-parb-phone-launch_dark.png
+  - id: p3-parc-launch-logs
+    kind: diagram
+    generator: python3 tools/diagrams/p3_parc_launch_logs.py
+    outputs:
+      - docs/assets/diagrams/p3-parc-launch-logs_light.svg
+      - docs/assets/diagrams/p3-parc-launch-logs_dark.svg
+      - docs/assets/diagrams/p3-parc-launch-logs_light.png
+      - docs/assets/diagrams/p3-parc-launch-logs_dark.png
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines

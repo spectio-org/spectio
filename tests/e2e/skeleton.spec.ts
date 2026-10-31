@@ -75,7 +75,8 @@ test('link → empty list → launch happy (Nextflow, local) → detail shows Su
   await page.getByRole('textbox', { name: /^Pipeline/ }).fill(join(SYNTHETIC, 'nextflow'));
   await page.getByRole('button', { name: 'Load', exact: true }).click();
   await page.getByRole('combobox', { name: 'Profile' }).selectOption('test');
-  await page.getByRole('button', { name: 'Launch', exact: true }).click();
+  // Launch is in the page head and under the aside on a desktop, one action (P3-parC): the head's.
+  await page.getByRole('button', { name: 'Launch', exact: true }).first().click();
 
   await expect(page).toHaveURL(/\/runs\/run_[0-9A-Z]{26}$/);
   await expect(page.locator('header .sp-state')).toHaveText('Succeeded', { timeout: 150_000 });

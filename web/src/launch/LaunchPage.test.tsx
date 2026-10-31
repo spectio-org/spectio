@@ -48,7 +48,8 @@ function page(onLaunched = vi.fn(), phone = false) {
 }
 
 const pipeline = () => screen.getByRole("textbox", { name: /^Pipeline/ });
-const launch = () => screen.getByRole("button", { name: "Launch" });
+/** The Launch beside the form (the aside's, or the phone's pinned bar); the page head has one too. */
+const launch = () => screen.getAllByRole("button", { name: "Launch" }).at(-1)!;
 
 async function load(inspected: unknown = INSPECTED, location = "/data/rnaseq") {
   fetchMock.mockResolvedValueOnce(json(200, inspected));
@@ -76,7 +77,7 @@ test("Revision shows only once the Pipeline field reads as a repository (UX-G2-0
 test("Load inspects; the guess is pressed; Launch waits for the required field, then posts", async () => {
   const onLaunched = page();
   expect(launch()).toHaveAttribute("aria-disabled", "true");
-  expect(screen.getByText("Load a pipeline first")).toBeInTheDocument();
+  expect(launch()).toHaveAccessibleDescription("Load a pipeline first");
   await load();
   const [url] = fetchMock.mock.calls[0];
   expect(url).toBe("/api/v1/workflows:inspect?location=%2Fdata%2Frnaseq");
@@ -312,7 +313,8 @@ test("UX-PAR-33: the Loaded card's status, and Where it runs names the engine an
   await load(NF_CORE);
   const card = screen.getByText("nf-core/rnaseq 3.27.0").closest("[data-loaded]")!;
   expect(within(card as HTMLElement).getByText("Loaded")).toBeInTheDocument();
-  expect(within(card as HTMLElement).getByRole("img", { name: "Nextflow" })).toBeInTheDocument();
+  // inbox #91 (b): a manifest name starting "nf-core/" shows the nf-core mark
+  expect(within(card as HTMLElement).getByRole("img", { name: "nf-core" })).toBeInTheDocument();
   const where = screen.getByRole("complementary", { name: "Where it runs and launch" });
   expect(within(where).getByText("Tasks")).toBeInTheDocument();
   expect(within(where).getByText(/fixed for this server/)).toBeInTheDocument();
@@ -334,4 +336,104 @@ test("SEC-P3PARB-01: a schema key Launch refuses is named, not dropped silently"
   await load({ ...INSPECTED, schema });
   expect(screen.getByRole("textbox", { name: /^depth/ })).toBeInTheDocument();
   expect(screen.getByText(/Not in the form: __proto__/)).toBeInTheDocument();
+});
+
+test("P3-parC: one parameter per line: the name with its type, default and state, the input, the help under it", async () => {
+  page();
+  await load(NF_CORE);
+  const io = group(/^Input\/output/);
+  expect(io.querySelector(".mantine-SimpleGrid-root")).toBeNull();
+  const rows = io.querySelectorAll(".launch-param");
+  expect(rows).toHaveLength(2);
+  const input = screen.getByRole("textbox", { name: /^input/ });
+  const row = input.closest(".launch-param")!;
+  expect(row).toBe(rows[0]);
+  expect(row.querySelectorAll("input, select, textarea")).toHaveLength(1);
+  expect(row.querySelector(".launch-param-meta")).toHaveTextContent("string · file-path");
+  const help = row.querySelector(".launch-param-help")!;
+  expect(help).toHaveTextContent("The samplesheet.");
+  expect(input.compareDocumentPosition(help) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+  // the accessible description is unchanged: help, then type, format and state
+  expect(input).toHaveAccessibleDescription("The samplesheet. · string · file-path");
+  await userEvent.type(input, "/data/s.csv");
+  expect(row.querySelector(".launch-param-meta")).toHaveTextContent("string · file-path · changed · no default");
+});
+
+test("P3-parC: one parameter per line in a form of one section too", async () => {
+  page();
+  await load();
+  const params = screen.getByRole("region", { name: "Parameters" });
+  expect(params.querySelector(".mantine-SimpleGrid-root")).toBeNull();
+  expect(params.querySelectorAll(".launch-param")).toHaveLength(2);
+});
+
+test("P3-parC: Pipeline, Parameters, Where it runs and the preview are sections that fold, each with its icon tile", async () => {
+  page();
+  await load(NF_CORE);
+  const icon = (name: string) => screen.getByRole("region", { name }).querySelector(".sp-fold-tile path");
+  expect(icon("Pipeline")).toHaveAttribute("d", ICONS.route);
+  expect(icon("Parameters")).toHaveAttribute("d", ICONS.sliders);
+  expect(icon("Where it runs")).toHaveAttribute("d", ICONS.server);
+  expect(icon("params.json preview")).toHaveAttribute("d", ICONS.fileCode);
+  expect(screen.getByRole("region", { name: "params.json preview" })).toHaveClass("launch-preview-card");
+  const fold = screen.getByRole("button", { name: /^Where it runs/ });
+  expect(fold).toHaveAttribute("aria-expanded", "true");
+  await userEvent.click(fold);
+  expect(fold).toHaveAttribute("aria-expanded", "false");
+});
+
+test("P3-parC: Launch sits in the page head too, the same action with the same reason", async () => {
+  const onLaunched = page();
+  const [head, side] = screen.getAllByRole("button", { name: "Launch" });
+  expect(head.closest("header")).not.toBeNull();
+  expect(side.closest("header")).toBeNull();
+  for (const b of [head, side]) {
+    expect(b).toHaveAttribute("aria-disabled", "true");
+    expect(b).toHaveAccessibleDescription("Load a pipeline first");
+  }
+  await load();
+  expect(head).toHaveAccessibleDescription("Fill the required field: input");
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
+  expect(head).not.toHaveAttribute("aria-disabled");
+  fetchMock.mockResolvedValueOnce(json(201, { id: "run_1" }));
+  await userEvent.click(head);
+  await waitFor(() => expect(onLaunched).toHaveBeenCalledWith("run_1"));
+});
+
+test("P3-parC: on the phone Launch is the pinned bar's only", () => {
+  page(vi.fn(), true);
+  expect(screen.getAllByRole("button", { name: "Launch" })).toHaveLength(1);
+});
+
+test("P3-parC: the engine buttons show the Nextflow and Snakemake marks", () => {
+  page();
+  for (const name of ["Nextflow", "Snakemake"]) {
+    const img = screen.getByRole("button", { name }).querySelector("img.sp-engine-mark");
+    expect(img).toHaveAttribute("src", expect.stringContaining(`logo-${name.toLowerCase()}`));
+    expect(img).toHaveAttribute("alt", ""); // the button's text names the engine
+  }
+});
+
+test("P3-parC: a pipeline not named nf-core/ shows its engine's mark on the Loaded card", async () => {
+  page();
+  await load();
+  const card = screen.getByText("rnaseq 3.27.0").closest("[data-loaded]") as HTMLElement;
+  expect(within(card).getByRole("img", { name: "Nextflow" })).toBeInTheDocument();
+});
+
+test("CR-P3PARC-01: a boolean is a row too: the name with its type, default and state, the help under it", async () => {
+  page();
+  const schema = {
+    type: "object",
+    properties: { skip_qc: { type: "boolean", default: false, description: "Skip the QC steps." } },
+  };
+  await load({ ...INSPECTED, schema });
+  const box = screen.getByRole("checkbox", { name: /^skip_qc/ });
+  const row = box.closest(".launch-param")!;
+  expect(row.querySelector(".launch-param-meta")).toHaveTextContent("boolean · default false");
+  expect(row.querySelector(".launch-param-help")).toHaveTextContent("Skip the QC steps.");
+  expect(box).toHaveAccessibleDescription("Skip the QC steps. · boolean · default false");
+  await userEvent.click(box);
+  expect(row.querySelector(".launch-param-meta")).toHaveTextContent("boolean · changed · default false");
+  expect(box).toHaveAccessibleDescription("Skip the QC steps. · boolean · changed · default false");
 });
