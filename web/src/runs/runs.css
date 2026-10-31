@@ -747,10 +747,12 @@
   font-size: 13px;
   color: var(--sp-text-primary);
 }
-.sp-log span[data-tone="failed"] {
+.sp-log span[data-tone="failed"],
+.sp-log-tail span[data-tone="failed"] {
   color: var(--sp-code-failed);
 }
-.sp-log span[data-tone="review"] {
+.sp-log span[data-tone="review"],
+.sp-log-tail span[data-tone="review"] {
   color: var(--sp-code-review);
 }
 .sp-note {
