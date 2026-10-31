@@ -23,6 +23,7 @@ from sqlalchemy import Connection, Row, Select, and_, func, select
 
 from spectio.config import Settings
 from spectio.runner.rundir import RUN_ID
+from spectio_server.api import models
 from spectio_server.api.problems import Invalid, not_found
 from spectio_server.store.schema import (
     RUN_STATES,
@@ -164,21 +165,24 @@ def run_detail(conn: Connection, run_id: str) -> dict[str, Any]:
     return {**found, "params": params or {}}
 
 
-# --- Cursors: base64url of [sort value, id] -------------------------------------------------
+# --- Cursors: base64url of [sort value, id], or of the id alone when it is the sort key -----
 
 
-def _encode(value: datetime | str, id_: str) -> str:
-    raw = json.dumps([value.isoformat() if isinstance(value, datetime) else value, id_])
+def _encode(value: Any) -> str:
+    raw = json.dumps(value)
     return base64.urlsafe_b64encode(raw.encode()).decode().rstrip("=")
 
 
 def _decode(cursor: str, timestamp: bool) -> tuple[Any, str]:
     try:
-        value, id_ = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
+        found = json.loads(base64.urlsafe_b64decode(cursor + "=" * (-len(cursor) % 4)))
+        if not timestamp:
+            if not isinstance(found, str):
+                raise ValueError("not an ID")
+            return found, found
+        value, id_ = found
         if not isinstance(id_, str):
             raise ValueError("no ID")
-        if not timestamp:
-            return str(value), id_
         at = datetime.fromisoformat(value)
         if at.utcoffset() is None:  # the store takes aware times only
             raise ValueError("naive")
@@ -198,12 +202,12 @@ def _page(
 ) -> Select[Any]:
     if cursor is not None:
         value, id_ = _decode(cursor, timestamp)
-        before = (
-            (key < value) | ((key == value) & (id_col < id_))
-            if descending
-            else ((key > value) | ((key == value) & (id_col > id_)))
-        )
-        query = query.where(before)
+        if not timestamp:  # the ID is the key (tasks): one comparison
+            query = query.where(key < value if descending else key > value)
+        elif descending:
+            query = query.where((key < value) | ((key == value) & (id_col < id_)))
+        else:
+            query = query.where((key > value) | ((key == value) & (id_col > id_)))
     order = (key.desc(), id_col.desc()) if descending else (key.asc(), id_col.asc())
     return query.order_by(*order).limit(limit + 1)
 
@@ -221,7 +225,7 @@ def _states(value: str | None, allowed: tuple[str, ...]) -> list[str] | None:
 # --- Routes ----------------------------------------------------------------------------------
 
 
-@router.get("/runs")
+@router.get("/runs", response_model=models.RunList)
 def list_runs(
     request: Request,
     state: Annotated[str | None, Query(max_length=200)] = None,
@@ -246,11 +250,11 @@ def list_runs(
         profiles = _profiles(conn, [r.id for r in rows[:limit]])
     items = [run_json(r, profiles.get(r.id, [])) for r in rows[:limit]]
     last = rows[limit - 1] if len(rows) > limit else None
-    next_ = None if last is None else _encode(getattr(last, key.name), last.id)
+    next_ = None if last is None else _encode([getattr(last, key.name).isoformat(), last.id])
     return {"items": items, "next": next_}
 
 
-@router.get("/runs:summary")
+@router.get("/runs:summary", response_model=models.Summary)
 def runs_summary(request: Request, group_by: Literal["state"] = "state") -> dict[str, Any]:
     """Counts by state over all the runs, with no time window (0.0.1: no `since`, `project`)."""
     with read(request) as conn:
@@ -258,7 +262,7 @@ def runs_summary(request: Request, group_by: Literal["state"] = "state") -> dict
     return {"groups": [{"key": key, "count": n} for key, n in rows]}
 
 
-@router.get("/version")
+@router.get("/version", response_model=models.ServerVersion)
 def server_version(request: Request) -> dict[str, Any]:
     settings: Settings = request.app.state.settings
     try:
@@ -274,13 +278,13 @@ def server_version(request: Request) -> dict[str, Any]:
     }
 
 
-@router.get("/runs/{run_id}")
+@router.get("/runs/{run_id}", response_model=models.RunDetail)
 def get_run(request: Request, run_id: str) -> dict[str, Any]:
     with read(request) as conn:
         return run_detail(conn, run_id)
 
 
-@router.get("/runs/{run_id}/processes")
+@router.get("/runs/{run_id}/processes", response_model=models.ProcessList)
 def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     """One item per process or rule, in first-seen order (the order of its first task's ID)."""
     with read(request) as conn:
@@ -321,7 +325,7 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     }
 
 
-@router.get("/runs/{run_id}/stages")
+@router.get("/runs/{run_id}/stages", response_model=models.StageList)
 def list_stages(request: Request, run_id: str) -> dict[str, Any]:
     with read(request) as conn:
         run_row(conn, run_id)
@@ -343,7 +347,7 @@ def list_stages(request: Request, run_id: str) -> dict[str, Any]:
     }
 
 
-@router.get("/runs/{run_id}/tasks")
+@router.get("/runs/{run_id}/tasks", response_model=models.TaskList)
 def list_tasks(
     request: Request,
     run_id: str,
@@ -374,5 +378,5 @@ def list_tasks(
         }
         for r in rows[:limit]
     ]
-    next_ = _encode(rows[limit - 1].id, rows[limit - 1].id) if len(rows) > limit else None
+    next_ = _encode(rows[limit - 1].id) if len(rows) > limit else None
     return {"items": items, "next": next_}

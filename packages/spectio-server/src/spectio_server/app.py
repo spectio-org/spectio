@@ -7,7 +7,8 @@ reason (inbox #86). In local mode too, the API is left unmounted on a machine th
 a cluster node or a shared one (`shared_host`, SEC-P3T17-06): kind `local` is a configuration
 value, which can be set on a login node. The Host allow-list and the write checks (dev-env §15.3
 req. 4 and 7) run on every request already (`api.browser`). The generated docs stay off: the
-OpenAPI document is a file, `openapi/0.0.1.json`, written from `app.openapi()` (Task 18).
+OpenAPI document is a file, `openapi/0.0.1.json`, written from `app.openapi()` (Task 18), with
+typed responses (`api.models`, FU-P3-21).
 
 The screens (`web/dist`, Task 19) follow the API's rule: served at `/` when the API is mounted,
 else `/` stays this plain page and says why (`static`). TODO(P1 Task 16): behind the session.
@@ -42,6 +43,7 @@ PLACEHOLDER = (
     "{why}\n"
 )
 API = "/api/v1"
+API_VERSION = "0.0.1"  # the API document's version, not the package's: a release bump keeps it
 NO_API = (
     "The API is served in local mode only (spectio init --local) until sign-in is built: "
     "P1 Tasks 12 to 16 (token link and session)."
@@ -96,7 +98,7 @@ def no_api_reason(settings: Settings) -> str | None:
 def create_app(settings: Settings, writer: Writer, web_dir: Path = static.DIST) -> FastAPI:
     app = FastAPI(
         title="Spectio",
-        version=version("spectio"),
+        version=API_VERSION,
         docs_url=None,
         redoc_url=None,
         openapi_url=None,

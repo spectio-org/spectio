@@ -12,6 +12,7 @@ from typing import Any
 from fastapi import APIRouter, Request, Response
 from sqlalchemy import Connection, insert, select
 
+from spectio_server.api import models
 from spectio_server.api.problems import Problem
 from spectio_server.api.runs_read import read, run_detail, run_row
 from spectio_server.ids import new_id
@@ -61,7 +62,7 @@ def _cancel(conn: Connection, run_id: str) -> int:
     return 202
 
 
-@router.post("/runs/{run_id}:cancel", status_code=202)
+@router.post("/runs/{run_id}:cancel", status_code=202, response_model=models.RunDetail)
 def cancel_run(request: Request, run_id: str, response: Response) -> dict[str, Any]:
     writer: Writer = request.app.state.writer
     response.status_code = writer.submit(lambda conn: _cancel(conn, run_id)).result()

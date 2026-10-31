@@ -255,6 +255,13 @@ def test_tasks_filter_and_paging(authed_client: TestClient, seeded_stages: str) 
     assert set(running[0]) == {"id", "process", "tag", "name", "state", "stage_id"}
 
 
+def test_task_cursor_is_one_id(authed_client: TestClient, seeded_stages: str) -> None:
+    """A task's ID is its sort key: the cursor carries it once (CR-P3T18-05)."""
+    first = authed_client.get(f"{RUNS}/{seeded_stages}/tasks", params={"limit": 1}).json()
+    raw = base64.urlsafe_b64decode(first["next"] + "=" * (-len(first["next"]) % 4))
+    assert json.loads(raw) == first["items"][0]["id"]
+
+
 # --- Logs ------------------------------------------------------------------------------------
 
 
