@@ -75,6 +75,13 @@ function ProcessTasks({ run, process, name, onOpen }: { run: RunDetail; process:
         setError(null);
       })
       .catch((e: Error) => signal?.aborted || setError(e.message));
+  // a Load more in flight: a second click meanwhile would add the same page twice
+  const [loading, setLoading] = useState(false);
+  const more = (cursor: string) => {
+    if (loading) return;
+    setLoading(true);
+    page(cursor).finally(() => setLoading(false));
+  };
   useEffect(() => {
     const controller = new AbortController();
     page(null, controller.signal);
@@ -98,7 +105,7 @@ function ProcessTasks({ run, process, name, onOpen }: { run: RunDetail; process:
       </ul>
       {next && (
         <div>
-          <Button variant="default" onClick={() => page(next)}>
+          <Button variant="default" aria-busy={loading} disabled={loading} onClick={() => more(next)}>
             Load more {w.units}
           </Button>
         </div>

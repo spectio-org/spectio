@@ -5,7 +5,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { app, fetched, run, serve, stubStream, viewport } from "../testing";
+import { app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -96,6 +96,29 @@ test("the process's tasks are paged: name, tag and state, then Load more", async
   await userEvent.click(within(sheet).getByRole("button", { name: "Load more tasks" }));
   expect(await within(list).findByRole("button", { name: "Open task ALIGN (S03)" })).toHaveTextContent("Failed");
   expect(within(sheet).queryByRole("button", { name: "Load more tasks" })).toBeNull();
+});
+
+test("Load more ignores a second click while its page is in flight (CR-P3PARD-06)", async () => {
+  let release!: () => void;
+  const held = new Promise<void>((r) => (release = r));
+  const mock = detail({}, {
+    [`${URL_}/tasks?process=${encodeURIComponent(ALIGN)}&limit=50&cursor=c2`]: async () => {
+      await held;
+      return json(200, { items: [task(3, "failed")], next: null });
+    },
+  });
+  app(`/runs/${ID}`);
+  await userEvent.click(within(await alignTable()).getByRole("button", { name: `Open process ${ALIGN}` }));
+  const sheet = await screen.findByRole("dialog", { name: "ALIGN" });
+  const list = await within(sheet).findByRole("list", { name: "Tasks of ALIGN" });
+  const more = within(sheet).getByRole("button", { name: "Load more tasks" });
+  await userEvent.click(more);
+  await waitFor(() => expect(more).toHaveAttribute("aria-busy", "true"));
+  await userEvent.click(more);
+  release();
+  expect(await within(list).findByRole("button", { name: "Open task ALIGN (S03)" })).toBeInTheDocument();
+  expect(within(list).getAllByRole("button", { name: "Open task ALIGN (S03)" })).toHaveLength(1);
+  expect(fetched(mock).filter((u) => u.includes("cursor=c2"))).toHaveLength(1);
 });
 
 test("Open in Tasks goes to the Tasks tab filtered on the process, kept in the URL", async () => {

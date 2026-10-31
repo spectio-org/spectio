@@ -6,6 +6,9 @@ import { ICONS, Icon } from "../icons";
 // previous and next (Enter, Shift+Enter) and Escape to clear. The query lands 150 ms after typing;
 // each line is a memoised component, so a keystroke or a step re-renders only the lines it changes.
 
+/** A log's lines; a final newline ends the last line, it does not start an empty one. */
+const splitLines = (text: string) => text.replace(/\n$/, "").split("\n");
+
 /** A log line's level, as a secondary tint (LiteRunLogs): the level word is in the text already.
  * Errors, then warnings and retries, then a task or job done, then Nextflow's progress line; INFO
  * keeps the viewer's text colour. */
@@ -61,7 +64,7 @@ const Line = memo(function Line({ text, tone, hits, size, current }: { text: str
 
 /** A log's lines, each tinted by its level (the Summary's last lines). */
 export function LogLines({ text }: { text: string }) {
-  return text.split("\n").map((line, i) => <Line key={i} text={line} tone={level(line)} size={0} current={-1} />);
+  return splitLines(text).map((line, i) => <Line key={i} text={line} tone={level(line)} size={0} current={-1} />);
 }
 
 /** The whole viewer: the search and level tools, then the lines, opened at their end. */
@@ -77,7 +80,7 @@ export function LogViewer({ text, label }: { text: string | null; label: string 
     return () => clearTimeout(timer);
   }, [typed]);
 
-  const lines = useMemo(() => (text ?? "").split("\n").map((line) => ({ text: line, tone: level(line) })), [text]);
+  const lines = useMemo(() => splitLines(text ?? "").map((line) => ({ text: line, tone: level(line) })), [text]);
   const counts = useMemo(() => {
     const found: Record<Level, number> = { all: lines.length, info: 0, warn: 0, error: 0 };
     for (const line of lines) found[levelOf(line.tone)] += 1;

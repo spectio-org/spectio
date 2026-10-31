@@ -272,14 +272,23 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
   const culpritId = typeof failure?.task_id === "string" ? failure.task_id : null;
   const w = words(run.workflow.engine);
   const { unit, units, Units } = w;
-  // the task that failed first (failure.task_id), found among the run's failed tasks
+  // the task that failed first (failure.task_id), found among the run's failed tasks: up to 5 pages
+  // of 50; past 250 failed tasks the line is left out
   const [culprit, setCulprit] = useState<Task | null>(null);
   useEffect(() => {
     if (!culpritId) return;
     const controller = new AbortController();
-    listTasks(run.id, { state: "failed", limit: 50 }, controller.signal)
-      .then((page) => setCulprit(page.items?.find((t) => t.id === culpritId) ?? null))
-      .catch(() => undefined); // the line is extra: without it, the rest still says why
+    const find = async () => {
+      let cursor: string | null = null;
+      for (let n = 0; n < 5; n += 1) {
+        const page = await listTasks(run.id, { state: "failed", limit: 50, cursor }, controller.signal);
+        const found = page.items?.find((t) => t.id === culpritId);
+        if (found) return setCulprit(found);
+        cursor = page.next ?? null;
+        if (!cursor) return;
+      }
+    };
+    find().catch(() => undefined); // the line is extra: without it, the rest still says why
     return () => controller.abort();
   }, [run.id, culpritId]);
   const failed = run.summary.tasks.failed;
@@ -851,9 +860,14 @@ export function RunDetailPage({ id }: { id: string }) {
   // A failed run's Tasks tab starts at Failed.
   const filter = taskFilter ?? (run.state === "failed" ? TASK_FILTERS.findIndex((f) => f.label === "Failed") : 0);
   // A count chip or Why it failed opens Tasks on that state, with focus on its panel.
+  // Already on that view, the URL does not change and the effect does not run: focus it here.
+  const focusTasks = (process?: string) => {
+    if (tab === "tasks" && search.process === process) panels.tasks.current?.focus();
+    else focusPanel.current = true;
+  };
   const showTasks = (label: string) => {
     setTaskFilter(Math.max(0, TASK_FILTERS.findIndex((f) => f.label === label)));
-    focusPanel.current = true;
+    focusTasks();
     go("tasks");
   };
   // The Summary's log links open Logs on the same source, with focus on its panel.
@@ -865,7 +879,7 @@ export function RunDetailPage({ id }: { id: string }) {
   const showProcess = (process: string) => {
     setViews([]);
     setTaskFilter(0);
-    focusPanel.current = true;
+    focusTasks(process);
     go("tasks", { process });
   };
   const w = words(run.workflow.engine);

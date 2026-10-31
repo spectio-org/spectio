@@ -581,3 +581,38 @@ test("P3-parD: the Logs tab's viewer has the search and the level filter", async
   expect(await screen.findByRole("searchbox", { name: "Search the engine log" })).toBeInTheDocument();
   expect(screen.getByRole("group", { name: "Show lines" })).toBeInTheDocument();
 });
+
+test("P3-parD: a count chip on the Tasks tab already shown focuses its panel; the next tab switch keeps focus on the tab (CR-P3PARD-01)", async () => {
+  detail();
+  const router = app(`/runs/${ID}?tab=tasks`);
+  const chips = within(await runHeader()).getByRole("list", { name: "Tasks by state" });
+  await userEvent.click(within(chips).getByRole("button", { name: "Show the 3 running tasks" }));
+  expect(router.state.location.search).toEqual({ tab: "tasks" });
+  await waitFor(() => expect(screen.getByRole("tabpanel", { name: "Tasks" })).toHaveFocus());
+  const logs = screen.getByRole("tab", { name: "Logs" });
+  await userEvent.click(logs);
+  await screen.findByRole("tabpanel", { name: "Logs" });
+  expect(logs).toHaveFocus();
+});
+
+test("P3-parD: First to fail follows the failed tasks' pages to find the task (CR-P3PARD-05)", async () => {
+  const mock = detail(
+    {
+      state: "failed",
+      ended_at: "2026-10-31T08:00:00+00:00",
+      failure: { class: "tool_error", message: "", task_id: "tsk_9", attempt_n: 1 },
+      summary: { tasks: { done: 24, total: 80, failed: 60, cached: 0 }, last_failure: null },
+    },
+    {
+      [`${URL_}/tasks?state=failed&limit=50&cursor=p2`]: {
+        items: [{ id: "tsk_9", process: "NFCORE:RNASEQ:ALIGN", tag: "S09", name: "ALIGN (S09)", state: "failed", stage_id: null }],
+        next: null,
+      },
+      [`${URL_}/tasks?state=failed&limit=50`]: { ...TASKS, next: "p2" },
+    },
+  );
+  app(`/runs/${ID}`);
+  const why = await screen.findByRole("region", { name: "Why it failed" });
+  expect(await within(why).findByText(/First to fail/)).toHaveTextContent("First to fail: ALIGN (S09)");
+  expect(fetched(mock)).toContain(`${URL_}/tasks?state=failed&limit=50&cursor=p2`);
+});

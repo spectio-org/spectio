@@ -150,3 +150,11 @@ test("a search for a regular-expression character is literal", async () => {
   await settle();
   expect(marks().map((m) => m.textContent)).toEqual(["(1/3)"]);
 });
+
+test("a log that ends with a newline has no extra empty line (CR-P3PARD-04)", () => {
+  show("INFO a\nINFO b\n");
+  const levels = screen.getByRole("group", { name: "Show lines" });
+  expect(within(levels).getByRole("button", { name: /All/ })).toHaveTextContent("2");
+  expect(within(levels).getByRole("button", { name: /INFO/ })).toHaveTextContent("2");
+  expect(viewer().children).toHaveLength(2);
+});
