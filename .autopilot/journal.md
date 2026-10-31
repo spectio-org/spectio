@@ -464,3 +464,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - UI parity A is on main. docs-gate first failed on the shot-churn guard (no `screenshots` label on the promotion PR); label added, green on re-run. Lesson: a promotion PR that carries rewritten shots needs the label too.
 - Step B running (workflow from base 4ce9112).
+
+## 2026-10-31 · P3-parB: PR #107 opened
+
+- Workflow stopped "blocked" after round 3 (code-reviewer changes, 1 major: the early head report cut the end grace). Fixed by hand: runner change reverted (7993752a), Head "Ending" on screen, round-3 minors and SEC-P3PARB-02/03 (614b81f5). Round 4 by hand: security approve, code changes (null major already fixed in dcec010e); round 5 code approve. Phone header overflow fixed (b092b7c3); shots retaken twice; doc-reviewer approve 12/14 with four changes applied.
+- PR #107 into integration, label `screenshots`, subscribed. Cost recorded: 60 USD (ceiling lifted for this fix).
