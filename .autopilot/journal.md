@@ -485,3 +485,25 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Thomas's five points after the online demo: parameters one per line (overrides the boards' grid; boards updated), icon tiles on the Launch sections and Launch in the page head, the logos (inbox #91 answered: option b, `nf-core/…` names show the nf-core mark), run detail Copy menu, and the Logs tab (deep link `?tab=logs&source=`, File row, no-wrap viewer opened at the end, Open raw, tints).
 - Workflow p3-task done in 3 review rounds (code approve 0/1/8, security approve 0/0/4), simplifier whitespace only, doc-reviewer approve 13. SAST 0 findings. Ten live shots retaken plus the new `app-run-logs`. Checked live: a demo copy `nf-core/demo` (under `/g/demo-lab/pipelines/nf-core-demo`, not in the repo) shows the nf-core mark on the row, header and Pipeline fact.
 - `pr-body` red on the placeholder body, green after the real body. Every check green on dfc2c0b. Squash-merged as 5af7d47 (`Release-As: 0.0.1`). Cost recorded: 45 USD. Open: FU-P3-27 (raw log headers SEC-P3PARC-01, two screen-reader points, token file). Promotion next, then P3-demo.
+
+## 2026-10-31 · Promotion #110 merged: UI parity C on main
+
+- Integration promoted to `main` by merge commit 00b900d (label `screenshots`; every check green on 4c4e3ba, `e2e-local` included). P3-demo (public read-only demo at `/demo/`) is building; its PR changes `previews.yml` and waits for Thomas's review.
+
+## 2026-10-31 · P3-demo: PR #111 open, waits for Thomas
+
+- Public read-only demo of the 0.0.1 screens at `/demo/` (Thomas: "oui ajoute cela"): `build:demo` answers the API from `web/demo/fixtures.json` (recorded by `tools/media/record_demo.py`, 41 answers, 773 kB, demo data only), writes refused with a reason, banner, hash routing; `previews.yml` publishes it on `main` and PR previews.
+- Workflow p3-task done in 3 review rounds (code approve 0/1/10, security approve 0/0/9), simplifier one rule, doc-reviewer approve 13. SAST 0 findings.
+- An early commit (`f769837`, local only) held the sandbox's kernel build in the recording (SEC-P3DEMO-07). Inbox #92 (b): the PR comes from `autopilot/P3-demo-pub`, one commit with the reviewed tree (`eedd124`); `autopilot/P3-demo` stays local, nothing force-pushed or deleted.
+- PR #111 into integration, label `screenshots`. Not auto-merged: it changes `.github/workflows/previews.yml`; Thomas reviews and merges it. Cost recorded: 40 USD. Thomas asked to stop after this workflow: no subscription, no check-in, no further step.
+
+## 2026-10-31 · Thomas's demo feedback, order set
+
+- After the #111 preview, Thomas: stages and steps not clickable and no details, many elements not clickable, near-empty params, no test workflow in Launch, logs not searchable, no logs or out/err per process and task. Triage: UI-only items → P3-parD; per-task files, exit and resources need the API → P1 Tasks 28, 29 (and 27 stages, 32 screens). Thomas: "go" for P3-parD, then Tasks 27 → 28 → 29 → 32, then Task 7.
+- P3-parD launched (workflow wf_7a6b3bc5-80c, base 5ce1f89). PR #111 still waits for Thomas's review; its fixtures to be re-recorded after both merge.
+
+## 2026-10-31 · P3-parD: PR #112 merged
+
+- UI parity D (Thomas's demo feedback): stage, process and task sheets on the run page (Open in Tasks with `?tab=tasks&process=`, an honest note on what Tasks 28 and 29 add), chip filters, First to fail, searchable logs with a level filter, Try a test pipeline in Launch, real parameter schemas for the synthetic Nextflow and Snakemake pipelines; clickability inventory on P3-M4. UI only, no API change.
+- Workflow p3-task in 2 review rounds (code approve 0/0/9, security approve 0/0/3), simplifier one change, doc-reviewer approve 13 (round 3). SAST 0 findings. The media tooling commit (`24f7cae`) came after review-code: reviewed by the orchestrator, no finding.
+- pr-body first ran on the placeholder body; my failed-jobs re-run then cancelled the edit and label runs (same concurrency group); the label run re-run passed. Every check green on 9909ae9; squash 37d3244 (`Release-As: 0.0.1`). Cost recorded: 45 USD. Open minors in FU-P3-28. Demo server serves the parD build. Next: promotion, then P1 Task 27.

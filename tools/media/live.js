@@ -2,7 +2,7 @@
 //   SPECTIO_URL=http://… node tools/media/live.js <route> <width> <height> <out.png> [step…]
 // $NAME in the route or a step is replaced by that environment variable; SPECTIO_THEME (light or dark) sets the
 // browser's colour scheme, which the screens follow until a theme is picked.
-// Steps: fill:<label>=<value> (the field whose accessible name starts with <label>),
+// Steps: fill:<label>=<value> (the text or search field whose accessible name starts with <label>),
 // click:<button name>, open:<start of a folded section's button name>, top (scroll to the top), wait:<visible text>. Run through shots.py, which preloads page_text.js
 // for the hygiene check.
 const path = require('path');
@@ -19,7 +19,8 @@ const steps = raw.map(expand);
     const [kind, arg] = [step.slice(0, step.indexOf(':')), step.slice(step.indexOf(':') + 1)];
     if (kind === 'fill') {
       const [label, value] = [arg.slice(0, arg.indexOf('=')), arg.slice(arg.indexOf('=') + 1)];
-      await page.getByRole('textbox', { name: new RegExp('^' + label) }).fill(value);
+      const name = new RegExp('^' + label); // a text field, or a search field (the log search, P3-parD)
+      await page.getByRole('textbox', { name }).or(page.getByRole('searchbox', { name })).fill(value);
     } else if (kind === 'click') {
       await page.getByRole('button', { name: arg, exact: true }).click();
     } else if (kind === 'open') {

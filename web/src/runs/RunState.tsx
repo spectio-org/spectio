@@ -1,9 +1,9 @@
 import "./runs.css";
 import { Link } from "@tanstack/react-router";
-import type { Run, RunState } from "../api";
+import type { Run, RunState, Task } from "../api";
 import { Icon } from "../icons";
 import { PipelineMark } from "../shell/EngineMark";
-import { type Tone, classWord, plural, runWord, shortId, tone, words } from "./stateWord";
+import { type Tone, classWord, lastSegment, plural, runWord, shortId, tone, words } from "./stateWord";
 
 // The icons of ui-spec §3.1, one per tone: clock, play, flag, pause, check, cross, slash.
 const SLASH = "M12 21a9 9 0 1 0 0-18 9 9 0 0 0 0 18z M6 18L18 6";
@@ -96,3 +96,18 @@ export function Pipeline({ run, size = 20 }: { run: Run; size?: number }) {
     </span>
   );
 }
+
+/** The last segment of a process name; the full name stays its accessible text (ui-spec §4.4). */
+export function ProcessName({ name }: { name: string }) {
+  const last = lastSegment(name);
+  if (last === name) return <span className="sp-mono">{name}</span>;
+  return (
+    <span className="sp-mono">
+      <span aria-hidden="true">{last}</span>
+      <span className="sp-sr">{name}</span>
+    </span>
+  );
+}
+
+/** A task as one line: the engine's name for it (`ALIGN (S01)`), else its process and tag. */
+export const taskLabel = (t: Task): string => t.name ?? (t.tag ? `${lastSegment(t.process)} (${t.tag})` : lastSegment(t.process));

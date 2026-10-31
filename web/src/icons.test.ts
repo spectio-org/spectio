@@ -13,3 +13,10 @@ test("P3-parC: the board's group icons for filtering, tags, checks and instituti
   expect(groupIcon("fas fa-shield-alt")).toBe(ICONS.shield);
   expect(groupIcon("fas fa-university")).toBe(ICONS.building);
 });
+
+test("P3-parD: every group icon of the synthetic pipelines' schemas is drawn, failure injection as a warning", () => {
+  expect(groupIcon("fas fa-exclamation-triangle")).toBe(ICONS.alert);
+  expect(groupIcon("fas fa-bug")).toBe(ICONS.alert);
+  expect(groupIcon("fas fa-terminal")).toBe(ICONS.terminal);
+  expect(groupIcon("fas fa-microchip")).toBe(ICONS.server);
+});

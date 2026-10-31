@@ -128,3 +128,16 @@ test("UX-PAR-11/12/13/16: subtitle words, linked cards with a detail line, a non
   const sidebar = screen.getByRole("navigation", { name: "Main" });
   expect(within(sidebar).getByText(/^Local · server on login1/)).toBeInTheDocument();
 });
+
+test("P3-parD: a pipeline of Your pipelines opens Launch prefilled with its directory", async () => {
+  serve({
+    "/api/v1/runs:summary": { groups: [{ key: "succeeded", count: 1 }] },
+    "/api/v1/runs?sort=-ended_at": { items: [ended], next: null },
+    "/api/v1/runs?state=": { items: [], next: null },
+    "/api/v1/runs": { items: [ended], next: null },
+  });
+  app("/");
+  const pipelines = await screen.findByRole("region", { name: "Your pipelines" });
+  const link = await within(pipelines).findByRole("link", { name: "Launch plate-qc, /g/demo-lab/pipelines/plate-qc" });
+  expect(link).toHaveAttribute("href", "/launch?location=%2Fg%2Fdemo-lab%2Fpipelines%2Fplate-qc");
+});

@@ -194,3 +194,62 @@
     padding-bottom: 104px;
   }
 }
+
+/* Try a test pipeline (P3-parD): the pipelines this server ran, one click to load. */
+.launch-try {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.launch-try-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sp-text-secondary);
+}
+.launch-try-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  max-width: 100%;
+  min-height: 40px;
+  padding: 4px 12px;
+  border: 1px solid var(--sp-line-input);
+  border-radius: 10px;
+  font: inherit;
+  font-size: 14px;
+  color: var(--sp-text-primary);
+  text-align: left;
+  background: var(--sp-surface-raised);
+  cursor: pointer;
+}
+.launch-try-item:hover {
+  background: var(--sp-surface-subtle);
+}
+.launch-try-item:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 1px;
+}
+.launch-try-name {
+  font-weight: 600;
+}
+.launch-try-where {
+  min-width: 0;
+  overflow: hidden;
+  font-family: var(--sp-font-mono);
+  font-size: 12px;
+  color: var(--sp-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.launch-try-none {
+  margin: 0 0 12px;
+  font-size: 14px;
+  color: var(--sp-text-secondary);
+}
+@media (max-width: 600px) {
+  .launch-try-item {
+    width: 100%;
+  }
+}

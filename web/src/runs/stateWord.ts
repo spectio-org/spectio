@@ -95,6 +95,10 @@ export const engineName = (engine: string | null): string => (engine ? (ENGINE_N
 export const isTerminal = (state: RunState): boolean =>
   state === "succeeded" || state === "failed" || state === "cancelled";
 
+/** Every count, whatever its state. */
+export const total = (counts: Counts) => Object.values(counts).reduce((a, b) => a + b, 0);
+/** The last segment of a process name (`NFCORE:RNASEQ:ALIGN` → `ALIGN`). */
+export const lastSegment = (name: string) => name.split(":").pop() ?? name;
 export const sum = (counts: Counts, ...states: string[]) => states.reduce((n, s) => n + (counts[s] ?? 0), 0);
 
 /** A process or rule has no stored state: its word comes from its task counts. `ended`: the run

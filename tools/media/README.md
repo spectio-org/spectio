@@ -69,7 +69,7 @@ python3 tools/media/shots.py run --all --theme light
       build: GRCh38
     ```
 
-    The shot opens the two sections (`open:` steps) and sets `outdir` and `ref.release`, so the preview shows the whole `ref` map. The launch is not submitted. `app-run-detail-failed` (P3 UI parity A) needs a failed run of the Nextflow copy (`SPECTIO_DEMO_PIPELINE`): launch it with the parameters `fail_mode=exit` and `fail_process=MERGE`, and set `SPECTIO_DEMO_FAILED_RUN` to its ID. `app-run-logs` (P3 UI parity C) opens the Logs tab of that same failed run, on the head's output.
+    The shot opens the two sections (`open:` steps) and sets `outdir` and `ref.release`, so the preview shows the whole `ref` map. The launch is not submitted. `app-run-detail-failed` (P3 UI parity A) needs a failed run of the Nextflow copy (`SPECTIO_DEMO_PIPELINE`): launch it with the parameters `fail_mode=exit` and `fail_process=MERGE`, and set `SPECTIO_DEMO_FAILED_RUN` to its ID. `app-run-logs` (P3 UI parity C) opens the Logs tab of that same failed run, on the head's output; since UI parity D it searches it for `MERGE` and waits for the counter `1 / 4`. `app-run-process` (P3 UI parity D) opens the sheet of process `ALIGN` on `SPECTIO_DEMO_RUN`. Since UI parity D, `app-launch` and `app-launch-phone` pick `SPECTIO_DEMO_PIPELINE` from Try a test pipeline, so the server must have run it once.
 
 ## Terminal and browser side by side: `combo.py`
 
