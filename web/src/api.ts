@@ -1,5 +1,6 @@
-// A small typed client of the routes the screens use (P1 Tasks 17 and 18; api §5).
-// Hand-written: the OpenAPI snapshot has no response models yet (follow-up FU-P3-21).
+// A small typed client of the routes the screens use (P1 Tasks 17, 18 and 20; api §5).
+// Hand-written from the OpenAPI snapshot packages/spectio-server/openapi/0.0.1.json, whose read
+// routes have response models (FU-P3-21); api.test.ts checks the field names against it.
 
 export type Engine = "nextflow" | "snakemake";
 export const ENGINES: Engine[] = ["nextflow", "snakemake"];
@@ -39,7 +40,7 @@ export interface Launched {
   state: string;
 }
 
-/** `GET /api/v1/version` */
+/** `GET /api/v1/version` (schema `ServerVersion`) */
 export interface ServerVersion {
   version: string;
   node: string;
@@ -47,6 +48,103 @@ export interface ServerVersion {
   account: string;
   executor: string;
 }
+
+/** api §7.1 (schema `Run.state`). */
+export type RunState =
+  | "queued"
+  | "running"
+  | "pausing"
+  | "paused"
+  | "awaiting_review"
+  | "cancelling"
+  | "succeeded"
+  | "failed"
+  | "cancelled";
+/** api §7.2 (schema `Task.state`). */
+export type TaskState =
+  | "pending"
+  | "submitted"
+  | "running"
+  | "succeeded"
+  | "failed"
+  | "cached"
+  | "stored"
+  | "aborted"
+  | "not_scheduled";
+export type StageState = "not_started" | "running" | "awaiting_review" | "completed" | "failed" | "skipped";
+export type Counts = Record<string, number>;
+export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
+
+/** Schema `Run`: an item of `GET /runs`. */
+export interface Run {
+  id: string;
+  name: string | null;
+  state: RunState;
+  origin: "ui" | "api" | "wes" | "cli-observed" | "cli-adopted" | null;
+  created_at: string;
+  started_at: string | null;
+  ended_at: string | null;
+  workflow: {
+    engine: string | null;
+    engine_version: string | null;
+    location: string;
+    name: string | null;
+    version: string | null;
+  };
+  profiles: string[];
+  failure: { [key: string]: Json } | null;
+  head: { session: string | null; node: string; alive: boolean; exit_code: number | null } | null;
+  task_counts: Counts;
+  summary: {
+    tasks: { done: number; total: number; failed: number; cached: number };
+    last_failure: { [key: string]: Json } | null;
+  };
+}
+
+/** Schema `RunDetail`: `GET /runs/{id}` and `POST /runs/{id}:cancel`. */
+export interface RunDetail extends Run {
+  params: { [key: string]: Json };
+}
+
+export interface Page<T> {
+  items: T[];
+  next: string | null;
+}
+
+/** Schema `Process`. */
+export interface Process {
+  process: string;
+  stage_id: string | null;
+  counts: Counts;
+  retries: number;
+}
+
+/** Schema `Stage`. */
+export interface Stage {
+  id: string;
+  position: number;
+  name: string | null;
+  source: "declared" | "detected";
+  state: StageState;
+  task_counts: Counts;
+}
+
+/** Schema `Task`. */
+export interface Task {
+  id: string;
+  process: string;
+  tag: string | null;
+  name: string | null;
+  state: TaskState;
+  stage_id: string | null;
+}
+
+/** Schema `Summary`: `GET /runs:summary?group_by=state`. */
+export interface Summary {
+  groups: { key: string; count: number }[];
+}
+
+export type LogSource = "head-out" | "head-err" | "engine";
 
 export interface FieldError {
   field: string;
@@ -88,6 +186,66 @@ export function inspect(
   const query = new URLSearchParams({ location });
   if (revision) query.set("revision", revision);
   return call(`/workflows:inspect?${query}`, { signal });
+}
+
+const query = (params: Record<string, string | number | null | undefined>) => {
+  const found = new URLSearchParams();
+  for (const [key, value] of Object.entries(params)) {
+    if (value !== null && value !== undefined && value !== "") found.set(key, String(value));
+  }
+  const text = found.toString();
+  return text ? `?${text}` : "";
+};
+const run = (id: string) => `/runs/${encodeURIComponent(id)}`;
+
+export interface RunsQuery {
+  state?: string;
+  q?: string;
+  sort?: "-created_at" | "-ended_at";
+  limit?: number;
+  cursor?: string | null;
+}
+
+export function listRuns(params: RunsQuery, signal?: AbortSignal): Promise<Page<Run>> {
+  return call(`/runs${query({ ...params })}`, { signal });
+}
+
+export function runsSummary(signal?: AbortSignal): Promise<Summary> {
+  return call("/runs:summary?group_by=state", { signal });
+}
+
+export function getRun(id: string, signal?: AbortSignal): Promise<RunDetail> {
+  return call(run(id), { signal });
+}
+
+export function listProcesses(id: string, signal?: AbortSignal): Promise<{ items: Process[] }> {
+  return call(`${run(id)}/processes`, { signal });
+}
+
+export function listStages(id: string, signal?: AbortSignal): Promise<{ items: Stage[] }> {
+  return call(`${run(id)}/stages`, { signal });
+}
+
+export function listTasks(
+  id: string,
+  params: { state?: string; process?: string; cursor?: string | null; limit?: number },
+  signal?: AbortSignal,
+): Promise<Page<Task>> {
+  return call(`${run(id)}/tasks${query({ ...params })}`, { signal });
+}
+
+export function cancelRun(id: string): Promise<RunDetail> {
+  return call(`${run(id)}:cancel`, { method: "POST" });
+}
+
+/** The last 64 KiB of a run log, as text. */
+export async function getLog(id: string, source: LogSource, signal?: AbortSignal): Promise<string> {
+  const response = await fetch(`${API}${run(id)}/logs${query({ source })}`, { signal });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, body?.detail ?? body?.title ?? `HTTP ${response.status}`);
+  }
+  return response.text();
 }
 
 export function launch(body: LaunchBody): Promise<Launched> {

@@ -22,3 +22,6 @@ globalThis.ResizeObserver ??= class {
   unobserve() {}
   disconnect() {}
 };
+
+// The router's scroll restoration calls scrollTo, which jsdom does not implement (FU-P3-23).
+window.scrollTo = () => {};
