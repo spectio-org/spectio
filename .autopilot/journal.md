@@ -501,3 +501,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - After the #111 preview, Thomas: stages and steps not clickable and no details, many elements not clickable, near-empty params, no test workflow in Launch, logs not searchable, no logs or out/err per process and task. Triage: UI-only items → P3-parD; per-task files, exit and resources need the API → P1 Tasks 28, 29 (and 27 stages, 32 screens). Thomas: "go" for P3-parD, then Tasks 27 → 28 → 29 → 32, then Task 7.
 - P3-parD launched (workflow wf_7a6b3bc5-80c, base 5ce1f89). PR #111 still waits for Thomas's review; its fixtures to be re-recorded after both merge.
+
+## 2026-10-31 · P3-parD: PR #112 merged
+
+- UI parity D (Thomas's demo feedback): stage, process and task sheets on the run page (Open in Tasks with `?tab=tasks&process=`, an honest note on what Tasks 28 and 29 add), chip filters, First to fail, searchable logs with a level filter, Try a test pipeline in Launch, real parameter schemas for the synthetic Nextflow and Snakemake pipelines; clickability inventory on P3-M4. UI only, no API change.
+- Workflow p3-task in 2 review rounds (code approve 0/0/9, security approve 0/0/3), simplifier one change, doc-reviewer approve 13 (round 3). SAST 0 findings. The media tooling commit (`24f7cae`) came after review-code: reviewed by the orchestrator, no finding.
+- pr-body first ran on the placeholder body; my failed-jobs re-run then cancelled the edit and label runs (same concurrency group); the label run re-run passed. Every check green on 9909ae9; squash 37d3244 (`Release-As: 0.0.1`). Cost recorded: 45 USD. Open minors in FU-P3-28. Demo server serves the parD build. Next: promotion, then P1 Task 27.
