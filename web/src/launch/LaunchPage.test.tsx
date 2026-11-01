@@ -278,7 +278,7 @@ test("UX-PAR-31/32: a Snakemake nested map is a section of dotted keys, rebuilt 
   await userEvent.click(screen.getByRole("button", { name: "Load" }));
   const ref = await screen.findByRole("region", { name: /^ref/ });
   await userEvent.click(within(ref).getByRole("button", { name: /^ref/ }));
-  const release = within(ref).getByRole("textbox", { name: "ref.release" });
+  const release = within(ref).getByRole("textbox", { name: "ref.release (optional)" });
   await userEvent.type(release, "114");
   const preview = screen.getByLabelText("Config preview, as YAML", { selector: "pre" });
   expect(preview.textContent).toBe("ref:\n  species: homo_sapiens\n  release: 114\n");
@@ -436,4 +436,77 @@ test("CR-P3PARC-01: a boolean is a row too: the name with its type, default and 
   await userEvent.click(box);
   expect(row.querySelector(".launch-param-meta")).toHaveTextContent("boolean · changed · default false");
   expect(box).toHaveAccessibleDescription("Skip the QC steps. · boolean · changed · default false");
+});
+
+// The client check (Thomas, 2026-10-31, todo.md UI; P1 Task 32): each value against its schema type
+// before Launch; the error on its field, tied by aria-describedby; Launch stays disabled with the
+// reason as text; the server still checks.
+const CHECKED = {
+  ...INSPECTED,
+  schema: {
+    type: "object",
+    required: ["input"],
+    properties: {
+      input: { type: "string", pattern: "\\.csv$" },
+      depth: { type: "integer", minimum: 1, maximum: 9, default: 3 },
+      ratio: { type: "number" },
+      flag: { type: "boolean" },
+    },
+  },
+};
+
+test("each row says required or optional, as text in its accessible name", async () => {
+  page();
+  await load(CHECKED);
+  expect(screen.getByRole("textbox", { name: "input (required)" })).toBeRequired();
+  expect(screen.getByRole("textbox", { name: "depth (optional)" })).not.toBeRequired();
+  expect(screen.getByRole("checkbox", { name: "flag (optional)" })).toBeInTheDocument();
+});
+
+test("a value of the wrong type shows its error on the field and keeps Launch disabled, with the reason", async () => {
+  page();
+  await load(CHECKED);
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
+  expect(launch()).not.toHaveAttribute("aria-disabled");
+  const depth = screen.getByRole("textbox", { name: /^depth/ });
+  expect(depth).toHaveAttribute("inputmode", "numeric");
+  expect(depth).not.toHaveAttribute("type", "number"); // a checked text input
+  await userEvent.type(depth, "12");
+  expect(depth).toHaveAttribute("aria-invalid", "true");
+  expect(depth).toHaveAccessibleDescription(expect.stringContaining("Must be at most 9."));
+  expect(launch()).toHaveAttribute("aria-disabled", "true");
+  expect(launch()).toHaveAccessibleDescription("Fix depth: Must be at most 9.");
+  await userEvent.click(launch());
+  expect(fetchMock).toHaveBeenCalledTimes(1); // nothing sent
+  await userEvent.clear(depth);
+  await userEvent.type(depth, "4");
+  expect(depth).toHaveAttribute("aria-invalid", "false");
+  expect(launch()).not.toHaveAttribute("aria-disabled");
+  const ratio = screen.getByRole("textbox", { name: /^ratio/ });
+  expect(ratio).toHaveAttribute("inputmode", "decimal");
+  await userEvent.type(ratio, "1,5");
+  expect(ratio).toHaveAccessibleDescription(expect.stringContaining("Must be a number, such as 0.5."));
+});
+
+test("an empty required field says so on the field once Launch is pressed; a wrong value says what is wrong", async () => {
+  page();
+  await load(CHECKED);
+  const input = screen.getByRole("textbox", { name: /^input/ });
+  expect(input).toHaveAttribute("aria-invalid", "false"); // not before anyone touched it
+  await userEvent.click(launch());
+  expect(input).toHaveAttribute("aria-invalid", "true");
+  expect(input).toHaveAccessibleDescription(expect.stringContaining("Required: give a value."));
+  await userEvent.type(input, "/data/s.tsv");
+  expect(input).toHaveAccessibleDescription(expect.stringContaining("Must match the pattern \\.csv$."));
+});
+
+test("the server still checks: a refusal of a value the client let through shows on its field", async () => {
+  page();
+  await load(CHECKED);
+  await userEvent.type(screen.getByRole("textbox", { name: /^input/ }), "/data/s.csv");
+  fetchMock.mockResolvedValueOnce(json(422, { status: 422, errors: [{ field: "params.input", message: "is not a file" }] }));
+  await userEvent.click(launch());
+  const input = screen.getByRole("textbox", { name: /^input/ });
+  await waitFor(() => expect(input).toHaveAttribute("aria-invalid", "true"));
+  expect(input).toHaveAccessibleDescription(expect.stringContaining("is not a file"));
 });

@@ -20,6 +20,9 @@ export interface Field {
   help: string | null;
   format: string | null;
   options?: unknown[]; // the raw enum values: an integer enum sends integers (CR-P3T19-02)
+  minimum?: number;
+  maximum?: number;
+  pattern?: string;
 }
 
 export interface Section {
@@ -34,6 +37,7 @@ type Obj = Record<string, unknown>;
 const isObj = (v: unknown): v is Obj => typeof v === "object" && v !== null && !Array.isArray(v);
 const SIMPLE = ["string", "integer", "number", "boolean"];
 const text = (v: unknown) => (typeof v === "string" ? v : null);
+const num = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 /** Keys from the pipeline are data: these would reach `Object.prototype` (SEC-P3PARB-01). */
 const UNSAFE = new Set(["__proto__", "constructor", "prototype"]);
 /** A record's own value only: an inherited `toString` or `constructor` is not a value. */
@@ -79,13 +83,17 @@ function field(path: string[], prop: Obj, required: boolean): Field {
     help: text(prop.help_text) ?? text(prop.description),
     format: text(prop.format),
     ...(enumValues ? { options: enumValues } : {}),
+    ...(num(prop.minimum) !== undefined ? { minimum: num(prop.minimum) } : {}),
+    ...(num(prop.maximum) !== undefined ? { maximum: num(prop.maximum) } : {}),
+    ...(typeof prop.pattern === "string" ? { pattern: prop.pattern } : {}),
   };
 }
 
 /** The fields of a map, its nested maps flattened to dotted keys when `nest`. An unsafe key is
- * left out and its dotted path pushed to `skipped`, for the form to name. */
-function fields(group: Obj, prefix: string[], nest: boolean, skipped: string[]): Field[] {
-  const required = Array.isArray(group.required) ? group.required : [];
+ * left out and its dotted path pushed to `skipped`, for the form to name. `also`: keys required
+ * from outside the map (an nf-core schema's top-level `required`, which names grouped keys). */
+function fields(group: Obj, prefix: string[], nest: boolean, skipped: string[], also: unknown[] = []): Field[] {
+  const required = [...(Array.isArray(group.required) ? group.required : []), ...also];
   const props = propertiesOf(group) ?? {};
   const parentDefault = isObj(group.default) ? group.default : {};
   return Object.entries(props).flatMap(([key, p]) => {
@@ -112,11 +120,11 @@ export function schemaFields(schema: JSONSchema | null, skipped: string[] = [], 
       skipped.push(f.key);
       return false;
     });
-  const section = (title: string, group: Obj, prefix: string[], nested: boolean): Section => ({
+  const section = (title: string, group: Obj, prefix: string[], nested: boolean, also: unknown[] = []): Section => ({
     title,
     description: text(group.description),
     icon: text(group.fa_icon),
-    fields: unique(fields(group, prefix, nested, skipped)),
+    fields: unique(fields(group, prefix, nested, skipped, also)),
   });
   if (!schema) return [];
   const defs = isObj(schema.$defs) ? schema.$defs : isObj(schema.definitions) ? schema.definitions : null;
@@ -128,7 +136,8 @@ export function schemaFields(schema: JSONSchema | null, skipped: string[] = [], 
     const names = [...new Set([...refs, ...Object.keys(defs)])];
     for (const name of names) {
       const group = defs[name];
-      if (isObj(group)) sections.push(section(String(group.title ?? name), group, [], false));
+      const top = Array.isArray(schema.required) ? schema.required : [];
+      if (isObj(group)) sections.push(section(String(group.title ?? name), group, [], false, top));
     }
     if (isObj(schema.properties)) sections.push({ ...section("Other parameters", schema, [], false), description: null });
     return sections.filter((s) => s.fields.length > 0);
@@ -165,6 +174,54 @@ export function paramValue(field: Field, value: string | boolean | undefined): u
   }
   if (field.type === "json") return JSON.parse(typed);
   return typed;
+}
+
+// --- The client check before Launch (Thomas, 2026-10-31, todo.md UI; P1 Task 32) ---------------
+
+export const REQUIRED = "Required: give a value.";
+const INTEGER = /^[+-]?\d+$/;
+const NUMBER = /^[+-]?(\d+\.?\d*|\.\d+)([eE][+-]?\d+)?$/;
+
+/** A JSON Schema `pattern` as a RegExp, unanchored as the spec reads it, without the `u` flag so
+ * the identity escapes many schemas use (`\@`) still compile; null when the browser cannot compile
+ * it (a Python- or PCRE-only form such as `(?i)`): the server checks it then. */
+function compiled(pattern: string): RegExp | null {
+  try {
+    return new RegExp(pattern);
+  } catch {
+    return null;
+  }
+}
+
+/** What is wrong with a field's value, in words, or null. An empty optional field is valid; the
+ * server still checks every value (this check only helps). */
+export function checkValue(field: Field, value: string | boolean | undefined): string | null {
+  if (field.type === "boolean") return value === undefined || typeof value === "boolean" ? null : "Must be true or false.";
+  const typed = typeof value === "string" ? value.trim() : "";
+  if (typed === "") return field.required ? REQUIRED : null;
+  if (field.type === "json") {
+    try {
+      JSON.parse(typed);
+    } catch {
+      return "Not valid JSON.";
+    }
+    return null;
+  }
+  if (field.type === "enum") {
+    const options = field.options ?? [];
+    return options.some((o) => String(o) === typed) ? null : `Must be one of: ${options.map(String).join(", ")}.`;
+  }
+  if (field.type === "integer" && !INTEGER.test(typed)) return "Must be a whole number, such as 10.";
+  if (field.type === "number" && !NUMBER.test(typed)) return "Must be a number, such as 0.5.";
+  if (field.type === "integer" || field.type === "number") {
+    const n = Number(typed);
+    if (field.minimum !== undefined && n < field.minimum) return `Must be at least ${field.minimum}.`;
+    if (field.maximum !== undefined && n > field.maximum) return `Must be at most ${field.maximum}.`;
+  }
+  if (field.type === "string" && field.pattern !== undefined && compiled(field.pattern)?.test(typed) === false) {
+    return `Must match the pattern ${field.pattern}.`;
+  }
+  return null;
 }
 
 /** True when the field sends a value that differs from its default ("changed"). */
