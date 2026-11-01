@@ -3,8 +3,9 @@
 
 The confined walk, the `.command.run` hiding, the file lists per engine, the paths the projector
 keeps from events, and the head script's engine log. The routes are in
-`api/test_taskfiles_api.py`. Snakemake events are synthetic lines in the shape of api §14.1: the
-logger plugin that sends them (P1 Task 7) is not built yet.
+`api/test_taskfiles_api.py`. Snakemake events are synthetic lines in the shape of api §14.1, as
+the logger plugin (P1 Task 7) sends them; `api/test_failure.py::test_smk_real_plugin` replays the
+plugin's own spool from a real run, the rules' logs included.
 """
 
 import os

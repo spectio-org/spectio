@@ -1,0 +1,37 @@
+# A two-rule workflow for the logger plugin's tests (P1 Task 7): one job with a log, a
+# benchmark, threads and resources (raw sbatch flags among them), one that fails with its log.
+# config: fail=1 makes `broken` fail.
+
+rule all:
+    input:
+        "out/a.txt",
+        "out/b.txt",
+
+
+rule measured:
+    output:
+        "out/a.txt",
+    log:
+        "logs/measured.log",
+    benchmark:
+        "benchmarks/measured.tsv"
+    threads: 2
+    resources:
+        mem_mb=100,
+        runtime=5,
+        slurm_extra="--export=ALL",
+    shell:
+        "echo measured > {output} 2> {log}"
+
+
+rule broken:
+    input:
+        "out/a.txt",
+    output:
+        "out/b.txt",
+    log:
+        "logs/broken.log",
+    params:
+        fail=config.get("fail", 0),
+    shell:
+        "echo broken > {log}; test {params.fail} = 0 && cp {input} {output}"
