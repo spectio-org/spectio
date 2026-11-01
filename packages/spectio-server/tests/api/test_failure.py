@@ -51,9 +51,16 @@ delay = os.path.join(here, "delay")
 if os.path.exists(delay):
     time.sleep(float(open(delay).read()))
 ids = sys.argv[sys.argv.index("-j") + 1].split(",")
-for job in ids:
-    print(f"{{job}}|OUT_OF_MEMORY|0:125|None|0|00:01:05|2G|00:10:00")
-    print(f"{{job}}.batch|OUT_OF_MEMORY|0:125||2097152K|00:01:05||")
+lag = os.path.join(here, "lag")  # a state per call, "-" for no row; then OUT_OF_MEMORY
+text = open(lag).read() if os.path.exists(lag) else ""
+states = text.split(",") if text else []
+if states:
+    with open(lag, "w") as f:
+        f.write(",".join(states[1:]))
+state = states[0] if states else "OUT_OF_MEMORY"
+for job in ids if state != "-" else ():
+    print(f"{{job}}|{{state}}|0:125|None|0|00:01:05|2G|00:10:00")
+    print(f"{{job}}.batch|{{state}}|0:125||2097152K|00:01:05||")
 """
 
 
@@ -473,6 +480,41 @@ def test_req15_rebuild_no_calls(settings: Settings, fakebin: Fake) -> None:
         assert not acct.step() and fakebin.calls() == []
     finally:
         booted.close()
+
+
+@pytest.mark.parametrize("lag", ["-", "RUNNING"])
+def test_sacct_lag_asked_again(settings: Settings, writer: Writer, fakebin: Fake, lag: str) -> None:
+    """A job sacct does not know yet, or knows in a state that is not terminal (slurmdbd lags,
+    [to be validated] on `slurm-mini`, P1 Task 22), is kept neither in memory nor in
+    `sacct.json`: the next view asks it again and then shows it."""
+    (fakebin.dir / "lag").write_text(lag)
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    run = Run(settings, writer)
+    run.nf_task(0, 1, "FAILED", "TERMINATE")
+    detail(client)
+    assert acct.step()
+    assert acct.rows(RUN) == {}
+    assert not (run.paths.run_dir / ".spectio" / "sacct.json").exists()
+    assert detail(client)["failures"][0]["scheduler"]["accounting"] == "pending"
+    assert acct.step() and fakebin.ids() == ["8812401", "8812401"]
+    scheduler = detail(client)["failures"][0]["scheduler"]
+    assert scheduler["accounting"] == "available" and scheduler["state"] == "OUT_OF_MEMORY"
+
+
+def test_sacct_lag_capped(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """A job sacct never answers is asked MAX_TRIES times, then recorded as null."""
+    (fakebin.dir / "lag").write_text("-,-,-,-")
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    run = Run(settings, writer)
+    run.nf_task(0, 1, "FAILED", "TERMINATE")
+    for _ in range(3):
+        detail(client)
+        assert acct.step()
+    assert acct.rows(RUN) == {"8812401": None}
+    assert detail(client)["failures"][0]["scheduler"]["accounting"] == "unavailable"
+    assert not acct.step() and len(fakebin.calls()) == 3
 
 
 def test_req15_cache_file(

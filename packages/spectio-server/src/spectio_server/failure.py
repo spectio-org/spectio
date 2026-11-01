@@ -47,6 +47,12 @@ LOG_TAIL_LINES = 20
 MAX_BENCHMARK_BYTES = 65536
 ENDED = ("succeeded", "failed", "aborted")
 MIB = 1048576
+MAX_TRIES = 3  # sacct calls for a job it does not know yet, or not as ended; then null
+# The states a job ends in (`sacct(1)`, JOB STATE CODES); a row in any other is not kept.
+TERMINAL = frozenset(
+    {"COMPLETED", "FAILED", "OUT_OF_MEMORY", "TIMEOUT", "CANCELLED", "NODE_FAIL", "PREEMPTED"}
+    | {"BOOT_FAIL", "DEADLINE"}
+)
 _MAX = 2**63 - 1
 
 Status = Literal["available", "pending", "unavailable"]
@@ -167,7 +173,10 @@ class Accounting:
     in memory and in `<run dir>/.spectio/sacct.json`, 0600, written by a rename in the run's
     checked directory and read back with no link followed. A run's file is read (`load`, in
     the file pool) before any of its jobs is asked (`want`), so a cached job is never asked
-    again, after a rebuild too. A job whose call failed is not asked again by this process."""
+    again, after a rebuild too. A job whose call failed is not asked again by this process.
+    Only a row in a TERMINAL state is kept: a job `sacct` does not know yet, or not as ended
+    (slurmdbd records a job after it ends, with a lag, [to be validated] on `slurm-mini`, P1
+    Task 22), is asked again on the next view, up to MAX_TRIES calls, then kept as None."""
 
     def __init__(
         self,
@@ -189,6 +198,7 @@ class Accounting:
         self._loaded: set[str] = set()
         self._failed: dict[str, set[str]] = {}
         self._asked: dict[str, set[str]] = {}  # job ID → the runs that wait for it
+        self._tries: dict[str, int] = {}  # job ID → calls that did not answer it as ended
         self._wake = threading.Event()
         self._start_thread = start_thread
         self._thread: threading.Thread | None = None
@@ -286,11 +296,18 @@ class Accounting:
         touched: dict[str, dict[str, SacctRow | None]] = {}
         with self._lock:
             for job in ids:
-                for run_id in self._asked.pop(job, set()):
+                runs = self._asked.pop(job, set())
+                row = found.get(job) if found is not None else None
+                if found is not None and (row is None or row.state not in TERMINAL):
+                    self._tries[job] = self._tries.get(job, 0) + 1
+                    if self._tries[job] < MAX_TRIES:
+                        continue  # not answered: the next view asks it again
+                    row = None
+                for run_id in runs:
                     if found is None:
                         self._failed.setdefault(run_id, set()).add(job)
                         continue
-                    self._rows.setdefault(run_id, {})[job] = found.get(job)
+                    self._rows.setdefault(run_id, {})[job] = row
                     touched[run_id] = dict(self._rows[run_id])
         for run_id, rows in touched.items():
             self._save(run_id, rows)
