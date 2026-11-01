@@ -14,7 +14,7 @@ from sqlalchemy import Connection, insert, select
 
 from spectio_server.api import models
 from spectio_server.api.problems import Problem
-from spectio_server.api.runs_read import read, run_detail, run_row
+from spectio_server.api.runs_read import context, read, run_detail, run_row
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import Projection
 from spectio_server.store.runs import first
@@ -67,4 +67,4 @@ def cancel_run(request: Request, run_id: str, response: Response) -> dict[str, A
     writer: Writer = request.app.state.writer
     response.status_code = writer.submit(lambda conn: _cancel(conn, run_id)).result()
     with read(request) as conn:
-        return run_detail(conn, run_id)
+        return run_detail(conn, run_id, context(request))

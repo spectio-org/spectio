@@ -1490,3 +1490,19 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a) until `slurm-mini` (P1 Task 22) and the EMBL check show what Nextflow reports; then (b) if needed, a local change in `files.taskfiles.task_work_rel`.
 - **Assumed (2026-10-31, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 7 as built, written into the notes of 2026-10-31 in api §5, §7 and §14.1, architecture §13.7 and dev-env §15.3 req. 13; rule 8 as built until FU-P3-31 applies (b). P1 Task 28's interface is not edited: its differences are listed on [P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-28).
 - **Blocked:** nothing.
+
+### #95 · Assumed: the failure summary and resources as built (P3 Task 29)
+
+- **Covers:** [P1 Task 29](../plans/P1-walking-skeleton.md#task-29-failure-summary-and-resources-per-job); [architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine), [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1) (Run, Resources), [§7](../specs/api-and-data-model.md#7-database-schema) and [§14.1](../specs/api-and-data-model.md#141-driven-runs-001), [dev-env §15.3 req. 15](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts).
+- **Context:** the specs say what the failure summary and the resources show, and how `sacct` is called, but not some things the code had to choose. Step P3-t29 took these rules:
+  1. **The Snakemake message.** `job_error` gains `msg` (cut at 4096 characters), read by the projector and never written to the event log; its SLURM state and reason go to `attempts.scheduler` (migration `0007`).
+  2. **Benchmarks at view time.** The rule's `benchmark:` file is read when the tasks page is served, in the file pool, not by the projector at job end, so the single writer never waits on the file system.
+  3. **The `sacct` cache.** In the server's memory and `.spectio/sacct.json`, not in the database; a failed call is not repeated by the same process; Snakemake failures queue nothing, their usage comes from the cache when the resources asked for it.
+  4. **New fields.** `scheduler.accounting` (`available`, `pending`, `unavailable`) and `attempt_n` on task items (it gives the Job files routes their `n`, CR-P3T28-05 r1).
+  5. **Order and message.** Failures in the order their last attempts were created; `message` only on the culprit's attempt.
+  6. **Units.** Snakemake `mem_mb` read as MiB, `runtime` as minutes **[to be validated]**.
+  7. **`log_tail`.** Snakemake falls back from the SLURM job log to the rule's first log; `null` when the read does not answer within 5 s.
+- **Options for rule 2:** (a) read at view time (as built); (b) read by the projector at job end, as P1 Task 29 planned, through a pool with a short timeout.
+- **Recommendation:** (a): the writer never touches a run's files, as req. 13 asks, and a benchmark written late is still found.
+- **Assumed (2026-11-01, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 7 as built, written into the notes of 2026-11-01 in api §5, §7 and §14.1, architecture §13.7 and dev-env §15.3 req. 15. The logger plugin's side (`msg`, `threads`, `resources`, `benchmark`) waits for P1 Task 7 and the cluster check for P1 Task 22 (follow-up FU-P3-32).
+- **Blocked:** nothing.

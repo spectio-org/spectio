@@ -25,6 +25,8 @@ from spectio.config import Settings
 from spectio.runner.rundir import RUN_ID
 from spectio_server.api import models
 from spectio_server.api.problems import Invalid, not_found
+from spectio_server.failure import Context, build_failures, task_resources
+from spectio_server.files.pool import READ_TIMEOUT_S
 from spectio_server.stages.freeze import FROZEN as STAGES_FROZEN
 from spectio_server.store.schema import (
     RUN_STATES,
@@ -168,7 +170,14 @@ def run_row(conn: Connection, run_id: str) -> Row[Any]:
     return row
 
 
-def run_detail(conn: Connection, run_id: str) -> dict[str, Any]:
+def context(request: Request) -> Context:
+    """What a view reads files and accounting with (P1 Task 29)."""
+    state = request.app.state
+    return Context(state.settings.runs_root, state.files, state.accounting, READ_TIMEOUT_S)
+
+
+def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
+    """The run, with its failures (P1 Task 29): each job that failed on its last attempt."""
     row = run_row(conn, run_id)
     found = run_json(
         row, _profiles(conn, [run_id]).get(run_id, []), _stage_modes(conn, [run_id]).get(run_id)
@@ -183,7 +192,14 @@ def run_detail(conn: Connection, run_id: str) -> dict[str, Any]:
         .order_by(run_inputs.c.version.desc())
         .limit(1)
     ).scalar()
-    return {**found, "params": params or {}, "stages_note": note if isinstance(note, str) else None}
+    failures, total = build_failures(conn, run_id, row.engine, row.failure, ctx)
+    return {
+        **found,
+        "params": params or {},
+        "stages_note": note if isinstance(note, str) else None,
+        "failures": failures,
+        "failures_total": total,
+    }
 
 
 # --- Cursors: base64url of [sort value, id], or of the id alone when it is the sort key -----
@@ -303,7 +319,7 @@ def server_version(request: Request) -> dict[str, Any]:
 @router.get("/runs/{run_id}", response_model=models.RunDetail)
 def get_run(request: Request, run_id: str) -> dict[str, Any]:
     with read(request) as conn:
-        return run_detail(conn, run_id)
+        return run_detail(conn, run_id, context(request))
 
 
 @router.get("/runs/{run_id}/processes", response_model=models.ProcessList)
@@ -397,8 +413,10 @@ def list_tasks(
         query = query.where(tasks.c.process_or_rule == process)
     query = _page(query, tasks.c.id, tasks.c.id, cursor, limit, descending=False, timestamp=False)
     with read(request) as conn:
-        run_row(conn, run_id)
-        rows = conn.execute(query).all()
+        run = run_row(conn, run_id)
+        rows = conn.execute(query).all()[: limit + 1]
+        page = [r.id for r in rows[:limit]]
+        resources = task_resources(conn, run_id, run.engine, page, context(request))
     items = [
         {
             "id": r.id,
@@ -407,6 +425,8 @@ def list_tasks(
             "name": r.name,
             "state": r.state,
             "stage_id": r.stage_id,
+            "attempt_n": resources[r.id][0],
+            "resources": resources[r.id][1],
         }
         for r in rows[:limit]
     ]

@@ -30,6 +30,7 @@ from spectio_sdk.events import (
     SnakemakeSlurmSubmitted,
     SnakemakeWorkflowStarted,
 )
+from spectio_server.failure import SchedulerInfo, parse_smk_slurm_message, smk_resources
 from spectio_server.files.taskfiles import launch_rel, log_kind, native_id
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import (
@@ -73,7 +74,7 @@ def project(p: Projection, data: BaseModel) -> None:
         _submitted(p, data)
     elif isinstance(data, SnakemakeJobError):
         aux = data.aux.external_jobid if data.aux else None
-        _job_end(p, data.jobid, "failed", data.log, aux)
+        _job_end(p, data.jobid, "failed", data.log, aux, parse_smk_slurm_message(data.msg))
 
 
 def drives(p: Projection) -> bool:
@@ -126,9 +127,23 @@ def _job_info(p: Projection, data: SnakemakeJobInfo) -> None:
             launch_n=p.launch_n,
             state="running",
             logs=_logs(p, [], data.log),
+            resources=_resources(p, data),
         )
     )
     p.sync_tasks([task_id])
+
+
+def _resources(p: Projection, data: SnakemakeJobInfo) -> dict[str, Any]:
+    """The requested threads, memory and runtime, and the benchmark file's path when it lies in
+    the launch directory (req. 13), read when the job is viewed (P1 Task 29)."""
+    found = smk_resources(data.threads, data.resources)
+    roots = p.roots()
+    if data.benchmark and roots is not None:
+        if (rel := launch_rel(roots.launch_dir, data.benchmark)) is not None:
+            found["benchmark"] = str(rel)
+        else:
+            p.dropped["path_outside_run"] += 1
+    return found
 
 
 def _logs(p: Projection, kept: list[dict[str, str]], paths: list[str]) -> list[dict[str, str]]:
@@ -188,11 +203,14 @@ def _job_end(
     state: str,
     paths: list[str] | None = None,
     job: str | int | None = None,
+    said: SchedulerInfo | None = None,
 ) -> None:
     last = _open_attempt(p, jobid)
     if last is None:
         return
     values = _where(p, last, paths or [], job)
+    if said is not None:  # the SLURM executor plugin's state and reason, never its text
+        values["scheduler"] = {"state": said.state, "reason": said.reason}
     p.conn.execute(update(attempts).where(attempts.c.id == last.id).values(state=state, **values))
     if state == "failed":  # on Snakemake, the culprit is the launch's last failed job
         p.set_launch(culprit_attempt_id=last.id)

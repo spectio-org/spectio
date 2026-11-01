@@ -81,9 +81,43 @@ class Run(BaseModel):
     summary: RunSummary
 
 
+class Scheduler(BaseModel):
+    """What the scheduler said of a failed job (P1 Task 29): its state and reason, from `sacct`
+    or the engine's own message, and requested and used memory and time, from `sacct` or the
+    trace. `accounting` says whether `sacct` answered, is being asked, or is unavailable (off,
+    not on SLURM, no job ID, or no answer)."""
+
+    state: str | None
+    reason: str | None
+    state_source: Literal["sacct", "engine_message"] | None
+    req_mem_bytes: int | None
+    max_rss_bytes: int | None
+    time_limit_s: int | None
+    elapsed_s: int | None
+    usage_source: Literal["sacct", "trace"] | None
+    accounting: Literal["available", "pending", "unavailable"]
+
+
+class Failure(BaseModel):
+    """A job that failed on its last attempt (P1 Task 29); `log_tail` is the last 20 lines of
+    its log, escape sequences removed, or null when it could not be read."""
+
+    task_id: str
+    attempt_n: int
+    process: str
+    tag: str | None
+    exit_code: int | None
+    message: str | None
+    native_id: str | None
+    scheduler: Scheduler
+    log_tail: str | None
+
+
 class RunDetail(Run):
     params: dict[str, JsonValue]
     stages_note: str | None  # why declared stages were not applied (P1 Task 27)
+    failures: list[Failure]  # the first 10 (P1 Task 29)
+    failures_total: int
 
 
 class RunList(BaseModel):
@@ -132,6 +166,19 @@ class StageList(BaseModel):
     items: list[Stage]
 
 
+class Resources(BaseModel):
+    """Requested (`cpus`, `memory_bytes`, `time_s`) and measured values of the task's last
+    attempt; `source` names where the measures come from (P1 Task 29). Unknown: null."""
+
+    cpus: int | None
+    memory_bytes: int | None
+    time_s: float | None
+    realtime_s: float | None
+    cpu_percent: float | None
+    peak_rss_bytes: int | None
+    source: Literal["trace", "benchmark", "sacct"] | None
+
+
 class Task(BaseModel):
     id: str
     process: str
@@ -139,6 +186,8 @@ class Task(BaseModel):
     name: str | None
     state: TaskState
     stage_id: str | None
+    attempt_n: int | None  # the last attempt's number, for its files (P1 Tasks 28, 29)
+    resources: Resources
 
 
 class TaskList(BaseModel):
