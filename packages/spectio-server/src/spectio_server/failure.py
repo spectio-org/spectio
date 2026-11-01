@@ -101,10 +101,7 @@ def _number(value: object) -> float | None:
     if isinstance(value, bool):
         return None
     if isinstance(value, str):
-        try:
-            value = float(value) if re.fullmatch(r"[0-9]{1,19}(\.[0-9]{1,9})?", value) else None
-        except ValueError:
-            return None
+        value = float(value) if re.fullmatch(r"[0-9]{1,19}(\.[0-9]{1,9})?", value) else None
     if isinstance(value, int | float) and 0 <= value <= _MAX:
         return float(value)
     return None
