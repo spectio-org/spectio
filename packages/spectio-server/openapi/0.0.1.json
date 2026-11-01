@@ -1,6 +1,94 @@
 {
   "components": {
     "schemas": {
+      "Failure": {
+        "description": "A job that failed on its last attempt (P1 Task 29); `log_tail` is the last 20 lines of\nits log, escape sequences removed, or null when it could not be read.",
+        "properties": {
+          "attempt_n": {
+            "title": "Attempt N",
+            "type": "integer"
+          },
+          "exit_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Code"
+          },
+          "log_tail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Tail"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "native_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Native Id"
+          },
+          "process": {
+            "title": "Process",
+            "type": "string"
+          },
+          "scheduler": {
+            "$ref": "#/components/schemas/Scheduler"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt_n",
+          "process",
+          "tag",
+          "exit_code",
+          "message",
+          "native_id",
+          "scheduler",
+          "log_tail"
+        ],
+        "title": "Failure",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -152,6 +240,104 @@
           "items"
         ],
         "title": "ProcessList",
+        "type": "object"
+      },
+      "Resources": {
+        "description": "Requested (`cpus`, `memory_bytes`, `time_s`) and measured values of the task's last\nattempt; `source` names where the measures come from (P1 Task 29). Unknown: null.",
+        "properties": {
+          "cpu_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu Percent"
+          },
+          "cpus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpus"
+          },
+          "memory_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Bytes"
+          },
+          "peak_rss_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak Rss Bytes"
+          },
+          "realtime_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Realtime S"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "trace",
+                  "benchmark",
+                  "sacct"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "time_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time S"
+          }
+        },
+        "required": [
+          "cpus",
+          "memory_bytes",
+          "time_s",
+          "realtime_s",
+          "cpu_percent",
+          "peak_rss_bytes",
+          "source"
+        ],
+        "title": "Resources",
         "type": "object"
       },
       "Run": {
@@ -324,6 +510,17 @@
             ],
             "title": "Failure"
           },
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/Failure"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
+          "failures_total": {
+            "title": "Failures Total",
+            "type": "integer"
+          },
           "head": {
             "anyOf": [
               {
@@ -381,6 +578,17 @@
             "title": "Profiles",
             "type": "array"
           },
+          "stages_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Stages Note"
+          },
           "started_at": {
             "anyOf": [
               {
@@ -435,7 +643,10 @@
           "head",
           "task_counts",
           "summary",
-          "params"
+          "params",
+          "stages_note",
+          "failures",
+          "failures_total"
         ],
         "title": "RunDetail",
         "type": "object"
@@ -484,15 +695,148 @@
             ],
             "title": "Last Failure"
           },
+          "stage_mode": {
+            "enum": [
+              "declared",
+              "detected",
+              "quarters"
+            ],
+            "title": "Stage Mode",
+            "type": "string"
+          },
           "tasks": {
             "$ref": "#/components/schemas/TaskSummary"
           }
         },
         "required": [
           "tasks",
-          "last_failure"
+          "last_failure",
+          "stage_mode"
         ],
         "title": "RunSummary",
+        "type": "object"
+      },
+      "Scheduler": {
+        "description": "What the scheduler said of a failed job (P1 Task 29): its state and reason, from `sacct`\nor the engine's own message, and requested and used memory and time, from `sacct` or the\ntrace. `accounting` says whether `sacct` answered, is being asked, or is unavailable (off,\nnot on SLURM, no job ID, or no answer).",
+        "properties": {
+          "accounting": {
+            "enum": [
+              "available",
+              "pending",
+              "unavailable"
+            ],
+            "title": "Accounting",
+            "type": "string"
+          },
+          "elapsed_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed S"
+          },
+          "max_rss_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Rss Bytes"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "req_mem_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Req Mem Bytes"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "state_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "sacct",
+                  "engine_message"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Source"
+          },
+          "time_limit_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit S"
+          },
+          "usage_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "sacct",
+                  "trace"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Source"
+          }
+        },
+        "required": [
+          "state",
+          "reason",
+          "state_source",
+          "req_mem_bytes",
+          "max_rss_bytes",
+          "time_limit_s",
+          "elapsed_s",
+          "usage_source",
+          "accounting"
+        ],
+        "title": "Scheduler",
         "type": "object"
       },
       "ServerVersion": {
@@ -640,6 +984,17 @@
       },
       "Task": {
         "properties": {
+          "attempt_n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempt N"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -658,6 +1013,9 @@
           "process": {
             "title": "Process",
             "type": "string"
+          },
+          "resources": {
+            "$ref": "#/components/schemas/Resources"
           },
           "stage_id": {
             "anyOf": [
@@ -703,9 +1061,140 @@
           "tag",
           "name",
           "state",
-          "stage_id"
+          "stage_id",
+          "attempt_n",
+          "resources"
         ],
         "title": "Task",
+        "type": "object"
+      },
+      "TaskFile": {
+        "description": "One file of an attempt (P1 Task 28): `size` and `mtime` (ISO 8601) only when `present`.",
+        "properties": {
+          "kind": {
+            "enum": [
+              "script",
+              "wrapper",
+              "stdout",
+              "stderr",
+              "job_log",
+              "exit",
+              "marker",
+              "trace",
+              "rule_log",
+              "slurm_log"
+            ],
+            "title": "Kind",
+            "type": "string"
+          },
+          "mtime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mtime"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "state": {
+            "enum": [
+              "present",
+              "not_yet",
+              "absent",
+              "deleted_after_success",
+              "cleaned"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "kind",
+          "size",
+          "mtime",
+          "state",
+          "note"
+        ],
+        "title": "TaskFile",
+        "type": "object"
+      },
+      "TaskFiles": {
+        "properties": {
+          "attempt": {
+            "title": "Attempt",
+            "type": "integer"
+          },
+          "files": {
+            "items": {
+              "$ref": "#/components/schemas/TaskFile"
+            },
+            "title": "Files",
+            "type": "array"
+          },
+          "native_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Native Id"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          },
+          "work_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Dir"
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt",
+          "work_dir",
+          "native_id",
+          "files"
+        ],
+        "title": "TaskFiles",
         "type": "object"
       },
       "TaskList": {
@@ -1159,7 +1648,7 @@
     },
     "/api/v1/runs/{run_id}/processes": {
       "get": {
-        "description": "One item per process or rule, in first-seen order (the order of its first task's ID).",
+        "description": "One item per process or rule: those the projector recorded (`onProcessCreate`, the rule\nfiles at the freeze, a first task), in that order, with the stage they froze with; then any\nknown from tasks only (a database from before P1 Task 27), in their first task's order.",
         "operationId": "list_processes_api_v1_runs__run_id__processes_get",
         "parameters": [
           {
@@ -1418,6 +1907,126 @@
           }
         },
         "summary": "Runs Summary"
+      }
+    },
+    "/api/v1/tasks/{task_id}/attempts/{n}/files": {
+      "get": {
+        "operationId": "task_files_api_v1_tasks__task_id__attempts__n__files_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "n",
+            "required": true,
+            "schema": {
+              "title": "N",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TaskFiles"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Task Files"
+      }
+    },
+    "/api/v1/tasks/{task_id}/attempts/{n}/files/{name}": {
+      "get": {
+        "operationId": "task_file_api_v1_tasks__task_id__attempts__n__files__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "task_id",
+            "required": true,
+            "schema": {
+              "title": "Task Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "n",
+            "required": true,
+            "schema": {
+              "title": "N",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tail",
+            "required": false,
+            "schema": {
+              "default": 65536,
+              "maximum": 1048576,
+              "minimum": 1,
+              "title": "Tail",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "download",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Download",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Task File"
       }
     },
     "/api/v1/version": {

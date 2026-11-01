@@ -306,6 +306,15 @@ attempts = Table(
     Column("exit", Integer),
     Column("failure_class", String),
     Column("resources", Json),
+    # Where its files are (P1 Task 28), each kept only under a root of the run (req. 13): the
+    # Nextflow work directory, the executor's job ID, the Snakemake log paths [{path, kind}].
+    Column("work_dir", String),
+    Column("native_id", String),
+    Column("logs", Json),
+    # The SLURM state and reason from the engine's own message, {state, reason} (P1 Task 29):
+    # Snakemake's SLURM executor plugin. `resources` holds the requested and measured values
+    # of the trace or of `job_info` (and the job's benchmark path, relative to the launch dir).
+    Column("scheduler", Json),
     _check("attempts", "state", ATTEMPT_STATES),
     _check("attempts", "failure_class", FAILURE_CLASSES, nullable=True),
     UniqueConstraint("task_id", "launch_n", "n", name="uq_attempts_key"),  # api §8.2
@@ -348,6 +357,24 @@ run_stages = Table(
     UniqueConstraint("run_id", "stage_id"),
     _check("run_stages", "source", STAGE_SOURCES),
     _check("run_stages", "state", STAGE_STATES),
+)
+
+# The processes (Nextflow) or rules (Snakemake) of a run, in first-seen order, with their stage:
+# Nextflow's from `onProcessCreate`, Snakemake's from the rule files read when the stages freeze,
+# and any other from its first task (P1 Task 27). `ended`: `onProcessTerminate` was seen;
+# `jobs_planned`: the rule's jobs in Snakemake's last `run_info`. Not in api §7, which keys
+# processes by name only: the stage of a process with no task yet needs a row.
+run_processes = Table(
+    "run_processes",
+    metadata,
+    *_base(),
+    Column("run_id", String, ForeignKey("runs.id"), nullable=False),
+    Column("name", String, nullable=False),
+    Column("position", Integer, nullable=False),
+    Column("stage_id", String),
+    Column("ended", Boolean, nullable=False, server_default="0"),
+    Column("jobs_planned", Integer),
+    UniqueConstraint("run_id", "name"),
 )
 
 # The spool cursor and drop counts of a launch (P1 Assumption 11), written in the ingest

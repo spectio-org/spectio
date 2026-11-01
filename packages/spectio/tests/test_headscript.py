@@ -467,3 +467,81 @@ def test_nfcore_style_pins_kept(
     assert (nxf_home / "plugins" / "nf-schema-2.7.2").is_dir()
     spool = list((spec.launch_dir / ".spectio" / "events").glob("nf-spectio-1-*.jsonl"))
     assert spool and spool[0].stat().st_size > 0, out
+
+
+LISTING_STUB = """#!/bin/bash
+for a in "$@"; do
+  if [ "$a" = --list-rules ]; then
+    printf '%s\\0' "$@" > list-argv.out
+    [ -n "$LIST_FAILS" ] && { echo partial; exit 1; }
+    [ -n "$LIST_SLEEPS" ] && "$LIST_SLEEPS" 30
+    printf 'all\\ncount_reads (Count reads)\\n'; exit 0
+  fi
+done
+printf '%s\\0' "$@" > argv.out
+exit 0
+"""
+
+
+@pytest.mark.parametrize("fails", [False, True])
+def test_snakemake_head_writes_rules_txt(home: Path, bridges: Path, fails: bool) -> None:
+    """The head writes `.spectio/rules.txt` from `snakemake --list-rules` with the launch's
+    configuration (P1 Task 27), 0600; a failing listing leaves none, says so on stderr and
+    never stops the run."""
+    spec = snakemake_spec(home, extra_args=["--config", "x=1"])
+    stub_engine(home / "bin", LISTING_STUB)
+    if fails:
+        spec = replace(spec, env={"LIST_FAILS": "1"})
+    assert run_head(spec).returncode == 0
+    spectio_dir = spec.launch_dir / ".spectio"
+    listed = (spec.launch_dir / "list-argv.out").read_text().split("\0")[:-1]
+    assert listed == [
+        "--snakefile",
+        str(spec.location / "workflow" / "Snakefile"),
+        "--directory",
+        str(spec.launch_dir),
+        "--configfile",
+        str(spectio_dir / "params.json"),
+        "--config",
+        "x=1",
+        "--list-rules",
+    ]
+    assert "--logger" not in listed
+    assert "--list-rules" not in argv(spec)  # the run itself
+    rules = spectio_dir / "rules.txt"
+    assert not (spectio_dir / "rules.txt.tmp").exists()
+    if fails:
+        assert not rules.exists()
+        assert "--list-rules failed" in (spectio_dir / "head.out").read_text()
+    else:
+        assert rules.read_text() == "all\ncount_reads (Count reads)\n"
+        assert stat.S_IMODE(rules.stat().st_mode) == 0o600
+
+
+def test_cancel_during_the_listing(home: Path, bridges: Path) -> None:
+    """CR-P3T27-01: a Cancel while `--list-rules` runs (the runner writes `.spectio/cancel`,
+    then signals the group) stops the listing and the engine never starts; head.exit is 143."""
+    spec = replace(snakemake_spec(home), env={"LIST_SLEEPS": shutil.which("sleep") or "/bin/sleep"})
+    stub_engine(home / "bin", LISTING_STUB)
+    head = write_launch_files(spec)
+    proc = subprocess.Popen([BASH, str(head)], start_new_session=True)
+    spectio_dir = spec.launch_dir / ".spectio"
+    try:
+        deadline = time.monotonic() + 20
+        while not (spec.launch_dir / "list-argv.out").exists():
+            assert time.monotonic() < deadline, "the listing never started"
+            time.sleep(0.05)
+        time.sleep(0.3)
+        (spectio_dir / "cancel").write_text("")
+        os.killpg(proc.pid, signal.SIGTERM)
+        assert proc.wait(timeout=15) == 143
+    finally:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(proc.pid, signal.SIGKILL)
+    assert not (spec.launch_dir / "argv.out").exists()
+    assert (spectio_dir / "head.exit").read_text().split()[0] == "143"
+
+
+def test_nextflow_head_lists_no_rules(home: Path, bridges: Path) -> None:
+    spec = make_spec(home / "runs", engine_cmd=shlex.quote(str(stub_engine(home / "bin"))))
+    assert "--list-rules" not in render_head_script(spec)

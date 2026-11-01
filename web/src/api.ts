@@ -98,12 +98,57 @@ export interface Run {
   summary: {
     tasks: { done: number; total: number; failed: number; cached: number };
     last_failure: { [key: string]: Json } | null;
+    /** Where the run's stages come from; `quarters` when it has none (api §7, P1 Task 27). */
+    stage_mode: "declared" | "detected" | "quarters";
   };
 }
 
 /** Schema `RunDetail`: `GET /runs/{id}` and `POST /runs/{id}:cancel`. */
 export interface RunDetail extends Run {
   params: { [key: string]: Json };
+  /** Why declared stages were not applied: two matching overlays, overlapping globs. */
+  stages_note: string | null;
+  /** The failed tasks' last attempts, in the order their last attempts were created, at most
+   * 10 (api §5, P1 Task 29). */
+  failures: Failure[];
+  failures_total: number;
+}
+
+/** Schema `Scheduler`: what SLURM says of a failed job; fields from `sacct` [to be validated]. */
+export interface Scheduler {
+  state: string | null;
+  reason: string | null;
+  state_source: "sacct" | "engine_message" | null;
+  max_rss_bytes: number | null;
+  req_mem_bytes: number | null;
+  elapsed_s: number | null;
+  time_limit_s: number | null;
+  usage_source: "sacct" | "trace" | null;
+  accounting: "available" | "pending" | "unavailable";
+}
+
+/** Schema `Failure`: one failed task's last attempt. */
+export interface Failure {
+  task_id: string;
+  process: string;
+  tag: string | null;
+  attempt_n: number;
+  native_id: string | null;
+  exit_code: number | null;
+  message: string | null;
+  log_tail: string | null;
+  scheduler: Scheduler;
+}
+
+/** Schema `Resources`: asked for and used, by the task's last attempt; null until known. */
+export interface Resources {
+  cpus: number | null;
+  memory_bytes: number | null;
+  time_s: number | null;
+  realtime_s: number | null;
+  cpu_percent: number | null;
+  peak_rss_bytes: number | null;
+  source: "trace" | "benchmark" | "sacct" | null;
 }
 
 export interface Page<T> {
@@ -137,6 +182,9 @@ export interface Task {
   name: string | null;
   state: TaskState;
   stage_id: string | null;
+  /** The last attempt's number, the one `resources` and the attempt files are read from. */
+  attempt_n: number | null;
+  resources: Resources;
 }
 
 /** Schema `Summary`: `GET /runs:summary?group_by=state`. */

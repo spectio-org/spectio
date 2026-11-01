@@ -190,9 +190,15 @@ function StagesOrProcesses({
   const ended = isTerminal(run.state);
   const w = words(run.workflow.engine);
   const engine = engineName(run.workflow.engine);
+  const note = run.stages_note ? (
+    <p role="note" className="sp-muted">
+      {run.stages_note}
+    </p>
+  ) : null;
   if (!stages.length) {
     return (
       <FoldSection id="processes" screen="run" icon={ICONS.list} title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
+        {note}
         <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>
         <ProcessTable processes={processes} ended={ended} label={w.Groups} w={w} onOpen={onOpen} />
       </FoldSection>
@@ -202,6 +208,7 @@ function StagesOrProcesses({
   const running = stages.filter((s) => s.state === "running").length;
   return (
     <FoldSection id="stages" screen="run" icon={ICONS.layers} title="Stages" summary={`${plural(stages.length, "stage", "stages")} · ${running} running`}>
+      {note}
       <p className="sp-intro">
         {plural(stages.length, "stage", "stages")}, in order, each with its {w.groups} in the order {engine} first reported
         them. Open a stage to see its {w.groups}. A stage declared in <span className="sp-mono">spectio.yml</span> shows

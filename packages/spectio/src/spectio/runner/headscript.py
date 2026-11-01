@@ -31,6 +31,24 @@ ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # (tests/pipelines/synthetic/snakemake/profiles/slurm/config.yaml); whether sites' per-user
 # limits (MaxSubmitJobs) want less is [to be validated].
 SLURM_JOBS = 100
+# `snakemake --list-rules` before the run (P1 Task 27): the rules the server groups into stages,
+# with this launch's configuration, in `.spectio/rules.txt`. It never holds the run back: a
+# listing that fails or takes more than LIST_RULES_S leaves no file, and one line on stderr
+# (so in head.out). `timeout` runs only an executable `engine_cmd`, not a shell function of the
+# login profile: then the listing fails, and the server groups the rules it reads in the source.
+# `timeout`, `mv` and `rm` are taken from the server's PATH: the login profile may set one
+# without them.
+LIST_RULES_S = 120
+# `--foreground` keeps the listing in the head's process group, so a Cancel's signal reaches
+# it; the cancel marker, written before the signal, is checked again after it, so the engine
+# never starts once the run is cancelled (CR-P3T27-01).
+_LIST_RULES = (
+    "(umask 077; {timeout} --foreground {s} {command} > .spectio/rules.txt.tmp 2>/dev/null) &&\n"
+    "  {mv} -f .spectio/rules.txt.tmp .spectio/rules.txt ||\n"
+    "  {{ {rm} -f .spectio/rules.txt.tmp; echo 'spectio: snakemake --list-rules failed:"
+    " stages from the rule files' >&2; }}\n"
+    "[ -e .spectio/cancel ] && exit 143\n"
+)
 
 # The outer script: {launch}, {inner} and {keep} are quoted by `render_head_script`. Both
 # shells trap INT and TERM (a trap, not an ignored signal, which the engine would inherit), so
@@ -85,13 +103,11 @@ def engine_args(spec: LaunchSpec) -> list[str]:
         if profiles:
             args += ["-profile", ",".join(profiles)]
     else:
-        snakefile = spec.location / "workflow" / "Snakefile"
-        if not snakefile.is_file():
-            snakefile = spec.location / "Snakefile"
-        args = ["--snakefile", str(snakefile), "--directory", str(spec.launch_dir)]
-        args += ["--configfile", params, "--logger", "spectio"]
+        args = [*_snakemake_base(spec), "--logger", "spectio"]
         if spec.slurm is not None:
-            args += ["--executor", "slurm"]
+            # The SLURM plugin deletes a job's log when the job succeeds; kept, every job has
+            # its log while the run directory exists (architecture §13.7, `slurm.py:209-243`).
+            args += ["--executor", "slurm", "--slurm-keep-successful-logs"]
         if profiles:
             # The profile owns resources and concurrency: `--default-resources` here would
             # replace its whole `default-resources` (CR-P3T09-06), so [slurm] partition and
@@ -106,6 +122,26 @@ def engine_args(spec: LaunchSpec) -> list[str]:
             if not any(_sets_concurrency(arg) for arg in spec.extra_args):
                 args += ["--cores", "all"] if spec.slurm is None else ["--jobs", str(SLURM_JOBS)]
     return args + spec.extra_args
+
+
+def _snakemake_base(spec: LaunchSpec) -> list[str]:
+    snakefile = spec.location / "workflow" / "Snakefile"
+    if not snakefile.is_file():
+        snakefile = spec.location / "Snakefile"
+    params = str(_spectio(spec) / "params.json")
+    return [
+        "--snakefile",
+        str(snakefile),
+        "--directory",
+        str(spec.launch_dir),
+        "--configfile",
+        params,
+    ]
+
+
+def list_rules_args(spec: LaunchSpec) -> list[str]:
+    """`--list-rules` with the launch's Snakefile, configuration and extra arguments."""
+    return _snakemake_base(spec) + spec.extra_args + ["--list-rules"]
 
 
 def _sets_concurrency(arg: str) -> bool:
@@ -126,6 +162,9 @@ def engine_env(spec: LaunchSpec) -> dict[str, str]:
         # sets: the engine never looks for it elsewhere, nor in the registry (SEC-P3T09-03).
         env["NXF_PLUGINS_DIR"] = str(nf_plugin_copy({**os.environ, **spec.env}).parent)
         env["NXF_ANSI_LOG"] = "false"
+        # One engine log per run: `.nextflow.log` rolls at each start in the same directory
+        # (architecture §13.7, `LoggerHelper.groovy:301-322`).
+        env["NXF_LOG_FILE"] = str(_spectio(spec) / "nextflow.log")
         if spec.nxf_opts:
             env["NXF_OPTS"] = spec.nxf_opts
     env.update(spec.env)
@@ -146,9 +185,14 @@ def render_head_script(spec: LaunchSpec) -> str:
     inner = (
         f"trap : INT TERM\ncd -- {shlex.quote(str(spec.launch_dir))} || exit 1\nexport {exports}\n"
     )
+    if spec.engine == "nextflow":  # `.command.log` never starts with the environment (req. 13)
+        inner += "unset NXF_DEBUG\n"
     if spec.engine == "snakemake":  # in front of the login profile's own (CR-P3T09-05)
         pylib = shlex.quote(str(_spectio(spec) / "pylib"))
         inner += f"export PYTHONPATH={pylib}${{PYTHONPATH:+:$PYTHONPATH}}\n"
+        listing = " ".join([spec.engine_cmd, *map(shlex.quote, list_rules_args(spec))])
+        tools = {t: shlex.quote(shutil.which(t) or t) for t in ("timeout", "mv", "rm")}
+        inner += _LIST_RULES.format(s=LIST_RULES_S, command=listing, **tools)
     inner += f"{command}\n"
     return _HEAD.format(
         run_id=spec.run_id,

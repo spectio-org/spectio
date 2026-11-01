@@ -94,7 +94,7 @@ test("UX-PAR-11/12/13/16: subtitle words, linked cards with a detail line, a non
     name: "wgs-cohort-12",
     state: "failed",
     failure: { class: "tool_error", message: "", task_id: null, attempt_n: 1 },
-    summary: { tasks: { done: 143, total: 175, failed: 2, cached: 0 }, last_failure: null },
+    summary: { tasks: { done: 143, total: 175, failed: 2, cached: 0 }, last_failure: null, stage_mode: "quarters" },
   });
   const hand = run({ origin: "cli-observed", name: "pilot-hand" });
   serve({

@@ -13,16 +13,21 @@ the sum of `task_counts`, and the computed `summary.tasks.total` of api §7 is `
 when set, else that sum.
 """
 
+from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass, field
 from datetime import UTC, datetime
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Connection, func, insert, select, update
 
+from spectio.runner.rundir import RunPaths, run_paths
 from spectio_server.ids import new_id
-from spectio_server.store.schema import attempts, events, launches, runs, tasks
+from spectio_server.store.schema import attempts, events, launches, run_processes, runs, tasks
 from spectio_server.store.writer import note_change
+
+if TYPE_CHECKING:
+    from spectio_server.stages.freeze import StageSources
 
 TERMINAL = frozenset({"succeeded", "failed", "cancelled"})
 OPEN_ATTEMPT_STATES = ("pending", "submitted", "running")
@@ -56,6 +61,15 @@ class Projection:
     now: datetime
     event_time: datetime | None = None  # the engine's time of the event being projected
     changed: set[str] = field(default_factory=set)  # tasks created or moved, for the stream
+    sources: "StageSources | None" = None  # where stage sources are read (P1 Task 27)
+    dropped: Counter[str] = field(default_factory=Counter)  # paths not kept (P1 Task 28)
+
+    def roots(self) -> RunPaths | None:
+        """The run's directories, from the runs root and the run ID (req. 10), or None when
+        the projection has no runs root: then no path from an event is kept."""
+        if self.sources is None or self.sources.runs_root is None:
+            return None
+        return run_paths(self.sources.runs_root, self.run_id)
 
     @classmethod
     def load(cls, conn: Connection, launch_id: str) -> "Projection":
@@ -154,9 +168,34 @@ class Projection:
                 tag=tag,
                 name=name,
                 state="not_scheduled",
+                stage_id=self.process(process),
             )
         )
         return task_id
+
+    def process(self, name: str) -> str | None:
+        """The run's process or rule `name`, recorded on first sight in creation order; its
+        stage, if the stages froze with it known (P1 Task 27)."""
+        found = self.conn.execute(
+            select(run_processes.c.stage_id).where(
+                run_processes.c.run_id == self.run_id, run_processes.c.name == name
+            )
+        ).one_or_none()
+        if found is not None:
+            return found.stage_id  # type: ignore[no-any-return]
+        position = self.conn.execute(
+            select(func.count()).where(run_processes.c.run_id == self.run_id)
+        ).scalar_one()
+        self.conn.execute(
+            insert(run_processes).values(
+                id=new_id("prc"),
+                created_at=self.now,
+                run_id=self.run_id,
+                name=name,
+                position=position + 1,
+            )
+        )
+        return None
 
     def end_launch(self, to: str = "aborted", failure_class: str | None = None) -> None:
         """Close this launch's open attempts: `aborted` (api §7.2), or `failed` when the head is
@@ -198,6 +237,9 @@ class Projection:
 
     def finish(self) -> None:
         """Write the summary; the projection is current with the log (P1 Assumption 11)."""
+        from spectio_server.stages.freeze import refresh  # it imports this module
+
+        refresh(self)
         counts = self.conn.execute(
             select(tasks.c.state, func.count())
             .where(tasks.c.run_id == self.run_id)

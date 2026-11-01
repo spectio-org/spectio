@@ -13,7 +13,14 @@ from typing import Any
 
 import typer
 
-from spectio.config import DEFAULT_PORT, EngineOpts, Settings, config_path, write_config
+from spectio.config import (
+    DEFAULT_PORT,
+    EngineOpts,
+    Settings,
+    SlurmOpts,
+    config_path,
+    write_config,
+)
 from spectio.loginshell import which
 from spectio.runner.engines import unpack_nf_spectio
 
@@ -92,6 +99,21 @@ def _engines(settings: Settings) -> dict[str, Any]:
     return engines
 
 
+def _slurm(settings: Settings) -> SlurmOpts:
+    """`sacct`'s path, resolved once through the login shell and recorded (dev-env §15.3
+    req. 15): a recorded or given one is kept; with none, SLURM accounting is unavailable."""
+    slurm = settings.slurm
+    if settings.executor != "slurm" or slurm.sacct is not None or not slurm.accounting:
+        return slurm
+    found = which("sacct")["sacct"]
+    if found is None:
+        typer.echo(
+            "warning: sacct not found on the login shell's PATH: SLURM accounting unavailable"
+        )
+        return slurm
+    return slurm.model_copy(update={"sacct": Path(found)})
+
+
 def _unix_user() -> str:
     """The principal's name: the uid's, never the environment's (P1 Assumption 18)."""
     try:
@@ -146,6 +168,7 @@ def _init(settings: Settings) -> None:
                 else _free_port(DEFAULT_PORT),
                 "host": socket.gethostname(),
                 "engines": EngineOpts.model_validate(_engines(settings)),
+                "slurm": _slurm(settings),
             }
         )
         server.init_store(

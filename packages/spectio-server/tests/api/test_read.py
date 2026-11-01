@@ -15,6 +15,7 @@ from sqlalchemy import update
 from spectio.config import Settings
 from spectio.runner.rundir import make_run_dirs, run_paths
 from spectio_server.app import NO_API
+from spectio_server.files.redact import strip_escapes
 from spectio_server.store.schema import launches
 from spectio_server.store.writer import Writer
 
@@ -22,12 +23,14 @@ from .conftest import add_run
 
 RUNS = "/api/v1/runs"
 T0 = datetime(2026, 10, 30, 8, 0, tzinfo=UTC)
+# `onProcessCreate` order (P1 Task 27), no longer the first task's: QC_REPORT is created before
+# SPLIT, though its first task comes after ALIGN's.
 FLAKY_PROCESSES = [
     "MAKE_READS",
     "QC_STATS",
+    "QC_REPORT",
     "SPLIT",
     "ALIGN",
-    "QC_REPORT",
     "MERGE",
     "COMPARE",
     "FINAL_REPORT",
@@ -252,7 +255,10 @@ def test_tasks_filter_and_paging(authed_client: TestClient, seeded_stages: str) 
     assert [t["id"] for t in running] == ["tsk_00"]
     star = authed_client.get(url, params={"process": "NFCORE_RNASEQ:RNASEQ:ALIGN:STAR"}).json()
     assert [t["id"] for t in star["items"]] == ["tsk_01"]
-    assert set(running[0]) == {"id", "process", "tag", "name", "state", "stage_id"}
+    assert set(running[0]) == {
+        *("id", "process", "tag", "name", "state", "stage_id"),
+        *("attempt_n", "resources"),  # P1 Task 29
+    }
 
 
 def test_task_cursor_is_one_id(authed_client: TestClient, seeded_stages: str) -> None:
@@ -294,7 +300,8 @@ def test_logs_tail_and_sources(
     assert out.status_code == 200, out.text
     assert out.headers["content-type"] == "text/plain; charset=utf-8"
     assert out.headers["x-content-type-options"] == "nosniff"
-    assert out.content == head[-65536:].decode("utf-8", "replace").encode()
+    # control characters and escape sequences removed (dev-env §15.3 req. 13, P1 Task 28)
+    assert out.text == strip_escapes(head[-65536:].decode("utf-8", "replace"))
     assert authed_client.get(f"{RUNS}/{rid(1)}/logs", params={"source": "head-err"}).text == "err\n"
     assert (
         authed_client.get(f"{RUNS}/{rid(1)}/logs", params={"source": "engine"}).text

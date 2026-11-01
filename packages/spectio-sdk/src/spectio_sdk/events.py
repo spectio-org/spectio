@@ -279,6 +279,7 @@ class SnakemakeWorkflowStarted(_Data):
     rundir: str | None = None
     host: str | None = None
     user: str | None = None
+    snakefile_main: str | None = None  # the main Snakefile's path (P1 Task 27)
 
 
 class SnakemakeRunInfo(_Data):
@@ -341,12 +342,40 @@ class SnakemakeJobFinished(_Data):
     job_id: Int64
 
 
+class SnakemakeJobAux(_Data):
+    """`aux` of `job_error`: the executor's job ID only (`snakemake-interface-executor-plugins`
+    9.4.0, `remote.py:259-267`; P1 Task 28)."""
+
+    external_jobid: str | Int64 | None = None
+
+
 class SnakemakeJobError(_Data):
     jobid: Int64
     rule_name: str | None = None
     input: list[str] = []
     output: list[str] = []
-    log: list[str] = []
+    log: list[str] = []  # the rule's logs and, on SLURM, the job's log (P1 Task 28)
+    aux: SnakemakeJobAux | None = None
+    # The error text, cut at MAX_MESSAGE_CHARS, read by the projector for the SLURM executor
+    # plugin's state and reason (P1 Task 29) and never stored: `exclude` keeps it out of every
+    # dump, so out of the event log (api §14.1).
+    msg: str | None = Field(None, exclude=True)
+
+    @field_validator("msg")
+    @classmethod
+    def _cap(cls, value: str | None) -> str | None:
+        return None if value is None else value[:MAX_MESSAGE_CHARS]
+
+
+class SnakemakeSlurmSubmitted(_Data):
+    """Not a Snakemake event: the logger plugin's reading of the info text "Job N has been
+    submitted with SLURM jobid X (log: P)." (`snakemake-executor-plugin-slurm` 2.8.0,
+    `__init__.py:1224-1227`), with a regular expression versioned per plugin release
+    (P1 Tasks 7 and 28). Its text is never sent."""
+
+    jobid: Int64
+    external_jobid: str
+    log: str | None = None
 
 
 class SnakemakeShellcmd(_Data):
@@ -390,6 +419,7 @@ DATA_MODELS: dict[str, type[_Data]] = {
     "snakemake.job_started": SnakemakeJobStarted,
     "snakemake.job_finished": SnakemakeJobFinished,
     "snakemake.job_error": SnakemakeJobError,
+    "snakemake.slurm_submitted": SnakemakeSlurmSubmitted,
     "snakemake.shellcmd": SnakemakeShellcmd,
     "snakemake.progress": SnakemakeProgress,
     "snakemake.error": SnakemakeError,

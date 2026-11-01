@@ -511,3 +511,39 @@ One entry per tick: time, steps started and finished, verification results, tria
 ## 2026-10-31 · Promotion #113 merged: UI parity D on main
 
 - Integration promoted to `main` by merge commit 4dfbee5 (label `screenshots`; every check green on 855786c). P1 Task 27 (stages) is building (workflow wf_8609c03e-ad3, base 855786c). PR #111 still waits for Thomas.
+
+## 2026-10-31 · Thomas's notes for later, in todo.md
+
+- `todo.md` (new, repo root): the real logo in the header, smooth sidebar and folds, client-side parameter validation in Launch, required or optional on each row. Thomas: the two Launch items go **with P1 Task 32** ("avec 32"); its brief must include them. Logo and animations: not assigned yet.
+
+## 2026-10-31 · P3-t27: PR #114 merged
+
+- P1 Task 27, milestone M7: stages declared or detected, frozen once at the run's first start event (lab overlay, else `spectio.yml`, else detection), above the processes or rules list; `run_processes` (migration 0005), `summary.stage_mode`, `stages_note`; the Snakemake head writes `.spectio/rules.txt`. Workflow p3-task in 4 rounds (code approve 1/2/16, security approve 0/2/16), simplifier -12/+7, doc-reviewer approve 13.
+- After the workflow, by the orchestrator, tests first (`e45b288`): an overlong Git revision no longer drops the start event; YAML tags and `%TAG` prefixes are masked in errors and logs. Inbox #93 and FU-P3-30 (renumbered, `6419bfc`) to stay apart from the demo's #92 and FU-P3-29.
+- CI: gitleaks took the test constant `NEXTFLOW_KEY` (a fixture name) for a key, and P3-M7 still linked the `-inbox-92` anchor. Fixed in `531482a` (constant renamed, fingerprint of `38a0946` in `.gitleaksignore`, anchor). Every check green, `e2e-local --seed-stages` included; squash c8c6678 (`Release-As: 0.0.1`). Cost recorded: 55 USD. The live shot `app-run-stages` is not taken (FU-P3-30). Demo server stopped at its 2 h limit. Next: promotion, then P1 Task 28.
+
+## 2026-10-31 · Promotion #115 opened; P1 Task 28 launched
+
+- Promotion PR #115 (integration → main, P1 Task 27), label `screenshots`; merged by merge commit once green.
+- P1 Task 28 (each job's files) launched: workflow wf_db098ce7-a4f, base 3a103a9. Scope set in the brief: Task 7 (Snakemake logger plugin) and Task 22 (`slurm-mini`) are not built, so the Snakemake side is server-only and fed by replayed events; the plugin changes go to Task 7 and the cluster check to Task 22. It also takes SEC-P3T27-03 (stage-source reads off the writer thread). Numbers reserved: inbox #94, FU-P3-31.
+
+## 2026-10-31 · Promotion #115 merged: P1 Task 27 on main
+
+- Integration promoted to `main` by merge commit a61b37c (every check green on 99aa36f). The first `pr-body` run lacked `## Evidence` in the body (fixed in the body); the first `ci-ok` failure was jobs cancelled by the newer push. P1 Task 28 is building (wf_db098ce7-a4f).
+
+## 2026-10-31 · P3-t28: PR #116 merged
+
+- P1 Task 28, milestone M8 (new Progress page P3-M8): each attempt's files listed and served read-only through a confined fd-relative walk in a bounded file pool; `.command.run` redacted by a fail-closed lexer; escape sequences stripped; `attempts.work_dir`, `native_id`, `logs` kept only under the run's roots (migration 0006); head and nf-spectio changes. The stage freeze reads in its own 2-thread pool (SEC-P3T27-03 closed, 10 s writer bound stated).
+- Workflow p3-task in 4 rounds (code approve 0/2/14, security approve 1/1/20, the blocker and majors fixed), simplifier -13/+1, doc-reviewer approve 13. Orchestrator gate on 02c9c3d: 611 passed; SAST 0; gitleaks clean. Every check green; squash 9a23b34 (`Release-As: 0.0.1`). Cost recorded: 58 USD.
+- Out of scope, by the brief: the Snakemake plugin side (Task 7), the `slurm-mini` check (Task 22), the screens (Task 32). Inbox #94 (assumed), FU-P3-31. Next: promotion, then P1 Task 29.
+
+## 2026-10-31 · Promotion #117 merged: P1 Task 28 on main; P1 Task 29 launched
+
+- Integration promoted to `main` by merge commit eb450e1 (every check green on fdcf43b; two docs runs cancelled by the label run, their reruns green).
+- P1 Task 29 (failure summary and resources per job) launched: workflow wf_3d469739-e12, base fdcf43b. Same scope as Task 28: the Snakemake side server-only (plugin to Task 7), `sacct` through a fake on PATH (the `slurm-mini` check to Task 22); `log_tail` through Task 28's confined reader. Numbers reserved: inbox #95, FU-P3-32.
+
+## 2026-11-01 · P3-t29: PR #118 merged
+
+- P1 Task 29, milestone M8 (P3-M8): `failures` and `failures_total` on the run detail (exit code, job ID, the culprit's `message`, the last 20 log lines through Task 28's confined reader, `scheduler`); `attempt_n` and `resources` on task items (trace, benchmark, sacct); `sacct` off the writer thread under req. 15 (checked IDs, stored path, explicit env, one call per 60 s, 100 IDs, 10 s kill, 0600 cache, `--user=<euid>` and a `WorkDir` match, only ended rows kept, 3 tries); migration 0007 (`attempts.scheduler`). P3-M8 finding 3 answered (`attempt_n`).
+- Workflow p3-task in 3 rounds (code approve 0/1/16 with the major fixed, security approve 0/0/13), simplifier -11/+4, doc-reviewer approve 12 on the third pass. Orchestrator gate on d9c958d: 650 passed; Vitest 181; tsc clean; SAST 0; gitleaks clean. Every check green (the first `pr-body` run was the placeholder body); squash 99a9015 (`Release-As: 0.0.1`). Cost recorded: 60 USD.
+- Out of scope, by the brief: the plugin side (Task 7), the real `sacct` check (Task 22), the screens (Task 32). Inbox #95 (assumed), FU-P3-32. Next: promotion, then P1 Task 32 (scoped to the API built by Tasks 28 and 29, plus todo.md's two Launch items; Resume, copy to a launch and results wait for Tasks 30 and 31, recorded as inbox #96, FU-P3-33).

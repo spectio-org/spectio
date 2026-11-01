@@ -33,8 +33,11 @@ from spectio_server.api import (
     runs_read,
     runs_write,
     stream,
+    taskfiles,
     workflows,
 )
+from spectio_server.failure import Accounting
+from spectio_server.files.pool import FilePool
 from spectio_server.store.writer import Writer
 
 PLACEHOLDER = (
@@ -95,7 +98,15 @@ def no_api_reason(settings: Settings) -> str | None:
     return None
 
 
-def create_app(settings: Settings, writer: Writer, web_dir: Path = static.DIST) -> FastAPI:
+def create_app(
+    settings: Settings,
+    writer: Writer,
+    web_dir: Path = static.DIST,
+    files: FilePool | None = None,
+    accounting: Accounting | None = None,
+) -> FastAPI:
+    """The app; `files` is the pool the routes read run files in, `accounting` the server's
+    one gate to `sacct` (each made from the settings when None)."""
     app = FastAPI(
         title="Spectio",
         version=API_VERSION,
@@ -105,6 +116,9 @@ def create_app(settings: Settings, writer: Writer, web_dir: Path = static.DIST) 
     )
     app.state.settings = settings
     app.state.writer = writer
+    app.state.files = FilePool() if files is None else files  # dev-env §15.3 req. 13
+    # dev-env §15.3 req. 15: its thread starts on the first job asked
+    app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.engine_versions = workflows.engine_versions(settings)
     problems.install(app)
     browser.install(app)  # Host allow-list, cross-site and write checks (§15.3 req. 4, 7)
@@ -124,7 +138,7 @@ def create_app(settings: Settings, writer: Writer, web_dir: Path = static.DIST) 
     if reason is None:
         app.state.stream = stream.Stream(writer.engine)
         writer.on_commit = app.state.stream.notify  # the writer thread, after each commit
-        for module in (workflows, runs_write, runs_read, logs, cancel, stream):
+        for module in (workflows, runs_write, runs_read, logs, taskfiles, cancel, stream):
             app.include_router(module.router, prefix=API)
     else:
 

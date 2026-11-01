@@ -205,6 +205,36 @@ def test_no_script_or_env_keys(nf_run: Path) -> None:
     assert "export SPECTIO_ATTEMPT" not in raw  # the synthetic task script's first line
 
 
+def test_metrics_enabled(nextflow: str, tmp_path: Path) -> None:
+    """`enableMetrics()` is true (P1 Task 28): the trace of a finished task has its measures,
+    even with the pipeline's trace, report and timeline off, whose observers enable them too."""
+    off = tmp_path / "off.config"
+    off.write_text("trace.enabled = false\nreport.enabled = false\ntimeline.enabled = false\n")
+    launch_dir = tmp_path / "launch"
+    done = run_nf(nextflow, launch_dir, "-c", str(off))
+    assert done.returncode == 0, done.stdout + done.stderr
+    events = [SpoolEvent.model_validate_json(line) for line in spool_lines(launch_dir)]
+    traces = [ev.data["trace"] for ev in events if ev.type == "nextflow.onTaskComplete"]
+    assert traces
+    for trace in traces:
+        assert isinstance(trace, dict)
+        for key in ("realtime", "%cpu", "peak_rss"):
+            assert trace.get(key) is not None, (key, trace)
+
+
+def test_task_events_carry_workdir_and_native_id(nf_run: Path) -> None:
+    """Every task event sends the work directory and the executor's job ID (P1 Task 28); on
+    SLURM the ID is known at submit already (GridTaskHandler), checked on slurm-mini (Task 22)."""
+    events = [SpoolEvent.model_validate_json(line) for line in spool_lines(nf_run)]
+    hooks = ("onTaskSubmit", "onTaskStart", "onTaskComplete")
+    for ev in (e for e in events if e.type.split(".")[1] in hooks):
+        trace = ev.data["trace"]
+        assert isinstance(trace, dict), ev.type
+        assert trace.get("workdir") == ev.data["workDir"], ev.type
+        if not ev.type.endswith("onTaskSubmit"):  # the local executor has no PID before start
+            assert trace.get("native_id"), ev.type
+
+
 @pytest.mark.parametrize("how", ["mode_0500", "events_is_a_file"])
 def test_unwritable_spool_never_fails_run(nextflow: str, tmp_path: Path, how: str) -> None:
     launch_dir = tmp_path / "launch"

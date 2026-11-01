@@ -4,21 +4,26 @@
 # the runs still active (their heads run in their own sessions and outlive `spectio serve` by
 # design), then removes the directory. Builds web/dist first when it is missing.
 #
-#   bash tests/e2e/serve-local.sh [--port N]
+#   bash tests/e2e/serve-local.sh [--port N] [--seed-stages]
+#
+# --seed-stages adds a run directory seeded with the rnaseq preview events (tests/e2e/seed_stages.py),
+# which the server indexes at boot: the Playwright smoke's stages check (P1 Task 27).
 #
 # There is no sign-in link yet (P1 Tasks 12 to 16, inbox #80): the server listens on 127.0.0.1
 # only, in local mode, and serves the screens to anyone on this machine who opens the address.
 set -euo pipefail
 
-usage() { sed -n '2,10p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; }
 
 port=""
+seed=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --port)
       [ $# -ge 2 ] || { echo "serve-local: --port needs a number" >&2; exit 2; }
       port=$2; shift 2 ;;
     --port=*) port=${1#--port=}; shift ;;
+    --seed-stages) seed=1; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "serve-local: unknown option $1 (try --help)" >&2; exit 2 ;;
   esac
@@ -105,6 +110,9 @@ echo "== spectio init --local in $home"
 spectio init --local --data-dir "$home/data" --db-dir "$home/db" --runs-root "$home/runs" \
   ${port:+--port "$port"}
 port=$(sed -n 's/^port *= *\([0-9][0-9]*\).*/\1/p' "$SPECTIO_CONFIG" | head -n 1)
+if [ -n "$seed" ]; then
+  echo "== Seeding run $(uv run --locked --project "$repo" --python "$PYTHON_VERSION" python "$repo/tests/e2e/seed_stages.py" "$home/runs")"
+fi
 
 echo "== spectio serve"
 # Not through the shell function: $! must be uv itself, which passes SIGTERM on to the server.

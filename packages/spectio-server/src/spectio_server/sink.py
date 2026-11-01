@@ -16,8 +16,10 @@ from sqlalchemy import Connection, Row, and_, or_, select, update
 
 from spectio.runner.rundir import run_paths
 from spectio.runner.types import Command, Engine, HeadReport, LaunchRef, SpoolBatch
+from spectio_server.files.pool import FilePool
 from spectio_server.projector.ingest import apply_head_report, ingest, load_cursor
 from spectio_server.projector.runs import TERMINAL
+from spectio_server.stages.freeze import StageSources
 from spectio_server.store.schema import (
     launches,
     runner_commands,
@@ -36,9 +38,18 @@ T = TypeVar("T")
 
 
 class StoreSink:
-    def __init__(self, writer: Writer, runs_root: Path) -> None:
+    def __init__(
+        self,
+        writer: Writer,
+        runs_root: Path,
+        overlays: Path | None = None,
+        data_dir: Path | None = None,
+        files: FilePool | None = None,
+    ) -> None:
         self.writer = writer
         self.runs_root = runs_root
+        # stage sources (P1 Task 27), read in the file pool when there is one (SEC-P3T27-03)
+        self.sources = StageSources(overlays, runs_root, data_dir, files)
 
     def _do(self, fn: Callable[[Connection], T]) -> T:
         return self.writer.submit(fn).result()
@@ -75,7 +86,7 @@ class StoreSink:
         return self._do(lambda conn: load_cursor(conn, launch_id))
 
     def ingest(self, launch_id: str, batch: SpoolBatch) -> None:
-        self._do(lambda conn: ingest(conn, launch_id, batch))
+        self._do(lambda conn: ingest(conn, launch_id, batch, self.sources))
 
     def head_report(self, launch_id: str, report: HeadReport) -> None:
         self._do(lambda conn: apply_head_report(conn, launch_id, report))
