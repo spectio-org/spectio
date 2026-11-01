@@ -659,6 +659,18 @@ function LogsPanel({
       .catch((e: ApiError) => controller.signal.aborted || setText(e.status === 404 ? "Not written yet." : `Could not read it: ${e.message}`));
     return () => controller.abort();
   }, [run.id, source, reloads]);
+  // The public demo has no server behind /api: Open raw opens the text shown, as a blob.
+  const [demoRaw, setDemoRaw] = useState<string | null>(null);
+  useEffect(() => {
+    if (import.meta.env.MODE !== "demo" || text === null) return;
+    const url = URL.createObjectURL(new Blob([text], { type: "text/plain;charset=utf-8" }));
+    setDemoRaw(url);
+    return () => {
+      URL.revokeObjectURL(url);
+      setDemoRaw(null);
+    };
+  }, [text]);
+  const raw = import.meta.env.MODE === "demo" ? demoRaw : logUrl(run.id, source);
   const label = LOGS.find((l) => l.source === source)!.label;
   const file = logFile(run, server, source);
   const download = () => {
@@ -695,7 +707,8 @@ function LogsPanel({
           <Button
             component="a"
             variant="default"
-            href={logUrl(run.id, source)}
+            href={raw ?? undefined}
+            disabled={raw === null}
             target="_blank"
             rel="noopener noreferrer"
             leftSection={<Icon path={ICONS.externalLink} size={15} />}

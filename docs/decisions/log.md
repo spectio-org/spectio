@@ -1070,6 +1070,14 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Not decided here:** the upstream source and terms of the three logos (**[to be validated]**, #91, before a release ships them). The headers of the raw log page (SEC-P3PARC-01), due before the screens are served beyond local mode.
 - **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions), follow-up FU-P3-27.
 
+## 2026-10-31 — A public read-only demo of the 0.0.1 screens at /demo/, written into dev-env §7.3 (P3-demo)
+
+- **Context.** Thomas looked at the 0.0.1 screens through a private page of recorded answers, then asked for it on the real site (2026-10-31, the step's brief: "pourquoi un artifact ? vrai site ?", then "oui ajoute cela"). So anyone can click through the real screens without a clone.
+- **Decided (Thomas, 2026-10-31):** a public, read-only demo of the built web UI at `https://spectio.pages.dev/demo/` and at `/demo/` of every PR preview, on recorded demo data only. Publishing the recording is his choice; the PR that adds it to `previews.yml` is reviewed and merged by him, not auto-merged.
+- **Applied (assumed — standing rule, [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** how 0.0.1 builds it, written as the [dev-env §7.3 note of 2026-10-31](../specs/dev-environment-and-testing.md#73-the-ui-in-mock-mode-from-the-first-ui-milestone): a build mode (`vite --mode demo`) with hash routing, answers recorded from a demo server in place of MSW and fixtures generated from the OpenAPI, writes refused with `403`, times moved so that the newest run ended an hour before the page opened, and a banner that says all of it. No section number changed.
+- **Not decided here:** whether §7.3's MSW plan still stands for later UI milestones, or the recording replaces it. That waits for the next `/apply-findings` pass.
+- **Open:** see [P3-M4](../progress/W5/P3-M4.md#findings-and-open-questions), follow-up FU-P3-29, and [inbox #92](../reviews/inbox.md#92-assumed-what-the-public-demo-leaves-open-before-it-is-published).
+
 ## 2026-10-31 — UI parity D: run detail sheets, searchable logs, test pipelines in Launch, written into ui-spec §4.4 and §4.6 and dev-env §10.1 (P3 parity D)
 
 - **Context.** After clicking through the public demo preview of PR #111, Thomas wrote (2026-10-31): "plein de probl, steps & stages pas clickable, pas de détails ; plein de parties et d'éléments pas encore clickable ; params quasi vides pour les wf ; pas de wf par défaut de test dans launch pour tester ; logs pas searchable ; pas de logs et info/outputs/err/out par process et task". The triage split it: what the 0.0.1 API already serves goes to a UI step, P3-parD; each task's files, exit code and resources need the API and go to P1 Tasks 27, 28, 29 and 32 (`.autopilot/journal.md`, "Thomas's demo feedback, order set").

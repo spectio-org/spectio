@@ -115,6 +115,11 @@ REGISTRY: dict[str, Shot] = {
              "0.0.1, live: the Logs tab of a failed run, searched: marked matches, the counter and the level buttons",
              themes=("light", "dark"), live=("wait:Download last 64 KiB", "wait:Command error",
                                              "fill:Search the head output=MERGE", "wait:1 / 4")),
+        # P3-demo: the public demo build (npm run build:demo) served statically under /demo/, so
+        # SPECTIO_URL is http://…/demo and the route is in the hash (README.md, "The public demo").
+        Shot("demo-runs", "/#/runs", 1280, 800,
+             "0.0.1, the public demo: the runs list from the recording, under its banner",
+             live=("wait:cohort-2026-scale",)),
     )
 }
 
