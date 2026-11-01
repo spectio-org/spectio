@@ -79,7 +79,7 @@ def build(theme: Theme) -> Sketch:
     s = Sketch(W, H, theme, seed=29)
     t = theme
     s.heading(50, 58, "P3 Task 29 · a failure's scheduler facts, asked of sacct and checked",
-              "`spectio_server.failure`, `spectio.runner.sacct` · api 5 note 2026-10-28, architecture "
+              "`spectio_server.failure`, `spectio.runner.sacct` · api 5 note 2026-11-01, architecture "
               "13.7, dev-env 15.3 req. 15 · no request ever waits for sacct")
 
     # 1 -- someone opens the run ----------------------------------------------------------------
@@ -137,8 +137,8 @@ def build(theme: Theme) -> Sketch:
                             "Snakemake: ended jobs with no benchmark file"))
 
     s.line(30, DIV, W - 30, DIV, dashed=True, colour=t.muted)
-    s.text(50, DIV - 10, "on the sacct thread of its own, never the writer's or a request's",
-           size=14, anchor="start", colour=t.dim)
+    s.text(1196, DIV + 24, "on the sacct thread of its own, never the writer's or a request's",
+           size=14, anchor="end", colour=t.dim)  # under the divider: the middle row's heading
 
     # 4 -- one paced call -----------------------------------------------------------------------
     s.hourglass(64, ROW + 12, size=9)

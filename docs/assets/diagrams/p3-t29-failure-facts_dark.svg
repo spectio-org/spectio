@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1250" viewBox="0 0 1600 1250">
   <rect width="1600" height="1250" fill="#1f2129"/>
   <text x="50.0" y="58.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="27" fill="#e3e3e3" text-anchor="start" font-weight="normal">P3 Task 29 · a failure's scheduler facts, asked of sacct and checked</text>
-  <text x="50.0" y="86.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15.5" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">spectio_server.failure</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">spectio.runner.sacct</tspan> · api 5 note 2026-10-28, architecture 13.7, dev-env 15.3 req. 15 · no request ever waits for sacct</text>
+  <text x="50.0" y="86.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15.5" fill="#9aa0ac" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">spectio_server.failure</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">spectio.runner.sacct</tspan> · api 5 note 2026-11-01, architecture 13.7, dev-env 15.3 req. 15 · no request ever waits for sacct</text>
   <rect x="50.0" y="122.0" width="340.0" height="196.0" rx="6" fill="#24272f"/>
   <path d="M50.0,121.8 C163.5,121.5 277.8,121.3 389.9,122.8" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M50.8,121.7 C162.1,121.8 275.8,121.5 390.2,121.9" fill="none" stroke="#e3e3e3" stroke-width="1.7" stroke-linecap="round"/>
@@ -177,7 +177,7 @@
   <text x="1016.0" y="413.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">Snakemake: ended jobs with no benchmark file</text>
   <path d="M29.1,452.0 C541.8,452.2 1056.9,451.3 1570.9,451.7" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
   <path d="M30.2,452.9 C543.4,453.7 1058.4,450.8 1570.8,451.1" fill="none" stroke="#585e6b" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
-  <text x="50.0" y="442.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#9aa0ac" text-anchor="start" font-weight="normal">on the sacct thread of its own, never the writer's or a request's</text>
+  <text x="1196.0" y="476.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#9aa0ac" text-anchor="end" font-weight="normal">on the sacct thread of its own, never the writer's or a request's</text>
   <path d="M55.0,485.0 L73.0,485.0 L64.0,494.0 Z" fill="#363020" stroke="none"/>
   <path d="M55.4,484.7 C61.7,484.6 66.3,485.0 73.1,485.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M73.2,484.7 C70.0,487.4 66.5,490.9 63.9,494.1" fill="none" stroke="#e3e3e3" stroke-width="1.5" stroke-linecap="round"/>
