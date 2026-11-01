@@ -98,17 +98,13 @@ def sacct_env(path: Path) -> dict[str, str]:
 
 
 def sacct_argv(path: Path, ids: list[str]) -> list[str]:
-    uid = os.geteuid()
-    if not isinstance(uid, int) or uid < 0:
-        raise Refused(f"not a user ID: {uid!r}")
-    joined = ",".join(ids)
     return [
         str(path),
         "--parsable2",
         "--noheader",
         "-j",
-        joined,
-        f"--user={uid}",
+        ",".join(ids),
+        f"--user={os.geteuid()}",
         f"--format={FORMAT}",
     ]
 
