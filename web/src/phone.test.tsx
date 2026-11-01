@@ -3,7 +3,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { app, run, serve, stubStream, viewport } from "./testing";
+import { NO_RESOURCES, app, run, serve, stubStream, viewport } from "./testing";
 
 beforeEach(() => {
   stubStream();
@@ -27,7 +27,7 @@ function detail() {
     },
     [`${URL_}/stages`]: { items: [] },
     [`${URL_}/tasks`]: {
-      items: [{ id: "tsk_1", process: "NFCORE:RNASEQ:ALIGN", tag: "S01", name: "ALIGN (S01)", state: "running", stage_id: null }],
+      items: [{ id: "tsk_1", process: "NFCORE:RNASEQ:ALIGN", tag: "S01", name: "ALIGN (S01)", state: "running", stage_id: null, attempt_n: 1, resources: NO_RESOURCES }],
       next: null,
     },
     [`${URL_}/logs`]: () => new Response(""),

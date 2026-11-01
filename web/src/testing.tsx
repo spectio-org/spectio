@@ -120,6 +120,9 @@ export function app(path: string) {
   return router;
 }
 
+/** A task's resources before anything is known (schema `Resources`). */
+export const NO_RESOURCES = { cpus: null, memory_bytes: null, time_s: null, realtime_s: null, cpu_percent: null, peak_rss_bytes: null, source: null };
+
 /** A run as `GET /runs` returns it. */
 export function run(over: Record<string, unknown> = {}) {
   return {

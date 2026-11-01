@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { FakeEventSource, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
+import { FakeEventSource, NO_RESOURCES, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -27,7 +27,7 @@ const PROCESSES = {
   ],
 };
 const TASKS = {
-  items: [{ id: "tsk_1", process: "NFCORE:RNASEQ:ALIGN", tag: "S01", name: "ALIGN (S01)", state: "failed", stage_id: null }],
+  items: [{ id: "tsk_1", process: "NFCORE:RNASEQ:ALIGN", tag: "S01", name: "ALIGN (S01)", state: "failed", stage_id: null, attempt_n: 1, resources: NO_RESOURCES }],
   next: null,
 };
 
@@ -42,7 +42,7 @@ function detail(over: Record<string, unknown> = {}, more: Record<string, unknown
     [`${URL_}/stages`]: { items: [] },
     [`${URL_}/tasks`]: TASKS,
     [`${URL_}/logs?source=engine`]: () => new Response("N E X T F L O W  ~  version 26.10.4\n"),
-    [URL_]: { ...run(over), params: { outdir: "results", depth: 3 } },
+    [URL_]: { failures: [], failures_total: 0, ...run(over), params: { outdir: "results", depth: 3 } },
     ...more,
   });
 }
@@ -179,7 +179,7 @@ test("the parameters table, and a log loaded on click", async () => {
 
 test("a frame for this run refetches it; none once it is terminal", async () => {
   let state = "running";
-  const mock = detail({}, { [URL_]: () => json(200, { ...run({ state }), params: {} }) });
+  const mock = detail({}, { [URL_]: () => json(200, { failures: [], failures_total: 0, ...run({ state }), params: {} }) });
   app(`/runs/${ID}`);
   await screen.findByRole("heading", { level: 1 });
   const count = () => fetched(mock).filter((u) => u === URL_).length;
@@ -633,7 +633,7 @@ test("P3-parD: First to fail follows the failed tasks' pages to find the task (C
     },
     {
       [`${URL_}/tasks?state=failed&limit=50&cursor=p2`]: {
-        items: [{ id: "tsk_9", process: "NFCORE:RNASEQ:ALIGN", tag: "S09", name: "ALIGN (S09)", state: "failed", stage_id: null }],
+        items: [{ id: "tsk_9", process: "NFCORE:RNASEQ:ALIGN", tag: "S09", name: "ALIGN (S09)", state: "failed", stage_id: null, attempt_n: 1, resources: NO_RESOURCES }],
         next: null,
       },
       [`${URL_}/tasks?state=failed&limit=50`]: { ...TASKS, next: "p2" },

@@ -2,7 +2,7 @@
   "components": {
     "schemas": {
       "Failure": {
-        "description": "A job that failed on its last attempt (P1 Task 29); `log_tail` is the last 20 lines of\nits log, escape sequences removed, or null when it could not be read.",
+        "description": "A job that failed on its last attempt (P1 Task 29); `log_tail` is the last 20 lines of\nits log, escape sequences removed, or null when it could not be read. `work_dir` is the\ndirectory the job files listing shows, for the failure summary's Copy (P1 Task 32).",
         "properties": {
           "attempt_n": {
             "title": "Attempt N",
@@ -73,6 +73,17 @@
           "task_id": {
             "title": "Task Id",
             "type": "string"
+          },
+          "work_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Dir"
           }
         },
         "required": [
@@ -84,7 +95,8 @@
           "message",
           "native_id",
           "scheduler",
-          "log_tail"
+          "log_tail",
+          "work_dir"
         ],
         "title": "Failure",
         "type": "object"

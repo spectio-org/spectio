@@ -37,7 +37,13 @@ from spectio.runner.sacct import JOB_ID, SacctLimiter, SacctRow
 from spectio_sdk.events import NextflowTrace
 from spectio_server.files.confine import NotAllowed, NotFound, open_confined, read_at, safe_rel
 from spectio_server.files.pool import FilePool, Stalled
-from spectio_server.files.taskfiles import AttemptFiles, Binary, read_task_file, run_root
+from spectio_server.files.taskfiles import (
+    AttemptFiles,
+    Binary,
+    attempt_dir,
+    read_task_file,
+    run_root,
+)
 from spectio_server.store.schema import attempts, tasks
 
 log = logging.getLogger(__name__)
@@ -437,7 +443,7 @@ def build_failures(
     culprit = (failure or {}).get("task_id"), (failure or {}).get("attempt_n")
     message = (failure or {}).get("message") or None
     found = []
-    for r, tail in zip(rows, tails, strict=True):
+    for r, f, tail in zip(rows, files, tails, strict=True):
         found.append(
             {
                 "task_id": r.task_id,
@@ -449,6 +455,7 @@ def build_failures(
                 "native_id": r.native_id,
                 "scheduler": _scheduler(engine, r, cached.get(r.native_id or ""), ctx, run_id),
                 "log_tail": tail,
+                "work_dir": attempt_dir(f),
             }
         )
     return found, total

@@ -100,7 +100,8 @@ class Scheduler(BaseModel):
 
 class Failure(BaseModel):
     """A job that failed on its last attempt (P1 Task 29); `log_tail` is the last 20 lines of
-    its log, escape sequences removed, or null when it could not be read."""
+    its log, escape sequences removed, or null when it could not be read. `work_dir` is the
+    directory the job files listing shows, for the failure summary's Copy (P1 Task 32)."""
 
     task_id: str
     attempt_n: int
@@ -111,6 +112,7 @@ class Failure(BaseModel):
     native_id: str | None
     scheduler: Scheduler
     log_tail: str | None
+    work_dir: str | None
 
 
 class RunDetail(Run):
