@@ -53,6 +53,9 @@ class Shot:
 APP_LAUNCH = ("wait:Try a test pipeline", "click:Use spectio/synthetic-scenarios, $SPECTIO_DEMO_PIPELINE",
               "wait:form from nextflow_schema.json")
 
+# P1 Task 32: Launch checks each value before sending. `scale` has "minimum": 1, so 0 shows its error.
+APP_LAUNCH_CHECKED = APP_LAUNCH + ("open:Scenario", "fill:scale=0", "wait:Must be at least 1", "view:Must be at least 1")
+
 # The synthetic Snakemake pipeline (tests/pipelines/synthetic/snakemake) copied to
 # $SPECTIO_DEMO_SMK_PIPELINE, with a config/config.yaml of the Snakefile's own defaults plus a nested
 # map `ref` (tools/media/README.md, live shots). Its two sections are opened, one dotted field is set.
@@ -80,7 +83,7 @@ REGISTRY: dict[str, Shot] = {
         # copied to $SPECTIO_DEMO_PIPELINE (a path free of forbidden terms, fixtures.yaml).
         Shot("app-launch", "/launch", 1440, 1000,
              "0.0.1, live: the launch form, the synthetic Nextflow pipeline picked from Try a test pipeline and loaded",
-             themes=("light", "dark"), live=APP_LAUNCH),
+             themes=("light", "dark"), live=APP_LAUNCH_CHECKED),
         Shot("app-launch-phone", "/launch", 390, 844, "0.0.1, live: the same launch form on a phone, from its top",
              themes=("light", "dark"), live=APP_LAUNCH + ("top:",)),
         # P1 Task 20: the same serve, after one run of the synthetic pipeline with profile `test` has
@@ -104,6 +107,18 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-run-detail-failed", "/runs/$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
              "0.0.1, live: a failed run of the synthetic Nextflow pipeline, why it failed and the first task to fail",
              themes=("light", "dark"), live=("wait:Why it failed", "wait:First to fail")),
+        # P1 Task 32: the failed run is launched with fail_mode=oom and fail_process=MERGE (three attempts, exit
+        # code 137), so that Attempt shows. "Open the job files of" is the failure card's button; the task sheet
+        # opens on the job log. The sacct values stay "unavailable" (no cluster): the honest state.
+        Shot("app-run-job-files", "/runs/$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
+             "0.0.1, live: the task sheet of a failed task open on .command.log, with Attempt and one tab per file",
+             themes=("light", "dark"), live=("wait:Why it failed", "open:Open the job files of", "wait:Attempt")),
+        Shot("app-run-job-files-phone", "/runs/$SPECTIO_DEMO_FAILED_RUN", 390, 844,
+             "0.0.1, live: the same sheet on a phone, the files in a File select",
+             themes=("light", "dark"), live=("wait:Why it failed", "open:Open the job files of", "wait:Attempt")),
+        Shot("app-run-tasks", "/runs/$SPECTIO_DEMO_FAILED_RUN?tab=tasks", 1440, 1000,
+             "0.0.1, live: the Tasks tab with Attempt, Duration, CPUs, Memory and Time limit columns",
+             themes=("light", "dark"), live=("wait:Peak memory", "open:All")),
         # P3 UI parity D: the process sheet (LiteTaskFiles), opened from a process name on the same run.
         # `open:` waits for the sheet's slide-in to settle.
         Shot("app-run-process", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,

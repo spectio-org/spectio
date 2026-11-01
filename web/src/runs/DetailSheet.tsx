@@ -3,7 +3,9 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type Counts, type Process, type RunDetail, type Stage, type Task, listTasks } from "../api";
 import { ICONS, Icon } from "../icons";
 import { usePhone } from "../shell/layout";
-import { Word, taskLabel } from "./RunState";
+import { bytes, nearLimit, seconds } from "./resources";
+import { NearLimit, Word, taskLabel } from "./RunState";
+import { TaskFiles } from "./TaskFiles";
 import { isTerminal, lastSegment, processWord, stageWord, sum, taskWord, total, words } from "./stateWord";
 
 // The detail of a stage, a process (a rule) or a task (a job), in a side sheet (LiteTaskFiles,
@@ -11,7 +13,8 @@ import { isTerminal, lastSegment, processWord, stageWord, sum, taskWord, total, 
 // a right sheet on a desktop, full screen on the phone; Mantine's Drawer is aria-modal, traps focus,
 // closes on Escape and returns focus to its opener (ui-spec §4.11). A stage lists its processes, a
 // process its tasks (GET /tasks?process=, paged), a task what 0.0.1 serves of it; each view opens the
-// next, and Back returns. Task files, exit code and resources wait for P1 Tasks 28 and 29.
+// next, and Back returns. A task shows its attempt, its resources and its files (TaskFiles, P1
+// Task 32 on Tasks 28 and 29's routes).
 
 export type Detail = { kind: "stage"; id: string } | { kind: "process"; name: string } | { kind: "task"; task: Task };
 
@@ -176,18 +179,26 @@ function StageView({ run, stage, processes, onOpen }: { run: RunDetail; stage: S
   );
 }
 
+/** "8 GB · 8 GB near limit": asked, then measured, the badge in words when near the limit. */
+function Pair({ asked, used, near }: { asked: string; used: string; near?: boolean }) {
+  return (
+    <>
+      {asked} · {used}
+      <NearLimit on={!!near} />
+    </>
+  );
+}
+
 function TaskView({ run, stages, processes, task, onOpen }: { run: RunDetail; stages: Stage[]; processes: Process[]; task: Task; onOpen: Props["onOpen"] }) {
   const w = words(run.workflow.engine);
   const known = processes.some((p) => p.process === task.process);
-  const files =
-    run.workflow.engine === "snakemake"
-      ? `this ${w.unit}'s log, its directory`
-      : `this ${w.unit}'s files (.command.log, .command.err, .command.out, .command.sh), its work directory`;
+  const r = task.resources;
+  const near = nearLimit(r);
   const facts: [string, ReactNode][] = [
     ["ID", <span className="sp-mono">{task.id}</span>],
-    ["Name", task.name ?? "—"],
     ["Tag", task.tag ?? "—"],
     ["State", <Word state={task.state} word={taskWord(task.state)} />],
+    ["Last attempt", task.attempt_n ?? "—"],
     [
       w.Group,
       known ? (
@@ -199,6 +210,9 @@ function TaskView({ run, stages, processes, task, onOpen }: { run: RunDetail; st
       ),
     ],
     ["Stage", stageLine(task.stage_id, stages)],
+    ["CPUs · CPU %", <Pair asked={r.cpus === null ? "—" : String(r.cpus)} used={r.cpu_percent === null ? "—" : `${Math.round(r.cpu_percent)} %`} />],
+    ["Memory, asked · peak", <Pair asked={bytes(r.memory_bytes)} used={bytes(r.peak_rss_bytes)} near={near.memory} />],
+    ["Time limit · duration", <Pair asked={seconds(r.time_s)} used={seconds(r.realtime_s)} near={near.time} />],
   ];
   return (
     <>
@@ -210,9 +224,8 @@ function TaskView({ run, stages, processes, task, onOpen }: { run: RunDetail; st
           </div>
         ))}
       </dl>
-      <p className="sp-note" role="note">
-        Not in Spectio 0.0.1 yet: {files}, exit code, duration and resources. They arrive with P1 Tasks 28 and 29.
-      </p>
+      <h3 className="sp-sheet-h">Files</h3>
+      <TaskFiles run={run} task={task} />
     </>
   );
 }

@@ -1187,3 +1187,119 @@
 .sp-quick-link:hover .sp-pipeline span {
   text-decoration: underline;
 }
+
+/* P1 Task 32: resources, job files and the failure summary (LiteRunTasks, LiteTaskFiles,
+   LiteTaskFilesStates, LiteRunFailed and their phone twins). */
+.sp-near {
+  display: inline-block;
+  margin-left: 2px;
+  padding: 1px 7px;
+  border-radius: 7px;
+  font-size: 11.5px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--sp-state-review-fg);
+  background: var(--sp-state-review-bg);
+}
+.sp-nowrap-cell {
+  white-space: nowrap;
+}
+.sp-files {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+.sp-file-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  border-bottom: 1px solid var(--sp-line-divider);
+}
+.sp-file-tabs [role="tablist"] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+}
+.sp-file-tabs [role="tab"] {
+  min-height: 36px;
+  padding: 0 10px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  font-family: var(--sp-font-mono);
+  font-size: 12.5px;
+  color: var(--sp-text-secondary);
+  background: none;
+  cursor: pointer;
+}
+.sp-file-tabs [role="tab"][aria-selected="true"] {
+  font-weight: 700;
+  color: var(--sp-text-primary);
+  border-bottom-color: var(--sp-state-running);
+}
+.sp-file-tabs [role="tab"]:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: -2px;
+}
+.sp-file-panel {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+.sp-file-panel p {
+  margin: 0;
+  font-size: 13px;
+}
+.sp-file-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+.sp-file-why {
+  display: grid;
+  gap: 6px;
+}
+.sp-file-why strong {
+  color: var(--sp-text-primary);
+}
+.sp-file-select select {
+  min-height: 44px;
+}
+.sp-failure {
+  display: grid;
+  gap: 8px;
+  padding: 14px 16px;
+}
+.sp-failure-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 10px;
+  margin: 0;
+}
+.sp-failure-facts {
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+}
+.sp-failure-message {
+  margin: 0;
+  font-family: var(--sp-font-mono);
+  font-size: 12.5px;
+  color: var(--sp-state-failed-fg);
+}
+.sp-failure-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  font-size: 12.5px;
+}
+.sp-files-button {
+  min-height: 44px;
+}
+@media (max-width: 767.98px) {
+  .sp-failure-facts {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

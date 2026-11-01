@@ -58,12 +58,13 @@ media:
     kind: screenshot
     # live: needs a running `spectio serve` (SPECTIO_URL) and the synthetic Nextflow pipeline
     # copied to a path free of forbidden terms (SPECTIO_DEMO_PIPELINE), tools/media/README.md;
-    # since UI parity D it is picked from Try a test pipeline, so the server must have run it once
+    # since UI parity D it is picked from Try a test pipeline, so the server must have run it once;
+    # P1 Task 32 retake: scale set to 0 shows its field error (Launch checks)
     generator: python3 tools/media/shots.py run --shot app-launch --theme both
     outputs: [docs/assets/shots/app-launch_light.webp, docs/assets/shots/app-launch_dark.webp]
   - id: app-launch-phone
     kind: screenshot
-    # live, as app-launch, at 390 x 844
+    # live, as app-launch, at 390 x 844; P1 Task 32 retake: (optional) labels
     generator: python3 tools/media/shots.py run --shot app-launch-phone --theme both
     outputs: [docs/assets/shots/app-launch-phone_light.webp, docs/assets/shots/app-launch-phone_dark.webp]
   - id: app-home
@@ -103,9 +104,25 @@ media:
     outputs: [docs/assets/shots/app-run-detail-phone_light.webp]
   - id: app-run-detail-failed
     kind: screenshot
-    # live, as app-run-detail; SPECTIO_DEMO_FAILED_RUN is a run launched with fail_mode=exit fail_process=MERGE
+    # live, as app-run-detail; SPECTIO_DEMO_FAILED_RUN is a run launched with fail_mode=oom fail_process=MERGE
+    # (three attempts, exit 137; the Task 32 retake; sacct values stay unavailable: no cluster)
     generator: python3 tools/media/shots.py run --shot app-run-detail-failed --theme both
     outputs: [docs/assets/shots/app-run-detail-failed_light.webp, docs/assets/shots/app-run-detail-failed_dark.webp]
+  - id: app-run-job-files
+    kind: screenshot
+    # live, as app-run-detail-failed (P1 Task 32): the failure card's Open job files, the task sheet on .command.log with Attempt
+    generator: python3 tools/media/shots.py run --shot app-run-job-files --theme both
+    outputs: [docs/assets/shots/app-run-job-files_light.webp, docs/assets/shots/app-run-job-files_dark.webp]
+  - id: app-run-job-files-phone
+    kind: screenshot
+    # live, as app-run-job-files, at 390 x 844: the File select
+    generator: python3 tools/media/shots.py run --shot app-run-job-files-phone --theme both
+    outputs: [docs/assets/shots/app-run-job-files-phone_light.webp, docs/assets/shots/app-run-job-files-phone_dark.webp]
+  - id: app-run-tasks
+    kind: screenshot
+    # live, as app-run-detail-failed: the Tasks tab, filter All, with the resources columns (P1 Task 32)
+    generator: python3 tools/media/shots.py run --shot app-run-tasks --theme both
+    outputs: [docs/assets/shots/app-run-tasks_light.webp, docs/assets/shots/app-run-tasks_dark.webp]
   - id: app-run-process
     kind: screenshot
     # live, as app-run-detail: the sheet of process ALIGN, opened from its name (P3 UI parity D)
@@ -565,6 +582,14 @@ media:
       - docs/assets/diagrams/p3-t29-failure-facts_dark.svg
       - docs/assets/diagrams/p3-t29-failure-facts_light.png
       - docs/assets/diagrams/p3-t29-failure-facts_dark.png
+  - id: p3-t32-failed-job
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t32_failed_job.py
+    outputs:
+      - docs/assets/diagrams/p3-t32-failed-job_light.svg
+      - docs/assets/diagrams/p3-t32-failed-job_dark.svg
+      - docs/assets/diagrams/p3-t32-failed-job_light.png
+      - docs/assets/diagrams/p3-t32-failed-job_dark.png
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines

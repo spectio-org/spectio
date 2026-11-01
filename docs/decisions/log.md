@@ -1114,3 +1114,14 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Recommended, not applied:** for #95 rule 8, also accept the expected directory's `realpath` (option (b)) if `slurm-mini` shows a symlinked runs root never matches.
 - **Not yet applied:** P1 Task 29's interface and its 8-field `sacct` format, at the next `/apply-findings` ([P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-29)).
 - **Open:** see [P3-M8](../progress/W5/P3-M8.md#findings-and-open-questions): follow-up FU-P3-32, the logger plugin's side (P1 Task 7) and the check on `slurm-mini` (P1 Task 22).
+
+## 2026-11-01 — The run tools screens as built, part one, written into ui-spec §4.4 and §4.6 and api §5 (P3 Task 32, inbox #96)
+
+- **Context.** P3 Task 32 built the screens of milestone M8 whose API exists ([P1 Task 32](../plans/P1-walking-skeleton.md#task-32-the-screens-job-files-failure-summary-results-resume-copy-and-resources), on the routes of P1 Tasks 28 and 29): each job's files in the task sheet, one failure card per failed job, and the resources per job. It also built Thomas's two Launch items of `todo.md` (2026-10-31, "avec 32"): each value checked against its schema before Launch, and "required" or "optional" on each row. The code had to choose where the drawer lives, two labels, number inputs, and one new API field.
+- **Applied (assumed — standing rule, [inbox #96](../reviews/inbox.md#96-assumed-the-run-tools-screens-as-built-and-what-waits-for-tasks-30-and-31-p3-task-32); [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** dated notes; no section number changed.
+    - [Ui-spec §4.4](../specs/ui-spec.md#44-run-detail), note 2026-11-01: the drawer is the task sheet, the Attempt select, the state words, the array task and Download labels, the refusals, the failure cards, the resources columns (#96 rules 1 to 4).
+    - [Ui-spec §4.6](../specs/ui-spec.md#46-launch-and-relaunch), note 2026-11-01: what Launch checks, where the error shows, checked text inputs for numbers, "(required)" or "(optional)" in the label (#96 rule 5).
+    - [Api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), note 2026-11-01: `failures[].work_dir` (#96 rule 6).
+- **Recommended, not applied:** restore the task sheet's Name fact (#96 rule 4 (b)); run a schema `pattern` in a Web Worker with a time bound (#96 rule 5 (c)). Both in follow-up FU-P3-33.
+- **Not yet applied:** P1 Task 32's interface (`TaskFilesDrawer.tsx` and the other planned files), at the next `/apply-findings` ([P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-32)).
+- **Open:** Resume, Copy to a new launch, and results and reports wait for P1 Tasks 30 and 31. The rest is listed on [P3-M8](../progress/W5/P3-M8.md#findings-and-open-questions): FU-P3-33.

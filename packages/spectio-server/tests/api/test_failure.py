@@ -246,6 +246,7 @@ def test_nf_failure_summary(settings: Settings, writer: Writer, fakebin: Fake) -
     assert failure["task_id"] == run.task_ids()[0]
     assert (failure["process"], failure["tag"], failure["attempt_n"]) == ("ALIGN", "S00", 2)
     assert (failure["exit_code"], failure["native_id"]) == (137, "8812402")
+    assert failure["work_dir"] == str(workdir)  # the directory to copy (P1 Task 32)
     assert failure["log_tail"] == "\n".join(f"line {n} red" for n in range(10, 30))
     assert failure["scheduler"]["accounting"] == "pending"
     assert failure["scheduler"]["state_source"] is None
@@ -472,6 +473,7 @@ def test_smk_failure_from_message(settings: Settings, writer: Writer, fakebin: F
     assert failure["scheduler"]["req_mem_bytes"] == 2000 * 1024**2
     assert failure["scheduler"]["time_limit_s"] == 1800
     assert failure["native_id"] == "8812477"
+    assert failure["work_dir"] == str(run.paths.launch_dir)  # Snakemake: the launch directory
     assert failure["log_tail"] == "start\nslurmstepd: error: Detected 1 oom_kill"
     assert not acct.step() and fakebin.calls() == []
     with writer.engine.connect() as conn:
