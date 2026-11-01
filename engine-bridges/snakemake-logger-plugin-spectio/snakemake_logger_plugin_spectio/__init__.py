@@ -379,10 +379,8 @@ class Spool:
     def _open_dir(self) -> int:
         """`events/`, made 0700 when missing; refused unless a directory of this user that
         group and others cannot use, and never through a symlink."""
-        try:
+        with contextlib.suppress(FileExistsError):
             os.mkdir(self.directory, 0o700)
-        except FileExistsError:
-            pass
         fd = os.open(self.directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
         st = os.fstat(fd)
         if st.st_uid != os.geteuid() or st.st_mode & 0o077:
@@ -414,19 +412,15 @@ class Spool:
 
     def _close_file(self) -> None:
         if self.fd is not None:
-            try:
+            with contextlib.suppress(OSError):
                 os.close(self.fd)
-            except OSError:
-                pass
         self.fd = None
 
     def close(self) -> None:
         self._close_file()
         if self.dir_fd is not None:
-            try:
+            with contextlib.suppress(OSError):
                 os.close(self.dir_fd)
-            except OSError:
-                pass
         self.dir_fd = None
 
     def error(self, message: str) -> None:
