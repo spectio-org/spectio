@@ -311,6 +311,10 @@ attempts = Table(
     Column("work_dir", String),
     Column("native_id", String),
     Column("logs", Json),
+    # The SLURM state and reason from the engine's own message, {state, reason} (P1 Task 29):
+    # Snakemake's SLURM executor plugin. `resources` holds the requested and measured values
+    # of the trace or of `job_info` (and the job's benchmark path, relative to the launch dir).
+    Column("scheduler", Json),
     _check("attempts", "state", ATTEMPT_STATES),
     _check("attempts", "failure_class", FAILURE_CLASSES, nullable=True),
     UniqueConstraint("task_id", "launch_n", "n", name="uq_attempts_key"),  # api §8.2

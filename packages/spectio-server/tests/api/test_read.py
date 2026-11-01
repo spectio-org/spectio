@@ -255,7 +255,10 @@ def test_tasks_filter_and_paging(authed_client: TestClient, seeded_stages: str) 
     assert [t["id"] for t in running] == ["tsk_00"]
     star = authed_client.get(url, params={"process": "NFCORE_RNASEQ:RNASEQ:ALIGN:STAR"}).json()
     assert [t["id"] for t in star["items"]] == ["tsk_01"]
-    assert set(running[0]) == {"id", "process", "tag", "name", "state", "stage_id"}
+    assert set(running[0]) == {
+        *("id", "process", "tag", "name", "state", "stage_id"),
+        *("attempt_n", "resources"),  # P1 Task 29
+    }
 
 
 def test_task_cursor_is_one_id(authed_client: TestClient, seeded_stages: str) -> None:

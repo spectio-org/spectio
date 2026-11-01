@@ -22,6 +22,7 @@ from typing import Any, TypeVar
 T = TypeVar("T")
 
 WORKERS = 4
+READ_TIMEOUT_S = 5.0  # what a route waits for one listing, one read or one view's reads
 BACKLOG = 16  # jobs waiting for a thread, beyond those running
 
 

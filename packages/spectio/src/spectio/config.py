@@ -52,10 +52,14 @@ class _Model(BaseModel):
 
 
 class SlurmOpts(_Model):
-    """The engines' SLURM executors, for their task jobs (P1 Assumption 14)."""
+    """The engines' SLURM executors, for their task jobs (P1 Assumption 14), and `sacct`, for
+    failed jobs and job resources (dev-env §15.3 req. 15): its path, resolved once by `spectio
+    init`, and `accounting = false` to never call it."""
 
     partition: str | None = None
     account: str | None = None
+    accounting: bool = True
+    sacct: AbsPath | None = None
 
 
 class EngineOpts(_Model):
@@ -90,6 +94,8 @@ _ENV: dict[str, tuple[str, ...]] = {
     "SPECTIO_SERVER_HOST": ("server", "host"),
     "SPECTIO_SLURM_PARTITION": ("slurm", "partition"),
     "SPECTIO_SLURM_ACCOUNT": ("slurm", "account"),
+    "SPECTIO_SLURM_ACCOUNTING": ("slurm", "accounting"),
+    "SPECTIO_SLURM_SACCT": ("slurm", "sacct"),
     "SPECTIO_ENGINES_NEXTFLOW_CMD": ("engines", "nextflow_cmd"),
     "SPECTIO_ENGINES_SNAKEMAKE_CMD": ("engines", "snakemake_cmd"),
     "SPECTIO_ENGINES_NXF_OPTS": ("engines", "nxf_opts"),
@@ -151,6 +157,8 @@ def _toml_value(value: Any) -> str:
         return "{" + ", ".join(f"{k} = {_toml_value(v)}" for k, v in value.items()) + "}"
     if isinstance(value, list):
         return "[" + ", ".join(_toml_value(v) for v in value) + "]"
+    if isinstance(value, bool):
+        return "true" if value else "false"
     if isinstance(value, int | float):
         return repr(value)
     # A JSON string is a TOML basic string, but for DEL, which TOML wants escaped; not

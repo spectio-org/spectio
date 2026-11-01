@@ -29,7 +29,7 @@ from spectio_server.api.models import TaskFiles
 from spectio_server.api.problems import Invalid, Problem, not_found
 from spectio_server.api.runs_read import read
 from spectio_server.files.confine import MAX_READ, TAIL, NotAllowed, NotFound
-from spectio_server.files.pool import FilePool, Stalled
+from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
 from spectio_server.files.taskfiles import (
     AttemptFiles,
     Binary,
@@ -44,7 +44,6 @@ __all__ = ["READ_TIMEOUT_S", "FilePool", "load_attempt", "router"]
 
 router = APIRouter()
 
-READ_TIMEOUT_S = 5.0  # one listing or one read, in the file pool
 HEADERS = {
     "X-Content-Type-Options": "nosniff",
     "Cache-Control": "no-store",
