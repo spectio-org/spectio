@@ -335,7 +335,7 @@ def build(theme: Theme) -> Sketch:
     # the tests ----------------------------------------------------------------------------------
     s.terminal(950, y - 4, 290, 150, ("$ npx vitest run", "$ npx tsc --noEmit", "$ uv run pytest -q",
                                       "all pass"), size=12.5, line_h=22)
-    lines(s, 950, y + 172, ("e2e smoke: route mocks,", "not re-run after the fixes"), size=12.5)
+    lines(s, 950, y + 172, ("e2e smoke: route mocks,", "re-run on 00f38eaa: 24 passed"), size=12.5)
 
     # what is still open -------------------------------------------------------------------------
     ox = 1270
@@ -343,7 +343,6 @@ def build(theme: Theme) -> Sketch:
     opened = (("R1 SEC-P3T32-01", "a schema `pattern` runs", "unbounded: ReDoS"),
               ("R1 SEC-P3T32-02", "Attempt has one option", "per attempt, no cap"),
               ("R2 CR-P3T32-05", "work directory row can", "show another attempt's"),
-              ("R1 CR-P3T32-05", "two labels need a", "dated ui-spec note"),
               ("R1 CR-P3T32-06", "the sheet's Name fact", "was removed"),
               ("R1 CR-P3T32-08", "two time formatters,", "left: outputs differ"))
     for i, (fid, a, b) in enumerate(opened):

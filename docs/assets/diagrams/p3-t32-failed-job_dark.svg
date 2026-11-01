@@ -524,7 +524,7 @@
   <text x="964.0" y="1272.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#e3e3e3" xml:space="preserve">$ uv run pytest -q</text>
   <text x="964.0" y="1294.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#e3e3e3" xml:space="preserve">all pass</text>
   <text x="950.0" y="1360.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">e2e smoke: route mocks,</text>
-  <text x="950.0" y="1381.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">not re-run after the fixes</text>
+  <text x="950.0" y="1381.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">re-run on 00f38eaa: 24 passed</text>
   <text x="1270.0" y="1200.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">open, all minor</text>
   <path d="M1278.0,1216.0 L1285.0,1228.6 L1271.0,1228.6 Z" fill="#363020" stroke="none"/>
   <path d="M1277.9,1216.3 C1279.9,1220.8 1282.6,1223.9 1285.3,1228.8" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
@@ -555,25 +555,17 @@
   <path d="M1284.7,1378.5 C1280.6,1379.0 1276.0,1379.3 1271.0,1378.7" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1271.1,1379.0 C1273.7,1373.8 1275.9,1370.1 1278.4,1366.3" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
   <text x="1278.0" y="1377.2" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="8.4" fill="#ffa94d" text-anchor="middle" font-weight="bold">!</text>
-  <text x="1292.0" y="1378.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#ff8787" text-anchor="start" font-weight="bold">R1 CR-P3T32-05</text>
-  <text x="1292.0" y="1395.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">two labels need a</text>
-  <text x="1292.0" y="1410.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">dated ui-spec note</text>
+  <text x="1292.0" y="1378.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#ff8787" text-anchor="start" font-weight="bold">R1 CR-P3T32-06</text>
+  <text x="1292.0" y="1395.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">the sheet's Name fact</text>
+  <text x="1292.0" y="1410.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">was removed</text>
   <path d="M1278.0,1416.0 L1285.0,1428.6 L1271.0,1428.6 Z" fill="#363020" stroke="none"/>
   <path d="M1277.9,1416.3 C1280.4,1420.0 1282.6,1424.0 1284.7,1428.4" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1284.7,1428.2 C1280.5,1428.9 1276.3,1427.9 1271.2,1428.9" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1270.7,1428.5 C1272.6,1424.0 1276.2,1419.9 1277.7,1416.1" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
   <text x="1278.0" y="1427.2" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="8.4" fill="#ffa94d" text-anchor="middle" font-weight="bold">!</text>
-  <text x="1292.0" y="1428.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#ff8787" text-anchor="start" font-weight="bold">R1 CR-P3T32-06</text>
-  <text x="1292.0" y="1445.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">the sheet's Name fact</text>
-  <text x="1292.0" y="1460.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">was removed</text>
-  <path d="M1278.0,1466.0 L1285.0,1478.6 L1271.0,1478.6 Z" fill="#363020" stroke="none"/>
-  <path d="M1277.9,1465.9 C1279.6,1470.5 1282.6,1474.8 1285.2,1479.0" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1285.3,1478.4 C1280.7,1478.5 1276.4,1478.0 1271.1,1478.7" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
-  <path d="M1270.8,1478.4 C1272.7,1475.1 1275.4,1470.3 1278.1,1465.9" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
-  <text x="1278.0" y="1477.2" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="8.4" fill="#ffa94d" text-anchor="middle" font-weight="bold">!</text>
-  <text x="1292.0" y="1478.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#ff8787" text-anchor="start" font-weight="bold">R1 CR-P3T32-08</text>
-  <text x="1292.0" y="1495.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">two time formatters,</text>
-  <text x="1292.0" y="1510.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">left: outputs differ</text>
+  <text x="1292.0" y="1428.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#ff8787" text-anchor="start" font-weight="bold">R1 CR-P3T32-08</text>
+  <text x="1292.0" y="1445.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">two time formatters,</text>
+  <text x="1292.0" y="1460.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">left: outputs differ</text>
   <text x="50.0" y="1580.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">IDs: CR code-reviewer · SEC security-reviewer</text>
   <text x="50.0" y="1602.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="start" font-weight="normal">R1, R2: the code review rounds, IDs restart in each round; the job and its numbers are the e2e mocks</text>
   <text x="1550.0" y="1602.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#9aa0ac" text-anchor="end" font-weight="normal">source: web/src/runs, web/src/launch, tests/e2e/skeleton.spec.ts · P1 Task 32</text>
