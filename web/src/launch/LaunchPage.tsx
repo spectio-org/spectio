@@ -688,6 +688,7 @@ function ParamField({
     description,
     error,
     inputContainer,
+    withAsterisk: false, // the word "(required)" replaces Mantine's asterisk (CR-P3T32-01)
     classNames: { root: "launch-param", description: "sp-sr" },
   };
   switch (field.type) {

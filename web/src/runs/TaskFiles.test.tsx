@@ -170,6 +170,36 @@ test("a read refused: 415 not text, 410 gone, 503 offline with Retry", async () 
   expect(await within(within(sheet).getByRole("tabpanel")).findByText("back")).toBeInTheDocument();
 });
 
+test("a read that 404s while the listing still says present: Retry reads the file again (CR-P3T32-02)", async () => {
+  let gone = true;
+  detail({
+    [`${FILES}/2/files/.command.log`]: () => (gone ? json(404, { title: "Not found" }) : new Response("here again\n")),
+    [`${FILES}/2/files`]: listing(NF_FILES),
+  });
+  const { sheet } = await openFiles();
+  const panel = within(sheet).getByRole("tabpanel");
+  expect(await within(panel).findByText("This file is not there now")).toBeInTheDocument();
+  gone = false;
+  await userEvent.click(within(panel).getByRole("button", { name: "Retry" }));
+  expect(await within(within(sheet).getByRole("tabpanel")).findByText("here again")).toBeInTheDocument();
+});
+
+test("picking another attempt says 'Loading the files…' until its listing comes (CR-P3T32-03)", async () => {
+  let answer: (r: Response) => void = () => undefined;
+  detail({
+    [`${FILES}/1/files`]: () => new Promise<Response>((resolve) => (answer = resolve)),
+    [`${FILES}/2/files/`]: text("second try\n"),
+    [`${FILES}/2/files`]: listing([file(".command.log", "job_log")]),
+  });
+  const { sheet } = await openFiles();
+  expect(await within(sheet).findByText("second try")).toBeInTheDocument();
+  await userEvent.selectOptions(within(sheet).getByRole("combobox", { name: "Attempt" }), "1");
+  expect(within(sheet).getByText("Loading the files…")).toBeInTheDocument();
+  expect(within(sheet).queryByText("This attempt has no file to show.")).toBeNull();
+  answer(json(200, listing([], 1)));
+  expect(await within(sheet).findByText("This attempt has no file to show.")).toBeInTheDocument();
+});
+
 test("the listing itself offline: the reason in words and Retry", async () => {
   let offline = true;
   detail({ [`${FILES}/2/files`]: () => (offline ? json(503, { title: "File system not answering" }) : json(200, listing([]))) });

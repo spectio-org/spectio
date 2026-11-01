@@ -120,7 +120,7 @@ function FilePanel({ task, n, file, running, onReload }: { task: Task; n: number
   if (error?.status === 415) return <Refused title="This file is not text. Download it to open it" body="Spectio shows text files only." download={download} />;
   if (error?.status === 410) return <Refused title={WHY.cleaned[0]} body={WHY.cleaned[1]} />;
   if (error?.status === 503) return <Refused title={OFFLINE} body="The file system does not answer. Nothing was lost; try again in a moment." onRetry={() => setReads((r) => r + 1)} />;
-  if (error?.status === 404) return <Refused title="This file is not there now" body="It was listed, then not found: reload the list." onRetry={onReload} />;
+  if (error?.status === 404) return <Refused title="This file is not there now" body="It was listed, then not found: reload the list." onRetry={() => (onReload(), setReads((r) => r + 1))} />;
   if (error) return <Refused title="The file could not be read" body={error.message} onRetry={() => setReads((r) => r + 1)} />;
   const size = file.size ?? 0;
   const big = size > DOWNLOAD;
@@ -224,8 +224,8 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
       )}
       {error && error.status === 503 && <Refused title={OFFLINE} body="The file system does not answer. Nothing was lost; try again in a moment." onRetry={reload} />}
       {error && error.status !== 503 && <Refused title="The files could not be listed" body={error.message} onRetry={reload} />}
-      {!error && listing === null && <p className="sp-muted">Loading the files…</p>}
-      {!error && listing !== null && files.length === 0 && <p className="sp-muted">This attempt has no file to show.</p>}
+      {!error && listing?.attempt !== n && <p className="sp-muted">Loading the files…</p>}
+      {!error && listing?.attempt === n && files.length === 0 && <p className="sp-muted">This attempt has no file to show.</p>}
       {!error && shown && (
         <>
           {phone ? (

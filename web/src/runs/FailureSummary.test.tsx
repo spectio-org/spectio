@@ -89,6 +89,15 @@ test("failed run: Why it failed shows SLURM state, requested and used memory, la
   expect(within(job).getByRole("button", { name: "Copy the work directory of ALIGN (S00)" })).toBeInTheDocument();
 });
 
+test("the run's message, also on the culprit's card, is shown once (CR-P3T32-04)", async () => {
+  failed({ failure: { class: "tool_error", message: FAILURE.message, task_id: "tsk_1", attempt_n: 2 } });
+  app(`/runs/${ID}`);
+  const job = await card();
+  const why = screen.getByRole("region", { name: "Why it failed" });
+  expect(within(why).getAllByText(FAILURE.message)).toHaveLength(1);
+  expect(within(job).getByText(FAILURE.message)).toBeInTheDocument();
+});
+
 test("Open job files opens the task sheet on its job log; Escape returns focus to the button", async () => {
   failed();
   app(`/runs/${ID}`);

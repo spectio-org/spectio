@@ -459,6 +459,8 @@ test("each row says required or optional, as text in its accessible name", async
   page();
   await load(CHECKED);
   expect(screen.getByRole("textbox", { name: "input (required)" })).toBeRequired();
+  // the word replaces Mantine's asterisk (CR-P3T32-01)
+  expect(document.querySelector(".mantine-InputWrapper-required")).toBeNull();
   expect(screen.getByRole("textbox", { name: "depth (optional)" })).not.toBeRequired();
   expect(screen.getByRole("checkbox", { name: "flag (optional)" })).toBeInTheDocument();
 });

@@ -277,7 +277,9 @@ function StagesOrProcesses({
 function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; processes: Process[]; onTasks: () => void; onOpen: (d: Detail) => void }) {
   const failure = run.failure as { class?: unknown; message?: unknown; task_id?: unknown } | null;
   const kind = typeof failure?.class === "string" ? failure.class : null;
-  const message = typeof failure?.message === "string" ? failure.message.trim() : "";
+  // left out when a job's card already shows it unchanged (CR-P3T32-04)
+  const said = typeof failure?.message === "string" ? failure.message.trim() : "";
+  const message = run.failures.some((f) => f.message?.trim() === said) ? "" : said;
   const culpritId = typeof failure?.task_id === "string" ? failure.task_id : null;
   const w = words(run.workflow.engine);
   const { unit, units, Units } = w;
