@@ -230,3 +230,160 @@ test('a malformed run id shows not-found inside the shell', async ({ page }) => 
   await expect(page.locator('body')).not.toContainText('%E0'); // no URL text, crumbs included
   expect(errors).toEqual([]);
 });
+
+// P1 Task 32, the parts on Tasks 28 and 29's routes: each job's files, the failure summary and the
+// resources, answered by route mocks (the shapes of packages/spectio-server/openapi/0.0.1.json).
+const GIB = 1024 ** 3;
+const PROC = 'NFCORE:RNASEQ:SUBREAD_FEATURECOUNTS';
+const WORKDIR = `/scratch/amartin/spectio-runs/${RUN}/work/9d/77c2140f5be3a1c96e04d2b88a7f13`;
+const FAILED_TASK = {
+  id: 'tsk_19', process: PROC, tag: 'S19', name: 'SUBREAD_FEATURECOUNTS (S19)', state: 'failed', stage_id: null, attempt_n: 1,
+  resources: { cpus: 6, memory_bytes: 8 * GIB, time_s: 8 * 3600, realtime_s: 360, cpu_percent: 412, peak_rss_bytes: 8 * GIB, source: 'trace' },
+};
+const jobFile = (name: string, kind: string, over: object = {}) =>
+  ({ name, kind, size: 2458, mtime: '2026-10-31T08:42:00+00:00', state: 'present', note: null, ...over });
+
+async function mockFailed(page: Page) {
+  await page.route(`**/api/v1/runs/${RUN}`, (r) => r.fulfill(json({
+    ...mockRun({
+      state: 'failed', ended_at: '2026-10-31T08:50:00+00:00',
+      failure: { class: 'tool_error', message: '', task_id: 'tsk_19', attempt_n: 1 },
+      head: { session: `spectio-${RUN}`, node: 'login1', alive: false, exit_code: 1 },
+      task_counts: { succeeded: 24, failed: 1 },
+      summary: { tasks: { done: 24, total: 25, failed: 1, cached: 0 }, last_failure: null, stage_mode: 'quarters' },
+    }),
+    failures: [{
+      task_id: 'tsk_19', process: PROC, tag: 'S19', attempt_n: 1, native_id: '8812477', exit_code: 137,
+      message: 'Process `SUBREAD_FEATURECOUNTS (S19)` terminated with an error exit status (137)',
+      log_tail: 'Total alignments : 61842317\nslurmstepd: error: Detected 1 oom_kill event in StepId=8812477.batch\n',
+      scheduler: { state: 'OUT_OF_MEMORY', reason: 'Step 0: OutOfMemory', state_source: 'sacct', max_rss_bytes: 8 * GIB, req_mem_bytes: 8 * GIB,
+        elapsed_s: 360, time_limit_s: 8 * 3600, usage_source: 'sacct', accounting: 'available' },
+      work_dir: WORKDIR,
+    }],
+    failures_total: 1,
+  })));
+  await page.route(`**/api/v1/runs/${RUN}/stages`, (r) => r.fulfill(json({ items: [] })));
+  await page.route(`**/api/v1/runs/${RUN}/processes`, (r) =>
+    r.fulfill(json({ items: [{ process: PROC, stage_id: null, counts: { succeeded: 24, failed: 1 }, retries: 0 }] })));
+  await page.route(`**/api/v1/runs/${RUN}/tasks?*`, (r) => r.fulfill(json({ items: [FAILED_TASK], next: null })));
+  await page.route(`**/api/v1/runs/${RUN}/logs?*`, (r) => r.fulfill({ status: 200, contentType: 'text/plain', body: 'Error executing process\n' }));
+  await page.route('**/api/v1/version', (r) => r.fulfill(json({ version: '0.0.1', node: 'login1', runs_root: '/scratch/amartin/spectio-runs', account: 'amartin', executor: 'slurm' })));
+  await page.route('**/api/v1/tasks/tsk_19/attempts/1/files', (r) => r.fulfill(json({
+    task_id: 'tsk_19', attempt: 1, work_dir: WORKDIR, native_id: '8812477',
+    files: [
+      jobFile('.command.sh', 'script'), jobFile('.command.run', 'wrapper'), jobFile('.command.out', 'stdout', { size: 3250586 }),
+      jobFile('.command.err', 'stderr'), jobFile('.command.log', 'job_log', { note: 'May show values from your parameters or environment.' }),
+      jobFile('.exitcode', 'exit'), jobFile('.command.begin', 'marker'),
+      jobFile('.command.trace', 'trace', { state: 'absent', size: null, mtime: null, note: 'Written only when the run measures its tasks.' }),
+    ],
+  })));
+  await page.route('**/api/v1/tasks/tsk_19/attempts/1/files/**', (r) => {
+    const name = decodeURIComponent(new URL(r.request().url()).pathname.split('/files/')[1]);
+    return name === '.command.log'
+      ? r.fulfill({ status: 200, contentType: 'text/plain', body: '|| Process BAM file S19.markdup.sorted.bam...\nslurmstepd: error: Detected 1 oom_kill event in StepId=8812477.batch\n' })
+      : r.fulfill({ status: 200, contentType: 'text/plain', body: `${name}\n` });
+  });
+}
+
+test('failed run: Why it failed shows SLURM state, requested and used memory, last lines', async ({ page }) => {
+  await mockFailed(page);
+  await page.goto(`/runs/${RUN}`);
+  const job = page.getByRole('article', { name: 'SUBREAD_FEATURECOUNTS (S19), attempt 1' });
+  await expect(job.getByText('OUT_OF_MEMORY')).toBeVisible();
+  await expect(job.getByText('8 GB · 8 GB near limit')).toBeVisible();
+  await expect(job.getByText(/SLURM state: from sacct · Reason: Step 0: OutOfMemory/)).toBeVisible();
+  await expect(job.getByLabel('SUBREAD_FEATURECOUNTS (S19), last lines')).toContainText('oom_kill event');
+  await expect(job.getByRole('button', { name: 'Copy the work directory of SUBREAD_FEATURECOUNTS (S19)' })).toBeVisible();
+});
+
+test("Files opens the drawer on .command.log for a failed attempt; Escape returns focus to the row's button", async ({ page }) => {
+  await mockFailed(page);
+  await page.goto(`/runs/${RUN}?tab=tasks`);
+  const files = page.getByRole('button', { name: 'Files of SUBREAD_FEATURECOUNTS (S19), attempt 1' });
+  await files.click();
+  const sheet = page.getByRole('dialog', { name: 'SUBREAD_FEATURECOUNTS (S19)' });
+  await expect(sheet).toHaveAttribute('aria-modal', 'true');
+  await expect(sheet.getByText(/oom_kill event/)).toBeVisible();
+  await expect(sheet.getByText(WORKDIR)).toBeVisible();
+  await page.keyboard.press('Escape');
+  await expect(sheet).toHaveCount(0);
+  await expect(files).toBeFocused();
+});
+
+test("tabs are buttons with role tab; the size line and Download; a missing file's state is in its label", async ({ page }, info) => {
+  await mockFailed(page);
+  await page.goto(`/runs/${RUN}?tab=tasks`);
+  await page.getByRole('button', { name: 'Files of SUBREAD_FEATURECOUNTS (S19), attempt 1' }).click();
+  const sheet = page.getByRole('dialog', { name: 'SUBREAD_FEATURECOUNTS (S19)' });
+  await expect(sheet.getByText(/^whole file · 2\.4 KiB · written /)).toBeVisible();
+  if (info.project.name === 'phone') {
+    // the phone's files are a native select labelled File (MLiteTaskFilesSheet)
+    const select = sheet.getByRole('combobox', { name: 'File' });
+    await expect(select.getByRole('option', { name: '.command.trace · missing' })).toHaveCount(1);
+    await select.selectOption('.command.out');
+  } else {
+    for (const tab of await sheet.getByRole('tab').all()) expect(await tab.evaluate((e) => e.tagName)).toBe('BUTTON');
+    await sheet.getByRole('button', { name: 'More files' }).click();
+    await expect(sheet.getByRole('tab', { name: '.command.trace · missing' })).toBeVisible();
+    await sheet.getByRole('tab', { name: '.command.out' }).click();
+  }
+  await expect(sheet.getByText(/^last 64 KiB of 3\.1 MiB/)).toBeVisible();
+  await expect(sheet.getByRole('link', { name: 'Download last 1 MiB of .command.out' })).toHaveText('Download last 1 MiB');
+});
+
+test("resources columns show 'near limit' as text", async ({ page }, info) => {
+  await mockFailed(page);
+  await page.goto(`/runs/${RUN}?tab=tasks`);
+  if (info.project.name === 'phone') {
+    await expect(page.getByText('attempt 1 · asked 8 GB · peak 8 GB, near limit · limit 8 h')).toBeVisible();
+  } else {
+    const row = page.getByRole('table', { name: 'Tasks' }).getByRole('row').nth(1);
+    await expect(row.getByRole('cell').nth(7)).toHaveText('8 GB near limit');
+    await expect(row.getByText('near limit')).toHaveCSS('white-space', 'nowrap');
+  }
+});
+
+test("the Copy menu is in the shared header on every tab and state, and announces 'Copied'", async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  await mockFailed(page);
+  for (const tab of ['', '?tab=tasks', '?tab=parameters', '?tab=logs']) {
+    await page.goto(`/runs/${RUN}${tab}`);
+    await expect(page.locator('header').getByRole('button', { name: 'Copy', exact: true })).toBeVisible();
+  }
+  await page.locator('header').getByRole('button', { name: 'Copy', exact: true }).click();
+  await page.getByRole('menuitem', { name: 'Run ID' }).click();
+  // The header holds the Copy status and, on the desktop, the Facts region's own status line.
+  await expect(page.locator('header').getByRole('status').filter({ hasText: 'Copied' })).toHaveText('Copied the run ID');
+});
+
+test('Launch: a wrong value shows its error on the field; each row says required or optional', async ({ page }) => {
+  await page.route('**/api/v1/workflows:inspect*', (r) => r.fulfill(json({
+    location: '/data/rnaseq', revision: null, engine: 'nextflow', engine_files: ['main.nf'], name: 'rnaseq', version: '3.27.0',
+    engine_version: '26.10.4', engine_versions: { nextflow: '26.10.4' }, schema_source: 'nextflow_schema.json', profiles: ['test'],
+    schema: { type: 'object', required: ['input'], properties: {
+      input: { type: 'string', pattern: '\\.csv$' }, depth: { type: 'integer', minimum: 1, maximum: 9, default: 3 } } },
+  })));
+  await page.goto('/launch');
+  await page.getByRole('textbox', { name: /^Pipeline/ }).fill('/data/rnaseq');
+  await page.getByRole('button', { name: 'Load', exact: true }).click();
+  await expect(page.getByRole('textbox', { name: 'input (required)' })).toBeVisible();
+  const depth = page.getByRole('textbox', { name: 'depth (optional)' });
+  await depth.fill('12');
+  await expect(depth).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByText('Must be at most 9.')).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Launch', exact: true }).last()).toHaveAttribute('aria-disabled', 'true');
+});
+
+// The rest of Task 32's plan waits for its routes (Thomas's order of 2026-10-31 skips Tasks 30 and 31).
+test('Resume asks, creates a child, and both runs link to each other', async () => {
+  test.fixme(true, 'TODO(P1 Task 30): POST /runs/{id}:resume is not built');
+});
+test('a refused Resume stays visible, aria-disabled, with its reason as text', async () => {
+  test.fixme(true, 'TODO(P1 Task 30): actions.resume is not served');
+});
+test('Copy to a new launch opens the form prefilled with the non-default values listed', async () => {
+  test.fixme(true, 'TODO(P1 Task 30): GET /runs/{id}:launch-template is not built');
+});
+test("a report opens in the viewer with its 'Untrusted report' banner", async () => {
+  test.fixme(true, 'TODO(P1 Task 31): results and reports are not served');
+});
