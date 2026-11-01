@@ -414,7 +414,7 @@ def list_tasks(
     query = _page(query, tasks.c.id, tasks.c.id, cursor, limit, descending=False, timestamp=False)
     with read(request) as conn:
         run = run_row(conn, run_id)
-        rows = conn.execute(query).all()[: limit + 1]
+        rows = conn.execute(query).all()
         page = [r.id for r in rows[:limit]]
         resources = task_resources(conn, run_id, run.engine, page, context(request))
     items = [
