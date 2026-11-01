@@ -1,0 +1,28 @@
+# Spectio's Snakemake logger plugin (P1 Task 7; architecture §13.1, §13.4). It is not installed:
+# the head script copies the package to `.spectio/pylib/` and puts it on PYTHONPATH (§7.3), so
+# it runs on Snakemake's own interpreter with the stdlib and the interface only. This project is
+# its test environment: `uv run --directory engine-bridges/snakemake-logger-plugin-spectio pytest -v`.
+[project]
+name = "snakemake-logger-plugin-spectio"
+version = "0.0.1"
+requires-python = ">=3.11"
+# The range Snakemake 9.27.1 itself requires (its wheel metadata, read 2026-11-01).
+dependencies = ["snakemake-interface-logger-plugins>=1.1.0,<3"]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "snakemake==9.27.1",  # = SNAKEMAKE_VERSION in dev/versions.env
+  "snakemake-interface-logger-plugins==2.1.0",  # the version in dev/snakemake.lock.txt
+  "spectio-sdk",  # the spool models the plugin's output must pass
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+spectio-sdk = { path = "../../packages/spectio-sdk" }
+
+[tool.pytest.ini_options]
+addopts = ["--import-mode=importlib"]
+pythonpath = ["."]

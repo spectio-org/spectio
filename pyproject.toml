@@ -31,8 +31,13 @@ spectio-server = { workspace = true }
 [tool.ruff]
 line-length = 100
 target-version = "py311"
-# The product code and its fixture tools only; the design-phase tooling keeps its own conventions.
-include = ["packages/**/*.py", "tests/fixtures/engine-events/*.py"]
+# The product code, the Snakemake logger plugin and the fixture tools only; the design-phase
+# tooling keeps its own conventions.
+include = [
+  "packages/**/*.py",
+  "engine-bridges/snakemake-logger-plugin-spectio/**/*.py",
+  "tests/fixtures/engine-events/*.py",
+]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "B", "UP", "S", "RUF", "TID251"]
@@ -47,7 +52,7 @@ select = ["E", "F", "W", "I", "B", "UP", "S", "RUF", "TID251"]
 "runpy".msg = "the runner imports statically, so that lint-imports sees it"
 
 [tool.ruff.lint.isort]
-known-first-party = ["spectio", "spectio_sdk", "spectio_server"]
+known-first-party = ["spectio", "spectio_sdk", "spectio_server", "snakemake_logger_plugin_spectio"]
 
 [tool.ruff.lint.per-file-ignores]
 "**/tests/**" = ["S101", "S603", "TID251"]
