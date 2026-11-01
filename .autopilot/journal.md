@@ -565,3 +565,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - Integration promoted to `main` by merge commit cc5d294 (every check green on 4eff69e).
 - P1 Task 7 (the Snakemake logger plugin writes the spool) launched: workflow wf_772093e4-082, base 4eff69e. It must send the fields Tasks 28 and 29 handed on (`slurm_submitted`, `job_error.aux.external_jobid` and `msg`, `log`, `threads`, `resources`, `benchmark`), with at least one Task 28/29 test fed by a real Snakemake 9.27.1 run. Numbers reserved: inbox #97, FU-P3-34. A change under `.github/workflows/` would make its PR wait for Thomas.
+
+## 2026-11-01 · P3-t7: PR #122 opened, waits for Thomas
+
+- P1 Task 7, the last of M1: `snakemake-logger-plugin-spectio` writes allow-listed events to a 0600 spool in a 0700 `.spectio/events/`, on `PYTHONPATH`, never failing the run; it sends the fields Tasks 28 and 29 read (`slurm_submitted`, `job_error.aux.external_jobid` and `msg`, `threads`, `resources`, `benchmark`, rule logs). A server test now projects the recorded spool of a real Snakemake 9.27.1 run.
+- Workflow p3-task in 2 rounds (code approve 0/0/5, security approve 0/0/5), simplifier -9/+3, doc-reviewer approve 13. Orchestrator gate on 4384acf: plugin suite 43 passed; pytest 651 passed; ruff, format, mypy, lint-imports, uv lock clean; SAST 0; gitleaks clean. Cost recorded: 45 USD (estimate).
+- The PR changes `.github/workflows/ci.yml` and `pipelines-synthetic.yml` (the plugin's suite in CI), so it is not auto-merged: it waits for Thomas. Inbox #97 (assumed), FU-P3-34. Thomas's order (P3-parD, 27, 28, 29, 32, 7) is built; #111 and #122 wait for his merge.
