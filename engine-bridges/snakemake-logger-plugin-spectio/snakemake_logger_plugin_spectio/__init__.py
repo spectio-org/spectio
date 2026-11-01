@@ -49,6 +49,7 @@ PRODUCER = f"{NAME}/{VERSION}"
 MAX_LINE_BYTES = 65536  # one line, without its "\n"
 ROTATE_BYTES = 33554432  # the next file is opened before a line would pass it
 MAX_MESSAGE_CHARS = 4096  # error texts, as the server cuts them
+_PARAMS_CHANGED = "Params have changed since last execution"  # = spectio_sdk.events
 LAST_INDEX = 9999  # spool files nnnn = 0001 … 9999
 
 # The plugin's own bounds on what one value may hold.
@@ -172,6 +173,12 @@ def _job_info(r: Any) -> dict[str, Any]:
     if isinstance(resources, dict):
         # Raw sbatch flags (SEC-P3T1-11): the server drops them too; they are never sent.
         resources.pop("slurm_extra", None)
+    # The "Params have changed" detail quotes param values (SEC-P3T1-08): cut after the marker,
+    # as the server cuts it (`SnakemakeJobInfo._cut_params_detail`).
+    reason = _opt_text(getattr(r, "reason", None))
+    if reason is not None:
+        head, marker, _ = reason.partition(_PARAMS_CHANGED)
+        reason = head + marker
     return _compact(
         {
             **_job_files(r),
@@ -179,7 +186,7 @@ def _job_info(r: Any) -> dict[str, Any]:
                 {k: _text(v) for k, v in wildcards.items()} if isinstance(wildcards, dict) else {}
             ),
             "benchmark": _opt_text(getattr(r, "benchmark", None)),
-            "reason": _opt_text(getattr(r, "reason", None)),
+            "reason": reason,
             "is_checkpoint": _bool(getattr(r, "is_checkpoint", None)),
             "is_handover": _bool(getattr(r, "is_handover", None)),
             "local": _bool(getattr(r, "local", None)),
@@ -393,12 +400,14 @@ class Spool:
         self._close_file()
         flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC
         while self.index < LAST_INDEX:
-            self.index += 1
-            name = f"{NAME}-{self.launch}-{self.index:04d}.jsonl"
+            # Another error (EACCES, EDQUOT) leaves the index for the next event (as nf-spectio).
+            name = f"{NAME}-{self.launch}-{self.index + 1:04d}.jsonl"
             try:
                 fd = os.open(name, flags, 0o600, dir_fd=self.dir_fd)
             except FileExistsError:
+                self.index += 1
                 continue
+            self.index += 1
             self.fd, self.size = fd, 0
             return fd
         raise OSError("no spool file index left")

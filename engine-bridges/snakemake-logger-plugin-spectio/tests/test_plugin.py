@@ -280,6 +280,29 @@ def test_other_writers_file_never_appended(tmp_path: Path, monkeypatch: pytest.M
     assert (spool / "snakemake-logger-spectio-1-0003.jsonl").read_text().count("\n") == 1
 
 
+def test_failed_create_keeps_the_index(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """CR-P3T7-01: a create that fails (EACCES, EDQUOT) does not use up an index; only
+    an existing file does (as nf-spectio)."""
+    (tmp_path / ".spectio").mkdir(mode=0o700)
+    spool = tmp_path / ".spectio" / "events"
+    h = handler(monkeypatch, spool)
+    real = os.open
+    failures = [2]
+
+    def refused(path: Any, flags: int, *args: Any, **kwargs: Any) -> int:
+        if str(path).endswith(".jsonl") and failures[0]:
+            failures[0] -= 1
+            raise PermissionError(errno.EACCES, "Permission denied")
+        return real(path, flags, *args, **kwargs)
+
+    monkeypatch.setattr(plugin.os, "open", refused)
+    for n in range(3):
+        h.handle(record(LogEvent.PROGRESS, done=n, total=3))
+    h.close()
+    assert [f.name for f in spool.glob("*.jsonl")] == ["snakemake-logger-spectio-1-0001.jsonl"]
+    assert [e["data"]["done"] for e in spool_lines(spool)] == [2]
+
+
 def test_rotates_before_the_cap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     (tmp_path / ".spectio").mkdir(mode=0o700)
     spool = tmp_path / ".spectio" / "events"
@@ -379,6 +402,20 @@ def test_job_error_msg_and_external_jobid(tmp_path: Path, monkeypatch: pytest.Mo
     assert isinstance(data, SnakemakeJobError) and data.aux is not None
     assert (data.aux.external_jobid, data.log) == ("8812477", ["a.log", "/l/8812477.log"])
     assert "shellcmd" not in line["data"] and PLANTED not in json.dumps(line)
+
+
+def test_job_info_reason_params_detail_cut(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """CR-P3T7-02: the "Params have changed" detail quotes param values (SEC-P3T1-08): the
+    reason is cut after the marker at the source, as the server cuts it."""
+    (tmp_path / ".spectio").mkdir(mode=0o700)
+    spool = tmp_path / ".spectio" / "events"
+    h = handler(monkeypatch, spool)
+    reason = f"Params have changed since last execution: params.token: old -> {PLANTED}"
+    h.handle(record(LogEvent.JOB_INFO, jobid=3, rule_name="align", reason=reason))
+    h.close()
+    (line,) = spool_lines(spool)
+    assert line["data"]["reason"] == "Params have changed since last execution"
+    assert PLANTED not in json.dumps(line)
 
 
 def test_slurm_submitted_parsed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
