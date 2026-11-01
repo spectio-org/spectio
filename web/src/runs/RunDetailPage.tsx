@@ -30,7 +30,7 @@ import { FailureSummary } from "./FailureSummary";
 import { LogLines, LogViewer } from "./LogViewer";
 import { bytes, nearLimit, resourcesLine, seconds } from "./resources";
 import { RunHeader, runDirectory } from "./RunHeader";
-import { ProcessName, Word, runName, taskLabel } from "./RunState";
+import { NearLimit, ProcessName, Word, runName, taskLabel } from "./RunState";
 import {
   classWord,
   engineName,
@@ -638,14 +638,14 @@ function TasksPanel({
                     <td className="sp-num">{t.attempt_n ?? "—"}</td>
                     <td className="sp-num sp-nowrap-cell">
                       {seconds(r.realtime_s)}
-                      {near.time && <> <span className="sp-near">near limit</span></>}
+                      <NearLimit on={near.time} />
                     </td>
                     <td className="sp-num" data-narrow="">{r.cpus ?? "—"}</td>
                     <td className="sp-num" data-narrow="">{r.cpu_percent === null ? "—" : `${Math.round(r.cpu_percent)} %`}</td>
                     <td className="sp-num sp-nowrap-cell">{bytes(r.memory_bytes)}</td>
                     <td className="sp-nowrap-cell">
                       {bytes(r.peak_rss_bytes)}
-                      {near.memory && <> <span className="sp-near">near limit</span></>}
+                      <NearLimit on={near.memory} />
                     </td>
                     <td className="sp-num sp-nowrap-cell">{seconds(r.time_s)}</td>
                     <td>

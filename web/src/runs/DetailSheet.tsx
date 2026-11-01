@@ -4,7 +4,7 @@ import { type Counts, type Process, type RunDetail, type Stage, type Task, listT
 import { ICONS, Icon } from "../icons";
 import { usePhone } from "../shell/layout";
 import { bytes, nearLimit, seconds } from "./resources";
-import { Word, taskLabel } from "./RunState";
+import { NearLimit, Word, taskLabel } from "./RunState";
 import { TaskFiles } from "./TaskFiles";
 import { isTerminal, lastSegment, processWord, stageWord, sum, taskWord, total, words } from "./stateWord";
 
@@ -184,7 +184,7 @@ function Pair({ asked, used, near }: { asked: string; used: string; near?: boole
   return (
     <>
       {asked} · {used}
-      {near && <> <span className="sp-near">near limit</span></>}
+      <NearLimit on={!!near} />
     </>
   );
 }

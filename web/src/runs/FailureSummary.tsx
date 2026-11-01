@@ -7,6 +7,7 @@ import { CopyButton } from "./CopyMenu";
 import type { Detail } from "./DetailSheet";
 import { LogLines } from "./LogViewer";
 import { bytes, nearLimit, seconds } from "./resources";
+import { NearLimit } from "./RunState";
 import { lastSegment, words } from "./stateWord";
 
 // "Why it failed", one card per job that failed on its last attempt (P1 Task 32 on Task 29's
@@ -57,15 +58,6 @@ function asTask(f: Failure, processes: Process[]): Task {
   };
 }
 
-function Near({ on }: { on: boolean }) {
-  return on ? (
-    <>
-      {" "}
-      <span className="sp-near">near limit</span>
-    </>
-  ) : null;
-}
-
 function FailureCard({ run, failure, processes, slurm, onOpen }: { run: RunDetail; failure: Failure; processes: Process[]; slurm: boolean; onOpen: (d: Detail) => void }) {
   const s = failure.scheduler;
   const name = label(failure);
@@ -80,14 +72,14 @@ function FailureCard({ run, failure, processes, slurm, onOpen }: { run: RunDetai
       "Memory, asked · used",
       <>
         {bytes(s.req_mem_bytes)} · {bytes(s.max_rss_bytes)}
-        <Near on={near.memory} />
+        <NearLimit on={near.memory} />
       </>,
     ],
     [
       "Time, limit · used",
       <>
         {seconds(s.time_limit_s)} · {seconds(s.elapsed_s)}
-        <Near on={near.time} />
+        <NearLimit on={near.time} />
       </>,
     ],
   ];
