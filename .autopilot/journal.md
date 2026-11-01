@@ -560,3 +560,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Workflow p3-task in 2 rounds (code approve 0/0/7, security approve 0/0/2), simplifier -16/+13, doc-reviewer approve 12. The docs pass deferred the screenshots on a wrong premise (no Nextflow); `media-capture` took them on the demo lab's Nextflow 26.10.4 from the branch's code (three new shots, three retakes). Orchestrator gate on ac436d1: 650 passed; Vitest 223; tsc and build clean; SAST 0; gitleaks clean. Every check green; squash 786b303 (`Release-As: 0.0.1`). Cost recorded: 45 USD.
 - Side effect: the shots run migrated `/g/demo-lab/db` to 0007 and added two failed runs there.
 - Open minors in FU-P3-33 (a schema `pattern` with no time bound, SEC-P3T32-01, first). Part two (Resume, copy to a launch, results) waits for Tasks 30 and 31. Inbox #96. Next: promotion, then P1 Task 7.
+
+## 2026-11-01 · Promotion #121 merged: P1 Task 32 part one on main; P1 Task 7 launched
+
+- Integration promoted to `main` by merge commit cc5d294 (every check green on 4eff69e).
+- P1 Task 7 (the Snakemake logger plugin writes the spool) launched: workflow wf_772093e4-082, base 4eff69e. It must send the fields Tasks 28 and 29 handed on (`slurm_submitted`, `job_error.aux.external_jobid` and `msg`, `log`, `threads`, `resources`, `benchmark`), with at least one Task 28/29 test fed by a real Snakemake 9.27.1 run. Numbers reserved: inbox #97, FU-P3-34. A change under `.github/workflows/` would make its PR wait for Thomas.
