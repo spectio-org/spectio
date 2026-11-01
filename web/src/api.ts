@@ -108,7 +108,8 @@ export interface RunDetail extends Run {
   params: { [key: string]: Json };
   /** Why declared stages were not applied: two matching overlays, overlapping globs. */
   stages_note: string | null;
-  /** The failed tasks' last attempts, culprit first, at most 10 (api §5, P1 Task 29). */
+  /** The failed tasks' last attempts, in the order their last attempts were created, at most
+   * 10 (api §5, P1 Task 29). */
   failures: Failure[];
   failures_total: number;
 }

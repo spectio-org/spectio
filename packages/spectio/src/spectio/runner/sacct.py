@@ -4,13 +4,16 @@
 bounded: job IDs of the form `^[0-9]{1,12}(_[0-9]{1,8})?$` only, checked before any call, at
 most `BATCH` per call; the tool's path as `spectio init` stored it, run as a list of arguments
 (no shell) with an explicit environment (`PATH` from that path, `SLURM_TIME_FORMAT=standard`,
-nothing inherited) and `TIMEOUT_S`, after which its process group is killed; its output read
-up to `MAX_OUTPUT` and parsed as data, field by field. `SacctLimiter` holds the server-wide
-pace: one call in flight, one call per `INTERVAL_S`.
+nothing inherited) and `TIMEOUT_S`, after which its process group is killed; only the server
+user's own jobs asked (`--user=<euid>`); its output read up to `MAX_OUTPUT` and parsed as data,
+field by field, each row with its `WorkDir`, which the caller compares with the directory the
+job was launched from (SEC-P3T29-01). `SacctLimiter` holds the server-wide pace: one call in
+flight, one call per `INTERVAL_S`.
 
-The fields asked for (`FORMAT`) and their units are [to be validated] on `slurm-mini` (P1 Task
-22) and at EMBL: a number with no unit is read as bytes, `K`, `M`, `G`, `T` as powers of 1024,
-and an older `ReqMem` suffix `n` (per node) or `c` (per CPU) is dropped.
+The fields asked for (`FORMAT`, `WorkDir` among them) and their units, and whether `-j` alone
+returns other users' jobs, are [to be validated] on `slurm-mini` (P1 Task 22) and at EMBL: a
+number with no unit is read as bytes, `K`, `M`, `G`, `T` as powers of 1024, and an older
+`ReqMem` suffix `n` (per node) or `c` (per CPU) is dropped.
 """
 
 import contextlib
@@ -29,7 +32,7 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 JOB_ID = re.compile(r"[0-9]{1,12}(_[0-9]{1,8})?")
-FORMAT = "JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit"
+FORMAT = "JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,WorkDir"
 TIMEOUT_S = 10.0
 INTERVAL_S = 60.0
 BATCH = 100
@@ -44,6 +47,7 @@ _DURATION = re.compile(
     r"(?:([0-9]{1,5})-)?(?:([0-9]{1,2}):)?([0-9]{1,2}):([0-9]{1,2})(?:\.[0-9]+)?"
 )
 _REASON = re.compile(rf"[A-Za-z0-9_.,:;()/ -]{{1,{MAX_REASON}}}")
+_WORK_DIR = re.compile(r"/[^\x00-\x1f\x7f]{0,4095}")
 _UNITS = {"": 1, "K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4, "P": 1024**5}
 
 
@@ -60,6 +64,7 @@ class SacctRow:
     elapsed_s: int | None
     req_mem_bytes: int | None
     time_limit_s: int | None
+    work_dir: str | None = None  # the job's WorkDir, as sacct gave it
 
 
 def check_ids(ids: Iterable[str]) -> list[str]:
@@ -93,7 +98,19 @@ def sacct_env(path: Path) -> dict[str, str]:
 
 
 def sacct_argv(path: Path, ids: list[str]) -> list[str]:
-    return [str(path), "--parsable2", "--noheader", "-j", ",".join(ids), f"--format={FORMAT}"]
+    uid = os.geteuid()
+    if not isinstance(uid, int) or uid < 0:
+        raise Refused(f"not a user ID: {uid!r}")
+    joined = ",".join(ids)
+    return [
+        str(path),
+        "--parsable2",
+        "--noheader",
+        "-j",
+        joined,
+        f"--user={uid}",
+        f"--format={FORMAT}",
+    ]
 
 
 def sacct_jobs(
@@ -139,14 +156,15 @@ def _kill(proc: "subprocess.Popen[bytes]") -> None:
 
 def parse_sacct(text: str, wanted: set[str]) -> dict[str, SacctRow]:
     """The rows of `--parsable2 --noheader` output for the `wanted` jobs: the job's own line for
-    its state and limits, the largest `MaxRSS` of its steps (`<id>.batch`, `<id>.0` …)."""
+    its state, limits and WorkDir, the largest `MaxRSS` of its steps (`<id>.batch`, `<id>.0` …).
+    WorkDir is the last field: a `|` in it is kept."""
     rows: dict[str, SacctRow] = {}
     rss: dict[str, int] = {}
     for line in text.splitlines():
-        parts = line.split("|")
-        if len(parts) != 8:
+        parts = line.split("|", 8)
+        if len(parts) != 9:
             continue
-        job, state, exit_code, reason, max_rss, elapsed, req_mem, time_limit = parts
+        job, state, exit_code, reason, max_rss, elapsed, req_mem, time_limit, work_dir = parts
         base, _, step = job.partition(".")
         if base not in wanted:
             continue
@@ -162,6 +180,7 @@ def parse_sacct(text: str, wanted: set[str]) -> dict[str, SacctRow]:
             elapsed_s=_duration(elapsed),
             req_mem_bytes=_memory(req_mem),
             time_limit_s=_duration(time_limit),
+            work_dir=work_dir if _WORK_DIR.fullmatch(work_dir) else None,
         )
     return {job: replace(row, max_rss_bytes=rss.get(job)) for job, row in rows.items()}
 

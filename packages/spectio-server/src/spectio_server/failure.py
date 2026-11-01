@@ -18,6 +18,7 @@ Where a failure's facts come from:
 
 import json
 import logging
+import os
 import re
 import threading
 import time
@@ -31,7 +32,7 @@ from sqlalchemy import Connection, func, select
 
 from spectio.config import Settings
 from spectio.runner import sacct
-from spectio.runner.rundir import private_dir, read_small, write_file
+from spectio.runner.rundir import private_dir, read_small, run_paths, write_file
 from spectio.runner.sacct import JOB_ID, SacctLimiter, SacctRow
 from spectio_sdk.events import NextflowTrace
 from spectio_server.files.confine import NotAllowed, NotFound, open_confined, read_at, safe_rel
@@ -164,6 +165,7 @@ class _CachedRow(BaseModel):
     elapsed_s: int | None = Field(None, ge=0, le=_MAX)
     req_mem_bytes: int | None = Field(None, ge=0, le=_MAX)
     time_limit_s: int | None = Field(None, ge=0, le=_MAX)
+    work_dir: str | None = Field(None, pattern=r"^/[^\x00-\x1f\x7f]{0,4095}$")
 
 
 class Accounting:
@@ -176,7 +178,10 @@ class Accounting:
     again, after a rebuild too. A job whose call failed is not asked again by this process.
     Only a row in a TERMINAL state is kept: a job `sacct` does not know yet, or not as ended
     (slurmdbd records a job after it ends, with a lag, [to be validated] on `slurm-mini`, P1
-    Task 22), is asked again on the next view, up to MAX_TRIES calls, then kept as None."""
+    Task 22), is asked again on the next view, up to MAX_TRIES calls, then kept as None. So is
+    a row whose WorkDir is not the directory the job was launched from (the Nextflow attempt's
+    work directory, Snakemake's launch directory): another job with that number, such as a
+    local PID read as a SLURM ID (SEC-P3T29-01; WorkDir [to be validated] on `slurm-mini`)."""
 
     def __init__(
         self,
@@ -198,7 +203,8 @@ class Accounting:
         self._loaded: set[str] = set()
         self._failed: dict[str, set[str]] = {}
         self._asked: dict[str, set[str]] = {}  # job ID → the runs that wait for it
-        self._tries: dict[str, int] = {}  # job ID → calls that did not answer it as ended
+        self._where: dict[tuple[str, str], str | None] = {}  # (run, job) asked → its directory
+        self._tries: dict[tuple[str, str], int] = {}  # (run, job) → calls with no answer yet
         self._wake = threading.Event()
         self._start_thread = start_thread
         self._thread: threading.Thread | None = None
@@ -230,9 +236,9 @@ class Accounting:
                 return "pending"
         return "unavailable"
 
-    def want(self, run_id: str, jobs: Iterable[str | None]) -> None:
-        """Ask `sacct` for the run's jobs it has not answered yet, once the run's cache file
-        was read; returns at once."""
+    def want(self, run_id: str, jobs: Iterable[tuple[str | None, str | None]]) -> None:
+        """Ask `sacct` for the run's jobs, (job ID, the directory it was launched from), it has
+        not answered yet, once the run's cache file was read; returns at once."""
         if not self.enabled:
             return
         with self._lock:
@@ -240,9 +246,10 @@ class Accounting:
                 return
             known = self._rows.get(run_id, {})
             failed = self._failed.get(run_id, set())
+            where = dict(jobs)
             new = [
                 job
-                for job in dict.fromkeys(jobs)
+                for job in where
                 if job is not None
                 and job not in known
                 and job not in failed
@@ -251,6 +258,7 @@ class Accounting:
             queued = self._limiter.request(new)  # the job IDs it took, as the limit allows
             for job in queued:
                 self._asked.setdefault(job, set()).add(run_id)
+                self._where[run_id, job] = where[job]
         if queued:
             self._ensure_thread()
             self._wake.set()
@@ -269,7 +277,8 @@ class Accounting:
             found = _parse_cache(data) if data is not None else {}
         except FileNotFoundError:
             pass
-        except (OSError, ValueError) as exc:  # a symlink, another owner, too large, not JSON
+        except (OSError, ValueError, RecursionError) as exc:  # a symlink, another owner, too
+            # large, not JSON, nested past the parser's depth (SEC-P3T29-02)
             log.warning("%s of %s not read: %s", CACHE_FILE, run_id, exc)
         with self._lock:
             mine = self._rows.setdefault(run_id, {})
@@ -296,18 +305,21 @@ class Accounting:
         touched: dict[str, dict[str, SacctRow | None]] = {}
         with self._lock:
             for job in ids:
-                runs = self._asked.pop(job, set())
                 row = found.get(job) if found is not None else None
-                if found is not None and (row is None or row.state not in TERMINAL):
-                    self._tries[job] = self._tries.get(job, 0) + 1
-                    if self._tries[job] < MAX_TRIES:
-                        continue  # not answered: the next view asks it again
-                    row = None
-                for run_id in runs:
+                for run_id in self._asked.pop(job, set()):
+                    key = run_id, job
+                    where = self._where.pop(key, None)
                     if found is None:
                         self._failed.setdefault(run_id, set()).add(job)
                         continue
-                    self._rows.setdefault(run_id, {})[job] = row
+                    mine = row if _answers(row, where) else None
+                    if mine is None:
+                        tries = self._tries.get(key, 0) + 1
+                        if tries < MAX_TRIES:
+                            self._tries[key] = tries
+                            continue  # not answered: the next view asks it again
+                    self._tries.pop(key, None)  # final: a terminal row, or the cap reached
+                    self._rows.setdefault(run_id, {})[job] = mine
                     touched[run_id] = dict(self._rows[run_id])
         for run_id, rows in touched.items():
             self._save(run_id, rows)
@@ -332,6 +344,13 @@ class Accounting:
             except Exception:  # never ends the thread: the next call is tried
                 log.exception("sacct step failed")
                 time.sleep(1)
+
+
+def _answers(row: SacctRow | None, where: str | None) -> bool:
+    """The row is the job's end: a TERMINAL state, launched from the expected directory."""
+    if row is None or row.state not in TERMINAL or row.work_dir is None or where is None:
+        return False
+    return os.path.normpath(row.work_dir) == os.path.normpath(where)
 
 
 def _parse_cache(data: bytes) -> dict[str, SacctRow | None]:
@@ -416,7 +435,7 @@ def build_failures(
     except Stalled:
         tails = [None] * len(rows)
     if engine == "nextflow":  # Snakemake's state comes from its own message (§13.7)
-        ctx.accounting.want(run_id, (r.native_id for r in rows))
+        ctx.accounting.want(run_id, ((r.native_id, r.work_dir) for r in rows))
     cached = ctx.accounting.rows(run_id)
     culprit = (failure or {}).get("task_id"), (failure or {}).get("attempt_n")
     message = (failure or {}).get("message") or None
@@ -547,7 +566,8 @@ def task_resources(
     except Stalled:
         measured = {}
     if engine == "snakemake":
-        ended = (r.native_id for r in rows if r.state in ENDED and r.id not in measured)
+        launch = str(run_paths(ctx.runs_root, run_id).launch_dir)
+        ended = ((r.native_id, launch) for r in rows if r.state in ENDED and r.id not in measured)
         ctx.accounting.want(run_id, ended)
     cached = ctx.accounting.rows(run_id) if engine == "snakemake" else {}
     found: dict[str, tuple[int | None, dict[str, Any]]] = {}

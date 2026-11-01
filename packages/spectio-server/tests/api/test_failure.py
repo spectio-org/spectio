@@ -58,9 +58,12 @@ if states:
     with open(lag, "w") as f:
         f.write(",".join(states[1:]))
 state = states[0] if states else "OUT_OF_MEMORY"
+dirs = os.path.join(here, "workdirs.json")  # job ID -> WorkDir; another directory otherwise
+dirs = json.load(open(dirs)) if os.path.exists(dirs) else {{}}
 for job in ids if state != "-" else ():
-    print(f"{{job}}|{{state}}|0:125|None|0|00:01:05|2G|00:10:00")
-    print(f"{{job}}.batch|{{state}}|0:125||2097152K|00:01:05||")
+    where = dirs.get(job, "/elsewhere")
+    print(f"{{job}}|{{state}}|0:125|None|0|00:01:05|2G|00:10:00|{{where}}")
+    print(f"{{job}}.batch|{{state}}|0:125||2097152K|00:01:05|||{{where}}")
 """
 
 
@@ -73,6 +76,12 @@ class Fake:
         self.path = self.dir / "sacct"
         self.path.write_text(FAKE.format(python=sys.executable))
         self.path.chmod(0o755)
+
+    def at(self, job: str, where: Path) -> None:
+        """Answer `job` with the WorkDir `where` (SEC-P3T29-01)."""
+        file = self.dir / "workdirs.json"
+        dirs = json.loads(file.read_text()) if file.exists() else {}
+        file.write_text(json.dumps({**dirs, job: str(where)}))
 
     def calls(self) -> list[list[str]]:
         log = self.dir / "calls.jsonl"
@@ -225,6 +234,7 @@ def test_nf_failure_summary(settings: Settings, writer: Writer, fakebin: Fake) -
     run = Run(settings, writer)
     run.nf_task(0, 1, "FAILED", "RETRY")
     workdir = run.nf_task(0, 2, "FAILED", "TERMINATE", exit="137", memory="2147483648")
+    fakebin.at("8812402", workdir)
     lines = [f"line {n} \x1b[31mred\x1b[0m" for n in range(30)]
     write_private(workdir / ".command.log", "\n".join(lines) + "\n")
     run.push("nextflow.onFlowComplete", success=False)
@@ -257,6 +267,29 @@ def test_nf_failure_summary(settings: Settings, writer: Writer, fakebin: Fake) -
         "accounting": "available",
     }
     assert not acct.step() and len(fakebin.calls()) == 1  # cached: never asked again
+    assert acct._tries == {}  # CR-P3T29-04: an answered job keeps no count
+
+
+def test_sacct_other_workdir_not_kept(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """SEC-P3T29-01: a row whose WorkDir is not the attempt's work directory is another job
+    with the same number (a local PID, another user's job): counted as no row, never cached."""
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    run = Run(settings, writer)
+    run.nf_task(0, 1, "FAILED", "TERMINATE")  # the fake answers WorkDir /elsewhere
+    detail(client)
+    assert acct.step() and fakebin.ids() == ["8812401"]
+    assert acct.status(RUN, "8812401") == "unavailable"
+    assert acct.rows(RUN) == {}
+    cache = run.paths.run_dir / ".spectio" / "sacct.json"
+    assert not cache.exists()
+    for _ in range(2):  # as a missing row: asked again, up to MAX_TRIES, then null
+        detail(client)
+        assert acct.step()
+    scheduler = detail(client)["failures"][0]["scheduler"]
+    assert scheduler["accounting"] == "unavailable" and scheduler["state_source"] is None
+    assert scheduler["usage_source"] is None
+    assert json.loads(cache.read_text())["jobs"] == {"8812401": None}
 
 
 def test_nf_log_tail_falls_back_to_err(settings: Settings, writer: Writer) -> None:
@@ -380,6 +413,7 @@ def test_resources_smk(settings: Settings, writer: Writer, fakebin: Fake) -> Non
     )
     run.push("snakemake.job_finished", job_id=1)
     smk_job(run, 2, "align", "S2", benchmark="/etc/passwd")  # outside: not kept
+    fakebin.at("8812477", run.paths.launch_dir)
     run.push("snakemake.slurm_submitted", jobid=2, external_jobid="8812477")
     run.push("snakemake.job_finished", job_id=2)
     smk_job(run, 3, "align", "S3")  # still running: nothing measured, nothing asked
@@ -491,7 +525,7 @@ def test_sacct_lag_asked_again(settings: Settings, writer: Writer, fakebin: Fake
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
     run = Run(settings, writer)
-    run.nf_task(0, 1, "FAILED", "TERMINATE")
+    fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
     detail(client)
     assert acct.step()
     assert acct.rows(RUN) == {}
@@ -500,6 +534,7 @@ def test_sacct_lag_asked_again(settings: Settings, writer: Writer, fakebin: Fake
     assert acct.step() and fakebin.ids() == ["8812401", "8812401"]
     scheduler = detail(client)["failures"][0]["scheduler"]
     assert scheduler["accounting"] == "available" and scheduler["state"] == "OUT_OF_MEMORY"
+    assert acct._tries == {}  # CR-P3T29-04: pruned once the answer is final
 
 
 def test_sacct_lag_capped(settings: Settings, writer: Writer, fakebin: Fake) -> None:
@@ -515,6 +550,7 @@ def test_sacct_lag_capped(settings: Settings, writer: Writer, fakebin: Fake) -> 
     assert acct.rows(RUN) == {"8812401": None}
     assert detail(client)["failures"][0]["scheduler"]["accounting"] == "unavailable"
     assert not acct.step() and len(fakebin.calls()) == 3
+    assert acct._tries == {}  # CR-P3T29-04: capped, so no count kept
 
 
 def test_req15_cache_file(
@@ -525,7 +561,7 @@ def test_req15_cache_file(
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
     run = Run(settings, writer)
-    run.nf_task(0, 1, "FAILED", "TERMINATE")
+    fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
     elsewhere = tmp_path / "elsewhere.json"
     elsewhere.write_text("{}")
     cache = run.paths.run_dir / ".spectio" / "sacct.json"
@@ -548,6 +584,19 @@ def test_req15_cache_file_refused(settings: Settings, writer: Writer, fakebin: F
     write_private(cache, json.dumps({"v": 1, "jobs": {"8812401": {"state": "COMPLETED"}}}))
     cache.chmod(0o622)
     assert detail(client)["failures"][0]["scheduler"]["accounting"] == "pending"
+    assert acct.step() and fakebin.ids() == ["8812401"]
+
+
+def test_cache_file_too_deep(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """SEC-P3T29-02: a `sacct.json` nested past the parser's depth reads as empty, as a refused
+    file does; the view answers and the job is asked."""
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    run = Run(settings, writer)
+    run.nf_task(0, 1, "FAILED", "TERMINATE")
+    write_private(run.paths.run_dir / ".spectio" / "sacct.json", '{"v":1,"jobs":' + "[" * 100000)
+    assert detail(client)["failures"][0]["scheduler"]["accounting"] == "pending"
+    assert detail(client)["failures_total"] == 1  # read once, not failing again
     assert acct.step() and fakebin.ids() == ["8812401"]
 
 

@@ -7,6 +7,7 @@ asked for stay [to be validated] on a real SLURM.
 
 import itertools
 import json
+import os
 import sys
 import threading
 import time
@@ -32,13 +33,14 @@ if os.path.exists(delay):
 sys.stdout.write(open(os.path.join(here, "out.txt")).read())
 """
 
-# What `sacct --parsable2 --noheader --format=JobID,State,…,Timelimit` prints (the shape of the
-# T3 probes, tests/fixtures/slurm/slurm-26.05.5/sacct-probes.json; real fields [to be validated]).
-OUT = """8812477|OUT_OF_MEMORY|0:125|None|0|00:01:05|2G|00:10:00
-8812477.batch|OUT_OF_MEMORY|0:125||2147480K|00:01:05||
-8812477.extern|COMPLETED|0:0||1024K|00:01:05||
-8812345_3|FAILED|137:0|None||1-02:03:04|4000M|2-00:00:00
-8812345_3.batch|FAILED|137:0||1.5G|1-02:03:04||
+# What `sacct --parsable2 --noheader --format=JobID,State,…,Timelimit,WorkDir` prints (the shape
+# of the T3 probes, tests/fixtures/slurm/slurm-26.05.5/sacct-probes.json; real fields, WorkDir
+# among them, [to be validated]).
+OUT = """8812477|OUT_OF_MEMORY|0:125|None|0|00:01:05|2G|00:10:00|/data/work/ab/cd
+8812477.batch|OUT_OF_MEMORY|0:125||2147480K|00:01:05|||/data/work/ab/cd
+8812477.extern|COMPLETED|0:0||1024K|00:01:05|||/data/work/ab/cd
+8812345_3|FAILED|137:0|None||1-02:03:04|4000M|2-00:00:00|/data/launch|x
+8812345_3.batch|FAILED|137:0||1.5G|1-02:03:04|||/data/launch|x
 """
 
 
@@ -78,7 +80,8 @@ def test_req15_argv_and_id_check(fakebin: Fake) -> None:
         "--noheader",
         "-j",
         "8812477,8812345_3",
-        "--format=JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit",
+        f"--user={os.geteuid()}",  # the server user's own jobs only
+        "--format=JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,WorkDir",
     ]
     assert found is not None and set(found) == {"8812477", "8812345_3"}
     for bad in (["1;rm"], ["1234567890123"], ["1_123456789"], ["8812477", "-j"], [""], [" 1"]):
@@ -141,6 +144,7 @@ def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
             elapsed_s=65,
             req_mem_bytes=2 * 1024**3,
             time_limit_s=600,
+            work_dir="/data/work/ab/cd",
         ),
         "8812345_3": SacctRow(
             state="FAILED",
@@ -150,6 +154,7 @@ def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
             elapsed_s=86400 + 2 * 3600 + 3 * 60 + 4,
             req_mem_bytes=4000 * 1024**2,
             time_limit_s=2 * 86400,
+            work_dir="/data/launch|x",  # the last field: a `|` in it stays
         ),
     }  # 9999: no row, so not in the result
     assert sacct.TIMEOUT_S == 10
@@ -163,28 +168,29 @@ def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
     ("line", "expected"),
     [
         (
-            "1|CANCELLED by 1000|0:15|None|||4Gn|UNLIMITED",
+            "1|CANCELLED by 1000|0:15|None|||4Gn|UNLIMITED|/w",
             ("CANCELLED", 0, None, 4 * 1024**3, None),
         ),
         (
-            "1|TIMEOUT|0:0|Reason=\x1b[31mx|||1T|Partition_Limit",
+            "1|TIMEOUT|0:0|Reason=\x1b[31mx|||1T|Partition_Limit|/w",
             ("TIMEOUT", 0, None, 1024**4, None),
         ),
         (
-            "1|FAILED|1:0|JobLaunchFailure|||16Mc|05:30",
+            "1|FAILED|1:0|JobLaunchFailure|||16Mc|05:30|/w",
             ("FAILED", 1, "JobLaunchFailure", 16 * 1024**2, 330),
         ),
-        ("1|weird state!|x|" + "R" * 300 + "|||-1|1-x", (None, None, None, None, None)),
+        ("1|weird state!|x|" + "R" * 300 + "|||-1|1-x|w\x1b", (None, None, None, None, None)),
     ],
 )
 def test_sacct_values_as_data(line: str, expected: tuple[Any, ...]) -> None:
     """Every field is parsed as data: an odd or over-long value is None, never an error."""
     row = sacct.parse_sacct(line + "\n", {"1"})["1"]
     assert (row.state, row.exit_code, row.reason, row.req_mem_bytes, row.time_limit_s) == expected
+    assert row.work_dir == (None if expected[0] is None else "/w")  # relative or a control: None
 
 
 def test_sacct_output_capped(fakebin: Fake) -> None:
-    fakebin.output("8812477|FAILED|1:0|None||00:00:01|1G|00:01:00\n" * 40000)  # > 1 MiB
+    fakebin.output("8812477|FAILED|1:0|None||00:00:01|1G|00:01:00|/w\n" * 40000)  # > 1 MiB
     assert sacct_jobs(["8812477"], sacct=fakebin.path) is None
 
 
