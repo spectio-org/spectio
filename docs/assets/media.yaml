@@ -565,6 +565,14 @@ media:
       - docs/assets/diagrams/p3-t29-failure-facts_dark.svg
       - docs/assets/diagrams/p3-t29-failure-facts_light.png
       - docs/assets/diagrams/p3-t29-failure-facts_dark.png
+  - id: p3-t32-failed-job
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t32_failed_job.py
+    outputs:
+      - docs/assets/diagrams/p3-t32-failed-job_light.svg
+      - docs/assets/diagrams/p3-t32-failed-job_dark.svg
+      - docs/assets/diagrams/p3-t32-failed-job_light.png
+      - docs/assets/diagrams/p3-t32-failed-job_dark.png
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines
