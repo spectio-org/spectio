@@ -553,3 +553,10 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Integration promoted to `main` by merge commit adcd902 (every check green on b690bea; the first `pr-body` run lacked `## Checks`, fixed in the body).
 - P1 Task 32 (the screens) launched: workflow wf_903abfc0-f4e, base b690bea. Scoped to the API of Tasks 28 and 29 (job files drawer, Why it failed, resources, `attempt_n`) plus todo.md's two Launch items (client-side checks by schema type, required or optional on each row). Resume, Copy to a new launch, results and reports wait for Tasks 30 and 31. Numbers reserved: inbox #96, FU-P3-33.
 - PR #111 had an inbox conflict after #118; integration merged into `autopilot/P3-demo-pub` (b797720, #92 kept beside #93 to #95). It still waits for Thomas.
+
+## 2026-11-01 · P3-t32: PR #120 merged
+
+- P1 Task 32 part one, milestone M8 (P3-M8): the task sheet with each attempt's files (Attempt select, file tabs or the phone's File select, last 64 KiB, Reload, Download, every missing state in words), Why it failed per job, the resources columns with "near limit" as text, `failures[].work_dir`. Launch checks each value against its schema (type, enum, bounds, pattern, JSON) with the error on its field, and each row says required or optional (todo.md's two items, done).
+- Workflow p3-task in 2 rounds (code approve 0/0/7, security approve 0/0/2), simplifier -16/+13, doc-reviewer approve 12. The docs pass deferred the screenshots on a wrong premise (no Nextflow); `media-capture` took them on the demo lab's Nextflow 26.10.4 from the branch's code (three new shots, three retakes). Orchestrator gate on ac436d1: 650 passed; Vitest 223; tsc and build clean; SAST 0; gitleaks clean. Every check green; squash 786b303 (`Release-As: 0.0.1`). Cost recorded: 45 USD.
+- Side effect: the shots run migrated `/g/demo-lab/db` to 0007 and added two failed runs there.
+- Open minors in FU-P3-33 (a schema `pattern` with no time bound, SEC-P3T32-01, first). Part two (Resume, copy to a launch, results) waits for Tasks 30 and 31. Inbox #96. Next: promotion, then P1 Task 7.
