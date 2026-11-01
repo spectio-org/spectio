@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { buildParams, isChanged, own, schemaFields, toYaml } from "./schemaFields";
+import { type Field, buildParams, checkValue, isChanged, own, schemaFields, toYaml } from "./schemaFields";
 
 // The nf-core shape: groups under $defs (draft 2020-12) or definitions (draft 7), in allOf order.
 const nfDefs = {
@@ -184,5 +184,92 @@ describe("untrusted keys", () => {
     const [toString] = schemaFields(schema).flatMap((s) => s.fields);
     expect(buildParams([toString], {}, [])).toEqual({});
     expect(isChanged(toString, own({}, "toString"))).toBe(false);
+  });
+});
+
+// The client check before Launch (Thomas, 2026-10-31, todo.md UI; P1 Task 32): one test per rule.
+describe("checkValue", () => {
+  const f = (over: Partial<Field>): Field => ({ key: "x", path: ["x"], label: "x", type: "string", required: false, default: undefined, help: null, format: null, ...over });
+
+  test("an empty optional field is valid; an empty required one is not", () => {
+    expect(checkValue(f({}), undefined)).toBeNull();
+    expect(checkValue(f({}), "  ")).toBeNull();
+    expect(checkValue(f({ type: "integer" }), "")).toBeNull();
+    expect(checkValue(f({ required: true }), "")).toBe("Required: give a value.");
+    expect(checkValue(f({ required: true, type: "enum", options: ["a"] }), undefined)).toBe("Required: give a value.");
+  });
+
+  test("integer: a whole number, sign allowed", () => {
+    expect(checkValue(f({ type: "integer" }), "-12")).toBeNull();
+    expect(checkValue(f({ type: "integer" }), "1.5")).toBe("Must be a whole number, such as 10.");
+    expect(checkValue(f({ type: "integer" }), "1e3")).toBe("Must be a whole number, such as 10.");
+    expect(checkValue(f({ type: "integer" }), "ten")).toBe("Must be a whole number, such as 10.");
+  });
+
+  test("number (float): decimals and exponents, not hex or words", () => {
+    for (const ok of ["0.5", ".5", "-3", "1e-3", "10."]) expect(checkValue(f({ type: "number" }), ok)).toBeNull();
+    for (const bad of ["0x10", "1,5", "Infinity", "abc"]) expect(checkValue(f({ type: "number" }), bad)).toBe("Must be a number, such as 0.5.");
+  });
+
+  test("string: any text", () => {
+    expect(checkValue(f({}), "anything at all")).toBeNull();
+  });
+
+  test("boolean: true or false only", () => {
+    expect(checkValue(f({ type: "boolean" }), true)).toBeNull();
+    expect(checkValue(f({ type: "boolean", required: true }), undefined)).toBeNull(); // a checkbox always has a value
+    expect(checkValue(f({ type: "boolean" }), "yes")).toBe("Must be true or false.");
+  });
+
+  test("enum: one of the listed values", () => {
+    expect(checkValue(f({ type: "enum", options: [1, 2] }), "2")).toBeNull();
+    expect(checkValue(f({ type: "enum", options: ["star", "hisat2"] }), "bowtie")).toBe("Must be one of: star, hisat2.");
+  });
+
+  test("minimum and maximum, inclusive", () => {
+    const depth = f({ type: "integer", minimum: 1, maximum: 10 });
+    expect(checkValue(depth, "1")).toBeNull();
+    expect(checkValue(depth, "10")).toBeNull();
+    expect(checkValue(depth, "0")).toBe("Must be at least 1.");
+    expect(checkValue(depth, "11")).toBe("Must be at most 10.");
+    expect(checkValue(f({ type: "number", minimum: 0.5 }), "0.4")).toBe("Must be at least 0.5.");
+  });
+
+  test("pattern: matched anywhere, as JSON Schema says; an invalid regex is skipped, never thrown", () => {
+    const csv = f({ pattern: "^\\S+\\.csv$" });
+    expect(checkValue(csv, "/data/s.csv")).toBeNull();
+    expect(checkValue(csv, "/data/s.tsv")).toBe("Must match the pattern ^\\S+\\.csv$.");
+    expect(checkValue(f({ pattern: "[unclosed" }), "anything")).toBeNull();
+  });
+
+  test("JSON: a value that parses", () => {
+    expect(checkValue(f({ type: "json" }), "[1, 2]")).toBeNull();
+    expect(checkValue(f({ type: "json" }), "[1,")).toBe("Not valid JSON.");
+  });
+});
+
+describe("constraints and required from the schema", () => {
+  test("minimum, maximum and pattern are read; required comes from the group's list and the top level", () => {
+    const schema = {
+      type: "object",
+      required: ["outdir"],
+      $defs: {
+        io: {
+          title: "IO",
+          required: ["input"],
+          properties: {
+            input: { type: "string", pattern: "\\.csv$" },
+            outdir: { type: "string" },
+            depth: { type: "integer", minimum: 1, maximum: 9 },
+          },
+        },
+      },
+      allOf: [{ $ref: "#/$defs/io" }],
+    };
+    const [io] = schemaFields(schema);
+    const by = Object.fromEntries(io.fields.map((x) => [x.key, x]));
+    expect([by.input.required, by.outdir.required, by.depth.required]).toEqual([true, true, false]);
+    expect(by.input.pattern).toBe("\\.csv$");
+    expect([by.depth.minimum, by.depth.maximum]).toEqual([1, 9]);
   });
 });

@@ -138,6 +138,9 @@ export interface Failure {
   message: string | null;
   log_tail: string | null;
   scheduler: Scheduler;
+  /** The directory to copy: the attempt's work directory (Nextflow), the launch directory
+   * (Snakemake); null when not recorded. */
+  work_dir: string | null;
 }
 
 /** Schema `Resources`: asked for and used, by the task's last attempt; null until known. */
@@ -190,6 +193,25 @@ export interface Task {
 /** Schema `Summary`: `GET /runs:summary?group_by=state`. */
 export interface Summary {
   groups: { key: string; count: number }[];
+}
+
+/** Schema `TaskFile`: one file of an attempt; `size` and `mtime` only when `present`. */
+export interface TaskFile {
+  name: string;
+  kind: "script" | "wrapper" | "stdout" | "stderr" | "job_log" | "exit" | "marker" | "trace" | "rule_log" | "slurm_log";
+  size: number | null;
+  mtime: string | null;
+  state: "present" | "not_yet" | "absent" | "deleted_after_success" | "cleaned";
+  note: string | null;
+}
+
+/** Schema `TaskFiles`: `GET /tasks/{id}/attempts/{n}/files` (P1 Task 28). */
+export interface TaskFiles {
+  task_id: string;
+  attempt: number;
+  work_dir: string | null;
+  native_id: string | null;
+  files: TaskFile[];
 }
 
 export type LogSource = "head-out" | "head-err" | "engine";
@@ -292,6 +314,28 @@ export const logUrl = (id: string, source: LogSource) => `${API}${run(id)}/logs$
 /** The last 64 KiB of a run log, as text. */
 export async function getLog(id: string, source: LogSource, signal?: AbortSignal): Promise<string> {
   const response = await fetch(logUrl(id, source), { signal });
+  if (!response.ok) {
+    const body = await response.json().catch(() => null);
+    throw new ApiError(response.status, body?.detail ?? body?.title ?? `HTTP ${response.status}`);
+  }
+  return response.text();
+}
+
+const attempt = (taskId: string, n: number) => `/tasks/${encodeURIComponent(taskId)}/attempts/${n}/files`;
+
+export function listTaskFiles(taskId: string, n: number, signal?: AbortSignal): Promise<TaskFiles> {
+  return call(attempt(taskId, n), { signal });
+}
+
+/** Where a job file is served, as text/plain: its last 64 KiB, or `tail` bytes (at most 1 MiB);
+ * `download` asks for it as an attachment. A Snakemake name is a path: each part is encoded. */
+export const taskFileUrl = (taskId: string, n: number, name: string, opts: { tail?: number; download?: boolean } = {}) =>
+  `${API}${attempt(taskId, n)}/${name.split("/").map(encodeURIComponent).join("/")}${query({ tail: opts.tail, download: opts.download ? "true" : null })}`;
+
+/** The last 64 KiB of a job file, as text; a refusal is an ApiError with its status (404, 410,
+ * 415, 422, 503). */
+export async function getTaskFile(taskId: string, n: number, name: string, signal?: AbortSignal): Promise<string> {
+  const response = await fetch(taskFileUrl(taskId, n, name), { signal });
   if (!response.ok) {
     const body = await response.json().catch(() => null);
     throw new ApiError(response.status, body?.detail ?? body?.title ?? `HTTP ${response.status}`);

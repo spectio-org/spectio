@@ -36,7 +36,9 @@ import {
   type Row,
   type Section,
   type Values,
+  REQUIRED,
   buildParams,
+  checkValue,
   isChanged,
   own,
   schemaFields,
@@ -86,16 +88,6 @@ function toErrors(errors: FieldError[], keys: string[]): Errors {
   return found;
 }
 
-function jsonError(text: unknown): boolean {
-  if (typeof text !== "string" || text.trim() === "") return false;
-  try {
-    JSON.parse(text);
-    return false;
-  } catch {
-    return true;
-  }
-}
-
 /** The line under the Profile select: where the engine finds the profiles, and how it gets one. */
 const PROFILE_HINTS: Record<Engine, string> = {
   nextflow: "From the pipeline's nextflow.config · passed as -profile",
@@ -126,6 +118,8 @@ export function LaunchPage({
   const [rows, setRows] = useState<Row[]>([]);
   const [errors, setErrors] = useState<Errors>({});
   const [sending, setSending] = useState(false);
+  // Launch pressed while a field is wrong: empty required fields then say so on the field too
+  const [tried, setTried] = useState(false);
   const inFlight = useRef<AbortController | null>(null);
   const revisionField = useRef<HTMLInputElement>(null);
 
@@ -177,6 +171,7 @@ export function LaunchPage({
       setLoaded(found);
       setEngine(guessEngine(found.engine_files));
       setProfile("");
+      setTried(false);
       setValues({});
       setRows([]);
     } catch (error) {
@@ -216,18 +211,20 @@ export function LaunchPage({
       const other = NAMES[engine === "nextflow" ? "snakemake" : "nextflow"];
       return `No ${ENGINE_FILES[engine].join(" or ")} in this directory: press ${other} or check the path`;
     }
-    const missing = fields.find(
-      (f) => f.required && f.type !== "boolean" && String(own(values, f.key) ?? "").trim() === "",
-    );
-    if (missing) return `Fill the required field: ${missing.key}`;
-    const badJson = fields.find((f) => f.type === "json" && jsonError(own(values, f.key)));
-    if (badJson) return `${badJson.key} is not valid JSON`;
+    for (const field of fields) {
+      const wrong = checkValue(field, own(values, field.key));
+      if (wrong === REQUIRED) return `Fill the required field: ${field.key}`;
+      if (wrong) return `Fix ${field.key}: ${wrong}`;
+    }
     if (sending) return "Launching…";
     return null;
   }
 
   async function submit() {
-    if (reason() || !loaded || !engine) return;
+    if (reason() || !loaded || !engine) {
+      setTried(true);
+      return;
+    }
     const params = buildParams(fields, values, rows);
     setSending(true);
     setErrors({});
@@ -434,6 +431,7 @@ export function LaunchPage({
                     fields={sections[0].fields}
                     values={values}
                     errors={errors}
+                    tried={tried}
                     onChange={(key, v) => setValues((old) => ({ ...old, [key]: v }))}
                   />
                 )}
@@ -444,6 +442,7 @@ export function LaunchPage({
                     section={section}
                     values={values}
                     errors={errors}
+                    tried={tried}
                     onChange={(key, v) => setValues((old) => ({ ...old, [key]: v }))}
                   />
                 ))}
@@ -519,12 +518,14 @@ function ParamGroup({
   section,
   values,
   errors,
+  tried,
   onChange,
 }: {
   id: string;
   section: Section;
   values: Values;
   errors: Errors;
+  tried: boolean;
   onChange: (key: string, value: string | boolean) => void;
 }) {
   const required = section.fields.filter((f) => f.required && f.type !== "boolean");
@@ -565,7 +566,7 @@ function ParamGroup({
       reveal={failed}
       card
     >
-      <ParamRows fields={section.fields} values={values} errors={errors} onChange={onChange} />
+      <ParamRows fields={section.fields} values={values} errors={errors} tried={tried} onChange={onChange} />
     </FoldSection>
   );
 }
@@ -575,24 +576,31 @@ function ParamRows({
   fields,
   values,
   errors,
+  tried,
   onChange,
 }: {
   fields: Field[];
   values: Values;
   errors: Errors;
+  tried: boolean;
   onChange: (key: string, value: string | boolean) => void;
 }) {
   return (
     <div className="launch-params">
-      {fields.map((field) => (
-        <ParamField
-          key={field.key}
-          field={field}
-          value={own(values, field.key)}
-          error={errors[`params.${field.key}`]}
-          onChange={(v) => onChange(field.key, v)}
-        />
-      ))}
+      {fields.map((field) => {
+        const value = own(values, field.key);
+        // the client's check once the field was touched or Launch pressed, else the server's answer
+        const wrong = value !== undefined || tried ? checkValue(field, value) : null;
+        return (
+          <ParamField
+            key={field.key}
+            field={field}
+            value={value}
+            error={wrong ?? errors[`params.${field.key}`]}
+            onChange={(v) => onChange(field.key, v)}
+          />
+        );
+      })}
     </div>
   );
 }
@@ -669,12 +677,18 @@ function ParamField({
       : typeof field.default === "string"
         ? field.default
         : JSON.stringify(field.default);
+  // required or optional as text in the label, so in the accessible name (Thomas, 2026-10-31)
+  const label = (
+    <>
+      {field.label} <span className="launch-param-need" data-required={field.required || undefined}>({field.required ? "required" : "optional"})</span>
+    </>
+  );
   const common = {
-    label: field.label,
+    label,
     description,
     error,
-    withAsterisk: field.required,
     inputContainer,
+    withAsterisk: false, // the word "(required)" replaces Mantine's asterisk (CR-P3T32-01)
     classNames: { root: "launch-param", description: "sp-sr" },
   };
   switch (field.type) {
@@ -685,7 +699,7 @@ function ParamField({
         <div className="launch-param">
           <Checkbox
             className="launch-param-check"
-            label={field.label}
+            label={label}
             aria-describedby={descriptionId}
             error={error}
             checked={typeof value === "boolean" ? value : field.default === true}
@@ -731,7 +745,7 @@ function ParamField({
         <TextInput
           {...common}
           required={field.required}
-          inputMode={field.type === "string" ? undefined : "decimal"}
+          inputMode={numericMode(field)}
           value={typeof value === "string" ? value : ""}
           onChange={(e) => onChange(e.currentTarget.value)}
           placeholder={placeholder}
@@ -740,6 +754,16 @@ function ParamField({
         />
       );
   }
+}
+
+/** The phone keyboard of a number field. A checked text input, not type="number": that one empties
+ * its value on text it cannot read (so neither check could name the mistake), steps on the scroll
+ * wheel and reads decimals by locale. The numeric and decimal keypads have no minus sign on iOS, so
+ * a field whose schema allows a negative minimum keeps the full keyboard. */
+function numericMode(field: Field): "numeric" | "decimal" | undefined {
+  if (field.type !== "integer" && field.type !== "number") return undefined;
+  if (field.minimum !== undefined && field.minimum < 0) return undefined;
+  return field.type === "integer" ? "numeric" : "decimal";
 }
 
 /** Parameters as name and value when the pipeline has no schema (schema_source `none`). */

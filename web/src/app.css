@@ -66,6 +66,16 @@
 .launch-param > .launch-param-check {
   grid-column: 1;
 }
+/* Required or optional, as text after the name (P1 Task 32; the boards' "(optional)" style). */
+.launch-param-need {
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--sp-text-secondary);
+}
+.launch-param-need[data-required] {
+  font-weight: 600;
+  color: var(--sp-text-primary);
+}
 .launch-param > .launch-param-meta {
   grid-column: 2;
   grid-row: 1;

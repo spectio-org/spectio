@@ -30,6 +30,11 @@ export function Word({ state, word }: { state: string; word: string }) {
   );
 }
 
+/** The "near limit" badge in words, after a measured value (a peak or a duration above 90 %). */
+export function NearLimit({ on }: { on: boolean }) {
+  return on ? <> <span className="sp-near">near limit</span></> : null;
+}
+
 export function StateWord({ state }: { state: RunState }) {
   return <Word state={state} word={runWord(state)} />;
 }

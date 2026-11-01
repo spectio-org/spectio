@@ -3,7 +3,7 @@
 // be the schema's properties, so a field added to or dropped from a response model fails here.
 import { expect, test } from "vitest";
 import snapshot from "../../packages/spectio-server/openapi/0.0.1.json";
-import type { Failure, Process, Resources, Run, RunDetail, Scheduler, ServerVersion, Stage, Task } from "./api";
+import type { Failure, Process, Resources, Run, RunDetail, Scheduler, ServerVersion, Stage, Task, TaskFile, TaskFiles } from "./api";
 
 const schemas = snapshot.components.schemas as unknown as Record<
   string,
@@ -48,6 +48,7 @@ const failure = {
   message: null,
   log_tail: null,
   scheduler,
+  work_dir: null,
 } satisfies Failure;
 
 const resources = {
@@ -60,7 +61,11 @@ const resources = {
   source: null,
 } satisfies Resources;
 
+const taskFile = { name: ".command.log", kind: "job_log", size: null, mtime: null, state: "not_yet", note: null } satisfies TaskFile;
+
 const SAMPLES: Record<string, object> = {
+  TaskFile: taskFile,
+  TaskFiles: { task_id: "", attempt: 1, work_dir: null, native_id: null, files: [taskFile] } satisfies TaskFiles,
   Run: run,
   RunDetail: { ...run, params: {}, stages_note: null, failures: [failure], failures_total: 1 } satisfies RunDetail,
   Failure: failure,

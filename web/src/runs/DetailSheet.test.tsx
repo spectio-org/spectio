@@ -1,11 +1,11 @@
 // Stages, processes and tasks open a detail (P3-parD, Thomas 2026-10-31: "steps & stages pas
 // clickable, pas de détails"): a side sheet that is aria-modal and returns focus to its opener, a
-// process's tasks paged with Load more, "Open in Tasks" kept in the URL, and a task detail that says
-// what 0.0.1 does not serve yet.
+// process's tasks paged with Load more, "Open in Tasks" kept in the URL, and a task detail with its
+// files (TaskFiles.test.tsx, P1 Task 32).
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { app, fetched, json, run, serve, stubStream, viewport } from "../testing";
+import { NO_RESOURCES, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -32,6 +32,8 @@ const task = (n: number, state = "succeeded") => ({
   name: `ALIGN (S0${n})`,
   state,
   stage_id: "st2",
+  attempt_n: 1,
+  resources: NO_RESOURCES,
 });
 
 function detail(over: Record<string, unknown> = {}, more: Record<string, unknown> = {}) {
@@ -42,7 +44,8 @@ function detail(over: Record<string, unknown> = {}, more: Record<string, unknown
     [`${URL_}/tasks?process=${encodeURIComponent(ALIGN)}`]: { items: [task(1), task(2, "running")], next: "c2" },
     [`${URL_}/tasks`]: { items: [task(1), task(2, "running")], next: null },
     [`${URL_}/logs`]: () => new Response(""),
-    [URL_]: { ...run(over), params: {} },
+    [URL_]: { failures: [], failures_total: 0, ...run(over), params: {} },
+    "/api/v1/tasks/": { task_id: "tsk_1", attempt: 1, work_dir: null, native_id: null, files: [] },
     ...more,
   });
 }
@@ -143,7 +146,7 @@ test("the URL ?tab=tasks&process= opens the Tasks tab on that process; changing 
   await waitFor(() => expect(router.state.location.search).toEqual({ tab: "tasks" }));
 });
 
-test("a task row in the sheet opens the task detail: what 0.0.1 knows, and an honest note", async () => {
+test("a task row in the sheet opens the task detail: its facts and its files, no note about Tasks 28 and 29", async () => {
   detail();
   app(`/runs/${ID}`);
   await userEvent.click(within(await alignTable()).getByRole("button", { name: `Open process ${ALIGN}` }));
@@ -156,9 +159,9 @@ test("a task row in the sheet opens the task detail: what 0.0.1 knows, and an ho
   expect(within(taskSheet).getByText("S02")).toBeInTheDocument();
   expect(within(taskSheet).getByText("Running")).toBeInTheDocument();
   expect(within(taskSheet).getByText("Stage 2 · Align")).toBeInTheDocument();
-  expect(within(taskSheet).getByRole("note")).toHaveTextContent(
-    "Not in Spectio 0.0.1 yet: this task's files (.command.log, .command.err, .command.out, .command.sh), its work directory, exit code, duration and resources. They arrive with P1 Tasks 28 and 29.",
-  );
+  expect(within(taskSheet).getByRole("heading", { name: "Files" })).toBeInTheDocument();
+  expect(await within(taskSheet).findByText("This attempt has no file to show.")).toBeInTheDocument();
+  expect(within(taskSheet).queryByRole("note")).toBeNull();
   await userEvent.click(within(taskSheet).getByRole("button", { name: "Back to ALIGN" }));
   expect(await screen.findByRole("dialog", { name: "ALIGN" })).toBeInTheDocument();
 });
@@ -182,9 +185,8 @@ test("a task row in the Tasks tab opens the task detail; Snakemake words", async
   const open = await within(table).findByRole("button", { name: "Open job ALIGN (S01)" });
   await userEvent.click(open);
   const sheet = await screen.findByRole("dialog", { name: "ALIGN (S01)" });
-  expect(within(sheet).getByRole("note")).toHaveTextContent(
-    "Not in Spectio 0.0.1 yet: this job's log, its directory, exit code, duration and resources. They arrive with P1 Tasks 28 and 29.",
-  );
+  expect(await within(sheet).findByText("Snakemake keeps no job script; the rule's command is in the Snakefile.")).toBeInTheDocument();
+  expect(within(sheet).queryByRole("note")).toBeNull();
   await userEvent.click(within(sheet).getByRole("button", { name: `Open rule ${ALIGN}` }));
   expect(await screen.findByRole("dialog", { name: "ALIGN" })).toBeInTheDocument();
   await userEvent.keyboard("{Escape}");

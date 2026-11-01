@@ -26,9 +26,11 @@ import { FoldSection } from "../shell/FoldSection";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
 import { type Detail, DetailSheet } from "./DetailSheet";
+import { FailureSummary } from "./FailureSummary";
 import { LogLines, LogViewer } from "./LogViewer";
+import { bytes, nearLimit, resourcesLine, seconds } from "./resources";
 import { RunHeader, runDirectory } from "./RunHeader";
-import { ProcessName, Word, runName, taskLabel } from "./RunState";
+import { NearLimit, ProcessName, Word, runName, taskLabel } from "./RunState";
 import {
   classWord,
   engineName,
@@ -270,12 +272,14 @@ function StagesOrProcesses({
   );
 }
 
-/** "Why it failed", open first on a failed run (ui-spec §4.4, UX-PAR-25): the run-level part. The
- * per-job cards (SLURM state, resources, last lines) come with P1 Tasks 29 and 32. */
+/** "Why it failed", open first on a failed run (ui-spec §4.4, UX-PAR-25): the run-level part, then
+ * one card per job that failed on its last attempt (FailureSummary, P1 Task 32). */
 function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; processes: Process[]; onTasks: () => void; onOpen: (d: Detail) => void }) {
   const failure = run.failure as { class?: unknown; message?: unknown; task_id?: unknown } | null;
   const kind = typeof failure?.class === "string" ? failure.class : null;
-  const message = typeof failure?.message === "string" ? failure.message.trim() : "";
+  // left out when a job's card already shows it unchanged (CR-P3T32-04)
+  const said = typeof failure?.message === "string" ? failure.message.trim() : "";
+  const message = run.failures.some((f) => f.message?.trim() === said) ? "" : said;
   const culpritId = typeof failure?.task_id === "string" ? failure.task_id : null;
   const w = words(run.workflow.engine);
   const { unit, units, Units } = w;
@@ -338,6 +342,7 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
           </p>
         )}
       </div>
+      <FailureSummary run={run} processes={processes} onOpen={onOpen} />
     </FoldSection>
   );
 }
@@ -464,6 +469,25 @@ function OpenTask({ task, w, onOpen }: { task: Task; w: Words; onOpen: (d: Detai
   );
 }
 
+/** The row's Files button: the task's detail, which shows its files; the name names the row
+ * (ui-spec §4.4 note 2026-10-28, Job files). */
+function FilesButton({ task, onOpen, wide = false }: { task: Task; onOpen: (d: Detail) => void; wide?: boolean }) {
+  const attempt = task.attempt_n === null ? "" : `, attempt ${task.attempt_n}`;
+  return (
+    <Button
+      variant="default"
+      size={wide ? "md" : "xs"}
+      fullWidth={wide}
+      className={wide ? "sp-files-button" : undefined}
+      leftSection={<Icon path={ICONS.file} size={14} />}
+      aria-label={`Files of ${taskLabel(task)}${attempt}`}
+      onClick={() => onOpen({ kind: "task", task })}
+    >
+      Files
+    </Button>
+  );
+}
+
 /** A refresh: the fresh first page, then the rows Load more added past it, and their cursor. */
 function refresh(shown: Shown | null, page: Page<Task>): Shown {
   const fresh = page.items ?? [];
@@ -571,6 +595,11 @@ function TasksPanel({
                 <OpenTask task={t} w={w} onOpen={onOpen} />
                 <Word state={t.state} word={taskWord(t.state)} />
               </span>
+              <span className="sp-muted">
+                {t.attempt_n !== null && `attempt ${t.attempt_n} · `}
+                {resourcesLine(t.resources)}
+              </span>
+              <FilesButton task={t} onOpen={onOpen} wide />
             </li>
           ))}
         </ul>
@@ -582,19 +611,49 @@ function TasksPanel({
               <tr>
                 <th scope="col">{w.Unit}</th>
                 <th scope="col">State</th>
+                <th scope="col" className="sp-num">Attempt</th>
+                <th scope="col" className="sp-num">Duration</th>
+                <th scope="col" className="sp-num" data-narrow="">CPUs</th>
+                <th scope="col" className="sp-num" data-narrow="">CPU %</th>
+                <th scope="col" className="sp-num">Memory</th>
+                <th scope="col">Peak memory</th>
+                <th scope="col" className="sp-num">Time limit</th>
+                <th scope="col">
+                  <span className="sp-sr">Files</span>
+                </th>
               </tr>
             </thead>
             <tbody>
-              {tasks.map((t) => (
-                <tr key={t.id}>
-                  <td data-rail="" data-tone={tone(t.state)} className="sp-task">
-                    <OpenTask task={t} w={w} onOpen={onOpen} />
-                  </td>
-                  <td>
-                    <Word state={t.state} word={taskWord(t.state)} />
-                  </td>
-                </tr>
-              ))}
+              {tasks.map((t) => {
+                const r = t.resources;
+                const near = nearLimit(r);
+                return (
+                  <tr key={t.id}>
+                    <td data-rail="" data-tone={tone(t.state)} className="sp-task">
+                      <OpenTask task={t} w={w} onOpen={onOpen} />
+                    </td>
+                    <td>
+                      <Word state={t.state} word={taskWord(t.state)} />
+                    </td>
+                    <td className="sp-num">{t.attempt_n ?? "—"}</td>
+                    <td className="sp-num sp-nowrap-cell">
+                      {seconds(r.realtime_s)}
+                      <NearLimit on={near.time} />
+                    </td>
+                    <td className="sp-num" data-narrow="">{r.cpus ?? "—"}</td>
+                    <td className="sp-num" data-narrow="">{r.cpu_percent === null ? "—" : `${Math.round(r.cpu_percent)} %`}</td>
+                    <td className="sp-num sp-nowrap-cell">{bytes(r.memory_bytes)}</td>
+                    <td className="sp-nowrap-cell">
+                      {bytes(r.peak_rss_bytes)}
+                      <NearLimit on={near.memory} />
+                    </td>
+                    <td className="sp-num sp-nowrap-cell">{seconds(r.time_s)}</td>
+                    <td>
+                      <FilesButton task={t} onOpen={onOpen} />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

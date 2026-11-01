@@ -1509,3 +1509,22 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation for rule 8:** (a) until `slurm-mini` (P1 Task 22) shows what `WorkDir` holds, then (b) if a symlinked runs root gives no match. (c) would show another job's state for a local PID of the same user. In every option a mismatch is logged (FU-P3-32).
 - **Assumed (2026-11-01, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 8 as built, written into the notes of 2026-11-01 in api §5, §7 and §14.1, architecture §13.7 and dev-env §15.3 req. 15 (rule 8: the note "the job's own row"). The logger plugin's side (`msg`, `threads`, `resources`, `benchmark`) waits for P1 Task 7 and the cluster check for P1 Task 22 (follow-up FU-P3-32).
 - **Blocked:** nothing.
+
+### #96 · Assumed: the run tools screens as built, and what waits for Tasks 30 and 31 (P3 Task 32)
+
+- **Covers:** [P1 Task 32](../plans/P1-walking-skeleton.md#task-32-the-screens-job-files-failure-summary-results-resume-copy-and-resources); [ui-spec §4.4](../specs/ui-spec.md#44-run-detail) (the 0.0.1 run tools note of 2026-10-28) and [§4.6](../specs/ui-spec.md#46-launch-and-relaunch); [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1); `todo.md`'s two Launch items (Thomas, 2026-10-31, "avec 32").
+- **Context:** step P3-t32 built the screens whose API exists, on the routes of P1 Tasks 28 and 29, plus the two Launch items. It took these rules:
+  1. **Scope.** Built: the job files in the task sheet, the failure cards in "Why it failed", the resources columns and line, and the Launch checks. Not built: Resume, Copy to a new launch, the Copy menu's Command item, and results and reports (P1 Tasks 30 and 31). Their four Playwright tests are `test.fixme`. Also not built: the Tasks table's SLURM job and Exit columns and the Retried filter, since task items carry no job ID and no exit code.
+  2. **One sheet.** The Files drawer is the task view of the UI parity D sheet (`DetailSheet.tsx`), not a separate `TaskFilesDrawer.tsx` as P1 planned. An Attempt select lists attempts 1 to `attempt_n`.
+  3. **Two labels** (CR-P3T32-05 r1). An array task's job log reads ".command.log · missing", with the server's note, because the listing has no array state. A file of 1 MiB or less offers "Download", not "Download last 1 MiB".
+  4. **The Name fact** (CR-P3T32-06 r1). The task view no longer lists Name; the sheet's title names the task.
+  5. **Launch checks.** The schema's type, enum, `minimum`, `maximum` and `pattern` are checked in the browser. Number fields stay checked text inputs with a numeric keypad, not `type="number"`. "(required)" or "(optional)" is part of each label. A `pattern` runs unbounded on every render (SEC-P3T32-01).
+  6. **`failures[].work_dir`.** A new field: the directory the same attempt's listing shows, for the card's Copy button.
+- **Options for rule 3:** (a) as built; (b) the listing gains an array state, so the label can say "none for array tasks".
+- **Recommendation for rule 3:** (a). The panel already says why, in the server's words, and (b) is an API change for one label.
+- **Options for rule 4:** (a) as built, no Name fact; (b) restore Name, as the UI parity D note lists it.
+- **Recommendation for rule 4:** (b), in FU-P3-33. Nothing asked for the removal, and it keeps the parity D note true.
+- **Options for rule 5, the pattern:** (a) as built, run on every render; (b) run the pattern only when Launch is pressed; (c) run it in a Web Worker and give up after 100 ms, leaving that value to the server's check; (d) no pattern check in the browser.
+- **Recommendation for rule 5:** (c), in FU-P3-33. The tab never freezes, and the user still gets the error for the patterns that answer in time. (b) still freezes the tab when Launch is pressed. (d) drops part of Thomas's request. The 100 ms bound is assumed **[to be validated]** against the patterns of the nf-core schemas.
+- **Assumed (2026-11-01, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 6 as built, written into the notes of 2026-11-01 in ui-spec §4.4 and §4.6 and api §5. Rule 4 is (a) and rule 5 is (a) until FU-P3-33 applies the recommendations. P1 Task 32's interface is not edited: its differences are listed on [P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-32).
+- **Blocked:** nothing.
