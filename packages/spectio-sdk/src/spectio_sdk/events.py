@@ -356,6 +356,15 @@ class SnakemakeJobError(_Data):
     output: list[str] = []
     log: list[str] = []  # the rule's logs and, on SLURM, the job's log (P1 Task 28)
     aux: SnakemakeJobAux | None = None
+    # The error text, cut at MAX_MESSAGE_CHARS, read by the projector for the SLURM executor
+    # plugin's state and reason (P1 Task 29) and never stored: `exclude` keeps it out of every
+    # dump, so out of the event log (api §14.1).
+    msg: str | None = Field(None, exclude=True)
+
+    @field_validator("msg")
+    @classmethod
+    def _cap(cls, value: str | None) -> str | None:
+        return None if value is None else value[:MAX_MESSAGE_CHARS]
 
 
 class SnakemakeSlurmSubmitted(_Data):

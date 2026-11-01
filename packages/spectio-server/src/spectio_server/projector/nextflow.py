@@ -19,6 +19,7 @@ from spectio_sdk.events import (
     NextflowProcess,
     NextflowTask,
 )
+from spectio_server.failure import trace_resources
 from spectio_server.files.taskfiles import native_id, task_work_rel
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import TERMINAL, Projection, failure_json
@@ -83,6 +84,8 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
     if (code := _exit(data)) is not None:
         values["exit"] = code
     values.update(_where(p, data))
+    if resources := trace_resources(data.trace):  # requested and measured (P1 Task 29)
+        values["resources"] = resources
     row = p.conn.execute(
         select(attempts.c.id, attempts.c.state).where(
             attempts.c.task_id == task_id, attempts.c.launch_n == p.launch_n, attempts.c.n == n

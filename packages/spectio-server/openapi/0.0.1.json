@@ -1,6 +1,94 @@
 {
   "components": {
     "schemas": {
+      "Failure": {
+        "description": "A job that failed on its last attempt (P1 Task 29); `log_tail` is the last 20 lines of\nits log, escape sequences removed, or null when it could not be read.",
+        "properties": {
+          "attempt_n": {
+            "title": "Attempt N",
+            "type": "integer"
+          },
+          "exit_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Exit Code"
+          },
+          "log_tail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Log Tail"
+          },
+          "message": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Message"
+          },
+          "native_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Native Id"
+          },
+          "process": {
+            "title": "Process",
+            "type": "string"
+          },
+          "scheduler": {
+            "$ref": "#/components/schemas/Scheduler"
+          },
+          "tag": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tag"
+          },
+          "task_id": {
+            "title": "Task Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "task_id",
+          "attempt_n",
+          "process",
+          "tag",
+          "exit_code",
+          "message",
+          "native_id",
+          "scheduler",
+          "log_tail"
+        ],
+        "title": "Failure",
+        "type": "object"
+      },
       "HTTPValidationError": {
         "properties": {
           "detail": {
@@ -152,6 +240,104 @@
           "items"
         ],
         "title": "ProcessList",
+        "type": "object"
+      },
+      "Resources": {
+        "description": "Requested (`cpus`, `memory_bytes`, `time_s`) and measured values of the task's last\nattempt; `source` names where the measures come from (P1 Task 29). Unknown: null.",
+        "properties": {
+          "cpu_percent": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu Percent"
+          },
+          "cpus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpus"
+          },
+          "memory_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Memory Bytes"
+          },
+          "peak_rss_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak Rss Bytes"
+          },
+          "realtime_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Realtime S"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "trace",
+                  "benchmark",
+                  "sacct"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "time_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time S"
+          }
+        },
+        "required": [
+          "cpus",
+          "memory_bytes",
+          "time_s",
+          "realtime_s",
+          "cpu_percent",
+          "peak_rss_bytes",
+          "source"
+        ],
+        "title": "Resources",
         "type": "object"
       },
       "Run": {
@@ -324,6 +510,17 @@
             ],
             "title": "Failure"
           },
+          "failures": {
+            "items": {
+              "$ref": "#/components/schemas/Failure"
+            },
+            "title": "Failures",
+            "type": "array"
+          },
+          "failures_total": {
+            "title": "Failures Total",
+            "type": "integer"
+          },
           "head": {
             "anyOf": [
               {
@@ -447,7 +644,9 @@
           "task_counts",
           "summary",
           "params",
-          "stages_note"
+          "stages_note",
+          "failures",
+          "failures_total"
         ],
         "title": "RunDetail",
         "type": "object"
@@ -515,6 +714,129 @@
           "stage_mode"
         ],
         "title": "RunSummary",
+        "type": "object"
+      },
+      "Scheduler": {
+        "description": "What the scheduler said of a failed job (P1 Task 29): its state and reason, from `sacct`\nor the engine's own message, and requested and used memory and time, from `sacct` or the\ntrace. `accounting` says whether `sacct` answered, is being asked, or is unavailable (off,\nnot on SLURM, no job ID, or no answer).",
+        "properties": {
+          "accounting": {
+            "enum": [
+              "available",
+              "pending",
+              "unavailable"
+            ],
+            "title": "Accounting",
+            "type": "string"
+          },
+          "elapsed_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed S"
+          },
+          "max_rss_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Max Rss Bytes"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "req_mem_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Req Mem Bytes"
+          },
+          "state": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State"
+          },
+          "state_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "sacct",
+                  "engine_message"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "State Source"
+          },
+          "time_limit_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit S"
+          },
+          "usage_source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "sacct",
+                  "trace"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Usage Source"
+          }
+        },
+        "required": [
+          "state",
+          "reason",
+          "state_source",
+          "req_mem_bytes",
+          "max_rss_bytes",
+          "time_limit_s",
+          "elapsed_s",
+          "usage_source",
+          "accounting"
+        ],
+        "title": "Scheduler",
         "type": "object"
       },
       "ServerVersion": {
@@ -662,6 +984,17 @@
       },
       "Task": {
         "properties": {
+          "attempt_n": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempt N"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -680,6 +1013,9 @@
           "process": {
             "title": "Process",
             "type": "string"
+          },
+          "resources": {
+            "$ref": "#/components/schemas/Resources"
           },
           "stage_id": {
             "anyOf": [
@@ -725,7 +1061,9 @@
           "tag",
           "name",
           "state",
-          "stage_id"
+          "stage_id",
+          "attempt_n",
+          "resources"
         ],
         "title": "Task",
         "type": "object"

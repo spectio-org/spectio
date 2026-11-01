@@ -36,6 +36,7 @@ from spectio_server.api import (
     taskfiles,
     workflows,
 )
+from spectio_server.failure import Accounting
 from spectio_server.files.pool import FilePool
 from spectio_server.store.writer import Writer
 
@@ -102,8 +103,10 @@ def create_app(
     writer: Writer,
     web_dir: Path = static.DIST,
     files: FilePool | None = None,
+    accounting: Accounting | None = None,
 ) -> FastAPI:
-    """The app; `files` is the pool the routes read run files in (one is made when None)."""
+    """The app; `files` is the pool the routes read run files in, `accounting` the server's
+    one gate to `sacct` (each made from the settings when None)."""
     app = FastAPI(
         title="Spectio",
         version=API_VERSION,
@@ -114,6 +117,8 @@ def create_app(
     app.state.settings = settings
     app.state.writer = writer
     app.state.files = FilePool() if files is None else files  # dev-env §15.3 req. 13
+    # dev-env §15.3 req. 15: its thread starts on the first job asked
+    app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.engine_versions = workflows.engine_versions(settings)
     problems.install(app)
     browser.install(app)  # Host allow-list, cross-site and write checks (§15.3 req. 4, 7)
