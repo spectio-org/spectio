@@ -576,9 +576,6 @@ export function LaunchPage({
   );
 }
 
-/** One schema group as a section that folds (UX-PAR-30): its icon, description and counts, and a
- * status that says what needs doing; open at first when it has an issue or a changed value, and
- * when the server finds an error in it. A form of one section shows its fields alone. */
 /** Copy to a new launch's banner (no live region): where the values come from and which differ
  * from the defaults, what is not sent, and what loads code or configuration (dev-env §15.3 req. 16). */
 function PrefillBanner({ prefill, onClear }: { prefill: Prefill; onClear?: () => void }) {
@@ -611,6 +608,9 @@ function PrefillBanner({ prefill, onClear }: { prefill: Prefill; onClear?: () =>
   );
 }
 
+/** One schema group as a section that folds (UX-PAR-30): its icon, description and counts, and a
+ * status that says what needs doing; open at first when it has an issue or a changed value, and
+ * when the server finds an error in it. A form of one section shows its fields alone. */
 function ParamGroup({
   id,
   section,
