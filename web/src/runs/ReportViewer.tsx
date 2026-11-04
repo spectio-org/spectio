@@ -25,7 +25,13 @@ export function reportTitle(path: string): string {
   return name.endsWith(MULTIQC) ? "MultiQC report" : name.replace(/\.[^.]*$/, "");
 }
 
-const isReport = (path: string) => /\.html?$/i.test(path);
+/** A path below the results root as the API names one: relative, with no empty, `.` or `..`
+ * part and no control character. Anything else is never asked for, nor shown (SEC-P3T31-10 r4,
+ * SEC-P3G4-02). */
+export const isResultPath = (path: string): boolean =>
+  !/[\u0000-\u001f\u007f-\u009f]/.test(path) && path.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+
+const isReport = (path: string) => isResultPath(path) && /\.html?$/i.test(path);
 
 export function ReportViewer({ id, path }: { id: string; path?: string }) {
   const [run, setRun] = useState<RunDetail | null>(null);

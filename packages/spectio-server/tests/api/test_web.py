@@ -68,6 +68,14 @@ def test_screens_may_frame_this_origin_only(web: TestClient) -> None:
         assert "script-src 'self';" in csp, path
 
 
+def test_results_browser_is_a_screen(web: TestClient) -> None:
+    """The results browser `/runs/{id}/results` answers the screens (P1 Task 32 part two)."""
+    r = web.get("/runs/run_01K8T2F1XTVRES000000000000/results?path=fastqc")
+    assert r.status_code == 200
+    assert r.text == INDEX
+    assert "frame-src 'self'" in r.headers["content-security-policy"]
+
+
 def test_head_on_screens_and_assets(web: TestClient) -> None:
     """A HEAD gets the GET's status and headers, no body (FU-P3-22: it was 405)."""
     for path in ("/", "/runs", "/runs/run_01K8T2F1XTVRES000000000000", "/assets/index-AbC1.js"):

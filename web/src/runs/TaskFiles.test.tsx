@@ -4,7 +4,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { app, fetched, json, run, serve, stubStream, viewport } from "../testing";
+import { DETAIL, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -53,7 +53,7 @@ function detail(files: Record<string, unknown>, over: Record<string, unknown> = 
     [`${URL_}/stages`]: { items: [] },
     [`${URL_}/tasks`]: { items: [task], next: null },
     [`${URL_}/logs`]: () => new Response(""),
-    [URL_]: { ...run({ state: "failed", ...over }), params: {}, failures: [], failures_total: 0 },
+    [URL_]: { ...DETAIL, ...run({ state: "failed", ...over }), params: {}, failures: [], failures_total: 0 },
     ...files,
   });
 }
@@ -278,7 +278,7 @@ test("resources columns show 'near limit' as text, after the state; unknown valu
     [`${URL_}/processes`]: { items: [{ process: PROCESS, stage_id: null, counts: { failed: 1, pending: 1 }, retries: 1 }] },
     [`${URL_}/stages`]: { items: [] },
     [`${URL_}/tasks`]: { items: [TASK, fresh], next: null },
-    [URL_]: { ...run({ state: "running" }), params: {}, failures: [], failures_total: 0 },
+    [URL_]: { ...DETAIL, ...run({ state: "running" }), params: {}, failures: [], failures_total: 0 },
   });
   app(`/runs/${ID}?tab=tasks`);
   const table = await screen.findByRole("table", { name: "Tasks" });

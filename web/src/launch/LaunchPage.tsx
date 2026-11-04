@@ -17,12 +17,16 @@ import {
   type Engine,
   type FieldError,
   type Inspected,
+  type LaunchTemplate,
   type Run,
+  getLaunchTemplate,
+  getRun,
   inspect,
   launch,
 } from "../api";
 import { ICONS, Icon, groupIcon } from "../icons";
-import { executorLabel, plural } from "../runs/stateWord";
+import { runName } from "../runs/RunState";
+import { executorLabel, plural, shortId } from "../runs/stateWord";
 import { useServer } from "../server";
 import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
@@ -43,6 +47,7 @@ import {
   own,
   schemaFields,
   toYaml,
+  valuesFrom,
 } from "./schemaFields";
 
 // The 0.0.1 launch form (P1 Task 19; ui-spec §4.6 note 2026-10-29; boards LiteLaunch and
@@ -94,16 +99,36 @@ const PROFILE_HINTS: Record<Engine, string> = {
   snakemake: "From the pipeline's profiles/ directory · passed as --workflow-profile",
 };
 
+/** Copy to a new launch (ui-spec §4.4 run tools note): the run the form was prefilled from. */
+interface Prefill {
+  template: LaunchTemplate;
+  /** "wgs-cohort-12 (7T9V1W)" */
+  run: string;
+  name: string;
+  /** Top-level keys of the run's params that no field of the form takes. */
+  left: string[];
+}
+
+/** A `code_loading` field as the form names it. */
+const loadingLabel = (field: string) =>
+  field === "workflow.location" ? "Pipeline" : field.startsWith("params.") ? field.slice(7) : `engine option ${field.replace(/^engine\./, "")}`;
+
 /** `recent`: the server's recent runs, for "Try a test pipeline" (null while they load: nothing
- * shown). `initialLocation`: a pipeline to fill in and load at once (/launch?location=). */
+ * shown). `initialLocation`: a pipeline to fill in and load at once (/launch?location=).
+ * `copyFrom`: a run to prefill the form from (/launch?from=, Copy to a new launch); `onClear`
+ * drops it. */
 export function LaunchPage({
   onLaunched,
   recent = null,
   initialLocation,
+  copyFrom,
+  onClear,
 }: {
   onLaunched: (id: string) => void;
   recent?: Run[] | null;
   initialLocation?: string;
+  copyFrom?: string;
+  onClear?: () => void;
 }) {
   const server = useServer();
   const phone = usePhone();
@@ -120,6 +145,8 @@ export function LaunchPage({
   const [sending, setSending] = useState(false);
   // Launch pressed while a field is wrong: empty required fields then say so on the field too
   const [tried, setTried] = useState(false);
+  const [prefill, setPrefill] = useState<Prefill | null>(null);
+  const [prefillError, setPrefillError] = useState<string | null>(null);
   const inFlight = useRef<AbortController | null>(null);
   const revisionField = useRef<HTMLInputElement>(null);
 
@@ -150,7 +177,7 @@ export function LaunchPage({
     setErrors({});
   }
 
-  async function load(at = location, rev = revision) {
+  async function load(at = location, rev = revision, copy?: Omit<Prefill, "left">) {
     const where = at.trim();
     const isRepo = where !== "" && !where.startsWith("/");
     if (where === "") {
@@ -169,11 +196,24 @@ export function LaunchPage({
     try {
       const found = await inspect(where, isRepo ? rev.trim() : null, controller.signal);
       setLoaded(found);
-      setEngine(guessEngine(found.engine_files));
-      setProfile("");
       setTried(false);
-      setValues({});
-      setRows([]);
+      if (copy) {
+        // the run's engine, profile and values, in the form's shape for that engine
+        const { engine: was } = copy.template.workflow;
+        const shape = schemaFields(found.schema, [], was === "snakemake").flatMap((s) => s.fields);
+        const params = copy.template.params;
+        const { values: filled, left } = shape.length ? valuesFrom(shape, params) : { values: {}, left: [] };
+        setEngine(was);
+        setProfile(copy.template.profiles[0] ?? "");
+        setValues(filled);
+        setRows(shape.length ? [] : Object.entries(params).map(([key, v]) => ({ key, value: typeof v === "string" ? v : JSON.stringify(v) })));
+        setPrefill({ ...copy, left });
+      } else {
+        setEngine(guessEngine(found.engine_files));
+        setProfile("");
+        setValues({});
+        setRows([]);
+      }
     } catch (error) {
       if (controller.signal.aborted) return; // an edit cancelled it: not an error
       setErrors(
@@ -199,6 +239,19 @@ export function LaunchPage({
   useEffect(() => {
     if (initialLocation) pick(initialLocation);
   }, [initialLocation]);
+  useEffect(() => {
+    if (!copyFrom) return;
+    const controller = new AbortController();
+    Promise.all([getLaunchTemplate(copyFrom, controller.signal), getRun(copyFrom, controller.signal)])
+      .then(([template, run]) => {
+        const { location: at, revision: rev } = template.workflow;
+        setLocation(at);
+        setRevision(rev ?? "");
+        void load(at, rev ?? "", { template, run: `${runName(run)} (${shortId(run.id)})`, name: runName(run) });
+      })
+      .catch((e: Error) => controller.signal.aborted || setPrefillError(e.message));
+    return () => controller.abort();
+  }, [copyFrom]);
 
   function reason(): string | null {
     if (loading) return "Wait for the pipeline to load";
@@ -247,6 +300,11 @@ export function LaunchPage({
     }
   }
 
+  const copiedOutdir = prefill?.template.params.outdir;
+  const notes: Record<string, string> =
+    prefill && typeof copiedOutdir === "string" && own(values, "outdir") === copiedOutdir
+      ? { outdir: `Warning: same as ${prefill.name}. Change it to keep the two runs' results apart.` }
+      : {};
   const why = reason();
   // The pinned bar on the phone says what Launch sends (UX-PAR-34).
   const summary =
@@ -305,6 +363,12 @@ export function LaunchPage({
           </span>
         }
       />
+      {prefillError && (
+        <Text c="red" role="alert">
+          Not prefilled: {prefillError}
+        </Text>
+      )}
+      {prefill && <PrefillBanner prefill={prefill} onClear={onClear} />}
       <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card>
         <TryPipelines runs={recent} onPick={pick} />
         <Group align="flex-start" gap="sm" wrap="wrap">
@@ -429,6 +493,7 @@ export function LaunchPage({
                 {sections.length === 1 && (
                   <ParamRows
                     fields={sections[0].fields}
+                    notes={notes}
                     values={values}
                     errors={errors}
                     tried={tried}
@@ -440,6 +505,7 @@ export function LaunchPage({
                     key={`${loaded.location}:${i}`}
                     id={`params-g${i}`}
                     section={section}
+                    notes={notes}
                     values={values}
                     errors={errors}
                     tried={tried}
@@ -513,9 +579,42 @@ export function LaunchPage({
 /** One schema group as a section that folds (UX-PAR-30): its icon, description and counts, and a
  * status that says what needs doing; open at first when it has an issue or a changed value, and
  * when the server finds an error in it. A form of one section shows its fields alone. */
+/** Copy to a new launch's banner (no live region): where the values come from and which differ
+ * from the defaults, what is not sent, and what loads code or configuration (dev-env §15.3 req. 16). */
+function PrefillBanner({ prefill, onClear }: { prefill: Prefill; onClear?: () => void }) {
+  const names = prefill.template.non_default;
+  const differ = names.length === 1 ? "1 value differs" : `${names.length} values differ`;
+  const profiles = prefill.template.profiles;
+  return (
+    <Paper className="launch-prefill" p="sm" withBorder>
+      <Text size="sm">
+        {`Prefilled from ${prefill.run}: ${differ} from the pipeline's defaults${names.length ? `: ${names.join(", ")}` : ""}.`}
+      </Text>
+      {prefill.left.length > 0 && <Text size="sm">{`Not in this pipeline's form, and not sent: ${prefill.left.join(", ")}.`}</Text>}
+      {profiles.length > 1 && <Text size="sm">{`Profiles ${profiles.join(", ")}: the form takes one, ${profiles[0]} is kept.`}</Text>}
+      {prefill.template.code_loading.length > 0 && (
+        <ul className="launch-loading">
+          {prefill.template.code_loading.map((c) => (
+            <li key={c.field}>
+              <span>{`${loadingLabel(c.field)}: loads code or configuration${c.writable_by_others ? " · writable by others" : ""}`}</span>{" "}
+              <code>{c.value}</code>
+            </li>
+          ))}
+        </ul>
+      )}
+      {onClear && (
+        <Button variant="default" size="xs" onClick={onClear}>
+          Clear and start empty
+        </Button>
+      )}
+    </Paper>
+  );
+}
+
 function ParamGroup({
   id,
   section,
+  notes,
   values,
   errors,
   tried,
@@ -523,6 +622,7 @@ function ParamGroup({
 }: {
   id: string;
   section: Section;
+  notes: Record<string, string>;
   values: Values;
   errors: Errors;
   tried: boolean;
@@ -566,7 +666,7 @@ function ParamGroup({
       reveal={failed}
       card
     >
-      <ParamRows fields={section.fields} values={values} errors={errors} tried={tried} onChange={onChange} />
+      <ParamRows fields={section.fields} notes={notes} values={values} errors={errors} tried={tried} onChange={onChange} />
     </FoldSection>
   );
 }
@@ -574,12 +674,15 @@ function ParamGroup({
 /** The parameters one per line (Thomas, 2026-10-31): each a full-width row. */
 function ParamRows({
   fields,
+  notes = {},
   values,
   errors,
   tried,
   onChange,
 }: {
   fields: Field[];
+  /** A warning under a field, in words: outdir the same as the copied run's. */
+  notes?: Record<string, string>;
   values: Values;
   errors: Errors;
   tried: boolean;
@@ -591,14 +694,12 @@ function ParamRows({
         const value = own(values, field.key);
         // the client's check once the field was touched or Launch pressed, else the server's answer
         const wrong = value !== undefined || tried ? checkValue(field, value) : null;
+        const note = own(notes, field.key);
         return (
-          <ParamField
-            key={field.key}
-            field={field}
-            value={value}
-            error={wrong ?? errors[`params.${field.key}`]}
-            onChange={(v) => onChange(field.key, v)}
-          />
+          <Fragment key={field.key}>
+            <ParamField field={field} value={value} error={wrong ?? errors[`params.${field.key}`]} onChange={(v) => onChange(field.key, v)} />
+            {note && <p className="launch-warning">{note}</p>}
+          </Fragment>
         );
       })}
     </div>

@@ -1,4 +1,5 @@
 import { Button } from "@mantine/core";
+import { Link } from "@tanstack/react-router";
 import type { ReactNode, Ref } from "react";
 import type { Process, RunDetail, ServerVersion, Stage } from "../api";
 import { ICONS } from "../icons";
@@ -8,13 +9,13 @@ import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PhoneTitle, usePhone } from "../shell/layout";
 import { type CopyItem, CopyButton, CopyMenu } from "./CopyMenu";
+import { ResumeAction } from "./ResumeDialog";
 import { StateWord, failureText, runName, tasksText } from "./RunState";
-import { duration, engineName, executorLabel, isTerminal, plural, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
+import { duration, engineName, executorLabel, isTerminal, plural, runWord, shortId, stagesLine, sum, tone, when, words } from "./stateWord";
 
 // The run header that every tab of the run shares (ui-spec §4.4 run tools note; LiteRunDetail;
 // UX-PAR-19, 21 and 22): the state bar, the engine's mark tile, the name and short ID, the state
-// line, Cancel and Copy, then the facts and the task counts. P1 Task 32 adds Resume, Copy to a
-// new launch and Copy's "Command" here.
+// line, Cancel, Resume, Copy to a new launch and Copy, then the facts and the task counts.
 
 /** The chips under the facts: the states with tasks, failed and retried always (UX-PAR-22). A chip
  * with a `filter` (a Tasks tab filter's label) opens the Tasks tab on it (P3-parD). */
@@ -39,10 +40,11 @@ export function runDirectory(run: RunDetail, server: ServerVersion | null): stri
   return run.origin !== "cli-observed" && server ? `${server.runs_root}/${run.id}` : null;
 }
 
-/** What Copy offers for this run (LiteRunActions B, H): its config as the engine reads it, its
- * directory when known, its ID. */
+/** What Copy offers for this run (LiteRunActions B, H): the engine command, its config as the
+ * engine reads it, its directory when known, its ID. */
 export function copyItems(run: RunDetail, server: ServerVersion | null): CopyItem[] {
   const items: CopyItem[] = [];
+  if (run.command) items.push({ label: "Command", what: "the command", text: run.command.text });
   if (Object.keys(run.params).length) {
     items.push(
       run.workflow.engine === "snakemake"
@@ -103,6 +105,27 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
     ["Executor", server ? executorLabel(server.executor) : "—"],
     ["Failure", run.state === "failed" ? failureText(run) : "—"],
   ];
+  // a Resume and its parent link to each other (LiteRunActions G); the parent is named by its short ID
+  if (run.parent_run_id) {
+    facts.push([
+      "Resume of",
+      <Link to="/runs/$id" params={{ id: run.parent_run_id }}>
+        run {shortId(run.parent_run_id)}
+      </Link>,
+    ]);
+  }
+  if (run.resumed_as.length) {
+    facts.push([
+      "Resumed as",
+      <span className="sp-lines">
+        {run.resumed_as.map((child) => (
+          <Link key={child.id} to="/runs/$id" params={{ id: child.id }}>
+            {child.name ?? `run ${shortId(child.id)}`} · {runWord(child.state)}
+          </Link>
+        ))}
+      </span>,
+    ]);
+  }
   return (
     <dl className="sp-facts">
       {facts.map(([name, value]) => (
@@ -114,6 +137,8 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
     </dl>
   );
 }
+
+const RESUMABLE = new Set(["failed", "cancelled"]);
 
 interface Props {
   run: RunDetail;
@@ -131,6 +156,9 @@ interface Props {
 export function RunHeader({ run, stages, processes, server, titleRef, canCancel, onCancel, cancelError, onChip }: Props) {
   const phone = usePhone();
   const ended = isTerminal(run.state);
+  // Failed and Cancelled add Resume, every ended state Copy to a new launch; a run started from a
+  // terminal has neither (ui-spec §4.4 run tools note, header actions)
+  const launched = run.origin !== "cli-observed";
   const { unit, units, Units } = words(run.workflow.engine);
   const line = stagesLine(stages);
   const failed = run.summary.tasks.failed;
@@ -193,6 +221,12 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
           {canCancel && (
             <Button color="red" variant="outline" onClick={onCancel}>
               Cancel run
+            </Button>
+          )}
+          {launched && RESUMABLE.has(run.state) && <ResumeAction run={run} server={server} fullWidth={phone} />}
+          {launched && ended && (
+            <Button renderRoot={(props) => <Link to="/launch" search={{ from: run.id }} {...props} />} variant="default" fullWidth={phone}>
+              Copy to a new launch
             </Button>
           )}
           <CopyMenu items={copyItems(run, server)} fullWidth={phone} />

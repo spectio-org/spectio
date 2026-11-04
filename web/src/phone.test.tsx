@@ -3,7 +3,7 @@
 import { screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { NO_RESOURCES, app, run, serve, stubStream, viewport } from "./testing";
+import { DETAIL, NO_RESOURCES, app, run, serve, stubStream, viewport } from "./testing";
 
 beforeEach(() => {
   stubStream();
@@ -31,7 +31,7 @@ function detail() {
       next: null,
     },
     [`${URL_}/logs`]: () => new Response(""),
-    [URL_]: { ...run({ name: "rnaseq-2026-10-25" }), params: { outdir: "results" } },
+    [URL_]: { ...DETAIL, ...run({ name: "rnaseq-2026-10-25" }), params: { outdir: "results" } },
   });
 }
 

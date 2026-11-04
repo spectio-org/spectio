@@ -912,12 +912,20 @@
     flex: 1 1 0;
     min-width: 0;
   }
-  /* Cancel and Copy side by side, full width (MLiteRunDetail). */
+  /* Cancel and Copy side by side, full width (MLiteRunDetail); Resume and its reason above them,
+     full width (MLiteRunFailed). */
   .sp-run-top > .sp-run-actions {
     width: 100%;
-    display: grid;
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, 1fr);
+    flex-wrap: wrap;
+  }
+  .sp-run-top > .sp-run-actions > * {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+  .sp-run-top > .sp-run-actions > .sp-resume,
+  .sp-run-top > .sp-run-actions > .sp-resume-why {
+    flex-basis: 100%;
+    order: -1;
   }
   .sp-run-actions .sp-copy {
     width: 100%;
@@ -1346,4 +1354,122 @@
   .sp-report-banner {
     flex-wrap: wrap;
   }
+}
+
+/* Resume (P1 Task 32 part two; LiteRunActions, MLiteResumeSheet): its reason when refused, as
+   text under the actions; a refused Resume keeps its place, dimmed. */
+.sp-resume-why {
+  flex-basis: 100%;
+  order: 10;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin: 0;
+  max-width: 460px;
+  font-size: 13px;
+  color: var(--sp-text-muted);
+}
+.sp-resume-why svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+.sp-run-actions .mantine-Button-root[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.sp-actions[data-stack] {
+  flex-direction: column;
+}
+.sp-alert {
+  color: var(--sp-state-failed-fg);
+}
+.sp-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Results and reports (LiteRunDetail) and the results browser (LiteResults). */
+.sp-results {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.sp-results-h {
+  margin: 8px 0 0;
+  font-size: 13px;
+  font-weight: 600;
+}
+.sp-results-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.sp-results-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 10px;
+}
+.sp-results-list li > .sp-mono {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}
+.sp-results-list li > a:last-child {
+  margin-left: auto;
+}
+.sp-results-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+}
+.sp-results-state {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--sp-surface-subtle);
+}
+.sp-pathbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px 16px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  background: var(--sp-surface-subtle);
+}
+.sp-pathbar ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+.sp-pathbar li + li::before {
+  content: "/";
+  margin-right: 4px;
+  color: var(--sp-text-muted);
+}
+.sp-pathbar [aria-current] {
+  font-weight: 600;
+}
+.sp-pathbar .sp-mono {
+  overflow-wrap: anywhere;
+}
+.sp-result-name {
+  display: inline-flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+.sp-result-name svg {
+  flex-shrink: 0;
+  margin-top: 3px;
 }
