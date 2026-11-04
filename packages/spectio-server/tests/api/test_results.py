@@ -328,6 +328,45 @@ def test_req13_results_dir_aliases_refused(
         assert stored is None, refused
 
 
+def test_req13_results_dir_home_dotdirs_refused(
+    authed_client: TestClient,
+    results: Results,
+    writer: Writer,
+    settings: Settings,
+    synthetic: Path,
+    tmp_path: Path,
+) -> None:
+    """A results directory that is a dot directory below the home directory (`~/.nextflow`
+    holds the Nextflow secrets file, `~/.ssh` the user's keys) is refused at launch, absolute
+    or relative, and when served, by any path to it (SEC-P3T31-03)."""
+    home = Path(os.environ["HOME"])
+    for name, secret in ((".nextflow", "secrets/store.json"), (".ssh", "id_ed25519")):
+        (home / name / secret).parent.mkdir(parents=True, exist_ok=True)
+        (home / name / secret).write_text("s3cret\n")
+    (tmp_path / "nf").symlink_to(home / ".nextflow")
+    up = os.path.relpath(home / ".nextflow", run_paths(settings.runs_root, RUN).launch_dir)
+    assert up.startswith("../") and up.endswith("/.nextflow")
+    nf = synthetic / "nextflow"
+    for refused in (str(home / ".nextflow"), up, str(home / ".ssh")):
+        _, stored = launched(authed_client, writer, nf, "nextflow", outdir=refused)
+        assert stored is None, refused
+    # a symlink is a text at launch (its folder may not exist yet): refused when served
+    _, stored = launched(authed_client, writer, nf, "nextflow", outdir=str(tmp_path / "nf"))
+    assert stored == str(tmp_path / "nf")
+    for alias, secret in (
+        (str(home / ".nextflow"), "secrets/store.json"),
+        (str(home / ".nextflow" / "secrets"), "store.json"),
+        (str(home / ".ssh"), "id_ed25519"),
+        (str(tmp_path / "nf"), "secrets/store.json"),
+    ):
+        set_run(writer, RUN, results_dir=alias)
+        found = listing(authed_client)
+        assert found.status_code == 422, (alias, found.text)
+        served = raw(authed_client, secret)
+        assert served.status_code == 422, (alias, served.text)
+        assert "s3cret" not in served.text
+
+
 def test_req13_snakemake_results_hide_engine_dirs(
     authed_client: TestClient, settings: Settings, writer: Writer
 ) -> None:
@@ -467,8 +506,8 @@ def test_results_dir_at_launch(
     nf = synthetic / "nextflow"
     run_id, stored = launched(authed_client, writer, nf, "nextflow")  # the schema's default
     assert stored == str(run_paths(settings.runs_root, run_id).launch_dir / "results")
-    run_id, stored = launched(authed_client, writer, nf, "nextflow", outdir="out/../x/")
-    assert stored == str(run_paths(settings.runs_root, run_id).launch_dir / "x")
+    run_id, stored = launched(authed_client, writer, nf, "nextflow", outdir="out//x/")
+    assert stored == str(run_paths(settings.runs_root, run_id).launch_dir / "out" / "x")
     _, stored = launched(authed_client, writer, nf, "nextflow", outdir="/data/project/res")
     assert stored == "/data/project/res"
     other = str(run_paths(settings.runs_root, run_id).work_dir)
@@ -482,6 +521,8 @@ def test_results_dir_at_launch(
         other,  # another run's
         ".spectio",
         "results/.SNAKEMAKE/x",
+        "out/../x",  # a relative `..`, as an absolute one (SEC-P3T31-03)
+        ".nextflow",  # the engine's cache and history in the launch directory
     ):
         _, stored = launched(authed_client, writer, nf, "nextflow", outdir=refused)
         assert stored is None, refused

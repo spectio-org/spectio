@@ -93,14 +93,15 @@ def results_dir(
     launch directory and normalised. None also for an `outdir` whose listing would serve more
     than results: one that holds the runs root or the home directory (`/`, `..`, `$HOME`), one
     under the runs root but not in the run's launch directory (a work directory, `.spectio/`,
-    another run), one with a `.spectio` or `.snakemake` part, or an absolute one with a `.` or
-    `..` part. The check is on the text; `_roots` checks the folder itself when it serves it."""
+    another run), one with a `.spectio` or `.snakemake` part, one with a `.` or `..` part, or
+    one with a dot directory (`~/.nextflow`, `~/.ssh`) outside or below the launch directory.
+    The check is on the text; `_roots` checks the folder itself when it serves it."""
     if engine == "snakemake":
         return launch_dir
     outdir = params.get("outdir", default_outdir)
     if not isinstance(outdir, str) or not outdir or "\x00" in outdir:
         return None
-    if outdir.startswith("/") and any(part in (".", "..") for part in outdir.split("/")):
+    if any(part in (".", "..") for part in outdir.split("/")[outdir.startswith("/") :]):
         return None  # the system may resolve `..` through a link: never guessed from the text
     found = posixpath.normpath(posixpath.join(launch_dir, outdir))
     found = "/" + found.lstrip("/")  # `//x` is `/x` (normpath keeps two slashes)
@@ -111,6 +112,9 @@ def results_dir(
         return None
     if any(part.casefold() in ENGINE_DIRS for part in found.split("/")):
         return None
+    below = found[len(launch_dir) :] if _holds(launch_dir, found) else found
+    if any(part.startswith(".") for part in below.split("/")):
+        return None  # `~/.nextflow`, `~/.ssh`, the launch directory's `.nextflow/` (SEC-P3T31-03)
     return found
 
 
@@ -196,10 +200,19 @@ def _refuse_aliases(fd: int, runs_root: Path) -> None:
     """Raise NotAllowed for a root opened by its absolute path that is the runs root, the home
     directory or a folder above either, or lies below the runs root: compared by inode, so no
     `//`, `/proc/self/root` or symlinked folder on the way names them by another path
-    (SEC-P3T31-01)."""
+    (SEC-P3T31-01). Also for one whose path, as the kernel holds it, has a dot directory, or
+    that is or lies in `~/.nextflow`, by inode (SEC-P3T31-03)."""
     mine, runs, home = _chain(fd), _chain_of(runs_root), _chain_of(Path.home())
     if mine[0] in runs or mine[0] in home or runs[0] in mine:
         raise NotAllowed("not a results directory: it holds or lies in Spectio's runs")
+    if any(part.startswith(".") for part in os.readlink(f"/proc/self/fd/{fd}").split("/")):
+        raise NotAllowed("not a results directory: a hidden folder")
+    try:
+        secrets = _chain_of(Path.home() / ".nextflow")[0]
+    except OSError:
+        return  # no ~/.nextflow
+    if secrets in mine:
+        raise NotAllowed("not a results directory: it lies in ~/.nextflow")
 
 
 # --- Listing and search ------------------------------------------------------------------

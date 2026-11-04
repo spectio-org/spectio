@@ -282,6 +282,8 @@ class _Lexer:
         double = False
         while i < end:
             c = self.s[i]
+            if self.s.startswith("\\=", i):  # `export T\=v` assigns (CR-P3T31-05)
+                return i + 1
             if c == "\\":
                 i += 2
             elif c == '"':

@@ -250,6 +250,9 @@ def test_req13_redact_review_gaps() -> None:
         "function f { T=v12; }": f"function f {{ T={HIDDEN}; }}",
         "f() { local T=v13; }": f"f() {{ local T={HIDDEN}; }}",
         "java -Dnxf.token=v14 x": f"java -Dnxf.token={HIDDEN} x",
+        "export TOKEN\\=abc4": f"export TOKEN={HIDDEN}",  # CR-P3T31-05: `\\=` is the `=`
+        "env T\\=abc5 cmd": f"env T={HIDDEN} cmd",
+        "docker run -e T\\=v15 img": f"docker run -e T={HIDDEN} img",
         "tool --flag=value": "tool --flag=value",  # an option's value: kept
         "[[ $A == b ]] && echo ${X:=d}": "[[ $A == b ]] && echo ${X:=d}",
         "#SBATCH --export=ALL,TOKEN=s1,B=s2": f"#SBATCH --export=ALL,TOKEN={HIDDEN},B={HIDDEN}",
