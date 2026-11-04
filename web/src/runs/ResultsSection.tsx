@@ -59,15 +59,19 @@ function Contents({ run, results }: { run: RunDetail; results: Results }) {
       <ul className="sp-results-list">
         {missing && (
           <li>
-            <span>MultiQC report</span>
-            <span className="sp-muted">{missing}</span>
+            <span className="sp-results-what">
+              <span>MultiQC report</span>
+              <span className="sp-muted">{missing}</span>
+            </span>
           </li>
         )}
         {rows.map((row) =>
           row.kind === "report" ? (
             <li key={row.report.path}>
-              <span>{row.report.title}</span>
-              <span className="sp-muted sp-mono">{row.report.path}</span>
+              <span className="sp-results-what">
+                <span>{row.report.title}</span>
+                <span className="sp-muted sp-mono">{row.report.path}</span>
+              </span>
               <Link
                 to="/runs/$id/report"
                 params={{ id: run.id }}
@@ -79,8 +83,10 @@ function Contents({ run, results }: { run: RunDetail; results: Results }) {
             </li>
           ) : (
             <li key={row.group}>
-              <span>{row.group} reports</span>
-              <span className="sp-muted">{row.n} HTML files</span>
+              <span className="sp-results-what">
+                <span>{row.group} reports</span>
+                <span className="sp-muted">{row.n} HTML files</span>
+              </span>
               <Link
                 to="/runs/$id/results"
                 params={{ id: run.id }}

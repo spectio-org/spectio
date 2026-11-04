@@ -225,7 +225,7 @@ export function RunHeader({ run, stages, processes, server, titleRef, canCancel,
           )}
           {launched && RESUMABLE.has(run.state) && <ResumeAction run={run} server={server} fullWidth={phone} />}
           {launched && ended && (
-            <Button renderRoot={(props) => <Link to="/launch" search={{ from: run.id }} {...props} />} variant="default" fullWidth={phone}>
+            <Button renderRoot={(props) => <Link to="/launch" search={{ from: run.id }} {...props} />} variant="default" className="sp-copy-launch" fullWidth={phone}>
               Copy to a new launch
             </Button>
           )}

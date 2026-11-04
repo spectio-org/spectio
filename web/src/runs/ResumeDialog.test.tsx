@@ -57,8 +57,10 @@ test("Resume asks in a modal dialog, focus on Cancel first and back on Resume", 
   const dialog = await screen.findByRole("dialog", { name: "Resume this run?" });
   expect(dialog).toHaveAttribute("aria-modal", "true");
   expect(dialog).toHaveTextContent(
-    `Spectio starts a new run in the same launch directory, ${VERSION.runs_root}/${ID}/launch. Nextflow runs again with -resume and reuses the 143 tasks that finished. This run stays Failed.`,
+    "Spectio starts a new run in the same launch directory. Nextflow runs again with -resume and reuses the 143 tasks that finished. This run stays Failed.",
   );
+  // the launch directory in its own block, as on the boards
+  expect(within(dialog).getByText(`${VERSION.runs_root}/${ID}/launch`).tagName).toBe("CODE");
   expect(dialog).toHaveTextContent("The head of this run has ended on login1 (checked): Spectio unlocks the directory first.");
   await waitFor(() => expect(within(dialog).getByRole("button", { name: "Cancel" })).toHaveFocus());
   await userEvent.keyboard("{Escape}");

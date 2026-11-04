@@ -54,15 +54,16 @@ export function refusedWords(reason: string, run: RunDetail, server: ServerVersi
 function Ask({ run, server }: { run: RunDetail; server: ServerVersion | null }) {
   const snakemake = run.workflow.engine === "snakemake";
   const { units } = words(run.workflow.engine);
-  const where = server && !run.parent_run_id ? `, ${server.runs_root}/${run.id}/launch` : "";
+  const where = server && !run.parent_run_id ? `${server.runs_root}/${run.id}/launch` : null;
   const head = run.head;
   return (
     <>
       <p>
-        Spectio starts a new run in the same launch directory{where}. {engineName(run.workflow.engine)} runs again with{" "}
+        Spectio starts a new run in the same launch directory. {engineName(run.workflow.engine)} runs again with{" "}
         <code>{snakemake ? "--rerun-incomplete" : "-resume"}</code> and reuses the {run.summary.tasks.done} {units} that finished. This
         run stays {runWord(run.state)}.
       </p>
+      {where && <code className="sp-resume-path">{where}</code>}
       {head && !head.alive && (
         <p className="sp-note">The head of this run has ended on {head.node} (checked): Spectio unlocks the directory first.</p>
       )}
@@ -139,7 +140,14 @@ export function ResumeAction({ run, server, fullWidth = false }: { run: RunDetai
         </p>
       )}
       {phone ? (
-        <Drawer opened={asking} onClose={close} position="bottom" size="auto" title="Resume this run?" returnFocus classNames={{ title: "sp-sheet-title" }}>
+        <Drawer
+          opened={asking}
+          onClose={close}
+          position="bottom"
+          title="Resume this run?"
+          returnFocus
+          classNames={{ content: "sp-bottom-sheet", title: "sp-sheet-title" }}
+        >
           {body}
         </Drawer>
       ) : (
