@@ -8,6 +8,8 @@ argument-hint: "<step-id or 'pr'> [wave]"
 
 The rules are in `docs/specs/documentation-system.md`. This skill is the procedure.
 
+**Batch mode** (P3 tasks, `documentation-system.md` §3.5). Each task writes only its review record, a short Progress section, the owning spec and a PR body without figure (`no-figure` label). Steps 3 and 5 below, and the full Progress page, run once per batch, in `p3-batch`.
+
 1. **Evidence first.** Collect the step's diff (`git diff --stat` and the diff against the integration branch), the worker's commands and outputs, test reports and the exit-check output. Docs are written from these, never from the step prompt alone.
 2. **Write** — dispatch `doc-writer` with the evidence, the step id, wave and kind. It creates `docs/progress/<wave>/<step>.md` from `progress-template.md` in this folder, updates the owning spec when behaviour was decided, and lists the figures and media the step kind needs (§3.1).
 3. **Figures and media** — every step gets at least one sketch, whatever its kind (§3.4): for a review round, the scope walked with its blockers and majors pinned by finding ID; for triage, bars to scale from the real counts; for apply, before and after. It goes first on the Progress page, under the `!!!` line. In parallel, dispatch `diagram-artist` for each figure and `media-capture` for each screenshot, cast or combined capture that `doc-writer` listed. They return light/dark pairs and media paths; `doc-writer` embeds them.

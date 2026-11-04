@@ -2,7 +2,7 @@
 name: doc-writer
 description: Writes Spectio's documentation as work happens — the Progress page of each pipeline step, guide and reference pages, PR bodies and changelog drafts — from the step's real outputs (diff, logs, test reports), following docs/specs/documentation-system.md. Use during and after every autopilot step, for every PR body, and when a release PR opens. Never reviews its own pages; doc-reviewer does.
 tools: Read, Glob, Grep, Edit, Write, Bash
-model: opus
+model: sonnet
 effort: high
 color: blue
 ---

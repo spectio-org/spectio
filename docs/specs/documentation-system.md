@@ -202,16 +202,30 @@ Since 2026-10-27 every step leaves at least one sketch pair (light and dark, `to
 - **How.** One script per figure in `tools/diagrams/`, drawn by `diagram-artist` in the Excalidraw-like sketch style (§0.4, `tools/diagrams/README.md`). Counts come from the step's real outputs, never from memory.
 - **Checked.** `check_progress` fails a `done` Progress page that does not embed a `docs/assets/diagrams/*_light.png#only-light` and `*_dark.png#only-dark` pair. Pages finished before the rule are listed in `FIGURE_EXEMPT` in `tools/docs/check.py`; a page leaves the list when it gets its figure.
 
+### 3.5 Docs per batch of P3 tasks (Thomas, 2026-11-04)
+
+P3 tasks are documented in two passes, to stop paying a figure and a doc review for every small task ([decision log](../decisions/log.md#2026-11-04-p3-tasks-run-in-batches-docs-figure-doc-review-simplify-and-promotion-once-per-batch)). The batches themselves are defined in [autopilot §11](../playbooks/autopilot.md#11-batches-of-p3-tasks-thomas-2026-11-04).
+
+- **Per task** (`p3-task` workflow, `doc-writer` only):
+  - the review record `docs/reviews/code/<step>.md` with its `CODE` line;
+  - a short section in the milestone's Progress page: what changed, the `CODE` line, links;
+  - the owning spec where behaviour was decided, and inbox entries;
+  - the PR body, with no figure: the PR carries the `no-figure` label and says the figure comes in the batch docs PR.
+
+  The docs gate (§3.3) still runs on every task PR.
+- **Per batch** (`p3-batch` workflow): the full Progress page (Evidence, Figures and media, Findings and open questions), guide or reference pages, screenshots and casts for new screens and CLI flows, one figure for the batch's mechanisms (§3.4), then `doc-reviewer` with up to two revisions. The batch docs PR carries the figure.
+- **What does not change:** a `done` Progress page still embeds a figure (§3.4); the milestone page stays `running` until its last batch is closed.
+
 ## 4. Writers and reviewers
 
 ### 4.1 Agents (`.claude/agents/`)
 
 | Agent | Writes | Tools | Model |
 |---|---|---|---|
-| `doc-writer` | Progress pages, guide and reference pages, PR bodies, changelog drafts | Read, Grep, Glob, Edit, Write, Bash | opus |
+| `doc-writer` | Progress pages, guide and reference pages, PR bodies, changelog drafts | Read, Grep, Glob, Edit, Write, Bash | sonnet (opus before 2026-11-04, §3.5) |
 | `diagram-artist` | `tools/diagrams/<figure>.py` and its outputs | Read, Write, Edit, Bash | opus |
 | `media-capture` | entries in `tools/media/` (shots registry, cast scripts, combo scripts), `docs/assets/` outputs, `media.yaml` | Read, Write, Edit, Bash | sonnet |
-| `doc-reviewer` | nothing in the docs; returns a verdict and findings | Read, Grep, Glob, Bash | opus |
+| `doc-reviewer` | nothing in the docs; returns a verdict and findings | Read, Grep, Glob, Bash | sonnet (opus before 2026-11-04, §3.5) |
 
 **Writers:**
 - **Sources.** Writers work from the step's actual outputs (diff, logs, test reports), never from the prompt alone.

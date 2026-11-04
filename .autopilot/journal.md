@@ -635,3 +635,14 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - PR #128 squash-merged as 5f2725d with `Release-As: 0.0.1`. Every check was green on 99a0ace; the first `pr-body` run had failed on the placeholder body. Cost recorded: 40 USD.
 - Next: the promotion PR to `main`, then the autopilot stays paused (Thomas). P1 tasks merged: 19 of 32. PRs #111, #122 and #126 wait for Thomas.
+
+## 2026-11-04 · Promotion #129 merged; autopilot paused
+
+- Promotion PR #129 merged into `main` with a merge commit (f7d03c0). Every check was green on c6ea076.
+- Autopilot paused as Thomas asked ("Stop building à la fin étape actuelle"). Next when resumed: §15.3 Task 12. PRs #111, #122 and #126 wait for Thomas.
+
+## 2026-11-04 · PR #130 merged: P3 tasks run in batches
+
+- PR #130 squash-merged as f5708cc. Every check was green on a6cff83. One code-reviewer pass returned changes (6 majors, 6 minors), all fixed before the merge.
+- From now on (autopilot.md §11): per task, code review, security review on sensitive paths, one fix round and short docs. Per batch of 3 to 5 tasks, `p3-batch` runs simplify, the full docs, the figure and doc-reviewer, followed by one promotion. Costs are recorded as `build-task` and `docs`.
+- Still paused. Next when resumed: batch P3-B01 = §15.3 Tasks 12 to 16.
