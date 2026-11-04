@@ -39,7 +39,9 @@ _NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(\[[^\]\n]*\])?\+?")
 _UNQUOTE = re.compile(r"\$(?=')|[\"'\\]")
 # A scheduler directive, and in it the options that carry `NAME=value` lists.
 _DIRECTIVE = re.compile(r"#(SBATCH|PBS|\$|BSUB)\s")
-_EXPORT_OPTION = re.compile(r"(?<=[ \t])(--export(=|[ \t]+)|-v[ \t]*|-env[ \t]*)")
+# An option starts after any `\s`, as wide as `_DIRECTIVE`, while a value ends only at an ASCII
+# space or tab (`_VALUE_END`): asymmetric on purpose, both fail closed (SEC-P3T31-10).
+_EXPORT_OPTION = re.compile(r"(?<=\s)(--export(=|\s+)|-v\s*|-env\s*)")
 _ITEM = re.compile(r"([^,=]*)=[^,]*")  # any name, even none: fails closed (SEC-P3T31-07)
 _QUOTING = "'\"\\"
 _VALUE_END = re.compile(r"[ \t'\"\\]")  # an ASCII space ends a directive value; a quoting hides it
@@ -339,20 +341,23 @@ class _Lexer:
         line = self.s[start:end]
         if not _DIRECTIVE.match(line):
             return
-        done = 0  # the end of the last value read: an option inside it is part of it
+        spans = []  # every option is read, even one inside the value of another (SEC-P3T31-09)
         for option in _EXPORT_OPTION.finditer(line):
             at = option.end()
-            if option.start() < done:
-                continue
             stop = _VALUE_END.search(line, at)
             if stop is not None and stop[0] in _QUOTING:
-                self.edits.append((start + at, end, HIDDEN))
-                return
+                spans.append((at, len(line)))
+                break
             value = line[at : len(line) if stop is None else stop.start()]
-            done = at + len(value)
             for item in _ITEM.finditer(value):
-                name_end = at + item.start() + len(item[1]) + 1
-                self.edits.append((start + name_end, start + at + item.end(), HIDDEN))
+                spans.append((at + item.start() + len(item[1]) + 1, at + item.end()))
+        merged: list[list[int]] = []  # overlapping spans make one marker
+        for lo, hi in sorted(spans):
+            if merged and lo <= merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], hi)
+            else:
+                merged.append([lo, hi])
+        self.edits += [(start + lo, start + hi, HIDDEN) for lo, hi in merged]
 
 
 def _apply(text: str, edits: list[tuple[int, int, str]]) -> str:

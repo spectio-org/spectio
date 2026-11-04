@@ -295,6 +295,25 @@ def test_req13_directive_quoted_values() -> None:
     }
     for line, expected in lines.items():
         assert redact_command_run(line + "\n") == expected + "\n", line
+    # An option starts after any `\s` and `--export` takes any `\s` before its value, as wide
+    # as the directive keyword, while a value ends only at an ASCII space or tab: the two
+    # classes are asymmetric on purpose, so both fail closed (CR-P3T31-09, SEC-P3T31-10).
+    # An option that is the whole value of the option before it is still read (SEC-P3T31-09).
+    probes = [
+        "#SBATCH -J x\v--export=TOKEN=s3cret",
+        "#SBATCH -J x\f--export=TOKEN=s3cret",
+        "#SBATCH -J x\r--export=TOKEN=s3cret",
+        "#SBATCH\v--export=TOKEN=s3cret",
+        "#SBATCH\xa0--export=TOKEN=s3cret",
+        "#SBATCH -J x\xa0--export=TOKEN=s3cret",
+        "#SBATCH --export\vTOKEN=s3cret",
+        "#PBS -v -v TOKEN=s3cret",
+        "#SBATCH --export -v TOKEN=s3cret",
+        "#BSUB -env -v TOKEN=s3cret",
+    ]
+    for line in probes:
+        served = redact_command_run(line + "\n")
+        assert "s3cret" not in served and f"TOKEN={HIDDEN}" in served, repr(line)
 
 
 def test_req13_here_string_hidden() -> None:
