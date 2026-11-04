@@ -26,9 +26,10 @@ from spectio_sdk.events import SpoolEvent
 from spectio_server.api.taskfiles import load_attempt
 from spectio_server.files import confine
 from spectio_server.files.confine import NotAllowed, NotFound, Root, list_confined, open_confined
-from spectio_server.files.redact import HIDDEN, redact_command_run
+from spectio_server.files.redact import HIDDEN, redact_command_run, strip_escapes
 from spectio_server.files.taskfiles import AttemptFiles, list_task_files, read_task_file
 from spectio_server.projector.ingest import ingest
+from spectio_server.projector.snakemake import MAX_LOGS
 from spectio_server.stages.freeze import StageSources
 from spectio_server.store.schema import attempts, spool_drops, tasks
 from spectio_server.store.writer import Writer
@@ -228,6 +229,57 @@ def test_req13_redact_container_env() -> None:
     assert "cat << EOF" in served and "\nEOF\n" in served
 
 
+def test_req13_redact_review_gaps() -> None:
+    """The forms the reviews found served (SEC-P3T28-03 r1 to r3, CR-P3T28-03 r2): a value is
+    hidden wherever an assignment word stands, not only at a command's start."""
+    lines = {
+        'export "TOKEN"=abc1': f"export TOKEN={HIDDEN}",
+        'export TOKEN"=abc2"': f"export TOKEN={HIDDEN}",
+        "export 'T'='abc3'": f"export T={HIDDEN}",
+        "exec env T=v1 cmd": f"exec env T={HIDDEN} cmd",
+        "command export T=v2": f"command export T={HIDDEN}",
+        "builtin export T=v3": f"builtin export T={HIDDEN}",
+        "nohup env T=v4 cmd": f"nohup env T={HIDDEN} cmd",
+        "sudo T=v5 cmd": f"sudo T={HIDDEN} cmd",
+        "sudo env T=v6 cmd": f"sudo env T={HIDDEN} cmd",
+        "docker run -eT=v7 img": f"docker run -eT={HIDDEN} img",
+        "docker run -eTOKEN=v8 img": f"docker run -eTOKEN={HIDDEN} img",
+        "ch-run --set-env=T=v9 img": f"ch-run --set-env=T={HIDDEN} img",
+        "2>/dev/null T=v10 cmd": f"2>/dev/null T={HIDDEN} cmd",
+        ">log T=v11 cmd": f">log T={HIDDEN} cmd",
+        "function f { T=v12; }": f"function f {{ T={HIDDEN}; }}",
+        "f() { local T=v13; }": f"f() {{ local T={HIDDEN}; }}",
+        "java -Dnxf.token=v14 x": f"java -Dnxf.token={HIDDEN} x",
+        "tool --flag=value": "tool --flag=value",  # an option's value: kept
+        "[[ $A == b ]] && echo ${X:=d}": "[[ $A == b ]] && echo ${X:=d}",
+        "#SBATCH --export=ALL,TOKEN=s1,B=s2": f"#SBATCH --export=ALL,TOKEN={HIDDEN},B={HIDDEN}",
+        "#SBATCH --export TOKEN=s3": f"#SBATCH --export TOKEN={HIDDEN}",
+        "#SBATCH --mem=4G --export=NONE": "#SBATCH --mem=4G --export=NONE",
+        "#PBS -v TOKEN=s4,B=s5": f"#PBS -v TOKEN={HIDDEN},B={HIDDEN}",
+        "#$ -v TOKEN=s6": f"#$ -v TOKEN={HIDDEN}",
+        '#BSUB -env "all, TOKEN=s7"': f'#BSUB -env "all, TOKEN={HIDDEN}"',
+        '#SBATCH --export="T=s8 x"': f'#SBATCH --export="T={HIDDEN}"',
+        "#SBATCH --export='T=s9": f"#SBATCH --export={HIDDEN}",
+        "#SBATCH -J name": "#SBATCH -J name",
+        "# a comment T=c1": "# a comment T=c1",
+    }
+    for line, expected in lines.items():
+        assert redact_command_run(line + "\n") == expected + "\n", line
+    whole = "".join(f"{line}\n" for line in lines)
+    served = redact_command_run(whole)
+    for secret in ("abc", "s1", "s3", "s4", "s7", "s8", "s9", "v1", "v12", "v14"):
+        assert f"={secret}" not in served and f"={secret}," not in served, secret
+    assert served.count("\n") == len(lines)
+
+
+def test_req13_strip_bidi_and_8bit_escapes() -> None:
+    """Bidi and other format controls, and the 8-bit CSI and OSC with their parameters, are
+    removed (SEC-P3T28-07 r1, SEC-P3T28-08 r3)."""
+    text = "a\u202eb\u2066c\u200bd\ufeffe\x9b31mf\x9d8;;http://x.example\x07g\x9b1;2Hh\n"
+    assert strip_escapes(text) == "abcdefgh\n"
+    assert strip_escapes("tab\tkept, é kept\n") == "tab\tkept, é kept\n"
+
+
 def test_req13_redact_fails_closed() -> None:
     text = 'echo one\nexport TOKEN="abc\necho two\necho three\n'
     served = redact_command_run(text)
@@ -418,6 +470,37 @@ def test_req13_long_log_names_dropped(smk_run: SmkRun) -> None:
     assert drops["path_outside_run"] == 3
 
 
+def test_req13_logs_capped(smk_run: SmkRun) -> None:
+    """The paths an attempt keeps from events are capped, each kept once, without a quadratic
+    check on the writer: past `MAX_LOGS` they are counted, not kept (SEC-P3T28-05 r1, r2)."""
+    many = [f"logs/bwa_mem/{i}.log" for i in range(5000)]
+    drops = smk_run.ingest(
+        job_info(1, 1, log=[SMK_LOG, SMK_LOG, *many]),
+        smk_event(2, "slurm_submitted", jobid=1, external_jobid="1", log=SLURM_LOG),
+    )
+    logs = smk_run.attempt().logs
+    assert len(logs) == MAX_LOGS
+    assert logs[0] == (SMK_LOG, "rule_log") and len({p for p, _ in logs}) == MAX_LOGS
+    assert SLURM_LOG not in {p for p, _ in logs}
+    assert drops["logs_capped"] == 5000 - (MAX_LOGS - 1) + 1
+
+
+def test_req13_lone_surrogate_name_dropped(smk_run: SmkRun) -> None:
+    """A recorded name that is not UTF-8 is dropped, so the listing never fails on it
+    (SEC-P3T28-07 r4)."""
+    drops = smk_run.ingest(job_info(1, 1, log=["logs/\udcff.log", SMK_LOG]))
+    assert smk_run.attempt().logs == ((SMK_LOG, "rule_log"),)
+    assert drops["path_outside_run"] == 1
+    assert [f.name for f in list_task_files(smk_run.attempt())] == [SMK_LOG]
+
+
+def test_req13_spectio_dir_any_case(smk_run: SmkRun) -> None:
+    """`.spectio/` is compared without case, on a file system that folds it (SEC-P3T28-07 r2)."""
+    drops = smk_run.ingest(job_info(1, 1, log=[".SPECTIO/run.json", ".Spectio/spool", SMK_LOG]))
+    assert smk_run.attempt().logs == ((SMK_LOG, "rule_log"),)
+    assert drops["path_outside_run"] == 2
+
+
 def test_req13_forged_nextflow_workdir_dropped(settings: Settings, writer: Writer) -> None:  # noqa: F811
     launch_id = add_run(writer, settings, RUN, "nf", "running")
     work = make_run_dirs(settings.runs_root, RUN).work_dir
@@ -469,8 +552,8 @@ def tree(tmp_path: Path) -> Iterator[tuple[Root, Root, Path]]:
     base = private(tmp_path / "run")
     (base / "results").mkdir()
     work = private(base / "work")
-    (work / "ab" / "cd").mkdir(parents=True)
-    (work / "ab" / "cd" / "x.bam").write_bytes(b"BAM\x01")
+    work.joinpath(*HASH).mkdir(parents=True)
+    work.joinpath(*HASH, "x.bam").write_bytes(b"BAM\x01")
     run_fd = os.open(base, os.O_RDONLY | os.O_DIRECTORY)
     work_fd = os.open(work, os.O_RDONLY | os.O_DIRECTORY)
     try:
@@ -520,14 +603,16 @@ def test_req13_dir_swapped_mid_request(
 
 def test_req13_published_symlink_served(tree: tuple[Root, Root, Path]) -> None:
     run, work, base = tree
-    (base / "results" / "x.bam").symlink_to(Path(work.path) / "ab" / "cd" / "x.bam")
+    (base / "results" / "x.bam").symlink_to(Path(work.path).joinpath(*HASH, "x.bam"))
     with open_confined(run, PurePosixPath("results/x.bam"), work=work) as f:
         assert f.read() == b"BAM\x01"
-    (base / "results" / "rel.bam").symlink_to("../work/ab/cd/x.bam")  # relative, as ln -r makes
+    (base / "results" / "rel.bam").symlink_to(
+        f"../work/{HASH[0]}/{HASH[1]}/x.bam"
+    )  # relative, as ln -r makes
     with open_confined(run, PurePosixPath("results/rel.bam"), work=work) as f:
         assert f.read() == b"BAM\x01"
-    (Path(work.path) / "ab" / "cd" / "hop").symlink_to(Path(work.path) / "ab" / "cd" / "x.bam")
-    (base / "results" / "two.bam").symlink_to(Path(work.path) / "ab" / "cd" / "hop")
+    Path(work.path).joinpath(*HASH, "hop").symlink_to(Path(work.path).joinpath(*HASH, "x.bam"))
+    (base / "results" / "two.bam").symlink_to(Path(work.path).joinpath(*HASH, "hop"))
     with pytest.raises(NotAllowed):  # a second symlink is refused
         open_confined(run, PurePosixPath("results/two.bam"), work=work)
 
@@ -535,7 +620,7 @@ def test_req13_published_symlink_served(tree: tuple[Root, Root, Path]) -> None:
 def test_req13_symlink_to_home_refused(tree: tuple[Root, Root, Path], tmp_path: Path) -> None:
     run, work, base = tree
     (base / "results" / "x").symlink_to(tmp_path)
-    (base / "results" / "x.bam").symlink_to(Path(work.path) / "ab" / "cd" / "x.bam")
+    (base / "results" / "x.bam").symlink_to(Path(work.path).joinpath(*HASH, "x.bam"))
     with pytest.raises(NotAllowed):
         open_confined(run, PurePosixPath("results/x"), work=work)
     listing = list_confined(run, PurePosixPath("results"), cap=100, work=work)
@@ -545,20 +630,45 @@ def test_req13_symlink_to_home_refused(tree: tuple[Root, Root, Path], tmp_path: 
     assert list_confined(run, PurePosixPath("results"), cap=1, work=work).truncated
 
 
+@dataclass
+class Foreign:
+    """Files that `os.stat` and `os.fstat` show as another user's, by inode: the owner checks
+    are tested without root, so they run on CI too (SEC-P3T28-07 r3)."""
+
+    inodes: set[int]
+
+    def mark(self, path: Path) -> None:
+        self.inodes.add(path.lstat().st_ino)
+
+
 @pytest.fixture
-def other_uid() -> int:
-    if os.geteuid() != 0:
-        pytest.skip("chown to another uid needs root")
-    return 54321
+def foreign(monkeypatch: pytest.MonkeyPatch) -> Foreign:
+    found = Foreign(set())
+    real_stat, real_fstat = os.stat, os.fstat
+
+    def theirs(st: os.stat_result) -> os.stat_result:
+        if st.st_ino not in found.inodes:
+            return st
+        fields = list(st[:10])
+        fields[4] = os.geteuid() + 1  # st_uid
+        return os.stat_result(fields)
+
+    monkeypatch.setattr(os, "stat", lambda *a, **k: theirs(real_stat(*a, **k)))
+    monkeypatch.setattr(os, "fstat", lambda fd: theirs(real_fstat(fd)))
+    return found
 
 
-def test_req13_foreign_uid(tree: tuple[Root, Root, Path], other_uid: int) -> None:
+def test_req13_foreign_uid(tree: tuple[Root, Root, Path], foreign: Foreign) -> None:
     run, work, base = tree
     (base / "results" / "theirs.txt").write_text("someone else's\n")
-    os.chown(base / "results" / "theirs.txt", other_uid, other_uid)
+    foreign.mark(base / "results" / "theirs.txt")
     (base / "results" / "mine.txt").write_text("mine\n")
-    with pytest.raises(NotAllowed):
-        open_confined(run, PurePosixPath("results/theirs.txt"), work=work)
+    (base / "results" / "their_dir").mkdir()
+    (base / "results" / "their_dir" / "x.txt").write_text("x\n")
+    foreign.mark(base / "results" / "their_dir")
+    for rel in ("results/theirs.txt", "results/their_dir/x.txt"):  # every folder on the way too
+        with pytest.raises(NotAllowed):
+            open_confined(run, PurePosixPath(rel), work=work)
     names = [e.name for e in list_confined(run, PurePosixPath("results"), 100, work=work).entries]
     assert names == ["mine.txt"]
 

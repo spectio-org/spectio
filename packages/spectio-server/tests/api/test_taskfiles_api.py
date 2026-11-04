@@ -22,11 +22,12 @@ from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server.api import taskfiles as api_taskfiles
 from spectio_server.files import taskfiles
+from spectio_server.files.pool import FilePool
 from spectio_server.ids import new_id
 from spectio_server.projector.ingest import ingest
 from spectio_server.stages import freeze
 from spectio_server.stages.freeze import StageSources
-from spectio_server.store.schema import attempts, runs, tasks
+from spectio_server.store.schema import attempts, events, run_stages, runs, tasks
 from spectio_server.store.writer import Writer
 
 from .conftest import add_run
@@ -327,8 +328,7 @@ def test_req13_spectio_dir(
         problem(authed_client.get(f"{base}/{name}"), 422, "file-not-allowed")
     launch = settings.runs_root / RUN / "launch" / ".spectio"
     (launch / "head.err").write_text("head err\n")
-    (launch / "nextflow.log").write_text("nf log\n")
-    logs = f"{API}/runs/{RUN}/logs"
+    logs = f"{API}/runs/{RUN}/logs"  # `.spectio/nextflow.log`: test_engine_log_from_the_run
     assert authed_client.get(logs, params={"source": "head-out"}).text == "head\n"
     assert authed_client.get(logs, params={"source": "head-err"}).text == "head err\n"
 
@@ -399,7 +399,7 @@ def test_req13_freeze_reads_off_the_writer(
 
     monkeypatch.setattr(freeze, "_sources", stalled)
     monkeypatch.setattr(freeze, "FREEZE_TIMEOUT_S", 0.2)
-    sources = StageSources(None, settings.runs_root, pool=api_taskfiles.FilePool())
+    sources = StageSources(None, settings.runs_root, pool=FilePool())
     began = time.monotonic()
     batch = SpoolBatch([event(1, "nextflow.onFlowBegin")], {}, Counter())
     writer.submit(lambda c: ingest(c, launch_id, batch, sources)).result()
@@ -407,3 +407,10 @@ def test_req13_freeze_reads_off_the_writer(
     release.set()
     with writer.engine.connect() as conn:
         assert conn.execute(select(runs.c.state)).scalar_one() == "running"
+        assert conn.execute(select(run_stages.c.id)).all() == []  # no stages (CR-P3T28-05 r2)
+        frozen = conn.execute(
+            select(events.c.payload).where(events.c.type == freeze.FROZEN)
+        ).scalar_one()
+    assert frozen["note"] == (
+        "The stage sources were not read in time (the file system did not answer)."
+    )

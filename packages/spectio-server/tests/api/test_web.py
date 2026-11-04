@@ -54,6 +54,19 @@ def test_spa_routes_serve_index(web: TestClient) -> None:
         assert r.headers["x-content-type-options"] == "nosniff"
 
 
+def test_report_page_may_frame_this_origin_only(web: TestClient) -> None:
+    """The report viewer (P1 Task 31) is the one screen that frames: `frame-src 'self'`, for the
+    sandboxed report served by `/api/v1/runs/{id}/results/raw/...`; the others frame nothing."""
+    r = web.get("/runs/run_01K8T2F1XTVRES000000000000/report")
+    assert r.status_code == 200
+    assert r.text == INDEX
+    csp = r.headers["content-security-policy"]
+    assert "frame-src 'self'" in csp
+    assert "frame-ancestors 'none'" in csp
+    assert "script-src 'self';" in csp
+    assert "frame-src" not in web.get("/runs").headers["content-security-policy"]
+
+
 def test_head_on_screens_and_assets(web: TestClient) -> None:
     """A HEAD gets the GET's status and headers, no body (FU-P3-22: it was 405)."""
     for path in ("/", "/runs", "/runs/run_01K8T2F1XTVRES000000000000", "/assets/index-AbC1.js"):

@@ -31,6 +31,7 @@ from spectio_server.api import (
     logs,
     problems,
     relaunch,
+    results,
     runs_read,
     runs_write,
     stream,
@@ -140,7 +141,10 @@ def create_app(
         app.state.stream = stream.Stream(writer.engine)
         writer.on_commit = app.state.stream.notify  # the writer thread, after each commit
         # relaunch first: `GET /runs/{id}:launch-template` before `GET /runs/{run_id}`
-        for module in (workflows, runs_write, relaunch, runs_read, logs, taskfiles, cancel, stream):
+        app.state.reports = {}  # the reports of ended runs (P1 Task 31)
+        app.state.follows = logs.Follows()  # dev-env §15.3 req. 14
+        routers = (workflows, runs_write, relaunch, runs_read, logs, taskfiles, results, cancel)
+        for module in (*routers, stream):
             app.include_router(module.router, prefix=API)
     else:
 

@@ -123,6 +123,24 @@ def _check_params(found: Found, params: dict[str, Any]) -> None:
         raise Invalid.many(found_errors)
 
 
+def _default(schema: dict[str, Any] | None, name: str) -> str | None:
+    """The schema's string default of parameter `name`: at the top, or in a group of
+    `definitions` or `$defs` (nf-core's layout); None when it has none."""
+    if schema is None:
+        return None
+    groups = [schema, *[g for key in ("definitions", "$defs") for g in _dicts(schema.get(key))]]
+    for group in groups:
+        found = group.get("properties")
+        prop = found.get(name) if isinstance(found, dict) else None
+        if isinstance(prop, dict) and isinstance(prop.get("default"), str):
+            return str(prop["default"])
+    return None
+
+
+def _dicts(value: Any) -> list[dict[str, Any]]:
+    return [v for v in value.values() if isinstance(v, dict)] if isinstance(value, dict) else []
+
+
 @router.post("/runs", status_code=201)
 def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str, Any]:
     _check(body)
@@ -209,6 +227,7 @@ def _insert(
             origin="ui",
             workflow_name=found.name,
             workflow_version=found.version,
+            default_outdir=_default(found.schema, "outdir"),
         )
     except EngineConflict as exc:
         raise Invalid(

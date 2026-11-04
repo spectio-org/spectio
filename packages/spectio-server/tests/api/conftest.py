@@ -9,6 +9,7 @@ API is not mounted (TODO(P1 Task 16): a client with no session cookie, answered 
 
 import shutil
 import subprocess
+import threading
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from functools import partial
@@ -16,6 +17,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import uvicorn
 from fastapi.testclient import TestClient
 from sqlalchemy import insert, update
 
@@ -30,6 +32,8 @@ from spectio_server.store.db import open_db
 from spectio_server.store.runs import insert_run
 from spectio_server.store.schema import run_stages, runs, tasks
 from spectio_server.store.writer import Writer
+
+from ..conftest import free_port
 
 SYNTHETIC = Path(__file__).resolve().parents[4] / "tests" / "pipelines" / "synthetic"
 FIXTURES = Path(__file__).resolve().parents[4] / "tests" / "fixtures" / "engine-events"
@@ -218,3 +222,26 @@ def git_repo(tmp_path: Path) -> Path:
 def lone_host(monkeypatch: pytest.MonkeyPatch) -> None:
     """The API tests run as on one person's machine, whatever the test host is (SEC-P3T17-06)."""
     monkeypatch.setattr(app_mod, "shared_host", lambda: None)
+
+
+@pytest.fixture
+def served(settings: Settings, writer: Writer) -> Iterator[str]:
+    """The app on a real loopback port, as `spectio serve` runs it."""
+    app = create_app(settings, writer)
+    port = free_port()
+    config = uvicorn.Config(
+        app,
+        host="127.0.0.1",
+        port=port,
+        lifespan="off",
+        log_level="warning",
+        timeout_graceful_shutdown=1,
+    )
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        thread.join(0.01)
+    yield f"http://127.0.0.1:{port}"
+    server.should_exit = True
+    thread.join(10)

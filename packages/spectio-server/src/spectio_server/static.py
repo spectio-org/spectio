@@ -1,13 +1,15 @@
 """The screens: the built `web/dist` (P1 Task 19), served at `/` beside the API.
 
-Only the four screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}`) answer `index.html` (to
-`GET` and `HEAD`), and
+Only the screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}` and the report viewer
+`/runs/{run_id}/report`) answer `index.html` (to `GET` and `HEAD`), and
 only `/assets/<name>` answers a file: one plain name, a known web type, opened under `dist`
 with `O_NOFOLLOW` at each step, so no symlink is followed and no path leaves the directory.
 Hashed assets are cached for a year, `index.html` is revalidated, and every answer carries a
 CSP that allows only this origin and no inline script (Mantine sets inline styles, so styles
 allow them), with `Referrer-Policy: no-referrer` and `Cross-Origin-Opener-Policy: same-origin`
-(SEC-P3T19-03). `app.create_app` mounts these routes only with the API (inbox #80, #86).
+(SEC-P3T19-03). The report viewer alone adds `frame-src 'self'`, for the sandboxed report
+the API serves with the CSP of req. 14 (P1 Task 31). `app.create_app` mounts these routes only
+with the API (inbox #80, #86).
 """
 
 import os
@@ -24,6 +26,7 @@ from spectio_server.api.workflows import _open
 # TODO(P1 Task 21): the wheel ships the screens as package data; read them from there first.
 DIST = Path(__file__).resolve().parents[4] / "web" / "dist"
 ROUTES = ("/", "/runs", "/launch", "/runs/{run_id}")
+REPORT_ROUTE = "/runs/{run_id}/report"
 ASSET = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,199}")
 TYPES = {
     ".js": "text/javascript; charset=utf-8",
@@ -44,6 +47,7 @@ HEADERS = {
     "Referrer-Policy": "no-referrer",
     "Cross-Origin-Opener-Policy": "same-origin",
 }
+REPORT_HEADERS = {**HEADERS, "Content-Security-Policy": CSP + "; frame-src 'self'"}
 NOT_BUILT = (
     "The screens are not built: run "
     "`npm --prefix web ci --ignore-scripts && npm --prefix web run build`, "
@@ -69,15 +73,22 @@ def built(dist: Path) -> bool:
 
 
 def install(app: FastAPI, dist: Path) -> None:
-    def index() -> Response:
-        page = read(dist, "index.html")
-        if page is None:
+    def page(base: dict[str, str]) -> Response:
+        body = read(dist, "index.html")
+        if body is None:
             raise not_found("The screens are not built.")
-        headers = {**HEADERS, "Cache-Control": "no-cache"}
-        return Response(page, media_type="text/html; charset=utf-8", headers=headers)
+        headers = {**base, "Cache-Control": "no-cache"}
+        return Response(body, media_type="text/html; charset=utf-8", headers=headers)
+
+    def index() -> Response:
+        return page(HEADERS)
+
+    def report() -> Response:
+        return page(REPORT_HEADERS)
 
     for route in ROUTES:
         app.add_api_route(route, index, methods=["GET", "HEAD"], include_in_schema=False)
+    app.add_api_route(REPORT_ROUTE, report, methods=["GET", "HEAD"], include_in_schema=False)
 
     @app.api_route("/assets/{name}", methods=["GET", "HEAD"], include_in_schema=False)
     def asset(name: str) -> Response:

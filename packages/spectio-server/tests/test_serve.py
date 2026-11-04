@@ -250,8 +250,10 @@ def test_boot_freeze_pool_apart(settings: Settings) -> None:
         assert pool is booted.stage_files and pool is not booted.files
         for reader in readers:
             reader.start()
-        time.sleep(0.2)
-        with pytest.raises(Stalled):  # every route slot is held
+        deadline = time.monotonic() + 5
+        while booted.files._slots._value and time.monotonic() < deadline:
+            time.sleep(0.01)  # the 20 slots are taken (CR-P3T28-03 r4)
+        with pytest.raises(Stalled, match="every file reader is waiting"):  # refused at once
             booted.files.run(lambda: None, 1)
         assert pool.run(lambda: "read", 1) == "read"
     finally:

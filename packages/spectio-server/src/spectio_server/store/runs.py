@@ -12,6 +12,7 @@ from typing import Any
 from sqlalchemy import Connection, insert, null, select
 
 from spectio.runner.rundir import RunManifest, run_paths
+from spectio_server.files.results import results_dir
 from spectio_server.ids import new_id
 from spectio_server.store.schema import (
     environments,
@@ -55,10 +56,13 @@ def insert_run(
     workflow_version: str | None = None,
     failure: dict[str, Any] | None = None,
     native_id: str | None = None,
+    default_outdir: str | None = None,
 ) -> str:
     """Insert the run of manifest `m` and its launch 1; return the launch's ID. A Resume's child
     (`m.parent_run_id`, P1 Task 30) runs in its lineage's directories: those of its parent's row,
-    or, when the rebuild finds no such row, the parent's own."""
+    or, when the rebuild finds no such row, the parent's own. Its results directory (P1 Task 31)
+    follows from its launch directory and its parameters, `default_outdir` standing for a
+    Nextflow `outdir` it does not set (the schema's default)."""
     mine = {"created_at": now, "created_by": first(conn, principals)}
     project = first(conn, projects)
     location, engine = m.workflow.location, m.workflow.engine
@@ -128,6 +132,9 @@ def insert_run(
             origin=origin,
             launch_dir=launch_dir,
             work_dir=work_dir,
+            results_dir=results_dir(
+                engine, m.run_id, runs_root, launch_dir, m.params, default_outdir
+            ),
             **lineage,
             **{**mine, "created_at": m.created_at},
         )
