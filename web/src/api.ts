@@ -389,10 +389,6 @@ export async function getTaskFile(taskId: string, n: number, name: string, signa
   return response.text();
 }
 
-export function listResults(id: string, path: string, signal?: AbortSignal): Promise<Results> {
-  return call(`${run(id)}/results${query({ path })}`, { signal });
-}
-
 /** Where a results file is served: an HTML report with the sandbox CSP of req. 14 (for the
  * report viewer's iframe), any other file, or `download`, as an attachment. */
 export const resultUrl = (id: string, path: string, opts: { download?: boolean } = {}) =>
