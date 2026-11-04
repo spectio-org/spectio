@@ -14,7 +14,6 @@ results directory: unknown, or a run started from a terminal (`cli-observed`), w
 
 import logging
 from collections.abc import Iterator
-from datetime import UTC, datetime
 from typing import Any
 from urllib.parse import quote
 
@@ -24,7 +23,7 @@ from fastapi.responses import Response, StreamingResponse
 from spectio_server.api.models import Results
 from spectio_server.api.problems import Problem, not_found
 from spectio_server.api.runs_read import read, results_of, run_row
-from spectio_server.api.taskfiles import HEADERS, in_pool
+from spectio_server.api.taskfiles import HEADERS, _iso, in_pool
 from spectio_server.failure import dir_run_id
 from spectio_server.files import results as files
 from spectio_server.files.confine import NotAllowed
@@ -61,10 +60,6 @@ def _rel(path: str) -> Any:
         return files.check_rel(path)
     except NotAllowed as exc:
         raise Problem(422, "file-not-allowed", "File not allowed", str(exc)) from None
-
-
-def _iso(mtime: float | None) -> str | None:
-    return None if mtime is None else datetime.fromtimestamp(mtime, UTC).isoformat()
 
 
 def _reports(request: Request, run_id: str, where: files.Where, ended: bool) -> Any:
