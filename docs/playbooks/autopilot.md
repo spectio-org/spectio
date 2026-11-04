@@ -276,14 +276,14 @@ Thomas, in the session of 2026-11-04: review and document in larger batches, so 
    - **One fix round** for blockers and majors; more only while a security blocker or major is open (inbox #75). Defects among the minors are still fixed after approval; other minors go to the batch's follow-up list.
    - Short docs (`documentation-system.md` §3.5).
    - The orchestrator pushes, opens the PR with the `no-figure` label, and squash-merges it into `autopilot/integration` when CI is green. There is no promotion to `main` per task.
-2. **Sensitive paths.** These are listed in `SENSITIVE` in `.claude/workflows/p3-task.js`:
-   - in `spectio_server`: `api/`, `files/`, `migrations/`, `app.py`, `serve.py`, `static.py`, `bootstrap.py`;
-   - in `spectio`: `runner/`, `loginshell.py`, `config.py`;
-   - `.github/` and `tools/ci/`;
-   - dependency manifests;
-   - any path whose name contains auth, token, secret, session, sandbox, plugin or permission.
+2. **Sensitive paths.** The list is owned by `SENSITIVE` in `.claude/workflows/p3-task.js`. It covers:
+   - the HTTP surface, file access and spool input;
+   - run directories and stage config;
+   - the runner and the web views of untrusted content;
+   - engine bridges, CI and dependencies;
+   - names like auth or token.
 
-   The paths of every fix round count too.
+   The paths come from the worker and from `code-reviewer`'s own `git diff --name-only`. A sensitive path found in any round starts the security review on the whole task.
 3. **A batch** is 3 to 5 merged tasks, or fewer when a milestone ends. Then the orchestrator runs `p3-batch` (`.claude/workflows/p3-batch.js`) on the batch's range of `autopilot/integration`:
    - one `code-simplifier` pass on the batch diff; a change over 20 lines is re-reviewed by both reviewers, and reverted if they find a blocker or major;
    - the full Progress page, media and one figure;
@@ -291,4 +291,4 @@ Thomas, in the session of 2026-11-04: review and document in larger batches, so 
 
    Its PR is merged like a task PR. Then **one promotion PR to `main`** per batch.
 4. **Models.** `doc-writer`, `doc-reviewer` and `code-simplifier` run on sonnet. The build worker, `code-reviewer`, `security-reviewer` and `diagram-artist` keep their models.
-5. **Cost by kind.** The orchestrator records each `p3-task` run as `--kind build` and each `p3-batch` run as `--kind docs` (`tools/autopilot/budget.py record-cost`). Comparing the two kinds over the next batches shows what the change saves.
+5. **Cost by kind.** The orchestrator records each `p3-task` run as `--kind build-task` and each `p3-batch` run as `--kind docs` (`tools/autopilot/budget.py record-cost`). The 39 earlier `build` records are the old full flow, so the new kinds keep the comparison clean. Until three samples of a new kind exist, `budget.py` uses its default prior.

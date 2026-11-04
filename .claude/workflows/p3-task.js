@@ -19,15 +19,19 @@ const A = args
 const branch = `autopilot/${A.step}`
 const wt = `.claude/worktrees/${A.step}`
 const trailer = `End every commit message with these two lines:\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: ${A.session}`
-const gate = 'uv run pytest -q; uv run ruff check .; uv run ruff format --check .; uv run mypy packages; uv run lint-imports; uv lock --check'
+const gate = 'uv run pytest -q; uv run ruff check .; uv run ruff format --check .; uv run mypy packages; uv run lint-imports; uv lock --check; (cd web && npx vitest run && npx tsc --noEmit)'
 
-// Paths whose change always gets a security review (autopilot.md §11): the HTTP surface, file access,
-// the runner and login shell, config, migrations, CI, dependencies, and anything named like a secret.
+// The owner of the sensitive-path list (autopilot.md §11 links here). A change to any of these paths gets
+// a security review: the HTTP surface and how it is served, file access, what is read from run directories
+// and spool input, stage and lab config, the runner and login shell, migrations, the web views of untrusted
+// content, the engine bridges, CI, dependencies, and anything named like a secret.
 const SENSITIVE = [
-  /^packages\/spectio-server\/src\/spectio_server\/(api|files|migrations)\//,
-  /^packages\/spectio-server\/src\/spectio_server\/(app|serve|static|bootstrap)\.py$/,
-  /^packages\/spectio\/src\/spectio\/(runner\/|loginshell\.py|config\.py)/,
-  /^\.github\//, /^tools\/ci\//, /(^|\/)(pyproject\.toml|uv\.lock|package(-lock)?\.json)$/,
+  /^packages\/spectio-server\/src\/spectio_server\/(api|files|migrations|stages)\//,
+  /^packages\/spectio-server\/src\/spectio_server\/(app|serve|static|bootstrap|resume|rebuild)\.py$/,
+  /^packages\/spectio-server\/src\/spectio_server\/projector\/ingest\.py$/,
+  /^packages\/spectio\/src\/spectio\/(runner\/|loginshell\.py|config\.py|cli\/serve\.py)/,
+  /^web\/src\/(runs\/(ReportViewer|LogViewer|ResultsBrowser)|api)\./,
+  /^engine-bridges\//, /^\.github\//, /^tools\/ci\//, /(^|\/)(pyproject\.toml|uv\.lock|package(-lock)?\.json)$/,
   /auth|token|secret|session|sandbox|plugin|permission/i,
 ]
 const touched = new Set()
@@ -43,6 +47,7 @@ const FINDINGS = {
       defect: { type: 'boolean', description: 'true when it is a wrong result or regression in this step\'s own code, not style' },
     }, required: ['id', 'severity', 'summary', 'defect'] } },
     report: { type: 'string', description: 'the full review text, as it should be saved in the review record' },
+    changed_paths: { type: 'array', items: { type: 'string' }, description: 'git diff --name-only of the reviewed range, every line' },
   },
   required: ['verdict', 'findings', 'report'],
 }
@@ -69,11 +74,20 @@ build.changed_paths.forEach(p => touched.add(p))
 const reviewPrompt = (kind, range) => `${kind} the Spectio build step ${A.step} ("${A.task}" in docs/plans/P1-walking-skeleton.md) in the worktree ${wt} (branch ${branch}).
 Review the diff ${range}. Also in scope: ${A.extra || 'nothing else'}. Worker's report:\n${build.report}
 Test command: ${build.test_command}. Number your findings ${kind === 'Review' ? 'CR' : 'SEC'}-${A.step.replace('-', '').toUpperCase()}-NN, continuing after any IDs already in docs/reviews/code/${A.step}.md.`
-// verdicts[0] is the code review; verdicts[1], when present, the security review.
-const review = (range) => parallel([
-  () => agent(reviewPrompt('Review', range), { label: 'code-reviewer', phase: 'Review', agentType: 'code-reviewer', schema: FINDINGS }),
-  ...(needSecurity() ? [() => agent(reviewPrompt('Security-review', range), { label: 'security-reviewer', phase: 'Review', agentType: 'security-reviewer', schema: FINDINGS })] : []),
-])
+// verdicts[0] is the code review; verdicts[1], when present, the security review. The code reviewer also
+// lists the changed paths, so the trigger does not rest only on the worker's own list; a sensitive path
+// found that way starts the security review at once, on the whole step.
+const secReview = (range) => agent(reviewPrompt('Security-review', range), { label: 'security-reviewer', phase: 'Review', agentType: 'security-reviewer', schema: FINDINGS })
+const review = async (range) => {
+  const ran = needSecurity()
+  const out = await parallel([
+    () => agent(reviewPrompt('Review', range), { label: 'code-reviewer', phase: 'Review', agentType: 'code-reviewer', schema: FINDINGS }),
+    ...(ran ? [() => secReview(range)] : []),
+  ])
+  if (out[0]) (out[0].changed_paths || []).forEach(p => touched.add(p))
+  if (!ran && needSecurity()) out.push(await secReview(`${A.base}..HEAD`))
+  return out
+}
 const fix = async (items, why) => {
   const out = await agent(
     `In the worktree ${wt} (branch ${branch}), fix these review findings of step ${A.step} (${why}), test-first, then run the gate (${gate}) and commit:\n${items.map(f => `- ${f.id} (${f.severity}) ${f.summary} ${f.where || ''} Fix: ${f.fix || ''}`).join('\n')}
@@ -129,7 +143,7 @@ This is the per-task part of docs/specs/documentation-system.md §3.5; the figur
 - the review record docs/reviews/code/${A.step}.md with its CODE line (security=skipped when it did not run);
 - a short section for this task in the milestone's Progress page under docs/progress/W5/ (What changed in a few bullets, the CODE line, links to the review record and the owning spec); no figure;
 - the owning spec where behaviour was decided (new numbers marked assumed or [to be validated]; a question with no safe default goes to docs/reviews/inbox.md as a new entry with options, the recommendation assumed).
-Run python3 tools/docs/check.py and uvx --with mkdocs-material mkdocs build --strict. Write the PR body (title "${A.title}") to docs-pr-body.md at the worktree root but do not commit that file; it carries no figure: say "Figure: in the batch docs PR" under Docs, and the PR gets the no-figure label. Check it with tools/docs/check.py --only pr-body --labels no-figure. ${trailer}`,
+Run python3 tools/docs/check.py and uvx --with mkdocs-material mkdocs build --strict. Write the PR body (title "${A.title}") to docs-pr-body.md at the worktree root but do not commit that file; it carries no figure: say "Figure: in the batch docs PR" under Docs, and the PR gets the no-figure label. check it with \`python3 tools/docs/check.py --only pr-body --pr-title "${A.title}" --pr-body docs-pr-body.md --changed <(git diff --name-only ${A.base}..HEAD) --labels no-figure\`. ${trailer}`,
   { label: 'doc-writer', phase: 'Docs', agentType: 'doc-writer' })
 
 return { status: 'done', step: A.step, branch, worktree: wt, prBody: `${wt}/docs-pr-body.md`, build, rounds: rounds.length, security: needSecurity() ? 'ran' : 'skipped', docs }

@@ -1172,7 +1172,9 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
     - The fix loop has one round instead of two; security blockers and majors keep their extra rounds (inbox #75).
     - `code-simplifier` runs once per batch, and the promotion to `main` happens once per batch.
     - `doc-writer`, `doc-reviewer` and `code-simplifier` move to sonnet.
-    - Cost is recorded by kind: `build` per task, `docs` per batch.
-    - Where: [autopilot §11](../playbooks/autopilot.md#11-batches-of-p3-tasks-thomas-2026-11-04), `.claude/workflows/p3-task.js`, the new `.claude/workflows/p3-batch.js`, the `review-code` and `write-docs` skills, and `CLAUDE.md`.
+    - Cost is recorded by kind: `build-task` per task, `docs` per batch.
+    - Only P3 tasks change; other step kinds keep the full flow.
+    - Where: [autopilot §11](../playbooks/autopilot.md#11-batches-of-p3-tasks-thomas-2026-11-04), `.claude/workflows/p3-task.js` (it owns the sensitive-path list), the new `.claude/workflows/p3-batch.js`, and the `autopilot`, `review-code` and `write-docs` skills. Also `CLAUDE.md`, which Thomas asked to change in the same session ("Modifie accordingly", after the proposal named its two rules), and a note in dev-env §11.
+- **Reviewed.** One `code-reviewer` pass on the change. It returned changes: 6 majors and 6 minors, all fixed in the same PR. These were the orchestrator skill, the P3-only scope, an independent path list, more sensitive paths, the pr-body check command, simplifier failure handling, the web gate, cost kinds and the Progress status.
 - **Why the code review stays per task.** On a larger diff, review is less precise and fixes cost more.
 

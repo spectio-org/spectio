@@ -52,36 +52,46 @@ const DOCREVIEW = {
 
 phase('Simplify')
 const simplifyIn = A.steps.map(s => `docs/reviews/code/${s}.md`).join(', ')
-const simplify = await agent(
+let simplify = await agent(
   `Create a git worktree: \`git worktree add ${wt} -b ${branch} ${A.head}\` (from the repository root), and work only there.
 Simplify the code of batch ${A.batch} (steps ${steps}): only the diff ${A.base}..${A.head} under packages/ and web/src/, never behaviour, public names or tests of kept code.
 Consider the simplify: findings in ${simplifyIn}. Test command: ${gate}. Commit on the branch. ${trailer}
 Return result=none when nothing is worth changing, and the new HEAD.`,
   { label: 'code-simplifier', agentType: 'code-simplifier', schema: SIMPLIFY })
 
-// review-code step 5: a simplification that is more than trivial is re-reviewed once on its own range.
+// review-code step 5: a failed simplification is reverted and never blocks the batch; one that is more
+// than trivial is re-reviewed once on its own range, and reverted on a blocker or major.
+const REVERT = { type: 'object', properties: { head: { type: 'string' }, tests: { type: 'string', enum: ['pass', 'fail'] } }, required: ['head', 'tests'] }
+const revert = async (why) => {
+  const out = await agent(`In the worktree ${wt} (branch ${branch}), revert every commit after ${A.head} with git revert (never reset or force-push), because ${why}. Run the gate (${gate}) and return the new HEAD. ${trailer}`,
+    { label: 'revert simplify', phase: 'Simplify', agentType: 'general-purpose', schema: REVERT })
+  if (!out || out.tests !== 'pass') throw new Error(`the simplify revert did not leave the gate green (${why})`)
+  return { result: 'reverted', head: out.head, removed: 0, added: 0, tests: 'pass', report: `reverted: ${why}` }
+}
+if (!simplify) simplify = await revert('the simplifier returned nothing')
+else if (simplify.result === 'changed' && simplify.tests === 'fail') simplify = await revert('the tests failed after it')
+
 let rereview = null
 if (simplify.result === 'changed' && simplify.removed + simplify.added > 20) {
-  const prompt = (kind) => `${kind} the code-simplifier commits of batch ${A.batch} in the worktree ${wt}: the diff ${A.head}..HEAD only. They must not change behaviour, public names or tests. Test command: ${gate}.`
+  const prompt = (kind) => `${kind} the code-simplifier commits of batch ${A.batch} in the worktree ${wt}: the diff ${A.head}..HEAD only. They must not change behaviour, public names or tests. Test command: ${gate}. Number findings ${kind === 'Review' ? 'CR' : 'SEC'}-${A.batch.replace('-', '').toUpperCase()}-NN.`
   rereview = await parallel([
     () => agent(prompt('Review'), { label: 'code-reviewer', phase: 'Simplify', agentType: 'code-reviewer', schema: FINDINGS }),
     () => agent(prompt('Security-review'), { label: 'security-reviewer', phase: 'Simplify', agentType: 'security-reviewer', schema: FINDINGS }),
   ])
-  const bad = rereview.filter(Boolean).flatMap(v => v.findings).filter(f => f.severity === 'blocker' || f.severity === 'major')
-  if (bad.length) {
-    await agent(`In the worktree ${wt} (branch ${branch}), revert the code-simplifier commits after ${A.head} (git revert, never reset or force-push): their review found ${bad.map(f => `${f.id} ${f.summary}`).join('; ')}. Run the gate (${gate}). ${trailer}`,
-      { label: 'revert simplify', phase: 'Simplify', agentType: 'general-purpose' })
-  }
+  if (rereview.some(v => !v)) throw new Error('a reviewer of the simplification returned nothing')
+  const bad = rereview.flatMap(v => v.findings).filter(f => f.severity === 'blocker' || f.severity === 'major')
+  if (bad.length) simplify = await revert(`its review found ${bad.map(f => `${f.id} ${f.summary}`).join('; ')}`)
 }
 
 phase('Docs')
 const evidence = `Batch ${A.batch} (wave W5): steps ${steps}, merged into autopilot/integration between ${A.base} and ${A.head}. Worktree ${wt}, branch ${branch}.
 Per step: its review record docs/reviews/code/<step>.md (CODE line, findings), its short section in the milestone Progress page under docs/progress/W5/, its PR on GitHub. Use git log/diff ${A.base}..HEAD for the code.
-Simplifier: ${simplify.result} -${simplify.removed}/+${simplify.added} tests=${simplify.tests}${rereview ? `; re-review: ${rereview.filter(Boolean).map(v => v.verdict).join(', ')}` : ''}.`
+Simplifier: ${simplify.result} -${simplify.removed}/+${simplify.added} tests=${simplify.tests}. ${simplify.report}
+Re-review of the simplification: ${rereview ? rereview.map(v => `${v.verdict}: ${v.findings.map(f => `${f.id} ${f.severity} ${f.summary}`).join(' | ') || 'no findings'}`).join(' || ') : 'not needed'}.`
 const [docs] = await parallel([
   () => agent(`Write the batch docs for ${evidence}
-Follow docs/specs/documentation-system.md §3.5: complete the milestone Progress page from the per-task sections (Evidence, Figures and media, Findings and open questions, the follow-up list of minors left open), the guide or reference pages the batch needs, and the screenshots or casts for new screens and CLI flows (media-capture, docs/assets/media.yaml). A diagram-artist draws docs/assets/diagrams/${A.batch.toLowerCase()}-*_{light,dark}.png in parallel on the branch: embed it first under the !!! line.
-Run python3 tools/docs/check.py and uvx --with mkdocs-material mkdocs build --strict. Write the PR body (title "${A.title}") to docs-pr-body.md at the worktree root but do not commit that file; it needs a Markdown image line to the figure on raw.githubusercontent.com/spectio-org/spectio/<sha>/... and preview links https://pr-PR_NUMBER.spectio.pages.dev/...; check it with tools/docs/check.py --only pr-body. ${trailer}`,
+Follow docs/specs/documentation-system.md §3.5: save the re-review of the simplification, if any, to docs/reviews/code/${A.batch}.md with its CODE line; complete the milestone Progress page (keep status: running unless this batch closes the milestone) from the per-task sections (Evidence, Figures and media, Findings and open questions, the follow-up list of minors left open), the guide or reference pages the batch needs, and the screenshots or casts for new screens and CLI flows (media-capture, docs/assets/media.yaml). A diagram-artist draws docs/assets/diagrams/${A.batch.toLowerCase()}-*_{light,dark}.png in parallel on the branch: embed it first under the !!! line.
+Run python3 tools/docs/check.py and uvx --with mkdocs-material mkdocs build --strict. Write the PR body (title "${A.title}") to docs-pr-body.md at the worktree root but do not commit that file; it needs a Markdown image line to the figure on raw.githubusercontent.com/spectio-org/spectio/<sha>/... and preview links https://pr-PR_NUMBER.spectio.pages.dev/...; check it with \`python3 tools/docs/check.py --only pr-body --pr-title "${A.title}" --pr-body docs-pr-body.md --changed <(git diff --name-only ${A.base}..HEAD)\`. ${trailer}`,
     { label: 'doc-writer', phase: 'Docs', agentType: 'doc-writer' }),
   () => agent(`Draw one figure for ${evidence}
 It shows the mechanisms the batch added, together. Follow tools/diagrams/p3_t03_spool_reader.py: a script tools/diagrams/${A.batch.toLowerCase().replace('-', '_')}_<name>.py producing docs/assets/diagrams/${A.batch.toLowerCase()}-<name>_{light,dark}.{svg,png}, a docs/assets/media.yaml entry, pictograms not boxes, every label checked against the code. Render with SPECTIO_SKETCH_TTF=${A.font} uv run --no-project --with playwright python <script>; look at the PNGs. Commit on the branch. ${trailer}`,
