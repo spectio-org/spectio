@@ -630,3 +630,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Afterwards the node name was `vm`, no `alice` server was running and the stash list was empty.
 - PR #128 is open into `autopilot/integration` with the `screenshots` label. Inbox #104 is assumed; open minors are in FU-P3-37.
 - Thomas (2026-11-04 ~18:13 UTC): "Stop building à la fin étape actuelle". After PR #128 and its promotion, nothing more is launched; next when resumed: §15.3 Task 12 (reserve inbox #105, FU-P3-38).
+
+## 2026-11-04 · PR #128 merged: P1 Task 32 part two; promotion next, then paused
+
+- PR #128 squash-merged as 5f2725d with `Release-As: 0.0.1`. Every check was green on 99a0ace; the first `pr-body` run had failed on the placeholder body. Cost recorded: 40 USD.
+- Next: the promotion PR to `main`, then the autopilot stays paused (Thomas). P1 tasks merged: 19 of 32. PRs #111, #122 and #126 wait for Thomas.
