@@ -1,7 +1,8 @@
 """The screens: the built `web/dist` (P1 Task 19), served at `/` beside the API.
 
-Only the screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}` and the report viewer
-`/runs/{run_id}/report`) answer `index.html` (to `GET` and `HEAD`), and
+Only the screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}`, the report viewer
+`/runs/{run_id}/report` and the results browser `/runs/{run_id}/results`) answer `index.html`
+(to `GET` and `HEAD`), and
 only `/assets/<name>` answers a file: one plain name, a known web type, opened under `dist`
 with `O_NOFOLLOW` at each step, so no symlink is followed and no path leaves the directory.
 Hashed assets are cached for a year, `index.html` is revalidated, and every answer carries a
@@ -27,7 +28,14 @@ from spectio_server.api.workflows import _open
 
 # TODO(P1 Task 21): the wheel ships the screens as package data; read them from there first.
 DIST = Path(__file__).resolve().parents[4] / "web" / "dist"
-ROUTES = ("/", "/runs", "/launch", "/runs/{run_id}", "/runs/{run_id}/report")
+ROUTES = (
+    "/",
+    "/runs",
+    "/launch",
+    "/runs/{run_id}",
+    "/runs/{run_id}/report",
+    "/runs/{run_id}/results",
+)
 ASSET = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,199}")
 TYPES = {
     ".js": "text/javascript; charset=utf-8",

@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { FakeEventSource, NO_RESOURCES, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
+import { DETAIL, FakeEventSource, NO_RESOURCES, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -42,7 +42,7 @@ function detail(over: Record<string, unknown> = {}, more: Record<string, unknown
     [`${URL_}/stages`]: { items: [] },
     [`${URL_}/tasks`]: TASKS,
     [`${URL_}/logs?source=engine`]: () => new Response("N E X T F L O W  ~  version 26.10.4\n"),
-    [URL_]: { failures: [], failures_total: 0, ...run(over), params: { outdir: "results", depth: 3 } },
+    [URL_]: { ...DETAIL, ...run(over), params: { outdir: "results", depth: 3 } },
     ...more,
   });
 }
@@ -59,7 +59,7 @@ test("the header names the run, its state word and short id; the crumb is the ru
 });
 
 test("Cancel asks first in a modal dialog, returns focus, then posts :cancel", async () => {
-  const cancelled = vi.fn((_url: URL, _init?: RequestInit) => json(202, { ...run({ state: "cancelling" }), params: {} }));
+  const cancelled = vi.fn((_url: URL, _init?: RequestInit) => json(202, { ...DETAIL, ...run({ state: "cancelling" }) }));
   detail({}, { [`${URL_}:cancel`]: cancelled });
   app(`/runs/${ID}`);
   const cancel = await screen.findByRole("button", { name: "Cancel run" });
@@ -132,7 +132,7 @@ test("with stages, the stage list and the header line", async () => {
 test("the stages note says why declared stages were not applied, (P1 Task 27)", async () => {
   const note = "2 lab overlays match this run (a.spectio.yml, b.spectio.yml): none was applied.";
   detail({ summary: { tasks: { done: 0, total: 0, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" } }, {
-    [URL_]: { ...run(), params: {}, stages_note: note },
+    [URL_]: { ...DETAIL, ...run(), stages_note: note },
   });
   app(`/runs/${ID}`);
   expect(await screen.findByRole("note")).toHaveTextContent(note);
@@ -142,7 +142,7 @@ test("the stages note says why declared stages were not applied, (P1 Task 27)", 
 test("the stages note over detected stages", async () => {
   const note = "The stages of spectio.yml were not applied: NFCORE:QC matches 2 stages.";
   detail({}, {
-    [URL_]: { ...run(), params: {}, stages_note: note },
+    [URL_]: { ...DETAIL, ...run(), stages_note: note },
     [`${URL_}/stages`]: { items: [{ id: "detected:1", position: 1, name: "QC", source: "detected", state: "running", task_counts: {} }] },
   });
   app(`/runs/${ID}`);
@@ -179,7 +179,7 @@ test("the parameters table, and a log loaded on click", async () => {
 
 test("a frame for this run refetches it; none once it is terminal", async () => {
   let state = "running";
-  const mock = detail({}, { [URL_]: () => json(200, { failures: [], failures_total: 0, ...run({ state }), params: {} }) });
+  const mock = detail({}, { [URL_]: () => json(200, { ...DETAIL, ...run({ state }), params: {} }) });
   app(`/runs/${ID}`);
   await screen.findByRole("heading", { level: 1 });
   const count = () => fetched(mock).filter((u) => u === URL_).length;

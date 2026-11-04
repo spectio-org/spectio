@@ -5,7 +5,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { NO_RESOURCES, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
+import { DETAIL, NO_RESOURCES, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -44,7 +44,7 @@ function detail(over: Record<string, unknown> = {}, more: Record<string, unknown
     [`${URL_}/tasks?process=${encodeURIComponent(ALIGN)}`]: { items: [task(1), task(2, "running")], next: "c2" },
     [`${URL_}/tasks`]: { items: [task(1), task(2, "running")], next: null },
     [`${URL_}/logs`]: () => new Response(""),
-    [URL_]: { failures: [], failures_total: 0, ...run(over), params: {} },
+    [URL_]: { ...DETAIL, ...run(over), params: {} },
     "/api/v1/tasks/": { task_id: "tsk_1", attempt: 1, work_dir: null, native_id: null, files: [] },
     ...more,
   });

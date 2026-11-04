@@ -606,6 +606,60 @@ media:
       - docs/assets/diagrams/p3-t32-failed-job_dark.svg
       - docs/assets/diagrams/p3-t32-failed-job_light.png
       - docs/assets/diagrams/p3-t32-failed-job_dark.png
+  - id: p3-t32b-run-tools
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t32b_run_tools.py
+    outputs:
+      - docs/assets/diagrams/p3-t32b-run-tools_light.svg
+      - docs/assets/diagrams/p3-t32b-run-tools_dark.svg
+      - docs/assets/diagrams/p3-t32b-run-tools_light.png
+      - docs/assets/diagrams/p3-t32b-run-tools_dark.png
+  - id: app-report-viewer
+    kind: screenshot
+    # as app-run-detail, with the run's multiqc/multiqc_report.html replaced by the gunzipped MultiQC fixture
+    # tests/fixtures/results/multiqc-1.35_custom_content_report.html.gz (P1 Task 32 part two, tools/media/README.md)
+    generator: python3 tools/media/shots.py run --shot app-report-viewer --theme both
+    outputs: [docs/assets/shots/app-report-viewer_light.webp, docs/assets/shots/app-report-viewer_dark.webp]
+  - id: app-report-viewer-phone
+    kind: screenshot
+    # as app-report-viewer, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-report-viewer-phone --theme both
+    outputs: [docs/assets/shots/app-report-viewer-phone_light.webp, docs/assets/shots/app-report-viewer-phone_dark.webp]
+  - id: app-run-results
+    kind: screenshot
+    # live, as app-run-detail, scrolled to Results and reports (P1 Task 32 part two)
+    generator: python3 tools/media/shots.py run --shot app-run-results --theme both
+    outputs: [docs/assets/shots/app-run-results_light.webp, docs/assets/shots/app-run-results_dark.webp]
+  - id: app-run-results-phone
+    kind: screenshot
+    # as app-run-results, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-run-results-phone --theme both
+    outputs: [docs/assets/shots/app-run-results-phone_light.webp, docs/assets/shots/app-run-results-phone_dark.webp]
+  - id: app-results-browser
+    kind: screenshot
+    # live, as app-run-detail, the results browser in multiqc/ (P1 Task 32 part two)
+    generator: python3 tools/media/shots.py run --shot app-results-browser --theme both
+    outputs: [docs/assets/shots/app-results-browser_light.webp, docs/assets/shots/app-results-browser_dark.webp]
+  - id: app-run-resume
+    kind: screenshot
+    # live, as app-run-detail-failed, with Resume clicked: the dialog (P1 Task 32 part two)
+    generator: python3 tools/media/shots.py run --shot app-run-resume --theme both
+    outputs: [docs/assets/shots/app-run-resume_light.webp, docs/assets/shots/app-run-resume_dark.webp]
+  - id: app-run-resume-phone
+    kind: screenshot
+    # as app-run-resume, at 390 x 844: the bottom sheet
+    generator: python3 tools/media/shots.py run --shot app-run-resume-phone --theme both
+    outputs: [docs/assets/shots/app-run-resume-phone_light.webp, docs/assets/shots/app-run-resume-phone_dark.webp]
+  - id: app-launch-copy
+    kind: screenshot
+    # live, /launch?from=SPECTIO_DEMO_FAILED_RUN: Copy to a new launch (P1 Task 32 part two)
+    generator: python3 tools/media/shots.py run --shot app-launch-copy --theme both
+    outputs: [docs/assets/shots/app-launch-copy_light.webp, docs/assets/shots/app-launch-copy_dark.webp]
+  - id: app-launch-copy-phone
+    kind: screenshot
+    # as app-launch-copy, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-launch-copy-phone --theme both
+    outputs: [docs/assets/shots/app-launch-copy-phone_light.webp, docs/assets/shots/app-launch-copy-phone_dark.webp]
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines

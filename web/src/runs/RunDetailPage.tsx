@@ -29,6 +29,7 @@ import { type Detail, DetailSheet } from "./DetailSheet";
 import { FailureSummary } from "./FailureSummary";
 import { LogLines, LogViewer } from "./LogViewer";
 import { bytes, nearLimit, resourcesLine, seconds } from "./resources";
+import { ResultsSection } from "./ResultsSection";
 import { RunHeader, runDirectory } from "./RunHeader";
 import { NearLimit, ProcessName, Word, runName, taskLabel } from "./RunState";
 import {
@@ -46,7 +47,7 @@ import {
   words,
 } from "./stateWord";
 
-const RUN_ID = /^run_[0-7][0-9A-HJKMNP-TV-Z]{25}$/; // api §7, as the server checks it
+export const RUN_ID = /^run_[0-7][0-9A-HJKMNP-TV-Z]{25}$/; // api §7, as the server checks it
 const CANCELLABLE = new Set(["queued", "running"]);
 const LOGS: { source: LogSource; label: string }[] = [
   { source: "head-out", label: "Head output" },
@@ -439,6 +440,7 @@ function SummaryAside({ run, server, onLogs }: { run: RunDetail; server: ServerV
           </p>
         </FoldSection>
       )}
+      {run.origin !== "cli-observed" && <ResultsSection run={run} />}
       <FoldSection id="params" screen="run" icon={ICONS.sliders} title="Parameters" summary={`${params} set at launch`} defaultOpen={false} card>
         <ParamsList params={run.params} />
       </FoldSection>

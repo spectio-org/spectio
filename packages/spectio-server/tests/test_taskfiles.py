@@ -8,6 +8,7 @@ logger plugin that sends them (P1 Task 7) is not built yet.
 """
 
 import os
+import re
 import stat
 import time
 from collections import Counter
@@ -27,7 +28,7 @@ from spectio_sdk.events import SpoolEvent
 from spectio_server.api.taskfiles import load_attempt
 from spectio_server.files import confine
 from spectio_server.files.confine import NotAllowed, NotFound, Root, list_confined, open_confined
-from spectio_server.files.redact import HIDDEN, redact_command_run, strip_escapes
+from spectio_server.files.redact import FORMAT_CHARS, HIDDEN, redact_command_run, strip_escapes
 from spectio_server.files.taskfiles import AttemptFiles, list_task_files, read_task_file
 from spectio_server.projector.ingest import ingest
 from spectio_server.projector.snakemake import MAX_LOGS
@@ -350,6 +351,15 @@ def test_req13_strip_bidi_and_8bit_escapes() -> None:
     text = "a\u202eb\u2066c\u200bd\ufeffe\x9b31mf\x9d8;;http://x.example\x07g\x9b1;2Hh\n"
     assert strip_escapes(text) == "abcdefgh\n"
     assert strip_escapes("tab\tkept, é kept\n") == "tab\tkept, é kept\n"
+
+
+def test_req13_web_refuses_the_same_format_chars() -> None:
+    """The web client's `FORMAT_CHARS` (`web/src/runs/ReportViewer.tsx`) is the server's, so a
+    path the server refuses is never shown before it answers (SEC-P3T32B-05, FU-P3-37)."""
+    viewer = Path(__file__).resolve().parents[3] / "web" / "src" / "runs" / "ReportViewer.tsx"
+    found = re.search(r'export const FORMAT_CHARS = "([^"]*)";', viewer.read_text())
+    assert found is not None
+    assert found[1].replace("\\\\", "\\") == FORMAT_CHARS
 
 
 def test_req13_redact_fails_closed() -> None:

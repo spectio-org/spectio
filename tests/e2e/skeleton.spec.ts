@@ -50,7 +50,10 @@ function mockRun(over: object = {}) {
     head: { session: `spectio-${RUN}`, node: 'login1', alive: true, exit_code: null },
     task_counts: { succeeded: 24, running: 3 },
     summary: { tasks: { done: 24, total: 27, failed: 0, cached: 0 }, last_failure: null, stage_mode: 'quarters' },
-    params: {}, stages_note: null, ...over,
+    params: {}, stages_note: null,
+    // the fields of P1 Tasks 29 to 31 (schema RunDetail)
+    failures: [], failures_total: 0, command: null, parent_run_id: null, resumed_as: [],
+    actions: { resume: { allowed: false, reason: 'running' } }, results_dir: null, ...over,
   };
 }
 
@@ -243,7 +246,7 @@ const FAILED_TASK = {
 const jobFile = (name: string, kind: string, over: object = {}) =>
   ({ name, kind, size: 2458, mtime: '2026-10-31T08:42:00+00:00', state: 'present', note: null, ...over });
 
-async function mockFailed(page: Page) {
+async function mockFailed(page: Page, over: object = {}) {
   await page.route(`**/api/v1/runs/${RUN}`, (r) => r.fulfill(json({
     ...mockRun({
       state: 'failed', ended_at: '2026-10-31T08:50:00+00:00',
@@ -261,6 +264,7 @@ async function mockFailed(page: Page) {
       work_dir: WORKDIR,
     }],
     failures_total: 1,
+    ...over,
   })));
   await page.route(`**/api/v1/runs/${RUN}/stages`, (r) => r.fulfill(json({ items: [] })));
   await page.route(`**/api/v1/runs/${RUN}/processes`, (r) =>
@@ -374,16 +378,144 @@ test('Launch: a wrong value shows its error on the field; each row says required
   await expect(page.getByRole('button', { name: 'Launch', exact: true }).last()).toHaveAttribute('aria-disabled', 'true');
 });
 
-// The rest of Task 32's plan waits for its routes (Thomas's order of 2026-10-31 skips Tasks 30 and 31).
-test('Resume asks, creates a child, and both runs link to each other', async () => {
-  test.fixme(true, 'TODO(P1 Task 30): POST /runs/{id}:resume is not built');
+// P1 Task 32 part two: Resume, Copy to a new launch, results and reports, on Tasks 30 and 31's
+// routes, answered by route mocks.
+const CHILD = 'run_01JBC6Q4ZK7M8N2P3R5S7T9C2D';
+
+/** Opens the run header's Facts when they are folded (the phone folds them, MLiteRunDetail). */
+async function openFacts(page: Page) {
+  const button = page.getByRole('region', { name: 'Facts' }).locator('.sp-fold-btn');
+  if ((await button.getAttribute('aria-expanded')) === 'false') await button.click();
+}
+
+test('Resume asks, creates a child, and both runs link to each other', async ({ page }) => {
+  await mockFailed(page, { actions: { resume: { allowed: true, reason: null } } });
+  const child = mockRun({ id: CHILD, name: 'rnaseq-mock-T9C2D', state: 'queued', started_at: null, parent_run_id: RUN });
+  let posted: unknown = null;
+  await page.route(`**/api/v1/runs/${RUN}:relaunch`, (r) => {
+    posted = r.request().postDataJSON();
+    return r.fulfill({ ...json(child), status: 201 });
+  });
+  await page.route(`**/api/v1/runs/${CHILD}`, (r) => r.fulfill(json(child)));
+  await page.route(`**/api/v1/runs/${CHILD}/stages`, (r) => r.fulfill(json({ items: [] })));
+  await page.route(`**/api/v1/runs/${CHILD}/processes`, (r) => r.fulfill(json({ items: [] })));
+  await page.goto(`/runs/${RUN}`);
+  const resume = page.locator('header').getByRole('button', { name: 'Resume', exact: true });
+  await resume.click();
+  const dialog = page.getByRole('dialog', { name: 'Resume this run?' });
+  await expect(dialog).toHaveAttribute('aria-modal', 'true');
+  await expect(dialog).toContainText('Nextflow runs again with -resume and reuses the 24 tasks that finished. This run stays Failed.');
+  await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(resume).toBeFocused();
+
+  await resume.click();
+  await dialog.getByRole('button', { name: 'Resume', exact: true }).click();
+  await expect(page).toHaveURL(new RegExp(`/runs/${CHILD}$`));
+  expect(posted).toEqual({ mode: 'resume' });
+  await openFacts(page);
+  await expect(page.getByRole('region', { name: 'Facts' }).getByRole('link', { name: 'run 7T9V1W' })).toHaveAttribute('href', `/runs/${RUN}`);
+
+  // the parent, now with its child
+  await page.unroute(`**/api/v1/runs/${RUN}`);
+  await mockFailed(page, { actions: { resume: { allowed: false, reason: 'resume_in_progress' } }, resumed_as: [{ id: CHILD, name: 'rnaseq-mock-T9C2D', state: 'running' }] });
+  await page.goto(`/runs/${RUN}`);
+  await openFacts(page);
+  await expect(page.getByRole('region', { name: 'Facts' }).getByRole('link', { name: 'rnaseq-mock-T9C2D · Running' })).toHaveAttribute('href', `/runs/${CHILD}`);
+  await expect(resume).toHaveAccessibleDescription('A resume of this run is already running: rnaseq-mock-T9C2D.');
 });
-test('a refused Resume stays visible, aria-disabled, with its reason as text', async () => {
-  test.fixme(true, 'TODO(P1 Task 30): actions.resume is not served');
+
+test('a refused Resume stays visible, aria-disabled, with its reason as text', async ({ page }) => {
+  await mockFailed(page, {
+    head: { session: `spectio-${RUN}`, node: 'login2', alive: false, exit_code: 1 },
+    actions: { resume: { allowed: false, reason: 'head_unverified' } },
+  });
+  await page.goto(`/runs/${RUN}`);
+  const resume = page.locator('header').getByRole('button', { name: 'Resume', exact: true });
+  await expect(resume).toHaveAttribute('aria-disabled', 'true');
+  const why = 'The head may still be running on login2, and Spectio cannot check it from login1. Resume when it has ended.';
+  await expect(resume).toHaveAccessibleDescription(why);
+  await expect(page.locator('header').getByText(why)).toBeVisible();
+  await resume.focus(); // still reachable by keyboard; Enter opens nothing
+  await page.keyboard.press('Enter');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
 });
-test('Copy to a new launch opens the form prefilled with the non-default values listed', async () => {
-  test.fixme(true, 'TODO(P1 Task 30): GET /runs/{id}:launch-template is not built');
+
+test('Copy to a new launch opens the form prefilled with the non-default values listed', async ({ page }) => {
+  await mockFailed(page);
+  await page.route(`**/api/v1/runs/${RUN}:launch-template`, (r) => r.fulfill(json({
+    workflow: { location: '/g/demo-lab/pipelines/rnaseq', revision: null, engine: 'nextflow' },
+    profiles: ['test'],
+    params: { input: 'samplesheet.csv', outdir: '/g/demo-lab/rnaseq/a', depth: 3, custom_config_base: '/g/shared/configs' },
+    non_default: ['input', 'outdir', 'custom_config_base'],
+    code_loading: [{ field: 'params.custom_config_base', value: '/g/shared/configs', writable_by_others: true }],
+  })));
+  await page.route('**/api/v1/workflows:inspect*', (r) => r.fulfill(json({
+    location: '/g/demo-lab/pipelines/rnaseq', revision: null, engine: 'nextflow', engine_files: ['main.nf'], name: 'rnaseq', version: '3.27.0',
+    engine_version: '26.10.4', engine_versions: { nextflow: '26.10.4' }, schema_source: 'nextflow_schema.json', profiles: ['test'],
+    schema: { type: 'object', required: ['input'], properties: {
+      input: { type: 'string' }, outdir: { type: 'string', default: 'results' }, depth: { type: 'integer', default: 3 },
+      custom_config_base: { type: 'string' } } },
+  })));
+  await page.goto(`/runs/${RUN}`);
+  await page.locator('header').getByRole('link', { name: 'Copy to a new launch' }).click();
+  await expect(page).toHaveURL(new RegExp(`/launch\\?from=${RUN}$`));
+  await expect(page.getByText(
+    "Prefilled from rnaseq-mock (7T9V1W): 3 values differ from the pipeline's defaults: input, outdir, custom_config_base.",
+  )).toBeVisible();
+  await expect(page.getByRole('textbox', { name: /^Pipeline/ })).toHaveValue('/g/demo-lab/pipelines/rnaseq');
+  await expect(page.getByRole('textbox', { name: 'input (required)' })).toHaveValue('samplesheet.csv');
+  await expect(page.getByRole('combobox', { name: 'Profile' })).toHaveValue('test');
+  await expect(page.getByText("Warning: same as rnaseq-mock. Change it to keep the two runs' results apart.")).toBeVisible();
+  await expect(page.getByText('custom_config_base: loads code or configuration · writable by others')).toBeVisible();
+  await page.getByRole('button', { name: 'Clear and start empty' }).click();
+  await expect(page).toHaveURL(/\/launch$/);
+  await expect(page.getByRole('textbox', { name: /^Pipeline/ })).toHaveValue('');
 });
-test("a report opens in the viewer with its 'Untrusted report' banner", async () => {
-  test.fixme(true, 'TODO(P1 Task 32 part two): no Results section opens it yet; the viewer itself: report.spec.ts');
+
+const RESULTS = '/g/demo-lab/rnaseq/2026-10-25';
+const MQC = 'multiqc/multiqc_report.html';
+
+async function mockResults(page: Page) {
+  await mockFailed(page, { results_dir: RESULTS });
+  const listing = (path: string, entries: object[]) => json({
+    root: RESULTS, path, exists: true, truncated: false, entries,
+    reports: [{ path: MQC, title: 'MultiQC report', group: 'multiqc' }, { path: 'fastqc/S01_fastqc.html', title: 'S01_fastqc', group: 'fastqc' }],
+  });
+  const mtime = '2026-10-31T08:42:00+00:00';
+  await page.route(`**/api/v1/runs/${RUN}/results`, (r) => r.fulfill(listing('', [
+    { name: 'fastqc', type: 'dir', size: null, mtime }, { name: 'multiqc', type: 'dir', size: null, mtime },
+  ])));
+  await page.route(`**/api/v1/runs/${RUN}/results?path=fastqc`, (r) => r.fulfill(listing('fastqc', [
+    { name: 'S01_fastqc.html', type: 'file', size: 626688, mtime }, { name: 'versions.yml', type: 'file', size: 84, mtime },
+    { name: 'latest', type: 'link_outside', size: null, mtime },
+  ])));
+  await page.route(`**/api/v1/runs/${RUN}/results/raw/**`, (r) =>
+    r.fulfill({ status: 200, contentType: 'text/html', body: '<!doctype html><title>r</title><h1>A report from the pipeline</h1>' }));
+}
+
+test("a report opens in the viewer with its 'Untrusted report' banner", async ({ page }) => {
+  await mockResults(page);
+  await page.goto(`/runs/${RUN}`);
+  const results = page.getByRole('region', { name: 'Results and reports' });
+  await expect(results.getByText(RESULTS)).toBeVisible();
+  await results.getByRole('link', { name: 'Open the MultiQC report' }).click();
+  await expect(page).toHaveURL(new RegExp(`/runs/${RUN}/report\\?path=`));
+  await expect(page.getByText(`Untrusted report: ${MQC}`)).toBeVisible();
+  const frame = page.frameLocator('iframe[title$="sandboxed"]');
+  await expect(frame.getByRole('heading', { name: 'A report from the pipeline' })).toBeVisible();
+  await expect(page.locator('iframe[title$="sandboxed"]')).toHaveAttribute('sandbox', 'allow-scripts allow-downloads');
+});
+
+test('the results browser shows one folder; an HTML file opens in the viewer, another downloads', async ({ page }) => {
+  await mockResults(page);
+  await page.goto(`/runs/${RUN}/results?path=fastqc`);
+  await expect(page.getByRole('heading', { level: 1, name: 'Results' })).toBeVisible();
+  await expect(page.getByRole('navigation', { name: 'Folder' }).getByRole('link', { name: 'results' })).toBeVisible();
+  const table = page.getByRole('table', { name: 'fastqc' });
+  await expect(table.getByRole('link', { name: 'versions.yml' })).toHaveAttribute('href', `/api/v1/runs/${RUN}/results/raw/fastqc/versions.yml?download=true`);
+  await expect(table.getByText('link outside the results directory')).toBeVisible();
+  await table.getByRole('link', { name: 'S01_fastqc.html' }).click();
+  await expect(page.getByText('Untrusted report: fastqc/S01_fastqc.html')).toBeVisible();
 });

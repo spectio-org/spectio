@@ -5,7 +5,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { VERSION, app, run, serve, stubStream, viewport } from "../testing";
+import { DETAIL, VERSION, app, run, serve, stubStream, viewport } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -54,6 +54,7 @@ function failed(over: Record<string, unknown> = {}, more: Record<string, unknown
       files: [{ name: ".command.log", kind: "job_log", size: 4, mtime: null, state: "present", note: null }],
     },
     [URL_]: {
+      ...DETAIL,
       ...run({
         state: "failed",
         ended_at: "2026-10-31T08:00:00+00:00",
