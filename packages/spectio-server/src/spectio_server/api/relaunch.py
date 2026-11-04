@@ -40,7 +40,7 @@ from spectio.runner.rundir import (
 from spectio_server.api import models
 from spectio_server.api.problems import Invalid, Problem
 from spectio_server.api.runs_read import context, read, run_detail, run_row
-from spectio_server.api.workflows import inspect_dir, resolve
+from spectio_server.api.workflows import inspect_dir, resolve, schema_defaults
 from spectio_server.failure import dir_run_id
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.ids import new_id
@@ -212,25 +212,6 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
 
 
 # --- Copy to a new launch -----------------------------------------------------------------
-
-
-def schema_defaults(schema: dict[str, Any] | None) -> dict[str, Any]:
-    """The `default` of each parameter, at the top or in a group of `$defs` / `definitions`
-    (the nf-core layout)."""
-    found: dict[str, Any] = {}
-    if not isinstance(schema, dict):
-        return found
-    groups = [schema]
-    for key in ("$defs", "definitions"):
-        if isinstance(schema.get(key), dict):
-            groups += [g for g in schema[key].values() if isinstance(g, dict)]
-    for group in groups:
-        properties = group.get("properties")
-        if isinstance(properties, dict):
-            for name, prop in properties.items():
-                if isinstance(prop, dict) and "default" in prop:
-                    found.setdefault(name, prop["default"])
-    return found
 
 
 MAX_LINK_HOPS = 40  # Linux's MAXSYMLINKS

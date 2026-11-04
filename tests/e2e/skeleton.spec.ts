@@ -385,5 +385,5 @@ test('Copy to a new launch opens the form prefilled with the non-default values 
   test.fixme(true, 'TODO(P1 Task 30): GET /runs/{id}:launch-template is not built');
 });
 test("a report opens in the viewer with its 'Untrusted report' banner", async () => {
-  test.fixme(true, 'TODO(P1 Task 31): results and reports are not served');
+  test.fixme(true, 'TODO(P1 Task 32 part two): no Results section opens it yet; the viewer itself: report.spec.ts');
 });

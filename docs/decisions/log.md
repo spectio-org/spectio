@@ -1138,3 +1138,15 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Recommended, not applied:** `--unlock` only with a host and lock-age check before any shared deployment (#99 rule 6 (c)); the engines' own option forms, a bounded walk of a local location, `command.cwd` and hidden secrets (#99 rules 7 and 8 (b)); resume the parent's recorded commit (#99 rule 9 (b)). All in follow-up FU-P3-35.
 - **Not yet applied:** P1 Task 30's interface, at the next `/apply-findings` ([P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-30)).
 - **Open:** Step 4 on `slurm-mini` (P1 Task 22), the CSRF token (P1 Task 16), the screens (P1 Task 32 part two). The rest is listed on [P3-M8](../progress/W5/P3-M8.md#findings-and-open-questions): FU-P3-35.
+
+## 2026-11-04 — Results and reports as built, written into api §5, dev-env §15.3 req. 13 and 14 and ui-spec §4.4 (P3 Task 31, inbox #100)
+
+- **Context.** P3 Task 31 built a run's results and reports, read only ([P1 Task 31](../plans/P1-walking-skeleton.md#task-31-results-and-reports)): `GET /runs/{id}/results`, `GET /runs/{id}/results/raw/{path}`, `results_dir` on the run, `GET /runs/{id}/logs?follow=true` and the report viewer `/runs/{id}/report`. It closed SEC-P3T28-05 and FU-P3-31, and hid scheduler directive values in `.command.run` (inbox #94 rule 8, option b). Seven review rounds found that text checks on `outdir` could be bypassed by aliases (SEC-P3T31-01 r1), that `~/.nextflow` and `~/.ssh` could be served (SEC-P3T31-03 r2), and that the directive hiding first failed open, then became quadratic (SEC-P3T31-09 r5, SEC-P3T31-11 r6, blocker).
+- **Applied (assumed — standing rule, [inbox #100](../reviews/inbox.md#100-assumed-results-and-reports-as-built-p3-task-31); [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** dated notes; no section number changed.
+    - [Api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), note 2026-11-04: `results_dir`, the listing, the raw file, the problems, `?follow=true` (#100 rules 1, 2, 7, 8 and 11).
+    - [Dev-env §15.3 req. 13](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), note 2026-11-04: the checks at launch and when served, published links, names, whole files, `.command.run` (#100 rules 1 to 6, 12 and 13).
+    - Req. 14, note 2026-11-04: headers, the viewer, search and streams, MultiQC under the sandbox (#100 rules 8 to 11 and 14).
+    - [Ui-spec §4.4](../specs/ui-spec.md#44-run-detail), note 2026-11-04: the report viewer's page (#100 rule 10).
+- **Recommended, not applied:** a download cap and pool of their own (#100 rule 2 (c)); hiding whole directive lines and failing closed after a here-document in `$(…)` (#100 rules 12 and 13 (b)). Both in follow-up FU-P3-36.
+- **Not yet applied:** P1 Task 31's interface, at the next `/apply-findings` ([P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-31)).
+- **Open:** the megatest MultiQC check (P1 Task 22); the Results section on screen (P1 Task 32 part two). The rest is listed on [P3-M8](../progress/W5/P3-M8.md#findings-and-open-questions): FU-P3-36.

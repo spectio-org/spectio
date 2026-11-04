@@ -34,6 +34,7 @@ from spectio_server.api.workflows import (
     inspect_dir,
     refuse_control,
     resolve,
+    schema_defaults,
 )
 from spectio_server.ids import new_id
 from spectio_server.store.runs import EngineConflict, first, insert_run
@@ -198,6 +199,7 @@ def _insert(
     now: datetime,
     runs_root: Path,
 ) -> None:
+    outdir = schema_defaults(found.schema).get("outdir")
     try:
         launch_id = insert_run(
             conn,
@@ -209,6 +211,7 @@ def _insert(
             origin="ui",
             workflow_name=found.name,
             workflow_version=found.version,
+            default_outdir=outdir if isinstance(outdir, str) else None,
         )
     except EngineConflict as exc:
         raise Invalid(

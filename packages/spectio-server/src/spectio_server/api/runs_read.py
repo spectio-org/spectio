@@ -71,6 +71,7 @@ _RUN_COLUMNS = (
     runs.c.parent_run_id,
     runs.c.lineage_id,
     runs.c.launch_dir,
+    runs.c.results_dir,
     workflows.c.engine,
     workflows.c.location,
     workflows.c.name.label("workflow_name"),
@@ -213,7 +214,14 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
         "parent_run_id": row.parent_run_id,
         "resumed_as": resumed_as(conn, run_id),
         "actions": {"resume": {"allowed": reason is None, "reason": reason}},
+        "results_dir": results_of(row),
     }
+
+
+def results_of(row: Row[Any]) -> str | None:
+    """The run's results directory, or None: unknown, or a run started from a terminal, whose
+    files Spectio does not serve in 0.0.1 (P1 Task 31)."""
+    return None if row.origin == "cli-observed" else row.results_dir
 
 
 # --- Cursors: base64url of [sort value, id], or of the id alone when it is the sort key -----

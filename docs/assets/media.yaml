@@ -590,6 +590,14 @@ media:
       - docs/assets/diagrams/p3-t30-resume-lineage_dark.svg
       - docs/assets/diagrams/p3-t30-resume-lineage_light.png
       - docs/assets/diagrams/p3-t30-resume-lineage_dark.png
+  - id: p3-t31-results
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t31_results.py
+    outputs:
+      - docs/assets/diagrams/p3-t31-results_light.svg
+      - docs/assets/diagrams/p3-t31-results_dark.svg
+      - docs/assets/diagrams/p3-t31-results_light.png
+      - docs/assets/diagrams/p3-t31-results_dark.png
   - id: p3-t32-failed-job
     kind: diagram
     generator: python3 tools/diagrams/p3_t32_failed_job.py

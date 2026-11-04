@@ -145,6 +145,20 @@ def test_resume_failed_creates_child(
     }
 
 
+def test_resume_keeps_the_schema_default_results_dir(
+    authed_client: TestClient, writer: Writer, settings: Settings, synthetic: Path
+) -> None:
+    """A Resume changes no parameter and runs in its lineage's launch directory: its results
+    directory is its parent's, also when `outdir` came from the schema's default (CR-P3T31-04)."""
+    run_id = launch(authed_client, synthetic / "nextflow")
+    end(writer, settings, run_id)
+    child = resume(authed_client, run_id).json()["id"]
+    found = {r.id: r.results_dir for r in rows(writer, runs)}
+    assert found[run_id] == str(run_paths(settings.runs_root, run_id).launch_dir / "results")
+    assert found[child] == found[run_id]
+    assert authed_client.get(f"/api/v1/runs/{child}").json()["results_dir"] == found[run_id]
+
+
 def test_resume_without_launch_command_keeps_profiles(
     authed_client: TestClient, writer: Writer, settings: Settings, failed_run: str
 ) -> None:

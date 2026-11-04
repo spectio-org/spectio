@@ -7,8 +7,13 @@ ended head and replays its spool, and the run shows 8 detected stages above its 
 The events are `tests/pipelines/real/stages/events/rnaseq-3.27.0_star_salmon_preview_events.jsonl`
 (onFlowCreate, 67 onProcessCreate, onFlowBegin, onFlowComplete), written as the spool of launch 1
 of run SEEDED; head.pid names a head that has ended (no such process) and head.exit says 0.
+
+The run's `params.outdir` is `results`, which holds the reports of `tests/fixtures/results` for the
+report viewer's check (P1 Task 31, req. 14): a real MultiQC 1.35 report at
+`multiqc/multiqc_report.html` and a hostile one at `hostile/hostile_report.html`.
 """
 
+import gzip
 import json
 import socket
 import sys
@@ -29,6 +34,7 @@ EVENTS = (
     Path(__file__).resolve().parents[1]
     / "pipelines/real/stages/events/rnaseq-3.27.0_star_salmon_preview_events.jsonl"
 )
+RESULTS = Path(__file__).resolve().parents[1] / "fixtures/results"
 T0 = datetime(2026, 10, 28, 7, 0, tzinfo=UTC)
 
 
@@ -58,7 +64,7 @@ def main(runs_root: Path) -> None:
         run_id=SEEDED,
         name="rnaseq-stages-seeded",
         workflow=Workflow(location="/pipelines/nf-core-rnaseq", engine="nextflow"),
-        params={},
+        params={"outdir": "results"},
         profiles=["test"],
         created_at=T0,
     )
@@ -71,6 +77,15 @@ def main(runs_root: Path) -> None:
         host = socket.gethostname()
         write_file(fd, "head.pid", f"{pid} {pid} 1 {boot} {host}\n".encode())
         write_file(fd, "head.exit", f"0 {int(T0.timestamp()) + 90}\n".encode())
+    results = paths.launch_dir / "results"
+    (results / "multiqc").mkdir(parents=True)
+    (results / "hostile").mkdir()
+    report = gzip.decompress((RESULTS / "multiqc-1.35_custom_content_report.html.gz").read_bytes())
+    (results / "multiqc" / "multiqc_report.html").write_bytes(report)
+    (results / "multiqc" / "align_mqc.tsv").write_bytes((RESULTS / "align_mqc.tsv").read_bytes())
+    (results / "hostile" / "hostile_report.html").write_bytes(
+        (RESULTS / "hostile_report.html").read_bytes()
+    )
     print(SEEDED)
 
 

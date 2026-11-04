@@ -1,13 +1,17 @@
 """The screens: the built `web/dist` (P1 Task 19), served at `/` beside the API.
 
-Only the four screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}`) answer `index.html` (to
-`GET` and `HEAD`), and
+Only the screen routes (`/`, `/runs`, `/launch`, `/runs/{run_id}` and the report viewer
+`/runs/{run_id}/report`) answer `index.html` (to `GET` and `HEAD`), and
 only `/assets/<name>` answers a file: one plain name, a known web type, opened under `dist`
 with `O_NOFOLLOW` at each step, so no symlink is followed and no path leaves the directory.
 Hashed assets are cached for a year, `index.html` is revalidated, and every answer carries a
 CSP that allows only this origin and no inline script (Mantine sets inline styles, so styles
 allow them), with `Referrer-Policy: no-referrer` and `Cross-Origin-Opener-Policy: same-origin`
-(SEC-P3T19-03). `app.create_app` mounts these routes only with the API (inbox #80, #86).
+(SEC-P3T19-03). Every screen allows `frame-src 'self'`, for the report viewer's sandboxed
+report, which the API serves with the CSP of req. 14 (P1 Task 31): a CSP is the document's, and
+the viewer is also reached by in-app navigation from another screen's document (CR-P3T31-02);
+the iframe's `sandbox` attribute and that CSP carry the protection. `app.create_app` mounts
+these routes only with the API (inbox #80, #86).
 """
 
 import os
@@ -23,7 +27,7 @@ from spectio_server.api.workflows import _open
 
 # TODO(P1 Task 21): the wheel ships the screens as package data; read them from there first.
 DIST = Path(__file__).resolve().parents[4] / "web" / "dist"
-ROUTES = ("/", "/runs", "/launch", "/runs/{run_id}")
+ROUTES = ("/", "/runs", "/launch", "/runs/{run_id}", "/runs/{run_id}/report")
 ASSET = re.compile(r"[A-Za-z0-9_][A-Za-z0-9._-]{0,199}")
 TYPES = {
     ".js": "text/javascript; charset=utf-8",
@@ -35,7 +39,7 @@ TYPES = {
 CSP = (
     "default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; "
     "img-src 'self'; font-src 'self'; connect-src 'self'; base-uri 'none'; "
-    "form-action 'self'; frame-ancestors 'none'"
+    "form-action 'self'; frame-ancestors 'none'; frame-src 'self'"
 )
 HEADERS = {
     "Content-Security-Policy": CSP,

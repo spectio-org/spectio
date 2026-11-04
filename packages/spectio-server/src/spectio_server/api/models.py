@@ -158,6 +158,7 @@ class RunDetail(Run):
     parent_run_id: str | None
     resumed_as: list[RunRef]
     actions: Actions
+    results_dir: str | None  # null when unknown, and for a run started from a terminal
 
 
 class TemplateWorkflow(BaseModel):
@@ -294,3 +295,30 @@ class TaskFiles(BaseModel):
     work_dir: str | None  # Nextflow: the task's work directory; Snakemake: the launch directory
     native_id: str | None  # the executor's job ID (SLURM), when known
     files: list[TaskFile]
+
+
+class ResultEntry(BaseModel):
+    """One entry of a results folder (P1 Task 31): a folder's `size` is null, and so are both
+    for a `link_outside`; `mtime` is ISO 8601."""
+
+    name: str
+    type: Literal["dir", "file", "link_outside"]
+    size: int | None
+    mtime: str | None
+
+
+class ResultReport(BaseModel):
+    path: str  # relative to the results root
+    title: str
+    group: str | None  # the folder it shares with other reports, such as FastQC's
+
+
+class Results(BaseModel):
+    """One folder of a run's results directory, and the reports found below its root."""
+
+    root: str
+    path: str
+    exists: bool
+    entries: list[ResultEntry]
+    truncated: bool
+    reports: list[ResultReport]

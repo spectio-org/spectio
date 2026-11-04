@@ -19,6 +19,10 @@ derived from the run ID. A Git location must meet the import rule of the launch 
 (`api.workflows.git_url`), or the run is skipped and counted. The rebuild writes no runner
 command: only `POST /runs` launches. Per-boot caps bound the work; what is left waits for the
 next boot.
+
+Known gap (CR-P3T31-04): the manifest records the parameters sent, not the pipeline schema's
+default `outdir`, so a rebuilt Nextflow run that did not set `outdir` gets `results_dir` None
+(its results answer 404); a rebuilt Resume child takes its parent's rebuilt row's.
 """
 
 import json
