@@ -119,7 +119,7 @@ def results_dir(
         return None
     below = found[len(launch_dir) :] if _holds(launch_dir, found) else found
     if any(part.startswith(".") for part in below.split("/")):
-        return None  # `~/.nextflow`, `~/.ssh`, the launch directory's `.nextflow/` (SEC-P3T31-03)
+        return None  # `~/.ssh`, a dot directory in the launch directory (SEC-P3T31-03)
     return found
 
 
