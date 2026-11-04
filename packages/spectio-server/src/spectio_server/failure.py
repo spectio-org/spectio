@@ -384,7 +384,7 @@ class Context:
     files: FilePool
     accounting: Accounting
     timeout_s: float
-    settings: Settings | None = None  # for the run's command (P1 Task 30)
+    settings: Settings  # for the run's command (P1 Task 30)
 
 
 def _last_attempt() -> Any:

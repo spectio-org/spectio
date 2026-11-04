@@ -209,7 +209,7 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
         "stages_note": note if isinstance(note, str) else None,
         "failures": failures,
         "failures_total": total,
-        "command": None if ctx.settings is None else command(conn, row, ctx.settings),
+        "command": command(conn, row, ctx.settings),
         "parent_run_id": row.parent_run_id,
         "resumed_as": resumed_as(conn, run_id),
         "actions": {"resume": {"allowed": reason is None, "reason": reason}},
