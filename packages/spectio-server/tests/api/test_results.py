@@ -14,6 +14,7 @@ from collections import Counter
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+from urllib.parse import quote
 
 import httpx2
 import pytest
@@ -228,6 +229,29 @@ def test_req14_report_search_caps(
     assert len(listing(authed_client).json()["reports"]) == 2  # searched, then kept
     results.write("z/third.html")
     assert len(listing(authed_client).json()["reports"]) == 2  # the kept result
+
+
+def test_req13_results_odd_names(
+    authed_client: TestClient, results: Results, writer: Writer
+) -> None:
+    """A name that is not UTF-8, or holds a control, format or bidi character, is neither
+    listed nor reported, and the raw route refuses it alike (SEC-P3T31-04)."""
+    results.write("ok.html")
+    odd = [b"bad\xff.html", b"e\x1b[31m.html", "x\u202e.html".encode()]
+    (results.root / "sub").mkdir()
+    for name in odd:
+        for folder in (bytes(results.root), bytes(results.root / "sub")):
+            with open(os.path.join(folder, name), "w") as f:
+                f.write("x")
+    set_run(writer, RUN, state="succeeded")  # the search is kept: it must not keep a bad name
+    for _ in range(2):
+        found = listing(authed_client)
+        assert found.status_code == 200, found.text
+        assert [e["name"] for e in found.json()["entries"]] == ["sub", "ok.html"]
+        assert [r["path"] for r in found.json()["reports"]] == ["ok.html"]
+    assert listing(authed_client, "sub").json()["entries"] == []
+    for bad in ("e\x1b[31m.html", "x\u202e.html", "a\x85b", "a\u2066b"):
+        assert raw(authed_client, quote(bad)).status_code == 422, bad
 
 
 # --- Confined -------------------------------------------------------------------------------
@@ -510,6 +534,8 @@ def test_results_dir_at_launch(
     assert stored == str(run_paths(settings.runs_root, run_id).launch_dir / "out" / "x")
     _, stored = launched(authed_client, writer, nf, "nextflow", outdir="/data/project/res")
     assert stored == "/data/project/res"
+    run_id, stored = launched(authed_client, writer, nf, "nextflow", outdir="./results")
+    assert stored == str(run_paths(settings.runs_root, run_id).launch_dir / "results")  # CR-07
     other = str(run_paths(settings.runs_root, run_id).work_dir)
     for refused in (
         "..",  # the run's directory
@@ -523,6 +549,7 @@ def test_results_dir_at_launch(
         "results/.SNAKEMAKE/x",
         "out/../x",  # a relative `..`, as an absolute one (SEC-P3T31-03)
         ".nextflow",  # the engine's cache and history in the launch directory
+        "/data/./res",  # an absolute `.` stays refused
     ):
         _, stored = launched(authed_client, writer, nf, "nextflow", outdir=refused)
         assert stored is None, refused

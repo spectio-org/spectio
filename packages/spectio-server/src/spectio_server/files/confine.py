@@ -32,6 +32,8 @@ from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import BinaryIO, Literal
 
+from spectio_server.files.redact import FORMAT_CHARS
+
 TAIL = 65536  # the bytes a read returns by default
 MAX_READ = 1048576  # the most one read or one Range response returns
 NAME_MAX = 255  # bytes in one path component (Linux `NAME_MAX`)
@@ -72,17 +74,25 @@ class Listing:
     truncated: bool
 
 
-def safe_rel(name: str) -> PurePosixPath:
-    """`name` as a relative path of plain components; raises NotAllowed for an absolute path, an
-    empty, `.` or `..` component, a control character (NUL included), a lone surrogate (not
-    UTF-8: SEC-P3T28-07 r4), or a name longer than `NAME_MAX` bytes a component or `PATH_MAX`
-    bytes in all (SEC-P3T28-04)."""
-    if not name or name.startswith("/") or any(ord(c) < 0x20 or ord(c) == 0x7F for c in name):
-        raise NotAllowed("not a name this server serves")
+_UNSERVED = re.compile(rf"[\x00-\x1f\x7f-\x9f{FORMAT_CHARS}]")
+
+
+def servable_name(name: str) -> bool:
+    """`name` encodes as UTF-8 (no lone surrogate: SEC-P3T28-07 r4) and has no C0, DEL or C1
+    control, nor a format or bidi character of `strip_escapes` (SEC-P3T31-04)."""
     try:
         name.encode()
     except UnicodeEncodeError:
-        raise NotAllowed("not a name this server serves") from None
+        return False
+    return _UNSERVED.search(name) is None
+
+
+def safe_rel(name: str) -> PurePosixPath:
+    """`name` as a relative path of plain components; raises NotAllowed for an absolute path, an
+    empty, `.` or `..` component, a name `servable_name` refuses, or a name longer than
+    `NAME_MAX` bytes a component or `PATH_MAX` bytes in all (SEC-P3T28-04)."""
+    if not name or name.startswith("/") or not servable_name(name):
+        raise NotAllowed("not a name this server serves")
     parts = name.split("/")
     if any(part in ("", ".", "..") for part in parts):
         raise NotAllowed("not a name this server serves")

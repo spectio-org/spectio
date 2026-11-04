@@ -49,12 +49,13 @@ _SPACE = " \t"
 # CSI (ESC [ or the 8-bit CSI, … final), OSC (ESC ] or the 8-bit OSC, … BEL, ST or ESC \),
 # other two-character escapes, the C0 and C1 controls left except tab and newline, and the bidi
 # and other format controls, line and paragraph separators (SEC-P3T28-07 r1, SEC-P3T28-08 r3).
+FORMAT_CHARS = r"\u061c\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff\ufff9-\ufffb"
 _ESCAPES = re.compile(
     r"(?:\x1b\[|\x9b)[0-?]*[ -/]*[@-~]"
     r"|(?:\x1b\]|\x9d)[^\x07\x1b\x9c]*(?:\x07|\x1b\\|\x9c)?"
     r"|\x1b[@-_]?"
     r"|[\x00-\x08\x0b-\x1f\x7f-\x9f]"
-    r"|[\u061c\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff\ufff9-\ufffb]"
+    rf"|[{FORMAT_CHARS}]"
 )
 
 

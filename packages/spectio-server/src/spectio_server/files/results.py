@@ -43,6 +43,7 @@ from spectio_server.files.confine import (
     open_root,
     read_at,
     safe_rel,
+    servable_name,
     size_of,
 )
 from spectio_server.files.taskfiles import run_root
@@ -93,15 +94,18 @@ def results_dir(
     launch directory and normalised. None also for an `outdir` whose listing would serve more
     than results: one that holds the runs root or the home directory (`/`, `..`, `$HOME`), one
     under the runs root but not in the run's launch directory (a work directory, `.spectio/`,
-    another run), one with a `.spectio` or `.snakemake` part, one with a `.` or `..` part, or
-    one with a dot directory (`~/.nextflow`, `~/.ssh`) outside or below the launch directory.
-    The check is on the text; `_roots` checks the folder itself when it serves it."""
+    another run), one with a `.spectio` or `.snakemake` part, one with a `..` part (or a `.`
+    part, when absolute), or one with a dot directory (`~/.nextflow`, `~/.ssh`) outside or
+    below the launch directory. The check is on the text; `_roots` checks the folder itself
+    when it serves it."""
     if engine == "snakemake":
         return launch_dir
     outdir = params.get("outdir", default_outdir)
     if not isinstance(outdir, str) or not outdir or "\x00" in outdir:
         return None
-    if any(part in (".", "..") for part in outdir.split("/")[outdir.startswith("/") :]):
+    absolute = outdir.startswith("/")
+    bad = (".", "..") if absolute else ("..",)  # a relative `.` is dropped by normpath (CR-07)
+    if any(part in bad for part in outdir.split("/")[absolute:]):
         return None  # the system may resolve `..` through a link: never guessed from the text
     found = posixpath.normpath(posixpath.join(launch_dir, outdir))
     found = "/" + found.lstrip("/")  # `//x` is `/x` (normpath keeps two slashes)
@@ -219,7 +223,8 @@ def _refuse_aliases(fd: int, runs_root: Path) -> None:
 
 
 def _shown(entry: Entry) -> bool:
-    return entry.name.casefold() not in ENGINE_DIRS
+    """Not an engine directory, and a name the raw route serves (SEC-P3T31-04)."""
+    return entry.name.casefold() not in ENGINE_DIRS and servable_name(entry.name)
 
 
 def list_results(where: Where, rel: PurePosixPath | None) -> tuple[bool, list[Entry], bool]:
@@ -268,6 +273,8 @@ def _search(root: Root, work: Root | None, found: list[PurePosixPath]) -> None:
                     visited += 1
                     if visited > SEARCH_ENTRIES or clock() - start > SEARCH_S:
                         return
+                    if not servable_name(item.name):
+                        continue  # counted, never queued nor reported (SEC-P3T31-04)
                     rel = folder / item.name
                     kind = _kind(root, rel, fd, work)
                     depth = len(rel.parts)
