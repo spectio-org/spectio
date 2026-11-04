@@ -598,3 +598,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 ## 2026-11-04 · Resumed by Thomas; P1 Task 31 launched
 
 - Thomas: "Continue". P1 Task 31 (results and reports; also SEC-P3T28-05 and FU-P3-31) launched with the `p3-task` workflow, base f9e4b96. Scope: no `slurm-mini` (Task 22), no session or token link (Tasks 12–16), plugin side waits for PR #122 (Task 7), no screens (Task 32 part two). Numbers reserved: inbox #100, FU-P3-36.
+- Thomas (2026-11-04 ~12:55 UTC): "5min avant reset". Read as: the usage window resets in about 5 minutes, so the 30 points start from a fresh window; the budget stays started with `--now 0`, and the Task 31 workflow continues.
