@@ -17,7 +17,7 @@ from spectio.config import Settings
 from spectio.runner.rundir import make_run_dirs, run_paths
 from spectio_server.app import NO_API
 from spectio_server.files.redact import strip_escapes
-from spectio_server.store.schema import launches
+from spectio_server.store.schema import launches, runs
 from spectio_server.store.writer import Writer
 
 from .conftest import add_run
@@ -385,6 +385,25 @@ def test_logs_snakemake_lineage_own_log(
     assert engine_log(child).text == "child.log\n"
     (logs / "child.log").unlink()  # the child's engine has not written its log yet
     problem(engine_log(child), 404, "log-not-found")
+    # CR-P3T30-05: no exited_at on the parent's launch: the window ends at the run's end
+    writer.submit(
+        lambda c: c.execute(
+            update(launches).where(launches.c.run_id == parent).values(exited_at=None)
+        )
+    ).result()
+    writer.submit(
+        lambda c: c.execute(
+            update(runs).where(runs.c.id == parent).values(ended_at=T0 + timedelta(hours=1))
+        )
+    ).result()
+    (logs / "child.log").write_text("child.log\n")
+    when = (T0 + timedelta(hours=3)).timestamp()
+    os.utime(logs / "child.log", (when, when))
+    assert engine_log(parent).text == "parent.log\n"
+    writer.submit(  # terminal, and neither the head's exit nor the run's end is known
+        lambda c: c.execute(update(runs).where(runs.c.id == parent).values(ended_at=None))
+    ).result()
+    problem(engine_log(parent), 404, "log-not-found")
 
 
 @pytest.mark.parametrize("bad", ["%00", "a" * 300])

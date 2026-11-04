@@ -674,6 +674,18 @@ def test_lock_held_refuses_a_second_head(home: Path, bridges: Path) -> None:
     assert lock.read_text() == PARENT_ID + "\n"
 
 
+def test_head_pid_not_written_stops_the_head(home: Path, bridges: Path) -> None:
+    """No head.pid means no engine ran (SEC-P3T30-03): when the head cannot write head.pid, it
+    stops before the cancel check, the lock and the engine, so Resume may trust its absence."""
+    engine = shlex.quote(str(stub_engine(home / "bin", RESUME_STUB)))
+    spec = make_spec(home / "runs", engine_cmd=engine)
+    (spec.launch_dir / ".spectio" / "head.pid.tmp").mkdir(parents=True)
+    assert run_head(spec).returncode != 0
+    assert not (spec.launch_dir / "argv.out").exists()
+    assert not (spec.launch_dir / ".spectio-launch.lock").exists()
+    assert not (spec.launch_dir / ".spectio" / "head.pid").exists()
+
+
 @pytest.mark.parametrize("session", ["x; rm -rf ~", "5f1c8a43", SESSION + "\n"])
 def test_req16_session_id_uuid_in_the_head(home: Path, bridges: Path, session: str) -> None:
     spec = resume_spec(home)

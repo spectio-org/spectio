@@ -5,7 +5,8 @@ Sources: `head-out` and `head-err` (`.spectio/head.out`, `.spectio/head.err`), a
 engine's run log: for Nextflow, `.spectio/nextflow.log`, where the head script points
 `NXF_LOG_FILE` (P1 Task 28), else `.nextflow.log` (a run launched before, or one from a terminal,
 `cli-observed`, which keeps its own); for Snakemake, the newest `.snakemake/log/*.log` last
-written between the run's creation and its head's exit, in the directory the engine ran in: a
+written between the run's creation and its head's exit (else the run's end; a terminal run with
+neither has none: CR-P3T30-05), in the directory the engine ran in: a
 Resume's lineage root's, which every run of the lineage shares (P1 Task 30, CR-P3T30-03). The
 launch directory is derived from the runs root and the run ID, never read from a row (dev-env
 §15.3 req. 10), and must be private. Below it, the read is the confined walk of `files.confine`
@@ -37,6 +38,7 @@ from spectio_server.files.confine import tail as tail_of
 from spectio_server.files.pool import Stalled
 from spectio_server.files.redact import strip_escapes
 from spectio_server.files.taskfiles import run_root
+from spectio_server.projector.runs import TERMINAL
 
 router = APIRouter()
 
@@ -54,7 +56,7 @@ def _newest_log(launch: Root, since: datetime, until: datetime | None) -> PurePo
     lineage share the directory. NotFound when there is none."""
     found = list_confined(launch, SMK_LOGS, MAX_SMK_LOGS)
     low = since.timestamp() - MTIME_SLACK_S
-    high = None if until is None else until.timestamp()
+    high = None if until is None else until.timestamp() + MTIME_SLACK_S
     logs = [
         e
         for e in found.entries
@@ -81,7 +83,10 @@ def _read(runs_root: Path, row: Any, source: str) -> str:
             own = origin != "cli-observed"
             candidates = [SPECTIO_LOG, NEXTFLOW_LOG] if own else [NEXTFLOW_LOG]
         else:
-            candidates = [_newest_log(launch, row.created_at, row.exited_at)]
+            until = row.exited_at or row.ended_at
+            if until is None and row.state in TERMINAL:
+                raise NotFound("the run ended, but not when: its own log is not known")
+            candidates = [_newest_log(launch, row.created_at, until)]
         for i, rel in enumerate(candidates):
             try:
                 with open_confined(launch, rel) as f:

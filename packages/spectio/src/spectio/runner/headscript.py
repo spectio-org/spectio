@@ -69,7 +69,9 @@ LOCKED = 75  # head.exit's code when another head holds the lock
 # reach head.out. The engine runs only while this head holds `.spectio-launch.lock` in the
 # engine's directory, created with O_EXCL (`set -C`) and holding the run ID, so that a second
 # Spectio head never starts there (dev-env §15.3 req. 16); a lock left by a killed head is
-# removed by the runner once that head is proven gone (`resume.clear_stale_lock`).
+# removed by the runner once that head is proven gone (`resume.clear_stale_lock`). A head that
+# cannot write head.pid stops before all of this, so that no head.pid means no engine ran
+# (`resume.head_gone`, SEC-P3T30-03).
 # The head files are made under `umask 077`, so they are 0600 whatever the inherited umask
 # (`read_small` refuses a group-writable file: CR-P3T09-01, SEC-P3T09-01); the engine gets the
 # inherited umask back, and the login profile may change it.
@@ -79,9 +81,9 @@ um=$(umask); umask 077
 cd -- {launch} || exit 1
 trap : INT TERM
 s=$(</proc/$$/stat); s=${{s##*) }}; read -r -a f <<< "$s"
-printf '%s %s %s %s %s\\n' "$$" "${{f[2]}}" "${{f[19]}}" \\
-  "$(</proc/sys/kernel/random/boot_id)" "$HOSTNAME" > .spectio/head.pid.tmp
-mv -f .spectio/head.pid.tmp .spectio/head.pid
+{{ printf '%s %s %s %s %s\\n' "$$" "${{f[2]}}" "${{f[19]}}" \\
+  "$(</proc/sys/kernel/random/boot_id)" "$HOSTNAME" > .spectio/head.pid.tmp &&
+  mv -f .spectio/head.pid.tmp .spectio/head.pid; }} || exit 1  # no head.pid, no engine
 keep=()
 for v in {keep}; do [ -n "${{!v+x}}" ] && keep+=("$v=${{!v}}"); done
 lock={lock}
