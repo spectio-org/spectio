@@ -187,7 +187,7 @@ jobs:
           SPECTIO_E2E_BASE_URL: http://127.0.0.1:8765
           SPECTIO_E2E_ENGINES: "1"
           SPECTIO_E2E_SEEDED: "1"
-        run: npx --no-install playwright test skeleton.spec.ts report.spec.ts --project desktop --project phone
+        run: npx --no-install playwright test skeleton.spec.ts --project desktop --project phone
       - name: Keep the report and the server log
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

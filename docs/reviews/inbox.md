@@ -1590,3 +1590,12 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation for rules 12 and 13:** (b), in FU-P3-36, before any shared deployment. It fails closed at the cost of showing less of the directive lines, and Nextflow's own `#SBATCH --export` form is already covered for 0.0.1 on SLURM.
 - **Assumed (2026-11-04, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 14 as built; rules 2, 12, 13 and 14 stay (a) until FU-P3-36 applies the recommendations. P1 Task 31's interface is not edited: its differences are listed on [P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-31). This PR changes `.github/workflows/ci.yml` (the e2e job also runs `report.spec.ts`), so by [#98](#98-assumed-the-next-p3-order-after-p3-pard-tasks-30-31-32-part-two-then-12-to-16) it waits for Thomas's merge. Next follow-up number: FU-P3-37.
 - **Blocked:** nothing.
+
+### #101 · Assumed: the CI line of Task 31 goes in its own PR
+
+- **Covers:** the e2e job of `.github/workflows/ci.yml` (one line: also run `report.spec.ts`); [inbox #98](#98-assumed-the-next-p3-order-after-p3-pard-tasks-30-31-32-part-two-then-12-to-16).
+- **Context:** the P3-t31 build changed that line. By #98, any PR that touches `.github/workflows/` waits for Thomas, so Task 31 and Task 32 part two, which builds on it, would have waited too.
+- **Options:** (a) split: the Task 31 PR keeps `report.spec.ts` and drops the CI line; a one-line PR adds it and waits for Thomas; (b) the whole Task 31 PR waits for Thomas.
+- **Recommendation:** (a). The test still runs locally in the gate. Until the one-line PR merges, CI does not run it.
+- **Assumed (2026-11-04, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a).
+- **Blocked:** the one-line CI PR, until Thomas merges it.
