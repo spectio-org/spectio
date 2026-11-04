@@ -44,7 +44,7 @@ from spectio_server.files.taskfiles import (
     read_task_file,
     run_root,
 )
-from spectio_server.store.schema import attempts, runs, tasks
+from spectio_server.store.schema import attempts, tasks
 
 log = logging.getLogger(__name__)
 
@@ -395,18 +395,18 @@ def _last_attempt() -> Any:
     return newest.scalar_subquery()
 
 
-def dir_run_id(conn: Connection, run_id: str) -> str:
+def dir_run_id(row: Any) -> str:
     """The run whose launch and work directories its engine used: its lineage root for a
     Resume (P1 Task 30), else the run itself. Known limit of a Snakemake Resume
     (CR-P3T30-03): a job the child reruns writes its log at the same relative path, so the
     parent's failure tails then show the child's log."""
-    found = conn.execute(select(runs.c.lineage_id).where(runs.c.id == run_id)).scalar()
-    return str(found or run_id)
+    return str(row.lineage_id or row.id)
 
 
 def build_failures(
     conn: Connection,
     run_id: str,
+    dirs: str,
     engine: str,
     failure: dict[str, Any] | None,
     ctx: Context,
@@ -437,7 +437,6 @@ def build_failures(
         .order_by(attempts.c.created_at, attempts.c.id)
         .limit(limit)
     ).all()
-    dirs = dir_run_id(conn, run_id)
     files = [_files(ctx.runs_root, dirs, engine, r) for r in rows]
 
     def read() -> list[str | None]:
@@ -545,7 +544,7 @@ MEASURED = ("realtime_s", "cpu_percent", "peak_rss_bytes")
 
 
 def task_resources(
-    conn: Connection, run_id: str, engine: str, task_ids: list[str], ctx: Context
+    conn: Connection, run_id: str, dirs: str, engine: str, task_ids: list[str], ctx: Context
 ) -> dict[str, tuple[int | None, dict[str, Any]]]:
     """Per task, its last attempt's number and `resources` (api §5 note, Resources): the
     trace's on Nextflow; on Snakemake the requested values of `job_info`, measured by the
@@ -564,7 +563,6 @@ def task_resources(
         .where(tasks.c.run_id == run_id, tasks.c.id.in_(task_ids))
     ).all()
     benches: dict[str, str] = {}
-    dirs = dir_run_id(conn, run_id)
     if engine == "snakemake":
         benches = {
             r.id: (r.resources or {})["benchmark"]

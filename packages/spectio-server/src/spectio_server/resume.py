@@ -20,17 +20,12 @@ from spectio.runner.loop import LaunchPayload
 from spectio.runner.resume import NotResumable, prove
 from spectio.runner.rundir import run_paths
 from spectio.runner.types import LaunchSpec, ResumeSource
-from spectio_server.failure import Context
+from spectio_server.failure import Context, dir_run_id
 from spectio_server.files.pool import Stalled
 from spectio_server.store.schema import runner_commands, runs
 
 TERMINAL = ("succeeded", "failed", "cancelled")
 RESUMABLE = ("failed", "cancelled")
-
-
-def dir_run_id(row: Row[Any]) -> str:
-    """The run whose launch and work directories this run's engine used: its lineage's root."""
-    return str(row.lineage_id or row.id)
 
 
 def row_refusal(conn: Connection, row: Row[Any]) -> str | None:

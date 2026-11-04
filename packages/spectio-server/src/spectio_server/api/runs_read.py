@@ -25,7 +25,7 @@ from spectio.config import Settings
 from spectio.runner.rundir import RUN_ID
 from spectio_server.api import models
 from spectio_server.api.problems import Invalid, not_found
-from spectio_server.failure import Context, build_failures, task_resources
+from spectio_server.failure import Context, build_failures, dir_run_id, task_resources
 from spectio_server.files.pool import READ_TIMEOUT_S
 from spectio_server.resume import command, resume_refusal, resumed_as
 from spectio_server.stages.freeze import FROZEN as STAGES_FROZEN
@@ -201,7 +201,7 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
         .order_by(run_inputs.c.version.desc())
         .limit(1)
     ).scalar()
-    failures, total = build_failures(conn, run_id, row.engine, row.failure, ctx)
+    failures, total = build_failures(conn, run_id, dir_run_id(row), row.engine, row.failure, ctx)
     reason = resume_refusal(conn, row, ctx)
     return {
         **found,
@@ -430,7 +430,9 @@ def list_tasks(
         run = run_row(conn, run_id)
         rows = conn.execute(query).all()
         page = [r.id for r in rows[:limit]]
-        resources = task_resources(conn, run_id, run.engine, page, context(request))
+        resources = task_resources(
+            conn, run_id, dir_run_id(run), run.engine, page, context(request)
+        )
     items = [
         {
             "id": r.id,

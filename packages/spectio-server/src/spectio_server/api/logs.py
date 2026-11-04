@@ -26,6 +26,7 @@ from fastapi.responses import PlainTextResponse
 from spectio_server.api.problems import Problem, not_found
 from spectio_server.api.runs_read import read, run_row
 from spectio_server.api.taskfiles import HEADERS, READ_TIMEOUT_S
+from spectio_server.failure import dir_run_id
 from spectio_server.files.confine import (
     TAIL,
     NotAllowed,
@@ -75,7 +76,7 @@ def _newest_log(launch: Root, since: datetime, until: datetime | None) -> PurePo
 def _read(runs_root: Path, row: Any, source: str) -> str:
     engine, origin = row.engine, row.origin
     smk_log = source not in HEAD_FILES and engine != "nextflow"
-    run_id = (row.lineage_id or row.id) if smk_log else row.id
+    run_id = dir_run_id(row) if smk_log else row.id
     with run_root(runs_root, run_id, "launch") as launch:
         if source in HEAD_FILES:
             candidates = [PurePosixPath(".spectio", HEAD_FILES[source])]

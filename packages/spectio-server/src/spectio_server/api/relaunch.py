@@ -41,9 +41,10 @@ from spectio_server.api import models
 from spectio_server.api.problems import Invalid, Problem
 from spectio_server.api.runs_read import context, read, run_detail, run_row
 from spectio_server.api.workflows import inspect_dir, resolve
+from spectio_server.failure import dir_run_id
 from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.ids import new_id
-from spectio_server.resume import check_dirs, dir_run_id, launch_payload, row_refusal
+from spectio_server.resume import check_dirs, launch_payload, row_refusal
 from spectio_server.store.runs import first, insert_run
 from spectio_server.store.schema import principals, run_inputs, runner_commands
 from spectio_server.store.writer import Writer
