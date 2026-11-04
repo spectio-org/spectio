@@ -629,3 +629,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - The third round approved (inbox #103). After post-approval fixes, the run reports `rounds=5`. Code review approved b/M/m=0/3/8, security 0/0/13, simplify −4/+4, doc-reviewer 12/14. Orchestrator gate on 99a0ace: pytest 731 passed, Vitest 289, docs gate 0 failures, no `.github/workflows/` change.
 - Afterwards the node name was `vm`, no `alice` server was running and the stash list was empty.
 - PR #128 is open into `autopilot/integration` with the `screenshots` label. Inbox #104 is assumed; open minors are in FU-P3-37.
+- Thomas (2026-11-04 ~18:13 UTC): "Stop building à la fin étape actuelle". After PR #128 and its promotion, nothing more is launched; next when resumed: §15.3 Task 12 (reserve inbox #105, FU-P3-38).
