@@ -2,25 +2,22 @@
 
 import asyncio
 import json
-import threading
 from collections import Counter
 from collections.abc import Iterator
 from typing import Any
 
 import httpx2
 import pytest
-import uvicorn
 from fastapi.testclient import TestClient
 
 from spectio.config import Settings
 from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server.api.stream import MAX_CLIENTS, Stream
-from spectio_server.app import NO_API, create_app
+from spectio_server.app import NO_API
 from spectio_server.projector.ingest import ingest
 from spectio_server.store.writer import Writer
 
-from ..conftest import free_port
 from .conftest import add_run
 
 RUN = "run_01K8T2F1XTVRES000000000301"
@@ -41,29 +38,6 @@ def event(n: int, hook: str, **data: Any) -> SpoolEvent:
             "data": data,
         }
     )
-
-
-@pytest.fixture
-def served(settings: Settings, writer: Writer) -> Iterator[str]:
-    """The app on a real loopback port, as `spectio serve` runs it."""
-    app = create_app(settings, writer)
-    port = free_port()
-    config = uvicorn.Config(
-        app,
-        host="127.0.0.1",
-        port=port,
-        lifespan="off",
-        log_level="warning",
-        timeout_graceful_shutdown=1,
-    )
-    server = uvicorn.Server(config)
-    thread = threading.Thread(target=server.run, daemon=True)
-    thread.start()
-    while not server.started:
-        thread.join(0.01)
-    yield f"http://127.0.0.1:{port}"
-    server.should_exit = True
-    thread.join(10)
 
 
 def test_stream_needs_session(client: TestClient, authed_client: TestClient) -> None:

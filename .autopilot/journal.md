@@ -588,3 +588,26 @@ One entry per tick: time, steps started and finished, verification results, tria
 - P1 Task 30, milestone M8 (P3-M8): Resume (`:relaunch` mode `resume`, a child run in the lineage's launch and work directories, req. 16 checked three times), `:launch-template` with `code_loading`, `command`, `parent_run_id`, `resumed_as` and `actions.resume` on the run detail, migration 0008; the head files are owned by the launch (CR-P3T09-11 closed). Inbox #99 (assumed, eleven rules), FU-P3-35.
 - Every check green on e0054c8 (the first `pr-body` run read the placeholder body; its rerun after the edit passed). The merge waited out a GitHub incident on Pull Requests (502, then "405 Merge already in progress", 09:58 to 10:46 UTC); squash b69d25d (`Release-As: 0.0.1`). Cost recorded: 60 USD (estimate).
 - Thomas's pause is applied: after the promotion PR, nothing more is launched. Next when resumed: P1 Task 31 (inbox #98). PRs #111 and #122 wait for Thomas.
+
+## 2026-11-04 · Promotion #124 merged: P1 Task 30 on main; autopilot paused
+
+- Integration promoted to `main` by merge commit 6ae3dcd (every check green on 1751492).
+- Paused at Thomas's request. Next when resumed: P1 Task 31 (inbox #98, reserve inbox #100 and FU-P3-36). PRs #111 and #122 wait for Thomas.
+- Dashboard not refreshed: `build.py` gave a 24 MB page, over the Artifact limit of 16 MB (XSS check passed). To fix in `tools/dashboard` (fewer inline images).
+
+## 2026-11-04 · Resumed by Thomas; P1 Task 31 launched
+
+- Thomas: "Continue". P1 Task 31 (results and reports; also SEC-P3T28-05 and FU-P3-31) launched with the `p3-task` workflow, base f9e4b96. Scope: no `slurm-mini` (Task 22), no session or token link (Tasks 12–16), plugin side waits for PR #122 (Task 7), no screens (Task 32 part two). Numbers reserved: inbox #100, FU-P3-36.
+- Thomas (2026-11-04 ~12:55 UTC): "5min avant reset". Read as: the usage window resets in about 5 minutes, so the 30 points start from a fresh window; the budget stays started with `--now 0`, and the Task 31 workflow continues.
+
+## 2026-11-04 · P1 Task 31 merged (PR #125); CI line split into PR #126
+
+- Workflow wf_f4c210db-200 done: review approve after 7 rounds (code b/M/m=1/8/17, security 1/6/31), simplify −19/+4, doc-reviewer approve 12/14. Orchestrator gate on 9c88c19: pytest 729 passed, Vitest 230, docs gate 0 failures.
+- The build changed one line of `.github/workflows/ci.yml` (e2e runs `report.spec.ts`). By inbox #98 that would hold Task 31 and Task 32 part two for Thomas, so the line was split into PR #126, which waits for Thomas (inbox #101, assumed).
+- PR #125 squash-merged as d982cc9 with `Release-As: 0.0.1`. The first `pr-body` run failed on the placeholder body; the re-run after the body edit passed. Cost recorded: 65 USD.
+- Next: promotion to `main`, then P1 Task 32 part two. PRs #111, #122 and #126 wait for Thomas.
+
+## 2026-11-04 · Promotion PR #127 opened; P1 Task 32 part two launched
+
+- Promotion PR #127 (integration → `main`, merge commit) opened on 85330d6.
+- P1 Task 32 part two launched with the `p3-task` workflow, step P3-t32b (branch `autopilot/P3-t32b`, since `autopilot/P3-t32` is part one), base 85330d6. Scope: Resume and its dialog, Copy to a new launch, the Copy menu's Command item, results and reports screens, the four `test.fixme` tests, and screenshots including `app-report-viewer` from a regenerated MultiQC fixture. No `.github/workflows/` change. Numbers reserved: inbox #102, FU-P3-37.

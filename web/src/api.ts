@@ -120,6 +120,34 @@ export interface RunDetail extends Run {
   resumed_as: { id: string; name: string | null; state: RunState }[];
   /** Whether Resume is allowed now, and why not (api §5, P1 Task 30). */
   actions: { resume: { allowed: boolean; reason: ResumeReason | null } };
+  /** The run's results directory; null when unknown or a run started from a terminal (api §5,
+   * P1 Task 31). */
+  results_dir: string | null;
+}
+
+/** Schema `ResultEntry`: one item of a results folder. */
+export interface ResultEntry {
+  name: string;
+  type: "dir" | "file" | "link_outside";
+  size: number | null;
+  mtime: string | null;
+}
+
+/** Schema `ResultReport`: an HTML report found below the results root. */
+export interface ResultReport {
+  path: string;
+  title: string;
+  group: string | null;
+}
+
+/** `GET /api/v1/runs/{id}/results?path=` (P1 Task 31). */
+export interface Results {
+  root: string;
+  path: string;
+  exists: boolean;
+  entries: ResultEntry[];
+  truncated: boolean;
+  reports: ResultReport[];
 }
 
 /** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */
@@ -360,6 +388,11 @@ export async function getTaskFile(taskId: string, n: number, name: string, signa
   }
   return response.text();
 }
+
+/** Where a results file is served: an HTML report with the sandbox CSP of req. 14 (for the
+ * report viewer's iframe), any other file, or `download`, as an attachment. */
+export const resultUrl = (id: string, path: string, opts: { download?: boolean } = {}) =>
+  `${API}${run(id)}/results/raw/${path.split("/").map(encodeURIComponent).join("/")}${query({ download: opts.download ? "true" : null })}`;
 
 export function launch(body: LaunchBody): Promise<Launched> {
   return call("/runs", {

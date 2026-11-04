@@ -1,0 +1,17 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Hostile report</title></head>
+<body>
+<h1>Hostile report</h1>
+<p>A report that tries to leave its sandbox (P1 Task 31, dev-env §15.3 req. 14). Each button
+writes what happened into the line below it.</p>
+<button id="open" onclick="try { out(window.open('https://example.com/opened') ? 'opened' : 'blocked'); } catch (e) { out('blocked'); }">Open a window</button>
+<button id="top" onclick="try { top.location = 'https://example.com/top'; out('moved'); } catch (e) { out('blocked'); }">Move the page</button>
+<button id="api" onclick="fetch('/api/v1/version').then(() => out('reached'), () => out('blocked'))">Call the API</button>
+<button id="cookie" onclick="try { out(document.cookie === '' ? 'empty' : 'read'); } catch (e) { out('blocked'); }">Read cookies</button>
+<a id="link" href="https://example.com/link" target="_top">An external link</a>
+<a id="inner" href="https://example.com/inner">A link in the frame</a>
+<p id="out">nothing yet</p>
+<script>function out(text) { document.getElementById('out').textContent = text; }</script>
+</body>
+</html>
