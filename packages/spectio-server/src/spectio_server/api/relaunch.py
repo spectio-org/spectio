@@ -28,8 +28,15 @@ from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, ConfigDict, JsonValue
 from sqlalchemy import Connection, insert, select
 
+from spectio.runner.loop import LaunchPayload
 from spectio.runner.resume import NotResumable
-from spectio.runner.rundir import RunManifest, Workflow, run_paths, write_run_manifest
+from spectio.runner.rundir import (
+    RunManifest,
+    Workflow,
+    read_run_manifest,
+    run_paths,
+    write_run_manifest,
+)
 from spectio_server.api import models
 from spectio_server.api.problems import Invalid, Problem
 from spectio_server.api.runs_read import context, read, run_detail, run_row
@@ -87,6 +94,17 @@ def _params(conn: Connection, run_id: str) -> dict[str, Any]:
     return dict(found or {})
 
 
+def _profiles(runs_root: Path, run_id: str, launched: LaunchPayload | None) -> list[str] | None:
+    """The run's profiles: its `launch` command's, else its manifest's (a run rebuilt from its
+    run directories has no command, CR-P3T30-04); None when neither can be read."""
+    if launched is not None:
+        return launched.profiles
+    try:
+        return read_run_manifest(run_paths(runs_root, run_id).run_dir).profiles
+    except (OSError, ValueError):
+        return None
+
+
 def _insert_child(
     conn: Connection,
     parent_id: str,
@@ -136,11 +154,13 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         reason = row_refusal(conn, parent)
         params = _params(conn, run_id)
         launched = launch_payload(conn, run_id)
-    profiles = [] if launched is None else launched.profiles
     if reason == "cli_observed":
         raise _not_in_this_version("Spectio did not start this run's head: it cannot resume it.")
     if reason is not None:
         raise _conflict(reason, REFUSED[reason])
+    profiles = _profiles(settings.runs_root, run_id, launched)
+    if profiles is None:
+        raise _conflict("profiles_unknown", "The run's profiles cannot be read from its manifest.")
     try:
         device, inode = check_dirs(ctx, parent)
     except NotResumable as exc:
@@ -212,26 +232,56 @@ def schema_defaults(schema: dict[str, Any] | None) -> dict[str, Any]:
     return found
 
 
+MAX_LINK_HOPS = 40  # Linux's MAXSYMLINKS
+
+
 def writable_by_others(path: str) -> bool:
-    """Whether someone else may change what the path loads (SEC-P3T30-01): its target, or a
-    directory above the target, owned by a user other than this one and root, or writable by
-    group or others. A sticky directory (`/tmp`) is excepted only above the nearest existing
-    part: a missing file in it, or the directory itself as a workflow, can still be planted.
-    Symlinks are followed (`realpath`): a link's own mode says nothing."""
-    me, found = os.geteuid(), False
-    real = Path(os.path.realpath(path))
-    for part in (real, *real.parents):
-        try:
-            st = os.stat(part)
-        except OSError:  # missing, or not reachable from here
-            continue
-        sticky = found and stat.S_ISDIR(st.st_mode) and st.st_mode & stat.S_ISVTX
-        if st.st_uid not in (me, 0):
-            return True
-        if st.st_mode & (stat.S_IWGRP | stat.S_IWOTH) and not sticky:
-            return True
-        found = True
-    return False
+    """Whether someone else may change what the path loads (SEC-P3T30-01, SEC-P3T30-02): the
+    path is resolved one component at a time, without following anything first. Flagged: a
+    directory on the way, or the target, owned by a user other than this one and root, or
+    writable by group or others; a symlink owned by another user, as one can repoint it. A
+    sticky directory (`/tmp`) is excepted only above the nearest existing part: a missing file
+    in it, or the directory itself as a workflow, can still be planted. A link's own mode says
+    nothing; its target is resolved the same way, up to 40 links."""
+    me = os.geteuid()
+
+    def others(st: os.stat_result, sticky_ok: bool) -> bool:
+        sticky = sticky_ok and stat.S_ISDIR(st.st_mode) and st.st_mode & stat.S_ISVTX
+        return st.st_uid not in (me, 0) or bool(
+            st.st_mode & (stat.S_IWGRP | stat.S_IWOTH) and not sticky
+        )
+
+    current, hops = "/", 0
+    todo = os.path.join(os.getcwd(), path).split("/")[::-1]  # not normalised: `link/..`
+    try:
+        while todo:
+            name = todo.pop()
+            if name in ("", "."):
+                continue
+            if name == "..":  # `current` holds no link: its parent is the real one
+                current = os.path.dirname(current)
+                continue
+            holder = os.lstat(current)
+            child = os.path.join(current, name)
+            try:
+                st = os.lstat(child)
+            except OSError:  # missing: `current` is the nearest existing part
+                return others(holder, sticky_ok=False)
+            if others(holder, sticky_ok=True):
+                return True
+            if stat.S_ISLNK(st.st_mode):
+                hops += 1
+                if hops > MAX_LINK_HOPS or st.st_uid not in (me, 0):
+                    return True
+                target = os.readlink(child)
+                todo += target.split("/")[::-1]
+                if target.startswith("/"):
+                    current = "/"
+                continue
+            current = child
+        return others(os.lstat(current), sticky_ok=False)
+    except OSError:  # changed while it was walked: flagged
+        return True
 
 
 def code_loading(
@@ -274,7 +324,7 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
     return {
         "workflow": {"location": row.location, "revision": row.revision, "engine": row.engine},
-        "profiles": [] if payload is None else payload.profiles,
+        "profiles": _profiles(settings.runs_root, run_id, payload) or [],
         "params": params,
         "non_default": [k for k in params if k not in defaults or params[k] != defaults[k]],
         "code_loading": loading,

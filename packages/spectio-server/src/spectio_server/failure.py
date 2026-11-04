@@ -397,7 +397,9 @@ def _last_attempt() -> Any:
 
 def dir_run_id(conn: Connection, run_id: str) -> str:
     """The run whose launch and work directories its engine used: its lineage root for a
-    Resume (P1 Task 30), else the run itself."""
+    Resume (P1 Task 30), else the run itself. Known limit of a Snakemake Resume
+    (CR-P3T30-03): a job the child reruns writes its log at the same relative path, so the
+    parent's failure tails then show the child's log."""
     found = conn.execute(select(runs.c.lineage_id).where(runs.c.id == run_id)).scalar()
     return str(found or run_id)
 

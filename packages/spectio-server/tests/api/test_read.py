@@ -7,6 +7,7 @@ import socket
 from datetime import UTC, datetime, timedelta
 from importlib.metadata import version
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -343,6 +344,47 @@ def test_logs_confined(
         404,
         "log-not-found",
     )
+
+
+def test_logs_snakemake_lineage_own_log(
+    authed_client: TestClient, writer: Writer, settings: Settings
+) -> None:
+    """A Resume's runs share the root's launch directory (CR-P3T30-03): each run reads the
+    newest log written between its creation and its head's exit, not the lineage's newest."""
+    parent, child = rid(1), rid(2)
+    add_run(writer, settings, parent, "smk", "failed", engine="snakemake", created_at=T0)
+    add_run(
+        writer,
+        settings,
+        child,
+        "smk",
+        "queued",
+        engine="snakemake",
+        created_at=T0 + timedelta(hours=2),
+        lineage_id=parent,
+        parent_run_id=parent,
+    )
+    writer.submit(
+        lambda c: c.execute(
+            update(launches)
+            .where(launches.c.run_id == parent)
+            .values(exited_at=T0 + timedelta(hours=1))
+        )
+    ).result()
+    logs = launch_dir(settings, parent) / ".snakemake" / "log"
+    logs.mkdir(parents=True)
+    for name, at in (("old.log", -1), ("parent.log", 0.5), ("child.log", 3)):
+        (logs / name).write_text(f"{name}\n")
+        when = (T0 + timedelta(hours=at)).timestamp()
+        os.utime(logs / name, (when, when))
+
+    def engine_log(run_id: str) -> Any:
+        return authed_client.get(f"{RUNS}/{run_id}/logs", params={"source": "engine"})
+
+    assert engine_log(parent).text == "parent.log\n"
+    assert engine_log(child).text == "child.log\n"
+    (logs / "child.log").unlink()  # the child's engine has not written its log yet
+    problem(engine_log(child), 404, "log-not-found")
 
 
 @pytest.mark.parametrize("bad", ["%00", "a" * 300])

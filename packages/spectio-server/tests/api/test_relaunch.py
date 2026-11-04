@@ -17,7 +17,7 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import select, update
+from sqlalchemy import delete, select, update
 
 from spectio.config import EngineOpts, Settings
 from spectio.runner.loop import LaunchPayload
@@ -27,7 +27,7 @@ from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.rebuild import rebuild_index
 from spectio_server.sink import StoreSink
 from spectio_server.store.db import open_db
-from spectio_server.store.schema import launches, runs
+from spectio_server.store.schema import launches, runner_commands, runs
 from spectio_server.store.writer import Writer
 
 from .conftest import client_for
@@ -143,6 +143,27 @@ def test_resume_failed_creates_child(
         "device": st.st_dev,
         "inode": st.st_ino,
     }
+
+
+def test_resume_without_launch_command_keeps_profiles(
+    authed_client: TestClient, writer: Writer, settings: Settings, failed_run: str
+) -> None:
+    """A run rebuilt from its run directories has no `launch` command (CR-P3T30-04): its
+    profiles come from its manifest, for the Resume and for Copy to a new launch."""
+    writer.submit(
+        lambda c: c.execute(delete(runner_commands).where(runner_commands.c.run_id == failed_run))
+    ).result()
+    template = authed_client.get(f"/api/v1/runs/{failed_run}:launch-template").json()
+    assert template["profiles"] == ["local"]
+    response = resume(authed_client, failed_run)
+    assert response.status_code == 201, response.text
+    child = response.json()["id"]
+    (command,) = [
+        c
+        for c in StoreSink(writer, settings.runs_root).lease_commands()
+        if c.kind == "launch" and c.launch.run_id == child
+    ]
+    assert LaunchPayload.model_validate(command.payload).profiles == ["local"]
 
 
 def test_resume_of_a_resume_keeps_the_first_directories(
@@ -431,14 +452,24 @@ def test_req16_code_loading_flagged(
 
 @pytest.mark.parametrize(
     "case",
-    ["other owner", "missing under sticky", "kept in sticky", "symlink", "symlink to shared"],
+    [
+        "other owner",
+        "missing under sticky",
+        "kept in sticky",
+        "symlink",
+        "symlink to shared",
+        "link in shared",
+        "my link in sticky",
+        "other's link in sticky",
+    ],
 )
 def test_req16_code_loading_flagged_paths(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
 ) -> None:
-    """Writable by others (SEC-P3T30-01): a path or a directory above it owned by another
-    user; a missing file whose nearest directory others can write, sticky or not; a symlink
-    judged by its target, not by its own 0777 mode."""
+    """Writable by others (SEC-P3T30-01, SEC-P3T30-02): a path or a directory above it owned
+    by another user; a missing file whose nearest directory others can write, sticky or not; a
+    symlink judged by its target, not by its own 0777 mode, and by the directory that holds it
+    and its owner (one who can repoint it)."""
     mine = tmp_path / "mine"
     mine.mkdir(mode=0o700)
     (mine / "main.nf").write_text("")
@@ -447,16 +478,20 @@ def test_req16_code_loading_flagged_paths(
     shared.chmod(0o1777)
     (shared / "kept.config").write_text("")
     (shared / "kept.config").chmod(0o644)
-    if case == "other owner":
-        real_stat = os.stat
 
-        def stat_as_other(path: Any, *args: Any, **kwargs: Any) -> os.stat_result:
-            st = real_stat(path, *args, **kwargs)
-            if Path(path) != mine:
+    def owned_by_other(other: Path) -> None:
+        real_lstat = os.lstat
+
+        def lstat_as_other(path: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+            st = real_lstat(path, *args, **kwargs)
+            if Path(path) != other:
                 return st
             return os.stat_result((*st[:4], 4321, *st[5:10]))
 
-        monkeypatch.setattr(os, "stat", stat_as_other)
+        monkeypatch.setattr(os, "lstat", lstat_as_other)
+
+    if case == "other owner":
+        owned_by_other(mine)
         path, flagged = mine / "main.nf", True
     elif case == "missing under sticky":
         path, flagged = shared / "site.config", True
@@ -465,13 +500,24 @@ def test_req16_code_loading_flagged_paths(
     elif case == "symlink":
         (tmp_path / "link").symlink_to(mine)
         path, flagged = tmp_path / "link" / "main.nf", False
-    else:
+    elif case == "symlink to shared":
         group = tmp_path / "group"
         group.mkdir()
         group.chmod(0o775)
         (group / "main.nf").write_text("")
         (mine / "link").symlink_to(group)
         path, flagged = mine / "link" / "main.nf", True
+    elif case == "link in shared":  # /g/lab/pipelines/current -> ~/rnaseq
+        open_dir = tmp_path / "open"
+        open_dir.mkdir()
+        open_dir.chmod(0o777)
+        (open_dir / "current").symlink_to(mine)
+        path, flagged = open_dir / "current" / "main.nf", True
+    else:
+        (shared / "current").symlink_to(mine)
+        if case == "other's link in sticky":
+            owned_by_other(shared / "current")
+        path, flagged = shared / "current" / "main.nf", case != "my link in sticky"
     assert writable_by_others(str(path)) is flagged
 
 

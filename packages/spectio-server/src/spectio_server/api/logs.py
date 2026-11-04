@@ -4,16 +4,18 @@ architecture §13.7).
 Sources: `head-out` and `head-err` (`.spectio/head.out`, `.spectio/head.err`), and `engine`, the
 engine's run log: for Nextflow, `.spectio/nextflow.log`, where the head script points
 `NXF_LOG_FILE` (P1 Task 28), else `.nextflow.log` (a run launched before, or one from a terminal,
-`cli-observed`, which keeps its own); for Snakemake, the newest `.snakemake/log/*.log`, in the
-directory the engine ran in: a Resume's lineage root's (P1 Task 30). The launch directory is
-derived from the runs root and the run ID, never read from a row (dev-env §15.3 req. 10), and
-must be private. Below it, the read is the confined walk of `files.confine`
-(checking-scenarios §11.1): no symlink is followed, only a regular file of the user is read, and
-it runs in the file pool with a timeout (req. 13). Anything refused or missing is
+`cli-observed`, which keeps its own); for Snakemake, the newest `.snakemake/log/*.log` last
+written between the run's creation and its head's exit, in the directory the engine ran in: a
+Resume's lineage root's, which every run of the lineage shares (P1 Task 30, CR-P3T30-03). The
+launch directory is derived from the runs root and the run ID, never read from a row (dev-env
+§15.3 req. 10), and must be private. Below it, the read is the confined walk of `files.confine`
+(checking-scenarios §11.1): no symlink is followed, only a regular file of the user is read,
+and it runs in the file pool with a timeout (req. 13). Anything refused or missing is
 `404 log-not-found`; a file system that does not answer is `503 runner-offline`. Escape
 sequences are removed from the text.
 """
 
+from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Any, Literal
 
@@ -43,14 +45,27 @@ SPECTIO_LOG = PurePosixPath(".spectio/nextflow.log")
 NEXTFLOW_LOG = PurePosixPath(".nextflow.log")
 SMK_LOGS = PurePosixPath(".snakemake/log")
 MAX_SMK_LOGS = 1000  # entries of `.snakemake/log` looked at
+MTIME_SLACK_S = 0.1  # a file's mtime comes from a coarser clock than `datetime.now`
 
 
-def _newest_log(launch: Root) -> PurePosixPath:
-    """The newest regular `*.log` of `.snakemake/log`; NotFound when there is none."""
+def _newest_log(launch: Root, since: datetime, until: datetime | None) -> PurePosixPath:
+    """The run's own Snakemake log (CR-P3T30-03): the newest regular `*.log` of
+    `.snakemake/log` last written between the run's creation and its head's exit; the runs of a
+    lineage share the directory. NotFound when there is none."""
     found = list_confined(launch, SMK_LOGS, MAX_SMK_LOGS)
-    logs = [e for e in found.entries if e.type == "file" and e.name.endswith(".log")]
+    low = since.timestamp() - MTIME_SLACK_S
+    high = None if until is None else until.timestamp()
+    logs = [
+        e
+        for e in found.entries
+        if e.type == "file"
+        and e.name.endswith(".log")
+        and e.mtime is not None
+        and e.mtime >= low
+        and (high is None or e.mtime <= high)
+    ]
     if not logs:
-        raise NotFound("no Snakemake log yet")
+        raise NotFound("no Snakemake log of this run yet")
     newest = max(logs, key=lambda e: (e.mtime or 0, e.name))
     return SMK_LOGS / newest.name
 
@@ -66,7 +81,7 @@ def _read(runs_root: Path, row: Any, source: str) -> str:
             own = origin != "cli-observed"
             candidates = [SPECTIO_LOG, NEXTFLOW_LOG] if own else [NEXTFLOW_LOG]
         else:
-            candidates = [_newest_log(launch)]
+            candidates = [_newest_log(launch, row.created_at, row.exited_at)]
         for i, rel in enumerate(candidates):
             try:
                 with open_confined(launch, rel) as f:
