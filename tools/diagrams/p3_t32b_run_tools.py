@@ -51,7 +51,9 @@ Every fact comes from branch autopilot/P3-t32b at 551df81 (BASE 85330d6):
 - the findings are rounds 1 to 5 of docs/reviews/code/P3-t32b.md. Majors: CR-P3T32B-01 round 1
   (fixed af7ce77), CR-P3T32B-02 round 2 (fixed 2999e77), CR-P3T32B-03 round 3 (fixed a580fb4);
   no blocker. Finding IDs restart per round, so each pin names its round. "Open" items were
-  checked against the code and shots at 551df81;
+  checked against the code and shots at 551df81; CR-P3T32B-03 round 2 is fixed by the retake of
+  app-results-browser on the 2 MB fixture; CR-P3T32B-06 round 4 is fixed in part (U+00AD still
+  passes, SEC-P3T32B-06 round 5);
 - tests: the four `test.fixme` Playwright tests made real plus a results browser test
   (tests/e2e/skeleton.spec.ts); pytest, ruff, mypy, tsc and vitest pass (simplifier's report,
   no count kept so that the figure does not go stale).
@@ -299,8 +301,8 @@ def build(theme: Theme) -> Sketch:
     s.text(bx + 16, by + 286, "a folder opens here, at most 1,000 entries", size=12,
            anchor="start", colour=t.dim)
     s.step(bx + 173, by + 330, 3, "one folder at a time")
-    pin(s, bx, by + 362, "R2 CR-P3T32B-03", ("its shot shows the 1.0 KB stand-in",
-                                            "report, not the 2 MB fixture"), done=False)
+    pin(s, bx, by + 362, "R2 CR-P3T32B-03", ("its shot showed the 1.0 KB stand-in;",
+                                            "retaken on the 2 MB fixture"))
     pin(s, bx, by + 418, "R1 CR-P3T32B-03", ("one error state for the run",
                                             "and the listing"), done=False)
 
@@ -404,7 +406,9 @@ def build(theme: Theme) -> Sketch:
     s.text(rx, yy + 58, "every version also refuses the 65 C0, DEL and C1 controls", size=12.5,
            anchor="start", colour=t.dim)
     pin(s, rx, yy + 92, "R4 SEC-P3T32B-05, CR-P3T32B-06", ("the client took the whole set;",
-                                                           "one constant, `FORMAT_CHARS`"))
+                                                           "one constant, `FORMAT_CHARS`;",
+                                                           "CR-P3T32B-06 fixed in part:",
+                                                           "U+00AD still passes (R5)"))
     s.terminal(rx + 300, yy + 74, 390, 92, ("test_req13_web_refuses_the_same_format_chars",
                                             "reads it from ReportViewer.tsx,",
                                             "asserts it equals the server's"), size=11.5,
