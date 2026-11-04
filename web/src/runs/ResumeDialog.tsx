@@ -17,7 +17,7 @@ import { engineName, isTerminal, runWord, words } from "./stateWord";
 export function refusedWords(reason: string, run: RunDetail, server: ServerVersion | null): ReactNode {
   switch (reason) {
     case "running":
-      return isTerminal(run.state) ? "The run's head is still running. Resume when it has ended." : "The run is still running.";
+      return "The run's head is still running. Resume when it has ended.";
     case "head_unverified":
       return `The head may still be running on ${run.head?.node ?? "its node"}, and Spectio cannot check it from ${server?.node ?? "this node"}. Resume when it has ended.`;
     case "resume_in_progress": {
