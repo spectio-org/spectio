@@ -536,6 +536,36 @@ def test_results_dir_at_launch(
     assert stored == "/data/project/res"
     run_id, stored = launched(authed_client, writer, nf, "nextflow", outdir="./results")
     assert stored == str(run_paths(settings.runs_root, run_id).launch_dir / "results")  # CR-07
+    for here in (".", "./"):  # the launch directory: its `.nextflow/` is never served
+        run_id, stored = launched(authed_client, writer, nf, "nextflow", outdir=here)
+        launch = make_run_dirs(settings.runs_root, run_id).launch_dir
+        assert stored == str(launch), here
+        (launch / ".nextflow").mkdir(exist_ok=True)
+        (launch / ".nextflow" / "history").write_text("h\n")
+        (launch / "out.txt").write_text("o\n")
+        names = [e["name"] for e in listing(authed_client, run_id=run_id).json()["entries"]]
+        assert "out.txt" in names and ".nextflow" not in names, names  # CR-08, SEC-05
+        assert raw(authed_client, ".nextflow/history", run_id).status_code == 422
+        assert listing(authed_client, ".nextflow", run_id).status_code == 422
+    fixed = str(run_paths(settings.runs_root, "run_01K8T2F1XTVRES0000000000R9").launch_dir)
+    absolute = files_results.results_dir(
+        "nextflow",
+        "run_01K8T2F1XTVRES0000000000R9",
+        settings.runs_root,
+        fixed,
+        {"outdir": fixed},
+        None,
+    )
+    assert absolute == fixed  # the same root as `.`: `.nextflow/` hidden by ENGINE_DIRS
+    for unservable in ("/x/\udcff", "r\x1b[31m", "r\u202e"):  # SEC-P3T31-06
+        assert (
+            files_results.results_dir(
+                "nextflow", RUN, settings.runs_root, fixed, {"outdir": unservable}, None
+            )
+            is None
+        ), repr(unservable)
+    _, stored = launched(authed_client, writer, nf, "nextflow", outdir="r\x1b[31m")
+    assert stored is None
     other = str(run_paths(settings.runs_root, run_id).work_dir)
     for refused in (
         "..",  # the run's directory

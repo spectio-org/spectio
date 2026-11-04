@@ -284,6 +284,25 @@ def test_req13_directive_quoted_values() -> None:
         '#SBATCH --export=A=x,TOKEN="a,b c"': f"#SBATCH --export={HIDDEN}",
         "#SBATCH --export=T=a\\ b": f"#SBATCH --export={HIDDEN}",
         "#SBATCH --export=A=x,B=y -J job": f"#SBATCH --export=A={HIDDEN},B={HIDDEN} -J job",
+        # SEC-P3T31-07: attached options, a non-ASCII space, an item with no name
+        "#PBS -vTOKEN=s3cret": f"#PBS -vTOKEN={HIDDEN}",
+        "#$ -vTOKEN=s3cret": f"#$ -vTOKEN={HIDDEN}",
+        '#BSUB -env"TOKEN=s3cret"': f"#BSUB -env{HIDDEN}",
+        "#SBATCH --export=TOKEN=s3cret\xa0more": f"#SBATCH --export=TOKEN={HIDDEN}",
+        "#SBATCH --export=ALL,-=v": f"#SBATCH --export=ALL,-={HIDDEN}",
+        "#SBATCH --export=ALL,1X=v,=w": f"#SBATCH --export=ALL,1X={HIDDEN},={HIDDEN}",
+        "#SBATCH -v --export=A=x,B=y": f"#SBATCH -v --export={HIDDEN},B={HIDDEN}",
+    }
+    for line, expected in lines.items():
+        assert redact_command_run(line + "\n") == expected + "\n", line
+
+
+def test_req13_here_string_hidden() -> None:
+    """A here-string is data, not a file name: its `NAME=value` is hidden (SEC-P3T31-08)."""
+    lines = {
+        "cat <<< TOKEN=v": f"cat <<< TOKEN={HIDDEN}",
+        'cat <<< "TOKEN=v"': f"cat <<< TOKEN={HIDDEN}",
+        "cat <<<TOKEN=v": f"cat <<<TOKEN={HIDDEN}",
     }
     for line, expected in lines.items():
         assert redact_command_run(line + "\n") == expected + "\n", line

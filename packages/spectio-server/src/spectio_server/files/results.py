@@ -55,7 +55,7 @@ SEARCH_ENTRIES = 10_000
 SEARCH_S = 5.0
 CHUNK = MAX_READ  # one read of a raw file
 REPORT_SUFFIXES = (".html", ".htm")
-ENGINE_DIRS = frozenset({".spectio", ".snakemake"})  # never part of a results path
+ENGINE_DIRS = frozenset({".spectio", ".snakemake", ".nextflow"})  # never part of a results path
 MULTIQC = "multiqc_report.html"
 
 clock = time.monotonic  # the search's clock (a test moves it)
@@ -94,14 +94,15 @@ def results_dir(
     launch directory and normalised. None also for an `outdir` whose listing would serve more
     than results: one that holds the runs root or the home directory (`/`, `..`, `$HOME`), one
     under the runs root but not in the run's launch directory (a work directory, `.spectio/`,
-    another run), one with a `.spectio` or `.snakemake` part, one with a `..` part (or a `.`
-    part, when absolute), or one with a dot directory (`~/.nextflow`, `~/.ssh`) outside or
-    below the launch directory. The check is on the text; `_roots` checks the folder itself
-    when it serves it."""
+    another run), one with an `ENGINE_DIRS` part, one with a `..` part (or a `.` part, when
+    absolute), one with a dot directory (`~/.ssh`) outside or below the launch directory, or
+    one `servable_name` refuses (SEC-P3T31-06). The launch directory itself (`.`) is served
+    with its `.nextflow/` hidden (CR-P3T31-08). The check is on the text; `_roots` checks the
+    folder itself when it serves it."""
     if engine == "snakemake":
         return launch_dir
     outdir = params.get("outdir", default_outdir)
-    if not isinstance(outdir, str) or not outdir or "\x00" in outdir:
+    if not isinstance(outdir, str) or not outdir or not servable_name(outdir):
         return None
     absolute = outdir.startswith("/")
     bad = (".", "..") if absolute else ("..",)  # a relative `.` is dropped by normpath (CR-07)
