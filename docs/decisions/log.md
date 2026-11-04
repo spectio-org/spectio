@@ -1162,3 +1162,17 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Recommended, not applied:** clear the Copy banner when another pipeline loads (#104 rule 5 (b)); a real warning for "writable by others" (rule 6 (b)); the boards' wording (rule 8 (b)); the shots' text check in frames (rule 10 (b)). All in follow-up FU-P3-37.
 - **Not yet applied:** P1 Task 32's interface, at the next `/apply-findings` ([P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-32-part-two)).
 - **Open:** the rest of FU-P3-37, listed on [P3-M8](../progress/W5/P3-M8.md#findings-and-open-questions).
+
+## 2026-11-04 — P3 tasks run in batches: docs, figure, doc review, simplify and promotion once per batch
+
+- **Context.** Thomas asked how to stop spending tokens on docs and reviews at every small step, and agreed to the proposal in the session of 2026-11-04. P3 tasks cost 40 to 70 USD each (`.autopilot/costs.jsonl`). The split between build, review and docs was not recorded **[to be validated]**.
+- **Decided (Thomas, 2026-11-04):**
+    - Docs are written in two passes. Each task leaves its review record, a short Progress section, the owning spec and a PR body without figure. The full Progress page, media, the figure and `doc-reviewer` run once per batch of 3 to 5 tasks ([documentation-system §3.5](../specs/documentation-system.md#35-docs-per-batch-of-p3-tasks-thomas-2026-11-04)).
+    - `code-reviewer` still runs on every task. `security-reviewer` runs only when the diff touches a sensitive path, or on a security task. This replaces "every step, whatever it touches" (2026-10-27).
+    - The fix loop has one round instead of two; security blockers and majors keep their extra rounds (inbox #75).
+    - `code-simplifier` runs once per batch, and the promotion to `main` happens once per batch.
+    - `doc-writer`, `doc-reviewer` and `code-simplifier` move to sonnet.
+    - Cost is recorded by kind: `build` per task, `docs` per batch.
+    - Where: [autopilot §11](../playbooks/autopilot.md#11-batches-of-p3-tasks-thomas-2026-11-04), `.claude/workflows/p3-task.js`, the new `.claude/workflows/p3-batch.js`, the `review-code` and `write-docs` skills, and `CLAUDE.md`.
+- **Why the code review stays per task.** On a larger diff, review is less precise and fixes cost more.
+

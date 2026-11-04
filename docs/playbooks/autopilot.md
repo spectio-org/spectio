@@ -186,6 +186,8 @@ Spectio is a side project, so the autopilot spends only what Thomas gives it. Ho
 
 ## 7. Docs in the loop
 
+*Note 2026-11-04:* P3 tasks are documented once per batch ([§11](#11-batches-of-p3-tasks-thomas-2026-11-04)).
+
 Every step leaves its pages (`docs/specs/documentation-system.md` §3). The pages so far are under [Progress](../progress/index.md); the foundations wave W0 is [F1](../progress/W0/F1.md) to [F7](../progress/W0/F7.md).
 
 **During the step:**
@@ -237,6 +239,8 @@ gh variable set AUTOMERGE_MAIN --body false   # set to true to let CI merge into
 
 ## 9. Code review in the loop
 
+*Note 2026-11-04:* for P3 tasks, the security review runs on sensitive paths only, the fix loop has one round, and the simplifier runs once per batch ([§11](#11-batches-of-p3-tasks-thomas-2026-11-04)).
+
 *Note 2026-10-29 (inbox #52 (b), [log](../decisions/log.md#2026-10-29-go-for-the-whole-p1-plan-with-five-changes)):* tooling and test-only changes need tests and one review; product code and security boundaries keep the full `review-code` below. `CLAUDE.md` still states the stricter rule until Thomas edits it.
 
 Every step that changes code, a `build` step or a spike whose code a later step reuses, goes through the `review-code` (`.claude/skills/review-code/SKILL.md`) skill. It runs after the exit check and before the docs (§7).
@@ -258,5 +262,33 @@ Thomas, in the session of 2026-10-30: the autopilot should depend only on its ow
    - at the end of a run, the two status lines of `ready.py` and what waits on Thomas.
 
    Progress, findings and fixes go to the journal, the Progress pages and the review records, as before. A reminder that the session has been silent is answered in one line.
-3. **One workflow per P3 task.** Each P3 task runs as the saved workflow `.claude/workflows/p3-task.js`: build in its own worktree (test-driven), `code-reviewer` and `security-reviewer` in parallel with the fix rounds of §9, defects among the minors fixed after approval and re-reviewed once, `code-simplifier`, then `doc-writer` and `diagram-artist` in parallel and `doc-reviewer` with up to two revisions. The orchestrator then pushes, opens the PR, merges when CI is green, promotes to `main`, records cost and state, and starts the next task while the budget check answers `go`.
+3. **One workflow per P3 task.** *(Since 2026-11-04, per task and per batch: [§11](#11-batches-of-p3-tasks-thomas-2026-11-04).)* Each P3 task runs as the saved workflow `.claude/workflows/p3-task.js`: build in its own worktree (test-driven), `code-reviewer` and `security-reviewer` in parallel with the fix rounds of §9, defects among the minors fixed after approval and re-reviewed once, `code-simplifier`, then `doc-writer` and `diagram-artist` in parallel and `doc-reviewer` with up to two revisions. The orchestrator then pushes, opens the PR, merges when CI is green, promotes to `main`, records cost and state, and starts the next task while the budget check answers `go`.
 4. **Chaining without a `/goal`.** A cloud session cannot type `/goal` for itself. The orchestrator keeps the run going with self check-ins (`send_later`): one to re-check CI on an open PR, one to start the next tick when a tick ends with work ready and budget left. It stops when the budget check answers `stop`, nothing is ready, or a human gate is reached, and says so once.
+
+## 11. Batches of P3 tasks (Thomas, 2026-11-04)
+
+Thomas, in the session of 2026-11-04: review and document in larger batches, so that small tasks do not each pay the full docs and review loop. [Decision log](../decisions/log.md#2026-11-04-p3-tasks-run-in-batches-docs-figure-doc-review-simplify-and-promotion-once-per-batch). It changes §7, §9 and §10 item 3 for P3 tasks; other step kinds are unchanged.
+
+1. **Per task, `p3-task` workflow.**
+   - Build in its own worktree, test-driven.
+   - `code-reviewer` on every task.
+   - `security-reviewer` only when the diff touches a sensitive path (below), or when the task is a security task (the dev-env §15.3 tasks run with `security: 'always'`).
+   - **One fix round** for blockers and majors; more only while a security blocker or major is open (inbox #75). Defects among the minors are still fixed after approval; other minors go to the batch's follow-up list.
+   - Short docs (`documentation-system.md` §3.5).
+   - The orchestrator pushes, opens the PR with the `no-figure` label, and squash-merges it into `autopilot/integration` when CI is green. There is no promotion to `main` per task.
+2. **Sensitive paths.** These are listed in `SENSITIVE` in `.claude/workflows/p3-task.js`:
+   - in `spectio_server`: `api/`, `files/`, `migrations/`, `app.py`, `serve.py`, `static.py`, `bootstrap.py`;
+   - in `spectio`: `runner/`, `loginshell.py`, `config.py`;
+   - `.github/` and `tools/ci/`;
+   - dependency manifests;
+   - any path whose name contains auth, token, secret, session, sandbox, plugin or permission.
+
+   The paths of every fix round count too.
+3. **A batch** is 3 to 5 merged tasks, or fewer when a milestone ends. Then the orchestrator runs `p3-batch` (`.claude/workflows/p3-batch.js`) on the batch's range of `autopilot/integration`:
+   - one `code-simplifier` pass on the batch diff; a change over 20 lines is re-reviewed by both reviewers, and reverted if they find a blocker or major;
+   - the full Progress page, media and one figure;
+   - `doc-reviewer` with up to two revisions.
+
+   Its PR is merged like a task PR. Then **one promotion PR to `main`** per batch.
+4. **Models.** `doc-writer`, `doc-reviewer` and `code-simplifier` run on sonnet. The build worker, `code-reviewer`, `security-reviewer` and `diagram-artist` keep their models.
+5. **Cost by kind.** The orchestrator records each `p3-task` run as `--kind build` and each `p3-batch` run as `--kind docs` (`tools/autopilot/budget.py record-cost`). Comparing the two kinds over the next batches shows what the change saves.
