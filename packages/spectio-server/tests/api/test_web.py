@@ -54,17 +54,18 @@ def test_spa_routes_serve_index(web: TestClient) -> None:
         assert r.headers["x-content-type-options"] == "nosniff"
 
 
-def test_report_page_may_frame_this_origin_only(web: TestClient) -> None:
-    """The report viewer (P1 Task 31) is the one screen that frames: `frame-src 'self'`, for the
-    sandboxed report served by `/api/v1/runs/{id}/results/raw/...`; the others frame nothing."""
-    r = web.get("/runs/run_01K8T2F1XTVRES000000000000/report")
-    assert r.status_code == 200
-    assert r.text == INDEX
-    csp = r.headers["content-security-policy"]
-    assert "frame-src 'self'" in csp
-    assert "frame-ancestors 'none'" in csp
-    assert "script-src 'self';" in csp
-    assert "frame-src" not in web.get("/runs").headers["content-security-policy"]
+def test_screens_may_frame_this_origin_only(web: TestClient) -> None:
+    """Every screen allows `frame-src 'self'`, for the report viewer's sandboxed report served by
+    `/api/v1/runs/{id}/results/raw/...` (P1 Task 31): a CSP is the document's, and the viewer is
+    also reached by in-app navigation from another screen (CR-P3T31-02)."""
+    for path in ("/", "/runs", "/runs/run_01K8T2F1XTVRES000000000000/report"):
+        r = web.get(path)
+        assert r.status_code == 200, path
+        assert r.text == INDEX
+        csp = r.headers["content-security-policy"]
+        assert "frame-src 'self'" in csp, path
+        assert "frame-ancestors 'none'" in csp, path
+        assert "script-src 'self';" in csp, path
 
 
 def test_head_on_screens_and_assets(web: TestClient) -> None:

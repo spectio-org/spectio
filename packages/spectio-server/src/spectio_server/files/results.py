@@ -2,17 +2,21 @@
 dev-env §15.3 req. 13 and 14).
 
 `results_dir` is the directory recorded on the run at launch (`runs.results_dir`): Nextflow's
-`params.outdir` resolved against the launch directory, Snakemake's launch directory. Below it,
-every read is the confined walk of `files.confine`; a last-component symlink is followed only
+`params.outdir` resolved against the launch directory, Snakemake's launch directory. One
+outside the launch directory is opened by its path, then refused by inode when it is or holds
+the runs root or the home directory, or lies in the runs root (SEC-P3T31-01). Below it, every
+read is the confined walk of `files.confine`; a last-component symlink is followed only
 into a task directory of the run's work directory (a `publishDir` in `'symlink'` mode). No part
 of a path may be `.spectio` or `.snakemake`, compared without case: those hold the head's and
 the engine's own files, which are served by their routes or not at all.
 
 A listing reads one folder, at most `MAX_ENTRIES` entries (`scandir` stops there), folders
 first. The search for reports looks for `.html` and `.htm` files to `REPORT_DEPTH` levels
-below the root, breadth first, and stops after `SEARCH_ENTRIES` entries visited, `SEARCH_S`
-seconds or `MAX_REPORTS` found (req. 14, SEC-157). Every function that touches the file system
-runs in the file pool (`files.pool`) and returns data, never an open file.
+below the root, breadth first, and stops after `SEARCH_ENTRIES` entries visited or `SEARCH_S`
+seconds; of the reports found, MultiQC's come first and `MAX_REPORTS` are kept (req. 14,
+SEC-157; CR-P3T31-01: a cap on the search would drop a MultiQC report found late). Every
+function that touches the file system runs in the file pool (`files.pool`) and returns data,
+never an open file.
 """
 
 import os
@@ -89,13 +93,17 @@ def results_dir(
     launch directory and normalised. None also for an `outdir` whose listing would serve more
     than results: one that holds the runs root or the home directory (`/`, `..`, `$HOME`), one
     under the runs root but not in the run's launch directory (a work directory, `.spectio/`,
-    another run), or one with a `.spectio` or `.snakemake` part."""
+    another run), one with a `.spectio` or `.snakemake` part, or an absolute one with a `.` or
+    `..` part. The check is on the text; `_roots` checks the folder itself when it serves it."""
     if engine == "snakemake":
         return launch_dir
     outdir = params.get("outdir", default_outdir)
     if not isinstance(outdir, str) or not outdir or "\x00" in outdir:
         return None
+    if outdir.startswith("/") and any(part in (".", "..") for part in outdir.split("/")):
+        return None  # the system may resolve `..` through a link: never guessed from the text
     found = posixpath.normpath(posixpath.join(launch_dir, outdir))
+    found = "/" + found.lstrip("/")  # `//x` is `/x` (normpath keeps two slashes)
     root = str(runs_root)
     if _holds(found, root) or _holds(found, str(Path.home())):
         return None
@@ -149,9 +157,49 @@ def _roots(where: Where) -> Iterator[tuple[Root | None, Root | None]]:
             else:
                 root = open_root(where.results_dir)
                 stack.callback(os.close, root.fd)
+                _refuse_aliases(root.fd, where.runs_root)
         except NotFound:
             root = None
         yield root, work
+
+
+_UP = getattr(os, "O_PATH", os.O_RDONLY) | os.O_DIRECTORY | os.O_CLOEXEC
+
+
+def _chain(fd: int) -> list[tuple[int, int]]:
+    """(st_dev, st_ino) of the folder `fd` and of each folder above it, up to `/`, walked with
+    `openat(fd, "..")`: the folders as the system holds them, whatever path named them."""
+    found: list[tuple[int, int]] = []
+    fd = os.dup(fd)
+    try:
+        while True:
+            st = os.fstat(fd)
+            if found and found[-1] == (st.st_dev, st.st_ino):
+                return found  # `/` is its own parent
+            found.append((st.st_dev, st.st_ino))
+            parent = os.open("..", _UP, dir_fd=fd)
+            os.close(fd)
+            fd = parent
+    finally:
+        os.close(fd)
+
+
+def _chain_of(path: Path) -> list[tuple[int, int]]:
+    fd = os.open(path, _UP)
+    try:
+        return _chain(fd)
+    finally:
+        os.close(fd)
+
+
+def _refuse_aliases(fd: int, runs_root: Path) -> None:
+    """Raise NotAllowed for a root opened by its absolute path that is the runs root, the home
+    directory or a folder above either, or lies below the runs root: compared by inode, so no
+    `//`, `/proc/self/root` or symlinked folder on the way names them by another path
+    (SEC-P3T31-01)."""
+    mine, runs, home = _chain(fd), _chain_of(runs_root), _chain_of(Path.home())
+    if mine[0] in runs or mine[0] in home or runs[0] in mine:
+        raise NotAllowed("not a results directory: it holds or lies in Spectio's runs")
 
 
 # --- Listing and search ------------------------------------------------------------------
@@ -182,13 +230,14 @@ def _report(rel: PurePosixPath) -> Report:
 
 
 def find_reports(where: Where) -> list[Report]:
-    """The reports below the root, MultiQC's first, then by path (a folder's together)."""
+    """At most `MAX_REPORTS` reports below the root, MultiQC's first, then by path (a folder's
+    together)."""
     found: list[PurePosixPath] = []
     with _roots(where) as (root, work):
         if root is not None:
             _search(root, work, found)
-    reports = [_report(rel) for rel in found]
-    return sorted(reports, key=lambda r: (not r.path.endswith(MULTIQC), r.path))
+    reports = sorted(map(_report, found), key=lambda r: (not r.path.endswith(MULTIQC), r.path))
+    return reports[:MAX_REPORTS]
 
 
 def _search(root: Root, work: Root | None, found: list[PurePosixPath]) -> None:
@@ -213,8 +262,6 @@ def _search(root: Root, work: Root | None, found: list[PurePosixPath]) -> None:
                         todo.append(rel)
                     elif kind == "file" and item.name.lower().endswith(REPORT_SUFFIXES):
                         found.append(rel)
-                        if len(found) >= MAX_REPORTS:
-                            return
         finally:
             os.close(fd)
 

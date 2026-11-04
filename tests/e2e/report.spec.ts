@@ -76,3 +76,21 @@ test('a MultiQC report renders in the viewer and cannot call the API', async ({ 
   expect(await inside!.evaluate(() => window.origin)).toBe('null'); // opaque: not Spectio's origin
   expect(outside).toEqual([]);
 });
+
+test('the viewer frames its report when reached by in-app navigation (CR-P3T31-02)', async ({ page }) => {
+  // A CSP is the document's: load another screen, then move to the viewer without a new document,
+  // as a link of the app does (TanStack Router wraps history.pushState).
+  const blocked: string[] = [];
+  page.on('console', (m) => m.text().includes('frame-src') && blocked.push(m.text()));
+  await page.goto(`/runs/${SEEDED}`);
+  await expect(page.locator('h1').first()).toBeVisible();
+  const path = 'hostile/hostile_report.html';
+  await page.evaluate(
+    (to) => window.history.pushState({ ...window.history.state, __TSR_index: 1 }, '', to),
+    `/runs/${SEEDED}/report?path=${encodeURIComponent(path)}`,
+  );
+  await expect(page.getByText(`Untrusted report: ${path}`)).toBeVisible();
+  const frame = page.frameLocator('iframe[title$="sandboxed"]');
+  await expect(frame.getByRole('heading', { name: 'Hostile report' })).toBeVisible();
+  expect(blocked).toEqual([]);
+});

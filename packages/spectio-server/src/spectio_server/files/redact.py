@@ -17,8 +17,9 @@ word that holds an assignment, wherever it stands, so that no command word befor
 - an option `--opt=NAME=value`: `--env=`, `--set-env=` (the value of `--opt=value` alone, with
   no name in it, is kept);
 - in a scheduler directive line (`#SBATCH`, `#PBS`, `#$`, `#BSUB`), the value of each
-  `NAME=value` item of `--export`, `-v` and `-env`; a quote left open there hides the rest of
-  the line (inbox #94 rule 8, option b). Other comments are kept.
+  `NAME=value` item of `--export`, `-v` and `-env`; a value with a quote or a backslash in it
+  hides the rest of the line (inbox #94 rule 8, option b; SEC-P3T31-02). Other comments are
+  kept.
 
 Each value becomes `«hidden»`. It fails closed: from the line where the lexer meets something it
 cannot read (a quote or a here-document left open, or constructs nested more than `MAX_NESTING`
@@ -40,6 +41,8 @@ _UNQUOTE = re.compile(r"\$(?=')|[\"'\\]")
 _DIRECTIVE = re.compile(r"#(SBATCH|PBS|\$|BSUB)\s")
 _EXPORT_OPTION = re.compile(r"(?<=\s)(--export(=|\s+)|-v\s+|-env\s+)")
 _ITEM = re.compile(r"([A-Za-z_][A-Za-z0-9_]*)=[^,]*")
+_QUOTING = "'\"\\"
+_VALUE_END = re.compile(r"[\s'\"\\]")  # a space ends a directive value; a quoting hides it
 _OPS = ";&|()<>"
 _SPACE = " \t"
 
@@ -325,30 +328,22 @@ class _Lexer:
         return _UNQUOTE.sub("", self.s[start:end])
 
     def _directive(self, start: int, end: int) -> None:
-        """In a scheduler directive line, hide each `NAME=value` of `--export`, `-v`, `-env`."""
+        """In a scheduler directive line, hide each `NAME=value` of `--export`, `-v`, `-env`; a
+        value with a quote or a backslash in it is hidden to the end of the line, so no tail of
+        a quoted value and no item after a closing quote is shown (fails closed: SEC-P3T31-02)."""
         line = self.s[start:end]
         if not _DIRECTIVE.match(line):
             return
         for option in _EXPORT_OPTION.finditer(line):
             at = option.end()
-            quote = line[at : at + 1]
-            if quote in ("'", '"'):
-                close = line.find(quote, at + 1)
-                if close < 0:  # left open: the rest of the line
-                    self.edits.append((start + at, end, HIDDEN))
-                    return
-                value_start, value_end = at + 1, close
-            else:
-                value_start = at
-                found = re.search(r"\s", line[at:])
-                value_end = len(line) if found is None else at + found.start()
-            value = line[value_start:value_end]
-            if "'" in value or '"' in value:
-                self.edits.append((start + value_start, start + value_end, HIDDEN))
-                continue
+            stop = _VALUE_END.search(line, at)
+            if stop is not None and stop[0] in _QUOTING:
+                self.edits.append((start + at, end, HIDDEN))
+                return
+            value = line[at : len(line) if stop is None else stop.start()]
             for item in _ITEM.finditer(value):
-                name_end = value_start + item.start() + len(item[1]) + 1
-                self.edits.append((start + name_end, start + value_start + item.end(), HIDDEN))
+                name_end = at + item.start() + len(item[1]) + 1
+                self.edits.append((start + name_end, start + at + item.end(), HIDDEN))
 
 
 def _apply(text: str, edits: list[tuple[int, int, str]]) -> str:

@@ -3,11 +3,13 @@ read only (P1 Task 31; api §5 note of 2026-10-28, Results; dev-env §15.3 req. 
 
 The listing is one folder of the results directory and the reports found below its root
 (`files.results`); the search runs once per listing while the run is active, and its result is
-kept once the run has ended. A raw file is served whole, read in chunks of at most 1 MiB, each
-in the file pool with its timeout. `.html` and `.htm` carry the sandbox CSP of req. 14 for the
-report viewer's `<iframe>`; every other file, and any file asked with `?download=true`, is an
-attachment with the CSP `sandbox`. `404` when the run has no results directory: unknown, or a
-run started from a terminal (`cli-observed`), whose files 0.0.1 does not serve.
+kept once the run has ended. A raw file is served whole with its `Content-Length`, read in chunks
+of at most 1 MiB, each in the file pool with its timeout; a read that fails or comes back short
+once the headers are sent aborts the response (CR-P3T31-03). `.html` and `.htm` carry the
+sandbox CSP of req. 14 for the report viewer's `<iframe>`; every other file, and any file asked
+with `?download=true`, is an attachment with the CSP `sandbox`. `404` when the run has no
+results directory: unknown, or a run started from a terminal (`cli-observed`), whose files
+0.0.1 does not serve.
 """
 
 import logging
@@ -119,6 +121,8 @@ def result_file(request: Request, run_id: str, path: str, download: bool = False
         headers["Content-Security-Policy"] = ATTACHMENT_CSP
         headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(rel.name, safe='')}"
 
+    headers["Content-Length"] = str(size)
+
     def chunks() -> Iterator[bytes]:
         start = 0
         while start < size:
@@ -126,12 +130,18 @@ def result_file(request: Request, run_id: str, path: str, download: bool = False
                 data = in_pool(
                     request, lambda at=start: files.read_chunk(where, rel, at, size - at)
                 )
-            except Problem as exc:  # the headers are sent: the body ends short
+            except Problem as exc:
                 log.warning("results file %s of %s cut at %d: %s", rel, run_id, start, exc)
-                return
+                raise
             if not data:
-                return  # the file shrank
+                log.warning("results file %s of %s cut at %d: it shrank", rel, run_id, start)
+                raise ShortFile(f"{rel}: shrank at {start}")
             yield data
             start += len(data)
 
     return StreamingResponse(chunks(), media_type=media, headers=headers)
+
+
+class ShortFile(Exception):
+    """A results file ended before the size its headers sent: the server aborts the response,
+    so the client sees a failed download, not a short file that looks whole (CR-P3T31-03)."""

@@ -8,6 +8,7 @@ directory.
 """
 
 import asyncio
+import errno
 import os
 from collections import Counter
 from dataclasses import dataclass
@@ -183,7 +184,21 @@ def test_results_reports(authed_client: TestClient, results: Results) -> None:
     assert by_path["multiqc/star_salmon/multiqc_report.html"]["title"] == "MultiQC report"
     for i in range(60):
         results.write(f"more/r{i:02d}.html")
-    assert len(listing(authed_client).json()["reports"]) == 50
+    capped = listing(authed_client).json()["reports"]
+    assert len(capped) == 50
+    assert capped[0]["path"] == "multiqc/star_salmon/multiqc_report.html"  # CR-P3T31-01
+
+
+def test_results_reports_multiqc_kept_past_the_cap(
+    authed_client: TestClient, results: Results
+) -> None:
+    """MultiQC's report is kept when 50 others come before it, breadth first (CR-P3T31-01)."""
+    for i in range(60):
+        results.write(f"fastqc/S{i:02d}_fastqc.html")
+    results.write("multiqc/star_salmon/multiqc_report.html")
+    reports = listing(authed_client).json()["reports"]
+    assert len(reports) == 50
+    assert reports[0]["path"] == "multiqc/star_salmon/multiqc_report.html"
 
 
 def test_req14_report_search_caps(
@@ -272,6 +287,47 @@ def test_req13_published_link_never_serves_job_files(
         assert "s3cret" not in found.text
 
 
+def test_req13_results_dir_aliases_refused(
+    authed_client: TestClient,
+    results: Results,
+    writer: Writer,
+    settings: Settings,
+    synthetic: Path,
+    tmp_path: Path,
+) -> None:
+    """A results directory that names the run's work directory, the home directory or the runs
+    root by another path is refused when served, by its inode, not its text (SEC-P3T31-01)."""
+    (results.task_dir / ".command.env").write_text("export TOKEN=s3cret\n")
+    home = Path(os.environ["HOME"])
+    (home / ".nextflow").mkdir(exist_ok=True)
+    (home / ".nextflow" / "secrets").write_text("s3cret\n")
+    run_dir = results.paths.work_dir.parent
+    (tmp_path / "alias").symlink_to(run_dir)
+    (tmp_path / "roots").symlink_to(settings.runs_root)
+    for alias, secret in (
+        ("/" + str(results.paths.work_dir), "/".join(HASH) + "/.command.env"),
+        (f"/proc/self/root{home}", ".nextflow/secrets"),
+        (str(tmp_path / "alias" / "work"), "/".join(HASH) + "/.command.env"),
+        (str(tmp_path / "roots"), f"{RUN}/work/{'/'.join(HASH)}/.command.env"),
+    ):
+        set_run(writer, RUN, results_dir=alias)
+        found = listing(authed_client)
+        assert found.status_code == 422, (alias, found.text)
+        served = raw(authed_client, secret)
+        assert served.status_code == 422, (alias, served.text)
+        assert "s3cret" not in served.text
+    elsewhere = tmp_path / "elsewhere" / "res"  # outside the runs root and home: served
+    elsewhere.mkdir(parents=True)
+    (elsewhere / "a.txt").write_text("fine\n")
+    set_run(writer, RUN, results_dir=str(elsewhere))
+    assert raw(authed_client, "a.txt").text == "fine\n"
+
+    nf = synthetic / "nextflow"
+    for refused in ("/" + str(results.paths.work_dir), f"{elsewhere}/../res", "/./tmp"):
+        _, stored = launched(authed_client, writer, nf, "nextflow", outdir=refused)
+        assert stored is None, refused
+
+
 def test_req13_snakemake_results_hide_engine_dirs(
     authed_client: TestClient, settings: Settings, writer: Writer
 ) -> None:
@@ -343,6 +399,37 @@ def test_raw_whole_file_in_chunks(
     too_big = raw(authed_client, "big.html")
     assert too_big.status_code == 413
     assert too_big.json()["type"] == "/problems/file-too-large"
+
+
+def test_raw_cut_mid_stream_is_incomplete(
+    served: str, settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A read that fails after the headers are sent aborts the response: with its
+    `Content-Length`, the client sees a short body as a failed download, not a whole file
+    (CR-P3T31-03)."""
+    paths = make_run_dirs(settings.runs_root, RUN)
+    root = paths.launch_dir / "results"
+    add_run(writer, settings, RUN, "rnaseq", "running", results_dir=str(root))
+    root.mkdir()
+    (root / "big.tsv").write_text("x" * 20)
+    monkeypatch.setattr(files_results, "CHUNK", 7)
+    real, calls = files_results.read_chunk, []
+
+    def failing(*args: Any) -> bytes:
+        calls.append(args)
+        if len(calls) == 2:
+            raise OSError(errno.EIO, "I/O error")
+        return real(*args)
+
+    monkeypatch.setattr(files_results, "read_chunk", failing)
+    with (
+        httpx2.Client(base_url=served, timeout=10) as http,
+        http.stream("GET", f"{API}/runs/{RUN}/results/raw/big.tsv") as response,
+    ):
+        assert response.status_code == 200
+        assert response.headers["content-length"] == "20"
+        with pytest.raises(httpx2.RemoteProtocolError):
+            response.read()
 
 
 def test_observed_run_no_results(

@@ -257,8 +257,8 @@ def test_req13_redact_review_gaps() -> None:
         "#SBATCH --mem=4G --export=NONE": "#SBATCH --mem=4G --export=NONE",
         "#PBS -v TOKEN=s4,B=s5": f"#PBS -v TOKEN={HIDDEN},B={HIDDEN}",
         "#$ -v TOKEN=s6": f"#$ -v TOKEN={HIDDEN}",
-        '#BSUB -env "all, TOKEN=s7"': f'#BSUB -env "all, TOKEN={HIDDEN}"',
-        '#SBATCH --export="T=s8 x"': f'#SBATCH --export="T={HIDDEN}"',
+        '#BSUB -env "all, TOKEN=s7"': f"#BSUB -env {HIDDEN}",
+        '#SBATCH --export="T=s8 x"': f"#SBATCH --export={HIDDEN}",
         "#SBATCH --export='T=s9": f"#SBATCH --export={HIDDEN}",
         "#SBATCH -J name": "#SBATCH -J name",
         "# a comment T=c1": "# a comment T=c1",
@@ -270,6 +270,20 @@ def test_req13_redact_review_gaps() -> None:
     for secret in ("abc", "s1", "s3", "s4", "s7", "s8", "s9", "v1", "v12", "v14"):
         assert f"={secret}" not in served and f"={secret}," not in served, secret
     assert served.count("\n") == len(lines)
+
+
+def test_req13_directive_quoted_values() -> None:
+    """A directive value with a quote in it is hidden to the end of the line, so neither the
+    tail of a quoted value nor an item after a closing quote is shown (SEC-P3T31-02)."""
+    lines = {
+        "#SBATCH --export=TOKEN='a b'": f"#SBATCH --export={HIDDEN}",
+        '#SBATCH --export="TOKEN=abc",B=c': f"#SBATCH --export={HIDDEN}",
+        '#SBATCH --export=A=x,TOKEN="a,b c"': f"#SBATCH --export={HIDDEN}",
+        "#SBATCH --export=T=a\\ b": f"#SBATCH --export={HIDDEN}",
+        "#SBATCH --export=A=x,B=y -J job": f"#SBATCH --export=A={HIDDEN},B={HIDDEN} -J job",
+    }
+    for line, expected in lines.items():
+        assert redact_command_run(line + "\n") == expected + "\n", line
 
 
 def test_req13_strip_bidi_and_8bit_escapes() -> None:
