@@ -571,3 +571,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 - P1 Task 7, the last of M1: `snakemake-logger-plugin-spectio` writes allow-listed events to a 0600 spool in a 0700 `.spectio/events/`, on `PYTHONPATH`, never failing the run; it sends the fields Tasks 28 and 29 read (`slurm_submitted`, `job_error.aux.external_jobid` and `msg`, `threads`, `resources`, `benchmark`, rule logs). A server test now projects the recorded spool of a real Snakemake 9.27.1 run.
 - Workflow p3-task in 2 rounds (code approve 0/0/5, security approve 0/0/5), simplifier -9/+3, doc-reviewer approve 13. Orchestrator gate on 4384acf: plugin suite 43 passed; pytest 651 passed; ruff, format, mypy, lint-imports, uv lock clean; SAST 0; gitleaks clean. Cost recorded: 45 USD (estimate).
 - The PR changes `.github/workflows/ci.yml` and `pipelines-synthetic.yml` (the plugin's suite in CI), so it is not auto-merged: it waits for Thomas. Inbox #97 (assumed), FU-P3-34. Thomas's order (P3-parD, 27, 28, 29, 32, 7) is built; #111 and #122 wait for his merge.
+
+## 2026-11-04 · P1 Task 30 launched (inbox #98, assumed order)
+
+- Thomas's next order recorded as assumed (inbox #98): Task 30, Task 31, Task 32 part two, then Tasks 12 → 16. PRs #111 and #122 still wait for Thomas.
+- Budget: `budget.py start --weekly 30 --now 0`. No live reading in this cloud session and no `/usage` figure from Thomas, so the 30 points are counted from now on recorded USD (estimated), not on the real window.
+- P1 Task 30 (Resume, copy to a new launch, copy actions; also CR-P3T09-11: head files scoped by `launch_n`) launched: workflow wf_35b73a40-f6f, base 3514bd9. Scope: no `slurm-mini` check (Task 22), no CSRF token (sessions, Tasks 12–16), no screens (Task 32 part two). Numbers reserved: inbox #99, FU-P3-35.
