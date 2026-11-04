@@ -124,7 +124,10 @@ function Contents({ run, results }: { run: RunDetail; results: Results }) {
       <Link to="/runs/$id/results" params={{ id: run.id }} className="sp-results-all">
         Browse all results <Icon path={ICONS.arrowRight} size={13} />
       </Link>
-      <p className="sp-muted">Reports open in Spectio's sandboxed report viewer: their scripts run, but they cannot reach Spectio.</p>
+      <p className="sp-muted">
+        Reports open in Spectio's sandboxed report viewer, where they cannot reach Spectio. MultiQC's scripts stop there: its
+        tables show, its plots and toolbox do not. Download a report to see all of it.
+      </p>
     </>
   );
 }

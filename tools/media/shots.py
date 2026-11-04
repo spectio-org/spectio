@@ -136,12 +136,14 @@ REGISTRY: dict[str, Shot] = {
         # P1 Task 32 part two. The synthetic pipeline's MULTIQC process writes only a stand-in table, so the
         # demo run's multiqc/multiqc_report.html is replaced by the regenerated MultiQC fixture first
         # (tools/media/README.md); `frame:` waits for its neutral input path inside the viewer. The failed run
-        # is the Task 32 run above, which Resume and Copy start from.
+        # is the Task 32 run above, which Resume and Copy start from. The report is stopped, not loaded: its
+        # scripts throw on localStorage in the opaque-origin sandbox, so "Loading report.." stays (inbox #102).
         Shot("app-report-viewer", "/runs/$SPECTIO_DEMO_RUN/report?path=multiqc/multiqc_report.html", 1440, 1180,
-             "0.0.1, live: a MultiQC report in the sandboxed report viewer, under its Untrusted report banner",
+             "0.0.1, live: a MultiQC report in the sandboxed report viewer, under its Untrusted report banner. "
+             "Its tables show, but its scripts stop on localStorage: 'Loading report..' stays, the toolbox does not start",
              themes=("light", "dark"), live=REPORT_VIEWER),
         Shot("app-report-viewer-phone", "/runs/$SPECTIO_DEMO_RUN/report?path=multiqc/multiqc_report.html", 390, 844,
-             "0.0.1, live: the same report on a phone", themes=("light", "dark"), live=REPORT_VIEWER),
+             "0.0.1, live: the same report on a phone, stopped the same way", themes=("light", "dark"), live=REPORT_VIEWER),
         Shot("app-run-results", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
              "0.0.1, live: the Summary's Results and reports: the results directory, MultiQC first, the folders",
              themes=("light", "dark"), live=("wait:Browse all results", "view:Results and reports")),

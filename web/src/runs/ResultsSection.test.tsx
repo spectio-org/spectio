@@ -62,6 +62,19 @@ test("the section shows the results directory with Copy, the reports MultiQC fir
   expect(within(results).getByRole("link", { name: "Browse all results" }).getAttribute("href")).toBe(`/runs/${ID}/results`);
 });
 
+test("the sandbox note does not promise working reports: MultiQC's scripts stop there (CR-P3T32B-02)", async () => {
+  detail();
+  app(`/runs/${ID}`);
+  const results = await section();
+  await within(results).findByRole("link", { name: "Open the MultiQC report" });
+  expect(within(results).queryByText(/their scripts run/)).toBeNull();
+  expect(
+    within(results).getByText(
+      "Reports open in Spectio's sandboxed report viewer, where they cannot reach Spectio. MultiQC's scripts stop there: its tables show, its plots and toolbox do not. Download a report to see all of it.",
+    ),
+  ).toBeInTheDocument();
+});
+
 test("a failed nf-core run with no MultiQC report says so; a running one says it comes at the end", async () => {
   detail({ state: "failed" }, { ...LISTING, reports: [] });
   app(`/runs/${ID}`);
