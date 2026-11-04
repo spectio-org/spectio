@@ -1,0 +1,273 @@
+"""Resume and Copy to a new launch (P1 Task 30; api §5 and §5.1, notes of 2026-10-28; dev-env
+§15.3 req. 7, 10 and 16).
+
+`POST /runs/{id}:relaunch` takes `{mode: "resume"}` only (every other field or mode is
+`422 not-in-this-version`). From a `failed` or `cancelled` run it creates a child run, `queued`,
+with its own run directory and `.spectio/`, whose head runs in the lineage's launch and work
+directories; the parent keeps its state. The checks of `spectio_server.resume` come first,
+outside the writer, then the store's again in the transaction that inserts the child
+(`BEGIN IMMEDIATE`, the writer's), so two parallel requests make one child. The runner checks
+the directories once more before the head starts. A refusal is `409 run-state-conflict` with
+the `reason` of `actions.resume`. The Origin check of req. 7 runs before any route
+(`api.browser`); its CSRF token waits for the session (TODO(P1 Task 16)).
+
+`GET /runs/{id}:launch-template` is the `POST /runs` body of the run, for Copy to a new launch,
+with `non_default` (the parameters that differ from the pipeline's schema defaults) and
+`code_loading` (the values that load code or configuration, req. 16).
+"""
+
+import os
+import shutil
+import stat
+from datetime import UTC, datetime
+from itertools import pairwise
+from pathlib import Path
+from typing import Any, Literal
+
+from fastapi import APIRouter, Request, Response
+from pydantic import BaseModel, ConfigDict, JsonValue
+from sqlalchemy import Connection, insert, select
+
+from spectio.runner.resume import NotResumable
+from spectio.runner.rundir import RunManifest, Workflow, run_paths, write_run_manifest
+from spectio_server.api import models
+from spectio_server.api.problems import Invalid, Problem
+from spectio_server.api.runs_read import context, read, run_detail, run_row
+from spectio_server.api.workflows import inspect_dir, resolve
+from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
+from spectio_server.ids import new_id
+from spectio_server.resume import check_dirs, dir_run_id, launch_payload, row_refusal
+from spectio_server.store.runs import first, insert_run
+from spectio_server.store.schema import principals, run_inputs, runner_commands
+from spectio_server.store.writer import Writer
+
+router = APIRouter()
+
+CONFIG_PARAMS = ("custom_config_base",)  # nf-core's: where institutional configs load from
+CONFIG_OPTIONS = {"nextflow": ("-c", "-config"), "snakemake": ("--configfile", "--configfiles")}
+
+
+class RelaunchIn(BaseModel):
+    """The body of `:relaunch` (api §5.1); 0.0.1 takes `mode: resume` alone."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    mode: Literal["resume", "rerun_from", "fresh"]
+    from_stage: JsonValue = None
+    params_patch: JsonValue = None
+    samplesheets: JsonValue = None
+    resources: JsonValue = None
+    gates: JsonValue = None
+    dry_run: JsonValue = None
+
+
+def _conflict(reason: str, detail: str) -> Problem:
+    return Problem(409, "run-state-conflict", "Run state conflict", detail, reason=reason)
+
+
+def _not_in_this_version(detail: str) -> Problem:
+    return Problem(422, "not-in-this-version", "Not in this version", detail)
+
+
+REFUSED = {
+    "running": "The run, or its head, is still running.",
+    "not_failed_or_cancelled": "Only a failed or cancelled run can be resumed.",
+    "resume_in_progress": "Another run of this launch directory has not ended yet.",
+    "session_id_refused": "The run's Nextflow session ID is not a UUID.",
+}
+
+
+def _params(conn: Connection, run_id: str) -> dict[str, Any]:
+    found = conn.execute(
+        select(run_inputs.c.content)
+        .where(run_inputs.c.run_id == run_id, run_inputs.c.kind == "params")
+        .order_by(run_inputs.c.version.desc())
+        .limit(1)
+    ).scalar()
+    return dict(found or {})
+
+
+def _insert_child(
+    conn: Connection,
+    parent_id: str,
+    m: RunManifest,
+    source: str,
+    payload: dict[str, Any],
+    now: datetime,
+    runs_root: Path,
+) -> None:
+    parent = run_row(conn, parent_id)
+    reason = row_refusal(conn, parent)  # again, in this BEGIN IMMEDIATE transaction
+    if reason is not None:
+        raise _conflict(reason, REFUSED.get(reason, reason))
+    launch_id = insert_run(
+        conn,
+        m,
+        source=source,
+        runs_root=runs_root,
+        now=now,
+        state="queued",
+        origin="ui",
+        workflow_name=parent.workflow_name,
+        workflow_version=parent.workflow_version,
+    )
+    conn.execute(
+        insert(runner_commands).values(
+            id=new_id("cmd"),
+            run_id=m.run_id,
+            launch_id=launch_id,
+            kind="launch",
+            payload=payload,
+            state="pending",
+            created_at=now,
+            created_by=first(conn, principals),
+        )
+    )
+
+
+@router.post("/runs/{run_id}:relaunch", status_code=201, response_model=models.RunDetail)
+def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response) -> dict[str, Any]:
+    if body.mode != "resume" or body.model_fields_set - {"mode"}:
+        raise _not_in_this_version("0.0.1 relaunches with {mode: resume} and nothing else.")
+    settings = request.app.state.settings
+    ctx = context(request)
+    with read(request) as conn:
+        parent = run_row(conn, run_id)
+        reason = row_refusal(conn, parent)
+        params = _params(conn, run_id)
+        launched = launch_payload(conn, run_id)
+    profiles = [] if launched is None else launched.profiles
+    if reason == "cli_observed":
+        raise _not_in_this_version("Spectio did not start this run's head: it cannot resume it.")
+    if reason is not None:
+        raise _conflict(reason, REFUSED[reason])
+    try:
+        device, inode = check_dirs(ctx, parent)
+    except NotResumable as exc:
+        raise _conflict(exc.reason, str(exc)) from None
+    try:
+        resolved = resolve(settings.data_dir, parent.location, parent.revision)
+    except Invalid as exc:
+        raise exc.under("workflow") from None
+
+    child_id = new_id("run")
+    now = datetime.now(UTC)
+    manifest = RunManifest(
+        run_id=child_id,
+        name=f"{parent.workflow_name or resolved.default_name}-{child_id[-6:]}",
+        workflow=Workflow(location=parent.location, revision=parent.revision, engine=parent.engine),
+        params=params,
+        profiles=profiles,
+        created_at=now,
+        parent_run_id=run_id,
+    )
+    payload = {
+        "location": str(resolved.directory),
+        "profiles": profiles,
+        "params": params,
+        "resume_of": {
+            "run_id": dir_run_id(parent),
+            "parent_run_id": run_id,
+            "engine_session_id": parent.engine_session_id,
+            "device": device,
+            "inode": inode,
+        },
+    }
+    paths = run_paths(settings.runs_root, child_id)
+    write_run_manifest(paths.run_dir, manifest)
+    writer: Writer = request.app.state.writer
+    try:
+        writer.submit(
+            lambda conn: _insert_child(
+                conn, run_id, manifest, resolved.source, payload, now, settings.runs_root
+            )
+        ).result()
+    except BaseException:
+        shutil.rmtree(paths.run_dir, ignore_errors=True)  # no run directory without its row
+        raise
+    response.headers["Location"] = f"/api/v1/runs/{child_id}"
+    with read(request) as conn:
+        return run_detail(conn, child_id, ctx)
+
+
+# --- Copy to a new launch -----------------------------------------------------------------
+
+
+def schema_defaults(schema: dict[str, Any] | None) -> dict[str, Any]:
+    """The `default` of each parameter, at the top or in a group of `$defs` / `definitions`
+    (the nf-core layout)."""
+    found: dict[str, Any] = {}
+    if not isinstance(schema, dict):
+        return found
+    groups = [schema]
+    for key in ("$defs", "definitions"):
+        if isinstance(schema.get(key), dict):
+            groups += [g for g in schema[key].values() if isinstance(g, dict)]
+    for group in groups:
+        properties = group.get("properties")
+        if isinstance(properties, dict):
+            for name, prop in properties.items():
+                if isinstance(prop, dict) and "default" in prop:
+                    found.setdefault(name, prop["default"])
+    return found
+
+
+def writable_by_others(path: str) -> bool:
+    """The path, or a directory above it, writable by group or others; a sticky directory
+    (`/tmp`) does not count. Missing parts are skipped."""
+    for part in (Path(path), *Path(path).parents):
+        try:
+            st = os.lstat(part)
+        except OSError:
+            continue
+        sticky = stat.S_ISDIR(st.st_mode) and st.st_mode & stat.S_ISVTX
+        if st.st_mode & (stat.S_IWGRP | stat.S_IWOTH) and not sticky:
+            return True
+    return False
+
+
+def code_loading(
+    location: str, local: bool, params: dict[str, Any], engine: str, extra: list[str]
+) -> list[dict[str, Any]]:
+    values = [("workflow.location", location)] if local else []
+    values += [(f"params.{k}", params[k]) for k in CONFIG_PARAMS if isinstance(params.get(k), str)]
+    options = CONFIG_OPTIONS.get(engine, ())
+    values += [(f"engine.{a}", b) for a, b in pairwise(extra) if a in options]
+    return [
+        {
+            "field": field,
+            "value": value,
+            "writable_by_others": value.startswith("/") and writable_by_others(value),
+        }
+        for field, value in values
+    ]
+
+
+@router.get("/runs/{run_id}:launch-template", response_model=models.LaunchTemplate)
+def launch_template(request: Request, run_id: str) -> dict[str, Any]:
+    settings = request.app.state.settings
+    with read(request) as conn:
+        row = run_row(conn, run_id)
+        params = _params(conn, run_id)
+        payload = launch_payload(conn, run_id)
+    try:
+        resolved = resolve(settings.data_dir, row.location, row.revision)
+        found = inspect_dir(resolved.directory, resolved.default_name)
+    except Invalid as exc:
+        raise exc.under("workflow") from None
+    defaults = schema_defaults(found.schema if found.schema_source != "inferred" else None)
+    extra = settings.engines.extra_args.get(row.engine, [])
+    local = resolved.source == "local"
+    try:
+        loading = request.app.state.files.run(
+            lambda: code_loading(row.location, local, params, row.engine, extra), READ_TIMEOUT_S
+        )
+    except Stalled as exc:
+        raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
+    return {
+        "workflow": {"location": row.location, "revision": row.revision, "engine": row.engine},
+        "profiles": [] if payload is None else payload.profiles,
+        "params": params,
+        "non_default": [k for k in params if k not in defaults or params[k] != defaults[k]],
+        "code_loading": loading,
+    }

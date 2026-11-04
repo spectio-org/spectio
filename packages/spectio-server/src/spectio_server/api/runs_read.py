@@ -27,6 +27,7 @@ from spectio_server.api import models
 from spectio_server.api.problems import Invalid, not_found
 from spectio_server.failure import Context, build_failures, task_resources
 from spectio_server.files.pool import READ_TIMEOUT_S
+from spectio_server.resume import command, resume_refusal, resumed_as
 from spectio_server.stages.freeze import FROZEN as STAGES_FROZEN
 from spectio_server.store.schema import (
     RUN_STATES,
@@ -67,11 +68,16 @@ _RUN_COLUMNS = (
     runs.c.task_counts,
     runs.c.tasks_expected,
     runs.c.engine_version,
+    runs.c.parent_run_id,
+    runs.c.lineage_id,
+    runs.c.launch_dir,
     workflows.c.engine,
     workflows.c.location,
     workflows.c.name.label("workflow_name"),
     workflow_versions.c.version.label("workflow_version"),
+    workflow_versions.c.revision,
     launches.c.head_native_id,
+    launches.c.engine_session_id,
     launches.c.exited_at,
     launches.c.exit_code,
 )
@@ -173,11 +179,14 @@ def run_row(conn: Connection, run_id: str) -> Row[Any]:
 def context(request: Request) -> Context:
     """What a view reads files and accounting with (P1 Task 29)."""
     state = request.app.state
-    return Context(state.settings.runs_root, state.files, state.accounting, READ_TIMEOUT_S)
+    return Context(
+        state.settings.runs_root, state.files, state.accounting, READ_TIMEOUT_S, state.settings
+    )
 
 
 def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
-    """The run, with its failures (P1 Task 29): each job that failed on its last attempt."""
+    """The run, with its failures (P1 Task 29): each job that failed on its last attempt; and
+    its command, parent, children and whether it can be resumed (P1 Task 30)."""
     row = run_row(conn, run_id)
     found = run_json(
         row, _profiles(conn, [run_id]).get(run_id, []), _stage_modes(conn, [run_id]).get(run_id)
@@ -193,12 +202,17 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
         .limit(1)
     ).scalar()
     failures, total = build_failures(conn, run_id, row.engine, row.failure, ctx)
+    reason = resume_refusal(conn, row, ctx)
     return {
         **found,
         "params": params or {},
         "stages_note": note if isinstance(note, str) else None,
         "failures": failures,
         "failures_total": total,
+        "command": None if ctx.settings is None else command(conn, row, ctx.settings),
+        "parent_run_id": row.parent_run_id,
+        "resumed_as": resumed_as(conn, run_id),
+        "actions": {"resume": {"allowed": reason is None, "reason": reason}},
     }
 
 

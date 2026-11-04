@@ -28,7 +28,7 @@ from spectio.runner.engines import (
 )
 from spectio.runner.headscript import engine_args, render_head_script, write_launch_files
 from spectio.runner.rundir import make_run_dirs
-from spectio.runner.types import LaunchSpec
+from spectio.runner.types import LaunchSpec, ResumeSource
 
 RUN_ID = "run_01K8T9HEAD0000000000000T09"
 BASH = shutil.which("bash") or "/bin/bash"
@@ -545,3 +545,120 @@ def test_cancel_during_the_listing(home: Path, bridges: Path) -> None:
 def test_nextflow_head_lists_no_rules(home: Path, bridges: Path) -> None:
     spec = make_spec(home / "runs", engine_cmd=shlex.quote(str(stub_engine(home / "bin"))))
     assert "--list-rules" not in render_head_script(spec)
+
+
+# --- Resume (P1 Task 30; api §5.1 note 2026-10-28; dev-env §15.3 req. 16) -------------------
+
+PARENT_ID = "run_01K8T9HEAD0000000000000P30"
+SESSION = "5f1c8a43-7f62-4a5e-9d4f-0a1b2c3d4e5f"
+RESUME_STUB = """#!/bin/bash
+for a in "$@"; do
+  [ "$a" = --unlock ] && { printf '%s\\0' "$@" > unlock.out; exit 0; }
+  [ "$a" = --list-rules ] && exit 1
+done
+printf '%s\\0' "$@" > argv.out
+export -p > env.out
+umask > umask.out
+[ -e .spectio-launch.lock ] && echo "$(< .spectio-launch.lock)" > lock.out
+exit 0
+"""
+
+
+def resume_spec(home: Path, engine: str = "nextflow", **kw: object) -> LaunchSpec:
+    """A child launch that resumes PARENT_ID in its launch and work directories."""
+    spec = make_spec(home / "runs", engine, **kw)
+    parent = make_run_dirs(home / "runs", PARENT_ID)
+    st = parent.launch_dir.stat()
+    resume = ResumeSource(
+        launch_dir=parent.launch_dir,
+        work_dir=parent.work_dir,
+        device=st.st_dev,
+        inode=st.st_ino,
+        engine_session_id=SESSION if engine == "nextflow" else None,
+    )
+    return replace(spec, resume_of=resume)
+
+
+def test_resume_head_script_nf(home: Path, bridges: Path) -> None:
+    """The child's head runs in the parent's launch directory, with `-resume <session id>` and
+    the parent's work directory; its spool and engine log stay in its own `.spectio/`; the
+    engine runs under umask 022 and while the launch-directory lock names the child."""
+    engine = shlex.quote(str(stub_engine(home / "bin", RESUME_STUB)))
+    spec = resume_spec(home, engine_cmd=engine)
+    assert spec.resume_of is not None
+    parent_dir = spec.resume_of.launch_dir
+    assert run_head(spec).returncode == 0
+    args = (parent_dir / "argv.out").read_text().split("\0")[:-1]
+    assert args[args.index("-resume") + 1] == SESSION
+    assert args[args.index("-work-dir") + 1] == str(spec.resume_of.work_dir)
+    own = spec.launch_dir / ".spectio"
+    assert args[args.index("-params-file") + 1] == str(own / "params.json")
+    assert (parent_dir / "umask.out").read_text().strip() == "0022"
+    assert (parent_dir / "lock.out").read_text().strip() == RUN_ID
+    assert not (parent_dir / ".spectio-launch.lock").exists()  # removed when the head ends
+    assert (own / "head.exit").is_file() and not (parent_dir / ".spectio" / "head.exit").exists()
+    env = exported(replace(spec, launch_dir=parent_dir))
+    assert env["SPECTIO_SPOOL_DIR"] == str(own / "events")
+    assert env["NXF_LOG_FILE"] == str(own / "nextflow.log")
+
+
+@pytest.mark.parametrize("unlock", [False, True])
+def test_resume_head_script_smk(home: Path, bridges: Path, unlock: bool) -> None:
+    """`--unlock` runs first only when the runner proved the parent's head gone, then the run
+    with `--rerun-incomplete` in the parent's launch directory."""
+    location = home / "pipeline"
+    (location / "workflow").mkdir(parents=True)
+    (location / "workflow" / "Snakefile").write_text("")
+    engine = shlex.quote(str(stub_engine(home / "bin", RESUME_STUB)))
+    spec = resume_spec(home, "snakemake", engine_cmd=engine, location=location)
+    assert spec.resume_of is not None
+    source = replace(spec.resume_of, unlock=unlock)
+    spec = replace(spec, resume_of=source)
+    parent_dir = source.launch_dir
+    assert run_head(spec).returncode == 0
+    args = (parent_dir / "argv.out").read_text().split("\0")[:-1]
+    assert args[args.index("--directory") + 1] == str(parent_dir)
+    assert "--rerun-incomplete" in args and "--unlock" not in args
+    unlocked = parent_dir / "unlock.out"
+    assert unlocked.exists() == unlock
+    if unlock:
+        found = unlocked.read_text().split("\0")[:-1]
+        assert found[found.index("--directory") + 1] == str(parent_dir)
+    assert not (parent_dir / ".spectio" / "rules.txt").exists()  # never the parent's files
+
+
+def test_req16_dir_swapped(home: Path, bridges: Path) -> None:
+    """The launch directory replaced after the check: `stat .` gives another device and inode,
+    so the head refuses and the engine never runs."""
+    engine = shlex.quote(str(stub_engine(home / "bin", RESUME_STUB)))
+    spec = resume_spec(home, engine_cmd=engine)
+    assert spec.resume_of is not None
+    parent_dir = spec.resume_of.launch_dir
+    parent_dir.rename(parent_dir.with_name("launch.old"))
+    parent_dir.mkdir(mode=0o700)
+    done = run_head(spec)
+    assert done.returncode != 0
+    assert not (parent_dir / "argv.out").exists()
+    assert "not the one checked" in (spec.launch_dir / ".spectio" / "head.out").read_text()
+
+
+def test_lock_held_refuses_a_second_head(home: Path, bridges: Path) -> None:
+    """`.spectio-launch.lock` (O_EXCL) already there: another head runs in the directory, so this
+    one starts no engine and leaves the other's lock alone."""
+    engine = shlex.quote(str(stub_engine(home / "bin", RESUME_STUB)))
+    spec = resume_spec(home, engine_cmd=engine)
+    assert spec.resume_of is not None
+    lock = spec.resume_of.launch_dir / ".spectio-launch.lock"
+    lock.write_text(PARENT_ID + "\n")
+    assert run_head(spec).returncode == 75
+    assert not (spec.resume_of.launch_dir / "argv.out").exists()
+    assert lock.read_text() == PARENT_ID + "\n"
+
+
+@pytest.mark.parametrize("session", ["x; rm -rf ~", "5f1c8a43", SESSION + "\n"])
+def test_req16_session_id_uuid_in_the_head(home: Path, bridges: Path, session: str) -> None:
+    spec = resume_spec(home)
+    assert spec.resume_of is not None
+    spec = replace(spec, resume_of=replace(spec.resume_of, engine_session_id=session))
+    with pytest.raises(ValueError, match="UUID"):
+        render_head_script(spec)

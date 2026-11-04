@@ -112,7 +112,25 @@ export interface RunDetail extends Run {
    * 10 (api §5, P1 Task 29). */
   failures: Failure[];
   failures_total: number;
+  /** The engine command as the head script runs it; null for a run started from a terminal
+   * (api §5, P1 Task 30). */
+  command: { argv: string[]; text: string } | null;
+  parent_run_id: string | null;
+  /** The runs that resumed this one (P1 Task 30). */
+  resumed_as: { id: string; name: string | null; state: RunState }[];
+  /** Whether Resume is allowed now, and why not (api §5, P1 Task 30). */
+  actions: { resume: { allowed: boolean; reason: ResumeReason | null } };
 }
+
+/** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */
+export type ResumeReason =
+  | "running"
+  | "head_unverified"
+  | "resume_in_progress"
+  | "cli_observed"
+  | "not_failed_or_cancelled"
+  | "launch_dir_refused"
+  | "session_id_refused";
 
 /** Schema `Scheduler`: what SLURM says of a failed job; fields from `sacct` [to be validated]. */
 export interface Scheduler {
