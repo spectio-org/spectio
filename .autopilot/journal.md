@@ -606,3 +606,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 - The build changed one line of `.github/workflows/ci.yml` (e2e runs `report.spec.ts`). By inbox #98 that would hold Task 31 and Task 32 part two for Thomas, so the line was split into PR #126, which waits for Thomas (inbox #101, assumed).
 - PR #125 squash-merged as d982cc9 with `Release-As: 0.0.1`. The first `pr-body` run failed on the placeholder body; the re-run after the body edit passed. Cost recorded: 65 USD.
 - Next: promotion to `main`, then P1 Task 32 part two. PRs #111, #122 and #126 wait for Thomas.
+
+## 2026-11-04 · Promotion PR #127 opened; P1 Task 32 part two launched
+
+- Promotion PR #127 (integration → `main`, merge commit) opened on 85330d6.
+- P1 Task 32 part two launched with the `p3-task` workflow, step P3-t32b (branch `autopilot/P3-t32b`, since `autopilot/P3-t32` is part one), base 85330d6. Scope: Resume and its dialog, Copy to a new launch, the Copy menu's Command item, results and reports screens, the four `test.fixme` tests, and screenshots including `app-report-viewer` from a regenerated MultiQC fixture. No `.github/workflows/` change. Numbers reserved: inbox #102, FU-P3-37.
