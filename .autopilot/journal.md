@@ -617,3 +617,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Integration promoted to `main` by merge commit 2b6ab38 (every check green on df0d13b; an older `ci-ok` failure was the cancelled run of 85330d6).
 - PR #126 (CI line for `report.spec.ts`) is green and waits for Thomas, with #111 and #122.
 - P1 Task 32 part two (P3-t32b) is building.
+
+## 2026-11-04 · P3-t32b blocked after two fix rounds; third round assumed (inbox #103)
+
+- The workflow returned `blocked` after two fix rounds. Open: CR-P3T32B-03 (major, the `app-run-results` shots predate the note's fix) and the defect minors CR-P3T32B-04 and SEC-P3T32B-02/-04. Security approved both rounds.
+- The harness flagged fix round 1 for security. I checked its commands. It ran `spectio serve` as `alice`, set the node name to `login1` for the live shots (the documented P3-M8 method), then put the node name back to `vm` and stopped the server; it also ran one bare `git stash`. The commit itself changes no CSP, sandbox, test or check. Nothing left the container.
+- Inbox #103, assumed: one third fix round, with guardrails in its prompt. The run is resumed from cache (wf_9d735017-476); a fourth round is not assumed.
