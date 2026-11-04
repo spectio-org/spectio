@@ -608,7 +608,8 @@ media:
       - docs/assets/diagrams/p3-t32-failed-job_dark.png
   - id: app-report-viewer
     kind: screenshot
-    # as app-run-detail; the report the synthetic pipeline's MULTIQC process publishes (P1 Task 32 part two)
+    # as app-run-detail, with the run's multiqc/multiqc_report.html replaced by the gunzipped MultiQC fixture
+    # tests/fixtures/results/multiqc-1.35_custom_content_report.html.gz (P1 Task 32 part two, tools/media/README.md)
     generator: python3 tools/media/shots.py run --shot app-report-viewer --theme both
     outputs: [docs/assets/shots/app-report-viewer_light.webp, docs/assets/shots/app-report-viewer_dark.webp]
   - id: app-report-viewer-phone

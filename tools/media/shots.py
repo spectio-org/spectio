@@ -63,6 +63,9 @@ APP_LAUNCH_CHECKED = APP_LAUNCH + ("open:Scenario", "fill:scale=0", "wait:Must b
 APP_LAUNCH_SMK = ("fill:Pipeline=$SPECTIO_DEMO_SMK_PIPELINE", "click:Load", "wait:Config preview, as YAML",
                   "open:Parameters defaults", "open:ref", "fill:outdir=results-smk", "fill:ref.release=114")
 
+# The report viewer, on the MultiQC fixture (tests/fixtures/results/multiqc-1.35_custom_content_report.html.gz).
+REPORT_VIEWER = ("wait:Untrusted report", "frame:/data/demo/mqc/in")
+
 REGISTRY: dict[str, Shot] = {
     s.name: s
     for s in (
@@ -130,13 +133,15 @@ REGISTRY: dict[str, Shot] = {
              "0.0.1, live: the Logs tab of a failed run, searched: marked matches, the counter and the level buttons",
              themes=("light", "dark"), live=("wait:Download last 64 KiB", "wait:Command error",
                                              "fill:Search the head output=MERGE", "wait:1 / 4")),
-        # P1 Task 32 part two. The finished demo run publishes multiqc/multiqc_report.html (the synthetic
-        # pipeline's MULTIQC process); the failed one is the Task 32 run above, which Resume and Copy start from.
+        # P1 Task 32 part two. The synthetic pipeline's MULTIQC process writes only a stand-in table, so the
+        # demo run's multiqc/multiqc_report.html is replaced by the regenerated MultiQC fixture first
+        # (tools/media/README.md); `frame:` waits for its neutral input path inside the viewer. The failed run
+        # is the Task 32 run above, which Resume and Copy start from.
         Shot("app-report-viewer", "/runs/$SPECTIO_DEMO_RUN/report?path=multiqc/multiqc_report.html", 1440, 1180,
-             "0.0.1, live: the run's MultiQC report in the sandboxed report viewer, under its Untrusted report banner",
-             themes=("light", "dark"), live=("wait:Untrusted report",)),
+             "0.0.1, live: a MultiQC report in the sandboxed report viewer, under its Untrusted report banner",
+             themes=("light", "dark"), live=REPORT_VIEWER),
         Shot("app-report-viewer-phone", "/runs/$SPECTIO_DEMO_RUN/report?path=multiqc/multiqc_report.html", 390, 844,
-             "0.0.1, live: the same report on a phone", themes=("light", "dark"), live=("wait:Untrusted report",)),
+             "0.0.1, live: the same report on a phone", themes=("light", "dark"), live=REPORT_VIEWER),
         Shot("app-run-results", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
              "0.0.1, live: the Summary's Results and reports: the results directory, MultiQC first, the folders",
              themes=("light", "dark"), live=("wait:Browse all results", "view:Results and reports")),

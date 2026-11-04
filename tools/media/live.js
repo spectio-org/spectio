@@ -3,7 +3,8 @@
 // $NAME in the route or a step is replaced by that environment variable; SPECTIO_THEME (light or dark) sets the
 // browser's colour scheme, which the screens follow until a theme is picked.
 // Steps: fill:<label>=<value> (the text or search field whose accessible name starts with <label>),
-// click:<button name>, view:<visible text> (its last match, scrolled to the middle), open:<start of a folded section's button name>, top (scroll to the top), wait:<visible text>. Run through shots.py, which preloads page_text.js
+// click:<button name>, view:<visible text> (its last match, scrolled to the middle), open:<start of a folded section's button name>, top (scroll to the top), wait:<visible text>,
+// frame:<text> (text shown inside the page's iframe, such as the report viewer's report). Run through shots.py, which preloads page_text.js
 // for the hygiene check.
 const path = require('path');
 const { chromium } = require(require.resolve('playwright', { paths: [path.resolve(__dirname, '../canvas'), process.cwd()] }));
@@ -32,6 +33,8 @@ const steps = raw.map(expand);
       await page.evaluate(() => window.scrollTo(0, 0));
     } else if (kind === 'wait') {
       await page.getByText(arg).first().waitFor({ timeout: 30000 });
+    } else if (kind === 'frame') {
+      await page.frameLocator('iframe').first().getByText(arg).first().waitFor({ timeout: 30000 });
     } else {
       throw new Error(`unknown step ${step}`);
     }
