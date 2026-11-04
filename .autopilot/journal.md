@@ -582,3 +582,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - P1 Task 30 workflow done: code approve (1/3/9, the blocker and majors fixed), security approve (0/2/20), 4 rounds, simplifier -20/+17, doc-reviewer approve 13. Orchestrator gate on e0054c8: pytest 701 passed; ruff, format, mypy, lint-imports, uv lock clean; Vitest 223; tsc clean; docs gate 0. No `.github/workflows/` change. PR #123 opened into integration.
 - Thomas (2026-11-04, in session): "met en pause une fois task courante terminée". Task 30 is finished (merge into integration, promotion to main), then the autopilot pauses: Task 31 is not launched until Thomas resumes it.
+
+## 2026-11-04 · P3-t30: PR #123 merged; autopilot paused
+
+- P1 Task 30, milestone M8 (P3-M8): Resume (`:relaunch` mode `resume`, a child run in the lineage's launch and work directories, req. 16 checked three times), `:launch-template` with `code_loading`, `command`, `parent_run_id`, `resumed_as` and `actions.resume` on the run detail, migration 0008; the head files are owned by the launch (CR-P3T09-11 closed). Inbox #99 (assumed, eleven rules), FU-P3-35.
+- Every check green on e0054c8 (the first `pr-body` run read the placeholder body; its rerun after the edit passed). The merge waited out a GitHub incident on Pull Requests (502, then "405 Merge already in progress", 09:58 to 10:46 UTC); squash b69d25d (`Release-As: 0.0.1`). Cost recorded: 60 USD (estimate).
+- Thomas's pause is applied: after the promotion PR, nothing more is launched. Next when resumed: P1 Task 31 (inbox #98). PRs #111 and #122 wait for Thomas.
