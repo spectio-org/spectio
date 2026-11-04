@@ -635,3 +635,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - PR #128 squash-merged as 5f2725d with `Release-As: 0.0.1`. Every check was green on 99a0ace; the first `pr-body` run had failed on the placeholder body. Cost recorded: 40 USD.
 - Next: the promotion PR to `main`, then the autopilot stays paused (Thomas). P1 tasks merged: 19 of 32. PRs #111, #122 and #126 wait for Thomas.
+
+## 2026-11-04 · Promotion #129 merged; autopilot paused
+
+- Promotion PR #129 merged into `main` with a merge commit (f7d03c0). Every check was green on c6ea076.
+- Autopilot paused as Thomas asked ("Stop building à la fin étape actuelle"). Next when resumed: §15.3 Task 12. PRs #111, #122 and #126 wait for Thomas.
