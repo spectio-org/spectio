@@ -1608,3 +1608,12 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a) for 0.0.1, (b) after it, as #100 rule 14 recommends. That the fixture has no plot, so "plots do not run" is read from the thrown errors, not seen, is **[to be validated]** with the nf-core/rnaseq megatest report (P1 Task 22).
 - **Assumed (2026-11-04, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a). The Results section now says "MultiQC's scripts stop there: its tables show, its plots and toolbox do not. Download a report to see all of it."; the two shot captions say the scripts stop on `localStorage` and "Loading report.." stays. The shots themselves are kept: they show the viewer as it is.
 - **Blocked:** nothing.
+
+### #103 · Assumed: a third fix round for P3-t32b
+
+- **Covers:** step P3-t32b (P1 Task 32 part two); `review-code` step 4 (two fix rounds, then `blocked`).
+- **Context:** after two fix rounds, `code-reviewer` still asked for changes. The one open major is CR-P3T32B-03: the `app-run-results` and `app-run-results-phone` shots predate the fix to the Results section's note, so they show the old wording. The minors CR-P3T32B-04 and SEC-P3T32B-02 and -04 are defects in this step's own code. Security approved both rounds. Fix round 1 started `spectio serve` as the demo account `alice` and set the node name to `login1` for the live shots, as the P3-M8 screenshot method says. It put the node name back to `vm` and stopped the server; nothing left the container.
+- **Options:** (a) one more fix round on the open findings, then the usual post-approval and docs steps; (b) leave the step `blocked` until Thomas looks.
+- **Recommendation:** (a). The major is mechanical: retake four shots and look at them. Option (a) can be undone: the PR is reviewed like any other.
+- **Assumed (2026-11-04, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), once. A fourth round is not assumed: if round 3 does not approve, the step stays `blocked`.
+- **Blocked:** nothing while (a) holds.
