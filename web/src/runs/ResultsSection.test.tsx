@@ -181,7 +181,7 @@ test("a folder the server does not confirm is not shown in the path bar (SEC-P3T
   expect(screen.queryByText(new RegExp(text))).toBeNull();
 });
 
-test.each(["a\u202eb", "a\u200fb", "a\u2066b"])("a path with a bidi or format character is not asked for (SEC-P3T32B-02): %j", async (path) => {
+test.each(["a\u202eb", "a\u200fb", "a\u2066b", "a\u061cb", "a\u200bb", "a\u2028b", "a\ufeffb"])("a path with a bidi or format character is not asked for (SEC-P3T32B-02): %j", async (path) => {
   const mock = serve({ [URL_]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT } });
   app(`/runs/${ID}/results?path=${encodeURIComponent(path)}`);
   expect(await screen.findByText("Not a folder of this run's results.")).toBeInTheDocument();
