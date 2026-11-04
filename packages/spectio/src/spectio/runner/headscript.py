@@ -8,6 +8,7 @@ code, epoch). Parameters reach the engine as a file, never as shell words; every
 quoted with `shlex.quote` (Review Focus 1). Only `engine_cmd`, from `spectio.toml`, is shell.
 """
 
+import contextlib
 import json
 import os
 import re
@@ -270,9 +271,15 @@ def nextflow_config(spec: LaunchSpec) -> str:
 def write_launch_files(spec: LaunchSpec) -> Path:
     """Write `.spectio/{params.json, spectio.config, head.sh}` and deliver the bridge: unpack
     nf-spectio, or copy the Snakemake logger to `.spectio/pylib/`. Returns the head script.
-    Raises BridgeMissing when the bridge is not there, ValueError on a bad spec."""
+    Raises BridgeMissing when the bridge is not there, ValueError on a bad spec.
+    For Nextflow, `.nextflow/` is made 0700 in the engine's directory first, so that the umask
+    the engine gets (the login profile's) never leaves it group-writable, which a Resume
+    refuses (`resume.check_dirs`, CR-P3T30-02)."""
     script = render_head_script(spec).encode()
     params = json.dumps(spec.params, ensure_ascii=False).encode()
+    if spec.engine == "nextflow":
+        with contextlib.suppress(FileExistsError):  # a symlink there is refused at Resume
+            os.mkdir(spec.engine_dir / ".nextflow", 0o700)
     with private_dir(spec.launch_dir, ".spectio") as fd:
         write_file(fd, "params.json", params)
         if spec.engine == "nextflow":

@@ -27,6 +27,7 @@ from spectio.runner.engines import (
     unpack_nf_spectio,
 )
 from spectio.runner.headscript import engine_args, render_head_script, write_launch_files
+from spectio.runner.resume import check_dirs
 from spectio.runner.rundir import make_run_dirs
 from spectio.runner.types import LaunchSpec, ResumeSource
 
@@ -625,6 +626,24 @@ def test_resume_head_script_smk(home: Path, bridges: Path, unlock: bool) -> None
         found = unlocked.read_text().split("\0")[:-1]
         assert found[found.index("--directory") + 1] == str(parent_dir)
     assert not (parent_dir / ".spectio" / "rules.txt").exists()  # never the parent's files
+
+
+UMASK_002_STUB = """#!/bin/bash
+umask 002  # a login profile's umask (user-private groups)
+{mkdir} -p .nextflow/cache  # as Nextflow makes its own directory: an existing one is kept
+exit 0
+"""
+
+
+def test_req16_nextflow_dir_private_under_umask_002(home: Path, bridges: Path) -> None:
+    """The head makes `.nextflow/` 0700 before the engine runs (CR-P3T30-02): a first launch
+    whose login profile sets umask 002 can still be resumed."""
+    body = UMASK_002_STUB.format(mkdir=shutil.which("mkdir") or "/bin/mkdir")
+    engine = shlex.quote(str(stub_engine(home / "bin", body)))
+    spec = make_spec(home / "runs", engine_cmd=engine)
+    assert run_head(spec).returncode == 0
+    assert stat.S_IMODE((spec.launch_dir / ".nextflow").stat().st_mode) == 0o700
+    check_dirs(home / "runs", RUN_ID)  # not refused
 
 
 def test_req16_dir_swapped(home: Path, bridges: Path) -> None:

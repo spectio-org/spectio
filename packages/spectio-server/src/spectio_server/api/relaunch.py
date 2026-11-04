@@ -213,16 +213,24 @@ def schema_defaults(schema: dict[str, Any] | None) -> dict[str, Any]:
 
 
 def writable_by_others(path: str) -> bool:
-    """The path, or a directory above it, writable by group or others; a sticky directory
-    (`/tmp`) does not count. Missing parts are skipped."""
-    for part in (Path(path), *Path(path).parents):
+    """Whether someone else may change what the path loads (SEC-P3T30-01): its target, or a
+    directory above the target, owned by a user other than this one and root, or writable by
+    group or others. A sticky directory (`/tmp`) is excepted only above the nearest existing
+    part: a missing file in it, or the directory itself as a workflow, can still be planted.
+    Symlinks are followed (`realpath`): a link's own mode says nothing."""
+    me, found = os.geteuid(), False
+    real = Path(os.path.realpath(path))
+    for part in (real, *real.parents):
         try:
-            st = os.lstat(part)
-        except OSError:
+            st = os.stat(part)
+        except OSError:  # missing, or not reachable from here
             continue
-        sticky = stat.S_ISDIR(st.st_mode) and st.st_mode & stat.S_ISVTX
+        sticky = found and stat.S_ISDIR(st.st_mode) and st.st_mode & stat.S_ISVTX
+        if st.st_uid not in (me, 0):
+            return True
         if st.st_mode & (stat.S_IWGRP | stat.S_IWOTH) and not sticky:
             return True
+        found = True
     return False
 
 

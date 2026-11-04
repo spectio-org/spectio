@@ -22,6 +22,7 @@ from sqlalchemy import select, update
 from spectio.config import EngineOpts, Settings
 from spectio.runner.loop import LaunchPayload
 from spectio.runner.rundir import make_run_dirs, read_run_manifest, run_paths
+from spectio_server.api.relaunch import writable_by_others
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.rebuild import rebuild_index
 from spectio_server.sink import StoreSink
@@ -426,6 +427,52 @@ def test_req16_code_loading_flagged(
         e["field"] for e in smk.get(f"/api/v1/runs/{smk_id}:launch-template").json()["code_loading"]
     ]
     assert fields == ["workflow.location", "engine.--configfile"]
+
+
+@pytest.mark.parametrize(
+    "case",
+    ["other owner", "missing under sticky", "kept in sticky", "symlink", "symlink to shared"],
+)
+def test_req16_code_loading_flagged_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, case: str
+) -> None:
+    """Writable by others (SEC-P3T30-01): a path or a directory above it owned by another
+    user; a missing file whose nearest directory others can write, sticky or not; a symlink
+    judged by its target, not by its own 0777 mode."""
+    mine = tmp_path / "mine"
+    mine.mkdir(mode=0o700)
+    (mine / "main.nf").write_text("")
+    shared = tmp_path / "shared"
+    shared.mkdir()
+    shared.chmod(0o1777)
+    (shared / "kept.config").write_text("")
+    (shared / "kept.config").chmod(0o644)
+    if case == "other owner":
+        real_stat = os.stat
+
+        def stat_as_other(path: Any, *args: Any, **kwargs: Any) -> os.stat_result:
+            st = real_stat(path, *args, **kwargs)
+            if Path(path) != mine:
+                return st
+            return os.stat_result((*st[:4], 4321, *st[5:10]))
+
+        monkeypatch.setattr(os, "stat", stat_as_other)
+        path, flagged = mine / "main.nf", True
+    elif case == "missing under sticky":
+        path, flagged = shared / "site.config", True
+    elif case == "kept in sticky":
+        path, flagged = shared / "kept.config", False
+    elif case == "symlink":
+        (tmp_path / "link").symlink_to(mine)
+        path, flagged = tmp_path / "link" / "main.nf", False
+    else:
+        group = tmp_path / "group"
+        group.mkdir()
+        group.chmod(0o775)
+        (group / "main.nf").write_text("")
+        (mine / "link").symlink_to(group)
+        path, flagged = mine / "link" / "main.nf", True
+    assert writable_by_others(str(path)) is flagged
 
 
 def test_rebuild_keeps_the_lineage(

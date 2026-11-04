@@ -4,9 +4,10 @@ architecture §13.7).
 Sources: `head-out` and `head-err` (`.spectio/head.out`, `.spectio/head.err`), and `engine`, the
 engine's run log: for Nextflow, `.spectio/nextflow.log`, where the head script points
 `NXF_LOG_FILE` (P1 Task 28), else `.nextflow.log` (a run launched before, or one from a terminal,
-`cli-observed`, which keeps its own); for Snakemake, the newest `.snakemake/log/*.log`. The launch
-directory is derived from the runs root and the run ID, never read from a row (dev-env §15.3
-req. 10), and must be private. Below it, the read is the confined walk of `files.confine`
+`cli-observed`, which keeps its own); for Snakemake, the newest `.snakemake/log/*.log`, in the
+directory the engine ran in: a Resume's lineage root's (P1 Task 30). The launch directory is
+derived from the runs root and the run ID, never read from a row (dev-env §15.3 req. 10), and
+must be private. Below it, the read is the confined walk of `files.confine`
 (checking-scenarios §11.1): no symlink is followed, only a regular file of the user is read, and
 it runs in the file pool with a timeout (req. 13). Anything refused or missing is
 `404 log-not-found`; a file system that does not answer is `503 runner-offline`. Escape
@@ -14,7 +15,7 @@ sequences are removed from the text.
 """
 
 from pathlib import Path, PurePosixPath
-from typing import Literal
+from typing import Any, Literal
 
 from fastapi import APIRouter, Request
 from fastapi.responses import PlainTextResponse
@@ -54,7 +55,10 @@ def _newest_log(launch: Root) -> PurePosixPath:
     return SMK_LOGS / newest.name
 
 
-def _read(runs_root: Path, run_id: str, engine: str | None, origin: str | None, source: str) -> str:
+def _read(runs_root: Path, row: Any, source: str) -> str:
+    engine, origin = row.engine, row.origin
+    smk_log = source not in HEAD_FILES and engine != "nextflow"
+    run_id = (row.lineage_id or row.id) if smk_log else row.id
     with run_root(runs_root, run_id, "launch") as launch:
         if source in HEAD_FILES:
             candidates = [PurePosixPath(".spectio", HEAD_FILES[source])]
@@ -81,9 +85,7 @@ def run_log(
         row = run_row(conn, run_id)
     runs_root = request.app.state.settings.runs_root
     try:
-        text = request.app.state.files.run(
-            lambda: _read(runs_root, run_id, row.engine, row.origin, source), READ_TIMEOUT_S
-        )
+        text = request.app.state.files.run(lambda: _read(runs_root, row, source), READ_TIMEOUT_S)
     except Stalled as exc:
         raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
     except (NotAllowed, NotFound, OSError) as exc:  # missing, a symlink, not private, not a file

@@ -57,6 +57,7 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
     row = conn.execute(
         select(
             tasks.c.run_id,
+            runs.c.lineage_id,
             workflows.c.engine,
             attempts.c.state,
             attempts.c.work_dir,
@@ -79,7 +80,13 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
         if isinstance(log, dict) and isinstance(log.get("path"), str)
     )
     return AttemptFiles(
-        row.run_id, row.engine, row.state, row.work_dir, row.native_id, logs, runs_root
+        row.lineage_id or row.run_id,
+        row.engine,
+        row.state,
+        row.work_dir,
+        row.native_id,
+        logs,
+        runs_root,
     )
 
 

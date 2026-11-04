@@ -44,7 +44,7 @@ from spectio_server.files.taskfiles import (
     read_task_file,
     run_root,
 )
-from spectio_server.store.schema import attempts, tasks
+from spectio_server.store.schema import attempts, runs, tasks
 
 log = logging.getLogger(__name__)
 
@@ -395,6 +395,13 @@ def _last_attempt() -> Any:
     return newest.scalar_subquery()
 
 
+def dir_run_id(conn: Connection, run_id: str) -> str:
+    """The run whose launch and work directories its engine used: its lineage root for a
+    Resume (P1 Task 30), else the run itself."""
+    found = conn.execute(select(runs.c.lineage_id).where(runs.c.id == run_id)).scalar()
+    return str(found or run_id)
+
+
 def build_failures(
     conn: Connection,
     run_id: str,
@@ -428,7 +435,8 @@ def build_failures(
         .order_by(attempts.c.created_at, attempts.c.id)
         .limit(limit)
     ).all()
-    files = [_files(ctx.runs_root, run_id, engine, r) for r in rows]
+    dirs = dir_run_id(conn, run_id)
+    files = [_files(ctx.runs_root, dirs, engine, r) for r in rows]
 
     def read() -> list[str | None]:
         ctx.accounting.load(run_id)
@@ -462,11 +470,11 @@ def build_failures(
     return found, total
 
 
-def _files(runs_root: Path, run_id: str, engine: str, r: Any) -> AttemptFiles:
+def _files(runs_root: Path, dir_run: str, engine: str, r: Any) -> AttemptFiles:
     logs = tuple(
         (x["path"], x["kind"]) for x in r.logs or [] if isinstance(x, dict) and "path" in x
     )
-    return AttemptFiles(run_id, engine, r.state, r.work_dir, r.native_id, logs, runs_root)
+    return AttemptFiles(dir_run, engine, r.state, r.work_dir, r.native_id, logs, runs_root)
 
 
 def _log_tail(attempt: AttemptFiles) -> str | None:
@@ -554,6 +562,7 @@ def task_resources(
         .where(tasks.c.run_id == run_id, tasks.c.id.in_(task_ids))
     ).all()
     benches: dict[str, str] = {}
+    dirs = dir_run_id(conn, run_id)
     if engine == "snakemake":
         benches = {
             r.id: (r.resources or {})["benchmark"]
@@ -564,14 +573,14 @@ def task_resources(
     def read() -> dict[str, dict[str, Any]]:
         if engine == "snakemake":
             ctx.accounting.load(run_id)
-        return {task: m for task, path in benches.items() if (m := _benchmark(ctx, run_id, path))}
+        return {task: m for task, path in benches.items() if (m := _benchmark(ctx, dirs, path))}
 
     try:
         measured = ctx.files.run(read, ctx.timeout_s) if engine == "snakemake" else {}
     except Stalled:
         measured = {}
     if engine == "snakemake":
-        launch = str(run_paths(ctx.runs_root, run_id).launch_dir)
+        launch = str(run_paths(ctx.runs_root, dirs).launch_dir)
         ended = ((r.native_id, launch) for r in rows if r.state in ENDED and r.id not in measured)
         ctx.accounting.want(run_id, ended)
     cached = ctx.accounting.rows(run_id) if engine == "snakemake" else {}
@@ -591,13 +600,13 @@ def task_resources(
     return found
 
 
-def _benchmark(ctx: Context, run_id: str, path: str) -> dict[str, Any] | None:
+def _benchmark(ctx: Context, dir_run: str, path: str) -> dict[str, Any] | None:
     """The last row of a Snakemake benchmark file, `s` (wall seconds), `max_rss` (MiB) and
     `mean_load` (CPU %) (`snakemake/benchmark.py`, [to be validated]); None when it cannot be
     read. Read in the launch directory with no link followed, as a job file is."""
     try:
         with (
-            run_root(ctx.runs_root, run_id, "launch") as root,
+            run_root(ctx.runs_root, dir_run, "launch") as root,
             open_confined(root, safe_rel(path)) as f,
         ):
             text = read_at(f, 0, MAX_BENCHMARK_BYTES).decode("utf-8", "replace")

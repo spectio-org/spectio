@@ -92,7 +92,7 @@ class AttemptFiles:
     """What the files of one attempt are found from: its run, engine and state, and the paths
     its events recorded."""
 
-    run_id: str
+    run_id: str  # the run whose directories the engine used: a Resume's lineage root
     engine: str
     state: str
     work_dir: str | None  # Nextflow: the attempt's work directory, as recorded

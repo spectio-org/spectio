@@ -1537,3 +1537,12 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a). It finishes the run tools 0.0.1 shows, and the security tasks come before any shared deployment.
 - **Assumed (2026-11-04, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a). Each task runs as the `p3-task` workflow; a PR that changes `.github/workflows/` waits for Thomas. Next follow-up number: FU-P3-35.
 - **Blocked:** nothing.
+
+### #99 · Assumed: `.nextflow/` made 0700 by Spectio, so a Resume is not refused under umask 002 (P3 Task 30, CR-P3T30-02)
+
+- **Covers:** [dev-env §15.3 req. 16](../specs/dev-environment-and-testing.md) ("Resume is refused when the launch directory holds a `nextflow.config` or `.nextflow/` not owned by the user, or writable by group or others"); [P1 Task 30](../plans/P1-walking-skeleton.md#task-30-resume-copy-to-a-new-launch-and-the-copy-actions).
+- **Context:** the engine of a first launch runs under the inherited umask, which the login profile may change. Under umask 002 (the login default of distributions with user-private groups, RHEL among them **[to be validated]**), Nextflow's own `.nextflow/` comes out 0775, so every Resume of that run was refused with `launch_dir_refused` (CR-P3T30-02 r1).
+- **Options:** (a) `write_launch_files` makes `.nextflow/` with mode 0700 in the engine's directory before the head runs, on every Nextflow launch, and the req. 16 check stays as written; (b) inside the private launch directory (0700, req. 10), check only the owner and the type (no symlink) of `nextflow.config` and `.nextflow/`, not the group-write bit.
+- **Recommendation:** (a). Req. 16 stays as written, and the check still refuses a group-writable `nextflow.config`, which Spectio never writes. It relies on Nextflow keeping a `.nextflow/` that already exists rather than changing its mode **[to be validated]** against Nextflow's sources. A run launched before this change, with a 0775 `.nextflow/`, is still refused; none exists outside tests.
+- **Assumed (2026-11-04, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), tested by `test_req16_nextflow_dir_private_under_umask_002`.
+- **Blocked:** nothing.
