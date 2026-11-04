@@ -1528,3 +1528,12 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation for rule 5:** (c), in FU-P3-33. The tab never freezes, and the user still gets the error for the patterns that answer in time. (b) still freezes the tab when Launch is pressed. (d) drops part of Thomas's request. The 100 ms bound is assumed **[to be validated]** against the patterns of the nf-core schemas.
 - **Assumed (2026-11-01, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 6 as built, written into the notes of 2026-11-01 in ui-spec §4.4 and §4.6 and api §5. Rule 4 is (a) and rule 5 is (a) until FU-P3-33 applies the recommendations. P1 Task 32's interface is not edited: its differences are listed on [P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-32).
 - **Blocked:** nothing.
+
+### #98 · Assumed: the next P3 order after P3-parD (Tasks 30, 31, 32 part two, then 12 to 16)
+
+- **Covers:** [P1 Tasks 30, 31 and 32](../plans/P1-walking-skeleton.md#task-30-resume-copy-to-a-new-launch-and-the-copy-actions) and the security tasks of [dev-env §15.3](../specs/dev-environment-and-testing.md) (P1 Tasks 12 to 16, P3-M3).
+- **Context:** Thomas's order of 2026-10-31 (P3-parD, Tasks 27, 28, 29, 32, 7) is built; PRs #111 and #122 wait for his merge. Task 32 part two waits for Tasks 30 and 31 (inbox #96).
+- **Options:** (a) Task 30 (it also closes CR-P3T09-11: `head.pid`, `head.exit`, `.spectio/cancel` and `launch-failed.json` scoped by `launch_n`), Task 31 (it closes SEC-P3T28-05 and FU-P3-31), Task 32 part two, then Tasks 12 → 13 → 14 → 15 → 16 before anything else; (b) the security tasks first; (c) wait for Thomas.
+- **Recommendation:** (a). It finishes the run tools 0.0.1 shows, and the security tasks come before any shared deployment.
+- **Assumed (2026-11-04, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a). Each task runs as the `p3-task` workflow; a PR that changes `.github/workflows/` waits for Thomas. Next follow-up number: FU-P3-35.
+- **Blocked:** nothing.
