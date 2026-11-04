@@ -577,3 +577,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Thomas's next order recorded as assumed (inbox #98): Task 30, Task 31, Task 32 part two, then Tasks 12 → 16. PRs #111 and #122 still wait for Thomas.
 - Budget: `budget.py start --weekly 30 --now 0`. No live reading in this cloud session and no `/usage` figure from Thomas, so the 30 points are counted from now on recorded USD (estimated), not on the real window.
 - P1 Task 30 (Resume, copy to a new launch, copy actions; also CR-P3T09-11: head files scoped by `launch_n`) launched: workflow wf_35b73a40-f6f, base 3514bd9. Scope: no `slurm-mini` check (Task 22), no CSRF token (sessions, Tasks 12–16), no screens (Task 32 part two). Numbers reserved: inbox #99, FU-P3-35.
+
+## 2026-11-04 · P3-t30: PR #123 opened; pause asked by Thomas
+
+- P1 Task 30 workflow done: code approve (1/3/9, the blocker and majors fixed), security approve (0/2/20), 4 rounds, simplifier -20/+17, doc-reviewer approve 13. Orchestrator gate on e0054c8: pytest 701 passed; ruff, format, mypy, lint-imports, uv lock clean; Vitest 223; tsc clean; docs gate 0. No `.github/workflows/` change. PR #123 opened into integration.
+- Thomas (2026-11-04, in session): "met en pause une fois task courante terminée". Task 30 is finished (merge into integration, promotion to main), then the autopilot pauses: Task 31 is not launched until Thomas resumes it.
