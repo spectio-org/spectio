@@ -26,10 +26,10 @@ export function reportTitle(path: string): string {
 }
 
 /** A path below the results root as the API names one: relative, with no empty, `.` or `..`
- * part and no control character. Anything else is never asked for, nor shown (SEC-P3T31-10 r4,
- * SEC-P3G4-02). */
+ * part, no control character and no bidi or format character. Anything else is never asked for,
+ * nor shown (SEC-P3T31-10 r4, SEC-P3G4-02, SEC-P3T32B-02). */
 export const isResultPath = (path: string): boolean =>
-  !/[\u0000-\u001f\u007f-\u009f]/.test(path) && path.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+  !/[\u0000-\u001f\u007f-\u009f\u200e\u200f\u202a-\u202e\u2066-\u2069]/.test(path) && path.split("/").every((part) => part !== "" && part !== "." && part !== "..");
 
 const isReport = (path: string) => isResultPath(path) && /\.html?$/i.test(path);
 

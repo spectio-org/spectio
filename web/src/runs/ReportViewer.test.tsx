@@ -52,7 +52,7 @@ test("an unknown run is not found", async () => {
   expect(screen.queryByTitle(/sandboxed/)).toBeNull();
 });
 
-test.each(["a/../b.html", "./b.html", "a//b.html", "/etc/b.html"])("a path with a dot or empty part frames nothing (SEC-P3T31-10 r4): %s", async (path) => {
+test.each(["a/../b.html", "./b.html", "a//b.html", "/etc/b.html", "a\u202eb.html", "a\u200eb.html", "a\u2069b.html"])("a path with a dot or empty part frames nothing, nor one with a bidi or format character (SEC-P3T31-10 r4, SEC-P3T32B-02): %s", async (path) => {
   serve({ [URL_]: detail() });
   app(`/runs/${ID}/report?path=${encodeURIComponent(path)}`);
   expect(await screen.findByRole("heading", { level: 1, name: "No such report" })).toBeInTheDocument();

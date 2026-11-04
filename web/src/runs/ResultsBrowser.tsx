@@ -146,8 +146,10 @@ export function ResultsBrowser({ id, path = "" }: { id: string; path?: string })
   }, [name]);
 
   if (missing) return <NotFound />;
-  const parts = valid && path ? path.split("/") : [];
-  const where = results && valid ? join(results.root, path) : null;
+  // The path bar shows the folder the server answered for, never the URL's own text (SEC-P3T32B-02).
+  const shown = results?.path ?? "";
+  const parts = shown ? shown.split("/") : [];
+  const where = results ? join(results.root, shown) : null;
   return (
     <div className="sp-runs">
       <Link className="sp-report-back" to="/runs/$id" params={{ id }}>

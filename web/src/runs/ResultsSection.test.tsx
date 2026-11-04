@@ -70,9 +70,19 @@ test("the sandbox note does not promise working reports: MultiQC's scripts stop 
   expect(within(results).queryByText(/their scripts run/)).toBeNull();
   expect(
     within(results).getByText(
-      "Reports open in Spectio's sandboxed report viewer, where they cannot reach Spectio. MultiQC's scripts stop there: its tables show, its plots and toolbox do not. Download a report to see all of it.",
+      "Reports open in Spectio's sandboxed report viewer, where they cannot reach Spectio. MultiQC's scripts stop there: its tables show, its plots and toolbox do not. To see all of a report you trust, use Download in the viewer: the report then runs outside Spectio's sandbox.",
     ),
   ).toBeInTheDocument();
+});
+
+test("with no MultiQC report listed, the note says nothing of MultiQC or Download (CR-P3T32B-04, SEC-P3T32B-04)", async () => {
+  detail({}, { ...LISTING, reports: LISTING.reports.filter((r) => !r.path.endsWith("multiqc_report.html")) });
+  app(`/runs/${ID}`);
+  const results = await section();
+  await within(results).findByRole("link", { name: "Open the report execution_report" });
+  expect(within(results).getByText("Reports open in Spectio's sandboxed report viewer, where they cannot reach Spectio.")).toBeInTheDocument();
+  expect(within(results).queryByText(/MultiQC's scripts/)).toBeNull();
+  expect(within(results).queryByText(/Download/)).toBeNull();
 });
 
 test("a failed nf-core run with no MultiQC report says so; a running one says it comes at the end", async () => {
@@ -157,6 +167,25 @@ test("the results browser says when a folder is cut at 1,000 entries, or missing
   expect(await screen.findByText("Showing the first 1,000 entries of this folder")).toBeInTheDocument();
   await router.navigate({ to: "/runs/$id/results", params: { id: ID }, search: { path: "gone" } });
   await waitFor(() => expect(screen.getByText("No such folder in this run's results.")).toBeInTheDocument());
+});
+
+test("a folder the server does not confirm is not shown in the path bar (SEC-P3T32B-02)", async () => {
+  const text = "Session expired, call 555 1234";
+  serve({
+    [`${URL_}/results`]: () => json(404, { title: "Not found", detail: "no such folder" }),
+    [URL_]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
+  });
+  app(`/runs/${ID}/results?path=${encodeURIComponent(text)}`);
+  expect(await screen.findByText("No such folder in this run's results.")).toBeInTheDocument();
+  expect(screen.queryByText(text)).toBeNull();
+  expect(screen.queryByText(new RegExp(text))).toBeNull();
+});
+
+test.each(["a\u202eb", "a\u200fb", "a\u2066b"])("a path with a bidi or format character is not asked for (SEC-P3T32B-02): %j", async (path) => {
+  const mock = serve({ [URL_]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT } });
+  app(`/runs/${ID}/results?path=${encodeURIComponent(path)}`);
+  expect(await screen.findByText("Not a folder of this run's results.")).toBeInTheDocument();
+  expect(fetched(mock).some((u) => u.includes("/results"))).toBe(false);
 });
 
 test("a path with a dot part or an empty part is not asked for (SEC-P3T31-10 r4)", async () => {

@@ -146,7 +146,7 @@ REGISTRY: dict[str, Shot] = {
              "0.0.1, live: the same report on a phone, stopped the same way", themes=("light", "dark"), live=REPORT_VIEWER),
         Shot("app-run-results", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
              "0.0.1, live: the Summary's Results and reports: the results directory, MultiQC first, the folders",
-             themes=("light", "dark"), live=("wait:Browse all results", "view:Results and reports")),
+             themes=("light", "dark"), live=("wait:Browse all results", "view:Browse all results")),
         Shot("app-run-results-phone", "/runs/$SPECTIO_DEMO_RUN", 390, 844,
              "0.0.1, live: the same section on a phone",
              themes=("light", "dark"), live=("wait:Browse all results", "view:Browse all results")),

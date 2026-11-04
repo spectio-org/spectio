@@ -51,7 +51,8 @@ function Contents({ run, results }: { run: RunDetail; results: Results }) {
     );
   }
   const rows = reportRows(results.reports);
-  const missing = results.reports.some((r) => r.path.endsWith(MULTIQC)) ? null : multiqcMissing(run);
+  const multiqc = results.reports.some((r) => r.path.endsWith(MULTIQC));
+  const missing = multiqc ? null : multiqcMissing(run);
   const folders = results.entries.filter((e) => e.type === "dir");
   return (
     <>
@@ -125,8 +126,9 @@ function Contents({ run, results }: { run: RunDetail; results: Results }) {
         Browse all results <Icon path={ICONS.arrowRight} size={13} />
       </Link>
       <p className="sp-muted">
-        Reports open in Spectio's sandboxed report viewer, where they cannot reach Spectio. MultiQC's scripts stop there: its
-        tables show, its plots and toolbox do not. Download a report to see all of it.
+        Reports open in Spectio's sandboxed report viewer, where they cannot reach Spectio.
+        {multiqc &&
+          " MultiQC's scripts stop there: its tables show, its plots and toolbox do not. To see all of a report you trust, use Download in the viewer: the report then runs outside Spectio's sandbox."}
       </p>
     </>
   );
