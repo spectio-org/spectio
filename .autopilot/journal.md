@@ -611,3 +611,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - Promotion PR #127 (integration → `main`, merge commit) opened on 85330d6.
 - P1 Task 32 part two launched with the `p3-task` workflow, step P3-t32b (branch `autopilot/P3-t32b`, since `autopilot/P3-t32` is part one), base 85330d6. Scope: Resume and its dialog, Copy to a new launch, the Copy menu's Command item, results and reports screens, the four `test.fixme` tests, and screenshots including `app-report-viewer` from a regenerated MultiQC fixture. No `.github/workflows/` change. Numbers reserved: inbox #102, FU-P3-37.
+
+## 2026-11-04 · Promotion #127 merged: P1 Task 31 on main
+
+- Integration promoted to `main` by merge commit 2b6ab38 (every check green on df0d13b; an older `ci-ok` failure was the cancelled run of 85330d6).
+- PR #126 (CI line for `report.spec.ts`) is green and waits for Thomas, with #111 and #122.
+- P1 Task 32 part two (P3-t32b) is building.
