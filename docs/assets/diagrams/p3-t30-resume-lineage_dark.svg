@@ -664,10 +664,10 @@
   <circle cx="65.0" cy="1388.0" r="4.5" fill="#ff8787"/>
   <circle cx="79.0" cy="1388.0" r="4.5" fill="#ffd43b"/>
   <circle cx="93.0" cy="1388.0" r="4.5" fill="#69db7c"/>
-  <text x="64.0" y="1418.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#e3e3e3" xml:space="preserve">$ uv run --locked pytest -q \</text>
-  <text x="64.0" y="1437.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#e3e3e3" xml:space="preserve">    tests/api/test_relaunch.py tests/api/test_read.py \</text>
-  <text x="64.0" y="1456.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#e3e3e3" xml:space="preserve">    tests/test_headscript.py</text>
-  <text x="64.0" y="1475.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#e3e3e3" xml:space="preserve">all pass</text>
+  <text x="64.0" y="1418.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#e3e3e3" xml:space="preserve">$ uv run --locked pytest \</text>
+  <text x="64.0" y="1437.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#e3e3e3" xml:space="preserve">    packages/spectio-server/tests/api/test_relaunch.py \</text>
+  <text x="64.0" y="1456.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#e3e3e3" xml:space="preserve">    packages/spectio/tests/test_headscript.py</text>
+  <text x="64.0" y="1475.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#e3e3e3" xml:space="preserve">75 passed, 1 deselected</text>
   <text x="560.0" y="1388.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#e3e3e3" text-anchor="start" font-weight="normal">open after round 4, all minor, both verdicts approve</text>
   <path d="M568.0,1404.0 L575.0,1416.6 L561.0,1416.6 Z" fill="#363020" stroke="none"/>
   <path d="M567.6,1403.7 C569.8,1407.6 573.2,1412.9 574.8,1416.6" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>

@@ -327,10 +327,10 @@ def build(theme: Theme) -> Sketch:
     s.line(30, DIV3, W - 30, DIV3, dashed=True, colour=t.muted)
 
     # the tests, and what is still open -----------------------------------------------------------
-    s.terminal(50, DIV3 + 22, 470, 120, ("$ uv run --locked pytest -q \\",
-                                          "    tests/api/test_relaunch.py tests/api/test_read.py \\",
-                                          "    tests/test_headscript.py",
-                                          "all pass"), size=12, line_h=19)
+    s.terminal(50, DIV3 + 22, 470, 120, ("$ uv run --locked pytest \\",
+                                          "    packages/spectio-server/tests/api/test_relaunch.py \\",
+                                          "    packages/spectio/tests/test_headscript.py",
+                                          "75 passed, 1 deselected"), size=12, line_h=19)
     ox = 560
     s.text(ox, DIV3 + 36, "open after round 4, all minor, both verdicts approve", size=14,
            anchor="start")
