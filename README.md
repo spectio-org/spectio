@@ -30,6 +30,8 @@ Spectio adds itself next to your setup rather than replacing it. On Nextflow it 
 
 Spectio is being designed in the open. The specifications, the UI design and the test pipelines are written first, and each step is reviewed before code is built on it. The first release, **0.0.1**, covers launch, monitor and relaunch from the browser on a SLURM cluster; its scope is in the [MVP page](docs/specs/mvp-0.0.1.md) and the [roadmap](docs/roadmap/index.md).
 
+**Try the demo:** [spectio.pages.dev/demo/](https://spectio.pages.dev/demo/) runs the 0.0.1 screens in your browser on answers recorded from a test server. It is read-only: you can open runs, tasks and logs, and load a pipeline in the launch form, but not launch or cancel ([how it is built](docs/specs/dev-environment-and-testing.md#73-the-ui-in-mock-mode-from-the-first-ui-milestone)).
+
 The package names are being reserved:
 
 | Name | Where | What it will be |

@@ -36,3 +36,4 @@ tools/media/out/
 # the screens (P1 Task 19): installed and built, never committed
 web/node_modules/
 web/dist/
+web/dist-demo/

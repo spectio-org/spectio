@@ -6,3 +6,9 @@ rules:
       # ci.yml calls its reusable workflows as ./.github/workflows/*.yml. The self-repository form ($/...),
       # GitHub 2026-07-30, is rejected by actionlint 1.7.12; switch once actionlint accepts it (reviewed 2026-10-27, D4).
       - ci.yml
+  cache-poisoning:
+    ignore:
+      # previews.yml builds the demo with actions/setup-node v4.4.0 (49933ea), whose caching is opt-in through
+      # its `cache` input, not set there; zizmor assumes the automatic cache of v5 (`package-manager-cache`,
+      # an input v4.4.0's action.yml does not have). Reviewed 2026-10-31 (P3-demo); the line moves on any edit.
+      - previews.yml:110

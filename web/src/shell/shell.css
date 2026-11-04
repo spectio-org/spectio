@@ -219,7 +219,7 @@ body {
   align-self: flex-start;
   flex: 0 0 auto;
   width: 216px;
-  height: calc(100vh - 86px);
+  height: calc(100vh - 86px - var(--sp-demo-banner-h, 0px));
   box-sizing: border-box;
   margin: 10px 0 10px 10px;
   padding: 14px 12px 12px;
