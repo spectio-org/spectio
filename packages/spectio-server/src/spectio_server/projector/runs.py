@@ -63,13 +63,20 @@ class Projection:
     changed: set[str] = field(default_factory=set)  # tasks created or moved, for the stream
     sources: "StageSources | None" = None  # where stage sources are read (P1 Task 27)
     dropped: Counter[str] = field(default_factory=Counter)  # paths not kept (P1 Task 28)
+    lineage_id: str | None = None  # a Resume's lineage root, whose directories it runs in
+
+    @property
+    def dir_run_id(self) -> str:
+        """The run whose launch and work directories the engine used (P1 Task 30)."""
+        return self.lineage_id or self.run_id
 
     def roots(self) -> RunPaths | None:
-        """The run's directories, from the runs root and the run ID (req. 10), or None when
-        the projection has no runs root: then no path from an event is kept."""
+        """The directories the run's engine used, from the runs root and the run ID, its
+        lineage root's for a Resume (req. 10), or None when the projection has no runs root:
+        then no path from an event is kept."""
         if self.sources is None or self.sources.runs_root is None:
             return None
-        return run_paths(self.sources.runs_root, self.run_id)
+        return run_paths(self.sources.runs_root, self.dir_run_id)
 
     @classmethod
     def load(cls, conn: Connection, launch_id: str) -> "Projection":
@@ -80,13 +87,24 @@ class Projection:
                 launches.c.head_state,
                 runs.c.state,
                 runs.c.last_seq,
+                runs.c.lineage_id,
             )
             .join(runs, runs.c.id == launches.c.run_id)
             .where(launches.c.id == launch_id)
             .with_for_update(of=runs)  # the run row lock of api §8.2 (no-op on SQLite)
         ).one()
         now = datetime.now(UTC)
-        return cls(conn, row.run_id, launch_id, row.n, row.state, row.head_state, row.last_seq, now)
+        return cls(
+            conn,
+            row.run_id,
+            launch_id,
+            row.n,
+            row.state,
+            row.head_state,
+            row.last_seq,
+            now,
+            lineage_id=row.lineage_id,
+        )
 
     def log(self, type_: str, payload: dict[str, Any], **columns: Any) -> None:
         """Append one event to the run's log with the next `seq`."""
