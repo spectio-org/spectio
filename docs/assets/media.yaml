@@ -606,6 +606,14 @@ media:
       - docs/assets/diagrams/p3-t32-failed-job_dark.svg
       - docs/assets/diagrams/p3-t32-failed-job_light.png
       - docs/assets/diagrams/p3-t32-failed-job_dark.png
+  - id: p3-t32b-run-tools
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t32b_run_tools.py
+    outputs:
+      - docs/assets/diagrams/p3-t32b-run-tools_light.svg
+      - docs/assets/diagrams/p3-t32b-run-tools_dark.svg
+      - docs/assets/diagrams/p3-t32b-run-tools_light.png
+      - docs/assets/diagrams/p3-t32b-run-tools_dark.png
   - id: app-report-viewer
     kind: screenshot
     # as app-run-detail, with the run's multiqc/multiqc_report.html replaced by the gunzipped MultiQC fixture
