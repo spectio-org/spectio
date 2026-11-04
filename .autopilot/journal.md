@@ -593,3 +593,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - Integration promoted to `main` by merge commit 6ae3dcd (every check green on 1751492).
 - Paused at Thomas's request. Next when resumed: P1 Task 31 (inbox #98, reserve inbox #100 and FU-P3-36). PRs #111 and #122 wait for Thomas.
+- Dashboard not refreshed: `build.py` gave a 24 MB page, over the Artifact limit of 16 MB (XSS check passed). To fix in `tools/dashboard` (fewer inline images).
