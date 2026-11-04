@@ -2,7 +2,7 @@
 // report in a sandboxed iframe, under a banner that says it is untrusted.
 import { screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { app, json, run, serve, stubStream } from "../testing";
+import { DETAIL, app, json, run, serve, stubStream } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -10,7 +10,7 @@ afterEach(() => vi.unstubAllGlobals());
 const ID = "run_01JBC6Q4ZK7M8N2P3R5S7T9V1W";
 const URL_ = `/api/v1/runs/${ID}`;
 const PATH = "multiqc/star_salmon/multiqc_report.html";
-const detail = () => ({ ...run({ state: "succeeded", name: "rnaseq-2026-10-25" }), params: {}, failures: [], failures_total: 0 });
+const detail = () => ({ ...DETAIL, ...run({ state: "succeeded", name: "rnaseq-2026-10-25" }), params: {}, failures: [], failures_total: 0 });
 
 test("a report opens sandboxed, under the untrusted banner, with Download", async () => {
   serve({ [URL_]: detail() });
@@ -50,4 +50,12 @@ test("an unknown run is not found", async () => {
   app(`/runs/${ID}/report?path=${encodeURIComponent(PATH)}`);
   expect(await screen.findByRole("heading", { level: 1, name: "No such run" })).toBeInTheDocument();
   expect(screen.queryByTitle(/sandboxed/)).toBeNull();
+});
+
+test.each(["a/../b.html", "./b.html", "a//b.html", "/etc/b.html", "a\u202eb.html", "a\u200eb.html", "a\u2069b.html", "a\u061cb.html", "a\u200bb.html", "a\u2028b.html", "a\ufeffb.html"])("a path with a dot or empty part frames nothing, nor one with a bidi or format character (SEC-P3T31-10 r4, SEC-P3T32B-02): %s", async (path) => {
+  serve({ [URL_]: detail() });
+  app(`/runs/${ID}/report?path=${encodeURIComponent(path)}`);
+  expect(await screen.findByRole("heading", { level: 1, name: "No such report" })).toBeInTheDocument();
+  expect(screen.queryByTitle(/sandboxed/)).toBeNull();
+  expect(screen.queryByText(path)).toBeNull();
 });

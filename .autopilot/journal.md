@@ -611,3 +611,27 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - Promotion PR #127 (integration → `main`, merge commit) opened on 85330d6.
 - P1 Task 32 part two launched with the `p3-task` workflow, step P3-t32b (branch `autopilot/P3-t32b`, since `autopilot/P3-t32` is part one), base 85330d6. Scope: Resume and its dialog, Copy to a new launch, the Copy menu's Command item, results and reports screens, the four `test.fixme` tests, and screenshots including `app-report-viewer` from a regenerated MultiQC fixture. No `.github/workflows/` change. Numbers reserved: inbox #102, FU-P3-37.
+
+## 2026-11-04 · Promotion #127 merged: P1 Task 31 on main
+
+- Integration promoted to `main` by merge commit 2b6ab38 (every check green on df0d13b; an older `ci-ok` failure was the cancelled run of 85330d6).
+- PR #126 (CI line for `report.spec.ts`) is green and waits for Thomas, with #111 and #122.
+- P1 Task 32 part two (P3-t32b) is building.
+
+## 2026-11-04 · P3-t32b blocked after two fix rounds; third round assumed (inbox #103)
+
+- The workflow returned `blocked` after two fix rounds. Open: CR-P3T32B-03 (major, the `app-run-results` shots predate the note's fix) and the defect minors CR-P3T32B-04 and SEC-P3T32B-02/-04. Security approved both rounds.
+- The harness flagged fix round 1 for security. I checked its commands. It ran `spectio serve` as `alice`, set the node name to `login1` for the live shots (the documented P3-M8 method), then put the node name back to `vm` and stopped the server; it also ran one bare `git stash`. The commit itself changes no CSP, sandbox, test or check. Nothing left the container.
+- Inbox #103, assumed: one third fix round, with guardrails in its prompt. The run is resumed from cache (wf_9d735017-476); a fourth round is not assumed.
+
+## 2026-11-04 · P3-t32b done; PR #128 opened
+
+- The third round approved (inbox #103). After post-approval fixes, the run reports `rounds=5`. Code review approved b/M/m=0/3/8, security 0/0/13, simplify −4/+4, doc-reviewer 12/14. Orchestrator gate on 99a0ace: pytest 731 passed, Vitest 289, docs gate 0 failures, no `.github/workflows/` change.
+- Afterwards the node name was `vm`, no `alice` server was running and the stash list was empty.
+- PR #128 is open into `autopilot/integration` with the `screenshots` label. Inbox #104 is assumed; open minors are in FU-P3-37.
+- Thomas (2026-11-04 ~18:13 UTC): "Stop building à la fin étape actuelle". After PR #128 and its promotion, nothing more is launched; next when resumed: §15.3 Task 12 (reserve inbox #105, FU-P3-38).
+
+## 2026-11-04 · PR #128 merged: P1 Task 32 part two; promotion next, then paused
+
+- PR #128 squash-merged as 5f2725d with `Release-As: 0.0.1`. Every check was green on 99a0ace; the first `pr-body` run had failed on the placeholder body. Cost recorded: 40 USD.
+- Next: the promotion PR to `main`, then the autopilot stays paused (Thomas). P1 tasks merged: 19 of 32. PRs #111, #122 and #126 wait for Thomas.

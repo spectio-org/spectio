@@ -150,6 +150,25 @@ export interface Results {
   reports: ResultReport[];
 }
 
+/** Schema `CodeLoading`: a value that loads code or configuration (dev-env §15.3 req. 16):
+ * `field` is `params.<name>`, `workflow.location` or `engine.<option>`. */
+export interface CodeLoading {
+  field: string;
+  value: string;
+  writable_by_others: boolean;
+}
+
+/** `GET /runs/{id}:launch-template` (schema `LaunchTemplate`): a `POST /runs` body prefilled from
+ * a run, for Copy to a new launch (P1 Task 30). */
+export interface LaunchTemplate {
+  workflow: { location: string; revision: string | null; engine: Engine };
+  profiles: string[];
+  params: { [key: string]: Json };
+  /** The top-level parameters that differ from the pipeline's schema defaults. */
+  non_default: string[];
+  code_loading: CodeLoading[];
+}
+
 /** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */
 export type ResumeReason =
   | "running"
@@ -267,12 +286,14 @@ export interface FieldError {
   message: string;
 }
 
-/** An RFC 9457 problem; a 422 carries `errors` with a dotted `field` (inbox #86 rule 3). */
+/** An RFC 9457 problem; a 422 carries `errors` with a dotted `field` (inbox #86 rule 3), a 409
+ * of `:relaunch` its `reason` (api §5.1). */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
     readonly errors: FieldError[] = [],
+    readonly reason: string | null = null,
   ) {
     super(message);
   }
@@ -285,7 +306,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const body = await response.json().catch(() => null);
   if (!response.ok) {
     const detail = body?.detail ?? body?.title ?? `HTTP ${response.status}`;
-    throw new ApiError(response.status, detail, Array.isArray(body?.errors) ? body.errors : []);
+    const reason = typeof body?.reason === "string" ? body.reason : null;
+    throw new ApiError(response.status, detail, Array.isArray(body?.errors) ? body.errors : [], reason);
   }
   return body as T;
 }
@@ -352,6 +374,24 @@ export function listTasks(
 
 export function cancelRun(id: string): Promise<RunDetail> {
   return call(`${run(id)}:cancel`, { method: "POST" });
+}
+
+/** Resume: a child run in the same launch directory (`:relaunch` with `mode: resume`, api §5.1). */
+export function resumeRun(id: string): Promise<RunDetail> {
+  return call(`${run(id)}:relaunch`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ mode: "resume" }),
+  });
+}
+
+export function getLaunchTemplate(id: string, signal?: AbortSignal): Promise<LaunchTemplate> {
+  return call(`${run(id)}:launch-template`, { signal });
+}
+
+/** One folder of the run's results, `path` relative to its root ("" for the root). */
+export function listResults(id: string, path: string, signal?: AbortSignal): Promise<Results> {
+  return call(`${run(id)}/results${query({ path })}`, { signal });
 }
 
 /** Where a run log's text is served: the same origin, text/plain (the Logs tab's Open raw). */

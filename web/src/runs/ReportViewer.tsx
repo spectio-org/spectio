@@ -25,7 +25,19 @@ export function reportTitle(path: string): string {
   return name.endsWith(MULTIQC) ? "MultiQC report" : name.replace(/\.[^.]*$/, "");
 }
 
-const isReport = (path: string) => /\.html?$/i.test(path);
+/** The bidi and other format controls, line and paragraph separators the server refuses in a
+ * path: exactly `FORMAT_CHARS` of `spectio_server/files/redact.py`, which a pytest compares with
+ * this text (SEC-P3T32B-05, FU-P3-37). */
+export const FORMAT_CHARS = "\\u061c\\u200b-\\u200f\\u2028-\\u202e\\u2060-\\u206f\\ufeff\\ufff9-\\ufffb";
+const UNSAFE = new RegExp(`[\\u0000-\\u001f\\u007f-\\u009f${FORMAT_CHARS}]`);
+
+/** A path below the results root as the API names one: relative, with no empty, `.` or `..`
+ * part, no control character and no bidi or format character. Anything else is never asked for,
+ * nor shown (SEC-P3T31-10 r4, SEC-P3G4-02, SEC-P3T32B-02, SEC-P3T32B-05). */
+export const isResultPath = (path: string): boolean =>
+  !UNSAFE.test(path) && path.split("/").every((part) => part !== "" && part !== "." && part !== "..");
+
+const isReport = (path: string) => isResultPath(path) && /\.html?$/i.test(path);
 
 export function ReportViewer({ id, path }: { id: string; path?: string }) {
   const [run, setRun] = useState<RunDetail | null>(null);

@@ -3,7 +3,7 @@
 // be the schema's properties, so a field added to or dropped from a response model fails here.
 import { expect, test } from "vitest";
 import snapshot from "../../packages/spectio-server/openapi/0.0.1.json";
-import type { Failure, Process, ResultEntry, ResultReport, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Stage, Task, TaskFile, TaskFiles } from "./api";
+import type { CodeLoading, Failure, LaunchTemplate, Process, ResultEntry, ResultReport, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Stage, Task, TaskFile, TaskFiles } from "./api";
 
 const schemas = snapshot.components.schemas as unknown as Record<
   string,
@@ -82,6 +82,15 @@ const SAMPLES: Record<string, object> = {
   ResultEntry: { name: "", type: "file", size: null, mtime: null } satisfies ResultEntry,
   ResultReport: { path: "", title: "", group: null } satisfies ResultReport,
   Results: { root: "", path: "", exists: true, entries: [], truncated: false, reports: [] } satisfies Results,
+  CodeLoading: { field: "", value: "", writable_by_others: false } satisfies CodeLoading,
+  LaunchTemplate: {
+    workflow: { location: "", revision: null, engine: "nextflow" },
+    profiles: [],
+    params: {},
+    non_default: [],
+    code_loading: [],
+  } satisfies LaunchTemplate,
+  TemplateWorkflow: { location: "", revision: null, engine: "nextflow" },
   Failure: failure,
   Scheduler: scheduler,
   Resources: resources,
