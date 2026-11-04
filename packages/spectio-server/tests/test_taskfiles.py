@@ -9,6 +9,7 @@ logger plugin that sends them (P1 Task 7) is not built yet.
 
 import os
 import stat
+import time
 from collections import Counter
 from collections.abc import Iterator
 from dataclasses import dataclass
@@ -314,6 +315,22 @@ def test_req13_directive_quoted_values() -> None:
     for line in probes:
         served = redact_command_run(line + "\n")
         assert "s3cret" not in served and f"TOKEN={HIDDEN}" in served, repr(line)
+
+
+def test_req13_directive_linear() -> None:
+    """A long directive line is read in linear time: an option inside the value of the one
+    before it is skipped, and an item with no `=` is not backtracked over (CR-P3T31-10,
+    SEC-P3T31-11)."""
+    lines = [
+        "#SBATCH " + "-v\v" * 300_000,
+        "#SBATCH --export=" + "x" * 1_000_000,
+        "#SBATCH" + "\v-v\vA=x," * (1024 * 1024 // 8),
+    ]
+    for line in lines:
+        began = time.monotonic()
+        served = redact_command_run(line + "\n")
+        assert time.monotonic() - began < 1, repr(line[:20])
+        assert "A=x" not in served
 
 
 def test_req13_here_string_hidden() -> None:

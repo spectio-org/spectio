@@ -42,7 +42,6 @@ _DIRECTIVE = re.compile(r"#(SBATCH|PBS|\$|BSUB)\s")
 # An option starts after any `\s`, as wide as `_DIRECTIVE`, while a value ends only at an ASCII
 # space or tab (`_VALUE_END`): asymmetric on purpose, both fail closed (SEC-P3T31-10).
 _EXPORT_OPTION = re.compile(r"(?<=\s)(--export(=|\s+)|-v\s*|-env\s*)")
-_ITEM = re.compile(r"([^,=]*)=[^,]*")  # any name, even none: fails closed (SEC-P3T31-07)
 _QUOTING = "'\"\\"
 _VALUE_END = re.compile(r"[ \t'\"\\]")  # an ASCII space ends a directive value; a quoting hides it
 _OPS = ";&|()<>"
@@ -342,15 +341,21 @@ class _Lexer:
         if not _DIRECTIVE.match(line):
             return
         spans = []  # every option is read, even one inside the value of another (SEC-P3T31-09)
+        done = 0  # the end of the last value read
         for option in _EXPORT_OPTION.finditer(line):
             at = option.end()
+            if at <= done:  # its value ends at `done` too, and its spans are a subset of those
+                continue  # read already: skipped, so a line is read in linear time (SEC-P3T31-11)
             stop = _VALUE_END.search(line, at)
             if stop is not None and stop[0] in _QUOTING:
                 spans.append((at, len(line)))
                 break
-            value = line[at : len(line) if stop is None else stop.start()]
-            for item in _ITEM.finditer(value):
-                spans.append((at + item.start() + len(item[1]) + 1, at + item.end()))
+            done = len(line) if stop is None else stop.start()
+            for item in line[at:done].split(","):  # no regex: no backtracking (CR-P3T31-10)
+                name, eq, _ = item.partition("=")
+                if eq:
+                    spans.append((at + len(name) + 1, at + len(item)))
+                at += len(item) + 1
         merged: list[list[int]] = []  # overlapping spans make one marker
         for lo, hi in sorted(spans):
             if merged and lo <= merged[-1][1]:
