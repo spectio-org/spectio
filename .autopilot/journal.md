@@ -623,3 +623,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 - The workflow returned `blocked` after two fix rounds. Open: CR-P3T32B-03 (major, the `app-run-results` shots predate the note's fix) and the defect minors CR-P3T32B-04 and SEC-P3T32B-02/-04. Security approved both rounds.
 - The harness flagged fix round 1 for security. I checked its commands. It ran `spectio serve` as `alice`, set the node name to `login1` for the live shots (the documented P3-M8 method), then put the node name back to `vm` and stopped the server; it also ran one bare `git stash`. The commit itself changes no CSP, sandbox, test or check. Nothing left the container.
 - Inbox #103, assumed: one third fix round, with guardrails in its prompt. The run is resumed from cache (wf_9d735017-476); a fourth round is not assumed.
+
+## 2026-11-04 · P3-t32b done; PR #128 opened
+
+- The third round approved (inbox #103). After post-approval fixes, the run reports `rounds=5`. Code review approved b/M/m=0/3/8, security 0/0/13, simplify −4/+4, doc-reviewer 12/14. Orchestrator gate on 99a0ace: pytest 731 passed, Vitest 289, docs gate 0 failures, no `.github/workflows/` change.
+- Afterwards the node name was `vm`, no `alice` server was running and the stash list was empty.
+- PR #128 is open into `autopilot/integration` with the `screenshots` label. Inbox #104 is assumed; open minors are in FU-P3-37.
