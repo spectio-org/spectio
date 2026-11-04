@@ -226,6 +226,46 @@ def test_unknown_attempt_404(nf_task: NfTask) -> None:
     problem(nf_task.client.get(f"{API}/tasks/tsk_nope/attempts/1/files"), 404, "not-found")
 
 
+CHILD = "run_01K8T2F1XTVRES0000000000F9"
+
+
+def test_resumed_child_reads_the_lineage_dirs(
+    authed_client: TestClient, writer: Writer, settings: Settings
+) -> None:
+    """A Resume runs in its lineage root's directories (CR-P3T30-01): the child's task
+    directory under the parent's work directory is kept, and its files are listed from there;
+    a Snakemake child's engine log is read from the parent's launch directory."""
+    add_run(writer, settings, RUN, "nf", "failed")
+    parent = make_run_dirs(settings.runs_root, RUN)
+    lineage: dict[str, Any] = {"parent_run_id": RUN, "lineage_id": RUN, "relaunch_mode": "resume"}
+    launch_id = add_run(writer, settings, CHILD, "nf-resume", "running", **lineage)
+    make_run_dirs(settings.runs_root, CHILD)
+    task_dir = parent.work_dir.joinpath(*HASH)
+    task_dir.mkdir(parents=True)
+    (task_dir / ".command.err").write_text("err\n")
+    workdir = str(task_dir)
+    data = {"process": "ALIGN", "attempt": 1, "workDir": workdir, "trace": {"workdir": workdir}}
+    started = event(1, "nextflow.onTaskStart", **data).model_copy(update={"run": CHILD})
+    push(writer, settings, launch_id, started)
+    with writer.engine.connect() as conn:
+        task_id, kept = conn.execute(
+            select(tasks.c.id, attempts.c.work_dir)
+            .join(attempts, attempts.c.task_id == tasks.c.id)
+            .where(tasks.c.run_id == CHILD)
+        ).one()
+    assert kept == workdir
+    body = authed_client.get(f"{API}/tasks/{task_id}/attempts/1/files").json()
+    assert body["work_dir"] == workdir
+    assert {f["name"]: f["state"] for f in body["files"]}[".command.err"] == "present"
+
+    smk = "run_01K8T2F1XTVRES0000000000FA"
+    add_run(writer, settings, smk, "smk-resume", "running", engine="snakemake", **lineage)
+    make_run_dirs(settings.runs_root, smk)
+    (parent.launch_dir / ".snakemake" / "log").mkdir(parents=True)
+    (parent.launch_dir / ".snakemake" / "log" / "a.snakemake.log").write_text("smk log\n")
+    assert authed_client.get(f"{API}/runs/{smk}/logs").text == "smk log\n"
+
+
 # --- Snakemake names: equal to a recorded path, byte for byte (SEC-156) ---------------------
 
 

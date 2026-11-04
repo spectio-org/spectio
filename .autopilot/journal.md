@@ -560,3 +560,31 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Workflow p3-task in 2 rounds (code approve 0/0/7, security approve 0/0/2), simplifier -16/+13, doc-reviewer approve 12. The docs pass deferred the screenshots on a wrong premise (no Nextflow); `media-capture` took them on the demo lab's Nextflow 26.10.4 from the branch's code (three new shots, three retakes). Orchestrator gate on ac436d1: 650 passed; Vitest 223; tsc and build clean; SAST 0; gitleaks clean. Every check green; squash 786b303 (`Release-As: 0.0.1`). Cost recorded: 45 USD.
 - Side effect: the shots run migrated `/g/demo-lab/db` to 0007 and added two failed runs there.
 - Open minors in FU-P3-33 (a schema `pattern` with no time bound, SEC-P3T32-01, first). Part two (Resume, copy to a launch, results) waits for Tasks 30 and 31. Inbox #96. Next: promotion, then P1 Task 7.
+
+## 2026-11-01 · Promotion #121 merged: P1 Task 32 part one on main; P1 Task 7 launched
+
+- Integration promoted to `main` by merge commit cc5d294 (every check green on 4eff69e).
+- P1 Task 7 (the Snakemake logger plugin writes the spool) launched: workflow wf_772093e4-082, base 4eff69e. It must send the fields Tasks 28 and 29 handed on (`slurm_submitted`, `job_error.aux.external_jobid` and `msg`, `log`, `threads`, `resources`, `benchmark`), with at least one Task 28/29 test fed by a real Snakemake 9.27.1 run. Numbers reserved: inbox #97, FU-P3-34. A change under `.github/workflows/` would make its PR wait for Thomas.
+
+## 2026-11-01 · P3-t7: PR #122 opened, waits for Thomas
+
+- P1 Task 7, the last of M1: `snakemake-logger-plugin-spectio` writes allow-listed events to a 0600 spool in a 0700 `.spectio/events/`, on `PYTHONPATH`, never failing the run; it sends the fields Tasks 28 and 29 read (`slurm_submitted`, `job_error.aux.external_jobid` and `msg`, `threads`, `resources`, `benchmark`, rule logs). A server test now projects the recorded spool of a real Snakemake 9.27.1 run.
+- Workflow p3-task in 2 rounds (code approve 0/0/5, security approve 0/0/5), simplifier -9/+3, doc-reviewer approve 13. Orchestrator gate on 4384acf: plugin suite 43 passed; pytest 651 passed; ruff, format, mypy, lint-imports, uv lock clean; SAST 0; gitleaks clean. Cost recorded: 45 USD (estimate).
+- The PR changes `.github/workflows/ci.yml` and `pipelines-synthetic.yml` (the plugin's suite in CI), so it is not auto-merged: it waits for Thomas. Inbox #97 (assumed), FU-P3-34. Thomas's order (P3-parD, 27, 28, 29, 32, 7) is built; #111 and #122 wait for his merge.
+
+## 2026-11-04 · P1 Task 30 launched (inbox #98, assumed order)
+
+- Thomas's next order recorded as assumed (inbox #98): Task 30, Task 31, Task 32 part two, then Tasks 12 → 16. PRs #111 and #122 still wait for Thomas.
+- Budget: `budget.py start --weekly 30 --now 0`. No live reading in this cloud session and no `/usage` figure from Thomas, so the 30 points are counted from now on recorded USD (estimated), not on the real window.
+- P1 Task 30 (Resume, copy to a new launch, copy actions; also CR-P3T09-11: head files scoped by `launch_n`) launched: workflow wf_35b73a40-f6f, base 3514bd9. Scope: no `slurm-mini` check (Task 22), no CSRF token (sessions, Tasks 12–16), no screens (Task 32 part two). Numbers reserved: inbox #99, FU-P3-35.
+
+## 2026-11-04 · P3-t30: PR #123 opened; pause asked by Thomas
+
+- P1 Task 30 workflow done: code approve (1/3/9, the blocker and majors fixed), security approve (0/2/20), 4 rounds, simplifier -20/+17, doc-reviewer approve 13. Orchestrator gate on e0054c8: pytest 701 passed; ruff, format, mypy, lint-imports, uv lock clean; Vitest 223; tsc clean; docs gate 0. No `.github/workflows/` change. PR #123 opened into integration.
+- Thomas (2026-11-04, in session): "met en pause une fois task courante terminée". Task 30 is finished (merge into integration, promotion to main), then the autopilot pauses: Task 31 is not launched until Thomas resumes it.
+
+## 2026-11-04 · P3-t30: PR #123 merged; autopilot paused
+
+- P1 Task 30, milestone M8 (P3-M8): Resume (`:relaunch` mode `resume`, a child run in the lineage's launch and work directories, req. 16 checked three times), `:launch-template` with `code_loading`, `command`, `parent_run_id`, `resumed_as` and `actions.resume` on the run detail, migration 0008; the head files are owned by the launch (CR-P3T09-11 closed). Inbox #99 (assumed, eleven rules), FU-P3-35.
+- Every check green on e0054c8 (the first `pr-body` run read the placeholder body; its rerun after the edit passed). The merge waited out a GitHub incident on Pull Requests (502, then "405 Merge already in progress", 09:58 to 10:46 UTC); squash b69d25d (`Release-As: 0.0.1`). Cost recorded: 60 USD (estimate).
+- Thomas's pause is applied: after the promotion PR, nothing more is launched. Next when resumed: P1 Task 31 (inbox #98). PRs #111 and #122 wait for Thomas.

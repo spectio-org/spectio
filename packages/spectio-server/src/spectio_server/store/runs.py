@@ -56,7 +56,9 @@ def insert_run(
     failure: dict[str, Any] | None = None,
     native_id: str | None = None,
 ) -> str:
-    """Insert the run of manifest `m` and its launch 1; return the launch's ID."""
+    """Insert the run of manifest `m` and its launch 1; return the launch's ID. A Resume's child
+    (`m.parent_run_id`, P1 Task 30) runs in its lineage's directories: those of its parent's row,
+    or, when the rebuild finds no such row, the parent's own."""
     mine = {"created_at": now, "created_by": first(conn, principals)}
     project = first(conn, projects)
     location, engine = m.workflow.location, m.workflow.engine
@@ -95,6 +97,24 @@ def insert_run(
         )
     )
     paths = run_paths(runs_root, m.run_id)
+    launch_dir, work_dir = str(paths.launch_dir), str(paths.work_dir)
+    lineage: dict[str, Any] = {}
+    if m.parent_run_id is not None:
+        parent = conn.execute(
+            select(runs.c.lineage_id, runs.c.launch_dir, runs.c.work_dir).where(
+                runs.c.id == m.parent_run_id
+            )
+        ).one_or_none()
+        if parent is not None and parent.launch_dir and parent.work_dir:
+            root, launch_dir, work_dir = parent.lineage_id, parent.launch_dir, parent.work_dir
+        else:
+            root, own = None, run_paths(runs_root, m.parent_run_id)
+            launch_dir, work_dir = str(own.launch_dir), str(own.work_dir)
+        lineage = {
+            "parent_run_id": m.parent_run_id,
+            "lineage_id": root or m.parent_run_id,
+            "relaunch_mode": "resume",
+        }
     conn.execute(
         insert(runs).values(
             id=m.run_id,
@@ -106,8 +126,9 @@ def insert_run(
             state_changed_at=now,
             failure=null() if failure is None else failure,  # SQL NULL, not JSON null
             origin=origin,
-            launch_dir=str(paths.launch_dir),
-            work_dir=str(paths.work_dir),
+            launch_dir=launch_dir,
+            work_dir=work_dir,
+            **lineage,
             **{**mine, "created_at": m.created_at},
         )
     )
@@ -122,7 +143,7 @@ def insert_run(
             id=launch_id,
             run_id=m.run_id,
             n=1,
-            launch_dir=str(paths.launch_dir),
+            launch_dir=launch_dir,
             head_native_id=native_id,
             **mine,
         )

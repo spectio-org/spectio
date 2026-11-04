@@ -384,6 +384,7 @@ class Context:
     files: FilePool
     accounting: Accounting
     timeout_s: float
+    settings: Settings  # for the run's command (P1 Task 30)
 
 
 def _last_attempt() -> Any:
@@ -394,9 +395,18 @@ def _last_attempt() -> Any:
     return newest.scalar_subquery()
 
 
+def dir_run_id(row: Any) -> str:
+    """The run whose launch and work directories its engine used: its lineage root for a
+    Resume (P1 Task 30), else the run itself. Known limit of a Snakemake Resume
+    (CR-P3T30-03): a job the child reruns writes its log at the same relative path, so the
+    parent's failure tails then show the child's log."""
+    return str(row.lineage_id or row.id)
+
+
 def build_failures(
     conn: Connection,
     run_id: str,
+    dirs: str,
     engine: str,
     failure: dict[str, Any] | None,
     ctx: Context,
@@ -427,7 +437,7 @@ def build_failures(
         .order_by(attempts.c.created_at, attempts.c.id)
         .limit(limit)
     ).all()
-    files = [_files(ctx.runs_root, run_id, engine, r) for r in rows]
+    files = [_files(ctx.runs_root, dirs, engine, r) for r in rows]
 
     def read() -> list[str | None]:
         ctx.accounting.load(run_id)
@@ -461,11 +471,11 @@ def build_failures(
     return found, total
 
 
-def _files(runs_root: Path, run_id: str, engine: str, r: Any) -> AttemptFiles:
+def _files(runs_root: Path, dir_run: str, engine: str, r: Any) -> AttemptFiles:
     logs = tuple(
         (x["path"], x["kind"]) for x in r.logs or [] if isinstance(x, dict) and "path" in x
     )
-    return AttemptFiles(run_id, engine, r.state, r.work_dir, r.native_id, logs, runs_root)
+    return AttemptFiles(dir_run, engine, r.state, r.work_dir, r.native_id, logs, runs_root)
 
 
 def _log_tail(attempt: AttemptFiles) -> str | None:
@@ -534,7 +544,7 @@ MEASURED = ("realtime_s", "cpu_percent", "peak_rss_bytes")
 
 
 def task_resources(
-    conn: Connection, run_id: str, engine: str, task_ids: list[str], ctx: Context
+    conn: Connection, run_id: str, dirs: str, engine: str, task_ids: list[str], ctx: Context
 ) -> dict[str, tuple[int | None, dict[str, Any]]]:
     """Per task, its last attempt's number and `resources` (api §5 note, Resources): the
     trace's on Nextflow; on Snakemake the requested values of `job_info`, measured by the
@@ -563,14 +573,14 @@ def task_resources(
     def read() -> dict[str, dict[str, Any]]:
         if engine == "snakemake":
             ctx.accounting.load(run_id)
-        return {task: m for task, path in benches.items() if (m := _benchmark(ctx, run_id, path))}
+        return {task: m for task, path in benches.items() if (m := _benchmark(ctx, dirs, path))}
 
     try:
         measured = ctx.files.run(read, ctx.timeout_s) if engine == "snakemake" else {}
     except Stalled:
         measured = {}
     if engine == "snakemake":
-        launch = str(run_paths(ctx.runs_root, run_id).launch_dir)
+        launch = str(run_paths(ctx.runs_root, dirs).launch_dir)
         ended = ((r.native_id, launch) for r in rows if r.state in ENDED and r.id not in measured)
         ctx.accounting.want(run_id, ended)
     cached = ctx.accounting.rows(run_id) if engine == "snakemake" else {}
@@ -590,13 +600,13 @@ def task_resources(
     return found
 
 
-def _benchmark(ctx: Context, run_id: str, path: str) -> dict[str, Any] | None:
+def _benchmark(ctx: Context, dir_run: str, path: str) -> dict[str, Any] | None:
     """The last row of a Snakemake benchmark file, `s` (wall seconds), `max_rss` (MiB) and
     `mean_load` (CPU %) (`snakemake/benchmark.py`, [to be validated]); None when it cannot be
     read. Read in the launch directory with no link followed, as a job file is."""
     try:
         with (
-            run_root(ctx.runs_root, run_id, "launch") as root,
+            run_root(ctx.runs_root, dir_run, "launch") as root,
             open_confined(root, safe_rel(path)) as f,
         ):
             text = read_at(f, 0, MAX_BENCHMARK_BYTES).decode("utf-8", "replace")

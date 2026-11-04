@@ -1,6 +1,64 @@
 {
   "components": {
     "schemas": {
+      "Actions": {
+        "properties": {
+          "resume": {
+            "$ref": "#/components/schemas/ResumeAction"
+          }
+        },
+        "required": [
+          "resume"
+        ],
+        "title": "Actions",
+        "type": "object"
+      },
+      "CodeLoading": {
+        "description": "A value that loads code or configuration (dev-env \u00a715.3 req. 16): `field` is a dotted\npath, `params.<name>`, `workflow.location`, or `engine.<option>` for an engine option of\n`spectio.toml`; `writable_by_others` when the path, or a directory above it, is.",
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          },
+          "writable_by_others": {
+            "title": "Writable By Others",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "field",
+          "value",
+          "writable_by_others"
+        ],
+        "title": "CodeLoading",
+        "type": "object"
+      },
+      "Command": {
+        "description": "The engine command as the head script runs it (P1 Task 30): `text` is `argv` quoted for a\nPOSIX shell, and names the parameters file, never a value.",
+        "properties": {
+          "argv": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Argv",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "argv",
+          "text"
+        ],
+        "title": "Command",
+        "type": "object"
+      },
       "Failure": {
         "description": "A job that failed on its last attempt (P1 Task 29); `log_tail` is the last 20 lines of\nits log, escape sequences removed, or null when it could not be read. `work_dir` is the\ndirectory the job files listing shows, for the failure summary's Copy (P1 Task 32).",
         "properties": {
@@ -200,6 +258,51 @@
         "title": "LaunchIn",
         "type": "object"
       },
+      "LaunchTemplate": {
+        "description": "A `POST /runs` body prefilled from a run, for Copy to a new launch (P1 Task 30), with the\nparameters that differ from the pipeline's defaults and the values that load code.",
+        "properties": {
+          "code_loading": {
+            "items": {
+              "$ref": "#/components/schemas/CodeLoading"
+            },
+            "title": "Code Loading",
+            "type": "array"
+          },
+          "non_default": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Non Default",
+            "type": "array"
+          },
+          "params": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Params",
+            "type": "object"
+          },
+          "profiles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Profiles",
+            "type": "array"
+          },
+          "workflow": {
+            "$ref": "#/components/schemas/TemplateWorkflow"
+          }
+        },
+        "required": [
+          "workflow",
+          "profiles",
+          "params",
+          "non_default",
+          "code_loading"
+        ],
+        "title": "LaunchTemplate",
+        "type": "object"
+      },
       "Process": {
         "properties": {
           "counts": {
@@ -252,6 +355,44 @@
           "items"
         ],
         "title": "ProcessList",
+        "type": "object"
+      },
+      "RelaunchIn": {
+        "additionalProperties": false,
+        "description": "The body of `:relaunch` (api \u00a75.1); 0.0.1 takes `mode: resume` alone.",
+        "properties": {
+          "dry_run": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "from_stage": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "gates": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "mode": {
+            "enum": [
+              "resume",
+              "rerun_from",
+              "fresh"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "params_patch": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "resources": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "samplesheets": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "RelaunchIn",
         "type": "object"
       },
       "Resources": {
@@ -350,6 +491,40 @@
           "source"
         ],
         "title": "Resources",
+        "type": "object"
+      },
+      "ResumeAction": {
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "running",
+                  "head_unverified",
+                  "resume_in_progress",
+                  "cli_observed",
+                  "not_failed_or_cancelled",
+                  "launch_dir_refused",
+                  "session_id_refused"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "allowed",
+          "reason"
+        ],
+        "title": "ResumeAction",
         "type": "object"
       },
       "Run": {
@@ -493,6 +668,19 @@
       },
       "RunDetail": {
         "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/Actions"
+          },
+          "command": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Command"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "created_at": {
             "title": "Created At",
             "type": "string"
@@ -583,11 +771,29 @@
             "title": "Params",
             "type": "object"
           },
+          "parent_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Run Id"
+          },
           "profiles": {
             "items": {
               "type": "string"
             },
             "title": "Profiles",
+            "type": "array"
+          },
+          "resumed_as": {
+            "items": {
+              "$ref": "#/components/schemas/RunRef"
+            },
+            "title": "Resumed As",
             "type": "array"
           },
           "stages_note": {
@@ -658,7 +864,11 @@
           "params",
           "stages_note",
           "failures",
-          "failures_total"
+          "failures_total",
+          "command",
+          "parent_run_id",
+          "resumed_as",
+          "actions"
         ],
         "title": "RunDetail",
         "type": "object"
@@ -689,6 +899,47 @@
           "next"
         ],
         "title": "RunList",
+        "type": "object"
+      },
+      "RunRef": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "running",
+              "pausing",
+              "paused",
+              "awaiting_review",
+              "cancelling",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "state"
+        ],
+        "title": "RunRef",
         "type": "object"
       },
       "RunSummary": {
@@ -1263,6 +1514,40 @@
           "cached"
         ],
         "title": "TaskSummary",
+        "type": "object"
+      },
+      "TemplateWorkflow": {
+        "properties": {
+          "engine": {
+            "enum": [
+              "nextflow",
+              "snakemake"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          }
+        },
+        "required": [
+          "location",
+          "revision",
+          "engine"
+        ],
+        "title": "TemplateWorkflow",
         "type": "object"
       },
       "ValidationError": {
@@ -1877,6 +2162,94 @@
           }
         },
         "summary": "Cancel Run"
+      }
+    },
+    "/api/v1/runs/{run_id}:launch-template": {
+      "get": {
+        "operationId": "launch_template_api_v1_runs__run_id__launch_template_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchTemplate"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Launch Template"
+      }
+    },
+    "/api/v1/runs/{run_id}:relaunch": {
+      "post": {
+        "operationId": "relaunch_api_v1_runs__run_id__relaunch_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RelaunchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Relaunch"
       }
     },
     "/api/v1/runs:summary": {

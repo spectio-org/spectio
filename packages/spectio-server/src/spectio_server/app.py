@@ -30,6 +30,7 @@ from spectio_server.api import (
     cancel,
     logs,
     problems,
+    relaunch,
     runs_read,
     runs_write,
     stream,
@@ -138,7 +139,8 @@ def create_app(
     if reason is None:
         app.state.stream = stream.Stream(writer.engine)
         writer.on_commit = app.state.stream.notify  # the writer thread, after each commit
-        for module in (workflows, runs_write, runs_read, logs, taskfiles, cancel, stream):
+        # relaunch first: `GET /runs/{id}:launch-template` before `GET /runs/{run_id}`
+        for module in (workflows, runs_write, relaunch, runs_read, logs, taskfiles, cancel, stream):
             app.include_router(module.router, prefix=API)
     else:
 

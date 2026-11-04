@@ -226,10 +226,15 @@ runs = Table(
     Column("idempotency_key", String),
     Column("last_seq", Integer, nullable=False, server_default="0"),
     Column("projected_seq", Integer, nullable=False, server_default="0"),
+    # A Resume's child run (P1 Task 30): its parent, the lineage's root, the mode (`resume`)
+    Column("parent_run_id", String),
+    Column("lineage_id", String),
+    Column("relaunch_mode", String),
     _check("runs", "state", RUN_STATES),
     _check("runs", "origin", RUN_ORIGINS, nullable=True),
     Index("ix_runs_project_created", "project_id", "created_at"),
     Index("ix_runs_state_project", "state", "project_id"),
+    Index("ix_runs_parent", "parent_run_id"),
 )
 
 run_inputs = Table(

@@ -54,6 +54,8 @@ class RunManifest(BaseModel):
     params: dict[str, JsonValue]
     profiles: list[str]
     created_at: AwareDatetime
+    # A Resume's parent (P1 Task 30): the child runs in its lineage's directories
+    parent_run_id: str | None = Field(None, pattern=rf"^{RUN_ID.pattern}$")
 
 
 def run_paths(runs_root: Path, run_id: str) -> RunPaths:
@@ -158,7 +160,7 @@ def read_small(dir_fd: int, name: str, cap: int = MAX_SMALL_FILE) -> bytes | Non
 
 
 def write_run_manifest(run_dir: Path, manifest: RunManifest) -> None:
-    """Write `<run_dir>/.spectio/run.json` (P1 Task 17 calls it when the run is created)."""
+    """Write `<run_dir>/.spectio/run.json` (P1 Tasks 17 and 30 call it when the run is created)."""
     if run_dir.name != manifest.run_id:
         raise ValueError(f"the run ID {manifest.run_id} is not the directory's name")
     run_paths(run_dir.parent, manifest.run_id)
