@@ -594,3 +594,7 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Integration promoted to `main` by merge commit 6ae3dcd (every check green on 1751492).
 - Paused at Thomas's request. Next when resumed: P1 Task 31 (inbox #98, reserve inbox #100 and FU-P3-36). PRs #111 and #122 wait for Thomas.
 - Dashboard not refreshed: `build.py` gave a 24 MB page, over the Artifact limit of 16 MB (XSS check passed). To fix in `tools/dashboard` (fewer inline images).
+
+## 2026-11-04 · Resumed by Thomas; P1 Task 31 launched
+
+- Thomas: "Continue". P1 Task 31 (results and reports; also SEC-P3T28-05 and FU-P3-31) launched with the `p3-task` workflow, base f9e4b96. Scope: no `slurm-mini` (Task 22), no session or token link (Tasks 12–16), plugin side waits for PR #122 (Task 7), no screens (Task 32 part two). Numbers reserved: inbox #100, FU-P3-36.
