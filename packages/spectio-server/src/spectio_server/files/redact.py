@@ -340,7 +340,7 @@ class _Lexer:
         line = self.s[start:end]
         if not _DIRECTIVE.match(line):
             return
-        spans = []  # every option is read, even one inside the value of another (SEC-P3T31-09)
+        spans = []  # in order, apart: each value starts after `done`
         done = 0  # the end of the last value read
         for option in _EXPORT_OPTION.finditer(line):
             at = option.end()
@@ -356,13 +356,7 @@ class _Lexer:
                 if eq:
                     spans.append((at + len(name) + 1, at + len(item)))
                 at += len(item) + 1
-        merged: list[list[int]] = []  # overlapping spans make one marker
-        for lo, hi in sorted(spans):
-            if merged and lo <= merged[-1][1]:
-                merged[-1][1] = max(merged[-1][1], hi)
-            else:
-                merged.append([lo, hi])
-        self.edits += [(start + lo, start + hi, HIDDEN) for lo, hi in merged]
+        self.edits += [(start + lo, start + hi, HIDDEN) for lo, hi in spans]
 
 
 def _apply(text: str, edits: list[tuple[int, int, str]]) -> str:
