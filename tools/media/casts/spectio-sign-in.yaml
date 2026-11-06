@@ -1,0 +1,71 @@
+# Batch P3-B01, P3 Tasks 12 to 16: the token link, the session cookie, the Host allow-list, the file
+# modes and the write checks, on a real `spectio serve`, run from the repository's .venv.
+# Same setup as the spectio-serve cast: a demo HOME (shown as ~) with a demo TMPDIR inside it
+# (shown as $TMPDIR), fake nextflow and snakemake scripts, a demo host name in its own UTS
+# namespace:
+#   unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-sign-in.yaml'
+# Port 18081. The ticket and the session secret are random, so each command that would print one
+# masks it with a visible sed; nothing else is rewritten. Each step is its own shell, so the link
+# and the cookie jar travel in files (link.txt, jar.txt). curl is used as the "other process on
+# the node", with the Origin header a browser would add.
+# Needs `uv sync` first (the .venv of the checkout).
+title: "P3 Tasks 12-16: token link, session cookie, Host allow-list, file modes, write checks"
+cols: 140
+rows: 38
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: tmp
+env:
+  HOME: "{workdir}"
+  TMPDIR: "{workdir}/.tmp"
+  PATH: "{repo}/.venv/bin:$PATH"
+setup:
+  - |
+    chmod 700 .
+    mkdir -m 700 .tmp
+    mkdir bin
+    printf '#!/bin/sh\necho "nextflow version 26.10.4 (fake, for this cast)"\n' > bin/nextflow
+    printf '#!/bin/sh\necho "9.27.1"\n' > bin/snakemake
+    chmod +x bin/nextflow bin/snakemake
+    echo 'export PATH="$HOME/bin:$PATH"' > .bash_profile
+    spectio init --local --port 18081 > /dev/null 2>&1
+replace:
+  "{workdir}/": "~/"
+  "{workdir}": "~"
+  "~/.tmp": "$TMPDIR"
+steps:
+  - comment: "1. serve prints a first link: single use, 15 minutes (the ticket is masked here)"
+  - run: "spectio serve > serve.out 2> serve.err &"
+  - run: "sleep 3; sed -E 's/#[A-Za-z0-9_-]{43}/#<ticket>/' serve.out"
+  - pause: 1.5
+  - clear: true
+  - comment: "2. no session, no data: 401 on every route; a Host that is not loopback gets 400 first"
+  - run: "curl -s http://127.0.0.1:18081/api/v1/version | jq -c '{type,status}'"
+  - run: "curl -s -H 'Host: evil.example' http://127.0.0.1:18081/api/v1/version | jq -c '{type,status}'"
+  - pause: 1.5
+  - clear: true
+  - comment: "3. a new link from the same node: the key is read from the 0600 file, sent to a listener of my uid"
+  - run: "spectio login --print-link > link.txt; sed -E 's/#[A-Za-z0-9_-]{43}/#<ticket>/' link.txt"
+  - pause: 1.0
+  - run: "curl -si -X POST -H \"Origin: http://127.0.0.1:18081\" -H 'Content-Type: application/json' -c jar.txt -d \"{\\\"ticket\\\":\\\"$(cut -d'#' -f2 link.txt)\\\"}\" http://127.0.0.1:18081/api/v1/auth/magic-links:exchange | sed -E 's/(spectio_session_18081=)[^;]+/\\1<secret>/'"
+    keep: "^HTTP|^[Ss]et-[Cc]ookie|^[Cc]ache-[Cc]ontrol|^[Rr]eferrer"
+  - pause: 1.5
+  - clear: true
+  - comment: "4. the cookie is named after the port; with it the data answers, the link is spent"
+  - run: "curl -s -b jar.txt http://127.0.0.1:18081/api/v1/version | jq -c '{version,node,executor}'"
+  - run: "curl -s -X POST -H \"Origin: http://127.0.0.1:18081\" -H 'Content-Type: application/json' -d \"{\\\"ticket\\\":\\\"$(cut -d'#' -f2 link.txt)\\\"}\" http://127.0.0.1:18081/api/v1/auth/magic-links:exchange | jq -c '{type,status}'"
+  - pause: 2.0
+  - clear: true
+  - comment: "5. writes need an Origin that is this server, and JSON (the session is already valid)"
+  - run: "curl -s -b jar.txt -X POST http://127.0.0.1:18081/api/v1/runs/r:cancel | jq -c '{type,title,status}'"
+  - run: "curl -s -b jar.txt -X POST -H 'Origin: http://evil.example' http://127.0.0.1:18081/api/v1/runs/r:cancel | jq -c '{type,title,status}'"
+  - run: "curl -s -b jar.txt -X POST -H \"Origin: http://127.0.0.1:18081\" -H 'Content-Type: text/plain' -d x http://127.0.0.1:18081/api/v1/runs | jq -c '{type,title,status}'"
+  - pause: 2.0
+  - clear: true
+  - comment: "6. modes: the config and data directories 0700, the key and the state file 0600"
+  - run: "stat -c '%a %n' ~/.spectio ~/.spectio/spectio.toml ~/.spectio/server.json $TMPDIR/spectio-0 $TMPDIR/spectio-0/server.key"
+  - pause: 1.5
+  - comment: "7. a clean stop removes server.json; the key file is the next start's to replace"
+  - run: "kill -TERM $(jq .pid ~/.spectio/server.json); sleep 2; ls ~/.spectio $TMPDIR/spectio-0"
+  - pause: 1.5
