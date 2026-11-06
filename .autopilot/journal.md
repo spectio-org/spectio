@@ -666,3 +666,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - PR #136 squash-merged into integration (5ec2dca); `e2e-local` red for the base reason (#133), commented.
 - P3-t16 started: `p3-task`, `security: 'always'`; last task of batch P3-B01.
 - P3-t16 done (run wf_1dcc6f65-937): `CODE review=approve 0/0/4 security=approve 0/0/4 rounds=1`. Middleware order settled (host, cross-site, session, writes). PR #137 opened (`no-figure`). Follow-ups FU-P3-43 (next FU-P3-44). Inbox #109 rule 5 is reserved for Thomas: mounting the API on SLURM and shared hosts now that sign-in is complete (security-posture default, not applied). Cost recorded: 26 USD, kind `build-task`.
+- PR #137 squash-merged into integration (5e1ddd9); `e2e-local` red for the base reason (#133), commented. All five tasks of P3-B01 merged.
+- P3-B01 batch close started: `p3-batch`, base 8ca8304, steps P3-t12..P3-t16.
