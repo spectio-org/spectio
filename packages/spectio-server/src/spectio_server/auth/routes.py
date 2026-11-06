@@ -81,7 +81,7 @@ def exchange(body: Exchange, request: Request) -> Response:
     if not state.tickets.burn(body.ticket):
         return _refused("link-expired", "Link used or expired", EXPIRED)
     answer = Response(status_code=204, headers=HEADERS)
-    name = cookie_name(request.headers.get("host", ""))  # no Domain: this host only (req. 3)
+    name = cookie_name(request.headers.get("host"))  # no Domain: this host only (req. 3)
     answer.set_cookie(name, state.sessions.create(), httponly=True, samesite="strict", path="/")
     return answer
 
