@@ -6,8 +6,9 @@ served in local mode only (`spectio init --local`): on a SLURM environment, wher
 users share the login node and its loopback port, every `/api/v1` path answers 404 with the
 reason (inbox #86). In local mode too, the API is left unmounted on a machine that looks like
 a cluster node or a shared one (`shared_host`, SEC-P3T17-06): kind `local` is a configuration
-value, which can be set on a login node. The Host allow-list (dev-env §15.3 req. 4, `auth.host`)
-and the write checks (req. 7, `api.browser`) run on every request. The generated docs stay off: the
+value, which can be set on a login node. The Host allow-list (dev-env §15.3 req. 4, `auth.host`),
+the cross-site check (`api.browser`), the session and the write checks (req. 7, `auth.writes`)
+run on every request, in that order. The generated docs stay off: the
 OpenAPI document is a file, `openapi/0.0.1.json`, written from `app.openapi()` (Task 18), with
 typed responses (`api.models`, FU-P3-21).
 
@@ -39,7 +40,7 @@ from spectio_server.api import (
     taskfiles,
     workflows,
 )
-from spectio_server.auth import host, middleware, routes
+from spectio_server.auth import host, middleware, routes, writes
 from spectio_server.auth.secrets import ServerKey, SessionStore, TicketStore
 from spectio_server.failure import Accounting
 from spectio_server.files.pool import FilePool
@@ -127,8 +128,10 @@ def create_app(
     app.state.tickets = TicketStore()
     app.state.sessions = SessionStore()
     problems.install(app)
+    # Starlette runs the last middleware installed first: Host, cross-site, session, writes
+    writes.install(app)  # last, the session-exempt writes included: Origin and JSON (§15.3 req. 7)
     middleware.install(app)  # a session on every request but four (§15.3 req. 2)
-    browser.install(app)  # cross-site and write checks (§15.3 req. 7)
+    browser.install(app)  # no cross-site request, a GET included (§15.3 req. 7, SEC-P3T17-02)
     host.install(app)  # first, the bootstrap routes included: the Host allow-list (§15.3 req. 4)
     app.include_router(routes.pages)
     app.include_router(routes.router, prefix=API)

@@ -18,7 +18,7 @@ from spectio_server.app import NO_API
 from spectio_server.projector.ingest import ingest
 from spectio_server.store.writer import Writer
 
-from .conftest import add_run
+from .conftest import add_run, client_for
 
 RUN = "run_01K8T2F1XTVRES000000000301"
 STREAM = "/api/v1/events/stream"
@@ -40,9 +40,14 @@ def event(n: int, hook: str, **data: Any) -> SpoolEvent:
     )
 
 
-def test_stream_needs_session(client: TestClient, authed_client: TestClient) -> None:
-    """TODO(P1 Task 16): no session cookie → 401 problem, no stream opened. Until sign-in is
-    built, the stream is not mounted on a shared machine, and other sites are refused (#86)."""
+def test_stream_needs_session(
+    client: TestClient, authed_client: TestClient, settings: Settings, writer: Writer
+) -> None:
+    """No session cookie → 401 problem, no stream opened; the stream is not mounted on a shared
+    machine, and other sites are refused (#86)."""
+    signed_out = client_for(settings, writer, signed_in=False).get(STREAM)
+    assert signed_out.status_code == 401
+    assert signed_out.json()["type"] == "/problems/unauthenticated"
     absent = client.get(STREAM)
     assert absent.status_code == 404
     assert absent.headers["content-type"].startswith("application/problem+json")
