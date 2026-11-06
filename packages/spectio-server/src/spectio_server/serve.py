@@ -5,10 +5,12 @@ The start, in order, each refusal a `ServeError` (exit 2) before anything is lef
 
 1. the bind address must be 127.0.0.1 (req. 1); the runs root the user's, not writable by
    others (req. 10);
-2. `<db dir>/serve.lock` (flock, node-local): one server per user and node;
+2. the database directory and its parents checked (`checked_db_dir`), then `<db dir>/serve.lock`
+   (flock, node-local): one server per user and node;
 3. the recorded port, bound on 127.0.0.1 only; a taken port is refused, naming its owner's uid,
    never replaced by another (Assumption 10);
-4. the state file `<data dir>/server.json`, created with O_EXCL (Assumption 9): one that names
+4. the state file `<data dir>/server.json` in the 0700 data directory, written whole under a
+   temporary name and linked into place, which fails if it exists (Assumption 9): one that names
    another node is refused unless `--force`; one that names this node is a dead server's, since
    the lock was free, and is replaced; it is removed at a clean stop;
 5. the database, the tenancy rows, the run directories missing from the index (`rebuild.py`),
@@ -41,10 +43,11 @@ import uvicorn
 from sqlalchemy import Engine
 
 from spectio.config import LOOPBACK, Settings
+from spectio.fsmodes import open_secure_dir, write_file
 from spectio.ports import port_owner
 from spectio.runner.local import LocalLauncher
 from spectio.runner.loop import RunnerLoop
-from spectio.runner.rundir import open_private, private_dir, read_small, write_file
+from spectio.runner.rundir import open_private, private_dir, read_small
 from spectio_server.app import create_app
 from spectio_server.auth.routes import NO_PASTE, link_url
 from spectio_server.auth.secrets import ServerKey
@@ -53,7 +56,7 @@ from spectio_server.files.pool import FilePool
 from spectio_server.rebuild import Rebuilt, rebuild_index
 from spectio_server.sink import StoreSink
 from spectio_server.stages.freeze import FREEZE_WORKERS
-from spectio_server.store.db import UnsafeDatabase, _require_private_dir, default_db_dir, open_db
+from spectio_server.store.db import UnsafeDatabase, checked_db_dir, default_db_dir, open_db
 from spectio_server.store.writer import Writer
 
 log = logging.getLogger(__name__)
@@ -216,17 +219,13 @@ def _record(settings: Settings, db_dir: Path) -> bytes:
 
 
 def _write_state(data_dir: Path, record: bytes, force: bool) -> None:
-    with private_dir(data_dir) as fd:
-        try:
-            new = os.open(
-                STATE, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=fd
-            )
+    fd = open_secure_dir(data_dir, create=False)  # 0700, as spectio init made it (req. 5)
+    try:
+        try:  # written whole, then linked: a reader on another node never sees it partial
+            write_file(fd, STATE, record, exclusive=True)
+            return
         except FileExistsError:
             pass
-        else:
-            with os.fdopen(new, "wb") as f:
-                f.write(record)
-            return
         if not force:
             try:
                 raw = read_small(fd, STATE, cap=65536)
@@ -241,6 +240,8 @@ def _write_state(data_dir: Path, record: bytes, force: bool) -> None:
                     "here with --force, which replaces it"
                 )
         write_file(fd, STATE, record)  # a dead server's file on this node, or --force
+    finally:
+        os.close(fd)
 
 
 def _remove_state(data_dir: Path, record: bytes) -> None:
@@ -270,8 +271,7 @@ def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
         ) from exc
     with ExitStack() as stack:  # undone in reverse order, whatever stops the server
         try:
-            db_dir = settings.db_dir or default_db_dir()
-            _require_private_dir(db_dir, os.getuid())
+            db_dir = checked_db_dir(settings.db_dir or default_db_dir())  # before the lock
             stack.callback(os.close, _lock(db_dir))
             sock = stack.enter_context(_bind(settings.port))
             record = _record(settings, db_dir)

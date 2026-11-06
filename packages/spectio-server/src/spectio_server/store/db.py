@@ -267,6 +267,18 @@ def _require_private_dir(db_dir: Path, uid: int) -> None:
         )
 
 
+def checked_db_dir(db_dir: Path) -> Path:
+    """`db_dir`, a private directory of this user under parents no other user can swap, with
+    its parents resolved. Resolved once, so that a symlink in a parent (in a directory others
+    can write) cannot be flipped under the checks (SEC-P3T2-13); use only the path returned."""
+    uid = os.getuid()
+    _require_private_dir(db_dir, uid)  # the last component, not followed
+    db_dir = Path(os.path.realpath(db_dir.parent)) / db_dir.name
+    _require_private_dir(db_dir, uid)
+    _check_parents(db_dir, uid)
+    return db_dir
+
+
 def open_db(db_dir: Path, mountinfo: Path = MOUNTINFO) -> tuple[Engine, bool]:
     """Open (or create) the database in `db_dir` and migrate it to the latest revision.
 
@@ -274,12 +286,7 @@ def open_db(db_dir: Path, mountinfo: Path = MOUNTINFO) -> tuple[Engine, bool]:
     """
     check_sqlite_version(sqlite3.sqlite_version)
     uid = os.getuid()
-    _require_private_dir(db_dir, uid)  # the last component, not followed
-    # Resolve the parents once and use only that path from here on, so that a symlink in a
-    # parent (in a directory others can write) cannot be flipped under the checks (SEC-P3T2-13).
-    db_dir = Path(os.path.realpath(db_dir.parent)) / db_dir.name
-    _require_private_dir(db_dir, uid)
-    _check_parents(db_dir, uid)
+    db_dir = checked_db_dir(db_dir)
     kind = fs_type(db_dir, mountinfo)
     if kind in NETWORK_FS:
         raise UnsafeDatabase(

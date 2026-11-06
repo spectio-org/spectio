@@ -21,6 +21,7 @@ from spectio.config import (
     config_path,
     write_config,
 )
+from spectio.fsmodes import secure_dir
 from spectio.loginshell import which
 from spectio.runner.engines import unpack_nf_spectio
 
@@ -29,10 +30,9 @@ class InitError(Exception):
     """A refusal; the message says why and what to do."""
 
 
-def _private_dir(path: Path, *, strict: bool = False) -> None:
+def _private_dir(path: Path) -> None:
     """Create `path` with mode 0700, or accept an existing directory of this user that others
-    cannot write; never tightened. `strict`: a real directory (no symlink followed) with no
-    group or other bits (dev-env §15.3 req. 5)."""
+    cannot write; never tightened (dev-env §15.3 req. 10)."""
     try:
         os.mkdir(path, 0o700)
         return
@@ -40,23 +40,6 @@ def _private_dir(path: Path, *, strict: bool = False) -> None:
         pass
     except FileNotFoundError as exc:
         raise InitError(f"{path}: its parent directory does not exist") from exc
-    if strict:
-        try:
-            fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW)
-        except OSError as exc:
-            raise InitError(
-                f"{path} must be a real directory, not a symlink or a file: {exc.strerror}"
-            ) from exc
-        try:
-            st = os.fstat(fd)
-        finally:
-            os.close(fd)
-        if st.st_uid != os.getuid() or st.st_mode & 0o077:
-            raise InitError(
-                f"{path} must be a directory of yours with mode 0700 (owner uid {st.st_uid}, "
-                f"mode {stat.S_IMODE(st.st_mode):o}): chmod 700 {path}"
-            )
-        return
     st = os.stat(path)
     if not stat.S_ISDIR(st.st_mode) or st.st_uid != os.getuid() or st.st_mode & 0o022:
         raise InitError(
@@ -154,7 +137,7 @@ def _init(settings: Settings) -> None:
         raise InitError("the server package is missing: install spectio[server]") from exc
     runs_root = _runs_root(settings)
     for path in (config_path().parent, settings.data_dir):
-        _private_dir(path, strict=True)
+        secure_dir(path)  # 0700, never tightened (dev-env §15.3 req. 5)
     try:
         # The default is resolved again at each start and never recorded, so that its mkdtemp
         # fallback still applies once the temporary directory is purged (dev-env §15.3).
