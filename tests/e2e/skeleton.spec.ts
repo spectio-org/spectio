@@ -7,8 +7,8 @@ import { resolveTarget } from './base-url';
 //   SPECTIO_E2E_BASE_URL=http://127.0.0.1:8765 npx playwright test skeleton.spec.ts   (in tests/e2e)
 // Tests that run a workflow engine need Nextflow on the server's PATH and SPECTIO_E2E_ENGINES=1;
 // CI's e2e-local job sets it after dev/bootstrap.sh. The others answer from the server alone or
-// from route mocks. Local-only order (inbox #80): no token link or session cookie before P1
-// Tasks 12 to 16, so the two session tests wait as fixme, and what holds today is tested instead.
+// from route mocks. Each test has the session that global-setup.ts got through the token link
+// (P1 Task 12); the expired-link and 401-page tests wait for Task 16 as fixme (inbox #80).
 
 const target = resolveTarget(process.env);
 const ENGINES = process.env.SPECTIO_E2E_ENGINES === '1';
@@ -71,8 +71,8 @@ async function mockDetail(page: Page, stages: object[]) {
 test('link → empty list → launch happy (Nextflow, local) → detail shows Succeeded and 65 tasks', async ({ page }) => {
   test.skip(!ENGINES, NEEDS_ENGINES);
   test.setTimeout(180_000);
-  // No link exchange before P1 Task 12: the address is the way in. The two projects share one
-  // server, so the empty list is the server's answer replayed, not the server's state.
+  // The link was exchanged once in global-setup.ts. The two projects share one server, so the
+  // empty list is the server's answer replayed, not the server's state.
   await page.route('**/api/v1/runs?*', (r) => r.fulfill(json({ items: [], next: null })));
   await page.goto('/runs');
   await expect(page.getByText('No runs yet.')).toBeVisible();
