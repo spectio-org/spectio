@@ -26,7 +26,7 @@ from spectio.runner.rundir import RunManifest, Workflow
 from spectio.runner.spool import read_spool
 from spectio_server import app as app_mod
 from spectio_server.app import create_app
-from spectio_server.auth.middleware import COOKIE
+from spectio_server.auth.middleware import cookie_name
 from spectio_server.projector.ingest import ingest
 from spectio_server.store.runs import insert_run
 from spectio_server.store.schema import run_stages, runs, tasks
@@ -50,7 +50,7 @@ def client_for(
     origin = f"http://127.0.0.1:{settings.port}"  # what a browser on the loopback sends (req. 4, 7)
     client = TestClient(app, base_url=origin, headers={"Origin": origin})
     if signed_in:
-        client.cookies.set(COOKIE, app.state.sessions.create())
+        client.cookies.set(cookie_name(f"127.0.0.1:{settings.port}"), app.state.sessions.create())
     return client
 
 
@@ -223,9 +223,9 @@ def served_app(settings: Settings, writer: Writer) -> FastAPI:
 
 
 @pytest.fixture
-def session(served_app: FastAPI) -> dict[str, str]:
-    """The cookie of a signed-in browser on `served` (P1 Task 12)."""
-    return {COOKIE: served_app.state.sessions.create()}
+def session(served_app: FastAPI, served: str) -> dict[str, str]:
+    """The cookie of a signed-in browser on `served` (P1 Task 12), named after its port."""
+    return {cookie_name(served.removeprefix("http://")): served_app.state.sessions.create()}
 
 
 @pytest.fixture

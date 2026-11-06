@@ -23,7 +23,7 @@ from spectio.cli import login
 from spectio.cli.main import app as cli_app
 from spectio.config import Settings
 from spectio_server import app as app_mod
-from spectio_server.auth.middleware import COOKIE, EXEMPT
+from spectio_server.auth.middleware import EXEMPT, cookie_name
 from spectio_server.auth.routes import EXPIRED
 from spectio_server.auth.secrets import ServerKey, SessionStore, TicketStore
 from spectio_server.serve import STATE, started
@@ -97,7 +97,8 @@ def test_req2_every_route_needs_session(
             checked += 1
     assert checked > 15  # the API is mounted
     assert client.get("/no/such/route").status_code == 401  # nothing answers before the check
-    client.cookies.set(COOKIE, "x" * 43)  # not a session of this server
+    name = cookie_name(f"127.0.0.1:{settings.port}")
+    client.cookies.set(name, "x" * 43)  # not a session of this server
     assert client.get("/api/v1/runs").status_code == 401
 
 
@@ -126,7 +127,7 @@ def test_req2_exchange_sets_the_session(anon: TestClient) -> None:
     answer = _exchange(anon, _ticket(anon))
     assert answer.status_code == 204
     cookie = answer.headers["set-cookie"]
-    assert cookie.startswith(f"{COOKIE}=")
+    assert cookie.startswith(f"{cookie_name(anon.base_url.netloc.decode())}=")
     assert "httponly" in cookie.lower()
     assert "samesite=strict" in cookie.lower()
     assert answer.headers["cache-control"] == "no-store"
