@@ -128,12 +128,12 @@ for _ in $(seq 1 100); do
   # GET /auth/link answers 200 with no session (P1 Assumption 8); every API route needs one.
   if curl -fsS -o /dev/null "${url}auth/link" 2>/dev/null; then
     pointer=$repo/tests/e2e/.local/$port.config
-    mkdir -p -m 700 "$repo/tests/e2e/.local"
+    mkdir -p "$repo/tests/e2e/.local" && chmod 700 "$repo/tests/e2e/.local"  # also when it already exists
     (umask 077 && printf '%s\n' "$SPECTIO_CONFIG" > "$pointer")
     cat <<EOF
 
   Spectio is running on $url. Sign in with the link printed above (single use, 15 minutes);
-  for another one: SPECTIO_CONFIG=$SPECTIO_CONFIG spectio login --print-link
+  for another one: SPECTIO_CONFIG=$SPECTIO_CONFIG uv run --project $repo spectio login --print-link
   Runs go under $home/runs.
   Press Ctrl-C to stop it: runs still active are stopped, and the temporary directory is removed.
 
