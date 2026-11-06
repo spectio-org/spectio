@@ -23,8 +23,8 @@ MAX_PORT = 65535
 def parse(host_header: str | None) -> tuple[str, str | None] | None:
     """`LocalHost:8080` → `("localhost", "8080")`, `[::1]` → `("[::1]", None)`; an empty port is
     no port. None for a missing or malformed `Host`, or a port above 65535."""
-    found = HOST.fullmatch(host_header or "")
-    if not host_header or found is None:
+    found = HOST.fullmatch(host_header) if host_header else None
+    if found is None:
         return None
     name, port = found.group(1).lower(), found.group(2) or None
     if port is not None and int(port) > MAX_PORT:
