@@ -301,11 +301,11 @@ def test_print_link_refuses_foreign_listener(
 ) -> None:
     monkeypatch.setattr(login, "hostname", lambda: "login3")
     _state(settings)
-    monkeypatch.setattr(login, "port_owner", lambda port: os.getuid() + 1)
+    monkeypatch.setattr(login, "port_owners", lambda port: {os.getuid(), os.getuid() + 1})
     result = CliRunner().invoke(cli_app, ["login", "--print-link"])
     assert result.exit_code == 2
     assert f"uid {os.getuid() + 1}" in result.output
-    monkeypatch.setattr(login, "port_owner", lambda port: None)
+    monkeypatch.setattr(login, "port_owners", lambda port: set())
     assert CliRunner().invoke(cli_app, ["login", "--print-link"]).exit_code == 2
 
 
