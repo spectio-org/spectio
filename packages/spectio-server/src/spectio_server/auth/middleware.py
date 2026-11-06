@@ -4,8 +4,8 @@ Every request needs the session cookie that the link exchange set, named after t
 (`cookie_name`, req. 3; P1 Task 13), or gets a 401 problem with
 no data, whatever its path, before any route runs. Four routes are exempt (P1 Assumption 8):
 the bootstrap page and its script, which carry no data, the exchange, which checks its ticket,
-and `auth/links`, which checks the server key. The Host and write checks (`api.browser`) run
-before this one.
+and `auth/links`, which checks the server key. The Host allow-list (`auth.host`, req. 4), then
+the cross-site and write checks (`api.browser`), run before this one.
 """
 
 from collections.abc import Awaitable, Callable
@@ -13,6 +13,7 @@ from collections.abc import Awaitable, Callable
 from fastapi import FastAPI, Request, Response
 
 from spectio_server.api.problems import problem
+from spectio_server.auth import host
 
 COOKIE = "spectio_session"
 EXEMPT = frozenset(
@@ -25,13 +26,13 @@ EXEMPT = frozenset(
 )
 
 
-def cookie_name(host_header: str) -> str:
+def cookie_name(host_header: str | None) -> str:
     """The session cookie of `Host`, named after its port as Jupyter's is (req. 3):
-    `127.0.0.1:41234` → `spectio_session_41234`; a `Host` with no port, or with something
-    other than ASCII digits after the last colon, → `spectio_session_80`."""
-    _, colon, port = host_header.rpartition(":")
-    if not (colon and port.isascii() and port.isdigit()):
-        port = "80"  # `[::1]` alone has colons but no port: its last one is not followed by digits
+    `127.0.0.1:41234` → `spectio_session_41234`; a `Host` with no port → `spectio_session_80`.
+    The port is the one the allow-list read (`host.parse`, SEC-P3T13-01); a `Host` it refuses
+    never gets here, and gets `spectio_session_80` too."""
+    parsed = host.parse(host_header)
+    port = parsed[1] if parsed is not None and parsed[1] is not None else "80"
     return f"{COOKIE}_{port}"
 
 
@@ -51,7 +52,7 @@ def install(app: FastAPI) -> None:
     ) -> Response:
         if (request.method, request.url.path) in EXEMPT:
             return await call_next(request)
-        secret = request.cookies.get(cookie_name(request.headers.get("host", "")))
+        secret = request.cookies.get(cookie_name(request.headers.get("host")))
         if secret is None or not request.app.state.sessions.valid(secret):
             return unauthenticated()
         return await call_next(request)
