@@ -655,3 +655,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - e2e-local needed a session after Task 12 (`/api/v1/version` is behind it): fixed in serve-local and the Playwright global setup (#132); the `ci.yml` wait for the pointer file is split into PR #133, which waits for Thomas (it touches `.github/workflows/`). Review blocker CR-P3T12-01 (race) fixed there.
 - PR #132 squash-merged into integration (7406eb4). Deferred to Task 13: CR-P3T12-03, CR-P3T12-05, the vacuous cookie assertion in skeleton.spec.ts.
 - P3-t13 started: `p3-task`, base 7406eb4, `security: 'always'`.
+- P3-t13 done (run wf_9c0395d4-f22): `CODE review=approve 0/0/3 security=approve 0/0/2 rounds=2`. PR #134 opened (`no-figure`). Follow-ups FU-P3-40 (next FU-P3-41). Cost recorded: 30 USD, kind `build-task`.
+- PR #133 (ci.yml wait) brought up to date with integration (merge, no force-push): all checks green on 14fa6cd; it waits for Thomas.
