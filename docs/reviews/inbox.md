@@ -1651,3 +1651,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** rules 1 to 5 and 7 as built; FU-P3-38 before the next live capture.
 - **Assumed (2026-11-06, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 7 as built. Next follow-up number: FU-P3-40.
 - **Blocked:** nothing.
+
+### #106 · Assumed: the session cookie as built (P3 Task 13)
+
+- **Covers:** [P1 Task 13](../plans/P1-walking-skeleton.md#task-13-session-cookie-153-req-3); [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 3, note 2026-11-06.
+- **Context:** step P3-t13 named the session cookie after the `Host` port, as Jupyter names its login cookie. Choices the plan left open:
+  1. **The name** is `spectio_session_<port>`, the port being the ASCII digits after the last colon of `Host`. A cookie of another port is not read. `HttpOnly`, `SameSite=Strict`, `Path=/`, no `Domain`, as before.
+  2. **A `Host` with no port** (or with something other than ASCII digits after its last colon) gives `spectio_session_80`, https included. A browser leaves a default port out of `Host`, so the server cannot tell http:80 from https:443. Options: (a) as built; the two share a name, which matters only behind a reverse proxy that 0.0.1 does not ship; (b) name 443 apart by the scheme, which the server learns only from a trusted proxy header; uvicorn's proxy headers are off in 0.0.1 (req. 1) (CR-P3T13-02 r2).
+  3. **Two readings of `Host`.** `api/browser.py::_name` (req. 4) takes the text before the first colon and checks no port; `cookie_name` takes the text after the last colon. Odd values such as `localhost:1:2` pass the allow-list and get a cookie name no browser would ask for. Nothing is exploitable (SEC-P3T13-01 r1). Options: (a) as built until Task 14; (b) Task 14's `auth/host.py` parses `Host` once, for the allow-list and the cookie name (FU-P3-40).
+- **Recommendation:** rules 1 and 2 as built (a); (b) for rule 3, in FU-P3-40 with P1 Task 14.
+- **Assumed (2026-11-06, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 and 2 as built; rule 3 stays (a) until Task 14. Next follow-up number: FU-P3-41.
+- **Blocked:** nothing.

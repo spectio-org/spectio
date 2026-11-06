@@ -12,15 +12,33 @@ import { resolveTarget } from './base-url';
 const REPO = join(__dirname, '..', '..');
 const LOCAL = join(__dirname, '.local');
 
+/** The port of `url`, or the default of its scheme when it names none (CR-P3T12-05). */
+export function portOf(url: string): string {
+  const { port, protocol } = new URL(url);
+  return port || (protocol === 'https:' ? '443' : '80');
+}
+
+/** The session cookie the server sets for `url`: its `cookie_name` reads the port in `Host`, which the
+ * browser leaves out for a default port, so no port means 80 even for https (CR-P3T13-01). */
+export function sessionCookie(url: string): string {
+  return `spectio_session_${new URL(url).port || '80'}`;
+}
+
 /** Where the signed-in state of the server at `url` is kept; it holds the session cookie. */
 export function statePath(url: string): string {
-  return join(LOCAL, `${new URL(url).port}.state.json`);
+  return join(LOCAL, `${portOf(url)}.state.json`);
+}
+
+/** `error` as a new Error with the ticket masked and no cause: a goto error names the link (CR-P3T12-03). */
+export function withoutTicket(error: unknown, ticket: string): Error {
+  const message = error instanceof Error ? error.message : String(error);
+  return new Error(`opening the token link failed: ${message.replaceAll(ticket, '<ticket>')}`);
 }
 
 export default async function globalSetup(): Promise<void> {
   const target = resolveTarget(process.env);
   if (target.serveStatic) return;
-  const pointer = join(LOCAL, `${new URL(target.url).port}.config`);
+  const pointer = join(LOCAL, `${portOf(target.url)}.config`);
   let config: string;
   try {
     config = readFileSync(pointer, 'utf8').trim();
@@ -39,7 +57,11 @@ export default async function globalSetup(): Promise<void> {
   try {
     const page = await browser.newPage();
     const exchange = page.waitForResponse('**/api/v1/auth/magic-links:exchange');
-    await page.goto(new URL(`/auth/link#${ticket}`, target.url).href);
+    try {
+      await page.goto(new URL(`/auth/link#${ticket}`, target.url).href);
+    } catch (error) {
+      throw withoutTicket(error, ticket);
+    }
     expect((await exchange).status()).toBe(204);
     await page.waitForURL(new URL('/', target.url).href);
     await page.context().storageState({ path: statePath(target.url) });

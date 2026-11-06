@@ -1,6 +1,7 @@
 """A session on every request (dev-env §15.3 req. 2; P1 Task 12).
 
-Every request needs the session cookie that the link exchange set, or gets a 401 problem with
+Every request needs the session cookie that the link exchange set, named after the `Host` port
+(`cookie_name`, req. 3; P1 Task 13), or gets a 401 problem with
 no data, whatever its path, before any route runs. Four routes are exempt (P1 Assumption 8):
 the bootstrap page and its script, which carry no data, the exchange, which checks its ticket,
 and `auth/links`, which checks the server key. The Host and write checks (`api.browser`) run
@@ -13,7 +14,7 @@ from fastapi import FastAPI, Request, Response
 
 from spectio_server.api.problems import problem
 
-COOKIE = "spectio_session"  # TODO(P1 Task 13): its name carries the Host port (req. 3)
+COOKIE = "spectio_session"
 EXEMPT = frozenset(
     {
         ("GET", "/auth/link"),
@@ -22,6 +23,16 @@ EXEMPT = frozenset(
         ("POST", "/api/v1/auth/links"),
     }
 )
+
+
+def cookie_name(host_header: str) -> str:
+    """The session cookie of `Host`, named after its port as Jupyter's is (req. 3):
+    `127.0.0.1:41234` → `spectio_session_41234`; a `Host` with no port, or with something
+    other than ASCII digits after the last colon, → `spectio_session_80`."""
+    _, colon, port = host_header.rpartition(":")
+    if not (colon and port.isascii() and port.isdigit()):
+        port = "80"  # `[::1]` alone has colons but no port: its last one is not followed by digits
+    return f"{COOKIE}_{port}"
 
 
 def unauthenticated() -> Response:
@@ -40,7 +51,7 @@ def install(app: FastAPI) -> None:
     ) -> Response:
         if (request.method, request.url.path) in EXEMPT:
             return await call_next(request)
-        secret = request.cookies.get(COOKIE)
+        secret = request.cookies.get(cookie_name(request.headers.get("host", "")))
         if secret is None or not request.app.state.sessions.valid(secret):
             return unauthenticated()
         return await call_next(request)
