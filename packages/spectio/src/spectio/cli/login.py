@@ -74,8 +74,9 @@ def new_link(settings: Settings) -> str:
         raise Refused(f"The server runs on {node}: run `ssh {node} spectio login --print-link`.")
     owners = port_owners(port)
     if owners != {os.getuid()}:
-        others = sorted(owners - {os.getuid()})
-        who = "nothing listens there" if not owners else f"it is held by uid {others[0]}"
+        who = "nothing listens there"
+        if owners:
+            who = f"it is held by uid {min(owners - {os.getuid()})}"
         raise Refused(f"no server of yours on port {port} ({who}): the key is not sent")
     try:
         with private_dir(db_dir) as fd:
