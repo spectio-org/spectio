@@ -161,6 +161,13 @@ Paths under `/admin/*` are for system admins only and are specified in [`admin-a
 
 *(assumed — pending Thomas, [inbox #87](../reviews/inbox.md#87-assumed-the-001-read-api-logs-cancel-and-stream-in-the-local-only-order))*
 
+*Note 2026-11-06 (0.0.1 token link, P1 Task 12):* the sign-in of [dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) "Access" and req. 2, with no email and no "Continue as" screen:
+
+- `GET /auth/link` and `GET /auth/link.js` (outside `/api/v1`, not in the OpenAPI document) are the bootstrap page: static, no data. The script reads the ticket from the URL fragment, drops it with `history.replaceState`, posts the exchange, then opens `/`. A used or expired link shows "This link was already used or has expired. Run `spectio login --print-link` on the cluster for a new one."
+- `POST /auth/magic-links:exchange` takes `{"ticket"}` and answers `204` with the session cookie (`HttpOnly`, `SameSite=Strict`, `Path=/`); a used, expired or unknown ticket is `401 link-expired`.
+- `POST /auth/links` takes the server key as `Authorization: Bearer <key>` and answers `{"url"}`, a new link on the server port; anything else is `401`. It is what `spectio login --print-link` calls; the key never opens a session.
+- Every other route, `/api/v1` or not, is `401 unauthenticated` with no data without a valid session cookie (P1 Assumption 8 lists the four exempt routes). The four answer `Cache-Control: no-store`, `Referrer-Policy: no-referrer` and `Content-Security-Policy: default-src 'self'`. The cookie name per Host port is P1 Task 13; the local-only rule of the notes above stays until P1 Task 16.
+
 ### Example: launch from a LIMS
 ```http
 POST /api/v1/runs

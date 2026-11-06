@@ -652,3 +652,6 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Thomas resumed the autopilot with batch P3-B01. The batch mode (PR #130, promoted in #131) is on `main` and in use.
 - P3-t12 started: `p3-task` run wf_8f494702-d5c, base 8ca8304, `security: 'always'`.
 - P3-t12 done after a resume (the container restarted during the run): `CODE review=approve 0/0/4 security=approve 0/0/6 rounds=2`. The orchestrator fixed a flaky test (DOC-P3T12-01) before opening the PR. PR #132 opened (`no-figure`). Cost recorded: 35 USD, kind `build-task`.
+- e2e-local needed a session after Task 12 (`/api/v1/version` is behind it): fixed in serve-local and the Playwright global setup (#132); the `ci.yml` wait for the pointer file is split into PR #133, which waits for Thomas (it touches `.github/workflows/`). Review blocker CR-P3T12-01 (race) fixed there.
+- PR #132 squash-merged into integration (7406eb4). Deferred to Task 13: CR-P3T12-03, CR-P3T12-05, the vacuous cookie assertion in skeleton.spec.ts.
+- P3-t13 started: `p3-task`, base 7406eb4, `security: 'always'`.

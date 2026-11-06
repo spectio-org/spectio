@@ -1636,3 +1636,18 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** rules 1 to 4, 7 and 9 as built (rule 7 fixed in FU-P3-37). (b) for rules 5, 6, 8 and 10, in FU-P3-37, before the 0.0.1 release (P1 Task 21). Rule 6 (b) is what req. 16 asks for. The 0.0.1 server serves one user on their own machine, so the risk until then is low, but a shared deployment must not ship with (a).
 - **Assumed (2026-11-04, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 10 as built; rules 5, 6, 8 and 10 stay (a) until FU-P3-37 applies (b). P1 Task 32's interface is not edited: its differences are listed on [P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-32-part-two). Next follow-up number: FU-P3-38.
 - **Blocked:** nothing.
+
+### #105 · Assumed: the token link as built (P3 Task 12)
+
+- **Covers:** [P1 Task 12](../plans/P1-walking-skeleton.md#task-12-token-link-secrets-and-sessions-153-req-2) and Assumptions 8 and 9; [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) "Access", req. 2, 8 and 9; [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), note 2026-11-06.
+- **Context:** step P3-t12 built the server key, the ticket and session stores, the bootstrap page, the exchange, `auth/links`, the session middleware and `spectio login --print-link`. Choices the plan left open:
+  1. **The cookie** is `spectio_session`, `HttpOnly`, `SameSite=Strict`, `Path=/`, until P1 Task 13 adds the Host port to its name.
+  2. **The sign-in routes are mounted on every server**, a SLURM environment or a shared machine included; the rest of the API stays local-only until P1 Task 16 (inbox #86). A first link is printed at every start.
+  3. **The `--json` line** is `spectio-ticket-v1 {"ticket": "<43 chars>"}`: one line, the sentinel, a space, the JSON (Assumption 9 says one line).
+  4. **No proxy.** `spectio login --print-link` ignores `http_proxy` and the like, so the server key never leaves the loopback.
+  5. **"Spectio never asks you to paste a link."** is on the bootstrap page and in the start text (req. 14). `spectio login --print-link` prints the link alone, so that it can be piped.
+  6. **Live captures** (`tools/media/live.js`, `SPECTIO_URL`) now meet the 401 of a signed-out browser: they need to open a link first (follow-up FU-P3-38).
+  7. **The signed-out test client** is the module-local `anon` fixture of `test_req2_secrets.py`. The plan (M3 intro) has Task 12's conftest provide `client` with no session; `client` stays the shared-host client with the API unmounted, and `authed_client` the signed-in one. Found by `code-reviewer` (CR-P3T12-03 (r1)).
+- **Recommendation:** rules 1 to 5 and 7 as built; FU-P3-38 before the next live capture.
+- **Assumed (2026-11-06, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 7 as built. Next follow-up number: FU-P3-40.
+- **Blocked:** nothing.
