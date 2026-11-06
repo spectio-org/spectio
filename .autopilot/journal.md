@@ -651,3 +651,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - Thomas resumed the autopilot with batch P3-B01. The batch mode (PR #130, promoted in #131) is on `main` and in use.
 - P3-t12 started: `p3-task` run wf_8f494702-d5c, base 8ca8304, `security: 'always'`.
+- P3-t12 done after a resume (the container restarted during the run): `CODE review=approve 0/0/4 security=approve 0/0/6 rounds=2`. The orchestrator fixed a flaky test (DOC-P3T12-01) before opening the PR. PR #132 opened (`no-figure`). Cost recorded: 35 USD, kind `build-task`.
