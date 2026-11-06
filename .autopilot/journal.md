@@ -646,3 +646,26 @@ One entry per tick: time, steps started and finished, verification results, tria
 - PR #130 squash-merged as f5708cc. Every check was green on a6cff83. One code-reviewer pass returned changes (6 majors, 6 minors), all fixed before the merge.
 - From now on (autopilot.md §11): per task, code review, security review on sensitive paths, one fix round and short docs. Per batch of 3 to 5 tasks, `p3-batch` runs simplify, the full docs, the figure and doc-reviewer, followed by one promotion. Costs are recorded as `build-task` and `docs`.
 - Still paused. Next when resumed: batch P3-B01 = §15.3 Tasks 12 to 16.
+
+## 2026-11-06 · Resumed: batch P3-B01 (Tasks 12 to 16), batch mode of autopilot.md §11
+
+- Thomas resumed the autopilot with batch P3-B01. The batch mode (PR #130, promoted in #131) is on `main` and in use.
+- P3-t12 started: `p3-task` run wf_8f494702-d5c, base 8ca8304, `security: 'always'`.
+- P3-t12 done after a resume (the container restarted during the run): `CODE review=approve 0/0/4 security=approve 0/0/6 rounds=2`. The orchestrator fixed a flaky test (DOC-P3T12-01) before opening the PR. PR #132 opened (`no-figure`). Cost recorded: 35 USD, kind `build-task`.
+- e2e-local needed a session after Task 12 (`/api/v1/version` is behind it): fixed in serve-local and the Playwright global setup (#132); the `ci.yml` wait for the pointer file is split into PR #133, which waits for Thomas (it touches `.github/workflows/`). Review blocker CR-P3T12-01 (race) fixed there.
+- PR #132 squash-merged into integration (7406eb4). Deferred to Task 13: CR-P3T12-03, CR-P3T12-05, the vacuous cookie assertion in skeleton.spec.ts.
+- P3-t13 started: `p3-task`, base 7406eb4, `security: 'always'`.
+- P3-t13 done (run wf_9c0395d4-f22): `CODE review=approve 0/0/3 security=approve 0/0/2 rounds=2`. PR #134 opened (`no-figure`). Follow-ups FU-P3-40 (next FU-P3-41). Cost recorded: 30 USD, kind `build-task`.
+- PR #133 (ci.yml wait) brought up to date with integration (merge, no force-push): all checks green on 14fa6cd; it waits for Thomas.
+- PR #134 squash-merged into integration (34838aa). `e2e-local` red there for the base reason (the `ci.yml` wait, fixed in #133), commented on the PR.
+- P3-t14 started: `p3-task`, `security: 'always'`, takes SEC-P3T13-01 (one `Host` parser shared by the cookie name and the allow-list).
+- P3-t14 done (run wf_720a12b4-a23): `CODE review=approve 0/0/1 security=approve 0/0/2 rounds=1`. SEC-P3T13-01 closed (one `Host` parser). PR #135 opened (`no-figure`). Follow-ups FU-P3-41 (next FU-P3-42). Cost recorded: 22 USD, kind `build-task`.
+- PR #135 squash-merged into integration (d4bc5a3); `e2e-local` red for the base reason (#133), commented.
+- P3-t15 started: `p3-task`, `security: 'always'`.
+- P3-t15 done (run wf_1a749e6c-6a6): `CODE review=approve 0/0/5 security=approve 0/0/6 rounds=1`. Closes SEC-P3T11-01/02/08 and SEC-P3T08-03 (r1). PR #136 opened (`no-figure`). Follow-ups FU-P3-42 (hard links on the EMBL home [to be validated], PID check, config parents). Cost recorded: 30 USD, kind `build-task`.
+- PR #136 squash-merged into integration (5ec2dca); `e2e-local` red for the base reason (#133), commented.
+- P3-t16 started: `p3-task`, `security: 'always'`; last task of batch P3-B01.
+- P3-t16 done (run wf_1dcc6f65-937): `CODE review=approve 0/0/4 security=approve 0/0/4 rounds=1`. Middleware order settled (host, cross-site, session, writes). PR #137 opened (`no-figure`). Follow-ups FU-P3-43 (next FU-P3-44). Inbox #109 rule 5 is reserved for Thomas: mounting the API on SLURM and shared hosts now that sign-in is complete (security-posture default, not applied). Cost recorded: 26 USD, kind `build-task`.
+- PR #137 squash-merged into integration (5e1ddd9); `e2e-local` red for the base reason (#133), commented. All five tasks of P3-B01 merged.
+- P3-B01 batch close started: `p3-batch`, base 8ca8304, steps P3-t12..P3-t16.
+- P3-B01 batch close done (run wf_17425d7a-093): simplify -11/+9 (no re-review, under 20 lines; closes CR-P3T16-01, CR-P3T14-02, CR-P3T12-03), figure p3-b01-signed-in, cast spectio-sign-in, guide "Signing in". doc-reviewer approve 12/14, changes applied. PR #138 opened. Cost recorded: 45 USD, kind `docs`.

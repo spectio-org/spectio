@@ -72,3 +72,13 @@ def test_heads_refuses_a_pid_that_does_not_lead_its_group(tmp_path: Path) -> Non
     finally:
         child.kill()
         child.wait()
+
+
+def test_the_start_probe_answers_without_a_session() -> None:
+    """The wait loop probes a route the session middleware lets through (P1 Assumption 8)."""
+    from spectio_server.auth.middleware import EXEMPT
+
+    text = (REPO / "tests/e2e/serve-local.sh").read_text()
+    probe = re.search(r'curl -fsS -o /dev/null "\$\{url\}([^"]*)"', text)
+    assert probe, "the wait loop's curl not found in serve-local.sh"
+    assert ("GET", "/" + probe.group(1)) in EXEMPT

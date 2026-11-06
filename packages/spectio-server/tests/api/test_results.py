@@ -465,7 +465,11 @@ def test_raw_whole_file_in_chunks(
 
 
 def test_raw_cut_mid_stream_is_incomplete(
-    served: str, settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+    served: str,
+    session: dict[str, str],
+    settings: Settings,
+    writer: Writer,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A read that fails after the headers are sent aborts the response: with its
     `Content-Length`, the client sees a short body as a failed download, not a whole file
@@ -486,7 +490,7 @@ def test_raw_cut_mid_stream_is_incomplete(
 
     monkeypatch.setattr(files_results, "read_chunk", failing)
     with (
-        httpx2.Client(base_url=served, timeout=10) as http,
+        httpx2.Client(base_url=served, timeout=10, cookies=session) as http,
         http.stream("GET", f"{API}/runs/{RUN}/results/raw/big.tsv") as response,
     ):
         assert response.status_code == 200
@@ -598,7 +602,11 @@ def head_out(settings: Settings, run_id: str, text: str) -> Path:
 
 
 def test_follow_streams_appended_lines(
-    served: str, settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+    served: str,
+    session: dict[str, str],
+    settings: Settings,
+    writer: Writer,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """`?follow=true` sends the tail, then each line appended, with escapes removed, and ends
     once the run has ended."""
@@ -609,7 +617,7 @@ def test_follow_streams_appended_lines(
     url = f"{API}/runs/{RUN}/logs?source=head-out&follow=true"
     seen = []
     with (
-        httpx2.Client(base_url=served, timeout=10) as http,
+        httpx2.Client(base_url=served, timeout=10, cookies=session) as http,
         http.stream("GET", url) as response,
     ):
         assert response.status_code == 200
@@ -625,7 +633,11 @@ def test_follow_streams_appended_lines(
 
 
 def test_req14_stream_cap(
-    served: str, settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+    served: str,
+    session: dict[str, str],
+    settings: Settings,
+    writer: Writer,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A fifth follow stream at once → 429 (dev-env §15.3 req. 14). Until sessions (P1 Tasks 12
     to 16), the local API is one session (inbox #86 rule 1), so the cap is the server's."""
@@ -636,7 +648,7 @@ def test_req14_stream_cap(
     url = f"{API}/runs/{RUN}/logs?source=head-out&follow=true"
 
     async def scenario() -> tuple[Counter[int], int, Any]:
-        async with httpx2.AsyncClient(base_url=served, timeout=10) as http:
+        async with httpx2.AsyncClient(base_url=served, timeout=10, cookies=session) as http:
 
             async def one() -> Any:
                 return await http.send(http.build_request("GET", url), stream=True)

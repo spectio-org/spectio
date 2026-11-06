@@ -8,8 +8,8 @@ directories; the parent keeps its state. The checks of `spectio_server.resume` c
 outside the writer, then the store's again in the transaction that inserts the child
 (`BEGIN IMMEDIATE`, the writer's), so two parallel requests make one child. The runner checks
 the directories once more before the head starts. A refusal is `409 run-state-conflict` with
-the `reason` of `actions.resume`. The Origin check of req. 7 runs before any route
-(`api.browser`); its CSRF token waits for the session (TODO(P1 Task 16)).
+the `reason` of `actions.resume`. The session (req. 2) and the Origin check of req. 7
+(`auth.writes`) run before any route.
 
 `GET /runs/{id}:launch-template` is the `POST /runs` body of the run, for Copy to a new launch,
 with `non_default` (the parameters that differ from the pipeline's schema defaults) and

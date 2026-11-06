@@ -268,9 +268,13 @@ def test_resume_other_fields_422(
 def test_req16_relaunch_origin_csrf(
     authed_client: TestClient, writer: Writer, failed_run: str
 ) -> None:
-    """Req. 7: no Origin, or another site's, is refused before the route. The CSRF token of
-    req. 7 comes with the session: TODO(P1 Task 16) add the no-token case here."""
+    """Req. 7: no session cookie (401), no Origin or another site's (403), refused before the
+    route."""
     url = f"/api/v1/runs/{failed_run}:relaunch"
+    cookies = dict(authed_client.cookies)
+    authed_client.cookies.clear()
+    assert authed_client.post(url, json={"mode": "resume"}).status_code == 401
+    authed_client.cookies.update(cookies)
     origin = authed_client.headers["origin"]
     del authed_client.headers["origin"]
     assert authed_client.post(url, json={"mode": "resume"}).status_code == 403

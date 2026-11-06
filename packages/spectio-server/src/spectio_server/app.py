@@ -1,17 +1,19 @@
-"""The FastAPI app of `spectio serve` (P1 Tasks 11, 17 and 18).
+"""The FastAPI app of `spectio serve` (P1 Tasks 11, 12, 17 and 18).
 
-Sign-in (P1 Tasks 12 to 16: token link, session) is not built yet, so the API is served in local
-mode only (`spectio init --local`): on a SLURM environment, where other
+Every request needs the session of the token link (dev-env §15.3 req. 2, `auth`, P1 Task 12).
+Sign-in is not complete until P1 Task 16 (the cookie per Host port, Task 13), so the API is
+served in local mode only (`spectio init --local`): on a SLURM environment, where other
 users share the login node and its loopback port, every `/api/v1` path answers 404 with the
 reason (inbox #86). In local mode too, the API is left unmounted on a machine that looks like
 a cluster node or a shared one (`shared_host`, SEC-P3T17-06): kind `local` is a configuration
-value, which can be set on a login node. The Host allow-list and the write checks (dev-env §15.3
-req. 4 and 7) run on every request already (`api.browser`). The generated docs stay off: the
+value, which can be set on a login node. The Host allow-list (dev-env §15.3 req. 4, `auth.host`),
+the cross-site check (`api.browser`), the session and the write checks (req. 7, `auth.writes`)
+run on every request, in that order. The generated docs stay off: the
 OpenAPI document is a file, `openapi/0.0.1.json`, written from `app.openapi()` (Task 18), with
 typed responses (`api.models`, FU-P3-21).
 
 The screens (`web/dist`, Task 19) follow the API's rule: served at `/` when the API is mounted,
-else `/` stays this plain page and says why (`static`). TODO(P1 Task 16): behind the session.
+else `/` stays this plain page and says why (`static`), behind the session too.
 """
 
 import os
@@ -38,20 +40,18 @@ from spectio_server.api import (
     taskfiles,
     workflows,
 )
+from spectio_server.auth import host, middleware, routes, writes
+from spectio_server.auth.secrets import ServerKey, SessionStore, TicketStore
 from spectio_server.failure import Accounting
 from spectio_server.files.pool import FilePool
 from spectio_server.store.writer import Writer
 
-PLACEHOLDER = (
-    "Spectio {version} is running.\n"
-    "Sign-in comes with P1 Task 12: this build is local-only.\n"
-    "{why}\n"
-)
+PLACEHOLDER = "Spectio {version} is running.\n{why}\n"
 API = "/api/v1"
 API_VERSION = "0.0.1"  # the API document's version, not the package's: a release bump keeps it
 NO_API = (
-    "The API is served in local mode only (spectio init --local) until sign-in is built: "
-    "P1 Tasks 12 to 16 (token link and session)."
+    "The API is served in local mode only (spectio init --local) until sign-in is complete: "
+    "P1 Tasks 13 to 16 (the session cookie per port and its checks)."
 )
 
 SLURM_CONF_FILE = Path("/etc/slurm/slurm.conf")
@@ -106,9 +106,11 @@ def create_app(
     web_dir: Path = static.DIST,
     files: FilePool | None = None,
     accounting: Accounting | None = None,
+    server_key: ServerKey | None = None,
 ) -> FastAPI:
     """The app; `files` is the pool the routes read run files in, `accounting` the server's
-    one gate to `sacct` (each made from the settings when None)."""
+    one gate to `sacct` (each made from the settings when None), `server_key` the key of
+    `auth/links` (one kept in memory only when None)."""
     app = FastAPI(
         title="Spectio",
         version=API_VERSION,
@@ -122,8 +124,17 @@ def create_app(
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.engine_versions = workflows.engine_versions(settings)
+    app.state.server_key = server_key or ServerKey.new()
+    app.state.tickets = TicketStore()
+    app.state.sessions = SessionStore()
     problems.install(app)
-    browser.install(app)  # Host allow-list, cross-site and write checks (§15.3 req. 4, 7)
+    # Starlette runs the last middleware installed first: Host, cross-site, session, writes
+    writes.install(app)  # last, the session-exempt writes included: Origin and JSON (§15.3 req. 7)
+    middleware.install(app)  # a session on every request but four (§15.3 req. 2)
+    browser.install(app)  # no cross-site request, a GET included (§15.3 req. 7, SEC-P3T17-02)
+    host.install(app)  # first, the bootstrap routes included: the Host allow-list (§15.3 req. 4)
+    app.include_router(routes.pages)
+    app.include_router(routes.router, prefix=API)
 
     reason = no_api_reason(settings)  # one scan: the start text reads it back (CR-P3T17-04)
     app.state.no_api = reason

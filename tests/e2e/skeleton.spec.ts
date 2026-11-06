@@ -1,14 +1,15 @@
-import { test, expect, type APIRequestContext, type Page } from '@playwright/test';
+import { test, expect, type APIRequestContext, type Page, type Request } from '@playwright/test';
 import { join } from 'node:path';
 import { resolveTarget } from './base-url';
+import { sessionCookie } from './global-setup';
 
 // The 0.0.1 smoke of P1 Task 20, against a real `spectio serve` (tests/e2e/serve-local.sh):
 //   bash tests/e2e/serve-local.sh --port 8765 &
 //   SPECTIO_E2E_BASE_URL=http://127.0.0.1:8765 npx playwright test skeleton.spec.ts   (in tests/e2e)
 // Tests that run a workflow engine need Nextflow on the server's PATH and SPECTIO_E2E_ENGINES=1;
 // CI's e2e-local job sets it after dev/bootstrap.sh. The others answer from the server alone or
-// from route mocks. Local-only order (inbox #80): no token link or session cookie before P1
-// Tasks 12 to 16, so the two session tests wait as fixme, and what holds today is tested instead.
+// from route mocks. Each test has the session that global-setup.ts got through the token link
+// (P1 Task 12); the expired-link and 401-page tests wait for Task 16 as fixme (inbox #80).
 
 const target = resolveTarget(process.env);
 const ENGINES = process.env.SPECTIO_E2E_ENGINES === '1';
@@ -71,8 +72,8 @@ async function mockDetail(page: Page, stages: object[]) {
 test('link → empty list → launch happy (Nextflow, local) → detail shows Succeeded and 65 tasks', async ({ page }) => {
   test.skip(!ENGINES, NEEDS_ENGINES);
   test.setTimeout(180_000);
-  // No link exchange before P1 Task 12: the address is the way in. The two projects share one
-  // server, so the empty list is the server's answer replayed, not the server's state.
+  // The link was exchanged once in global-setup.ts. The two projects share one server, so the
+  // empty list is the server's answer replayed, not the server's state.
   await page.route('**/api/v1/runs?*', (r) => r.fulfill(json({ items: [], next: null })));
   await page.goto('/runs');
   await expect(page.getByText('No runs yet.')).toBeVisible();
@@ -182,8 +183,8 @@ test('the detail updates without a reload as tasks finish', async ({ page, reque
   test.skip(!ENGINES, NEEDS_ENGINES);
   test.setTimeout(180_000);
   const id = await launch(request, ['local'], { scale: 3 });
-  const streams: Record<string, string>[] = [];
-  page.on('request', (r) => r.url().endsWith('/api/v1/events/stream') && streams.push(r.headers()));
+  const streams: Request[] = [];
+  page.on('request', (r) => r.url().endsWith('/api/v1/events/stream') && streams.push(r));
   await page.goto(`/runs/${id}`);
   await page.evaluate(() => ((window as unknown as { marker: number }).marker = 1));
   const tasks = page.locator('header').getByText(/ tasks$/);
@@ -191,8 +192,9 @@ test('the detail updates without a reload as tasks finish', async ({ page, reque
   await expect(tasks).not.toHaveText(first ?? '', { timeout: 120_000 });
   await expect(page.locator('header .sp-state')).toHaveText('Succeeded', { timeout: 150_000 });
   expect(await page.evaluate(() => (window as unknown as { marker?: number }).marker)).toBe(1); // no reload
-  expect(streams).toHaveLength(1); // one EventSource, same origin, no session cookie yet (Task 13)
-  expect(streams[0].cookie).toBeUndefined();
+  expect(streams).toHaveLength(1); // one EventSource, same origin
+  // It carries the session cookie of this port (req. 3 [to be validated]); headers() leaves cookies out.
+  expect((await streams[0].allHeaders()).cookie).toMatch(new RegExp(`(^|; )${sessionCookie(target.url)}=`));
 });
 
 test('a request without the cookie shows the 401 page, not data', async () => {

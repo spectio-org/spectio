@@ -20,7 +20,7 @@ from spectio_server.files.redact import strip_escapes
 from spectio_server.store.schema import launches, runs
 from spectio_server.store.writer import Writer
 
-from .conftest import add_run
+from .conftest import add_run, client_for
 
 RUNS = "/api/v1/runs"
 T0 = datetime(2026, 10, 30, 8, 0, tzinfo=UTC)
@@ -130,10 +130,12 @@ def test_runs_summary_by_state(
 
 
 def test_version_behind_session(
-    client: TestClient, authed_client: TestClient, settings: Settings
+    client: TestClient, authed_client: TestClient, settings: Settings, writer: Writer
 ) -> None:
-    """TODO(P1 Task 16): with no session cookie → 401. Until sign-in is built, the API is not
-    mounted on a shared machine, and other sites and hosts are refused (inbox #86, #87)."""
+    """No session cookie → 401; the API is not mounted on a shared machine, and other sites
+    and hosts are refused (inbox #86, #87)."""
+    signed_out = client_for(settings, writer, signed_in=False)
+    problem(signed_out.get("/api/v1/version"), 401, "unauthenticated")
     absent = problem(client.get("/api/v1/version"), 404, "not-found")
     assert NO_API in str(absent["detail"])
     problem(
