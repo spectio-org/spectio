@@ -1647,6 +1647,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   4. **No proxy.** `spectio login --print-link` ignores `http_proxy` and the like, so the server key never leaves the loopback.
   5. **"Spectio never asks you to paste a link."** is on the bootstrap page and in the start text (req. 14). `spectio login --print-link` prints the link alone, so that it can be piped.
   6. **Live captures** (`tools/media/live.js`, `SPECTIO_URL`) now meet the 401 of a signed-out browser: they need to open a link first (follow-up FU-P3-38).
-- **Recommendation:** rules 1 to 5 as built; FU-P3-38 before the next live capture.
-- **Assumed (2026-11-06, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 6 as built.
+  7. **The signed-out test client** is the module-local `anon` fixture of `test_req2_secrets.py`. The plan (M3 intro) has Task 12's conftest provide `client` with no session; `client` stays the shared-host client with the API unmounted, and `authed_client` the signed-in one. Found by `code-reviewer` (CR-P3T12-03 (r1)).
+- **Recommendation:** rules 1 to 5 and 7 as built; FU-P3-38 before the next live capture.
+- **Assumed (2026-11-06, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 7 as built. Next follow-up number: FU-P3-40.
 - **Blocked:** nothing.
