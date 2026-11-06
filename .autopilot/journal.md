@@ -657,3 +657,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - P3-t13 started: `p3-task`, base 7406eb4, `security: 'always'`.
 - P3-t13 done (run wf_9c0395d4-f22): `CODE review=approve 0/0/3 security=approve 0/0/2 rounds=2`. PR #134 opened (`no-figure`). Follow-ups FU-P3-40 (next FU-P3-41). Cost recorded: 30 USD, kind `build-task`.
 - PR #133 (ci.yml wait) brought up to date with integration (merge, no force-push): all checks green on 14fa6cd; it waits for Thomas.
+- PR #134 squash-merged into integration (34838aa). `e2e-local` red there for the base reason (the `ci.yml` wait, fixed in #133), commented on the PR.
+- P3-t14 started: `p3-task`, `security: 'always'`, takes SEC-P3T13-01 (one `Host` parser shared by the cookie name and the allow-list).
