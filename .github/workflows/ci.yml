@@ -176,7 +176,7 @@ jobs:
           export SPECTIO_ENGINES_NEXTFLOW_CMD
           bash tests/e2e/serve-local.sh --port 8765 --seed-stages > "$RUNNER_TEMP/serve.log" 2>&1 &
           for _ in $(seq 1 300); do
-            curl -fsS -o /dev/null http://127.0.0.1:8765/api/v1/version && exit 0
+            curl -fsS -o /dev/null http://127.0.0.1:8765/auth/link && exit 0
             sleep 1
           done
           cat "$RUNNER_TEMP/serve.log"; exit 1
