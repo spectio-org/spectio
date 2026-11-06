@@ -7,6 +7,7 @@ import typer
 
 from spectio.cli.doctor import run_doctor
 from spectio.cli.init import run_init
+from spectio.cli.login import run_login
 from spectio.cli.serve import run_serve
 from spectio.config import Settings
 
@@ -62,3 +63,14 @@ def serve(
 ) -> None:
     """Start the server on 127.0.0.1, at the port spectio init recorded."""
     raise typer.Exit(run_serve(force))
+
+
+@app.command()
+def login(
+    print_link: Annotated[
+        bool, Opt("--print-link", help="Print a new link to the server of this node")
+    ] = False,
+    as_json: Annotated[bool, Opt("--json", help="One line for spectio open: the ticket")] = False,
+) -> None:
+    """Get a new single-use token link from the running server (valid 15 minutes)."""
+    raise typer.Exit(run_login(print_link, as_json))

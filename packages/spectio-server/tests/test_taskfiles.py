@@ -36,7 +36,7 @@ from spectio_server.stages.freeze import StageSources
 from spectio_server.store.schema import attempts, spool_drops, tasks
 from spectio_server.store.writer import Writer
 
-from .api.conftest import add_run, writer  # noqa: F401 (the fixture)
+from .api.conftest import add_run
 
 RUN = "run_01K8T2F1XTVRES0000000000T8"
 HASH = ("ab", "0123456789abcdef0123456789abcd")
@@ -464,7 +464,7 @@ class SmkRun:
 
 
 @pytest.fixture
-def smk_run(settings: Settings, writer: Writer) -> SmkRun:  # noqa: F811 (the fixture)
+def smk_run(settings: Settings, writer: Writer) -> SmkRun:
     launch_id = add_run(writer, settings, RUN, "smk", "running", engine="snakemake")
     launch_dir = make_run_dirs(settings.runs_root, RUN).launch_dir
     (launch_dir / "logs" / "bwa_mem").mkdir(parents=True)
@@ -583,7 +583,7 @@ def test_req13_spectio_dir_any_case(smk_run: SmkRun) -> None:
     assert drops["path_outside_run"] == 2
 
 
-def test_req13_forged_nextflow_workdir_dropped(settings: Settings, writer: Writer) -> None:  # noqa: F811
+def test_req13_forged_nextflow_workdir_dropped(settings: Settings, writer: Writer) -> None:
     launch_id = add_run(writer, settings, RUN, "nf", "running")
     work = make_run_dirs(settings.runs_root, RUN).work_dir
     sources = StageSources(None, settings.runs_root)

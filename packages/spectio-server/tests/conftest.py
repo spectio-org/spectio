@@ -1,12 +1,17 @@
-"""Shared fixtures of the server tests: settings in a private HOME, written to spectio.toml."""
+"""Shared fixtures of the server tests: settings in a private HOME, written to spectio.toml, and
+the writer over a fresh index."""
 
 import os
 import socket
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
 from spectio.config import Settings, write_config
+from spectio_server.bootstrap import ensure_tenancy
+from spectio_server.store.db import open_db
+from spectio_server.store.writer import Writer
 
 
 def free_port() -> int:
@@ -36,3 +41,15 @@ def settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Settings:
     )
     write_config(found)
     return found
+
+
+@pytest.fixture
+def writer(settings: Settings) -> Iterator[Writer]:
+    assert settings.db_dir is not None
+    engine, _ = open_db(settings.db_dir)
+    writer = Writer(engine)
+    config = {"runs_root": str(settings.runs_root)}
+    writer.submit(lambda c: ensure_tenancy(c, "me", settings.executor, config, "0.0.1")).result()
+    yield writer
+    writer.close()
+    engine.dispose()
