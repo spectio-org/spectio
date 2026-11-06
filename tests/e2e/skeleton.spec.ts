@@ -1,7 +1,7 @@
 import { test, expect, type APIRequestContext, type Page, type Request } from '@playwright/test';
 import { join } from 'node:path';
 import { resolveTarget } from './base-url';
-import { portOf } from './global-setup';
+import { sessionCookie } from './global-setup';
 
 // The 0.0.1 smoke of P1 Task 20, against a real `spectio serve` (tests/e2e/serve-local.sh):
 //   bash tests/e2e/serve-local.sh --port 8765 &
@@ -194,7 +194,7 @@ test('the detail updates without a reload as tasks finish', async ({ page, reque
   expect(await page.evaluate(() => (window as unknown as { marker?: number }).marker)).toBe(1); // no reload
   expect(streams).toHaveLength(1); // one EventSource, same origin
   // It carries the session cookie of this port (req. 3 [to be validated]); headers() leaves cookies out.
-  expect((await streams[0].allHeaders()).cookie).toMatch(new RegExp(`(^|; )spectio_session_${portOf(target.url)}=`));
+  expect((await streams[0].allHeaders()).cookie).toMatch(new RegExp(`(^|; )${sessionCookie(target.url)}=`));
 });
 
 test('a request without the cookie shows the 401 page, not data', async () => {

@@ -18,6 +18,12 @@ export function portOf(url: string): string {
   return port || (protocol === 'https:' ? '443' : '80');
 }
 
+/** The session cookie the server sets for `url`: its `cookie_name` reads the port in `Host`, which the
+ * browser leaves out for a default port, so no port means 80 even for https (CR-P3T13-01). */
+export function sessionCookie(url: string): string {
+  return `spectio_session_${new URL(url).port || '80'}`;
+}
+
 /** Where the signed-in state of the server at `url` is kept; it holds the session cookie. */
 export function statePath(url: string): string {
   return join(LOCAL, `${portOf(url)}.state.json`);
