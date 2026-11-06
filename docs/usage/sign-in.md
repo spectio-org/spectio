@@ -25,7 +25,7 @@ The rules are owned by [development environment §15.3](../specs/dev-environment
 
 2. **Open the link** in a browser on the same machine. The page reads the ticket after the `#`, removes it from the address bar and history, and opens Spectio. The browser keeps a session cookie named after the port, for example `spectio_session_18081`.
 3. **Need another link?** Run `spectio login --print-link` on the node where the server runs. `--json` prints one line for scripts.
-4. **Server on another node?** The command prints the `ssh` line to run there and sends nothing: `The server runs on <node>: run ssh <node> spectio login --print-link.`
+4. **Server on another node?** The command prints the `ssh` line to run there and sends nothing: ``The server runs on <node>: run `ssh <node> spectio login --print-link`.``
 5. **Restart the server** and every session ends. Sessions live in the server's memory only. Ask for a new link.
 
 !!! warning "A spent or old link"
