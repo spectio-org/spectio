@@ -59,6 +59,21 @@
         "title": "Command",
         "type": "object"
       },
+      "Exchange": {
+        "additionalProperties": false,
+        "properties": {
+          "ticket": {
+            "maxLength": 128,
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket"
+        ],
+        "title": "Exchange",
+        "type": "object"
+      },
       "Failure": {
         "description": "A job that failed on its last attempt (P1 Task 29); `log_tail` is the last 20 lines of\nits log, escape sequences removed, or null when it could not be read. `work_dir` is the\ndirectory the job files listing shows, for the failure summary's Copy (P1 Task 32).",
         "properties": {
@@ -301,6 +316,19 @@
           "code_loading"
         ],
         "title": "LaunchTemplate",
+        "type": "object"
+      },
+      "Link": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "Link",
         "type": "object"
       },
       "Process": {
@@ -1828,6 +1856,67 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/auth/links": {
+      "post": {
+        "operationId": "new_link_api_v1_auth_links_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Link"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No server key, or another one"
+          }
+        },
+        "summary": "New Link",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/magic-links:exchange": {
+      "post": {
+        "operationId": "exchange_api_v1_auth_magic_links_exchange_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Exchange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "The ticket was already used, has expired or is unknown"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Exchange",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/events/stream": {
       "get": {
         "operationId": "events_stream_api_v1_events_stream_get",

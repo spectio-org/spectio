@@ -38,7 +38,8 @@ def test_req1_binds_loopback_only(settings: Settings) -> None:
         try:
             assert server.sock.getsockname() == ("127.0.0.1", settings.port)
             assert _listeners(settings.port) == {"0100007F"}  # 127.0.0.1, and nothing else
-            with urllib.request.urlopen(f"http://127.0.0.1:{settings.port}/") as response:
+            page = f"http://127.0.0.1:{settings.port}/auth/link"  # the one page with no session
+            with urllib.request.urlopen(page) as response:
                 assert response.status == 200
         finally:
             server.uvicorn.should_exit = True
