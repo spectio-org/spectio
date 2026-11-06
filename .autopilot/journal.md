@@ -669,3 +669,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - PR #137 squash-merged into integration (5e1ddd9); `e2e-local` red for the base reason (#133), commented. All five tasks of P3-B01 merged.
 - P3-B01 batch close started: `p3-batch`, base 8ca8304, steps P3-t12..P3-t16.
 - P3-B01 batch close done (run wf_17425d7a-093): simplify -11/+9 (no re-review, under 20 lines; closes CR-P3T16-01, CR-P3T14-02, CR-P3T12-03), figure p3-b01-signed-in, cast spectio-sign-in, guide "Signing in". doc-reviewer approve 12/14, changes applied. PR #138 opened. Cost recorded: 45 USD, kind `docs`.
+
+- 2026-11-06 23:54 UTC · promotion #139 merged into main (merge commit 7f2021a): batch P3-B01, P1 Tasks 12-16. e2e-local red for the known base cause (#133).
