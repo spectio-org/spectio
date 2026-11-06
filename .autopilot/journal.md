@@ -660,3 +660,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - PR #134 squash-merged into integration (34838aa). `e2e-local` red there for the base reason (the `ci.yml` wait, fixed in #133), commented on the PR.
 - P3-t14 started: `p3-task`, `security: 'always'`, takes SEC-P3T13-01 (one `Host` parser shared by the cookie name and the allow-list).
 - P3-t14 done (run wf_720a12b4-a23): `CODE review=approve 0/0/1 security=approve 0/0/2 rounds=1`. SEC-P3T13-01 closed (one `Host` parser). PR #135 opened (`no-figure`). Follow-ups FU-P3-41 (next FU-P3-42). Cost recorded: 22 USD, kind `build-task`.
+- PR #135 squash-merged into integration (d4bc5a3); `e2e-local` red for the base reason (#133), commented.
+- P3-t15 started: `p3-task`, `security: 'always'`.
