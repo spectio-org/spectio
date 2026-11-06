@@ -154,7 +154,8 @@ def test_req2_ticket_stored_hashed(anon: TestClient) -> None:
     sessions: SessionStore = anon.app.state.sessions  # type: ignore[attr-defined]
     secret = sessions.create()
     assert secret not in repr(vars(sessions))
-    assert sessions.valid(secret) and not sessions.valid(secret[:-1] + "A")
+    other = "B" if secret[-1] == "A" else "A"  # always a different secret (DOC-P3T12-01)
+    assert sessions.valid(secret) and not sessions.valid(secret[:-1] + other)
 
 
 def test_req2_server_key_only_for_links(anon: TestClient) -> None:
