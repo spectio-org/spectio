@@ -1661,4 +1661,17 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   3. **Two readings of `Host`.** `api/browser.py::_name` (req. 4) takes the text before the first colon and checks no port; `cookie_name` takes the text after the last colon. Odd values such as `localhost:1:2` pass the allow-list and get a cookie name no browser would ask for. Nothing is exploitable (SEC-P3T13-01 r1). Options: (a) as built until Task 14; (b) Task 14's `auth/host.py` parses `Host` once, for the allow-list and the cookie name (FU-P3-40).
 - **Recommendation:** rules 1 and 2 as built (a); (b) for rule 3, in FU-P3-40 with P1 Task 14.
 - **Assumed (2026-11-06, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 and 2 as built; rule 3 stays (a) until Task 14. Next follow-up number: FU-P3-41.
+- **Update (2026-11-06, P3 Task 14):** rule 3 was built as (b): `auth/host.py` parses `Host` once, for the allow-list and the cookie name ([inbox #107](#107-assumed-the-host-allow-list-as-built-p3-task-14)).
+- **Blocked:** nothing.
+
+### #107 · Assumed: the Host allow-list as built (P3 Task 14)
+
+- **Covers:** [P1 Task 14](../plans/P1-walking-skeleton.md#task-14-host-allow-list-153-req-4); [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 4, note 2026-11-06; closes rule 3 of [inbox #106](#106-assumed-the-session-cookie-as-built-p3-task-13) and SEC-P3T13-01.
+- **Context:** step P3-t14 moved the Host check out of `api/browser.py` into `auth/host.py`, which parses `Host` once. Choices the plan left open:
+  1. **The refusal code** stays `400` with `/problems/host-not-allowed`. The plan allows 421 or 400; the note of 2026-10-30 already says 400. Options: (a) 400 as built; (b) 421 Misdirected Request.
+  2. **The order.** The allow-list runs first, before `api.browser` and the session check, and on the four session-exempt routes. `api.browser` still runs before the session check; Task 16's plan text puts the write check after it, and that move is left to Task 16.
+  3. **Port syntax.** Up to five ASCII digits, at most 65535; an empty port counts as no port. A port is taken as written, so `127.0.0.1:08080` is accepted and gives the cookie `spectio_session_08080`, a second spelling of the port in the cookie name (SEC-P3T14-02). A browser normalises the port before it sends it, so it never sends this. Options: (a) as built; (b) refuse a leading zero and port 0 in `parse`, one line.
+  4. **Scope.** The middleware is `@app.middleware("http")`, which Starlette passes any other scope through. No WebSocket route exists; a future one needs its own Host check (SEC-P3T14-01). Option: (a) as built, with a test that fails when a WebSocket route is added without one, in FU-P3-41.
+- **Recommendation:** rules 1 and 2 as built; (b) for rule 3, in FU-P3-41; (a) for rule 4, with its test.
+- **Assumed (2026-11-06, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 and 2 as built; rule 3 stays (a) until FU-P3-41; rule 4 (a). Next follow-up number: FU-P3-42.
 - **Blocked:** nothing.
