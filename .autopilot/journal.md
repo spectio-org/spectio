@@ -646,3 +646,8 @@ One entry per tick: time, steps started and finished, verification results, tria
 - PR #130 squash-merged as f5708cc. Every check was green on a6cff83. One code-reviewer pass returned changes (6 majors, 6 minors), all fixed before the merge.
 - From now on (autopilot.md §11): per task, code review, security review on sensitive paths, one fix round and short docs. Per batch of 3 to 5 tasks, `p3-batch` runs simplify, the full docs, the figure and doc-reviewer, followed by one promotion. Costs are recorded as `build-task` and `docs`.
 - Still paused. Next when resumed: batch P3-B01 = §15.3 Tasks 12 to 16.
+
+## 2026-11-06 · Resumed: batch P3-B01 (Tasks 12 to 16), batch mode of autopilot.md §11
+
+- Thomas resumed the autopilot with batch P3-B01. The batch mode (PR #130, promoted in #131) is on `main` and in use.
+- P3-t12 started: `p3-task` run wf_8f494702-d5c, base 8ca8304, `security: 'always'`.
