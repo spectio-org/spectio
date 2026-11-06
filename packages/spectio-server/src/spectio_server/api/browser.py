@@ -1,13 +1,13 @@
-"""Browser checks on every request, before any route (dev-env §15.3 req. 7; inbox #37). The Host
-allow-list (req. 4, `auth.host`) runs before them, so `Host` here is a loopback one.
+"""No cross-site request, on every request, before the session check (dev-env §15.3 req. 7;
+SEC-P3T17-02; inbox #37). The Host allow-list (req. 4, `auth.host`) runs before it, so `Host`
+here is a loopback one; the write checks of req. 7 (`auth.writes`) run after the session check.
 
-- **No cross-site request** (stands in for the `SameSite=Strict` session of req. 3 until P1
-  Tasks 12 to 16; SEC-P3T17-02): `Sec-Fetch-Site: cross-site` or `same-site`, or an `Origin` or
-  `Referer` other than this loopback origin, is refused with 403. A `GET` such as inspect clones
-  a repository, so another site's `<img src>` must not reach it.
-- **Writes** (req. 7): a method other than `GET` and `HEAD` needs `Origin` equal to
-  `http://<Host>` (403), and a body of type `application/json` (415), with a `Content-Length`
-  (411) of at most 1 MiB (413; FU-P3-17).
+`Sec-Fetch-Site: cross-site` or `same-site`, or an `Origin` or `Referer` other than this loopback
+origin, is refused with 403, a `GET` too. A `GET` such as inspect clones a repository, so another
+site's `<img src>` must not reach it. The `SameSite=Strict` cookie (req. 3) does not cover a page
+on another port of the same loopback host: a site ignores the port ([HTML standard, "same
+site"](https://html.spec.whatwg.org/multipage/browsers.html#same-site) **[to be validated]**), so
+this check stays.
 """
 
 from collections.abc import Awaitable, Callable
@@ -16,8 +16,6 @@ from urllib.parse import urlsplit
 from fastapi import FastAPI, Request, Response
 
 from spectio_server.api.problems import problem
-
-MAX_BODY = 1048576
 
 
 def _netloc(url: str) -> str | None:
@@ -40,22 +38,6 @@ def refusal(request: Request) -> Response | None:
         return problem(
             403, "cross-site", "Cross-site request", "Requests from other sites are refused."
         )
-    if request.method in ("GET", "HEAD"):
-        return None
-    if origin is None:
-        return problem(403, "cross-site", "Origin required", "A write needs an Origin header.")
-    length = request.headers.get("content-length")
-    if "transfer-encoding" in request.headers:
-        return problem(411, "length-required", "Length required", "Send a Content-Length.")
-    media = request.headers.get("content-type", "").split(";")[0].strip().lower()
-    if length not in (None, "0") and media != "application/json":
-        return problem(
-            415, "unsupported-media-type", "Unsupported media type", "Send application/json."
-        )
-    if length is not None and not (
-        length.isascii() and length.isdigit() and int(length) <= MAX_BODY
-    ):
-        return problem(413, "request-too-large", "Request too large", f"At most {MAX_BODY} bytes.")
     return None
 
 

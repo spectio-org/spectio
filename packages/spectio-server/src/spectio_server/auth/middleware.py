@@ -5,7 +5,8 @@ Every request needs the session cookie that the link exchange set, named after t
 no data, whatever its path, before any route runs. Four routes are exempt (P1 Assumption 8):
 the bootstrap page and its script, which carry no data, the exchange, which checks its ticket,
 and `auth/links`, which checks the server key. The Host allow-list (`auth.host`, req. 4), then
-the cross-site and write checks (`api.browser`), run before this one.
+the cross-site check (`api.browser`), run before this one; the write checks of req. 7
+(`auth.writes`) run after it, on the exempt writes too.
 """
 
 from collections.abc import Awaitable, Callable
