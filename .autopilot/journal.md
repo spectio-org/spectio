@@ -663,3 +663,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - PR #135 squash-merged into integration (d4bc5a3); `e2e-local` red for the base reason (#133), commented.
 - P3-t15 started: `p3-task`, `security: 'always'`.
 - P3-t15 done (run wf_1a749e6c-6a6): `CODE review=approve 0/0/5 security=approve 0/0/6 rounds=1`. Closes SEC-P3T11-01/02/08 and SEC-P3T08-03 (r1). PR #136 opened (`no-figure`). Follow-ups FU-P3-42 (hard links on the EMBL home [to be validated], PID check, config parents). Cost recorded: 30 USD, kind `build-task`.
+- PR #136 squash-merged into integration (5ec2dca); `e2e-local` red for the base reason (#133), commented.
+- P3-t16 started: `p3-task`, `security: 'always'`; last task of batch P3-B01.
