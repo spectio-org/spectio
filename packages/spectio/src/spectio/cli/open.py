@@ -117,7 +117,14 @@ class Remote:
         return state
 
     def ticket(self, node: str) -> str:
-        return parse_ticket(self.run(node, login_script(self.remote_cmd)))
+        try:
+            return parse_ticket(self.run(node, login_script(self.remote_cmd)))
+        except Failed as exc:  # server.json is not checked for a live server yet (FU-P3-48)
+            raise Failed(
+                f"{exc}\n~/.spectio/server.json on the cluster may be stale (its server may have "
+                "stopped): if so, remove it and run spectio open again.",
+                code=exc.code,
+            ) from exc
 
 
 def _wait_up(tunnel: subprocess.Popen[bytes], local_port: int) -> None:

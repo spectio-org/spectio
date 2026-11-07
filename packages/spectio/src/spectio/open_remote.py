@@ -59,8 +59,9 @@ def tunnel_argv(ssh: str, node: str, local_port: int, port: int) -> list[str]:
 
 def command(remote_cmd: str, *args: str) -> str:
     """`remote_cmd` (the user's own setting, shell text used as given) followed by `args`
-    quoted as shell words."""
-    return f"{remote_cmd} {shlex.join(args)}"
+    quoted as shell words, in a `{ ...; }` group: one shell unit, so `&&` or `||` inside
+    `remote_cmd` stays inside it and a redirection covers all of it."""
+    return f"{{ {remote_cmd} {shlex.join(args)}; }}"
 
 
 def probe_script(remote_cmd: str) -> str:

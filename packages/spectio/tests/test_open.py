@@ -32,7 +32,8 @@ os.execv("/bin/sh", ["/bin/sh", "-c", sys.argv[2]])
 """
 
 # The remote spectio: logs its argv and SPECTIO_X; init, serve --detach and login answer as the
-# real commands do; `login.out` in $FAKE_SSH_DIR replaces what login prints.
+# real commands do; `login.out` in $FAKE_SSH_DIR replaces what login prints, and `dead` makes
+# login fail as it does when the server of server.json has stopped.
 RSPECTIO = f"""#!{PY}
 import json, os, sys
 d = os.environ["FAKE_SSH_DIR"]
@@ -51,6 +52,8 @@ elif cmd == ["serve", "--detach"]:
     print("Open http://127.0.0.1:8123/auth/link#" + "S" * 43)
 elif cmd == ["login", "--print-link", "--json"]:
     out = os.path.join(d, "login.out")
+    if os.path.exists(os.path.join(d, "dead")):
+        sys.exit("spectio login: no server answers")
     if os.path.exists(out):
         print(open(out).read())
     else:
@@ -186,7 +189,30 @@ def test_login_shell_and_remote_cmd(fake_ssh: FakeSsh, home: Path) -> None:
     assert remote and all(c[-1].startswith('"$SHELL" -lc ') for c in remote)
     shells = fake_ssh.shells()
     assert len(shells) == len(remote)
-    assert all(s[1].startswith("module load spectio && spectio ") for s in shells)
+    assert all(s[1].startswith("{ module load spectio && spectio ") for s in shells)
+
+
+def test_first_start_with_compound_remote_cmd_keeps_data_dir(fake_ssh: FakeSsh, home: Path) -> None:
+    """`&&` in remote_cmd must not escape the `[ -d ~/.spectio ] ||` guard (CR-P3T24-01)."""
+    fake_ssh.tool("module", "#!/bin/sh\nexit 0\n")
+    clusters_toml(home, '[cluster]\nremote_cmd = "module load spectio && spectio"\n')
+    (fake_ssh.home / ".spectio").mkdir(mode=0o700)
+    result = spectio_open("cluster")
+    assert result.exit_code == 0, result.output
+    started = [s["argv"] for s in fake_ssh.spectio()]
+    assert ["init"] not in started
+    assert ["serve", "--detach"] in started
+
+
+def test_stale_state_file_named_in_error(fake_ssh: FakeSsh) -> None:
+    """A server.json whose server has stopped is not checked for liveness yet (FU-P3-48): the
+    exit-3 message says the file may be stale (CR-P3T24-02)."""
+    fake_ssh.state(STATE)
+    (fake_ssh.dir / "dead").touch()
+    result = spectio_open("cluster")
+    assert result.exit_code == 3, result.output
+    assert "may be stale" in result.output
+    assert not (fake_ssh.dir / "opened").exists()
 
 
 def test_remote_cmd_flag_beats_clusters_toml(fake_ssh: FakeSsh, home: Path) -> None:
@@ -275,11 +301,11 @@ def test_remote_quoting_two_layers(fake_ssh: FakeSsh) -> None:
     cmd = """SPECTIO_X='it'"'"'s "q" $HOME `x`' spectio"""
     result = spectio_open("cluster", "--remote-cmd", cmd)
     assert result.exit_code == 0, result.output
-    assert all(s[1].startswith(cmd + " ") for s in fake_ssh.shells())
+    assert all(s[1].startswith("{ " + cmd + " ") for s in fake_ssh.shells())
     assert {s["x"] for s in fake_ssh.spectio()} == {"""it's "q" $HOME `x`"""}
     login = [c for c in fake_ssh.calls() if c[0] != "-N"][-1][-1]
     assert login == '"$SHELL" -lc ' + shlex.quote(
-        cmd + " " + shlex.join(["login", "--print-link", "--json"])
+        "{ " + cmd + " " + shlex.join(["login", "--print-link", "--json"]) + "; }"
     )
 
 
