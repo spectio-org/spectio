@@ -3,7 +3,7 @@
 `check_engine` runs the engine's version command through the login shell, as the head script
 will run the engine, and refuses one that is missing or older than the floor (architecture
 §13.4; Review Focus 4). The bridges come from `bridge_dir()`: `$SPECTIO_BRIDGES_DIR` (the Task 6
-and Task 7 build output, in a checkout) or the wheel's `spectio/bridges` (Task 21).
+and Task 7 build output, in a checkout) or the wheel's `spectio/_bridges` (Task 21).
 """
 
 import os
@@ -82,7 +82,7 @@ def check_engine(engine: str, cmd: str | None = None) -> EngineInfo:
 
 def bridge_dir() -> Path:
     given = os.environ.get("SPECTIO_BRIDGES_DIR")
-    return Path(given) if given else Path(str(files("spectio") / "bridges"))
+    return Path(given) if given else Path(str(files("spectio") / "_bridges"))
 
 
 class BridgeMissing(FileNotFoundError):

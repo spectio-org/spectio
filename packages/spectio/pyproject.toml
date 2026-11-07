@@ -18,5 +18,15 @@ spectio = "spectio.cli.main:app"
 spectio-sdk = { workspace = true }
 
 [build-system]
-requires = ["uv_build==0.11.32"]  # = UV_VERSION in dev/versions.env
-build-backend = "uv_build"
+# hatchling, for the build hook that adds both engine bridges (spectio/_bridges): P1 Task 21, architecture §7.3.
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spectio"]
+
+# Only these in the sdist (hatchling adds pyproject.toml and PKG-INFO), never an untracked local file.
+[tool.hatch.build.targets.sdist]
+only-include = ["src", "hatch_build.py"]
+
+[tool.hatch.build.hooks.custom]  # hatch_build.py
