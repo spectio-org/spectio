@@ -22,7 +22,7 @@ from fastapi import APIRouter, Query, Request
 from sqlalchemy import Connection, Row, Select, and_, func, select
 
 from spectio.config import Settings
-from spectio.runner.local import _boot_id
+from spectio.runner.local import checkable
 from spectio.runner.rundir import RUN_ID
 from spectio_server.api import models
 from spectio_server.api.problems import Invalid, not_found
@@ -131,13 +131,13 @@ def run_json(row: Row[Any], profiles: list[str], stage_mode: str | None = None) 
     total = row.tasks_expected if row.tasks_expected is not None else sum(counts.values())
     head = None
     if row.origin == "cli-observed" and row.head_host is not None:
-        # its pointer's head (P1 Task 25): checked only on the server's boot (architecture §13.8)
+        # its pointer's head (P1 Task 25): checked only on the server's host and boot (§13.8)
         head = {
             "session": None,
             "node": row.head_host,
             "alive": row.exited_at is None,
             "exit_code": row.exit_code,
-            "checked": row.host_boot_id == _boot_id(),
+            "checked": checkable(row.head_host, row.host_boot_id),
         }
     elif row.head_native_id is not None:  # the head started
         head = {

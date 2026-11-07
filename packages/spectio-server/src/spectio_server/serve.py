@@ -18,7 +18,7 @@ The start, in order, each refusal a `ServeError` (exit 2) before anything is lef
 
 Heads start with the local launcher on a local environment and with the tmux launcher on a
 SLURM one (P1 Task 10), in a tmux session per run on this login node. On a SLURM environment the
-API is not served until sign-in is complete (P1 Task 16, inbox #86).
+API is not served: the host is shared (`NO_API`, inbox #109 rule 5).
 
 Each start writes a new server key next to the database (`auth.secrets`, P1 Task 12) and prints
 a first token link; `spectio login --print-link` asks for another one.
@@ -49,7 +49,7 @@ from spectio.runner.local import LocalLauncher
 from spectio.runner.loop import RunnerLoop
 from spectio.runner.rundir import open_private, private_dir, read_small
 from spectio.runner.tmux import TmuxLauncher
-from spectio_server.app import create_app
+from spectio_server.app import NO_API, create_app
 from spectio_server.auth.routes import NO_PASTE, link_url
 from spectio_server.auth.secrets import ServerKey
 from spectio_server.bootstrap import ensure_tenancy
@@ -120,7 +120,7 @@ def start_text(settings: Settings, node: str, user: str, no_api: str | None, lin
             f"2. Then open this link {once}",
             f"   {link}",
             f"Each run's head runs in a tmux session on {node}: tmux attach -t spectio-<run ID>.",
-            "The API is served in local mode only until sign-in is complete (P1 Tasks 13 to 16).",
+            NO_API,
         ]
     lines += ["New link at any time: spectio login --print-link", NO_PASTE]
     return "\n".join(lines)

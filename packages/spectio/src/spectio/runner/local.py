@@ -48,6 +48,12 @@ def _boot_id() -> str:
     return Path("/proc/sys/kernel/random/boot_id").read_text().strip()
 
 
+def checkable(host: str, boot_id: str) -> bool:
+    """True when a head on `host` and `boot_id` can be checked here: this host and this boot,
+    both. The runner's PID check and the API's `head.checked` use it (CR-P3T25-05)."""
+    return host == socket.gethostname() and boot_id == _boot_id()
+
+
 def _stat(pid: int) -> list[str] | None:
     """The fields of `/proc/<pid>/stat` after the command name, or None (no such process)."""
     try:

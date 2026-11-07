@@ -249,24 +249,28 @@ def test_terminal_run_head(authed_client: TestClient, writer: Writer, settings: 
     launch_id = add_run(writer, settings, rid(2), "t", "running", origin="cli-observed")
     boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
 
-    def head_of(boot_id: str) -> Any:
+    here = socket.gethostname()
+
+    def head_of(host: str, boot_id: str) -> Any:
         writer.submit(
             lambda c: c.execute(
                 update(launches)
                 .where(launches.c.id == launch_id)
-                .values(head_host="login7", host_boot_id=boot_id, pid=42, pid_start_time="9")
+                .values(head_host=host, host_boot_id=boot_id, pid=42, pid_start_time="9")
             )
         ).result()
         return authed_client.get(f"{RUNS}/{rid(2)}").json()["head"]
 
-    assert head_of(boot) == {
+    assert head_of(here, boot) == {
         "session": None,
-        "node": "login7",
+        "node": here,
         "alive": True,
         "exit_code": None,
         "checked": True,
     }
-    assert head_of("00000000-0000-4000-8000-000000000000")["checked"] is False
+    assert head_of(here, "00000000-0000-4000-8000-000000000000")["checked"] is False
+    # the same kernel, another host name (a container): the runner never checks it either
+    assert head_of("login7", boot)["checked"] is False
 
 
 def test_run_unknown_404(authed_client: TestClient) -> None:

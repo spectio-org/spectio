@@ -566,6 +566,8 @@ def test_terminal_snakemake_run_no_progress_fails(
     ticks(loop)
     row = run_row(store, RUN_A)
     assert row.state == "failed" and row.failure["class"] == "engine_fault"
+    message = row.failure["message"]
+    assert "no progress record" in message and "None" not in message  # CR-P3T25-06
 
 
 def test_terminal_run_same_boot_head_alive_stays_running(
@@ -736,3 +738,57 @@ def test_stuck_launch_dir_never_holds_the_boot(
         assert booted.rebuilt.added == 1
     finally:
         booted.close()
+
+
+def stuck_loop(
+    store: tuple[Engine, Writer], runs_root: Path, home: Path, end_grace_s: float = 0
+) -> RunnerLoop:
+    """A loop with the server's observed pool: 4 threads, no backlog (serve.boot)."""
+    return RunnerLoop(
+        StoreSink(store[1], runs_root),
+        Launcher(),
+        Settings(runs_root=runs_root, executor="local"),
+        end_grace_s=end_grace_s,
+        home=home,
+        files=FilePool(backlog=0),
+        files_timeout_s=0.2,
+    )
+
+
+def test_stuck_launch_dir_holds_one_reader(
+    tmp_home: Path,
+    runs_root: Path,
+    project: Path,
+    store: tuple[Engine, Writer],
+    stuck: threading.Event,
+) -> None:
+    """A stuck launch directory holds one file reader, not one per tick (CR-P3T25-03): after
+    many ticks, a new pointer is still found and another terminal run's spool still read."""
+    write_pointer(tmp_home, pointer(RUN_A, project, boot_id=OTHER_BOOT))
+    loop = stuck_loop(store, runs_root, tmp_home)
+    ticks(loop, 6)
+    other = tmp_home.parent / "other"
+    other.mkdir()
+    write_pointer(tmp_home, pointer(RUN_B, other, boot_id=OTHER_BOOT))
+    write_spool(other, RUN_B, fixture_lines(RUN_B))
+    ticks(loop, 3)
+    assert run_row(store, RUN_B).state == "succeeded"
+    assert run_row(store, RUN_A).state == "queued"
+
+
+def test_stuck_launch_dir_end_grace_waits(
+    tmp_home: Path,
+    runs_root: Path,
+    project: Path,
+    store: tuple[Engine, Writer],
+    stuck: threading.Event,
+) -> None:
+    """A terminal run whose head is gone while its spool does not answer is not ended: its end
+    grace starts again at each stalled read, as its last events are still unread."""
+    write_pointer(tmp_home, pointer(RUN_A, project, pid_start_time="1"))  # this boot: gone
+    loop = stuck_loop(store, runs_root, tmp_home, end_grace_s=0.3)
+    deadline = time.monotonic() + 1
+    while time.monotonic() < deadline:
+        loop.tick()
+        time.sleep(0.05)
+    assert run_row(store, RUN_A).state not in ("failed", "succeeded")

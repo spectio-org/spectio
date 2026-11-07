@@ -13,7 +13,6 @@ import logging
 import os
 import re
 import shlex
-import socket
 import threading
 import time
 from collections import Counter
@@ -28,7 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from spectio.config import Settings
 from spectio.runner.engines import EngineError, check_engine
-from spectio.runner.local import _boot_id, same_process
+from spectio.runner.local import checkable, same_process
 from spectio.runner.observed import check_observed_launch_dir, end_pointer, scan_observed
 from spectio.runner.resume import clear_stale_lock, prove
 from spectio.runner.rundir import (
@@ -134,6 +133,7 @@ class RunnerLoop:
         # directory is project storage, which can stop answering (SEC-P3T25-01)
         self.files = files
         self.files_timeout_s = files_timeout_s
+        self._busy: set[str] = set()  # jobs still in the pool: a launch ID, or "scan"
         self._pointers: set[str] = set()  # run IDs whose pointer was read or refused
         self._pointers_mtime: int | None = None
         self._observed_refused = False  # a loose `observed/` already warned of
@@ -371,9 +371,30 @@ class RunnerLoop:
         self._last[ref.launch_id] = report
         self.sink.head_report(ref.launch_id, report)
 
-    def _fs(self, fn: Callable[[], T]) -> T:
-        """`fn()` in the file pool with its timeout when there is one; raises `Stalled`."""
-        return fn() if self.files is None else self.files.run(fn, self.files_timeout_s)
+    def _fs(self, key: str, fn: Callable[[], T]) -> T:
+        """`fn()` in the file pool with its timeout when there is one; raises `Stalled`. A job
+        of `key` still in the pool is waited for, never sent again: a stuck launch directory
+        holds one thread, not one per tick (CR-P3T25-03)."""
+        if self.files is None:
+            return fn()
+        if key in self._busy:
+            raise Stalled("the file system has not answered the last read yet")
+        started = threading.Event()
+
+        def job() -> T:
+            started.set()
+            try:
+                return fn()
+            finally:
+                self._busy.discard(key)
+
+        self._busy.add(key)
+        try:
+            return self.files.run(job, self.files_timeout_s)
+        except Stalled:
+            if not started.is_set():  # refused, or cancelled before it ran
+                self._busy.discard(key)
+            raise
 
     def _read(self, ref: LaunchRef) -> None:
         cursor = self.sink.cursor(ref.launch_id)
@@ -381,10 +402,11 @@ class RunnerLoop:
             batch = self._spool(ref, cursor)
         else:  # project storage: bounded, and a stuck one is skipped and counted
             try:
-                batch = self._fs(partial(self._spool, ref, cursor))
+                batch = self._fs(ref.launch_id, partial(self._spool, ref, cursor))
             except Stalled as exc:
                 log.warning("spool of %s not read: %s", ref.run_id, exc)
                 batch = SpoolBatch([], dict(cursor), Counter({SPOOL_STALLED: 1}))
+                self._ended_at.pop(ref.launch_id, None)  # its last events are still unread
         if batch.drops[SPOOL_REFUSED]:
             if ref.launch_id in self._refused:
                 return  # counted when it was first refused
@@ -426,7 +448,7 @@ class RunnerLoop:
             since_ns=self._pointers_mtime,
         )
         try:
-            scan = self._fs(job)
+            scan = self._fs("scan", job)
         except Stalled as exc:
             log.warning("runs started from a terminal not scanned: %s", exc)
             return
@@ -446,7 +468,7 @@ class RunnerLoop:
         """The PID check, only on the pointer's host and boot; elsewhere the head is not checked
         and only a terminal event ends the run. Nothing is ever signalled."""
         head = ref.terminal
-        if head is None or head.host != socket.gethostname() or head.boot_id != _boot_id():
+        if head is None or not checkable(head.host, head.boot_id):
             return
         alive = same_process(head.pid, head.start)
         report = HeadReport(

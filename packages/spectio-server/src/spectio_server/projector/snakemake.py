@@ -97,16 +97,6 @@ def from_terminal(p: Projection) -> bool:
     return bool(origin == "cli-observed")
 
 
-def _last(p: Projection, type_: str) -> Any:
-    """The payload of the run's last event of `type_`, or None."""
-    return p.conn.execute(
-        select(events.c.payload)
-        .where(events.c.run_id == p.run_id, events.c.type == type_)
-        .order_by(events.c.seq.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-
-
 def _end_time(p: Projection) -> None:
     """The engine's last record is its end; the clock only when it wrote none (inbox #79)."""
     p.event_time = p.conn.execute(
@@ -164,7 +154,11 @@ def spool_end(p: Projection) -> None:
     if total is not None and done == total and failed is None and error is None:
         p.move("succeeded")
         return
-    said = (error or {}).get("msg") or f"its last progress: {done} of {total} jobs"
+    said = (error or {}).get("msg") or (
+        f"its last progress: {done} of {total} jobs"
+        if last is not None
+        else "it holds no progress record"
+    )
     message = (
         "Started from a terminal: Snakemake sends no end event and its exit code is not known, "
         f"so this end is assumed from its spool ({said})."
@@ -301,7 +295,13 @@ def _last_attempt(p: Projection, task_id: str) -> Any:
 def _failure(p: Projection, exit_code: int) -> dict[str, Any]:
     """`tool_error` when the launch's last failed job is its task's last attempt, else
     `engine_fault`; the message is the last `error` record's text (already hidden, §14.1)."""
-    message = (_last(p, ERROR_EVENT) or {}).get("msg") or f"snakemake exited with code {exit_code}"
+    payload = p.conn.execute(
+        select(events.c.payload)
+        .where(events.c.run_id == p.run_id, events.c.type == ERROR_EVENT)
+        .order_by(events.c.seq.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    message = (payload or {}).get("msg") or f"snakemake exited with code {exit_code}"
     culprit = p.conn.execute(
         select(attempts.c.id, attempts.c.task_id, attempts.c.n)
         .join(launches, launches.c.culprit_attempt_id == attempts.c.id)
