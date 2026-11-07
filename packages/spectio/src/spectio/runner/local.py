@@ -96,11 +96,7 @@ def read_head_exit(launch_dir: Path) -> int | None:
 
 def alive(head: HeadPid) -> bool:
     """The PID check: this host, this boot, and the same process and group still live."""
-    return (
-        head.host == socket.gethostname()
-        and head.boot_id == _boot_id()
-        and _process(head.pid) == (head.pgid, head.start)
-    )
+    return checkable(head.host, head.boot_id) and _process(head.pid) == (head.pgid, head.start)
 
 
 def same_process(pid: int, start: str) -> bool:

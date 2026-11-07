@@ -91,11 +91,10 @@ def rebuild_index(
     max_runs: int = MAX_RUNS,
     max_bytes: int = MAX_BYTES,
     files: FilePool | None = None,
-    timeout_s: float = READ_TIMEOUT_S,
 ) -> Rebuilt:
     """Add the run directories under `runs_root` that the index lacks, oldest first, then the
     runs of the pointers under `home` (when given) that it lacks. The pointer pass runs in
-    `files` when given, bounded by `timeout_s`; a stuck one is skipped and counted, and the
+    `files` when given, bounded by `READ_TIMEOUT_S`; a stuck one is skipped and counted, and the
     next boot or the runner's scan reads it (SEC-P3T25-01)."""
     known = writer.submit(lambda conn: set(conn.execute(select(runs.c.id)).scalars())).result()
     with private_dir(runs_root) as fd:
@@ -131,7 +130,7 @@ def rebuild_index(
                 scan_observed, home, runs_root, set(known), max(max_runs - added, 0), ended=ended
             )
             try:
-                scan = job() if files is None else files.run(job, timeout_s)
+                scan = job() if files is None else files.run(job, READ_TIMEOUT_S)
             except Stalled as exc:
                 log.warning("pointers not read at boot: %s", exc)
                 skipped += 1
