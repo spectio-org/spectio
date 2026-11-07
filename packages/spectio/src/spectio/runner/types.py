@@ -154,7 +154,8 @@ class RunnerSink(Protocol):
 
 
 class Launcher(Protocol):
-    """Starts and watches heads (schedulers §3.1.1): `LocalLauncher` here, tmux in Task 10."""
+    """Starts and watches heads (schedulers §3.1.1): `LocalLauncher`, and `TmuxLauncher` on a
+    SLURM login node (P1 Task 10)."""
 
     def submit(self, spec: LaunchSpec) -> str: ...
     def poll(self, ids: list[str]) -> dict[str, HeadReport]: ...
