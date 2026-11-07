@@ -32,6 +32,10 @@ MAX_EVENT_DEPTH = 32  # nesting of `data`, which is depth 1
 SPOOL_FILE_NAME = re.compile(
     r"(nf-spectio|snakemake-logger-spectio)-([1-9][0-9]{0,18})-(?!0000)[0-9]{4}\.jsonl"
 )
+# A run started from a terminal (architecture §13.8): `<run ID>-<producer>-<nnnn>.jsonl`, launch 1.
+TERMINAL_SPOOL_FILE_NAME = re.compile(
+    r"(run_[0-7][0-9A-HJKMNP-TV-Z]{25})-(nf-spectio|snakemake-logger-spectio)-(?!0000)[0-9]{4}\.jsonl"
+)
 
 MAX_MESSAGE_CHARS = 4096  # error texts are cut here
 

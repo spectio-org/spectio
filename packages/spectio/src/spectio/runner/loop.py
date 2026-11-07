@@ -19,12 +19,16 @@ from collections import Counter
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
+from typing import TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from spectio.config import Settings
 from spectio.runner.engines import EngineError, check_engine
+from spectio.runner.local import checkable, same_process
+from spectio.runner.observed import check_observed_launch_dir, end_pointer, scan_observed
 from spectio.runner.resume import clear_stale_lock, prove
 from spectio.runner.rundir import (
     RUN_ID,
@@ -35,10 +39,11 @@ from spectio.runner.rundir import (
     run_paths,
     write_file,
 )
-from spectio.runner.spool import SPOOL_REFUSED, try_read_spool
+from spectio.runner.spool import SPOOL_REFUSED, SPOOL_STALLED, try_read_spool
 from spectio.runner.types import (
     Command,
     Failure,
+    FileRunner,
     HeadReport,
     Launcher,
     LaunchRef,
@@ -46,6 +51,7 @@ from spectio.runner.types import (
     ResumeSource,
     RunnerSink,
     SpoolBatch,
+    Stalled,
 )
 
 log = logging.getLogger(__name__)
@@ -59,6 +65,7 @@ OWNER = "launch"
 HEAD_FILES = ("head.pid", "head.exit", CANCEL, LAUNCH_FAILED)
 _OWNER_LINE = re.compile(r"([1-9][0-9]{0,8})\n")
 LAUNCH_CLASSES = frozenset({"launch_error", "engine_missing", "engine_version"})
+T = TypeVar("T")
 
 
 class ResumePayload(BaseModel):
@@ -110,12 +117,27 @@ class RunnerLoop:
         settings: Settings,
         tick_s: float = 2,
         end_grace_s: float = 60,
+        home: Path | None = None,
+        observe_cap: int = 100,
+        files: FileRunner | None = None,
+        files_timeout_s: float = 5.0,
     ) -> None:
         self.sink = sink
         self.launcher = launcher
         self.settings = settings
         self.tick_s = tick_s
         self.end_grace_s = end_grace_s  # how long an ended head waits for its spool
+        self.home = home  # `~/.spectio/observed/` is scanned when set (architecture §13.8)
+        self.observe_cap = observe_cap  # pointers read per scan (req. 12)
+        # where the file-system work of runs from a terminal runs, bounded: their launch
+        # directory is project storage, which can stop answering (SEC-P3T25-01)
+        self.files = files
+        self.files_timeout_s = files_timeout_s
+        self._busy: set[str] = set()  # jobs still in the pool: a launch ID, or "scan"
+        self._pointers: set[str] = set()  # run IDs whose pointer was read or refused
+        self._pointers_mtime: int | None = None
+        self._observed_refused = False  # a loose `observed/` already warned of
+        self._terminal: set[str] = set()  # the active runs started from a terminal
         self._known: set[str] = set()  # launches the launcher started or adopted
         self._refused: set[str] = set()  # launches whose refused spool is already counted
         self._unadopted: set[str] = set()  # launches whose refused adopt is already logged
@@ -131,6 +153,11 @@ class RunnerLoop:
             stop.wait(self.tick_s)
 
     def tick(self) -> None:
+        if self.home is not None:
+            try:
+                self._observe(self.home)
+            except Exception:
+                log.exception("runs started from a terminal not scanned")
         for ref in self.sink.active_launches():
             if ref.native_id and ref.launch_id not in self._known:
                 self._try_adopt(ref)  # after a restart
@@ -139,6 +166,9 @@ class RunnerLoop:
         launches = self.sink.active_launches()
         for ref in launches:
             self._each(self._read, ref)
+            if ref.terminal is not None:
+                self._each(self._watch_terminal, ref)
+        self._end_pointers({r.run_id for r in launches if r.terminal is not None})
         watched = {r.native_id: r for r in launches if r.native_id and r.launch_id in self._known}
         try:
             polled = self.launcher.poll(list(watched))
@@ -181,6 +211,9 @@ class RunnerLoop:
 
     def _command(self, command: Command) -> None:
         try:
+            if command.launch.terminal is not None:  # never a launcher call (req. 12)
+                self.sink.ack(command.id, False, "a run started from a terminal is monitor only")
+                return
             if command.kind == "launch":
                 detail = self._launch(command)
             elif command.kind == "cancel":
@@ -338,15 +371,44 @@ class RunnerLoop:
         self._last[ref.launch_id] = report
         self.sink.head_report(ref.launch_id, report)
 
+    def _fs(self, key: str, fn: Callable[[], T]) -> T:
+        """`fn()` in the file pool with its timeout when there is one; raises `Stalled`. A job
+        of `key` still in the pool is not sent again (`Stalled` at once): a stuck launch
+        directory holds one thread, not one per tick (CR-P3T25-03). The one-shot `claim` lets
+        exactly one side, the job or the caller that gave up, take the key off (CR-P3T25-r3-01)."""
+        if self.files is None:
+            return fn()
+        if key in self._busy:
+            raise Stalled("the file system has not answered the last read yet")
+        claim = threading.Lock()
+
+        def job() -> T:
+            if not claim.acquire(blocking=False):
+                raise Stalled("the caller gave up before this job ran")
+            try:
+                return fn()
+            finally:
+                self._busy.discard(key)
+
+        self._busy.add(key)
+        try:
+            return self.files.run(job, self.files_timeout_s)
+        except BaseException:  # also a pool that cannot start a thread (SEC-P3T25-r3-02)
+            if claim.acquire(blocking=False):  # it never ran, and now never will
+                self._busy.discard(key)
+            raise
+
     def _read(self, ref: LaunchRef) -> None:
         cursor = self.sink.cursor(ref.launch_id)
-        try:
-            check_launch_dir(self.settings.runs_root, ref.run_id, ref.launch_dir)
-        except (OSError, ValueError) as exc:
-            log.debug("launch directory of %s refused: %r", ref.run_id, exc)
-            batch = SpoolBatch([], dict(cursor), Counter({SPOOL_REFUSED: 1}))
-        else:
-            batch = try_read_spool(ref.launch_dir, ref.run_id, ref.launch_n, cursor)
+        if ref.terminal is None:
+            batch = self._spool(ref, cursor)
+        else:  # project storage: bounded, and a stuck one is skipped and counted
+            try:
+                batch = self._fs(ref.launch_id, partial(self._spool, ref, cursor))
+            except Stalled as exc:
+                log.warning("spool of %s not read: %s", ref.run_id, exc)
+                batch = SpoolBatch([], dict(cursor), Counter({SPOOL_STALLED: 1}))
+                self._ended_at.pop(ref.launch_id, None)  # its last events are still unread
         if batch.drops[SPOOL_REFUSED]:
             if ref.launch_id in self._refused:
                 return  # counted when it was first refused
@@ -360,6 +422,72 @@ class RunnerLoop:
             self._refused.discard(ref.launch_id)
         if batch.events or +batch.drops or batch.cursor != cursor:
             self.sink.ingest(ref.launch_id, batch)
+
+    def _spool(self, ref: LaunchRef, cursor: dict[str, int]) -> SpoolBatch:
+        """Check the launch directory, then read its spool: a whole file-system job."""
+        observed = ref.terminal is not None
+        try:
+            if observed:  # its pointer's launch directory, never one in the runs root
+                check_observed_launch_dir(self.settings.runs_root, str(ref.launch_dir))
+            else:
+                check_launch_dir(self.settings.runs_root, ref.run_id, ref.launch_dir)
+        except (OSError, ValueError) as exc:
+            log.debug("launch directory of %s refused: %r", ref.run_id, exc)
+            return SpoolBatch([], dict(cursor), Counter({SPOOL_REFUSED: 1}))
+        return try_read_spool(ref.launch_dir, ref.run_id, ref.launch_n, cursor, observed=observed)
+
+    # --- Runs started from a terminal (architecture §13.8, req. 12) ----------------------------
+
+    def _observe(self, home: Path) -> None:
+        """Scan `~/.spectio/observed/` when its mtime changed, and add each new run. The scan
+        is bounded: a stuck one is logged and tried again at the next tick (SEC-P3T25-01)."""
+        job = partial(
+            scan_observed,
+            home,
+            self.settings.runs_root,
+            set(self._pointers),  # a copy: a stalled scan goes on in its thread
+            self.observe_cap,
+            since_ns=self._pointers_mtime,
+        )
+        try:
+            scan = self._fs("scan", job)
+        except Stalled as exc:
+            log.warning("runs started from a terminal not scanned: %s", exc)
+            return
+        self._pointers_mtime = scan.mtime_ns
+        self._pointers |= scan.seen
+        refused = bool(scan.skipped.pop("observed_refused", 0))
+        if refused and not self._observed_refused:
+            log.warning("%s/.spectio/observed is not a private directory: not read", home)
+        self._observed_refused = refused
+        if +scan.skipped:
+            log.warning("pointers skipped: %s", dict(scan.skipped))
+        for run in scan.runs:
+            if self.sink.add_observed(run):
+                end_pointer(home, run.run_id)  # it ended while its pointer stayed
+
+    def _watch_terminal(self, ref: LaunchRef) -> None:
+        """The PID check, only on the pointer's host and boot; elsewhere the head is not checked
+        and only a terminal event ends the run. Nothing is ever signalled."""
+        head = ref.terminal
+        if head is None or not checkable(head.host, head.boot_id):
+            return
+        alive = same_process(head.pid, head.start)
+        report = HeadReport(
+            "running" if alive else "exited", None, head.host, None, not alive, None
+        )
+        self._report(ref, report)
+
+    def _end_pointers(self, active: set[str]) -> None:
+        """Move the pointer of each run started from a terminal that is no longer active."""
+        ended, self._terminal = self._terminal - active, active
+        if self.home is None:
+            return
+        for run_id in ended:
+            try:
+                end_pointer(self.home, run_id)
+            except (OSError, ValueError):
+                log.exception("pointer of %s not moved to ended/", run_id)
 
 
 def _claim(dir_fd: int, launch_n: int) -> int:

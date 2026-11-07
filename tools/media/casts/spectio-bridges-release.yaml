@@ -1,0 +1,27 @@
+# Batch P3-B03, P3 Task 26: the release dry run of both engine bridges, run for real. It builds
+# nf-spectio-0.0.1.zip with the pinned Gradle wrapper and checks its manifest, builds the Snakemake
+# logger with `uv build`, loads each into its engine and runs the synthetic `happy` pipeline.
+# Nothing is uploaded: the script refuses to start with a registry key or a PyPI token in its
+# environment. Needs Java, Nextflow, uv and network (Maven repositories; the first attempt of the
+# batch failed on 429 and 403 from them, the second passed: FU-P3-51 lists the offline check).
+#   python3 tools/media/cast.py tools/media/casts/spectio-bridges-release.yaml
+title: "P3 Task 26: release packages of both bridges, dry run only (real builds, nothing published)"
+cols: 120
+rows: 24
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: tmp
+env:
+  REPO: "{repo}"
+replace:
+  "{repo}": "<repo>"
+steps:
+  - comment: "a registry key or a PyPI token in the environment stops the dry run before it builds anything"
+  - run: "(cd $REPO && NPR_API_KEY=demo bash tests/packaging/test_bridges_release.sh 2>&1 | tail -n 3)"
+    expect_exit: 1
+  - pause: 1.5
+  - comment: "the dry run: both packages built from the tracked files, loaded into their engine, synthetic happy"
+  - run: "(cd $REPO && bash tests/packaging/test_bridges_release.sh 2>&1)"
+    expect_exit: 0
+  - pause: 2.5

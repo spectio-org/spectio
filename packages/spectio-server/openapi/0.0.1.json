@@ -188,10 +188,14 @@
         "type": "object"
       },
       "Head": {
-        "description": "The last launch's head; `session` is null for a run started from a terminal.",
+        "description": "The last launch's head; `session` is null for a run started from a terminal, whose head\nis `checked` only when its pointer's boot ID is the server's (architecture \u00a713.8).",
         "properties": {
           "alive": {
             "title": "Alive",
+            "type": "boolean"
+          },
+          "checked": {
+            "title": "Checked",
             "type": "boolean"
           },
           "exit_code": {
@@ -225,7 +229,8 @@
           "session",
           "node",
           "alive",
-          "exit_code"
+          "exit_code",
+          "checked"
         ],
         "title": "Head",
         "type": "object"

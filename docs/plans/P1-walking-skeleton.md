@@ -93,6 +93,7 @@ The five inputs most likely to hurt a test user that no other test covers. Each 
 | M6 · Runs from a terminal | 25–26 | a run started by hand with the bridge enabled shows in the runs list, monitor only; both bridges build as release packages, dry-run only |
 | M7 · Stages | 27 | the run detail shows named stages, declared or detected, above the processes or rules list, on the four example pipelines |
 | M8 · Job files and run tools | 28–32 | each job's files and work directory, the failure summary with the SLURM state, resources per job, Resume and the copy actions, results and reports in a sandbox |
+| M9 · DAG, temp outputs and efficiency | 33–35 | process and rule states for checkpoints and rules or processes that do not run, temporary outputs in the job files, the SLURM request and efficiency per job and per process or rule (added 2026-11-07) |
 
 Commands assume the repository root, and that the uv workspace exists (after Task 1).
 
@@ -944,6 +945,8 @@ def test_guide_pins_bridge_versions(): ...                   # every install lin
 
 ### Task 27: Stages, declared or detected, above the processes or rules list
 
+*Note 2026-11-07:* the process and rule states of checkpoints and of rules or processes that do not run extend this task in Task 34 (server) and Task 35 (screens).
+
 **Spec:** [ui-spec §5.1 and §5.1.1](../specs/ui-spec.md) (sources, detection rules, order and state), [checking-scenarios §12.1](../specs/checking-scenarios.md) (`stages[]`, what `match` sees) and §12.3 (overlaps), [api §7](../specs/api-and-data-model.md) (`run_stages`, `tasks.stage_id`, `summary.stage_mode`; when detected stages freeze), [api §5](../specs/api-and-data-model.md) (`GET /runs/{id}/stages`); evidence: [stage-detection spike](../research/spike-stage-detection-2026-10-28.md) · **Depends on:** 4, 5, 18, 20, 25 · **Added 2026-10-28 (Thomas, [log](../decisions/log.md#2026-10-28-001-shows-stages-declared-or-detected-and-the-processes-or-rules-list))**
 
 **Files:**
@@ -990,6 +993,8 @@ def test_stages_route(authed_client, replayed): ...  # Task 18's GET /api/v1/run
 *Added 2026-10-28 (Thomas: "Je veux également que ça soit possible de voir les logs globaux et les lots et stout err log sh et autres de chaque job si possible via workdir", then "les 5 dans 0.0.1"; [log](../decisions/log.md#2026-10-28-001-shows-each-jobs-files-and-gains-resume-failure-summary-results-copy-and-resources)).* Each job's files and the work directory (Task 28), the failure summary and resources per job (Task 29), Resume and the copy actions (Task 30), results and reports (Task 31), and their screens (Task 32). Specs: [architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine) (files, failure reason, resources), [api §5 and §5.1](../specs/api-and-data-model.md) (notes 2026-10-28), [ui-spec §4.4](../specs/ui-spec.md#44-run-detail) (note 2026-10-28, run tools), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 13 to 16. *(assumed — pending Thomas, inbox #70)*
 
 ### Task 28: Each job's files and the work directory
+
+*Note 2026-11-07:* the Outputs list (temporary and protected outputs) and the `cleanup` line extend this task in Tasks 33 to 35.
 
 **Spec:** [architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine), [api §5](../specs/api-and-data-model.md) (note 2026-10-28, Job files), [checking-scenarios §11.1](../specs/checking-scenarios.md) (confinement), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 13 · **Depends on:** 4, 5, 6, 7, 9, 18
 
@@ -1046,6 +1051,8 @@ def test_metrics_enabled(nf_run): ...            # the trace of a finished task 
 - [ ] **Step 5: Commit** `feat(server): each job's files and the work directory`.
 
 ### Task 29: Failure summary and resources per job
+
+*Note 2026-11-07:* the SLURM request, the `sacct` efficiency fields and the per-process aggregate extend this task in Task 34.
 
 **Spec:** [architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine) (failure reason, resources), [api §5](../specs/api-and-data-model.md) (note 2026-10-28, Run and Resources), [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 15 · **Depends on:** 4, 5, 18, 28
 
@@ -1166,6 +1173,8 @@ test("a MultiQC report renders in the viewer and cannot call the API", async ({ 
 
 ### Task 32: The screens: job files, failure summary, results, Resume, copy and resources
 
+*Note 2026-11-07:* the efficiency columns, SLURM facts, By process view, Outputs tab and process states extend these screens in Task 35.
+
 **Spec:** [ui-spec §4.4](../specs/ui-spec.md#44-run-detail) (note 2026-10-28, run tools) · **Depends on:** 20, 28–31 · **Boards:** LiteRunDetail, MLiteRunDetail, LiteRunTasks, MLiteRunTasks, LiteTaskFiles, MLiteTaskFilesSheet, LiteTaskFilesStates, LiteRunLogs, MLiteRunLogs, LiteRunFailed, MLiteRunFailed, LiteRunActions, MLiteResumeSheet, LiteResults, LiteReportViewer, LiteLaunch
 
 **Files:**
@@ -1193,6 +1202,95 @@ test("resources columns show 'near limit' as text", async ({ page }) => { /* …
 - [ ] **Step 4:** both PASS on the desktop and phone projects; render the boards and compare by eye.
 - [ ] **Step 5: Commit** `feat(web): job files, failure summary, results, resume and copy`.
 
+## M9 · DAG, temp outputs and efficiency
+
+Added 2026-11-07 (Thomas, 2026-11-07, "prends en considération checkpoints rule & execution conditionnelle dans snake & nf ; temp files également … je veux voir efficiency + params slurm par job et par rule", [decision log](../decisions/log.md#2026-11-07-checkpoints-conditional-and-skipped-jobs-temp-outputs-and-slurm-efficiency-per-job-and-per-rule-thomas)). Tasks 27 to 32 are built and merged; these three tasks extend them rather than reopen them. Facts and sources: [research note](../research/dag-temp-slurm-efficiency-2026-11-07.md). In 0.0.1 unless a line says **beyond 0.0.1**.
+
+### Task 33: Bridges send DAG updates, temporary outputs and the SLURM request
+
+**Spec:** [api §14.1](../specs/api-and-data-model.md#141-driven-runs-001) (note 2026-11-07), [architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine) (note 2026-11-07) · **Depends on:** 6, 7
+
+**Files:**
+- Modify: `engine-bridges/snakemake-logger-plugin-spectio/snakemake_logger_plugin_spectio/__init__.py` (three new texts, pinned to Snakemake 9.27.1), `engine-bridges/nf-spectio/src/spectio/SpectioPlugin.groovy` (`cleanup` and `clusterOptionsSet` at `onFlowCreate`; the trace's request keys on the pending, submit and start hooks), the server's allow-list models
+- Test: the bridges' tests of Tasks 6 and 7, and `tests/pipelines/` fixtures with a `temp()` output, a `protected()` output and a checkpoint (the T2 checkpoint capture is reused)
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+def test_smk_temp_removed(): ...     # "Removing temporary output a/b.txt." → snakemake.temp_removed {path: "a/b.txt"};
+                                     # "Would remove temporary output …" → stays snakemake.log
+def test_smk_protected(): ...        # "Write-protecting output file r.txt." → snakemake.protected {path}
+def test_smk_dag_updated(): ...      # "Updating checkpoint dependencies." → snakemake.dag_updated {}
+def test_smk_text_unknown(): ...     # a reworded text → snakemake.log with level only
+def test_nf_flow_create_cleanup(): ...   # cleanup = true in config → onFlowCreate.cleanup true; clusterOptions set → flag only
+def test_nf_request_at_submit(): ...     # onTaskSubmit.trace has cpus, memory, time, queue, attempt; no %cpu, no peak_rss
+def test_allow_list_new_keys(): ...      # the server keeps the new keys and drops any other
+```
+
+- [ ] **Step 2:** the bridges' test commands of Tasks 6 and 7: FAIL.
+- [ ] **Step 3:** implement; every pattern is anchored and versioned; `slurm_extra` and `clusterOptions` text are never sent.
+- [ ] **Step 4:** PASS; a local Snakemake run of the checkpoint fixture gives one `dag_updated` and the temp removals once each after dedup.
+- [ ] **Step 5: Commit** `feat(bridges): DAG updates, temporary outputs and the SLURM request`.
+
+### Task 34: Server: process and rule states, outputs, SLURM request and efficiency
+
+**Spec:** [api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1) and §7 (notes 2026-11-07), [schedulers §3.6](../specs/schedulers-and-monitoring.md#36-efficiency-per-job-and-per-process-or-rule), [dev-env §15.3 req. 15](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (note 2026-11-07), [ui-spec §5.2](../specs/ui-spec.md#52-checkpoints-conditional-execution-and-temporary-outputs) (the states) · **Depends on:** 27, 28, 29, 33
+
+**Files:**
+- Create: `packages/spectio-server/src/spectio_server/efficiency.py`, migration `0009`
+- Modify: the projector (`run_output_events`, `attempts.outputs`, `attempts.slurm`, `run_processes.is_checkpoint`, `runs.engine_settings`), `packages/spectio/src/spectio/runner/sacct.py` (the new fields, step rows), the stages code of Task 27 (the `checkpoint <name>:` rule-file line), the read API (`slurm`, `efficiency`, process `status` and aggregate, `outputs`, `lower_bound`, `open_checkpoints`)
+- Test: `packages/spectio-server/tests/test_efficiency.py`, `test_process_status.py`, and `test_sacct.py` of Task 29
+
+- [ ] **Step 1: Write the failing tests**
+
+```python
+def test_status_awaiting_checkpoint(smk_checkpoint_run): ...  # rule of rules.txt, no job, checkpoint open → awaiting_checkpoint
+def test_status_not_needed(smk_run): ...       # rule defined, absent from rulegraph, run_info, job_info → not_needed
+def test_status_up_to_date(smk_run): ...       # in rulegraph, absent from run_info → up_to_date
+def test_status_nf_no_tasks(replayed): ...     # onProcessCreate then onProcessTerminate, no task → no_tasks
+def test_lower_bound(smk_checkpoint_run): ...  # summary.tasks.lower_bound true until the checkpoint job ends
+def test_outputs_temp_removed(smk_run): ...    # job_info outputs + temp_removed → state temp_removed, once despite duplicates
+def test_slurm_request_smk(smk_run): ...       # resources → request; slurm_extra set → custom_options true, no text
+def test_slurm_request_nf(replayed): ...       # trace at submit → request; account null
+def test_eff_sacct(fakebin): ...               # steps summed, MaxRSS max over steps, ReqMem per CPU × NCPUS
+def test_eff_trace_and_benchmark(): ...        # %cpu 400 / cpus 8 → 0.5; benchmark cpu_time 30, s 10, threads 4 → 0.75
+def test_eff_states(fakebin): ...              # running → pending_accounting → available; local → unavailable "local"
+def test_aggregate(replayed_many): ...         # count, measured, mean and max of cpu and mem, requested varies
+def test_req15_eff_fields(fakebin): ...        # new format parsed; "|" in WorkDir kept; 5,000 jobs → at most 50 calls
+```
+
+- [ ] **Step 2:** `uv run pytest packages/spectio-server/tests/test_efficiency.py packages/spectio-server/tests/test_process_status.py packages/spectio/tests/test_sacct.py -v`: FAIL.
+- [ ] **Step 3:** implement.
+- [ ] **Step 4:** PASS; on `slurm-mini` a Snakemake job and a Nextflow job each reach `available` with values from `sacct`, and the step-row WorkDir question of req. 15's note is settled.
+- [ ] **Step 5: Commit** `feat(server): process states, outputs and SLURM efficiency`.
+
+### Task 35: Screens: states, checkpoints, outputs, SLURM and efficiency
+
+**Spec:** [ui-spec §4.4](../specs/ui-spec.md#44-run-detail) (note 2026-11-07), [§5.2](../specs/ui-spec.md#52-checkpoints-conditional-execution-and-temporary-outputs) · **Depends on:** 32, 34 · **Boards:** to be updated first (decision log entry of 2026-11-07, "Boards to update"): LiteRunDetail, LiteRunDetailSnakemake, MLiteRunDetail, LiteRunTasks, MLiteRunTasks, LiteTaskFiles, MLiteTaskFilesSheet, LiteTaskFilesStates, and a new LiteRunEfficiency with its phone board
+
+**Files:**
+- Create: `web/src/runs/ByProcess.tsx`, `web/src/runs/SlurmFacts.tsx`, their tests
+- Modify: `web/src/runs/RunDetailPage.tsx`, `RunHeader.tsx`, `TaskFiles.tsx`, `resources.ts`, `DetailSheet.tsx`, `tests/e2e/skeleton.spec.ts`
+
+- [ ] **Step 1: Write the failing tests**
+
+```ts
+test("a rule waiting for a checkpoint reads 'Waiting for checkpoint <rule>', not Pending", …);
+test("the header reads 'at least n jobs' while a checkpoint is open", …);
+test("a Nextflow process with no task reads 'No task (condition or empty input)'", …);
+test("Outputs tab: a removed temporary output reads 'deleted by Snakemake (temporary)'", …);
+test("SLURM facts show the request, 'Custom sbatch options set' without text, and 'differs from the request'", …);
+test("efficiency reads 'Waiting for SLURM accounting (sacct)' before sacct answers", …);
+test("By process is a tab button; its sort buttons are native buttons; each row names its process", …);
+```
+
+- [ ] **Step 2:** `npm --prefix web test` and the Playwright smoke: FAIL.
+- [ ] **Step 3:** implement; native `<button>` and `<input>` only, per-row accessible names, nothing hover-only (`CLAUDE.md`).
+- [ ] **Step 4:** both PASS on the desktop and phone projects; render the updated boards and compare by eye.
+- [ ] **Step 5: Commit** `feat(web): process states, outputs, SLURM request and efficiency`.
+
+**Beyond 0.0.1** (in Out of scope below, with the reason): live efficiency from `sstat`; the effective partition of a pending job from `squeue`; efficiency plots; the temporary flag of an output before it is deleted; a count of Nextflow tasks filtered by `when:`; processes behind a Groovy `if`.
+
 ---
 
 ## Out of scope
@@ -1216,10 +1314,11 @@ Also not in P1:
 - slurmrestd;
 - the spike sec-single-mode (R10 C6);
 - everything before the 0.0.1 tag (R10 C5–C8).
+- beyond 0.0.1 from M9 (2026-11-07): live efficiency from `sstat` (one more call per running job on the shared accounting daemon; load not measured, **[to be validated]**); the effective partition of a pending task job from `squeue` (task jobs are not polled in 0.0.1, §15.1); efficiency plots (no visualisation in 0.0.1); the temporary flag of an output before deletion (Snakemake does not send it; it would need a dry run or a Snakefile parser); a count of Nextflow tasks filtered by `when:` (Nextflow notifies no observer, so not possible from events); processes behind a Groovy `if` (needs a static read of the script).
 
 ## Done when
 
-- [ ] Tasks 1–32 are merged, each with its tests first and its `review-code` pass (Assumptions, Process).
+- [ ] Tasks 1–35 are merged, each with its tests first and its `review-code` pass (Assumptions, Process).
 - [ ] On `slurm-mini` in CI (`pipelines-slurm.yml`, job `e2e`), through a token-link session, the synthetic Nextflow and Snakemake `happy` runs launch with their heads in tmux on the submitter node, end `succeeded`, and match the golden counts per process (Task 22).
 - [ ] A running run of each engine cancels to `cancelled` with no job left, and a server killed while a Nextflow head runs adopts it on restart, with no duplicate event (Task 23).
 - [ ] Each of §15.3 requirements 1–7 has passing `test_req<N>_*` tests (Tasks 3, 11–16), requirements 8–12 their named tests (Tasks 2, 9–12, 24–26), and requirements 13–16 theirs (Tasks 28–31).
@@ -1231,6 +1330,7 @@ Also not in P1:
 - [ ] Both bridges build as release packages, dry-run only; nothing is published (Task 26).
 - [ ] The run detail shows declared or detected stages above the processes or rules list, and the detectors match their golden output on nf-core/rnaseq, sarek, methylseq and mosaicatcher-pipeline (Task 27).
 - [ ] A failed run shows each job's files, the failure summary with its SLURM state, and resources per job; it resumes as a child run; a MultiQC report opens in its sandbox (Tasks 28–32).
+- [ ] On `slurm-mini`, a Snakemake run with a checkpoint and a `temp()` output shows "at least n jobs" until the checkpoint ends, a rule waiting for it, the temporary output "deleted by Snakemake (temporary)", and each job's SLURM request and `sacct` efficiency; the By rule view aggregates them; a Nextflow process with no task reads "No task" (Tasks 33–35).
 - [ ] `tests/packaging/test_wheel.sh` passes: one installable wheel with the UI and both bridges, and a `spectio` environment under 80 MB (Task 21).
 - [ ] Tier 0 is green on every package: ruff, mypy (`--strict` on `spectio-sdk`), `lint-imports`.
 - [ ] api §14 (driven runs) is written, and every spec the code contradicted is updated with a log entry; `python3 tools/docs/check.py` passes.

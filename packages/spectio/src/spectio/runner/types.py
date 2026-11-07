@@ -1,12 +1,13 @@
 """What the runner hands to the server; the runner never imports the server (architecture §6)."""
 
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, TypeVar
 
 from spectio.config import SlurmOpts
+from spectio.runner.observed import ObservedRun
 from spectio_sdk.events import SpoolEvent
 
 
@@ -118,9 +119,21 @@ class LaunchSpec:
 
 
 @dataclass(frozen=True)
+class TerminalHead:
+    """The head of a run started from a terminal, from its pointer (architecture §13.8): the
+    PID check only, on its host and boot; no launcher ever sees it (req. 12, No signal)."""
+
+    host: str
+    pid: int
+    start: str
+    boot_id: str
+
+
+@dataclass(frozen=True)
 class LaunchRef:
     """A launch the runner watches: a `launches` row (api §7). `native_id` is the head's id as
-    the launcher gave it, None until the head is started."""
+    the launcher gave it, None until the head is started. `terminal` is set for a run started
+    from a terminal (`cli-observed`), whose `launch_dir` is its pointer's, and `native_id` None."""
 
     launch_id: str
     run_id: str
@@ -128,6 +141,7 @@ class LaunchRef:
     engine: Engine
     launch_dir: Path
     native_id: str | None = None
+    terminal: TerminalHead | None = None
 
 
 @dataclass(frozen=True)
@@ -151,6 +165,24 @@ class RunnerSink(Protocol):
     def cursor(self, launch_id: str) -> dict[str, int]: ...
     def ingest(self, launch_id: str, batch: SpoolBatch) -> None: ...
     def head_report(self, launch_id: str, report: HeadReport) -> None: ...
+    def add_observed(self, run: ObservedRun) -> bool:
+        """Add a run started from a terminal, unless the index has it; True when the index
+        holds it as an ended `cli-observed` run (its pointer then moves to `ended/`)."""
+        ...
+
+
+T = TypeVar("T")
+
+
+class Stalled(Exception):
+    """The file system did not answer in time, or every file reader is waiting."""
+
+
+class FileRunner(Protocol):
+    """Runs a whole file-system job with a timeout: the server's `FilePool`. Raises `Stalled`
+    when it does not answer in time (SEC-P3T25-01)."""
+
+    def run(self, fn: Callable[[], T], timeout_s: float) -> T: ...
 
 
 class Launcher(Protocol):

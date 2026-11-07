@@ -21,6 +21,7 @@ from spectio.config import EngineOpts, Settings
 from spectio.runner import loop as loop_mod
 from spectio.runner.local import LocalLauncher
 from spectio.runner.loop import RunnerLoop
+from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import (
     RunManifest,
     make_run_dirs,
@@ -388,6 +389,9 @@ class FakeSink:
 
     def cursor(self, launch_id: str) -> dict[str, int]:
         return self.cursors.get(launch_id, {})
+
+    def add_observed(self, run: ObservedRun) -> bool:
+        return False
 
     def ingest(self, launch_id: str, batch: SpoolBatch) -> None:
         self.batches.append((launch_id, batch))

@@ -19,15 +19,13 @@ from concurrent.futures import Future
 from concurrent.futures import TimeoutError as FutureTimeout
 from typing import Any, TypeVar
 
+from spectio.runner.types import Stalled as Stalled  # one class: the runner catches it too
+
 T = TypeVar("T")
 
 WORKERS = 4
 READ_TIMEOUT_S = 5.0  # what a route waits for one listing, one read or one view's reads
 BACKLOG = 16  # jobs waiting for a thread, beyond those running
-
-
-class Stalled(Exception):
-    """The file system did not answer in time, or the pool is full of stalled reads."""
 
 
 class FilePool:

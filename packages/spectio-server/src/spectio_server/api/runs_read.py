@@ -22,6 +22,7 @@ from fastapi import APIRouter, Query, Request
 from sqlalchemy import Connection, Row, Select, and_, func, select
 
 from spectio.config import Settings
+from spectio.runner.local import checkable
 from spectio.runner.rundir import RUN_ID
 from spectio_server.api import models
 from spectio_server.api.problems import Invalid, not_found
@@ -78,6 +79,8 @@ _RUN_COLUMNS = (
     workflow_versions.c.version.label("workflow_version"),
     workflow_versions.c.revision,
     launches.c.head_native_id,
+    launches.c.head_host,
+    launches.c.host_boot_id,
     launches.c.engine_session_id,
     launches.c.exited_at,
     launches.c.exit_code,
@@ -127,13 +130,22 @@ def run_json(row: Row[Any], profiles: list[str], stage_mode: str | None = None) 
     counts: dict[str, int] = row.task_counts or {}
     total = row.tasks_expected if row.tasks_expected is not None else sum(counts.values())
     head = None
-    if row.head_native_id is not None:  # the head started (a terminal's run: Task 25)
-        observed = row.origin == "cli-observed"
+    if row.origin == "cli-observed" and row.head_host is not None:
+        # its pointer's head (P1 Task 25): checked only on the server's host and boot (§13.8)
         head = {
-            "session": None if observed else row.head_native_id,
+            "session": None,
+            "node": row.head_host,
+            "alive": row.exited_at is None,
+            "exit_code": row.exit_code,
+            "checked": checkable(row.head_host, row.host_boot_id),
+        }
+    elif row.head_native_id is not None:  # the head started
+        head = {
+            "session": row.head_native_id,
             "node": socket.gethostname(),  # both launchers' heads run on the server's node
             "alive": row.exited_at is None,
             "exit_code": row.exit_code,
+            "checked": True,
         }
     return {
         "id": row.id,

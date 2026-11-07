@@ -35,7 +35,7 @@ jobs:
           if [ "$EVENT" = pull_request ]; then
             git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
             touched() { grep -qE "$1" "$RUNNER_TEMP/changed.txt" && echo true || echo false; }
-            synthetic=$(touched '^(tests/pipelines/synthetic/|engine-bridges/nf-spectio/|packages/spectio/tests/test_bridge_nextflow\.py$|\.github/workflows/(pipelines-synthetic|ci)\.yml$)')
+            synthetic=$(touched '^(tests/pipelines/synthetic/|engine-bridges/|tests/fixtures/engine-events/logger-plugin/|packages/spectio/tests/test_bridge_nextflow\.py$|\.github/workflows/(pipelines-synthetic|ci)\.yml$)')
             real=$(touched '^(tests/pipelines/real/|\.github/workflows/(pipelines-real|ci)\.yml$)')
           else
             # Pushes to main: the synthetic scenarios always; the corpus runs nightly.
@@ -61,9 +61,9 @@ jobs:
       - run: python3 -m unittest discover -s tests/slurm -p 'test_*.py'
 
   product:
-    # The uv workspace under packages/ (architecture §6): lint, types, import contracts and unit tests.
+    # The uv workspace under packages/ (architecture §6): lint, types, import contracts, unit tests and the wheels.
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -109,6 +109,23 @@ jobs:
           fresh spectio ./packages/spectio-sdk ./packages/spectio
           "$tmp/spectio/bin/python" -I -c "$check" spectio spectio_server fastapi sqlalchemy
       - run: uv run --locked pytest
+      # P1 Task 21: one wheel with the UI and both bridges. The build hooks need the screens (Node),
+      # and nf-spectio's build.sh needs Java and Nextflow; the Snakemake logger comes from P1 Task 7.
+      - name: Read the pins for the wheel test (dev/versions.env, §1)
+        id: pins
+        run: |
+          . dev/versions.env
+          { echo "node=$NODE_VERSION"; echo "nextflow=$NEXTFLOW_VERSION"; } >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: {node-version: "${{ steps.pins.outputs.node }}"}
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with: {distribution: temurin, java-version: "21"} # = JAVA_MAJOR in dev/versions.env
+      - uses: nf-core/setup-nextflow@893c28b667aedeba26e37f296d260ccc5bc4d914 # v3.0.1
+        with:
+          version: ${{ steps.pins.outputs.nextflow }}
+      - name: Build the wheels and check them (tests/packaging/test_wheel.sh)
+        # uv build --all-packages, uv tool install of spectio alone, the 80 MB limit (architecture §6).
+        run: bash tests/packaging/test_wheel.sh
 
   web:
     # The screens under web/ (P1 Task 19): Vitest, then the Vite build, on the Node of dev/versions.env.
@@ -176,7 +193,7 @@ jobs:
           export SPECTIO_ENGINES_NEXTFLOW_CMD
           bash tests/e2e/serve-local.sh --port 8765 --seed-stages > "$RUNNER_TEMP/serve.log" 2>&1 &
           for _ in $(seq 1 300); do
-            curl -fsS -o /dev/null http://127.0.0.1:8765/api/v1/version && exit 0
+            [ -f tests/e2e/.local/8765.config ] && exit 0  # serve-local.sh writes it once /auth/link answers
             sleep 1
           done
           cat "$RUNNER_TEMP/serve.log"; exit 1
@@ -187,7 +204,7 @@ jobs:
           SPECTIO_E2E_BASE_URL: http://127.0.0.1:8765
           SPECTIO_E2E_ENGINES: "1"
           SPECTIO_E2E_SEEDED: "1"
-        run: npx --no-install playwright test skeleton.spec.ts --project desktop --project phone
+        run: npx --no-install playwright test skeleton.spec.ts report.spec.ts --project desktop --project phone
       - name: Keep the report and the server log
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

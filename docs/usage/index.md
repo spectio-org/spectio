@@ -44,5 +44,6 @@ The stop Spectio will generate, shown with plain Snakemake (`snakemake --until`)
 ## Next
 
 - [Signing in](sign-in.md): the link that opens Spectio on your own machine.
+- [Runs started from a terminal](runs-from-a-terminal.md): see a run you started by hand.
 - [Features](../features/index.md): what each part does.
 - [API and CLI](../api/index.md): doing it without the web interface.

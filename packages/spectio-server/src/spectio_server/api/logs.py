@@ -9,7 +9,11 @@ written between the run's creation and its head's exit (else the run's end; a te
 neither has none: CR-P3T30-05), in the directory the engine ran in: a
 Resume's lineage root's, which every run of the lineage shares (P1 Task 30, CR-P3T30-03). The
 launch directory is derived from the runs root and the run ID, never read from a row (dev-env
-§15.3 req. 10), and must be private. Below it, the read is the confined walk of `files.confine`
+§15.3 req. 10), and must be private. A run started from a terminal (`cli-observed`, P1 Task 25)
+is the exception: its launch directory is its pointer's, checked again as the scan checks it
+(absolute, normalised, outside the runs root) and not itself required to be private (a project
+directory is often group-writable); a refused log there is "log not readable" (req. 12).
+Below it, the read is the confined walk of `files.confine`
 (checking-scenarios §11.1): no symlink is followed, only a regular file of the user is read,
 and it runs in the file pool with a timeout (req. 13). Anything refused or missing is
 `404 log-not-found`; a file system that does not answer is `503 runner-offline`. Escape
@@ -23,8 +27,10 @@ so the cap is the server's, and a fifth is `429 rate-limited`.
 """
 
 import asyncio
+import os
 import threading
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Iterator
+from contextlib import contextmanager
 from datetime import datetime
 from pathlib import Path, PurePosixPath
 from typing import Any, Literal
@@ -34,6 +40,7 @@ from fastapi.responses import PlainTextResponse, Response, StreamingResponse
 from sqlalchemy import select
 from starlette.concurrency import run_in_threadpool
 
+from spectio.runner.observed import check_observed_launch_dir
 from spectio_server.api.problems import Problem
 from spectio_server.api.runs_read import read, run_row
 from spectio_server.api.taskfiles import HEADERS, in_pool
@@ -41,6 +48,7 @@ from spectio_server.failure import dir_run_id
 from spectio_server.files.confine import (
     MAX_READ,
     TAIL,
+    NotAllowed,
     NotFound,
     Root,
     list_confined,
@@ -108,6 +116,29 @@ def _newest_log(launch: Root, since: datetime, until: datetime | None) -> PurePo
     return SMK_LOGS / newest.name
 
 
+@contextmanager
+def _launch_root(runs_root: Path, row: Any, source: str) -> Iterator[Root]:
+    """The directory that holds the log: the run's launch directory under the runs root, or a
+    terminal run's own (its `.spectio/` holds no head log: Spectio did not start its head)."""
+    if row.origin != "cli-observed":
+        with run_root(runs_root, _launch_of(row, source), "launch") as launch:
+            yield launch
+        return
+    try:
+        if source in HEAD_FILES:
+            raise ValueError("a run started from a terminal has no head log")
+        path = check_observed_launch_dir(runs_root, row.launch_dir or "")
+        fd = os.open(path, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
+    except (OSError, ValueError) as exc:
+        raise NotAllowed(f"log not readable: {exc}") from None
+    try:
+        yield Root(fd, PurePosixPath(path))
+    except NotAllowed as exc:
+        raise NotAllowed(f"log not readable: {exc}") from None
+    finally:
+        os.close(fd)
+
+
 def _launch_of(row: Any, source: str) -> str:
     """The run whose launch directory holds the log: a Snakemake engine log is in the lineage
     root's (CR-P3T30-03)."""
@@ -117,7 +148,7 @@ def _launch_of(row: Any, source: str) -> str:
 def _read(runs_root: Path, row: Any, source: str) -> tuple[str, PurePosixPath, int]:
     """The log's tail, its path in the launch directory and its size."""
     engine, origin = row.engine, row.origin
-    with run_root(runs_root, _launch_of(row, source), "launch") as launch:
+    with _launch_root(runs_root, row, source) as launch:
         if source in HEAD_FILES:
             candidates = [PurePosixPath(".spectio", HEAD_FILES[source])]
         elif engine == "nextflow":
@@ -139,10 +170,12 @@ def _read(runs_root: Path, row: Any, source: str) -> tuple[str, PurePosixPath, i
     raise NotFound(source)  # not reached: there is always one candidate
 
 
-def _read_from(runs_root: Path, run_id: str, rel: PurePosixPath, at: int) -> tuple[int, bytes]:
+def _read_from(
+    runs_root: Path, row: Any, source: str, rel: PurePosixPath, at: int
+) -> tuple[int, bytes]:
     """The bytes of the log from `at` (at most MAX_READ), and where they start: from 0 when the
     file is now shorter (replaced)."""
-    with run_root(runs_root, run_id, "launch") as launch, open_confined(launch, rel) as f:
+    with _launch_root(runs_root, row, source) as launch, open_confined(launch, rel) as f:
         start = at if size_of(f) >= at else 0
         return start, read_at(f, start, MAX_READ)
 
@@ -157,13 +190,13 @@ async def _follow(
     request: Request, row: Any, source: str, rel: PurePosixPath, at: int
 ) -> AsyncIterator[str]:
     """Each line appended after `at`, until the run has ended (then the rest, whole)."""
-    runs_root, run_id = request.app.state.settings.runs_root, _launch_of(row, source)
+    runs_root = request.app.state.settings.runs_root
     pending = b""
     while True:
         ended = await run_in_threadpool(_ended, request, row.id)
         try:
             start, data = await run_in_threadpool(
-                in_pool, request, lambda at=at: _read_from(runs_root, run_id, rel, at)
+                in_pool, request, lambda at=at: _read_from(runs_root, row, source, rel, at)
             )
         except Problem:  # gone or not answering: the stream ends
             return

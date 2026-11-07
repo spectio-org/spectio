@@ -259,6 +259,7 @@ launches = Table(
     Column("pid", Integer),
     Column("pid_start_time", String),
     Column("host_boot_id", String),
+    Column("head_host", String),  # a run from a terminal: its pointer's host (P1 Task 25)
     Column("engine_session_id", String),
     Column("head_native_id", String),
     Column("head_state", String),

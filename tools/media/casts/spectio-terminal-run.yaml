@@ -1,0 +1,57 @@
+# Batch P3-B03, P3 Task 25: a Nextflow run started by hand in a shell is found and shown by a
+# real `spectio serve`. Real Nextflow 26.10.4 on the synthetic pipeline, real nf-spectio built from
+# engine-bridges/nf-spectio/build.sh into a plugins directory (what `spectio init` unpacks from the
+# wheel in an install), real server, real session cookie. Nothing is faked.
+# What it does not show: a cluster, a login shell that a person started on another node, Snakemake
+# (its bridge is covered by the tests and the batch evidence), a browser.
+# The ticket is random: the command that prints it masks it with a visible sed.
+# Port 18083. Needs `uv sync` first (the .venv of the checkout), Java and Nextflow on the PATH.
+# The host name is a demo one: run the generator in its own UTS namespace, as docs/assets/media.yaml does:
+#   unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-terminal-run.yaml'
+title: "P3 Task 25: a run started from a terminal is found and shown (real Nextflow, real server)"
+cols: 140
+rows: 36
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: tmp
+env:
+  HOME: "{workdir}"
+  TMPDIR: "{workdir}/.tmp"
+  NXF_PLUGINS_DIR: "{workdir}/plugins"
+  NXF_ANSI_LOG: "false"
+  WF: "{repo}/tests/pipelines/synthetic/nextflow/main.nf"
+  PATH: "{repo}/.venv/bin:$PATH"
+setup:
+  - |
+    chmod 700 .
+    mkdir -m 700 .tmp plugins proj
+    {repo}/engine-bridges/nf-spectio/build.sh "$PWD/plugins" > /dev/null 2>&1
+    spectio init --local --port 18083 > /dev/null 2>&1
+replace:
+  "{workdir}/": "~/"
+  "{workdir}": "~"
+  "~/.tmp": "$TMPDIR"
+  "{repo}/": ""
+steps:
+  - comment: "1. a run started by hand: no Spectio command, only the bridge named in one variable"
+  - run: "cd proj && NXF_PLUGINS_DEFAULT=nf-spectio@0.0.1 nextflow -q run $WF -profile test,local --outdir results"
+    tail: 3
+    expect_exit: 0
+  - pause: 1.5
+  - comment: "2. the bridge left a pointer in the home (0600, no parameters, no environment) and the spool in the launch directory"
+  - run: "stat -c '%a %n' ~/.spectio/observed/*.json; jq -c . ~/.spectio/observed/*.json"
+  - run: "ls proj/.spectio/events"
+  - pause: 2.5
+  - clear: true
+  - comment: "3. the server finds it: start it, log in from this node, list the runs"
+  - run: "spectio serve > serve.out 2> serve.err &"
+  - run: "sleep 4; sed -E 's/#[A-Za-z0-9_-]{43}/#<ticket>/' serve.out | head -n 3"
+  - run: "spectio login --print-link > link.txt; curl -s -o /dev/null -w '%{http_code}\\n' -X POST -H 'Origin: http://127.0.0.1:18083' -H 'Content-Type: application/json' -c jar.txt -d \"{\\\"ticket\\\":\\\"$(cut -d'#' -f2 link.txt)\\\"}\" http://127.0.0.1:18083/api/v1/auth/magic-links:exchange"
+  - run: "curl -s -b jar.txt http://127.0.0.1:18083/api/v1/runs | jq -c '.items[] | {name,state,origin,head,task_counts}'"
+  - pause: 3.0
+  - clear: true
+  - comment: "4. the run ended on its own event, so the pointer moved to observed/ended/; the server never signals this head"
+  - run: "ls ~/.spectio/observed ~/.spectio/observed/ended"
+  - run: "kill -TERM $(jq .pid ~/.spectio/server.json); sleep 2; ls ~/.spectio"
+  - pause: 2.0

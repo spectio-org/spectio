@@ -85,11 +85,17 @@ test("Cancel asks first in a modal dialog, returns focus, then posts :cancel", a
 });
 
 test("no Cancel on a terminal run, nor on a run started from a terminal", async () => {
-  detail({ origin: "cli-observed", head: { session: null, node: "login1", alive: true, exit_code: null } });
+  detail({ origin: "cli-observed", head: { session: null, node: "login2", alive: true, exit_code: null, checked: false } });
   app(`/runs/${ID}`);
   await screen.findByRole("heading", { level: 1 });
   expect(screen.queryByRole("button", { name: "Cancel run" })).toBeNull();
-  expect(screen.getByText("Not checked (started from a terminal)")).toBeInTheDocument();
+  expect(screen.getByText("Not checked (on login2, started from a terminal)")).toBeInTheDocument();
+});
+
+test("a run started from a terminal on this host and boot has its head checked", async () => {
+  detail({ origin: "cli-observed", head: { session: null, node: "login1", alive: true, exit_code: null, checked: true } });
+  app(`/runs/${ID}`);
+  expect(await screen.findByText("Alive")).toBeInTheDocument();
 });
 
 test("the facts say the head is not started yet while head is null", async () => {
@@ -268,7 +274,7 @@ test("UX-PAR-25/16: a failed run opens on Why it failed, never blank, with a way
     state: "failed",
     ended_at: "2026-10-31T08:00:00+00:00",
     failure: { class: "tool_error", message: "", task_id: null, attempt_n: 1 },
-    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1 },
+    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1, checked: true },
     summary: { tasks: { done: 24, total: 32, failed: 2, cached: 0 }, last_failure: null, stage_mode: "quarters" },
   }, { [`${URL_}/logs?source=head-err`]: () => new Response("line 1\nError in rule x\n") });
   app(`/runs/${ID}`);
@@ -342,7 +348,7 @@ test("Download attaches its anchor to the page and revokes the URL after the cli
 });
 
 test("UX-PAR-23: with the local executor the head has no terminal: its process instead", async () => {
-  detail({ head: { session: "18823.3644058", node: "login1", alive: true, exit_code: null } });
+  detail({ head: { session: "18823.3644058", node: "login1", alive: true, exit_code: null, checked: true } });
   app(`/runs/${ID}`);
   const attach = await screen.findByRole("region", { name: "Open the head by hand" });
   expect(within(attach).getByText("ps -o pid,etime,args --sid 18823")).toBeInTheDocument();
@@ -353,7 +359,7 @@ test.each([
   ["a node that starts with -", { session: `spectio-${ID}`, node: "-oProxyCommand=x" }],
   ["a session with shell words", { session: "spectio-$(rm -rf ~)", node: "login1" }],
 ])("SEC-P3PARA-01: no head commands to copy for %s", async (_, head) => {
-  detail({ head: { ...head, alive: true, exit_code: null } }, { "/api/v1/version": { ...VERSION, executor: "slurm" } });
+  detail({ head: { ...head, alive: true, exit_code: null, checked: true } }, { "/api/v1/version": { ...VERSION, executor: "slurm" } });
   app(`/runs/${ID}`);
   await screen.findByRole("region", { name: "Engine log · last lines" });
   expect(screen.queryByRole("region", { name: "Open the head by hand" })).toBeNull();
@@ -383,7 +389,7 @@ test("UX-PAR-29: the Cancel dialog says what stops and how, for the server's exe
 });
 
 test("P3-parB: a run that has ended but whose head end is not yet reported shows Head Ending, not Alive", async () => {
-  detail({ state: "succeeded", head: { session: "18823.3644058", node: "login1", alive: true, exit_code: null } });
+  detail({ state: "succeeded", head: { session: "18823.3644058", node: "login1", alive: true, exit_code: null, checked: true } });
   app(`/runs/${ID}`);
   expect(await screen.findByText("Ending")).toBeInTheDocument();
   expect(screen.queryByText("Alive")).toBeNull();
@@ -482,7 +488,7 @@ test("P3-parC: the aside's All logs opens the Logs tab on the tail's source, wit
   detail({
     state: "failed",
     ended_at: "2026-10-31T08:00:00+00:00",
-    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1 },
+    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1, checked: true },
   }, { [`${URL_}/logs?source=head-err`]: () => new Response("Error in rule x\n") });
   const router = app(`/runs/${ID}`);
   const tail = await screen.findByRole("region", { name: "Head errors · last lines" });

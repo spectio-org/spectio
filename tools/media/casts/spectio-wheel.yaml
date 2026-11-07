@@ -1,0 +1,45 @@
+# Batch P3-B03, P3 Task 21: one wheel with the UI and both engine bridges, built and installed for
+# real. `uv build --all-packages` runs both build hooks (hatch_build.py), each wheel is built from
+# its sdist; `uv tool install` puts `spectio` alone in its own environment, with no Node and no
+# Nextflow on its path. Nothing is faked and nothing is published.
+# Needs web/dist first (`npm --prefix web ci --ignore-scripts && npm --prefix web run build`, which
+# tests/packaging/test_wheel.sh does), the .venv of the checkout, Java and Nextflow on the PATH
+# (engine-bridges/nf-spectio/build.sh), network for uv (third-party dependencies).
+#   python3 tools/media/cast.py tools/media/casts/spectio-wheel.yaml
+title: "P3 Task 21: one wheel with the UI and both bridges (built and installed for real)"
+cols: 140
+rows: 34
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: tmp
+env:
+  REPO: "{repo}"
+  UV_TOOL_DIR: "{workdir}/tools"
+  UV_TOOL_BIN_DIR: "{workdir}/bin"
+  PATH: "{workdir}/bin:$PATH"
+setup:
+  - ". {repo}/dev/versions.env; echo \"$PYTHON_VERSION\" > pyver"
+replace:
+  "{workdir}/": "./"
+  "{workdir}": "."
+  "{repo}": "<repo>"
+steps:
+  - comment: "1. build the three packages: each sdist first, then each wheel from its sdist"
+  - run: "(cd $REPO && uv build --quiet --all-packages --python $(cat $OLDPWD/pyver) --out-dir $OLDPWD/dist) && ls -1 dist"
+    expect_exit: 0
+  - pause: 1.5
+  - comment: "2. the runner's wheel carries both bridges; the server's wheel carries the screens"
+  - run: "unzip -Z1 dist/spectio-0.0.1-py3-none-any.whl | grep -E '_bridges/(nf-spectio-0.0.1/classes/META-INF/MANIFEST|snakemake)'"
+  - run: "unzip -Z1 dist/spectio_server-0.0.1-py3-none-any.whl | grep -E 'spectio_server/web/' | head -n 4"
+  - pause: 2.0
+  - clear: true
+  - comment: "3. install spectio alone, with no server extra: the version, then the size"
+  - run: "uv tool install --quiet --python $(cat pyver) dist/spectio-0.0.1-py3-none-any.whl --with dist/spectio_sdk-0.0.1-py3-none-any.whl"
+    expect_exit: 0
+  - run: "spectio --version"
+  - run: "du -sm tools/spectio | cut -f1 | sed 's/$/ MB (limit 80 MB)/'"
+  - pause: 1.5
+  - comment: "4. the runner finds both bridges in its own package, not in a checkout"
+  - run: "env -u SPECTIO_BRIDGES_DIR tools/spectio/bin/python -I -c 'from spectio.runner.engines import NF_SPECTIO_DIR, SNAKEMAKE_LOGGER, bridge; [print(bridge(n).resolve()) for n in (NF_SPECTIO_DIR, SNAKEMAKE_LOGGER)]'"
+  - pause: 2.5

@@ -9,12 +9,11 @@ directory (a Snakemake started by hand) also holds it. This host only: `/proc` s
 """
 
 import os
-import socket
 import stat
 from pathlib import Path
 
 from spectio.runner.headscript import LOCK
-from spectio.runner.local import _boot_id, alive, read_head_pid
+from spectio.runner.local import alive, checkable, read_head_pid
 from spectio.runner.rundir import RUN_ID, private_dir, read_small, run_paths
 
 CONFIGS = ("nextflow.config", ".nextflow")  # what Nextflow loads from its launch directory
@@ -63,7 +62,7 @@ def head_gone(runs_root: Path, run_id: str) -> None:
         raise NotResumable("head_unverified", message) from None
     if head is None:
         return  # it never started
-    if head.host != socket.gethostname() or head.boot_id != _boot_id():
+    if not checkable(head.host, head.boot_id):
         message = f"the head of {run_id} ran on {head.host} or before a restart: not checkable"
         raise NotResumable("head_unverified", message)
     if alive(head):

@@ -48,6 +48,12 @@ def _boot_id() -> str:
     return Path("/proc/sys/kernel/random/boot_id").read_text().strip()
 
 
+def checkable(host: str, boot_id: str) -> bool:
+    """True when a head on `host` and `boot_id` can be checked here: this host and this boot,
+    both. The runner's PID check and the API's `head.checked` use it (CR-P3T25-05)."""
+    return host == socket.gethostname() and boot_id == _boot_id()
+
+
 def _stat(pid: int) -> list[str] | None:
     """The fields of `/proc/<pid>/stat` after the command name, or None (no such process)."""
     try:
@@ -90,11 +96,14 @@ def read_head_exit(launch_dir: Path) -> int | None:
 
 def alive(head: HeadPid) -> bool:
     """The PID check: this host, this boot, and the same process and group still live."""
-    return (
-        head.host == socket.gethostname()
-        and head.boot_id == _boot_id()
-        and _process(head.pid) == (head.pgid, head.start)
-    )
+    return checkable(head.host, head.boot_id) and _process(head.pid) == (head.pgid, head.start)
+
+
+def same_process(pid: int, start: str) -> bool:
+    """Whether process `pid` lives and started at `start` (clock ticks after boot): on this
+    boot, the same process."""
+    found = _process(pid)
+    return found is not None and found[1] == start
 
 
 def _is_head(head: HeadPid, native_id: str) -> bool:

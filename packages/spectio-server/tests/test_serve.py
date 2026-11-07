@@ -450,7 +450,7 @@ def test_serve_slurm_start_text_and_tmux_runner(settings: Settings) -> None:
     assert f"ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} alice@login1" in text
     assert f"2. Then open this link (single use, valid 15 minutes):\n   {LINK}\n" in text
     assert "tmux session on login1: tmux attach -t spectio-<run ID>" in text
-    assert "Tasks 13 to 16" in text  # no API off local mode (inbox #86)
+    assert "spectio init --local" in text and "Task" not in text  # NO_API (inbox #109 rule 5)
     assert slurm.db_dir is not None
     booted = boot(slurm, slurm.db_dir)
     try:

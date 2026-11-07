@@ -20,6 +20,10 @@ derived from the run ID. A Git location must meet the import rule of the launch 
 command: only `POST /runs` launches. Per-boot caps bound the work; what is left waits for the
 next boot.
 
+Runs started from a terminal (P1 Task 25, architecture §13.8) are rebuilt from their pointers,
+in `~/.spectio/observed/` and `observed/ended/` (which only a rebuild reads), under the scan's
+checks of req. 12, so each keeps its run ID; the runner loop replays its spool.
+
 Known gap (CR-P3T31-04): the manifest records the parameters sent, not the pipeline schema's
 default `outdir`, so a rebuilt Nextflow run that did not set `outdir` gets `results_dir` None
 (its results answer 404); a rebuilt Resume child takes its parent's rebuilt row's.
@@ -38,6 +42,7 @@ from sqlalchemy import Connection, select
 
 from spectio.runner.local import read_head_pid
 from spectio.runner.loop import CANCEL, LAUNCH_CLASSES, LAUNCH_FAILED
+from spectio.runner.observed import scan_observed
 from spectio.runner.rundir import (
     MAX_SMALL_FILE,
     RUN_ID,
@@ -50,8 +55,9 @@ from spectio.runner.rundir import (
 )
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import check_revision, git_url
+from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
 from spectio_server.projector.runs import failure_json
-from spectio_server.store.runs import insert_run
+from spectio_server.store.runs import EngineConflict, insert_observed_run, insert_run
 from spectio_server.store.schema import runs
 from spectio_server.store.writer import Writer
 
@@ -78,9 +84,18 @@ class _Found:
 
 
 def rebuild_index(
-    writer: Writer, runs_root: Path, *, max_runs: int = MAX_RUNS, max_bytes: int = MAX_BYTES
+    writer: Writer,
+    runs_root: Path,
+    *,
+    home: Path | None = None,
+    max_runs: int = MAX_RUNS,
+    max_bytes: int = MAX_BYTES,
+    files: FilePool | None = None,
 ) -> Rebuilt:
-    """Add the run directories under `runs_root` that the index lacks, oldest first."""
+    """Add the run directories under `runs_root` that the index lacks, oldest first, then the
+    runs of the pointers under `home` (when given) that it lacks. The pointer pass runs in
+    `files` when given, bounded by `READ_TIMEOUT_S`; a stuck one is skipped and counted, and the
+    next boot or the runner's scan reads it (SEC-P3T25-01)."""
     known = writer.submit(lambda conn: set(conn.execute(select(runs.c.id)).scalars())).result()
     with private_dir(runs_root) as fd:
         names = sorted(os.listdir(fd))
@@ -108,6 +123,30 @@ def rebuild_index(
             skipped += 1
             continue
         added += 1
+    if home is not None:
+        known |= set(names)
+        for ended in (False, True):
+            job = partial(
+                scan_observed, home, runs_root, set(known), max(max_runs - added, 0), ended=ended
+            )
+            try:
+                scan = job() if files is None else files.run(job, READ_TIMEOUT_S)
+            except Stalled as exc:
+                log.warning("pointers not read at boot: %s", exc)
+                skipped += 1
+                break
+            skipped += scan.skipped.total()
+            for run in scan.runs:
+                try:
+                    writer.submit(
+                        partial(insert_observed_run, run=run, now=datetime.now(UTC))
+                    ).result()
+                except EngineConflict as exc:
+                    log.warning("pointer %s skipped: %s", run.run_id, exc)
+                    skipped += 1
+                    continue
+                known.add(run.run_id)
+                added += 1
     if skipped or deferred:
         log.warning(
             "index rebuild: %d runs added, %d entries skipped, %d left for the next boot",

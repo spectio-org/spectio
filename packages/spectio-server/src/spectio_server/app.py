@@ -1,12 +1,12 @@
 """The FastAPI app of `spectio serve` (P1 Tasks 11, 12, 17 and 18).
 
 Every request needs the session of the token link (dev-env §15.3 req. 2, `auth`, P1 Task 12).
-Sign-in is not complete until P1 Task 16 (the cookie per Host port, Task 13), so the API is
-served in local mode only (`spectio init --local`): on a SLURM environment, where other
-users share the login node and its loopback port, every `/api/v1` path answers 404 with the
-reason (inbox #86). In local mode too, the API is left unmounted on a machine that looks like
-a cluster node or a shared one (`shared_host`, SEC-P3T17-06): kind `local` is a configuration
-value, which can be set on a login node. The Host allow-list (dev-env §15.3 req. 4, `auth.host`),
+The API is served in local mode only (`spectio init --local`; inbox #86, and #109 rule 5 (a),
+Thomas 2026-11-07): on a SLURM environment, where other users share the login node and its
+loopback port, every `/api/v1` path answers 404 with the reason. In local mode too, the API is
+left unmounted on a machine that looks like a cluster node or a shared one (`shared_host`,
+SEC-P3T17-06): kind `local` is a configuration value, which can be set on a login node.
+The Host allow-list (dev-env §15.3 req. 4, `auth.host`),
 the cross-site check (`api.browser`), the session and the write checks (req. 7, `auth.writes`)
 run on every request, in that order. The generated docs stay off: the
 OpenAPI document is a file, `openapi/0.0.1.json`, written from `app.openapi()` (Task 18), with
@@ -49,9 +49,10 @@ from spectio_server.store.writer import Writer
 PLACEHOLDER = "Spectio {version} is running.\n{why}\n"
 API = "/api/v1"
 API_VERSION = "0.0.1"  # the API document's version, not the package's: a release bump keeps it
+# inbox #109 rule 5 (a), Thomas 2026-11-07: unmounted on SLURM and shared hosts
 NO_API = (
-    "The API is served in local mode only (spectio init --local) until sign-in is complete: "
-    "P1 Tasks 13 to 16 (the session cookie per port and its checks)."
+    "The API is served only in local mode (spectio init --local), on a machine only you use: "
+    "on a cluster or another shared host, other users could reach its port."
 )
 
 SLURM_CONF_FILE = Path("/etc/slurm/slurm.conf")

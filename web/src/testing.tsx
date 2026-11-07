@@ -142,7 +142,7 @@ export function run(over: Record<string, unknown> = {}) {
     },
     profiles: ["test"],
     failure: null,
-    head: { session: "spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W", node: "login1", alive: true, exit_code: null },
+    head: { session: "spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W", node: "login1", alive: true, exit_code: null, checked: true },
     task_counts: { succeeded: 24, running: 3, pending: 5 },
     summary: { tasks: { done: 24, total: 32, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" },
     ...over,
