@@ -2,12 +2,27 @@
 # the head script copies the package to `.spectio/pylib/` and puts it on PYTHONPATH (§7.3), so
 # it runs on Snakemake's own interpreter with the stdlib and the interface only. This project is
 # its test environment: `uv run --directory engine-bridges/snakemake-logger-plugin-spectio pytest -v`.
+# It is also released to PyPI, for runs started from a terminal (architecture §13.8; P1 Task 26,
+# dry run only: tests/packaging/test_bridges_release.sh). `uv build` here makes the sdist and wheel.
 [project]
-name = "snakemake-logger-plugin-spectio"
+name = "snakemake-logger-plugin-spectio"  # lowercase and hyphenated, as the plugin catalogue matches it
 version = "0.0.1"
+description = "Snakemake logger plugin that writes a run's events to Spectio's spool"
+readme = "README.md"  # the PyPI description only: the catalogue page is the root docs/intro.md (decision log 2026-10-29)
+license = "MIT"
 requires-python = ">=3.11"
 # The range Snakemake 9.27.1 itself requires (its wheel metadata, read 2026-11-01).
 dependencies = ["snakemake-interface-logger-plugins>=1.1.0,<3"]
+
+[project.urls]
+Repository = "https://github.com/spectio-org/spectio"  # the catalogue needs a Repository URL
+
+[build-system]
+requires = ["uv_build==0.11.32"]  # = UV_VERSION in dev/versions.env
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = ""  # the module is at the top, where the head script copies it from
 
 [dependency-groups]
 dev = [
