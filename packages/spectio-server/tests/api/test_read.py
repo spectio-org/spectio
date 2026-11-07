@@ -75,14 +75,23 @@ def test_run_detail_after_replay(authed_client: TestClient, replayed_flaky: str)
     run = response.json()
     assert (run["id"], run["name"], run["state"]) == (replayed_flaky, "rnaseq-flaky", "succeeded")
     assert run["task_counts"] == {"succeeded": 65}
-    assert run["summary"]["tasks"] == {"done": 65, "total": 65, "failed": 0, "cached": 0}
+    assert run["summary"]["tasks"] == {
+        "done": 65,
+        "total": 65,
+        "failed": 0,
+        "cached": 0,
+        "lower_bound": False,  # P1 Task 34
+    }
     assert run["head"] is None  # no head report in a replay
     assert run["params"] == {"reads": 4}
     assert run["started_at"] is not None and run["ended_at"] is not None
     processes = authed_client.get(f"{RUNS}/{replayed_flaky}/processes").json()["items"]
     assert [p["process"] for p in processes] == FLAKY_PROCESSES
     assert sum(p["retries"] for p in processes) == 2  # two tasks retried once
-    assert all(set(p) == {"process", "stage_id", "counts", "retries"} for p in processes)
+    keys = {"process", "stage_id", "counts", "retries"}
+    keys |= {"status", "is_checkpoint", "lower_bound", "efficiency"}  # P1 Task 34
+    assert all(set(p) == keys for p in processes)
+    assert {p["status"] for p in processes} == {"done"}
 
 
 def test_runs_paging(authed_client: TestClient, writer: Writer, settings: Settings) -> None:
@@ -294,6 +303,7 @@ def test_tasks_filter_and_paging(authed_client: TestClient, seeded_stages: str) 
     assert set(running[0]) == {
         *("id", "process", "tag", "name", "state", "stage_id"),
         *("attempt_n", "resources"),  # P1 Task 29
+        *("slurm", "efficiency"),  # P1 Task 34
     }
 
 

@@ -35,6 +35,7 @@ from spectio.runner import sacct
 from spectio.runner.rundir import private_dir, read_small, run_paths, write_file
 from spectio.runner.sacct import JOB_ID, SacctLimiter, SacctRow
 from spectio_sdk.events import NextflowTrace
+from spectio_server import efficiency
 from spectio_server.files.confine import NotAllowed, NotFound, open_confined, read_at, safe_rel
 from spectio_server.files.pool import FilePool, Stalled
 from spectio_server.files.taskfiles import (
@@ -44,7 +45,7 @@ from spectio_server.files.taskfiles import (
     read_task_file,
     run_root,
 )
-from spectio_server.store.schema import attempts, tasks
+from spectio_server.store.schema import attempts, environments, runs, tasks
 
 log = logging.getLogger(__name__)
 
@@ -52,6 +53,9 @@ CACHE_FILE = "sacct.json"  # in <run dir>/.spectio/
 MAX_CACHE_BYTES = 8388608
 LOG_TAIL_LINES = 20
 MAX_BENCHMARK_BYTES = 65536
+MAX_MEASURES = 200_000  # attempts whose benchmark is kept in memory (CR-P3T34-01)
+MAX_BENCHMARKS_PER_VIEW = 500  # read by one view; later views read the rest (SEC-P3T34-01)
+BENCHMARK_CHUNK = 100  # benchmarks kept as each batch is read, even past a timeout (CR-P3T34-03)
 ENDED = ("succeeded", "failed", "aborted")
 MIB = 1048576
 MAX_TRIES = 3  # sacct calls for a job it does not know yet, or not as ended; then null
@@ -153,6 +157,76 @@ def smk_resources(threads: int | None, resources: dict[str, Any]) -> dict[str, A
     return {k: v for k, v in found.items() if v is not None}
 
 
+# The SLURM request (P1 Task 34; api §5 note of 2026-11-07): the keys, each null when not asked.
+REQUEST = (
+    "partition",
+    "account",
+    "qos",
+    "cpus",
+    "mem_bytes",
+    "mem_per_cpu_bytes",
+    "time_limit_s",
+    "gres",
+    "constraint",
+    "nodes",
+    "tasks",
+)
+_SLURM_TEXT = re.compile(r"[A-Za-z0-9_.,:+=/&|*\[\]-]{1,256}")  # a partition, a gres, a constraint
+
+
+def _slurm_text(value: object) -> str | None:
+    return value if isinstance(value, str) and _SLURM_TEXT.fullmatch(value) else None
+
+
+def _request(found: dict[str, Any]) -> dict[str, Any] | None:
+    """The request with only the values known, or None when it has none."""
+    kept = {k: v for k, v in found.items() if v is not None}
+    return kept or None
+
+
+def smk_request(threads: int | None, resources: dict[str, Any]) -> dict[str, Any] | None:
+    """What a Snakemake job asks SLURM for, from `job_info.resources` as the SLURM executor
+    plugin reads them (api §5 note of 2026-11-07): `cpus_per_task` else `threads`, `mem_mb`
+    (MiB) unless `mem_mb_per_cpu` is set, `runtime` (minutes), `gres` else `gpu`."""
+    per_cpu = _whole(resources.get("mem_mb_per_cpu"), MIB)
+    memory = None if per_cpu is not None else resources.get("mem_mb", resources.get("mem_mib"))
+    cpus = _whole(resources["cpus_per_task"]) if "cpus_per_task" in resources else _whole(threads)
+    gpus = _whole(resources.get("gpu"))
+    return _request(
+        {
+            "partition": _slurm_text(resources.get("slurm_partition")),
+            "account": _slurm_text(resources.get("slurm_account")),
+            "qos": _slurm_text(resources.get("qos")),
+            "cpus": cpus,
+            "mem_bytes": _whole(memory, MIB),
+            "mem_per_cpu_bytes": per_cpu,
+            "time_limit_s": _whole(resources.get("runtime"), 60),
+            "gres": _slurm_text(resources.get("gres")) or (f"gpu:{gpus}" if gpus else None),
+            "constraint": _slurm_text(resources.get("constraint")),
+            "nodes": _whole(resources.get("nodes")),
+            "tasks": _whole(resources.get("tasks")),
+        }
+    )
+
+
+def nf_request(trace: NextflowTrace | None) -> dict[str, Any] | None:
+    """What a Nextflow task asks for, from its trace record: `queue`, `cpus`, `memory`
+    (bytes), `time` (ms) and `accelerator`, read as `gpu:<n>` [to be validated] on
+    `slurm-mini`. `executor.account` and `clusterOptions` are not in the trace."""
+    if trace is None:
+        return None
+    gpus = _whole(trace.accelerator)
+    return _request(
+        {
+            "partition": _slurm_text(trace.queue),
+            "cpus": _whole(trace.cpus),
+            "mem_bytes": _whole(trace.memory),
+            "time_limit_s": _whole(trace.time, 0.001),
+            "gres": f"gpu:{gpus}" if gpus else None,
+        }
+    )
+
+
 # --- sacct: the server's one accounting ------------------------------------------------------
 
 
@@ -169,6 +243,13 @@ class _CachedRow(BaseModel):
     req_mem_bytes: int | None = Field(None, ge=0, le=_MAX)
     time_limit_s: int | None = Field(None, ge=0, le=_MAX)
     work_dir: str | None = Field(None, pattern=r"^/[^\x00-\x1f\x7f]{0,4095}$")
+    total_cpu_s: float | None = Field(None, ge=0, le=_MAX)  # P1 Task 34: absent before it
+    ncpus: int | None = Field(None, ge=0, le=_MAX)
+    nnodes: int | None = Field(None, ge=0, le=_MAX)
+    partition: str | None = Field(None, pattern=r"^[A-Za-z0-9_.,:+-]{1,128}$")
+    account: str | None = Field(None, pattern=r"^[A-Za-z0-9_.,:+-]{1,128}$")
+    qos: str | None = Field(None, pattern=r"^[A-Za-z0-9_.,:+-]{1,128}$")
+    alloc_tres: str | None = Field(None, pattern=r"^[A-Za-z0-9_.,:/=+-]{1,1024}$")
 
 
 class Accounting:
@@ -238,6 +319,16 @@ class Accounting:
             if job is not None and run_id in self._asked.get(job, ()):
                 return "pending"
         return "unavailable"
+
+    def loaded(self, run_id: str) -> bool:
+        """True once the run's cache file was read: a view need not enter the file pool for it."""
+        with self._lock:
+            return run_id in self._loaded
+
+    def failed(self, run_id: str, job: str) -> bool:
+        """True when the call that asked `job` failed: this process does not ask it again."""
+        with self._lock:
+            return job in self._failed.get(run_id, set())
 
     def want(self, run_id: str, jobs: Iterable[tuple[str | None, str | None]]) -> None:
         """Ask `sacct` for the run's jobs, (job ID, the directory it was launched from), it has
@@ -376,15 +467,52 @@ def _parse_cache(data: bytes) -> dict[str, SacctRow | None]:
 # --- The run's failures (GET /runs/{id}) -----------------------------------------------------
 
 
+class Measures:
+    """What each ended attempt's benchmark file gave (None when it could not be read), by
+    attempt ID, for the whole server: a job's benchmark does not change once it has ended, so
+    it is read once, not on every view (CR-P3T34-01; dev-env §15.3 req. 15). Emptied when
+    MAX_MEASURES attempts are kept. At most one sweep per run reads them at a time
+    (SEC-P3T34-01)."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._found: dict[str, dict[str, Any] | None] = {}
+        self._sweeping: set[str] = set()
+
+    def claim(self, run_id: str) -> bool:
+        """True when no other sweep of the run is reading; then `release` it when done."""
+        with self._lock:
+            if run_id in self._sweeping:
+                return False
+            self._sweeping.add(run_id)
+            return True
+
+    def release(self, run_id: str) -> None:
+        with self._lock:
+            self._sweeping.discard(run_id)
+
+    def get(self, ids: Iterable[str]) -> dict[str, dict[str, Any] | None]:
+        with self._lock:
+            return {a: self._found[a] for a in ids if a in self._found}
+
+    def put(self, found: dict[str, dict[str, Any] | None]) -> None:
+        with self._lock:
+            if len(self._found) + len(found) > MAX_MEASURES:
+                self._found.clear()
+            self._found.update(found)
+
+
 @dataclass(frozen=True)
 class Context:
-    """What a view reads with: the runs root, the file pool and its timeout, the accounting."""
+    """What a view reads with: the runs root, the file pool and its timeout, the accounting,
+    the benchmarks already read."""
 
     runs_root: Path
     files: FilePool
     accounting: Accounting
     timeout_s: float
     settings: Settings  # for the run's command (P1 Task 30)
+    measures: Measures
 
 
 def _last_attempt() -> Any:
@@ -544,66 +672,145 @@ MEASURED = ("realtime_s", "cpu_percent", "peak_rss_bytes")
 
 
 def task_resources(
-    conn: Connection, run_id: str, dirs: str, engine: str, task_ids: list[str], ctx: Context
-) -> dict[str, tuple[int | None, dict[str, Any]]]:
-    """Per task, its last attempt's number and `resources` (api §5 note, Resources): the
-    trace's on Nextflow; on Snakemake the requested values of `job_info`, measured by the
-    job's benchmark file when it has one, else by `sacct` once the job ended (asked here,
-    answered on a later read)."""
-    rows = conn.execute(
+    conn: Connection,
+    run_id: str,
+    dirs: str,
+    engine: str,
+    task_ids: list[str] | None,
+    ctx: Context,
+) -> dict[str, dict[str, Any]]:
+    """Per task (the run's `task_ids`, or all of them), from its last attempt: its number,
+    `resources` (api §5 note of 2026-10-28), `slurm` and `efficiency` (note of 2026-11-07),
+    with the task's `process`, `state` and `requested` values for the aggregate. `resources`
+    are the trace's on Nextflow; on Snakemake the requested values of `job_info`, measured by
+    the job's benchmark file when it has one, else by `sacct`. On a SLURM run every ended job
+    with a job ID is asked of `sacct` here (answered on a later read; schedulers §3.6), which
+    a local run never is."""
+    run = conn.execute(
+        select(environments.c.kind, runs.c.engine_settings)
+        .join(environments, environments.c.id == runs.c.environment_id)
+        .where(runs.c.id == run_id)
+    ).one()
+    on_slurm, smk = run.kind == "slurm", engine == "snakemake"
+    query = (
         select(
             tasks.c.id,
+            tasks.c.process_or_rule,
+            tasks.c.state.label("task_state"),
+            attempts.c.id.label("attempt_id"),
             attempts.c.n,
             attempts.c.state,
             attempts.c.native_id,
+            attempts.c.work_dir,
             attempts.c.resources,
+            attempts.c.slurm,
         )
         .select_from(tasks)
         .outerjoin(attempts, attempts.c.id == _last_attempt())
-        .where(tasks.c.run_id == run_id, tasks.c.id.in_(task_ids))
-    ).all()
-    benches: dict[str, str] = {}
-    if engine == "snakemake":
+        .where(tasks.c.run_id == run_id)
+    )
+    if task_ids is not None:
+        query = query.where(tasks.c.id.in_(task_ids))
+    rows = conn.execute(query).all()
+    benches: dict[str, str] = {}  # attempt ID → its benchmark path
+    if smk:
         benches = {
-            r.id: (r.resources or {})["benchmark"]
+            r.attempt_id: (r.resources or {})["benchmark"]
             for r in rows
             if r.state in ENDED and isinstance((r.resources or {}).get("benchmark"), str)
         }
+    known = ctx.measures.get(benches)
+    unread = [(a, path) for a, path in benches.items() if a not in known]
+    unread = unread[:MAX_BENCHMARKS_PER_VIEW]
 
-    def read() -> dict[str, dict[str, Any]]:
-        if engine == "snakemake":
-            ctx.accounting.load(run_id)
-        return {task: m for task, path in benches.items() if (m := _benchmark(ctx, dirs, path))}
+    def read() -> dict[str, dict[str, Any] | None]:
+        """In the pool thread: each batch is kept as it is read, so a read that outlasts the
+        view's timeout still fills the cache (CR-P3T34-03); a run another sweep is reading
+        is left to it (SEC-P3T34-01), and what a sweep just released has read is not read
+        again (CR-P3T34-04, SEC-P3T34-02)."""
+        if not ctx.measures.claim(run_id):
+            return {}
+        try:
+            if on_slurm:
+                ctx.accounting.load(run_id)
+            seen = ctx.measures.get(a for a, _ in unread)
+            todo = [(a, p) for a, p in unread if a not in seen]
+            fresh: dict[str, dict[str, Any] | None] = dict(seen)
+            for i in range(0, len(todo), BENCHMARK_CHUNK):
+                batch = {a: _benchmark(ctx, dirs, p) for a, p in todo[i : i + BENCHMARK_CHUNK]}
+                ctx.measures.put(batch)
+                fresh.update(batch)
+            return fresh
+        finally:
+            ctx.measures.release(run_id)
 
     try:
-        measured = ctx.files.run(read, ctx.timeout_s) if engine == "snakemake" else {}
+        if (on_slurm and not ctx.accounting.loaded(run_id)) or unread:
+            known.update(ctx.files.run(read, ctx.timeout_s))
     except Stalled:
-        measured = {}
-    if engine == "snakemake":
+        pass
+    measured = {a: m for a, m in known.items() if m is not None}
+    cached: dict[str, SacctRow | None] = {}
+    if on_slurm:
         launch = str(run_paths(ctx.runs_root, dirs).launch_dir)
-        ended = ((r.native_id, launch) for r in rows if r.state in ENDED and r.id not in measured)
-        ctx.accounting.want(run_id, ended)
-    cached = ctx.accounting.rows(run_id) if engine == "snakemake" else {}
-    found: dict[str, tuple[int | None, dict[str, Any]]] = {}
+        ended = (r for r in rows if r.state in ENDED)
+        ctx.accounting.want(run_id, ((r.native_id, launch if smk else r.work_dir) for r in ended))
+        cached = ctx.accounting.rows(run_id)
+    off = "local" if not on_slurm else None if ctx.accounting.enabled else "accounting_off"
+    cluster_options = True if (run.engine_settings or {}).get("cluster_options") is True else None
+    found: dict[str, dict[str, Any]] = {}
     for r in rows:
         own = r.resources or {}
         values: dict[str, Any] = {k: own.get(k) for k in REQUESTED}
         values.update(dict.fromkeys(MEASURED), source=None)
+        row = cached.get(r.native_id) if r.native_id and r.state in ENDED else None
+        by_engine: tuple[str, dict[str, Any]] | None = None
         if engine == "nextflow" and any(own.get(k) is not None for k in MEASURED):
             values.update({k: own.get(k) for k in MEASURED}, source="trace")
-        elif r.id in measured:
-            values.update(measured[r.id], source="benchmark")
-        elif (row := cached.get(r.native_id or "")) is not None and r.state in ENDED:
+            by_engine = "trace", own
+        elif r.attempt_id in measured:
+            bench = measured[r.attempt_id]
+            values.update({k: bench[k] for k in MEASURED}, source="benchmark")
+            by_engine = "benchmark", {**own, **bench}
+        elif row is not None:
             elapsed = None if row.elapsed_s is None else float(row.elapsed_s)
             values.update(realtime_s=elapsed, peak_rss_bytes=row.max_rss_bytes, source="sacct")
-        found[r.id] = (r.n, values)
+        reason = off
+        if reason is None and r.native_id is None:
+            reason = "no_job_id"
+        elif reason is None and (
+            r.native_id in cached or ctx.accounting.failed(run_id, r.native_id)
+        ):
+            reason = "not_found"  # sacct knew no such job after its tries, or its call failed
+        slurm = None
+        if on_slurm and r.slurm is not None:
+            slurm = {
+                "request": {**dict.fromkeys(REQUEST), **(r.slurm.get("request") or {})},
+                "allocated": efficiency.allocated(row) if row is not None else None,
+                "custom_options": r.slurm.get("custom_options") if smk else cluster_options,
+            }
+        time_s = values["time_s"]
+        found[r.id] = {
+            "process": r.process_or_rule,
+            "state": r.task_state,
+            "attempt_n": r.n,
+            "resources": values,
+            "slurm": slurm,
+            "efficiency": efficiency.job(r.state, by_engine, row, reason),
+            "requested": {
+                "cpus": values["cpus"],
+                "mem_bytes": values["memory_bytes"],
+                "time_limit_s": None if time_s is None else int(time_s),
+            },
+        }
     return found
 
 
 def _benchmark(ctx: Context, dir_run: str, path: str) -> dict[str, Any] | None:
-    """The last row of a Snakemake benchmark file, `s` (wall seconds), `max_rss` (MiB) and
-    `mean_load` (CPU %) (`snakemake/benchmark.py`, [to be validated]); None when it cannot be
-    read. Read in the launch directory with no link followed, as a job file is."""
+    """The last row of a Snakemake benchmark file, `s` (wall seconds), `max_rss` (MiB),
+    `mean_load` (CPU %) and `cpu_time` (seconds) (`snakemake/benchmark.py`, [to be validated]);
+    None when it cannot be read. Read in the launch directory with no link followed, as a job
+    file is."""
     try:
         with (
             run_root(ctx.runs_root, dir_run, "launch") as root,
@@ -621,4 +828,6 @@ def _benchmark(ctx: Context, dir_run: str, path: str) -> dict[str, Any] | None:
         "cpu_percent": _number(row.get("mean_load")),
         "peak_rss_bytes": _whole(row.get("max_rss"), MIB),
     }
-    return found if any(v is not None for v in found.values()) else None
+    if not any(v is not None for v in found.values()):
+        return None
+    return {**found, "cpu_time_s": _number(row.get("cpu_time"))}  # for the efficiency only

@@ -320,6 +320,8 @@ class SnakemakeJobInfo(_Data):
     priority: SignedInt64 | None = None
     threads: Int64 | None = None
     resources: dict[str, JsonValue] = {}
+    # Whether `slurm_extra` was set, its text never sent (P1 Task 34, SEC-P3T1-11).
+    custom_options: bool | None = None
 
     @field_validator("reason")
     @classmethod

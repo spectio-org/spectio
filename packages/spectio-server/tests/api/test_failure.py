@@ -22,7 +22,7 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import inspect, select
+from sqlalchemy import inspect, select, update
 
 from spectio.config import Settings
 from spectio.runner.rundir import RunPaths, make_run_dirs
@@ -34,7 +34,7 @@ from spectio_server.projector.ingest import ingest
 from spectio_server.serve import boot
 from spectio_server.stages.freeze import StageSources
 from spectio_server.store.db import open_db
-from spectio_server.store.schema import attempts, events, tasks
+from spectio_server.store.schema import attempts, environments, events, tasks
 from spectio_server.store.writer import Writer
 
 from ..test_serve import FIXTURE_RUN, FIXTURES, head_files, make_run, run_id, settle
@@ -64,8 +64,9 @@ dirs = os.path.join(here, "workdirs.json")  # job ID -> WorkDir; another directo
 dirs = json.load(open(dirs)) if os.path.exists(dirs) else {{}}
 for job in ids if state != "-" else ():
     where = dirs.get(job, "/elsewhere")
-    print(f"{{job}}|{{state}}|0:125|None|0|00:01:05|2G|00:10:00|{{where}}")
-    print(f"{{job}}.batch|{{state}}|0:125||2097152K|00:01:05|||{{where}}")
+    tres = "billing=2,cpu=2,mem=2G,node=1"
+    print(f"{{job}}|{{state}}|0:125|None|0|00:01:05|2G|00:10:00|00:52.000|2|1|htc|lab|normal|{{tres}}|{{where}}")
+    print(f"{{job}}.batch|{{state}}|0:125||2097152K|00:01:05|||00:52.000|2|1||||{{tres}}|{{where}}")
 """
 
 
@@ -404,9 +405,11 @@ def smk_job(run: Run, jobid: int, rule: str, sample: str, **info: Any) -> None:
 
 def test_resources_smk(settings: Settings, writer: Writer, fakebin: Fake) -> None:
     """threads and mem_mb requested; a benchmark file gives the measures (source benchmark);
-    without one, sacct for the job's SLURM ID, in a batch (source sacct)."""
+    without one, sacct for the job's SLURM ID, in a batch (source sacct). On a SLURM run: a
+    local one never asks sacct (P1 Task 34, schedulers §3.6)."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    writer.submit(lambda c: c.execute(update(environments).values(kind="slurm"))).result()
     run = Run(settings, writer, "snakemake")
     smk_job(run, 1, "align", "S1", benchmark="benchmarks/align_S1.tsv")
     write_private(

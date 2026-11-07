@@ -98,11 +98,22 @@ export interface Run {
   head: { session: string | null; node: string; alive: boolean; exit_code: number | null; checked: boolean } | null;
   task_counts: Counts;
   summary: {
-    tasks: { done: number; total: number; failed: number; cached: number };
+    /** `lower_bound`: a checkpoint is open, the total may grow (P1 Task 34; optional until the
+     * screens of P1 Task 35 read it). */
+    tasks: { done: number; total: number; failed: number; cached: number; lower_bound?: boolean };
     last_failure: { [key: string]: Json } | null;
     /** Where the run's stages come from; `quarters` when it has none (api §7, P1 Task 27). */
     stage_mode: "declared" | "detected" | "quarters";
+    /** Snakemake checkpoint rules with a job left, and the count of `snakemake.dag_updated`. */
+    open_checkpoints?: string[];
+    dag_updates?: number;
   };
+}
+
+/** Schema `EngineSettings`: Nextflow's `cleanup`; Snakemake's `--notemp`, null in 0.0.1. */
+export interface EngineSettings {
+  cleanup: boolean | null;
+  notemp: boolean | null;
 }
 
 /** Schema `RunDetail`: `GET /runs/{id}` and `POST /runs/{id}:cancel`. */
@@ -125,6 +136,7 @@ export interface RunDetail extends Run {
   /** The run's results directory; null when unknown or a run started from a terminal (api §5,
    * P1 Task 31). */
   results_dir: string | null;
+  engine_settings?: EngineSettings;
 }
 
 /** Schema `ResultEntry`: one item of a results folder. */
@@ -226,12 +238,40 @@ export interface Page<T> {
   next: string | null;
 }
 
-/** Schema `Process`. */
+/** A process's or rule's status (api §5 note of 2026-11-07; ui-spec §5.2). */
+export type ProcessStatus =
+  | "pending"
+  | "running"
+  | "done"
+  | "failed"
+  | "stopped"
+  | "awaiting_checkpoint"
+  | "not_needed"
+  | "up_to_date"
+  | "no_tasks";
+
+/** Schema `ProcessEfficiency`: over its tasks' last attempts; ratios, 0.63 for 63 %. */
+export interface ProcessEfficiency {
+  jobs: { done: number; total: number };
+  measured: number;
+  cpu_mean: number | null;
+  cpu_max: number | null;
+  mem_mean: number | null;
+  mem_max: number | null;
+  requested: { cpus: number | null; mem_bytes: number | null; time_limit_s: number | null; varies: boolean };
+  used: { peak_rss_bytes_max: number | null; elapsed_s_max: number | null };
+}
+
+/** Schema `Process`. The fields of P1 Task 34 are optional until its screens (Task 35). */
 export interface Process {
   process: string;
   stage_id: string | null;
   counts: Counts;
   retries: number;
+  status?: ProcessStatus;
+  is_checkpoint?: boolean;
+  lower_bound?: boolean;
+  efficiency?: ProcessEfficiency;
 }
 
 /** Schema `Stage`. */
@@ -242,6 +282,52 @@ export interface Stage {
   source: "declared" | "detected";
   state: StageState;
   task_counts: Counts;
+}
+
+/** Schema `SlurmRequest`: what the engine asked SLURM for. */
+export interface SlurmRequest {
+  partition: string | null;
+  account: string | null;
+  qos: string | null;
+  cpus: number | null;
+  mem_bytes: number | null;
+  mem_per_cpu_bytes: number | null;
+  time_limit_s: number | null;
+  gres: string | null;
+  constraint: string | null;
+  nodes: number | null;
+  tasks: number | null;
+}
+
+/** Schema `SlurmAllocated`: what SLURM gave the job, from `sacct` once it ended. */
+export interface SlurmAllocated {
+  partition: string | null;
+  account: string | null;
+  qos: string | null;
+  ncpus: number | null;
+  req_mem_bytes: number | null;
+  time_limit_s: number | null;
+  alloc_tres: string | null;
+  nnodes: number | null;
+}
+
+/** Schema `Slurm`: `custom_options` when `slurm_extra` or `clusterOptions` was set (never the
+ * text). */
+export interface Slurm {
+  request: SlurmRequest;
+  allocated: SlurmAllocated | null;
+  custom_options: boolean | null;
+}
+
+/** Schema `Efficiency`: one job's CPU and memory efficiency (schedulers §3.6). */
+export interface Efficiency {
+  cpu: number | null;
+  mem: number | null;
+  elapsed_s: number | null;
+  peak_rss_bytes: number | null;
+  state: "running" | "pending_accounting" | "available" | "unavailable";
+  source: "sacct" | "trace" | "benchmark" | null;
+  reason: "local" | "no_job_id" | "accounting_off" | "not_found" | "cached" | null;
 }
 
 /** Schema `Task`. */
@@ -255,6 +341,9 @@ export interface Task {
   /** The last attempt's number, the one `resources` and the attempt files are read from. */
   attempt_n: number | null;
   resources: Resources;
+  /** Null on a local run (P1 Task 34; optional until Task 35). */
+  slurm?: Slurm | null;
+  efficiency?: Efficiency;
 }
 
 /** Schema `Summary`: `GET /runs:summary?group_by=state`. */
@@ -272,6 +361,14 @@ export interface TaskFile {
   note: string | null;
 }
 
+/** Schema `TaskOutput`: one output of a Snakemake job (P1 Task 34). */
+export interface TaskOutput {
+  path: string;
+  state: "present" | "not_yet" | "absent" | "temp_removed" | "tbd";
+  protected: boolean;
+  removed_at: string | null;
+}
+
 /** Schema `TaskFiles`: `GET /tasks/{id}/attempts/{n}/files` (P1 Task 28). */
 export interface TaskFiles {
   task_id: string;
@@ -279,6 +376,8 @@ export interface TaskFiles {
   work_dir: string | null;
   native_id: string | null;
   files: TaskFile[];
+  /** Snakemake's outputs; null for a Nextflow attempt (optional until P1 Task 35). */
+  outputs?: TaskOutput[] | null;
 }
 
 export type LogSource = "head-out" | "head-err" | "engine";

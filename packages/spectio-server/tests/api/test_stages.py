@@ -521,11 +521,13 @@ def test_stages_route(replayed: Replayed, settings: Settings, writer: Writer) ->
     assert items[0]["name"] == "Prepare genome references + Prepare genome indices"
     processes = client.get(f"{runs}/{RNASEQ_RUN}/processes").json()["items"]
     assert [p["process"] for p in processes] == names("rnaseq-3.27.0_star_salmon")
-    assert processes[0] == {
+    first = {k: processes[0][k] for k in ("process", "stage_id", "counts", "retries", "status")}
+    assert first == {
         "process": "NFCORE_RNASEQ:PREPARE_GENOME_REFERENCES:GUNZIP_GTF",
         "stage_id": "detected:1",
         "counts": {},
         "retries": 0,
+        "status": "pending",  # P1 Task 34: no task yet, the process not ended
     }
     assert {p["stage_id"] for p in processes} == {s["id"] for s in items}
     run = client.get(f"{runs}/{RNASEQ_RUN}").json()

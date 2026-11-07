@@ -193,9 +193,11 @@ def _job_files(r: Any) -> dict[str, Any]:
 def _job_info(r: Any) -> dict[str, Any]:
     wildcards = _plain(getattr(r, "wildcards", None))
     resources = _plain(getattr(r, "resources", None))
+    custom = None
     if isinstance(resources, dict):
-        # Raw sbatch flags (SEC-P3T1-11): the server drops them too; they are never sent.
-        resources.pop("slurm_extra", None)
+        # Raw sbatch flags (SEC-P3T1-11): the server drops them too; they are never sent, only
+        # whether they were set (P1 Task 34).
+        custom = bool(resources.pop("slurm_extra", None))
     # The "Params have changed" detail quotes param values (SEC-P3T1-08): cut after the marker,
     # as the server cuts it (`SnakemakeJobInfo._cut_params_detail`).
     reason = _opt_text(getattr(r, "reason", None))
@@ -216,6 +218,7 @@ def _job_info(r: Any) -> dict[str, Any]:
             "priority": _int(getattr(r, "priority", None)),  # "highest" is not sent
             "threads": _count(getattr(r, "threads", None)),
             "resources": resources if isinstance(resources, dict) else {},
+            "custom_options": custom,
         }
     )
 

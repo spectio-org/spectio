@@ -26,6 +26,7 @@ spectio_server/auth/static/link.html
 spectio_server/auth/static/link.js
 spectio_server/auth/writes.py
 spectio_server/bootstrap.py
+spectio_server/efficiency.py
 spectio_server/failure.py
 spectio_server/files/__init__.py
 spectio_server/files/confine.py
@@ -46,6 +47,7 @@ spectio_server/migrations/versions/0006_attempt_files.py
 spectio_server/migrations/versions/0007_attempt_scheduler.py
 spectio_server/migrations/versions/0008_run_lineage.py
 spectio_server/migrations/versions/0009_terminal_head.py
+spectio_server/migrations/versions/0010_outputs_and_efficiency.py
 spectio_server/projector/__init__.py
 spectio_server/projector/ingest.py
 spectio_server/projector/nextflow.py

@@ -42,7 +42,7 @@ from spectio_server.api import (
 )
 from spectio_server.auth import host, middleware, routes, writes
 from spectio_server.auth.secrets import ServerKey, SessionStore, TicketStore
-from spectio_server.failure import Accounting
+from spectio_server.failure import Accounting, Measures
 from spectio_server.files.pool import FilePool
 from spectio_server.store.writer import Writer
 
@@ -124,6 +124,7 @@ def create_app(
     app.state.files = FilePool() if files is None else files  # dev-env §15.3 req. 13
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
+    app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)
     app.state.engine_versions = workflows.engine_versions(settings)
     app.state.server_key = server_key or ServerKey.new()
     app.state.tickets = TicketStore()
