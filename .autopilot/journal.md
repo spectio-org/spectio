@@ -686,3 +686,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-07 18:00 UTC · P3-t26 (Task 26, release dry-run) built: code approve 0/1/6, security approve 0/0/9, 2 rounds; test_bridges_release.sh pass (first run hit Maven 429/403 in the sandbox). Not release-ready: provider spectio vs spectio-org, no nf-spectio README (FU-P3-51); inbox #114. Test made executable (CR-P3T26-05). PR #148 opened (no-figure).
 
 - 2026-11-07 20:20 · P3-t26 · merged #148 (d7c69a1) after Thomas accepted the build-classpath vulnerabilities with an expiry (osv-scanner.toml, IgnoredVulns until 2027-05-07; decision log). Next: batch P3-B03 close (P3-t21, P3-t25, P3-t26).
+- 2026-11-07 21:05 · P3-B03 · batch close done (simplify -24/+11, figure, 3 casts, guide, doc-reviewer approve 13); CR-P3B03-01 fixed by the orchestrator (be6b4ee). PR #149 opened.
