@@ -54,6 +54,8 @@ MAX_CACHE_BYTES = 8388608
 LOG_TAIL_LINES = 20
 MAX_BENCHMARK_BYTES = 65536
 MAX_MEASURES = 200_000  # attempts whose benchmark is kept in memory (CR-P3T34-01)
+MAX_BENCHMARKS_PER_VIEW = 500  # read by one view; later views read the rest (SEC-P3T34-01)
+BENCHMARK_CHUNK = 100  # benchmarks kept as each batch is read, even past a timeout (CR-P3T34-03)
 ENDED = ("succeeded", "failed", "aborted")
 MIB = 1048576
 MAX_TRIES = 3  # sacct calls for a job it does not know yet, or not as ended; then null
@@ -469,11 +471,25 @@ class Measures:
     """What each ended attempt's benchmark file gave (None when it could not be read), by
     attempt ID, for the whole server: a job's benchmark does not change once it has ended, so
     it is read once, not on every view (CR-P3T34-01; dev-env §15.3 req. 15). Emptied when
-    MAX_MEASURES attempts are kept."""
+    MAX_MEASURES attempts are kept. At most one sweep per run reads them at a time
+    (SEC-P3T34-01)."""
 
     def __init__(self) -> None:
         self._lock = threading.Lock()
         self._found: dict[str, dict[str, Any] | None] = {}
+        self._sweeping: set[str] = set()
+
+    def claim(self, run_id: str) -> bool:
+        """True when no other sweep of the run is reading; then `release` it when done."""
+        with self._lock:
+            if run_id in self._sweeping:
+                return False
+            self._sweeping.add(run_id)
+            return True
+
+    def release(self, run_id: str) -> None:
+        with self._lock:
+            self._sweeping.discard(run_id)
 
     def get(self, ids: Iterable[str]) -> dict[str, dict[str, Any] | None]:
         with self._lock:
@@ -704,17 +720,30 @@ def task_resources(
             if r.state in ENDED and isinstance((r.resources or {}).get("benchmark"), str)
         }
     known = ctx.measures.get(benches)
-    unread = {a: path for a, path in benches.items() if a not in known}
+    unread = [(a, path) for a, path in benches.items() if a not in known]
+    unread = unread[:MAX_BENCHMARKS_PER_VIEW]
 
     def read() -> dict[str, dict[str, Any] | None]:
-        if on_slurm:
-            ctx.accounting.load(run_id)
-        return {a: _benchmark(ctx, dirs, path) for a, path in unread.items()}
+        """In the pool thread: each batch is kept as it is read, so a read that outlasts the
+        view's timeout still fills the cache (CR-P3T34-03); a run another sweep is reading
+        is left to it (SEC-P3T34-01)."""
+        if not ctx.measures.claim(run_id):
+            return {}
+        try:
+            if on_slurm:
+                ctx.accounting.load(run_id)
+            fresh: dict[str, dict[str, Any] | None] = {}
+            for i in range(0, len(unread), BENCHMARK_CHUNK):
+                batch = {a: _benchmark(ctx, dirs, p) for a, p in unread[i : i + BENCHMARK_CHUNK]}
+                ctx.measures.put(batch)
+                fresh.update(batch)
+            return fresh
+        finally:
+            ctx.measures.release(run_id)
 
     try:
         if (on_slurm and not ctx.accounting.loaded(run_id)) or unread:
-            known.update(fresh := ctx.files.run(read, ctx.timeout_s))
-            ctx.measures.put(fresh)
+            known.update(ctx.files.run(read, ctx.timeout_s))
     except Stalled:
         pass
     measured = {a: m for a, m in known.items() if m is not None}

@@ -7,6 +7,8 @@ request from the trace record at submit, its efficiency from `sacct`, then the t
 is `test_failure`'s fake (`slurm-mini`, P1 Task 22, is not built).
 """
 
+import threading
+import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -18,6 +20,7 @@ from sqlalchemy import insert, update
 from spectio.config import Settings
 from spectio.runner.sacct import SacctRow
 from spectio_server import efficiency, failure
+from spectio_server.api import runs_read
 from spectio_server.store.schema import attempts, environments, tasks
 from spectio_server.store.writer import Writer
 
@@ -499,3 +502,78 @@ def test_req15_benchmark_read_once(
     assert processes(client)["ALIGN"]["efficiency"] == first
     assert opened == ["benchmarks/S0.tsv"]  # the second view opened nothing
     assert first["measured"] == 1
+
+
+def slow_benchmarks(
+    monkeypatch: pytest.MonkeyPatch, gate: threading.Event | None = None, pause: float = 0.0
+) -> list[str]:
+    """`_benchmark` made slow (it sleeps `pause`, or waits for `gate`) past a short file
+    timeout; returns the paths it opened."""
+    monkeypatch.setattr(runs_read, "READ_TIMEOUT_S", 0.05)
+    opened: list[str] = []
+    real = failure._benchmark
+
+    def slow(ctx: Any, dirs: str, path: str) -> dict[str, Any] | None:
+        if gate is not None:
+            gate.wait(10)
+        time.sleep(pause)
+        opened.append(path)
+        return real(ctx, dirs, path)
+
+    monkeypatch.setattr(failure, "_benchmark", slow)
+    return opened
+
+
+def three_benchmarks(settings: Settings, writer: Writer) -> TestClient:
+    client = client_for(settings, writer)
+    run = Run(settings, writer, "snakemake")
+    for i in range(3):
+        submit(run, "snakemake", i, native=None)
+        finish(run, "snakemake", i)
+    return client
+
+
+def measured_soon(client: TestClient, count: int) -> None:
+    deadline = time.monotonic() + 10
+    while processes(client)["ALIGN"]["efficiency"]["measured"] != count:
+        assert time.monotonic() < deadline, "the late benchmark reads were not kept"
+        time.sleep(0.02)
+
+
+def test_req15_stalled_view_keeps_its_reads(
+    settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A view whose benchmark reads outlast the file timeout still leaves them cached
+    (CR-P3T34-03): once the pool thread is done, a later view opens no file."""
+    client = three_benchmarks(settings, writer)
+    opened = slow_benchmarks(monkeypatch, pause=0.1)
+    assert processes(client)["ALIGN"]["efficiency"]["measured"] == 0  # stalled
+    measured_soon(client, 3)
+    assert sorted(opened) == [f"benchmarks/S{i}.tsv" for i in range(3)]  # each opened once
+    processes(client)
+    assert len(opened) == 3
+
+
+def test_req13_benchmark_sweep_bounded(
+    settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """One benchmark sweep per run at a time, of at most MAX_BENCHMARKS_PER_VIEW files
+    (SEC-P3T34-01): 30 views while a sweep hangs leave the file pool free, and later views
+    get the late results."""
+    client = three_benchmarks(settings, writer)
+    monkeypatch.setattr(failure, "MAX_BENCHMARKS_PER_VIEW", 2)
+    gate = threading.Event()
+    opened = slow_benchmarks(monkeypatch, gate)
+    for _ in range(30):
+        processes(client)
+    pool = client.app.state.files  # type: ignore[attr-defined]
+    assert pool.run(lambda: "free", 1.0) == "free"  # the 30 views did not fill the pool
+    gate.set()
+    deadline = time.monotonic() + 10
+    while len(opened) < 2:
+        assert time.monotonic() < deadline, "the hung sweep never finished"
+        time.sleep(0.02)
+    time.sleep(0.2)
+    assert len(opened) == 2  # the hung sweep read at most MAX_BENCHMARKS_PER_VIEW files
+    measured_soon(client, 3)  # later views got its results and read the last one
+    assert sorted(opened) == [f"benchmarks/S{i}.tsv" for i in range(3)]
