@@ -55,13 +55,16 @@ def checkpoint_open(counts: Mapping[str, int], jobs_planned: int | None, run_sta
 @dataclass(frozen=True)
 class RunFacts:
     """What a process's status reads of its run: the engine and state; on Snakemake whether
-    `run_info` came, the rules of the rule graph, and whether a checkpoint is open."""
+    `run_info` came, the rules of the rule graph, whether a checkpoint is open, and whether
+    jobs are still to come after a `dag_updated` (its last `progress` total exceeds the jobs
+    known)."""
 
     engine: str | None
     state: str
     planned: bool = False
     rulegraph: frozenset[str] = frozenset()
     checkpoint_open: bool = False
+    more_after_dag_update: bool = False
 
 
 def process_status(
@@ -71,8 +74,9 @@ def process_status(
     one runs or more are to come, then `failed`, `stopped` or `done`. Without: Nextflow's
     `no_tasks` once `onProcessTerminate` came; Snakemake's `pending` while jobs are planned or
     before `run_info`, then `up_to_date` (in the rule graph, or nothing to be done),
-    `awaiting_checkpoint` while a checkpoint is open, else `not_needed` (ui-spec §5.2). A
-    process left with work on a run that ended is `stopped`."""
+    `awaiting_checkpoint` while a checkpoint is open, `pending` once the DAG was updated while
+    more jobs are to come, else `not_needed` (ui-spec §5.2). A process left with work on a run
+    that ended is `stopped`."""
     terminal = run.state in TERMINAL
     smk = run.engine == "snakemake"
     if sum(counts.values()):
@@ -98,4 +102,6 @@ def process_status(
         return "stopped" if terminal else "pending"
     if name in run.rulegraph:
         return "up_to_date"
-    return "awaiting_checkpoint" if run.checkpoint_open else "not_needed"
+    if run.checkpoint_open:
+        return "awaiting_checkpoint"
+    return "pending" if run.more_after_dag_update and not terminal else "not_needed"

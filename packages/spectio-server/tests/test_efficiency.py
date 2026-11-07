@@ -17,7 +17,7 @@ from sqlalchemy import insert, update
 
 from spectio.config import Settings
 from spectio.runner.sacct import SacctRow
-from spectio_server import efficiency
+from spectio_server import efficiency, failure
 from spectio_server.store.schema import attempts, environments, tasks
 from spectio_server.store.writer import Writer
 
@@ -475,3 +475,27 @@ def test_req15_5000_jobs(settings: Settings, writer: Writer, fakebin: Fake, engi
     asked = fakebin.ids()
     assert len(asked) == len(set(asked)) == 5000
     assert max(len(argv[argv.index("-j") + 1].split(",")) for argv in fakebin.calls()) == 100
+
+
+def test_req15_benchmark_read_once(
+    settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An ended attempt's benchmark is read once (CR-P3T34-01): a second By process view, as
+    each live frame fetches, opens no benchmark file and gives the same measures."""
+    client = client_for(settings, writer)
+    run = Run(settings, writer, "snakemake")
+    submit(run, "snakemake", 0, native=None)
+    finish(run, "snakemake", 0)
+    opened: list[str] = []
+    real = failure._benchmark
+
+    def spy(ctx: Any, dirs: str, path: str) -> dict[str, Any] | None:
+        opened.append(path)
+        return real(ctx, dirs, path)
+
+    monkeypatch.setattr(failure, "_benchmark", spy)
+    first = processes(client)["ALIGN"]["efficiency"]
+    assert opened == ["benchmarks/S0.tsv"]
+    assert processes(client)["ALIGN"]["efficiency"] == first
+    assert opened == ["benchmarks/S0.tsv"]  # the second view opened nothing
+    assert first["measured"] == 1

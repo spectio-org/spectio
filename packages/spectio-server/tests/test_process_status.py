@@ -124,9 +124,12 @@ def test_status_awaiting_checkpoint(settings: Settings, writer: Writer, tmp_path
     }
 
 
-def test_status_not_needed(settings: Settings, writer: Writer, tmp_path: Path) -> None:
-    """Once the checkpoint has ended, a defined rule in neither the rule graph, `run_info` nor
-    any `job_info` is not needed; a rule behind the checkpoint takes its state from its jobs."""
+def test_status_pending_after_dag_update(
+    settings: Settings, writer: Writer, tmp_path: Path
+) -> None:
+    """Once the checkpoint has ended and the DAG is updated, a defined rule with no job moves
+    from Waiting for a checkpoint to Pending while the progress total exceeds the jobs known
+    (ui-spec §5.2, CR-P3T34-02); a rule behind the checkpoint takes its state from its jobs."""
     client = client_for(settings, writer)
     run = smk_run(settings, writer, tmp_path)
     checkpoint_running(run)
@@ -134,10 +137,31 @@ def test_status_not_needed(settings: Settings, writer: Writer, tmp_path: Path) -
     run.push("snakemake.dag_updated")
     run.push("snakemake.progress", done=3, total=8)
     found = statuses(client)
-    assert found["unused"] == "not_needed"
-    assert found["align"] == "not_needed"  # its jobs are not known until their job_info
+    assert found["align"] == "pending"  # its jobs are not known until their job_info
+    assert found["unused"] == "pending"  # Spectio cannot tell which rule the 5 jobs are of
     job(run, 4, "align")
     assert statuses(client)["align"] == "running"
+
+
+def test_status_not_needed(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """Once the checkpoint has ended, a defined rule in neither the rule graph, `run_info` nor
+    any `job_info` is not needed when every job of the progress total is known, or once the
+    run has ended."""
+    client = client_for(settings, writer)
+    run = smk_run(settings, writer, tmp_path)
+    checkpoint_running(run)
+    run.push("snakemake.job_finished", job_id=3)
+    run.push("snakemake.dag_updated")
+    run.push("snakemake.progress", done=3, total=4)
+    job(run, 4, "align")
+    assert statuses(client)["unused"] == "not_needed"  # the 4 jobs of the total are known
+    run.push("snakemake.progress", done=3, total=8)
+    assert statuses(client)["unused"] == "pending"
+    report = HeadReport(
+        state="exited", native_id="1", node="n", exit_code=0, ended=True, failure=None
+    )
+    writer.submit(lambda c: apply_head_report(c, run.launch_id, report)).result()
+    assert statuses(client)["unused"] == "not_needed"  # the run ended
 
 
 def test_status_up_to_date(settings: Settings, writer: Writer, tmp_path: Path) -> None:

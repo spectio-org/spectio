@@ -53,6 +53,7 @@ CACHE_FILE = "sacct.json"  # in <run dir>/.spectio/
 MAX_CACHE_BYTES = 8388608
 LOG_TAIL_LINES = 20
 MAX_BENCHMARK_BYTES = 65536
+MAX_MEASURES = 200_000  # attempts whose benchmark is kept in memory (CR-P3T34-01)
 ENDED = ("succeeded", "failed", "aborted")
 MIB = 1048576
 MAX_TRIES = 3  # sacct calls for a job it does not know yet, or not as ended; then null
@@ -317,6 +318,11 @@ class Accounting:
                 return "pending"
         return "unavailable"
 
+    def loaded(self, run_id: str) -> bool:
+        """True once the run's cache file was read: a view need not enter the file pool for it."""
+        with self._lock:
+            return run_id in self._loaded
+
     def failed(self, run_id: str, job: str) -> bool:
         """True when the call that asked `job` failed: this process does not ask it again."""
         with self._lock:
@@ -459,15 +465,38 @@ def _parse_cache(data: bytes) -> dict[str, SacctRow | None]:
 # --- The run's failures (GET /runs/{id}) -----------------------------------------------------
 
 
+class Measures:
+    """What each ended attempt's benchmark file gave (None when it could not be read), by
+    attempt ID, for the whole server: a job's benchmark does not change once it has ended, so
+    it is read once, not on every view (CR-P3T34-01; dev-env §15.3 req. 15). Emptied when
+    MAX_MEASURES attempts are kept."""
+
+    def __init__(self) -> None:
+        self._lock = threading.Lock()
+        self._found: dict[str, dict[str, Any] | None] = {}
+
+    def get(self, ids: Iterable[str]) -> dict[str, dict[str, Any] | None]:
+        with self._lock:
+            return {a: self._found[a] for a in ids if a in self._found}
+
+    def put(self, found: dict[str, dict[str, Any] | None]) -> None:
+        with self._lock:
+            if len(self._found) + len(found) > MAX_MEASURES:
+                self._found.clear()
+            self._found.update(found)
+
+
 @dataclass(frozen=True)
 class Context:
-    """What a view reads with: the runs root, the file pool and its timeout, the accounting."""
+    """What a view reads with: the runs root, the file pool and its timeout, the accounting,
+    the benchmarks already read."""
 
     runs_root: Path
     files: FilePool
     accounting: Accounting
     timeout_s: float
     settings: Settings  # for the run's command (P1 Task 30)
+    measures: Measures
 
 
 def _last_attempt() -> Any:
@@ -652,6 +681,7 @@ def task_resources(
             tasks.c.id,
             tasks.c.process_or_rule,
             tasks.c.state.label("task_state"),
+            attempts.c.id.label("attempt_id"),
             attempts.c.n,
             attempts.c.state,
             attempts.c.native_id,
@@ -666,23 +696,28 @@ def task_resources(
     if task_ids is not None:
         query = query.where(tasks.c.id.in_(task_ids))
     rows = conn.execute(query).all()
-    benches: dict[str, str] = {}
+    benches: dict[str, str] = {}  # attempt ID → its benchmark path
     if smk:
         benches = {
-            r.id: (r.resources or {})["benchmark"]
+            r.attempt_id: (r.resources or {})["benchmark"]
             for r in rows
             if r.state in ENDED and isinstance((r.resources or {}).get("benchmark"), str)
         }
+    known = ctx.measures.get(benches)
+    unread = {a: path for a, path in benches.items() if a not in known}
 
-    def read() -> dict[str, dict[str, Any]]:
+    def read() -> dict[str, dict[str, Any] | None]:
         if on_slurm:
             ctx.accounting.load(run_id)
-        return {task: m for task, path in benches.items() if (m := _benchmark(ctx, dirs, path))}
+        return {a: _benchmark(ctx, dirs, path) for a, path in unread.items()}
 
     try:
-        measured = ctx.files.run(read, ctx.timeout_s) if on_slurm or benches else {}
+        if (on_slurm and not ctx.accounting.loaded(run_id)) or unread:
+            known.update(fresh := ctx.files.run(read, ctx.timeout_s))
+            ctx.measures.put(fresh)
     except Stalled:
-        measured = {}
+        pass
+    measured = {a: m for a, m in known.items() if m is not None}
     cached: dict[str, SacctRow | None] = {}
     if on_slurm:
         launch = str(run_paths(ctx.runs_root, dirs).launch_dir)
@@ -701,8 +736,8 @@ def task_resources(
         if engine == "nextflow" and any(own.get(k) is not None for k in MEASURED):
             values.update({k: own.get(k) for k in MEASURED}, source="trace")
             by_engine = "trace", own
-        elif r.id in measured:
-            bench = measured[r.id]
+        elif r.attempt_id in measured:
+            bench = measured[r.attempt_id]
             values.update({k: bench[k] for k in MEASURED}, source="benchmark")
             by_engine = "benchmark", {**own, **bench}
         elif row is not None:

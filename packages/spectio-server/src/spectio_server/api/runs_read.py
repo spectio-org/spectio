@@ -241,7 +241,12 @@ def context(request: Request) -> Context:
     """What a view reads files and accounting with (P1 Task 29)."""
     state = request.app.state
     return Context(
-        state.settings.runs_root, state.files, state.accounting, READ_TIMEOUT_S, state.settings
+        state.settings.runs_root,
+        state.files,
+        state.accounting,
+        READ_TIMEOUT_S,
+        state.settings,
+        state.measures,
     )
 
 
@@ -490,8 +495,8 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
 
 
 def _run_facts(conn: Connection, run: Row[Any]) -> RunFacts:
-    """What the process statuses read of the run (Snakemake: its `run_info`, rule graph and
-    open checkpoints)."""
+    """What the process statuses read of the run (Snakemake: its `run_info`, rule graph, open
+    checkpoints, and whether jobs are to come after a DAG update)."""
     if run.engine != "snakemake":
         return RunFacts(run.engine, run.state)
     mine = events.c.run_id == run.id
@@ -510,12 +515,15 @@ def _run_facts(conn: Connection, run: Row[Any]) -> RunFacts:
         for n in (nodes if isinstance(nodes, list) else [])
         if isinstance(n, dict) and isinstance(n.get("rule"), str)
     )
+    open_, dag_updates = _checkpoints(conn, [run])[run.id]
+    known = sum((run.task_counts or {}).values())
     return RunFacts(
         run.engine,
         run.state,
         planned is not None,
         rules,
-        bool(_checkpoints(conn, [run])[run.id][0]),
+        bool(open_),
+        dag_updates > 0 and (run.tasks_expected or 0) > known,
     )
 
 
