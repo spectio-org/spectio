@@ -689,3 +689,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-07 21:05 · P3-B03 · batch close done (simplify -24/+11, figure, 3 casts, guide, doc-reviewer approve 13); CR-P3B03-01 fixed by the orchestrator (be6b4ee). PR #149 opened.
 - 2026-11-07 21:20 · P3-B03 · #149 merged (f5f8849, no-figure label: the MCP body writer drops embedded images); promotion #150 merged into main (5ab4090). Next: M9 Tasks 33-35.
 - 2026-11-07 21:55 · P3-t33 · built (review approve 0/0/3, security approve 0/0/4, 1 round); PR #151 opened. Thomas: Snakemake resources per job and per rule too, to be stated in Task 34's brief.
+- 2026-11-07 22:00 · P3-t33 · merged #151 (ab79707). Next: P3-t34.
