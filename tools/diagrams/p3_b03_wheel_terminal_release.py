@@ -373,7 +373,7 @@ def build(theme: Theme) -> Sketch:
         bw = n * 0.55
         bar(s, 370, y, bw, 22, "bar_green")
         s.text(380 + bw, y + 17, label, size=13.5, anchor="start")
-    s.text(50, LOW + 222, "web tests not run here: no `node_modules`", size=12.5, anchor="start",
+    s.text(50, LOW + 222, "the simplifier ran no web tests; the doc-writer's run is on P3-M4", size=12.5, anchor="start",
            colour=t.dim)
 
     sx, sy = 1090, LOW + 2
