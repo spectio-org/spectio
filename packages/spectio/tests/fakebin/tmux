@@ -1,0 +1,119 @@
+#!/usr/bin/env python3
+"""A fake tmux for the unit tests of the tmux launcher (P1 Task 10).
+
+It keeps its sessions in `$TMUX_TMPDIR`, where the real tmux keeps its socket, and logs every
+call's arguments to `calls.jsonl` there. `new-session` runs the command detached in its own
+session and process group, as a pane's command is, and prints the `-F` format; `list-panes`
+and `has-session` take an exact target (`=name`) only; `send-keys ... C-c` sends SIGINT to the
+pane's process group, as a Ctrl-C typed in the pane does. A file `fail` there makes the next
+call print its text to stderr and exit 1.
+"""
+
+import json
+import os
+import signal
+import subprocess
+import sys
+from pathlib import Path
+
+state = Path(os.environ["TMUX_TMPDIR"])
+sessions = state / "sessions"
+sessions.mkdir(exist_ok=True)
+args = sys.argv[1:]
+with (state / "calls.jsonl").open("a") as calls:
+    calls.write(json.dumps(args) + "\n")
+
+
+def die(message: str) -> None:
+    print(message, file=sys.stderr)
+    sys.exit(1)
+
+
+fail = state / "fail"
+if fail.exists():
+    message = fail.read_text()
+    fail.unlink()
+    die(message)
+
+
+def alive(pid: int) -> bool:
+    try:
+        return Path(f"/proc/{pid}/stat").read_text().rsplit(") ", 1)[1].split()[0] != "Z"
+    except OSError:
+        return False
+
+
+def pane_of(name: str) -> tuple[str, int] | None:
+    """The live pane of session `name`, as (pane ID, pane PID); a dead one closes it."""
+    path = sessions / name
+    if not path.exists():
+        return None
+    pane, pid = path.read_text().split()
+    if not alive(int(pid)):
+        path.unlink()
+        return None
+    return pane, int(pid)
+
+
+def options(words: list[str], flags: str, valued: str) -> tuple[dict[str, str], list[str]]:
+    found: dict[str, str] = {}
+    while words and words[0].startswith("-"):
+        word = words.pop(0)
+        if word[1:] in flags:
+            found[word[1:]] = ""
+        elif word[1:] in valued:
+            found[word[1:]] = words.pop(0)
+        else:
+            die(f"fake tmux: unknown option {word}")
+    return found, words
+
+
+def exact(target: str) -> str:
+    if not target.startswith("="):
+        die(f"fake tmux: not an exact target: {target}")
+    return target[1:]
+
+
+def fmt(template: str, pane: str, pid: int) -> str:
+    return template.replace("#{pane_id}", pane).replace("#{pane_pid}", str(pid))
+
+
+command, rest = args[0], args[1:]
+if command == "new-session":
+    opts, words = options(rest, "dP", "Fsc")
+    name = opts["s"]
+    if pane_of(name) is not None:
+        die(f"duplicate session: {name}")
+    counter = state / "panes"
+    n = int(counter.read_text()) + 1 if counter.exists() else 0
+    counter.write_text(str(n))
+    with (state / f"{name}.out").open("ab") as out:
+        proc = subprocess.Popen(
+            words,
+            cwd=opts["c"],
+            stdin=subprocess.DEVNULL,
+            stdout=out,
+            stderr=out,
+            start_new_session=True,
+        )
+    (sessions / name).write_text(f"%{n} {proc.pid}")
+    if "P" in opts:
+        print(fmt(opts.get("F", "#{pane_id}"), f"%{n}", proc.pid))
+elif command in ("list-panes", "has-session"):
+    opts, _ = options(rest, "s", "tF")
+    name = exact(opts["t"])
+    found = pane_of(name)
+    if found is None:
+        die(f"can't find session: {name}")
+    if command == "list-panes":
+        print(fmt(opts.get("F", "#{pane_id}"), *found))
+elif command == "send-keys":
+    opts, keys = options(rest, "", "t")
+    panes = [p for p in (pane_of(s.name) for s in sessions.iterdir()) if p is not None]
+    pid = next((pid for pane, pid in panes if pane == opts["t"]), None)
+    if pid is None:
+        die(f"can't find pane: {opts['t']}")
+    if "C-c" in keys:
+        os.killpg(pid, signal.SIGINT)
+else:
+    die(f"fake tmux: unknown command {command}")

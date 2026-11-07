@@ -1,6 +1,6 @@
 """`spectio serve` (P1 Task 11): the server on 127.0.0.1, in the foreground.
 
-`--detach` (a tmux session `spectio-server`) comes with the tmux launcher of P1 Task 10. There
+`--detach` (a tmux session `spectio-server`) is not built yet: follow-up FU-P3-44. There
 is no `--host` flag: 0.0.1 listens on 127.0.0.1 only (dev-env §15.3 req. 1).
 """
 

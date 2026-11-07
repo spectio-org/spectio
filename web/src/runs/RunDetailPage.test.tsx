@@ -289,7 +289,8 @@ test("UX-PAR-23: the Summary aside opens the head by hand and tails the engine l
   detail({}, { "/api/v1/version": { ...VERSION, executor: "slurm" } });
   app(`/runs/${ID}`);
   const attach = await screen.findByRole("region", { name: "Open the head by hand" });
-  expect(within(attach).getByText(`tmux attach -t spectio-${ID}`, { exact: false })).toBeInTheDocument();
+  // Each value quoted, the session targeted exactly (SEC-P3PARA-01; dev-env §15.3 req. 11).
+  expect(within(attach).getByText(`ssh -- 'login1' tmux attach -t '=spectio-${ID}'`, { normalizer: (t) => t.replace(/\s+/g, " ") })).toBeInTheDocument();
   expect(within(attach).getByRole("button", { name: "Copy the commands to open the head by hand" })).toBeInTheDocument();
   const log = screen.getByRole("region", { name: "Engine log · last lines" });
   expect(await within(log).findByText(/N E X T F L O W/)).toBeInTheDocument();
@@ -346,6 +347,16 @@ test("UX-PAR-23: with the local executor the head has no terminal: its process i
   const attach = await screen.findByRole("region", { name: "Open the head by hand" });
   expect(within(attach).getByText("ps -o pid,etime,args --sid 18823")).toBeInTheDocument();
   expect(within(attach).queryByText(/tmux/)).toBeNull();
+});
+
+test.each([
+  ["a node that starts with -", { session: `spectio-${ID}`, node: "-oProxyCommand=x" }],
+  ["a session with shell words", { session: "spectio-$(rm -rf ~)", node: "login1" }],
+])("SEC-P3PARA-01: no head commands to copy for %s", async (_, head) => {
+  detail({ head: { ...head, alive: true, exit_code: null } }, { "/api/v1/version": { ...VERSION, executor: "slurm" } });
+  app(`/runs/${ID}`);
+  await screen.findByRole("region", { name: "Engine log · last lines" });
+  expect(screen.queryByRole("region", { name: "Open the head by hand" })).toBeNull();
 });
 
 test("UX-PAR-27: the Logs tab opens on the engine log, with Reload and Download", async () => {

@@ -131,7 +131,7 @@ def run_json(row: Row[Any], profiles: list[str], stage_mode: str | None = None) 
         observed = row.origin == "cli-observed"
         head = {
             "session": None if observed else row.head_native_id,
-            "node": socket.gethostname(),  # the local launcher's node: the server's
+            "node": socket.gethostname(),  # both launchers' heads run on the server's node
             "alive": row.exited_at is None,
             "exit_code": row.exit_code,
         }

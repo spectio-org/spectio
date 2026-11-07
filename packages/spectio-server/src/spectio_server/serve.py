@@ -16,9 +16,9 @@ The start, in order, each refusal a `ServeError` (exit 2) before anything is lef
 5. the database, the tenancy rows, the run directories missing from the index (`rebuild.py`),
    then one runner tick (adopt the heads, replay the spools), the runner thread and uvicorn.
 
-Local-only build (inbox #80 (a)): heads start with the local launcher only. On a SLURM
-environment the runner loop is not started until the tmux launcher (P1 Task 10), and the API is
-not served until sign-in is complete (P1 Task 16, inbox #86).
+Heads start with the local launcher on a local environment and with the tmux launcher on a
+SLURM one (P1 Task 10), in a tmux session per run on this login node. On a SLURM environment the
+API is not served until sign-in is complete (P1 Task 16, inbox #86).
 
 Each start writes a new server key next to the database (`auth.secrets`, P1 Task 12) and prints
 a first token link; `spectio login --print-link` asks for another one.
@@ -48,6 +48,7 @@ from spectio.ports import port_owner
 from spectio.runner.local import LocalLauncher
 from spectio.runner.loop import RunnerLoop
 from spectio.runner.rundir import open_private, private_dir, read_small
+from spectio.runner.tmux import TmuxLauncher
 from spectio_server.app import create_app
 from spectio_server.auth.routes import NO_PASTE, link_url
 from spectio_server.auth.secrets import ServerKey
@@ -75,7 +76,7 @@ class Booted:
     writer: Writer
     new: bool  # the database was just created
     rebuilt: Rebuilt
-    loop: RunnerLoop | None  # None on a SLURM environment (P1 Task 10)
+    loop: RunnerLoop
     files: FilePool  # the routes' reads of a run's files (req. 13)
     stage_files: FilePool  # the freeze's: route reads never take its slots (SEC-P3T28-06)
 
@@ -118,8 +119,7 @@ def start_text(settings: Settings, node: str, user: str, no_api: str | None, lin
             f"{user}@{node}",
             f"2. Then open this link {once}",
             f"   {link}",
-            "Runs are not launched or watched on a SLURM environment until the tmux launcher "
-            "(P1 Task 10).",
+            f"Each run's head runs in a tmux session on {node}: tmux attach -t spectio-<run ID>.",
             "The API is served in local mode only until sign-in is complete (P1 Tasks 13 to 16).",
         ]
     lines += ["New link at any time: spectio login --print-link", NO_PASTE]
@@ -140,29 +140,23 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
         files, stage_files = FilePool(), FilePool(FREEZE_WORKERS, 0)
         rebuilt = rebuild_index(writer, settings.runs_root)
         log.info("index %s: %d runs added", "rebuilt" if new else "reconciled", rebuilt.added)
-        loop = None
-        if settings.executor == "local":
-            loop = RunnerLoop(
-                StoreSink(
-                    writer,
-                    settings.runs_root,
-                    settings.data_dir / "overlays",
-                    settings.data_dir,
-                    stage_files,
-                ),
-                LocalLauncher(),
-                settings,
-                tick_s=settings.runner.spool_s,
-            )
-            try:
-                loop.tick()
-            except Exception:  # as RunnerLoop.run does: the next tick tries again
-                log.exception("first runner tick failed")
-        else:
-            log.warning(
-                "SLURM environment: the runner loop is not started; heads need the tmux "
-                "launcher (P1 Task 10), not built yet"
-            )
+        launcher = LocalLauncher() if settings.executor == "local" else TmuxLauncher()
+        loop = RunnerLoop(
+            StoreSink(
+                writer,
+                settings.runs_root,
+                settings.data_dir / "overlays",
+                settings.data_dir,
+                stage_files,
+            ),
+            launcher,
+            settings,
+            tick_s=settings.runner.spool_s,
+        )
+        try:
+            loop.tick()
+        except Exception:  # as RunnerLoop.run does: the next tick tries again
+            log.exception("first runner tick failed")
     except BaseException:
         writer.close()
         engine.dispose()
@@ -297,13 +291,12 @@ def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
         )
         link = link_url(settings.port, api.state.tickets.mint())
         server = Started(sock, uvicorn.Server(config), booted, api.state.no_api, link)
-        if booted.loop is not None:
-            thread = threading.Thread(
-                target=booted.loop.run, args=(server.stop,), name="spectio-runner"
-            )
-            thread.start()
-            stack.callback(thread.join)
-            stack.callback(server.stop.set)
+        thread = threading.Thread(
+            target=booted.loop.run, args=(server.stop,), name="spectio-runner"
+        )
+        thread.start()
+        stack.callback(thread.join)
+        stack.callback(server.stop.set)
         yield server
 
 
