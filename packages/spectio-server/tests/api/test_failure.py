@@ -2,8 +2,10 @@
 and Resources; architecture §13.7; dev-env §15.3 req. 15).
 
 `sacct` is a fake on its own PATH directory (`slurm-mini`, P1 Task 22, is not built). The
-Snakemake side is fed by synthetic event lines in the shape the logger plugin is to send (P1
-Task 7 is not built).
+Snakemake side is fed by synthetic event lines in the shape the logger plugin sends, and, in
+`test_smk_real_plugin`, by the plugin's own spool from a real Snakemake 9.27.1 run (P1 Task 7).
+The SLURM fields (`slurm_submitted`, `aux.external_jobid`, the executor's `msg`) stay synthetic
+until `slurm-mini` runs the plugin on a cluster.
 """
 
 import json
@@ -32,10 +34,10 @@ from spectio_server.projector.ingest import ingest
 from spectio_server.serve import boot
 from spectio_server.stages.freeze import StageSources
 from spectio_server.store.db import open_db
-from spectio_server.store.schema import events, tasks
+from spectio_server.store.schema import attempts, events, tasks
 from spectio_server.store.writer import Writer
 
-from ..test_serve import head_files, make_run, run_id, settle
+from ..test_serve import FIXTURE_RUN, FIXTURES, head_files, make_run, run_id, settle
 from .conftest import add_run, client_for
 
 API = "/api/v1"
@@ -479,6 +481,51 @@ def test_smk_failure_from_message(settings: Settings, writer: Writer, fakebin: F
     with writer.engine.connect() as conn:
         stored = json.dumps(list(conn.execute(select(events.c.payload)).scalars()))
     assert "s3cret" not in stored and "SLURM-job" not in stored
+
+
+def test_smk_real_plugin(settings: Settings, writer: Writer) -> None:
+    """P1 Task 7: the logger plugin's spool from a real Snakemake 9.27.1 run (the `files`
+    workflow of engine-bridges/snakemake-logger-plugin-spectio, recorded by its
+    `test_recorded_fixture_current`), projected unchanged: the requested threads, memory and
+    runtime and the benchmark of `job_info` (Task 29), the rules' logs of `job_info` and
+    `job_error` (Task 28), and the failure of the job that broke."""
+    client = client_for(settings, writer)
+    run = Run(settings, writer, "snakemake")
+    launch = run.paths.launch_dir
+    text = (FIXTURES / "logger-plugin" / "snakemake-9.27.1_files.spool.jsonl").read_text()
+    repo = Path(__file__).resolve().parents[4]
+    text = text.replace(FIXTURE_RUN, RUN).replace("<launch>", str(launch))
+    text = text.replace("<repo>", str(repo))
+    found = [SpoolEvent.model_validate_json(line) for line in text.splitlines()]
+    write_private(launch / "logs" / "broken.log", "broken\n")
+    write_private(
+        launch / "benchmarks" / "measured.tsv",
+        "s\th:m:s\tmax_rss\tmax_vms\tmax_uss\tmax_pss\tio_in\tio_out\tmean_load\tcpu_time\n"
+        "0.0125\t0:00:00\t3.5\t9\t1\t1\t0\t0\t0.0\t0.0\n",
+    )
+    push(writer, settings, run.launch_id, *found)
+
+    items = {i["process"]: i for i in task_items(client)}
+    assert items["measured"]["resources"] == {
+        "cpus": 2,
+        "memory_bytes": 100 * 1024**2,
+        "time_s": 300.0,
+        "realtime_s": 0.0125,
+        "cpu_percent": 0.0,
+        "peak_rss_bytes": int(3.5 * 1024**2),
+        "source": "benchmark",
+    }
+    (failure,) = detail(client)["failures"]
+    assert failure["process"] == "broken"
+    assert failure["log_tail"] == "broken"
+    with writer.engine.connect() as conn:
+        logs: dict[str, Any] = dict(
+            conn.execute(select(tasks.c.process_or_rule, attempts.c.logs).join(attempts)).all()
+        )
+    assert logs == {
+        "measured": [{"path": "logs/measured.log", "kind": "rule_log"}],
+        "broken": [{"path": "logs/broken.log", "kind": "rule_log"}],
+    }
 
 
 # --- dev-env §15.3 req. 15 ------------------------------------------------------------------
