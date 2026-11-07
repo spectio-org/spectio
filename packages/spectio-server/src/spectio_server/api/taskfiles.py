@@ -15,6 +15,7 @@ counts the file's bytes, while the body has its escape sequences removed (and, f
 """
 
 import errno
+import logging
 import re
 from datetime import UTC, datetime
 from pathlib import Path
@@ -29,7 +30,7 @@ from spectio_server.api.models import TaskFiles
 from spectio_server.api.problems import Invalid, Problem, not_found
 from spectio_server.api.runs_read import read
 from spectio_server.files.confine import MAX_READ, TAIL, NotAllowed, NotFound
-from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
+from spectio_server.files.pool import READ_TIMEOUT_S, Stalled
 from spectio_server.files.taskfiles import (
     AttemptFiles,
     Binary,
@@ -40,8 +41,7 @@ from spectio_server.files.taskfiles import (
 )
 from spectio_server.store.schema import attempts, runs, tasks, workflow_versions, workflows
 
-__all__ = ["READ_TIMEOUT_S", "FilePool", "load_attempt", "router"]
-
+log = logging.getLogger(__name__)
 router = APIRouter()
 
 HEADERS = {
@@ -57,6 +57,7 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
     row = conn.execute(
         select(
             tasks.c.run_id,
+            runs.c.lineage_id,
             workflows.c.engine,
             attempts.c.state,
             attempts.c.work_dir,
@@ -79,7 +80,13 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
         if isinstance(log, dict) and isinstance(log.get("path"), str)
     )
     return AttemptFiles(
-        row.run_id, row.engine, row.state, row.work_dir, row.native_id, logs, runs_root
+        row.lineage_id or row.run_id,
+        row.engine,
+        row.state,
+        row.work_dir,
+        row.native_id,
+        logs,
+        runs_root,
     )
 
 
@@ -94,9 +101,20 @@ def _attempt(request: Request, task_id: str, n: int) -> AttemptFiles:
 _OFFLINE = frozenset({errno.EIO, errno.ESTALE})  # a mount that failed, not a missing file
 
 
-def _in_pool(request: Request, job: Any) -> Any:
+def in_pool(
+    request: Request,
+    job: Any,
+    timeout_s: float | None = None,
+    missing: str = "log-not-found",
+    refused_missing: bool = False,
+) -> Any:
+    """`job()` in the routes' file pool, its refusals mapped to problems (one mapping for every
+    file route: CR-P3T28-01 r4): `503 runner-offline`, `415 binary-file`, `410 log-cleaned`,
+    `422 file-not-allowed` (`404 <missing>` with `refused_missing`, as a run log answers it),
+    and `404 <missing>`. Any other file system error is `503` for `EIO` and `ESTALE`, else
+    `404`, with a fixed text, and is logged (CR-P3T28-02 r4)."""
     try:
-        return request.app.state.files.run(job, READ_TIMEOUT_S)
+        return request.app.state.files.run(job, timeout_s or READ_TIMEOUT_S)
     except Stalled as exc:
         raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
     except Binary as exc:
@@ -104,15 +122,18 @@ def _in_pool(request: Request, job: Any) -> Any:
     except Cleaned as exc:
         raise Problem(410, "log-cleaned", "Cleaned", str(exc)) from None
     except NotAllowed as exc:
+        if refused_missing:
+            raise not_found(str(exc), missing) from None
         raise Problem(422, "file-not-allowed", "File not allowed", str(exc)) from None
     except NotFound as exc:
-        raise not_found(str(exc), "log-not-found") from None
+        raise not_found(str(exc), missing) from None
     except OSError as exc:  # fixed text: never the path or the system's message (SEC-P3T28-04)
+        log.warning("file read failed on %s: %s", request.url.path, exc)
         if exc.errno in _OFFLINE:
             raise Problem(
                 503, "runner-offline", "File system not answering", "the file system failed"
             ) from None
-        raise not_found("the file could not be read", "log-not-found") from None
+        raise not_found("the file could not be read", missing) from None
 
 
 def _iso(mtime: float | None) -> str | None:
@@ -122,7 +143,7 @@ def _iso(mtime: float | None) -> str | None:
 @router.get("/tasks/{task_id}/attempts/{n}/files", response_model=TaskFiles)
 def task_files(request: Request, task_id: str, n: int) -> Response:
     attempt = _attempt(request, task_id, n)
-    files = _in_pool(request, lambda: list_task_files(attempt))
+    files = in_pool(request, lambda: list_task_files(attempt))
     body = TaskFiles.model_validate(
         {
             "task_id": task_id,
@@ -168,7 +189,7 @@ def task_file(
 ) -> Response:
     attempt = _attempt(request, task_id, n)
     byte_range = _byte_range(request.headers.get("range"))
-    served = _in_pool(
+    served = in_pool(
         request,
         lambda: read_task_file(attempt, name, max_bytes=tail, byte_range=byte_range),
     )

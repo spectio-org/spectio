@@ -11,6 +11,7 @@ derived from the runs root and the run ID, and walked one private directory at a
 import json
 import logging
 import os
+import re
 import shlex
 import threading
 import time
@@ -20,15 +21,18 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, JsonValue
+from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
 from spectio.config import Settings
 from spectio.runner.engines import EngineError, check_engine
+from spectio.runner.resume import clear_stale_lock, prove
 from spectio.runner.rundir import (
+    RUN_ID,
     check_launch_dir,
     make_run_dirs,
     private_dir,
     read_small,
+    run_paths,
     write_file,
 )
 from spectio.runner.spool import SPOOL_REFUSED, try_read_spool
@@ -39,6 +43,7 @@ from spectio.runner.types import (
     Launcher,
     LaunchRef,
     LaunchSpec,
+    ResumeSource,
     RunnerSink,
     SpoolBatch,
 )
@@ -47,17 +52,37 @@ log = logging.getLogger(__name__)
 
 LAUNCH_FAILED = "launch-failed.json"
 CANCEL = "cancel"
+# The launch whose head files `.spectio/` holds (CR-P3T09-11): head.pid, head.exit, cancel and
+# launch-failed.json are named per run, so a later launch clears an earlier one's first. No file
+# is launch 1, as before P1 Task 30.
+OWNER = "launch"
+HEAD_FILES = ("head.pid", "head.exit", CANCEL, LAUNCH_FAILED)
+_OWNER_LINE = re.compile(r"([1-9][0-9]{0,8})\n")
 LAUNCH_CLASSES = frozenset({"launch_error", "engine_missing", "engine_version"})
 
 
+class ResumePayload(BaseModel):
+    """What `:relaunch` mode `resume` asks (P1 Task 30): run in `run_id`'s directories after
+    `parent_run_id`, found at `device` and `inode` when the server checked them."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    run_id: str = Field(pattern=rf"^{RUN_ID.pattern}$")
+    parent_run_id: str = Field(pattern=rf"^{RUN_ID.pattern}$")
+    engine_session_id: str | None = None
+    device: int
+    inode: int
+
+
 class LaunchPayload(BaseModel):
-    """The payload of a `launch` command (written by P1 Task 17)."""
+    """The payload of a `launch` command (written by P1 Tasks 17 and 30)."""
 
     model_config = ConfigDict(extra="forbid")
 
     location: str
     profiles: list[str] = []
     params: dict[str, JsonValue] = {}
+    resume_of: ResumePayload | None = None
 
 
 def _now() -> str:
@@ -176,6 +201,9 @@ class RunnerLoop:
             paths = make_run_dirs(root, ref.run_id)
             check_launch_dir(root, ref.run_id, ref.launch_dir)
             with private_dir(root, ref.run_id, "launch", ".spectio") as fd:
+                owner = _claim(fd, ref.launch_n)
+                if owner != ref.launch_n:
+                    return f"launch {owner} owns the head files: launch {ref.launch_n} is late"
                 failed = _read_json(fd, LAUNCH_FAILED)
                 started = _exists(fd, "head.pid") or _exists(fd, "head.exit")
                 cancelled = _exists(fd, CANCEL)
@@ -204,6 +232,8 @@ class RunnerLoop:
             payload = LaunchPayload.model_validate(command.payload)
             if not Path(payload.location).is_absolute():
                 raise ValueError(f"{payload.location!r} is not an absolute path")
+            asked = payload.resume_of
+            resume = None if asked is None else self._resume_source(ref, asked)
             engines = self.settings.engines
             cmd = engines.nextflow_cmd if ref.engine == "nextflow" else engines.snakemake_cmd
             info = check_engine(ref.engine, cmd)
@@ -220,6 +250,7 @@ class RunnerLoop:
                 slurm=self.settings.slurm if self.settings.executor == "slurm" else None,
                 nxf_opts=engines.nxf_opts,
                 extra_args=engines.extra_args.get(ref.engine, []),
+                resume_of=resume,
             )
             native_id = self.launcher.submit(spec)
         except EngineError as exc:
@@ -229,6 +260,25 @@ class RunnerLoop:
         self._known.add(ref.launch_id)
         self._report(ref, HeadReport("starting", native_id, None, None, False, None))
         return None
+
+    def _resume_source(self, ref: LaunchRef, asked: ResumePayload) -> ResumeSource:
+        """The parent's directories, checked again now (req. 16): its head gone, nobody in the
+        launch directory, and that directory still the one the server checked. A lock its
+        killed head left is removed. Raises NotResumable (a ValueError)."""
+        root = self.settings.runs_root
+        found = prove(root, asked.run_id, asked.parent_run_id)
+        if found != (asked.device, asked.inode):
+            raise ValueError("the parent's launch directory changed since Resume was asked")
+        clear_stale_lock(root, asked.run_id)
+        parent = run_paths(root, asked.run_id)
+        return ResumeSource(
+            launch_dir=parent.launch_dir,
+            work_dir=parent.work_dir,
+            device=found[0],
+            inode=found[1],
+            engine_session_id=asked.engine_session_id,
+            unlock=ref.engine == "snakemake",  # its head is proven gone: prove() above
+        )
 
     def _fail(self, ref: LaunchRef, class_: str, message: str) -> str:
         """`.spectio/launch-failed.json`, when the directory can hold it, and the failure."""
@@ -253,6 +303,9 @@ class RunnerLoop:
             make_run_dirs(root, ref.run_id)
         check_launch_dir(root, ref.run_id, ref.launch_dir)
         with private_dir(root, ref.run_id, "launch", ".spectio") as fd:
+            owner = _claim(fd, ref.launch_n)
+            if owner != ref.launch_n:
+                return f"launch {owner} owns the head files: launch {ref.launch_n} is late"
             write_file(fd, CANCEL, json.dumps({"time": _now()}).encode())
         if native_id is None:
             return None
@@ -307,6 +360,27 @@ class RunnerLoop:
             self._refused.discard(ref.launch_id)
         if batch.events or +batch.drops or batch.cursor != cursor:
             self.sink.ingest(ref.launch_id, batch)
+
+
+def _claim(dir_fd: int, launch_n: int) -> int:
+    """The launch that owns the head files, after launch `launch_n` took them from an earlier
+    one, whose files it removes first (CR-P3T09-11). A later owner is returned unchanged."""
+    raw = read_small(dir_fd, OWNER, cap=16)
+    owner = 1
+    if raw is not None:
+        match = _OWNER_LINE.fullmatch(raw.decode("ascii", "replace"))
+        if match is None:
+            raise ValueError(f".spectio/{OWNER} is not a launch number")
+        owner = int(match[1])
+    if owner >= launch_n:
+        return owner
+    for name in HEAD_FILES:
+        try:
+            os.unlink(name, dir_fd=dir_fd)
+        except FileNotFoundError:
+            pass
+    write_file(dir_fd, OWNER, f"{launch_n}\n".encode())
+    return launch_n
 
 
 def _exists(dir_fd: int, name: str) -> bool:

@@ -112,7 +112,72 @@ export interface RunDetail extends Run {
    * 10 (api §5, P1 Task 29). */
   failures: Failure[];
   failures_total: number;
+  /** The engine command as the head script runs it; null for a run started from a terminal
+   * (api §5, P1 Task 30). */
+  command: { argv: string[]; text: string } | null;
+  parent_run_id: string | null;
+  /** The runs that resumed this one (P1 Task 30). */
+  resumed_as: { id: string; name: string | null; state: RunState }[];
+  /** Whether Resume is allowed now, and why not (api §5, P1 Task 30). */
+  actions: { resume: { allowed: boolean; reason: ResumeReason | null } };
+  /** The run's results directory; null when unknown or a run started from a terminal (api §5,
+   * P1 Task 31). */
+  results_dir: string | null;
 }
+
+/** Schema `ResultEntry`: one item of a results folder. */
+export interface ResultEntry {
+  name: string;
+  type: "dir" | "file" | "link_outside";
+  size: number | null;
+  mtime: string | null;
+}
+
+/** Schema `ResultReport`: an HTML report found below the results root. */
+export interface ResultReport {
+  path: string;
+  title: string;
+  group: string | null;
+}
+
+/** `GET /api/v1/runs/{id}/results?path=` (P1 Task 31). */
+export interface Results {
+  root: string;
+  path: string;
+  exists: boolean;
+  entries: ResultEntry[];
+  truncated: boolean;
+  reports: ResultReport[];
+}
+
+/** Schema `CodeLoading`: a value that loads code or configuration (dev-env §15.3 req. 16):
+ * `field` is `params.<name>`, `workflow.location` or `engine.<option>`. */
+export interface CodeLoading {
+  field: string;
+  value: string;
+  writable_by_others: boolean;
+}
+
+/** `GET /runs/{id}:launch-template` (schema `LaunchTemplate`): a `POST /runs` body prefilled from
+ * a run, for Copy to a new launch (P1 Task 30). */
+export interface LaunchTemplate {
+  workflow: { location: string; revision: string | null; engine: Engine };
+  profiles: string[];
+  params: { [key: string]: Json };
+  /** The top-level parameters that differ from the pipeline's schema defaults. */
+  non_default: string[];
+  code_loading: CodeLoading[];
+}
+
+/** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */
+export type ResumeReason =
+  | "running"
+  | "head_unverified"
+  | "resume_in_progress"
+  | "cli_observed"
+  | "not_failed_or_cancelled"
+  | "launch_dir_refused"
+  | "session_id_refused";
 
 /** Schema `Scheduler`: what SLURM says of a failed job; fields from `sacct` [to be validated]. */
 export interface Scheduler {
@@ -221,12 +286,14 @@ export interface FieldError {
   message: string;
 }
 
-/** An RFC 9457 problem; a 422 carries `errors` with a dotted `field` (inbox #86 rule 3). */
+/** An RFC 9457 problem; a 422 carries `errors` with a dotted `field` (inbox #86 rule 3), a 409
+ * of `:relaunch` its `reason` (api §5.1). */
 export class ApiError extends Error {
   constructor(
     readonly status: number,
     message: string,
     readonly errors: FieldError[] = [],
+    readonly reason: string | null = null,
   ) {
     super(message);
   }
@@ -239,7 +306,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   const body = await response.json().catch(() => null);
   if (!response.ok) {
     const detail = body?.detail ?? body?.title ?? `HTTP ${response.status}`;
-    throw new ApiError(response.status, detail, Array.isArray(body?.errors) ? body.errors : []);
+    const reason = typeof body?.reason === "string" ? body.reason : null;
+    throw new ApiError(response.status, detail, Array.isArray(body?.errors) ? body.errors : [], reason);
   }
   return body as T;
 }
@@ -308,6 +376,24 @@ export function cancelRun(id: string): Promise<RunDetail> {
   return call(`${run(id)}:cancel`, { method: "POST" });
 }
 
+/** Resume: a child run in the same launch directory (`:relaunch` with `mode: resume`, api §5.1). */
+export function resumeRun(id: string): Promise<RunDetail> {
+  return call(`${run(id)}:relaunch`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ mode: "resume" }),
+  });
+}
+
+export function getLaunchTemplate(id: string, signal?: AbortSignal): Promise<LaunchTemplate> {
+  return call(`${run(id)}:launch-template`, { signal });
+}
+
+/** One folder of the run's results, `path` relative to its root ("" for the root). */
+export function listResults(id: string, path: string, signal?: AbortSignal): Promise<Results> {
+  return call(`${run(id)}/results${query({ path })}`, { signal });
+}
+
 /** Where a run log's text is served: the same origin, text/plain (the Logs tab's Open raw). */
 export const logUrl = (id: string, source: LogSource) => `${API}${run(id)}/logs${query({ source })}`;
 
@@ -342,6 +428,11 @@ export async function getTaskFile(taskId: string, n: number, name: string, signa
   }
   return response.text();
 }
+
+/** Where a results file is served: an HTML report with the sandbox CSP of req. 14 (for the
+ * report viewer's iframe), any other file, or `download`, as an attachment. */
+export const resultUrl = (id: string, path: string, opts: { download?: boolean } = {}) =>
+  `${API}${run(id)}/results/raw/${path.split("/").map(encodeURIComponent).join("/")}${query({ download: opts.download ? "true" : null })}`;
 
 export function launch(body: LaunchBody): Promise<Launched> {
   return call("/runs", {

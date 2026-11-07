@@ -8,8 +8,8 @@ shared home holds it (dev-env §15.3, Where data lives), whatever `data_dir` say
 
 import json
 import os
-import secrets
 import shlex
+import stat
 import tomllib
 from pathlib import Path
 from typing import Annotated, Any, Literal
@@ -23,9 +23,38 @@ from pydantic_settings import (
     TomlConfigSettingsSource,
 )
 
+from spectio.fsmodes import write_secret
+
 NF_SPECTIO_VERSION = "0.0.1"  # the nf-spectio the wheel carries (engine-bridges/nf-spectio)
 DEFAULT_PORT = 8080  # architecture §7.3
 LOOPBACK = "127.0.0.1"  # the only address 0.0.1 listens on (dev-env §15.3 req. 1)
+
+
+class UnsafeConfig(ValueError):
+    """`spectio.toml`, or its directory, could be changed by another user."""
+
+
+def check_config(path: Path) -> None:
+    """Refuse `spectio.toml` if another user could change it, since it holds the shell commands
+    the head script runs (SEC-P3T08-03): it must be a regular file of this user, and the
+    directories holding it and its target this user's or root's, none of them writable by group
+    or others. A missing file is fine: there is nothing to read."""
+    try:
+        st = os.stat(path)
+    except (FileNotFoundError, NotADirectoryError):
+        return
+    if not stat.S_ISREG(st.st_mode) or st.st_uid != os.geteuid() or st.st_mode & 0o022:
+        raise UnsafeConfig(
+            f"{path} must be a file of yours that others cannot write (owner uid {st.st_uid}, "
+            f"mode {stat.S_IMODE(st.st_mode):o}): chmod go-w {path}"
+        )
+    for parent in {path.parent, Path(os.path.realpath(path)).parent}:
+        st = os.stat(parent)
+        if st.st_uid not in (0, os.geteuid()) or st.st_mode & 0o022:
+            raise UnsafeConfig(
+                f"{path}: its directory {parent} must be yours and not writable by others "
+                f"(owner uid {st.st_uid}, mode {stat.S_IMODE(st.st_mode):o})"
+            )
 
 
 def default_data_dir() -> Path:
@@ -148,7 +177,9 @@ class Settings(BaseSettings):
         dotenv_settings: PydanticBaseSettingsSource,
         file_secret_settings: PydanticBaseSettingsSource,
     ) -> tuple[PydanticBaseSettingsSource, ...]:
-        toml = TomlConfigSettingsSource(settings_cls, toml_file=config_path())
+        path = config_path()
+        check_config(path)
+        toml = TomlConfigSettingsSource(settings_cls, toml_file=path)
         return init_settings, _FlatEnv(settings_cls), toml
 
 
@@ -187,15 +218,5 @@ def write_config(settings: Settings, path: Path | None = None) -> Path:
     path = path or config_path()
     text = render_toml(settings)
     tomllib.loads(text)  # a render that would not load never replaces the file
-    tmp = path.with_name(f".{path.name}.{secrets.token_hex(8)}")
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as f:
-            f.write(text)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, path)
-    except BaseException:
-        tmp.unlink(missing_ok=True)
-        raise
+    write_secret(path, text.encode())
     return path

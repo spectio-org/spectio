@@ -12,7 +12,6 @@ never read from a file.
 import errno
 import os
 import re
-import secrets
 import stat
 from collections.abc import Iterator, Sequence
 from contextlib import contextmanager
@@ -21,6 +20,8 @@ from pathlib import Path
 from typing import Literal
 
 from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, JsonValue
+
+from spectio.fsmodes import write_file as write_file  # its home before P1 Task 15
 
 RUN_ID = re.compile(r"run_[0-7][0-9A-HJKMNP-TV-Z]{25}")  # a ULID with its prefix (api §7)
 MAX_SMALL_FILE = 1048576  # a manifest, PID, exit or marker file is never larger
@@ -54,6 +55,8 @@ class RunManifest(BaseModel):
     params: dict[str, JsonValue]
     profiles: list[str]
     created_at: AwareDatetime
+    # A Resume's parent (P1 Task 30): the child runs in its lineage's directories
+    parent_run_id: str | None = Field(None, pattern=rf"^{RUN_ID.pattern}$")
 
 
 def run_paths(runs_root: Path, run_id: str) -> RunPaths:
@@ -116,24 +119,6 @@ def check_launch_dir(runs_root: Path, run_id: str, launch_dir: Path) -> None:
     os.close(open_private(runs_root, (run_id, "launch")))
 
 
-def write_file(dir_fd: int, name: str, data: bytes) -> None:
-    """Replace `name` in the directory atomically with a 0600 file holding `data`."""
-    tmp = f".{name}.{secrets.token_hex(8)}"
-    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=dir_fd)
-    try:
-        with os.fdopen(fd, "wb") as f:
-            f.write(data)
-            f.flush()
-            os.fsync(f.fileno())
-        os.replace(tmp, name, src_dir_fd=dir_fd, dst_dir_fd=dir_fd)
-    except BaseException:
-        try:
-            os.unlink(tmp, dir_fd=dir_fd)
-        except FileNotFoundError:
-            pass
-        raise
-
-
 def read_small(dir_fd: int, name: str, cap: int = MAX_SMALL_FILE) -> bytes | None:
     """The bytes of a regular file of the user that others cannot write, or None when missing.
     Raises PermissionError when it is refused, ValueError when larger than `cap`."""
@@ -158,7 +143,7 @@ def read_small(dir_fd: int, name: str, cap: int = MAX_SMALL_FILE) -> bytes | Non
 
 
 def write_run_manifest(run_dir: Path, manifest: RunManifest) -> None:
-    """Write `<run_dir>/.spectio/run.json` (P1 Task 17 calls it when the run is created)."""
+    """Write `<run_dir>/.spectio/run.json` (P1 Tasks 17 and 30 call it when the run is created)."""
     if run_dir.name != manifest.run_id:
         raise ValueError(f"the run ID {manifest.run_id} is not the directory's name")
     run_paths(run_dir.parent, manifest.run_id)

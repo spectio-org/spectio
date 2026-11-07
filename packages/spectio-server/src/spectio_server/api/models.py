@@ -115,11 +115,77 @@ class Failure(BaseModel):
     work_dir: str | None
 
 
+class Command(BaseModel):
+    """The engine command as the head script runs it (P1 Task 30): `text` is `argv` quoted for a
+    POSIX shell, and names the parameters file, never a value."""
+
+    argv: list[str]
+    text: str
+
+
+class RunRef(BaseModel):
+    id: str
+    name: str | None
+    state: RunState
+
+
+ResumeReason = Literal[
+    "running",
+    "head_unverified",
+    "resume_in_progress",
+    "cli_observed",
+    "not_failed_or_cancelled",
+    "launch_dir_refused",
+    "session_id_refused",
+]
+
+
+class ResumeAction(BaseModel):
+    allowed: bool
+    reason: ResumeReason | None
+
+
+class Actions(BaseModel):
+    resume: ResumeAction
+
+
 class RunDetail(Run):
     params: dict[str, JsonValue]
     stages_note: str | None  # why declared stages were not applied (P1 Task 27)
     failures: list[Failure]  # the first 10 (P1 Task 29)
     failures_total: int
+    command: Command | None  # null for a run started from a terminal (P1 Task 30)
+    parent_run_id: str | None
+    resumed_as: list[RunRef]
+    actions: Actions
+    results_dir: str | None  # null when unknown, and for a run started from a terminal
+
+
+class TemplateWorkflow(BaseModel):
+    location: str
+    revision: str | None
+    engine: Literal["nextflow", "snakemake"]
+
+
+class CodeLoading(BaseModel):
+    """A value that loads code or configuration (dev-env §15.3 req. 16): `field` is a dotted
+    path, `params.<name>`, `workflow.location`, or `engine.<option>` for an engine option of
+    `spectio.toml`; `writable_by_others` when the path, or a directory above it, is."""
+
+    field: str
+    value: str
+    writable_by_others: bool
+
+
+class LaunchTemplate(BaseModel):
+    """A `POST /runs` body prefilled from a run, for Copy to a new launch (P1 Task 30), with the
+    parameters that differ from the pipeline's defaults and the values that load code."""
+
+    workflow: TemplateWorkflow
+    profiles: list[str]
+    params: dict[str, JsonValue]
+    non_default: list[str]
+    code_loading: list[CodeLoading]
 
 
 class RunList(BaseModel):
@@ -229,3 +295,30 @@ class TaskFiles(BaseModel):
     work_dir: str | None  # Nextflow: the task's work directory; Snakemake: the launch directory
     native_id: str | None  # the executor's job ID (SLURM), when known
     files: list[TaskFile]
+
+
+class ResultEntry(BaseModel):
+    """One entry of a results folder (P1 Task 31): a folder's `size` is null, and so are both
+    for a `link_outside`; `mtime` is ISO 8601."""
+
+    name: str
+    type: Literal["dir", "file", "link_outside"]
+    size: int | None
+    mtime: str | None
+
+
+class ResultReport(BaseModel):
+    path: str  # relative to the results root
+    title: str
+    group: str | None  # the folder it shares with other reports, such as FastQC's
+
+
+class Results(BaseModel):
+    """One folder of a run's results directory, and the reports found below its root."""
+
+    root: str
+    path: str
+    exists: bool
+    entries: list[ResultEntry]
+    truncated: bool
+    reports: list[ResultReport]

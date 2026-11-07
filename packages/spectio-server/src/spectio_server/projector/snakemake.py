@@ -52,6 +52,7 @@ from spectio_server.store.schema import (
 )
 
 ERROR_EVENT = "spectio.engine.snakemake.error"
+MAX_LOGS = 32  # paths kept per attempt: a rule's `log:` files and its SLURM job log
 
 
 def project(p: Projection, data: BaseModel) -> None:
@@ -148,16 +149,23 @@ def _resources(p: Projection, data: SnakemakeJobInfo) -> dict[str, Any]:
 
 def _logs(p: Projection, kept: list[dict[str, str]], paths: list[str]) -> list[dict[str, str]]:
     """`kept` and the paths of `paths` that resolve in the launch directory (req. 13), each
-    once, with its kind; the others are counted, not kept."""
+    once, with its kind, at most `MAX_LOGS` in all; the others are counted, not kept
+    (SEC-P3T28-05: the events are untrusted, and this runs on the writer)."""
     roots = p.roots()
     found = list(kept)
     if roots is None:
         return found
+    seen = {log["path"] for log in found}
     for path in paths:
         rel = launch_rel(roots.launch_dir, path)
         if rel is None:
             p.dropped["path_outside_run"] += 1
-        elif all(log["path"] != str(rel) for log in found):
+        elif str(rel) in seen:
+            continue
+        elif len(found) >= MAX_LOGS:
+            p.dropped["logs_capped"] += 1
+        else:
+            seen.add(str(rel))
             found.append({"path": str(rel), "kind": log_kind(rel)})
     return found
 

@@ -1136,3 +1136,56 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Recommended, not applied:** check `bridge.err`'s owner and mode (#97 rule 3 (b)); a bounded queue and a close-time bound in the plugin (#97 rule 5 (b)). Both are in follow-up FU-P3-34.
 - **Not yet applied:** P1 Task 7's interface (the extra tests, the recorded fixture, the 1.1.0 floor), at the next `/apply-findings` ([P3-M1](../progress/W5/P3-M1.md#differences-from-the-plans-interface-task-7)).
 - **Open:** see [P3-M1](../progress/W5/P3-M1.md#findings-and-open-questions): FU-P3-34, and the live SLURM check on `slurm-mini` (P1 Task 22).
+
+## 2026-11-04 — Resume and Copy to a new launch as built, written into api §5, §5.1 and §7, architecture §13.7 and dev-env §15.3 req. 16 (P3 Task 30, inbox #99)
+
+- **Context.** P3 Task 30 built Resume and Copy to a new launch ([P1 Task 30](../plans/P1-walking-skeleton.md#task-30-resume-copy-to-a-new-launch-and-the-copy-actions)): `POST /runs/{id}:relaunch` with `{mode: "resume"}`, `GET /runs/{id}:launch-template`, and the run detail's `command`, `parent_run_id`, `resumed_as` and `actions.resume`. It also closed CR-P3T09-11 with the `.spectio/launch` owner file. Four review rounds found that a child must read the lineage root's directories (CR-P3T30-01, blocker), that a login umask of 002 refused every Nextflow Resume (CR-P3T30-02), and that each Snakemake run of a lineage must read its own engine log (CR-P3T30-03).
+- **Applied (assumed — standing rule, [inbox #99](../reviews/inbox.md#99-assumed-resume-and-copy-to-a-new-launch-as-built-p3-task-30); [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** dated notes; no section number changed.
+    - [Api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), note 2026-11-04: `command`, the two new `actions.resume` reasons, `resumed_as`, `:launch-template` as built (#99 rules 7, 8 and 11).
+    - [Api §5.1](../specs/api-and-data-model.md#51-run-actions), note 2026-11-04: the body, the `reason` member of the `409`, the child run, the engine arguments (#99 rules 2 and 9).
+    - [Api §7](../specs/api-and-data-model.md#7-database-schema), note 2026-11-04: migration `0008`, `lineage_id`, the manifest's `parent_run_id` (#99 rules 2 and 3).
+    - [Architecture §13.7](../specs/architecture-plugins-and-packaging.md#137-log-sources-per-engine), note 2026-11-04: a lineage's files and each Snakemake run's own engine log (#99 rules 2 and 5).
+    - [Dev-env §15.3 req. 16](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), note 2026-11-04: where the checks run, the head proven gone, the lock, `.nextflow/` 0700, `writable_by_others` (#99 rules 1, 4 and 6).
+- **Recommended, not applied:** `--unlock` only with a host and lock-age check before any shared deployment (#99 rule 6 (c)); the engines' own option forms, a bounded walk of a local location, `command.cwd` and hidden secrets (#99 rules 7 and 8 (b)); resume the parent's recorded commit (#99 rule 9 (b)). All in follow-up FU-P3-35.
+- **Not yet applied:** P1 Task 30's interface, at the next `/apply-findings` ([P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-30)).
+- **Open:** Step 4 on `slurm-mini` (P1 Task 22), the CSRF token (P1 Task 16), the screens (P1 Task 32 part two). The rest is listed on [P3-M8](../progress/W5/P3-M8.md#findings-and-open-questions): FU-P3-35.
+
+## 2026-11-04 — Results and reports as built, written into api §5, dev-env §15.3 req. 13 and 14 and ui-spec §4.4 (P3 Task 31, inbox #100)
+
+- **Context.** P3 Task 31 built a run's results and reports, read only ([P1 Task 31](../plans/P1-walking-skeleton.md#task-31-results-and-reports)): `GET /runs/{id}/results`, `GET /runs/{id}/results/raw/{path}`, `results_dir` on the run, `GET /runs/{id}/logs?follow=true` and the report viewer `/runs/{id}/report`. It closed SEC-P3T28-05 and FU-P3-31, and hid scheduler directive values in `.command.run` (inbox #94 rule 8, option b). Seven review rounds found that text checks on `outdir` could be bypassed by aliases (SEC-P3T31-01 r1), that `~/.nextflow` and `~/.ssh` could be served (SEC-P3T31-03 r2), and that the directive hiding first failed open, then became quadratic (SEC-P3T31-09 r5, SEC-P3T31-11 r6, blocker).
+- **Applied (assumed — standing rule, [inbox #100](../reviews/inbox.md#100-assumed-results-and-reports-as-built-p3-task-31); [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** dated notes; no section number changed.
+    - [Api §5](../specs/api-and-data-model.md#5-endpoint-catalogue-api-v1), note 2026-11-04: `results_dir`, the listing, the raw file, the problems, `?follow=true` (#100 rules 1, 2, 7, 8 and 11).
+    - [Dev-env §15.3 req. 13](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), note 2026-11-04: the checks at launch and when served, published links, names, whole files, `.command.run` (#100 rules 1 to 6, 12 and 13).
+    - Req. 14, note 2026-11-04: headers, the viewer, search and streams, MultiQC under the sandbox (#100 rules 8 to 11 and 14).
+    - [Ui-spec §4.4](../specs/ui-spec.md#44-run-detail), note 2026-11-04: the report viewer's page (#100 rule 10).
+- **Recommended, not applied:** a download cap and pool of their own (#100 rule 2 (c)); hiding whole directive lines and failing closed after a here-document in `$(…)` (#100 rules 12 and 13 (b)). Both in follow-up FU-P3-36.
+- **Not yet applied:** P1 Task 31's interface, at the next `/apply-findings` ([P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-31)).
+- **Open:** the megatest MultiQC check (P1 Task 22); the Results section on screen (P1 Task 32 part two). The rest is listed on [P3-M8](../progress/W5/P3-M8.md#findings-and-open-questions): FU-P3-36.
+
+## 2026-11-04 — The run tools screens as built, part two, written into ui-spec §4.4 and dev-env §15.3 req. 14, 16 and 17 (P3 Task 32 part two, inbox #104)
+
+- **Context.** P3 Task 32 part two built the screens on the API of P1 Tasks 30 and 31 ([P1 Task 32](../plans/P1-walking-skeleton.md#task-32-the-screens-job-files-failure-summary-results-resume-copy-and-resources)): Resume and its dialog, Copy to a new launch, Copy's Command item, the lineage facts, the Summary's Results and reports, the results browser `/runs/{id}/results`, and a client check of result paths. Five review rounds found that the first report viewer shots showed a stand-in table (CR-P3T32B-01 r1), that MultiQC's scripts stop in the sandbox while the UI said they run (CR-P3T32B-02 r2, [inbox #102](../reviews/inbox.md#102-assumed-the-report-viewer-stops-multiqcs-scripts-and-the-ui-and-the-shots-say-so)), and that the client let through format characters the server refuses (SEC-P3T32B-05 r4).
+- **Applied (assumed — standing rule, [inbox #104](../reviews/inbox.md#104-assumed-the-run-tools-screens-as-built-part-two-p3-task-32-part-two); [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** dated notes; no section number changed.
+    - [Ui-spec §4.4](../specs/ui-spec.md#44-run-detail), note 2026-11-04, part two: header actions, Resume and its words, lineage facts, Results and reports, the results browser, which `path` is asked for, Copy to a new launch (#104 rules 1 to 4, 7 and 9).
+    - [Dev-env §15.3 req. 14](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), note 2026-11-04, part two: the viewer and the browser check `path` against the server's `FORMAT_CHARS` (#104 rule 9).
+    - Req. 16, note 2026-11-04, part two: what Copy to a new launch shows, and what it does not yet warn (#104 rules 5 and 6).
+    - Req. 17 "What" and "Tests": six screen routes answer `index.html`, the report viewer and the results browser included (SEC-P3T32B-03 r1).
+- **Recommended, not applied:** clear the Copy banner when another pipeline loads (#104 rule 5 (b)); a real warning for "writable by others" (rule 6 (b)); the boards' wording (rule 8 (b)); the shots' text check in frames (rule 10 (b)). All in follow-up FU-P3-37.
+- **Not yet applied:** P1 Task 32's interface, at the next `/apply-findings` ([P3-M8](../progress/W5/P3-M8.md#differences-from-the-plans-interface-task-32-part-two)).
+- **Open:** the rest of FU-P3-37, listed on [P3-M8](../progress/W5/P3-M8.md#findings-and-open-questions).
+
+## 2026-11-04 — P3 tasks run in batches: docs, figure, doc review, simplify and promotion once per batch
+
+- **Context.** Thomas asked how to stop spending tokens on docs and reviews at every small step, and agreed to the proposal in the session of 2026-11-04. P3 tasks cost 40 to 70 USD each (`.autopilot/costs.jsonl`). The split between build, review and docs was not recorded **[to be validated]**.
+- **Decided (Thomas, 2026-11-04):**
+    - Docs are written in two passes. Each task leaves its review record, a short Progress section, the owning spec and a PR body without figure. The full Progress page, media, the figure and `doc-reviewer` run once per batch of 3 to 5 tasks ([documentation-system §3.5](../specs/documentation-system.md#35-docs-per-batch-of-p3-tasks-thomas-2026-11-04)).
+    - `code-reviewer` still runs on every task. `security-reviewer` runs only when the diff touches a sensitive path, or on a security task. This replaces "every step, whatever it touches" (2026-10-27).
+    - The fix loop has one round instead of two; security blockers and majors keep their extra rounds (inbox #75).
+    - `code-simplifier` runs once per batch, and the promotion to `main` happens once per batch.
+    - `doc-writer`, `doc-reviewer` and `code-simplifier` move to sonnet.
+    - Cost is recorded by kind: `build-task` per task, `docs` per batch.
+    - Only P3 tasks change; other step kinds keep the full flow.
+    - Where: [autopilot §11](../playbooks/autopilot.md#11-batches-of-p3-tasks-thomas-2026-11-04), `.claude/workflows/p3-task.js` (it owns the sensitive-path list), the new `.claude/workflows/p3-batch.js`, and the `autopilot`, `review-code` and `write-docs` skills. Also `CLAUDE.md`, which Thomas asked to change in the same session ("Modifie accordingly", after the proposal named its two rules), and a note in dev-env §11.
+- **Reviewed.** One `code-reviewer` pass on the change. It returned changes: 6 majors and 6 minors, all fixed in the same PR. These were the orchestrator skill, the P3-only scope, an independent path list, more sensitive paths, the pr-body check command, simplifier failure handling, the web gate, cost kinds and the Progress status.
+- **Why the code review stays per task.** On a larger diff, review is less precise and fixes cost more.
+

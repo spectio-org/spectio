@@ -3,7 +3,7 @@
 // be the schema's properties, so a field added to or dropped from a response model fails here.
 import { expect, test } from "vitest";
 import snapshot from "../../packages/spectio-server/openapi/0.0.1.json";
-import type { Failure, Process, Resources, Run, RunDetail, Scheduler, ServerVersion, Stage, Task, TaskFile, TaskFiles } from "./api";
+import type { CodeLoading, Failure, LaunchTemplate, Process, ResultEntry, ResultReport, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Stage, Task, TaskFile, TaskFiles } from "./api";
 
 const schemas = snapshot.components.schemas as unknown as Record<
   string,
@@ -67,7 +67,30 @@ const SAMPLES: Record<string, object> = {
   TaskFile: taskFile,
   TaskFiles: { task_id: "", attempt: 1, work_dir: null, native_id: null, files: [taskFile] } satisfies TaskFiles,
   Run: run,
-  RunDetail: { ...run, params: {}, stages_note: null, failures: [failure], failures_total: 1 } satisfies RunDetail,
+  RunDetail: {
+    ...run,
+    params: {},
+    stages_note: null,
+    failures: [failure],
+    failures_total: 1,
+    command: null,
+    parent_run_id: null,
+    resumed_as: [],
+    actions: { resume: { allowed: false, reason: "running" } },
+    results_dir: null,
+  } satisfies RunDetail,
+  ResultEntry: { name: "", type: "file", size: null, mtime: null } satisfies ResultEntry,
+  ResultReport: { path: "", title: "", group: null } satisfies ResultReport,
+  Results: { root: "", path: "", exists: true, entries: [], truncated: false, reports: [] } satisfies Results,
+  CodeLoading: { field: "", value: "", writable_by_others: false } satisfies CodeLoading,
+  LaunchTemplate: {
+    workflow: { location: "", revision: null, engine: "nextflow" },
+    profiles: [],
+    params: {},
+    non_default: [],
+    code_loading: [],
+  } satisfies LaunchTemplate,
+  TemplateWorkflow: { location: "", revision: null, engine: "nextflow" },
   Failure: failure,
   Scheduler: scheduler,
   Resources: resources,

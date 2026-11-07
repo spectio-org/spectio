@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""A fake ssh for the tests of `spectio open` (P1 Task 24; dev-env §15.3 "Access", req. 8).
+
+It keeps its state in `$FAKE_SSH_DIR` and logs every call's arguments to `calls.jsonl` there.
+It takes `-N`, `-o VALUE` and `-L SPEC` only, then requires `--` before the destination.
+
+- With a command, it runs it "on the cluster" as sshd does: the words joined by spaces, given
+  to `/bin/sh -c`, with HOME `$FAKE_SSH_DIR/home` (the shared home), PATH `$FAKE_SSH_DIR/bin`
+  then /usr/bin:/bin, SHELL `$FAKE_SSH_DIR/bin/rshell` and FAKE_NODE the destination; it exits
+  with the command's status.
+- With `-N`, it is a tunnel: it listens on the local end of `-L`, accepts connections, and
+  exits 0 once a file `close` exists in `$FAKE_SSH_DIR` (or after 30 s); a port it cannot bind
+  makes it exit 255, as `ExitOnForwardFailure=yes` does. A file `linger` makes it exit that
+  many seconds after its first connection instead.
+
+A file `down` makes every call print ssh's own error and exit 255.
+"""
+
+import json
+import os
+import socket
+import subprocess
+import sys
+import time
+from pathlib import Path
+
+state = Path(os.environ["FAKE_SSH_DIR"])
+args = sys.argv[1:]
+with (state / "calls.jsonl").open("a") as calls:
+    calls.write(json.dumps(args) + "\n")
+
+
+def die(message: str) -> None:
+    print(message, file=sys.stderr)
+    sys.exit(255)
+
+
+opts: dict[str, str] = {}
+while args and args[0] != "--":
+    word = args.pop(0)
+    if word == "-N":
+        opts["N"] = ""
+    elif word in ("-o", "-L"):
+        opts[word[1]] = args.pop(0)
+    else:
+        die(f"fake ssh: unknown option {word}")
+if not args:
+    die("fake ssh: no -- before the destination")
+dest, words = args[1], args[2:]
+if (state / "down").exists():
+    die(f"ssh: connect to host {dest} port 22: Connection refused")
+
+if "N" in opts:
+    bind, lport, _, _ = opts["L"].split(":")
+    sock = socket.socket()
+    sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    try:
+        sock.bind((bind, int(lport)))
+    except OSError as exc:
+        die(f"bind [{bind}]:{lport}: {exc}\nCould not request local forwarding.")
+    sock.listen()
+    sock.settimeout(0.05)
+    deadline = time.monotonic() + 30
+    linger = state / "linger"
+    while not (state / "close").exists() and time.monotonic() < deadline:
+        try:
+            sock.accept()[0].close()
+        except TimeoutError:
+            continue
+        if linger.exists():
+            deadline = min(deadline, time.monotonic() + float(linger.read_text()))
+    sys.exit(0)
+
+env = {
+    "HOME": str(state / "home"),
+    "PATH": f"{state / 'bin'}:/usr/bin:/bin",
+    "SHELL": str(state / "bin" / "rshell"),
+    "FAKE_NODE": dest,
+    "FAKE_SSH_DIR": str(state),
+}
+sys.exit(subprocess.run(["/bin/sh", "-c", " ".join(words)], env=env, check=False).returncode)

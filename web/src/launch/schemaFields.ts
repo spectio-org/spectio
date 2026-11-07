@@ -280,3 +280,21 @@ export function toYaml(value: unknown, indent = ""): string {
   }
   return `${scalar(value)}\n`;
 }
+
+/** The form's values for `params` (Copy to a new launch): each field's value at its path, as the
+ * field holds it, and the top-level keys no field takes. */
+export function valuesFrom(fields: Field[], params: Record<string, unknown>): { values: Values; left: string[] } {
+  const values: Values = {};
+  for (const field of fields) {
+    let at: unknown = params;
+    for (const part of field.path) at = isObj(at) ? own(at, part) : undefined;
+    if (at === undefined) continue;
+    if (field.type === "boolean") {
+      if (typeof at === "boolean") values[field.key] = at;
+    } else {
+      values[field.key] = typeof at === "string" && field.type !== "json" ? at : JSON.stringify(at);
+    }
+  }
+  const taken = new Set(fields.map((f) => f.path[0]));
+  return { values, left: Object.keys(params).filter((key) => !taken.has(key)) };
+}

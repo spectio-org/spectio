@@ -2,26 +2,23 @@
 
 import asyncio
 import json
-import threading
 from collections import Counter
 from collections.abc import Iterator
 from typing import Any
 
 import httpx2
 import pytest
-import uvicorn
 from fastapi.testclient import TestClient
 
 from spectio.config import Settings
 from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server.api.stream import MAX_CLIENTS, Stream
-from spectio_server.app import NO_API, create_app
+from spectio_server.app import NO_API
 from spectio_server.projector.ingest import ingest
 from spectio_server.store.writer import Writer
 
-from ..conftest import free_port
-from .conftest import add_run
+from .conftest import add_run, client_for
 
 RUN = "run_01K8T2F1XTVRES000000000301"
 STREAM = "/api/v1/events/stream"
@@ -43,32 +40,14 @@ def event(n: int, hook: str, **data: Any) -> SpoolEvent:
     )
 
 
-@pytest.fixture
-def served(settings: Settings, writer: Writer) -> Iterator[str]:
-    """The app on a real loopback port, as `spectio serve` runs it."""
-    app = create_app(settings, writer)
-    port = free_port()
-    config = uvicorn.Config(
-        app,
-        host="127.0.0.1",
-        port=port,
-        lifespan="off",
-        log_level="warning",
-        timeout_graceful_shutdown=1,
-    )
-    server = uvicorn.Server(config)
-    thread = threading.Thread(target=server.run, daemon=True)
-    thread.start()
-    while not server.started:
-        thread.join(0.01)
-    yield f"http://127.0.0.1:{port}"
-    server.should_exit = True
-    thread.join(10)
-
-
-def test_stream_needs_session(client: TestClient, authed_client: TestClient) -> None:
-    """TODO(P1 Task 16): no session cookie → 401 problem, no stream opened. Until sign-in is
-    built, the stream is not mounted on a shared machine, and other sites are refused (#86)."""
+def test_stream_needs_session(
+    client: TestClient, authed_client: TestClient, settings: Settings, writer: Writer
+) -> None:
+    """No session cookie → 401 problem, no stream opened; the stream is not mounted on a shared
+    machine, and other sites are refused (#86)."""
+    signed_out = client_for(settings, writer, signed_in=False).get(STREAM)
+    assert signed_out.status_code == 401
+    assert signed_out.json()["type"] == "/problems/unauthenticated"
     absent = client.get(STREAM)
     assert absent.status_code == 404
     assert absent.headers["content-type"].startswith("application/problem+json")
@@ -91,10 +70,12 @@ def frames(response: Any) -> Iterator[tuple[str, str]]:
             yield kind, line[len("data: ") :]
 
 
-def test_stream_delta_after_ingest(served: str, writer: Writer, settings: Settings) -> None:
+def test_stream_delta_after_ingest(
+    served: str, session: dict[str, str], writer: Writer, settings: Settings
+) -> None:
     launch_id = add_run(writer, settings, RUN, "live", "queued")
     with (
-        httpx2.Client(base_url=served, timeout=10) as http,
+        httpx2.Client(base_url=served, timeout=10, cookies=session) as http,
         http.stream("GET", STREAM) as response,
     ):
         assert response.status_code == 200
@@ -161,23 +142,27 @@ def test_slow_client_dropped_never_blocks(writer: Writer, settings: Settings) ->
     assert asyncio.run(scenario()) == (True, False, 1)
 
 
-def test_stream_keep_alive(served: str, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_stream_keep_alive(
+    served: str, session: dict[str, str], monkeypatch: pytest.MonkeyPatch
+) -> None:
     from spectio_server.api import stream as stream_mod
 
     monkeypatch.setattr(stream_mod, "KEEP_ALIVE_S", 0.2)
     with (
-        httpx2.Client(base_url=served, timeout=10) as http,
+        httpx2.Client(base_url=served, timeout=10, cookies=session) as http,
         http.stream("GET", STREAM) as response,
     ):
         seen = frames(response)
         assert [next(seen), next(seen)] == [("", "keep-alive"), ("", "keep-alive")]
 
 
-def test_new_run_sends_a_delta(served: str, writer: Writer, settings: Settings) -> None:
+def test_new_run_sends_a_delta(
+    served: str, session: dict[str, str], writer: Writer, settings: Settings
+) -> None:
     """A run just inserted (`insert_run`, used by `POST /runs` and the rebuild) sends a frame,
     before any head report (CR-P3T18-01)."""
     with (
-        httpx2.Client(base_url=served, timeout=10) as http,
+        httpx2.Client(base_url=served, timeout=10, cookies=session) as http,
         http.stream("GET", STREAM) as response,
     ):
         seen = frames(response)
@@ -188,12 +173,12 @@ def test_new_run_sends_a_delta(served: str, writer: Writer, settings: Settings) 
     assert json.loads(data)["run_id"] == RUN
 
 
-def test_client_cap_holds_under_concurrent_opens(served: str) -> None:
+def test_client_cap_holds_under_concurrent_opens(served: str, session: dict[str, str]) -> None:
     """Opens that arrive together cannot pass the cap (CR-P3T18-02, SEC-P3T18-02), and a closed
     stream frees its slot."""
 
     async def scenario() -> tuple[Counter[int], int]:
-        async with httpx2.AsyncClient(base_url=served, timeout=10) as http:
+        async with httpx2.AsyncClient(base_url=served, timeout=10, cookies=session) as http:
 
             async def one() -> tuple[int, Any]:
                 response = await http.send(http.build_request("GET", STREAM), stream=True)

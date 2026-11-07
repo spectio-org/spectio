@@ -54,6 +54,28 @@ def test_spa_routes_serve_index(web: TestClient) -> None:
         assert r.headers["x-content-type-options"] == "nosniff"
 
 
+def test_screens_may_frame_this_origin_only(web: TestClient) -> None:
+    """Every screen allows `frame-src 'self'`, for the report viewer's sandboxed report served by
+    `/api/v1/runs/{id}/results/raw/...` (P1 Task 31): a CSP is the document's, and the viewer is
+    also reached by in-app navigation from another screen (CR-P3T31-02)."""
+    for path in ("/", "/runs", "/runs/run_01K8T2F1XTVRES000000000000/report"):
+        r = web.get(path)
+        assert r.status_code == 200, path
+        assert r.text == INDEX
+        csp = r.headers["content-security-policy"]
+        assert "frame-src 'self'" in csp, path
+        assert "frame-ancestors 'none'" in csp, path
+        assert "script-src 'self';" in csp, path
+
+
+def test_results_browser_is_a_screen(web: TestClient) -> None:
+    """The results browser `/runs/{id}/results` answers the screens (P1 Task 32 part two)."""
+    r = web.get("/runs/run_01K8T2F1XTVRES000000000000/results?path=fastqc")
+    assert r.status_code == 200
+    assert r.text == INDEX
+    assert "frame-src 'self'" in r.headers["content-security-policy"]
+
+
 def test_head_on_screens_and_assets(web: TestClient) -> None:
     """A HEAD gets the GET's status and headers, no body (FU-P3-22: it was 405)."""
     for path in ("/", "/runs", "/runs/run_01K8T2F1XTVRES000000000000", "/assets/index-AbC1.js"):

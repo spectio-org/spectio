@@ -5,18 +5,27 @@ escape sequences (dev-env §15.3 req. 13, SEC-155, SEC-158; architecture §13.7)
 quoted values over several lines, `$'…'`, `$(…)`, `${…}`, backquotes and here-documents (whose
 body is read as shell too: Nextflow writes the container environment as `export` lines inside
 `cat << EOF`, `SimpleFileCopyStrategy.groovy:398-415`, v26.10.4). It hides the value of every
-assignment word:
+word that holds an assignment, wherever it stands, so that no command word before it (`export`,
+`env`, `exec`, `sudo`, `nohup`, a redirection, a function's `{`) lets a value through
+(SEC-P3T28-03, CR-P3T28-03):
 
-- at the start of a simple command (`FOO=bar cmd`, a `beforeScript` assignment,
-  `SINGULARITYENV_X=…`, `APPTAINERENV_X=…`), an array value `NAME=(…)` included;
-- after `export`, `declare`, `local`, `readonly`, `typeset` and `env`, the word quoted or not;
-- after `-e` or `--env`, or in `--env=NAME=value` (Docker, Podman), the word quoted or not.
+- a word with an `=` outside `$(…)`, `${…}` and backquotes: `FOO=bar`, `"NAME=value"`,
+  `"NAME"=value`, `NAME"=value"`, an array value `NAME=(…)`, a `beforeScript` assignment,
+  `SINGULARITYENV_X=…`, `key=value` as an argument. It becomes `NAME=«hidden»` (the name with
+  its quotes removed), or keeps its text before the `=` when that is not a name;
+- an option with one dash and an `=`, the value attached: `-eTOKEN=v`, `-Dprop=v`;
+- an option `--opt=NAME=value`: `--env=`, `--set-env=` (the value of `--opt=value` alone, with
+  no name in it, is kept);
+- in a scheduler directive line (`#SBATCH`, `#PBS`, `#$`, `#BSUB`), the value of each
+  `NAME=value` item of `--export`, `-v` and `-env`; a value with a quote or a backslash in it
+  hides the rest of the line (inbox #94 rule 8, option b; SEC-P3T31-02). Other comments are
+  kept.
 
-Each becomes `NAME=«hidden»`. It fails closed: from the line where the lexer meets something it
+Each value becomes `«hidden»`. It fails closed: from the line where the lexer meets something it
 cannot read (a quote or a here-document left open, or constructs nested more than `MAX_NESTING`
-deep), every line is `«hidden»`. Values inside a
-command substitution or a parameter expansion (`${X:+NAME=v}`) are not looked into; that the
-wrappers of every container engine fit these forms is [to be validated] (req. 13).
+deep), every line is `«hidden»`. Values inside a command substitution or a parameter expansion
+(`${X:+NAME=v}`) are not looked into; that the wrappers of every container engine fit these
+forms is [to be validated] (req. 13).
 """
 
 import re
@@ -26,28 +35,34 @@ MAX_NESTING = 64  # `$(`, `${`, `"` and here-documents inside one another (SEC-P
 
 # A name (with an optional array index) and `=` or `+=`, at the very start of a word.
 _ASSIGN = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(\[[^\]\n]*\])?\+?=")
-_DECLARE = frozenset({"export", "declare", "local", "readonly", "typeset", "env"})
-_ENV_FLAGS = frozenset({"-e", "--env"})
-# Words after which a new command starts.
-_RESERVED = frozenset(
-    {"if", "then", "else", "elif", "fi", "do", "done", "while", "until", "!", "{", "}", "time"}
-)
+_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*(\[[^\]\n]*\])?\+?")
+_UNQUOTE = re.compile(r"\$(?=')|[\"'\\]")
+# A scheduler directive, and in it the options that carry `NAME=value` lists.
+_DIRECTIVE = re.compile(r"#(SBATCH|PBS|\$|BSUB)\s")
+# An option starts after any `\s`, as wide as `_DIRECTIVE`, while a value ends only at an ASCII
+# space or tab (`_VALUE_END`): asymmetric on purpose, both fail closed (SEC-P3T31-10).
+_EXPORT_OPTION = re.compile(r"(?<=\s)(--export(=|\s+)|-v\s*|-env\s*)")
+_QUOTING = "'\"\\"
+_VALUE_END = re.compile(r"[ \t'\"\\]")  # an ASCII space ends a directive value; a quoting hides it
 _OPS = ";&|()<>"
 _SPACE = " \t"
 
-# CSI (ESC [ … final), OSC (ESC ] … BEL or ESC \), other two-character escapes, then the C0
-# and C1 controls left, except tab and newline.
+# CSI (ESC [ or the 8-bit CSI, … final), OSC (ESC ] or the 8-bit OSC, … BEL, ST or ESC \),
+# other two-character escapes, the C0 and C1 controls left except tab and newline, and the bidi
+# and other format controls, line and paragraph separators (SEC-P3T28-07 r1, SEC-P3T28-08 r3).
+FORMAT_CHARS = r"\u061c\u200b-\u200f\u2028-\u202e\u2060-\u206f\ufeff\ufff9-\ufffb"
 _ESCAPES = re.compile(
-    r"\x1b\[[0-?]*[ -/]*[@-~]"
-    r"|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)?"
+    r"(?:\x1b\[|\x9b)[0-?]*[ -/]*[@-~]"
+    r"|(?:\x1b\]|\x9d)[^\x07\x1b\x9c]*(?:\x07|\x1b\\|\x9c)?"
     r"|\x1b[@-_]?"
     r"|[\x00-\x08\x0b-\x1f\x7f-\x9f]"
+    rf"|[{FORMAT_CHARS}]"
 )
 
 
 def strip_escapes(text: str) -> str:
-    """`text` with terminal escape sequences and control characters removed (tab and newline
-    kept)."""
+    """`text` with terminal escape sequences, control and format characters removed (tab and
+    newline kept)."""
     return _ESCAPES.sub("", text)
 
 
@@ -210,7 +225,6 @@ class _Lexer:
         self.heredocs = []
 
     def run(self) -> None:
-        at_start, declaring, prev = True, False, ""
         redirect = False  # the next word is a redirection's target
         while self.i < len(self.s):
             c = self.s[self.i]
@@ -220,12 +234,15 @@ class _Lexer:
                 self.i += 2
             elif c == "\n":
                 self.i += 1
-                at_start, declaring, prev, redirect = True, False, "", False
+                redirect = False
                 if self.heredocs:
                     self._heredoc_bodies()
-            elif c == "#":  # at a word's start: a comment (`#SBATCH` lines are kept)
+            elif c == "#":  # at a word's start: a comment, a directive's values hidden
                 newline = self.s.find("\n", self.i)
-                self.i = len(self.s) if newline < 0 else newline
+                end = len(self.s) if newline < 0 else newline
+                if self.i == 0 or self.s[self.i - 1] == "\n":
+                    self._directive(self.i, end)
+                self.i = end
             elif c in _OPS:
                 j = self.i
                 while j < len(self.s) and self.s[j] in _OPS:
@@ -237,24 +254,19 @@ class _Lexer:
                     self.i += strip
                     self._heredoc_start(strip)
                 elif any(ch in op for ch in ";|()") or op in ("&", "&&"):
-                    at_start, declaring, prev, redirect = True, False, "", False
-                else:  # `<`, `>`, `>>`, `>&`, `&>`, `<<<`: the next word is its target
-                    redirect = True
+                    redirect = False
+                else:  # `<`, `>`, `>>`, `>&`, `&>`: the next word is its target; a `<<<`
+                    redirect = not op.endswith("<<<")  # here-string is data (SEC-P3T31-08)
             else:
                 start = self.i
                 self.i = self._word()
                 if self.s.startswith("(", self.i) and _ASSIGN.fullmatch(self.s, start, self.i):
                     # an array value `NAME=(…)`: the `=` stands in for `$`, same nesting rules
                     self.i = self._dollar(self.i - 1)
-                raw = self.s[start : self.i]
                 if redirect:
                     redirect = False
                     continue
-                self._assignment(start, raw, at_start, declaring, prev)
-                if at_start and not _ASSIGN.match(raw):
-                    at_start = raw in _RESERVED
-                    declaring = raw in _DECLARE
-                prev = raw
+                self._assignment(start, self.i)
 
     def _heredoc_start(self, strip: bool) -> None:
         while self.s.startswith(tuple(_SPACE), self.i):
@@ -266,20 +278,85 @@ class _Lexer:
             raise _Unreadable(start)
         self.heredocs.append((delimiter, strip))
 
-    def _assignment(self, start: int, raw: str, at_start: bool, declaring: bool, prev: str) -> None:
-        if raw.startswith("--env="):
-            self._hide(start + len("--env="), raw[len("--env=") :])
-        elif at_start or declaring:
-            self._hide(start, raw, quoted=not at_start)
-        elif prev in _ENV_FLAGS:
-            self._hide(start, raw)
+    def _eq(self, i: int, end: int) -> int | None:
+        """The first `=` of the word `[i, end)` outside `$(…)`, `${…}` and backquotes (inside
+        quotes or not), or None. The word was read whole already, so nothing here fails."""
+        double = False
+        while i < end:
+            c = self.s[i]
+            if self.s.startswith("\\=", i):  # `export T\=v` assigns (CR-P3T31-05)
+                return i + 1
+            if c == "\\":
+                i += 2
+            elif c == '"':
+                double, i = not double, i + 1
+            elif not double and (c == "'" or self.s.startswith("$'", i)):
+                body = i + (2 if c == "$" else 1)
+                close = self._closing(body, "$'" if c == "$" else "'")
+                found = self.s.find("=", body, close - 1)
+                if found >= 0:
+                    return found
+                i = close
+            elif self.s.startswith(("$(", "${"), i):
+                i = self._dollar(i)
+            elif c == "`":
+                i = self._backquote(i + 1)
+            elif c == "=":
+                return i
+            else:
+                i += 1
+        return None
 
-    def _hide(self, start: int, raw: str, quoted: bool = True) -> None:
-        """`NAME=value` → `NAME=«hidden»`; with `quoted`, also `"NAME=value"`."""
-        lead = 1 if quoted and raw[:1] in ("'", '"') else 0
-        found = _ASSIGN.match(raw, lead)
-        if found is not None:
-            self.edits.append((start, start + len(raw), raw[lead : found.end()] + HIDDEN))
+    def _assignment(self, start: int, end: int) -> None:
+        """Hide the value of the word `[start, end)` when it holds one (the module's list)."""
+        if self.s.startswith("--", start):
+            option = self.s.find("=", start, end)
+            if option < 0:
+                return
+            found = self._eq(option + 1, end)
+            if found is not None and _NAME.fullmatch(self._unquoted(option + 1, found)):
+                self.edits.append((found + 1, end, HIDDEN))
+            return
+        found = self._eq(start, end)
+        if found is None or found == start:
+            return
+        if self.s.startswith("-", start):
+            self.edits.append((found + 1, end, HIDDEN))
+            return
+        name = self._unquoted(start, found)
+        if not _NAME.fullmatch(name):
+            name = self.s[start:found]
+        self.edits.append((start, end, f"{name}={HIDDEN}"))
+
+    def _unquoted(self, start: int, end: int) -> str:
+        return _UNQUOTE.sub("", self.s[start:end])
+
+    def _directive(self, start: int, end: int) -> None:
+        """In a scheduler directive line, hide what follows the first `=` of each comma item of
+        `--export`, `-v`, `-env` (attached or not), whatever the item's name; a value ends at an
+        ASCII space or tab, and one with a quote or a backslash in it is hidden to the end of
+        the line, so no tail of a quoted value and no item after a closing quote is shown
+        (fails closed: SEC-P3T31-02, SEC-P3T31-07)."""
+        line = self.s[start:end]
+        if not _DIRECTIVE.match(line):
+            return
+        spans = []  # in order, apart: each value starts after `done`
+        done = 0  # the end of the last value read
+        for option in _EXPORT_OPTION.finditer(line):
+            at = option.end()
+            if at <= done:  # its value ends at `done` too, and its spans are a subset of those
+                continue  # read already: skipped, so a line is read in linear time (SEC-P3T31-11)
+            stop = _VALUE_END.search(line, at)
+            if stop is not None and stop[0] in _QUOTING:
+                spans.append((at, len(line)))
+                break
+            done = len(line) if stop is None else stop.start()
+            for item in line[at:done].split(","):  # no regex: no backtracking (CR-P3T31-10)
+                name, eq, _ = item.partition("=")
+                if eq:
+                    spans.append((at + len(name) + 1, at + len(item)))
+                at += len(item) + 1
+        self.edits += [(start + lo, start + hi, HIDDEN) for lo, hi in spans]
 
 
 def _apply(text: str, edits: list[tuple[int, int, str]]) -> str:

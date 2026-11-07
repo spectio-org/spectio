@@ -8,6 +8,7 @@ code, epoch). Parameters reach the engine as a file, never as shell words; every
 quoted with `shlex.quote` (Review Focus 1). Only `engine_cmd`, from `spectio.toml`, is shell.
 """
 
+import contextlib
 import json
 import os
 import re
@@ -43,19 +44,34 @@ LIST_RULES_S = 120
 # it; the cancel marker, written before the signal, is checked again after it, so the engine
 # never starts once the run is cancelled (CR-P3T27-01).
 _LIST_RULES = (
-    "(umask 077; {timeout} --foreground {s} {command} > .spectio/rules.txt.tmp 2>/dev/null) &&\n"
-    "  {mv} -f .spectio/rules.txt.tmp .spectio/rules.txt ||\n"
-    "  {{ {rm} -f .spectio/rules.txt.tmp; echo 'spectio: snakemake --list-rules failed:"
+    "(umask 077; {timeout} --foreground {s} {command} > {tmp} 2>/dev/null) &&\n"
+    "  {mv} -f {tmp} {rules} ||\n"
+    "  {{ {rm} -f {tmp}; echo 'spectio: snakemake --list-rules failed:"
     " stages from the rule files' >&2; }}\n"
-    "[ -e .spectio/cancel ] && exit 143\n"
+    "[ -e {cancel} ] && exit 143\n"
 )
+# A Resume (P1 Task 30, dev-env §15.3 req. 16) runs in the parent's launch directory: the engine
+# starts only if `stat .` there gives the device and inode the runner checked, under umask 022.
+_RESUME = (
+    '[ "$({stat} -c %d:%i .)" = {dev}:{ino} ] ||\n'
+    "  {{ echo 'spectio: the launch directory is not the one checked (req. 16)' >&2; exit 1; }}\n"
+    "umask 022\n"
+)
+SESSION_ID = re.compile(r"[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}")
+LOCK = ".spectio-launch.lock"  # in the engine's directory, while a head of Spectio runs there
+LOCKED = 75  # head.exit's code when another head holds the lock
 
 # The outer script: {launch}, {inner} and {keep} are quoted by `render_head_script`. Both
 # shells trap INT and TERM (a trap, not an ignored signal, which the engine would inherit), so
 # that the engine gets Ctrl-C and SIGTERM while they wait for it, and head.exit is written only
 # once it has ended. A `.spectio/cancel` there once head.pid is written stops the engine from
 # ever starting (CR-P3T09-02). `tee` ignores both, so that the engine's last words still
-# reach head.out.
+# reach head.out. The engine runs only while this head holds `.spectio-launch.lock` in the
+# engine's directory, created with O_EXCL (`set -C`) and holding the run ID, so that a second
+# Spectio head never starts there (dev-env §15.3 req. 16); a lock left by a killed head is
+# removed by the runner once that head is proven gone (`resume.clear_stale_lock`). A head that
+# cannot write head.pid stops before all of this, so that no head.pid means no engine ran
+# (`resume.head_gone`, SEC-P3T30-03).
 # The head files are made under `umask 077`, so they are 0600 whatever the inherited umask
 # (`read_small` refuses a group-writable file: CR-P3T09-01, SEC-P3T09-01); the engine gets the
 # inherited umask back, and the login profile may change it.
@@ -65,17 +81,22 @@ um=$(umask); umask 077
 cd -- {launch} || exit 1
 trap : INT TERM
 s=$(</proc/$$/stat); s=${{s##*) }}; read -r -a f <<< "$s"
-printf '%s %s %s %s %s\\n' "$$" "${{f[2]}}" "${{f[19]}}" \\
-  "$(</proc/sys/kernel/random/boot_id)" "$HOSTNAME" > .spectio/head.pid.tmp
-mv -f .spectio/head.pid.tmp .spectio/head.pid
+{{ printf '%s %s %s %s %s\\n' "$$" "${{f[2]}}" "${{f[19]}}" \\
+  "$(</proc/sys/kernel/random/boot_id)" "$HOSTNAME" > .spectio/head.pid.tmp &&
+  mv -f .spectio/head.pid.tmp .spectio/head.pid; }} || exit 1  # no head.pid, no engine
 keep=()
 for v in {keep}; do [ -n "${{!v+x}}" ] && keep+=("$v=${{!v}}"); done
+lock={lock}
 if [ -e .spectio/cancel ]; then
   code=143  # cancelled before the engine ran
+elif ! (set -C; printf '%s\\n' {run_id} > "$lock") 2>/dev/null; then
+  echo "spectio: $lock exists: another Spectio head runs there" > .spectio/head.out
+  code={locked}
 else
   (umask "$um"; exec env -i "${{keep[@]}}" bash -l -c {inner} spectio-head) 2>&1 |
     (trap '' INT TERM; exec tee .spectio/head.out)
   code=${{PIPESTATUS[0]}}
+  {{ [ "$(< "$lock")" = {run_id} ]; }} 2>/dev/null && {rm} -f -- "$lock"
 fi
 printf '%s %s\\n' "$code" "$(date +%s)" > .spectio/head.exit.tmp
 mv -f .spectio/head.exit.tmp .spectio/head.exit
@@ -99,11 +120,18 @@ def engine_args(spec: LaunchSpec) -> list[str]:
         raise ValueError("a Snakemake launch takes one profile")
     if spec.engine == "nextflow":
         args = ["run", str(spec.location), "-params-file", params]
-        args += ["-c", str(spectio / "spectio.config"), "-work-dir", str(spec.work_dir)]
+        args += ["-c", str(spectio / "spectio.config"), "-work-dir", str(spec.engine_work_dir)]
         if profiles:
             args += ["-profile", ",".join(profiles)]
+        if spec.resume_of is not None:
+            session = spec.resume_of.engine_session_id
+            if session is not None and not SESSION_ID.fullmatch(session):
+                raise ValueError(f"engine_session_id {session!r} is not a UUID (req. 16)")
+            args += ["-resume", *([session] if session else [])]
     else:
         args = [*_snakemake_base(spec), "--logger", "spectio"]
+        if spec.resume_of is not None:  # `snakemake/cli.py:919-922`, v9.27.1
+            args.append("--rerun-incomplete")
         if spec.slurm is not None:
             # The SLURM plugin deletes a job's log when the job succeeds; kept, every job has
             # its log while the run directory exists (architecture §13.7, `slurm.py:209-243`).
@@ -133,7 +161,7 @@ def _snakemake_base(spec: LaunchSpec) -> list[str]:
         "--snakefile",
         str(snakefile),
         "--directory",
-        str(spec.launch_dir),
+        str(spec.engine_dir),
         "--configfile",
         params,
     ]
@@ -182,17 +210,33 @@ def render_head_script(spec: LaunchSpec) -> str:
         raise ValueError(f"{spec.launch_n!r} is not a launch number")
     exports = " ".join(f"{k}={shlex.quote(v)}" for k, v in engine_env(spec).items())
     command = " ".join([spec.engine_cmd, *map(shlex.quote, engine_args(spec))])
+    tools = {t: shlex.quote(shutil.which(t) or t) for t in ("timeout", "mv", "rm", "stat")}
     inner = (
-        f"trap : INT TERM\ncd -- {shlex.quote(str(spec.launch_dir))} || exit 1\nexport {exports}\n"
+        f"trap : INT TERM\ncd -- {shlex.quote(str(spec.engine_dir))} || exit 1\nexport {exports}\n"
     )
+    if spec.resume_of is not None:
+        resume = spec.resume_of
+        inner += _RESUME.format(stat=tools["stat"], dev=int(resume.device), ino=int(resume.inode))
     if spec.engine == "nextflow":  # `.command.log` never starts with the environment (req. 13)
         inner += "unset NXF_DEBUG\n"
     if spec.engine == "snakemake":  # in front of the login profile's own (CR-P3T09-05)
         pylib = shlex.quote(str(_spectio(spec) / "pylib"))
         inner += f"export PYTHONPATH={pylib}${{PYTHONPATH:+:$PYTHONPATH}}\n"
+        if spec.resume_of is not None and spec.resume_of.unlock:  # `cli.py:1226`, v9.27.1
+            unlock = " ".join([spec.engine_cmd, *map(shlex.quote, _snakemake_base(spec))])
+            inner += f"{unlock} --unlock || exit $?\n"
         listing = " ".join([spec.engine_cmd, *map(shlex.quote, list_rules_args(spec))])
-        tools = {t: shlex.quote(shutil.which(t) or t) for t in ("timeout", "mv", "rm")}
-        inner += _LIST_RULES.format(s=LIST_RULES_S, command=listing, **tools)
+        own = str(_spectio(spec))
+        inner += _LIST_RULES.format(
+            s=LIST_RULES_S,
+            command=listing,
+            timeout=tools["timeout"],
+            mv=tools["mv"],
+            rm=tools["rm"],
+            tmp=shlex.quote(own + "/rules.txt.tmp"),
+            rules=shlex.quote(own + "/rules.txt"),
+            cancel=shlex.quote(own + "/cancel"),
+        )
     inner += f"{command}\n"
     return _HEAD.format(
         run_id=spec.run_id,
@@ -200,6 +244,9 @@ def render_head_script(spec: LaunchSpec) -> str:
         launch=shlex.quote(str(spec.launch_dir)),
         keep=" ".join(KEEP),
         inner=shlex.quote(inner),
+        lock=shlex.quote(str(spec.engine_dir / LOCK)),
+        locked=LOCKED,
+        rm=tools["rm"],
     )
 
 
@@ -226,9 +273,15 @@ def nextflow_config(spec: LaunchSpec) -> str:
 def write_launch_files(spec: LaunchSpec) -> Path:
     """Write `.spectio/{params.json, spectio.config, head.sh}` and deliver the bridge: unpack
     nf-spectio, or copy the Snakemake logger to `.spectio/pylib/`. Returns the head script.
-    Raises BridgeMissing when the bridge is not there, ValueError on a bad spec."""
+    Raises BridgeMissing when the bridge is not there, ValueError on a bad spec.
+    For Nextflow, `.nextflow/` is made 0700 in the engine's directory first, so that the umask
+    the engine gets (the login profile's) never leaves it group-writable, which a Resume
+    refuses (`resume.check_dirs`, CR-P3T30-02)."""
     script = render_head_script(spec).encode()
     params = json.dumps(spec.params, ensure_ascii=False).encode()
+    if spec.engine == "nextflow":
+        with contextlib.suppress(FileExistsError):  # a symlink there is refused at Resume
+            os.mkdir(spec.engine_dir / ".nextflow", 0o700)
     with private_dir(spec.launch_dir, ".spectio") as fd:
         write_file(fd, "params.json", params)
         if spec.engine == "nextflow":

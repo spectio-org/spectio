@@ -40,9 +40,10 @@ class Invalid(Exception):
 class Problem(Exception):
     """A request the API answers with this problem (api §4.1 catalogue)."""
 
-    def __init__(self, status: int, slug: str, title: str, detail: str) -> None:
+    def __init__(self, status: int, slug: str, title: str, detail: str, **extra: Any) -> None:
         super().__init__(detail)
         self.status, self.slug, self.title, self.detail = status, slug, title, detail
+        self.extra = extra  # more members of the problem, such as `reason` (P1 Task 30)
 
 
 def not_found(detail: str, slug: str = "not-found") -> Problem:
@@ -64,7 +65,7 @@ def _field(loc: tuple[int | str, ...]) -> str:
 def install(app: FastAPI) -> None:
     @app.exception_handler(Problem)
     def known(request: Request, exc: Problem) -> JSONResponse:
-        return problem(exc.status, exc.slug, exc.title, exc.detail)
+        return problem(exc.status, exc.slug, exc.title, exc.detail, **exc.extra)
 
     @app.exception_handler(Invalid)
     def invalid(request: Request, exc: Invalid) -> JSONResponse:

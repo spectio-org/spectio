@@ -148,3 +148,17 @@ export function run(over: Record<string, unknown> = {}) {
     ...over,
   };
 }
+
+/** The fields `GET /runs/{id}` adds to a run (schema `RunDetail`), as for a run that cannot be
+ * resumed while it runs. */
+export const DETAIL = {
+  params: {},
+  stages_note: null,
+  failures: [],
+  failures_total: 0,
+  command: null,
+  parent_run_id: null,
+  resumed_as: [],
+  actions: { resume: { allowed: false, reason: "running" } },
+  results_dir: null,
+};

@@ -1,14 +1,14 @@
 """Fixtures of the API tests (P1 Tasks 17 and 18).
 
 `authed_client` is a TestClient on `http://127.0.0.1:<port>` with that Origin (dev-env §15.3 req. 4
-and 7), with no session for now: sign-in (P1 Tasks 12 to 16) is not built, and the
-API is served in local mode only (inbox #86). Task 16 makes this fixture sign in, and the tests
-that use it keep their name. `client` is the same app on a machine that looks shared, so its
-API is not mounted (TODO(P1 Task 16): a client with no session cookie, answered 401).
+and 7) and a session cookie (req. 2, P1 Task 12); the API is served in local mode only until
+P1 Task 16 (inbox #86). `client` is the same app on a machine that looks shared, so its API is
+not mounted. `served` is the app on a real port, and `session` the cookie a browser holds there.
 """
 
 import shutil
 import subprocess
+import threading
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from functools import partial
@@ -16,6 +16,8 @@ from pathlib import Path
 from typing import Any
 
 import pytest
+import uvicorn
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import insert, update
 
@@ -24,12 +26,13 @@ from spectio.runner.rundir import RunManifest, Workflow
 from spectio.runner.spool import read_spool
 from spectio_server import app as app_mod
 from spectio_server.app import create_app
-from spectio_server.bootstrap import ensure_tenancy
+from spectio_server.auth.middleware import cookie_name
 from spectio_server.projector.ingest import ingest
-from spectio_server.store.db import open_db
 from spectio_server.store.runs import insert_run
 from spectio_server.store.schema import run_stages, runs, tasks
 from spectio_server.store.writer import Writer
+
+from ..conftest import free_port
 
 SYNTHETIC = Path(__file__).resolve().parents[4] / "tests" / "pipelines" / "synthetic"
 FIXTURES = Path(__file__).resolve().parents[4] / "tests" / "fixtures" / "engine-events"
@@ -37,24 +40,18 @@ FLAKY_RUN = "run_01K8T2F1XTVRES000000000000"  # the run of every converted T2 fi
 ENGINE_VERSIONS = {"nextflow": "26.10.4", "snakemake": "9.27.1"}
 
 
-@pytest.fixture
-def writer(settings: Settings) -> Iterator[Writer]:
-    assert settings.db_dir is not None
-    engine, _ = open_db(settings.db_dir)
-    writer = Writer(engine)
-    config = {"runs_root": str(settings.runs_root)}
-    writer.submit(lambda c: ensure_tenancy(c, "me", settings.executor, config, "0.0.1")).result()
-    yield writer
-    writer.close()
-    engine.dispose()
-
-
-def client_for(settings: Settings, writer: Writer, web_dir: Path | None = None) -> TestClient:
-    """`web_dir` is the built screens (P1 Task 19); none by default, so `/` is the plain page."""
+def client_for(
+    settings: Settings, writer: Writer, web_dir: Path | None = None, *, signed_in: bool = True
+) -> TestClient:
+    """`web_dir` is the built screens (P1 Task 19); none by default, so `/` is the plain page.
+    `signed_in`: the client holds a session cookie, as after the link exchange (P1 Task 12)."""
     app = create_app(settings, writer, web_dir=web_dir or Path("/nonexistent/web/dist"))
     app.state.engine_versions = lambda: dict(ENGINE_VERSIONS)  # no login shell in the tests
     origin = f"http://127.0.0.1:{settings.port}"  # what a browser on the loopback sends (req. 4, 7)
-    return TestClient(app, base_url=origin, headers={"Origin": origin})
+    client = TestClient(app, base_url=origin, headers={"Origin": origin})
+    if signed_in:
+        client.cookies.set(cookie_name(f"127.0.0.1:{settings.port}"), app.state.sessions.create())
+    return client
 
 
 @pytest.fixture
@@ -218,3 +215,37 @@ def git_repo(tmp_path: Path) -> Path:
 def lone_host(monkeypatch: pytest.MonkeyPatch) -> None:
     """The API tests run as on one person's machine, whatever the test host is (SEC-P3T17-06)."""
     monkeypatch.setattr(app_mod, "shared_host", lambda: None)
+
+
+@pytest.fixture
+def served_app(settings: Settings, writer: Writer) -> FastAPI:
+    return create_app(settings, writer)
+
+
+@pytest.fixture
+def session(served_app: FastAPI, served: str) -> dict[str, str]:
+    """The cookie of a signed-in browser on `served` (P1 Task 12), named after its port."""
+    return {cookie_name(served.removeprefix("http://")): served_app.state.sessions.create()}
+
+
+@pytest.fixture
+def served(served_app: FastAPI) -> Iterator[str]:
+    """The app on a real loopback port, as `spectio serve` runs it."""
+    app = served_app
+    port = free_port()
+    config = uvicorn.Config(
+        app,
+        host="127.0.0.1",
+        port=port,
+        lifespan="off",
+        log_level="warning",
+        timeout_graceful_shutdown=1,
+    )
+    server = uvicorn.Server(config)
+    thread = threading.Thread(target=server.run, daemon=True)
+    thread.start()
+    while not server.started:
+        thread.join(0.01)
+    yield f"http://127.0.0.1:{port}"
+    server.should_exit = True
+    thread.join(10)

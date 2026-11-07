@@ -29,6 +29,7 @@ import { type Detail, DetailSheet } from "./DetailSheet";
 import { FailureSummary } from "./FailureSummary";
 import { LogLines, LogViewer } from "./LogViewer";
 import { bytes, nearLimit, resourcesLine, seconds } from "./resources";
+import { ResultsSection } from "./ResultsSection";
 import { RunHeader, runDirectory } from "./RunHeader";
 import { NearLimit, ProcessName, Word, runName, taskLabel } from "./RunState";
 import {
@@ -46,7 +47,7 @@ import {
   words,
 } from "./stateWord";
 
-const RUN_ID = /^run_[0-7][0-9A-HJKMNP-TV-Z]{25}$/; // api §7, as the server checks it
+export const RUN_ID = /^run_[0-7][0-9A-HJKMNP-TV-Z]{25}$/; // api §7, as the server checks it
 const CANCELLABLE = new Set(["queued", "running"]);
 const LOGS: { source: LogSource; label: string }[] = [
   { source: "head-out", label: "Head output" },
@@ -347,13 +348,22 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
   );
 }
 
-/** How to look at the head by hand: ssh and tmux attach with tmux heads; the process with the
- * local executor, whose head has no terminal (P1 Task 9; tmux heads come with Task 10). */
+// What may go into the copied commands: a host name, a tmux session name, a local head's
+// `<pid>.<start>`. Anything else shows no commands, and each value is quoted (SEC-P3PARA-01).
+const HOST_NAME = /^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$/;
+const SESSION_NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
+const LOCAL_HEAD = /^([0-9]{1,10})\.[0-9]{1,20}$/;
+
+/** How to look at the head by hand: ssh and tmux attach with tmux heads (P1 Task 10, the exact
+ * session as dev-env §15.3 req. 11 targets it); the process with the local executor, whose head
+ * has no terminal (P1 Task 9). */
 function HeadByHand({ run, server }: { run: RunDetail; server: ServerVersion | null }) {
   const head = run.head!;
   const local = server?.executor === "local";
-  const pid = head.session?.split(".")[0] ?? "";
-  const commands = local ? `ps -o pid,etime,args --sid ${pid}` : `ssh ${head.node}\ntmux attach -t ${head.session}`;
+  const session = head.session ?? "";
+  const pid = LOCAL_HEAD.exec(session)?.[1];
+  if (local ? pid === undefined : !HOST_NAME.test(head.node) || !SESSION_NAME.test(session)) return null;
+  const commands = local ? `ps -o pid,etime,args --sid ${pid}` : `ssh -- '${head.node}'\ntmux attach -t '=${session}'`;
   return (
     <FoldSection id="attach" screen="run" icon={ICONS.terminal} title="Open the head by hand" summary={local ? `process ${pid}` : `tmux on ${head.node}`} card>
       <p className="sp-muted">
@@ -439,6 +449,7 @@ function SummaryAside({ run, server, onLogs }: { run: RunDetail; server: ServerV
           </p>
         </FoldSection>
       )}
+      {run.origin !== "cli-observed" && <ResultsSection run={run} />}
       <FoldSection id="params" screen="run" icon={ICONS.sliders} title="Parameters" summary={`${params} set at launch`} defaultOpen={false} card>
         <ParamsList params={run.params} />
       </FoldSection>

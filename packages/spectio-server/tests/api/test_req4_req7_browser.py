@@ -12,6 +12,7 @@ from sqlalchemy import select
 
 from spectio.config import Settings
 from spectio_server.api import workflows as wf
+from spectio_server.auth.middleware import cookie_name
 from spectio_server.store.schema import runs
 from spectio_server.store.writer import Writer
 
@@ -61,7 +62,8 @@ def test_req4_other_host_refused(
 
 @pytest.mark.parametrize("host", ["127.0.0.1", "localhost:9999", "[::1]:8080", "LOCALHOST"])
 def test_req4_loopback_hosts_any_port(settings: Settings, writer: Writer, host: str) -> None:
-    client = client_for(settings, writer)
+    client = client_for(settings, writer, signed_in=False)
+    client.cookies.set(cookie_name(host), client.app.state.sessions.create())  # type: ignore[attr-defined]
     headers = {"Host": host, "Origin": f"http://{host}"}  # a tunnel's local port (req. 4)
     assert client.get("/", headers=headers).status_code == 200
 
