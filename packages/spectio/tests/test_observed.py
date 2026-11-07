@@ -24,7 +24,7 @@ from spectio.runner.observed import end_pointer, scan_observed
 from spectio.runner.rundir import RunManifest, Workflow, make_run_dirs
 from spectio.runner.spool import read_spool
 from spectio.runner.types import HeadReport, LaunchRef, LaunchSpec
-from spectio_server import serve
+from spectio_server import rebuild, serve
 from spectio_server.bootstrap import ensure_tenancy
 from spectio_server.files.pool import FilePool
 from spectio_server.rebuild import rebuild_index
@@ -727,6 +727,7 @@ def test_stuck_launch_dir_never_holds_the_boot(
 ) -> None:
     """The boot's rebuild and first tick finish while the launch directory does not answer."""
     monkeypatch.setattr(serve, "READ_TIMEOUT_S", 0.2)
+    monkeypatch.setattr(rebuild, "READ_TIMEOUT_S", 0.2)  # the boot's pointer pass (CR-P3B03-01)
     write_pointer(tmp_home, pointer(RUN_A, project, boot_id=OTHER_BOOT))
     write_spool(project, RUN_A, fixture_lines(RUN_A, last=3))
     db_dir = tmp_home.parent / "db"
