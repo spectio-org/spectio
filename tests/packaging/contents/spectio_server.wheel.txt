@@ -45,6 +45,7 @@ spectio_server/migrations/versions/0005_run_processes.py
 spectio_server/migrations/versions/0006_attempt_files.py
 spectio_server/migrations/versions/0007_attempt_scheduler.py
 spectio_server/migrations/versions/0008_run_lineage.py
+spectio_server/migrations/versions/0009_terminal_head.py
 spectio_server/projector/__init__.py
 spectio_server/projector/ingest.py
 spectio_server/projector/nextflow.py

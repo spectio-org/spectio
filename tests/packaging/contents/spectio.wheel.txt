@@ -26,6 +26,7 @@ spectio/runner/engines.py
 spectio/runner/headscript.py
 spectio/runner/local.py
 spectio/runner/loop.py
+spectio/runner/observed.py
 spectio/runner/resume.py
 spectio/runner/rundir.py
 spectio/runner/sacct.py
