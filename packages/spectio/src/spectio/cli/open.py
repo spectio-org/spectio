@@ -47,15 +47,16 @@ from spectio.open_remote import (
 )
 
 NOT_FOUND = 127  # the shell's status for a command it cannot find
+SSH_ERROR = 255  # ssh's own status: it did not reach the node or run the command
 TUNNEL_WAIT_S = 120  # ssh may ask for a password or a second factor first
 
 
 class Failed(Exception):
     """Why `spectio open` stops; `code` is its exit code."""
 
-    def __init__(self, message: str, code: int = 3) -> None:
+    def __init__(self, message: str, code: int = 3, status: int | None = None) -> None:
         super().__init__(message)
-        self.code = code
+        self.code, self.status = code, status  # status: the ssh exit status, if any
 
 
 def clusters_path() -> Path:
@@ -104,7 +105,10 @@ class Remote:
                 code=2,
             )
         if done.returncode != 0:
-            raise Failed(f"ssh {node} failed ({done.returncode}): {_printable(done.stderr)}")
+            raise Failed(
+                f"ssh {node} failed ({done.returncode}): {_printable(done.stderr)}",
+                status=done.returncode,
+            )
         return done.stdout
 
     def state(self) -> State | None:
@@ -117,14 +121,7 @@ class Remote:
         return state
 
     def ticket(self, node: str) -> str:
-        try:
-            return parse_ticket(self.run(node, login_script(self.remote_cmd)))
-        except Failed as exc:  # server.json is not checked for a live server yet (FU-P3-48)
-            raise Failed(
-                f"{exc}\n~/.spectio/server.json on the cluster may be stale (its server may have "
-                "stopped): if so, remove it and run spectio open again.",
-                code=exc.code,
-            ) from exc
+        return parse_ticket(self.run(node, login_script(self.remote_cmd)))
 
 
 def _wait_up(tunnel: subprocess.Popen[bytes], local_port: int) -> None:
@@ -152,15 +149,25 @@ def _open(
     if ssh is None:
         raise Failed("ssh is not on PATH")
     remote = Remote(ssh, host, remote_cmd or config.get("remote_cmd") or "spectio")
-    state = remote.state()
-    if state is None:
-        state = remote.start(node or first or host)
+    probed = remote.state()
+    state = probed or remote.start(node or first or host)
     target = node or state.node
     lport = free_port() if local_port is None else check_port(local_port, "--local-port")
     with subprocess.Popen(tunnel_argv(ssh, target, lport, state.port)) as tunnel:  # noqa: S603
         try:
             _wait_up(tunnel, lport)
-            url = link(lport, remote.ticket(target))
+            try:
+                ticket = remote.ticket(target)
+            except Failed as exc:  # server.json is not checked for a live server yet (FU-P3-48)
+                # Only a probed file, on its own node, past ssh itself, can be the cause.
+                if probed is None or target != probed.node or exc.status == SSH_ERROR:
+                    raise
+                raise Failed(
+                    f"{exc}\n~/.spectio/server.json on the cluster may be stale (its server may "
+                    "have stopped): if so, remove it and run spectio open again.",
+                    code=exc.code,
+                ) from exc
+            url = link(lport, ticket)
             if tunnel.poll() is not None:
                 raise Failed(f"the tunnel to {target} closed (ssh exit {tunnel.returncode})")
             typer.echo(f"Spectio on {target}: {url}\nCtrl-C closes the tunnel.")

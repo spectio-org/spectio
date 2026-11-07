@@ -215,6 +215,24 @@ def test_stale_state_file_named_in_error(fake_ssh: FakeSsh) -> None:
     assert not (fake_ssh.dir / "opened").exists()
 
 
+def test_no_stale_hint_for_another_node(fake_ssh: FakeSsh) -> None:
+    """With --node on another node than server.json's, a failed login is not the file's fault:
+    no hint to remove the lock of a live server (CR-P3T24-03)."""
+    fake_ssh.state(STATE)
+    (fake_ssh.dir / "dead").touch()
+    result = spectio_open("cluster", "--node", "login2")
+    assert result.exit_code == 3, result.output
+    assert "may be stale" not in result.output
+
+
+def test_no_stale_hint_after_first_start(fake_ssh: FakeSsh) -> None:
+    """server.json was just written by serve --detach: it is not stale (CR-P3T24-03)."""
+    (fake_ssh.dir / "dead").touch()
+    result = spectio_open("cluster")
+    assert result.exit_code == 3, result.output
+    assert "may be stale" not in result.output
+
+
 def test_remote_cmd_flag_beats_clusters_toml(fake_ssh: FakeSsh, home: Path) -> None:
     clusters_toml(home, '[cluster]\nremote_cmd = "nope"\n')
     fake_ssh.state(STATE)
