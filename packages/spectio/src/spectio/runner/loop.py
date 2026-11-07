@@ -393,7 +393,7 @@ class RunnerLoop:
         self._busy.add(key)
         try:
             return self.files.run(job, self.files_timeout_s)
-        except Stalled:
+        except BaseException:  # also a pool that cannot start a thread (SEC-P3T25-r3-02)
             if claim.acquire(blocking=False):  # it never ran, and now never will
                 self._busy.discard(key)
             raise
