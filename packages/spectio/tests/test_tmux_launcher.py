@@ -96,6 +96,20 @@ def ref_for(spec: LaunchSpec, native_id: str | None = None) -> LaunchRef:
     )
 
 
+def running_from(where: Path) -> list[int]:
+    """The live processes whose command line names a file under `where`."""
+    found = []
+    for proc in Path("/proc").iterdir():
+        try:
+            argv = (proc / "cmdline").read_bytes().split(b"\0")
+            state = (proc / "stat").read_text().rsplit(") ", 1)[1].split()[0]
+        except (OSError, IndexError):
+            continue
+        if state != "Z" and any(str(where).encode() in a for a in argv):
+            found.append(int(proc.name))
+    return found
+
+
 def ended(launcher: TmuxLauncher, native_id: str) -> HeadReport:
     found: list[HeadReport] = []
 
@@ -184,6 +198,41 @@ def test_tmux_start_failure_fails_run(runs_root: Path, fake_tmux: Path, why: str
     if why == "exists":
         assert report.failure.message.startswith(f"duplicate session: spectio-{RUN_A}")
     assert sink.acks[0][1] is False
+
+
+@pytest.mark.parametrize("why", ["garbage", "timeout"])
+def test_unparsed_or_slow_start_kills_its_session(
+    runs_root: Path, fake_tmux: Path, monkeypatch: pytest.MonkeyPatch, why: str
+) -> None:
+    """A session started but not confirmed is ended: no engine runs on with no owner
+    (CR-P3T10-01)."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; sleep 30")
+    if why == "garbage":
+        (fake_tmux / "garbage").write_text("no pane here")
+    else:
+        monkeypatch.setattr("spectio.runner.tmux.TMUX_TIMEOUT_S", 2)
+        (fake_tmux / "slow").write_text("4")
+    ref = LaunchRef("lch_1", RUN_A, 1, "nextflow", runs_root / RUN_A / "launch")
+    sink = Sink(ref, {"location": str(runs_root.parent / "pipeline")})
+    settings = Settings(
+        runs_root=runs_root, executor="slurm", engines=EngineOpts(nextflow_cmd=str(engine))
+    )
+    RunnerLoop(sink, TmuxLauncher(str(FAKE)), settings, end_grace_s=0).tick()
+    (report,) = sink.reports
+    assert report.ended and report.failure is not None
+    assert report.failure.class_ == "launch_error"
+    assert ["kill-session", "-t", f"=spectio-{RUN_A}"] in calls(fake_tmux)
+    assert not (fake_tmux / "sessions" / f"spectio-{RUN_A}").exists()
+    wait_for(lambda: not running_from(engine.parent))  # the engine went with its session
+
+
+def test_kill_never_on_a_failed_start(runs_root: Path, fake_tmux: Path) -> None:
+    """A non-zero new-session may be another launch's live session: it is never killed."""
+    (fake_tmux / "fail").write_text(f"duplicate session: spectio-{RUN_A}")
+    spec = spec_for(runs_root, stub_engine(runs_root.parent / "bin", "exit 0"))
+    with pytest.raises(OSError, match="duplicate session"):
+        TmuxLauncher(str(FAKE)).submit(spec)
+    assert [c[0] for c in calls(fake_tmux)] == ["new-session"]
 
 
 def test_adopt_by_session_and_pid(runs_root: Path, fake_tmux: Path) -> None:

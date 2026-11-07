@@ -5,8 +5,10 @@ It keeps its sessions in `$TMUX_TMPDIR`, where the real tmux keeps its socket, a
 call's arguments to `calls.jsonl` there. `new-session` runs the command detached in its own
 session and process group, as a pane's command is, and prints the `-F` format; `list-panes`
 and `has-session` take an exact target (`=name`) only; `send-keys ... C-c` sends SIGINT to the
-pane's process group, as a Ctrl-C typed in the pane does. A file `fail` there makes the next
-call print its text to stderr and exit 1.
+pane's process group, as a Ctrl-C typed in the pane does; `kill-session` sends SIGHUP to the
+pane's process group, as closing its terminal does. A file `fail` there makes the next call print
+its text to stderr and exit 1; a file `garbage` makes the next `new-session` print that file's
+text for `-P`; a file `slow` makes the next `new-session` sleep that many seconds once started.
 """
 
 import json
@@ -14,6 +16,7 @@ import os
 import signal
 import subprocess
 import sys
+import time
 from pathlib import Path
 
 state = Path(os.environ["TMUX_TMPDIR"])
@@ -97,7 +100,15 @@ if command == "new-session":
             start_new_session=True,
         )
     (sessions / name).write_text(f"%{n} {proc.pid}")
-    if "P" in opts:
+    garbage, slow = state / "garbage", state / "slow"
+    if slow.exists():
+        seconds = float(slow.read_text())
+        slow.unlink()
+        time.sleep(seconds)
+    if garbage.exists():
+        print(garbage.read_text())
+        garbage.unlink()
+    elif "P" in opts:
         print(fmt(opts.get("F", "#{pane_id}"), f"%{n}", proc.pid))
 elif command in ("list-panes", "has-session"):
     opts, _ = options(rest, "s", "tF")
@@ -107,6 +118,14 @@ elif command in ("list-panes", "has-session"):
         die(f"can't find session: {name}")
     if command == "list-panes":
         print(fmt(opts.get("F", "#{pane_id}"), *found))
+elif command == "kill-session":
+    opts, _ = options(rest, "", "t")
+    name = exact(opts["t"])
+    found = pane_of(name)
+    if found is None:
+        die(f"can't find session: {name}")
+    (sessions / name).unlink()
+    os.killpg(found[1], signal.SIGHUP)
 elif command == "send-keys":
     opts, keys = options(rest, "", "t")
     panes = [p for p in (pane_of(s.name) for s in sessions.iterdir()) if p is not None]

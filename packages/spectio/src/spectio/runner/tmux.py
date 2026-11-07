@@ -85,7 +85,7 @@ class TmuxLauncher:
                 check=False,
             )
         except subprocess.TimeoutExpired:
-            raise OSError(f"tmux {args[0]} did not answer in {TMUX_TIMEOUT_S} s") from None
+            raise TimeoutError(f"tmux {args[0]} did not answer in {TMUX_TIMEOUT_S} s") from None
 
     def _list_panes(self, session: str) -> dict[int, str]:
         """The panes of the session, pane PID → pane ID; empty when there is no such session."""
@@ -101,18 +101,36 @@ class TmuxLauncher:
         session = session_name(spec.run_id)
         head = write_launch_files(spec)
         bash = shutil.which("bash") or "/bin/bash"
-        started = self._run(
-            *("new-session", "-d", "-P", "-F", PANE_FORMAT, "-s", session),
-            *("-c", str(spec.launch_dir), bash, str(head)),
-        )
-        if started.returncode != 0:
+        try:
+            started = self._run(
+                *("new-session", "-d", "-P", "-F", PANE_FORMAT, "-s", session),
+                *("-c", str(spec.launch_dir), bash, str(head)),
+            )
+        except TimeoutError:
+            self._kill_unconfirmed(session)  # a duplicate fails fast: a session found is ours
+            raise
+        if started.returncode != 0:  # never killed: it may be another launch's live session
             stderr = started.stderr.strip() or f"tmux new-session exited {started.returncode}"
             raise OSError(stderr[:4096])
         match = _PANE_LINE.fullmatch(started.stdout)
         if match is None:
+            self._kill_unconfirmed(session)
             raise OSError(f"tmux new-session printed {started.stdout[:200]!r}, not a pane")
         self._panes[session] = _Pane(spec.launch_dir, match[1], int(match[2]))
         return session
+
+    def _kill_unconfirmed(self, session: str) -> None:
+        """Best effort: end the session `submit` just started but could not confirm, so that no
+        engine runs on with no owner once the run is failed (CR-P3T10-01)."""
+        try:
+            if not self._list_panes(session):
+                return
+            killed = self._run("kill-session", "-t", f"={session}")
+        except OSError as exc:
+            log.warning("session %s not killed: %s", session, exc)
+            return
+        if killed.returncode != 0:
+            log.warning("session %s not killed: %s", session, killed.stderr.strip()[:200])
 
     def adopt(self, launch: LaunchRef) -> HeadReport:
         """The head of `spectio-<run_id>`, whatever native ID the index holds (a rebuilt index
