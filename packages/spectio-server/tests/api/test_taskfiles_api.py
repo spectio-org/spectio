@@ -6,10 +6,12 @@ would, with paths under the run's directories (`make_run_dirs`).
 """
 
 import errno
+import os
 import threading
 import time
 from collections import Counter
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -345,10 +347,54 @@ def test_engine_log_from_the_run(
     found = authed_client.get(f"{API}/runs/{RUN}/logs")
     assert found.text == "this run's log\n"
     assert found.headers["referrer-policy"] == "no-referrer"
+
+    # A run from a terminal: its own launch directory, outside the runs root (P1 Task 25).
+    terminal = settings.runs_root.parent / "project"
+    terminal.mkdir()
+    terminal.chmod(0o770)  # a project directory is often group-writable: not checked
+    (terminal / ".nextflow.log").write_text("the project's log\n")
+    observed = {"origin": "cli-observed", "launch_dir": str(terminal)}
     writer.submit(
-        lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(origin="cli-observed"))
+        lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(**observed))
     ).result()
-    assert authed_client.get(f"{API}/runs/{RUN}/logs").text == "the terminal's log\n"
+    assert authed_client.get(f"{API}/runs/{RUN}/logs").text == "the project's log\n"
+
+
+@pytest.mark.parametrize("how", ["symlink", "fifo", "foreign", "in_runs_root", "relative"])
+def test_terminal_log_symlink_fifo_foreign_refused(
+    authed_client: TestClient, writer: Writer, settings: Settings, how: str
+) -> None:
+    """Req. 12, "Server, reads": a terminal run's engine log is read only when it is a regular
+    file of the user, opened with O_NOFOLLOW|O_NONBLOCK; otherwise "log not readable". Its
+    launch directory must still pass the scan's check."""
+    add_run(writer, settings, RUN, "nf", "running")
+    terminal = settings.runs_root.parent / "project"
+    terminal.mkdir()
+    log = terminal / ".nextflow.log"
+    secret = settings.runs_root.parent / "secret"
+    secret.write_text("not the log\n")
+    launch_dir = str(terminal)
+    if how == "symlink":
+        log.symlink_to(secret)
+    elif how == "fifo":
+        os.mkfifo(log)
+    elif how == "foreign":
+        if os.geteuid() != 0:
+            pytest.skip("needs root to make another user's file")
+        log.write_text("theirs\n")
+        os.chown(log, 4242, 4242)
+    elif how == "in_runs_root":
+        launch_dir = str(make_run_dirs(settings.runs_root, RUN).launch_dir)
+        (Path(launch_dir) / ".nextflow.log").write_text("a driven run's log\n")
+    else:
+        launch_dir = "project"
+    observed = {"origin": "cli-observed", "launch_dir": launch_dir}
+    writer.submit(
+        lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(**observed))
+    ).result()
+    found = authed_client.get(f"{API}/runs/{RUN}/logs")
+    assert found.status_code == 404, found.text
+    assert "log not readable" in found.json()["detail"]
 
 
 # --- A stalled file system never stops the events (req. 13, SEC-157) --------------------------

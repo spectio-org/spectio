@@ -21,7 +21,7 @@ const run = {
   workflow: { engine: null, engine_version: null, location: "", name: null, version: null },
   profiles: [],
   failure: null,
-  head: { session: null, node: "", alive: false, exit_code: null },
+  head: { session: null, node: "", alive: false, exit_code: null, checked: true },
   task_counts: {},
   summary: { tasks: { done: 0, total: 0, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" },
 } satisfies Run;

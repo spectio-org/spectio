@@ -93,7 +93,9 @@ export interface Run {
   };
   profiles: string[];
   failure: { [key: string]: Json } | null;
-  head: { session: string | null; node: string; alive: boolean; exit_code: number | null } | null;
+  /** `checked` false: a run started from a terminal on another host or boot, whose head the
+   * server cannot see (architecture §13.8). */
+  head: { session: string | null; node: string; alive: boolean; exit_code: number | null; checked: boolean } | null;
   task_counts: Counts;
   summary: {
     tasks: { done: number; total: number; failed: number; cached: number };

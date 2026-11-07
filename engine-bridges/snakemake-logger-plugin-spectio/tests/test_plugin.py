@@ -37,7 +37,17 @@ from spectio_sdk.events import (
     parse_data,
 )
 
-from .conftest import FILES, PLANTED, REPO, ROOT, RUN_ID, SmkRun, snakemake, synthetic_happy
+from .conftest import (
+    FILES,
+    PLANTED,
+    REPO,
+    ROOT,
+    RUN_ID,
+    SmkRun,
+    snakemake,
+    synthetic_happy,
+    terminal,
+)
 
 FIXTURE = (
     REPO
@@ -319,13 +329,12 @@ def test_rotates_before_the_cap(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
 @pytest.mark.parametrize(
     ("env", "said"),
     [
-        ({}, ""),  # not driven: silent
         ({"SPECTIO_RUN_ID": "run_x", "SPECTIO_LAUNCH_N": "1"}, "SPECTIO_RUN_ID"),
         ({"SPECTIO_RUN_ID": RUN_ID, "SPECTIO_LAUNCH_N": "01"}, "SPECTIO_LAUNCH_N"),
         ({"SPECTIO_RUN_ID": RUN_ID, "SPECTIO_LAUNCH_N": "1", "SPECTIO_SPOOL_DIR": "rel"}, "abs"),
     ],
 )
-def test_silent_unless_driven(
+def test_silent_when_misdriven(
     env: dict[str, str], said: str, monkeypatch: pytest.MonkeyPatch, capsys: Any, tmp_path: Path
 ) -> None:
     monkeypatch.chdir(tmp_path)
@@ -336,8 +345,7 @@ def test_silent_unless_driven(
     h = plugin.LogHandler(MockOutputSettings(), plugin.LogHandlerSettings())
     h.handle(record(None, "hello"))
     assert h.spool is None and list(tmp_path.iterdir()) == []
-    err = capsys.readouterr().err
-    assert (said in err) if said else err == ""
+    assert said in capsys.readouterr().err
 
 
 # --- The fields P1 Tasks 28 and 29 read --------------------------------------------------------
@@ -521,3 +529,150 @@ def test_recorded_fixture_current(files_run: SmkRun) -> None:
     if os.environ.get("SPECTIO_RECORD") == "1":
         FIXTURE.write_text(text)
     assert shape(FIXTURE.read_text()) == shape(text)
+
+
+# --- Runs started from a terminal (P1 Task 25; architecture §13.8, dev-env §15.3 req. 12) ------
+
+POINTER_KEYS = {
+    "run_id",
+    "launch_dir",
+    "engine",
+    "engine_version",
+    "bridge_version",
+    "host",
+    "pid",
+    "pid_start_time",
+    "boot_id",
+}
+
+
+@pytest.fixture
+def tmp_home(tmp_path: Path) -> Path:
+    """A home where Spectio is installed: `~/.spectio/` 0700, no `observed/` yet."""
+    home = tmp_path / "home"
+    (home / ".spectio").mkdir(mode=0o700, parents=True)
+    home.chmod(0o700)
+    return home
+
+
+def pointers(home: Path) -> list[Path]:
+    observed = home / ".spectio" / "observed"
+    return sorted(observed.iterdir()) if observed.is_dir() else []
+
+
+def test_terminal_run_writes_pointer_snakemake(tmp_home: Path, tmp_path: Path) -> None:
+    """No SPECTIO_RUN_ID: a run ID, the spool `<run ID>-<producer>-0001.jsonl` in the launch
+    directory, and `~/.spectio/observed/<run ID>.json`, 0600, in `observed/` made 0700."""
+    run = terminal(tmp_path / "launch", tmp_home)
+    assert run.proc.returncode == 0, run.proc.stderr[-3000:]
+    [found] = pointers(tmp_home)
+    data = json.loads(found.read_text())
+    run_id = data["run_id"]
+    assert found.name == f"{run_id}.json" and plugin._RUN_ID.fullmatch(run_id)
+    assert stat.S_IMODE(found.stat().st_mode) == 0o600
+    assert stat.S_IMODE((tmp_home / ".spectio" / "observed").stat().st_mode) == 0o700
+    assert [f.name for f in run.files()] == [f"{run_id}-snakemake-logger-spectio-0001.jsonl"]
+    assert stat.S_IMODE((run.launch / ".spectio").stat().st_mode) == 0o700
+    lines = run.lines()
+    assert lines and {(e["run"], e["launch"]) for e in lines} == {(run_id, 1)}
+    for line in lines:
+        parse_data(SpoolEvent.model_validate(line))
+    assert data["launch_dir"] == str(run.launch) and data["engine"] == "snakemake"
+    assert data["engine_version"] == "9.27.1" and data["bridge_version"] == plugin.VERSION
+
+
+def test_pointer_keys_exact_snakemake(tmp_home: Path, tmp_path: Path) -> None:
+    """Exactly the keys of architecture §13.8: no environment, arguments or parameters."""
+    run = terminal(tmp_path / "launch", tmp_home, "--config", "secret_param=7f3a")
+    assert run.proc.returncode == 0, run.proc.stderr[-3000:]
+    [found] = pointers(tmp_home)
+    text = found.read_text()
+    assert set(json.loads(text)) == POINTER_KEYS
+    assert PLANTED not in text and "7f3a" not in text
+
+
+def test_no_spectio_home_run_unaffected_snakemake(tmp_path: Path) -> None:
+    """No `~/.spectio/`: no pointer, and none made; the spool is written; exit 0."""
+    home = tmp_path / "home"
+    home.mkdir(mode=0o700)
+    run = terminal(tmp_path / "launch", home)
+    assert run.proc.returncode == 0, run.proc.stderr[-3000:]
+    assert not (home / ".spectio").exists() and run.files()
+
+
+def test_unwritable_home_run_unaffected_snakemake(tmp_home: Path, tmp_path: Path) -> None:
+    """`observed/` that cannot be written (mode 0500; a file in its place, which even root
+    cannot write into): exit 0, the spool written, the reason in `bridge.err`."""
+    (tmp_home / ".spectio" / "observed").write_text("")
+    run = terminal(tmp_path / "launch", tmp_home)
+    assert run.proc.returncode == 0, run.proc.stderr[-3000:]
+    assert run.files()
+    assert "no pointer written" in (run.launch / ".spectio" / "bridge.err").read_text()
+    os.unlink(tmp_home / ".spectio" / "observed")
+    (tmp_home / ".spectio" / "observed").mkdir(mode=0o500)
+    again = terminal(tmp_path / "launch2", tmp_home)
+    assert again.proc.returncode == 0, again.proc.stderr[-3000:]
+
+
+def test_driven_run_writes_no_pointer_snakemake(tmp_home: Path, tmp_path: Path) -> None:
+    """SPECTIO_RUN_ID set (a run Spectio launched): no pointer, the driven file names."""
+    launch = tmp_path / "launch"
+    os.environ["HOME"], home = str(tmp_home), os.environ["HOME"]
+    try:
+        run = snakemake(launch, FILES, "--cores", "1")
+    finally:
+        os.environ["HOME"] = home
+    assert run.proc.returncode == 0, run.proc.stderr[-3000:]
+    assert pointers(tmp_home) == []
+    assert all(SPOOL_FILE_NAME.fullmatch(f.name) for f in run.files()) and run.files()
+
+
+@pytest.mark.parametrize("how", ["symlink", "other_owner", "mode_0777", "bridge_err_symlink"])
+def test_bridge_refuses_foreign_spectio_dir_snakemake(
+    tmp_home: Path, tmp_path: Path, how: str
+) -> None:
+    """`.spectio` a symlink, another user's or 0777, or `bridge.err` a symlink: nothing is
+    written outside it, the targets are unchanged, and the run exits 0."""
+    launch = tmp_path / "launch"
+    launch.mkdir()
+    target = tmp_path / "target"
+    target.mkdir(mode=0o700)
+    victim = tmp_path / "victim"
+    victim.write_text("unchanged\n")
+    if how == "symlink":
+        (launch / ".spectio").symlink_to(target)
+    elif how == "other_owner":
+        if os.geteuid() != 0:
+            pytest.skip("needs root to make another user's directory")
+        (launch / ".spectio").mkdir(mode=0o700)
+        os.chown(launch / ".spectio", 4242, 4242)
+    elif how == "mode_0777":
+        (launch / ".spectio").mkdir()
+        (launch / ".spectio").chmod(0o777)
+    else:  # the spool refused (events a file) makes the bridge say why in bridge.err
+        (launch / ".spectio").mkdir(mode=0o700)
+        (launch / ".spectio" / "events").write_text("")
+        (launch / ".spectio" / "bridge.err").symlink_to(victim)
+    run = terminal(launch, tmp_home)
+    assert run.proc.returncode == 0, run.proc.stderr[-3000:]
+    assert list(target.iterdir()) == [] and victim.read_text() == "unchanged\n"
+    assert pointers(tmp_home) == []  # no spool, no pointer: nothing to show
+    if how in ("other_owner", "mode_0777"):
+        assert list((launch / ".spectio").iterdir()) == []
+    assert "the spool directory is refused" in run.proc.stderr
+
+
+@pytest.mark.parametrize("how", ["mode_0777", "symlink"])
+def test_loose_spectio_home_no_pointer_snakemake(tmp_home: Path, tmp_path: Path, how: str) -> None:
+    """`~/.spectio/` 0777 or a symlink: no pointer anywhere; the run and its spool go on."""
+    if how == "mode_0777":
+        (tmp_home / ".spectio").chmod(0o777)
+        where = tmp_home / ".spectio"
+    else:
+        where = tmp_path / "real-spectio"
+        (tmp_home / ".spectio").rename(where)
+        (tmp_home / ".spectio").symlink_to(where)
+    run = terminal(tmp_path / "launch", tmp_home)
+    assert run.proc.returncode == 0, run.proc.stderr[-3000:]
+    assert list(where.iterdir()) == [] and run.files()
+    assert "no pointer written" in (run.launch / ".spectio" / "bridge.err").read_text()

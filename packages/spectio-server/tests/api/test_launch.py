@@ -471,7 +471,7 @@ def test_api_absent_off_local(settings: Settings, writer: Writer, synthetic: Pat
     client = client_for(slurm, writer)
     response = client.get(INSPECT, params={"location": str(synthetic / "nextflow")})
     assert response.status_code == 404
-    assert "Tasks 13 to 16" in response.json()["detail"]
+    assert "spectio init --local" in response.json()["detail"]
     assert launch(client, str(synthetic / "nextflow"), "nextflow").status_code == 404
     assert table(writer, runs) == []
 
@@ -485,10 +485,10 @@ def test_api_absent_on_shared_host(
     response = client.get(INSPECT, params={"location": "/srv/pipeline"})
     assert response.status_code == 404
     assert "sinfo on PATH" in response.json()["detail"]
-    assert "Tasks 13 to 16" in response.json()["detail"]
+    assert "spectio init --local" in response.json()["detail"]
     no_api = client.app.state.no_api  # type: ignore[attr-defined]
     text = start_text(settings, "login1", "alice", no_api, "http://127.0.0.1:1/auth/link#t")
-    assert "sinfo on PATH" in text and "Tasks 13 to 16" in text
+    assert "sinfo on PATH" in text and "spectio init --local" in text
 
 
 class RecordingLauncher:

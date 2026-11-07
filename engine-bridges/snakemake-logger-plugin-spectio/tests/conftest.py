@@ -57,6 +57,25 @@ def snakemake(launch: Path, snakefile: Path, *args: str, spool: Path | None = No
     return SmkRun(launch, spool, proc)
 
 
+def terminal(launch: Path, home: Path, *args: str) -> SmkRun:
+    """Run the `files` workflow (passing) by hand: no SPECTIO_* variable, HOME `home`, the
+    plugin enabled as a user enables it (architecture §13.8). The spool is the launch
+    directory's."""
+    launch.mkdir(parents=True, exist_ok=True)
+    env = {k: v for k, v in os.environ.items() if not k.startswith("SPECTIO_")}
+    env |= {"PYTHONPATH": str(ROOT), "HOME": str(home), "TEST_TOKEN": PLANTED}
+    cmd = [str(SNAKEMAKE), "-s", str(FILES), "--directory", str(launch), "--logger", "spectio"]
+    proc = subprocess.run(
+        [*cmd, "--cores", "1", *args],
+        cwd=launch,
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=300,
+    )
+    return SmkRun(launch, launch / ".spectio" / "events", proc)
+
+
 def synthetic_happy(launch: Path, spool: Path | None = None) -> SmkRun:
     """The synthetic pipeline, happy path, as run_scenarios.py runs it (local, 2 cores)."""
     config = [

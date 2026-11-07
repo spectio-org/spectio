@@ -138,6 +138,8 @@ def test_version_behind_session(
     problem(signed_out.get("/api/v1/version"), 401, "unauthenticated")
     absent = problem(client.get("/api/v1/version"), 404, "not-found")
     assert NO_API in str(absent["detail"])
+    # inbox #109 rule 5 (a), Thomas 2026-11-07: the reason, not a plan's task numbers
+    assert "Task" not in NO_API and "spectio init --local" in NO_API and "shared" in NO_API
     problem(
         authed_client.get("/api/v1/version", headers={"Host": "evil.example"}),
         400,
@@ -237,7 +239,38 @@ def test_queued_run_head_null(
         "node": socket.gethostname(),
         "alive": True,
         "exit_code": None,
+        "checked": True,
     }
+
+
+def test_terminal_run_head(authed_client: TestClient, writer: Writer, settings: Settings) -> None:
+    """A run started from a terminal (P1 Task 25): its head is its pointer's, with no session;
+    `checked` only on the server's boot (architecture §13.8: "head on <node>, not checked")."""
+    launch_id = add_run(writer, settings, rid(2), "t", "running", origin="cli-observed")
+    boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+
+    here = socket.gethostname()
+
+    def head_of(host: str, boot_id: str) -> Any:
+        writer.submit(
+            lambda c: c.execute(
+                update(launches)
+                .where(launches.c.id == launch_id)
+                .values(head_host=host, host_boot_id=boot_id, pid=42, pid_start_time="9")
+            )
+        ).result()
+        return authed_client.get(f"{RUNS}/{rid(2)}").json()["head"]
+
+    assert head_of(here, boot) == {
+        "session": None,
+        "node": here,
+        "alive": True,
+        "exit_code": None,
+        "checked": True,
+    }
+    assert head_of(here, "00000000-0000-4000-8000-000000000000")["checked"] is False
+    # the same kernel, another host name (a container): the runner never checks it either
+    assert head_of("login7", boot)["checked"] is False
 
 
 def test_run_unknown_404(authed_client: TestClient) -> None:

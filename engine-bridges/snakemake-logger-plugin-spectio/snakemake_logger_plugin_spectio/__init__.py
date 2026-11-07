@@ -6,16 +6,21 @@ The spool format is api-and-data-model.md §14.1; its reader and models are `spe
 
 - Discovered by its module name through `PYTHONPATH` (`--logger spectio`), with no install
   (`snakemake_interface_logger_plugins.registry`, interface 1.1.0 to 2.x).
-- Silent unless driven: with none of SPECTIO_RUN_ID, SPECTIO_LAUNCH_N, SPECTIO_SPOOL_DIR set it
-  writes nothing; with one missing or invalid it says so once on stderr and writes nothing.
+- Driven, or started from a terminal (P1 Task 25, architecture §13.8): with none of
+  SPECTIO_RUN_ID, SPECTIO_LAUNCH_N, SPECTIO_SPOOL_DIR set, it makes a run ID, writes the spool in
+  `<launch dir>/.spectio/events/` as `<run ID>-<producer>-<nnnn>.jsonl`, and a pointer
+  `~/.spectio/observed/<run ID>.json` when `~/.spectio/` exists; with one variable missing or
+  invalid it says so once on stderr and writes nothing.
 - Added, never replacing: it writes to no stream and no file Snakemake knows of, so Snakemake
   keeps its own stderr output and `.snakemake/log/` file (`writes_to_file = False`: with True,
   Snakemake reads `baseFilename`, which the interface does not declare; T2 note, row 21).
 - Each type keeps only the keys of its §14.1 allow-list; nothing is read from the environment
   but the three variables above. Strings, lists and maps are cut (`MAX_TEXT_CHARS`, `MAX_ITEMS`,
   `MAX_DEPTH`) and a line never passes `MAX_LINE_BYTES`.
-- The spool: `events/` 0700 and owned by the user, never a symlink; each file created 0600
-  with an exclusive create relative to that directory, never one another writer made; one
+- The spool (dev-env §15.3 req. 12): `.spectio/` (made 0700 for a terminal run) and `events/`
+  (made 0700) each opened with O_NOFOLLOW and used only when a directory of the user with no group
+  or other bits; `bridge.err` and each spool file created relative to those descriptors with
+  O_NOFOLLOW, 0600, a spool file with an exclusive create, never one another writer made; one
   `write(2)` per line on an `O_APPEND` descriptor; a failed write is cut back to the last full
   line. Nothing it does raises into Snakemake: an unwritable or full spool loses events, never
   the run. Records reach `emit` on Snakemake's QueueListener thread, so a slow disk does not
@@ -30,8 +35,10 @@ import logging
 import os
 import re
 import secrets
+import socket
 import stat
 import sys
+import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from datetime import UTC, datetime
@@ -58,6 +65,7 @@ MAX_ITEMS = 512  # items of one list, keys of one map
 MAX_DEPTH = 8  # nesting; deeper values become their text
 MAX_ERROR_LINES = 100  # lines in bridge.err
 
+_DIR_FLAGS = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 _RUN_ID = re.compile(r"run_[0-7][0-9A-HJKMNP-TV-Z]{25}")
 _LAUNCH_N = re.compile(r"[1-9][0-9]{0,18}")
 _INT64 = 2**63 - 1
@@ -303,20 +311,53 @@ def _ulid(ms: int) -> str:
     return "".join(_CROCKFORD[(n >> (5 * i)) & 31] for i in reversed(range(26)))
 
 
-class Spool:
-    """The append-only spool of one launch (api §14.1). `write` never raises."""
+def _private_dir(name: str | Path, dir_fd: int | None = None, create: bool = False) -> int:
+    """`name` (relative to `dir_fd`), made 0700 when `create`; refused unless a directory of
+    this user that group and others cannot use, and never through a symlink."""
+    if create:
+        with contextlib.suppress(FileExistsError):
+            os.mkdir(name, 0o700, dir_fd=dir_fd)
+    fd = os.open(name, _DIR_FLAGS, dir_fd=dir_fd)
+    st = os.fstat(fd)
+    if st.st_uid != os.geteuid() or st.st_mode & 0o077:
+        os.close(fd)
+        raise PermissionError(
+            f"{name} is not a private directory of yours "
+            f"(uid {st.st_uid}, mode {stat.filemode(st.st_mode)})"
+        )
+    return fd
 
-    def __init__(self, directory: Path, run: str, launch: int) -> None:
+
+class Spool:
+    """The append-only spool of one launch (api §14.1). `write` never raises. `terminal`: a
+    run started from a terminal, whose `.spectio/` is made here and whose files carry its run
+    ID (architecture §13.8)."""
+
+    def __init__(self, directory: Path, run: str, launch: int, terminal: bool = False) -> None:
         self.directory = directory
         self.run = run
         self.launch = launch
+        self.terminal = terminal
         self.seq = 0
+        self.parent_fd: int | None = None  # `.spectio`, which holds bridge.err
         self.dir_fd: int | None = None
         self.fd: int | None = None
         self.size = 0
         self.index = 0
         self.broken = False  # the directory was refused: nothing more is tried
         self.errors = 0
+
+    def start(self) -> bool:
+        """Open `.spectio` and `events`, once; False, with one line said, when refused."""
+        if self.dir_fd is not None or self.broken:
+            return not self.broken
+        try:
+            self.parent_fd = _private_dir(self.directory.parent, create=self.terminal)
+            self.dir_fd = _private_dir(self.directory.name, self.parent_fd, create=True)
+        except OSError as e:  # read-only, refused, a symlink: no event of this launch
+            self.broken = True
+            self.error(f"the spool directory is refused, no events are written: {e}")
+        return not self.broken
 
     def write(self, type_: str, data: dict[str, Any], created: float) -> None:
         if self.broken:
@@ -325,16 +366,11 @@ class Spool:
         line = self._line(type_, data, ms)
         if line is None and type_ in ("snakemake.job_info", "snakemake.job_error"):
             line = self._line(type_, {**data, "input": [], "output": []}, ms)
+        if not self.start():
+            return
         if line is None:
             self.error(f"{type_}: line over {MAX_LINE_BYTES} bytes, dropped")
             return
-        if self.dir_fd is None:
-            try:
-                self.dir_fd = self._open_dir()
-            except OSError as e:  # read-only, refused, a symlink: no event of this launch
-                self.error(f"the spool directory is refused, no events are written: {e}")
-                self.broken = True
-                return
         try:
             fd = self.fd
             if fd is None or self.size + len(line) > ROTATE_BYTES:
@@ -376,21 +412,6 @@ class Spool:
         except OSError:
             self._close_file()
 
-    def _open_dir(self) -> int:
-        """`events/`, made 0700 when missing; refused unless a directory of this user that
-        group and others cannot use, and never through a symlink."""
-        with contextlib.suppress(FileExistsError):
-            os.mkdir(self.directory, 0o700)
-        fd = os.open(self.directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
-        st = os.fstat(fd)
-        if st.st_uid != os.geteuid() or st.st_mode & 0o077:
-            os.close(fd)
-            raise PermissionError(
-                f"{self.directory} is not a private directory of yours "
-                f"(uid {st.st_uid}, mode {stat.filemode(st.st_mode)})"
-            )
-        return fd
-
     def _next(self) -> int:
         """The next file that does not exist yet, opened; the current one while it is empty."""
         if self.fd is not None and self.size == 0:
@@ -399,7 +420,12 @@ class Spool:
         flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC
         while self.index < LAST_INDEX:
             # Another error (EACCES, EDQUOT) leaves the index for the next event (as nf-spectio).
-            name = f"{NAME}-{self.launch}-{self.index + 1:04d}.jsonl"
+            n = self.index + 1
+            name = (
+                f"{self.run}-{NAME}-{n:04d}.jsonl"
+                if self.terminal
+                else f"{NAME}-{self.launch}-{n:04d}.jsonl"
+            )
             try:
                 fd = os.open(name, flags, 0o600, dir_fd=self.dir_fd)
             except FileExistsError:
@@ -418,20 +444,26 @@ class Spool:
 
     def close(self) -> None:
         self._close_file()
-        if self.dir_fd is not None:
-            with contextlib.suppress(OSError):
-                os.close(self.dir_fd)
-        self.dir_fd = None
+        for fd in (self.dir_fd, self.parent_fd):
+            if fd is not None:
+                with contextlib.suppress(OSError):
+                    os.close(fd)
+        self.dir_fd = self.parent_fd = None
 
     def error(self, message: str) -> None:
-        """One line in `.spectio/bridge.err`, at most MAX_ERROR_LINES of them."""
+        """One line in `.spectio/bridge.err`, at most MAX_ERROR_LINES of them; on stderr when
+        `.spectio` itself was refused (nothing is written in it)."""
         self.errors += 1
         if self.errors > MAX_ERROR_LINES:
             return
         line = f"{datetime.now(UTC).isoformat()} {NAME}: {_text(message, 1024)}\n".encode()
+        if not self.broken:
+            self.start()  # a record that failed before its first write (once: start sets broken)
         try:
+            if self.parent_fd is None:
+                raise OSError("no checked .spectio directory")
             flags = os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW | os.O_NONBLOCK
-            fd = os.open(self.directory.parent / "bridge.err", flags | os.O_CLOEXEC, 0o600)
+            fd = os.open("bridge.err", flags | os.O_CLOEXEC, 0o600, dir_fd=self.parent_fd)
             try:
                 if not stat.S_ISREG(os.fstat(fd).st_mode):  # a FIFO or device: never written
                     raise OSError("bridge.err is not a regular file")
@@ -447,12 +479,76 @@ def _stderr(message: str) -> None:
         print(f"{NAME}: {message}", file=sys.stderr)
 
 
+def _head_pid() -> dict[str, Any]:
+    """The PID fields of the head's PID file (schedulers §3.1.1): this process is the head."""
+    fields = Path("/proc/self/stat").read_text().rsplit(") ", 1)[1].split()
+    boot_id = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+    return {"pid": os.getpid(), "pid_start_time": fields[19], "boot_id": boot_id}
+
+
+def _engine_version() -> str | None:
+    try:
+        from importlib.metadata import version
+
+        return version("snakemake")
+    except Exception:
+        return None
+
+
+def write_pointer(spool: Spool, home: Path) -> None:
+    """`~/.spectio/observed/<run ID>.json` (architecture §13.8), 0600, created under a
+    temporary name, then renamed; only when `~/.spectio/` and `observed/` (made 0700) are
+    private directories of the user (req. 12). No `~/.spectio/`: no pointer, silently. Any
+    other error is said once and swallowed (architecture §13.3)."""
+    name = f"{spool.run}.json"
+    fds: list[int] = []
+    try:
+        fds.append(os.open(home, os.O_RDONLY | os.O_DIRECTORY | os.O_CLOEXEC))
+        try:
+            fds.append(_private_dir(".spectio", fds[-1]))
+        except FileNotFoundError:
+            return  # Spectio is not installed: the spool only
+        fds.append(_private_dir("observed", fds[-1], create=True))
+        data = {
+            "run_id": spool.run,
+            "launch_dir": str(spool.directory.parent.parent),
+            "engine": "snakemake",
+            "engine_version": _engine_version(),
+            "bridge_version": VERSION,
+            "host": socket.gethostname(),
+            **_head_pid(),
+        }
+        tmp = f".{name}.tmp"
+        flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW | os.O_CLOEXEC
+        fd = os.open(tmp, flags, 0o600, dir_fd=fds[-1])
+        try:
+            os.write(fd, json.dumps(data).encode())
+        finally:
+            os.close(fd)
+        os.rename(tmp, name, src_dir_fd=fds[-1], dst_dir_fd=fds[-1])
+    except Exception as e:  # never into Snakemake
+        spool.error(f"no pointer written in ~/.spectio/observed: {e}")
+    finally:
+        for fd in fds:
+            os.close(fd)
+
+
+def terminal_spool(launch_dir: Path) -> Spool:
+    """A run started from a terminal: a new run ID, its spool in `launch_dir`, launch 1."""
+    run = "run_" + _ulid(int(time.time() * 1000))
+    return Spool(launch_dir / ".spectio" / "events", run, 1, terminal=True)
+
+
 def spool_from_env(env: Mapping[str, str]) -> Spool | None:
-    """The launch's spool, or None when the run is not driven (nothing set: silent) or the
-    variables are wrong (one line on stderr)."""
+    """The launch's spool: a driven run's, or one started from a terminal (nothing set); None
+    when the variables are wrong (one line on stderr)."""
     values = [env.get(name, "") for name in _ENV]
     if not any(values):
-        return None
+        try:
+            return terminal_spool(Path.cwd())
+        except OSError as e:  # the launch directory is gone: no events, never a failed run
+            _stderr(f"no launch directory: {e}")
+            return None
     run, launch, directory = values
     if not _RUN_ID.fullmatch(run):
         problem = "SPECTIO_RUN_ID is not run_ and a ULID"
@@ -479,6 +575,8 @@ class LogHandler(LogHandlerBase):
         if not hasattr(self, "filters"):  # interface 1.x does not initialise the Handler
             logging.Handler.__init__(self)
         self.spool = spool_from_env(os.environ)
+        if self.spool is not None and self.spool.terminal and self.spool.start():
+            write_pointer(self.spool, Path(os.path.expanduser("~")))
 
     def emit(self, record: logging.LogRecord) -> None:
         spool = self.spool
