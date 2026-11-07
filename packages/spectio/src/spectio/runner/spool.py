@@ -38,6 +38,7 @@ from spectio_sdk.events import (
 log = logging.getLogger(__name__)
 
 SPOOL_REFUSED = "spool_refused"  # a drop reason: `.spectio` or `events` was refused whole
+SPOOL_STALLED = "spool_stalled"  # a drop reason: the launch directory did not answer in time
 
 CHUNK_BYTES = 1048576  # read at a time: the line buffer holds at most this plus MAX_LINE_BYTES
 MAX_READ_BYTES = 2097152  # bytes one read takes from the files, skipped ones included

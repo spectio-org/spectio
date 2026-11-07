@@ -20,7 +20,9 @@ from collections import Counter
 from collections.abc import Callable
 from dataclasses import replace
 from datetime import UTC, datetime
+from functools import partial
 from pathlib import Path
+from typing import TypeVar
 
 from pydantic import BaseModel, ConfigDict, Field, JsonValue
 
@@ -38,10 +40,11 @@ from spectio.runner.rundir import (
     run_paths,
     write_file,
 )
-from spectio.runner.spool import SPOOL_REFUSED, try_read_spool
+from spectio.runner.spool import SPOOL_REFUSED, SPOOL_STALLED, try_read_spool
 from spectio.runner.types import (
     Command,
     Failure,
+    FileRunner,
     HeadReport,
     Launcher,
     LaunchRef,
@@ -49,6 +52,7 @@ from spectio.runner.types import (
     ResumeSource,
     RunnerSink,
     SpoolBatch,
+    Stalled,
 )
 
 log = logging.getLogger(__name__)
@@ -62,6 +66,7 @@ OWNER = "launch"
 HEAD_FILES = ("head.pid", "head.exit", CANCEL, LAUNCH_FAILED)
 _OWNER_LINE = re.compile(r"([1-9][0-9]{0,8})\n")
 LAUNCH_CLASSES = frozenset({"launch_error", "engine_missing", "engine_version"})
+T = TypeVar("T")
 
 
 class ResumePayload(BaseModel):
@@ -115,6 +120,8 @@ class RunnerLoop:
         end_grace_s: float = 60,
         home: Path | None = None,
         observe_cap: int = 100,
+        files: FileRunner | None = None,
+        files_timeout_s: float = 5.0,
     ) -> None:
         self.sink = sink
         self.launcher = launcher
@@ -123,6 +130,10 @@ class RunnerLoop:
         self.end_grace_s = end_grace_s  # how long an ended head waits for its spool
         self.home = home  # `~/.spectio/observed/` is scanned when set (architecture §13.8)
         self.observe_cap = observe_cap  # pointers read per scan (req. 12)
+        # where the file-system work of runs from a terminal runs, bounded: their launch
+        # directory is project storage, which can stop answering (SEC-P3T25-01)
+        self.files = files
+        self.files_timeout_s = files_timeout_s
         self._pointers: set[str] = set()  # run IDs whose pointer was read or refused
         self._pointers_mtime: int | None = None
         self._observed_refused = False  # a loose `observed/` already warned of
@@ -360,21 +371,20 @@ class RunnerLoop:
         self._last[ref.launch_id] = report
         self.sink.head_report(ref.launch_id, report)
 
+    def _fs(self, fn: Callable[[], T]) -> T:
+        """`fn()` in the file pool with its timeout when there is one; raises `Stalled`."""
+        return fn() if self.files is None else self.files.run(fn, self.files_timeout_s)
+
     def _read(self, ref: LaunchRef) -> None:
         cursor = self.sink.cursor(ref.launch_id)
-        observed = ref.terminal is not None
-        try:
-            if observed:  # its pointer's launch directory, never one in the runs root
-                check_observed_launch_dir(self.settings.runs_root, str(ref.launch_dir))
-            else:
-                check_launch_dir(self.settings.runs_root, ref.run_id, ref.launch_dir)
-        except (OSError, ValueError) as exc:
-            log.debug("launch directory of %s refused: %r", ref.run_id, exc)
-            batch = SpoolBatch([], dict(cursor), Counter({SPOOL_REFUSED: 1}))
-        else:
-            batch = try_read_spool(
-                ref.launch_dir, ref.run_id, ref.launch_n, cursor, observed=observed
-            )
+        if ref.terminal is None:
+            batch = self._spool(ref, cursor)
+        else:  # project storage: bounded, and a stuck one is skipped and counted
+            try:
+                batch = self._fs(partial(self._spool, ref, cursor))
+            except Stalled as exc:
+                log.warning("spool of %s not read: %s", ref.run_id, exc)
+                batch = SpoolBatch([], dict(cursor), Counter({SPOOL_STALLED: 1}))
         if batch.drops[SPOOL_REFUSED]:
             if ref.launch_id in self._refused:
                 return  # counted when it was first refused
@@ -389,17 +399,37 @@ class RunnerLoop:
         if batch.events or +batch.drops or batch.cursor != cursor:
             self.sink.ingest(ref.launch_id, batch)
 
+    def _spool(self, ref: LaunchRef, cursor: dict[str, int]) -> SpoolBatch:
+        """Check the launch directory, then read its spool: a whole file-system job."""
+        observed = ref.terminal is not None
+        try:
+            if observed:  # its pointer's launch directory, never one in the runs root
+                check_observed_launch_dir(self.settings.runs_root, str(ref.launch_dir))
+            else:
+                check_launch_dir(self.settings.runs_root, ref.run_id, ref.launch_dir)
+        except (OSError, ValueError) as exc:
+            log.debug("launch directory of %s refused: %r", ref.run_id, exc)
+            return SpoolBatch([], dict(cursor), Counter({SPOOL_REFUSED: 1}))
+        return try_read_spool(ref.launch_dir, ref.run_id, ref.launch_n, cursor, observed=observed)
+
     # --- Runs started from a terminal (architecture §13.8, req. 12) ----------------------------
 
     def _observe(self, home: Path) -> None:
-        """Scan `~/.spectio/observed/` when its mtime changed, and add each new run."""
-        scan = scan_observed(
+        """Scan `~/.spectio/observed/` when its mtime changed, and add each new run. The scan
+        is bounded: a stuck one is logged and tried again at the next tick (SEC-P3T25-01)."""
+        job = partial(
+            scan_observed,
             home,
             self.settings.runs_root,
-            self._pointers,
+            set(self._pointers),  # a copy: a stalled scan goes on in its thread
             self.observe_cap,
             since_ns=self._pointers_mtime,
         )
+        try:
+            scan = self._fs(job)
+        except Stalled as exc:
+            log.warning("runs started from a terminal not scanned: %s", exc)
+            return
         self._pointers_mtime = scan.mtime_ns
         self._pointers |= scan.seen
         refused = bool(scan.skipped.pop("observed_refused", 0))

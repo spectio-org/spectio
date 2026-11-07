@@ -53,7 +53,7 @@ from spectio_server.app import create_app
 from spectio_server.auth.routes import NO_PASTE, link_url
 from spectio_server.auth.secrets import ServerKey
 from spectio_server.bootstrap import ensure_tenancy
-from spectio_server.files.pool import FilePool
+from spectio_server.files.pool import READ_TIMEOUT_S, FilePool
 from spectio_server.rebuild import Rebuilt, rebuild_index
 from spectio_server.sink import StoreSink
 from spectio_server.stages.freeze import FREEZE_WORKERS
@@ -138,7 +138,15 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
             )
         ).result()
         files, stage_files = FilePool(), FilePool(FREEZE_WORKERS, 0)
-        rebuilt = rebuild_index(writer, settings.runs_root, home=Path.home())
+        # runs started from a terminal: their file-system work, bounded (SEC-P3T25-01)
+        observed_files = FilePool(backlog=0)
+        rebuilt = rebuild_index(
+            writer,
+            settings.runs_root,
+            home=Path.home(),
+            files=observed_files,
+            timeout_s=READ_TIMEOUT_S,
+        )
         log.info("index %s: %d runs added", "rebuilt" if new else "reconciled", rebuilt.added)
         launcher = LocalLauncher() if settings.executor == "local" else TmuxLauncher()
         loop = RunnerLoop(
@@ -153,6 +161,8 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
             settings,
             tick_s=settings.runner.spool_s,
             home=Path.home(),  # runs started from a terminal (architecture §13.8)
+            files=observed_files,
+            files_timeout_s=READ_TIMEOUT_S,
         )
         try:
             loop.tick()

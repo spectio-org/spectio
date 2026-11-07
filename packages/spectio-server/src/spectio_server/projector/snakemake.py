@@ -13,7 +13,8 @@ only. `job_finished` gives `succeeded`, `job_error` `failed`.
 
 No engine event ends a Snakemake launch: its head's exit code does (`head_exit`). On a non-zero
 exit the run's failure takes the text of the last `error` record, and blames the launch's last
-failed job when no later attempt of its task ran.
+failed job when no later attempt of its task ran. A run started from a terminal has no exit
+code: once the PID check sees its head gone, its spool ends it (`spool_end`, assumed: inbox #113).
 """
 
 from typing import Any
@@ -52,6 +53,7 @@ from spectio_server.store.schema import (
 )
 
 ERROR_EVENT = "spectio.engine.snakemake.error"
+PROGRESS_EVENT = "spectio.engine.snakemake.progress"
 MAX_LOGS = 32  # paths kept per attempt: a rule's `log:` files and its SLURM job log
 
 
@@ -89,23 +91,85 @@ def drives(p: Projection) -> bool:
     return bool(engine == "snakemake")
 
 
-def head_exit(p: Projection, exit_code: int) -> None:
-    """End the launch on the head's exit code: 0 succeeds, anything else fails."""
-    if p.state in TERMINAL:
-        return
-    # The engine's last record is its end; the clock only when it wrote none (inbox #79).
+def from_terminal(p: Projection) -> bool:
+    """True for a run started from a terminal (`cli-observed`): its head has no exit code."""
+    origin = p.conn.execute(select(runs.c.origin).where(runs.c.id == p.run_id)).scalar_one()
+    return bool(origin == "cli-observed")
+
+
+def _last(p: Projection, type_: str) -> Any:
+    """The payload of the run's last event of `type_`, or None."""
+    return p.conn.execute(
+        select(events.c.payload)
+        .where(events.c.run_id == p.run_id, events.c.type == type_)
+        .order_by(events.c.seq.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+
+
+def _end_time(p: Projection) -> None:
+    """The engine's last record is its end; the clock only when it wrote none (inbox #79)."""
     p.event_time = p.conn.execute(
         select(events.c.engine_time)
         .where(events.c.run_id == p.run_id, events.c.engine_time.is_not(None))
         .order_by(events.c.seq.desc())
         .limit(1)
     ).scalar_one_or_none()
+
+
+def head_exit(p: Projection, exit_code: int) -> None:
+    """End the launch on the head's exit code: 0 succeeds, anything else fails."""
+    if p.state in TERMINAL:
+        return
+    _end_time(p)
     p.move("running")  # a launch that wrote no event at all
     p.end_launch()
     if exit_code == 0:
         p.move("succeeded")
     else:
         p.move("failed", _failure(p, exit_code))
+
+
+def spool_end(p: Projection) -> None:
+    """End a run started from a terminal whose head is gone, from what its spool shows
+    (CR-P3T25-01; assumed, inbox #113): `succeeded` when its last progress is done == total, no
+    task is `failed` and no `error` record came after that progress (a retried job logs one
+    before it); `failed` with `engine_fault` otherwise."""
+    if p.state in TERMINAL:
+        return
+    _end_time(p)
+    last = p.conn.execute(
+        select(events.c.seq, events.c.payload)
+        .where(events.c.run_id == p.run_id, events.c.type == PROGRESS_EVENT)
+        .order_by(events.c.seq.desc())
+        .limit(1)
+    ).one_or_none()
+    progress = last.payload if last is not None else {}
+    error = p.conn.execute(
+        select(events.c.payload)
+        .where(
+            events.c.run_id == p.run_id,
+            events.c.type == ERROR_EVENT,
+            events.c.seq > (last.seq if last is not None else 0),
+        )
+        .order_by(events.c.seq.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    failed = p.conn.execute(
+        select(tasks.c.id).where(tasks.c.run_id == p.run_id, tasks.c.state == "failed").limit(1)
+    ).first()
+    done, total = progress.get("done"), progress.get("total")
+    p.move("running")  # a launch that wrote no event at all
+    p.end_launch()
+    if total is not None and done == total and failed is None and error is None:
+        p.move("succeeded")
+        return
+    said = (error or {}).get("msg") or f"its last progress: {done} of {total} jobs"
+    message = (
+        "Started from a terminal: Snakemake sends no end event and its exit code is not known, "
+        f"so this end is assumed from its spool ({said})."
+    )
+    p.move("failed", failure_json("engine_fault", message))
 
 
 def _job_info(p: Projection, data: SnakemakeJobInfo) -> None:
@@ -237,13 +301,7 @@ def _last_attempt(p: Projection, task_id: str) -> Any:
 def _failure(p: Projection, exit_code: int) -> dict[str, Any]:
     """`tool_error` when the launch's last failed job is its task's last attempt, else
     `engine_fault`; the message is the last `error` record's text (already hidden, §14.1)."""
-    payload = p.conn.execute(
-        select(events.c.payload)
-        .where(events.c.run_id == p.run_id, events.c.type == ERROR_EVENT)
-        .order_by(events.c.seq.desc())
-        .limit(1)
-    ).scalar_one_or_none()
-    message = (payload or {}).get("msg") or f"snakemake exited with code {exit_code}"
+    message = (_last(p, ERROR_EVENT) or {}).get("msg") or f"snakemake exited with code {exit_code}"
     culprit = p.conn.execute(
         select(attempts.c.id, attempts.c.task_id, attempts.c.n)
         .join(launches, launches.c.culprit_attempt_id == attempts.c.id)

@@ -3,7 +3,8 @@ one writer, so that the runner never imports the server (architecture §6).
 
 Launch directories are derived from the runs root and the run ID, never read from a row
 (dev-env §15.3 req. 10), except for a run started from a terminal (`cli-observed`, architecture
-§13.8), whose launch directory is its pointer's: checked again at every read (req. 12). A
+§13.8), whose launch directory is its pointer's: checked again lexically here and resolved by
+the runner at every read (req. 12, SEC-P3T25-01). A
 `runner_commands` row is leased for `LEASE` and delivered again once
 the lease runs out; the runner loop makes a second delivery harmless (P1 Task 9).
 """
@@ -16,7 +17,7 @@ from typing import Any, TypeVar, cast, get_args
 
 from sqlalchemy import Connection, Row, and_, or_, select, update
 
-from spectio.runner.observed import ObservedRun, check_observed_launch_dir
+from spectio.runner.observed import ObservedRun, lexical_launch_dir, runs_roots
 from spectio.runner.rundir import run_paths
 from spectio.runner.types import (
     Command,
@@ -59,6 +60,7 @@ class StoreSink:
     ) -> None:
         self.writer = writer
         self.runs_root = runs_root
+        self._roots = runs_roots(runs_root)  # once: `_ref` runs on the writer (SEC-P3T25-01)
         # stage sources (P1 Task 27), read in the file pool when there is one (SEC-P3T27-03)
         self.sources = StageSources(overlays, runs_root, data_dir, files)
 
@@ -167,9 +169,10 @@ class StoreSink:
 
     def _terminal_ref(self, row: Row[Any]) -> LaunchRef | None:
         """A run started from a terminal: its pointer's launch directory, refused if it no longer
-        passes the scan's check, and its head's PID fields; never a native ID."""
+        passes the scan's lexical check, and its head's PID fields; never a native ID. No file is
+        touched here, on the writer: the runner checks the directory resolved (SEC-P3T25-01)."""
         try:
-            launch_dir = check_observed_launch_dir(self.runs_root, row.run_launch_dir or "")
+            launch_dir = lexical_launch_dir(self._roots, row.run_launch_dir or "")
         except ValueError as exc:
             log.warning("run %s from a terminal not read: %s", row.run_id, exc)
             return None

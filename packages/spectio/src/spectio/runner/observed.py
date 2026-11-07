@@ -63,15 +63,33 @@ class ObservedScan:
     mtime_ns: int | None
 
 
-def check_observed_launch_dir(runs_root: Path, launch_dir: str) -> Path:
+def runs_roots(runs_root: Path) -> frozenset[str]:
+    """The runs root as configured and as the system resolves it (the one file-system call)."""
+    return frozenset({posixpath.normpath(str(runs_root)), os.path.realpath(runs_root)})
+
+
+def _in_roots(path: str, roots: frozenset[str]) -> bool:
+    return any(path == root or path.startswith(root.rstrip("/") + "/") for root in roots)
+
+
+def lexical_launch_dir(roots: frozenset[str], launch_dir: str) -> Path:
     """The launch directory of a pointer, refused (ValueError) unless absolute and normalised,
-    and outside the runs root, as configured and as the system resolves it."""
+    and not lexically in `roots` (`runs_roots`). No file-system call: it runs on the writer's
+    thread and in the scan, and a stuck mount must never hold either (SEC-P3T25-01)."""
     if not launch_dir.startswith("/") or posixpath.normpath(launch_dir) != launch_dir:
         raise ValueError(f"{launch_dir!r} is not an absolute, normalised path")
-    roots = {posixpath.normpath(str(runs_root)), os.path.realpath(runs_root)}
-    for path in {launch_dir, os.path.realpath(launch_dir)}:
-        if any(path == root or path.startswith(root.rstrip("/") + "/") for root in roots):
-            raise ValueError(f"{launch_dir} lies in the runs root")
+    if _in_roots(launch_dir, roots):
+        raise ValueError(f"{launch_dir} lies in the runs root")
+    return Path(launch_dir)
+
+
+def check_observed_launch_dir(runs_root: Path, launch_dir: str) -> Path:
+    """`lexical_launch_dir`, and outside the runs root as the system resolves it too. It walks
+    the launch directory's path: run it bounded (the runner's file pool, SEC-P3T25-01)."""
+    roots = runs_roots(runs_root)
+    lexical_launch_dir(roots, launch_dir)
+    if _in_roots(os.path.realpath(launch_dir), roots):
+        raise ValueError(f"{launch_dir} lies in the runs root")
     return Path(launch_dir)
 
 
@@ -116,6 +134,7 @@ def scan_observed(
     only a rebuild reads) whose run ID is not in `known`, in name order. When the directory's
     mtime is `since_ns`, nothing is listed."""
     skipped: Counter[str] = Counter()
+    roots = runs_roots(runs_root)
     try:
         with _observed_dir(home, *((ENDED,) if ended else ())) as fd:
             mtime_ns: int | None = os.fstat(fd).st_mtime_ns
@@ -137,7 +156,7 @@ def scan_observed(
             runs, seen = [], set()
             for name in names[:cap]:
                 seen.add(name[:-5])
-                found = _pointer(fd, name, runs_root)
+                found = _pointer(fd, name, runs_root, roots)
                 if isinstance(found, str):
                     skipped[found] += 1
                 else:
@@ -150,8 +169,9 @@ def scan_observed(
     return ObservedScan(runs, skipped, frozenset(seen), mtime_ns)
 
 
-def _pointer(dir_fd: int, name: str, runs_root: Path) -> ObservedRun | str:
-    """The pointer `name`, or the reason it is skipped."""
+def _pointer(dir_fd: int, name: str, runs_root: Path, roots: frozenset[str]) -> ObservedRun | str:
+    """The pointer `name`, or the reason it is skipped. Its launch directory is checked
+    lexically only: the runner checks it resolved before each read (SEC-P3T25-01)."""
     try:
         fd = os.open(name, _FILE, dir_fd=dir_fd)
     except FileNotFoundError:
@@ -180,7 +200,7 @@ def _pointer(dir_fd: int, name: str, runs_root: Path) -> ObservedRun | str:
     if f"{run.run_id}.json" != name:
         return "name_mismatch"
     try:
-        check_observed_launch_dir(runs_root, run.launch_dir)
+        lexical_launch_dir(roots, run.launch_dir)
     except ValueError:
         return "launch_dir"
     if os.path.lexists(runs_root / run.run_id):

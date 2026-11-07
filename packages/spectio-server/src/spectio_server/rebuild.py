@@ -55,6 +55,7 @@ from spectio.runner.rundir import (
 )
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import check_revision, git_url
+from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
 from spectio_server.projector.runs import failure_json
 from spectio_server.store.runs import EngineConflict, insert_observed_run, insert_run
 from spectio_server.store.schema import runs
@@ -89,9 +90,13 @@ def rebuild_index(
     home: Path | None = None,
     max_runs: int = MAX_RUNS,
     max_bytes: int = MAX_BYTES,
+    files: FilePool | None = None,
+    timeout_s: float = READ_TIMEOUT_S,
 ) -> Rebuilt:
     """Add the run directories under `runs_root` that the index lacks, oldest first, then the
-    runs of the pointers under `home` (when given) that it lacks."""
+    runs of the pointers under `home` (when given) that it lacks. The pointer pass runs in
+    `files` when given, bounded by `timeout_s`; a stuck one is skipped and counted, and the
+    next boot or the runner's scan reads it (SEC-P3T25-01)."""
     known = writer.submit(lambda conn: set(conn.execute(select(runs.c.id)).scalars())).result()
     with private_dir(runs_root) as fd:
         names = sorted(os.listdir(fd))
@@ -122,7 +127,15 @@ def rebuild_index(
     if home is not None:
         known |= set(names)
         for ended in (False, True):
-            scan = scan_observed(home, runs_root, known, max(max_runs - added, 0), ended=ended)
+            job = partial(
+                scan_observed, home, runs_root, set(known), max(max_runs - added, 0), ended=ended
+            )
+            try:
+                scan = job() if files is None else files.run(job, timeout_s)
+            except Stalled as exc:
+                log.warning("pointers not read at boot: %s", exc)
+                skipped += 1
+                break
             skipped += scan.skipped.total()
             for run in scan.runs:
                 try:

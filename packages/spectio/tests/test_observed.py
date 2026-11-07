@@ -7,6 +7,7 @@ The bridges' side (the pointer they write) is in the bridge tests of Tasks 6 and
 import json
 import os
 import socket
+import threading
 import time
 from collections.abc import Iterator
 from datetime import UTC, datetime
@@ -23,12 +24,14 @@ from spectio.runner.observed import end_pointer, scan_observed
 from spectio.runner.rundir import RunManifest, Workflow, make_run_dirs
 from spectio.runner.spool import read_spool
 from spectio.runner.types import HeadReport, LaunchRef, LaunchSpec
+from spectio_server import serve
 from spectio_server.bootstrap import ensure_tenancy
+from spectio_server.files.pool import FilePool
 from spectio_server.rebuild import rebuild_index
 from spectio_server.sink import StoreSink
 from spectio_server.store.db import open_db
 from spectio_server.store.runs import insert_run
-from spectio_server.store.schema import launches, runner_commands, runs
+from spectio_server.store.schema import launches, runner_commands, runs, spool_drops
 from spectio_server.store.writer import Writer
 
 RUN_A = "run_01K9AAAAAAAAAAAAAAAAAAAAAA"
@@ -95,11 +98,13 @@ def write_pointer(home: Path, data: dict[str, Any], name: str | None = None) -> 
     return path
 
 
-def write_spool(launch_dir: Path, run_id: str, lines: list[str], index: int = 1) -> Path:
+def write_spool(
+    launch_dir: Path, run_id: str, lines: list[str], index: int = 1, producer: str = "nf-spectio"
+) -> Path:
     events = launch_dir / ".spectio" / "events"
     events.mkdir(mode=0o700, parents=True, exist_ok=True)
     (launch_dir / ".spectio").chmod(0o700)
-    path = events / f"{run_id}-nf-spectio-{index:04d}.jsonl"
+    path = events / f"{run_id}-{producer}-{index:04d}.jsonl"
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
     os.write(fd, "".join(line + "\n" for line in lines).encode())
     os.close(fd)
@@ -111,6 +116,12 @@ def fixture_lines(run_id: str, last: int | None = None) -> list[str]:
     (no terminal event) when given."""
     lines = FIXTURE.read_text().replace(FIXTURE_RUN, run_id).splitlines()
     return lines if last is None else lines[:last]
+
+
+def smk_lines(run_id: str, name: str) -> list[str]:
+    """A Snakemake 9.27.1 fixture of spike T2 as run `run_id`: it holds no terminal event."""
+    found = FIXTURE.with_name(f"snakemake-9.27.1_{name}.spool.jsonl").read_text()
+    return found.replace(FIXTURE_RUN, run_id).splitlines()
 
 
 class Launcher:
@@ -504,6 +515,59 @@ def test_terminal_run_same_boot_head_gone_is_head_lost(
     assert row.state == "failed" and row.failure["class"] == "head_lost"
 
 
+@pytest.mark.parametrize(
+    ("name", "state", "class_"),
+    [
+        ("tool_error_rerun", "succeeded", None),  # last progress 3 of 3, no failed task
+        ("checkpoint_flaky_retry", "succeeded", None),  # a failed attempt, retried: no failed task
+        ("tool_error", "failed", "engine_fault"),  # a failed task and `error` records
+    ],
+)
+def test_terminal_snakemake_run_ends_from_its_spool(
+    tmp_home: Path,
+    runs_root: Path,
+    project: Path,
+    store: tuple[Engine, Writer],
+    name: str,
+    state: str,
+    class_: str | None,
+) -> None:
+    """Snakemake writes no terminal event, and a terminal run has no exit code: once the PID
+    check sees its head gone, the run ends from what its spool shows, never `head_lost`
+    (CR-P3T25-01, assumed: inbox #113)."""
+    data = pointer(RUN_A, project, engine="snakemake", engine_version="9.27.1", pid_start_time="1")
+    write_pointer(tmp_home, data)
+    lines = smk_lines(RUN_A, name)
+    write_spool(project, RUN_A, lines, producer="snakemake-logger-spectio")
+    loop, launcher = make_loop(store, runs_root, tmp_home)
+    ticks(loop)
+    row = run_row(store, RUN_A)
+    assert row.state == state
+    if class_ is None:
+        assert row.failure is None
+    else:
+        assert row.failure["class"] == class_ and "assumed" in row.failure["message"]
+    assert launcher.calls == []
+
+
+def test_terminal_snakemake_run_no_progress_fails(
+    tmp_home: Path, runs_root: Path, project: Path, store: tuple[Engine, Writer]
+) -> None:
+    """No progress record (a dry run, or a head killed early): `failed`, `engine_fault`."""
+    data = pointer(RUN_A, project, engine="snakemake", engine_version="9.27.1", pid_start_time="1")
+    write_pointer(tmp_home, data)
+    write_spool(
+        project,
+        RUN_A,
+        smk_lines(RUN_A, "tool_error_rerun")[:2],
+        producer="snakemake-logger-spectio",
+    )
+    loop, _ = make_loop(store, runs_root, tmp_home)
+    ticks(loop)
+    row = run_row(store, RUN_A)
+    assert row.state == "failed" and row.failure["class"] == "engine_fault"
+
+
 def test_terminal_run_same_boot_head_alive_stays_running(
     tmp_home: Path, runs_root: Path, project: Path, store: tuple[Engine, Writer]
 ) -> None:
@@ -598,3 +662,77 @@ def test_server_down_events_wait(
 def test_end_pointer_missing_is_a_no_op(tmp_home: Path) -> None:
     end_pointer(tmp_home, RUN_A)
     assert (tmp_home / ".spectio" / "observed" / "ended").is_dir()
+
+
+# --- A stuck launch directory (SEC-P3T25-01) --------------------------------------------------
+
+
+@pytest.fixture
+def stuck(project: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[threading.Event]:
+    """`os.path.realpath` of the launch directory never answers, as on a stale NFS mount or a
+    FUSE mount put there by a group member; released at teardown."""
+    release = threading.Event()
+    real = os.path.realpath
+
+    def realpath(path: Any, *args: Any, **kwargs: Any) -> str:
+        if str(path).startswith(str(project)):
+            release.wait(30)
+        return str(real(path, *args, **kwargs))
+
+    monkeypatch.setattr(os.path, "realpath", realpath)
+    yield release
+    release.set()
+
+
+def test_stuck_launch_dir_never_holds_the_writer(
+    tmp_home: Path,
+    runs_root: Path,
+    project: Path,
+    store: tuple[Engine, Writer],
+    stuck: threading.Event,
+) -> None:
+    """The writer touches no file of a terminal run: `active_launches` returns, another write
+    goes through, and a runner tick skips the stuck run and counts it."""
+    write_pointer(tmp_home, pointer(RUN_A, project, boot_id=OTHER_BOOT))
+    write_spool(project, RUN_A, fixture_lines(RUN_A, last=3))
+    files = FilePool(backlog=0)
+    sink = StoreSink(store[1], runs_root)
+    loop = RunnerLoop(
+        sink,
+        Launcher(),
+        Settings(runs_root=runs_root, executor="local"),
+        home=tmp_home,
+        files=files,
+        files_timeout_s=0.2,
+    )
+    started = time.monotonic()
+    loop.tick()
+    assert time.monotonic() - started < 5
+    assert [r.run_id for r in sink.active_launches()] == [RUN_A]
+    store[1].submit(lambda c: None).result(timeout=1)
+    with store[0].connect() as conn:
+        drops = dict(conn.execute(select(spool_drops.c.reason, spool_drops.c.count)).all())
+    assert drops.get("spool_stalled", 0) >= 1
+    assert run_row(store, RUN_A).state == "queued"
+
+
+def test_stuck_launch_dir_never_holds_the_boot(
+    tmp_home: Path,
+    runs_root: Path,
+    project: Path,
+    stuck: threading.Event,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The boot's rebuild and first tick finish while the launch directory does not answer."""
+    monkeypatch.setattr(serve, "READ_TIMEOUT_S", 0.2)
+    write_pointer(tmp_home, pointer(RUN_A, project, boot_id=OTHER_BOOT))
+    write_spool(project, RUN_A, fixture_lines(RUN_A, last=3))
+    db_dir = tmp_home.parent / "db"
+    db_dir.mkdir(mode=0o700)
+    started = time.monotonic()
+    booted = serve.boot(Settings(runs_root=runs_root, executor="local"), db_dir)
+    try:
+        assert time.monotonic() - started < 10
+        assert booted.rebuilt.added == 1
+    finally:
+        booted.close()

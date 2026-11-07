@@ -1,10 +1,10 @@
 """What the runner hands to the server; the runner never imports the server (architecture §6)."""
 
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, TypeVar
 
 from spectio.config import SlurmOpts
 from spectio.runner.observed import ObservedRun
@@ -169,6 +169,20 @@ class RunnerSink(Protocol):
         """Add a run started from a terminal, unless the index has it; True when the index
         holds it as an ended `cli-observed` run (its pointer then moves to `ended/`)."""
         ...
+
+
+T = TypeVar("T")
+
+
+class Stalled(Exception):
+    """The file system did not answer in time, or every file reader is waiting."""
+
+
+class FileRunner(Protocol):
+    """Runs a whole file-system job with a timeout: the server's `FilePool`. Raises `Stalled`
+    when it does not answer in time (SEC-P3T25-01)."""
+
+    def run(self, fn: Callable[[], T], timeout_s: float) -> T: ...
 
 
 class Launcher(Protocol):
