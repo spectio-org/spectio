@@ -677,3 +677,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-07 01:50 UTC · P3-t24 (Task 24, spectio open) built: review approve 1/1/11 (3 rounds); the workflow skipped security (paths not in SENSITIVE), so the orchestrator ran security-reviewer: approve 0/0/5 -> FU-P3-48; inbox #112 rule 6 done. cli/open.py and open_remote.py added to SENSITIVE in p3-task.js. PR #143 (no-figure).
 - 2026-11-07 01:57 UTC · P3-t24 merged (#143, squash 1f6187e). B02 closes with Tasks 10 and 24 (21-23, 25-26 wait for #122); p3-batch P3-B02 started.
 - 2026-11-07 02:30 UTC · P3-B02 batch (Tasks 10, 24): simplify none, figure p3-b02-open-tmux, casts spectio-open and spectio-tmux, guide usage/open-from-your-laptop, doc-reviewer approve 14/14. PR #144. FU-P3-49.
+- 2026-11-07 02:37 UTC · P3-B02 merged (#144, squash 46dfe7b). Promotion PR to main next.
