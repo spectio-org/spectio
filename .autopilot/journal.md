@@ -691,3 +691,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-07 21:55 · P3-t33 · built (review approve 0/0/3, security approve 0/0/4, 1 round); PR #151 opened. Thomas: Snakemake resources per job and per rule too, to be stated in Task 34's brief.
 - 2026-11-07 22:00 · P3-t33 · merged #151 (ab79707). Next: P3-t34.
 - 2026-11-07 23:40 · P3-t34 · built (review approve 0/3/9, security approve 0/1/12, 4 rounds; sacct per job, efficiency per job and per rule or process for both engines, migration 0010, custom_options flag only); slurm-mini not run (Task 22). Inbox #116, FU-P3-53. PR #152 opened (no-figure).
+- 2026-11-07 23:50 · P3-t34 · merged #152 (a84fc10). Next: P3-t35 (boards, then screens).
