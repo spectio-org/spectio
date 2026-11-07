@@ -678,3 +678,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-07 01:57 UTC · P3-t24 merged (#143, squash 1f6187e). B02 closes with Tasks 10 and 24 (21-23, 25-26 wait for #122); p3-batch P3-B02 started.
 - 2026-11-07 02:30 UTC · P3-B02 batch (Tasks 10, 24): simplify none, figure p3-b02-open-tmux, casts spectio-open and spectio-tmux, guide usage/open-from-your-laptop, doc-reviewer approve 14/14. PR #144. FU-P3-49.
 - 2026-11-07 02:37 UTC · P3-B02 merged (#144, squash 46dfe7b). Promotion PR to main next.
+- 2026-11-07 02:44 UTC · promotion #145 merged into main (merge commit eff61fe): batch P3-B02. W5 now waits on Thomas: #122 (Task 7) blocks Tasks 21-23, 25-32; #141, #142 (after #122), #133, #111, #126; inbox #109 rule 5, #111.
