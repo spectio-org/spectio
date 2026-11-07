@@ -67,7 +67,7 @@ Create a git worktree: \`git worktree add ${wt} -b ${branch} ${A.base}\` (from t
 Also in scope: ${A.extra || 'nothing else'}.
 Read the owning specs the task names and the earlier P3 review records in docs/reviews/code/ for the standard this code will meet.
 Follow karpathy-guidelines, test-driven-development (show the failing run first) and verification-before-completion. Do not write docs pages.
-Run the gate before finishing: ${gate}. Never push, never force-push, never bypass hooks, no model identifier in commits. ${trailer}`,
+Run the gate before finishing: ${gate}. If you add, rename or remove a file under packages/*/src/, update tests/packaging/contents/<package>.wheel.txt to match (the CI product job runs tests/packaging/test_wheel.sh and fails on any difference). Never push, never force-push, never bypass hooks, no model identifier in commits. ${trailer}`,
   { label: `build ${A.step}`, agentType: 'general-purpose', schema: BUILD })
 build.changed_paths.forEach(p => touched.add(p))
 
