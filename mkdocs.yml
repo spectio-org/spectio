@@ -89,6 +89,7 @@ nav:
   - Usage:
       - usage/index.md
       - Signing in: usage/sign-in.md
+      - Opening from your laptop: usage/open-from-your-laptop.md
   - Features:
       - features/index.md
       - Runs: features/runs.md
