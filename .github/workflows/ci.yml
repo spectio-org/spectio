@@ -35,7 +35,7 @@ jobs:
           if [ "$EVENT" = pull_request ]; then
             git diff --name-only HEAD^1 HEAD > "$RUNNER_TEMP/changed.txt"
             touched() { grep -qE "$1" "$RUNNER_TEMP/changed.txt" && echo true || echo false; }
-            synthetic=$(touched '^(tests/pipelines/synthetic/|engine-bridges/nf-spectio/|packages/spectio/tests/test_bridge_nextflow\.py$|\.github/workflows/(pipelines-synthetic|ci)\.yml$)')
+            synthetic=$(touched '^(tests/pipelines/synthetic/|engine-bridges/|tests/fixtures/engine-events/logger-plugin/|packages/spectio/tests/test_bridge_nextflow\.py$|\.github/workflows/(pipelines-synthetic|ci)\.yml$)')
             real=$(touched '^(tests/pipelines/real/|\.github/workflows/(pipelines-real|ci)\.yml$)')
           else
             # Pushes to main: the synthetic scenarios always; the corpus runs nightly.
@@ -193,7 +193,7 @@ jobs:
           export SPECTIO_ENGINES_NEXTFLOW_CMD
           bash tests/e2e/serve-local.sh --port 8765 --seed-stages > "$RUNNER_TEMP/serve.log" 2>&1 &
           for _ in $(seq 1 300); do
-            curl -fsS -o /dev/null http://127.0.0.1:8765/api/v1/version && exit 0
+            [ -f tests/e2e/.local/8765.config ] && exit 0  # serve-local.sh writes it once /auth/link answers
             sleep 1
           done
           cat "$RUNNER_TEMP/serve.log"; exit 1
@@ -204,7 +204,7 @@ jobs:
           SPECTIO_E2E_BASE_URL: http://127.0.0.1:8765
           SPECTIO_E2E_ENGINES: "1"
           SPECTIO_E2E_SEEDED: "1"
-        run: npx --no-install playwright test skeleton.spec.ts --project desktop --project phone
+        run: npx --no-install playwright test skeleton.spec.ts report.spec.ts --project desktop --project phone
       - name: Keep the report and the server log
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

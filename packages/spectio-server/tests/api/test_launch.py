@@ -281,7 +281,8 @@ def test_launch_engine_file_missing_422(authed_client: TestClient, synthetic: Pa
 def test_launch_snakemake_accepted(
     authed_client: TestClient, synthetic: Path, writer: Writer
 ) -> None:
-    """Accepted here; the runner fails it `launch_error` until the logger (P1 Task 7)."""
+    """Accepted here; the runner fails it `launch_error` while the logger plugin (P1 Task 7) is
+    not in the bridges directory: the wheel bundles it with P1 Task 21."""
     location = str(synthetic / "snakemake")
     response = launch(authed_client, location, "snakemake", profiles=["local"])
     assert response.status_code == 201, response.text

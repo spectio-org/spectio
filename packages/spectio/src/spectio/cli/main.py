@@ -9,6 +9,7 @@ import typer
 from spectio.cli.doctor import run_doctor
 from spectio.cli.init import run_init
 from spectio.cli.login import run_login
+from spectio.cli.open import run_open
 from spectio.cli.serve import run_serve
 from spectio.config import Settings
 
@@ -91,3 +92,21 @@ def login(
 ) -> None:
     """Get a new single-use token link from the running server (valid 15 minutes)."""
     raise typer.Exit(run_login(print_link, as_json))
+
+
+@app.command("open")
+def open_(
+    host: Annotated[str, typer.Argument(help="The cluster, as ssh names it")],
+    node: Annotated[
+        str | None, Opt(help="Login node for a first start; overrides server.json")
+    ] = None,
+    remote_cmd: Annotated[
+        str | None, Opt(help="Shell text that runs spectio there, e.g. a full path")
+    ] = None,
+    local_port: Annotated[
+        int | None, Opt(help="Laptop end of the tunnel; default a free port")
+    ] = None,
+    no_browser: Annotated[bool, Opt("--no-browser", help="Print the link only")] = False,
+) -> None:
+    """On the laptop: open your server on a cluster login node, through an SSH tunnel."""
+    raise typer.Exit(run_open(host, node, remote_cmd, local_port, not no_browser))
