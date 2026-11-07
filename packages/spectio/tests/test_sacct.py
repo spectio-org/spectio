@@ -343,6 +343,31 @@ def test_eff_sacct() -> None:
     assert alone.total_cpu_s == 49 * 3600  # no step rows: the allocation row's own
 
 
+def test_eff_sacct_steps_join_their_own_job() -> None:
+    """SEC-P3T34-04: a step row counts only for the allocation row printed before it (sacct
+    prints steps after their job [to be validated] on slurm-mini). Two allocation rows for one
+    ID (a reused ID, or a forged line) are ambiguous: no row, so no other job's CPU or memory is
+    mixed in, and a step before any allocation row is ignored."""
+    reused = "\n".join(
+        [
+            line(JobID="123", State="COMPLETED", TotalCPU="00:01.000", WorkDir="/old"),
+            line(JobID="123.batch", State="COMPLETED", MaxRSS="9G", TotalCPU="10:00.000"),
+            line(JobID="123", State="COMPLETED", TotalCPU="00:02.000", WorkDir="/data/launch"),
+            line(JobID="123.batch", State="COMPLETED", MaxRSS="1G", TotalCPU="00:02.000"),
+        ]
+    )
+    assert sacct.parse_sacct(reused, {"123"}) == {}
+    early = "\n".join(
+        [
+            line(JobID="9.batch", State="COMPLETED", MaxRSS="9G", TotalCPU="10:00.000"),
+            line(JobID="9", State="COMPLETED", TotalCPU="00:02.000", WorkDir="/data/launch"),
+            line(JobID="9.batch", State="COMPLETED", MaxRSS="1G", TotalCPU="00:02.000"),
+        ]
+    )
+    row = sacct.parse_sacct(early, {"9"})["9"]
+    assert (row.total_cpu_s, row.max_rss_bytes, row.work_dir) == (2.0, 1024**3, "/data/launch")
+
+
 def test_req15_eff_fields(fakebin: Fake) -> None:
     """The new format is asked and parsed from the tool's output, a `|` inside WorkDir kept;
     a line with fewer fields (the format before P1 Task 34) is no row."""

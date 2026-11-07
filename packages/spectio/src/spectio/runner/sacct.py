@@ -173,9 +173,11 @@ def _kill(proc: "subprocess.Popen[bytes]") -> None:
 def parse_sacct(text: str, wanted: set[str]) -> dict[str, SacctRow]:
     """The rows of `--parsable2 --noheader` output for the `wanted` jobs: the job's own line for
     its state, limits, allocation and WorkDir; the largest `MaxRSS` of its lines and the sum of
-    its steps' `TotalCPU` (`<id>.batch`, `<id>.0` …). WorkDir is the last field: a `|` in it is
-    kept."""
-    rows: dict[str, SacctRow] = {}
+    its steps' `TotalCPU` (`<id>.batch`, `<id>.0` …). A step counts only after its job's line
+    (sacct prints steps after their job [to be validated] on slurm-mini); two job lines for one
+    ID (a reused ID, a forged line) give no row (SEC-P3T34-04). WorkDir is the last field: a `|`
+    in it is kept."""
+    rows: dict[str, SacctRow | None] = {}  # None: two job lines for the ID
     rss: dict[str, int] = {}
     cpu: dict[str, float] = {}
     for line in text.splitlines():
@@ -187,12 +189,19 @@ def parse_sacct(text: str, wanted: set[str]) -> dict[str, SacctRow]:
         base, _, step = job.partition(".")
         if base not in wanted:
             continue
-        if (used := _memory(max_rss)) is not None:
-            rss[base] = max(used, rss.get(base, 0))
         if step:
+            if rows.get(base) is None:
+                continue  # before its job's line, or of an ambiguous ID
+            if (used := _memory(max_rss)) is not None:
+                rss[base] = max(used, rss.get(base, 0))
             if (spent := _cpu_seconds(total_cpu)) is not None:
                 cpu[base] = cpu.get(base, 0.0) + spent
             continue
+        if base in rows:
+            rows[base] = None
+            continue
+        if (used := _memory(max_rss)) is not None:
+            rss[base] = used
         cpus, nodes = _count(ncpus), _count(nnodes)
         rows[base] = SacctRow(
             state=_state(state),
@@ -218,6 +227,7 @@ def parse_sacct(text: str, wanted: set[str]) -> dict[str, SacctRow]:
             total_cpu_s=round(cpu[job], 6) if job in cpu else row.total_cpu_s,
         )
         for job, row in rows.items()
+        if row is not None
     }
 
 

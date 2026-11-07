@@ -726,15 +726,18 @@ def task_resources(
     def read() -> dict[str, dict[str, Any] | None]:
         """In the pool thread: each batch is kept as it is read, so a read that outlasts the
         view's timeout still fills the cache (CR-P3T34-03); a run another sweep is reading
-        is left to it (SEC-P3T34-01)."""
+        is left to it (SEC-P3T34-01), and what a sweep just released has read is not read
+        again (CR-P3T34-04, SEC-P3T34-02)."""
         if not ctx.measures.claim(run_id):
             return {}
         try:
             if on_slurm:
                 ctx.accounting.load(run_id)
-            fresh: dict[str, dict[str, Any] | None] = {}
-            for i in range(0, len(unread), BENCHMARK_CHUNK):
-                batch = {a: _benchmark(ctx, dirs, p) for a, p in unread[i : i + BENCHMARK_CHUNK]}
+            seen = ctx.measures.get(a for a, _ in unread)
+            todo = [(a, p) for a, p in unread if a not in seen]
+            fresh: dict[str, dict[str, Any] | None] = dict(seen)
+            for i in range(0, len(todo), BENCHMARK_CHUNK):
+                batch = {a: _benchmark(ctx, dirs, p) for a, p in todo[i : i + BENCHMARK_CHUNK]}
                 ctx.measures.put(batch)
                 fresh.update(batch)
             return fresh

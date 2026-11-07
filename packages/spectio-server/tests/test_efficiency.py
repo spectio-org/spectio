@@ -577,3 +577,35 @@ def test_req13_benchmark_sweep_bounded(
     assert len(opened) == 2  # the hung sweep read at most MAX_BENCHMARKS_PER_VIEW files
     measured_soon(client, 3)  # later views got its results and read the last one
     assert sorted(opened) == [f"benchmarks/S{i}.tsv" for i in range(3)]
+
+
+def test_req15_late_sweep_skips_what_the_last_one_read(
+    settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A sweep that takes the claim just after another sweep of the run released it reads only
+    what is still not cached (CR-P3T34-04, SEC-P3T34-02): its `unread` list was computed while
+    the first sweep held the claim, so each file is opened once all the same."""
+    client = three_benchmarks(settings, writer)
+    gate, released = threading.Event(), threading.Event()
+    opened = slow_benchmarks(monkeypatch, gate)
+    real_claim, real_release = failure.Measures.claim, failure.Measures.release
+    claims: list[str] = []
+
+    def claim(self: failure.Measures, run_id: str) -> bool:
+        claims.append(run_id)
+        if len(claims) == 2:  # the second view: its unread list holds all three files
+            gate.set()
+            assert released.wait(10), "the first sweep never released its claim"
+        return real_claim(self, run_id)
+
+    def release(self: failure.Measures, run_id: str) -> None:
+        real_release(self, run_id)
+        released.set()
+
+    monkeypatch.setattr(failure.Measures, "claim", claim)
+    monkeypatch.setattr(failure.Measures, "release", release)
+    processes(client)  # the first sweep waits on the gate
+    processes(client)  # the second view's sweep claims once the first is done
+    measured_soon(client, 3)
+    time.sleep(0.2)
+    assert sorted(opened) == [f"benchmarks/S{i}.tsv" for i in range(3)]  # each opened once
