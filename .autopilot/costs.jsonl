@@ -49,3 +49,4 @@
 {"at": 1794014589.2205427, "usd": 38.0, "kind": "build-task", "step": "P3-t21"}
 {"at": 1794016229.719365, "usd": 30.0, "kind": "build-task", "step": "P3-t24"}
 {"at": 1794018560.063105, "usd": 35.0, "kind": "docs", "step": "P3-B02"}
+{"at": 1794064379.8878667, "usd": 6.0, "kind": "docs", "step": "dag-temp-efficiency"}
