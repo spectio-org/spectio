@@ -671,3 +671,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - P3-B01 batch close done (run wf_17425d7a-093): simplify -11/+9 (no re-review, under 20 lines; closes CR-P3T16-01, CR-P3T14-02, CR-P3T12-03), figure p3-b01-signed-in, cast spectio-sign-in, guide "Signing in". doc-reviewer approve 12/14, changes applied. PR #138 opened. Cost recorded: 45 USD, kind `docs`.
 
 - 2026-11-06 23:54 UTC · promotion #139 merged into main (merge commit 7f2021a): batch P3-B01, P1 Tasks 12-16. e2e-local red for the known base cause (#133).
+- 2026-11-07 00:30 UTC · P3-t10 (Task 10, tmux launcher) built: review approve 0/1/8, security approve 0/0/7, 2 rounds; PR #140 opened (no-figure). FU-P3-44, FU-P3-45; inbox #110. Next follow-up FU-P3-46.
