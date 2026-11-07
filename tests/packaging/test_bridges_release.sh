@@ -152,7 +152,7 @@ want+="snakemake_logger_plugin_spectio/__init__.py "
 [ "$got" = "$want" ] || fail "the wheel holds: $got"
 got=$(python3 -I -c 'import sys, tarfile; [print(m.name) for m in tarfile.open(sys.argv[1]) if m.isfile()]' \
   "$sdist" | sort | tr '\n' ' ')
-want="$name/PKG-INFO $name/docs/intro.md $name/pyproject.toml "
+want="$name/PKG-INFO $name/README.md $name/pyproject.toml "
 want+="$name/snakemake_logger_plugin_spectio/__init__.py "
 [ "$got" = "$want" ] || fail "the sdist holds: $got"
 meta=$(unzip -p "$whl" "$name.dist-info/METADATA")

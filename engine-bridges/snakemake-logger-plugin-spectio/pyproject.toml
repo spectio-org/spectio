@@ -8,7 +8,7 @@
 name = "snakemake-logger-plugin-spectio"  # lowercase and hyphenated, as the plugin catalogue matches it
 version = "0.0.1"
 description = "Snakemake logger plugin that writes a run's events to Spectio's spool"
-readme = "docs/intro.md"  # also the Snakemake plugin catalogue's page (dev-env §12 Publishing)
+readme = "README.md"  # the PyPI description only: the catalogue page is the root docs/intro.md (decision log 2026-10-29)
 license = "MIT"
 requires-python = ">=3.11"
 # The range Snakemake 9.27.1 itself requires (its wheel metadata, read 2026-11-01).
