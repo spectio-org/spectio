@@ -672,3 +672,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - 2026-11-06 23:54 UTC · promotion #139 merged into main (merge commit 7f2021a): batch P3-B01, P1 Tasks 12-16. e2e-local red for the known base cause (#133).
 - 2026-11-07 00:30 UTC · P3-t10 (Task 10, tmux launcher) built: review approve 0/1/8, security approve 0/0/7, 2 rounds; PR #140 opened (no-figure). FU-P3-44, FU-P3-45; inbox #110. Next follow-up FU-P3-46.
+- 2026-11-07 00:37 UTC · P3-t10 merged (#140, squash 075cee9). e2e-local red for the known base cause (#133). Next: P3-t21; its ci.yml product-job change goes in a separate PR that waits for Thomas.
