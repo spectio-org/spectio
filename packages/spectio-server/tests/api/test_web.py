@@ -14,6 +14,7 @@ from fastapi.testclient import TestClient
 
 from spectio.config import Settings
 from spectio_server import app as app_mod
+from spectio_server import static
 from spectio_server.store.writer import Writer
 
 from .conftest import client_for
@@ -184,3 +185,42 @@ def test_missing_dist_says_how_to_build(settings: Settings, writer: Writer, tmp_
     assert "npm --prefix web ci --ignore-scripts && npm --prefix web run build" in r.text
     assert missing.get("/launch").status_code == 404
     assert missing.get("/api/v1/version").status_code == 200  # the API does not need the screens
+
+
+def _layout(top: Path, package: str) -> Path:
+    """`static.py` at `top/<package>/spectio_server/`, and a planted `top/web/dist`."""
+    module = top / package / "spectio_server" / "static.py"
+    module.parent.mkdir(parents=True)
+    module.touch()
+    (top / "web" / "dist").mkdir(parents=True)
+    (top / "web" / "dist" / "index.html").write_text(INDEX)
+    return module
+
+
+def test_installed_wheel_never_uses_a_planted_dist(tmp_path: Path) -> None:
+    # `pip install --target <top>/x/y/lib`: four levels up is `top`, which another user may own.
+    module = _layout(tmp_path, "x/y/lib")
+    found = static.find_dist(module)
+    assert found == module.parent / "web"
+    assert static.built(found) is False
+
+
+def test_checkout_dist_needs_an_owned_unwritable_walk(tmp_path: Path) -> None:
+    module = _layout(tmp_path, "packages/spectio-server/src")
+    (tmp_path / "pyproject.toml").touch()
+    assert static.find_dist(module) == tmp_path / "web" / "dist"
+    (tmp_path / "web").chmod(0o777)
+    assert static.find_dist(module) == module.parent / "web"
+
+
+def test_refused_checkout_says_why(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    # The screens are built but the walk is refused: say so, not "run npm build" (CR-P3T21-02).
+    module = _layout(tmp_path, "packages/spectio-server/src")
+    (tmp_path / "pyproject.toml").touch()
+    web = tmp_path / "web"
+    web.chmod(0o777)
+    with caplog.at_level("WARNING", logger="spectio_server.static"):
+        assert static.find_dist(module) == module.parent / "web"
+    assert [r.getMessage() for r in caplog.records] == [
+        f"{web} is group- or world-writable or not yours: chmod g-w,o-w {web}"
+    ]

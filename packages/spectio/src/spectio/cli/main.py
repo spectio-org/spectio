@@ -1,5 +1,6 @@
 """The `spectio` command (cli-and-shared-libraries.md §2)."""
 
+from importlib.metadata import version
 from pathlib import Path
 from typing import Annotated
 
@@ -15,6 +16,22 @@ from spectio.config import Settings
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
 Opt = typer.Option
+
+
+def _print_version(value: bool) -> None:
+    if value:
+        typer.echo(f"spectio {version('spectio')}")
+        raise typer.Exit
+
+
+@app.callback()
+def main(
+    _version: Annotated[
+        bool | None,
+        Opt("--version", callback=_print_version, is_eager=True, help="Print the version"),
+    ] = None,
+) -> None:
+    """Spectio: launch and monitor Nextflow and Snakemake runs."""
 
 
 @app.command()
