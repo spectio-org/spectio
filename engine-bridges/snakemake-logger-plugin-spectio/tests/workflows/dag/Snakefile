@@ -1,0 +1,48 @@
+# A workflow for the logger plugin's DAG texts (P1 Task 33): one checkpoint job with jobs
+# behind it ("Updating checkpoint dependencies."), two temp() outputs removed once their
+# consumers ran ("Removing temporary output <path>."), and one protected() output
+# ("Write-protecting output file <path>.").
+
+
+rule all:
+    input:
+        "out/summary.txt",
+
+
+rule seed:
+    output:
+        temp("tmp/seed.txt"),
+    shell:
+        "printf 'a\\nb\\n' > {output}"
+
+
+checkpoint fan_out:
+    input:
+        "tmp/seed.txt",
+    output:
+        directory("out/parts"),
+    shell:
+        "mkdir -p {output} && while read p; do echo $p > {output}/$p.txt; done < {input}"
+
+
+rule part:
+    input:
+        "out/parts/{p}.txt",
+    output:
+        temp("tmp/{p}.done"),
+    shell:
+        "cp {input} {output}"
+
+
+def parts(wildcards):
+    d = checkpoints.fan_out.get().output[0]
+    return expand("tmp/{p}.done", p=glob_wildcards(f"{d}/{{p}}.txt").p)
+
+
+rule summary:
+    input:
+        parts,
+    output:
+        protected("out/summary.txt"),
+    shell:
+        "cat {input} > {output}"

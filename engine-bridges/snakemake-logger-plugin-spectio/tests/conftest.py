@@ -14,6 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]  # the directory the head puts on PYT
 REPO = ROOT.parents[1]
 SYNTHETIC = REPO / "tests" / "pipelines" / "synthetic"
 FILES = ROOT / "tests" / "workflows" / "files" / "Snakefile"
+DAG = ROOT / "tests" / "workflows" / "dag" / "Snakefile"
 SNAKEMAKE = Path(sys.executable).parent / "snakemake"  # 9.27.1, from this project's lock
 RUN_ID = "run_01K8T7SMKRVN00000000000000"
 PLANTED = "planted-in-the-environment-7f3a"  # set in every run's environment: never sent
@@ -97,3 +98,9 @@ def files_run(tmp_path_factory: pytest.TempPathFactory) -> SmkRun:
     """The `files` workflow with its `broken` rule failing (it needs `measured`: one order)."""
     launch = tmp_path_factory.mktemp("files") / "launch"
     return snakemake(launch, FILES, "--cores", "2", "--config", "fail=1")
+
+
+@pytest.fixture(scope="session")
+def dag_run(tmp_path_factory: pytest.TempPathFactory) -> SmkRun:
+    """The `dag` workflow: a checkpoint, temp() and protected() outputs (P1 Task 33)."""
+    return snakemake(tmp_path_factory.mktemp("dag") / "launch", DAG, "--cores", "2")
