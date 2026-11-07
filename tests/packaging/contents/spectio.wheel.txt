@@ -13,10 +13,12 @@ spectio/cli/doctor.py
 spectio/cli/init.py
 spectio/cli/login.py
 spectio/cli/main.py
+spectio/cli/open.py
 spectio/cli/serve.py
 spectio/config.py
 spectio/fsmodes.py
 spectio/loginshell.py
+spectio/open_remote.py
 spectio/ports.py
 spectio/py.typed
 spectio/runner/__init__.py
