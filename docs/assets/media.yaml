@@ -510,6 +510,14 @@ media:
       - docs/assets/diagrams/p3-b02-open-tmux_dark.svg
       - docs/assets/diagrams/p3-b02-open-tmux_light.png
       - docs/assets/diagrams/p3-b02-open-tmux_dark.png
+  - id: p3-b03-wheel-terminal-release
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b03_wheel_terminal_release.py
+    outputs:
+      - docs/assets/diagrams/p3-b03-wheel-terminal-release_light.svg
+      - docs/assets/diagrams/p3-b03-wheel-terminal-release_dark.svg
+      - docs/assets/diagrams/p3-b03-wheel-terminal-release_light.png
+      - docs/assets/diagrams/p3-b03-wheel-terminal-release_dark.png
   - id: p3-t17-launch
     kind: diagram
     generator: python3 tools/diagrams/p3_t17_launch.py
@@ -717,3 +725,24 @@ media:
     # the user name is replaced by alice and the ticket masked
     generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-tmux.yaml'
     outputs: [docs/assets/casts/spectio-tmux.cast]
+  - id: spectio-terminal-run
+    kind: cast
+    # real Nextflow on the synthetic pipeline, real nf-spectio built by engine-bridges/nf-spectio/build.sh
+    # into a plugins directory, real `spectio serve` (uv sync first; Java and Nextflow on PATH), under
+    # the demo host name demo-hpc-login1 (its own UTS namespace); the ticket is masked by a sed the
+    # cast shows
+    generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-terminal-run.yaml'
+    outputs: [docs/assets/casts/spectio-terminal-run.cast]
+  - id: spectio-wheel
+    kind: cast
+    # builds the three packages for real with `uv build --all-packages` and installs spectio alone with
+    # `uv tool install` into a temporary UV_TOOL_DIR; needs web/dist (npm --prefix web ci
+    # --ignore-scripts && npm --prefix web run build), Java and Nextflow on PATH, and network for uv
+    generator: python3 tools/media/cast.py tools/media/casts/spectio-wheel.yaml
+    outputs: [docs/assets/casts/spectio-wheel.cast]
+  - id: spectio-bridges-release
+    kind: cast
+    # tests/packaging/test_bridges_release.sh for real: Gradle wrapper, Nextflow, uv, a fresh
+    # Snakemake 9; needs Java, Nextflow, uv and network for the Maven repositories; publishes nothing
+    generator: python3 tools/media/cast.py tools/media/casts/spectio-bridges-release.yaml
+    outputs: [docs/assets/casts/spectio-bridges-release.cast]

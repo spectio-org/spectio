@@ -140,13 +140,7 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
         files, stage_files = FilePool(), FilePool(FREEZE_WORKERS, 0)
         # runs started from a terminal: their file-system work, bounded (SEC-P3T25-01)
         observed_files = FilePool(backlog=0)
-        rebuilt = rebuild_index(
-            writer,
-            settings.runs_root,
-            home=Path.home(),
-            files=observed_files,
-            timeout_s=READ_TIMEOUT_S,
-        )
+        rebuilt = rebuild_index(writer, settings.runs_root, home=Path.home(), files=observed_files)
         log.info("index %s: %d runs added", "rebuilt" if new else "reconciled", rebuilt.added)
         launcher = LocalLauncher() if settings.executor == "local" else TmuxLauncher()
         loop = RunnerLoop(

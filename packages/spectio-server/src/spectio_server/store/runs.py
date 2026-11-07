@@ -175,16 +175,16 @@ def insert_run(
     return launch_id
 
 
-def insert_observed_run(conn: Connection, run: ObservedRun, now: datetime) -> str:
+def insert_observed_run(conn: Connection, run: ObservedRun, now: datetime) -> None:
     """Insert a run started from a terminal (P1 Task 25, architecture §13.8), `queued` with
     origin `cli-observed`, and its launch 1 with the pointer's head fields and no native ID:
     no launcher ever adopts it. Its workflow is its launch directory (the pipeline is not in the
-    pointer); it has no parameters, work directory or results directory in 0.0.1. Return the
-    launch's ID; raises EngineConflict when that directory is a workflow of the other engine."""
+    pointer); it has no parameters, work directory or results directory in 0.0.1. Raises
+    EngineConflict when that directory is a workflow of the other engine."""
     mine = {"created_at": now, "created_by": first(conn, principals)}
     project = first(conn, projects)
     workflow_id = _workflow_id(conn, project, "local", run.launch_dir, run.engine, None, mine)
-    version_id, launch_id = new_id("wfv"), new_id("lch")
+    version_id = new_id("wfv")
     conn.execute(insert(workflow_versions).values(id=version_id, workflow_id=workflow_id, **mine))
     conn.execute(
         insert(runs).values(
@@ -204,7 +204,7 @@ def insert_observed_run(conn: Connection, run: ObservedRun, now: datetime) -> st
     note_change(conn, run.run_id)
     conn.execute(
         insert(launches).values(
-            id=launch_id,
+            id=new_id("lch"),
             run_id=run.run_id,
             n=1,
             launch_dir=run.launch_dir,
@@ -215,4 +215,3 @@ def insert_observed_run(conn: Connection, run: ObservedRun, now: datetime) -> st
             **mine,
         )
     )
-    return launch_id
