@@ -138,6 +138,8 @@ def test_version_behind_session(
     problem(signed_out.get("/api/v1/version"), 401, "unauthenticated")
     absent = problem(client.get("/api/v1/version"), 404, "not-found")
     assert NO_API in str(absent["detail"])
+    # inbox #109 rule 5 (a), Thomas 2026-11-07: the reason, not a plan's task numbers
+    assert "Task" not in NO_API and "spectio init --local" in NO_API and "shared" in NO_API
     problem(
         authed_client.get("/api/v1/version", headers={"Host": "evil.example"}),
         400,

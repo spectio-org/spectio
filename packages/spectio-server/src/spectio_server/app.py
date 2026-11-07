@@ -49,9 +49,10 @@ from spectio_server.store.writer import Writer
 PLACEHOLDER = "Spectio {version} is running.\n{why}\n"
 API = "/api/v1"
 API_VERSION = "0.0.1"  # the API document's version, not the package's: a release bump keeps it
+# inbox #109 rule 5 (a), Thomas 2026-11-07: unmounted on SLURM and shared hosts
 NO_API = (
-    "The API is served in local mode only (spectio init --local) until sign-in is complete: "
-    "P1 Tasks 13 to 16 (the session cookie per port and its checks)."
+    "The API is served only in local mode (spectio init --local), on a machine only you use: "
+    "on a cluster or another shared host, other users could reach its port."
 )
 
 SLURM_CONF_FILE = Path("/etc/slurm/slurm.conf")
