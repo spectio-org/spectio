@@ -373,16 +373,18 @@ class RunnerLoop:
 
     def _fs(self, key: str, fn: Callable[[], T]) -> T:
         """`fn()` in the file pool with its timeout when there is one; raises `Stalled`. A job
-        of `key` still in the pool is waited for, never sent again: a stuck launch directory
-        holds one thread, not one per tick (CR-P3T25-03)."""
+        of `key` still in the pool is not sent again (`Stalled` at once): a stuck launch
+        directory holds one thread, not one per tick (CR-P3T25-03). The one-shot `claim` lets
+        exactly one side, the job or the caller that gave up, take the key off (CR-P3T25-r3-01)."""
         if self.files is None:
             return fn()
         if key in self._busy:
             raise Stalled("the file system has not answered the last read yet")
-        started = threading.Event()
+        claim = threading.Lock()
 
         def job() -> T:
-            started.set()
+            if not claim.acquire(blocking=False):
+                raise Stalled("the caller gave up before this job ran")
             try:
                 return fn()
             finally:
@@ -392,7 +394,7 @@ class RunnerLoop:
         try:
             return self.files.run(job, self.files_timeout_s)
         except Stalled:
-            if not started.is_set():  # refused, or cancelled before it ran
+            if claim.acquire(blocking=False):  # it never ran, and now never will
                 self._busy.discard(key)
             raise
 
