@@ -33,15 +33,77 @@ if os.path.exists(delay):
 sys.stdout.write(open(os.path.join(here, "out.txt")).read())
 """
 
-# What `sacct --parsable2 --noheader --format=JobID,State,…,Timelimit,WorkDir` prints (the shape
-# of the T3 probes, tests/fixtures/slurm/slurm-26.05.5/sacct-probes.json; real fields, WorkDir
-# among them, [to be validated]).
-OUT = """8812477|OUT_OF_MEMORY|0:125|None|0|00:01:05|2G|00:10:00|/data/work/ab/cd
-8812477.batch|OUT_OF_MEMORY|0:125||2147480K|00:01:05|||/data/work/ab/cd
-8812477.extern|COMPLETED|0:0||1024K|00:01:05|||/data/work/ab/cd
-8812345_3|FAILED|137:0|None||1-02:03:04|4000M|2-00:00:00|/data/launch|x
-8812345_3.batch|FAILED|137:0||1.5G|1-02:03:04|||/data/launch|x
-"""
+# What `sacct --parsable2 --noheader --format=JobID,State,…,AllocTRES,WorkDir` prints (the shape
+# of the T3 probes, tests/fixtures/slurm/slurm-26.05.5/sacct-probes.json, with the efficiency
+# fields of P1 Task 34; real fields, WorkDir among them, [to be validated]).
+FIELDS = sacct.FORMAT.split(",")
+
+
+def line(**values: str) -> str:
+    """One `--parsable2` line in FORMAT's order; a field not given is empty."""
+    unknown = set(values) - set(FIELDS)
+    assert not unknown, unknown
+    return "|".join(values.get(f, "") for f in FIELDS)
+
+
+OOM = {"State": "OUT_OF_MEMORY", "ExitCode": "0:125", "Elapsed": "00:01:05"}
+ARRAY = {"State": "FAILED", "ExitCode": "137:0", "Elapsed": "1-02:03:04"}
+OUT = (
+    "\n".join(
+        [
+            line(
+                JobID="8812477",
+                **OOM,
+                Reason="None",
+                MaxRSS="0",
+                ReqMem="2G",
+                Timelimit="00:10:00",
+                TotalCPU="00:40.500",
+                NCPUS="4",
+                NNodes="1",
+                Partition="htc",
+                Account="lab",
+                QOS="normal",
+                AllocTRES="billing=4,cpu=4,mem=2G,node=1",
+                WorkDir="/data/work/ab/cd",
+            ),
+            line(
+                JobID="8812477.batch",
+                **OOM,
+                MaxRSS="2147480K",
+                TotalCPU="00:40.000",
+                NCPUS="4",
+                NNodes="1",
+                WorkDir="/data/work/ab/cd",
+            ),
+            line(
+                JobID="8812477.extern",
+                State="COMPLETED",
+                ExitCode="0:0",
+                MaxRSS="1024K",
+                Elapsed="00:01:05",
+                TotalCPU="00:00.500",
+                NCPUS="4",
+                NNodes="1",
+                WorkDir="/data/work/ab/cd",
+            ),
+            line(
+                JobID="8812345_3",
+                **ARRAY,
+                Reason="None",
+                ReqMem="4000M",
+                Timelimit="2-00:00:00",
+                NCPUS="1",
+                NNodes="1",
+                WorkDir="/data/launch|x",
+            ),
+            line(
+                JobID="8812345_3.batch", **ARRAY, MaxRSS="1.5G", NCPUS="1", WorkDir="/data/launch|x"
+            ),
+        ]
+    )
+    + "\n"
+)
 
 
 class Fake:
@@ -81,7 +143,8 @@ def test_req15_argv_and_id_check(fakebin: Fake) -> None:
         "-j",
         "8812477,8812345_3",
         f"--user={os.geteuid()}",  # the server user's own jobs only
-        "--format=JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,WorkDir",
+        "--format=JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,TotalCPU,NCPUS,"
+        "NNodes,Partition,Account,QOS,AllocTRES,WorkDir",
     ]
     assert found is not None and set(found) == {"8812477", "8812345_3"}
     for bad in (["1;rm"], ["1234567890123"], ["1_123456789"], ["8812477", "-j"], [""], [" 1"]):
@@ -145,6 +208,13 @@ def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
             req_mem_bytes=2 * 1024**3,
             time_limit_s=600,
             work_dir="/data/work/ab/cd",
+            total_cpu_s=40.5,  # the sum of its steps, not the allocation row's as well
+            ncpus=4,
+            nnodes=1,
+            partition="htc",
+            account="lab",
+            qos="normal",
+            alloc_tres="billing=4,cpu=4,mem=2G,node=1",
         ),
         "8812345_3": SacctRow(
             state="FAILED",
@@ -155,6 +225,8 @@ def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
             req_mem_bytes=4000 * 1024**2,
             time_limit_s=2 * 86400,
             work_dir="/data/launch|x",  # the last field: a `|` in it stays
+            ncpus=1,
+            nnodes=1,
         ),
     }  # 9999: no row, so not in the result
     assert sacct.TIMEOUT_S == 10
@@ -165,32 +237,125 @@ def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
 
 
 @pytest.mark.parametrize(
-    ("line", "expected"),
+    ("values", "expected"),
     [
         (
-            "1|CANCELLED by 1000|0:15|None|||4Gn|UNLIMITED|/w",
-            ("CANCELLED", 0, None, 4 * 1024**3, None),
+            {
+                "State": "CANCELLED by 1000",
+                "ExitCode": "0:15",
+                "Reason": "None",
+                "ReqMem": "4Gn",
+                "NNodes": "2",
+                "Timelimit": "UNLIMITED",
+            },
+            ("CANCELLED", 0, None, 2 * 4 * 1024**3, None),  # per node, times NNodes
         ),
         (
-            "1|TIMEOUT|0:0|Reason=\x1b[31mx|||1T|Partition_Limit|/w",
+            {
+                "State": "TIMEOUT",
+                "ExitCode": "0:0",
+                "Reason": "Reason=\x1b[31mx",
+                "ReqMem": "1T",
+                "Timelimit": "Partition_Limit",
+            },
             ("TIMEOUT", 0, None, 1024**4, None),
         ),
         (
-            "1|FAILED|1:0|JobLaunchFailure|||16Mc|05:30|/w",
-            ("FAILED", 1, "JobLaunchFailure", 16 * 1024**2, 330),
+            {
+                "State": "FAILED",
+                "ExitCode": "1:0",
+                "Reason": "JobLaunchFailure",
+                "ReqMem": "16Mc",
+                "NCPUS": "4",
+                "Timelimit": "05:30",
+            },
+            ("FAILED", 1, "JobLaunchFailure", 4 * 16 * 1024**2, 330),  # per CPU, times NCPUS
         ),
-        ("1|weird state!|x|" + "R" * 300 + "|||-1|1-x|w\x1b", (None, None, None, None, None)),
+        (
+            {"State": "FAILED", "ReqMem": "16Mc"},  # per CPU with no NCPUS: not known
+            ("FAILED", None, None, None, None),
+        ),
+        (
+            {
+                "State": "weird state!",
+                "ExitCode": "x",
+                "Reason": "R" * 300,
+                "ReqMem": "-1",
+                "Timelimit": "1-x",
+                "TotalCPU": "x",
+                "NCPUS": "-1",
+                "Partition": "a b",
+                "QOS": "\x1b",
+                "AllocTRES": "cpu=4;rm",
+                "WorkDir": "w\x1b",
+            },
+            (None, None, None, None, None),
+        ),
     ],
 )
-def test_sacct_values_as_data(line: str, expected: tuple[Any, ...]) -> None:
+def test_sacct_values_as_data(values: dict[str, str], expected: tuple[Any, ...]) -> None:
     """Every field is parsed as data: an odd or over-long value is None, never an error."""
-    row = sacct.parse_sacct(line + "\n", {"1"})["1"]
+    work_dir = values.pop("WorkDir", "/w")
+    row = sacct.parse_sacct(line(JobID="1", WorkDir=work_dir, **values) + "\n", {"1"})["1"]
     assert (row.state, row.exit_code, row.reason, row.req_mem_bytes, row.time_limit_s) == expected
-    assert row.work_dir == (None if expected[0] is None else "/w")  # relative or a control: None
+    assert row.work_dir == (None if work_dir != "/w" else "/w")  # relative or a control: None
+    if expected[0] is None:
+        assert (row.total_cpu_s, row.ncpus, row.partition, row.qos, row.alloc_tres) == (None,) * 5
+
+
+def test_eff_sacct() -> None:
+    """P1 Task 34 (schedulers §3.6): TotalCPU summed over the job's steps (batch, extern and each
+    srun step), never with the allocation row's, which already holds them; MaxRSS the largest
+    of any step; ReqMem per CPU times NCPUS; the allocation's partition, account, QOS and TRES.
+    Step rows have no WorkDir of their own [to be validated]: they join their job by ID."""
+    text = "\n".join(
+        [
+            line(
+                JobID="77",
+                State="COMPLETED",
+                ExitCode="0:0",
+                Elapsed="00:01:05",
+                ReqMem="1000Mc",
+                Timelimit="01:00:00",
+                TotalCPU="01:40.500",
+                NCPUS="4",
+                NNodes="1",
+                Partition="gpu",
+                Account="lab",
+                QOS="high",
+                AllocTRES="cpu=4,gres/gpu=1,mem=4000M,node=1",
+                WorkDir="/data/launch",
+            ),
+            line(JobID="77.batch", State="COMPLETED", MaxRSS="1G", TotalCPU="00:40.000", NCPUS="4"),
+            line(JobID="77.extern", State="COMPLETED", MaxRSS="1M", TotalCPU="00:00.500"),
+            line(JobID="77.0", State="COMPLETED", MaxRSS="3G", TotalCPU="01:00.000", NCPUS="4"),
+            line(JobID="78.batch", State="COMPLETED", MaxRSS="9G"),  # not asked: ignored
+        ]
+    )
+    row = sacct.parse_sacct(text, {"77"})["77"]
+    assert row.total_cpu_s == 100.5
+    assert row.max_rss_bytes == 3 * 1024**3
+    assert row.req_mem_bytes == 4 * 1000 * 1024**2
+    assert (row.ncpus, row.nnodes, row.elapsed_s, row.time_limit_s) == (4, 1, 65, 3600)
+    assert (row.partition, row.account, row.qos) == ("gpu", "lab", "high")
+    assert row.alloc_tres == "cpu=4,gres/gpu=1,mem=4000M,node=1"
+    alone = sacct.parse_sacct(line(JobID="5", TotalCPU="2-01:00:00", WorkDir="/w"), {"5"})["5"]
+    assert alone.total_cpu_s == 49 * 3600  # no step rows: the allocation row's own
+
+
+def test_req15_eff_fields(fakebin: Fake) -> None:
+    """The new format is asked and parsed from the tool's output, a `|` inside WorkDir kept;
+    a line with fewer fields (the format before P1 Task 34) is no row."""
+    fakebin.output(OUT + "8812999|FAILED|1:0|None||00:00:01|1G|00:01:00|/w\n")
+    found = sacct_jobs(["8812477", "8812345_3", "8812999"], sacct=fakebin.path)
+    assert found is not None and set(found) == {"8812477", "8812345_3"}
+    assert found["8812345_3"].work_dir == "/data/launch|x"
+    assert fakebin.calls()[0]["argv"][-1] == f"--format={sacct.FORMAT}"
+    assert sacct.FORMAT.endswith(",WorkDir") and sacct.FORMAT.count(",") == 15
 
 
 def test_sacct_output_capped(fakebin: Fake) -> None:
-    fakebin.output("8812477|FAILED|1:0|None||00:00:01|1G|00:01:00|/w\n" * 40000)  # > 1 MiB
+    fakebin.output((line(JobID="8812477", State="FAILED", WorkDir="/w") + "\n") * 40000)  # > 1 MiB
     assert sacct_jobs(["8812477"], sacct=fakebin.path) is None
 
 

@@ -364,6 +364,15 @@ def test_job_info_threads_resources_benchmark(files_run: SmkRun) -> None:
     assert SnakemakeJobInfo.model_validate(info).resources == resources
 
 
+def test_job_info_custom_options(files_run: SmkRun) -> None:
+    """Task 34: `custom_options` says whether `slurm_extra` was set; its text is never sent."""
+    infos = {d["rule_name"]: d for d in files_run.of("snakemake.job_info")}
+    assert infos["measured"]["custom_options"] is True  # slurm_extra="--export=ALL"
+    assert infos["broken"]["custom_options"] is False
+    text = "".join(f.read_text() for f in files_run.files())
+    assert "--export" not in text
+
+
 def test_job_info_log(files_run: SmkRun) -> None:
     """Task 28: the rule's logs on `job_info`, relative to the launch directory."""
     infos = {d["rule_name"]: d for d in files_run.of("snakemake.job_info")}

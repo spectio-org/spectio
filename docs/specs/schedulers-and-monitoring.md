@@ -229,6 +229,8 @@ Added 2026-11-07 (Thomas, 2026-11-07, "je veux voir efficiency + params slurm pa
 
 **Waste.** "<n> jobs of <rule> used under 25 % of their memory" (§3.5) is read from the aggregate: the measured jobs whose memory efficiency is below 0.25, shown when there are at least 3 such jobs *(assumed — threshold from §3.5's example)*.
 
+*Note 2026-11-07 (as built, [P3 Task 34](../progress/W5/P3-M9.md#task-34-server-process-and-rule-states-outputs-slurm-request-and-efficiency); assumed — pending Thomas, [inbox #116](../reviews/inbox.md#116-assumed-process-states-outputs-slurm-request-and-efficiency-as-built-p3-task-34)):* the formulas above are built in `spectio_server/efficiency.py`, ratios rounded to 4 places. A local run is one whose environment kind is not `slurm`. The aggregate's mean and maximum count every measured job with the best source it has. The waste line is not built (P1 Task 35 shows the aggregate). The `sacct` values are checked on `slurm-mini` only when P1 Task 22 is built.
+
 ## 4. Kubernetes in detail
 
 - **What the runner watches.**

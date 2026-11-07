@@ -19,12 +19,12 @@ from spectio_sdk.events import (
     NextflowProcess,
     NextflowTask,
 )
-from spectio_server.failure import trace_resources
+from spectio_server.failure import nf_request, trace_resources
 from spectio_server.files.taskfiles import native_id, task_work_rel
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import TERMINAL, Projection, failure_json
 from spectio_server.stages import freeze
-from spectio_server.store.schema import attempts, launches
+from spectio_server.store.schema import attempts, launches, runs
 
 HOOK_STATES = {
     "onTaskPending": "pending",
@@ -61,6 +61,9 @@ def _flow_create(p: Projection, data: NextflowFlowCreate) -> None:
     if data.sessionId:
         p.set_launch(engine_session_id=data.sessionId)
     p.pin_engine_version(data.nextflow)
+    # `cleanup` and whether `clusterOptions` is set, never its text (P1 Task 34, SEC-P3T1-11)
+    settings = {"cleanup": data.cleanup, "cluster_options": data.clusterOptionsSet}
+    p.conn.execute(update(runs).where(runs.c.id == p.run_id).values(engine_settings=settings))
 
 
 def _task(p: Projection, hook: str, data: NextflowTask) -> None:
@@ -87,10 +90,13 @@ def _task(p: Projection, hook: str, data: NextflowTask) -> None:
     if resources := trace_resources(data.trace):  # requested and measured (P1 Task 29)
         values["resources"] = resources
     row = p.conn.execute(
-        select(attempts.c.id, attempts.c.state).where(
+        select(attempts.c.id, attempts.c.state, attempts.c.slurm).where(
             attempts.c.task_id == task_id, attempts.c.launch_n == p.launch_n, attempts.c.n == n
         )
     ).one_or_none()
+    request = nf_request(data.trace)
+    if request and (row is None or row.slurm is None):  # the request at its first sight, the
+        values["slurm"] = {"request": request}  # submit (P1 Task 34)
     if row is None:
         attempt_id = new_id("att")
         p.conn.execute(
