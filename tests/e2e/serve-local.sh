@@ -104,7 +104,8 @@ spectio() { uv run --locked --project "$repo" --python "$PYTHON_VERSION" spectio
 export SPECTIO_CONFIG=$home/data/spectio.toml
 
 mkdir -m 700 "$home/data" "$home/db" "$home/runs"
-# Until the wheel carries the bridges (P1 Task 21), build nf-spectio here when Nextflow is found.
+# A checkout's editable install carries no bridges (only a wheel does, P1 Task 21): build nf-spectio
+# here when Nextflow is found.
 nextflow=${SPECTIO_ENGINES_NEXTFLOW_CMD:-$(command -v nextflow || true)}
 if [ -z "${SPECTIO_BRIDGES_DIR:-}" ] && [ -n "$nextflow" ]; then
   echo "== Building nf-spectio with $nextflow"

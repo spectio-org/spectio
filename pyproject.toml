@@ -57,6 +57,8 @@ known-first-party = ["spectio", "spectio_sdk", "spectio_server"]
 
 [tool.mypy]
 strict = true
+# The two build hooks (P1 Task 21) share a module name, and hatchling is a build dependency only.
+exclude = ['/hatch_build\.py$']
 plugins = ["pydantic.mypy"]
 
 [tool.pytest.ini_options]

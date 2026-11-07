@@ -20,5 +20,11 @@ spectio = { workspace = true }
 spectio-sdk = { workspace = true }
 
 [build-system]
-requires = ["uv_build==0.11.32"]  # = UV_VERSION in dev/versions.env
-build-backend = "uv_build"
+# hatchling, for the build hook that adds the built screens (spectio_server/web): P1 Task 21, architecture §7.3.
+requires = ["hatchling==1.32.4"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/spectio_server"]
+
+[tool.hatch.build.hooks.custom]  # hatch_build.py

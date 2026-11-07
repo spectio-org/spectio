@@ -18,6 +18,7 @@ these routes only with the API (inbox #80, #86).
 import os
 import re
 import stat
+from importlib.resources import files
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -26,8 +27,10 @@ from fastapi.responses import Response
 from spectio_server.api.problems import not_found
 from spectio_server.api.workflows import _open
 
-# TODO(P1 Task 21): the wheel ships the screens as package data; read them from there first.
-DIST = Path(__file__).resolve().parents[4] / "web" / "dist"
+# The wheel's screens (hatch_build.py, P1 Task 21), else the checkout's `web/dist`.
+_PACKAGED = Path(str(files("spectio_server") / "web"))
+_CHECKOUT = Path(__file__).resolve().parents[4] / "web" / "dist"
+DIST = _PACKAGED if (_PACKAGED / "index.html").is_file() else _CHECKOUT
 ROUTES = (
     "/",
     "/runs",
