@@ -29,7 +29,7 @@ const SENSITIVE = [
   /^packages\/spectio-server\/src\/spectio_server\/(api|files|migrations|stages)\//,
   /^packages\/spectio-server\/src\/spectio_server\/(app|serve|static|bootstrap|resume|rebuild)\.py$/,
   /^packages\/spectio-server\/src\/spectio_server\/projector\/ingest\.py$/,
-  /^packages\/spectio\/src\/spectio\/(runner\/|loginshell\.py|config\.py|cli\/serve\.py)/,
+  /^packages\/spectio\/src\/spectio\/(runner\/|loginshell\.py|config\.py|open_remote\.py|cli\/(serve|open)\.py)/,
   /^web\/src\/(runs\/(ReportViewer|LogViewer|ResultsBrowser)|api)\./,
   /^engine-bridges\//, /^\.github\//, /^tools\/ci\//, /(^|\/)(pyproject\.toml|uv\.lock|package(-lock)?\.json)$/,
   /auth|token|secret|session|sandbox|plugin|permission/i,

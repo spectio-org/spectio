@@ -1,0 +1,50 @@
+# Batch P3-B02, P3 Task 10: the tmux launcher on the login node.
+# Two steps, both for real, from the repository's .venv:
+#   1. the M2 done proof for tmux (P2 §2 item 3): `pytest -m tmux` starts a head in a real tmux
+#      session (TMUX_TMPDIR of its own), checks that the head leads the pane's process group, adopts
+#      it with a new launcher, cancels it (exit 130) and waits until the session is gone.
+#      Only the PASSED line is kept; the summary line, which carries a run time, is dropped.
+#   2. `spectio serve` in a SLURM environment: the start text now names the tmux session of a head.
+#      sbatch, squeue, sacct, scontrol and sinfo are five fake scripts that print one version line,
+#      enough for `spectio init` to choose the SLURM executor. No job is submitted. Lines that start
+#      with INFO (log lines) are dropped; the user name in the tunnel line is replaced by the demo
+#      user alice (the cast generator runs as root).
+# The host name is a demo one: run the generator in its own UTS namespace (root or user
+# namespaces), as docs/assets/media.yaml does:
+#   unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-tmux.yaml'
+# The link ticket is random, so the command masks it with a visible sed. Port 18083.
+# Needs `uv sync` first (the .venv of the checkout) and tmux on PATH.
+title: "P3 Task 10: tmux launcher (real tmux test) and the SLURM start text"
+cols: 140
+rows: 30
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: tmp
+env:
+  HOME: "{workdir}"
+  PATH: "{repo}/.venv/bin:$PATH"
+  REPO: "{repo}"
+setup:
+  - |
+    chmod 700 .
+    mkdir bin
+    for c in sbatch squeue sacct scontrol sinfo; do printf '#!/bin/sh\necho "slurm 25.05.0 (fake, for this cast)"\n' > bin/$c; done
+    printf '#!/bin/sh\necho "nextflow version 26.10.4 (fake, for this cast)"\n' > bin/nextflow
+    printf '#!/bin/sh\necho "9.27.1"\n' > bin/snakemake
+    chmod +x bin/*
+    echo 'export PATH="$HOME/bin:$PATH"' > .bash_profile
+replace:
+  "{workdir}/": "~/"
+  "{workdir}": "~"
+  "root@": "alice@"
+steps:
+  - comment: "1. a head in a real tmux session: start, adopt, cancel (the marker tmux)"
+  - run: "cd $REPO && pytest -m tmux packages/spectio/tests/test_tmux_real.py -v -p no:cacheprovider --no-header"
+    keep: "PASSED|FAILED|SKIPPED"
+  - pause: 1.5
+  - clear: true
+  - comment: "2. on a SLURM environment, serve runs the heads in tmux sessions on this node"
+  - run: "env -u TMPDIR spectio init --port 18083 2>&1 | grep -v '^warning: nf-spectio'"
+  - run: "(env -u TMPDIR timeout 5 spectio serve 2>&1 || true) | grep -v '^INFO' | sed -E 's/#[A-Za-z0-9_-]{43}/#<ticket>/'"
+  - pause: 3.0
