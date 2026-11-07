@@ -202,6 +202,33 @@ Each check gives ✓ / ⚠ / ✗, and ✗ blocks the launch unless overridden.
 
 **Purge during a gate.** The purge check does not stop at launch. When a gate opens, the runner records the stage's cached outputs and the purge deadline of their work directories, and the gate shows 'work directory purged in N days'. At Continue, the runner checks a sample of those outputs before resuming, because a partial purge makes `-resume` silently recompute upstream stages or removes a gated stage's outputs. Snakemake counts the jobs to run with `--dry-run`; Nextflow has no command that predicts cache hits **[to be validated]**, so its reused-vs-to-run figure comes from inspecting work directories and the UI labels it an estimate. Spectio never touches files to dodge the purge, which breaks many sites' policies **[site-dependent]**.
 
+### 3.6 Efficiency per job and per process or rule
+
+Added 2026-11-07 (Thomas, 2026-11-07, "je veux voir efficiency + params slurm par job et par rule", [decision log](../decisions/log.md#2026-11-07-checkpoints-conditional-and-skipped-jobs-temp-outputs-and-slurm-efficiency-per-job-and-per-rule-thomas); sources: [research note](../research/dag-temp-slurm-efficiency-2026-11-07.md) §6 and §7). This section owns the formulas and when each value is available; the fields are in [`api-and-data-model.md`](api-and-data-model.md) §5 (note 2026-11-07), the words in [ui-spec §4.4](ui-spec.md#44-run-detail) (note 2026-11-07), the `sacct` call in [dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 15. It makes the "Efficiency" bullets of §3.5 precise.
+
+**Per job, by source.** A job is a task's last attempt with one SLURM job ID. Spectio shows the best source it has, in this order: `sacct`, then the engine's own measure.
+
+| Source | CPU efficiency | Memory efficiency | Available |
+|---|---|---|---|
+| `sacct` (both engines) | sum over the job's steps of `TotalCPU` / (`Elapsed` × `NCPUS`) of the allocation row, as `seff` computes it ([`seff`](https://github.com/SchedMD/slurm/blob/master/contribs/seff/seff) lines 119-126, 171-179) | largest `MaxRSS` over the steps / `ReqMem` (per node × `NNodes`, or per CPU × `NCPUS`) | after the job has ended and accounting has recorded it ([`sacct(1)`](https://slurm.schedmd.com/sacct.html); `seff` lines 199-203) |
+| Nextflow trace | `%cpu` / (100 × `cpus`); `%cpu` is "relative to a single CPU" ([`trace` config](https://docs.seqera.io/nextflow/reference/config/trace)) | `peak_rss` / `memory` | at `onTaskComplete` |
+| Snakemake benchmark | `cpu_time` / (`s` × `threads`) | `max_rss` (MiB) / `mem_mb` | when the job has ended and its benchmark file is read (`benchmark.py:28-40`, Snakemake 9.27.1) |
+
+- `TotalCPU` "may not include CPU time of child processes" for steps stopped by a signal, a time-out or `scancel` ([`sacct(1)`](https://slurm.schedmd.com/sacct.html)): a timed-out job's CPU efficiency is marked "may be low (stopped job)".
+- `ReqMem` is "only from the job allocation, not the step" (same page); a Snakemake job with `mem_mb_per_cpu` has its request per CPU.
+- The `batch` and `extern` rows count in the sum, as `seff` does; the SLURM plugin's own report drops them (`efficiency_report.py`, 2.8.0). On a job that runs its tool in the batch step (Nextflow, Snakemake's job step) the values match **[to be validated]** on `slurm-mini`.
+- A value above 100 % is shown as measured, never clamped (a tool using more threads than asked).
+
+**Timing.**
+1. **Submitted or pending:** the request only (from the engine's event); the efficiency state is `running` with no value.
+2. **Running:** the request, elapsed time against the time limit (from the engine's start time). Live values from `sstat` on running steps are later **[to be validated]**.
+3. **Ended:** the engine's measure at once when it has one (Nextflow trace, Snakemake benchmark), state `pending_accounting`, until `sacct` answers through the limiter of §15.3 req. 15 (one call per 60 s, at most 100 IDs); then `available`. A job that `sacct` does not know after the req. 15 retries reads `unavailable`.
+4. **Local run:** the engine's measure only; `sacct` is never called.
+
+**Per process or rule (the aggregate).** Over the last attempts of a process's or rule's tasks: `jobs` (done / total, total a lower bound while a checkpoint is open), `measured` (jobs with a CPU or memory value), the mean and the maximum of the CPU efficiency and of the memory efficiency over measured jobs, the requested CPUs, memory and time (the most common value, with `varies` when jobs differ, which happens with Snakemake resources computed from inputs or Nextflow retries that raise memory), and the largest peak memory and elapsed time used. Each job counts with the source it has; the aggregate does not mix in a job's older source once `sacct` has answered. A job of a cached or up-to-date task has no value and is not counted in `measured`.
+
+**Waste.** "<n> jobs of <rule> used under 25 % of their memory" (§3.5) is read from the aggregate: the measured jobs whose memory efficiency is below 0.25, shown when there are at least 3 such jobs *(assumed — threshold from §3.5's example)*.
+
 ## 4. Kubernetes in detail
 
 - **What the runner watches.**
