@@ -45,6 +45,7 @@ Working notes are dated and kept as written. Specs cite them. When something cha
 - [Adoption and positioning](research/adoption-and-positioning-2026-10-26.md): who the first users are, where to find them, and how not to fight Seqera.
 - Spikes: [synthetic pipelines](research/spike-synthetic-pipelines-2026-10-26.md), [docs media tooling](research/spike-docs-media-tooling-2026-10-26.md), [cloud environment](research/spike-cloud-env-2026-10-26.md).
 - [Landscape](research/landscape-2026-10-26.md): prior art, GA4GH standards and a neutral comparison of Spectio with other tools.
+- [Checkpoints, conditional and skipped jobs, temporary outputs, and SLURM efficiency](research/dag-temp-slurm-efficiency-2026-11-07.md) (2026-11-07): what Snakemake, Nextflow and SLURM give for each; owners: [ui-spec §5.2](specs/ui-spec.md#52-checkpoints-conditional-execution-and-temporary-outputs) and [schedulers §3.6](specs/schedulers-and-monitoring.md#36-efficiency-per-job-and-per-process-or-rule).
 - `research/data/`: the nf-core survey behind the checking scenarios (`analysis.json`, `classes.json`, `nfcore_released.tsv`, `nfcore_repos.tsv`, and `fetch.sh`, which recreates the sparse clones).
 - `research/depictio-shots/`: depictio screenshots used for comparison.
 
