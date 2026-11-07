@@ -2,7 +2,6 @@
 Assumptions 9, 10 and 21; dev-env §15.3 "Server restart")."""
 
 import json
-import logging
 import os
 import re
 import signal
@@ -24,6 +23,7 @@ from typer.testing import CliRunner
 from spectio.cli.main import app
 from spectio.config import Settings
 from spectio.runner.rundir import RunManifest, Workflow, make_run_dirs, write_run_manifest
+from spectio.runner.tmux import TmuxLauncher
 from spectio.runner.types import HeadReport
 from spectio_server import app as app_mod
 from spectio_server.bootstrap import ensure_tenancy
@@ -443,22 +443,18 @@ def test_serve_decides_the_api_once(settings: Settings, monkeypatch: pytest.Monk
         assert config.timeout_graceful_shutdown == 5  # an event stream never holds a stop
 
 
-def test_serve_slurm_start_text_and_no_runner(
-    settings: Settings, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_serve_slurm_start_text_and_tmux_runner(settings: Settings) -> None:
     slurm = settings.model_copy(update={"executor": "slurm"})
     port = settings.port
     text = start_text(slurm, "login1", "alice", None, LINK)
     assert f"ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} alice@login1" in text
     assert f"2. Then open this link (single use, valid 15 minutes):\n   {LINK}\n" in text
-    assert "P1 Task 10" in text
+    assert "tmux session on login1: tmux attach -t spectio-<run ID>" in text
     assert "Tasks 13 to 16" in text  # no API off local mode (inbox #86)
     assert slurm.db_dir is not None
-    with caplog.at_level(logging.WARNING):
-        booted = boot(slurm, slurm.db_dir)
+    booted = boot(slurm, slurm.db_dir)
     try:
-        assert booted.loop is None
-        assert "P1 Task 10" in caplog.text
+        assert isinstance(booted.loop.launcher, TmuxLauncher)  # P1 Task 10
     finally:
         booted.close()
 

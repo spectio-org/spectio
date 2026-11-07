@@ -669,3 +669,12 @@ One entry per tick: time, steps started and finished, verification results, tria
 - PR #137 squash-merged into integration (5e1ddd9); `e2e-local` red for the base reason (#133), commented. All five tasks of P3-B01 merged.
 - P3-B01 batch close started: `p3-batch`, base 8ca8304, steps P3-t12..P3-t16.
 - P3-B01 batch close done (run wf_17425d7a-093): simplify -11/+9 (no re-review, under 20 lines; closes CR-P3T16-01, CR-P3T14-02, CR-P3T12-03), figure p3-b01-signed-in, cast spectio-sign-in, guide "Signing in". doc-reviewer approve 12/14, changes applied. PR #138 opened. Cost recorded: 45 USD, kind `docs`.
+
+- 2026-11-06 23:54 UTC · promotion #139 merged into main (merge commit 7f2021a): batch P3-B01, P1 Tasks 12-16. e2e-local red for the known base cause (#133).
+- 2026-11-07 00:30 UTC · P3-t10 (Task 10, tmux launcher) built: review approve 0/1/8, security approve 0/0/7, 2 rounds; PR #140 opened (no-figure). FU-P3-44, FU-P3-45; inbox #110. Next follow-up FU-P3-46.
+- 2026-11-07 00:37 UTC · P3-t10 merged (#140, squash 075cee9). e2e-local red for the known base cause (#133). Next: P3-t21; its ci.yml product-job change goes in a separate PR that waits for Thomas.
+- 2026-11-07 01:30 UTC · P3-t21 (Task 21, one wheel) built, workflow blocked after one fix round: CR-P3T21-01 blocker = test_wheel.sh needs Task 7 logger (#122). Round-3 fixes 21005f3, docs d59f821. PR #141 opened, waits for #122 (not merged). CI wiring split to PR #142 (stacked on P3-t21, waits for Thomas). FU-P3-46/47; inbox #111. Tasks 22, 23, 25, 26 depend on #122 too; Task 24 started (wf_b06238ec-445), joins B02.
+- 2026-11-07 01:50 UTC · P3-t24 (Task 24, spectio open) built: review approve 1/1/11 (3 rounds); the workflow skipped security (paths not in SENSITIVE), so the orchestrator ran security-reviewer: approve 0/0/5 -> FU-P3-48; inbox #112 rule 6 done. cli/open.py and open_remote.py added to SENSITIVE in p3-task.js. PR #143 (no-figure).
+- 2026-11-07 01:57 UTC · P3-t24 merged (#143, squash 1f6187e). B02 closes with Tasks 10 and 24 (21-23, 25-26 wait for #122); p3-batch P3-B02 started.
+- 2026-11-07 02:30 UTC · P3-B02 batch (Tasks 10, 24): simplify none, figure p3-b02-open-tmux, casts spectio-open and spectio-tmux, guide usage/open-from-your-laptop, doc-reviewer approve 14/14. PR #144. FU-P3-49.
+- 2026-11-07 02:37 UTC · P3-B02 merged (#144, squash 46dfe7b). Promotion PR to main next.
