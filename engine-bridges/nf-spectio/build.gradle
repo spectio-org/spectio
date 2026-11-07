@@ -1,0 +1,29 @@
+// The release package of nf-spectio for the Nextflow plugin registry (P1 Task 26; dev-env §12
+// Publishing): `./gradlew packagePlugin` writes build/distributions/nf-spectio-<version>.zip.
+// Dry run only: the registry release tasks this plugin adds are never run from here, and no key
+// is configured (tests/packaging/test_bridges_release.sh). The wheel's copy of the plugin is
+// built without Gradle by build.sh (P1 Task 21), from the same sources and the same manifest.
+// Pinned: the wrapper's distributionSha256Sum, and the sha256 of every plugin, POM and jar the
+// build resolves in gradle/verification-metadata.xml (regenerate after a version change with
+// `./gradlew --write-verification-metadata sha256 packagePlugin`, then review the diff).
+plugins {
+    // https://plugins.gradle.org/plugin/io.nextflow.nextflow-plugin, the latest on 2026-11-07.
+    id 'io.nextflow.nextflow-plugin' version '1.0.0-beta.16'
+}
+
+version = '0.0.1' // = VERSION in build.sh
+
+sourceSets {
+    main.groovy.srcDirs = ['src']
+}
+
+nextflowPlugin {
+    // Compiled against this release, and Plugin-Requires is `>=` it: the floor of
+    // architecture §13.4, = REQUIRES in build.sh.
+    nextflowVersion = '25.04.0'
+    provider = 'spectio'
+    className = 'spectio.SpectioPlugin'
+    extensionPoints = ['spectio.SpectioFactory']
+    // The plugin spec lists config options and functions; nf-spectio has neither.
+    generateSpec = false
+}
