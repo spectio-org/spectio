@@ -61,9 +61,9 @@ jobs:
       - run: python3 -m unittest discover -s tests/slurm -p 'test_*.py'
 
   product:
-    # The uv workspace under packages/ (architecture §6): lint, types, import contracts and unit tests.
+    # The uv workspace under packages/ (architecture §6): lint, types, import contracts, unit tests and the wheels.
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -109,6 +109,23 @@ jobs:
           fresh spectio ./packages/spectio-sdk ./packages/spectio
           "$tmp/spectio/bin/python" -I -c "$check" spectio spectio_server fastapi sqlalchemy
       - run: uv run --locked pytest
+      # P1 Task 21: one wheel with the UI and both bridges. The build hooks need the screens (Node),
+      # and nf-spectio's build.sh needs Java and Nextflow; the Snakemake logger comes from P1 Task 7.
+      - name: Read the pins for the wheel test (dev/versions.env, §1)
+        id: pins
+        run: |
+          . dev/versions.env
+          { echo "node=$NODE_VERSION"; echo "nextflow=$NEXTFLOW_VERSION"; } >> "$GITHUB_OUTPUT"
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with: {node-version: "${{ steps.pins.outputs.node }}"}
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with: {distribution: temurin, java-version: "21"} # = JAVA_MAJOR in dev/versions.env
+      - uses: nf-core/setup-nextflow@893c28b667aedeba26e37f296d260ccc5bc4d914 # v3.0.1
+        with:
+          version: ${{ steps.pins.outputs.nextflow }}
+      - name: Build the wheels and check them (tests/packaging/test_wheel.sh)
+        # uv build --all-packages, uv tool install of spectio alone, the 80 MB limit (architecture §6).
+        run: bash tests/packaging/test_wheel.sh
 
   web:
     # The screens under web/ (P1 Task 19): Vitest, then the Vite build, on the Node of dev/versions.env.
