@@ -211,3 +211,16 @@ def test_checkout_dist_needs_an_owned_unwritable_walk(tmp_path: Path) -> None:
     assert static.find_dist(module) == tmp_path / "web" / "dist"
     (tmp_path / "web").chmod(0o777)
     assert static.find_dist(module) == module.parent / "web"
+
+
+def test_refused_checkout_says_why(tmp_path: Path, caplog: pytest.LogCaptureFixture) -> None:
+    # The screens are built but the walk is refused: say so, not "run npm build" (CR-P3T21-02).
+    module = _layout(tmp_path, "packages/spectio-server/src")
+    (tmp_path / "pyproject.toml").touch()
+    web = tmp_path / "web"
+    web.chmod(0o777)
+    with caplog.at_level("WARNING", logger="spectio_server.static"):
+        assert static.find_dist(module) == module.parent / "web"
+    assert [r.getMessage() for r in caplog.records] == [
+        f"{web} is group- or world-writable or not yours: chmod g-w,o-w {web}"
+    ]

@@ -15,6 +15,7 @@ the iframe's `sandbox` attribute and that CSP carry the protection. `app.create_
 these routes only with the API (inbox #80, #86).
 """
 
+import logging
 import os
 import re
 import stat
@@ -25,6 +26,8 @@ from fastapi.responses import Response
 
 from spectio_server.api.problems import not_found
 from spectio_server.api.workflows import _open
+
+log = logging.getLogger(__name__)
 
 
 def _owned(path: Path) -> bool:
@@ -42,6 +45,7 @@ def find_dist(module: Path) -> Path:
     (`packages/<name>/src/spectio_server/` under a `pyproject.toml`) and its root, `web` and
     `web/dist` are this user's and writable by no one else: a wheel without screens, installed
     anywhere, gets the "not built" page, never a `web/dist` another user planted (SEC-P3T21-02).
+    A refused checkout whose screens are built logs which directory and why (CR-P3T21-02).
     """
     packaged = module.parent / "web"
     if (packaged / "index.html").is_file() or len(module.parents) < 5:
@@ -50,8 +54,15 @@ def find_dist(module: Path) -> Path:
     checkout = root / "web" / "dist"
     workspace = module.parents[3].name == "packages" and module.parents[1].name == "src"
     walk = (root, root / "web", checkout)
-    if workspace and (root / "pyproject.toml").is_file() and all(map(_owned, walk)):
+    if not (workspace and (root / "pyproject.toml").is_file()):
+        return packaged
+    refused = next((d for d in walk if not _owned(d)), None)
+    if refused is None:
         return checkout
+    if (checkout / "index.html").is_file():
+        log.warning(
+            "%s is group- or world-writable or not yours: chmod g-w,o-w %s", refused, refused
+        )
     return packaged
 
 
