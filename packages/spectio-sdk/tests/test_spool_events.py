@@ -210,6 +210,29 @@ def test_slurm_extra_never_kept() -> None:
     assert parse_data(ev).model_dump()["resources"] == {"mem_mb": 512}
 
 
+def test_allow_list_new_keys() -> None:
+    """P1 Task 33 (api §14.1, note 2026-11-07): the new types and keys are kept, any other key
+    is dropped, and no `clusterOptions` text survives."""
+    for type_ in ("snakemake.temp_removed", "snakemake.protected"):
+        ev = make_event(type_, path="a/b.txt", msg="Removing temporary output a/b.txt.")
+        assert parse_data(ev).model_dump() == {"path": "a/b.txt"}
+        with pytest.raises(ValidationError):
+            parse_data(make_event(type_))  # the path is required
+    assert parse_data(make_event("snakemake.dag_updated", msg="x")).model_dump() == {}
+    create = make_event(
+        "nextflow.onFlowCreate", cleanup=True, clusterOptionsSet=True, clusterOptions="--qos=x"
+    )
+    dumped = parse_data(create).model_dump(exclude_none=True)
+    assert (dumped["cleanup"], dumped["clusterOptionsSet"]) == (True, True)
+    assert "clusterOptions" not in dumped
+    request = {"cpus": "2", "memory": "536870912", "time": "120000", "disk": None}
+    request |= {"queue": "short", "accelerator": "1", "accelerator_type": "a100", "attempt": "1"}
+    trace = {**request, "native_id": "8812477", "workdir": "/w", "account": "lab42"}
+    ev = make_event("nextflow.onTaskSubmit", taskId="1", trace=trace)
+    kept = parse_data(ev).model_dump(by_alias=True, exclude_none=True)["trace"]
+    assert kept == {k: v for k, v in trace.items() if v is not None and k != "account"}
+
+
 def raw_command_values(value: Any, key: str = "") -> Iterator[str]:
     """Raw command text in a capture: denylisted values and quoted `Command '...'` text."""
     if isinstance(value, dict):

@@ -82,6 +82,21 @@ SLURM_SUBMITTED = re.compile(
     r"(?P<external>[^\s()]{1,128}) \(log: (?P<log>[^\n]{1,4096})\)\."
 )
 
+# Snakemake 9.27.1's own untyped info texts (read at the tag v9.27.1, 2026-11-07; research note
+# dag-temp-slurm-efficiency-2026-11-07 §2-§3), each read as a whole message. A text another
+# release words otherwise matches none and stays a `snakemake.log` (api §14.1). The dry run's
+# "Would remove temporary output <path>" (`dag.py:1048-1051`) is not read.
+SNAKEMAKE_TEXTS_VERSION = "9.27.1"
+SNAKEMAKE_TEXTS = {
+    # `dag.py:1054-1056`, in `handle_temp`
+    "snakemake.temp_removed": re.compile(r"Removing temporary output (?P<path>[^\n]{1,4096})\."),
+    # `dag.py:932-936`, in `handle_protected`
+    "snakemake.protected": re.compile(r"Write-protecting output file (?P<path>[^\n]{1,4096})\."),
+    # `dag.py:2245`, in `update_checkpoint_dependencies`
+    "snakemake.dag_updated": re.compile(r"Updating checkpoint dependencies\."),
+}
+MAX_TEMP_PATHS = 65536  # paths remembered to send each removal once; past it, every one is sent
+
 
 # --- Values --------------------------------------------------------------------------------
 
@@ -284,11 +299,22 @@ def slurm_submitted(message: str) -> dict[str, Any] | None:
     }
 
 
+def read_text(message: str) -> tuple[str, dict[str, Any]] | None:
+    """The event an untyped info text reports: a SLURM submission or one of SNAKEMAKE_TEXTS."""
+    submitted = slurm_submitted(message)
+    if submitted is not None:
+        return "snakemake.slurm_submitted", submitted
+    for type_, pattern in SNAKEMAKE_TEXTS.items():
+        found = pattern.fullmatch(message)
+        if found is not None:
+            return type_, found.groupdict()
+    return None
+
+
 def to_events(record: logging.LogRecord) -> list[tuple[str, dict[str, Any]]]:
     """The spool events of one record: `snakemake.<event>`, or `snakemake.log` (its level
     only) for a record with no event, one §14.1 does not list or one missing a required key;
-    after it, the SLURM
-    submission it reports, if any."""
+    after it, for an untyped record, the event its text reports, if any (`read_text`)."""
     event = getattr(record, "event", None)
     build = _EVENTS.get(str(event)) if event is not None else None
     if build is not None:
@@ -297,9 +323,9 @@ def to_events(record: logging.LogRecord) -> list[tuple[str, dict[str, Any]]]:
             return [(f"snakemake.{event}", data)]
     found: list[tuple[str, dict[str, Any]]] = [("snakemake.log", {"level": record.levelname})]
     message = _message(record) if event is None else None
-    submitted = slurm_submitted(message) if message else None
-    if submitted is not None:
-        found.append(("snakemake.slurm_submitted", submitted))
+    read = read_text(message) if message else None
+    if read is not None:
+        found.append(read)
     return found
 
 
@@ -575,6 +601,7 @@ class LogHandler(LogHandlerBase):
         if not hasattr(self, "filters"):  # interface 1.x does not initialise the Handler
             logging.Handler.__init__(self)
         self.spool = spool_from_env(os.environ)
+        self.temp_removed: set[str] = set()  # Snakemake logs some removals twice (T2, row 19)
         if self.spool is not None and self.spool.terminal and self.spool.start():
             write_pointer(self.spool, Path(os.path.expanduser("~")))
 
@@ -584,6 +611,11 @@ class LogHandler(LogHandlerBase):
             return
         try:
             for type_, data in to_events(record):
+                if type_ == "snakemake.temp_removed":
+                    if data["path"] in self.temp_removed:
+                        continue
+                    if len(self.temp_removed) < MAX_TEMP_PATHS:
+                        self.temp_removed.add(data["path"])
                 spool.write(type_, data, record.created)
         except Exception as e:  # never into Snakemake: a lost event, not a lost run
             spool.error(f"record not written: {type(e).__name__}: {e}")

@@ -450,6 +450,115 @@ def test_slurm_submitted_parsed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     assert "has been submitted" not in json.dumps(lines)
 
 
+def texts_to_spool(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, *texts: str) -> list[Any]:
+    """Each text as an untyped info record through a driven handler; the spool's lines."""
+    (tmp_path / ".spectio").mkdir(mode=0o700)
+    spool = tmp_path / ".spectio" / "events"
+    h = handler(monkeypatch, spool)
+    for text in texts:
+        h.handle(record(None, text))
+    h.close()
+    lines = spool_lines(spool)
+    for line in lines:
+        parse_data(SpoolEvent.model_validate(line))
+    assert not any(text in json.dumps(lines) for text in texts)  # the texts are never sent
+    return lines
+
+
+def typed(lines: list[Any]) -> list[tuple[str, Any]]:
+    return [(e["type"], e["data"]) for e in lines if e["type"] != "snakemake.log"]
+
+
+def test_smk_temp_removed(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Task 33: Snakemake 9.27.1's "Removing temporary output <path>." (`dag.py:1054-1056`)
+    becomes `snakemake.temp_removed` after its own `snakemake.log`, once per path; the dry
+    run's "Would remove temporary output <path>" (`dag.py:1048-1051`) stays a log."""
+    lines = texts_to_spool(
+        tmp_path,
+        monkeypatch,
+        "Removing temporary output a/b.txt.",
+        "Removing temporary output a/b.txt.",  # Snakemake logs some removals twice (T2, row 19)
+        "Would remove temporary output a/c.txt",
+        "Removing temporary output out dir/with space.txt.",
+    )
+    assert [e["type"] for e in lines] == ["snakemake.log", "snakemake.temp_removed"] + [
+        "snakemake.log"
+    ] * 2 + ["snakemake.log", "snakemake.temp_removed"]
+    assert typed(lines) == [
+        ("snakemake.temp_removed", {"path": "a/b.txt"}),
+        ("snakemake.temp_removed", {"path": "out dir/with space.txt"}),
+    ]
+
+
+def test_smk_protected(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Task 33: "Write-protecting output file <path>." (`dag.py:932-936`)."""
+    lines = texts_to_spool(tmp_path, monkeypatch, "Write-protecting output file r.txt.")
+    assert typed(lines) == [("snakemake.protected", {"path": "r.txt"})]
+
+
+def test_smk_dag_updated(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """Task 33: "Updating checkpoint dependencies." (`dag.py:2245`), each time it is logged."""
+    text = "Updating checkpoint dependencies."
+    lines = texts_to_spool(tmp_path, monkeypatch, text, text)
+    assert typed(lines) == [("snakemake.dag_updated", {})] * 2
+
+
+@pytest.mark.parametrize(
+    "text",
+    [
+        "Removing temporary output a/b.txt",  # no period
+        "Removing temp output a/b.txt.",
+        "Removing temporary output .",
+        "  Removing temporary output a/b.txt.",
+        "Removing temporary output a/b.txt.\nmore",
+        "Write-protecting output files r.txt.",
+        "Write-protecting output file r.txt. done",
+        "Updating checkpoint dependencies",
+        "Updating checkpoint dependencies. Round 1",
+        "DAG of jobs will be updated after completion.",
+    ],
+)
+def test_smk_text_unknown(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, text: str) -> None:
+    """Task 33: a reworded text is a `snakemake.log` with its level only."""
+    lines = texts_to_spool(tmp_path, monkeypatch, text)
+    assert [(e["type"], e["data"]) for e in lines] == [("snakemake.log", {"level": "INFO"})]
+
+
+def test_smk_texts_only_untyped(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A typed record is never read as a text, whatever its message."""
+    (tmp_path / ".spectio").mkdir(mode=0o700)
+    spool = tmp_path / ".spectio" / "events"
+    h = handler(monkeypatch, spool)
+    h.handle(record(LogEvent.GROUP_INFO, "Updating checkpoint dependencies."))
+    h.close()
+    assert [e["type"] for e in spool_lines(spool)] == ["snakemake.log"]
+
+
+def test_smk_dag_run(dag_run: SmkRun) -> None:
+    """Task 33 Step 4: a real run of `tests/workflows/dag` (one checkpoint job with jobs behind
+    it, two temp() outputs, one protected() output) gives one `dag_updated`, each temporary
+    output removed once and the protected one, all also in a `job_info`'s outputs."""
+    assert dag_run.proc.returncode == 0, dag_run.proc.stderr[-2000:]
+    check_spool(dag_run)
+    assert dag_run.of("snakemake.dag_updated") == [{}]
+    removed = [d["path"] for d in dag_run.of("snakemake.temp_removed")]
+    assert sorted(removed) == ["tmp/a.done", "tmp/b.done", "tmp/seed.txt"]
+    assert dag_run.of("snakemake.protected") == [{"path": "out/summary.txt"}]
+    outputs = {o for d in dag_run.of("snakemake.job_info") for o in d["output"]}
+    assert {*removed, "out/summary.txt"} <= outputs
+
+
+def test_smk_synthetic_temp_once(smk_run: SmkRun) -> None:
+    """Task 33 Step 4: the synthetic pipeline, where Snakemake logs each removal of a
+    `make_reads` output twice: one `temp_removed` per path; one `dag_updated` per `split`
+    checkpoint job."""
+    removed = [d["path"] for d in smk_run.of("snakemake.temp_removed")]
+    assert removed and len(removed) == len(set(removed))
+    assert all(p.startswith("results/work/reads/") for p in removed)
+    splits = [d for d in smk_run.of("snakemake.job_info") if d["rule_name"] == "split"]
+    assert len(smk_run.of("snakemake.dag_updated")) == len(splits)
+
+
 # --- Bounds ----------------------------------------------------------------------------------
 
 
