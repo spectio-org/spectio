@@ -1,0 +1,33 @@
+# spectio-0.0.1.tar.gz: every entry, one glob per line (* for hashed assets and class files). tests/packaging/test_wheel.sh
+# hatchling adds pyproject.toml, PKG-INFO and the repository's .gitignore; only-include adds src/ and hatch_build.py.
+spectio-0.0.1/.gitignore
+spectio-0.0.1/PKG-INFO
+spectio-0.0.1/hatch_build.py
+spectio-0.0.1/pyproject.toml
+spectio-0.0.1/src/spectio/__init__.py
+spectio-0.0.1/src/spectio/_bridges/nf-spectio-0.0.1/classes/META-INF/MANIFEST.MF
+spectio-0.0.1/src/spectio/_bridges/nf-spectio-0.0.1/classes/META-INF/extensions.idx
+spectio-0.0.1/src/spectio/_bridges/nf-spectio-0.0.1/classes/spectio/*.class
+spectio-0.0.1/src/spectio/_bridges/snakemake_logger_plugin_spectio/__init__.py
+spectio-0.0.1/src/spectio/cli/__init__.py
+spectio-0.0.1/src/spectio/cli/doctor.py
+spectio-0.0.1/src/spectio/cli/init.py
+spectio-0.0.1/src/spectio/cli/login.py
+spectio-0.0.1/src/spectio/cli/main.py
+spectio-0.0.1/src/spectio/cli/serve.py
+spectio-0.0.1/src/spectio/config.py
+spectio-0.0.1/src/spectio/fsmodes.py
+spectio-0.0.1/src/spectio/loginshell.py
+spectio-0.0.1/src/spectio/ports.py
+spectio-0.0.1/src/spectio/py.typed
+spectio-0.0.1/src/spectio/runner/__init__.py
+spectio-0.0.1/src/spectio/runner/engines.py
+spectio-0.0.1/src/spectio/runner/headscript.py
+spectio-0.0.1/src/spectio/runner/local.py
+spectio-0.0.1/src/spectio/runner/loop.py
+spectio-0.0.1/src/spectio/runner/resume.py
+spectio-0.0.1/src/spectio/runner/rundir.py
+spectio-0.0.1/src/spectio/runner/sacct.py
+spectio-0.0.1/src/spectio/runner/spool.py
+spectio-0.0.1/src/spectio/runner/tmux.py
+spectio-0.0.1/src/spectio/runner/types.py

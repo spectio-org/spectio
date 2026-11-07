@@ -5,7 +5,8 @@
 #
 # Builds the screens (npm ci --ignore-scripts, vite build), then `uv build --all-packages`, which
 # builds each sdist and each wheel from its sdist, so a pass also proves the sdists carry the
-# prebuilt UI and bridges. Installs `spectio` alone with `uv tool install` into a temporary
+# prebuilt UI and bridges, and checks that each sdist and wheel lists exactly its file in
+# tests/packaging/contents/. Installs `spectio` alone with `uv tool install` into a temporary
 # UV_TOOL_DIR and checks its version, its bridges through importlib.resources and its size;
 # installs the three wheels into a venv and checks that the server finds the packaged screens.
 # Needs Node, Java and Nextflow ($NEXTFLOW, for engine-bridges/nf-spectio/build.sh) and the
@@ -20,8 +21,23 @@ dist=$tmp/dist
 MAX_MB=80 # architecture §6: the `spectio` environment, without [server]
 
 fail() { echo "FAIL $*" >&2; echo "RESULT wheel fail"; exit 1; }
-lists() { unzip -Z1 "$1" | grep -x "$2" >/dev/null || fail "$(basename "$1") does not list $2"; }
-tar_lists() { tar -tzf "$1" | grep -x "$2" >/dev/null || fail "$(basename "$1") does not list $2"; }
+# The entries on stdin against the committed list tests/packaging/contents/$2, one glob per line:
+# every entry matches a glob and every glob an entry (as pypi-publish.yml does with wheel-contents.txt).
+contents() {
+  local list=$repo/tests/packaging/contents/$2 entry pat found
+  local -a pats
+  local -A hit=()
+  mapfile -t pats < <(grep -v '^#' "$list")
+  while IFS= read -r entry; do
+    found=
+    for pat in "${pats[@]}"; do
+      # shellcheck disable=SC2053  # $pat is a glob
+      if [[ $entry == $pat ]]; then hit[$pat]=1; found=1; break; fi
+    done
+    [ -n "$found" ] || fail "$1 carries $entry, which $2 does not list"
+  done
+  for pat in "${pats[@]}"; do [ -n "${hit[$pat]:-}" ] || fail "$1 has nothing for $pat ($2)"; done
+}
 
 echo "== Building the screens (web/dist)"
 npm --prefix "$repo/web" ci --no-audit --no-fund --ignore-scripts >/dev/null
@@ -36,13 +52,11 @@ server=$dist/spectio_server-0.0.1-py3-none-any.whl
 sdk=$dist/spectio_sdk-0.0.1-py3-none-any.whl
 for f in "$runner" "$server" "$sdk"; do [ -f "$f" ] || fail "no $(basename "$f")"; done
 
-lists "$runner" spectio/_bridges/nf-spectio-0.0.1/classes/META-INF/MANIFEST.MF
-lists "$runner" spectio/_bridges/nf-spectio-0.0.1/classes/META-INF/extensions.idx
-lists "$runner" spectio/_bridges/snakemake_logger_plugin_spectio/__init__.py
-lists "$server" spectio_server/web/index.html
-tar_lists "$dist/spectio-0.0.1.tar.gz" spectio-0.0.1/src/spectio/_bridges/nf-spectio-0.0.1/classes/META-INF/MANIFEST.MF
-tar_lists "$dist/spectio_server-0.0.1.tar.gz" spectio_server-0.0.1/src/spectio_server/web/index.html
-if unzip -Z1 "$runner" | grep '__pycache__\|\.pyc$' >/dev/null; then fail "the wheel carries bytecode"; fi
+# Nothing more, nothing less: no untracked local file in an sdist, no wheel without its bridges or screens.
+for name in spectio spectio_server spectio_sdk; do
+  contents "$name-0.0.1.tar.gz" "$name.sdist.txt" < <(tar -tzf "$dist/$name-0.0.1.tar.gz")
+  contents "$name-0.0.1-py3-none-any.whl" "$name.wheel.txt" < <(unzip -Z1 "$dist/$name-0.0.1-py3-none-any.whl")
+done
 
 echo "== uv tool install spectio (without [server])"
 export UV_TOOL_DIR=$tmp/tools UV_TOOL_BIN_DIR=$tmp/bin
