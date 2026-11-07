@@ -1206,3 +1206,11 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
     - LiteTaskFiles, MLiteTaskFilesSheet, LiteTaskFilesStates: the Outputs tab with its states, the SLURM facts block (request, allocated, "Custom sbatch options set") and Efficiency, the `cleanup = true` line.
     - New LiteRunEfficiency and MLiteRunEfficiency: the By process table and phone cards, with the waste line.
 - **Later or [to be validated].** Beyond 0.0.1: `sstat` live values, `squeue` effective partition for pending task jobs, efficiency plots, the temporary flag before deletion, a count of when-filtered Nextflow tasks (not possible from events), processes behind a Groovy `if`. **[to be validated]** on `slurm-mini`: whether step rows match the batch step for Nextflow and Snakemake jobs, and whether step rows carry a WorkDir; the `sacct` load of queuing every ended job at EMBL (inbox #70).
+
+
+## 2026-11-07 — Known vulnerabilities on the nf-spectio build classpath are accepted, with an expiry (Thomas)
+
+- **Context.** P1 Task 26 (PR #148) adds `engine-bridges/nf-spectio/gradle/verification-metadata.xml`. `osv-scanner` reads it as a lockfile and found 31 known vulnerabilities (15 high) in 8 Maven packages: jackson-core and jackson-databind 2.18.2, pf4j 3.4.1 and 3.12.0, guava 33.0.0-jre, jsoup 1.15.4, jgit 7.1.0, logback-core 1.5.16 and commons-lang 2.6. They come from the compile classpath of `nextflow-25.04.0`, the floor of [architecture §13.4](../specs/architecture-plugins-and-packaging.md), and from the `io.nextflow.nextflow-plugin`.
+- **Decided (Thomas, 2026-11-07).** They are accepted in `engine-bridges/nf-spectio/gradle/osv-scanner.toml`, with one `IgnoredVulns` entry per vulnerability id, a reason and `ignoreUntil = 2027-05-07`. A new vulnerability still fails the audit, and the file applies only to the lockfile in its directory.
+- **Why.** None of these libraries ships: `tests/packaging/test_bridges_release.sh` fails if the plugin zip contains any `lib/` entry, and at run time the plugin uses the jars of the user's own Nextflow. They run only on the build machine, on our own sources. pf4j 3.4.1 and commons-lang 2.6 have no fixed version; only a higher Nextflow floor would remove them.
+- **Review.** When the entries expire, and whenever `nextflowVersion` or the Gradle plugin changes. Remove an entry if its library starts to ship.
