@@ -18,7 +18,6 @@ these routes only with the API (inbox #80, #86).
 import os
 import re
 import stat
-from importlib.resources import files
 from pathlib import Path
 
 from fastapi import FastAPI
@@ -27,10 +26,36 @@ from fastapi.responses import Response
 from spectio_server.api.problems import not_found
 from spectio_server.api.workflows import _open
 
-# The wheel's screens (hatch_build.py, P1 Task 21), else the checkout's `web/dist`.
-_PACKAGED = Path(str(files("spectio_server") / "web"))
-_CHECKOUT = Path(__file__).resolve().parents[4] / "web" / "dist"
-DIST = _PACKAGED if (_PACKAGED / "index.html").is_file() else _CHECKOUT
+
+def _owned(path: Path) -> bool:
+    """A directory, not a symlink, owned by this user and writable by no one else."""
+    try:
+        st = path.lstat()
+    except OSError:
+        return False
+    return stat.S_ISDIR(st.st_mode) and st.st_uid == os.geteuid() and not st.st_mode & 0o022
+
+
+def find_dist(module: Path) -> Path:
+    """The wheel's screens (hatch_build.py, P1 Task 21), else `web/dist` of the checkout that
+    holds `module` (an editable install). The checkout is used only when it is the workspace
+    (`packages/<name>/src/spectio_server/` under a `pyproject.toml`) and its root, `web` and
+    `web/dist` are this user's and writable by no one else: a wheel without screens, installed
+    anywhere, gets the "not built" page, never a `web/dist` another user planted (SEC-P3T21-02).
+    """
+    packaged = module.parent / "web"
+    if (packaged / "index.html").is_file() or len(module.parents) < 5:
+        return packaged
+    root = module.parents[4]
+    checkout = root / "web" / "dist"
+    workspace = module.parents[3].name == "packages" and module.parents[1].name == "src"
+    walk = (root, root / "web", checkout)
+    if workspace and (root / "pyproject.toml").is_file() and all(map(_owned, walk)):
+        return checkout
+    return packaged
+
+
+DIST = find_dist(Path(__file__).resolve())
 ROUTES = (
     "/",
     "/runs",
