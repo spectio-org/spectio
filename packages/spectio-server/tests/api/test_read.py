@@ -239,7 +239,34 @@ def test_queued_run_head_null(
         "node": socket.gethostname(),
         "alive": True,
         "exit_code": None,
+        "checked": True,
     }
+
+
+def test_terminal_run_head(authed_client: TestClient, writer: Writer, settings: Settings) -> None:
+    """A run started from a terminal (P1 Task 25): its head is its pointer's, with no session;
+    `checked` only on the server's boot (architecture §13.8: "head on <node>, not checked")."""
+    launch_id = add_run(writer, settings, rid(2), "t", "running", origin="cli-observed")
+    boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+
+    def head_of(boot_id: str) -> Any:
+        writer.submit(
+            lambda c: c.execute(
+                update(launches)
+                .where(launches.c.id == launch_id)
+                .values(head_host="login7", host_boot_id=boot_id, pid=42, pid_start_time="9")
+            )
+        ).result()
+        return authed_client.get(f"{RUNS}/{rid(2)}").json()["head"]
+
+    assert head_of(boot) == {
+        "session": None,
+        "node": "login7",
+        "alive": True,
+        "exit_code": None,
+        "checked": True,
+    }
+    assert head_of("00000000-0000-4000-8000-000000000000")["checked"] is False
 
 
 def test_run_unknown_404(authed_client: TestClient) -> None:

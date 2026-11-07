@@ -60,7 +60,8 @@ export function copyItems(run: RunDetail, server: ServerVersion | null): CopyIte
 
 function headWord(run: RunDetail): string {
   if (!run.head) return "Not started yet";
-  if (run.origin === "cli-observed") return "Not checked (started from a terminal)";
+  // a run started from a terminal on another host or boot: its head cannot be seen from here
+  if (!run.head.checked) return `Not checked (on ${run.head.node}, started from a terminal)`;
   // the runner reports a head's end after its 60 s end grace (the spool may still hold events):
   // until then a run that has ended has a head that is ending, not alive (P3-parB)
   if (run.head.alive) return isTerminal(run.state) ? "Ending" : "Alive";

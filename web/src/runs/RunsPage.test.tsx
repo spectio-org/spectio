@@ -11,7 +11,7 @@ const observed = run({
   id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V2X",
   name: "pilot-hand",
   origin: "cli-observed",
-  head: { session: null, node: "login1", alive: true, exit_code: null },
+  head: { session: null, node: "login1", alive: true, exit_code: null, checked: true },
 });
 const failed = run({
   id: "run_01JBC6Q4ZK7M8N2P3R5S7T9V3Y",

@@ -14,6 +14,8 @@ import logging
 import os
 import stat
 from collections import Counter
+from collections.abc import Callable
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -27,6 +29,7 @@ from spectio_sdk.events import (
     MAX_LINE_BYTES,
     MAX_SPOOL_FILES,
     SPOOL_FILE_NAME,
+    TERMINAL_SPOOL_FILE_NAME,
     SpoolEvent,
     UnknownEventType,
     parse_data,
@@ -57,6 +60,8 @@ def read_spool(
     cursor: dict[str, int],
     max_lines: int = 5000,
     max_bytes: int = MAX_READ_BYTES,
+    *,
+    observed: bool = False,
 ) -> SpoolBatch:
     """Read at most `max_lines` lines and `max_bytes` bytes past `cursor`, in file name order.
 
@@ -68,17 +73,23 @@ def read_spool(
     counted (`unreadable`, or `read_error` and retried by the next read); a file that is gone is
     skipped; neither stops the other files. Raises ValueError when `max_lines` is under 1 or
     `max_bytes` cannot hold one line.
+
+    `observed`: a run started from a terminal (architecture §13.8), whose spool files are named
+    `<run ID>-<producer>-<nnnn>.jsonl` in its launch directory, shared with other terminal runs:
+    only the files named for `run_id` are read, another run's are passed over, and a driven
+    run's name is outside the grammar (req. 12, "Server, reads").
     """
     if max_lines < 1 or max_bytes <= MAX_LINE_BYTES:
         raise ValueError("max_lines must be at least 1 and max_bytes more than MAX_LINE_BYTES")
     events: list[SpoolEvent] = []
     drops: Counter[str] = Counter()
-    new = _checked(cursor, launch_n, drops)
+    own = partial(_own, run_id=run_id, launch_n=launch_n, observed=observed)
+    new = _checked(cursor, own, drops)
     dir_fd = _open_events_dir(launch_dir)
     if dir_fd is None:
         return SpoolBatch(events, new, drops)
     try:
-        for name in _admit(dir_fd, launch_n, new, drops):
+        for name in _admit(dir_fd, own, new, drops):
             if max_lines <= 0 or max_bytes <= 0:
                 break
             offset = new[name]
@@ -119,7 +130,13 @@ def read_spool(
 
 
 def try_read_spool(
-    launch_dir: Path, run_id: str, launch_n: int, cursor: dict[str, int], max_lines: int = 5000
+    launch_dir: Path,
+    run_id: str,
+    launch_n: int,
+    cursor: dict[str, int],
+    max_lines: int = 5000,
+    *,
+    observed: bool = False,
 ) -> SpoolBatch:
     """`read_spool` for the runner loop and the boot rebuild, which must not stop on one run.
 
@@ -129,13 +146,25 @@ def try_read_spool(
     (CR-P3T04-05), so this logs at debug level only.
     """
     try:
-        return read_spool(launch_dir, run_id, launch_n, cursor, max_lines)
+        return read_spool(launch_dir, run_id, launch_n, cursor, max_lines, observed=observed)
     except OSError as exc:  # PermissionError included
         log.debug("spool of %s launch %d not read: %r", run_id, launch_n, exc)
         return SpoolBatch([], dict(cursor), Counter({SPOOL_REFUSED: 1}))
 
 
-def _checked(cursor: dict[str, int], launch_n: int, drops: Counter[str]) -> dict[str, int]:
+def _own(name: str, *, run_id: str, launch_n: int, observed: bool) -> bool | None:
+    """True for a spool file of this launch, False for another launch's (or another terminal
+    run's), None for a name outside the grammar."""
+    if observed:
+        found = TERMINAL_SPOOL_FILE_NAME.fullmatch(name)
+        return None if found is None else found[1] == run_id
+    match = SPOOL_FILE_NAME.fullmatch(name)
+    return None if match is None else int(match[2]) == launch_n
+
+
+def _checked(
+    cursor: dict[str, int], own: Callable[[str], bool | None], drops: Counter[str]
+) -> dict[str, int]:
     """A copy of the cursor in which every key and value is one the reader writes.
 
     A spool file name of this launch maps to REFUSED or an offset up to MAX_FILE_BYTES, a name
@@ -144,8 +173,7 @@ def _checked(cursor: dict[str, int], launch_n: int, drops: Counter[str]) -> dict
     """
     checked = {}
     for key, value in cursor.items():
-        match = SPOOL_FILE_NAME.fullmatch(key)
-        if not key.startswith("#") and (match is None or int(match[2]) != launch_n):
+        if not key.startswith("#") and not own(key):
             drops["bad_cursor"] += 1
             continue
         if type(value) is not int:  # a bool is an int, and is refused here
@@ -184,7 +212,9 @@ def _private_dir(path: Path | str, dir_fd: int | None = None) -> int:
     return fd
 
 
-def _admit(dir_fd: int, launch_n: int, new: dict[str, int], drops: Counter[str]) -> list[str]:
+def _admit(
+    dir_fd: int, own: Callable[[str], bool | None], new: dict[str, int], drops: Counter[str]
+) -> list[str]:
     """This launch's spool files to read, in name order; count the other names once.
 
     Only this launch's names get a slot, up to MAX_SPOOL_FILES. A name outside the grammar is
@@ -201,8 +231,8 @@ def _admit(dir_fd: int, launch_n: int, new: dict[str, int], drops: Counter[str])
             if i == MAX_DIR_ENTRIES:
                 excess += 1
                 break
-            match = SPOOL_FILE_NAME.fullmatch(entry.name)
-            if match and int(match[2]) != launch_n:
+            match = own(entry.name)
+            if match is False:
                 continue  # another launch's file
             key = (
                 entry.name

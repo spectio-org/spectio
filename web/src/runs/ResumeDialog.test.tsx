@@ -22,7 +22,7 @@ const ID = "run_01JBC6Q4ZK7M8N2P3R5S7T9V1W";
 const CHILD = "run_01JBC6Q4ZK7M8N2P3R5S7T9C2D";
 const URL_ = `/api/v1/runs/${ID}`;
 const ENDED = { state: "failed", ended_at: "2026-10-31T08:00:00+00:00" };
-const HEAD_ENDED = { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1 };
+const HEAD_ENDED = { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1, checked: true };
 
 function failedRun(over: Record<string, unknown> = {}) {
   return {

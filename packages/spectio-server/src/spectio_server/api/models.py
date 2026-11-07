@@ -44,12 +44,14 @@ class WorkflowRef(BaseModel):
 
 
 class Head(BaseModel):
-    """The last launch's head; `session` is null for a run started from a terminal."""
+    """The last launch's head; `session` is null for a run started from a terminal, whose head
+    is `checked` only when its pointer's boot ID is the server's (architecture §13.8)."""
 
     session: str | None
     node: str
     alive: bool
     exit_code: int | None
+    checked: bool
 
 
 class TaskSummary(BaseModel):

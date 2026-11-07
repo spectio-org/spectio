@@ -1721,6 +1721,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Assumed (2026-11-06, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 4 as built (a); rule 6 as FU-P3-43. Next follow-up number: FU-P3-44.
 - **Blocked:** rule 5 is a security-posture default, reserved for Thomas ([triage-policy](../playbooks/triage-policy.md#reserved-for-thomas-always-to-the-inbox)). Nothing changes meanwhile: the API stays unmounted on SLURM and shared hosts, which is the safe side.
 - **Answered (Thomas, 2026-11-07):** rule 5 (a). The API stays unmounted on SLURM and shared hosts, and the `NO_API` text is reworded so that it no longer names Tasks 13 to 16 (in the next build task). Option (b) is reconsidered after the by-hand check on a real login node (W6).
+- **Done (P3-t25, 2026-11-07):** rule 5 (a). The API stays unmounted on SLURM and shared hosts; `NO_API` in `packages/spectio-server/src/spectio_server/app.py` now says the API is served only in local mode (`spectio init --local`), on a machine only the user uses, because on a shared host other users could reach its port. It names no task. The start text of `serve.py` still names Tasks 13 to 16 and stays with FU-P3-43.
 
 ### #110 · Assumed: the tmux launcher as built (P3 Task 10)
 

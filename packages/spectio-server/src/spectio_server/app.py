@@ -3,9 +3,10 @@
 Every request needs the session of the token link (dev-env §15.3 req. 2, `auth`, P1 Task 12).
 The API is served in local mode only (`spectio init --local`; inbox #86, and #109 rule 5 (a),
 Thomas 2026-11-07): on a SLURM environment, where other users share the login node and its
-loopback port, every `/api/v1` path answers 404 with the reason. In local mode too, the API is left unmounted on a machine that looks like
-a cluster node or a shared one (`shared_host`, SEC-P3T17-06): kind `local` is a configuration
-value, which can be set on a login node. The Host allow-list (dev-env §15.3 req. 4, `auth.host`),
+loopback port, every `/api/v1` path answers 404 with the reason. In local mode too, the API is
+left unmounted on a machine that looks like a cluster node or a shared one (`shared_host`,
+SEC-P3T17-06): kind `local` is a configuration value, which can be set on a login node.
+The Host allow-list (dev-env §15.3 req. 4, `auth.host`),
 the cross-site check (`api.browser`), the session and the write checks (req. 7, `auth.writes`)
 run on every request, in that order. The generated docs stay off: the
 OpenAPI document is a file, `openapi/0.0.1.json`, written from `app.openapi()` (Task 18), with

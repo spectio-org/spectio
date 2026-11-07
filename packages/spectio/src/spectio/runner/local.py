@@ -97,6 +97,13 @@ def alive(head: HeadPid) -> bool:
     )
 
 
+def same_process(pid: int, start: str) -> bool:
+    """Whether process `pid` lives and started at `start` (clock ticks after boot): on this
+    boot, the same process."""
+    found = _process(pid)
+    return found is not None and found[1] == start
+
+
 def _is_head(head: HeadPid, native_id: str) -> bool:
     """Whether head.pid names the head with this native ID, `<pid>.<start time>`: unique per
     process, so that a head that reuses an ended head's PID is never taken for it (SEC-P3T09-04,

@@ -138,7 +138,7 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
             )
         ).result()
         files, stage_files = FilePool(), FilePool(FREEZE_WORKERS, 0)
-        rebuilt = rebuild_index(writer, settings.runs_root)
+        rebuilt = rebuild_index(writer, settings.runs_root, home=Path.home())
         log.info("index %s: %d runs added", "rebuilt" if new else "reconciled", rebuilt.added)
         launcher = LocalLauncher() if settings.executor == "local" else TmuxLauncher()
         loop = RunnerLoop(
@@ -152,6 +152,7 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
             launcher,
             settings,
             tick_s=settings.runner.spool_s,
+            home=Path.home(),  # runs started from a terminal (architecture §13.8)
         )
         try:
             loop.tick()

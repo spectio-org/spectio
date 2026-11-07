@@ -17,6 +17,7 @@ import pytest
 
 from spectio.config import EngineOpts, Settings
 from spectio.runner.loop import RunnerLoop
+from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import make_run_dirs
 from spectio.runner.tmux import TmuxLauncher
 from spectio.runner.types import Command, HeadReport, LaunchRef, LaunchSpec, SpoolBatch
@@ -167,6 +168,9 @@ class Sink:
 
     def cursor(self, launch_id: str) -> dict[str, int]:
         return {}
+
+    def add_observed(self, run: ObservedRun) -> bool:
+        return False
 
     def ingest(self, launch_id: str, batch: SpoolBatch) -> None:
         pass

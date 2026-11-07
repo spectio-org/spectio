@@ -8,6 +8,7 @@ or the PATH, Java with it. The default `pytest` run skips them; `-m engines` run
 import json
 import os
 import shutil
+import stat
 import subprocess
 from collections import Counter
 from collections.abc import Iterator
@@ -19,8 +20,15 @@ from typing import Any
 import pytest
 from sqlalchemy import Connection, Engine, insert, select
 
+from spectio.runner.observed import ObservedRun
+from spectio.runner.rundir import RUN_ID as RUN_ID_RE
 from spectio.runner.spool import read_spool
-from spectio_sdk.events import MAX_LINE_BYTES, SpoolEvent, parse_data
+from spectio_sdk.events import (
+    MAX_LINE_BYTES,
+    TERMINAL_SPOOL_FILE_NAME,
+    SpoolEvent,
+    parse_data,
+)
 from spectio_server.projector.ingest import ingest
 from spectio_server.store.db import open_db
 from spectio_server.store.schema import (
@@ -54,10 +62,15 @@ def nextflow() -> str:
 
 
 def run_nf(
-    nextflow: str, launch_dir: Path, *args: str, spool_dir: Path | None = None
+    nextflow: str,
+    launch_dir: Path,
+    *args: str,
+    spool_dir: Path | None = None,
+    env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     env = {
         **os.environ,
+        **(env or {}),
         "NEXTFLOW": nextflow,
         "SPECTIO_RUN_ID": RUN_ID,
         "SPECTIO_LAUNCH_N": "1",
@@ -453,3 +466,184 @@ def test_stuck_writer_does_not_hang_the_head(nextflow: str, tmp_path: Path) -> N
     spool = tmp_path / "launch" / ".spectio" / "events"
     done = run_writer(nextflow, tmp_path, spool, STUCK_WRITER_SCRIPT, timeout=30)
     assert "nf-spectio: close: the writer thread is still running" in done.stderr
+
+
+# --- Runs started from a terminal (P1 Task 25; architecture §13.8, dev-env §15.3 req. 12) ------
+
+POINTER_KEYS = {
+    "run_id",
+    "launch_dir",
+    "engine",
+    "engine_version",
+    "bridge_version",
+    "host",
+    "pid",
+    "pid_start_time",
+    "boot_id",
+}
+PLANTED = "PLANTED-7f3a"  # in the run's environment and parameters, never in a pointer
+
+
+def run_nf_terminal(
+    nextflow: str, launch_dir: Path, home: Path, *args: str
+) -> subprocess.CompletedProcess[str]:
+    """A run started by hand: no SPECTIO_* variable, HOME `home` (Nextflow's own home kept),
+    the plugin enabled with NXF_PLUGINS_DEFAULT (`run_local.sh --terminal`)."""
+    env = {k: v for k, v in os.environ.items() if not k.startswith("SPECTIO_")}
+    nxf_home = os.environ.get("NXF_HOME") or str(Path.home() / ".nextflow")
+    env |= {"NEXTFLOW": nextflow, "HOME": str(home), "NXF_HOME": nxf_home, "TEST_TOKEN": PLANTED}
+    launch_dir.mkdir(mode=0o700, parents=True, exist_ok=True)
+    return subprocess.run(
+        [str(RUN_LOCAL), "--terminal", str(launch_dir), *args],
+        env=env,
+        capture_output=True,
+        text=True,
+        timeout=600,
+        check=False,
+    )
+
+
+@pytest.fixture
+def tmp_home(tmp_path: Path) -> Path:
+    """A home where Spectio is installed: `~/.spectio/` 0700, no `observed/` yet."""
+    home = tmp_path / "home"
+    (home / ".spectio").mkdir(mode=0o700, parents=True)
+    home.chmod(0o700)
+    return home
+
+
+def pointers(home: Path) -> list[Path]:
+    observed = home / ".spectio" / "observed"
+    return sorted(observed.iterdir()) if observed.is_dir() else []
+
+
+def terminal_files(launch_dir: Path) -> list[Path]:
+    events = launch_dir / ".spectio" / "events"
+    return sorted(events.glob("*.jsonl")) if events.is_dir() else []
+
+
+def test_terminal_run_writes_pointer(nextflow: str, tmp_home: Path, tmp_path: Path) -> None:
+    """No SPECTIO_RUN_ID: a run ID, the spool `<run ID>-nf-spectio-0001.jsonl` in the launch
+    directory, read whole by the runner's reader, and `~/.spectio/observed/<run ID>.json`, 0600,
+    in `observed/` made 0700."""
+    launch_dir = tmp_path / "launch"
+    done = run_nf_terminal(nextflow, launch_dir, tmp_home)
+    assert done.returncode == 0, done.stdout + done.stderr
+    [found] = pointers(tmp_home)
+    data = json.loads(found.read_text())
+    run_id = data["run_id"]
+    assert found.name == f"{run_id}.json" and RUN_ID_RE.fullmatch(run_id)
+    assert stat.S_IMODE(found.stat().st_mode) == 0o600
+    assert stat.S_IMODE((tmp_home / ".spectio" / "observed").stat().st_mode) == 0o700
+    assert stat.S_IMODE((launch_dir / ".spectio").stat().st_mode) == 0o700
+    assert [f.name for f in terminal_files(launch_dir)] == [f"{run_id}-nf-spectio-0001.jsonl"]
+    assert TERMINAL_SPOOL_FILE_NAME.fullmatch(f"{run_id}-nf-spectio-0001.jsonl")
+    batch = read_spool(launch_dir, run_id, 1, {}, max_lines=100000, observed=True)
+    assert batch.drops == Counter() and batch.events
+    assert {(ev.run, ev.launch) for ev in batch.events} == {(run_id, 1)}
+    assert Counter(ev.type for ev in batch.events)["nextflow.onTaskComplete"] == 65
+    assert data["launch_dir"] == str(launch_dir) and data["engine"] == "nextflow"
+    assert data["engine_version"] == next(
+        ev.data["nextflow"] for ev in batch.events if ev.type == "nextflow.onFlowCreate"
+    )
+    assert data["bridge_version"] == "0.0.1" and data["pid"] > 1
+    ObservedRun.model_validate(data)
+
+
+def test_pointer_keys_exact(nextflow: str, tmp_home: Path, tmp_path: Path) -> None:
+    """Exactly the keys of architecture §13.8: no environment, arguments or parameters."""
+    done = run_nf_terminal(nextflow, tmp_path / "launch", tmp_home, "--secret_param", PLANTED)
+    assert done.returncode == 0, done.stdout + done.stderr
+    [found] = pointers(tmp_home)
+    text = found.read_text()
+    assert set(json.loads(text)) == POINTER_KEYS
+    assert PLANTED not in text
+
+
+def test_no_spectio_home_run_unaffected(nextflow: str, tmp_path: Path) -> None:
+    """No `~/.spectio/`: no pointer, and none made; the spool is written; exit 0."""
+    home = tmp_path / "home"
+    home.mkdir(mode=0o700)
+    launch_dir = tmp_path / "launch"
+    done = run_nf_terminal(nextflow, launch_dir, home)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert not (home / ".spectio").exists() and terminal_files(launch_dir)
+
+
+def test_unwritable_home_run_unaffected(nextflow: str, tmp_home: Path, tmp_path: Path) -> None:
+    """`observed/` that cannot be written (a file in its place, which even root cannot write
+    into; mode 0500): exit 0, the spool written, the reason in `bridge.err`."""
+    (tmp_home / ".spectio" / "observed").write_text("")
+    launch_dir = tmp_path / "launch"
+    done = run_nf_terminal(nextflow, launch_dir, tmp_home)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert terminal_files(launch_dir)
+    assert "no pointer written" in (launch_dir / ".spectio" / "bridge.err").read_text()
+    os.unlink(tmp_home / ".spectio" / "observed")
+    (tmp_home / ".spectio" / "observed").mkdir(mode=0o500)
+    again = run_nf_terminal(nextflow, tmp_path / "launch2", tmp_home)
+    assert again.returncode == 0, again.stdout + again.stderr
+
+
+def test_driven_run_writes_no_pointer(nextflow: str, tmp_home: Path, tmp_path: Path) -> None:
+    """SPECTIO_RUN_ID set (a run Spectio launched): no pointer, the driven file names."""
+    launch_dir = tmp_path / "launch"
+    nxf_home = os.environ.get("NXF_HOME") or str(Path.home() / ".nextflow")
+    done = run_nf(nextflow, launch_dir, env={"HOME": str(tmp_home), "NXF_HOME": nxf_home})
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert pointers(tmp_home) == []
+    assert spool_lines(launch_dir)
+
+
+@pytest.mark.parametrize("how", ["symlink", "other_owner", "mode_0777", "bridge_err_symlink"])
+def test_bridge_refuses_foreign_spectio_dir(
+    nextflow: str, tmp_home: Path, tmp_path: Path, how: str
+) -> None:
+    """`.spectio` a symlink, another user's or 0777, or `bridge.err` a symlink: nothing is
+    written outside it, the targets are unchanged, and the run exits 0."""
+    launch_dir = tmp_path / "launch"
+    launch_dir.mkdir()
+    target = tmp_path / "target"
+    target.mkdir(mode=0o700)
+    victim = tmp_path / "victim"
+    victim.write_text("unchanged\n")
+    if how == "symlink":
+        (launch_dir / ".spectio").symlink_to(target)
+    elif how == "other_owner":
+        if os.geteuid() != 0:
+            pytest.skip("needs root to make another user's directory")
+        (launch_dir / ".spectio").mkdir(mode=0o700)
+        os.chown(launch_dir / ".spectio", 4242, 4242)
+    elif how == "mode_0777":
+        (launch_dir / ".spectio").mkdir()
+        (launch_dir / ".spectio").chmod(0o777)
+    else:  # the spool refused (events a file) makes the bridge say why in bridge.err
+        (launch_dir / ".spectio").mkdir(mode=0o700)
+        (launch_dir / ".spectio" / "events").write_text("")
+        (launch_dir / ".spectio" / "bridge.err").symlink_to(victim)
+    done = run_nf_terminal(nextflow, launch_dir, tmp_home)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert list(target.iterdir()) == [] and victim.read_text() == "unchanged\n"
+    assert pointers(tmp_home) == []  # no spool, no pointer: nothing to show
+    if how in ("other_owner", "mode_0777"):
+        assert list((launch_dir / ".spectio").iterdir()) == []
+    assert "the spool directory is refused" in done.stderr
+
+
+@pytest.mark.parametrize("how", ["mode_0777", "symlink"])
+def test_loose_spectio_home_no_pointer(
+    nextflow: str, tmp_home: Path, tmp_path: Path, how: str
+) -> None:
+    """`~/.spectio/` 0777 or a symlink: no pointer anywhere; the run and its spool go on."""
+    if how == "mode_0777":
+        (tmp_home / ".spectio").chmod(0o777)
+        where = tmp_home / ".spectio"
+    else:
+        where = tmp_path / "real-spectio"
+        (tmp_home / ".spectio").rename(where)
+        (tmp_home / ".spectio").symlink_to(where)
+    launch_dir = tmp_path / "launch"
+    done = run_nf_terminal(nextflow, launch_dir, tmp_home)
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert list(where.iterdir()) == [] and terminal_files(launch_dir)
+    assert "no pointer written" in (launch_dir / ".spectio" / "bridge.err").read_text()
