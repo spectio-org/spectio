@@ -1821,6 +1821,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a) for rule 2; (a) for rule 9 now, then (b) in FU-P3-53 if the check shows files appear late; (b) for rule 10 in FU-P3-53, since it keeps a legitimate resized job; rule 11 as built.
 - **Assumed (2026-11-07, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the recommendation is applied. Open items go to FU-P3-53: the `slurm-mini` check of Step 4 (a Snakemake job and a Nextflow job each reach `available`, the order of step rows, the one-line-per-ID assumption and the step-row WorkDir question), the `accelerator` mapping, rule 2 (b) if lists grow slow, rule 9 (b), rule 10 (b), and the findings the review record marks open ([P3-t34](code/P3-t34.md#findings)). Next follow-up number: FU-P3-54.
 - **Blocked:** nothing; the live check on `slurm-mini` waits for P1 Task 22.
+- **Decided (Thomas, 2026-11-08): (b)** for rule 10, "Go, with a pre-review to be sure of what you do". The design was reviewed by `security-reviewer` and `constraints-hunter` before any code, and built in FU-P3-53 ([pre-review and review record](code/P3-fu53.md#pre-review), [decision log](../decisions/log.md#2026-11-08-sacct-rows-bound-to-the-runs-workdir-inbox-116-rule-10-b-thomas)). The choices it left open are #119.
 
 ### #117 · Assumed: process states, outputs, SLURM request and efficiency on the screens, as built (P3 Task 35)
 
@@ -1834,3 +1835,17 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a) for rules 1, 3 and 5 now, then (b) of rules 1 and 3 in FU-P3-54 and (b) of rule 5 in FU-P3-55; rules 2 and 4 as built.
 - **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the recommendation is applied. FU-P3-54: rule 1 (b), rule 3 (b), the `slurm-mini` check of P1 Task 35 (a Snakemake run with a checkpoint and a `temp()` output), and the findings the review record marks open ([P3-t35](code/P3-t35.md#findings)). FU-P3-55: rule 5 (b). Next follow-up number: FU-P3-56.
 - **Blocked:** nothing; the live check on `slurm-mini` waits for P1 Task 22. FU-P3-56 is taken by batch P3-B04 ([follow-ups](../progress/W5/P3-M9.md#follow-ups-of-batch-p3-b04)); the next number is FU-P3-57.
+
+### #119 · Assumed: `sacct` rows bound to the run's WorkDir, as built (FU-P3-53)
+
+- **Covers:** [#116](#116-assumed-process-states-outputs-slurm-request-and-efficiency-as-built-p3-task-34) rule 10 (b), decided 2026-11-08; [dev-env §15.3 req. 15](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) and [schedulers §3.6](../specs/schedulers-and-monitoring.md#36-efficiency-per-job-and-per-process-or-rule) (notes 2026-11-08); the [pre-review](code/P3-fu53.md#pre-review).
+- **Context:** step P3-fu53 built the pre-reviewed design. Choices it left open:
+  1. **The run's launch time is `min(runs.created_at, runs.started_at)`,** so a run started from a terminal, whose row is created after its first jobs, keeps them. `SUBMIT_SKEW_S` is 300 s.
+  2. **`TZ=UTC` in the call's environment,** not in the design, so `Submit` is read in one zone whatever the server's or the cluster's. Whether `sacct` honours it is **[to be validated]** on `slurm-mini`.
+  3. **A resized job also loses `max_rss_bytes`,** not only `total_cpu_s`: the failure card then shows no used memory. Options: (a) as built, since the peak before the resize is under the RESIZING record; (b) keep the final record's own peak for the failure card only.
+  4. **A job with no directory reads `not_found`** on the Tasks list. The API has no closer reason. Options: (a) as built; (b) a new reason `no_work_dir`.
+  5. **Two runs that expect one job ID in one directory share the earlier launch** for the `Submit` check. `run_paths` gives each run its own directories, so this needs a hand-made layout.
+  6. **At most 500 directories are resolved per view;** the jobs past them are queued by later views. A file pool that does not answer queues nothing.
+- **Recommendation:** as built for rules 1, 2, 5 and 6; (a) for rules 3 and 4.
+- **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the recommendation is applied. FU-P3-60: the `slurm-mini` cases (a resized job, a requeued job, a runs root behind a symlink, a newline in a WorkDir, a 16-character delimiter, `TZ=UTC` on `Submit`). FU-P3-61: rules 3 (b) and 4 (b) if Thomas wants them. Next follow-up number: FU-P3-62.
+- **Blocked:** nothing; the `slurm-mini` cases wait for P1 Task 22.
