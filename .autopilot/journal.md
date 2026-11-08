@@ -733,3 +733,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - 2026-11-08 · P3-fu77 · PR #173 merged (1a89e33). P3-B07 · PR #172 merged (d2523ac) after taking the fix. Promotion #174 to main merged (8237e13). Open for Thomas: login1 checks of FU-P3-72, #164 (e2e client to the socket, FU-P3-75), #111, FU-P3-71 (repo size), FU-P3-78 (policy: dead head with malformed head.exit).
 - 2026-11-08 · Thomas login1 UI feedback: FU-P3-79..83 launched in parallel; P3-fu82 → PR #175.
+- 2026-11-08 · P3-fu80 → PR #176.
