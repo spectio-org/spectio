@@ -1337,6 +1337,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a). Rule 1 keeps the index and the start text usable on a login node while nothing launches there; rule 5 is equivalent and smaller; rule 7 has no 0.0.1 case, since the server is not started under systemd. Before any data route (Tasks 17–18) is served on a shared login node, Task 12 must be merged: until then another user on the node can reach the loopback port.
 - **Assumed (2026-10-30, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a), pending Thomas. Rules 3, 5, 6 and 8 in dated notes of [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts), rule 7 in [schedulers §3.1.1](../specs/schedulers-and-monitoring.md#311-local-launcher-detach-adopt-exit) ([decision log](../decisions/log.md#2026-10-30-spectio-serve-in-the-local-only-order-written-into-dev-env-153-and-schedulers-311-p3-task-11-inbox-85)). One part of rule 6 differs from the spec: a run that never had a head gets class `head_lost`, not the spec's `launch_error`; the spec is kept and the code follows at follow-up FU-P3-15 ([P3-M3](../progress/W5/P3-M3.md#findings-and-open-questions), open point 2).
 - **Blocked:** nothing.
+- **Done (2026-11-08):** `spectio serve --detach`, which rule 2 gave to Task 10, is built as FU-P3-44: [inbox #118](#118-assumed-spectio-serve-detach-as-built-p3-fu-p3-44).
 
 ### #86 · Assumed: the 0.0.1 launch API, served in local mode only before sign-in
 
@@ -1735,6 +1736,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a) for rules 1 to 3; rule 2 (b) and rule 1 (b) in FU-P3-45; (a) for rule 4, as FU-P3-44; rule 5 as FU-P3-45.
 - **Assumed (2026-11-07, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 3 as built (a); rule 4 (a), FU-P3-44; rule 5 as FU-P3-45. Next follow-up number: FU-P3-46.
 - **Blocked:** nothing.
+- **Done (2026-11-08):** rule 4, FU-P3-44: [inbox #118](#118-assumed-spectio-serve-detach-as-built-p3-fu-p3-44).
 
 ### #111 · Assumed: one wheel with the UI and both bridges, as built (P3 Task 21)
 
@@ -1765,6 +1767,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Assumed (2026-11-07, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** rules 1 to 4 as built (a); rule 5 as FU-P3-48. Next follow-up number: FU-P3-49. The numbers #112 and FU-P3-48 follow P3-t21's #111 and FU-P3-46 and -47, which are on `autopilot/P3-t21` and not yet in `autopilot/integration`; renumber at the merge if the order changes.
 - **Blocked:** rule 6 is a security-process choice and is not assumed: the safe side is to run the review (a). Nothing else is blocked.
 - **Done (2026-11-07):** rule 6 (a). `security-reviewer` ran on the final diff and approved it, with 0 blockers, 0 majors and 5 minors, all in FU-P3-48 (the review record, section "Security review"). `cli/open.py` and `open_remote.py` are added to `SENSITIVE` in `.claude/workflows/p3-task.js`.
+- **Done (2026-11-08):** rule 2. `spectio serve --detach` is built (FU-P3-44), and the first start passes `--no-link` and asks for the ticket again while the server boots: [inbox #118](#118-assumed-spectio-serve-detach-as-built-p3-fu-p3-44). The check on an EMBL login node (P1 Task 24 Step 4) is still not done.
 
 ### #113 · Assumed: how a Snakemake run started from a terminal ends (P3 Task 25)
 
@@ -1821,6 +1824,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a) for rule 2; (a) for rule 9 now, then (b) in FU-P3-53 if the check shows files appear late; (b) for rule 10 in FU-P3-53, since it keeps a legitimate resized job; rule 11 as built.
 - **Assumed (2026-11-07, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the recommendation is applied. Open items go to FU-P3-53: the `slurm-mini` check of Step 4 (a Snakemake job and a Nextflow job each reach `available`, the order of step rows, the one-line-per-ID assumption and the step-row WorkDir question), the `accelerator` mapping, rule 2 (b) if lists grow slow, rule 9 (b), rule 10 (b), and the findings the review record marks open ([P3-t34](code/P3-t34.md#findings)). Next follow-up number: FU-P3-54.
 - **Blocked:** nothing; the live check on `slurm-mini` waits for P1 Task 22.
+- **Decided (Thomas, 2026-11-08): (b)** for rule 10, "Go, with a pre-review to be sure of what you do". The design was reviewed by `security-reviewer` and `constraints-hunter` before any code, and built in FU-P3-53 ([pre-review and review record](code/P3-fu53.md#pre-review), [decision log](../decisions/log.md#2026-11-08-sacct-rows-bound-to-the-runs-workdir-inbox-116-rule-10-b-thomas)). The choices it left open are #119.
 
 ### #117 · Assumed: process states, outputs, SLURM request and efficiency on the screens, as built (P3 Task 35)
 
@@ -1834,3 +1838,33 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** (a) for rules 1, 3 and 5 now, then (b) of rules 1 and 3 in FU-P3-54 and (b) of rule 5 in FU-P3-55; rules 2 and 4 as built.
 - **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the recommendation is applied. FU-P3-54: rule 1 (b), rule 3 (b), the `slurm-mini` check of P1 Task 35 (a Snakemake run with a checkpoint and a `temp()` output), and the findings the review record marks open ([P3-t35](code/P3-t35.md#findings)). FU-P3-55: rule 5 (b). Next follow-up number: FU-P3-56.
 - **Blocked:** nothing; the live check on `slurm-mini` waits for P1 Task 22. FU-P3-56 is taken by batch P3-B04 ([follow-ups](../progress/W5/P3-M9.md#follow-ups-of-batch-p3-b04)); the next number is FU-P3-57.
+
+### #118 · Assumed: `spectio serve --detach` as built (P3 FU-P3-44)
+
+- **Covers:** FU-P3-44 ([inbox #85](#85-assumed-spectio-serve-in-the-local-only-order-and-what-p3-task-11-leaves-to-tasks-10-and-12) rule 2, [#110](#110-assumed-the-tmux-launcher-as-built-p3-task-10) rule 4, [#112](#112-assumed-spectio-open-as-built-p3-task-24) rule 2); [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 11 and the Access notes; [cli §2](../specs/cli-and-shared-libraries.md#2-the-spectio-command-tree) `serve` row. The design and its pre-review: [review record](code/P3-fu44.md#pre-review).
+- **Context:** step P3-fu44 built `--detach` from the pre-reviewed design (Step A). Choices the specs left open, or that depart from the design:
+  1. **Exit 3** for "started, no link in time"; the session is left running. The design's open question 1; both reviewers agreed. Options: (a) as built; (b) exit 0 with a warning.
+  2. **What reaches the pane:** `HOME`, `USER`, `LOGNAME`, `SHELL`, `LANG`, `TMPDIR`, `PATH`, `LD_LIBRARY_PATH`, `TMUX_TMPDIR`, `SPECTIO_CONFIG` and the `SPECTIO_*` names of `config._ENV`, as `NAME=value` words of `/usr/bin/env -i`: visible in `ps`, so configuration only. `SPECTIO_BRIDGES_DIR` (a development override, P1 Task 6) is not among them. An argv word that ends in `;` is refused, since tmux cuts the command there.
+  3. **`--pane` mints no ticket;** the pane says where to get a link. **`--no-link`** (hidden) is what `spectio open` passes, so no link lands in the ssh output it captures; `--detach` still asks the server for a link to know it is ready, and drops it.
+  4. **`--wait SECONDS`**, default 120, is a flag, not a `spectio.toml` setting.
+  5. **The parent never writes or removes server.json;** a stale one is replaced by the child, under its lock.
+  6. **The start text printed here has no shared-machine line** in local mode: whether the API is served is decided once, in the server (CR-P3T17-04); the pane shows it. Options: (a) as built; (b) the server records the decision in server.json and `--detach` prints it (FU-P3-59).
+  7. **What the fix round decided** (review rounds 1 and 2, [review record](code/P3-fu44.md#findings)). A `list-panes` output that does not parse, or lists no pane, exits 2 and kills nothing; a session whose panes have all ended is removed with `kill-pane` on each dead pane ID, never `kill-session`. `--wait` is limited to 0 to 3600 s and must be finite (the 3600 is **assumed**, there is no source for it). `--wait` and `--no-link` without `--detach` exit 2, except the default `--wait` value. A relative `SPECTIO_CONFIG` is forwarded as an absolute path. Ten minors stay open as FU-P3-64: pane IDs repeat after a tmux server restart (SEC-P3FU44-05), values in the tmux server's `/proc/<pid>/cmdline` (SEC-P3FU44-01), symlinks under `abspath`, the "no server running" window, the attach hint on a second call, tests for the freshness check, the no-ticket check and the real `kill-pane`, private names of other modules, a flaky launcher test. Options for the 3600: (a) as built; (b) another limit, or none with a check on `nan` only.
+- **Recommendation:** (a) for rules 1 to 7; rule 6 (b) as FU-P3-59.
+- **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the recommendation is applied. FU-P3-57: a challenge-response in place of sending the server key, one link request per match (SEC-PRE-09). FU-P3-58: `spectio doctor` lines for logind (Linger, KillUserProcesses, CON-PRE-06, **[to be validated]** at EMBL) and the tmux version (CON-PRE-07). FU-P3-59: rule 6 (b). `destroy-unattached` for run heads (CON-PRE-05) joins FU-P3-45; calling `--detach` on the target node from `spectio open` (CON-PRE-12) joins FU-P3-48. Rule 7 (a); the open findings of the review are FU-P3-64 (FU-P3-60 to -63 are taken by step P3-fu53; renumber at the merge if the order changes). Next follow-up number: FU-P3-65.
+- **Blocked:** nothing. Not done: the check on an EMBL login node, and any run on SLURM; the tests ran with tmux 3.4 here only.
+
+### #119 · Assumed: `sacct` rows bound to the run's WorkDir, as built (FU-P3-53)
+
+- **Covers:** [#116](#116-assumed-process-states-outputs-slurm-request-and-efficiency-as-built-p3-task-34) rule 10 (b), decided 2026-11-08; [dev-env §15.3 req. 15](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) and [schedulers §3.6](../specs/schedulers-and-monitoring.md#36-efficiency-per-job-and-per-process-or-rule) (notes 2026-11-08); the [pre-review](code/P3-fu53.md#pre-review).
+- **Context:** step P3-fu53 built the pre-reviewed design. Choices it left open:
+  1. **The run's launch time is `min(runs.created_at, runs.started_at)`,** so a run started from a terminal, whose row is created after its first jobs, keeps them. `SUBMIT_SKEW_S` is 300 s.
+  2. **`TZ=UTC` in the call's environment,** not in the design, so `Submit` is read in one zone whatever the server's or the cluster's. Whether `sacct` honours it is **[to be validated]** on `slurm-mini`.
+  3. **A resized job also loses `max_rss_bytes`,** not only `total_cpu_s`: the failure card then shows no used memory. Options: (a) as built, since the peak before the resize is under the RESIZING record; (b) keep the final record's own peak for the failure card only.
+  4. **A job with no directory reads `not_found`** on the Tasks list. The API has no closer reason. Options: (a) as built; (b) a new reason `no_work_dir`.
+  5. **Two runs that expect one job ID in one directory share the earlier launch** for the `Submit` check. `run_paths` gives each run its own directories, so this needs a hand-made layout.
+  6. **Directories are resolved in the file pool, 100 at a time, one resolve per run in flight;** each result is kept as it is computed, so a view that times out still leaves its work and the jobs past the batch are queued by later views. Only SLURM job IDs are resolved.
+  7. **`realpath` follows symlinks in a task directory** that the pipeline's own uid controls (SEC-P3FU53-03 r1, r2): a link to another run's task directory widens the expected set, and a link to a dead mount ties a file-pool worker. Options: (a) as built, low impact because the planter already runs as the server's uid; (b) resolve per component with `O_NOFOLLOW` as the rest of §15.3 does, and refuse a link below the run's work directory.
+- **Recommendation:** as built for rules 1, 2, 5 and 6; (a) for rules 3, 4 and 7.
+- **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the recommendation is applied. FU-P3-60: the `slurm-mini` cases (a resized job, a requeued job, a runs root behind a symlink, a newline in a WorkDir, a 16-character delimiter, `TZ=UTC` on `Submit`). FU-P3-61: rules 3 (b) and 4 (b) if Thomas wants them. FU-P3-62: rule 7 (b) and the other open findings of the [review record](code/P3-fu53.md#findings). Next follow-up number: FU-P3-63.
+- **Blocked:** nothing; the `slurm-mini` cases wait for P1 Task 22.

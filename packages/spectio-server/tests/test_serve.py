@@ -435,6 +435,7 @@ def test_serve_decides_the_api_once(settings: Settings, monkeypatch: pytest.Monk
         assert app.state.no_api is None  # the routers are mounted: no catch-all 404
         assert all(getattr(r, "path", "") != "/api/v1/{path:path}" for r in app.routes)
         assert "shared" not in start_text(settings, "node1", "alice", server.no_api, server.link)
+        assert server.link is not None
         assert re.fullmatch(
             rf"http://127\.0\.0\.1:{settings.port}/auth/link#[A-Za-z0-9_-]{{43}}", server.link
         )
@@ -535,9 +536,11 @@ def test_sink_leases_once_until_the_lease_ends(settings: Settings, writer: Write
     assert [r.run_id for r in sink.active_launches()] == []  # its run failed: no head ran
 
 
-def test_sigterm_stops_cleanly(settings: Settings) -> None:
-    """`spectio serve` in the foreground: the start text, then SIGTERM stops it with the state
-    file removed and the lock free."""
+@pytest.mark.parametrize("sig", [signal.SIGTERM, signal.SIGHUP])
+def test_sigterm_stops_cleanly(settings: Settings, sig: signal.Signals) -> None:
+    """`spectio serve` in the foreground: the start text, then SIGTERM, or SIGHUP as
+    `tmux kill-session` sends it (CON-PRE-10), stops it with the state file removed and the lock
+    free."""
     spectio = Path(sys.executable).parent / "spectio"
     proc = subprocess.Popen(
         [str(spectio), "serve"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
@@ -547,7 +550,7 @@ def test_sigterm_stops_cleanly(settings: Settings) -> None:
         first = proc.stdout.readline()
         assert first.startswith("Spectio ") and f"port {settings.port}" in first
         assert (settings.data_dir / "server.json").exists()
-        proc.send_signal(signal.SIGTERM)
+        proc.send_signal(sig)
         assert proc.wait(20) == 0
     finally:
         proc.kill()

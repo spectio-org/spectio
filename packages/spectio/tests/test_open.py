@@ -33,7 +33,8 @@ os.execv("/bin/sh", ["/bin/sh", "-c", sys.argv[2]])
 
 # The remote spectio: logs its argv and SPECTIO_X; init, serve --detach and login answer as the
 # real commands do; `login.out` in $FAKE_SSH_DIR replaces what login prints, and `dead` makes
-# login fail as it does when the server of server.json has stopped.
+# login fail as it does when the server of server.json has stopped. `starting` (a number N) makes
+# serve --detach exit 3, as when its server is still booting, and the next N logins fail.
 RSPECTIO = f"""#!{PY}
 import json, os, sys
 d = os.environ["FAKE_SSH_DIR"]
@@ -44,16 +45,24 @@ with open(os.path.join(d, "spectio.jsonl"), "a") as f:
 cmd = sys.argv[1:]
 if cmd == ["init"]:
     os.makedirs(os.path.join(home, ".spectio"), mode=0o700)
-elif cmd == ["serve", "--detach"]:
+elif cmd == ["serve", "--detach", "--no-link"]:
     record = {{"host": os.environ["FAKE_NODE"], "port": 8123, "pid": 4242,
               "db_dir": "/scratch/spectio-1000", "started_at": "2026-11-07T10:00:00Z"}}
     with open(os.path.join(home, ".spectio", "server.json"), "w") as f:
         json.dump(record, f)
-    print("Open http://127.0.0.1:8123/auth/link#" + "S" * 43)
+    print("Spectio is running; a link: spectio login --print-link")
+    if os.path.exists(os.path.join(d, "starting")):
+        sys.exit(3)
 elif cmd == ["login", "--print-link", "--json"]:
     out = os.path.join(d, "login.out")
     if os.path.exists(os.path.join(d, "dead")):
         sys.exit("spectio login: no server answers")
+    starting = os.path.join(d, "starting")
+    if os.path.exists(starting):
+        left = int(open(starting).read())
+        if left > 0:
+            open(starting, "w").write(str(left - 1))
+            sys.exit("spectio login: the server on port 8123 gave no link")
     if os.path.exists(out):
         print(open(out).read())
     else:
@@ -163,10 +172,46 @@ def test_node_flag_for_first_start(fake_ssh: FakeSsh) -> None:
     assert result.exit_code == 0, result.output
     started = [(s["node"], s["argv"]) for s in fake_ssh.spectio()]
     assert ("login2", ["init"]) in started
-    assert ("login2", ["serve", "--detach"]) in started
-    assert started.index(("login2", ["init"])) < started.index(("login2", ["serve", "--detach"]))
+    assert ("login2", ["serve", "--detach", "--no-link"]) in started
+    assert started.index(("login2", ["init"])) < started.index(
+        ("login2", ["serve", "--detach", "--no-link"])
+    )
     assert tunnel(fake_ssh)[-1] == "login2"
     assert "127.0.0.1:8123" in tunnel(fake_ssh)[tunnel(fake_ssh).index("-L") + 1]
+
+
+def test_first_start_asks_no_link_from_serve(fake_ssh: FakeSsh) -> None:
+    """The link of `serve --detach` would land in ssh's captured stdout: --no-link (SEC-PRE-10);
+    the ticket comes from spectio login, as for a running server."""
+    result = spectio_open("cluster")
+    assert result.exit_code == 0, result.output
+    assert [s["argv"] for s in fake_ssh.spectio()][-2:] == [
+        ["serve", "--detach", "--no-link"],
+        ["login", "--print-link", "--json"],
+    ]
+
+
+def test_first_start_still_starting_retries_the_ticket(
+    fake_ssh: FakeSsh, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """serve --detach exits 3 while its server boots: the ticket is asked again (CON-PRE-02)."""
+    monkeypatch.setattr("spectio.cli.open.TICKET_RETRY_S", 0)
+    (fake_ssh.dir / "starting").write_text("2")
+    result = spectio_open("cluster")
+    assert result.exit_code == 0, result.output
+    logins = [s for s in fake_ssh.spectio() if s["argv"][0] == "login"]
+    assert len(logins) == 3
+    assert TICKET in opened(fake_ssh)
+
+
+def test_first_start_ticket_retries_end(fake_ssh: FakeSsh, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("spectio.cli.open.TICKET_RETRY_S", 0)
+    monkeypatch.setattr("spectio.cli.open.TICKET_WAIT_S", 0.5)
+    (fake_ssh.dir / "starting").write_text("1000000")
+    result = spectio_open("cluster")
+    assert result.exit_code == 3, result.output
+    assert "gave no link" in result.output
+    assert not (fake_ssh.dir / "opened").exists()
 
 
 def test_first_start_keeps_existing_data_dir(fake_ssh: FakeSsh) -> None:
@@ -175,7 +220,7 @@ def test_first_start_keeps_existing_data_dir(fake_ssh: FakeSsh) -> None:
     assert result.exit_code == 0, result.output
     started = [s["argv"] for s in fake_ssh.spectio()]
     assert ["init"] not in started
-    assert ["serve", "--detach"] in started
+    assert ["serve", "--detach", "--no-link"] in started
     assert tunnel(fake_ssh)[-1] == "cluster"  # the node serve recorded
 
 
@@ -201,7 +246,7 @@ def test_first_start_with_compound_remote_cmd_keeps_data_dir(fake_ssh: FakeSsh, 
     assert result.exit_code == 0, result.output
     started = [s["argv"] for s in fake_ssh.spectio()]
     assert ["init"] not in started
-    assert ["serve", "--detach"] in started
+    assert ["serve", "--detach", "--no-link"] in started
 
 
 def test_stale_state_file_named_in_error(fake_ssh: FakeSsh) -> None:

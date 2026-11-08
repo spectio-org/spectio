@@ -21,7 +21,9 @@ SLURM one (P1 Task 10), in a tmux session per run on this login node. On a SLURM
 API is not served: the host is shared (`NO_API`, inbox #109 rule 5).
 
 Each start writes a new server key next to the database (`auth.secrets`, P1 Task 12) and prints
-a first token link; `spectio login --print-link` asks for another one.
+a first token link; `spectio login --print-link` asks for another one. In the pane of
+`spectio serve --detach` (`mint_link=False`) no link is minted or printed: the calling terminal
+gets one (dev-env §15.3 req. 11).
 """
 
 import fcntl
@@ -91,7 +93,7 @@ class Started:
     uvicorn: uvicorn.Server
     booted: Booted
     no_api: str | None  # why the API is not served, as create_app decided (CR-P3T17-04)
-    link: str  # the first token link: single use, 15 minutes
+    link: str | None  # the first token link: single use, 15 minutes; None in a detached pane
     stop: threading.Event = field(default_factory=threading.Event)
 
     def run(self) -> None:
@@ -105,20 +107,32 @@ def _user() -> str:
         return str(os.getuid())
 
 
-def start_text(settings: Settings, node: str, user: str, no_api: str | None, link: str) -> str:
+def start_text(
+    settings: Settings, node: str, user: str, no_api: str | None, link: str | None
+) -> str:
+    """What `spectio serve` prints; with no `link` (a detached pane), where to get one."""
     port = settings.port
     once = "(single use, valid 15 minutes):"
     lines = [f"Spectio {version('spectio')} is running on {node}, port {port}."]
     if settings.executor == "local":
-        lines += [f"Open this link in a browser on this machine {once}", f"   {link}"]
+        if link is None:
+            lines.append(
+                "Get a link to open in a browser on this machine: spectio login --print-link"
+            )
+        else:
+            lines += [f"Open this link in a browser on this machine {once}", f"   {link}"]
         if no_api is not None:  # a shared machine (SEC-P3T17-06)
             lines.append(no_api)
     else:
-        lines += [
+        lines.append(
             f"1. On your laptop, open a tunnel:  ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} "
-            f"{user}@{node}",
-            f"2. Then open this link {once}",
-            f"   {link}",
+            f"{user}@{node}"
+        )
+        if link is None:
+            lines.append(f"2. Then open the link that spectio login --print-link prints on {node}")
+        else:
+            lines += [f"2. Then open this link {once}", f"   {link}"]
+        lines += [
             f"Each run's head runs in a tmux session on {node}: tmux attach -t spectio-<run ID>.",
             NO_API,
         ]
@@ -254,8 +268,11 @@ def _remove_state(data_dir: Path, record: bytes) -> None:
 
 
 @contextmanager
-def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
-    """The server, booted and bound, not yet serving: `Started.run()` serves until stopped."""
+def started(
+    settings: Settings, *, force: bool = False, mint_link: bool = True
+) -> Iterator[Started]:
+    """The server, booted and bound, not yet serving: `Started.run()` serves until stopped.
+    Without `mint_link` no first ticket is minted (a detached pane, SEC-PRE-05)."""
     if settings.server.host != LOOPBACK:
         raise ServeError(
             f"0.0.1 binds to 127.0.0.1 only: remove host = {settings.server.host!r} "
@@ -294,7 +311,7 @@ def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
             access_log=False,  # a query string can hold a location or a token (FU-P3-17)
             timeout_graceful_shutdown=5,  # an open event stream never holds a stop (Task 18)
         )
-        link = link_url(settings.port, api.state.tickets.mint())
+        link = link_url(settings.port, api.state.tickets.mint()) if mint_link else None
         server = Started(sock, uvicorn.Server(config), booted, api.state.no_api, link)
         thread = threading.Thread(
             target=booted.loop.run, args=(server.stop,), name="spectio-runner"
@@ -309,14 +326,17 @@ def _stop(signum: int, frame: object) -> None:
     raise SystemExit(0)
 
 
-def serve(settings: Settings, *, force: bool = False) -> None:
-    """Start, print the start text and serve until Ctrl-C or SIGTERM, then stop cleanly.
+def serve(settings: Settings, *, force: bool = False, mint_link: bool = True) -> None:
+    """Start, print the start text and serve until Ctrl-C, SIGTERM or SIGHUP, then stop cleanly.
+    SIGHUP is what `tmux kill-session` sends a pane (CON-PRE-10).
 
-    uvicorn catches both while it serves, stops, and raises the signal again: SIGTERM then
-    reaches `_stop`, and Ctrl-C the default KeyboardInterrupt, so the cleanup above runs."""
+    uvicorn catches SIGINT and SIGTERM while it serves, stops, and raises the signal again:
+    SIGTERM then reaches `_stop`, and Ctrl-C the default KeyboardInterrupt, so the cleanup above
+    runs; SIGHUP reaches `_stop` directly."""
     signal.signal(signal.SIGTERM, _stop)
+    signal.signal(signal.SIGHUP, _stop)
     try:
-        with started(settings, force=force) as server:
+        with started(settings, force=force, mint_link=mint_link) as server:
             node = socket.gethostname()
             print(start_text(settings, node, _user(), server.no_api, server.link), flush=True)
             server.run()

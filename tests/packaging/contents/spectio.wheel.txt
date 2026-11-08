@@ -4,6 +4,7 @@ spectio-0.0.1.dist-info/RECORD
 spectio-0.0.1.dist-info/WHEEL
 spectio-0.0.1.dist-info/entry_points.txt
 spectio/__init__.py
+spectio/__main__.py
 spectio/_bridges/nf-spectio-0.0.1/classes/META-INF/MANIFEST.MF
 spectio/_bridges/nf-spectio-0.0.1/classes/META-INF/extensions.idx
 spectio/_bridges/nf-spectio-0.0.1/classes/spectio/*.class

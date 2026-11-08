@@ -13,7 +13,7 @@ The rules are owned by [development environment §15.3](../specs/dev-environment
 
 ## Steps
 
-1. **Start the server.** `spectio serve` prints a first link, single use, valid 15 minutes:
+1. **Start the server.** `spectio serve` prints a first link, single use, valid 15 minutes. To keep the server running after you log out, use `spectio serve --detach` instead ([Keeping the server running](keep-the-server-running.md)); it prints the link in your terminal too:
 
     ```text
     Spectio 0.0.1 is running on demo-hpc-login1, port 18081.

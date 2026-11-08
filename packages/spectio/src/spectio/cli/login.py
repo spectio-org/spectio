@@ -39,6 +39,18 @@ class Refused(Exception):
     """Why no link is printed."""
 
 
+class OtherNode(Refused):
+    """server.json names a server on another node."""
+
+
+class PortHeld(Refused):
+    """Another uid listens on the port of server.json."""
+
+
+class NotReady(Refused):
+    """A listener of this uid on the port, but no link from it yet: it may still be starting."""
+
+
 def _record(settings: Settings) -> dict[str, Any]:
     try:
         with private_dir(settings.data_dir) as fd:
@@ -67,22 +79,24 @@ def _checked(record: dict[str, Any]) -> tuple[str, int, Path]:
     return node, port, Path(db_dir)
 
 
-def new_link(settings: Settings) -> str:
-    """A fresh link from the running server of this node."""
+def new_link(settings: Settings, timeout: float = 10) -> str:
+    """A fresh link from the running server of this node; `timeout` bounds the request."""
     node, port, db_dir = _checked(_record(settings))
     if node != hostname():
-        raise Refused(f"The server runs on {node}: run `ssh {node} spectio login --print-link`.")
+        raise OtherNode(f"The server runs on {node}: run `ssh {node} spectio login --print-link`.")
     owners = port_owners(port)
+    if not owners:
+        raise Refused(f"no server of yours on port {port} (nothing listens there)")
     if owners != {os.getuid()}:
-        who = "nothing listens there"
-        if owners:
-            who = f"it is held by uid {min(owners - {os.getuid()})}"
-        raise Refused(f"no server of yours on port {port} ({who}): the key is not sent")
+        who = f"it is held by uid {min(owners - {os.getuid()})}"
+        raise PortHeld(f"no server of yours on port {port} ({who}): the key is not sent")
     try:
         with private_dir(db_dir) as fd:
             key = (read_small(fd, KEY_FILE, cap=256) or b"").decode().strip()
     except (OSError, ValueError) as exc:
         raise Refused(f"the server key in {db_dir} cannot be read: {exc}") from exc
+    if not key:  # written once the server has booted
+        raise NotReady(f"no server key in {db_dir} yet")
     origin = f"http://{LOOPBACK}:{port}"
     request = urllib.request.Request(  # noqa: S310 (a loopback http URL built here)
         f"{origin}/api/v1/auth/links",
@@ -91,10 +105,10 @@ def new_link(settings: Settings) -> str:
         method="POST",
     )
     try:
-        with DIRECT.open(request, timeout=10) as answer:
+        with DIRECT.open(request, timeout=timeout) as answer:
             url = json.load(answer)["url"]
     except (OSError, ValueError, KeyError, TypeError) as exc:  # HTTPError and URLError too
-        raise Refused(f"the server on port {port} gave no link: {exc}") from exc
+        raise NotReady(f"the server on port {port} gave no link: {exc}") from exc
     if not isinstance(url, str) or not TICKET.fullmatch(url.partition("#")[2]):
         raise Refused(f"the server on port {port} gave no link")
     return url

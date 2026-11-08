@@ -6,11 +6,18 @@ call's arguments to `calls.jsonl` there. `new-session` runs the command detached
 session and process group, as a pane's command is, and prints the `-F` format; `list-panes`
 and `has-session` take an exact target (`=name`) only; `send-keys ... C-c` sends SIGINT to the
 pane's process group, as a Ctrl-C typed in the pane does; `kill-session` sends SIGHUP to the
-pane's process group, as closing its terminal does. A file `fail` there makes the next call print
+pane's process group, as closing its terminal does, and so does `kill-pane -t %N` (the session
+goes with its one pane). A file `fail` there makes the next call print
 its text to stderr and exit 1; a file `garbage` makes the next `new-session` print that file's
-text for `-P`; a file `slow` makes the next `new-session` sleep that many seconds once started.
+text for `-P`; a file `panes.out` makes the next `list-panes` print that file's text instead;
+a file `slow` makes the next `new-session` sleep that many seconds once started.
+Commands chain on a `;` argument, as tmux's do; `set-option` is logged only. `-V` prints the
+file `version` there, or "tmux 3.4". With a file `remain` there, a pane that ended stays in its
+session, `#{pane_dead}` 1, as with tmux's `remain-on-exit on`. Calls run one at a time (a lock
+file), so that two `new-session` of one name make one session.
 """
 
+import fcntl
 import json
 import os
 import signal
@@ -25,12 +32,19 @@ sessions.mkdir(exist_ok=True)
 args = sys.argv[1:]
 with (state / "calls.jsonl").open("a") as calls:
     calls.write(json.dumps(args) + "\n")
+lock = (state / "lock").open("w")
+fcntl.flock(lock, fcntl.LOCK_EX)
 
 
 def die(message: str) -> None:
     print(message, file=sys.stderr)
     sys.exit(1)
 
+
+if args == ["-V"]:
+    version = state / "version"
+    print(version.read_text().strip() if version.exists() else "tmux 3.4")
+    sys.exit(0)  # never takes `fail`
 
 fail = state / "fail"
 if fail.exists():
@@ -46,16 +60,18 @@ def alive(pid: int) -> bool:
         return False
 
 
-def pane_of(name: str) -> tuple[str, int] | None:
-    """The live pane of session `name`, as (pane ID, pane PID); a dead one closes it."""
+def pane_of(name: str) -> tuple[str, int, int] | None:
+    """The pane of session `name`, as (pane ID, pane PID, dead); a dead one closes it, unless
+    `remain` exists."""
     path = sessions / name
     if not path.exists():
         return None
     pane, pid = path.read_text().split()
-    if not alive(int(pid)):
+    dead = 0 if alive(int(pid)) else 1
+    if dead and not (state / "remain").exists():
         path.unlink()
         return None
-    return pane, int(pid)
+    return pane, int(pid), dead
 
 
 def options(words: list[str], flags: str, valued: str) -> tuple[dict[str, str], list[str]]:
@@ -77,62 +93,95 @@ def exact(target: str) -> str:
     return target[1:]
 
 
-def fmt(template: str, pane: str, pid: int) -> str:
-    return template.replace("#{pane_id}", pane).replace("#{pane_pid}", str(pid))
+def fmt(template: str, pane: str, pid: int, dead: int = 0) -> str:
+    out = template.replace("#{pane_id}", pane).replace("#{pane_pid}", str(pid))
+    return out.replace("#{pane_dead}", str(dead))
 
 
-command, rest = args[0], args[1:]
-if command == "new-session":
-    opts, words = options(rest, "dP", "Fsc")
-    name = opts["s"]
-    if pane_of(name) is not None:
-        die(f"duplicate session: {name}")
-    counter = state / "panes"
-    n = int(counter.read_text()) + 1 if counter.exists() else 0
-    counter.write_text(str(n))
-    with (state / f"{name}.out").open("ab") as out:
-        proc = subprocess.Popen(
-            words,
-            cwd=opts["c"],
-            stdin=subprocess.DEVNULL,
-            stdout=out,
-            stderr=out,
-            start_new_session=True,
-        )
-    (sessions / name).write_text(f"%{n} {proc.pid}")
-    garbage, slow = state / "garbage", state / "slow"
-    if slow.exists():
-        seconds = float(slow.read_text())
-        slow.unlink()
-        time.sleep(seconds)
-    if garbage.exists():
-        print(garbage.read_text())
-        garbage.unlink()
-    elif "P" in opts:
-        print(fmt(opts.get("F", "#{pane_id}"), f"%{n}", proc.pid))
-elif command in ("list-panes", "has-session"):
-    opts, _ = options(rest, "s", "tF")
-    name = exact(opts["t"])
-    found = pane_of(name)
-    if found is None:
-        die(f"can't find session: {name}")
-    if command == "list-panes":
-        print(fmt(opts.get("F", "#{pane_id}"), *found))
-elif command == "kill-session":
-    opts, _ = options(rest, "", "t")
-    name = exact(opts["t"])
-    found = pane_of(name)
-    if found is None:
-        die(f"can't find session: {name}")
-    (sessions / name).unlink()
-    os.killpg(found[1], signal.SIGHUP)
-elif command == "send-keys":
-    opts, keys = options(rest, "", "t")
-    panes = [p for p in (pane_of(s.name) for s in sessions.iterdir()) if p is not None]
-    pid = next((pid for pane, pid in panes if pane == opts["t"]), None)
-    if pid is None:
-        die(f"can't find pane: {opts['t']}")
-    if "C-c" in keys:
-        os.killpg(pid, signal.SIGINT)
-else:
-    die(f"fake tmux: unknown command {command}")
+def run(command: str, rest: list[str]) -> None:
+    if command == "new-session":
+        opts, words = options(rest, "dP", "Fsc")
+        name = opts["s"]
+        if pane_of(name) is not None:
+            die(f"duplicate session: {name}")
+        counter = state / "panes"
+        n = int(counter.read_text()) + 1 if counter.exists() else 0
+        counter.write_text(str(n))
+        with (state / f"{name}.out").open("ab") as out:
+            proc = subprocess.Popen(
+                words,
+                cwd=opts["c"],
+                stdin=subprocess.DEVNULL,
+                stdout=out,
+                stderr=out,
+                start_new_session=True,
+            )
+        (sessions / name).write_text(f"%{n} {proc.pid}")
+        garbage, slow = state / "garbage", state / "slow"
+        if slow.exists():
+            seconds = float(slow.read_text())
+            slow.unlink()
+            fcntl.flock(lock, fcntl.LOCK_UN)
+            time.sleep(seconds)
+        if garbage.exists():
+            print(garbage.read_text())
+            garbage.unlink()
+        elif "P" in opts:
+            print(fmt(opts.get("F", "#{pane_id}"), f"%{n}", proc.pid))
+    elif command in ("list-panes", "has-session"):
+        opts, _ = options(rest, "s", "tF")
+        name = exact(opts["t"])
+        found = pane_of(name)
+        if found is None:
+            die(f"can't find session: {name}")
+        panes = state / "panes.out"
+        if command == "list-panes" and panes.exists():
+            print(panes.read_text(), end="")
+            panes.unlink()
+        elif command == "list-panes":
+            print(fmt(opts.get("F", "#{pane_id}"), *found))
+    elif command == "kill-session":
+        opts, _ = options(rest, "", "t")
+        name = exact(opts["t"])
+        found = pane_of(name)
+        if found is None:
+            die(f"can't find session: {name}")
+        (sessions / name).unlink()
+        if not found[2]:
+            os.killpg(found[1], signal.SIGHUP)
+    elif command == "kill-pane":
+        opts, _ = options(rest, "", "t")
+        for path in sessions.iterdir():
+            found = pane_of(path.name)
+            if found is not None and found[0] == opts["t"]:
+                path.unlink()
+                if not found[2]:
+                    os.killpg(found[1], signal.SIGHUP)
+                break
+        else:
+            die(f"can't find pane: {opts['t']}")
+    elif command == "send-keys":
+        opts, keys = options(rest, "", "t")
+        panes = [p for p in (pane_of(s.name) for s in sessions.iterdir()) if p is not None]
+        pid = next((pid for pane, pid, _ in panes if pane == opts["t"]), None)
+        if pid is None:
+            die(f"can't find pane: {opts['t']}")
+        if "C-c" in keys:
+            os.killpg(pid, signal.SIGINT)
+    elif command == "set-option":
+        opts, words = options(rest, "g", "t")
+        if "t" in opts and pane_of(exact(opts["t"]).removesuffix(":")) is None:
+            die(f"no such session: {opts['t']}")
+        if len(words) != 2:
+            die("fake tmux: set-option takes a name and a value")
+    else:
+        die(f"fake tmux: unknown command {command}")
+
+
+command: list[str] = []
+for word in [*args, ";"]:
+    if word != ";":
+        command.append(word)
+    elif command:
+        run(command[0], command[1:])
+        command = []
