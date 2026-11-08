@@ -1,4 +1,4 @@
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useId, useState } from "react";
 import type { Process, ProcessEfficiency } from "../api";
 import { usePhone } from "../shell/layout";
 import { bytes, isLow, isNear, percent, seconds } from "./resources";
@@ -10,10 +10,11 @@ import { lastSegment, type words } from "./stateWord";
 // LiteRunEfficiency, MLiteRunEfficiency): one row per process or rule from `/processes`
 // `efficiency`, over each task's last attempt (schedulers §3.6). Every header sorts with a native
 // button; the row's name opens the task list filtered to it. On the phone, one card per process
-// with the same facts as label and value rows, and a Sort by select. No plot in 0.0.1.
+// with the same facts as label and value rows, and a Sort by select. No plot in 0.0.1. Both open
+// in pipeline order, with a Pipeline order / A to Z choice above (ui-spec §4.4 note 2026-11-08).
 
 type Words = ReturnType<typeof words>;
-type Key = "name" | "jobs" | "measured" | "cpu_mean" | "cpu_max" | "mem_mean" | "mem_max" | "cpus" | "mem" | "time" | "varies" | "peak" | "longest";
+type Key = "pipeline" | "name" | "jobs" | "measured" | "cpu_mean" | "cpu_max" | "mem_mean" | "mem_max" | "cpus" | "mem" | "time" | "varies" | "peak" | "longest";
 
 /** A ratio and its badges: "low" under 25 %, and for memory "near limit" above 90 %. */
 function Ratio({ value, memory = false }: { value: number | null; memory?: boolean }) {
@@ -89,7 +90,8 @@ export function wasteLines(processes: Process[], w: Words): string[] {
 }
 
 function sorted(processes: Process[], key: Key, ascending: boolean): Process[] {
-  const by = COLUMNS.find((c) => c.key === key)!.sort;
+  // the API's pipeline_order; without it, the API's own order (a stable sort of equal keys)
+  const by = key === "pipeline" ? (p: Process) => p.pipeline_order ?? null : COLUMNS.find((c) => c.key === key)!.sort;
   return [...processes].sort((a, b) => {
     const x = by(a);
     const y = by(b);
@@ -108,10 +110,28 @@ function Show({ process, w, onShow }: { process: string; w: Words; onShow: (proc
   );
 }
 
+/** The two whole-list orders, as native radio buttons; neither is checked under a column sort. */
+function Order({ sortKey, ascending, onPick }: { sortKey: Key; ascending: boolean; onPick: (k: Key) => void }) {
+  const name = useId();
+  const options: [Key, string][] = [
+    ["pipeline", "Pipeline order"],
+    ["name", "A to Z"],
+  ];
+  return (
+    <div role="radiogroup" aria-label="Order" className="sp-order">
+      {options.map(([k, label]) => (
+        <label key={k}>
+          <input type="radio" name={name} checked={sortKey === k && ascending} onChange={() => onPick(k)} /> {label}
+        </label>
+      ))}
+    </div>
+  );
+}
+
 export function ByProcess({ processes, w, onShow }: { processes: Process[]; w: Words; onShow: (process: string) => void }) {
   const phone = usePhone();
-  // lowest mean memory efficiency first: the processes that waste the most (LiteRunEfficiency)
-  const [key, setKey] = useState<Key>("mem_mean");
+  // the rules' true order first (Thomas, 2026-11-08); every column still sorts
+  const [key, setKey] = useState<Key>("pipeline");
   const [ascending, setAscending] = useState(true);
   const label = `${w.Units} by ${w.group}`;
   const rows = sorted(processes, key, ascending);
@@ -120,6 +140,11 @@ export function ByProcess({ processes, w, onShow }: { processes: Process[]; w: W
     setAscending(k === key ? !ascending : true);
     setKey(k);
   };
+  const pick = (k: Key) => {
+    setKey(k);
+    setAscending(true);
+  };
+  const order = <Order sortKey={key} ascending={ascending} onPick={pick} />;
   const foot = (
     <>
       {waste.map((line) => (
@@ -137,6 +162,7 @@ export function ByProcess({ processes, w, onShow }: { processes: Process[]; w: W
   if (phone) {
     return (
       <section className="sp-runs" aria-label={label}>
+        {order}
         <label className="sp-select">
           Sort by{" "}
           <select
@@ -147,6 +173,7 @@ export function ByProcess({ processes, w, onShow }: { processes: Process[]; w: W
               setAscending(dir === "asc");
             }}
           >
+            <option value="pipeline:asc">Pipeline order</option>
             {COLUMNS.filter((c) => c.num).flatMap((c) => [
               <option key={`${c.key}:asc`} value={`${c.key}:asc`}>
                 {c.label(w)}, lowest first
@@ -176,6 +203,7 @@ export function ByProcess({ processes, w, onShow }: { processes: Process[]; w: W
   }
   return (
     <section className="sp-runs" aria-label={label}>
+      {order}
       <div className="sp-table-wrap">
         <table className="sp-table" aria-label={label}>
           <thead>

@@ -90,7 +90,9 @@ def test_run_detail_after_replay(authed_client: TestClient, replayed_flaky: str)
     assert sum(p["retries"] for p in processes) == 2  # two tasks retried once
     keys = {"process", "stage_id", "counts", "retries"}
     keys |= {"status", "is_checkpoint", "lower_bound", "efficiency"}  # P1 Task 34
+    keys |= {"pipeline_order"}  # FU-P3-82
     assert all(set(p) == keys for p in processes)
+    assert [p["pipeline_order"] for p in processes] == list(range(len(FLAKY_PROCESSES)))
     assert {p["status"] for p in processes} == {"done"}
 
 
