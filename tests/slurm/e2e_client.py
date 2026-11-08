@@ -168,8 +168,11 @@ class Api:
 
 
 def lines_of(*argv: str) -> list[str]:
+    """The command's stdout lines; a non-zero exit raises, so a failed squeue never reads as an empty queue."""
     done = subprocess.run(argv, capture_output=True, text=True, timeout=60)  # noqa: S603
-    return done.stdout.splitlines() if done.returncode == 0 else []
+    if done.returncode != 0:
+        raise Failed(f"{argv[0]} exited {done.returncode}: {done.stderr.strip()}")
+    return done.stdout.splitlines()
 
 
 def tmux_has(session: str) -> bool:
@@ -179,6 +182,16 @@ def tmux_has(session: str) -> bool:
 
 def squeue() -> list[str]:
     return lines_of("squeue", "--me", "-h", "-o", "%i|%j|%Z")
+
+
+def left_over(run_dir: str, session: str) -> str | None:
+    """What is left of the run (its jobs in squeue, its tmux session), None when nothing; a failed squeue is left over."""
+    try:
+        left = run_jobs(squeue(), run_dir)
+    except Failed as exc:
+        return f"squeue failed: {exc}"
+    tmux = tmux_has(session)
+    return f"jobs in squeue: {left}; tmux session {session}: {tmux}" if left or tmux else None
 
 
 def spool_drops(db: Path, run_id: str) -> list[tuple]:
@@ -204,6 +217,7 @@ def launch(args: argparse.Namespace) -> int:
     session = f"spectio-{run_id}"
     print(f"run {run_id} launched; polling", flush=True)
     states, head_seen, tmux_seen, jobs_seen = [run["state"]], False, False, set()
+    squeue_error: str | None = "no sample"  # None once a squeue sample has answered
     deadline = time.monotonic() + args.timeout
     detail: dict = run
     while detail["state"] not in ENDED:
@@ -218,13 +232,19 @@ def launch(args: argparse.Namespace) -> int:
             head = detail.get("head") or {}
             head_seen |= head.get("session") == session and head.get("alive") is True
             tmux_seen |= tmux_has(session)
-        jobs_seen.update(squeue())
+        try:
+            jobs_seen.update(squeue())
+            squeue_error = None
+        except Failed as exc:  # skip the sample
+            squeue_error = squeue_error and str(exc)
     checks: dict[str, str | None] = dict.fromkeys(CHECKS)
     checks["run succeeded"] = states_problem(states)
     heads = head_jobs(sorted(jobs_seen))
     if not (head_seen and tmux_seen) or heads:
         checks["head in tmux, no sbatch"] = (
             f"the API showed {session} alive: {head_seen}; tmux had it: {tmux_seen}; head jobs in squeue: {heads}")
+    elif squeue_error:
+        checks["head in tmux, no sbatch"] = f"squeue never answered: {squeue_error}"
     items, _ = api.expect(200, "GET", f"/api/v1/runs/{run_id}/processes")
     diff = count_diff(golden_counts(Path(args.golden).read_text()), process_counts(items["items"]))
     checks["counts equal the golden"] = "; ".join(diff) or None
@@ -247,12 +267,9 @@ def launch(args: argparse.Namespace) -> int:
     drops = spool_drops(Path(db_dir) / "spectio.db", run_id)
     checks["no spool drop"] = f"spool_drops: {drops}" if drops else None
     left_until = time.monotonic() + LEFT_S
-    while True:
-        left, tmux = run_jobs(squeue(), run_dir), tmux_has(session)
-        if not left and not tmux:
-            break
+    while (left := left_over(run_dir, session)) is not None:
         if time.monotonic() > left_until:
-            checks["no job or session left"] = f"jobs in squeue: {left}; tmux session {session}: {tmux}"
+            checks["no job or session left"] = left
             break
         time.sleep(POLL_S)
     lines = scenario_expect(args.scenario) if args.scenario else []

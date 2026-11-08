@@ -5,6 +5,7 @@ import os
 import sys
 import unittest
 from email.message import Message
+from unittest import mock
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -108,6 +109,34 @@ class Jobs(unittest.TestCase):
 
     def test_head_jobs_by_name(self):
         self.assertEqual(c.head_jobs(["12|nf-ALIGN|/w", "13|spectio-head-run_1|/w"]), ["13|spectio-head-run_1|/w"])
+
+
+class Squeue(unittest.TestCase):
+    """A squeue that exits non-zero (slurmctld unreachable, a bad flag) is a failure, never an empty queue."""
+
+    def test_a_non_zero_exit_raises_with_its_stderr(self):
+        with self.assertRaisesRegex(c.Failed, "exited 3: slurmctld down"):
+            c.lines_of(sys.executable, "-c", "import sys; sys.stderr.write('slurmctld down'); sys.exit(3)")
+
+    def test_a_zero_exit_gives_the_lines(self):
+        self.assertEqual(c.lines_of(sys.executable, "-c", "print('a'); print('b')"), ["a", "b"])
+
+    def test_a_failed_squeue_is_left_over_not_nothing(self):
+        with mock.patch.object(c, "squeue", side_effect=c.Failed("squeue exited 1: no controller")), \
+                mock.patch.object(c, "tmux_has", return_value=False):
+            self.assertEqual(c.left_over("/r/runs/run_1", "spectio-run_1"),
+                             "squeue failed: squeue exited 1: no controller")
+
+    def test_nothing_left(self):
+        with mock.patch.object(c, "squeue", return_value=["13|other|/r/runs/run_10/work"]), \
+                mock.patch.object(c, "tmux_has", return_value=False):
+            self.assertIsNone(c.left_over("/r/runs/run_1", "spectio-run_1"))
+
+    def test_a_job_or_the_session_left(self):
+        with mock.patch.object(c, "squeue", return_value=["12|x|/r/runs/run_1/work"]), \
+                mock.patch.object(c, "tmux_has", return_value=True):
+            self.assertEqual(c.left_over("/r/runs/run_1", "spectio-run_1"),
+                             "jobs in squeue: ['12|x|/r/runs/run_1/work']; tmux session spectio-run_1: True")
 
 
 if __name__ == "__main__":

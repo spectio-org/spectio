@@ -25,7 +25,8 @@ jobs:
   slurm:
     name: ${{ matrix.name }}
     runs-on: ubuntu-24.04
-    timeout-minutes: 40
+    # e2e: bootstrap, install and cluster up (10 min each at most), then its step's 40, then the steps after it.
+    timeout-minutes: ${{ matrix.timeout || 40 }}
     permissions:
       contents: read
     strategy:
@@ -37,7 +38,7 @@ jobs:
           - {name: snakemake-b, profile: site, scenarios: "snakemake:oom_fatal,timeout_fatal,tool_error_then_fixed_resume heads"}
           - {name: rest, profile: rest, scenarios: "rest"}
           - {name: mini, profile: mini, scenarios: "nextflow:happy"}
-          - {name: e2e, profile: mini, scenarios: "", e2e: "nextflow snakemake"}
+          - {name: e2e, profile: mini, scenarios: "", e2e: "nextflow snakemake", timeout: 75}
     env:
       SIND_REALM: spx-t3
       SIND_PROGRESS: plain
@@ -79,8 +80,12 @@ jobs:
           done
       - name: End to end (launch and monitor)
         if: matrix.e2e
+        # Below the job's budget, so a hung run ends as a step failure: its FAIL lines, the server pane and
+        # head.out are printed and "Cluster state on failure" runs. 900 s a run: the native runs took 1 and 8 min.
+        timeout-minutes: 40
         env:
           ENGINES: ${{ matrix.e2e }}
+          E2E_TIMEOUT: "900"
         run: |
           rc=0
           for e in $ENGINES; do
