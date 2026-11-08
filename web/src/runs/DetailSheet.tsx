@@ -104,11 +104,13 @@ function ProcessTasks({ run, process, name, onOpen }: { run: RunDetail; process:
     return () => controller.abort();
   }, [run.id, process]);
   useFrames(() => first(), run.id, !isTerminal(run.state));
-  if (error) return <p role="alert">The {w.units} could not be read: {error}</p>;
-  if (shown === null) return <p className="sp-muted">Loading the {w.units}…</p>;
-  if (!shown.rows.length) return <p className="sp-muted">No {w.unit} reported yet.</p>;
+  // a failed re-read keeps the rows (and the focused one) under the alert (CR-P3FU80-02)
+  const alert = error && <p role="alert">The {w.units} could not be read: {error}</p>;
+  if (shown === null) return alert || <p className="sp-muted">Loading the {w.units}…</p>;
+  if (!shown.rows.length) return alert || <p className="sp-muted">No {w.unit} reported yet.</p>;
   return (
     <>
+      {alert}
       <div className="sp-task-head" aria-hidden="true">
         <span>{w.Unit}</span>
         <span>State</span>

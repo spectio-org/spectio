@@ -137,6 +137,30 @@ test("FU-P3-80: a frame for this run reads the process's tasks again, keeping Lo
   expect(count()).toBe(before);
 });
 
+test("CR-P3FU80-02: a failed re-read shows the alert above the rows, keeps them and the focus, and a later frame clears it", async () => {
+  let fail = false;
+  const first = `${URL_}/tasks?process=${encodeURIComponent(ALIGN)}`;
+  detail({}, {
+    [first]: () => (fail ? json(500, { detail: "boom" }) : json(200, { items: [task(1), task(2, "running")], next: "c2" })),
+  });
+  app(`/runs/${ID}`);
+  await userEvent.click(within(await alignTable()).getByRole("button", { name: `Open process ${ALIGN}` }));
+  const sheet = await screen.findByRole("dialog", { name: "ALIGN" });
+  const list = await within(sheet).findByRole("list", { name: "Tasks of ALIGN" });
+  const row = within(list).getByRole("button", { name: "Open task ALIGN (S01), Succeeded" });
+  row.focus();
+  fail = true;
+  FakeEventSource.last!.frame({ run_id: ID });
+  expect(await within(sheet).findByRole("alert", {}, { timeout: 3000 })).toHaveTextContent("The tasks could not be read");
+  expect(row).toBeInTheDocument();
+  expect(row).toHaveFocus();
+  expect(within(list).getAllByRole("button")).toHaveLength(2);
+  fail = false;
+  FakeEventSource.last!.frame({ run_id: ID });
+  await waitFor(() => expect(within(sheet).queryByRole("alert")).toBeNull(), { timeout: 3000 });
+  expect(row).toHaveFocus();
+});
+
 test("Load more ignores a second click while its page is in flight (CR-P3PARD-06)", async () => {
   let release!: () => void;
   const held = new Promise<void>((r) => (release = r));
