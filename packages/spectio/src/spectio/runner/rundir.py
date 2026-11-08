@@ -128,8 +128,8 @@ def runs_disk(runs_root: Path) -> tuple[str, str]:
     """`ok` or `warn`, and a detail, for the free space of the file system that holds
     `runs_root`, or its nearest existing parent before it is created; never raises. The used
     percentage is rounded up, as `df` shows it."""
-    measured = next(p for p in (runs_root, *runs_root.parents) if p.is_dir())
     try:
+        measured = next(p for p in (runs_root, *runs_root.parents) if p.is_dir())
         usage = shutil.disk_usage(measured)
     except OSError as exc:
         return "warn", f"cannot measure the free space of {runs_root}: {exc}"

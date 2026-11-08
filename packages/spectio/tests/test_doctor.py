@@ -363,6 +363,19 @@ def test_runs_disk_unmeasurable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch)
     )
 
 
+def test_runs_disk_unsearchable_parent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # pathlib's is_dir() re-raises EACCES on Python 3.11 to 3.13 (SEC-P3FU74-01)
+    def refused(self: Path) -> bool:
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(Path, "is_dir", refused)
+    missing = tmp_path / "locked" / "spectio-runs"
+    assert runs_disk(missing) == (
+        "warn",
+        f"cannot measure the free space of {missing}: [Errno 13] Permission denied",
+    )
+
+
 def test_doctor_reports_runs_disk(
     home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
 ) -> None:
