@@ -365,7 +365,7 @@ def build(theme: Theme) -> Sketch:
 
     # login shells of spectio doctor
     x, y = 50, LOW + 8
-    s.text(x, y + 10, "`spectio doctor`, login shells", size=13.5, anchor="start", weight="bold")
+    s.text(x, y + 10, "`spectio doctor`, the login shells around uv", size=13.5, anchor="start", weight="bold")
     s.text(x, y + 34, "before, 3", size=12.5, anchor="start", colour=t.dim)
     for i, text in enumerate(("`which tmux sbatch`", "`which uv`", "`uv --version`")):
         shell(s, x + 72 + i * 132, y + 22, 124, "$ bash -l")
