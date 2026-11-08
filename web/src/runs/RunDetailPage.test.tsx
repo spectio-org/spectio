@@ -684,6 +684,16 @@ const snakemakeRun = () =>
     { [`${URL_}/processes`]: RULES },
   );
 
+test("with every rule up to date the run reads 'Nothing to run' (ui-spec §5.2, CR-P3T35-04)", async () => {
+  const upToDate = (process: string) => ({ process, stage_id: null, counts: {}, retries: 0, status: "up_to_date", is_checkpoint: false, lower_bound: false });
+  detail(
+    { workflow: SNAKEMAKE, task_counts: {}, summary: { tasks: { done: 0, total: 0, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" } },
+    { [`${URL_}/processes`]: { items: [upToDate("samtools_faindex"), upToDate("plot_SV_calls")] } },
+  );
+  app(`/runs/${ID}`);
+  expect(await screen.findByText("Nothing to run: all outputs are up to date")).toBeInTheDocument();
+});
+
 test("a rule waiting for a checkpoint reads 'Waiting for checkpoint <rule>', not Pending", async () => {
   snakemakeRun();
   app(`/runs/${ID}`);

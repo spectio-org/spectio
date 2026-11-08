@@ -12,7 +12,7 @@ import { lastSegment, type words } from "./stateWord";
 // with the same facts as label and value rows, and a Sort by select. No plot in 0.0.1.
 
 type Words = ReturnType<typeof words>;
-type Key = "name" | "jobs" | "measured" | "cpu_mean" | "cpu_max" | "mem_mean" | "mem_max" | "asked" | "used";
+type Key = "name" | "jobs" | "measured" | "cpu_mean" | "cpu_max" | "mem_mean" | "mem_max" | "cpus" | "mem" | "time" | "peak" | "longest";
 
 /** A ratio and its badges: "low" under 25 %, and for memory "near limit" above 90 %. */
 function Ratio({ value, memory = false }: { value: number | null; memory?: boolean }) {
@@ -25,12 +25,11 @@ function Ratio({ value, memory = false }: { value: number | null; memory?: boole
   );
 }
 
-const asked = (e: ProcessEfficiency): string => {
-  const r = e.requested;
-  const text = [r.cpus === null ? "—" : `${r.cpus} CPUs`, bytes(r.mem_bytes), seconds(r.time_limit_s)].join(" · ");
-  return r.varies ? `${text}, varies` : text;
-};
-const used = (e: ProcessEfficiency): string => `${bytes(e.used.peak_rss_bytes_max)} · ${seconds(e.used.elapsed_s_max)}`;
+/** One requested value; "varies" when the jobs asked for different values. */
+const asked = (e: ProcessEfficiency, text: string): string => (e.requested.varies ? `${text}, varies` : text);
+const cpus = (e: ProcessEfficiency): string => asked(e, e.requested.cpus === null ? "—" : String(e.requested.cpus));
+const memory = (e: ProcessEfficiency): string => asked(e, bytes(e.requested.mem_bytes));
+const limit = (e: ProcessEfficiency): string => asked(e, seconds(e.requested.time_limit_s));
 
 const COLUMNS: { key: Key; label: (w: Words) => string; sort: (p: Process) => number | string | null; num?: boolean }[] = [
   { key: "name", label: (w) => w.Group, sort: (p) => lastSegment(p.process) },
@@ -40,13 +39,16 @@ const COLUMNS: { key: Key; label: (w: Words) => string; sort: (p: Process) => nu
   { key: "cpu_max", label: () => "CPU eff. max", sort: (p) => p.efficiency?.cpu_max ?? null, num: true },
   { key: "mem_mean", label: () => "Mem eff. mean", sort: (p) => p.efficiency?.mem_mean ?? null, num: true },
   { key: "mem_max", label: () => "Mem eff. max", sort: (p) => p.efficiency?.mem_max ?? null, num: true },
-  { key: "asked", label: () => "Asked", sort: (p) => p.efficiency?.requested.mem_bytes ?? null },
-  { key: "used", label: () => "Used, at most", sort: (p) => p.efficiency?.used.peak_rss_bytes_max ?? null },
+  { key: "cpus", label: () => "CPUs asked", sort: (p) => p.efficiency?.requested.cpus ?? null, num: true },
+  { key: "mem", label: () => "Memory asked", sort: (p) => p.efficiency?.requested.mem_bytes ?? null, num: true },
+  { key: "time", label: () => "Time limit", sort: (p) => p.efficiency?.requested.time_limit_s ?? null, num: true },
+  { key: "peak", label: () => "Peak memory", sort: (p) => p.efficiency?.used.peak_rss_bytes_max ?? null },
+  { key: "longest", label: () => "Longest", sort: (p) => p.efficiency?.used.elapsed_s_max ?? null, num: true },
 ];
 
 /** The cells of one process, in the columns' order after the name. */
 function cells(e: ProcessEfficiency | undefined): ReactNode[] {
-  if (!e) return ["—", "—", "—", "—", "—", "—", "—", "—"];
+  if (!e) return COLUMNS.slice(1).map(() => "—");
   return [
     `${e.jobs.done} / ${e.jobs.total}`,
     e.measured,
@@ -54,8 +56,11 @@ function cells(e: ProcessEfficiency | undefined): ReactNode[] {
     <Ratio value={e.cpu_max} />,
     <Ratio value={e.mem_mean} memory />,
     <Ratio value={e.mem_max} memory />,
-    asked(e),
-    used(e),
+    cpus(e),
+    memory(e),
+    limit(e),
+    bytes(e.used.peak_rss_bytes_max),
+    seconds(e.used.elapsed_s_max),
   ];
 }
 
@@ -66,8 +71,8 @@ export function efficiencyFacts(e: ProcessEfficiency | undefined, w: Words): [st
     [`${w.Units} done · measured`, `${e.jobs.done} / ${e.jobs.total} · ${e.measured}`],
     ["CPU eff. mean · max", <><Ratio value={e.cpu_mean} /> · <Ratio value={e.cpu_max} /></>],
     ["Mem eff. mean · max", <><Ratio value={e.mem_mean} memory /> · <Ratio value={e.mem_max} memory /></>],
-    ["Asked", asked(e)],
-    ["Used, at most", used(e)],
+    ["CPUs · memory · time limit asked", `${cpus(e)} · ${memory(e)} · ${limit(e)}`],
+    ["Peak memory · longest", `${bytes(e.used.peak_rss_bytes_max)} · ${seconds(e.used.elapsed_s_max)}`],
   ];
 }
 

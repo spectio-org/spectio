@@ -105,3 +105,33 @@ test("on the phone By process is one card per process, with a Sort by select", a
   expect(within(first).getByRole("button", { name: "Show the tasks of process NFCORE:RNASEQ:FASTQC" })).toBeInTheDocument();
   expect(within(first).getByText("Mem eff. mean · max")).toBeInTheDocument();
 });
+
+test("By process has the board's request and usage columns, each sortable (CR-P3T35-02)", async () => {
+  served();
+  app(`/runs/${ID}?tab=tasks`);
+  await userEvent.click(await screen.findByRole("tab", { name: "By process" }));
+  const table = screen.getByRole("table", { name: "Tasks by process" });
+  for (const name of ["CPUs asked", "Memory asked", "Time limit", "Peak memory", "Longest"])
+    expect(within(table).getByRole("button", { name: `Sort by ${name}` })).toBeInTheDocument();
+  const first = () => within(table).getAllByRole("row")[1].textContent;
+  for (const name of ["CPUs asked", "Time limit"]) {
+    await userEvent.click(within(table).getByRole("button", { name: `Sort by ${name}` }));
+    await userEvent.click(within(table).getByRole("button", { name: `Sort by ${name}` }));
+    expect(within(table).getByRole("columnheader", { name: new RegExp(name) })).toHaveAttribute("aria-sort", "descending");
+    expect(first()).toContain("STAR_ALIGN");
+  }
+});
+
+test("the Task list and By process tabs each control their tab panel (CR-P3T35-03)", async () => {
+  served();
+  app(`/runs/${ID}?tab=tasks`);
+  const list = await screen.findByRole("tab", { name: "Task list" });
+  let panel = screen.getByRole("tabpanel", { name: "Task list" });
+  expect(list).toHaveAttribute("aria-controls", panel.id);
+  expect(within(panel).getByRole("table", { name: "Tasks" })).toBeInTheDocument();
+  const byProcess = screen.getByRole("tab", { name: "By process" });
+  await userEvent.click(byProcess);
+  panel = screen.getByRole("tabpanel", { name: "By process" });
+  expect(byProcess).toHaveAttribute("aria-controls", panel.id);
+  expect(within(panel).getByRole("table", { name: "Tasks by process" })).toBeInTheDocument();
+});

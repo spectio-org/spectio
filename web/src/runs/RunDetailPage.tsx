@@ -227,6 +227,11 @@ function StagesOrProcesses({
           {run.stages_note}
         </p>
       )}
+      {processes.length > 0 && processes.every((p) => p.status === "up_to_date") && (
+        <p role="note" className="sp-note">
+          Nothing to run: all outputs are up to date
+        </p>
+      )}
       {open.length > 0 && (
         <p role="note" className="sp-note">
           The DAG grows after checkpoint {open.join(", ")}: more {w.units} may come.
@@ -551,6 +556,8 @@ function ViewTabs({ view, setView, w }: { view: "list" | "process"; setView: (v:
           type="button"
           role="tab"
           data-view={v.key}
+          id={`view-${v.key}`}
+          aria-controls={`view-panel-${v.key}`}
           aria-selected={view === v.key}
           tabIndex={view === v.key ? 0 : -1}
           onClick={() => setView(v.key)}
@@ -666,155 +673,161 @@ function TasksPanel({
     return (
       <section className="sp-runs" aria-label={w.Units}>
         {tabs}
-        <ByProcess
-          processes={processes}
-          w={w}
-          onShow={(name) => {
-            setView("list");
-            setProcess(name);
-          }}
-        />
+        <div role="tabpanel" id="view-panel-list" aria-labelledby="view-list" hidden />
+        <div role="tabpanel" id="view-panel-process" aria-labelledby="view-process">
+          <ByProcess
+            processes={processes}
+            w={w}
+            onShow={(name) => {
+              setView("list");
+              setProcess(name);
+            }}
+          />
+        </div>
       </section>
     );
   }
   return (
     <section className="sp-runs" aria-label={w.Units}>
       {tabs}
-      <div className="sp-filters">
-        <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
-          {TASK_FILTERS.map((f, i) => (
-            <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
-              {f.label}
-              <span className="sp-count">{count(f.states)}</span>
-            </button>
-          ))}
-        </div>
-        <label className="sp-select">
-          {w.Group}{" "}
-          <select value={process} onChange={(e) => setProcess(e.currentTarget.value)}>
-            <option value="">
-              All {w.groups} ({processes.length})
-            </option>
-            {processes.map((p) => (
-              <option key={p.process} value={p.process}>
-                {lastSegment(p.process)} ({total(p.counts)})
-              </option>
+      <div role="tabpanel" id="view-panel-process" aria-labelledby="view-process" hidden />
+      <div role="tabpanel" id="view-panel-list" aria-labelledby="view-list" className="sp-runs">
+        <div className="sp-filters">
+          <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
+            {TASK_FILTERS.map((f, i) => (
+              <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
+                {f.label}
+                <span className="sp-count">{count(f.states)}</span>
+              </button>
             ))}
-            {process && !processes.some((p) => p.process === process) && <option value={process}>{lastSegment(process)}</option>}
-          </select>
-        </label>
+          </div>
+          <label className="sp-select">
+            {w.Group}{" "}
+            <select value={process} onChange={(e) => setProcess(e.currentTarget.value)}>
+              <option value="">
+                All {w.groups} ({processes.length})
+              </option>
+              {processes.map((p) => (
+                <option key={p.process} value={p.process}>
+                  {lastSegment(p.process)} ({total(p.counts)})
+                </option>
+              ))}
+              {process && !processes.some((p) => p.process === process) && <option value={process}>{lastSegment(process)}</option>}
+            </select>
+          </label>
+        </div>
+        <p className="sp-sub">
+          <span>In the order {engineName(run.workflow.engine)} first reported them</span>
+          {active && <LiveStatus />}
+        </p>
+        {error && <p role="alert">The {w.units} could not be read: {error}</p>}
+        {tasks === null && !error && <p className="sp-muted">Loading the {w.units}…</p>}
+        {tasks?.length === 0 && <p className="sp-empty">No {w.unit} matches these filters.</p>}
+        {!!tasks?.length && phone && (
+          <ul className="sp-cards-list" aria-label={w.Units}>
+            {tasks.map((t) => (
+              <li key={t.id} className="sp-row-card sp-task" data-rail="" data-tone={tone(t.state)}>
+                <span className="sp-row-card-top">
+                  <OpenTask task={t} w={w} onOpen={onOpen} />
+                  <Word state={t.state} word={taskWord(t.state)} />
+                </span>
+                <span className="sp-muted">
+                  {t.attempt_n !== null && `attempt ${t.attempt_n} · `}
+                  {resourcesLine(t.resources)}
+                </span>
+                {efficiencyLine(t) && <span className="sp-muted">{efficiencyLine(t)}</span>}
+                <FilesButton task={t} onOpen={onOpen} wide />
+              </li>
+            ))}
+          </ul>
+        )}
+        {!!tasks?.length && !phone && (
+          <div className="sp-table-wrap">
+            <table className="sp-table" aria-label={w.Units}>
+              <thead>
+                <tr>
+                  <th scope="col">{w.Unit}</th>
+                  <th scope="col">State</th>
+                  <th scope="col" className="sp-num">Attempt</th>
+                  <th scope="col" className="sp-num">Duration</th>
+                  <th scope="col" className="sp-num" data-narrow="">CPUs</th>
+                  <th scope="col" className="sp-num" data-narrow="">CPU %</th>
+                  <th scope="col" className="sp-num">Memory</th>
+                  <th scope="col">Peak memory</th>
+                  <th scope="col" className="sp-num">Time limit</th>
+                  <th scope="col" className="sp-num sp-nowrap-cell" aria-describedby={effSource}>
+                    CPU eff.
+                  </th>
+                  <th scope="col" className="sp-num sp-nowrap-cell" aria-describedby={effSource}>
+                    Mem eff.
+                  </th>
+                  <th scope="col">
+                    <span className="sp-sr">Files</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((t) => {
+                  const r = t.resources;
+                  const near = nearLimit(r);
+                  return (
+                    <tr key={t.id}>
+                      <td data-rail="" data-tone={tone(t.state)} className="sp-task">
+                        <OpenTask task={t} w={w} onOpen={onOpen} />
+                      </td>
+                      <td>
+                        <Word state={t.state} word={taskWord(t.state)} />
+                      </td>
+                      <td className="sp-num">{t.attempt_n ?? "—"}</td>
+                      <td className="sp-num sp-nowrap-cell">
+                        {seconds(r.realtime_s)}
+                        <NearLimit on={near.time} />
+                      </td>
+                      <td className="sp-num" data-narrow="">{r.cpus ?? "—"}</td>
+                      <td className="sp-num" data-narrow="">{r.cpu_percent === null ? "—" : `${Math.round(r.cpu_percent)} %`}</td>
+                      <td className="sp-num sp-nowrap-cell">{bytes(r.memory_bytes)}</td>
+                      <td className="sp-nowrap-cell">
+                        {bytes(r.peak_rss_bytes)}
+                        <NearLimit on={near.memory} />
+                      </td>
+                      <td className="sp-num sp-nowrap-cell">{seconds(r.time_s)}</td>
+                      <td className="sp-num sp-nowrap-cell">
+                        {percent(t.efficiency?.cpu)}
+                        <Low on={isLow(t.efficiency?.cpu)} />
+                      </td>
+                      <td className="sp-num sp-nowrap-cell">
+                        {percent(t.efficiency?.mem)}
+                        <Low on={isLow(t.efficiency?.mem)} />
+                        <NearLimit on={isNear(t.efficiency?.mem)} />
+                      </td>
+                      <td>
+                        <FilesButton task={t} onOpen={onOpen} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {!!tasks?.length && !phone && (
+          <p className="sp-muted">
+            CPU eff. and Mem eff.: <span id={effSource}>{EFF_SOURCE}</span>. "low": under 25 %.
+          </p>
+        )}
+        {!!tasks?.length && (
+          <p className="sp-foot-line">
+            {tasks.length} of {plural(count(TASK_FILTERS[filter].states), w.unit, w.units)}
+          </p>
+        )}
+        {shown?.next && (
+          <div>
+            <Button variant="default" onClick={more}>
+              Load more {w.units}
+            </Button>
+          </div>
+        )}
       </div>
-      <p className="sp-sub">
-        <span>In the order {engineName(run.workflow.engine)} first reported them</span>
-        {active && <LiveStatus />}
-      </p>
-      {error && <p role="alert">The {w.units} could not be read: {error}</p>}
-      {tasks === null && !error && <p className="sp-muted">Loading the {w.units}…</p>}
-      {tasks?.length === 0 && <p className="sp-empty">No {w.unit} matches these filters.</p>}
-      {!!tasks?.length && phone && (
-        <ul className="sp-cards-list" aria-label={w.Units}>
-          {tasks.map((t) => (
-            <li key={t.id} className="sp-row-card sp-task" data-rail="" data-tone={tone(t.state)}>
-              <span className="sp-row-card-top">
-                <OpenTask task={t} w={w} onOpen={onOpen} />
-                <Word state={t.state} word={taskWord(t.state)} />
-              </span>
-              <span className="sp-muted">
-                {t.attempt_n !== null && `attempt ${t.attempt_n} · `}
-                {resourcesLine(t.resources)}
-              </span>
-              {efficiencyLine(t) && <span className="sp-muted">{efficiencyLine(t)}</span>}
-              <FilesButton task={t} onOpen={onOpen} wide />
-            </li>
-          ))}
-        </ul>
-      )}
-      {!!tasks?.length && !phone && (
-        <div className="sp-table-wrap">
-          <table className="sp-table" aria-label={w.Units}>
-            <thead>
-              <tr>
-                <th scope="col">{w.Unit}</th>
-                <th scope="col">State</th>
-                <th scope="col" className="sp-num">Attempt</th>
-                <th scope="col" className="sp-num">Duration</th>
-                <th scope="col" className="sp-num" data-narrow="">CPUs</th>
-                <th scope="col" className="sp-num" data-narrow="">CPU %</th>
-                <th scope="col" className="sp-num">Memory</th>
-                <th scope="col">Peak memory</th>
-                <th scope="col" className="sp-num">Time limit</th>
-                <th scope="col" className="sp-num sp-nowrap-cell" aria-describedby={effSource}>
-                  CPU eff.
-                </th>
-                <th scope="col" className="sp-num sp-nowrap-cell" aria-describedby={effSource}>
-                  Mem eff.
-                </th>
-                <th scope="col">
-                  <span className="sp-sr">Files</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((t) => {
-                const r = t.resources;
-                const near = nearLimit(r);
-                return (
-                  <tr key={t.id}>
-                    <td data-rail="" data-tone={tone(t.state)} className="sp-task">
-                      <OpenTask task={t} w={w} onOpen={onOpen} />
-                    </td>
-                    <td>
-                      <Word state={t.state} word={taskWord(t.state)} />
-                    </td>
-                    <td className="sp-num">{t.attempt_n ?? "—"}</td>
-                    <td className="sp-num sp-nowrap-cell">
-                      {seconds(r.realtime_s)}
-                      <NearLimit on={near.time} />
-                    </td>
-                    <td className="sp-num" data-narrow="">{r.cpus ?? "—"}</td>
-                    <td className="sp-num" data-narrow="">{r.cpu_percent === null ? "—" : `${Math.round(r.cpu_percent)} %`}</td>
-                    <td className="sp-num sp-nowrap-cell">{bytes(r.memory_bytes)}</td>
-                    <td className="sp-nowrap-cell">
-                      {bytes(r.peak_rss_bytes)}
-                      <NearLimit on={near.memory} />
-                    </td>
-                    <td className="sp-num sp-nowrap-cell">{seconds(r.time_s)}</td>
-                    <td className="sp-num sp-nowrap-cell">
-                      {percent(t.efficiency?.cpu)}
-                      <Low on={isLow(t.efficiency?.cpu)} />
-                    </td>
-                    <td className="sp-num sp-nowrap-cell">
-                      {percent(t.efficiency?.mem)}
-                      <Low on={isLow(t.efficiency?.mem)} />
-                      <NearLimit on={isNear(t.efficiency?.mem)} />
-                    </td>
-                    <td>
-                      <FilesButton task={t} onOpen={onOpen} />
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-      {!!tasks?.length && !phone && (
-        <p className="sp-muted">
-          CPU eff. and Mem eff.: <span id={effSource}>{EFF_SOURCE}</span>. "low": under 25 %.
-        </p>
-      )}
-      {!!tasks?.length && (
-        <p className="sp-foot-line">
-          {tasks.length} of {plural(count(TASK_FILTERS[filter].states), w.unit, w.units)}
-        </p>
-      )}
-      {shown?.next && (
-        <div>
-          <Button variant="default" onClick={more}>
-            Load more {w.units}
-          </Button>
-        </div>
-      )}
     </section>
   );
 }
