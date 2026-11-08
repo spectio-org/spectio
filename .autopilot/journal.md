@@ -724,3 +724,7 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - 2026-11-08 · P3-fu73 · PR #170 merged (0da295d).
 - 2026-11-08 · P3-fu74 · build done (review approve, security approve, 2 rounds); PR #171 into autopilot/integration, label no-figure. Next: batch close P3-B07 (fu72, fu73, fu74).
+
+- 2026-11-08 · P3-fu74 · PR #171 merged (47d78c4).
+- 2026-11-08 · P3-B07 · batch docs: simplify -13/+17 (re-review approve), figure, cast; doc-reviewer changes 12/14 after two revisions, its last finding (figure shell count) fixed by the orchestrator in f5b7a8e, not re-reviewed. PR #172.
+- 2026-11-08 · P3-t22 · merged integration again (d19ce3f6): M5 page conflict resolved keeping both sides; still waits for Thomas.
