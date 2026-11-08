@@ -1,11 +1,13 @@
 """The FastAPI app of `spectio serve` (P1 Tasks 11, 12, 17 and 18).
 
 Every request needs the session of the token link (dev-env §15.3 req. 2, `auth`, P1 Task 12).
-The API is served in local mode only (`spectio init --local`; inbox #86, and #109 rule 5 (a),
-Thomas 2026-11-07): on a SLURM environment, where other users share the login node and its
-loopback port, every `/api/v1` path answers 404 with the reason. In local mode too, the API is
-left unmounted on a machine that looks like a cluster node or a shared one (`shared_host`,
-SEC-P3T17-06): kind `local` is a configuration value, which can be set on a login node.
+On a TCP port the API is served in local mode only (`spectio init --local`; inbox #86), on a
+machine that does not look like a cluster node or a shared one (`shared_host`, SEC-P3T17-06:
+kind `local` is a configuration value, which can be set on a login node); elsewhere every
+`/api/v1` path answers 404 with the reason. On SLURM and shared hosts `spectio serve` listens
+on a Unix socket in its 0700 database directory instead (`on_socket`), where the kernel refuses
+other users at `connect`, and the API is mounted there (inbox #109 rule 5, Thomas 2026-11-08;
+FU-P3-72): another user can reach a loopback port of the same node, never that socket.
 The Host allow-list (dev-env §15.3 req. 4, `auth.host`),
 the cross-site check (`api.browser`), the session and the write checks (req. 7, `auth.writes`)
 run on every request, in that order. The generated docs stay off: the
@@ -49,10 +51,11 @@ from spectio_server.store.writer import Writer
 PLACEHOLDER = "Spectio {version} is running.\n{why}\n"
 API = "/api/v1"
 API_VERSION = "0.0.1"  # the API document's version, not the package's: a release bump keeps it
-# inbox #109 rule 5 (a), Thomas 2026-11-07: unmounted on SLURM and shared hosts
+# inbox #109 rule 5, Thomas 2026-11-08: never on a TCP port on SLURM and shared hosts
 NO_API = (
-    "The API is served only in local mode (spectio init --local), on a machine only you use: "
-    "on a cluster or another shared host, other users could reach its port."
+    "The API is served on a TCP port only in local mode (spectio init --local), on a machine "
+    "only you use: on a cluster or another shared host, other users could reach its port, so "
+    "spectio serve serves it there on a Unix socket in its 0700 database directory."
 )
 
 SLURM_CONF_FILE = Path("/etc/slurm/slurm.conf")
@@ -92,7 +95,8 @@ def shared_host() -> str | None:
 
 
 def no_api_reason(settings: Settings) -> str | None:
-    """Why the `/api/v1` routers are not mounted, or None when they are."""
+    """Why the `/api/v1` routers may not be mounted on a TCP port here, or None when they may:
+    `spectio serve` then listens on a Unix socket instead."""
     if settings.executor != "local":
         return NO_API
     shared = shared_host()
@@ -108,10 +112,12 @@ def create_app(
     files: FilePool | None = None,
     accounting: Accounting | None = None,
     server_key: ServerKey | None = None,
+    on_socket: bool = False,
 ) -> FastAPI:
     """The app; `files` is the pool the routes read run files in, `accounting` the server's
     one gate to `sacct` (each made from the settings when None), `server_key` the key of
-    `auth/links` (one kept in memory only when None)."""
+    `auth/links` (one kept in memory only when None). `on_socket`: served on the Unix socket of
+    `spectio serve`, so the API is mounted; on TCP, `no_api_reason` decides."""
     app = FastAPI(
         title="Spectio",
         version=API_VERSION,
@@ -138,7 +144,8 @@ def create_app(
     app.include_router(routes.pages)
     app.include_router(routes.router, prefix=API)
 
-    reason = no_api_reason(settings)  # one scan: the start text reads it back (CR-P3T17-04)
+    # one scan, on TCP only: the start text reads it back (CR-P3T17-04)
+    reason = None if on_socket else no_api_reason(settings)
     app.state.no_api = reason
     if reason is None and static.built(web_dir):
         static.install(app, web_dir)

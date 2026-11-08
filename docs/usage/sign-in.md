@@ -7,7 +7,7 @@ icon: material/key-link
 
     Everything below runs today from a checkout (batch [P3-B01](../progress/W5/P3-M3.md#tasks-12-to-16-batch-p3-b01), 2026-11-06). The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). There are no accounts yet: 0.0.1 serves one user on one machine.
 
-Spectio's 0.0.1 server listens on `127.0.0.1` only. On a shared login node every user can reach that port, so Spectio asks for a sign-in before it shows any data. You sign in with a link, not a password.
+On a machine only you use, Spectio's 0.0.1 server listens on `127.0.0.1` only; on a cluster login node or another shared host, on a Unix socket in a directory only you can open, never on a TCP port ([Opening from your laptop](open-from-your-laptop.md#why-a-socket-on-a-cluster)). Spectio still asks for a sign-in before it shows any data, as a second barrier. You sign in with a link, not a password.
 
 The rules are owned by [development environment §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (requirements 2 to 5, 7 and 9). This page says what you see.
 
@@ -54,6 +54,6 @@ The cast runs the real CLI in a demo home, with the demo host `demo-hpc-login1`.
 ## Not built or not checked
 
 - **A browser end to end.** The page script (`link.js`) was not run in a browser for this batch. Two browser behaviours that requirement 3 marks **[to be validated]** (the `EventSource` carries the cookie; a `SameSite=Strict` cookie is sent after a link opened from another site) wait for the Playwright smoke.
-- **SLURM and shared hosts.** The API is still not served there, and its refusal text still says "until sign-in is complete". Mounting it is a security-posture choice that waits for a decision ([inbox #109](../reviews/inbox.md#109-assumed-writes-need-origin-and-json-as-built-p3-task-16) rule 5).
+- **SLURM and shared hosts.** The API and the screens are served there only behind the Unix socket (Thomas, 2026-11-08, [inbox #109](../reviews/inbox.md#109-assumed-writes-need-origin-and-json-as-built-p3-task-16) rule 5; FU-P3-72). Not yet run on a real login node: a second account refused at the socket, and the server surviving a full logout, are **[to be validated]**.
 - **Hard links on the EMBL shared home.** The first state file is linked into place; whether `link(2)` works there is **[to be validated]**.
 - **Accounts, passwords, tokens for robots.** Later versions: [Authentication and access](../specs/authentication-and-access.md).
