@@ -39,10 +39,6 @@ class Refused(Exception):
     """Why no link is printed."""
 
 
-class NoServer(Refused):
-    """No server.json, or nothing listens on its port: no server runs on this node."""
-
-
 class OtherNode(Refused):
     """server.json names a server on another node."""
 
@@ -62,7 +58,7 @@ def _record(settings: Settings) -> dict[str, Any]:
     except (OSError, ValueError) as exc:
         raise Refused(f"{settings.data_dir / STATE} cannot be read: {exc}") from exc
     if raw is None:
-        raise NoServer("no server runs (no server.json): start one with spectio serve")
+        raise Refused("no server runs (no server.json): start one with spectio serve")
     try:
         record = json.loads(raw)
     except ValueError as exc:
@@ -90,7 +86,7 @@ def new_link(settings: Settings, timeout: float = 10) -> str:
         raise OtherNode(f"The server runs on {node}: run `ssh {node} spectio login --print-link`.")
     owners = port_owners(port)
     if not owners:
-        raise NoServer(f"no server of yours on port {port} (nothing listens there)")
+        raise Refused(f"no server of yours on port {port} (nothing listens there)")
     if owners != {os.getuid()}:
         who = f"it is held by uid {min(owners - {os.getuid()})}"
         raise PortHeld(f"no server of yours on port {port} ({who}): the key is not sent")
