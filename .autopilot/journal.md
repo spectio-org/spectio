@@ -742,3 +742,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-08T23:2xZ · Batch P3-B08 docs: workflow done (simplify -12/+4, doc-reviewer approve 13/14); PR #180 opened and subscribed. New major DW-P3B08-01 (a rule after a checkpoint sorts first), follow-up FU-P3-90; FU-P3-91 minors. Cost recorded: 30 USD.
 
 - 2026-11-08T22:5xZ · Batch P3-B08 merged (#180, squash b1974f73) and promoted to main (#181, merge 17c488fb), checks green. Next: FU-P3-90 (rule after a checkpoint sorts first), then FU-P3-85 file preview and explorer (spec note first).
+
+- 2026-11-08T23:2xZ · P3-fu90 (FU-P3-90) built: review approve 0/0/1, security approve 0/0/1, round 1. PR #182 opened, subscribed. Inbox #126 assumed (a rule in no graph comes after the graph rules). Cost recorded: 12 USD.
