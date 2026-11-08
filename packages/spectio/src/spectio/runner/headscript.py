@@ -75,6 +75,9 @@ LOCKED = 75  # head.exit's code when another head holds the lock
 # The head files are made under `umask 077`, so they are 0600 whatever the inherited umask
 # (`read_small` refuses a group-writable file: CR-P3T09-01, SEC-P3T09-01); the engine gets the
 # inherited umask back, and the login profile may change it.
+# head.exit's epoch is bash's own `%(%s)T` (bash >= 4.2), not `$(date)`: a Cancel's SIGTERM to
+# the group kills a child of the tail, which left an epoch-less head.exit that never parses, and
+# a run that never ends (FU-P3-77).
 _HEAD = """#!/usr/bin/env bash
 um=$(umask); umask 077
 # Spectio head script: run {run_id}, launch {launch_n}. Written by Spectio at each launch.
@@ -98,7 +101,7 @@ else
   code=${{PIPESTATUS[0]}}
   {{ [ "$(< "$lock")" = {run_id} ]; }} 2>/dev/null && {rm} -f -- "$lock"
 fi
-printf '%s %s\\n' "$code" "$(date +%s)" > .spectio/head.exit.tmp
+printf '%s %(%s)T\\n' "$code" -1 > .spectio/head.exit.tmp
 mv -f .spectio/head.exit.tmp .spectio/head.exit
 exit "$code"
 """
