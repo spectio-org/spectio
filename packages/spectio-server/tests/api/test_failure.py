@@ -62,11 +62,24 @@ if states:
 state = states[0] if states else "OUT_OF_MEMORY"
 dirs = os.path.join(here, "workdirs.json")  # job ID -> WorkDir; another directory otherwise
 dirs = json.load(open(dirs)) if os.path.exists(dirs) else {{}}
+d = [a for a in sys.argv if a.startswith("--delimiter=")][0].split("=", 1)[1]
+submit = os.path.join(here, "submit")  # Submit, in UTC as TZ=UTC asks; now otherwise
+now = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+submit = open(submit).read() if os.path.exists(submit) else now
+resized = os.path.exists(os.path.join(here, "resized"))  # an older RESIZING record first
+tres = "billing=2,cpu=2,mem=2G,node=1"
 for job in ids if state != "-" else ():
     where = dirs.get(job, "/elsewhere")
-    tres = "billing=2,cpu=2,mem=2G,node=1"
-    print(f"{{job}}|{{state}}|0:125|None|0|00:01:05|2G|00:10:00|00:52.000|2|1|htc|lab|normal|{{tres}}|{{where}}")
-    print(f"{{job}}.batch|{{state}}|0:125||2097152K|00:01:05|||00:52.000|2|1||||{{tres}}|{{where}}")
+    lines = [
+        [job, state, "0:125", "None", "0", "00:01:05", "2G", "00:10:00", "00:52.000", "2", "1",
+         "htc", "lab", "normal", tres, submit, where],
+        [job + ".batch", state, "0:125", "", "2097152K", "00:01:05", "", "", "00:52.000", "2",
+         "1", "", "", "", tres, "", ""],
+    ]
+    if resized:
+        lines = [[f[0], "RESIZING", *f[2:]] for f in lines] + lines
+    for fields in lines:
+        print(d.join(fields))
 """
 
 
@@ -294,6 +307,101 @@ def test_sacct_other_workdir_not_kept(settings: Settings, writer: Writer, fakebi
     assert scheduler["accounting"] == "unavailable" and scheduler["state_source"] is None
     assert scheduler["usage_source"] is None
     assert json.loads(cache.read_text())["jobs"] == {"8812401": None}
+
+
+def test_sacct_resized_job_available(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """Inbox #116 rule 10 (b): a resized job prints an older RESIZING record before its final
+    one (CON-PRE-15). The final record is the row, so the job reads `available` instead of
+    `not_found` (SEC-P3T34-06); its CPU and memory efficiency are None."""
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    writer.submit(lambda c: c.execute(update(environments).values(kind="slurm"))).result()
+    (fakebin.dir / "resized").write_text("")
+    run = Run(settings, writer)
+    fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
+    detail(client)
+    assert acct.step()
+    scheduler = detail(client)["failures"][0]["scheduler"]
+    assert scheduler["accounting"] == "available" and scheduler["state"] == "OUT_OF_MEMORY"
+    assert scheduler["max_rss_bytes"] is None  # the steps under RESIZING are not summed
+    (item,) = task_items(client)
+    efficiency = item["efficiency"]
+    assert (efficiency["state"], efficiency["source"]) == ("available", "sacct")
+    assert (efficiency["cpu"], efficiency["mem"]) == (None, None)
+
+
+def test_sacct_symlinked_workdir(
+    settings: Settings, writer: Writer, fakebin: Fake, tmp_path: Path
+) -> None:
+    """CON-PRE-14: the engine passed a path through a symlink, SLURM recorded it resolved. The
+    expected set holds the path and its `realpath`, computed in the file pool when the job is
+    asked; the WorkDir sacct gives is never resolved."""
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    run = Run(settings, writer)
+    workdir = run.nf_task(0, 1, "FAILED", "TERMINATE")
+    real = tmp_path / "real-work"
+    workdir.rename(real)
+    workdir.symlink_to(real)
+    fakebin.at("8812401", real)
+    detail(client)
+    assert acct.step()
+    assert detail(client)["failures"][0]["scheduler"]["accounting"] == "available"
+
+
+def test_sacct_submit_before_launch_not_kept(
+    settings: Settings, writer: Writer, fakebin: Fake
+) -> None:
+    """SEC-PRE-14: a line submitted before the run was launched is another job with that ID:
+    no row, asked again as a missing one."""
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    (fakebin.dir / "submit").write_text("2020-01-01T00:00:00")
+    run = Run(settings, writer)
+    fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
+    detail(client)
+    assert acct.step()
+    assert acct.rows(RUN) == {} and acct._tries == {(RUN, "8812401"): 1}
+
+
+def test_sacct_job_without_dir_not_asked(settings: Settings, writer: Writer) -> None:
+    """SEC-PRE-15: a job with no directory to bind it is never queued, reads unavailable at
+    once, and no None is cached for it."""
+    Run(settings, writer)
+    acct = Accounting(settings.runs_root, Path("/usr/bin/false"), start_thread=False)
+    acct.load(RUN)
+    acct.want(RUN, [("8812401", None)], 0.0)
+    assert acct._limiter.pending() == 0
+    assert acct.status(RUN, "8812401") == "unavailable" and acct.rows(RUN) == {}
+
+
+def test_sacct_run_asked_during_call_costs_no_try(
+    settings: Settings, writer: Writer, fakebin: Fake
+) -> None:
+    """CON-PRE-16: a run that asks a job while the call for it is in flight was not in that
+    call: it is queued again, and its tries are not counted."""
+    run = Run(settings, writer)
+    other = "run_01K8T2F1XTVRES0000000000G0"
+    (make_run_dirs(settings.runs_root, other).run_dir / ".spectio").mkdir(mode=0o700)
+    acct = accounting(settings, fakebin)
+    for rid in (RUN, other):
+        acct.load(rid)
+    acct.want(RUN, [("8812401", str(run.paths.work_dir))], 0.0)
+    called = acct._limiter._call
+
+    def call(ids: list[str]) -> Any:
+        found = called(ids)
+        acct.want(other, [("8812401", "/elsewhere")], 0.0)  # it arrives during the call
+        return found
+
+    acct._limiter._call = call
+    assert acct.step()
+    assert acct._tries == {(RUN, "8812401"): 1}  # RUN was in the call; `other` was not
+    assert acct._limiter.pending() == 1 and acct._asked == {"8812401": {other}}
+    acct._limiter._call = called
+    assert acct.step()
+    row = acct.rows(other)["8812401"]  # the fake's default WorkDir is `other`'s directory
+    assert row is not None and row.state == "OUT_OF_MEMORY"
 
 
 def test_nf_log_tail_falls_back_to_err(settings: Settings, writer: Writer) -> None:

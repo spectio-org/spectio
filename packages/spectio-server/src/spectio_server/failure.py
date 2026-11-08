@@ -22,7 +22,8 @@ import os
 import re
 import threading
 import time
-from collections.abc import Iterable
+from collections import Counter
+from collections.abc import Callable, Iterable
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -59,6 +60,7 @@ BENCHMARK_CHUNK = 100  # benchmarks kept as each batch is read, even past a time
 ENDED = ("succeeded", "failed", "aborted")
 MIB = 1048576
 MAX_TRIES = 3  # sacct calls for a job it does not know yet, or not as ended; then null
+MAX_RESOLVE = 500  # directories one view resolves for new jobs; later views the rest (CON-PRE-14)
 # The states a job ends in (`sacct(1)`, JOB STATE CODES); a row in any other is not kept.
 TERMINAL = frozenset(
     {"COMPLETED", "FAILED", "OUT_OF_MEMORY", "TIMEOUT", "CANCELLED", "NODE_FAIL", "PREEMPTED"}
@@ -67,6 +69,8 @@ TERMINAL = frozenset(
 _MAX = 2**63 - 1
 
 Status = Literal["available", "pending", "unavailable"]
+# The `realpath` of each absolute directory, in the file pool; None when it did not answer.
+Resolve = Callable[[list[str]], dict[str, str] | None]
 
 
 # --- Snakemake's SLURM executor plugin, in its own words -------------------------------------
@@ -263,9 +267,13 @@ class Accounting:
     Only a row in a TERMINAL state is kept: a job `sacct` does not know yet, or not as ended
     (slurmdbd records a job after it ends, with a lag, [to be validated] on `slurm-mini`, P1
     Task 22), is asked again on the next view, up to MAX_TRIES calls, then kept as None. So is
-    a row whose WorkDir is not the directory the job was launched from (the Nextflow attempt's
-    work directory, Snakemake's launch directory): another job with that number, such as a
-    local PID read as a SLURM ID (SEC-P3T29-01; WorkDir [to be validated] on `slurm-mini`)."""
+    a job with no line whose WorkDir is the directory it was launched from (the Nextflow
+    attempt's work directory, Snakemake's launch directory), as it was given or resolved, and
+    whose Submit is not before the run's launch: the lines of other jobs with that number, such
+    as a local PID read as a SLURM ID, are dropped (SEC-P3T29-01; inbox #116 rule 10 (b); WorkDir
+    [to be validated] on `slurm-mini`). A job with no directory is never asked. Each call asks
+    the (run, job) pairs queued when it starts; a run that asks a job during that call is
+    queued again, with no try counted (CON-PRE-16)."""
 
     def __init__(
         self,
@@ -287,7 +295,10 @@ class Accounting:
         self._loaded: set[str] = set()
         self._failed: dict[str, set[str]] = {}
         self._asked: dict[str, set[str]] = {}  # job ID → the runs that wait for it
-        self._where: dict[tuple[str, str], str | None] = {}  # (run, job) asked → its directory
+        # (run, job) asked → its directories (normalised, and resolved) and the run's launch time
+        self._where: dict[tuple[str, str], tuple[frozenset[str], float]] = {}
+        self._called: dict[tuple[str, str], tuple[frozenset[str], float]] = {}  # the last call's
+        self._logged: set[str] = set()  # runs whose dropped lines were logged
         self._tries: dict[tuple[str, str], int] = {}  # (run, job) → calls with no answer yet
         self._wake = threading.Event()
         self._start_thread = start_thread
@@ -301,10 +312,35 @@ class Accounting:
         on = settings.executor == "slurm" and slurm.accounting
         return cls(settings.runs_root, slurm.sacct, enabled=on, **kwargs)
 
-    def _call(self, ids: list[str]) -> dict[str, SacctRow] | None:
+    def _call(self, ids: list[str]) -> sacct.Found | None:
+        """The limiter's call: the pairs asked for `ids` are copied under the lock, and `sacct`
+        runs outside it (CON-PRE-16)."""
         if self._path is None:  # never: `want` asks nothing when off
             return None
-        return sacct.sacct_jobs(ids, self._timeout, sacct=self._path)
+        with self._lock:
+            called = {
+                (run_id, job): self._where[run_id, job]
+                for job in ids
+                for run_id in self._asked.get(job, ())
+            }
+            self._called = called
+        wanted: dict[str, dict[str, float]] = {}
+        for (_, job), (dirs, since) in called.items():
+            mine = wanted.setdefault(job, {})
+            for where in dirs:  # two runs of one directory: the earlier launch (FU-P3-53)
+                mine[where] = min(since, mine.get(where, since))
+        if not wanted:
+            return {}
+        dropped: Counter[str] = Counter()
+        found = sacct.sacct_jobs(wanted, self._timeout, sacct=self._path, dropped=dropped)
+        by_run = Counter[str]()
+        for run_id, job in called:
+            by_run[run_id] += dropped[job]
+        for run_id, count in by_run.items():
+            if count and run_id not in self._logged:  # once per run (CON-PRE-14)
+                self._logged.add(run_id)
+                log.info("sacct: %d lines of %s dropped for their WorkDir", count, run_id)
+        return found
 
     # Reads, from a request (no file system, no wait).
 
@@ -330,32 +366,52 @@ class Accounting:
         with self._lock:
             return job in self._failed.get(run_id, set())
 
-    def want(self, run_id: str, jobs: Iterable[tuple[str | None, str | None]]) -> None:
+    def want(
+        self,
+        run_id: str,
+        jobs: Iterable[tuple[str | None, str | None]],
+        since: float,
+        resolve: Resolve | None = None,
+    ) -> None:
         """Ask `sacct` for the run's jobs, (job ID, the directory it was launched from), it has
-        not answered yet, once the run's cache file was read; returns at once."""
+        not answered yet, once the run's cache file was read. `since` is the run's launch,
+        epoch seconds. `resolve` gives each directory's `realpath`, in the file pool with its
+        timeout (CON-PRE-14), for up to MAX_RESOLVE directories; when it does not answer,
+        nothing is asked and a later view asks again. A job with no directory is never asked
+        (SEC-PRE-15). Returns once the jobs are queued."""
         if not self.enabled:
             return
+        given = {job: os.path.normpath(where) for job, where in jobs if job and where}
         with self._lock:
             if run_id not in self._loaded:  # its file could not be read in time: ask nothing
                 return
-            known = self._rows.get(run_id, {})
-            failed = self._failed.get(run_id, set())
-            where = dict(jobs)
-            new = [
-                job
-                for job in where
-                if job is not None
-                and job not in known
-                and job not in failed
-                and run_id not in self._asked.get(job, ())
-            ]
+            new = self._new(run_id, given)
+        if not new:
+            return
+        dirs = list(dict.fromkeys(new.values()))[:MAX_RESOLVE]
+        real = {where: where for where in dirs} if resolve is None else resolve(dirs)
+        if real is None:
+            return
+        with self._lock:
+            new = {job: where for job, where in self._new(run_id, new).items() if where in real}
             queued = self._limiter.request(new)  # the job IDs it took, as the limit allows
             for job in queued:
+                where = new[job]
                 self._asked.setdefault(job, set()).add(run_id)
-                self._where[run_id, job] = where[job]
+                self._where[run_id, job] = frozenset({where, os.path.normpath(real[where])}), since
         if queued:
             self._ensure_thread()
             self._wake.set()
+
+    def _new(self, run_id: str, given: dict[str, str]) -> dict[str, str]:
+        """The jobs of `given` neither answered, failed nor asked for the run; under the lock."""
+        known = self._rows.get(run_id, {})
+        failed = self._failed.get(run_id, set())
+        return {
+            job: where
+            for job, where in given.items()
+            if job not in known and job not in failed and run_id not in self._asked.get(job, ())
+        }
 
     # The run's cache file (file system: in the file pool, or on the accounting thread).
 
@@ -398,15 +454,23 @@ class Accounting:
         ids, found = done
         touched: dict[str, dict[str, SacctRow | None]] = {}
         with self._lock:
+            called, self._called = self._called, {}
             for job in ids:
-                row = found.get(job) if found is not None else None
+                answer = found.get(job, {}) if found is not None else {}
+                later = set()
                 for run_id in self._asked.pop(job, set()):
                     key = run_id, job
-                    where = self._where.pop(key, None)
+                    if key not in called:  # asked during the call: not in it, no try
+                        later.add(run_id)
+                        continue
+                    self._where.pop(key, None)
+                    dirs = called[key][0]
                     if found is None:
                         self._failed.setdefault(run_id, set()).add(job)
                         continue
-                    mine = row if _answers(row, where) else None
+                    matches = [answer[where] for where in dirs if where in answer]
+                    row = matches[0] if len(matches) == 1 else None
+                    mine = row if _answers(row, dirs) else None
                     if mine is None:
                         tries = self._tries.get(key, 0) + 1
                         if tries < MAX_TRIES:
@@ -415,6 +479,11 @@ class Accounting:
                     self._tries.pop(key, None)  # final: a terminal row, or the cap reached
                     self._rows.setdefault(run_id, {})[job] = mine
                     touched[run_id] = dict(self._rows[run_id])
+                if later and self._limiter.request([job]):
+                    self._asked[job] = later
+                else:
+                    for run_id in later:
+                        self._where.pop((run_id, job), None)
         for run_id, rows in touched.items():
             self._save(run_id, rows)
         return True
@@ -440,11 +509,34 @@ class Accounting:
                 time.sleep(1)
 
 
-def _answers(row: SacctRow | None, where: str | None) -> bool:
-    """The row is the job's end: a TERMINAL state, launched from the expected directory."""
-    if row is None or row.state not in TERMINAL or row.work_dir is None or where is None:
+def _answers(row: SacctRow | None, dirs: frozenset[str]) -> bool:
+    """The row is the job's end: a TERMINAL state, launched from an expected directory (a
+    second guard: `parse_sacct` kept only such lines)."""
+    if row is None or row.state not in TERMINAL or row.work_dir is None:
         return False
-    return os.path.normpath(row.work_dir) == os.path.normpath(where)
+    return os.path.normpath(row.work_dir) in dirs
+
+
+def _resolver(ctx: "Context") -> Resolve:
+    """`realpath` of each absolute directory, in the file pool with the view's timeout, never
+    on the accounting thread; a WorkDir from `sacct` is never resolved (SEC-PRE-13)."""
+
+    def resolve(dirs: list[str]) -> dict[str, str] | None:
+        def read() -> dict[str, str]:
+            return {d: os.path.realpath(d) if os.path.isabs(d) else d for d in dirs}
+
+        try:
+            return ctx.files.run(read, ctx.timeout_s)
+        except Stalled:
+            return None
+
+    return resolve
+
+
+def _launched(created_at: Any, started_at: Any) -> float:
+    """The run's launch, epoch seconds: the earlier of its row's creation and the engine's
+    start (a run started from a terminal is created after its first jobs)."""
+    return float(min(t for t in (created_at, started_at) if t is not None).timestamp())
 
 
 def _parse_cache(data: bytes) -> dict[str, SacctRow | None]:
@@ -576,7 +668,11 @@ def build_failures(
     except Stalled:
         tails = [None] * len(rows)
     if engine == "nextflow":  # Snakemake's state comes from its own message (§13.7)
-        ctx.accounting.want(run_id, ((r.native_id, r.work_dir) for r in rows))
+        run = conn.execute(
+            select(runs.c.created_at, runs.c.started_at).where(runs.c.id == run_id)
+        ).one()
+        jobs = ((r.native_id, r.work_dir) for r in rows)
+        ctx.accounting.want(run_id, jobs, _launched(*run), _resolver(ctx))
     cached = ctx.accounting.rows(run_id)
     culprit = (failure or {}).get("task_id"), (failure or {}).get("attempt_n")
     message = (failure or {}).get("message") or None
@@ -687,7 +783,7 @@ def task_resources(
     with a job ID is asked of `sacct` here (answered on a later read; schedulers §3.6), which
     a local run never is."""
     run = conn.execute(
-        select(environments.c.kind, runs.c.engine_settings)
+        select(environments.c.kind, runs.c.engine_settings, runs.c.created_at, runs.c.started_at)
         .join(environments, environments.c.id == runs.c.environment_id)
         .where(runs.c.id == run_id)
     ).one()
@@ -754,7 +850,9 @@ def task_resources(
     if on_slurm:
         launch = str(run_paths(ctx.runs_root, dirs).launch_dir)
         ended = (r for r in rows if r.state in ENDED)
-        ctx.accounting.want(run_id, ((r.native_id, launch if smk else r.work_dir) for r in ended))
+        jobs = ((r.native_id, launch if smk else r.work_dir) for r in ended)
+        since = _launched(run.created_at, run.started_at)
+        ctx.accounting.want(run_id, jobs, since, _resolver(ctx))
         cached = ctx.accounting.rows(run_id)
     off = "local" if not on_slurm else None if ctx.accounting.enabled else "accounting_off"
     cluster_options = True if (run.engine_settings or {}).get("cluster_options") is True else None
@@ -779,9 +877,13 @@ def task_resources(
         if reason is None and r.native_id is None:
             reason = "no_job_id"
         elif reason is None and (
-            r.native_id in cached or ctx.accounting.failed(run_id, r.native_id)
+            r.native_id in cached
+            or ctx.accounting.failed(run_id, r.native_id)
+            or (not smk and r.work_dir is None)
         ):
-            reason = "not_found"  # sacct knew no such job after its tries, or its call failed
+            # sacct knew no such job after its tries, its call failed, or no directory binds
+            # the job to a line, so it is never asked (SEC-PRE-15)
+            reason = "not_found"
         slurm = None
         if on_slurm and r.slurm is not None:
             slurm = {

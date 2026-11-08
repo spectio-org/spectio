@@ -8,9 +8,11 @@ asked for stay [to be validated] on a real SLURM.
 import itertools
 import json
 import os
+import re
 import sys
 import threading
 import time
+from collections import Counter
 from pathlib import Path
 from typing import Any
 
@@ -30,20 +32,41 @@ with open(os.path.join(here, "calls.jsonl"), "a") as f:
 delay = os.path.join(here, "delay")
 if os.path.exists(delay):
     time.sleep(float(open(delay).read()))
-sys.stdout.write(open(os.path.join(here, "out.txt")).read())
+delimiter = [a for a in sys.argv if a.startswith("--delimiter=")][0].split("=", 1)[1]
+sys.stdout.write(open(os.path.join(here, "out.txt")).read().replace("{{D}}", delimiter))
 """
 
-# What `sacct --parsable2 --noheader --format=JobID,State,…,AllocTRES,WorkDir` prints (the shape
-# of the T3 probes, tests/fixtures/slurm/slurm-26.05.5/sacct-probes.json, with the efficiency
-# fields of P1 Task 34; real fields, WorkDir among them, [to be validated]).
+# What `sacct --parsable2 --noheader --delimiter=<D> --format=JobID,State,…,Submit,WorkDir`
+# prints (the shape of the T3 probes, tests/fixtures/slurm/slurm-26.05.5/sacct-probes.json, with
+# the efficiency fields of P1 Task 34 and Submit of FU-P3-53; real fields, WorkDir among them,
+# and a 16-character delimiter, [to be validated] on slurm-mini). The fake prints `out.txt` with
+# `D` replaced by the delimiter of its call; `parse_sacct` is called with `D` itself.
 FIELDS = sacct.FORMAT.split(",")
+D = "{D}"
+SUBMIT = "2026-11-08T09:00:00"  # UTC (`TZ=UTC` in the call's environment)
+LAUNCH = 1_794_128_400.0  # 2026-11-08T09:00:00Z: a run launched at the job's submit time
 
 
 def line(**values: str) -> str:
-    """One `--parsable2` line in FORMAT's order; a field not given is empty."""
+    """One `--parsable2` line in FORMAT's order; a field not given is empty, except a job
+    line's Submit (a step line, `<id>.<step>`, has none here)."""
     unknown = set(values) - set(FIELDS)
     assert not unknown, unknown
-    return "|".join(values.get(f, "") for f in FIELDS)
+    if "." not in values.get("JobID", ""):
+        values = {"Submit": SUBMIT, **values}
+    return D.join(values.get(f, "") for f in FIELDS)
+
+
+def want(*pairs: tuple[str, str], since: float = LAUNCH) -> dict[str, dict[str, float]]:
+    """`parse_sacct`'s `wanted`: job ID → {WorkDir: the run's launch time}."""
+    found: dict[str, dict[str, float]] = {}
+    for job, where in pairs:
+        found.setdefault(job, {})[where] = since
+    return found
+
+
+def parse(text: str, *pairs: tuple[str, str], since: float = LAUNCH) -> dict[str, Any]:
+    return sacct.parse_sacct(text, want(*pairs, since=since), D)
 
 
 OOM = {"State": "OUT_OF_MEMORY", "ExitCode": "0:125", "Elapsed": "00:01:05"}
@@ -133,26 +156,42 @@ def fakebin(tmp_path: Path) -> Fake:  # this module's: a fake sacct, not the eng
     return Fake(tmp_path)
 
 
+ASKED = want(("8812477", "/data/work/ab/cd"), ("8812345_3", "/data/launch|x"), ("9999", "/w"))
+
+
 def test_req15_argv_and_id_check(fakebin: Fake) -> None:
-    found = sacct_jobs(["8812477", "8812345_3"], sacct=fakebin.path)
+    found = sacct_jobs(ASKED, sacct=fakebin.path)
     (call,) = fakebin.calls()
+    delimiter = call["argv"][3]
+    assert re.fullmatch(r"--delimiter=[A-Za-z0-9]{16}", delimiter)  # SEC-PRE-11
     assert call["argv"] == [
         str(fakebin.path),
         "--parsable2",
         "--noheader",
+        delimiter,
         "-j",
-        "8812477,8812345_3",
+        "8812477,8812345_3,9999",
         f"--user={os.geteuid()}",  # the server user's own jobs only
         "--format=JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,TotalCPU,NCPUS,"
-        "NNodes,Partition,Account,QOS,AllocTRES,WorkDir",
+        "NNodes,Partition,Account,QOS,AllocTRES,Submit,WorkDir",
     ]
+    assert "--duplicates" not in call["argv"] and "-D" not in call["argv"]  # CON-PRE-15
     assert found is not None and set(found) == {"8812477", "8812345_3"}
     for bad in (["1;rm"], ["1234567890123"], ["1_123456789"], ["8812477", "-j"], [""], [" 1"]):
         with pytest.raises(sacct.Refused):
-            sacct_jobs(bad, sacct=fakebin.path)
-    with pytest.raises(sacct.Refused):
-        sacct_jobs([str(n) for n in range(101)], sacct=fakebin.path)  # 100 IDs per call
+            sacct_jobs({job: {"/w": LAUNCH} for job in bad}, sacct=fakebin.path)
+    with pytest.raises(sacct.Refused):  # 100 IDs per call
+        sacct_jobs({str(n): {"/w": LAUNCH} for n in range(101)}, sacct=fakebin.path)
     assert len(fakebin.calls()) == 1  # every refusal before any call
+
+
+def test_sacct_delimiter_random_per_call(fakebin: Fake) -> None:
+    """SEC-PRE-11: a new 16-character delimiter for each call, so a WorkDir cannot carry one
+    known in advance."""
+    for _ in range(3):
+        assert sacct_jobs(ASKED, sacct=fakebin.path) is not None
+    delimiters = [call["argv"][3] for call in fakebin.calls()]
+    assert len(set(delimiters)) == 3
 
 
 def test_req15_tool_checked(fakebin: Fake, tmp_path: Path) -> None:
@@ -160,7 +199,7 @@ def test_req15_tool_checked(fakebin: Fake, tmp_path: Path) -> None:
     fakebin.path.chmod(0o775)
     for path in (fakebin.path, Path("sacct"), tmp_path):
         with pytest.raises(sacct.Refused):
-            sacct_jobs(["1"], sacct=path)
+            sacct_jobs(want(("1", "/w")), sacct=path)
     assert fakebin.calls() == []
 
 
@@ -168,10 +207,12 @@ def test_req15_env_explicit(fakebin: Fake, monkeypatch: pytest.MonkeyPatch) -> N
     monkeypatch.setenv("SLURM_CONF", "/nonexistent/evil.conf")
     monkeypatch.setenv("LD_PRELOAD", "/nonexistent/evil.so")
     monkeypatch.setenv("SACCT_FORMAT", "JobID")
-    sacct_jobs(["8812477"], sacct=fakebin.path)
+    monkeypatch.setenv("TZ", "Asia/Kolkata")
+    sacct_jobs(want(("8812477", "/data/work/ab/cd")), sacct=fakebin.path)
     env = fakebin.calls()[0]["env"]
     env.pop("LC_CTYPE", None)  # Python itself may set it at start (PEP 538), not the caller
-    assert env == {"PATH": str(fakebin.dir), "SLURM_TIME_FORMAT": "standard"}
+    # Submit in UTC, whatever the server's or the node's zone ([to be validated] on slurm-mini)
+    assert env == {"PATH": str(fakebin.dir), "SLURM_TIME_FORMAT": "standard", "TZ": "UTC"}
 
 
 def test_init_stores_the_sacct_path(home: Path, tools: Any, login: Any) -> None:
@@ -197,42 +238,46 @@ def test_init_warns_without_sacct(home: Path, tools: Any) -> None:
 
 
 def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
-    found = sacct_jobs(["8812477", "8812345_3", "9999"], sacct=fakebin.path)
+    found = sacct_jobs(ASKED, sacct=fakebin.path)
     assert found == {
-        "8812477": SacctRow(
-            state="OUT_OF_MEMORY",
-            exit_code=0,
-            reason=None,
-            max_rss_bytes=2147480 * 1024,  # the largest of its steps
-            elapsed_s=65,
-            req_mem_bytes=2 * 1024**3,
-            time_limit_s=600,
-            work_dir="/data/work/ab/cd",
-            total_cpu_s=40.5,  # the sum of its steps, not the allocation row's as well
-            ncpus=4,
-            nnodes=1,
-            partition="htc",
-            account="lab",
-            qos="normal",
-            alloc_tres="billing=4,cpu=4,mem=2G,node=1",
-        ),
-        "8812345_3": SacctRow(
-            state="FAILED",
-            exit_code=137,
-            reason=None,
-            max_rss_bytes=int(1.5 * 1024**3),
-            elapsed_s=86400 + 2 * 3600 + 3 * 60 + 4,
-            req_mem_bytes=4000 * 1024**2,
-            time_limit_s=2 * 86400,
-            work_dir="/data/launch|x",  # the last field: a `|` in it stays
-            ncpus=1,
-            nnodes=1,
-        ),
+        "8812477": {
+            "/data/work/ab/cd": SacctRow(
+                state="OUT_OF_MEMORY",
+                exit_code=0,
+                reason=None,
+                max_rss_bytes=2147480 * 1024,  # the largest of its steps
+                elapsed_s=65,
+                req_mem_bytes=2 * 1024**3,
+                time_limit_s=600,
+                work_dir="/data/work/ab/cd",
+                total_cpu_s=40.5,  # the sum of its steps, not the allocation row's as well
+                ncpus=4,
+                nnodes=1,
+                partition="htc",
+                account="lab",
+                qos="normal",
+                alloc_tres="billing=4,cpu=4,mem=2G,node=1",
+            )
+        },
+        "8812345_3": {
+            "/data/launch|x": SacctRow(
+                state="FAILED",
+                exit_code=137,
+                reason=None,
+                max_rss_bytes=int(1.5 * 1024**3),
+                elapsed_s=86400 + 2 * 3600 + 3 * 60 + 4,
+                req_mem_bytes=4000 * 1024**2,
+                time_limit_s=2 * 86400,
+                work_dir="/data/launch|x",  # a `|` is data: the delimiter is the call's own
+                ncpus=1,
+                nnodes=1,
+            )
+        },
     }  # 9999: no row, so not in the result
     assert sacct.TIMEOUT_S == 10
     fakebin.delay(30)
     started = time.monotonic()
-    assert sacct_jobs(["8812477"], timeout_s=0.5, sacct=fakebin.path) is None
+    assert sacct_jobs(ASKED, timeout_s=0.5, sacct=fakebin.path) is None
     assert time.monotonic() - started < 5  # killed at the timeout, never waited for
 
 
@@ -287,7 +332,6 @@ def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
                 "Partition": "a b",
                 "QOS": "\x1b",
                 "AllocTRES": "cpu=4;rm",
-                "WorkDir": "w\x1b",
             },
             (None, None, None, None, None),
         ),
@@ -295,19 +339,26 @@ def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
 )
 def test_sacct_values_as_data(values: dict[str, str], expected: tuple[Any, ...]) -> None:
     """Every field is parsed as data: an odd or over-long value is None, never an error."""
-    work_dir = values.pop("WorkDir", "/w")
-    row = sacct.parse_sacct(line(JobID="1", WorkDir=work_dir, **values) + "\n", {"1"})["1"]
+    row = parse(line(JobID="1", WorkDir="/w", **values) + "\n", ("1", "/w"))["1"]["/w"]
     assert (row.state, row.exit_code, row.reason, row.req_mem_bytes, row.time_limit_s) == expected
-    assert row.work_dir == (None if work_dir != "/w" else "/w")  # relative or a control: None
+    assert row.work_dir == "/w"
     if expected[0] is None:
         assert (row.total_cpu_s, row.ncpus, row.partition, row.qos, row.alloc_tres) == (None,) * 5
+
+
+@pytest.mark.parametrize("work_dir", ["w", "w\x1b", "", "/w\x00x"])
+def test_sacct_bad_workdir_no_row(work_dir: str) -> None:
+    """A WorkDir that is not absolute or holds a control character is no candidate (and so
+    never `normpath`ed into one, SEC-PRE-13)."""
+    assert parse(line(JobID="1", State="FAILED", WorkDir=work_dir), ("1", "/w")) == {}
 
 
 def test_eff_sacct() -> None:
     """P1 Task 34 (schedulers §3.6): TotalCPU summed over the job's steps (batch, extern and each
     srun step), never with the allocation row's, which already holds them; MaxRSS the largest
     of any step; ReqMem per CPU times NCPUS; the allocation's partition, account, QOS and TRES.
-    Step rows have no WorkDir of their own [to be validated]: they join their job by ID."""
+    Step rows have an empty WorkDir (sacct/print.c, CON-PRE-15): they join the job line just
+    before them."""
     text = "\n".join(
         [
             line(
@@ -332,23 +383,41 @@ def test_eff_sacct() -> None:
             line(JobID="78.batch", State="COMPLETED", MaxRSS="9G"),  # not asked: ignored
         ]
     )
-    row = sacct.parse_sacct(text, {"77"})["77"]
+    row = parse(text, ("77", "/data/launch"))["77"]["/data/launch"]
     assert row.total_cpu_s == 100.5
     assert row.max_rss_bytes == 3 * 1024**3
     assert row.req_mem_bytes == 4 * 1000 * 1024**2
     assert (row.ncpus, row.nnodes, row.elapsed_s, row.time_limit_s) == (4, 1, 65, 3600)
     assert (row.partition, row.account, row.qos) == ("gpu", "lab", "high")
     assert row.alloc_tres == "cpu=4,gres/gpu=1,mem=4000M,node=1"
-    alone = sacct.parse_sacct(line(JobID="5", TotalCPU="2-01:00:00", WorkDir="/w"), {"5"})["5"]
+    alone = parse(line(JobID="5", TotalCPU="2-01:00:00", WorkDir="/w"), ("5", "/w"))["5"]["/w"]
     assert alone.total_cpu_s == 49 * 3600  # no step rows: the allocation row's own
 
 
 def test_eff_sacct_steps_join_their_own_job() -> None:
-    """SEC-P3T34-04: a step row counts only for the allocation row printed before it (sacct
-    prints steps after their job [to be validated] on slurm-mini). Two allocation rows for one
-    ID (a reused ID, or a forged line) are ambiguous: no row, so no other job's CPU or memory is
-    mixed in, and a step before any allocation row is ignored."""
-    reused = "\n".join(
+    """SEC-PRE-12, CON-PRE-15: a step line counts only for the job line printed just before it,
+    with the same base ID, and only when that job line is a candidate. A step after another
+    job's line (a forged `<id>.batch`), after a dropped line, or before any job line adds no
+    CPU and no memory."""
+    text = "\n".join(
+        [
+            line(JobID="9.batch", State="COMPLETED", MaxRSS="9G", TotalCPU="10:00.000"),
+            line(JobID="9", State="COMPLETED", TotalCPU="00:02.000", WorkDir="/data/launch"),
+            line(JobID="9.batch", State="COMPLETED", MaxRSS="1G", TotalCPU="00:02.000"),
+            line(JobID="8", State="COMPLETED", TotalCPU="00:01.000", WorkDir="/other"),
+            line(JobID="9.batch", State="COMPLETED", MaxRSS="8G", TotalCPU="20:00.000"),
+            line(JobID="9", State="RUNNING", WorkDir="/elsewhere"),  # dropped: not a candidate
+            line(JobID="9.0", State="COMPLETED", MaxRSS="7G", TotalCPU="30:00.000"),
+        ]
+    )
+    row = parse(text, ("9", "/data/launch"), ("8", "/other"))["9"]["/data/launch"]
+    assert (row.total_cpu_s, row.max_rss_bytes, row.work_dir) == (2.0, 1024**3, "/data/launch")
+
+
+def test_eff_sacct_line_of_other_workdir_ignored() -> None:
+    """SEC-P3T34-04 answered: a job line with another WorkDir (a reused ID, a forged line) is
+    dropped, and no longer removes the job's own row."""
+    text = "\n".join(
         [
             line(JobID="123", State="COMPLETED", TotalCPU="00:01.000", WorkDir="/old"),
             line(JobID="123.batch", State="COMPLETED", MaxRSS="9G", TotalCPU="10:00.000"),
@@ -356,32 +425,116 @@ def test_eff_sacct_steps_join_their_own_job() -> None:
             line(JobID="123.batch", State="COMPLETED", MaxRSS="1G", TotalCPU="00:02.000"),
         ]
     )
-    assert sacct.parse_sacct(reused, {"123"}) == {}
-    early = "\n".join(
+    dropped: Counter[str] = Counter()
+    found = sacct.parse_sacct(text, want(("123", "/data/launch")), D, dropped)
+    row = found["123"]["/data/launch"]
+    assert (row.total_cpu_s, row.max_rss_bytes) == (2.0, 1024**3)
+    assert dropped == {"123": 1}  # counted, for the run's one log line (CON-PRE-14)
+
+
+def test_eff_sacct_resizing_record_skipped() -> None:
+    """CON-PRE-15: a resized job prints its older RESIZING records too (they come first). The
+    final record is the row; its CPU and memory are None, since the steps under the RESIZING
+    record are not summed (B1 of the security pre-review)."""
+    text = "\n".join(
         [
-            line(JobID="9.batch", State="COMPLETED", MaxRSS="9G", TotalCPU="10:00.000"),
-            line(JobID="9", State="COMPLETED", TotalCPU="00:02.000", WorkDir="/data/launch"),
-            line(JobID="9.batch", State="COMPLETED", MaxRSS="1G", TotalCPU="00:02.000"),
+            line(JobID="42", State="RESIZING", TotalCPU="05:00.000", WorkDir="/w"),
+            line(JobID="42.batch", State="RESIZING", MaxRSS="4G", TotalCPU="05:00.000"),
+            line(JobID="42", State="COMPLETED", ExitCode="0:0", NCPUS="2", WorkDir="/w"),
+            line(JobID="42.batch", State="COMPLETED", MaxRSS="1G", TotalCPU="00:30.000"),
         ]
     )
-    row = sacct.parse_sacct(early, {"9"})["9"]
-    assert (row.total_cpu_s, row.max_rss_bytes, row.work_dir) == (2.0, 1024**3, "/data/launch")
+    row = parse(text, ("42", "/w"))["42"]["/w"]
+    assert (row.state, row.exit_code, row.ncpus) == ("COMPLETED", 0, 2)
+    assert (row.total_cpu_s, row.max_rss_bytes) == (None, None)
+    only = line(JobID="42", State="RESIZING", WorkDir="/w")
+    assert parse(only, ("42", "/w")) == {}  # only a RESIZING record: not the job's end
+
+
+def test_eff_sacct_two_final_lines_same_dir_no_row() -> None:
+    """Two non-RESIZING job lines for one ID in the expected directory: which is the job is not
+    known (order between instances is not verified), so no row."""
+    text = "\n".join(
+        [
+            line(JobID="7", State="FAILED", WorkDir="/w"),
+            line(JobID="7", State="COMPLETED", WorkDir="/w/"),  # the same directory, normalised
+        ]
+    )
+    assert parse(text, ("7", "/w")) == {}
+
+
+def test_eff_sacct_no_matching_line_no_row() -> None:
+    """No candidate: no entry (the caller asks again, up to MAX_TRIES); an empty expected set
+    never means any directory (SEC-PRE-15)."""
+    text = line(JobID="7", State="FAILED", WorkDir="/w")
+    assert parse(text, ("7", "/v")) == {}
+    assert sacct.parse_sacct(text, {"7": {}}, D) == {}
+
+
+def test_eff_sacct_one_id_two_dirs() -> None:
+    """One job ID asked for two directories (two runs, one a local PID read as an ID): each
+    directory gets its own line's row."""
+    text = "\n".join(
+        [
+            line(JobID="7", State="FAILED", WorkDir="/a"),
+            line(JobID="7.batch", State="FAILED", TotalCPU="00:01.000"),
+            line(JobID="7", State="COMPLETED", WorkDir="/b"),
+            line(JobID="7.batch", State="COMPLETED", TotalCPU="00:03.000"),
+        ]
+    )
+    found = parse(text, ("7", "/a"), ("7", "/b"))["7"]
+    assert (found["/a"].state, found["/a"].total_cpu_s) == ("FAILED", 1.0)
+    assert (found["/b"].state, found["/b"].total_cpu_s) == ("COMPLETED", 3.0)
+
+
+def test_eff_sacct_workdir_normalised() -> None:
+    """WorkDir is `normpath`ed, never resolved (SEC-PRE-13): `/w/./x/` is `/w/x`, the row keeps
+    sacct's text, and `..` is folded as text (no file system is asked)."""
+    text = line(JobID="7", State="FAILED", WorkDir="/w/./x/")
+    row = parse(text, ("7", "/w/x"))["7"]["/w/x"]
+    assert row.work_dir == "/w/./x/"
+    assert set(parse(line(JobID="7", State="FAILED", WorkDir="/w/y/../x"), ("7", "/w/x"))) == {"7"}
+
+
+def test_eff_sacct_submit_before_launch_dropped() -> None:
+    """SEC-PRE-14: a job line submitted before the run's launch (less SUBMIT_SKEW_S) is another
+    job with that ID; a Submit that does not parse is no candidate either."""
+    text = line(JobID="7", State="FAILED", WorkDir="/w")  # submitted at LAUNCH
+    assert parse(text, ("7", "/w"), since=LAUNCH + sacct.SUBMIT_SKEW_S + 1) == {}
+    assert set(parse(text, ("7", "/w"), since=LAUNCH + sacct.SUBMIT_SKEW_S)) == {"7"}
+    for submit in ("Unknown", "", "2026-11-08 09:00:00", "2026-13-40T09:00:00"):
+        assert parse(line(JobID="7", Submit=submit, WorkDir="/w"), ("7", "/w")) == {}
+
+
+def test_sacct_line_split_wrongly_dropped() -> None:
+    """SEC-PRE-11: a line with more or fewer fields than FORMAT is dropped. A newline in a WorkDir
+    cannot forge a job line, since the forger does not know the call's delimiter; a `|` there is
+    data."""
+    forged = "|".join(["7", "COMPLETED", "0:0"] + [""] * 13 + ["/w"])
+    text = "\n".join(
+        [
+            line(JobID="7", State="FAILED", WorkDir="/x\n" + forged),  # two lines, both dropped
+            line(JobID="8", State="FAILED", WorkDir="/w" + D + "x"),  # one field too many
+            line(JobID="9", State="FAILED", WorkDir="/w|y"),
+        ]
+    )
+    found = parse(text, ("7", "/w"), ("8", "/w"), ("9", "/w|y"))
+    assert set(found) == {"9"}
 
 
 def test_req15_eff_fields(fakebin: Fake) -> None:
-    """The new format is asked and parsed from the tool's output, a `|` inside WorkDir kept;
-    a line with fewer fields (the format before P1 Task 34) is no row."""
-    fakebin.output(OUT + "8812999|FAILED|1:0|None||00:00:01|1G|00:01:00|/w\n")
-    found = sacct_jobs(["8812477", "8812345_3", "8812999"], sacct=fakebin.path)
+    """The new format is asked and parsed from the tool's output; a line with fewer fields (the
+    format before FU-P3-53) is no row."""
+    fakebin.output(OUT + D.join(["8812999", "FAILED", "1:0", "None", "", "00:00:01", "/w"]) + "\n")
+    found = sacct_jobs({**ASKED, "8812999": {"/w": LAUNCH}}, sacct=fakebin.path)
     assert found is not None and set(found) == {"8812477", "8812345_3"}
-    assert found["8812345_3"].work_dir == "/data/launch|x"
     assert fakebin.calls()[0]["argv"][-1] == f"--format={sacct.FORMAT}"
-    assert sacct.FORMAT.endswith(",WorkDir") and sacct.FORMAT.count(",") == 15
+    assert sacct.FORMAT.endswith(",Submit,WorkDir") and sacct.FORMAT.count(",") == 16
 
 
 def test_sacct_output_capped(fakebin: Fake) -> None:
     fakebin.output((line(JobID="8812477", State="FAILED", WorkDir="/w") + "\n") * 40000)  # > 1 MiB
-    assert sacct_jobs(["8812477"], sacct=fakebin.path) is None
+    assert sacct_jobs(want(("8812477", "/w")), sacct=fakebin.path) is None
 
 
 class Clock:
@@ -398,7 +551,7 @@ def test_req15_limiter(fakebin: Fake) -> None:
     starts: list[float] = []
     in_flight = 0
 
-    def call(ids: list[str]) -> dict[str, SacctRow]:
+    def call(ids: list[str]) -> sacct.Found:
         nonlocal in_flight
         in_flight += 1
         assert in_flight == 1 and len(ids) <= 100
@@ -424,7 +577,7 @@ def test_req15_limiter_one_in_flight() -> None:
     """Two threads that find the limiter due: one call runs, the other returns at once."""
     entered, release = threading.Event(), threading.Event()
 
-    def call(ids: list[str]) -> dict[str, SacctRow]:
+    def call(ids: list[str]) -> sacct.Found:
         entered.set()
         release.wait(5)
         return {}
