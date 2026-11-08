@@ -123,3 +123,23 @@ bash tools/ci/security.sh sast                        # 0 findings
 ```text
 CODE  step=P3-demo-refresh  review=approve b/M/m=0/0/3  security=approve b/M/m=0/0/1  rounds=1  simplify=none  tests=pass
 ```
+
+## Refresh round of 2026-11-08
+
+Thomas decided on 2026-11-08 to refresh PR #111 so the demo shows the current UI; he merges it himself. The merge is `7038e76`; [P3-M4 · Public demo](../../progress/W5/P3-M4.md#public-demo-p3-demo), "Refreshed 2026-11-08", has the numbers. The diff after the merge:
+
+- `tools/media/record_demo.py`: the session cookie (`SPECTIO_SESSION_COOKIE`, sent, never written); each run's launch template and results folders (at most 20); the job files of a sample of tasks (`files_sample`); the host-name guard as a whole word;
+- `web/demo/fixtures.json`: 255 answers, 1 035 918 bytes, five runs;
+- `web/src/demo/stub.test.ts`: the failed run found in the recording, 3 new cases; `web/src/demo/demo.test.tsx`: the failed run found the same way;
+- `tools/media/README.md`: the recipe (wheels, namespaces, sign-in, the five runs) and what the demo cannot show.
+
+`stub.ts` is unchanged: the new screens' requests (`:launch-template`, `/results`, `/tasks/{id}/attempts/{n}/files` and its files) are exact paths it already answers.
+
+**How it was reviewed.** The session that did the refresh had no tool to start subagents, so it reviewed its own diff against `.claude/agents/code-reviewer.md` and `.claude/agents/security-reviewer.md`. This is **not independent**; Thomas may ask for an independent pass before he merges. One finding was fixed before the commit: `results()` stopped when its queue held more than 20 folders rather than after 20 visits, so it recorded 36 folders instead of 46. For the security pass, the decoded bodies of the 255 answers were searched for host names, paths outside `/g/demo-lab`, e-mail addresses, IP addresses, `PATH=`/`HOME=`, `token`, `password`, `Bearer`, `secret`, the session cookie's name, this sandbox's host name, `root`, `/home/`, `/tmp/` and the kernel release. The only matches: `/usr/local/bin/nextflow` and `/opt/snakemake-demo-venv/bin/snakemake` (the engine commands), `registry.nextflow.io` and the schema `$id` on `raw.githubusercontent.com`, the `nf-…@version` plugin names, the JDK build line, `vmem` trace fields, the results answers' `root` key, Nextflow's secrets store path (no content) and the server's own `«hidden»` masks of `PATH`.
+
+| Id | Severity | Finding | Status |
+|---|---|---|---|
+| CR-P3DEMO-01 (r6) | minor | `results()` capped the queue, not the folders visited. | fixed before the commit; the recording taken again (255 answers) |
+| CR-P3DEMO-02 (r6) | minor | A task outside `files_sample` shows "The files could not be listed: Not in the demo's recorded data." That is true, but a visitor may click several before finding one with files. | accepted: `tools/media/README.md` and the P3-M4 paragraph say which tasks have files; all of them would pass the budget |
+| SEC-P3DEMO-01 (r6) | minor | The job files add the text of `.command.run` wrappers; they hold the run's own paths under `/g/demo-lab` and Nextflow's helper functions, nothing of the sandbox. | no action |
+| SEC-P3DEMO-02 (r6) | minor | The engine logs still carry the JDK build, `CPUs` and `Mem` lines. | **open**: SEC-P3DEMO-04 (r3), FU-P3-29 |
