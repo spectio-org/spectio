@@ -1534,3 +1534,54 @@
   max-height: 90dvh;
   border-radius: 16px 16px 0 0;
 }
+
+/* P1 Task 35: process and rule states, checkpoints, the By process view and efficiency
+   (LiteRunDetailSnakemake, LiteRunTasks, LiteRunEfficiency and their phone twins). */
+.sp-bar[data-lower] {
+  /* the part past the known jobs may still come: hatched, never animated (ui-spec §5.2) */
+  background: repeating-linear-gradient(135deg, var(--sp-surface-sunken) 0 3px, var(--sp-line-border) 3px 5px);
+}
+.sp-checkpoint {
+  display: block;
+  width: max-content;
+  margin-top: 3px;
+}
+.sp-state-cell {
+  max-width: 190px;
+}
+.sp-table tr[data-quiet],
+.sp-row-card[data-quiet] {
+  color: var(--sp-text-muted);
+}
+.sp-view-tabs {
+  align-self: flex-start;
+}
+.sp-view-tabs [role="tab"][aria-selected="true"] {
+  font-weight: 600;
+  color: var(--sp-text-primary);
+  background: var(--sp-surface-raised);
+  box-shadow: var(--sp-shadow);
+}
+.sp-sort {
+  padding: 0;
+  border: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+.sp-sort:focus-visible {
+  outline: 2px solid var(--sp-indigo-500);
+  outline-offset: 2px;
+}
+.sp-outputs .sp-sheet-row {
+  font-family: var(--sp-font-mono);
+  font-size: 12.5px;
+  overflow-wrap: anywhere;
+}
+.sp-card-facts {
+  /* the phone's process card: one label and value row per fact (MLiteRunEfficiency) */
+  grid-template-columns: 1fr;
+  gap: 0;
+}

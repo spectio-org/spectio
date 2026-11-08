@@ -1,6 +1,16 @@
 import { Button } from "@mantine/core";
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
-import { ApiError, type TaskFile, type TaskFiles as Listing, type RunDetail, type Task, getTaskFile, listTaskFiles, taskFileUrl } from "../api";
+import {
+  ApiError,
+  type TaskFile,
+  type TaskFiles as Listing,
+  type TaskOutput,
+  type RunDetail,
+  type Task,
+  getTaskFile,
+  listTaskFiles,
+  taskFileUrl,
+} from "../api";
 import { ICONS, Icon } from "../icons";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
@@ -39,6 +49,39 @@ const WHY: Record<Exclude<TaskFile["state"], "present">, [string, string]> = {
   ],
 };
 const OFFLINE = "Spectio cannot read the cluster's files right now";
+const CLEANUP: [string, string] = [
+  "This job's work directory was removed by cleanup = true",
+  "Nextflow removes the work directories after a successful run when cleanup = true. The run's results are not affected.",
+];
+
+// Snakemake's outputs of the job (ui-spec §5.2): a tab after the files; its key, empty, is no
+// file's name.
+const OUTPUTS = "";
+const OUTPUT_WORDS: Record<TaskOutput["state"], string> = {
+  present: "present",
+  not_yet: "not yet",
+  absent: "absent",
+  temp_removed: "deleted by Snakemake (temporary)",
+  tbd: "decided after the checkpoint",
+};
+
+function OutputsPanel({ outputs }: { outputs: TaskOutput[] }) {
+  if (!outputs.length) return <p className="sp-muted">This job declares no output.</p>;
+  return (
+    <>
+      <ul className="sp-sheet-list sp-outputs" aria-label="Outputs">
+        {outputs.map((o) => (
+          <li key={o.path} className="sp-sheet-row">
+            {[o.path, OUTPUT_WORDS[o.state], o.state === "temp_removed" && o.removed_at ? when(o.removed_at) : null, o.protected ? "write-protected" : null]
+              .filter(Boolean)
+              .join(" · ")}
+          </li>
+        ))}
+      </ul>
+      <p className="sp-muted">Snakemake says an output is temporary only when it deletes it; Spectio does not guess.</p>
+    </>
+  );
+}
 
 /** "2.4 KiB", "3.1 MiB", "120 B". */
 function fileSize(n: number): string {
@@ -83,7 +126,7 @@ function Refused({ title, body, onRetry, download }: { title: string; body?: str
   );
 }
 
-function FilePanel({ task, n, file, running, onReload }: { task: Task; n: number; file: TaskFile; running: boolean; onReload: () => void }) {
+function FilePanel({ task, n, file, running, cleanup, onReload }: { task: Task; n: number; file: TaskFile; running: boolean; cleanup: boolean; onReload: () => void }) {
   const [text, setText] = useState<string | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [reads, setReads] = useState(0);
@@ -101,7 +144,7 @@ function FilePanel({ task, n, file, running, onReload }: { task: Task; n: number
   }, [task.id, n, file.name, present, reads]);
 
   if (state !== "present") {
-    const [title, body] = WHY[state];
+    const [title, body] = state === "cleaned" && cleanup ? CLEANUP : WHY[state];
     return (
       <>
         <Refused title={title} body={body} />
@@ -118,7 +161,10 @@ function FilePanel({ task, n, file, running, onReload }: { task: Task; n: number
   }
   const download = taskFileUrl(task.id, n, file.name, { tail: DOWNLOAD, download: true });
   if (error?.status === 415) return <Refused title="This file is not text. Download it to open it" body="Spectio shows text files only." download={download} />;
-  if (error?.status === 410) return <Refused title={WHY.cleaned[0]} body={WHY.cleaned[1]} />;
+  if (error?.status === 410) {
+    const [title, body] = cleanup ? CLEANUP : WHY.cleaned;
+    return <Refused title={title} body={body} />;
+  }
   if (error?.status === 503) return <Refused title={OFFLINE} body="The file system does not answer. Nothing was lost; try again in a moment." onRetry={() => setReads((r) => r + 1)} />;
   if (error?.status === 404) return <Refused title="This file is not there now" body="It was listed, then not found: reload the list." onRetry={() => (onReload(), setReads((r) => r + 1))} />;
   if (error) return <Refused title="The file could not be read" body={error.message} onRetry={() => setReads((r) => r + 1)} />;
@@ -176,7 +222,7 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
     listTaskFiles(task.id, n, controller.signal)
       .then((found) => {
         setListing(found);
-        setPicked((name) => (found.files.some((f) => f.name === name) ? name : null));
+        setPicked((name) => ((name === OUTPUTS && found.outputs) || found.files.some((f) => f.name === name) ? name : null));
       })
       .catch((e: ApiError) => controller.signal.aborted || setError(e));
     return () => controller.abort();
@@ -186,18 +232,25 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
   const reload = () => setLists((l) => l + 1);
   const failed = task.state === "failed" || n < last;
   const files = [...(listing?.attempt === n ? listing.files : [])].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
-  const shown = files.find((f) => f.name === picked) ?? first(files, failed);
+  const outputs = listing?.attempt === n ? (listing.outputs ?? null) : null;
+  // with no file to show (a Snakemake job without a log: directive) the drawer opens on Outputs
+  const onOutputs = outputs !== null && (picked === OUTPUTS || files.length === 0);
+  const shown = onOutputs ? undefined : (files.find((f) => f.name === picked) ?? first(files, failed));
   const visible = files.filter((f) => more || !MORE.has(f.kind) || f === shown);
   const hasMore = files.some((f) => MORE.has(f.kind));
   const directory = listing?.work_dir ?? null;
-  const index = shown ? visible.indexOf(shown) : -1;
+  // the tabs: the files shown, then Outputs on a Snakemake attempt
+  const outputsLabel = outputs ? `Outputs (${outputs.length})` : "";
+  const tabList = [...visible.map((f) => ({ key: f.name, label: label(f), state: f.state as string })), ...(outputs ? [{ key: OUTPUTS, label: outputsLabel, state: "present" }] : [])];
+  const current = onOutputs ? OUTPUTS : shown?.name;
+  const index = tabList.findIndex((t) => t.key === current);
   const tabId = (i: number) => `${base}-tab-${i}`;
   const onKey = (event: KeyboardEvent) => {
-    const to = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: visible.length - 1 }[event.key];
+    const to = { ArrowRight: index + 1, ArrowLeft: index - 1, Home: 0, End: tabList.length - 1 }[event.key];
     if (to === undefined) return;
     event.preventDefault();
-    const at = (to + visible.length) % visible.length;
-    setPicked(visible[at].name);
+    const at = (to + tabList.length) % tabList.length;
+    setPicked(tabList[at].key);
     tabs.current?.querySelectorAll<HTMLButtonElement>("[role=tab]")[at]?.focus();
   };
 
@@ -225,36 +278,37 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
       {error && error.status === 503 && <Refused title={OFFLINE} body="The file system does not answer. Nothing was lost; try again in a moment." onRetry={reload} />}
       {error && error.status !== 503 && <Refused title="The files could not be listed" body={error.message} onRetry={reload} />}
       {!error && listing?.attempt !== n && <p className="sp-muted">Loading the files…</p>}
-      {!error && listing?.attempt === n && files.length === 0 && <p className="sp-muted">This attempt has no file to show.</p>}
-      {!error && shown && (
+      {!error && listing?.attempt === n && files.length === 0 && outputs === null && <p className="sp-muted">This attempt has no file to show.</p>}
+      {!error && current !== undefined && (
         <>
           {phone ? (
             <label className="sp-select sp-file-select">
               File{" "}
-              <select value={shown.name} onChange={(e) => setPicked(e.currentTarget.value)}>
+              <select value={current} onChange={(e) => setPicked(e.currentTarget.value)}>
                 {files.map((f) => (
                   <option key={f.name} value={f.name}>
                     {label(f)}
                   </option>
                 ))}
+                {outputs && <option value={OUTPUTS}>{outputsLabel}</option>}
               </select>
             </label>
           ) : (
             <div className="sp-file-tabs">
               <div ref={tabs} role="tablist" aria-label="Files" onKeyDown={onKey}>
-                {visible.map((f, i) => (
+                {tabList.map((t, i) => (
                   <button
-                    key={f.name}
+                    key={t.key}
                     id={tabId(i)}
                     type="button"
                     role="tab"
-                    aria-selected={f === shown}
+                    aria-selected={t.key === current}
                     aria-controls={`${base}-panel`}
-                    tabIndex={f === shown ? 0 : -1}
-                    data-state={f.state}
-                    onClick={() => setPicked(f.name)}
+                    tabIndex={t.key === current ? 0 : -1}
+                    data-state={t.state}
+                    onClick={() => setPicked(t.key)}
                   >
-                    {label(f)}
+                    {t.label}
                   </button>
                 ))}
               </div>
@@ -265,8 +319,26 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
               )}
             </div>
           )}
-          <div id={`${base}-panel`} role="tabpanel" aria-labelledby={phone ? undefined : tabId(index)} aria-label={phone ? label(shown) : undefined} className="sp-file-panel">
-            <FilePanel key={`${n}:${shown.name}`} task={task} n={n} file={shown} running={task.state === "running" && n === last} onReload={reload} />
+          <div
+            id={`${base}-panel`}
+            role="tabpanel"
+            aria-labelledby={phone ? undefined : tabId(index)}
+            aria-label={phone ? (shown ? label(shown) : outputsLabel) : undefined}
+            className="sp-file-panel"
+          >
+            {shown ? (
+              <FilePanel
+                key={`${n}:${shown.name}`}
+                task={task}
+                n={n}
+                file={shown}
+                running={task.state === "running" && n === last}
+                cleanup={run.engine_settings?.cleanup === true}
+                onReload={reload}
+              />
+            ) : (
+              <OutputsPanel outputs={outputs ?? []} />
+            )}
           </div>
         </>
       )}
