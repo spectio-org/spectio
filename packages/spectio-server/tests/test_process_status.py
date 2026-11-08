@@ -22,7 +22,7 @@ from spectio_server.projector.ingest import apply_head_report
 from spectio_server.store.schema import run_output_events
 from spectio_server.store.writer import Writer
 
-from .api.conftest import client_for
+from .api.conftest import client_for, lone_host  # noqa: F401 - autouse: a lone host, any test host
 from .api.test_failure import API, RUN, Run, write_private
 
 SNAKEFILE = """\

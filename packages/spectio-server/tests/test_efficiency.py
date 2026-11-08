@@ -24,7 +24,7 @@ from spectio_server.api import runs_read
 from spectio_server.store.schema import attempts, environments, tasks
 from spectio_server.store.writer import Writer
 
-from .api.conftest import client_for
+from .api.conftest import client_for, lone_host  # noqa: F401 - autouse: a lone host, any test host
 from .api.test_failure import (
     API,
     HASHES,
