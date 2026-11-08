@@ -186,9 +186,11 @@ def preferred_db_dir() -> Path:
     return base / f"spectio-{uid}"
 
 
-def default_db_dir() -> Path:
+def default_db_dir(*, fixed: bool = False) -> Path:
     """`preferred_db_dir()`, 0700; a squatted path is left as it is and a fresh `mkdtemp`
     directory is used instead (dev-environment-and-testing.md §15.3, Where data lives).
+    With `fixed` (a server behind its socket, whose tunnel names that path) a squatted path is
+    refused instead (SEC-P3FU72-01).
     """
     uid = os.getuid()
     path = preferred_db_dir()
@@ -200,6 +202,12 @@ def default_db_dir() -> Path:
     private, owner = _private_dir(path, uid)
     if private:
         return path
+    if fixed:
+        raise UnsafeDatabase(
+            f"{path} is not a private directory of yours ({_owner(owner)}), and the tunnel to "
+            "the socket names it: remove it if it is yours, or choose another with --db-dir "
+            "(spectio init --db-dir)"
+        )
     fallback = Path(tempfile.mkdtemp(prefix=f"spectio-{uid}-", dir=base))
     seen = "uid unknown" if owner is None else f"uid {owner}"
     log.warning("%s is not a private directory of this user (%s); using %s", path, seen, fallback)
