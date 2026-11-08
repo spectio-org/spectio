@@ -1868,6 +1868,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** as built for rules 1, 2, 5 and 6; (a) for rules 3, 4 and 7.
 - **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the recommendation is applied. FU-P3-60: the `slurm-mini` cases (a resized job, a requeued job, a runs root behind a symlink, a newline in a WorkDir, a 16-character delimiter, `TZ=UTC` on `Submit`). FU-P3-61: rules 3 (b) and 4 (b) if Thomas wants them. FU-P3-62: rule 7 (b) and the other open findings of the [review record](code/P3-fu53.md#findings). Next follow-up number: FU-P3-63.
 - **Blocked:** nothing; the `slurm-mini` cases wait for P1 Task 22.
+- **Checked on native 23.11 (2026-11-08, FU-P3-66):** the multi-character `--delimiter` (rule 2's item among the **[to be validated]** items; 18 characters in the hand check, 10 in the worker's) and `TZ` honoured for `Submit` held on a one-node Slurm 23.11.4 with accounting (`dev/slurm/native.sh`, [review record](code/P3-fu66.md)). Both stay **[to be validated]** on the `slurm-mini` versions (25.11, 26.05); the other items (a resized job, a requeued job, a runs root behind a symlink, a newline in a WorkDir) were not run.
 
 ### #120 · Question: `dev/slurm/native.sh`, native Slurm in cloud sessions (FU-P3-66)
 

@@ -181,6 +181,14 @@ The data directory stays writable for work directories. Today neither cluster do
 
 The runner runs on the sind submitter node as an unprivileged user, exactly as on a login node. Fixture workflows are mounted into it. Nextflow and Snakemake run inside the submitter node, using the cluster's `sbatch`. Note 2026-10-28: for 0.0.1 the end-to-end tests start each engine head in tmux on the submitter node, as on a login node (§15.3), with one cancel test per engine (an interrupt in the head's pane, then SIGTERM and SIGKILL) and a server restart while a head runs in tmux ([P1](../plans/P1-walking-skeleton.md) Tasks 22 and 23); the head-job items planned above stay for the later SLURM head launcher.
 
+**Native Slurm in a cloud session** (note 2026-11-08, Thomas, [inbox #120](../reviews/inbox.md#120-question-devslurmnativesh-native-slurm-in-cloud-sessions-fu-p3-66) (a), step P3-fu66, FU-P3-66; [review record](../reviews/code/P3-fu66.md); [Progress](../progress/W5/P3-M9.md#fu-p3-66-native-slurm)). A cloud session is cgroup v1, so sind does not start there (§4.2). `bash dev/slurm/native.sh up | down | status` runs a real one-node Slurm in the session's own container instead:
+
+- **What it is.** Slurm 23.11.4, slurmdbd, MariaDB 10.11 and munge from the Ubuntu 24.04 packages (apt only), installed as root into a throwaway container. One node named after the host, partition `debug`, cluster `local`, accounting on. It is not a `cluster.sh` profile and not a CI job.
+- **Guards.** It refuses to run unless root; refuses a `slurm.conf` or `slurmdbd.conf` that lacks its marker line, an inherited `SLURM_CONF` that is not its own, `down` without its own config, and `up` while another Slurm daemon runs or a configless cache is there. The database password is made per install into a root-only file and never printed. MariaDB listens on 127.0.0.1; the Slurm daemons listen on every interface, with munge as the only control, so the container must not publish ports 6817 to 6819. The open minors of its review are FU-P3-67.
+- **What it covers.** `sacct` parsing against real 23.11 output, with accounting: `SPECTIO_NATIVE_SLURM=1 uv run pytest -m native_slurm` runs a job through `sbatch` and checks that `sacct_jobs` gives its row (state, exit code, MaxRSS, ReqMem, WorkDir) for the right directory and none for another (§15.3 req. 15). A multi-character `--delimiter` and `TZ` for `Submit` were honoured on 23.11 in a hand check on the same packages.
+- **What it does not cover.** More than one node, requeue, resize, a Slurm other than 23.11 (the sind images are 25.11 and 26.05), and slurmrestd. Those stay on `slurm-mini` and `slurm-site` in CI (P1 Task 22, [inbox #121](../reviews/inbox.md#121-question-p1-task-22-slurm-mini-end-to-end-in-ci)). It does not replace sind. The delimiter and `TZ` items stay **[to be validated]** on the sind versions.
+- **Guard tests** (`tests/slurm/test_native.py`) use fakes and run in the CI unit job; they install and start nothing.
+
 ### 4.2 Kubernetes with kind
 
 | Profile | Setup | Used for |
@@ -189,7 +197,7 @@ The runner runs on the sind submitter node as an unprivileged user, exactly as o
 | `k8s-kueue` | kind with 2 workers, Kueue with a `ClusterQueue` and a `LocalQueue`, the visibility API; Kueue `KUEUE_VERSION` only (§1) | built: queue positions and admission (T4, `tests/fixtures/k8s/kueue-workloads.json`, `kueue-pending-workloads.json`). Planned, not built yet: preemption, and the older Kueue version (§1). Step page: [T4](../progress/W3/T4.md) |
 | `k8s-rwx` | `k8s-mini` + an RWX storage class (NFS provisioner) | Nextflow k8s executor with a shared work directory (Nextflow only; Snakemake needs S3) |
 
-kind does not run inside a Claude Code cloud session: the VM's cgroup v1 layout stops the node's static pods ([spike D2](../research/spike-cloud-env-2026-10-26.md#result)), and the same layout stops sind (§4.1). Kubernetes and SLURM scenarios therefore run in CI and on the user's machine only; `dev-env.yml` proves both layers on every change to `dev/` (§1 "Checks").
+kind does not run inside a Claude Code cloud session: the VM's cgroup v1 layout stops the node's static pods ([spike D2](../research/spike-cloud-env-2026-10-26.md#result)), and the same layout stops sind (§4.1). Kubernetes and SLURM scenarios therefore run in CI and on the user's machine only (a session can run `dev/slurm/native.sh` for a one-node Slurm with accounting, §4.1); `dev-env.yml` proves both layers on every change to `dev/` (§1 "Checks").
 
 ## 5. Isolated, parallel scenarios
 
