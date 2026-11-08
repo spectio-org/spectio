@@ -766,6 +766,14 @@ media:
     # the user name is replaced by alice and the ticket masked
     generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-tmux.yaml'
     outputs: [docs/assets/casts/spectio-tmux.cast]
+  - id: spectio-detach
+    kind: cast
+    # needs tmux on PATH (3.4 when made); the real `spectio serve --detach` from the checkout's .venv
+    # (uv sync first), in a demo HOME with fake engines and a tmux socket of its own, under the demo
+    # host name demo-hpc-login1 (its own UTS namespace); the user name is replaced by alice and the
+    # ticket masked by a sed the cast shows
+    generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-detach.yaml'
+    outputs: [docs/assets/casts/spectio-detach.cast]
   - id: spectio-terminal-run
     kind: cast
     # real Nextflow on the synthetic pipeline, real nf-spectio built by engine-bridges/nf-spectio/build.sh
