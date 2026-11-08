@@ -10,6 +10,7 @@ for the writer. The run's `Location` of `POST /runs` is served here (inbox #86, 
 
 import base64
 import binascii
+import heapq
 import json
 import os
 import pwd
@@ -425,7 +426,8 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     """One item per process or rule: those the projector recorded (`onProcessCreate`, the rule
     files at the freeze, a first task), in that order, with the stage they froze with; then any
     known from tasks only (a database from before P1 Task 27), in their first task's order.
-    Each has its `status`, and the `efficiency` of its jobs (P1 Task 34)."""
+    Each has its `status`, the `efficiency` of its jobs (P1 Task 34), and its `pipeline_order`
+    (FU-P3-82)."""
     with read(request) as conn:
         run = run_row(conn, run_id)
         mine = tasks.c.run_id == run_id
@@ -459,7 +461,8 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
                 .group_by(tasks.c.process_or_rule)
             ).all()
         )
-        facts = _run_facts(conn, run)
+        graph = _rulegraph(conn, run)
+        facts = _run_facts(conn, run, graph)
         jobs = task_resources(conn, run_id, dir_run_id(run), run.engine, None, context(request))
     by_process: dict[str, dict[str, int]] = {}
     for process, state, n in counts:
@@ -471,6 +474,7 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     order: dict[str, str | None] = {r.name: r.stage_id for r in known}
     for process, stage_id in from_tasks:
         order.setdefault(process, stage_id)
+    ranks = {name: n for n, name in enumerate(_pipeline_order(list(order), graph.get("links")))}
     items = []
     for process, stage_id in order.items():
         r = rows.get(process)
@@ -489,13 +493,61 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
                 "is_checkpoint": bool(r is not None and r.is_checkpoint),
                 "lower_bound": facts.checkpoint_open,
                 "efficiency": efficiency.aggregate(of_process.get(process, []), planned),
+                "pipeline_order": ranks[process],
             }
         )
     return {"items": items}
 
 
-def _run_facts(conn: Connection, run: Row[Any]) -> RunFacts:
-    """What the process statuses read of the run (Snakemake: its `run_info`, rule graph, open
+def _pipeline_order(names: list[str], links: Any) -> list[str]:
+    """`names` (in their recorded order) in topological order of the rule graph's `links`
+    (`sourcerule` before `targetrule`; tests/fixtures/engine-events/
+    snakemake-9.27.1_checkpoint_flaky_retry.spool.jsonl:4), ties broken by the recorded order.
+    No links (Nextflow, an older plugin): the recorded order. A cycle, which a rule graph should
+    not have, leaves its rules at the end in the recorded order."""
+    rank = {name: n for n, name in enumerate(names)}
+    after: dict[str, set[str]] = {name: set() for name in names}
+    for link in links if isinstance(links, list) else []:
+        if not isinstance(link, dict):
+            continue
+        source, target = link.get("sourcerule"), link.get("targetrule")
+        if isinstance(source, str) and isinstance(target, str) and source != target:
+            if source in rank and target in rank:
+                after[source].add(target)
+    waiting = {name: 0 for name in names}
+    for targets in after.values():
+        for target in targets:
+            waiting[target] += 1
+    ready = [rank[name] for name in names if waiting[name] == 0]
+    heapq.heapify(ready)
+    done: list[str] = []
+    while ready:
+        name = names[heapq.heappop(ready)]
+        done.append(name)
+        for target in after[name]:
+            waiting[target] -= 1
+            if waiting[target] == 0:
+                heapq.heappush(ready, rank[target])
+    placed = set(done)
+    return done + [name for name in names if name not in placed]
+
+
+def _rulegraph(conn: Connection, run: Row[Any]) -> dict[str, Any]:
+    """The last rule graph the Snakemake logger plugin sent (`{}` for none, or for Nextflow)."""
+    if run.engine != "snakemake":
+        return {}
+    payload = conn.execute(
+        select(events.c.payload)
+        .where(events.c.run_id == run.id, events.c.type == RULEGRAPH)
+        .order_by(events.c.seq.desc())
+        .limit(1)
+    ).scalar()
+    graph = (payload or {}).get("rulegraph")
+    return graph if isinstance(graph, dict) else {}
+
+
+def _run_facts(conn: Connection, run: Row[Any], graph: dict[str, Any]) -> RunFacts:
+    """What the process statuses read of the run (Snakemake: its `run_info`, rule `graph`, open
     checkpoints, and whether jobs are to come after a DAG update)."""
     if run.engine != "snakemake":
         return RunFacts(run.engine, run.state)
@@ -503,13 +555,7 @@ def _run_facts(conn: Connection, run: Row[Any]) -> RunFacts:
     planned = conn.execute(
         select(events.c.id).where(mine, events.c.type == RUN_INFO).limit(1)
     ).first()
-    graph = conn.execute(
-        select(events.c.payload)
-        .where(mine, events.c.type == RULEGRAPH)
-        .order_by(events.c.seq.desc())
-        .limit(1)
-    ).scalar()
-    nodes = ((graph or {}).get("rulegraph") or {}).get("nodes")
+    nodes = graph.get("nodes")
     rules = frozenset(
         n["rule"]
         for n in (nodes if isinstance(nodes, list) else [])

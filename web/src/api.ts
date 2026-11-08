@@ -272,6 +272,8 @@ export interface Process {
   is_checkpoint?: boolean;
   lower_bound?: boolean;
   efficiency?: ProcessEfficiency;
+  /** 0 first: the rule graph's topological order, else the list's (FU-P3-82). */
+  pipeline_order?: number;
 }
 
 /** Schema `Stage`. */
