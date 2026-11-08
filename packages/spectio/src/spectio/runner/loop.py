@@ -356,7 +356,9 @@ class RunnerLoop:
         self._report(ref, report)
 
     def _report(self, ref: LaunchRef, report: HeadReport) -> None:
-        if report.ended and report.failure is None:
+        # once its engine's end event is in, an ended head waits for no spool grace and has no
+        # failure: the run is already ended, and the exit code is reported at once (G7)
+        if report.ended and report.failure is None and not ref.engine_ended:
             if ref.engine == "snakemake" and report.exit_code is not None:
                 # its exit code ends the launch (Assumption 16): the head is gone, so one more
                 # read drains its spool, with no grace to wait (FU-P3-14, CR-P3T09-04)

@@ -584,6 +584,18 @@ def test_launch_active_until_the_ended_report(settings: Settings, writer: Writer
     assert sink.active_launches() == []
 
 
+def test_launch_engine_ended_once_its_end_event_is_in(settings: Settings, writer: Writer) -> None:
+    """G7: the runner learns that the engine's own end event (`head_state` succeeded) is in, so
+    that its head's exit code is reported without the spool grace."""
+    root = settings.runs_root
+    head_files(make_run(root, run_id(1)), code=None)
+    rebuild_index(writer, root)
+    sink = StoreSink(writer, root)
+    assert [r.engine_ended for r in sink.active_launches()] == [False]
+    writer.submit(lambda c: c.execute(update(launches).values(head_state="succeeded"))).result()
+    assert [r.engine_ended for r in sink.active_launches()] == [True]
+
+
 @pytest.mark.parametrize(
     ("location", "added"),
     [

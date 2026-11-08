@@ -29,7 +29,7 @@ from spectio.runner.types import (
 )
 from spectio_server.files.pool import FilePool
 from spectio_server.projector.ingest import apply_head_report, ingest, load_cursor
-from spectio_server.projector.runs import TERMINAL
+from spectio_server.projector.runs import ENGINE_ENDED, TERMINAL
 from spectio_server.stages.freeze import StageSources
 from spectio_server.store.runs import EngineConflict, insert_observed_run
 from spectio_server.store.schema import (
@@ -165,6 +165,7 @@ class StoreSink:
             engine=cast(Engine, row.engine),
             launch_dir=run_paths(self.runs_root, row.run_id).launch_dir,
             native_id=row.head_native_id,
+            engine_ended=row.head_state in ENGINE_ENDED,
         )
 
     def _terminal_ref(self, row: Row[Any]) -> LaunchRef | None:
@@ -195,6 +196,7 @@ def _launch_query() -> Any:
             launches.c.run_id,
             launches.c.n,
             launches.c.head_native_id,
+            launches.c.head_state,
             launches.c.pid,
             launches.c.pid_start_time,
             launches.c.host_boot_id,

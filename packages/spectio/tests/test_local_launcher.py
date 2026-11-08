@@ -692,6 +692,23 @@ def test_snakemake_end_skips_the_spool_grace(runs_root: Path, launcher: LocalLau
     assert [len(b.events) for _, b in sink.batches if b.events] == [1]  # read before the end
 
 
+def test_nextflow_end_after_its_end_event_skips_the_spool_grace(
+    runs_root: Path, launcher: LocalLauncher
+) -> None:
+    """With the default spool grace (60 s), a Nextflow head that exits after its engine's end
+    event was ingested (`engine_ended`) is reported at the poll that sees it, with its exit code
+    and no failure: its last events are already in, there is nothing to wait for (G7)."""
+    engine = stub_engine(runs_root.parent / "bin", "exit 0")
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher, end_grace_s=60)
+    ref = sink.launch(runs_root, RUN_A)
+    sink.launches[ref.launch_id] = ref = replace(ref, engine_ended=True)
+    sink.commands[-1] = replace(sink.commands[-1], launch=ref)
+    run_until(loop, lambda: ref.launch_id not in sink.launches, timeout=10)
+    report = sink.last(ref.launch_id)
+    assert (report.ended, report.exit_code, report.failure) == (True, 0, None), report
+
+
 # --- Head files scoped by launch, and the Resume launch (P1 Task 30, CR-P3T09-11) -----------
 
 
