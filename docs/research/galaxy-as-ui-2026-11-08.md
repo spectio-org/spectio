@@ -144,3 +144,79 @@ The public usegalaxy.* servers would also be unlikely to accept long, opaque, wh
 
    This would also cover spike 8 of [R9](../reviews/R9-landscape.md) (Galaxy WES and pause).
 4. **Raise the idea with Galaxy maintainers before building.** The BioFAIR 2026 interoperability sprint (15-17 Sep 2026, `BiocCodingCollaborations/BioFAIR2026_Sprint`) brought Galaxy and nf-core together. Its outputs are not published yet **[to be validated]**.
+
+## 7. If we do it anyway: the least-bad route
+
+*Added on 2026-11-08, after Thomas's follow-up: "Et si l'on voudrait vraiment le faire ?" (And what if we really wanted to do it?).*
+
+The goal would be that a Galaxy user launches, follows and decides Spectio runs without leaving Galaxy. Spectio keeps execution, stages and gates. Option A, emulating Galaxy's API, stays excluded (§4). The route below keeps Galaxy unmodified, and every piece of it is a published Galaxy extension point. Code references are to Galaxy at `0924bf1`.
+
+### 7.1 The pieces
+
+1. **One Galaxy tool per pipeline, generated from `nextflow_schema.json`.**
+   - stableexpression_galaxy already does this generation (§3).
+   - Spectio already reads that schema for its launch forms ([ui-spec §7](../specs/ui-spec.md)).
+   - The tool's `<command>` is a thin client: `spectio launch … --wait`. It sends the run to Spectio's API, and Spectio's runner executes it on SLURM or Kubernetes.
+   - The Galaxy job only waits, so it does not hold "the maximum RAM/CPU … for the entire duration" (§3, fubar). That problem comes from running the whole engine inside the Galaxy job.
+   - The client traps the job's termination and calls `:cancel`.
+2. **Per-user credentials.**
+   - The tool XML's `<credentials>` element injects user-managed variables and secrets into the tool's environment (`lib/galaxy/tool_util/xsd/galaxy.xsd:707,832-844`; API `lib/galaxy/webapps/galaxy/api/credentials.py`).
+   - That carries a Spectio token per user, so the run is attributed to the person, not to a service.
+   - A shared Keycloak realm (§2.2) is the later step **[to be validated end to end]**.
+3. **A `spectio_run` output dataset, plus a visualization plugin bound to it.**
+   - A visualization plugin declares the datasets it opens with `<data_sources><data_source><model_class>HistoryDatasetAssociation</model_class><test test_attr="ext">…</test>` (`config/plugins/visualizations/example/static/example.xml:5-10`).
+   - The tool would write a small `spectio_run` dataset (server URL and run id) as soon as the run is accepted, rather than at the end **[to be validated: can an output be visible while the job still runs?]**.
+   - The plugin, opened on that dataset in Galaxy's centre panel, renders Spectio's own views of the run: stages, tasks, logs and the gate review.
+   - The rendering would use the planned embeddable `@spectio/elements` ([api §9](../specs/api-and-data-model.md)), calling Spectio's API directly.
+   - **This is the step that puts Spectio's UI inside Galaxy.**
+4. **Gates.**
+   - The Galaxy job stays `running` while the Spectio run is `awaiting_review`.
+   - The decision is taken in the embedded view and posted to Spectio's API.
+   - The thin client prints the run's state changes. Galaxy serves running-job output through `GET /api/jobs/{job_id}/console_output` (`lib/galaxy/webapps/galaxy/api/jobs.py:451-470`), so the job panel shows "waiting for review".
+5. **Data in and out.**
+   - **Inputs:** Galaxy datasets are paths in Galaxy's object store. Spectio's runner must see them through a shared filesystem, or fetch them through Galaxy's API or DRS. On HPC sites, the shared filesystem is the likely case **[to be validated per site]**.
+   - **Outputs:** the client lays out Spectio's results for `discover_datasets` (for example `from_provided_metadata="true"`, `lib/galaxy/tool_util/xsd/galaxy.xsd:83`), so they land in the Galaxy history and the next Galaxy tools can use them.
+6. **Later, and only with upstream.**
+   - **A `SpectioJobRunner`:** an `AsynchronousJobRunner` with `queue_job`, `check_watched_item`, `stop_job` and `recover`, shaped like `lib/galaxy/jobs/runners/kubernetes.py:141,191,717` and loaded through `job_conf`. It would replace the waiting process. Galaxy's runner API is internal and can change with each release.
+   - **Stages shown as Galaxy invocation steps:** this needs a new workflow module type (§2.2), so a discussion with Galaxy's maintainers first.
+
+### 7.2 What Spectio would have to add
+
+All of these are already planned or close to it:
+
+- a launch that takes input paths and an `external_refs` entry `galaxy:job/<id>` ([synthesis §7quinquies](../specs/synthesis.md));
+- per-user tokens (`spk_…`, [api §6](../specs/api-and-data-model.md));
+- `@spectio/elements`, with CORS and `frame-ancestors` for the Galaxy origin;
+- a schema-to-tool generator next to the launch-form code.
+
+### 7.3 What is lost compared with Spectio's own UI
+
+The Galaxy route covers launching, following one run and deciding its gates. It does not cover:
+
+- the phone layout ([ui-spec §4.11](../specs/ui-spec.md));
+- the review queue across runs, which would need a Galaxy webhook or a link out;
+- observed runs not launched from Galaxy;
+- the scheduler and efficiency views, unless the plugin embeds them;
+- Spectio's branding.
+
+Spectio's own UI would remain the full product. Galaxy would be a second way in.
+
+### 7.4 Effort and next step (judgement)
+
+- **Spike, about 3 days, on `spike/galaxy-bridge`:**
+  - Galaxy 26.1 in a container;
+  - one generated tool for a fixture workflow;
+  - `spectio launch --wait` against a local server;
+  - a `<credentials>` token;
+  - outputs collected with `discover_datasets`;
+  - a stub visualization plugin that shows the run's state through Spectio's API.
+
+  The exit check: launch from Galaxy, see the stage change in Galaxy, cancel from Galaxy, and find the results in the history.
+- **Pieces 1–5 in production:** a few weeks, mostly the generator, data staging and `@spectio/elements`. Piece 6 depends on Galaxy's maintainers.
+
+The main risks:
+
+- running two stacks: Galaxy needs PostgreSQL, a message queue, Celery and CVMFS (§2.3);
+- data staging on sites without a shared filesystem;
+- the visualization plugin API changing between Galaxy releases;
+- whether the admins of public usegalaxy.* servers would install a tool that calls an outside service **[to be validated]**.
