@@ -27,7 +27,7 @@ A checkpoint rule carries a **Checkpoint** chip. While one is open the count rea
 
 *A finished Snakemake 9.27.1 run of the synthetic pipeline, launched from Spectio on a local executor: 88 jobs, 12 DAG updates.*
 
-Nextflow does not report a task that `when:` filtered out, and a process left out by a Groovy `if` is never created. Spectio cannot tell these apart, so the list says "Processes the script does not call in this run are not listed."
+Nextflow does not report a task that `when:` filtered out, and a process left out by a Groovy `if` is never created ([source: research note, section 4](../research/dag-temp-slurm-efficiency-2026-11-07.md#4-nextflow-conditional-execution-and-processes-that-never-run)). Spectio cannot tell these apart, so the list says "Processes the script does not call in this run are not listed."
 
 ## Efficiency by process or rule
 
