@@ -94,6 +94,7 @@ Decided by Thomas on 2026-11-08 ([inbox #109](../reviews/inbox.md#109-assumed-wr
 `spectio serve` chooses the socket by itself on a SLURM environment, and in local mode on a machine that looks shared (another user's process, a SLURM install). In local mode on a machine only you use it keeps `127.0.0.1:<port>`, opened in that machine's browser. It refuses to start when:
 
 - the database directory is not `0700` and yours: it changes nothing, and says the directory must be one of yours with mode `0700`, naming its owner;
+- the default `/tmp/spectio-<uid>` already exists and is not a private directory of yours, which on a shared `/tmp` usually means another user made it first. Behind the socket the tunnel names that exact path, so `spectio serve` does not move to another directory: it exits 2, names the owner's uid, and asks you to remove the directory if it is yours or to choose another with `--db-dir`. Do not `chmod` or reuse a directory someone else made;
 - the socket path is over 107 bytes, the Linux limit: choose a shorter `--db-dir`;
 - a file at the socket's path is not a socket, or a server answers on it. A socket file nothing answers on, left by a server that died, is replaced.
 
