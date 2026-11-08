@@ -63,13 +63,16 @@ PRE = (
 
 
 def logs(job):
-    """The rule logs of one job: what its shell writes to stdout and to stderr."""
-    return dict(out=f"{OUT}/logs/{job}.out", err=f"{OUT}/logs/{job}.err")
+    """The rule logs of one job: what its shell writes to stderr and to stdout. err comes first:
+    Spectio's failure tail reads the first rule log when there is no SLURM job log."""
+    return dict(err=f"{OUT}/logs/{job}.err", out=f"{OUT}/logs/{job}.out")
 
 
 def body(cmd):
-    """The shell of a rule: the failure hook, then the command, both writing to the rule logs."""
-    return PRE + "( {params.hook} && " + cmd + " ) > {log.out} 2> {log.err}"
+    """The shell of a rule: the failure hook, then the command, both writing to the rule logs.
+    stderr is also teed to the job's own stderr (the SLURM job log); Snakemake's pipefail keeps
+    the command's exit status."""
+    return PRE + "( {params.hook} && " + cmd + " ) 2>&1 > {log.out} | tee {log.err} >&2"
 
 
 def res(**extra):
