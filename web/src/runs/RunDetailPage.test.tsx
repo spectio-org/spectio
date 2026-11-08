@@ -661,3 +661,72 @@ test("P3-parD: First to fail follows the failed tasks' pages to find the task (C
   expect(await within(why).findByText(/First to fail/)).toHaveTextContent("First to fail: ALIGN (S09)");
   expect(fetched(mock)).toContain(`${URL_}/tasks?state=failed&limit=50&cursor=p2`);
 });
+
+// Process and rule states, checkpoints and "at least" (P1 Task 35; ui-spec §5.2; boards
+// LiteRunDetailSnakemake, LiteRunDetail, MLiteRunDetail).
+const SNAKEMAKE = { engine: "snakemake", engine_version: "9.5.1", location: "/g/demo-lab/mosaicatcher", name: "mosaicatcher-pipeline", version: "2.5.1" };
+const RULES = {
+  items: [
+    { process: "segmentation", stage_id: null, counts: { running: 1 }, retries: 0, status: "running", is_checkpoint: true, lower_bound: false },
+    { process: "regenotype_SNVs", stage_id: null, counts: {}, retries: 0, status: "not_needed", is_checkpoint: false, lower_bound: false },
+    { process: "segmentation_selection", stage_id: null, counts: {}, retries: 0, status: "awaiting_checkpoint", is_checkpoint: false, lower_bound: false },
+    { process: "plot_SV_calls", stage_id: null, counts: { pending: 3 }, retries: 0, status: "pending", is_checkpoint: false, lower_bound: true },
+    { process: "samtools_faindex", stage_id: null, counts: {}, retries: 0, status: "up_to_date", is_checkpoint: false, lower_bound: false },
+  ],
+};
+const snakemakeRun = () =>
+  detail(
+    {
+      workflow: SNAKEMAKE,
+      task_counts: { succeeded: 242, running: 1, pending: 3 },
+      summary: { tasks: { done: 242, total: 347, failed: 0, cached: 0, lower_bound: true }, last_failure: null, stage_mode: "quarters", open_checkpoints: ["segmentation"], dag_updates: 1 },
+    },
+    { [`${URL_}/processes`]: RULES },
+  );
+
+test("a rule waiting for a checkpoint reads 'Waiting for checkpoint <rule>', not Pending", async () => {
+  snakemakeRun();
+  app(`/runs/${ID}`);
+  const table = await screen.findByRole("table", { name: "Rules" });
+  const row = (name: string) => within(table).getByRole("button", { name: `Open rule ${name}` }).closest("tr")!;
+  expect(within(row("segmentation_selection")).getByText("Waiting for checkpoint segmentation")).toBeInTheDocument();
+  expect(within(row("segmentation_selection")).queryByText("Pending")).toBeNull();
+  expect(within(row("samtools_faindex")).getByText("Up to date")).toBeInTheDocument();
+  expect(within(row("segmentation")).getByText("Checkpoint")).toBeInTheDocument();
+  expect(within(row("plot_SV_calls")).getByText("0 / at least 3")).toBeInTheDocument();
+  // Not needed is greyed and listed after the others
+  const names = within(table).getAllByRole("button", { name: /^Open rule / }).map((b) => b.getAttribute("aria-label"));
+  expect(names[names.length - 1]).toBe("Open rule regenotype_SNVs");
+  expect(within(row("regenotype_SNVs")).getByText("Not needed in this run")).toBeInTheDocument();
+  expect(row("regenotype_SNVs")).toHaveAttribute("data-quiet");
+});
+
+test("the header reads 'at least n jobs' while a checkpoint is open", async () => {
+  snakemakeRun();
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(within(header).getByText("242 / at least 347 jobs")).toBeInTheDocument();
+  expect(await screen.findByText("The DAG grows after checkpoint segmentation: more jobs may come.")).toBeInTheDocument();
+  expect(screen.getByText(/^DAG updated after a checkpoint/)).toBeInTheDocument();
+});
+
+test("a Nextflow process with no task reads 'No task (condition or empty input)'", async () => {
+  detail(
+    { state: "succeeded", ended_at: "2026-10-31T09:00:00+00:00", engine_settings: { cleanup: true, notemp: null } },
+    {
+      [`${URL_}/processes`]: {
+        items: [
+          { process: "NFCORE:RNASEQ:FASTQC", stage_id: null, counts: { succeeded: 12 }, retries: 0, status: "done" },
+          { process: "NFCORE:RNASEQ:UMITOOLS_DEDUP", stage_id: null, counts: {}, retries: 0, status: "no_tasks" },
+        ],
+      },
+    },
+  );
+  app(`/runs/${ID}`);
+  const table = await screen.findByRole("table", { name: "Processes" });
+  const row = within(table).getByRole("button", { name: "Open process NFCORE:RNASEQ:UMITOOLS_DEDUP" }).closest("tr")!;
+  expect(within(row).getByText("No task (condition or empty input)")).toBeInTheDocument();
+  expect(within(row).queryByText("Not run")).toBeNull();
+  expect(screen.getByText(/Processes the script does not call in this run are not listed\./)).toBeInTheDocument();
+  expect(within(await runHeader()).getByText("Work directory cleaned after success (cleanup = true)")).toBeInTheDocument();
+});

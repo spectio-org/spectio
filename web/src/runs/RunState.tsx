@@ -35,6 +35,11 @@ export function NearLimit({ on }: { on: boolean }) {
   return on ? <> <span className="sp-near">near limit</span></> : null;
 }
 
+/** The "low" badge in words, after an efficiency under 25 % (ui-spec §4.4 note 2026-11-07). */
+export function Low({ on }: { on: boolean }) {
+  return on ? <> <span className="sp-near" data-low="">low</span></> : null;
+}
+
 export function StateWord({ state }: { state: RunState }) {
   return <Word state={state} word={runWord(state)} />;
 }
@@ -84,8 +89,12 @@ export function RunLink({ run }: { run: Run }) {
   );
 }
 
-export const tasksText = (run: Run): string =>
-  run.summary.tasks.total ? `${run.summary.tasks.done} / ${run.summary.tasks.total}` : "—";
+/** "24 / 32", or "242 / at least 347" while a checkpoint is open (ui-spec §5.2); "—" with none. */
+export function tasksText(run: Run): string {
+  const t = run.summary.tasks;
+  if (!t.total) return "—";
+  return t.lower_bound ? `${t.done} / at least ${t.total}` : `${t.done} / ${t.total}`;
+}
 
 /** The run's pipeline: its mark (nf-core for an nf-core/ name, else the engine's; inbox #91), the
  * name and the version, muted, on one line (UX-PAR-01). */

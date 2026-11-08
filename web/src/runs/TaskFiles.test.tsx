@@ -283,10 +283,10 @@ test("resources columns show 'near limit' as text, after the state; unknown valu
   app(`/runs/${ID}?tab=tasks`);
   const table = await screen.findByRole("table", { name: "Tasks" });
   const heads = within(table).getAllByRole("columnheader").map((h) => h.textContent);
-  expect(heads).toEqual(["Task", "State", "Attempt", "Duration", "CPUs", "CPU %", "Memory", "Peak memory", "Time limit", "Files"]);
+  expect(heads).toEqual(["Task", "State", "Attempt", "Duration", "CPUs", "CPU %", "Memory", "Peak memory", "Time limit", "CPU eff.", "Mem eff.", "Files"]);
   const [, failedRow, pendingRow] = within(table).getAllByRole("row");
   expect(within(failedRow).getAllByRole("cell").map((c) => c.textContent).slice(1)).toEqual([
-    "Failed", "2", "6 min", "6", "412 %", "8 GB", "8 GB near limit", "8 h", "Files",
+    "Failed", "2", "6 min", "6", "412 %", "8 GB", "8 GB near limit", "8 h", "—", "—", "Files",
   ]);
   expect(within(pendingRow).getAllByRole("cell").map((c) => c.textContent).slice(2, 9)).toEqual(["—", "—", "6", "—", "8 GB", "—", "8 h"]);
   expect(within(pendingRow).getByRole("button", { name: "Files of SUBREAD_FEATURECOUNTS (S20)" })).toBeInTheDocument();
@@ -300,4 +300,38 @@ test("on the phone each task has one resources line and a full-width Files butto
   expect(within(cards).getByText("attempt 2 · asked 8 GB · peak 8 GB, near limit · limit 8 h")).toBeInTheDocument();
   await userEvent.click(within(cards).getByRole("button", { name: "Files of SUBREAD_FEATURECOUNTS (S19), attempt 2" }));
   expect(await screen.findByRole("dialog", { name: "SUBREAD_FEATURECOUNTS (S19)" })).toHaveAttribute("aria-modal", "true");
+});
+
+test("Outputs tab: a removed temporary output reads 'deleted by Snakemake (temporary)'", async () => {
+  const outputs = [
+    { path: "counts/S19.tsv", state: "present", protected: true, removed_at: null },
+    { path: "sorted/S19.bam", state: "temp_removed", protected: false, removed_at: "2026-10-31T08:50:00+00:00" },
+    { path: "segmentation/<TBD>", state: "tbd", protected: false, removed_at: null },
+  ];
+  detail(
+    {
+      [`${FILES}/2/files/`]: text("x\n"),
+      [`${FILES}/2/files`]: { ...listing([file("logs/S19.log", "rule_log")]), outputs },
+    },
+    { workflow: { engine: "snakemake", engine_version: "9.5.1", location: "/g/x", name: null, version: null } },
+  );
+  const { sheet } = await openFiles();
+  const tab = within(sheet).getByRole("tab", { name: "Outputs (3)" });
+  expect(tab.tagName).toBe("BUTTON");
+  await userEvent.click(tab);
+  const panel = within(sheet).getByRole("tabpanel");
+  const rows = within(panel).getAllByRole("listitem").map((li) => li.textContent);
+  expect(rows[0]).toBe("counts/S19.tsv · present · write-protected");
+  expect(rows[1]).toMatch(/^sorted\/S19\.bam · deleted by Snakemake \(temporary\) · /);
+  expect(rows[2]).toBe("segmentation/<TBD> · decided after the checkpoint");
+});
+
+test("with cleanup = true a cleaned work directory says cleanup removed it", async () => {
+  detail(
+    { [`${FILES}/2/files`]: listing([file(".command.log", "job_log", { state: "cleaned", size: null, mtime: null })]) },
+    { state: "succeeded", engine_settings: { cleanup: true, notemp: null } },
+    { ...TASK, state: "succeeded" },
+  );
+  const { sheet } = await openFiles();
+  expect(within(sheet).getByText("This job's work directory was removed by cleanup = true")).toBeInTheDocument();
 });

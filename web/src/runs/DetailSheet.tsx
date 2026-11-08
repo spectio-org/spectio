@@ -4,9 +4,11 @@ import { type Counts, type Process, type RunDetail, type Stage, type Task, listT
 import { ICONS, Icon } from "../icons";
 import { usePhone } from "../shell/layout";
 import { bytes, nearLimit, seconds } from "./resources";
+import { efficiencyFacts } from "./ByProcess";
 import { NearLimit, Word, taskLabel } from "./RunState";
+import { SlurmFacts } from "./SlurmFacts";
 import { TaskFiles } from "./TaskFiles";
-import { isTerminal, lastSegment, processWord, stageWord, sum, taskWord, total, words } from "./stateWord";
+import { isTerminal, lastSegment, neededFirst, processState, stageWord, sum, taskWord, total, words } from "./stateWord";
 
 // The detail of a stage, a process (a rule) or a task (a job), in a side sheet (LiteTaskFiles,
 // MLiteTaskFilesSheet; P3-parD, Thomas 2026-10-31: "steps & stages pas clickable, pas de détails"):
@@ -120,15 +122,30 @@ function ProcessTasks({ run, process, name, onOpen }: { run: RunDetail; process:
 function ProcessView({ run, stages, process, onOpen, onTasks }: { run: RunDetail; stages: Stage[]; process: Process; onOpen: Props["onOpen"]; onTasks: Props["onTasks"] }) {
   const w = words(run.workflow.engine);
   const name = lastSegment(process.process);
-  const word = processWord(process.counts, isTerminal(run.state));
+  const { state, word } = processState(process, isTerminal(run.state), run.summary.open_checkpoints);
+  const efficiency = efficiencyFacts(process.efficiency, w);
   return (
     <>
       <p className="sp-mono sp-sheet-name">{process.process}</p>
       <p className="sp-sub">
-        <Word state={word} word={word} />
+        <Word state={state} word={word} />
+        {process.is_checkpoint && <span className="sp-chip">Checkpoint</span>}
         <span>{stageLine(process.stage_id, stages)}</span>
       </p>
       <CountChips counts={process.counts} retries={process.retries} label={`${w.Units} of ${name} by state`} />
+      {efficiency.length > 0 && (
+        <section aria-label="Efficiency">
+          <h3 className="sp-sheet-h">Efficiency</h3>
+          <dl className="sp-facts sp-sheet-facts">
+            {efficiency.map(([label, value]) => (
+              <div key={label}>
+                <dt>{label}</dt>
+                <dd>{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      )}
       <div>
         <Button variant="default" aria-label={`Open ${name} in ${w.Units}`} onClick={() => onTasks(process.process)}>
           Open in {w.Units}
@@ -159,8 +176,8 @@ function StageView({ run, stage, processes, onOpen }: { run: RunDetail; stage: S
         <p className="sp-muted">No {w.group} reported in this stage yet.</p>
       ) : (
         <ul className="sp-sheet-list" aria-label={`${w.Groups} of ${name}`}>
-          {mine.map((p) => {
-            const pw = processWord(p.counts, ended);
+          {neededFirst(mine).map((p) => {
+            const { state, word: pw } = processState(p, ended, run.summary.open_checkpoints);
             return (
               <li key={p.process}>
                 <button type="button" className="sp-sheet-row" aria-label={`Open ${w.group} ${p.process}`} onClick={() => onOpen({ kind: "process", name: p.process })}>
@@ -168,7 +185,7 @@ function StageView({ run, stage, processes, onOpen }: { run: RunDetail; stage: S
                   <span className="sp-muted">
                     {sum(p.counts, "succeeded", "cached", "stored")} / {total(p.counts)}
                   </span>
-                  <Word state={pw} word={pw} />
+                  <Word state={state} word={pw} />
                 </button>
               </li>
             );
@@ -224,6 +241,7 @@ function TaskView({ run, stages, processes, task, onOpen }: { run: RunDetail; st
           </div>
         ))}
       </dl>
+      <SlurmFacts task={task} />
       <h3 className="sp-sheet-h">Files</h3>
       <TaskFiles run={run} task={task} />
     </>

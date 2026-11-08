@@ -349,6 +349,52 @@ test("resources columns show 'near limit' as text", async ({ page }, info) => {
   }
 });
 
+// P1 Task 35: each job's SLURM request and efficiency, and the By process view, on Task 34's
+// fields (route mocks in the shapes of packages/spectio-server/openapi/0.0.1.json).
+const SLURM_TASK = {
+  ...FAILED_TASK,
+  slurm: {
+    request: { partition: 'htc', account: null, qos: null, cpus: 6, mem_bytes: 8 * GIB, mem_per_cpu_bytes: null, time_limit_s: 8 * 3600, gres: null, constraint: null, nodes: null, tasks: null },
+    allocated: { partition: 'htc-el8', account: 'demo', qos: 'normal', ncpus: 6, req_mem_bytes: 8 * GIB, time_limit_s: 8 * 3600, alloc_tres: 'cpu=6,mem=8G,node=1', nnodes: 1 },
+    custom_options: true,
+  },
+  efficiency: { cpu: 0.69, mem: 1.0, elapsed_s: 360, peak_rss_bytes: 8 * GIB, state: 'available', source: 'sacct', reason: null },
+};
+const PROC_EFFICIENCY = {
+  jobs: { done: 24, total: 25 }, measured: 24, cpu_mean: 0.34, cpu_max: 0.41, mem_mean: 0.03, mem_max: 0.05,
+  requested: { cpus: 6, mem_bytes: 8 * GIB, time_limit_s: 8 * 3600, varies: false }, used: { peak_rss_bytes_max: 0.4 * GIB, elapsed_s_max: 360 },
+};
+
+test("the job sheet shows the SLURM request, 'Custom sbatch options set' and efficiency from sacct", async ({ page }) => {
+  await mockFailed(page);
+  await page.route(`**/api/v1/runs/${RUN}/tasks?*`, (r) => r.fulfill(json({ items: [SLURM_TASK], next: null })));
+  await page.goto(`/runs/${RUN}?tab=tasks`);
+  await page.getByRole('button', { name: 'Files of SUBREAD_FEATURECOUNTS (S19), attempt 1' }).click();
+  const sheet = page.getByRole('dialog', { name: 'SUBREAD_FEATURECOUNTS (S19)' });
+  const slurm = sheet.getByRole('region', { name: 'SLURM' });
+  await expect(slurm.getByText('differs from the request')).toBeVisible();
+  await expect(slurm.getByText('Custom sbatch options set')).toBeVisible();
+  await expect(sheet.getByRole('region', { name: 'Efficiency' }).getByText(/from sacct/)).toBeVisible();
+});
+
+test('By process is a tab button; the waste line names the process', async ({ page }, info) => {
+  await mockFailed(page);
+  await page.route(`**/api/v1/runs/${RUN}/processes`, (r) =>
+    r.fulfill(json({ items: [{ process: PROC, stage_id: null, counts: { succeeded: 24, failed: 1 }, retries: 0, status: 'failed', efficiency: PROC_EFFICIENCY }] })));
+  await page.goto(`/runs/${RUN}?tab=tasks`);
+  const tab = page.getByRole('tab', { name: 'By process' });
+  expect(await tab.evaluate((e) => e.tagName)).toBe('BUTTON');
+  await tab.click();
+  await expect(page.getByText('24 tasks of SUBREAD_FEATURECOUNTS used under 25 % of their memory.')).toBeVisible();
+  if (info.project.name === 'phone') {
+    await expect(page.getByRole('combobox', { name: 'Sort by' })).toBeVisible();
+  } else {
+    await expect(page.getByRole('button', { name: 'Sort by CPU eff. mean' })).toBeVisible();
+  }
+  await page.getByRole('button', { name: `Show the tasks of process ${PROC}` }).click();
+  await expect(page.getByRole('tab', { name: 'Task list' })).toHaveAttribute('aria-selected', 'true');
+});
+
 test("the Copy menu is in the shared header on every tab and state, and announces 'Copied'", async ({ page, context }) => {
   await context.grantPermissions(['clipboard-read', 'clipboard-write']);
   await mockFailed(page);
