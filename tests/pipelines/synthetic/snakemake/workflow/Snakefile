@@ -6,8 +6,9 @@ Stages and gate targets:
   quant  : merge -> compare (per group vs ctrl) -> final_report
 Failure injection (config): fail_mode=exit|oom|oom_once|oom_real|timeout|flaky fail_rule=NAME fail_sample=ID
   (--workflow-profile profiles/fail_demo: compare for treatA exits 1, so the run fails)
-Job logs (config): verbosity=quiet|normal|loud, the lines bin/synth.py writes; each job's stdout and
-stderr go to its rule logs, {outdir}/logs/<rule>/<job>.out and .err
+Job logs (config): verbosity=quiet|normal|loud, the lines bin/synth.py writes; each job's stdout goes to
+{outdir}/logs/<rule>/<job>.out; its stderr to <job>.err and, copied, to the job's own stream
+(the SLURM job log on a cluster, Snakemake's log on the local executor)
 Run with --retries 2 so OOM / flaky / timeout retries behave like the Nextflow twin.
 """
 import csv
