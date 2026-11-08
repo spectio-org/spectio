@@ -14,14 +14,18 @@ const SECTIONS: Record<string, { label: string; to: To }> = {
   launch: { label: "Launch", to: "/launch" },
 };
 
+const RUN_PAGES: Record<string, string> = { report: "Report", results: "Results" };
+
 /** Home > section > item, from the path; every crumb but the last is a link. The URL's own text
  * is never shown (SEC-P3G4-02): an item reads `item`, the page's label (a run's name from the
- * API), else "Run" under /runs, else "Not found". */
+ * API), else "Run" under /runs, else "Not found"; a run's report viewer ends with "Report", its
+ * results browser with "Results". */
 export function crumbsFor(pathname: string, item: string | null = null): Crumb[] {
   const crumbs: Crumb[] = [{ label: "Home", to: "/" }];
   let previous = "";
   for (const segment of pathname.split("/").filter(Boolean)) {
-    crumbs.push(SECTIONS[segment] ?? { label: item ?? (previous === "runs" ? "Run" : "Not found") });
+    const tool = crumbs.length === 3 && crumbs[1].to === "/runs" && Object.hasOwn(RUN_PAGES, segment) ? RUN_PAGES[segment] : undefined;
+    crumbs.push(SECTIONS[segment] ?? { label: tool ?? item ?? (previous === "runs" ? "Run" : "Not found") });
     previous = segment;
   }
   return crumbs.map((crumb, i) => (i === crumbs.length - 1 ? { label: crumb.label } : crumb));

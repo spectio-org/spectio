@@ -226,10 +226,18 @@ runs = Table(
     Column("idempotency_key", String),
     Column("last_seq", Integer, nullable=False, server_default="0"),
     Column("projected_seq", Integer, nullable=False, server_default="0"),
+    # A Resume's child run (P1 Task 30): its parent, the lineage's root, the mode (`resume`)
+    Column("parent_run_id", String),
+    Column("lineage_id", String),
+    Column("relaunch_mode", String),
+    # What the engine said of the run (P1 Task 34): {cleanup, notemp, cluster_options}, the
+    # last a flag, never the text; the API shows `cleanup` and `notemp`.
+    Column("engine_settings", Json),
     _check("runs", "state", RUN_STATES),
     _check("runs", "origin", RUN_ORIGINS, nullable=True),
     Index("ix_runs_project_created", "project_id", "created_at"),
     Index("ix_runs_state_project", "state", "project_id"),
+    Index("ix_runs_parent", "parent_run_id"),
 )
 
 run_inputs = Table(
@@ -254,6 +262,7 @@ launches = Table(
     Column("pid", Integer),
     Column("pid_start_time", String),
     Column("host_boot_id", String),
+    Column("head_host", String),  # a run from a terminal: its pointer's host (P1 Task 25)
     Column("engine_session_id", String),
     Column("head_native_id", String),
     Column("head_state", String),
@@ -315,6 +324,11 @@ attempts = Table(
     # Snakemake's SLURM executor plugin. `resources` holds the requested and measured values
     # of the trace or of `job_info` (and the job's benchmark path, relative to the launch dir).
     Column("scheduler", Json),
+    # P1 Task 34 (migration 0010): the outputs of a Snakemake job's `job_info` (relative to
+    # the launch directory, or `<TBD>`), and the SLURM request {request, custom_options}, never
+    # the text of `slurm_extra` or `clusterOptions`.
+    Column("outputs", Json),
+    Column("slurm", Json),
     _check("attempts", "state", ATTEMPT_STATES),
     _check("attempts", "failure_class", FAILURE_CLASSES, nullable=True),
     UniqueConstraint("task_id", "launch_n", "n", name="uq_attempts_key"),  # api §8.2
@@ -374,7 +388,22 @@ run_processes = Table(
     Column("stage_id", String),
     Column("ended", Boolean, nullable=False, server_default="0"),
     Column("jobs_planned", Integer),
+    Column("is_checkpoint", Boolean, nullable=False, server_default="0"),  # P1 Task 34
     UniqueConstraint("run_id", "name"),
+)
+OUTPUT_EVENT_KINDS = ("output", "temp_removed", "protected")
+# A run's outputs (P1 Task 34): each output path of its jobs' `job_info` once (`output`), and
+# the logger plugin's removal and write-protection texts for one of them, once each.
+run_output_events = Table(
+    "run_output_events",
+    metadata,
+    *_base(),
+    Column("run_id", String, ForeignKey("runs.id"), nullable=False),
+    Column("path", String, nullable=False),
+    Column("kind", String, nullable=False),
+    Column("at", UTCDateTime()),
+    _check("run_output_events", "kind", OUTPUT_EVENT_KINDS),
+    UniqueConstraint("run_id", "path", "kind"),
 )
 
 # The spool cursor and drop counts of a launch (P1 Assumption 11), written in the ingest

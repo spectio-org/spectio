@@ -247,7 +247,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           <summary style="list-style: none; cursor: pointer; display: flex; flex-direction: column; gap: 6px; padding: 10px 0; min-height: 44px; box-sizing: border-box;">
             <span style="display: flex; justify-content: space-between; align-items: flex-start; gap: 8px;"><span style="display: flex; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0;"><span style="font-size: 13.5px; font-weight: 600; overflow-wrap: break-word; min-width: 0;"><span style="color: #6E7287; font-weight: 500;">4</span> Bam markduplicates picard</span><span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; background: #F1F2F6; color: #33364A;">Detected</span></span><span style="display: flex; align-items: center; gap: 6px; flex-shrink: 0;"><span style="display: flex; align-items: center; gap: 4px; font-size: 12.5px; font-weight: 600; color: #1D5FC9;"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="0" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg>Running</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 15l6-6 6 6"/></svg></span></span>
             <span aria-hidden="true" style="display: block; height: 6px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 6px; width: 80%; background: #3B82F6;"></span></span>
-            <span style="font-size: 12.5px; color: #4D5065;">96 of 120 tasks · 6 processes</span>
+            <span style="font-size: 12.5px; color: #4D5065;">96 of 120 tasks · 7 processes</span>
           </summary>
           <ul style="list-style: none; margin: 0 0 6px; padding: 0 0 0 14px;" aria-label="Processes of Bam markduplicates picard, in first-seen order">
             <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
@@ -279,6 +279,10 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
               <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: break-word;"><span aria-hidden="true">STRINGTIE_<wbr>STRINGTIE</span><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;">NFCORE_RNASEQ:RNASEQ:STRINGTIE_STRINGTIE</span></span><span style="font-size: 12px; font-weight: 600; color: #1D5FC9;">Running</span></span>
               <span aria-hidden="true" style="display: block; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="display: block; height: 4px; width: 50%; background: #3B82F6;"></span></span>
               <span style="font-size: 12px; color: #4D5065;">10 / 20 done · 5 running · 5 pending</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: break-word;"><span aria-hidden="true">UMITOOLS_<wbr>DEDUP</span><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;">NFCORE_RNASEQ:RNASEQ:BAM_MARKDUPLICATES_PICARD:UMITOOLS_DEDUP</span></span><span style="font-size: 12px; font-weight: 600; color: #33364A; text-align: right;">No task (condition or empty input)</span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 tasks</span>
             </li>
           </ul>
         </details></li>
@@ -464,8 +468,38 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           </ul>
         </details></li>
         </ul>
-        <span style="display: block; font-size: 11px; color: #6E7287; line-height: 1.4; padding: 6px 0 8px;">Data: stages and which process falls in which are the stage detector's expected output for nf-core/rnaseq 3.27.0 (rnaseq-3.27.0_star_salmon_detected.json): 67 processes, every one in a stage. Counts for 20 samples are fixture data.</span>
+        <span style="display: block; font-size: 11px; color: #6E7287; line-height: 1.4; padding: 6px 0 8px;">Data: stages and which process falls in which are the stage detector's expected output for nf-core/rnaseq 3.27.0 (rnaseq-3.27.0_star_salmon_detected.json): 67 processes, every one in a stage. Counts for 20 samples, and UMITOOLS_DEDUP with no task, are fixture data. Processes the script does not call in this run are not listed.</span>
       </div></section>
+      <section aria-labelledby="h-smk" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 8px;">
+        <h2 id="h-smk" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;">Board note: the same list on a Snakemake run</h2>
+        <span style="font-size: 12.5px; color: #33364A;">Running · 242 / at least 347 jobs</span>
+        <span aria-hidden="true" style="display: flex; height: 6px; border-radius: 3px; overflow: hidden; background: #EEEFF5;"><span style="width: 60%; background: #3B82F6;"></span><span style="width: 26%;"></span><span style="flex: 1 1 auto; background: repeating-linear-gradient(135deg, #9EA2B5 0 2px, #EEEFF5 2px 5px);"></span></span>
+        <div role="note" style="border-radius: 12px; background: #F7F7FB; padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; font-size: 12.5px; color: #33364A; line-height: 1.5;"><strong style="font-weight: 600;">The DAG grows after checkpoint segmentation: more jobs may come.</strong><span>DAG updated after checkpoint filter_bad_cells_from_mosaic_count: 251 → 347 jobs.</span></div>
+        <ul style="list-style: none; margin: 0; padding: 0;" aria-label="Rules of strandseq-hg002-p01, in first-seen order">
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">segmentation<span style="font-size: 11px; font-weight: 600; border-radius: 6px; padding: 2px 7px; margin-left: 6px; background: #EEEDFB; color: #3F35A3; font-family: 'Inter', sans-serif;">Checkpoint</span></span><span style="font-size: 12px; font-weight: 600; color: #1D5FC9; text-align: right;">Running</span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 / 1 done · 1 running</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">segmentation_selection</span><span style="font-size: 12px; font-weight: 600; color: #33364A; text-align: right;">Waiting for checkpoint segmentation</span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 jobs yet</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">plot_SV_calls</span><span style="font-size: 12px; font-weight: 600; color: #33364A; text-align: right;">Pending</span></span>
+              <span aria-hidden="true" style="display: flex; height: 4px; border-radius: 3px; background: #EEEFF5; overflow: hidden;"><span style="width: 0%; background: #3B82F6;"></span><span style="width: 70%;"></span><span style="flex: 1 1 auto; background: repeating-linear-gradient(135deg, #9EA2B5 0 2px, #EEEFF5 2px 5px);"></span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 / at least 3 done · 3 pending</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">samtools_faindex</span><span style="font-size: 12px; font-weight: 600; color: #33364A; text-align: right;">Up to date</span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 jobs: its outputs already exist</span>
+            </li>
+            <li style="display: flex; flex-direction: column; gap: 4px; padding: 8px 0; border-top: 1px solid #EEEFF5;">
+              <span style="display: flex; justify-content: space-between; gap: 8px;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 600; min-width: 0; overflow-wrap: anywhere;">regenotype_SNVs</span><span style="font-size: 12px; font-weight: 600; color: #6E7287; text-align: right;">Not needed in this run</span></span>
+              <span style="font-size: 12px; color: #4D5065;">0 jobs</span>
+            </li>
+        </ul>
+        <span style="display: block; font-size: 11px; color: #6E7287; line-height: 1.4;">The desktop board is LiteRunDetailSnakemake. Rule names from mosaicatcher-pipeline v2.5.1's stage detector output; the checkpoints, states and counts are fixture data showing ui-spec §5.2. The hatched part of a bar is what may still come; the words "at least" say it.</span>
+      </section>
       <section class="cx" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px;"><h2 id="h-head" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 17px;"><button type="button" class="cx-btn" aria-expanded="false" aria-controls="cx-2" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v14H4z M7 9l3 3-3 3 M12 15h5"/></svg></span><span style="min-width: 0;">Open the head by hand</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">tmux on login1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-2" hidden><div style="display: flex; flex-direction: column; gap: 6px; margin-top: 8px;">
         
         <span style="font-size: 13px; color: #33364A; line-height: 1.45;">The engine runs in the tmux session spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W on login1. From a terminal:</span>

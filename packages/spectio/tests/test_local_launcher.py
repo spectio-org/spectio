@@ -18,8 +18,10 @@ from pathlib import Path
 import pytest
 
 from spectio.config import EngineOpts, Settings
+from spectio.runner import loop as loop_mod
 from spectio.runner.local import LocalLauncher
 from spectio.runner.loop import RunnerLoop
+from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import (
     RunManifest,
     make_run_dirs,
@@ -388,6 +390,9 @@ class FakeSink:
     def cursor(self, launch_id: str) -> dict[str, int]:
         return self.cursors.get(launch_id, {})
 
+    def add_observed(self, run: ObservedRun) -> bool:
+        return False
+
     def ingest(self, launch_id: str, batch: SpoolBatch) -> None:
         self.batches.append((launch_id, batch))
         self.cursors[launch_id] = batch.cursor
@@ -685,3 +690,173 @@ def test_snakemake_end_skips_the_spool_grace(runs_root: Path, launcher: LocalLau
     report = sink.last(ref.launch_id)
     assert (report.ended, report.exit_code, report.failure) == (True, 0, None), report
     assert [len(b.events) for _, b in sink.batches if b.events] == [1]  # read before the end
+
+
+# --- Head files scoped by launch, and the Resume launch (P1 Task 30, CR-P3T09-11) -----------
+
+
+def launch_n(sink: FakeSink, ref: LaunchRef, n: int) -> LaunchRef:
+    """The run's launch `n`, its command in place of launch 1's."""
+    later = replace(ref, launch_id=f"{ref.launch_id}_{n}", launch_n=n)
+    del sink.launches[ref.launch_id]
+    sink.launches[later.launch_id] = later
+    sink.commands = [replace(c, launch=later, id=f"{c.id}_{n}") for c in sink.commands]
+    return later
+
+
+def first_launch_files(launch_dir: Path) -> None:
+    """What launch 1 left: an ended head, its exit, a cancel and a failed launch."""
+    spectio = launch_dir / ".spectio"
+    for name, text in (
+        ("head.pid", head_pid_line(os.getpid(), start="1")),
+        ("head.exit", "143 1\n"),
+        ("cancel", "{}"),
+        ("launch-failed.json", '{"class": "engine_missing", "message": "launch 1"}'),
+    ):
+        (spectio / name).write_text(text)
+        (spectio / name).chmod(0o600)
+
+
+def test_new_launch_never_takes_the_first_launchs_files(
+    runs_root: Path, launcher: LocalLauncher
+) -> None:
+    """CR-P3T09-11, SEC-P3T09-05, SEC-P3T09-R6-02: launch 2 of a run is neither adopted,
+    cancelled nor failed by launch 1's head.pid, head.exit, cancel and launch-failed.json."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; exit 0")
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher)
+    ref = sink.launch(runs_root, RUN_A)
+    make_run_dirs(runs_root, RUN_A)
+    first_launch_files(ref.launch_dir)
+    ref = launch_n(sink, ref, 2)
+    run_until(loop, lambda: ref.launch_id not in sink.launches)
+    assert (ref.launch_dir / "started").exists()
+    assert sink.acks == [(f"cmd_{RUN_A[4:]}_2", True, None)]
+    assert sink.last(ref.launch_id).exit_code == 0
+    assert not (ref.launch_dir / ".spectio" / "launch-failed.json").exists()
+
+
+def test_cancel_of_launch_2_before_it_starts_is_kept(
+    runs_root: Path, launcher: LocalLauncher
+) -> None:
+    """Clearing launch 1's files never drops launch 2's own cancel, written before its start."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; exit 0")
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher)
+    ref = sink.launch(runs_root, RUN_A)
+    make_run_dirs(runs_root, RUN_A)
+    first_launch_files(ref.launch_dir)
+    ref = launch_n(sink, ref, 2)
+    sink.commands.insert(0, Command("cmd_cancel", "cancel", ref))
+    loop.tick()
+    report = sink.last(ref.launch_id)
+    assert report.ended and report.native_id is None
+    assert report.failure is not None and report.failure.class_ == "head_lost"
+    time.sleep(0.2)
+    assert not (ref.launch_dir / "started").exists()
+
+
+def test_command_of_an_earlier_launch_refused(runs_root: Path, launcher: LocalLauncher) -> None:
+    """Once launch 2 owns the head files, a launch 1 command delivered late touches nothing."""
+    engine = stub_engine(runs_root.parent / "bin", "touch started; exit 0")
+    sink = FakeSink()
+    ref = sink.launch(runs_root, RUN_A)
+    paths = make_run_dirs(runs_root, RUN_A)
+    (paths.launch_dir / ".spectio" / "launch").write_text("2\n")
+    make_loop(sink, runs_root, engine, launcher).tick()
+    assert sink.acks[-1][1] is False and "launch 2" in str(sink.acks[-1][2])
+    assert not (ref.launch_dir / "started").exists()
+    assert not (ref.launch_dir / ".spectio" / "launch-failed.json").exists()
+
+
+class Recorder:
+    """A launcher that keeps the spec it was given and starts nothing."""
+
+    def __init__(self) -> None:
+        self.specs: list[LaunchSpec] = []
+
+    def submit(self, spec: LaunchSpec) -> str:
+        self.specs.append(spec)
+        return "1.1"
+
+    def poll(self, ids: list[str]) -> dict[str, HeadReport]:
+        return {i: HeadReport("running", i, None, None, False, None) for i in ids}
+
+    def cancel(self, native_id: str, grace_s: int = 60) -> None: ...
+
+    def adopt(self, launch: LaunchRef) -> HeadReport:
+        return HeadReport("running", launch.native_id, None, None, False, None)
+
+    def forget(self, ids: object) -> None: ...
+
+
+def resume_command(sink: FakeSink, runs_root: Path, engine: str = "nextflow") -> LaunchRef:
+    """RUN_B resumes RUN_A, whose head ran and ended."""
+    parent = make_run_dirs(runs_root, RUN_A)
+    st = parent.launch_dir.stat()
+    ref = sink.launch(runs_root, RUN_B)
+    sink.launches[ref.launch_id] = ref = replace(ref, engine=engine)  # type: ignore[arg-type]
+    resume = {
+        "run_id": RUN_A,
+        "parent_run_id": RUN_A,
+        "engine_session_id": "5f1c8a43-7f62-4a5e-9d4f-0a1b2c3d4e5f",
+        "device": st.st_dev,
+        "inode": st.st_ino,
+    }
+    command = sink.commands[-1]
+    sink.commands[-1] = replace(
+        command, launch=ref, payload={**command.payload, "resume_of": resume}
+    )
+    return ref
+
+
+def test_resume_launch_runs_in_the_parents_dirs(
+    runs_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The runner checks again that the parent's head is gone (req. 16), clears a stale lock
+    the parent left, and hands the launcher the parent's directories; Snakemake unlocks."""
+    monkeypatch.setattr(loop_mod, "check_engine", lambda *a: None)
+    for engine in ("nextflow", "snakemake"):
+        sink, recorder = FakeSink(), Recorder()
+        settings = Settings(
+            runs_root=runs_root,
+            executor="local",
+            engines=EngineOpts(nextflow_cmd="nextflow-x", snakemake_cmd="snakemake-x"),
+        )
+        loop = RunnerLoop(sink, recorder, settings, tick_s=0.05)
+        ref = resume_command(sink, runs_root, engine)
+        parent = runs_root / RUN_A / "launch"
+        (parent / ".spectio-launch.lock").write_text(RUN_A + "\n")  # the parent was killed
+        loop.tick()
+        assert sink.acks[-1][1] is True, sink.acks
+        (spec,) = recorder.specs
+        assert spec.launch_dir == ref.launch_dir  # its own .spectio/
+        assert spec.resume_of is not None
+        assert (spec.resume_of.launch_dir, spec.resume_of.work_dir) == (
+            parent,
+            runs_root / RUN_A / "work",
+        )
+        assert spec.resume_of.unlock is (engine == "snakemake")
+        assert not (parent / ".spectio-launch.lock").exists()
+        shutil.rmtree(runs_root / RUN_B)
+
+
+def test_resume_launch_refused_while_a_process_runs_there(
+    runs_root: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A Snakemake started by hand in the parent's launch directory: no launch, no unlock."""
+    sink, recorder = FakeSink(), Recorder()
+    monkeypatch.setattr(loop_mod, "check_engine", lambda *a: None)
+    settings = Settings(runs_root=runs_root, executor="local")
+    loop = RunnerLoop(sink, recorder, settings, tick_s=0.05)
+    ref = resume_command(sink, runs_root, "snakemake")
+    by_hand = subprocess.Popen([SLEEP, "30"], cwd=runs_root / RUN_A / "launch")
+    try:
+        loop.tick()
+    finally:
+        by_hand.kill()
+        by_hand.wait()
+    assert recorder.specs == []
+    report = sink.last(ref.launch_id)
+    assert report.failure is not None and report.failure.class_ == "launch_error"
+    assert "runs in" in report.failure.message

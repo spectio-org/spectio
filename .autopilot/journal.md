@@ -547,3 +547,161 @@ One entry per tick: time, steps started and finished, verification results, tria
 - P1 Task 29, milestone M8 (P3-M8): `failures` and `failures_total` on the run detail (exit code, job ID, the culprit's `message`, the last 20 log lines through Task 28's confined reader, `scheduler`); `attempt_n` and `resources` on task items (trace, benchmark, sacct); `sacct` off the writer thread under req. 15 (checked IDs, stored path, explicit env, one call per 60 s, 100 IDs, 10 s kill, 0600 cache, `--user=<euid>` and a `WorkDir` match, only ended rows kept, 3 tries); migration 0007 (`attempts.scheduler`). P3-M8 finding 3 answered (`attempt_n`).
 - Workflow p3-task in 3 rounds (code approve 0/1/16 with the major fixed, security approve 0/0/13), simplifier -11/+4, doc-reviewer approve 12 on the third pass. Orchestrator gate on d9c958d: 650 passed; Vitest 181; tsc clean; SAST 0; gitleaks clean. Every check green (the first `pr-body` run was the placeholder body); squash 99a9015 (`Release-As: 0.0.1`). Cost recorded: 60 USD.
 - Out of scope, by the brief: the plugin side (Task 7), the real `sacct` check (Task 22), the screens (Task 32). Inbox #95 (assumed), FU-P3-32. Next: promotion, then P1 Task 32 (scoped to the API built by Tasks 28 and 29, plus todo.md's two Launch items; Resume, copy to a launch and results wait for Tasks 30 and 31, recorded as inbox #96, FU-P3-33).
+
+## 2026-11-01 · Promotion #119 merged: P1 Task 29 on main; P1 Task 32 launched
+
+- Integration promoted to `main` by merge commit adcd902 (every check green on b690bea; the first `pr-body` run lacked `## Checks`, fixed in the body).
+- P1 Task 32 (the screens) launched: workflow wf_903abfc0-f4e, base b690bea. Scoped to the API of Tasks 28 and 29 (job files drawer, Why it failed, resources, `attempt_n`) plus todo.md's two Launch items (client-side checks by schema type, required or optional on each row). Resume, Copy to a new launch, results and reports wait for Tasks 30 and 31. Numbers reserved: inbox #96, FU-P3-33.
+- PR #111 had an inbox conflict after #118; integration merged into `autopilot/P3-demo-pub` (b797720, #92 kept beside #93 to #95). It still waits for Thomas.
+
+## 2026-11-01 · P3-t32: PR #120 merged
+
+- P1 Task 32 part one, milestone M8 (P3-M8): the task sheet with each attempt's files (Attempt select, file tabs or the phone's File select, last 64 KiB, Reload, Download, every missing state in words), Why it failed per job, the resources columns with "near limit" as text, `failures[].work_dir`. Launch checks each value against its schema (type, enum, bounds, pattern, JSON) with the error on its field, and each row says required or optional (todo.md's two items, done).
+- Workflow p3-task in 2 rounds (code approve 0/0/7, security approve 0/0/2), simplifier -16/+13, doc-reviewer approve 12. The docs pass deferred the screenshots on a wrong premise (no Nextflow); `media-capture` took them on the demo lab's Nextflow 26.10.4 from the branch's code (three new shots, three retakes). Orchestrator gate on ac436d1: 650 passed; Vitest 223; tsc and build clean; SAST 0; gitleaks clean. Every check green; squash 786b303 (`Release-As: 0.0.1`). Cost recorded: 45 USD.
+- Side effect: the shots run migrated `/g/demo-lab/db` to 0007 and added two failed runs there.
+- Open minors in FU-P3-33 (a schema `pattern` with no time bound, SEC-P3T32-01, first). Part two (Resume, copy to a launch, results) waits for Tasks 30 and 31. Inbox #96. Next: promotion, then P1 Task 7.
+
+## 2026-11-01 · Promotion #121 merged: P1 Task 32 part one on main; P1 Task 7 launched
+
+- Integration promoted to `main` by merge commit cc5d294 (every check green on 4eff69e).
+- P1 Task 7 (the Snakemake logger plugin writes the spool) launched: workflow wf_772093e4-082, base 4eff69e. It must send the fields Tasks 28 and 29 handed on (`slurm_submitted`, `job_error.aux.external_jobid` and `msg`, `log`, `threads`, `resources`, `benchmark`), with at least one Task 28/29 test fed by a real Snakemake 9.27.1 run. Numbers reserved: inbox #97, FU-P3-34. A change under `.github/workflows/` would make its PR wait for Thomas.
+
+## 2026-11-01 · P3-t7: PR #122 opened, waits for Thomas
+
+- P1 Task 7, the last of M1: `snakemake-logger-plugin-spectio` writes allow-listed events to a 0600 spool in a 0700 `.spectio/events/`, on `PYTHONPATH`, never failing the run; it sends the fields Tasks 28 and 29 read (`slurm_submitted`, `job_error.aux.external_jobid` and `msg`, `threads`, `resources`, `benchmark`, rule logs). A server test now projects the recorded spool of a real Snakemake 9.27.1 run.
+- Workflow p3-task in 2 rounds (code approve 0/0/5, security approve 0/0/5), simplifier -9/+3, doc-reviewer approve 13. Orchestrator gate on 4384acf: plugin suite 43 passed; pytest 651 passed; ruff, format, mypy, lint-imports, uv lock clean; SAST 0; gitleaks clean. Cost recorded: 45 USD (estimate).
+- The PR changes `.github/workflows/ci.yml` and `pipelines-synthetic.yml` (the plugin's suite in CI), so it is not auto-merged: it waits for Thomas. Inbox #97 (assumed), FU-P3-34. Thomas's order (P3-parD, 27, 28, 29, 32, 7) is built; #111 and #122 wait for his merge.
+
+## 2026-11-04 · P1 Task 30 launched (inbox #98, assumed order)
+
+- Thomas's next order recorded as assumed (inbox #98): Task 30, Task 31, Task 32 part two, then Tasks 12 → 16. PRs #111 and #122 still wait for Thomas.
+- Budget: `budget.py start --weekly 30 --now 0`. No live reading in this cloud session and no `/usage` figure from Thomas, so the 30 points are counted from now on recorded USD (estimated), not on the real window.
+- P1 Task 30 (Resume, copy to a new launch, copy actions; also CR-P3T09-11: head files scoped by `launch_n`) launched: workflow wf_35b73a40-f6f, base 3514bd9. Scope: no `slurm-mini` check (Task 22), no CSRF token (sessions, Tasks 12–16), no screens (Task 32 part two). Numbers reserved: inbox #99, FU-P3-35.
+
+## 2026-11-04 · P3-t30: PR #123 opened; pause asked by Thomas
+
+- P1 Task 30 workflow done: code approve (1/3/9, the blocker and majors fixed), security approve (0/2/20), 4 rounds, simplifier -20/+17, doc-reviewer approve 13. Orchestrator gate on e0054c8: pytest 701 passed; ruff, format, mypy, lint-imports, uv lock clean; Vitest 223; tsc clean; docs gate 0. No `.github/workflows/` change. PR #123 opened into integration.
+- Thomas (2026-11-04, in session): "met en pause une fois task courante terminée". Task 30 is finished (merge into integration, promotion to main), then the autopilot pauses: Task 31 is not launched until Thomas resumes it.
+
+## 2026-11-04 · P3-t30: PR #123 merged; autopilot paused
+
+- P1 Task 30, milestone M8 (P3-M8): Resume (`:relaunch` mode `resume`, a child run in the lineage's launch and work directories, req. 16 checked three times), `:launch-template` with `code_loading`, `command`, `parent_run_id`, `resumed_as` and `actions.resume` on the run detail, migration 0008; the head files are owned by the launch (CR-P3T09-11 closed). Inbox #99 (assumed, eleven rules), FU-P3-35.
+- Every check green on e0054c8 (the first `pr-body` run read the placeholder body; its rerun after the edit passed). The merge waited out a GitHub incident on Pull Requests (502, then "405 Merge already in progress", 09:58 to 10:46 UTC); squash b69d25d (`Release-As: 0.0.1`). Cost recorded: 60 USD (estimate).
+- Thomas's pause is applied: after the promotion PR, nothing more is launched. Next when resumed: P1 Task 31 (inbox #98). PRs #111 and #122 wait for Thomas.
+
+## 2026-11-04 · Promotion #124 merged: P1 Task 30 on main; autopilot paused
+
+- Integration promoted to `main` by merge commit 6ae3dcd (every check green on 1751492).
+- Paused at Thomas's request. Next when resumed: P1 Task 31 (inbox #98, reserve inbox #100 and FU-P3-36). PRs #111 and #122 wait for Thomas.
+- Dashboard not refreshed: `build.py` gave a 24 MB page, over the Artifact limit of 16 MB (XSS check passed). To fix in `tools/dashboard` (fewer inline images).
+
+## 2026-11-04 · Resumed by Thomas; P1 Task 31 launched
+
+- Thomas: "Continue". P1 Task 31 (results and reports; also SEC-P3T28-05 and FU-P3-31) launched with the `p3-task` workflow, base f9e4b96. Scope: no `slurm-mini` (Task 22), no session or token link (Tasks 12–16), plugin side waits for PR #122 (Task 7), no screens (Task 32 part two). Numbers reserved: inbox #100, FU-P3-36.
+- Thomas (2026-11-04 ~12:55 UTC): "5min avant reset". Read as: the usage window resets in about 5 minutes, so the 30 points start from a fresh window; the budget stays started with `--now 0`, and the Task 31 workflow continues.
+
+## 2026-11-04 · P1 Task 31 merged (PR #125); CI line split into PR #126
+
+- Workflow wf_f4c210db-200 done: review approve after 7 rounds (code b/M/m=1/8/17, security 1/6/31), simplify −19/+4, doc-reviewer approve 12/14. Orchestrator gate on 9c88c19: pytest 729 passed, Vitest 230, docs gate 0 failures.
+- The build changed one line of `.github/workflows/ci.yml` (e2e runs `report.spec.ts`). By inbox #98 that would hold Task 31 and Task 32 part two for Thomas, so the line was split into PR #126, which waits for Thomas (inbox #101, assumed).
+- PR #125 squash-merged as d982cc9 with `Release-As: 0.0.1`. The first `pr-body` run failed on the placeholder body; the re-run after the body edit passed. Cost recorded: 65 USD.
+- Next: promotion to `main`, then P1 Task 32 part two. PRs #111, #122 and #126 wait for Thomas.
+
+## 2026-11-04 · Promotion PR #127 opened; P1 Task 32 part two launched
+
+- Promotion PR #127 (integration → `main`, merge commit) opened on 85330d6.
+- P1 Task 32 part two launched with the `p3-task` workflow, step P3-t32b (branch `autopilot/P3-t32b`, since `autopilot/P3-t32` is part one), base 85330d6. Scope: Resume and its dialog, Copy to a new launch, the Copy menu's Command item, results and reports screens, the four `test.fixme` tests, and screenshots including `app-report-viewer` from a regenerated MultiQC fixture. No `.github/workflows/` change. Numbers reserved: inbox #102, FU-P3-37.
+
+## 2026-11-04 · Promotion #127 merged: P1 Task 31 on main
+
+- Integration promoted to `main` by merge commit 2b6ab38 (every check green on df0d13b; an older `ci-ok` failure was the cancelled run of 85330d6).
+- PR #126 (CI line for `report.spec.ts`) is green and waits for Thomas, with #111 and #122.
+- P1 Task 32 part two (P3-t32b) is building.
+
+## 2026-11-04 · P3-t32b blocked after two fix rounds; third round assumed (inbox #103)
+
+- The workflow returned `blocked` after two fix rounds. Open: CR-P3T32B-03 (major, the `app-run-results` shots predate the note's fix) and the defect minors CR-P3T32B-04 and SEC-P3T32B-02/-04. Security approved both rounds.
+- The harness flagged fix round 1 for security. I checked its commands. It ran `spectio serve` as `alice`, set the node name to `login1` for the live shots (the documented P3-M8 method), then put the node name back to `vm` and stopped the server; it also ran one bare `git stash`. The commit itself changes no CSP, sandbox, test or check. Nothing left the container.
+- Inbox #103, assumed: one third fix round, with guardrails in its prompt. The run is resumed from cache (wf_9d735017-476); a fourth round is not assumed.
+
+## 2026-11-04 · P3-t32b done; PR #128 opened
+
+- The third round approved (inbox #103). After post-approval fixes, the run reports `rounds=5`. Code review approved b/M/m=0/3/8, security 0/0/13, simplify −4/+4, doc-reviewer 12/14. Orchestrator gate on 99a0ace: pytest 731 passed, Vitest 289, docs gate 0 failures, no `.github/workflows/` change.
+- Afterwards the node name was `vm`, no `alice` server was running and the stash list was empty.
+- PR #128 is open into `autopilot/integration` with the `screenshots` label. Inbox #104 is assumed; open minors are in FU-P3-37.
+- Thomas (2026-11-04 ~18:13 UTC): "Stop building à la fin étape actuelle". After PR #128 and its promotion, nothing more is launched; next when resumed: §15.3 Task 12 (reserve inbox #105, FU-P3-38).
+
+## 2026-11-04 · PR #128 merged: P1 Task 32 part two; promotion next, then paused
+
+- PR #128 squash-merged as 5f2725d with `Release-As: 0.0.1`. Every check was green on 99a0ace; the first `pr-body` run had failed on the placeholder body. Cost recorded: 40 USD.
+- Next: the promotion PR to `main`, then the autopilot stays paused (Thomas). P1 tasks merged: 19 of 32. PRs #111, #122 and #126 wait for Thomas.
+
+## 2026-11-04 · Promotion #129 merged; autopilot paused
+
+- Promotion PR #129 merged into `main` with a merge commit (f7d03c0). Every check was green on c6ea076.
+- Autopilot paused as Thomas asked ("Stop building à la fin étape actuelle"). Next when resumed: §15.3 Task 12. PRs #111, #122 and #126 wait for Thomas.
+
+## 2026-11-04 · PR #130 merged: P3 tasks run in batches
+
+- PR #130 squash-merged as f5708cc. Every check was green on a6cff83. One code-reviewer pass returned changes (6 majors, 6 minors), all fixed before the merge.
+- From now on (autopilot.md §11): per task, code review, security review on sensitive paths, one fix round and short docs. Per batch of 3 to 5 tasks, `p3-batch` runs simplify, the full docs, the figure and doc-reviewer, followed by one promotion. Costs are recorded as `build-task` and `docs`.
+- Still paused. Next when resumed: batch P3-B01 = §15.3 Tasks 12 to 16.
+
+## 2026-11-06 · Resumed: batch P3-B01 (Tasks 12 to 16), batch mode of autopilot.md §11
+
+- Thomas resumed the autopilot with batch P3-B01. The batch mode (PR #130, promoted in #131) is on `main` and in use.
+- P3-t12 started: `p3-task` run wf_8f494702-d5c, base 8ca8304, `security: 'always'`.
+- P3-t12 done after a resume (the container restarted during the run): `CODE review=approve 0/0/4 security=approve 0/0/6 rounds=2`. The orchestrator fixed a flaky test (DOC-P3T12-01) before opening the PR. PR #132 opened (`no-figure`). Cost recorded: 35 USD, kind `build-task`.
+- e2e-local needed a session after Task 12 (`/api/v1/version` is behind it): fixed in serve-local and the Playwright global setup (#132); the `ci.yml` wait for the pointer file is split into PR #133, which waits for Thomas (it touches `.github/workflows/`). Review blocker CR-P3T12-01 (race) fixed there.
+- PR #132 squash-merged into integration (7406eb4). Deferred to Task 13: CR-P3T12-03, CR-P3T12-05, the vacuous cookie assertion in skeleton.spec.ts.
+- P3-t13 started: `p3-task`, base 7406eb4, `security: 'always'`.
+- P3-t13 done (run wf_9c0395d4-f22): `CODE review=approve 0/0/3 security=approve 0/0/2 rounds=2`. PR #134 opened (`no-figure`). Follow-ups FU-P3-40 (next FU-P3-41). Cost recorded: 30 USD, kind `build-task`.
+- PR #133 (ci.yml wait) brought up to date with integration (merge, no force-push): all checks green on 14fa6cd; it waits for Thomas.
+- PR #134 squash-merged into integration (34838aa). `e2e-local` red there for the base reason (the `ci.yml` wait, fixed in #133), commented on the PR.
+- P3-t14 started: `p3-task`, `security: 'always'`, takes SEC-P3T13-01 (one `Host` parser shared by the cookie name and the allow-list).
+- P3-t14 done (run wf_720a12b4-a23): `CODE review=approve 0/0/1 security=approve 0/0/2 rounds=1`. SEC-P3T13-01 closed (one `Host` parser). PR #135 opened (`no-figure`). Follow-ups FU-P3-41 (next FU-P3-42). Cost recorded: 22 USD, kind `build-task`.
+- PR #135 squash-merged into integration (d4bc5a3); `e2e-local` red for the base reason (#133), commented.
+- P3-t15 started: `p3-task`, `security: 'always'`.
+- P3-t15 done (run wf_1a749e6c-6a6): `CODE review=approve 0/0/5 security=approve 0/0/6 rounds=1`. Closes SEC-P3T11-01/02/08 and SEC-P3T08-03 (r1). PR #136 opened (`no-figure`). Follow-ups FU-P3-42 (hard links on the EMBL home [to be validated], PID check, config parents). Cost recorded: 30 USD, kind `build-task`.
+- PR #136 squash-merged into integration (5ec2dca); `e2e-local` red for the base reason (#133), commented.
+- P3-t16 started: `p3-task`, `security: 'always'`; last task of batch P3-B01.
+- P3-t16 done (run wf_1dcc6f65-937): `CODE review=approve 0/0/4 security=approve 0/0/4 rounds=1`. Middleware order settled (host, cross-site, session, writes). PR #137 opened (`no-figure`). Follow-ups FU-P3-43 (next FU-P3-44). Inbox #109 rule 5 is reserved for Thomas: mounting the API on SLURM and shared hosts now that sign-in is complete (security-posture default, not applied). Cost recorded: 26 USD, kind `build-task`.
+- PR #137 squash-merged into integration (5e1ddd9); `e2e-local` red for the base reason (#133), commented. All five tasks of P3-B01 merged.
+- P3-B01 batch close started: `p3-batch`, base 8ca8304, steps P3-t12..P3-t16.
+- P3-B01 batch close done (run wf_17425d7a-093): simplify -11/+9 (no re-review, under 20 lines; closes CR-P3T16-01, CR-P3T14-02, CR-P3T12-03), figure p3-b01-signed-in, cast spectio-sign-in, guide "Signing in". doc-reviewer approve 12/14, changes applied. PR #138 opened. Cost recorded: 45 USD, kind `docs`.
+
+- 2026-11-06 23:54 UTC · promotion #139 merged into main (merge commit 7f2021a): batch P3-B01, P1 Tasks 12-16. e2e-local red for the known base cause (#133).
+- 2026-11-07 00:30 UTC · P3-t10 (Task 10, tmux launcher) built: review approve 0/1/8, security approve 0/0/7, 2 rounds; PR #140 opened (no-figure). FU-P3-44, FU-P3-45; inbox #110. Next follow-up FU-P3-46.
+- 2026-11-07 00:37 UTC · P3-t10 merged (#140, squash 075cee9). e2e-local red for the known base cause (#133). Next: P3-t21; its ci.yml product-job change goes in a separate PR that waits for Thomas.
+- 2026-11-07 01:30 UTC · P3-t21 (Task 21, one wheel) built, workflow blocked after one fix round: CR-P3T21-01 blocker = test_wheel.sh needs Task 7 logger (#122). Round-3 fixes 21005f3, docs d59f821. PR #141 opened, waits for #122 (not merged). CI wiring split to PR #142 (stacked on P3-t21, waits for Thomas). FU-P3-46/47; inbox #111. Tasks 22, 23, 25, 26 depend on #122 too; Task 24 started (wf_b06238ec-445), joins B02.
+- 2026-11-07 01:50 UTC · P3-t24 (Task 24, spectio open) built: review approve 1/1/11 (3 rounds); the workflow skipped security (paths not in SENSITIVE), so the orchestrator ran security-reviewer: approve 0/0/5 -> FU-P3-48; inbox #112 rule 6 done. cli/open.py and open_remote.py added to SENSITIVE in p3-task.js. PR #143 (no-figure).
+- 2026-11-07 01:57 UTC · P3-t24 merged (#143, squash 1f6187e). B02 closes with Tasks 10 and 24 (21-23, 25-26 wait for #122); p3-batch P3-B02 started.
+- 2026-11-07 02:30 UTC · P3-B02 batch (Tasks 10, 24): simplify none, figure p3-b02-open-tmux, casts spectio-open and spectio-tmux, guide usage/open-from-your-laptop, doc-reviewer approve 14/14. PR #144. FU-P3-49.
+- 2026-11-07 02:37 UTC · P3-B02 merged (#144, squash 46dfe7b). Promotion PR to main next.
+- 2026-11-07 02:44 UTC · promotion #145 merged into main (merge commit eff61fe): batch P3-B02. W5 now waits on Thomas: #122 (Task 7) blocks Tasks 21-23, 25-32; #141, #142 (after #122), #133, #111, #126; inbox #109 rule 5, #111.
+- 2026-11-07 02:55 UTC · Thomas: "suite tes recommandations". #133 merged (squash 6a67586). Inbox #109 rule 5 = (a). #122 brought up to date with integration (8e4bfa8, conflicts in log.md and inbox.md kept both sides, 878 passed), then merge, then #141, #142, #126. New requirement (checkpoints, conditional or skipped jobs, temp outputs, SLURM params and efficiency per job and per rule): research and spec pass on branch autopilot/dag-temp-efficiency.
+- 2026-11-07 15:15 UTC · Merged on Thomas's approval: #126 (squash e8567db), #122 Task 7 (f2b3d23), #141 Task 21 (1de2080; integration merged in, Task 24 files added to the wheel list, test_wheel.sh pass on the branch, CR-P3T21-01 resolved), #142 ci.yml product job (95b40dd, product green). #146 specs for checkpoints, skipped jobs, temp outputs, SLURM request and efficiency (0d9091e): new P1 M9, Tasks 33-35. #111 still waits for Thomas. Next: B03 (Tasks 22, 23, 25 + NO_API reword).
+- 2026-11-07 17:40 UTC · P3-t25 (Task 25, runs from a terminal) built: workflow blocked after round 2 (code changes: one stuck launch dir starved the pool), orchestrator fix round 3279826 + d5e2193; code approve r3 1/2/13, security approve 0/1/7; Snakemake end from the spool assumed (inbox #113); FU-P3-50. PR #147 opened (no-figure). Tasks 22, 23 need `spectio serve --detach` (FU-P3-44), a Docker daemon, and a workflow change that waits for Thomas.
+- 2026-11-07 17:10 UTC · P3-t25 merged (#147, squash 70e9bf5) after the product job failed twice on the wheel lists (fixed 0329462); SEC-P3T25-r3-02 fixed (9fa5efb), r3-01 to FU-P3-50. p3-task worker prompt now keeps tests/packaging/contents/ in step (dc02cb5). P3-t26 (Task 26, release dry-run) launched, base dc02cb5. Tasks 27-32 were already done; left in P1: 22, 23 (blocked), 33-35 (M9).
+- 2026-11-07 18:00 UTC · P3-t26 (Task 26, release dry-run) built: code approve 0/1/6, security approve 0/0/9, 2 rounds; test_bridges_release.sh pass (first run hit Maven 429/403 in the sandbox). Not release-ready: provider spectio vs spectio-org, no nf-spectio README (FU-P3-51); inbox #114. Test made executable (CR-P3T26-05). PR #148 opened (no-figure).
+
+- 2026-11-07 20:20 · P3-t26 · merged #148 (d7c69a1) after Thomas accepted the build-classpath vulnerabilities with an expiry (osv-scanner.toml, IgnoredVulns until 2027-05-07; decision log). Next: batch P3-B03 close (P3-t21, P3-t25, P3-t26).
+- 2026-11-07 21:05 · P3-B03 · batch close done (simplify -24/+11, figure, 3 casts, guide, doc-reviewer approve 13); CR-P3B03-01 fixed by the orchestrator (be6b4ee). PR #149 opened.
+- 2026-11-07 21:20 · P3-B03 · #149 merged (f5f8849, no-figure label: the MCP body writer drops embedded images); promotion #150 merged into main (5ab4090). Next: M9 Tasks 33-35.
+- 2026-11-07 21:55 · P3-t33 · built (review approve 0/0/3, security approve 0/0/4, 1 round); PR #151 opened. Thomas: Snakemake resources per job and per rule too, to be stated in Task 34's brief.
+- 2026-11-07 22:00 · P3-t33 · merged #151 (ab79707). Next: P3-t34.
+- 2026-11-07 23:40 · P3-t34 · built (review approve 0/3/9, security approve 0/1/12, 4 rounds; sacct per job, efficiency per job and per rule or process for both engines, migration 0010, custom_options flag only); slurm-mini not run (Task 22). Inbox #116, FU-P3-53. PR #152 opened (no-figure).
+- 2026-11-07 23:50 · P3-t34 · merged #152 (a84fc10). Next: P3-t35 (boards, then screens).
+- 2026-11-08 00:45 · P3-t35 · built (11 boards first, then screens; review approve 1/1/16 with blocker and major fixed, security approve 0/0/1, 4 rounds); Playwright smoke 36 passed, 16 skipped; slurm-mini not run. Inbox #117, FU-P3-54, FU-P3-55. PR #153 opened (no-figure).
+- 2026-11-08 00:50 · P3-t35 · merged #153 (0115dbd). M9 tasks done; batch P3-B04 close (P3-t33, t34, t35) next.
+- 2026-11-08 01:25 · P3-B04 · batch close done (simplify -27/+8, re-review approve, figure, guide states-outputs-efficiency with five shots, doc-reviewer approve 13/14); FU-P3-56. PR #154 opened (no-figure).
+- 2026-11-08 01:30 · P3-B04 · merged #154 (b64451e). Promotion to main next.
+- 2026-11-08 01:45 · promotion #155 merged into main (merge commit e253fdf): batch P3-B04, M9 done. Left in P1: Tasks 22, 23 (need spectio serve --detach FU-P3-44 and a Docker daemon). #111 waits for Thomas.
+- 2026-11-08 07:25 · P3-fu53 · Thomas chose (b) for inbox #116 rule 10, with a pre-review first (security-reviewer + constraints-hunter on the design). Built: sacct rows bound to WorkDir, random delimiter, RESIZING dropped, Submit check; review approve 0/1/9, security approve 0/1/6, 3 rounds. Inbox #119, FU-P3-60..62. PR #156 opened (no-figure).
+- 2026-11-08 07:32 · P3-fu53 · merged #156 (8f6775e). P3-fu44 still building.
+- 2026-11-08 07:45 · P3-fu44 · built after a pre-review (design + security-reviewer + constraints-hunter): spectio serve --detach in tmux session spectio-server, env -i allow-list, link in the calling terminal only, exit 0/2/3, kill-pane of dead panes only; review approve 0/0/9, security approve 0/0/7, 2 rounds; real tmux 3.4 test. Inbox #118, FU-P3-57..59, FU-P3-64. Integration merged in (inbox conflict, both entries kept). PR #157 opened (no-figure).
+- 2026-11-08 07:55 · P3-fu44 · CI product red on GITHUB_ACTIONS colour codes in two usage-error asserts; fixed in the tests (d71de4c, reproduced with GITHUB_ACTIONS=true). Merged #157 (8eef45b). Batch P3-B05 close (fu44, fu53) next.
+- 2026-11-08 08:20 · P3-B05 · batch close done (simplify -6/+2 NoServer folded into Refused, figure p3-b05-sacct-bind-detach, guide keep-the-server-running with cast spectio-detach, doc-reviewer approve 12/14 after the cast re-record). PR #158 opened (no-figure: the PR tool strips image embeds; figure on P3-M9).
+- 2026-11-08 08:30 · P3-B05 · merged #158 (b71a68a). Promotion to main next. Local check: native Slurm 23.11 with slurmdbd in the container (cgroup v1 rules out sind): sacct_jobs gives the row for the right WorkDir and none for another; a 18-character delimiter and TZ for Submit honoured.
+- 2026-11-08 08:35 · promotion #159 merged into main (merge commit 8eee628): batch P3-B05, FU-P3-53, FU-P3-44. Asked Thomas: dev/slurm/native.sh (native Slurm in cloud sessions) and P1 Task 22 in CI (workflow change, waits for him). #111 waits for Thomas.
+- 2026-11-08 08:45 · Thomas decided (questions): #111 refresh then he merges; dev/slurm/native.sh (FU-P3-66, p3-task wf_78fca804-309) and P1 Task 22 in CI (after native.sh; its PR waits for him, workflow change). #111 refresh running in the background.

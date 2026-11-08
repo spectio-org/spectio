@@ -48,6 +48,12 @@ def _boot_id() -> str:
     return Path("/proc/sys/kernel/random/boot_id").read_text().strip()
 
 
+def checkable(host: str, boot_id: str) -> bool:
+    """True when a head on `host` and `boot_id` can be checked here: this host and this boot,
+    both. The runner's PID check and the API's `head.checked` use it (CR-P3T25-05)."""
+    return host == socket.gethostname() and boot_id == _boot_id()
+
+
 def _stat(pid: int) -> list[str] | None:
     """The fields of `/proc/<pid>/stat` after the command name, or None (no such process)."""
     try:
@@ -82,13 +88,22 @@ def read_head_pid(launch_dir: Path) -> HeadPid | None:
     return HeadPid(int(pid), int(pgid), start, boot_id, host)
 
 
+def read_head_exit(launch_dir: Path) -> int | None:
+    """The exit code in `head.exit`, None when it is missing. Raises OSError or ValueError."""
+    match = _read(launch_dir, "head.exit", _EXIT_LINE)
+    return None if match is None else int(match[1])
+
+
 def alive(head: HeadPid) -> bool:
     """The PID check: this host, this boot, and the same process and group still live."""
-    return (
-        head.host == socket.gethostname()
-        and head.boot_id == _boot_id()
-        and _process(head.pid) == (head.pgid, head.start)
-    )
+    return checkable(head.host, head.boot_id) and _process(head.pid) == (head.pgid, head.start)
+
+
+def same_process(pid: int, start: str) -> bool:
+    """Whether process `pid` lives and started at `start` (clock ticks after boot): on this
+    boot, the same process."""
+    found = _process(pid)
+    return found is not None and found[1] == start
 
 
 def _is_head(head: HeadPid, native_id: str) -> bool:
@@ -216,7 +231,7 @@ class LocalLauncher:
             node = socket.gethostname()
             if head is not None and alive(head):
                 return HeadReport("running", native_id, node, None, False, None)
-            done = _read(launch_dir, "head.exit", _EXIT_LINE)  # after the PID check: no race
+            done = read_head_exit(launch_dir)  # after the PID check: no race
         except (OSError, ValueError) as exc:
             if native_id not in self._warned:  # once per head, not once per tick
                 self._warned.add(native_id)
@@ -224,7 +239,7 @@ class LocalLauncher:
             return HeadReport("unknown", native_id, None, None, False, None)
         self._warned.discard(native_id)
         if done is not None:
-            return HeadReport("exited", native_id, node, int(done[1]), True, None)
+            return HeadReport("exited", native_id, node, done, True, None)
         if head is None and proc is not None:
             if proc.returncode is None:
                 return HeadReport("starting", native_id, node, None, False, None)

@@ -1,6 +1,6 @@
 import { Button, Modal, Tabs } from "@mantine/core";
 import { Link, useNavigate, useSearch } from "@tanstack/react-router";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { type KeyboardEvent, useCallback, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
   type LogSource,
@@ -26,16 +26,21 @@ import { FoldSection } from "../shell/FoldSection";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
 import { type Detail, DetailSheet } from "./DetailSheet";
+import { FailureSummary } from "./FailureSummary";
 import { LogLines, LogViewer } from "./LogViewer";
+import { ByProcess } from "./ByProcess";
+import { bytes, isLow, isNear, nearLimit, percent, resourcesLine, seconds } from "./resources";
+import { ResultsSection } from "./ResultsSection";
 import { RunHeader, runDirectory } from "./RunHeader";
-import { ProcessName, Word, runName, taskLabel } from "./RunState";
+import { Low, NearLimit, ProcessName, Word, runName, taskLabel } from "./RunState";
 import {
   classWord,
   engineName,
   isTerminal,
   lastSegment,
+  neededFirst,
   plural,
-  processWord,
+  processState,
   stageWord,
   sum,
   taskWord,
@@ -44,7 +49,7 @@ import {
   words,
 } from "./stateWord";
 
-const RUN_ID = /^run_[0-7][0-9A-HJKMNP-TV-Z]{25}$/; // api §7, as the server checks it
+export const RUN_ID = /^run_[0-7][0-9A-HJKMNP-TV-Z]{25}$/; // api §7, as the server checks it
 const CANCELLABLE = new Set(["queued", "running"]);
 const LOGS: { source: LogSource; label: string }[] = [
   { source: "head-out", label: "Head output" },
@@ -78,11 +83,12 @@ function OpenProcess({ name, w, onOpen }: { name: string; w: Words; onOpen: (d: 
 }
 
 /** "n of m" with a bar beside it: indigo when all is done, running blue otherwise (UX-PAR-24).
- * The bar is decoration; the text says the value. */
-function Bar({ done, all }: { done: number; all: number }) {
+ * The bar is decoration; the text says the value. `lower`: the total may grow (a checkpoint is
+ * open), so the part past the known jobs is hatched and the bar is never full (ui-spec §5.2). */
+function Bar({ done, all, lower = false }: { done: number; all: number; lower?: boolean }) {
   const width = all ? Math.round((done / all) * 100) : 0;
   return (
-    <span className="sp-bar" data-full={all > 0 && done === all} aria-hidden="true">
+    <span className="sp-bar" data-full={all > 0 && done === all && !lower} data-lower={lower || undefined} aria-hidden="true">
       <span style={{ width: `${width}%` }} />
     </span>
   );
@@ -90,23 +96,45 @@ function Bar({ done, all }: { done: number; all: number }) {
 
 /** On the phone, one card per process (MLiteRunDetail; UX-PAR-10): name and state word, the
  * bar, then the counts the table has in columns. */
-type Rows = { processes: Process[]; ended: boolean; label: string; w: Words; onOpen: (d: Detail) => void };
+type Rows = { processes: Process[]; ended: boolean; open: string[]; label: string; w: Words; onOpen: (d: Detail) => void };
 
-function ProcessCards({ processes, ended, label, w, onOpen }: Rows) {
+const QUIET = new Set(["not_needed", "up_to_date", "no_tasks"]); // states with no job to come
+
+/** "12 / 20", "0 / at least 3", "0 jobs yet", or "0 jobs" for a state with no job to come. */
+function doneText(p: Process, w: Words): string {
+  const all = total(p.counts);
+  const done = sum(p.counts, "succeeded", "cached", "stored");
+  if (!all) return QUIET.has(p.status ?? "") ? `0 ${w.units}` : `0 ${w.units} yet`;
+  return p.lower_bound ? `${done} / at least ${all}` : `${done} / ${all}`;
+}
+
+/** The process's name, and the "Checkpoint" text chip of a checkpoint rule. */
+function NameCell({ p, w, onOpen }: { p: Process; w: Words; onOpen: (d: Detail) => void }) {
+  return (
+    <>
+      <OpenProcess name={p.process} w={w} onOpen={onOpen} />
+      {p.is_checkpoint && <span className="sp-chip sp-checkpoint">Checkpoint</span>}
+    </>
+  );
+}
+
+function ProcessCards({ processes, ended, open, label, w, onOpen }: Rows) {
   return (
     <ul className="sp-cards-list" aria-label={label}>
-      {processes.map((p) => {
+      {neededFirst(processes).map((p) => {
         const all = total(p.counts);
         const done = sum(p.counts, "succeeded", "cached", "stored");
-        const word = processWord(p.counts, ended);
+        const { state, word } = processState(p, ended, open);
         return (
-          <li key={p.process} className="sp-row-card" data-rail="" data-tone={tone(word)}>
+          <li key={p.process} className="sp-row-card" data-rail="" data-tone={tone(state)} data-quiet={p.status === "not_needed" || undefined}>
             <span className="sp-row-card-top">
-              <OpenProcess name={p.process} w={w} onOpen={onOpen} />
-              <Word state={word} word={word} />
+              <span>
+                <NameCell p={p} w={w} onOpen={onOpen} />
+              </span>
+              <Word state={state} word={word} />
             </span>
             <span className="sp-done">
-              <Bar done={done} all={all} /> {done} / {all} {w.units}
+              <Bar done={done} all={all} lower={p.lower_bound} /> {all ? `${doneText(p, w)} ${w.units}` : doneText(p, w)}
             </span>
             <span className="sp-muted">
               {sum(p.counts, "running")} running · {sum(p.counts, "pending", "submitted")} pending ·{" "}
@@ -119,9 +147,9 @@ function ProcessCards({ processes, ended, label, w, onOpen }: Rows) {
   );
 }
 
-function ProcessTable({ processes, ended, label, w, onOpen }: Rows) {
+function ProcessTable({ processes, ended, open, label, w, onOpen }: Rows) {
   const phone = usePhone();
-  if (phone) return <ProcessCards processes={processes} ended={ended} label={label} w={w} onOpen={onOpen} />;
+  if (phone) return <ProcessCards processes={processes} ended={ended} open={open} label={label} w={w} onOpen={onOpen} />;
   return (
     <div className="sp-table-wrap">
       <table className="sp-table" aria-label={label}>
@@ -137,25 +165,25 @@ function ProcessTable({ processes, ended, label, w, onOpen }: Rows) {
           </tr>
         </thead>
         <tbody>
-          {processes.map((p) => {
+          {neededFirst(processes).map((p) => {
             const all = total(p.counts);
             const done = sum(p.counts, "succeeded", "cached", "stored");
-            const word = processWord(p.counts, ended);
+            const { state, word } = processState(p, ended, open);
             return (
-              <tr key={p.process}>
+              <tr key={p.process} data-quiet={p.status === "not_needed" || undefined}>
                 <td>
-                  <OpenProcess name={p.process} w={w} onOpen={onOpen} />
+                  <NameCell p={p} w={w} onOpen={onOpen} />
                 </td>
-                <td>
-                  <Word state={word} word={word} />
+                <td className="sp-state-cell">
+                  <Word state={state} word={word} />
                 </td>
                 <td>
                   {all ? (
                     <span className="sp-done">
-                      <Bar done={done} all={all} /> {done} / {all}
+                      <Bar done={done} all={all} lower={p.lower_bound} /> {doneText(p, w)}
                     </span>
                   ) : (
-                    `0 ${w.units} yet`
+                    doneText(p, w)
                   )}
                 </td>
                 <td className="sp-num" data-narrow="" data-running={sum(p.counts, "running") > 0 || undefined}>
@@ -190,17 +218,49 @@ function StagesOrProcesses({
   const ended = isTerminal(run.state);
   const w = words(run.workflow.engine);
   const engine = engineName(run.workflow.engine);
-  const note = run.stages_note ? (
-    <p role="note" className="sp-muted">
-      {run.stages_note}
+  const open = run.summary.open_checkpoints ?? [];
+  const updates = run.summary.dag_updates ?? 0;
+  const note = (
+    <>
+      {run.stages_note && (
+        <p role="note" className="sp-muted">
+          {run.stages_note}
+        </p>
+      )}
+      {processes.length > 0 && processes.every((p) => p.status === "up_to_date") && (
+        <p role="note" className="sp-note">
+          Nothing to run: all outputs are up to date
+        </p>
+      )}
+      {open.length > 0 && (
+        <p role="note" className="sp-note">
+          The DAG grows after checkpoint {open.join(", ")}: more {w.units} may come.
+        </p>
+      )}
+      {/* the old and new totals and the checkpoint's name are not served yet (FU-P3-54) */}
+      {updates > 0 && (
+        <p className="sp-muted">
+          DAG updated after a checkpoint{updates > 1 ? ` (${updates} times)` : ""}: the {w.unit} count includes the new {w.units}.
+        </p>
+      )}
+    </>
+  );
+  const legend = (
+    <p className="sp-legend">
+      Pending: no {w.unit} has started. Running: {w.units} are running, or some are done and more are to come. Done:
+      every {w.unit} succeeded or was reused. Stopped: the run ended before it finished.{" "}
+      {run.workflow.engine === "snakemake"
+        ? "Waiting for checkpoint: its jobs may appear once the checkpoint ends. Up to date: its outputs already exist. Not needed in this run: the targets or an input function left it out. \"at least\": a checkpoint is open and more jobs may come."
+        : "No task (condition or empty input): a when: condition was false, or its input was empty. Processes the script does not call in this run are not listed."}
     </p>
-  ) : null;
+  );
   if (!stages.length) {
     return (
       <FoldSection id="processes" screen="run" icon={ICONS.list} title={w.Groups} summary={plural(processes.length, w.group, w.groups)}>
         {note}
         <p className="sp-muted">No stages for this pipeline: {w.groups} as the engine reports them.</p>
-        <ProcessTable processes={processes} ended={ended} label={w.Groups} w={w} onOpen={onOpen} />
+        <ProcessTable processes={processes} ended={ended} open={open} label={w.Groups} w={w} onOpen={onOpen} />
+        {legend}
       </FoldSection>
     );
   }
@@ -245,7 +305,7 @@ function StagesOrProcesses({
                 Stage details <Icon path={ICONS.arrowRight} size={13} />
               </button>
             </p>
-            <ProcessTable processes={mine} ended={ended} label={`${w.Groups} of ${stage.name ?? stage.id}`} w={w} onOpen={onOpen} />
+            <ProcessTable processes={mine} ended={ended} open={open} label={`${w.Groups} of ${stage.name ?? stage.id}`} w={w} onOpen={onOpen} />
           </details>
         );
       })}
@@ -259,23 +319,22 @@ function StagesOrProcesses({
               <Icon path={ICONS.chevronDown} size={16} stroke={2} />
             </span>
           </summary>
-          <ProcessTable processes={loose} ended={ended} label={`${w.Groups} not in a stage`} w={w} onOpen={onOpen} />
+          <ProcessTable processes={loose} ended={ended} open={open} label={`${w.Groups} not in a stage`} w={w} onOpen={onOpen} />
         </details>
       )}
-      <p className="sp-legend">
-        Pending: no {w.unit} has started. Running: {w.units} are running, or some are done and more are to come. Done:
-        every {w.unit} succeeded or was reused. Stopped: the run ended before it finished.
-      </p>
+      {legend}
     </FoldSection>
   );
 }
 
-/** "Why it failed", open first on a failed run (ui-spec §4.4, UX-PAR-25): the run-level part. The
- * per-job cards (SLURM state, resources, last lines) come with P1 Tasks 29 and 32. */
+/** "Why it failed", open first on a failed run (ui-spec §4.4, UX-PAR-25): the run-level part, then
+ * one card per job that failed on its last attempt (FailureSummary, P1 Task 32). */
 function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; processes: Process[]; onTasks: () => void; onOpen: (d: Detail) => void }) {
   const failure = run.failure as { class?: unknown; message?: unknown; task_id?: unknown } | null;
   const kind = typeof failure?.class === "string" ? failure.class : null;
-  const message = typeof failure?.message === "string" ? failure.message.trim() : "";
+  // left out when a job's card already shows it unchanged (CR-P3T32-04)
+  const said = typeof failure?.message === "string" ? failure.message.trim() : "";
+  const message = run.failures.some((f) => f.message?.trim() === said) ? "" : said;
   const culpritId = typeof failure?.task_id === "string" ? failure.task_id : null;
   const w = words(run.workflow.engine);
   const { unit, units, Units } = w;
@@ -338,17 +397,27 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
           </p>
         )}
       </div>
+      <FailureSummary run={run} processes={processes} onOpen={onOpen} />
     </FoldSection>
   );
 }
 
-/** How to look at the head by hand: ssh and tmux attach with tmux heads; the process with the
- * local executor, whose head has no terminal (P1 Task 9; tmux heads come with Task 10). */
+// What may go into the copied commands: a host name, a tmux session name, a local head's
+// `<pid>.<start>`. Anything else shows no commands, and each value is quoted (SEC-P3PARA-01).
+const HOST_NAME = /^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$/;
+const SESSION_NAME = /^[A-Za-z0-9][A-Za-z0-9_-]{0,127}$/;
+const LOCAL_HEAD = /^([0-9]{1,10})\.[0-9]{1,20}$/;
+
+/** How to look at the head by hand: ssh and tmux attach with tmux heads (P1 Task 10, the exact
+ * session as dev-env §15.3 req. 11 targets it); the process with the local executor, whose head
+ * has no terminal (P1 Task 9). */
 function HeadByHand({ run, server }: { run: RunDetail; server: ServerVersion | null }) {
   const head = run.head!;
   const local = server?.executor === "local";
-  const pid = head.session?.split(".")[0] ?? "";
-  const commands = local ? `ps -o pid,etime,args --sid ${pid}` : `ssh ${head.node}\ntmux attach -t ${head.session}`;
+  const session = head.session ?? "";
+  const pid = LOCAL_HEAD.exec(session)?.[1];
+  if (local ? pid === undefined : !HOST_NAME.test(head.node) || !SESSION_NAME.test(session)) return null;
+  const commands = local ? `ps -o pid,etime,args --sid ${pid}` : `ssh -- '${head.node}'\ntmux attach -t '=${session}'`;
   return (
     <FoldSection id="attach" screen="run" icon={ICONS.terminal} title="Open the head by hand" summary={local ? `process ${pid}` : `tmux on ${head.node}`} card>
       <p className="sp-muted">
@@ -434,6 +503,7 @@ function SummaryAside({ run, server, onLogs }: { run: RunDetail; server: ServerV
           </p>
         </FoldSection>
       )}
+      {run.origin !== "cli-observed" && <ResultsSection run={run} />}
       <FoldSection id="params" screen="run" icon={ICONS.sliders} title="Parameters" summary={`${params} set at launch`} defaultOpen={false} card>
         <ParamsList params={run.params} />
       </FoldSection>
@@ -452,6 +522,53 @@ const TASK_FILTERS: { label: string; states: string[] | null }[] = [
 
 type Shown = { rows: Task[]; next: string | null };
 
+const EFF_SOURCE = "From sacct when the job has ended; before that from the engine's trace or benchmark";
+
+/** A job's efficiency on the phone: "CPU eff. 34 % · Mem eff. 3 %, low"; while it runs, when it
+ * will be measured. */
+function efficiencyLine(t: Task): string | null {
+  const e = t.efficiency;
+  if (!e) return null;
+  if (e.state === "running") return "Measured when the job ends";
+  if (e.cpu === null && e.mem === null) return null;
+  const flag = (r: number | null, memory: boolean) => (isLow(r) ? ", low" : memory && isNear(r) ? ", near limit" : "");
+  return `CPU eff. ${percent(e.cpu)}${flag(e.cpu, false)} · Mem eff. ${percent(e.mem)}${flag(e.mem, true)}`;
+}
+
+/** The Tasks tab's two views (ui-spec §4.4 note 2026-11-07): the list, and By process (By rule). */
+function ViewTabs({ view, setView, w }: { view: "list" | "process"; setView: (v: "list" | "process") => void; w: Words }) {
+  const views = [
+    { key: "list" as const, label: `${w.Unit} list` },
+    { key: "process" as const, label: `By ${w.group}` },
+  ];
+  const onKey = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) return;
+    event.preventDefault();
+    const next = view === "list" ? "process" : "list"; // two tabs: every arrow key moves to the other
+    setView(next);
+    event.currentTarget.querySelector<HTMLButtonElement>(`[data-view="${next}"]`)?.focus();
+  };
+  return (
+    <div className="sp-segments sp-view-tabs" role="tablist" aria-label={`${w.Units} view`} onKeyDown={onKey}>
+      {views.map((v) => (
+        <button
+          key={v.key}
+          type="button"
+          role="tab"
+          data-view={v.key}
+          id={`view-${v.key}`}
+          aria-controls={`view-panel-${v.key}`}
+          aria-selected={view === v.key}
+          tabIndex={view === v.key ? 0 : -1}
+          onClick={() => setView(v.key)}
+        >
+          {v.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 /** A task's name and tag as the button that opens its detail; the label names the row. */
 function OpenTask({ task, w, onOpen }: { task: Task; w: Words; onOpen: (d: Detail) => void }) {
   return (
@@ -461,6 +578,25 @@ function OpenTask({ task, w, onOpen }: { task: Task; w: Words; onOpen: (d: Detai
       </strong>
       {(task.tag ?? task.name) && <> ({task.tag ?? task.name})</>}
     </button>
+  );
+}
+
+/** The row's Files button: the task's detail, which shows its files; the name names the row
+ * (ui-spec §4.4 note 2026-10-28, Job files). */
+function FilesButton({ task, onOpen, wide = false }: { task: Task; onOpen: (d: Detail) => void; wide?: boolean }) {
+  const attempt = task.attempt_n === null ? "" : `, attempt ${task.attempt_n}`;
+  return (
+    <Button
+      variant="default"
+      size={wide ? "md" : "xs"}
+      fullWidth={wide}
+      className={wide ? "sp-files-button" : undefined}
+      leftSection={<Icon path={ICONS.file} size={14} />}
+      aria-label={`Files of ${taskLabel(task)}${attempt}`}
+      onClick={() => onOpen({ kind: "task", task })}
+    >
+      Files
+    </Button>
   );
 }
 
@@ -492,6 +628,8 @@ function TasksPanel({
   const id = run.id;
   const w = words(run.workflow.engine);
   const phone = usePhone();
+  const effSource = useId();
+  const [view, setView] = useState<"list" | "process">("list");
   const [shown, setShown] = useState<Shown | null>(null);
   const [error, setError] = useState<string | null>(null);
   const states = TASK_FILTERS[filter].states?.join(",") ?? "";
@@ -530,87 +668,166 @@ function TasksPanel({
   const counts = process ? (processes.find((p) => p.process === process)?.counts ?? {}) : run.task_counts;
   const count = (states: string[] | null) => (states ? sum(counts, ...states) : total(counts));
   const tasks = shown?.rows ?? null;
+  const tabs = <ViewTabs view={view} setView={setView} w={w} />;
+  if (view === "process") {
+    return (
+      <section className="sp-runs" aria-label={w.Units}>
+        {tabs}
+        <div role="tabpanel" id="view-panel-list" aria-labelledby="view-list" hidden />
+        <div role="tabpanel" id="view-panel-process" aria-labelledby="view-process">
+          <ByProcess
+            processes={processes}
+            w={w}
+            onShow={(name) => {
+              setView("list");
+              setProcess(name);
+            }}
+          />
+        </div>
+      </section>
+    );
+  }
   return (
     <section className="sp-runs" aria-label={w.Units}>
-      <div className="sp-filters">
-        <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
-          {TASK_FILTERS.map((f, i) => (
-            <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
-              {f.label}
-              <span className="sp-count">{count(f.states)}</span>
-            </button>
-          ))}
-        </div>
-        <label className="sp-select">
-          {w.Group}{" "}
-          <select value={process} onChange={(e) => setProcess(e.currentTarget.value)}>
-            <option value="">
-              All {w.groups} ({processes.length})
-            </option>
-            {processes.map((p) => (
-              <option key={p.process} value={p.process}>
-                {lastSegment(p.process)} ({total(p.counts)})
-              </option>
+      {tabs}
+      <div role="tabpanel" id="view-panel-process" aria-labelledby="view-process" hidden />
+      <div role="tabpanel" id="view-panel-list" aria-labelledby="view-list" className="sp-runs">
+        <div className="sp-filters">
+          <div className="sp-segments" role="group" aria-label={`Show ${w.units}`}>
+            {TASK_FILTERS.map((f, i) => (
+              <button key={f.label} type="button" aria-pressed={filter === i} onClick={() => setFilter(i)}>
+                {f.label}
+                <span className="sp-count">{count(f.states)}</span>
+              </button>
             ))}
-            {process && !processes.some((p) => p.process === process) && <option value={process}>{lastSegment(process)}</option>}
-          </select>
-        </label>
-      </div>
-      <p className="sp-sub">
-        <span>In the order {engineName(run.workflow.engine)} first reported them</span>
-        {active && <LiveStatus />}
-      </p>
-      {error && <p role="alert">The {w.units} could not be read: {error}</p>}
-      {tasks === null && !error && <p className="sp-muted">Loading the {w.units}…</p>}
-      {tasks?.length === 0 && <p className="sp-empty">No {w.unit} matches these filters.</p>}
-      {!!tasks?.length && phone && (
-        <ul className="sp-cards-list" aria-label={w.Units}>
-          {tasks.map((t) => (
-            <li key={t.id} className="sp-row-card sp-task" data-rail="" data-tone={tone(t.state)}>
-              <span className="sp-row-card-top">
-                <OpenTask task={t} w={w} onOpen={onOpen} />
-                <Word state={t.state} word={taskWord(t.state)} />
-              </span>
-            </li>
-          ))}
-        </ul>
-      )}
-      {!!tasks?.length && !phone && (
-        <div className="sp-table-wrap">
-          <table className="sp-table" aria-label={w.Units}>
-            <thead>
-              <tr>
-                <th scope="col">{w.Unit}</th>
-                <th scope="col">State</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((t) => (
-                <tr key={t.id}>
-                  <td data-rail="" data-tone={tone(t.state)} className="sp-task">
-                    <OpenTask task={t} w={w} onOpen={onOpen} />
-                  </td>
-                  <td>
-                    <Word state={t.state} word={taskWord(t.state)} />
-                  </td>
-                </tr>
+          </div>
+          <label className="sp-select">
+            {w.Group}{" "}
+            <select value={process} onChange={(e) => setProcess(e.currentTarget.value)}>
+              <option value="">
+                All {w.groups} ({processes.length})
+              </option>
+              {processes.map((p) => (
+                <option key={p.process} value={p.process}>
+                  {lastSegment(p.process)} ({total(p.counts)})
+                </option>
               ))}
-            </tbody>
-          </table>
+              {process && !processes.some((p) => p.process === process) && <option value={process}>{lastSegment(process)}</option>}
+            </select>
+          </label>
         </div>
-      )}
-      {!!tasks?.length && (
-        <p className="sp-foot-line">
-          {tasks.length} of {plural(count(TASK_FILTERS[filter].states), w.unit, w.units)}
+        <p className="sp-sub">
+          <span>In the order {engineName(run.workflow.engine)} first reported them</span>
+          {active && <LiveStatus />}
         </p>
-      )}
-      {shown?.next && (
-        <div>
-          <Button variant="default" onClick={more}>
-            Load more {w.units}
-          </Button>
-        </div>
-      )}
+        {error && <p role="alert">The {w.units} could not be read: {error}</p>}
+        {tasks === null && !error && <p className="sp-muted">Loading the {w.units}…</p>}
+        {tasks?.length === 0 && <p className="sp-empty">No {w.unit} matches these filters.</p>}
+        {!!tasks?.length && phone && (
+          <ul className="sp-cards-list" aria-label={w.Units}>
+            {tasks.map((t) => (
+              <li key={t.id} className="sp-row-card sp-task" data-rail="" data-tone={tone(t.state)}>
+                <span className="sp-row-card-top">
+                  <OpenTask task={t} w={w} onOpen={onOpen} />
+                  <Word state={t.state} word={taskWord(t.state)} />
+                </span>
+                <span className="sp-muted">
+                  {t.attempt_n !== null && `attempt ${t.attempt_n} · `}
+                  {resourcesLine(t.resources)}
+                </span>
+                {efficiencyLine(t) && <span className="sp-muted">{efficiencyLine(t)}</span>}
+                <FilesButton task={t} onOpen={onOpen} wide />
+              </li>
+            ))}
+          </ul>
+        )}
+        {!!tasks?.length && !phone && (
+          <div className="sp-table-wrap">
+            <table className="sp-table" aria-label={w.Units}>
+              <thead>
+                <tr>
+                  <th scope="col">{w.Unit}</th>
+                  <th scope="col">State</th>
+                  <th scope="col" className="sp-num">Attempt</th>
+                  <th scope="col" className="sp-num">Duration</th>
+                  <th scope="col" className="sp-num" data-narrow="">CPUs</th>
+                  <th scope="col" className="sp-num" data-narrow="">CPU %</th>
+                  <th scope="col" className="sp-num">Memory</th>
+                  <th scope="col">Peak memory</th>
+                  <th scope="col" className="sp-num">Time limit</th>
+                  <th scope="col" className="sp-num sp-nowrap-cell" aria-describedby={effSource}>
+                    CPU eff.
+                  </th>
+                  <th scope="col" className="sp-num sp-nowrap-cell" aria-describedby={effSource}>
+                    Mem eff.
+                  </th>
+                  <th scope="col">
+                    <span className="sp-sr">Files</span>
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {tasks.map((t) => {
+                  const r = t.resources;
+                  const near = nearLimit(r);
+                  return (
+                    <tr key={t.id}>
+                      <td data-rail="" data-tone={tone(t.state)} className="sp-task">
+                        <OpenTask task={t} w={w} onOpen={onOpen} />
+                      </td>
+                      <td>
+                        <Word state={t.state} word={taskWord(t.state)} />
+                      </td>
+                      <td className="sp-num">{t.attempt_n ?? "—"}</td>
+                      <td className="sp-num sp-nowrap-cell">
+                        {seconds(r.realtime_s)}
+                        <NearLimit on={near.time} />
+                      </td>
+                      <td className="sp-num" data-narrow="">{r.cpus ?? "—"}</td>
+                      <td className="sp-num" data-narrow="">{r.cpu_percent === null ? "—" : `${Math.round(r.cpu_percent)} %`}</td>
+                      <td className="sp-num sp-nowrap-cell">{bytes(r.memory_bytes)}</td>
+                      <td className="sp-nowrap-cell">
+                        {bytes(r.peak_rss_bytes)}
+                        <NearLimit on={near.memory} />
+                      </td>
+                      <td className="sp-num sp-nowrap-cell">{seconds(r.time_s)}</td>
+                      <td className="sp-num sp-nowrap-cell">
+                        {percent(t.efficiency?.cpu)}
+                        <Low on={isLow(t.efficiency?.cpu)} />
+                      </td>
+                      <td className="sp-num sp-nowrap-cell">
+                        {percent(t.efficiency?.mem)}
+                        <Low on={isLow(t.efficiency?.mem)} />
+                        <NearLimit on={isNear(t.efficiency?.mem)} />
+                      </td>
+                      <td>
+                        <FilesButton task={t} onOpen={onOpen} />
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {!!tasks?.length && !phone && (
+          <p className="sp-muted">
+            CPU eff. and Mem eff.: <span id={effSource}>{EFF_SOURCE}</span>. "low": under 25 %.
+          </p>
+        )}
+        {!!tasks?.length && (
+          <p className="sp-foot-line">
+            {tasks.length} of {plural(count(TASK_FILTERS[filter].states), w.unit, w.units)}
+          </p>
+        )}
+        {shown?.next && (
+          <div>
+            <Button variant="default" onClick={more}>
+              Load more {w.units}
+            </Button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

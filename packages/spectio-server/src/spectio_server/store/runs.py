@@ -6,12 +6,14 @@ launch 1. The launch endpoint adds its `launch` command; the rebuild gives the s
 """
 
 from datetime import datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 from sqlalchemy import Connection, insert, null, select
 
+from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import RunManifest, run_paths
+from spectio_server.files.results import results_dir
 from spectio_server.ids import new_id
 from spectio_server.store.schema import (
     environments,
@@ -42,6 +44,42 @@ def first(conn: Connection, table: Any) -> str:
     return str(found)
 
 
+def _workflow_id(
+    conn: Connection,
+    project: str,
+    source: str,
+    location: str,
+    engine: str,
+    name: str | None,
+    mine: dict[str, Any],
+) -> str:
+    """The location's `workflows` row, created when missing (one per location, one engine)."""
+    workflow = conn.execute(
+        select(workflows.c.id, workflows.c.engine).where(
+            workflows.c.project_id == project,
+            workflows.c.source == source,
+            workflows.c.location == location,
+        )
+    ).one_or_none()
+    if workflow is not None and workflow.engine != engine:
+        raise EngineConflict(location, workflow.engine)
+    if workflow is not None:
+        return str(workflow.id)
+    workflow_id = new_id("wfl")
+    conn.execute(
+        insert(workflows).values(
+            id=workflow_id,
+            project_id=project,
+            name=name,
+            location=location,
+            source=source,
+            engine=engine,
+            **mine,
+        )
+    )
+    return workflow_id
+
+
 def insert_run(
     conn: Connection,
     m: RunManifest,
@@ -55,35 +93,19 @@ def insert_run(
     workflow_version: str | None = None,
     failure: dict[str, Any] | None = None,
     native_id: str | None = None,
+    default_outdir: str | None = None,
 ) -> str:
-    """Insert the run of manifest `m` and its launch 1; return the launch's ID."""
+    """Insert the run of manifest `m` and its launch 1; return the launch's ID. A Resume's child
+    (`m.parent_run_id`, P1 Task 30) runs in its lineage's directories: those of its parent's row,
+    or, when the rebuild finds no such row, the parent's own. Its results directory (P1 Task 31)
+    follows from its launch directory and its parameters, `default_outdir` standing for a
+    Nextflow `outdir` it does not set (the schema's default); a child's is its parent's row's."""
     mine = {"created_at": now, "created_by": first(conn, principals)}
     project = first(conn, projects)
-    location, engine = m.workflow.location, m.workflow.engine
-    workflow = conn.execute(
-        select(workflows.c.id, workflows.c.engine).where(
-            workflows.c.project_id == project,
-            workflows.c.source == source,
-            workflows.c.location == location,
-        )
-    ).one_or_none()
-    if workflow is not None and workflow.engine != engine:
-        raise EngineConflict(location, workflow.engine)
-    if workflow is not None:
-        workflow_id = workflow.id
-    else:
-        workflow_id = new_id("wfl")
-        conn.execute(
-            insert(workflows).values(
-                id=workflow_id,
-                project_id=project,
-                name=workflow_name,
-                location=location,
-                source=source,
-                engine=engine,
-                **mine,
-            )
-        )
+    engine = m.workflow.engine
+    workflow_id = _workflow_id(
+        conn, project, source, m.workflow.location, engine, workflow_name, mine
+    )
     version_id, launch_id = new_id("wfv"), new_id("lch")
     conn.execute(
         insert(workflow_versions).values(
@@ -95,6 +117,26 @@ def insert_run(
         )
     )
     paths = run_paths(runs_root, m.run_id)
+    launch_dir, work_dir = str(paths.launch_dir), str(paths.work_dir)
+    lineage: dict[str, Any] = {}
+    results = None
+    if m.parent_run_id is not None:
+        parent = conn.execute(
+            select(runs.c.lineage_id, runs.c.launch_dir, runs.c.work_dir, runs.c.results_dir).where(
+                runs.c.id == m.parent_run_id
+            )
+        ).one_or_none()
+        if parent is not None and parent.launch_dir and parent.work_dir:
+            root, launch_dir, work_dir = parent.lineage_id, parent.launch_dir, parent.work_dir
+            results = parent.results_dir  # a Resume changes no parameter (CR-P3T31-04)
+        else:
+            root, own = None, run_paths(runs_root, m.parent_run_id)
+            launch_dir, work_dir = str(own.launch_dir), str(own.work_dir)
+        lineage = {
+            "parent_run_id": m.parent_run_id,
+            "lineage_id": root or m.parent_run_id,
+            "relaunch_mode": "resume",
+        }
     conn.execute(
         insert(runs).values(
             id=m.run_id,
@@ -106,8 +148,11 @@ def insert_run(
             state_changed_at=now,
             failure=null() if failure is None else failure,  # SQL NULL, not JSON null
             origin=origin,
-            launch_dir=str(paths.launch_dir),
-            work_dir=str(paths.work_dir),
+            launch_dir=launch_dir,
+            work_dir=work_dir,
+            results_dir=results
+            or results_dir(engine, m.run_id, runs_root, launch_dir, m.params, default_outdir),
+            **lineage,
             **{**mine, "created_at": m.created_at},
         )
     )
@@ -122,9 +167,51 @@ def insert_run(
             id=launch_id,
             run_id=m.run_id,
             n=1,
-            launch_dir=str(paths.launch_dir),
+            launch_dir=launch_dir,
             head_native_id=native_id,
             **mine,
         )
     )
     return launch_id
+
+
+def insert_observed_run(conn: Connection, run: ObservedRun, now: datetime) -> None:
+    """Insert a run started from a terminal (P1 Task 25, architecture §13.8), `queued` with
+    origin `cli-observed`, and its launch 1 with the pointer's head fields and no native ID:
+    no launcher ever adopts it. Its workflow is its launch directory (the pipeline is not in the
+    pointer); it has no parameters, work directory or results directory in 0.0.1. Raises
+    EngineConflict when that directory is a workflow of the other engine."""
+    mine = {"created_at": now, "created_by": first(conn, principals)}
+    project = first(conn, projects)
+    workflow_id = _workflow_id(conn, project, "local", run.launch_dir, run.engine, None, mine)
+    version_id = new_id("wfv")
+    conn.execute(insert(workflow_versions).values(id=version_id, workflow_id=workflow_id, **mine))
+    conn.execute(
+        insert(runs).values(
+            id=run.run_id,
+            project_id=project,
+            workflow_version_id=version_id,
+            environment_id=first(conn, environments),
+            name=f"{PurePosixPath(run.launch_dir).name or 'terminal'}-{run.run_id[-6:]}",
+            state="queued",
+            state_changed_at=now,
+            origin="cli-observed",
+            launch_dir=run.launch_dir,
+            engine_version=run.engine_version,
+            **mine,
+        )
+    )
+    note_change(conn, run.run_id)
+    conn.execute(
+        insert(launches).values(
+            id=new_id("lch"),
+            run_id=run.run_id,
+            n=1,
+            launch_dir=run.launch_dir,
+            pid=run.pid,
+            pid_start_time=run.pid_start_time,
+            host_boot_id=run.boot_id,
+            head_host=run.host,
+            **mine,
+        )
+    )

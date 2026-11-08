@@ -457,3 +457,22 @@ def inspect(request: Request, location: str, revision: str | None = None) -> dic
         "schema_source": found.schema_source,
         "profiles": found.profiles,
     }
+
+
+def schema_defaults(schema: dict[str, Any] | None) -> dict[str, Any]:
+    """The `default` of each parameter, at the top or in a group of `$defs` / `definitions`
+    (the nf-core layout)."""
+    found: dict[str, Any] = {}
+    if not isinstance(schema, dict):
+        return found
+    groups = [schema]
+    for key in ("$defs", "definitions"):
+        if isinstance(schema.get(key), dict):
+            groups += [g for g in schema[key].values() if isinstance(g, dict)]
+    for group in groups:
+        properties = group.get("properties")
+        if isinstance(properties, dict):
+            for name, prop in properties.items():
+                if isinstance(prop, dict) and "default" in prop:
+                    found.setdefault(name, prop["default"])
+    return found

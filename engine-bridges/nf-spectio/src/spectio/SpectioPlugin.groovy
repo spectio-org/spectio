@@ -6,9 +6,14 @@
  * throw), §13.4 (floor 25.04, in build.sh). Ported from the spike T2 prototype (branch
  * spike/engine-events), which posted each event over HTTP.
  *
- * The plugin is silent unless SPECTIO_RUN_ID, SPECTIO_LAUNCH_N and SPECTIO_SPOOL_DIR are set.
+ * A driven run sets SPECTIO_RUN_ID, SPECTIO_LAUNCH_N and SPECTIO_SPOOL_DIR. With none of them, the
+ * run was started from a terminal (architecture §13.8): the plugin makes a run ID, writes the
+ * spool in <launch dir>/.spectio/events/<run ID>-nf-spectio-<nnnn>.jsonl, launch 1, and the
+ * pointer ~/.spectio/observed/<run ID>.json, so the server finds the run.
  * Hooks build a small map of allow-listed values and enqueue it; one writer thread appends the
  * lines and rotates. Every Throwable is caught; errors go to <spool dir>/../bridge.err.
+ * Every file is opened relative to a checked directory, never through a symlink (dev-env §15.3
+ * req. 12): .spectio and events must be private directories of the user.
  * Never sent: the task's script and env (P1 Assumption 3), the error report, and the error
  * message when it is the failing task's stderr (SEC-P3T1-09, FU-P3-08).
  */
@@ -16,14 +21,21 @@ package spectio
 
 import groovy.json.JsonOutput
 import java.nio.ByteBuffer
-import java.nio.channels.FileChannel
+import java.nio.channels.SeekableByteChannel
 import java.nio.charset.StandardCharsets
 import java.nio.file.FileAlreadyExistsException
 import java.nio.file.Files
 import java.nio.file.LinkOption
+import java.nio.file.NoSuchFileException
+import java.nio.file.OpenOption
 import java.nio.file.Path
 import java.nio.file.Paths
+import java.nio.file.SecureDirectoryStream
 import java.nio.file.StandardOpenOption
+import java.nio.file.attribute.BasicFileAttributeView
+import java.nio.file.attribute.FileAttribute
+import java.nio.file.attribute.PosixFileAttributeView
+import java.nio.file.attribute.PosixFilePermission
 import java.nio.file.attribute.PosixFilePermissions
 import java.security.SecureRandom
 import java.time.Instant
@@ -69,16 +81,29 @@ class Spool {
     private final Thread thread
     private final AtomicLong dropped = new AtomicLong()
 
-    /** null when this is not a driven run (no variable set) or a variable is invalid. */
+    /** A driven run's spool, or a terminal run's (no variable set); null when a variable is
+     *  invalid, or a terminal run's spool directory is refused. */
     static Spool fromEnv(Map<String, String> env) {
         final run = env.SPECTIO_RUN_ID, launch = env.SPECTIO_LAUNCH_N, dir = env.SPECTIO_SPOOL_DIR
         if (!run && !launch && !dir)
-            return null
+            return terminal(Paths.get(System.getProperty('user.dir')).toAbsolutePath().normalize(),
+                            Paths.get(env.HOME ?: System.getProperty('user.home')))
         if (!(run ==~ /run_[0-7][0-9A-HJKMNP-TV-Z]{25}/) || !(launch ==~ /[1-9][0-9]{0,18}/) || !dir) {
             System.err.println('nf-spectio: disabled: SPECTIO_RUN_ID, SPECTIO_LAUNCH_N or SPECTIO_SPOOL_DIR is invalid')
             return null
         }
         return new Spool(new SpoolWriter(Paths.get(dir), run, Long.parseLong(launch), SpoolWriter.ROTATE_BYTES))
+    }
+
+    /** A run started from a terminal in `launchDir`: a new run ID, launch 1, and the pointer. */
+    static Spool terminal(Path launchDir, Path home) {
+        final run = 'run_' + SpoolWriter.ulid(System.currentTimeMillis())
+        final writer = new SpoolWriter(launchDir.resolve('.spectio').resolve('events'), run, 1L,
+                                       SpoolWriter.ROTATE_BYTES, true)
+        if (!writer.start())
+            return null  // said once; no spool, so no pointer: nothing to show
+        Pointer.write(writer, launchDir, home)
+        return new Spool(writer)
     }
 
     Spool(SpoolWriter writer) {
@@ -135,38 +160,139 @@ class Spool {
     }
 }
 
-/** Appends envelopes to <dir>/nf-spectio-<launch>-<nnnn>.jsonl (api §14.1). One thread only. */
+/** `~/.spectio/observed/<run ID>.json` of a terminal run (architecture §13.8). */
+class Pointer {
+    /** Written 0600 under a temporary name, then renamed, only when ~/.spectio and observed/
+     *  (made 0700) are private directories of the user (req. 12). No ~/.spectio: no pointer,
+     *  silently. Any other error is said once in bridge.err and swallowed (architecture §13.3). */
+    static void write(SpoolWriter writer, Path launchDir, Path home) {
+        final run = writer.run
+        SecureDirectoryStream<Path> top = null, spectio = null, observed = null
+        try {
+            top = SpoolWriter.openDir(home)
+            try {
+                spectio = SpoolWriter.privateDir(top, home, '.spectio', false)
+            } catch (NoSuchFileException ignored) {
+                return  // Spectio is not installed: the spool only
+            }
+            observed = SpoolWriter.privateDir(spectio, home.resolve('.spectio'), 'observed', true)
+            final stat = new File('/proc/self/stat').text
+            final data = [run_id: run, launch_dir: launchDir.toString(), engine: 'nextflow',
+                          engine_version: BuildInfo.version?.toString(),
+                          bridge_version: SpoolWriter.PRODUCER.split('/')[1],
+                          host: new File('/proc/sys/kernel/hostname').text.trim(),
+                          pid: ProcessHandle.current().pid(),
+                          pid_start_time: stat.substring(stat.lastIndexOf(') ') + 2).trim().split(' ')[19],
+                          boot_id: new File('/proc/sys/kernel/random/boot_id').text.trim()]
+            final tmp = Paths.get(".${run}.json.tmp".toString())
+            final options = [StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW, LinkOption.NOFOLLOW_LINKS] as Set<OpenOption>
+            final ch = observed.newByteChannel(tmp, options, SpoolWriter.PRIVATE_FILE)
+            try {
+                final buf = ByteBuffer.wrap(JsonOutput.toJson(data).getBytes(StandardCharsets.UTF_8))
+                while (buf.hasRemaining())
+                    ch.write(buf)
+            } finally {
+                ch.close()
+            }
+            observed.move(tmp, observed, Paths.get("${run}.json".toString()))
+        } catch (Throwable e) {
+            writer.error("no pointer written in ~/.spectio/observed: $e")
+        } finally {
+            for (d in [observed, spectio, top]) {
+                try { d?.close() } catch (Throwable ignored) {}
+            }
+        }
+    }
+}
+
+/** Appends envelopes to <dir>/nf-spectio-<launch>-<nnnn>.jsonl, a terminal run's to
+ *  <dir>/<run ID>-nf-spectio-<nnnn>.jsonl (api §14.1). One thread only. */
 class SpoolWriter {
     static final String PRODUCER = 'nf-spectio/0.0.1'
     static final int MAX_LINE_BYTES = 65536
     static final long ROTATE_BYTES = 33554432
     static final int MAX_ERROR_LINES = 100
     private static final String CROCKFORD = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
-    private static final def PRIVATE_DIR = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString('rwx------'))
-    private static final def PRIVATE_FILE = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString('rw-------'))
+    static final FileAttribute PRIVATE_DIR = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString('rwx------'))
+    static final FileAttribute PRIVATE_FILE = PosixFilePermissions.asFileAttribute(PosixFilePermissions.fromString('rw-------'))
+    private static final Set<PosixFilePermission> NOT_PRIVATE = PosixFilePermissions.fromString('---rwxrwx')
+    private static final SecureRandom RANDOM = new SecureRandom()
+    private static final Path ERR = Paths.get('bridge.err')
 
     private final Path dir
-    private final Path errFile
-    private final String run
+    final String run
     private final long launch
     private final long rotateBytes
-    private final SecureRandom random = new SecureRandom()
-    private FileChannel out
+    private final boolean terminal
+    private SecureDirectoryStream<Path> parentDir  // .spectio, which holds bridge.err
+    private SecureDirectoryStream<Path> eventsDir
+    private boolean broken  // the directory was refused: nothing more is tried
+    private SeekableByteChannel out
     private Path path
     private long size
     private int index
     private long seq
     private int errors
 
-    SpoolWriter(Path dir, String run, long launch, long rotateBytes) {
+    SpoolWriter(Path dir, String run, long launch, long rotateBytes, boolean terminal = false) {
         this.dir = dir
-        this.errFile = dir.parent.resolve('bridge.err')
         this.run = run
         this.launch = launch
         this.rotateBytes = rotateBytes
+        this.terminal = terminal
+    }
+
+    /** `dir` as given (the launch directory or the home, not checked). */
+    static SecureDirectoryStream<Path> openDir(Path dir) {
+        final ds = Files.newDirectoryStream(dir)
+        if (ds instanceof SecureDirectoryStream)
+            return (SecureDirectoryStream<Path>) ds
+        ds.close()
+        throw new IOException("$dir: no secure directory stream on this file system")
+    }
+
+    /** `name` in `parent` (at `parentPath`), made 0700 when `create`; refused unless a directory
+     *  of this user that group and others cannot use, opened without following a symlink. */
+    static SecureDirectoryStream<Path> privateDir(SecureDirectoryStream<Path> parent, Path parentPath, String name, boolean create) {
+        if (create) {
+            try {
+                Files.createDirectory(parentPath.resolve(name), PRIVATE_DIR)
+            } catch (FileAlreadyExistsException ignored) {
+            }
+        }
+        final ds = parent.newDirectoryStream(Paths.get(name), LinkOption.NOFOLLOW_LINKS)
+        final attrs = ds.getFileAttributeView(PosixFileAttributeView).readAttributes()
+        final me = parentPath.fileSystem.userPrincipalLookupService.lookupPrincipalByName(System.getProperty('user.name'))
+        if (attrs.owner() != me || !attrs.permissions().disjoint(NOT_PRIVATE)) {
+            ds.close()
+            throw new IOException("$name is not a private directory of yours (${attrs.owner()}, ${PosixFilePermissions.toString(attrs.permissions())})")
+        }
+        return ds
+    }
+
+    /** Open .spectio and events, once; false, with one line said, when refused. */
+    synchronized boolean start() {
+        if (eventsDir != null || broken)
+            return !broken
+        SecureDirectoryStream<Path> top = null
+        try {
+            final spectio = dir.parent
+            Files.createDirectories(spectio.parent)  // the launch directory, as given
+            top = openDir(spectio.parent)
+            parentDir = privateDir(top, spectio.parent, spectio.fileName.toString(), true)
+            eventsDir = privateDir(parentDir, spectio, dir.fileName.toString(), true)
+        } catch (Throwable e) {  // read-only, refused, a symlink: no event of this launch
+            broken = true
+            error("the spool directory is refused, no events are written: $e")
+        } finally {
+            try { top?.close() } catch (Throwable ignored) {}
+        }
+        return !broken
     }
 
     synchronized void write(String type, long ms, Map data) {
+        if (!start())
+            return
         try {
             final envelope = [v: 1, id: 'evt_' + ulid(ms), run: run, launch: launch, producer: PRODUCER,
                               seq: seq + 1, time: Instant.ofEpochMilli(ms).toString(), type: type, data: data]
@@ -194,9 +320,17 @@ class SpoolWriter {
                 } catch (Throwable ignored) {
                     close()
                 }
-                if (!Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS))
+                if (!isRegularFile(eventsDir, path))
                     close()
             }
+        }
+    }
+
+    private static boolean isRegularFile(SecureDirectoryStream<Path> ds, Path name) {
+        try {
+            return ds.getFileAttributeView(name, BasicFileAttributeView, LinkOption.NOFOLLOW_LINKS).readAttributes().regularFile
+        } catch (IOException ignored) {
+            return false
         }
     }
 
@@ -204,17 +338,18 @@ class SpoolWriter {
      *  current file instead while it is still empty. */
     private void next() {
         close()
-        if (path != null && size == 0 && Files.isRegularFile(path, LinkOption.NOFOLLOW_LINKS)) {
-            out = open(path)
+        if (path != null && size == 0 && isRegularFile(eventsDir, path)) {
+            out = eventsDir.newByteChannel(path, [StandardOpenOption.WRITE, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS] as Set<OpenOption>)
             return
         }
-        Files.createDirectories(dir, PRIVATE_DIR)
+        final options = [StandardOpenOption.WRITE, StandardOpenOption.APPEND, StandardOpenOption.CREATE_NEW, LinkOption.NOFOLLOW_LINKS] as Set<OpenOption>
         while (true) {
             if (index >= 9999)
                 throw new IOException('no spool file index left')
-            final candidate = dir.resolve(String.format('nf-spectio-%d-%04d.jsonl', launch, index + 1))
+            final candidate = Paths.get(terminal ? String.format('%s-nf-spectio-%04d.jsonl', run, index + 1)
+                                                 : String.format('nf-spectio-%d-%04d.jsonl', launch, index + 1))
             try {
-                Files.createFile(candidate, PRIVATE_FILE)
+                out = eventsDir.newByteChannel(candidate, options, PRIVATE_FILE)
             } catch (FileAlreadyExistsException ignored) {
                 index++
                 continue
@@ -222,13 +357,8 @@ class SpoolWriter {
             index++
             path = candidate
             size = 0
-            out = open(path)
             return
         }
-    }
-
-    private static FileChannel open(Path p) {
-        FileChannel.open(p, StandardOpenOption.WRITE, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS)
     }
 
     synchronized void close() {
@@ -241,6 +371,7 @@ class SpoolWriter {
 
     /** One line in bridge.err, at most MAX_ERROR_LINES of them; never throws. */
     synchronized void error(String message) {
+        start()
         if (errors++ < MAX_ERROR_LINES)
             log(message)
     }
@@ -253,25 +384,34 @@ class SpoolWriter {
             log("$dropped events dropped: the queue was full")
     }
 
+    /** In .spectio/bridge.err, opened relative to the checked .spectio; on stderr without it. */
     private void log(String message) {
         try {
+            if (parentDir == null)
+                throw new IOException('.spectio is not open')
             try {
-                Files.createFile(errFile, PRIVATE_FILE)
+                parentDir.newByteChannel(ERR, [StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW, LinkOption.NOFOLLOW_LINKS] as Set<OpenOption>, PRIVATE_FILE).close()
             } catch (FileAlreadyExistsException ignored) {
             }
             // A FIFO or device in its place would block the open forever (SEC-P3T06-02).
-            if (!Files.isRegularFile(errFile, LinkOption.NOFOLLOW_LINKS))
-                throw new IOException("$errFile is not a regular file")
-            final line = "${Instant.now()} nf-spectio: $message\n".toString().getBytes(StandardCharsets.UTF_8)
-            Files.write(errFile, line, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS)
+            if (!isRegularFile(parentDir, ERR))
+                throw new IOException("${dir.parent.resolve(ERR)} is not a regular file")
+            final ch = parentDir.newByteChannel(ERR, [StandardOpenOption.WRITE, StandardOpenOption.APPEND, LinkOption.NOFOLLOW_LINKS] as Set<OpenOption>)
+            try {
+                final buf = ByteBuffer.wrap("${Instant.now()} nf-spectio: $message\n".toString().getBytes(StandardCharsets.UTF_8))
+                while (buf.hasRemaining())
+                    ch.write(buf)
+            } finally {
+                ch.close()
+            }
         } catch (Throwable e) {
             System.err.println("nf-spectio: $message ($e)")
         }
     }
 
-    private String ulid(long ms) {
+    static String ulid(long ms) {
         final rnd = new byte[10]
-        random.nextBytes(rnd)
+        RANDOM.nextBytes(rnd)
         BigInteger n = BigInteger.valueOf(ms).shiftLeft(80).or(new BigInteger(1, rnd))
         final chars = new char[26]
         for (int i = 25; i >= 0; i--) {
@@ -293,7 +433,12 @@ class SpectioObserver implements TraceObserverV2 {
         'queue', '%cpu', '%mem', 'rss', 'vmem', 'peak_rss', 'peak_vmem', 'rchar', 'wchar', 'syscr', 'syscw',
         'read_bytes', 'write_bytes', 'vol_ctxt', 'inv_ctxt', 'workdir', 'scratch', 'error_action',
         'cpu_model', 'accelerator', 'accelerator_type']
+    // Every task hook (P1 Task 28), and the request the trace record carries from submission
+    // on (TaskHandler.groovy:203-231, v26.10.4; P1 Task 33); the measured keys are final only.
     static final List<String> WHERE_KEYS = ['native_id', 'workdir']
+    static final List<String> REQUEST_KEYS = ['cpus', 'memory', 'time', 'disk', 'queue', 'accelerator',
+                                              'accelerator_type', 'attempt']
+    static final int MAX_CONFIG_DEPTH = 8
 
     private final Spool spool
     private volatile Session session
@@ -325,7 +470,7 @@ class SpectioObserver implements TraceObserverV2 {
         // Every task event carries the work directory and the executor's job ID (P1 Task 28):
         // the trace record of the other hooks is cut to those two (TaskHandler.groovy:218,
         // GridTaskHandler.groovy:528, nextflow v26.10.4).
-        data.trace = trace(ev?.trace?.store, withTrace ? TRACE_KEYS : WHERE_KEYS)
+        data.trace = trace(ev?.trace?.store, withTrace ? TRACE_KEYS : WHERE_KEYS + REQUEST_KEYS)
         return data
     }
 
@@ -340,9 +485,22 @@ class SpectioObserver implements TraceObserverV2 {
         return out
     }
 
+    /** True when the process config, or one of its selectors (`withName:`, `withLabel:`), sets
+     *  `clusterOptions`. Raw sbatch text: only that it is set is sent (SEC-P3T1-11). A directive
+     *  written in the script itself is not in the config, so not seen here. */
+    static boolean setsClusterOptions(Object config, int depth = 0) {
+        if (!(config instanceof Map) || depth > MAX_CONFIG_DEPTH)
+            return false
+        return ((Map) config).any { k, v -> k == 'clusterOptions' ? v != null : setsClusterOptions(v, depth + 1) }
+    }
     @Override void onFlowCreate(Session s) {
         session = s
-        emit('onFlowCreate') { [nextflow: str(BuildInfo.version), resume: s.resumeMode as Boolean, workDir: str(s.workDir)] }
+        emit('onFlowCreate') {
+            // As Session.cleanup() reads it: `!config.cleanup` by Groovy truth (Session.groovy:1375-1410;
+            // its bytecode read in the 26.10.4 jar, 2026-11-07).
+            [nextflow: str(BuildInfo.version), resume: s.resumeMode as Boolean, workDir: str(s.workDir),
+             cleanup: s.config?.cleanup ? true : false, clusterOptionsSet: setsClusterOptions(s.config?.process)]
+        }
     }
 
     @Override void onFlowBegin() { emit('onFlowBegin') { [:] } }

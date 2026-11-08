@@ -82,7 +82,7 @@ def ingest(
             if engine == "nextflow":
                 nextflow.project(p, hook, data)
             else:
-                snakemake.project(p, data)
+                snakemake.project(p, data, hook)
         except OperationalError:
             raise  # a storage fault: the whole batch rolls back and the cursor stays
         except Exception:
@@ -105,7 +105,8 @@ def apply_head_report(conn: Connection, launch_id: str, report: HeadReport) -> N
     `engine_fault`), whose open attempts then fail with class `head_lost`. A head that ends
     while the run is `cancelling` makes it `cancelled`. A Snakemake head's exit code ends its
     launch (P1 Assumption 16), even when the report also carries a `head_lost` or `engine_fault`
-    failure: a Snakemake head never writes a terminal engine event (CR-P3T05-01). A terminal
+    failure: a Snakemake head never writes a terminal engine event (CR-P3T05-01). A Snakemake run
+    started from a terminal has no exit code: its spool ends it (inbox #113). A terminal
     run does not move, and the engine's own end (`head_state` set by `onFlowComplete`) is kept.
     """
     p = Projection.load(conn, launch_id)
@@ -134,6 +135,14 @@ def apply_head_report(conn: Connection, launch_id: str, report: HeadReport) -> N
         and snakemake.drives(p)
     ):  # a Snakemake head never writes a terminal event: its exit code wins (CR-P3T05-01)
         snakemake.head_exit(p, report.exit_code)
+    elif (
+        report.ended
+        and report.exit_code is None
+        and (failure is None or failure.class_ in HEAD_FAILURES)
+        and snakemake.drives(p)
+        and snakemake.from_terminal(p)
+    ):  # a terminal run has no exit code: its spool ends it (CR-P3T25-01, inbox #113)
+        snakemake.spool_end(p)
     elif failure is not None and p.state in ("queued", "running"):
         if failure.class_ in HEAD_FAILURES:
             p.end_launch("failed", "head_lost")

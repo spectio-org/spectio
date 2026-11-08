@@ -1,12 +1,11 @@
 export const meta = {
   name: 'p3-task',
-  description: 'Build one P3 task (one P1 plan task) end to end: TDD build, code and security review with fix rounds, simplify, docs, figure and doc review',
-  whenToUse: 'The autopilot runs it once per P3 task (docs/playbooks/autopilot.md §10). The orchestrator then pushes, opens the PR, merges and promotes.',
+  description: 'Build one P3 task (one P1 plan task): TDD build, code review (security review when the diff touches a sensitive path), one fix round, short docs',
+  whenToUse: 'The autopilot runs it once per P3 task (docs/playbooks/autopilot.md §10, §11). The orchestrator then pushes, opens the PR and merges; simplify, figure, doc review and promotion run once per batch (p3-batch).',
   phases: [
     { title: 'Build', detail: 'worker in its own git worktree, test-driven' },
-    { title: 'Review', detail: 'code-reviewer and security-reviewer in parallel, fix rounds' },
-    { title: 'Simplify', detail: 'code-simplifier on the step diff' },
-    { title: 'Docs', detail: 'doc-writer and diagram-artist, docs gate, doc-reviewer' },
+    { title: 'Review', detail: 'code-reviewer, plus security-reviewer on sensitive paths, fix rounds' },
+    { title: 'Docs', detail: 'doc-writer: review record, short Progress section, owning spec, PR body' },
   ],
 }
 
@@ -14,12 +13,29 @@ export const meta = {
 //   step: "P3-t04"; task: "Task 4: Projector, run state and Nextflow mapping" (the P1 heading);
 //   base: full sha of the integration tip; title: Conventional Commit PR title;
 //   extra: deferred findings and follow-ups this task takes (text); session: the Claude-Session URL;
-//   font: path of the sketch font (tools/diagrams/sketch.py, SPECTIO_SKETCH_TTF).
+//   security: 'always' to force the security review (the dev-env §15.3 tasks); otherwise it runs
+//   when a changed path matches SENSITIVE (autopilot.md §11, decision of 2026-11-04).
 const A = args
 const branch = `autopilot/${A.step}`
 const wt = `.claude/worktrees/${A.step}`
 const trailer = `End every commit message with these two lines:\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>\nClaude-Session: ${A.session}`
-const gate = 'uv run pytest -q; uv run ruff check .; uv run ruff format --check .; uv run mypy packages; uv run lint-imports; uv lock --check'
+const gate = 'uv run pytest -q; uv run ruff check .; uv run ruff format --check .; uv run mypy packages; uv run lint-imports; uv lock --check; (cd web && npx vitest run && npx tsc --noEmit)'
+
+// The owner of the sensitive-path list (autopilot.md §11 links here). A change to any of these paths gets
+// a security review: the HTTP surface and how it is served, file access, what is read from run directories
+// and spool input, stage and lab config, the runner and login shell, migrations, the web views of untrusted
+// content, the engine bridges, CI, dependencies, and anything named like a secret.
+const SENSITIVE = [
+  /^packages\/spectio-server\/src\/spectio_server\/(api|files|migrations|stages)\//,
+  /^packages\/spectio-server\/src\/spectio_server\/(app|serve|static|bootstrap|resume|rebuild)\.py$/,
+  /^packages\/spectio-server\/src\/spectio_server\/projector\/ingest\.py$/,
+  /^packages\/spectio\/src\/spectio\/(runner\/|loginshell\.py|config\.py|open_remote\.py|cli\/(serve|open)\.py)/,
+  /^web\/src\/(runs\/(ReportViewer|LogViewer|ResultsBrowser)|api)\./,
+  /^engine-bridges\//, /^\.github\//, /^tools\/ci\//, /(^|\/)(pyproject\.toml|uv\.lock|package(-lock)?\.json)$/,
+  /auth|token|secret|session|sandbox|plugin|permission/i,
+]
+const touched = new Set()
+const needSecurity = () => A.security === 'always' || [...touched].some(p => SENSITIVE.some(r => r.test(p)))
 
 const FINDINGS = {
   type: 'object',
@@ -31,6 +47,7 @@ const FINDINGS = {
       defect: { type: 'boolean', description: 'true when it is a wrong result or regression in this step\'s own code, not style' },
     }, required: ['id', 'severity', 'summary', 'defect'] } },
     report: { type: 'string', description: 'the full review text, as it should be saved in the review record' },
+    changed_paths: { type: 'array', items: { type: 'string' }, description: 'git diff --name-only of the reviewed range, every line' },
   },
   required: ['verdict', 'findings', 'report'],
 }
@@ -38,19 +55,11 @@ const BUILD = {
   type: 'object',
   properties: {
     head: { type: 'string' }, tests: { type: 'string' }, test_command: { type: 'string' },
+    changed_paths: { type: 'array', items: { type: 'string' }, description: 'git diff --name-only BASE..HEAD, every line' },
     report: { type: 'string', description: 'what was built, commands run with results, assumptions, open questions' },
   },
-  required: ['head', 'tests', 'test_command', 'report'],
+  required: ['head', 'tests', 'test_command', 'changed_paths', 'report'],
 }
-const DOCREVIEW = {
-  type: 'object',
-  properties: {
-    verdict: { type: 'string', enum: ['approve', 'changes', 'block'] }, score: { type: 'integer' },
-    required_changes: { type: 'array', items: { type: 'string' } }, report: { type: 'string' },
-  },
-  required: ['verdict', 'score', 'required_changes', 'report'],
-}
-
 phase('Build')
 let build = await agent(
   `Build Spectio step ${A.step}: P1 plan "### ${A.task}" in docs/plans/P1-walking-skeleton.md (see P2-execution.md §0 for how P3 runs P1 tasks).
@@ -58,31 +67,47 @@ Create a git worktree: \`git worktree add ${wt} -b ${branch} ${A.base}\` (from t
 Also in scope: ${A.extra || 'nothing else'}.
 Read the owning specs the task names and the earlier P3 review records in docs/reviews/code/ for the standard this code will meet.
 Follow karpathy-guidelines, test-driven-development (show the failing run first) and verification-before-completion. Do not write docs pages.
-Run the gate before finishing: ${gate}. Never push, never force-push, never bypass hooks, no model identifier in commits. ${trailer}`,
+Run the gate before finishing: ${gate}. If you add, rename or remove a file under packages/*/src/, update tests/packaging/contents/<package>.wheel.txt to match (the CI product job runs tests/packaging/test_wheel.sh and fails on any difference). Never push, never force-push, never bypass hooks, no model identifier in commits. ${trailer}`,
   { label: `build ${A.step}`, agentType: 'general-purpose', schema: BUILD })
+build.changed_paths.forEach(p => touched.add(p))
 
 const reviewPrompt = (kind, range) => `${kind} the Spectio build step ${A.step} ("${A.task}" in docs/plans/P1-walking-skeleton.md) in the worktree ${wt} (branch ${branch}).
 Review the diff ${range}. Also in scope: ${A.extra || 'nothing else'}. Worker's report:\n${build.report}
 Test command: ${build.test_command}. Number your findings ${kind === 'Review' ? 'CR' : 'SEC'}-${A.step.replace('-', '').toUpperCase()}-NN, continuing after any IDs already in docs/reviews/code/${A.step}.md.`
-const review = (range) => parallel([
-  () => agent(reviewPrompt('Review', range), { label: 'code-reviewer', phase: 'Review', agentType: 'code-reviewer', schema: FINDINGS }),
-  () => agent(reviewPrompt('Security-review', range), { label: 'security-reviewer', phase: 'Review', agentType: 'security-reviewer', schema: FINDINGS }),
-])
-const fix = (items, why) => agent(
-  `In the worktree ${wt} (branch ${branch}), fix these review findings of step ${A.step} (${why}), test-first, then run the gate (${gate}) and commit:\n${items.map(f => `- ${f.id} (${f.severity}) ${f.summary} ${f.where || ''} Fix: ${f.fix || ''}`).join('\n')}
+// verdicts[0] is the code review; verdicts[1], when present, the security review. The code reviewer also
+// lists the changed paths, so the trigger does not rest only on the worker's own list; a sensitive path
+// found that way starts the security review at once, on the whole step.
+const secReview = (range) => agent(reviewPrompt('Security-review', range), { label: 'security-reviewer', phase: 'Review', agentType: 'security-reviewer', schema: FINDINGS })
+const review = async (range) => {
+  const ran = needSecurity()
+  const out = await parallel([
+    () => agent(reviewPrompt('Review', range), { label: 'code-reviewer', phase: 'Review', agentType: 'code-reviewer', schema: FINDINGS }),
+    ...(ran ? [() => secReview(range)] : []),
+  ])
+  if (out[0]) (out[0].changed_paths || []).forEach(p => touched.add(p))
+  if (!ran && needSecurity()) out.push(await secReview(`${A.base}..HEAD`))
+  return out
+}
+const fix = async (items, why) => {
+  const out = await agent(
+    `In the worktree ${wt} (branch ${branch}), fix these review findings of step ${A.step} (${why}), test-first, then run the gate (${gate}) and commit:\n${items.map(f => `- ${f.id} (${f.severity}) ${f.summary} ${f.where || ''} Fix: ${f.fix || ''}`).join('\n')}
 Keep each fix minimal. If a finding is wrong, say why instead of changing code. ${trailer}`,
-  { label: `fix ${why}`, phase: 'Review', agentType: 'general-purpose', schema: BUILD })
+    { label: `fix ${why}`, phase: 'Review', agentType: 'general-purpose', schema: BUILD })
+  out.changed_paths.forEach(p => touched.add(p))
+  return out
+}
 
 const rounds = []
 let verdicts = await review(`${A.base}..HEAD`)
 if (verdicts.some(v => !v)) throw new Error('a reviewer returned nothing')
 rounds.push(verdicts)
-// review-code step 4: two fix rounds, more while a security blocker or major is open (inbox #75), never more than 4.
+// review-code step 4: one fix round, more while a security blocker or major is open (inbox #75; one round
+// since 2026-11-04, autopilot.md §11), never more than 4. Unfixed minors go to the batch's follow-up list.
 for (let r = 1; r <= 4; r++) {
   const open = verdicts.filter(Boolean).flatMap(v => v.findings).filter(f => f.severity === 'blocker' || f.severity === 'major')
   const secOpen = (verdicts[1]?.findings || []).some(f => f.severity === 'blocker' || f.severity === 'major')
   if (!open.length) break  // the fix loop is for blockers and majors only (review-code step 4)
-  if (r > 2 && !secOpen) return { status: 'blocked', reason: 'two fix rounds without approval', rounds, build }
+  if (r > 1 && !secOpen) return { status: 'blocked', reason: 'one fix round without approval', rounds, build }
   if (r === 4) return { status: 'blocked', reason: 'four rounds and a security finding still open', rounds, build }
   build = await fix(open, `round ${r}`)
   verdicts = await review(`${A.base}..HEAD`)
@@ -108,40 +133,17 @@ if (defects.length) {
   }
 }
 
-phase('Simplify')
-const simplifyIn = rounds.flat().filter(Boolean).flatMap(v => v.findings).filter(f => f.severity === 'simplify')
-const simplify = await agent(
-  `Simplify step ${A.step} in the worktree ${wt} (branch ${branch}): only the diff ${A.base}..HEAD, never behaviour, public names or tests of kept code.
-Findings to consider: ${simplifyIn.map(f => `${f.id}: ${f.summary} ${f.where || ''}`).join('; ') || 'none named'}. Test command: ${gate}. ${trailer}
-Return the SIMPLIFY line (result=changed|reverted, -n/+n, tests=pass|fail) and the new HEAD.`,
-  { label: 'code-simplifier', agentType: 'code-simplifier' })
-
+// Simplify, the figure, doc-reviewer and the promotion run once per batch (p3-batch.js, autopilot.md §11).
 phase('Docs')
 const evidence = `Step ${A.step} (wave W5, kind build), worktree ${wt}, branch ${branch}, BASE ${A.base}. Use git log/diff BASE..HEAD for the code.
-Worker report:\n${build.report}\nReview rounds (verdicts and findings, all saved to docs/reviews/code/${A.step}.md):\n${rounds.map((rv, i) => `Round ${i + 1}: ${rv.filter(Boolean).map(v => `${v.verdict}: ${v.findings.map(f => `${f.id} ${f.severity} ${f.summary}`).join(' | ')}`).join(' || ')}`).join('\n')}
-Simplifier: ${simplify}`
-const [docs] = await parallel([
-  () => agent(`Write the docs for ${evidence}
-Follow docs/specs/documentation-system.md and how Tasks 1-3 are documented: a section of docs/progress/W5/P3-M1.md, the review record docs/reviews/code/${A.step}.md with its CODE line, the owning spec updated where behaviour was decided (new numbers marked assumed or [to be validated]; a question with no safe default goes to docs/reviews/inbox.md as a new entry with options, the recommendation assumed). A diagram-artist draws docs/assets/diagrams/${A.step.toLowerCase()}-*_{light,dark}.png in parallel on the branch: embed it first under the !!! line when it exists.
-Run python3 tools/docs/check.py and uvx --with mkdocs-material mkdocs build --strict. Write the PR body (title "${A.title}") to docs-pr-body.md at the worktree root but do not commit that file; it needs a Markdown image line to the figure on raw.githubusercontent.com/spectio-org/spectio/<sha>/... and preview links https://pr-PR_NUMBER.spectio.pages.dev/...; check it with tools/docs/check.py --only pr-body. ${trailer}`,
-    { label: 'doc-writer', phase: 'Docs', agentType: 'doc-writer' }),
-  () => agent(`Draw one figure for ${evidence}
-Follow tools/diagrams/p3_t03_spool_reader.py: a script tools/diagrams/${A.step.toLowerCase().replace('-', '_')}_<name>.py producing docs/assets/diagrams/${A.step.toLowerCase()}-<name>_{light,dark}.{svg,png}, a docs/assets/media.yaml entry, pictograms not boxes, every label checked against the code. Render with SPECTIO_SKETCH_TTF=${A.font} uv run --no-project --with playwright python <script>; look at the PNGs. Commit on the branch. ${trailer}`,
-    { label: 'diagram-artist', phase: 'Docs', agentType: 'diagram-artist' }),
-])
+Worker report:\n${build.report}\nSecurity review: ${needSecurity() ? 'ran' : 'skipped, no sensitive path changed (autopilot.md §11)'}.
+Review rounds (verdicts and findings, all saved to docs/reviews/code/${A.step}.md):\n${rounds.map((rv, i) => `Round ${i + 1}: ${rv.filter(Boolean).map(v => `${v.verdict}: ${v.findings.map(f => `${f.id} ${f.severity} ${f.summary}`).join(' | ')}`).join(' || ')}`).join('\n')}`
+const docs = await agent(`Write the short per-task docs for ${evidence}
+This is the per-task part of docs/specs/documentation-system.md §3.5; the figure, media, the full Progress page and doc-reviewer come later, once per batch. Write only:
+- the review record docs/reviews/code/${A.step}.md with its CODE line (security=skipped when it did not run);
+- a short section for this task in the milestone's Progress page under docs/progress/W5/ (What changed in a few bullets, the CODE line, links to the review record and the owning spec); no figure;
+- the owning spec where behaviour was decided (new numbers marked assumed or [to be validated]; a question with no safe default goes to docs/reviews/inbox.md as a new entry with options, the recommendation assumed).
+Run python3 tools/docs/check.py and uvx --with mkdocs-material mkdocs build --strict. Write the PR body (title "${A.title}") to docs-pr-body.md at the worktree root but do not commit that file; it carries no figure: say "Figure: in the batch docs PR" under Docs, and the PR gets the no-figure label. check it with \`python3 tools/docs/check.py --only pr-body --pr-title "${A.title}" --pr-body docs-pr-body.md --changed <(git diff --name-only ${A.base}..HEAD) --labels no-figure\`. ${trailer}`,
+  { label: 'doc-writer', phase: 'Docs', agentType: 'doc-writer' })
 
-let docReview
-for (let r = 0; r <= 2; r++) {
-  docReview = await agent(`Review the documentation of ${evidence}
-Changed pages: see git diff --stat ${A.base}..HEAD -- docs tools/diagrams. PR body draft: ${wt}/docs-pr-body.md. Rubric: docs/specs/documentation-system.md §4.2. Re-run sampled commands, open every figure, check claims against the code, run tools/docs/check.py and mkdocs build --strict.`,
-    { label: `doc-reviewer ${r + 1}`, phase: 'Docs', agentType: 'doc-reviewer', schema: DOCREVIEW })
-  if (docReview.verdict === 'block') return { status: 'blocked', reason: 'doc-reviewer block', docReview, rounds, build }
-  if (!docReview.required_changes.length) break
-  if (r === 2 && docReview.verdict !== 'approve') return { status: 'blocked', reason: 'two doc revisions without approval', docReview, rounds, build }
-  await agent(`In the worktree ${wt} (branch ${branch}), make these required doc changes, rerun tools/docs/check.py and mkdocs build --strict, update docs-pr-body.md if affected, commit:\n${docReview.required_changes.join('\n')}\n${trailer}`,
-    { label: `doc fix ${r + 1}`, phase: 'Docs', agentType: 'doc-writer' })
-  // An approve whose last required changes were just applied ends the loop (P3-t06 stopped on one stale line).
-  if (r === 2) break
-}
-
-return { status: 'done', step: A.step, branch, worktree: wt, prBody: `${wt}/docs-pr-body.md`, build, rounds: rounds.length, simplify, docs, docReview }
+return { status: 'done', step: A.step, branch, worktree: wt, prBody: `${wt}/docs-pr-body.md`, build, rounds: rounds.length, security: needSecurity() ? 'ran' : 'skipped', docs }

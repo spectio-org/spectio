@@ -680,7 +680,7 @@ def test_other_launch_cursor_key_dropped_and_never_opened(events_dir: Path) -> N
 @pytest.mark.parametrize(
     "budget", [{"max_bytes": 10}, {"max_bytes": MAX_LINE_BYTES}, {"max_lines": 0}]
 )
-def test_budgets_too_small_refused(events_dir: Path, budget: dict[str, int]) -> None:
+def test_budgets_too_small_refused(events_dir: Path, budget: dict[str, Any]) -> None:
     with pytest.raises(ValueError):
         read_spool(events_dir.parent.parent, RUN_ID, 1, {}, **budget)
 

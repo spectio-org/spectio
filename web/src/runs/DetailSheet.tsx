@@ -3,15 +3,20 @@ import { type ReactNode, useEffect, useRef, useState } from "react";
 import { type Counts, type Process, type RunDetail, type Stage, type Task, listTasks } from "../api";
 import { ICONS, Icon } from "../icons";
 import { usePhone } from "../shell/layout";
-import { Word, taskLabel } from "./RunState";
-import { isTerminal, lastSegment, processWord, stageWord, sum, taskWord, total, words } from "./stateWord";
+import { bytes, nearLimit, seconds } from "./resources";
+import { efficiencyFacts } from "./ByProcess";
+import { NearLimit, Word, taskLabel } from "./RunState";
+import { Facts, SlurmFacts } from "./SlurmFacts";
+import { TaskFiles } from "./TaskFiles";
+import { isTerminal, lastSegment, neededFirst, processState, stageWord, sum, taskWord, total, words } from "./stateWord";
 
 // The detail of a stage, a process (a rule) or a task (a job), in a side sheet (LiteTaskFiles,
 // MLiteTaskFilesSheet; P3-parD, Thomas 2026-10-31: "steps & stages pas clickable, pas de détails"):
 // a right sheet on a desktop, full screen on the phone; Mantine's Drawer is aria-modal, traps focus,
 // closes on Escape and returns focus to its opener (ui-spec §4.11). A stage lists its processes, a
 // process its tasks (GET /tasks?process=, paged), a task what 0.0.1 serves of it; each view opens the
-// next, and Back returns. Task files, exit code and resources wait for P1 Tasks 28 and 29.
+// next, and Back returns. A task shows its attempt, its resources and its files (TaskFiles, P1
+// Task 32 on Tasks 28 and 29's routes).
 
 export type Detail = { kind: "stage"; id: string } | { kind: "process"; name: string } | { kind: "task"; task: Task };
 
@@ -117,15 +122,23 @@ function ProcessTasks({ run, process, name, onOpen }: { run: RunDetail; process:
 function ProcessView({ run, stages, process, onOpen, onTasks }: { run: RunDetail; stages: Stage[]; process: Process; onOpen: Props["onOpen"]; onTasks: Props["onTasks"] }) {
   const w = words(run.workflow.engine);
   const name = lastSegment(process.process);
-  const word = processWord(process.counts, isTerminal(run.state));
+  const { state, word } = processState(process, isTerminal(run.state), run.summary.open_checkpoints);
+  const efficiency = efficiencyFacts(process.efficiency, w);
   return (
     <>
       <p className="sp-mono sp-sheet-name">{process.process}</p>
       <p className="sp-sub">
-        <Word state={word} word={word} />
+        <Word state={state} word={word} />
+        {process.is_checkpoint && <span className="sp-chip">Checkpoint</span>}
         <span>{stageLine(process.stage_id, stages)}</span>
       </p>
       <CountChips counts={process.counts} retries={process.retries} label={`${w.Units} of ${name} by state`} />
+      {efficiency.length > 0 && (
+        <section aria-label="Efficiency">
+          <h3 className="sp-sheet-h">Efficiency</h3>
+          <Facts facts={efficiency} />
+        </section>
+      )}
       <div>
         <Button variant="default" aria-label={`Open ${name} in ${w.Units}`} onClick={() => onTasks(process.process)}>
           Open in {w.Units}
@@ -156,8 +169,8 @@ function StageView({ run, stage, processes, onOpen }: { run: RunDetail; stage: S
         <p className="sp-muted">No {w.group} reported in this stage yet.</p>
       ) : (
         <ul className="sp-sheet-list" aria-label={`${w.Groups} of ${name}`}>
-          {mine.map((p) => {
-            const pw = processWord(p.counts, ended);
+          {neededFirst(mine).map((p) => {
+            const { state, word: pw } = processState(p, ended, run.summary.open_checkpoints);
             return (
               <li key={p.process}>
                 <button type="button" className="sp-sheet-row" aria-label={`Open ${w.group} ${p.process}`} onClick={() => onOpen({ kind: "process", name: p.process })}>
@@ -165,7 +178,7 @@ function StageView({ run, stage, processes, onOpen }: { run: RunDetail; stage: S
                   <span className="sp-muted">
                     {sum(p.counts, "succeeded", "cached", "stored")} / {total(p.counts)}
                   </span>
-                  <Word state={pw} word={pw} />
+                  <Word state={state} word={pw} />
                 </button>
               </li>
             );
@@ -176,18 +189,26 @@ function StageView({ run, stage, processes, onOpen }: { run: RunDetail; stage: S
   );
 }
 
+/** "8 GB · 8 GB near limit": asked, then measured, the badge in words when near the limit. */
+function Pair({ asked, used, near }: { asked: string; used: string; near?: boolean }) {
+  return (
+    <>
+      {asked} · {used}
+      <NearLimit on={!!near} />
+    </>
+  );
+}
+
 function TaskView({ run, stages, processes, task, onOpen }: { run: RunDetail; stages: Stage[]; processes: Process[]; task: Task; onOpen: Props["onOpen"] }) {
   const w = words(run.workflow.engine);
   const known = processes.some((p) => p.process === task.process);
-  const files =
-    run.workflow.engine === "snakemake"
-      ? `this ${w.unit}'s log, its directory`
-      : `this ${w.unit}'s files (.command.log, .command.err, .command.out, .command.sh), its work directory`;
+  const r = task.resources;
+  const near = nearLimit(r);
   const facts: [string, ReactNode][] = [
     ["ID", <span className="sp-mono">{task.id}</span>],
-    ["Name", task.name ?? "—"],
     ["Tag", task.tag ?? "—"],
     ["State", <Word state={task.state} word={taskWord(task.state)} />],
+    ["Last attempt", task.attempt_n ?? "—"],
     [
       w.Group,
       known ? (
@@ -199,20 +220,16 @@ function TaskView({ run, stages, processes, task, onOpen }: { run: RunDetail; st
       ),
     ],
     ["Stage", stageLine(task.stage_id, stages)],
+    ["CPUs · CPU %", <Pair asked={r.cpus === null ? "—" : String(r.cpus)} used={r.cpu_percent === null ? "—" : `${Math.round(r.cpu_percent)} %`} />],
+    ["Memory, asked · peak", <Pair asked={bytes(r.memory_bytes)} used={bytes(r.peak_rss_bytes)} near={near.memory} />],
+    ["Time limit · duration", <Pair asked={seconds(r.time_s)} used={seconds(r.realtime_s)} near={near.time} />],
   ];
   return (
     <>
-      <dl className="sp-facts sp-sheet-facts">
-        {facts.map(([name, value]) => (
-          <div key={name}>
-            <dt>{name}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
-      <p className="sp-note" role="note">
-        Not in Spectio 0.0.1 yet: {files}, exit code, duration and resources. They arrive with P1 Tasks 28 and 29.
-      </p>
+      <Facts facts={facts} />
+      <SlurmFacts task={task} />
+      <h3 className="sp-sheet-h">Files</h3>
+      <TaskFiles run={run} task={task} />
     </>
   );
 }

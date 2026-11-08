@@ -2,8 +2,8 @@
 Assumptions 9, 10 and 21; dev-env §15.3 "Server restart")."""
 
 import json
-import logging
 import os
+import re
 import signal
 import socket
 import subprocess
@@ -23,6 +23,7 @@ from typer.testing import CliRunner
 from spectio.cli.main import app
 from spectio.config import Settings
 from spectio.runner.rundir import RunManifest, Workflow, make_run_dirs, write_run_manifest
+from spectio.runner.tmux import TmuxLauncher
 from spectio.runner.types import HeadReport
 from spectio_server import app as app_mod
 from spectio_server.bootstrap import ensure_tenancy
@@ -250,8 +251,10 @@ def test_boot_freeze_pool_apart(settings: Settings) -> None:
         assert pool is booted.stage_files and pool is not booted.files
         for reader in readers:
             reader.start()
-        time.sleep(0.2)
-        with pytest.raises(Stalled):  # every route slot is held
+        deadline = time.monotonic() + 5
+        while booted.files._slots._value and time.monotonic() < deadline:
+            time.sleep(0.01)  # the 20 slots are taken (CR-P3T28-03 r4)
+        with pytest.raises(Stalled, match="every file reader is waiting"):  # refused at once
             booted.files.run(lambda: None, 1)
         assert pool.run(lambda: "read", 1) == "read"
     finally:
@@ -407,14 +410,18 @@ def test_cli_refusal_exits_2(settings: Settings) -> None:
     assert "spectio serve: runs root" in result.output
 
 
+LINK = "http://127.0.0.1:8080/auth/link#" + "t" * 43
+
+
 def test_serve_local_start_text(settings: Settings) -> None:
-    text = start_text(settings, "node1", "alice", None)  # the API decision is the caller's
-    assert f"http://127.0.0.1:{settings.port}/" in text
-    assert "on this machine" in text
+    text = start_text(settings, "node1", "alice", None, LINK)  # the API decision is the caller's
+    assert "on this machine (single use, valid 15 minutes):\n   " + LINK in text
     assert "ssh -N -L" not in text
-    assert "P1 Task 12" in text  # no token link yet: local-only (inbox #80)
+    assert "New link at any time: spectio login --print-link" in text
+    assert "Spectio never asks you to paste a link." in text
     assert "shared" not in text
-    assert "looks shared" in start_text(settings, "node1", "alice", "This machine looks shared")
+    shared = start_text(settings, "node1", "alice", "This machine looks shared", LINK)
+    assert "looks shared" in shared
 
 
 def test_serve_decides_the_api_once(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -427,28 +434,28 @@ def test_serve_decides_the_api_once(settings: Settings, monkeypatch: pytest.Monk
         assert isinstance(app, FastAPI)
         assert app.state.no_api is None  # the routers are mounted: no catch-all 404
         assert all(getattr(r, "path", "") != "/api/v1/{path:path}" for r in app.routes)
-        assert "shared" not in start_text(settings, "node1", "alice", server.no_api)
+        assert "shared" not in start_text(settings, "node1", "alice", server.no_api, server.link)
+        assert server.link is not None
+        assert re.fullmatch(
+            rf"http://127\.0\.0\.1:{settings.port}/auth/link#[A-Za-z0-9_-]{{43}}", server.link
+        )
         config = server.uvicorn.config
         assert config.access_log is False  # a query string can hold a location (FU-P3-17)
         assert config.timeout_graceful_shutdown == 5  # an event stream never holds a stop
 
 
-def test_serve_slurm_start_text_and_no_runner(
-    settings: Settings, caplog: pytest.LogCaptureFixture
-) -> None:
+def test_serve_slurm_start_text_and_tmux_runner(settings: Settings) -> None:
     slurm = settings.model_copy(update={"executor": "slurm"})
     port = settings.port
-    text = start_text(slurm, "login1", "alice", None)
+    text = start_text(slurm, "login1", "alice", None, LINK)
     assert f"ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} alice@login1" in text
-    assert f"http://127.0.0.1:{port}/" in text
-    assert "P1 Task 10" in text
-    assert "Tasks 12 to 16" in text  # no API off local mode (inbox #86)
+    assert f"2. Then open this link (single use, valid 15 minutes):\n   {LINK}\n" in text
+    assert "tmux session on login1: tmux attach -t spectio-<run ID>" in text
+    assert "spectio init --local" in text and "Task" not in text  # NO_API (inbox #109 rule 5)
     assert slurm.db_dir is not None
-    with caplog.at_level(logging.WARNING):
-        booted = boot(slurm, slurm.db_dir)
+    booted = boot(slurm, slurm.db_dir)
     try:
-        assert booted.loop is None
-        assert "P1 Task 10" in caplog.text
+        assert isinstance(booted.loop.launcher, TmuxLauncher)  # P1 Task 10
     finally:
         booted.close()
 
@@ -529,9 +536,11 @@ def test_sink_leases_once_until_the_lease_ends(settings: Settings, writer: Write
     assert [r.run_id for r in sink.active_launches()] == []  # its run failed: no head ran
 
 
-def test_sigterm_stops_cleanly(settings: Settings) -> None:
-    """`spectio serve` in the foreground: the start text, then SIGTERM stops it with the state
-    file removed and the lock free."""
+@pytest.mark.parametrize("sig", [signal.SIGTERM, signal.SIGHUP])
+def test_sigterm_stops_cleanly(settings: Settings, sig: signal.Signals) -> None:
+    """`spectio serve` in the foreground: the start text, then SIGTERM, or SIGHUP as
+    `tmux kill-session` sends it (CON-PRE-10), stops it with the state file removed and the lock
+    free."""
     spectio = Path(sys.executable).parent / "spectio"
     proc = subprocess.Popen(
         [str(spectio), "serve"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
@@ -541,7 +550,7 @@ def test_sigterm_stops_cleanly(settings: Settings) -> None:
         first = proc.stdout.readline()
         assert first.startswith("Spectio ") and f"port {settings.port}" in first
         assert (settings.data_dir / "server.json").exists()
-        proc.send_signal(signal.SIGTERM)
+        proc.send_signal(sig)
         assert proc.wait(20) == 0
     finally:
         proc.kill()

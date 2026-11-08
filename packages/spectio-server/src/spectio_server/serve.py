@@ -5,19 +5,25 @@ The start, in order, each refusal a `ServeError` (exit 2) before anything is lef
 
 1. the bind address must be 127.0.0.1 (req. 1); the runs root the user's, not writable by
    others (req. 10);
-2. `<db dir>/serve.lock` (flock, node-local): one server per user and node;
+2. the database directory and its parents checked (`checked_db_dir`), then `<db dir>/serve.lock`
+   (flock, node-local): one server per user and node;
 3. the recorded port, bound on 127.0.0.1 only; a taken port is refused, naming its owner's uid,
    never replaced by another (Assumption 10);
-4. the state file `<data dir>/server.json`, created with O_EXCL (Assumption 9): one that names
+4. the state file `<data dir>/server.json` in the 0700 data directory, written whole under a
+   temporary name and linked into place, which fails if it exists (Assumption 9): one that names
    another node is refused unless `--force`; one that names this node is a dead server's, since
    the lock was free, and is replaced; it is removed at a clean stop;
 5. the database, the tenancy rows, the run directories missing from the index (`rebuild.py`),
    then one runner tick (adopt the heads, replay the spools), the runner thread and uvicorn.
 
-Local-only build (inbox #80 (a)): heads start with the local launcher only. On a SLURM
-environment the runner loop is not started until the tmux launcher (P1 Task 10), and the API is
-not served until sign-in (P1 Tasks 12 to 16, inbox #86). There is no token link and no server
-key yet (P1 Task 12).
+Heads start with the local launcher on a local environment and with the tmux launcher on a
+SLURM one (P1 Task 10), in a tmux session per run on this login node. On a SLURM environment the
+API is not served: the host is shared (`NO_API`, inbox #109 rule 5).
+
+Each start writes a new server key next to the database (`auth.secrets`, P1 Task 12) and prints
+a first token link; `spectio login --print-link` asks for another one. In the pane of
+`spectio serve --detach` (`mint_link=False`) no link is minted or printed: the calling terminal
+gets one (dev-env §15.3 req. 11).
 """
 
 import fcntl
@@ -39,16 +45,21 @@ import uvicorn
 from sqlalchemy import Engine
 
 from spectio.config import LOOPBACK, Settings
+from spectio.fsmodes import open_secure_dir, write_file
+from spectio.ports import port_owner
 from spectio.runner.local import LocalLauncher
 from spectio.runner.loop import RunnerLoop
-from spectio.runner.rundir import open_private, private_dir, read_small, write_file
-from spectio_server.app import create_app
+from spectio.runner.rundir import open_private, private_dir, read_small
+from spectio.runner.tmux import TmuxLauncher
+from spectio_server.app import NO_API, create_app
+from spectio_server.auth.routes import NO_PASTE, link_url
+from spectio_server.auth.secrets import ServerKey
 from spectio_server.bootstrap import ensure_tenancy
-from spectio_server.files.pool import FilePool
+from spectio_server.files.pool import READ_TIMEOUT_S, FilePool
 from spectio_server.rebuild import Rebuilt, rebuild_index
 from spectio_server.sink import StoreSink
 from spectio_server.stages.freeze import FREEZE_WORKERS
-from spectio_server.store.db import UnsafeDatabase, _require_private_dir, default_db_dir, open_db
+from spectio_server.store.db import UnsafeDatabase, checked_db_dir, default_db_dir, open_db
 from spectio_server.store.writer import Writer
 
 log = logging.getLogger(__name__)
@@ -67,7 +78,7 @@ class Booted:
     writer: Writer
     new: bool  # the database was just created
     rebuilt: Rebuilt
-    loop: RunnerLoop | None  # None on a SLURM environment (P1 Task 10)
+    loop: RunnerLoop
     files: FilePool  # the routes' reads of a run's files (req. 13)
     stage_files: FilePool  # the freeze's: route reads never take its slots (SEC-P3T28-06)
 
@@ -82,6 +93,7 @@ class Started:
     uvicorn: uvicorn.Server
     booted: Booted
     no_api: str | None  # why the API is not served, as create_app decided (CR-P3T17-04)
+    link: str | None  # the first token link: single use, 15 minutes; None in a detached pane
     stop: threading.Event = field(default_factory=threading.Event)
 
     def run(self) -> None:
@@ -95,24 +107,36 @@ def _user() -> str:
         return str(os.getuid())
 
 
-def start_text(settings: Settings, node: str, user: str, no_api: str | None) -> str:
+def start_text(
+    settings: Settings, node: str, user: str, no_api: str | None, link: str | None
+) -> str:
+    """What `spectio serve` prints; with no `link` (a detached pane), where to get one."""
     port = settings.port
-    page = f"http://127.0.0.1:{port}/"
+    once = "(single use, valid 15 minutes):"
     lines = [f"Spectio {version('spectio')} is running on {node}, port {port}."]
     if settings.executor == "local":
-        lines.append(f"Open this page in a browser on this machine:  {page}")
+        if link is None:
+            lines.append(
+                "Get a link to open in a browser on this machine: spectio login --print-link"
+            )
+        else:
+            lines += [f"Open this link in a browser on this machine {once}", f"   {link}"]
         if no_api is not None:  # a shared machine (SEC-P3T17-06)
             lines.append(no_api)
     else:
-        lines += [
+        lines.append(
             f"1. On your laptop, open a tunnel:  ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} "
-            f"{user}@{node}",
-            f"2. Then open this page:  {page}",
-            "Runs are not launched or watched on a SLURM environment until the tmux launcher "
-            "(P1 Task 10).",
-            "The API is served in local mode only until sign-in (P1 Tasks 12 to 16).",
+            f"{user}@{node}"
+        )
+        if link is None:
+            lines.append(f"2. Then open the link that spectio login --print-link prints on {node}")
+        else:
+            lines += [f"2. Then open this link {once}", f"   {link}"]
+        lines += [
+            f"Each run's head runs in a tmux session on {node}: tmux attach -t spectio-<run ID>.",
+            NO_API,
         ]
-    lines.append("Sign-in comes with P1 Task 12: until then this build is local-only.")
+    lines += ["New link at any time: spectio login --print-link", NO_PASTE]
     return "\n".join(lines)
 
 
@@ -128,31 +152,30 @@ def boot(settings: Settings, db_dir: Path) -> Booted:
             )
         ).result()
         files, stage_files = FilePool(), FilePool(FREEZE_WORKERS, 0)
-        rebuilt = rebuild_index(writer, settings.runs_root)
+        # runs started from a terminal: their file-system work, bounded (SEC-P3T25-01)
+        observed_files = FilePool(backlog=0)
+        rebuilt = rebuild_index(writer, settings.runs_root, home=Path.home(), files=observed_files)
         log.info("index %s: %d runs added", "rebuilt" if new else "reconciled", rebuilt.added)
-        loop = None
-        if settings.executor == "local":
-            loop = RunnerLoop(
-                StoreSink(
-                    writer,
-                    settings.runs_root,
-                    settings.data_dir / "overlays",
-                    settings.data_dir,
-                    stage_files,
-                ),
-                LocalLauncher(),
-                settings,
-                tick_s=settings.runner.spool_s,
-            )
-            try:
-                loop.tick()
-            except Exception:  # as RunnerLoop.run does: the next tick tries again
-                log.exception("first runner tick failed")
-        else:
-            log.warning(
-                "SLURM environment: the runner loop is not started; heads need the tmux "
-                "launcher (P1 Task 10), not built yet"
-            )
+        launcher = LocalLauncher() if settings.executor == "local" else TmuxLauncher()
+        loop = RunnerLoop(
+            StoreSink(
+                writer,
+                settings.runs_root,
+                settings.data_dir / "overlays",
+                settings.data_dir,
+                stage_files,
+            ),
+            launcher,
+            settings,
+            tick_s=settings.runner.spool_s,
+            home=Path.home(),  # runs started from a terminal (architecture §13.8)
+            files=observed_files,
+            files_timeout_s=READ_TIMEOUT_S,
+        )
+        try:
+            loop.tick()
+        except Exception:  # as RunnerLoop.run does: the next tick tries again
+            log.exception("first runner tick failed")
     except BaseException:
         writer.close()
         engine.dispose()
@@ -179,20 +202,6 @@ def _lock(db_dir: Path) -> int:
     return fd
 
 
-def _port_owner(port: int) -> int | None:
-    """The uid of a socket listening on `port`, from /proc/net/tcp and tcp6."""
-    for table in ("/proc/net/tcp", "/proc/net/tcp6"):
-        try:
-            lines = Path(table).read_text().splitlines()[1:]
-        except OSError:
-            continue
-        for line in lines:
-            fields = line.split()
-            if int(fields[1].rsplit(":", 1)[1], 16) == port and fields[3] == "0A":  # LISTEN
-                return int(fields[7])
-    return None
-
-
 def _bind(port: int) -> socket.socket:
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
@@ -201,7 +210,7 @@ def _bind(port: int) -> socket.socket:
         sock.listen(128)
     except OSError as exc:
         sock.close()
-        owner = _port_owner(port)
+        owner = port_owner(port)
         who = "uid unknown" if owner is None else f"uid {owner}"
         raise ServeError(
             f"port {port} on 127.0.0.1 is taken ({who}): stop that server, or record another "
@@ -223,17 +232,13 @@ def _record(settings: Settings, db_dir: Path) -> bytes:
 
 
 def _write_state(data_dir: Path, record: bytes, force: bool) -> None:
-    with private_dir(data_dir) as fd:
-        try:
-            new = os.open(
-                STATE, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o600, dir_fd=fd
-            )
+    fd = open_secure_dir(data_dir, create=False)  # 0700, as spectio init made it (req. 5)
+    try:
+        try:  # written whole, then linked: a reader on another node never sees it partial
+            write_file(fd, STATE, record, exclusive=True)
+            return
         except FileExistsError:
             pass
-        else:
-            with os.fdopen(new, "wb") as f:
-                f.write(record)
-            return
         if not force:
             try:
                 raw = read_small(fd, STATE, cap=65536)
@@ -248,6 +253,8 @@ def _write_state(data_dir: Path, record: bytes, force: bool) -> None:
                     "here with --force, which replaces it"
                 )
         write_file(fd, STATE, record)  # a dead server's file on this node, or --force
+    finally:
+        os.close(fd)
 
 
 def _remove_state(data_dir: Path, record: bytes) -> None:
@@ -261,8 +268,11 @@ def _remove_state(data_dir: Path, record: bytes) -> None:
 
 
 @contextmanager
-def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
-    """The server, booted and bound, not yet serving: `Started.run()` serves until stopped."""
+def started(
+    settings: Settings, *, force: bool = False, mint_link: bool = True
+) -> Iterator[Started]:
+    """The server, booted and bound, not yet serving: `Started.run()` serves until stopped.
+    Without `mint_link` no first ticket is minted (a detached pane, SEC-PRE-05)."""
     if settings.server.host != LOOPBACK:
         raise ServeError(
             f"0.0.1 binds to 127.0.0.1 only: remove host = {settings.server.host!r} "
@@ -277,8 +287,7 @@ def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
         ) from exc
     with ExitStack() as stack:  # undone in reverse order, whatever stops the server
         try:
-            db_dir = settings.db_dir or default_db_dir()
-            _require_private_dir(db_dir, os.getuid())
+            db_dir = checked_db_dir(settings.db_dir or default_db_dir())  # before the lock
             stack.callback(os.close, _lock(db_dir))
             sock = stack.enter_context(_bind(settings.port))
             record = _record(settings, db_dir)
@@ -288,7 +297,11 @@ def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
         except (UnsafeDatabase, OSError) as exc:  # a missing data directory, among others
             raise ServeError(str(exc)) from exc
         stack.callback(booted.close)
-        api = create_app(settings, booted.writer, files=booted.files)
+        try:
+            key = ServerKey.generate(db_dir)
+        except OSError as exc:
+            raise ServeError(str(exc)) from exc
+        api = create_app(settings, booted.writer, files=booted.files, server_key=key)
         config = uvicorn.Config(
             api,
             host=LOOPBACK,
@@ -298,14 +311,14 @@ def started(settings: Settings, *, force: bool = False) -> Iterator[Started]:
             access_log=False,  # a query string can hold a location or a token (FU-P3-17)
             timeout_graceful_shutdown=5,  # an open event stream never holds a stop (Task 18)
         )
-        server = Started(sock, uvicorn.Server(config), booted, api.state.no_api)
-        if booted.loop is not None:
-            thread = threading.Thread(
-                target=booted.loop.run, args=(server.stop,), name="spectio-runner"
-            )
-            thread.start()
-            stack.callback(thread.join)
-            stack.callback(server.stop.set)
+        link = link_url(settings.port, api.state.tickets.mint()) if mint_link else None
+        server = Started(sock, uvicorn.Server(config), booted, api.state.no_api, link)
+        thread = threading.Thread(
+            target=booted.loop.run, args=(server.stop,), name="spectio-runner"
+        )
+        thread.start()
+        stack.callback(thread.join)
+        stack.callback(server.stop.set)
         yield server
 
 
@@ -313,15 +326,19 @@ def _stop(signum: int, frame: object) -> None:
     raise SystemExit(0)
 
 
-def serve(settings: Settings, *, force: bool = False) -> None:
-    """Start, print the start text and serve until Ctrl-C or SIGTERM, then stop cleanly.
+def serve(settings: Settings, *, force: bool = False, mint_link: bool = True) -> None:
+    """Start, print the start text and serve until Ctrl-C, SIGTERM or SIGHUP, then stop cleanly.
+    SIGHUP is what `tmux kill-session` sends a pane (CON-PRE-10).
 
-    uvicorn catches both while it serves, stops, and raises the signal again: SIGTERM then
-    reaches `_stop`, and Ctrl-C the default KeyboardInterrupt, so the cleanup above runs."""
+    uvicorn catches SIGINT and SIGTERM while it serves, stops, and raises the signal again:
+    SIGTERM then reaches `_stop`, and Ctrl-C the default KeyboardInterrupt, so the cleanup above
+    runs; SIGHUP reaches `_stop` directly."""
     signal.signal(signal.SIGTERM, _stop)
+    signal.signal(signal.SIGHUP, _stop)
     try:
-        with started(settings, force=force) as server:
-            print(start_text(settings, socket.gethostname(), _user(), server.no_api), flush=True)
+        with started(settings, force=force, mint_link=mint_link) as server:
+            node = socket.gethostname()
+            print(start_text(settings, node, _user(), server.no_api, server.link), flush=True)
             server.run()
     except KeyboardInterrupt:
         pass

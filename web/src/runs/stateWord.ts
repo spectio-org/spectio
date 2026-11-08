@@ -1,6 +1,6 @@
 // The words of the run, stage and process states (ui-spec §3.1 and the §4.4 note of 2026-10-28,
 // "State word"), and the short formats the run screens share.
-import type { Counts, RunState, Stage } from "../api";
+import type { Counts, Process, RunState, Stage } from "../api";
 
 const RUN_WORDS: Record<RunState, string> = {
   queued: "Queued",
@@ -42,6 +42,10 @@ const TONES: Record<string, Tone> = {
   "Not run": "cancelled",
   cached: "cached",
   stored: "cached",
+  // the server's process statuses of ui-spec §5.2; awaiting_checkpoint stays queued
+  up_to_date: "cached",
+  not_needed: "cancelled",
+  no_tasks: "cancelled",
 };
 
 /** The tone of a run, stage or task state, or of a stage or process word; queued otherwise
@@ -113,6 +117,29 @@ export function processWord(counts: Counts, ended: boolean): string {
   }
   return ended ? "Stopped" : "Running";
 }
+
+/** A process's or rule's state and word: the server's status for the four states of ui-spec §5.2
+ * (which its counts cannot tell), else `processWord`. `open`: the run's open checkpoints. */
+export function processState(p: Process, ended: boolean, open: string[] = []): { state: string; word: string } {
+  switch (p.status) {
+    case "awaiting_checkpoint":
+      return { state: p.status, word: open.length ? `Waiting for checkpoint ${open.join(", ")}` : "Waiting for a checkpoint" };
+    case "not_needed":
+      return { state: p.status, word: "Not needed in this run" };
+    case "up_to_date":
+      return { state: p.status, word: "Up to date" };
+    case "no_tasks":
+      return { state: p.status, word: "No task (condition or empty input)" };
+    default: {
+      const word = processWord(p.counts, ended);
+      return { state: word, word };
+    }
+  }
+}
+
+/** Not needed last, the others in the server's order (ui-spec §5.2: "greyed but listed, after the others"). */
+export const neededFirst = (processes: Process[]): Process[] =>
+  [...processes].sort((a, b) => Number(a.status === "not_needed") - Number(b.status === "not_needed"));
 
 /** The word of `run_stages.state`; `failed` reads Failed only when one of the stage's own tasks
  * failed, otherwise Stopped. */

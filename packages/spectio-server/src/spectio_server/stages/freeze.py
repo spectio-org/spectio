@@ -296,9 +296,11 @@ def process_ended(p: "Projection", name: str) -> None:
 
 
 def plan_jobs(p: "Projection", stats: dict[str, int]) -> None:
-    """Snakemake's `run_info`: the jobs it plans per rule (it plans again past a checkpoint)."""
+    """Snakemake's `run_info`: the jobs it plans per rule (it plans again past a checkpoint);
+    a rule not recorded yet is (P1 Task 34: its status reads the plan)."""
     for rule, n in stats.items():
         if rule != "total":
+            p.process(rule)
             p.conn.execute(
                 update(run_processes)
                 .where(run_processes.c.run_id == p.run_id, run_processes.c.name == rule)
@@ -319,10 +321,11 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
 
     pool = None if sources is None else sources.pool
     try:
-        universe, stages, source, note = job() if pool is None else pool.run(job, FREEZE_TIMEOUT_S)
+        found = job() if pool is None else pool.run(job, FREEZE_TIMEOUT_S)
+        universe, stages, source, note, checkpoints = found
     except Stalled as exc:
         log.warning("run %s: stage sources not read: %s", p.run_id, exc)
-        universe, stages, source = names, [], None
+        universe, stages, source, checkpoints = names, [], None, []
         note = "The stage sources were not read in time (the file system did not answer)."
     for n, stage in enumerate(stages, 1):
         p.conn.execute(
@@ -343,13 +346,22 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
         p.process(name)
         if (stage_id := assign(stages, name)) is not None:
             by_stage.setdefault(stage_id, []).append(name)
-    for stage_id, found in by_stage.items():
-        for i in range(0, len(found), IN_CHUNK):
+    for i in range(0, len(checkpoints), IN_CHUNK):  # `checkpoint <name>:` (P1 Task 34)
+        p.conn.execute(
+            update(run_processes)
+            .where(
+                run_processes.c.run_id == p.run_id,
+                run_processes.c.name.in_(checkpoints[i : i + IN_CHUNK]),
+            )
+            .values(is_checkpoint=True)
+        )
+    for stage_id, names_in in by_stage.items():
+        for i in range(0, len(names_in), IN_CHUNK):
             p.conn.execute(
                 update(run_processes)
                 .where(
                     run_processes.c.run_id == p.run_id,
-                    run_processes.c.name.in_(found[i : i + IN_CHUNK]),
+                    run_processes.c.name.in_(names_in[i : i + IN_CHUNK]),
                 )
                 .values(stage_id=stage_id)
             )
@@ -366,7 +378,7 @@ def freeze(p: "Projection", snakefile_main: str | None = None) -> None:
     p.log(FROZEN, {"mode": mode, "source": source, "note": note}, source="projector")
 
 
-_Found = tuple[list[str], list[StageDef], str | None, str | None]
+_Found = tuple[list[str], list[StageDef], str | None, str | None, list[str]]
 
 
 def _sources(
@@ -376,16 +388,17 @@ def _sources(
     names: list[str],
     snakefile_main: str | None,
 ) -> _Found:
-    """The run's names, its stages, the file they come from and a note: every file read of the
-    freeze, and no database (it runs in the file pool)."""
+    """The run's names, its stages, the file they come from, a note, and its checkpoint rules:
+    every file read of the freeze, and no database (it runs in the file pool)."""
     run = _run(sources, row)
     # A source that fails gives no stages, never a failed ingest (CR-P3T27-02, SEC-P3T27-01).
     smk = run.engine == "snakemake"
     universe = names
     detected: list[StageDef] = []
+    checkpoints: list[str] = []
     try:
         if smk:
-            universe, detected = _snakemake(sources, run_id, run, snakefile_main)
+            universe, detected, checkpoints = _snakemake(sources, run_id, run, snakefile_main)
         else:
             detected = detect_nextflow(universe, run.name, _meta(run, universe))
     except Exception:
@@ -398,7 +411,7 @@ def _sources(
         stages, source, note = [], None, None
     if not stages:
         stages, source = detected, None
-    return universe, stages, source, note
+    return universe, stages, source, note, checkpoints
 
 
 def _declared(
@@ -464,23 +477,22 @@ def _meta(run: _Run, names: list[str]) -> dict[str, str]:
 
 def _snakemake(
     sources: StageSources | None, run_id: str, run: _Run, snakefile_main: str | None
-) -> tuple[list[str], list[StageDef]]:
-    """The run's rules (from `rules.txt` when the head wrote it, else from the rule files) and
-    the detected stages."""
+) -> tuple[list[str], list[StageDef], list[str]]:
+    """The run's rules (from `rules.txt` when the head wrote it, else from the rule files), the
+    detected stages, and the rules the rule files declare with `checkpoint <name>:`."""
     defined = _rules_txt(sources, run_id)
     main = _main_snakefile(run, snakefile_main)
     if main is None:
-        return defined or [], []
+        return defined or [], [], []
     detected = detect_snakemake(main, defined)
     universe = [r for s in detected for r in s.match]
-    if defined is not None:
-        universe += defined
-    else:
-        try:
-            universe += [r for f in rule_files(main) for r in f.rules]
-        except Unsafe:
-            pass
-    return list(dict.fromkeys(universe)), detected
+    try:
+        files = rule_files(main)
+    except Unsafe:
+        files = []
+    universe += defined if defined is not None else [r for f in files for r in f.rules]
+    checkpoints = [r for f in files for r in f.checkpoints]
+    return list(dict.fromkeys(universe)), detected, checkpoints
 
 
 def _main_snakefile(run: _Run, snakefile_main: str | None) -> Path | None:

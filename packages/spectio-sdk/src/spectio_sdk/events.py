@@ -32,6 +32,10 @@ MAX_EVENT_DEPTH = 32  # nesting of `data`, which is depth 1
 SPOOL_FILE_NAME = re.compile(
     r"(nf-spectio|snakemake-logger-spectio)-([1-9][0-9]{0,18})-(?!0000)[0-9]{4}\.jsonl"
 )
+# A run started from a terminal (architecture §13.8): `<run ID>-<producer>-<nnnn>.jsonl`, launch 1.
+TERMINAL_SPOOL_FILE_NAME = re.compile(
+    r"(run_[0-7][0-9A-HJKMNP-TV-Z]{25})-(nf-spectio|snakemake-logger-spectio)-(?!0000)[0-9]{4}\.jsonl"
+)
 
 MAX_MESSAGE_CHARS = 4096  # error texts are cut here
 
@@ -227,6 +231,8 @@ class NextflowFlowCreate(NextflowEvent):
     nextflow: str | None = None
     resume: bool | None = None
     workDir: str | None = None
+    cleanup: bool | None = None  # the session's `config.cleanup` (P1 Task 33)
+    clusterOptionsSet: bool | None = None  # never the text (SEC-P3T1-11)
 
 
 class NextflowFlowComplete(NextflowEvent):
@@ -314,6 +320,8 @@ class SnakemakeJobInfo(_Data):
     priority: SignedInt64 | None = None
     threads: Int64 | None = None
     resources: dict[str, JsonValue] = {}
+    # Whether `slurm_extra` was set, its text never sent (P1 Task 34, SEC-P3T1-11).
+    custom_options: bool | None = None
 
     @field_validator("reason")
     @classmethod
@@ -378,6 +386,21 @@ class SnakemakeSlurmSubmitted(_Data):
     log: str | None = None
 
 
+class SnakemakeOutputPath(_Data):
+    """`snakemake.temp_removed` and `snakemake.protected`: not Snakemake events, but the logger
+    plugin's reading of the info texts "Removing temporary output <path>." (`dag.py:1054-1056`)
+    and "Write-protecting output file <path>." (`dag.py:932-936`) of Snakemake 9.27.1 (P1
+    Task 33). `path` is as Snakemake wrote it, relative to the launch directory for a relative
+    output; its text is never sent."""
+
+    path: str
+
+
+class SnakemakeDagUpdated(_Data):
+    """Not a Snakemake event: the text "Updating checkpoint dependencies." (`dag.py:2245`,
+    Snakemake 9.27.1), logged when jobs depend on a finished checkpoint (P1 Task 33)."""
+
+
 class SnakemakeShellcmd(_Data):
     """Kept as a record; its content (the job's command) is not."""
 
@@ -420,6 +443,9 @@ DATA_MODELS: dict[str, type[_Data]] = {
     "snakemake.job_finished": SnakemakeJobFinished,
     "snakemake.job_error": SnakemakeJobError,
     "snakemake.slurm_submitted": SnakemakeSlurmSubmitted,
+    "snakemake.temp_removed": SnakemakeOutputPath,
+    "snakemake.protected": SnakemakeOutputPath,
+    "snakemake.dag_updated": SnakemakeDagUpdated,
     "snakemake.shellcmd": SnakemakeShellcmd,
     "snakemake.progress": SnakemakeProgress,
     "snakemake.error": SnakemakeError,

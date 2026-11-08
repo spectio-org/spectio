@@ -2,8 +2,10 @@
 and Resources; architecture §13.7; dev-env §15.3 req. 15).
 
 `sacct` is a fake on its own PATH directory (`slurm-mini`, P1 Task 22, is not built). The
-Snakemake side is fed by synthetic event lines in the shape the logger plugin is to send (P1
-Task 7 is not built).
+Snakemake side is fed by synthetic event lines in the shape the logger plugin sends, and, in
+`test_smk_real_plugin`, by the plugin's own spool from a real Snakemake 9.27.1 run (P1 Task 7).
+The SLURM fields (`slurm_submitted`, `aux.external_jobid`, the executor's `msg`) stay synthetic
+until `slurm-mini` runs the plugin on a cluster.
 """
 
 import json
@@ -20,22 +22,22 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import inspect, select
+from sqlalchemy import inspect, select, update
 
 from spectio.config import Settings
 from spectio.runner.rundir import RunPaths, make_run_dirs
 from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server.failure import Accounting, parse_smk_slurm_message
-from spectio_server.files.pool import FilePool
+from spectio_server.files.pool import FilePool, Stalled
 from spectio_server.projector.ingest import ingest
 from spectio_server.serve import boot
 from spectio_server.stages.freeze import StageSources
 from spectio_server.store.db import open_db
-from spectio_server.store.schema import events, tasks
+from spectio_server.store.schema import attempts, environments, events, tasks
 from spectio_server.store.writer import Writer
 
-from ..test_serve import head_files, make_run, run_id, settle
+from ..test_serve import FIXTURE_RUN, FIXTURES, head_files, make_run, run_id, settle
 from .conftest import add_run, client_for
 
 API = "/api/v1"
@@ -60,10 +62,24 @@ if states:
 state = states[0] if states else "OUT_OF_MEMORY"
 dirs = os.path.join(here, "workdirs.json")  # job ID -> WorkDir; another directory otherwise
 dirs = json.load(open(dirs)) if os.path.exists(dirs) else {{}}
+d = [a for a in sys.argv if a.startswith("--delimiter=")][0].split("=", 1)[1]
+submit = os.path.join(here, "submit")  # Submit, in UTC as TZ=UTC asks; now otherwise
+now = time.strftime("%Y-%m-%dT%H:%M:%S", time.gmtime())
+submit = open(submit).read() if os.path.exists(submit) else now
+resized = os.path.exists(os.path.join(here, "resized"))  # an older RESIZING record first
+tres = "billing=2,cpu=2,mem=2G,node=1"
 for job in ids if state != "-" else ():
     where = dirs.get(job, "/elsewhere")
-    print(f"{{job}}|{{state}}|0:125|None|0|00:01:05|2G|00:10:00|{{where}}")
-    print(f"{{job}}.batch|{{state}}|0:125||2097152K|00:01:05|||{{where}}")
+    lines = [
+        [job, state, "0:125", "None", "0", "00:01:05", "2G", "00:10:00", "00:52.000", "2", "1",
+         "htc", "lab", "normal", tres, where, submit],
+        [job + ".batch", state, "0:125", "", "2097152K", "00:01:05", "", "", "00:52.000", "2",
+         "1", "", "", "", tres, "", ""],
+    ]
+    if resized:
+        lines = [[f[0], "RESIZING", *f[2:]] for f in lines] + lines
+    for fields in lines:
+        print(d.join(fields))
 """
 
 
@@ -246,6 +262,7 @@ def test_nf_failure_summary(settings: Settings, writer: Writer, fakebin: Fake) -
     assert failure["task_id"] == run.task_ids()[0]
     assert (failure["process"], failure["tag"], failure["attempt_n"]) == ("ALIGN", "S00", 2)
     assert (failure["exit_code"], failure["native_id"]) == (137, "8812402")
+    assert failure["work_dir"] == str(workdir)  # the directory to copy (P1 Task 32)
     assert failure["log_tail"] == "\n".join(f"line {n} red" for n in range(10, 30))
     assert failure["scheduler"]["accounting"] == "pending"
     assert failure["scheduler"]["state_source"] is None
@@ -290,6 +307,197 @@ def test_sacct_other_workdir_not_kept(settings: Settings, writer: Writer, fakebi
     assert scheduler["accounting"] == "unavailable" and scheduler["state_source"] is None
     assert scheduler["usage_source"] is None
     assert json.loads(cache.read_text())["jobs"] == {"8812401": None}
+
+
+def test_sacct_resized_job_available(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """Inbox #116 rule 10 (b): a resized job prints an older RESIZING record before its final
+    one (CON-PRE-15). The final record is the row, so the job reads `available` instead of
+    `not_found` (SEC-P3T34-06); its CPU and memory efficiency are None."""
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    writer.submit(lambda c: c.execute(update(environments).values(kind="slurm"))).result()
+    (fakebin.dir / "resized").write_text("")
+    run = Run(settings, writer)
+    fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
+    detail(client)
+    assert acct.step()
+    scheduler = detail(client)["failures"][0]["scheduler"]
+    assert scheduler["accounting"] == "available" and scheduler["state"] == "OUT_OF_MEMORY"
+    assert scheduler["max_rss_bytes"] is None  # the steps under RESIZING are not summed
+    (item,) = task_items(client)
+    efficiency = item["efficiency"]
+    assert (efficiency["state"], efficiency["source"]) == ("available", "sacct")
+    assert (efficiency["cpu"], efficiency["mem"]) == (None, None)
+
+
+def test_sacct_symlinked_workdir(
+    settings: Settings, writer: Writer, fakebin: Fake, tmp_path: Path
+) -> None:
+    """CON-PRE-14: the engine passed a path through a symlink, SLURM recorded it resolved. The
+    expected set holds the path and its `realpath`, computed in the file pool when the job is
+    asked; the WorkDir sacct gives is never resolved."""
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    run = Run(settings, writer)
+    workdir = run.nf_task(0, 1, "FAILED", "TERMINATE")
+    real = tmp_path / "real-work"
+    workdir.rename(real)
+    workdir.symlink_to(real)
+    fakebin.at("8812401", real)
+    detail(client)
+    assert acct.step()
+    assert detail(client)["failures"][0]["scheduler"]["accounting"] == "available"
+
+
+def test_sacct_submit_before_launch_not_kept(
+    settings: Settings, writer: Writer, fakebin: Fake
+) -> None:
+    """SEC-PRE-14: a line submitted before the run was launched is another job with that ID:
+    no row, asked again as a missing one."""
+    client = client_for(settings, writer)
+    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    (fakebin.dir / "submit").write_text("2020-01-01T00:00:00")
+    run = Run(settings, writer)
+    fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
+    detail(client)
+    assert acct.step()
+    assert acct.rows(RUN) == {} and acct._tries == {(RUN, "8812401"): 1}
+
+
+def test_sacct_job_without_dir_not_asked(settings: Settings, writer: Writer) -> None:
+    """SEC-PRE-15: a job with no directory to bind it is never queued, reads unavailable at
+    once, and no None is cached for it."""
+    Run(settings, writer)
+    acct = Accounting(settings.runs_root, Path("/usr/bin/false"), start_thread=False)
+    acct.load(RUN)
+    acct.want(RUN, [("8812401", None)], 0.0)
+    assert acct._limiter.pending() == 0
+    assert acct.status(RUN, "8812401") == "unavailable" and acct.rows(RUN) == {}
+
+
+def test_sacct_non_slurm_ids_never_resolved(
+    settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3FU53-01: a native ID that is no SLURM job ID (a pod name, `nf-1`) reads
+    unavailable and never reaches the file pool, so it cannot starve the run's SLURM jobs; a
+    directory resolved once is not resolved again by a later view."""
+    Run(settings, writer)
+    acct = Accounting(settings.runs_root, Path("/usr/bin/false"), start_thread=False)
+    acct.load(RUN)
+    resolved: list[str] = []
+    real = os.path.realpath
+
+    def spy(d: str) -> str:
+        resolved.append(d)
+        return real(d)
+
+    monkeypatch.setattr(os.path, "realpath", spy)
+    pool: list[int] = []
+
+    def in_pool(job: Any) -> bool:
+        pool.append(1)
+        job()
+        return True
+
+    jobs = [(f"nf-{i}", f"/work/nf-{i}") for i in range(600)] + [("12345", "/work/slurm")]
+    acct.want(RUN, jobs, 0.0, in_pool)
+    assert resolved == ["/work/slurm"] and pool == [1]
+    assert acct._limiter.pending() == 1 and acct._asked == {"12345": {RUN}}
+    assert acct.status(RUN, "nf-0") == "unavailable"
+    acct._limiter._pending.clear()  # the limiter refused it (MAX_PENDING): asked again
+    acct._asked.clear()
+    acct.want(RUN, jobs, 0.0, in_pool)
+    assert resolved == ["/work/slurm"] and pool == [1]  # its directory is kept
+    assert acct._asked == {"12345": {RUN}}
+
+
+def test_sacct_resolve_one_in_flight_per_run(
+    settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3FU53-01: on a stalled file system, views that follow a stalled resolve send no
+    second one for the run, and each directory resolved before the stall is kept."""
+    Run(settings, writer)
+    acct = Accounting(settings.runs_root, Path("/usr/bin/false"), start_thread=False)
+    acct.load(RUN)
+    files = FilePool()
+    go = threading.Event()
+    real = os.path.realpath
+
+    def slow(d: str) -> str:
+        if d == "/work/b":
+            go.wait(10)
+        return real(d)
+
+    monkeypatch.setattr(os.path, "realpath", slow)
+    sent: list[int] = []
+
+    def in_pool(job: Any) -> bool:
+        sent.append(1)
+        try:
+            files.run(job, 0.05)
+            return True
+        except Stalled:
+            return False
+
+    jobs = [("1", "/work/a"), ("2", "/work/b")]
+    for _ in range(5):
+        acct.want(RUN, jobs, 0.0, in_pool)
+    assert sent == [1]
+    assert acct._asked == {"1": {RUN}}  # /work/a was resolved before the stall
+    go.set()
+    for _ in range(100):
+        if RUN not in acct._resolving:
+            break
+        time.sleep(0.01)
+    acct.want(RUN, jobs, 0.0, in_pool)
+    assert sent == [1] and acct._asked == {"1": {RUN}, "2": {RUN}}
+
+
+def test_sacct_resolve_cancelled_in_queue_sent_again(settings: Settings, writer: Writer) -> None:
+    """CR-P3FU53-01: a resolve the pool refused or cancelled before it ran holds no guard."""
+    Run(settings, writer)
+    acct = Accounting(settings.runs_root, Path("/usr/bin/false"), start_thread=False)
+    acct.load(RUN)
+    sent: list[Any] = []
+
+    def refused(job: Any) -> bool:
+        sent.append(job)
+        return False
+
+    acct.want(RUN, [("1", "/work/a")], 0.0, refused)
+    acct.want(RUN, [("1", "/work/a")], 0.0, refused)
+    assert len(sent) == 2 and acct._asked == {}
+    sent[0]()  # a cancelled job that runs anyway does nothing
+    assert acct._asked == {} and "/work/a" not in acct._real
+
+
+def test_sacct_run_asked_during_call_costs_no_try(
+    settings: Settings, writer: Writer, fakebin: Fake
+) -> None:
+    """CON-PRE-16: a run that asks a job while the call for it is in flight was not in that
+    call: it is queued again, and its tries are not counted."""
+    run = Run(settings, writer)
+    other = "run_01K8T2F1XTVRES0000000000G0"
+    (make_run_dirs(settings.runs_root, other).run_dir / ".spectio").mkdir(mode=0o700)
+    acct = accounting(settings, fakebin)
+    for rid in (RUN, other):
+        acct.load(rid)
+    acct.want(RUN, [("8812401", str(run.paths.work_dir))], 0.0)
+    called = acct._limiter._call
+
+    def call(ids: list[str]) -> Any:
+        found = called(ids)
+        acct.want(other, [("8812401", "/elsewhere")], 0.0)  # it arrives during the call
+        return found
+
+    acct._limiter._call = call
+    assert acct.step()
+    assert acct._tries == {(RUN, "8812401"): 1}  # RUN was in the call; `other` was not
+    assert acct._limiter.pending() == 1 and acct._asked == {"8812401": {other}}
+    acct._limiter._call = called
+    assert acct.step()
+    row = acct.rows(other)["8812401"]  # the fake's default WorkDir is `other`'s directory
+    assert row is not None and row.state == "OUT_OF_MEMORY"
 
 
 def test_nf_log_tail_falls_back_to_err(settings: Settings, writer: Writer) -> None:
@@ -401,9 +609,11 @@ def smk_job(run: Run, jobid: int, rule: str, sample: str, **info: Any) -> None:
 
 def test_resources_smk(settings: Settings, writer: Writer, fakebin: Fake) -> None:
     """threads and mem_mb requested; a benchmark file gives the measures (source benchmark);
-    without one, sacct for the job's SLURM ID, in a batch (source sacct)."""
+    without one, sacct for the job's SLURM ID, in a batch (source sacct). On a SLURM run: a
+    local one never asks sacct (P1 Task 34, schedulers §3.6)."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    writer.submit(lambda c: c.execute(update(environments).values(kind="slurm"))).result()
     run = Run(settings, writer, "snakemake")
     smk_job(run, 1, "align", "S1", benchmark="benchmarks/align_S1.tsv")
     write_private(
@@ -472,11 +682,57 @@ def test_smk_failure_from_message(settings: Settings, writer: Writer, fakebin: F
     assert failure["scheduler"]["req_mem_bytes"] == 2000 * 1024**2
     assert failure["scheduler"]["time_limit_s"] == 1800
     assert failure["native_id"] == "8812477"
+    assert failure["work_dir"] == str(run.paths.launch_dir)  # Snakemake: the launch directory
     assert failure["log_tail"] == "start\nslurmstepd: error: Detected 1 oom_kill"
     assert not acct.step() and fakebin.calls() == []
     with writer.engine.connect() as conn:
         stored = json.dumps(list(conn.execute(select(events.c.payload)).scalars()))
     assert "s3cret" not in stored and "SLURM-job" not in stored
+
+
+def test_smk_real_plugin(settings: Settings, writer: Writer) -> None:
+    """P1 Task 7: the logger plugin's spool from a real Snakemake 9.27.1 run (the `files`
+    workflow of engine-bridges/snakemake-logger-plugin-spectio, recorded by its
+    `test_recorded_fixture_current`), projected unchanged: the requested threads, memory and
+    runtime and the benchmark of `job_info` (Task 29), the rules' logs of `job_info` and
+    `job_error` (Task 28), and the failure of the job that broke."""
+    client = client_for(settings, writer)
+    run = Run(settings, writer, "snakemake")
+    launch = run.paths.launch_dir
+    text = (FIXTURES / "logger-plugin" / "snakemake-9.27.1_files.spool.jsonl").read_text()
+    repo = Path(__file__).resolve().parents[4]
+    text = text.replace(FIXTURE_RUN, RUN).replace("<launch>", str(launch))
+    text = text.replace("<repo>", str(repo))
+    found = [SpoolEvent.model_validate_json(line) for line in text.splitlines()]
+    write_private(launch / "logs" / "broken.log", "broken\n")
+    write_private(
+        launch / "benchmarks" / "measured.tsv",
+        "s\th:m:s\tmax_rss\tmax_vms\tmax_uss\tmax_pss\tio_in\tio_out\tmean_load\tcpu_time\n"
+        "0.0125\t0:00:00\t3.5\t9\t1\t1\t0\t0\t0.0\t0.0\n",
+    )
+    push(writer, settings, run.launch_id, *found)
+
+    items = {i["process"]: i for i in task_items(client)}
+    assert items["measured"]["resources"] == {
+        "cpus": 2,
+        "memory_bytes": 100 * 1024**2,
+        "time_s": 300.0,
+        "realtime_s": 0.0125,
+        "cpu_percent": 0.0,
+        "peak_rss_bytes": int(3.5 * 1024**2),
+        "source": "benchmark",
+    }
+    (failure,) = detail(client)["failures"]
+    assert failure["process"] == "broken"
+    assert failure["log_tail"] == "broken"
+    with writer.engine.connect() as conn:
+        logs: dict[str, Any] = dict(
+            conn.execute(select(tasks.c.process_or_rule, attempts.c.logs).join(attempts)).all()
+        )
+    assert logs == {
+        "measured": [{"path": "logs/measured.log", "kind": "rule_log"}],
+        "broken": [{"path": "logs/broken.log", "kind": "rule_log"}],
+    }
 
 
 # --- dev-env §15.3 req. 15 ------------------------------------------------------------------

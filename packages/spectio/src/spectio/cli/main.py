@@ -1,5 +1,7 @@
 """The `spectio` command (cli-and-shared-libraries.md §2)."""
 
+import math
+from importlib.metadata import version
 from pathlib import Path
 from typing import Annotated
 
@@ -7,12 +9,30 @@ import typer
 
 from spectio.cli.doctor import run_doctor
 from spectio.cli.init import run_init
-from spectio.cli.serve import run_serve
+from spectio.cli.login import run_login
+from spectio.cli.open import run_open
+from spectio.cli.serve import DETACH_WAIT_S, run_detach, run_serve
 from spectio.config import Settings
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 
 Opt = typer.Option
+
+
+def _print_version(value: bool) -> None:
+    if value:
+        typer.echo(f"spectio {version('spectio')}")
+        raise typer.Exit
+
+
+@app.callback()
+def main(
+    _version: Annotated[
+        bool | None,
+        Opt("--version", callback=_print_version, is_eager=True, help="Print the version"),
+    ] = None,
+) -> None:
+    """Spectio: launch and monitor Nextflow and Snakemake runs."""
 
 
 @app.command()
@@ -59,6 +79,55 @@ def serve(
     force: Annotated[
         bool, Opt("--force", help="Start even if server.json names a server on another node")
     ] = False,
+    detach: Annotated[
+        bool, Opt("--detach", help="Run it in the tmux session spectio-server; print the link")
+    ] = False,
+    wait: Annotated[
+        float,
+        Opt(
+            "--wait", min=0, max=3600, help="--detach: seconds to wait for the link (exit 3 after)"
+        ),
+    ] = DETACH_WAIT_S,
+    no_link: Annotated[bool, Opt("--no-link", hidden=True)] = False,  # spectio open's start
+    pane: Annotated[bool, Opt("--pane", hidden=True)] = False,  # the pane --detach starts
 ) -> None:
-    """Start the server on 127.0.0.1, at the port spectio init recorded."""
-    raise typer.Exit(run_serve(force))
+    """Start the server on 127.0.0.1, at the port spectio init recorded.
+
+    Exit codes: 0, it served and stopped (with --detach, a link was printed); 2, refused;
+    3, --detach started it but got no link in time: it is still starting."""
+    if not math.isfinite(wait):  # nan passes the range, and no deadline would pass
+        raise typer.BadParameter("must be a number of seconds", param_hint="'--wait'")
+    if not detach and (wait != DETACH_WAIT_S or no_link):
+        raise typer.BadParameter("only with --detach", param_hint="'--wait' or '--no-link'")
+    if detach and not pane:
+        raise typer.Exit(run_detach(force, wait, not no_link))
+    raise typer.Exit(run_serve(force, pane))
+
+
+@app.command()
+def login(
+    print_link: Annotated[
+        bool, Opt("--print-link", help="Print a new link to the server of this node")
+    ] = False,
+    as_json: Annotated[bool, Opt("--json", help="One line for spectio open: the ticket")] = False,
+) -> None:
+    """Get a new single-use token link from the running server (valid 15 minutes)."""
+    raise typer.Exit(run_login(print_link, as_json))
+
+
+@app.command("open")
+def open_(
+    host: Annotated[str, typer.Argument(help="The cluster, as ssh names it")],
+    node: Annotated[
+        str | None, Opt(help="Login node for a first start; overrides server.json")
+    ] = None,
+    remote_cmd: Annotated[
+        str | None, Opt(help="Shell text that runs spectio there, e.g. a full path")
+    ] = None,
+    local_port: Annotated[
+        int | None, Opt(help="Laptop end of the tunnel; default a free port")
+    ] = None,
+    no_browser: Annotated[bool, Opt("--no-browser", help="Print the link only")] = False,
+) -> None:
+    """On the laptop: open your server on a cluster login node, through an SSH tunnel."""
+    raise typer.Exit(run_open(host, node, remote_cmd, local_port, not no_browser))

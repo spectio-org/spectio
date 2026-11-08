@@ -13,7 +13,8 @@ only. `job_finished` gives `succeeded`, `job_error` `failed`.
 
 No engine event ends a Snakemake launch: its head's exit code does (`head_exit`). On a non-zero
 exit the run's failure takes the text of the last `error` record, and blames the launch's last
-failed job when no later attempt of its task ran.
+failed job when no later attempt of its task ran. A run started from a terminal has no exit
+code: once the PID check sees its head gone, its spool ends it (`spool_end`, assumed: inbox #113).
 """
 
 from typing import Any
@@ -25,12 +26,18 @@ from spectio_sdk.events import (
     SnakemakeJobError,
     SnakemakeJobFinished,
     SnakemakeJobInfo,
+    SnakemakeOutputPath,
     SnakemakeProgress,
     SnakemakeRunInfo,
     SnakemakeSlurmSubmitted,
     SnakemakeWorkflowStarted,
 )
-from spectio_server.failure import SchedulerInfo, parse_smk_slurm_message, smk_resources
+from spectio_server.failure import (
+    SchedulerInfo,
+    parse_smk_slurm_message,
+    smk_request,
+    smk_resources,
+)
 from spectio_server.files.taskfiles import launch_rel, log_kind, native_id
 from spectio_server.ids import new_id
 from spectio_server.projector.runs import (
@@ -44,6 +51,8 @@ from spectio_server.store.schema import (
     attempts,
     events,
     launches,
+    run_output_events,
+    run_processes,
     runs,
     snakemake_jobs,
     tasks,
@@ -52,9 +61,13 @@ from spectio_server.store.schema import (
 )
 
 ERROR_EVENT = "spectio.engine.snakemake.error"
+PROGRESS_EVENT = "spectio.engine.snakemake.progress"
+MAX_LOGS = 32  # paths kept per attempt: a rule's `log:` files and its SLURM job log
+MAX_OUTPUTS = 64  # output paths kept per attempt (P1 Task 34)
+TBD = "<TBD>"  # a checkpoint's output before it ran (T2 note)
 
 
-def project(p: Projection, data: BaseModel) -> None:
+def project(p: Projection, data: BaseModel, kind: str = "") -> None:
     """Project one `snakemake.<kind>` event, already logged."""
     if isinstance(data, SnakemakeWorkflowStarted):
         p.set_started()
@@ -64,6 +77,8 @@ def project(p: Projection, data: BaseModel) -> None:
         freeze.plan_jobs(p, data.stats)
     elif isinstance(data, SnakemakeProgress):  # the total grows past each checkpoint
         p.conn.execute(update(runs).where(runs.c.id == p.run_id).values(tasks_expected=data.total))
+    elif isinstance(data, SnakemakeOutputPath):  # `temp_removed` or `protected` (P1 Task 34)
+        _output_event(p, data.path, kind)
     elif p.state in TERMINAL:  # a late job event is logged only (api §8.2)
         return
     elif isinstance(data, SnakemakeJobInfo):
@@ -88,23 +103,79 @@ def drives(p: Projection) -> bool:
     return bool(engine == "snakemake")
 
 
-def head_exit(p: Projection, exit_code: int) -> None:
-    """End the launch on the head's exit code: 0 succeeds, anything else fails."""
-    if p.state in TERMINAL:
-        return
-    # The engine's last record is its end; the clock only when it wrote none (inbox #79).
+def from_terminal(p: Projection) -> bool:
+    """True for a run started from a terminal (`cli-observed`): its head has no exit code."""
+    origin = p.conn.execute(select(runs.c.origin).where(runs.c.id == p.run_id)).scalar_one()
+    return bool(origin == "cli-observed")
+
+
+def _end_time(p: Projection) -> None:
+    """The engine's last record is its end; the clock only when it wrote none (inbox #79)."""
     p.event_time = p.conn.execute(
         select(events.c.engine_time)
         .where(events.c.run_id == p.run_id, events.c.engine_time.is_not(None))
         .order_by(events.c.seq.desc())
         .limit(1)
     ).scalar_one_or_none()
+
+
+def head_exit(p: Projection, exit_code: int) -> None:
+    """End the launch on the head's exit code: 0 succeeds, anything else fails."""
+    if p.state in TERMINAL:
+        return
+    _end_time(p)
     p.move("running")  # a launch that wrote no event at all
     p.end_launch()
     if exit_code == 0:
         p.move("succeeded")
     else:
         p.move("failed", _failure(p, exit_code))
+
+
+def spool_end(p: Projection) -> None:
+    """End a run started from a terminal whose head is gone, from what its spool shows
+    (CR-P3T25-01; assumed, inbox #113): `succeeded` when its last progress is done == total, no
+    task is `failed` and no `error` record came after that progress (a retried job logs one
+    before it); `failed` with `engine_fault` otherwise."""
+    if p.state in TERMINAL:
+        return
+    _end_time(p)
+    last = p.conn.execute(
+        select(events.c.seq, events.c.payload)
+        .where(events.c.run_id == p.run_id, events.c.type == PROGRESS_EVENT)
+        .order_by(events.c.seq.desc())
+        .limit(1)
+    ).one_or_none()
+    progress = last.payload if last is not None else {}
+    error = p.conn.execute(
+        select(events.c.payload)
+        .where(
+            events.c.run_id == p.run_id,
+            events.c.type == ERROR_EVENT,
+            events.c.seq > (last.seq if last is not None else 0),
+        )
+        .order_by(events.c.seq.desc())
+        .limit(1)
+    ).scalar_one_or_none()
+    failed = p.conn.execute(
+        select(tasks.c.id).where(tasks.c.run_id == p.run_id, tasks.c.state == "failed").limit(1)
+    ).first()
+    done, total = progress.get("done"), progress.get("total")
+    p.move("running")  # a launch that wrote no event at all
+    p.end_launch()
+    if total is not None and done == total and failed is None and error is None:
+        p.move("succeeded")
+        return
+    said = (error or {}).get("msg") or (
+        f"its last progress: {done} of {total} jobs"
+        if last is not None
+        else "it holds no progress record"
+    )
+    message = (
+        "Started from a terminal: Snakemake sends no end event and its exit code is not known, "
+        f"so this end is assumed from its spool ({said})."
+    )
+    p.move("failed", failure_json("engine_fault", message))
 
 
 def _job_info(p: Projection, data: SnakemakeJobInfo) -> None:
@@ -115,9 +186,17 @@ def _job_info(p: Projection, data: SnakemakeJobInfo) -> None:
         p.conn.execute(
             insert(snakemake_jobs).values(launch_id=p.launch_id, jobid=data.jobid, task_id=task_id)
         )
+    if data.is_checkpoint:
+        p.conn.execute(
+            update(run_processes)
+            .where(run_processes.c.run_id == p.run_id, run_processes.c.name == data.rule_name)
+            .values(is_checkpoint=True)
+        )
     last = _last_attempt(p, task_id)
     if last is not None and last.state != "failed":
         return  # already running, or a re-announced job that has ended: no new attempt
+    request = None if data.local else smk_request(data.threads, data.resources)
+    slurm = None if data.local else {"request": request, "custom_options": data.custom_options}
     p.conn.execute(
         insert(attempts).values(
             id=new_id("att"),
@@ -128,6 +207,8 @@ def _job_info(p: Projection, data: SnakemakeJobInfo) -> None:
             state="running",
             logs=_logs(p, [], data.log),
             resources=_resources(p, data),
+            outputs=_outputs(p, data.output),
+            slurm=slurm,
         )
     )
     p.sync_tasks([task_id])
@@ -148,18 +229,90 @@ def _resources(p: Projection, data: SnakemakeJobInfo) -> dict[str, Any]:
 
 def _logs(p: Projection, kept: list[dict[str, str]], paths: list[str]) -> list[dict[str, str]]:
     """`kept` and the paths of `paths` that resolve in the launch directory (req. 13), each
-    once, with its kind; the others are counted, not kept."""
+    once, with its kind, at most `MAX_LOGS` in all; the others are counted, not kept
+    (SEC-P3T28-05: the events are untrusted, and this runs on the writer)."""
     roots = p.roots()
     found = list(kept)
     if roots is None:
         return found
+    seen = {log["path"] for log in found}
     for path in paths:
         rel = launch_rel(roots.launch_dir, path)
         if rel is None:
             p.dropped["path_outside_run"] += 1
-        elif all(log["path"] != str(rel) for log in found):
+        elif str(rel) in seen:
+            continue
+        elif len(found) >= MAX_LOGS:
+            p.dropped["logs_capped"] += 1
+        else:
+            seen.add(str(rel))
             found.append({"path": str(rel), "kind": log_kind(rel)})
     return found
+
+
+def _outputs(p: Projection, paths: list[str]) -> list[str] | None:
+    """The job's outputs that resolve in the launch directory, and `<TBD>`, each once, at most
+    `MAX_OUTPUTS`; each is also the run's `output` row, once, which a removal or protection
+    text must name to be kept (SEC-P3T33-03)."""
+    roots = p.roots()
+    if roots is None:
+        return None
+    found: list[str] = []
+    for path in paths:
+        rel = TBD if path == TBD else launch_rel(roots.launch_dir, path)
+        if rel is None:
+            p.dropped["path_outside_run"] += 1
+        elif str(rel) in found:
+            continue
+        elif len(found) >= MAX_OUTPUTS:
+            p.dropped["outputs_capped"] += 1
+        else:
+            found.append(str(rel))
+            if rel != TBD:
+                _output_row(p, str(rel), "output")
+    return found
+
+
+def _output_row(p: Projection, path: str, kind: str) -> bool:
+    """Record (run, path, kind) once; False when it was already."""
+    key = (
+        (run_output_events.c.run_id == p.run_id)
+        & (run_output_events.c.path == path)
+        & (run_output_events.c.kind == kind)
+    )
+    if p.conn.execute(select(run_output_events.c.id).where(key)).first() is not None:
+        return False
+    p.conn.execute(
+        insert(run_output_events).values(
+            id=new_id("out"),
+            created_at=p.now,
+            run_id=p.run_id,
+            path=path,
+            kind=kind,
+            at=p.event_time or p.now,
+        )
+    )
+    return True
+
+
+def _output_event(p: Projection, path: str, kind: str) -> None:
+    """A removal or write-protection text: kept once, for an output of the run's jobs only;
+    another path is counted, not kept (the texts come from Snakemake's log, untrusted)."""
+    roots = p.roots()
+    if roots is None or kind not in ("temp_removed", "protected"):
+        return
+    rel = launch_rel(roots.launch_dir, path)
+    known = (
+        (run_output_events.c.run_id == p.run_id)
+        & (run_output_events.c.path == str(rel))
+        & (run_output_events.c.kind == "output")
+    )
+    if rel is None:
+        p.dropped["path_outside_run"] += 1
+    elif p.conn.execute(select(run_output_events.c.id).where(known)).first() is None:
+        p.dropped["output_unknown"] += 1
+    else:
+        _output_row(p, str(rel), kind)
 
 
 def _open_attempt(p: Projection, jobid: int) -> Any:

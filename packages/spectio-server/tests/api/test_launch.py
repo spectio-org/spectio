@@ -281,7 +281,8 @@ def test_launch_engine_file_missing_422(authed_client: TestClient, synthetic: Pa
 def test_launch_snakemake_accepted(
     authed_client: TestClient, synthetic: Path, writer: Writer
 ) -> None:
-    """Accepted here; the runner fails it `launch_error` until the logger (P1 Task 7)."""
+    """Accepted here; the runner fails it `launch_error` while the logger plugin (P1 Task 7) is
+    not in the bridges directory: the wheel bundles it with P1 Task 21."""
     location = str(synthetic / "snakemake")
     response = launch(authed_client, location, "snakemake", profiles=["local"])
     assert response.status_code == 201, response.text
@@ -470,7 +471,7 @@ def test_api_absent_off_local(settings: Settings, writer: Writer, synthetic: Pat
     client = client_for(slurm, writer)
     response = client.get(INSPECT, params={"location": str(synthetic / "nextflow")})
     assert response.status_code == 404
-    assert "Tasks 12" in response.json()["detail"]
+    assert "spectio init --local" in response.json()["detail"]
     assert launch(client, str(synthetic / "nextflow"), "nextflow").status_code == 404
     assert table(writer, runs) == []
 
@@ -484,9 +485,10 @@ def test_api_absent_on_shared_host(
     response = client.get(INSPECT, params={"location": "/srv/pipeline"})
     assert response.status_code == 404
     assert "sinfo on PATH" in response.json()["detail"]
-    assert "Tasks 12 to 16" in response.json()["detail"]
-    text = start_text(settings, "login1", "alice", client.app.state.no_api)  # type: ignore[attr-defined]
-    assert "sinfo on PATH" in text and "Tasks 12 to 16" in text
+    assert "spectio init --local" in response.json()["detail"]
+    no_api = client.app.state.no_api  # type: ignore[attr-defined]
+    text = start_text(settings, "login1", "alice", no_api, "http://127.0.0.1:1/auth/link#t")
+    assert "sinfo on PATH" in text and "spectio init --local" in text
 
 
 class RecordingLauncher:

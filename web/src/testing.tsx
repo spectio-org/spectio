@@ -120,6 +120,9 @@ export function app(path: string) {
   return router;
 }
 
+/** A task's resources before anything is known (schema `Resources`). */
+export const NO_RESOURCES = { cpus: null, memory_bytes: null, time_s: null, realtime_s: null, cpu_percent: null, peak_rss_bytes: null, source: null };
+
 /** A run as `GET /runs` returns it. */
 export function run(over: Record<string, unknown> = {}) {
   return {
@@ -139,9 +142,23 @@ export function run(over: Record<string, unknown> = {}) {
     },
     profiles: ["test"],
     failure: null,
-    head: { session: "spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W", node: "login1", alive: true, exit_code: null },
+    head: { session: "spectio-run_01JBC6Q4ZK7M8N2P3R5S7T9V1W", node: "login1", alive: true, exit_code: null, checked: true },
     task_counts: { succeeded: 24, running: 3, pending: 5 },
     summary: { tasks: { done: 24, total: 32, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" },
     ...over,
   };
 }
+
+/** The fields `GET /runs/{id}` adds to a run (schema `RunDetail`), as for a run that cannot be
+ * resumed while it runs. */
+export const DETAIL = {
+  params: {},
+  stages_note: null,
+  failures: [],
+  failures_total: 0,
+  command: null,
+  parent_run_id: null,
+  resumed_as: [],
+  actions: { resume: { allowed: false, reason: "running" } },
+  results_dir: null,
+};

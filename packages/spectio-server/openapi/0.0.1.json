@@ -1,8 +1,218 @@
 {
   "components": {
     "schemas": {
+      "Actions": {
+        "properties": {
+          "resume": {
+            "$ref": "#/components/schemas/ResumeAction"
+          }
+        },
+        "required": [
+          "resume"
+        ],
+        "title": "Actions",
+        "type": "object"
+      },
+      "CodeLoading": {
+        "description": "A value that loads code or configuration (dev-env \u00a715.3 req. 16): `field` is a dotted\npath, `params.<name>`, `workflow.location`, or `engine.<option>` for an engine option of\n`spectio.toml`; `writable_by_others` when the path, or a directory above it, is.",
+        "properties": {
+          "field": {
+            "title": "Field",
+            "type": "string"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          },
+          "writable_by_others": {
+            "title": "Writable By Others",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "field",
+          "value",
+          "writable_by_others"
+        ],
+        "title": "CodeLoading",
+        "type": "object"
+      },
+      "Command": {
+        "description": "The engine command as the head script runs it (P1 Task 30): `text` is `argv` quoted for a\nPOSIX shell, and names the parameters file, never a value.",
+        "properties": {
+          "argv": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Argv",
+            "type": "array"
+          },
+          "text": {
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "argv",
+          "text"
+        ],
+        "title": "Command",
+        "type": "object"
+      },
+      "Efficiency": {
+        "description": "A job's CPU and memory efficiency (schedulers \u00a73.6), `cpu` and `mem` ratios, never\nclamped; `peak_rss_bytes` and `elapsed_s` the values they come from.",
+        "properties": {
+          "cpu": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu"
+          },
+          "elapsed_s": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed S"
+          },
+          "mem": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem"
+          },
+          "peak_rss_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak Rss Bytes"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "local",
+                  "no_job_id",
+                  "accounting_off",
+                  "not_found",
+                  "cached"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "source": {
+            "anyOf": [
+              {
+                "enum": [
+                  "trace",
+                  "benchmark",
+                  "sacct"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Source"
+          },
+          "state": {
+            "enum": [
+              "running",
+              "pending_accounting",
+              "available",
+              "unavailable"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cpu",
+          "mem",
+          "elapsed_s",
+          "peak_rss_bytes",
+          "state",
+          "source",
+          "reason"
+        ],
+        "title": "Efficiency",
+        "type": "object"
+      },
+      "EngineSettings": {
+        "description": "What the engine said of its temporary files (P1 Task 34): Nextflow's `cleanup`;\nSnakemake's `--notemp`, null in 0.0.1 (no event carries it).",
+        "properties": {
+          "cleanup": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cleanup"
+          },
+          "notemp": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notemp"
+          }
+        },
+        "required": [
+          "cleanup",
+          "notemp"
+        ],
+        "title": "EngineSettings",
+        "type": "object"
+      },
+      "Exchange": {
+        "additionalProperties": false,
+        "properties": {
+          "ticket": {
+            "maxLength": 128,
+            "title": "Ticket",
+            "type": "string"
+          }
+        },
+        "required": [
+          "ticket"
+        ],
+        "title": "Exchange",
+        "type": "object"
+      },
       "Failure": {
-        "description": "A job that failed on its last attempt (P1 Task 29); `log_tail` is the last 20 lines of\nits log, escape sequences removed, or null when it could not be read.",
+        "description": "A job that failed on its last attempt (P1 Task 29); `log_tail` is the last 20 lines of\nits log, escape sequences removed, or null when it could not be read. `work_dir` is the\ndirectory the job files listing shows, for the failure summary's Copy (P1 Task 32).",
         "properties": {
           "attempt_n": {
             "title": "Attempt N",
@@ -73,6 +283,17 @@
           "task_id": {
             "title": "Task Id",
             "type": "string"
+          },
+          "work_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Work Dir"
           }
         },
         "required": [
@@ -84,7 +305,8 @@
           "message",
           "native_id",
           "scheduler",
-          "log_tail"
+          "log_tail",
+          "work_dir"
         ],
         "title": "Failure",
         "type": "object"
@@ -103,10 +325,14 @@
         "type": "object"
       },
       "Head": {
-        "description": "The last launch's head; `session` is null for a run started from a terminal.",
+        "description": "The last launch's head; `session` is null for a run started from a terminal, whose head\nis `checked` only when its pointer's boot ID is the server's (architecture \u00a713.8).",
         "properties": {
           "alive": {
             "title": "Alive",
+            "type": "boolean"
+          },
+          "checked": {
+            "title": "Checked",
             "type": "boolean"
           },
           "exit_code": {
@@ -140,9 +366,28 @@
           "session",
           "node",
           "alive",
-          "exit_code"
+          "exit_code",
+          "checked"
         ],
         "title": "Head",
+        "type": "object"
+      },
+      "JobCount": {
+        "properties": {
+          "done": {
+            "title": "Done",
+            "type": "integer"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "done",
+          "total"
+        ],
+        "title": "JobCount",
         "type": "object"
       },
       "JsonValue": {},
@@ -188,6 +433,64 @@
         "title": "LaunchIn",
         "type": "object"
       },
+      "LaunchTemplate": {
+        "description": "A `POST /runs` body prefilled from a run, for Copy to a new launch (P1 Task 30), with the\nparameters that differ from the pipeline's defaults and the values that load code.",
+        "properties": {
+          "code_loading": {
+            "items": {
+              "$ref": "#/components/schemas/CodeLoading"
+            },
+            "title": "Code Loading",
+            "type": "array"
+          },
+          "non_default": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Non Default",
+            "type": "array"
+          },
+          "params": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/JsonValue"
+            },
+            "title": "Params",
+            "type": "object"
+          },
+          "profiles": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Profiles",
+            "type": "array"
+          },
+          "workflow": {
+            "$ref": "#/components/schemas/TemplateWorkflow"
+          }
+        },
+        "required": [
+          "workflow",
+          "profiles",
+          "params",
+          "non_default",
+          "code_loading"
+        ],
+        "title": "LaunchTemplate",
+        "type": "object"
+      },
+      "Link": {
+        "properties": {
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "url"
+        ],
+        "title": "Link",
+        "type": "object"
+      },
       "Process": {
         "properties": {
           "counts": {
@@ -196,6 +499,17 @@
             },
             "title": "Counts",
             "type": "object"
+          },
+          "efficiency": {
+            "$ref": "#/components/schemas/ProcessEfficiency"
+          },
+          "is_checkpoint": {
+            "title": "Is Checkpoint",
+            "type": "boolean"
+          },
+          "lower_bound": {
+            "title": "Lower Bound",
+            "type": "boolean"
           },
           "process": {
             "title": "Process",
@@ -215,15 +529,108 @@
               }
             ],
             "title": "Stage Id"
+          },
+          "status": {
+            "enum": [
+              "pending",
+              "running",
+              "done",
+              "failed",
+              "stopped",
+              "awaiting_checkpoint",
+              "not_needed",
+              "up_to_date",
+              "no_tasks"
+            ],
+            "title": "Status",
+            "type": "string"
           }
         },
         "required": [
           "process",
           "stage_id",
           "counts",
-          "retries"
+          "retries",
+          "status",
+          "is_checkpoint",
+          "lower_bound",
+          "efficiency"
         ],
         "title": "Process",
+        "type": "object"
+      },
+      "ProcessEfficiency": {
+        "description": "Over the last attempts of its tasks (schedulers \u00a73.6): ratios, 0.63 for 63 %.",
+        "properties": {
+          "cpu_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu Max"
+          },
+          "cpu_mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu Mean"
+          },
+          "jobs": {
+            "$ref": "#/components/schemas/JobCount"
+          },
+          "measured": {
+            "title": "Measured",
+            "type": "integer"
+          },
+          "mem_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Max"
+          },
+          "mem_mean": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Mean"
+          },
+          "requested": {
+            "$ref": "#/components/schemas/Requested"
+          },
+          "used": {
+            "$ref": "#/components/schemas/Used"
+          }
+        },
+        "required": [
+          "jobs",
+          "measured",
+          "cpu_mean",
+          "cpu_max",
+          "mem_mean",
+          "mem_max",
+          "requested",
+          "used"
+        ],
+        "title": "ProcessEfficiency",
         "type": "object"
       },
       "ProcessList": {
@@ -240,6 +647,94 @@
           "items"
         ],
         "title": "ProcessList",
+        "type": "object"
+      },
+      "RelaunchIn": {
+        "additionalProperties": false,
+        "description": "The body of `:relaunch` (api \u00a75.1); 0.0.1 takes `mode: resume` alone.",
+        "properties": {
+          "dry_run": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "from_stage": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "gates": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "mode": {
+            "enum": [
+              "resume",
+              "rerun_from",
+              "fresh"
+            ],
+            "title": "Mode",
+            "type": "string"
+          },
+          "params_patch": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "resources": {
+            "$ref": "#/components/schemas/JsonValue"
+          },
+          "samplesheets": {
+            "$ref": "#/components/schemas/JsonValue"
+          }
+        },
+        "required": [
+          "mode"
+        ],
+        "title": "RelaunchIn",
+        "type": "object"
+      },
+      "Requested": {
+        "description": "The most common request of the jobs; `varies` when they differ.",
+        "properties": {
+          "cpus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpus"
+          },
+          "mem_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Bytes"
+          },
+          "time_limit_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit S"
+          },
+          "varies": {
+            "title": "Varies",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "cpus",
+          "mem_bytes",
+          "time_limit_s",
+          "varies"
+        ],
+        "title": "Requested",
         "type": "object"
       },
       "Resources": {
@@ -338,6 +833,163 @@
           "source"
         ],
         "title": "Resources",
+        "type": "object"
+      },
+      "ResultEntry": {
+        "description": "One entry of a results folder (P1 Task 31): a folder's `size` is null, and so are both\nfor a `link_outside`; `mtime` is ISO 8601.",
+        "properties": {
+          "mtime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mtime"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "type": {
+            "enum": [
+              "dir",
+              "file",
+              "link_outside"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "type",
+          "size",
+          "mtime"
+        ],
+        "title": "ResultEntry",
+        "type": "object"
+      },
+      "ResultReport": {
+        "properties": {
+          "group": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Group"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "title",
+          "group"
+        ],
+        "title": "ResultReport",
+        "type": "object"
+      },
+      "Results": {
+        "description": "One folder of a run's results directory, and the reports found below its root.",
+        "properties": {
+          "entries": {
+            "items": {
+              "$ref": "#/components/schemas/ResultEntry"
+            },
+            "title": "Entries",
+            "type": "array"
+          },
+          "exists": {
+            "title": "Exists",
+            "type": "boolean"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "reports": {
+            "items": {
+              "$ref": "#/components/schemas/ResultReport"
+            },
+            "title": "Reports",
+            "type": "array"
+          },
+          "root": {
+            "title": "Root",
+            "type": "string"
+          },
+          "truncated": {
+            "title": "Truncated",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "root",
+          "path",
+          "exists",
+          "entries",
+          "truncated",
+          "reports"
+        ],
+        "title": "Results",
+        "type": "object"
+      },
+      "ResumeAction": {
+        "properties": {
+          "allowed": {
+            "title": "Allowed",
+            "type": "boolean"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "running",
+                  "head_unverified",
+                  "resume_in_progress",
+                  "cli_observed",
+                  "not_failed_or_cancelled",
+                  "launch_dir_refused",
+                  "session_id_refused"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "allowed",
+          "reason"
+        ],
+        "title": "ResumeAction",
         "type": "object"
       },
       "Run": {
@@ -481,6 +1133,19 @@
       },
       "RunDetail": {
         "properties": {
+          "actions": {
+            "$ref": "#/components/schemas/Actions"
+          },
+          "command": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Command"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "created_at": {
             "title": "Created At",
             "type": "string"
@@ -495,6 +1160,9 @@
               }
             ],
             "title": "Ended At"
+          },
+          "engine_settings": {
+            "$ref": "#/components/schemas/EngineSettings"
           },
           "failure": {
             "anyOf": [
@@ -571,11 +1239,40 @@
             "title": "Params",
             "type": "object"
           },
+          "parent_run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Run Id"
+          },
           "profiles": {
             "items": {
               "type": "string"
             },
             "title": "Profiles",
+            "type": "array"
+          },
+          "results_dir": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Results Dir"
+          },
+          "resumed_as": {
+            "items": {
+              "$ref": "#/components/schemas/RunRef"
+            },
+            "title": "Resumed As",
             "type": "array"
           },
           "stages_note": {
@@ -646,7 +1343,13 @@
           "params",
           "stages_note",
           "failures",
-          "failures_total"
+          "failures_total",
+          "command",
+          "parent_run_id",
+          "resumed_as",
+          "actions",
+          "results_dir",
+          "engine_settings"
         ],
         "title": "RunDetail",
         "type": "object"
@@ -679,8 +1382,53 @@
         "title": "RunList",
         "type": "object"
       },
+      "RunRef": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "state": {
+            "enum": [
+              "queued",
+              "running",
+              "pausing",
+              "paused",
+              "awaiting_review",
+              "cancelling",
+              "succeeded",
+              "failed",
+              "cancelled"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "state"
+        ],
+        "title": "RunRef",
+        "type": "object"
+      },
       "RunSummary": {
         "properties": {
+          "dag_updates": {
+            "title": "Dag Updates",
+            "type": "integer"
+          },
           "last_failure": {
             "anyOf": [
               {
@@ -694,6 +1442,13 @@
               }
             ],
             "title": "Last Failure"
+          },
+          "open_checkpoints": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Open Checkpoints",
+            "type": "array"
           },
           "stage_mode": {
             "enum": [
@@ -711,7 +1466,9 @@
         "required": [
           "tasks",
           "last_failure",
-          "stage_mode"
+          "stage_mode",
+          "open_checkpoints",
+          "dag_updates"
         ],
         "title": "RunSummary",
         "type": "object"
@@ -872,6 +1629,288 @@
         "title": "ServerVersion",
         "type": "object"
       },
+      "Slurm": {
+        "description": "`custom_options`: `slurm_extra` or `clusterOptions` was set, the text never kept.",
+        "properties": {
+          "allocated": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SlurmAllocated"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "custom_options": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Custom Options"
+          },
+          "request": {
+            "$ref": "#/components/schemas/SlurmRequest"
+          }
+        },
+        "required": [
+          "request",
+          "allocated",
+          "custom_options"
+        ],
+        "title": "Slurm",
+        "type": "object"
+      },
+      "SlurmAllocated": {
+        "description": "What SLURM gave the job, from `sacct` once it ended.",
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "alloc_tres": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alloc Tres"
+          },
+          "ncpus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ncpus"
+          },
+          "nnodes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nnodes"
+          },
+          "partition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partition"
+          },
+          "qos": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qos"
+          },
+          "req_mem_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Req Mem Bytes"
+          },
+          "time_limit_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit S"
+          }
+        },
+        "required": [
+          "partition",
+          "account",
+          "qos",
+          "ncpus",
+          "req_mem_bytes",
+          "time_limit_s",
+          "alloc_tres",
+          "nnodes"
+        ],
+        "title": "SlurmAllocated",
+        "type": "object"
+      },
+      "SlurmRequest": {
+        "description": "What the engine asked SLURM for (api \u00a75 note of 2026-11-07).",
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "constraint": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Constraint"
+          },
+          "cpus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpus"
+          },
+          "gres": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gres"
+          },
+          "mem_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Bytes"
+          },
+          "mem_per_cpu_bytes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Per Cpu Bytes"
+          },
+          "nodes": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nodes"
+          },
+          "partition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partition"
+          },
+          "qos": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Qos"
+          },
+          "tasks": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tasks"
+          },
+          "time_limit_s": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Limit S"
+          }
+        },
+        "required": [
+          "partition",
+          "account",
+          "qos",
+          "cpus",
+          "mem_bytes",
+          "mem_per_cpu_bytes",
+          "time_limit_s",
+          "gres",
+          "constraint",
+          "nodes",
+          "tasks"
+        ],
+        "title": "SlurmRequest",
+        "type": "object"
+      },
       "Stage": {
         "properties": {
           "id": {
@@ -995,6 +2034,9 @@
             ],
             "title": "Attempt N"
           },
+          "efficiency": {
+            "$ref": "#/components/schemas/Efficiency"
+          },
           "id": {
             "title": "Id",
             "type": "string"
@@ -1016,6 +2058,16 @@
           },
           "resources": {
             "$ref": "#/components/schemas/Resources"
+          },
+          "slurm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Slurm"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "stage_id": {
             "anyOf": [
@@ -1063,7 +2115,9 @@
           "state",
           "stage_id",
           "attempt_n",
-          "resources"
+          "resources",
+          "slurm",
+          "efficiency"
         ],
         "title": "Task",
         "type": "object"
@@ -1171,6 +2225,20 @@
             ],
             "title": "Native Id"
           },
+          "outputs": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/TaskOutput"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outputs"
+          },
           "task_id": {
             "title": "Task Id",
             "type": "string"
@@ -1192,7 +2260,8 @@
           "attempt",
           "work_dir",
           "native_id",
-          "files"
+          "files",
+          "outputs"
         ],
         "title": "TaskFiles",
         "type": "object"
@@ -1225,6 +2294,49 @@
         "title": "TaskList",
         "type": "object"
       },
+      "TaskOutput": {
+        "description": "One output of a Snakemake job's `job_info`: `tbd` for a checkpoint's `<TBD>`.",
+        "properties": {
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "protected": {
+            "title": "Protected",
+            "type": "boolean"
+          },
+          "removed_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Removed At"
+          },
+          "state": {
+            "enum": [
+              "present",
+              "not_yet",
+              "absent",
+              "temp_removed",
+              "tbd"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "state",
+          "protected",
+          "removed_at"
+        ],
+        "title": "TaskOutput",
+        "type": "object"
+      },
       "TaskSummary": {
         "properties": {
           "cached": {
@@ -1239,6 +2351,10 @@
             "title": "Failed",
             "type": "integer"
           },
+          "lower_bound": {
+            "title": "Lower Bound",
+            "type": "boolean"
+          },
           "total": {
             "title": "Total",
             "type": "integer"
@@ -1248,9 +2364,76 @@
           "done",
           "total",
           "failed",
-          "cached"
+          "cached",
+          "lower_bound"
         ],
         "title": "TaskSummary",
+        "type": "object"
+      },
+      "TemplateWorkflow": {
+        "properties": {
+          "engine": {
+            "enum": [
+              "nextflow",
+              "snakemake"
+            ],
+            "title": "Engine",
+            "type": "string"
+          },
+          "location": {
+            "title": "Location",
+            "type": "string"
+          },
+          "revision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Revision"
+          }
+        },
+        "required": [
+          "location",
+          "revision",
+          "engine"
+        ],
+        "title": "TemplateWorkflow",
+        "type": "object"
+      },
+      "Used": {
+        "properties": {
+          "elapsed_s_max": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Elapsed S Max"
+          },
+          "peak_rss_bytes_max": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak Rss Bytes Max"
+          }
+        },
+        "required": [
+          "peak_rss_bytes_max",
+          "elapsed_s_max"
+        ],
+        "title": "Used",
         "type": "object"
       },
       "ValidationError": {
@@ -1396,6 +2579,67 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/auth/links": {
+      "post": {
+        "operationId": "new_link_api_v1_auth_links_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Link"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "No server key, or another one"
+          }
+        },
+        "summary": "New Link",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/magic-links:exchange": {
+      "post": {
+        "operationId": "exchange_api_v1_auth_magic_links_exchange_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Exchange"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "description": "The ticket was already used, has expired or is unknown"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Exchange",
+        "tags": [
+          "auth"
+        ]
+      }
+    },
     "/api/v1/events/stream": {
       "get": {
         "operationId": "events_stream_api_v1_events_stream_get",
@@ -1619,6 +2863,16 @@
               "title": "Source",
               "type": "string"
             }
+          },
+          {
+            "in": "query",
+            "name": "follow",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Follow",
+              "type": "boolean"
+            }
           }
         ],
         "responses": {
@@ -1648,7 +2902,7 @@
     },
     "/api/v1/runs/{run_id}/processes": {
       "get": {
-        "description": "One item per process or rule: those the projector recorded (`onProcessCreate`, the rule\nfiles at the freeze, a first task), in that order, with the stage they froze with; then any\nknown from tasks only (a database from before P1 Task 27), in their first task's order.",
+        "description": "One item per process or rule: those the projector recorded (`onProcessCreate`, the rule\nfiles at the freeze, a first task), in that order, with the stage they froze with; then any\nknown from tasks only (a database from before P1 Task 27), in their first task's order.\nEach has its `status`, and the `efficiency` of its jobs (P1 Task 34).",
         "operationId": "list_processes_api_v1_runs__run_id__processes_get",
         "parameters": [
           {
@@ -1684,6 +2938,106 @@
           }
         },
         "summary": "List Processes"
+      }
+    },
+    "/api/v1/runs/{run_id}/results": {
+      "get": {
+        "operationId": "run_results_api_v1_runs__run_id__results_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "path",
+            "required": false,
+            "schema": {
+              "default": "",
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Results"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Run Results"
+      }
+    },
+    "/api/v1/runs/{run_id}/results/raw/{path}": {
+      "get": {
+        "operationId": "result_file_api_v1_runs__run_id__results_raw__path__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "download",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Download",
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Result File"
       }
     },
     "/api/v1/runs/{run_id}/stages": {
@@ -1865,6 +3219,94 @@
           }
         },
         "summary": "Cancel Run"
+      }
+    },
+    "/api/v1/runs/{run_id}:launch-template": {
+      "get": {
+        "operationId": "launch_template_api_v1_runs__run_id__launch_template_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LaunchTemplate"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Launch Template"
+      }
+    },
+    "/api/v1/runs/{run_id}:relaunch": {
+      "post": {
+        "operationId": "relaunch_api_v1_runs__run_id__relaunch_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RelaunchIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RunDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Relaunch"
       }
     },
     "/api/v1/runs:summary": {

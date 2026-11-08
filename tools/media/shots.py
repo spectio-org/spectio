@@ -53,12 +53,18 @@ class Shot:
 APP_LAUNCH = ("wait:Try a test pipeline", "click:Use spectio/synthetic-scenarios, $SPECTIO_DEMO_PIPELINE",
               "wait:form from nextflow_schema.json")
 
+# P1 Task 32: Launch checks each value before sending. `scale` has "minimum": 1, so 0 shows its error.
+APP_LAUNCH_CHECKED = APP_LAUNCH + ("open:Scenario", "fill:scale=0", "wait:Must be at least 1", "view:Must be at least 1")
+
 # The synthetic Snakemake pipeline (tests/pipelines/synthetic/snakemake) copied to
 # $SPECTIO_DEMO_SMK_PIPELINE, with a config/config.yaml of the Snakefile's own defaults plus a nested
 # map `ref` (tools/media/README.md, live shots). Its two sections are opened, one dotted field is set.
 # Since UI parity C the Parameters card folds too, so its first group is named with its status.
 APP_LAUNCH_SMK = ("fill:Pipeline=$SPECTIO_DEMO_SMK_PIPELINE", "click:Load", "wait:Config preview, as YAML",
                   "open:Parameters defaults", "open:ref", "fill:outdir=results-smk", "fill:ref.release=114")
+
+# The report viewer, on the MultiQC fixture (tests/fixtures/results/multiqc-1.35_custom_content_report.html.gz).
+REPORT_VIEWER = ("wait:Untrusted report", "frame:/data/demo/mqc/in")
 
 REGISTRY: dict[str, Shot] = {
     s.name: s
@@ -80,7 +86,7 @@ REGISTRY: dict[str, Shot] = {
         # copied to $SPECTIO_DEMO_PIPELINE (a path free of forbidden terms, fixtures.yaml).
         Shot("app-launch", "/launch", 1440, 1000,
              "0.0.1, live: the launch form, the synthetic Nextflow pipeline picked from Try a test pipeline and loaded",
-             themes=("light", "dark"), live=APP_LAUNCH),
+             themes=("light", "dark"), live=APP_LAUNCH_CHECKED),
         Shot("app-launch-phone", "/launch", 390, 844, "0.0.1, live: the same launch form on a phone, from its top",
              themes=("light", "dark"), live=APP_LAUNCH + ("top:",)),
         # P1 Task 20: the same serve, after one run of the synthetic pipeline with profile `test` has
@@ -104,6 +110,18 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-run-detail-failed", "/runs/$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
              "0.0.1, live: a failed run of the synthetic Nextflow pipeline, why it failed and the first task to fail",
              themes=("light", "dark"), live=("wait:Why it failed", "wait:First to fail")),
+        # P1 Task 32: the failed run is launched with fail_mode=oom and fail_process=MERGE (three attempts, exit
+        # code 137), so that Attempt shows. "Open the job files of" is the failure card's button; the task sheet
+        # opens on the job log. The sacct values stay "unavailable" (no cluster): the honest state.
+        Shot("app-run-job-files", "/runs/$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
+             "0.0.1, live: the task sheet of a failed task open on .command.log, with Attempt and one tab per file",
+             themes=("light", "dark"), live=("wait:Why it failed", "open:Open the job files of", "wait:Attempt")),
+        Shot("app-run-job-files-phone", "/runs/$SPECTIO_DEMO_FAILED_RUN", 390, 844,
+             "0.0.1, live: the same sheet on a phone, the files in a File select",
+             themes=("light", "dark"), live=("wait:Why it failed", "open:Open the job files of", "wait:Attempt")),
+        Shot("app-run-tasks", "/runs/$SPECTIO_DEMO_FAILED_RUN?tab=tasks", 1440, 1000,
+             "0.0.1, live: the Tasks tab with Attempt, Duration, CPUs, Memory and Time limit columns",
+             themes=("light", "dark"), live=("wait:Peak memory", "open:All")),
         # P3 UI parity D: the process sheet (LiteTaskFiles), opened from a process name on the same run.
         # `open:` waits for the sheet's slide-in to settle.
         Shot("app-run-process", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
@@ -115,6 +133,57 @@ REGISTRY: dict[str, Shot] = {
              "0.0.1, live: the Logs tab of a failed run, searched: marked matches, the counter and the level buttons",
              themes=("light", "dark"), live=("wait:Download last 64 KiB", "wait:Command error",
                                              "fill:Search the head output=MERGE", "wait:1 / 4")),
+        # P1 Task 32 part two. The synthetic pipeline's MULTIQC process writes only a stand-in table, so the
+        # demo run's multiqc/multiqc_report.html is replaced by the regenerated MultiQC fixture first
+        # (tools/media/README.md); `frame:` waits for its neutral input path inside the viewer. The failed run
+        # is the Task 32 run above, which Resume and Copy start from. The report is stopped, not loaded: its
+        # scripts throw on localStorage in the opaque-origin sandbox, so "Loading report.." stays (inbox #102).
+        Shot("app-report-viewer", "/runs/$SPECTIO_DEMO_RUN/report?path=multiqc/multiqc_report.html", 1440, 1180,
+             "0.0.1, live: a MultiQC report in the sandboxed report viewer, under its Untrusted report banner. "
+             "Its tables show, but its scripts stop on localStorage: 'Loading report..' stays, the toolbox does not start",
+             themes=("light", "dark"), live=REPORT_VIEWER),
+        Shot("app-report-viewer-phone", "/runs/$SPECTIO_DEMO_RUN/report?path=multiqc/multiqc_report.html", 390, 844,
+             "0.0.1, live: the same report on a phone, stopped the same way", themes=("light", "dark"), live=REPORT_VIEWER),
+        Shot("app-run-results", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
+             "0.0.1, live: the Summary's Results and reports: the results directory, MultiQC first, the folders",
+             themes=("light", "dark"), live=("wait:Browse all results", "view:Browse all results")),
+        Shot("app-run-results-phone", "/runs/$SPECTIO_DEMO_RUN", 390, 844,
+             "0.0.1, live: the same section on a phone",
+             themes=("light", "dark"), live=("wait:Browse all results", "view:Browse all results")),
+        Shot("app-results-browser", "/runs/$SPECTIO_DEMO_RUN/results?path=multiqc", 1440, 1000,
+             "0.0.1, live: the results browser in one folder: path bar, Copy path, a report and files that download",
+             themes=("light", "dark"), live=("wait:multiqc_report.html",)),
+        Shot("app-run-resume", "/runs/$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
+             "0.0.1, live: Resume this run? on a failed run: same launch directory, -resume, the tasks reused",
+             themes=("light", "dark"), live=("wait:Why it failed", "open:Resume", "wait:Resume this run?")),
+        Shot("app-run-resume-phone", "/runs/$SPECTIO_DEMO_FAILED_RUN", 390, 844,
+             "0.0.1, live: the same question as a bottom sheet on a phone, Resume above Cancel",
+             themes=("light", "dark"), live=("wait:Why it failed", "open:Resume", "wait:Resume this run?")),
+        Shot("app-launch-copy", "/launch?from=$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
+             "0.0.1, live: Copy to a new launch: the form prefilled from the failed run, the values that differ named",
+             themes=("light", "dark"), live=("wait:Prefilled from",)),
+        Shot("app-launch-copy-phone", "/launch?from=$SPECTIO_DEMO_FAILED_RUN", 390, 844,
+             "0.0.1, live: the same prefilled form on a phone",
+             themes=("light", "dark"), live=("wait:Prefilled from",)),
+        # P1 Tasks 34 and 35 (batch P3-B04): $SPECTIO_DEMO_RUN is a finished run of the synthetic Nextflow pipeline, and
+        # $SPECTIO_DEMO_SMK_RUN a finished run of the synthetic Snakemake pipeline (a copy with a config/config.yaml,
+        # launched from the UI; chunks 0, so the `split` checkpoint grows the DAG). Both on a local executor: no
+        # `sacct`, so no SLURM facts; the efficiency is the engine's own.
+        Shot("app-run-rules", "/runs/$SPECTIO_DEMO_SMK_RUN", 1440, 1500,
+             "0.0.1, live: a Snakemake run's rules: the Checkpoint chip on split, the DAG-updated line, the states legend",
+             themes=("light", "dark"), live=("wait:Checkpoint",)),
+        Shot("app-run-by-process", "/runs/$SPECTIO_DEMO_RUN?tab=tasks", 1680, 1000,
+             "0.0.1, live: Tasks, By process: CPU and memory efficiency per process, the request and the sort button of each column",
+             themes=("light", "dark"), live=("tab:By process", "wait:CPU eff. mean")),
+        Shot("app-run-by-process-phone", "/runs/$SPECTIO_DEMO_RUN?tab=tasks", 390, 844,
+             "0.0.1, live: By process on a phone: the waste lines and one card per process",
+             themes=("light", "dark"), live=("tab:By process", "wait:Sort by", "view:Over each task")),
+        Shot("app-run-job-outputs", "/runs/$SPECTIO_DEMO_SMK_RUN?tab=tasks&process=merge", 1440, 1000,
+             "0.0.1, live: a Snakemake job's sheet on its Outputs tab (the rule has no log file): the file, present, and what Snakemake does not say",
+             themes=("light", "dark"), live=("open:Files of", "wait:present")),
+        Shot("app-run-task-efficiency", "/runs/$SPECTIO_DEMO_RUN?tab=tasks&process=FINAL_REPORT", 1440, 1000,
+             "0.0.1, live: a Nextflow task's sheet: Efficiency from the engine's trace, with its source, and the 'low' flag",
+             themes=("light", "dark"), live=("open:Files of", "wait:from the Nextflow trace")),
         # P3-demo: the public demo build (npm run build:demo) served statically under /demo/, so
         # SPECTIO_URL is http://…/demo and the route is in the hash (README.md, "The public demo").
         Shot("demo-runs", "/#/runs", 1280, 800,

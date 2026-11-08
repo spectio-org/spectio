@@ -7,6 +7,7 @@ import socket
 from datetime import UTC, datetime, timedelta
 from importlib.metadata import version
 from pathlib import Path
+from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
@@ -16,10 +17,10 @@ from spectio.config import Settings
 from spectio.runner.rundir import make_run_dirs, run_paths
 from spectio_server.app import NO_API
 from spectio_server.files.redact import strip_escapes
-from spectio_server.store.schema import launches
+from spectio_server.store.schema import launches, runs
 from spectio_server.store.writer import Writer
 
-from .conftest import add_run
+from .conftest import add_run, client_for
 
 RUNS = "/api/v1/runs"
 T0 = datetime(2026, 10, 30, 8, 0, tzinfo=UTC)
@@ -74,14 +75,23 @@ def test_run_detail_after_replay(authed_client: TestClient, replayed_flaky: str)
     run = response.json()
     assert (run["id"], run["name"], run["state"]) == (replayed_flaky, "rnaseq-flaky", "succeeded")
     assert run["task_counts"] == {"succeeded": 65}
-    assert run["summary"]["tasks"] == {"done": 65, "total": 65, "failed": 0, "cached": 0}
+    assert run["summary"]["tasks"] == {
+        "done": 65,
+        "total": 65,
+        "failed": 0,
+        "cached": 0,
+        "lower_bound": False,  # P1 Task 34
+    }
     assert run["head"] is None  # no head report in a replay
     assert run["params"] == {"reads": 4}
     assert run["started_at"] is not None and run["ended_at"] is not None
     processes = authed_client.get(f"{RUNS}/{replayed_flaky}/processes").json()["items"]
     assert [p["process"] for p in processes] == FLAKY_PROCESSES
     assert sum(p["retries"] for p in processes) == 2  # two tasks retried once
-    assert all(set(p) == {"process", "stage_id", "counts", "retries"} for p in processes)
+    keys = {"process", "stage_id", "counts", "retries"}
+    keys |= {"status", "is_checkpoint", "lower_bound", "efficiency"}  # P1 Task 34
+    assert all(set(p) == keys for p in processes)
+    assert {p["status"] for p in processes} == {"done"}
 
 
 def test_runs_paging(authed_client: TestClient, writer: Writer, settings: Settings) -> None:
@@ -129,12 +139,16 @@ def test_runs_summary_by_state(
 
 
 def test_version_behind_session(
-    client: TestClient, authed_client: TestClient, settings: Settings
+    client: TestClient, authed_client: TestClient, settings: Settings, writer: Writer
 ) -> None:
-    """TODO(P1 Task 16): with no session cookie → 401. Until sign-in is built, the API is not
-    mounted on a shared machine, and other sites and hosts are refused (inbox #86, #87)."""
+    """No session cookie → 401; the API is not mounted on a shared machine, and other sites
+    and hosts are refused (inbox #86, #87)."""
+    signed_out = client_for(settings, writer, signed_in=False)
+    problem(signed_out.get("/api/v1/version"), 401, "unauthenticated")
     absent = problem(client.get("/api/v1/version"), 404, "not-found")
     assert NO_API in str(absent["detail"])
+    # inbox #109 rule 5 (a), Thomas 2026-11-07: the reason, not a plan's task numbers
+    assert "Task" not in NO_API and "spectio init --local" in NO_API and "shared" in NO_API
     problem(
         authed_client.get("/api/v1/version", headers={"Host": "evil.example"}),
         400,
@@ -234,7 +248,38 @@ def test_queued_run_head_null(
         "node": socket.gethostname(),
         "alive": True,
         "exit_code": None,
+        "checked": True,
     }
+
+
+def test_terminal_run_head(authed_client: TestClient, writer: Writer, settings: Settings) -> None:
+    """A run started from a terminal (P1 Task 25): its head is its pointer's, with no session;
+    `checked` only on the server's boot (architecture §13.8: "head on <node>, not checked")."""
+    launch_id = add_run(writer, settings, rid(2), "t", "running", origin="cli-observed")
+    boot = Path("/proc/sys/kernel/random/boot_id").read_text().strip()
+
+    here = socket.gethostname()
+
+    def head_of(host: str, boot_id: str) -> Any:
+        writer.submit(
+            lambda c: c.execute(
+                update(launches)
+                .where(launches.c.id == launch_id)
+                .values(head_host=host, host_boot_id=boot_id, pid=42, pid_start_time="9")
+            )
+        ).result()
+        return authed_client.get(f"{RUNS}/{rid(2)}").json()["head"]
+
+    assert head_of(here, boot) == {
+        "session": None,
+        "node": here,
+        "alive": True,
+        "exit_code": None,
+        "checked": True,
+    }
+    assert head_of(here, "00000000-0000-4000-8000-000000000000")["checked"] is False
+    # the same kernel, another host name (a container): the runner never checks it either
+    assert head_of("login7", boot)["checked"] is False
 
 
 def test_run_unknown_404(authed_client: TestClient) -> None:
@@ -258,6 +303,7 @@ def test_tasks_filter_and_paging(authed_client: TestClient, seeded_stages: str) 
     assert set(running[0]) == {
         *("id", "process", "tag", "name", "state", "stage_id"),
         *("attempt_n", "resources"),  # P1 Task 29
+        *("slurm", "efficiency"),  # P1 Task 34
     }
 
 
@@ -343,6 +389,66 @@ def test_logs_confined(
         404,
         "log-not-found",
     )
+
+
+def test_logs_snakemake_lineage_own_log(
+    authed_client: TestClient, writer: Writer, settings: Settings
+) -> None:
+    """A Resume's runs share the root's launch directory (CR-P3T30-03): each run reads the
+    newest log written between its creation and its head's exit, not the lineage's newest."""
+    parent, child = rid(1), rid(2)
+    add_run(writer, settings, parent, "smk", "failed", engine="snakemake", created_at=T0)
+    add_run(
+        writer,
+        settings,
+        child,
+        "smk",
+        "queued",
+        engine="snakemake",
+        created_at=T0 + timedelta(hours=2),
+        lineage_id=parent,
+        parent_run_id=parent,
+    )
+    writer.submit(
+        lambda c: c.execute(
+            update(launches)
+            .where(launches.c.run_id == parent)
+            .values(exited_at=T0 + timedelta(hours=1))
+        )
+    ).result()
+    logs = launch_dir(settings, parent) / ".snakemake" / "log"
+    logs.mkdir(parents=True)
+    for name, at in (("old.log", -1), ("parent.log", 0.5), ("child.log", 3)):
+        (logs / name).write_text(f"{name}\n")
+        when = (T0 + timedelta(hours=at)).timestamp()
+        os.utime(logs / name, (when, when))
+
+    def engine_log(run_id: str) -> Any:
+        return authed_client.get(f"{RUNS}/{run_id}/logs", params={"source": "engine"})
+
+    assert engine_log(parent).text == "parent.log\n"
+    assert engine_log(child).text == "child.log\n"
+    (logs / "child.log").unlink()  # the child's engine has not written its log yet
+    problem(engine_log(child), 404, "log-not-found")
+    # CR-P3T30-05: no exited_at on the parent's launch: the window ends at the run's end
+    writer.submit(
+        lambda c: c.execute(
+            update(launches).where(launches.c.run_id == parent).values(exited_at=None)
+        )
+    ).result()
+    writer.submit(
+        lambda c: c.execute(
+            update(runs).where(runs.c.id == parent).values(ended_at=T0 + timedelta(hours=1))
+        )
+    ).result()
+    (logs / "child.log").write_text("child.log\n")
+    when = (T0 + timedelta(hours=3)).timestamp()
+    os.utime(logs / "child.log", (when, when))
+    assert engine_log(parent).text == "parent.log\n"
+    writer.submit(  # terminal, and neither the head's exit nor the run's end is known
+        lambda c: c.execute(update(runs).where(runs.c.id == parent).values(ended_at=None))
+    ).result()
+    problem(engine_log(parent), 404, "log-not-found")
 
 
 @pytest.mark.parametrize("bad", ["%00", "a" * 300])

@@ -66,6 +66,16 @@
 .launch-param > .launch-param-check {
   grid-column: 1;
 }
+/* Required or optional, as text after the name (P1 Task 32; the boards' "(optional)" style). */
+.launch-param-need {
+  font-weight: 400;
+  font-size: 12.5px;
+  color: var(--sp-text-secondary);
+}
+.launch-param-need[data-required] {
+  font-weight: 600;
+  color: var(--sp-text-primary);
+}
 .launch-param > .launch-param-meta {
   grid-column: 2;
   grid-row: 1;
@@ -252,4 +262,25 @@
   .launch-try-item {
     width: 100%;
   }
+}
+/* Copy to a new launch (P1 Task 32 part two): the banner and the warning under outdir. */
+.launch-prefill {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  background: var(--sp-surface-subtle);
+}
+.launch-loading {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 13px;
+}
+.launch-loading code {
+  overflow-wrap: anywhere;
+}
+.launch-warning {
+  margin: -4px 0 8px;
+  font-size: 13px;
+  color: var(--sp-state-review-fg);
 }

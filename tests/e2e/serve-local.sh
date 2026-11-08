@@ -9,11 +9,13 @@
 # --seed-stages adds a run directory seeded with the rnaseq preview events (tests/e2e/seed_stages.py),
 # which the server indexes at boot: the Playwright smoke's stages check (P1 Task 27).
 #
-# There is no sign-in link yet (P1 Tasks 12 to 16, inbox #80): the server listens on 127.0.0.1
-# only, in local mode, and serves the screens to anyone on this machine who opens the address.
+# Sign-in is the token link (P1 Task 12): `spectio serve` prints a first one, single use. Once the
+# server answers, the path of its spectio.toml is written to tests/e2e/.local/<port>.config (0600,
+# removed at exit), so that the Playwright run (tests/e2e/global-setup.ts) can ask for a fresh
+# link with `spectio login --print-link --json` and sign in as a user does.
 set -euo pipefail
 
-usage() { sed -n '2,13p' "$0" | sed 's/^# \{0,1\}//'; }
+usage() { sed -n '2,16p' "$0" | sed 's/^# \{0,1\}//'; }
 
 port=""
 seed=""
@@ -47,6 +49,7 @@ fi
 home=$(mktemp -d "${TMPDIR:-/tmp}/spectio-local.XXXXXX")
 chmod 700 "$home"
 server=""
+pointer=""
 # The heads of the runs under $home still alive: "pid" per line. The launch directories are
 # untrusted (spec §15.3 req. 10 to 12): head.pid is parsed as strictly as spectio.runner.local
 # parses it (_PID_LINE), a symlink is refused, and a PID is named only when it is above 1, leads
@@ -73,6 +76,8 @@ stop() {
     kill -TERM "$server" 2>/dev/null || true
     wait "$server" 2>/dev/null || true
   fi
+  # The pointer, and the session cookie global-setup.ts saved next to it: both die with the server.
+  [ -z "$pointer" ] || rm -f "$pointer" "${pointer%.config}.state.json"
   local live
   live=$(heads)
   if [ -n "$live" ]; then
@@ -99,7 +104,8 @@ spectio() { uv run --locked --project "$repo" --python "$PYTHON_VERSION" spectio
 export SPECTIO_CONFIG=$home/data/spectio.toml
 
 mkdir -m 700 "$home/data" "$home/db" "$home/runs"
-# Until the wheel carries the bridges (P1 Task 21), build nf-spectio here when Nextflow is found.
+# A checkout's editable install carries no bridges (only a wheel does, P1 Task 21): build nf-spectio
+# here when Nextflow is found.
 nextflow=${SPECTIO_ENGINES_NEXTFLOW_CMD:-$(command -v nextflow || true)}
 if [ -z "${SPECTIO_BRIDGES_DIR:-}" ] && [ -n "$nextflow" ]; then
   echo "== Building nf-spectio with $nextflow"
@@ -120,11 +126,16 @@ uv run --locked --project "$repo" --python "$PYTHON_VERSION" spectio serve &
 server=$!
 url="http://127.0.0.1:$port/"
 for _ in $(seq 1 100); do
-  if curl -fsS -o /dev/null "${url}api/v1/version" 2>/dev/null; then
+  # GET /auth/link answers 200 with no session (P1 Assumption 8); every API route needs one.
+  if curl -fsS -o /dev/null "${url}auth/link" 2>/dev/null; then
+    pointer=$repo/tests/e2e/.local/$port.config
+    mkdir -p "$repo/tests/e2e/.local" && chmod 700 "$repo/tests/e2e/.local"  # also when it already exists
+    (umask 077 && printf '%s\n' "$SPECTIO_CONFIG" > "$pointer")
     cat <<EOF
 
-  Spectio is running. Open $url
-  Runs go under $home/runs. No sign-in link yet: the server answers on 127.0.0.1 only.
+  Spectio is running on $url. Sign in with the link printed above (single use, 15 minutes);
+  for another one: SPECTIO_CONFIG=$SPECTIO_CONFIG uv run --project $repo spectio login --print-link
+  Runs go under $home/runs.
   Press Ctrl-C to stop it: runs still active are stopped, and the temporary directory is removed.
 
 EOF

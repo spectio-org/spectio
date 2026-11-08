@@ -58,12 +58,13 @@ media:
     kind: screenshot
     # live: needs a running `spectio serve` (SPECTIO_URL) and the synthetic Nextflow pipeline
     # copied to a path free of forbidden terms (SPECTIO_DEMO_PIPELINE), tools/media/README.md;
-    # since UI parity D it is picked from Try a test pipeline, so the server must have run it once
+    # since UI parity D it is picked from Try a test pipeline, so the server must have run it once;
+    # P1 Task 32 retake: scale set to 0 shows its field error (Launch checks)
     generator: python3 tools/media/shots.py run --shot app-launch --theme both
     outputs: [docs/assets/shots/app-launch_light.webp, docs/assets/shots/app-launch_dark.webp]
   - id: app-launch-phone
     kind: screenshot
-    # live, as app-launch, at 390 x 844
+    # live, as app-launch, at 390 x 844; P1 Task 32 retake: (optional) labels
     generator: python3 tools/media/shots.py run --shot app-launch-phone --theme both
     outputs: [docs/assets/shots/app-launch-phone_light.webp, docs/assets/shots/app-launch-phone_dark.webp]
   - id: app-home
@@ -103,9 +104,25 @@ media:
     outputs: [docs/assets/shots/app-run-detail-phone_light.webp]
   - id: app-run-detail-failed
     kind: screenshot
-    # live, as app-run-detail; SPECTIO_DEMO_FAILED_RUN is a run launched with fail_mode=exit fail_process=MERGE
+    # live, as app-run-detail; SPECTIO_DEMO_FAILED_RUN is a run launched with fail_mode=oom fail_process=MERGE
+    # (three attempts, exit 137; the Task 32 retake; sacct values stay unavailable: no cluster)
     generator: python3 tools/media/shots.py run --shot app-run-detail-failed --theme both
     outputs: [docs/assets/shots/app-run-detail-failed_light.webp, docs/assets/shots/app-run-detail-failed_dark.webp]
+  - id: app-run-job-files
+    kind: screenshot
+    # live, as app-run-detail-failed (P1 Task 32): the failure card's Open job files, the task sheet on .command.log with Attempt
+    generator: python3 tools/media/shots.py run --shot app-run-job-files --theme both
+    outputs: [docs/assets/shots/app-run-job-files_light.webp, docs/assets/shots/app-run-job-files_dark.webp]
+  - id: app-run-job-files-phone
+    kind: screenshot
+    # live, as app-run-job-files, at 390 x 844: the File select
+    generator: python3 tools/media/shots.py run --shot app-run-job-files-phone --theme both
+    outputs: [docs/assets/shots/app-run-job-files-phone_light.webp, docs/assets/shots/app-run-job-files-phone_dark.webp]
+  - id: app-run-tasks
+    kind: screenshot
+    # live, as app-run-detail-failed: the Tasks tab, filter All, with the resources columns (P1 Task 32)
+    generator: python3 tools/media/shots.py run --shot app-run-tasks --theme both
+    outputs: [docs/assets/shots/app-run-tasks_light.webp, docs/assets/shots/app-run-tasks_dark.webp]
   - id: app-run-process
     kind: screenshot
     # live, as app-run-detail: the sheet of process ALIGN, opened from its name (P3 UI parity D)
@@ -451,6 +468,14 @@ media:
       - docs/assets/diagrams/p3-t06-nf-spectio_dark.svg
       - docs/assets/diagrams/p3-t06-nf-spectio_light.png
       - docs/assets/diagrams/p3-t06-nf-spectio_dark.png
+  - id: p3-t7-snakemake-logger
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t7_snakemake_logger.py
+    outputs:
+      - docs/assets/diagrams/p3-t7-snakemake-logger_light.svg
+      - docs/assets/diagrams/p3-t7-snakemake-logger_dark.svg
+      - docs/assets/diagrams/p3-t7-snakemake-logger_light.png
+      - docs/assets/diagrams/p3-t7-snakemake-logger_dark.png
   - id: p3-t08-init-doctor
     kind: diagram
     generator: python3 tools/diagrams/p3_t08_init_doctor.py
@@ -475,6 +500,46 @@ media:
       - docs/assets/diagrams/p3-t11-serve_dark.svg
       - docs/assets/diagrams/p3-t11-serve_light.png
       - docs/assets/diagrams/p3-t11-serve_dark.png
+  - id: p3-b01-signed-in
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b01_signed_in.py
+    outputs:
+      - docs/assets/diagrams/p3-b01-signed-in_light.svg
+      - docs/assets/diagrams/p3-b01-signed-in_dark.svg
+      - docs/assets/diagrams/p3-b01-signed-in_light.png
+      - docs/assets/diagrams/p3-b01-signed-in_dark.png
+  - id: p3-b02-open-tmux
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b02_open_tmux.py
+    outputs:
+      - docs/assets/diagrams/p3-b02-open-tmux_light.svg
+      - docs/assets/diagrams/p3-b02-open-tmux_dark.svg
+      - docs/assets/diagrams/p3-b02-open-tmux_light.png
+      - docs/assets/diagrams/p3-b02-open-tmux_dark.png
+  - id: p3-b03-wheel-terminal-release
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b03_wheel_terminal_release.py
+    outputs:
+      - docs/assets/diagrams/p3-b03-wheel-terminal-release_light.svg
+      - docs/assets/diagrams/p3-b03-wheel-terminal-release_dark.svg
+      - docs/assets/diagrams/p3-b03-wheel-terminal-release_light.png
+      - docs/assets/diagrams/p3-b03-wheel-terminal-release_dark.png
+  - id: p3-b04-dag-temp-efficiency
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b04_dag_temp_efficiency.py
+    outputs:
+      - docs/assets/diagrams/p3-b04-dag-temp-efficiency_light.svg
+      - docs/assets/diagrams/p3-b04-dag-temp-efficiency_dark.svg
+      - docs/assets/diagrams/p3-b04-dag-temp-efficiency_light.png
+      - docs/assets/diagrams/p3-b04-dag-temp-efficiency_dark.png
+  - id: p3-b05-sacct-bind-detach
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b05_sacct_bind_detach.py
+    outputs:
+      - docs/assets/diagrams/p3-b05-sacct-bind-detach_light.svg
+      - docs/assets/diagrams/p3-b05-sacct-bind-detach_dark.svg
+      - docs/assets/diagrams/p3-b05-sacct-bind-detach_light.png
+      - docs/assets/diagrams/p3-b05-sacct-bind-detach_dark.png
   - id: p3-t17-launch
     kind: diagram
     generator: python3 tools/diagrams/p3_t17_launch.py
@@ -579,6 +644,109 @@ media:
       - docs/assets/diagrams/p3-t29-failure-facts_dark.svg
       - docs/assets/diagrams/p3-t29-failure-facts_light.png
       - docs/assets/diagrams/p3-t29-failure-facts_dark.png
+  - id: p3-t30-resume-lineage
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t30_resume_lineage.py
+    outputs:
+      - docs/assets/diagrams/p3-t30-resume-lineage_light.svg
+      - docs/assets/diagrams/p3-t30-resume-lineage_dark.svg
+      - docs/assets/diagrams/p3-t30-resume-lineage_light.png
+      - docs/assets/diagrams/p3-t30-resume-lineage_dark.png
+  - id: p3-t31-results
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t31_results.py
+    outputs:
+      - docs/assets/diagrams/p3-t31-results_light.svg
+      - docs/assets/diagrams/p3-t31-results_dark.svg
+      - docs/assets/diagrams/p3-t31-results_light.png
+      - docs/assets/diagrams/p3-t31-results_dark.png
+  - id: p3-t32-failed-job
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t32_failed_job.py
+    outputs:
+      - docs/assets/diagrams/p3-t32-failed-job_light.svg
+      - docs/assets/diagrams/p3-t32-failed-job_dark.svg
+      - docs/assets/diagrams/p3-t32-failed-job_light.png
+      - docs/assets/diagrams/p3-t32-failed-job_dark.png
+  - id: p3-t32b-run-tools
+    kind: diagram
+    generator: python3 tools/diagrams/p3_t32b_run_tools.py
+    outputs:
+      - docs/assets/diagrams/p3-t32b-run-tools_light.svg
+      - docs/assets/diagrams/p3-t32b-run-tools_dark.svg
+      - docs/assets/diagrams/p3-t32b-run-tools_light.png
+      - docs/assets/diagrams/p3-t32b-run-tools_dark.png
+  - id: app-report-viewer
+    kind: screenshot
+    # as app-run-detail, with the run's multiqc/multiqc_report.html replaced by the gunzipped MultiQC fixture
+    # tests/fixtures/results/multiqc-1.35_custom_content_report.html.gz (P1 Task 32 part two, tools/media/README.md)
+    generator: python3 tools/media/shots.py run --shot app-report-viewer --theme both
+    outputs: [docs/assets/shots/app-report-viewer_light.webp, docs/assets/shots/app-report-viewer_dark.webp]
+  - id: app-report-viewer-phone
+    kind: screenshot
+    # as app-report-viewer, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-report-viewer-phone --theme both
+    outputs: [docs/assets/shots/app-report-viewer-phone_light.webp, docs/assets/shots/app-report-viewer-phone_dark.webp]
+  - id: app-run-results
+    kind: screenshot
+    # live, as app-run-detail, scrolled to Results and reports (P1 Task 32 part two)
+    generator: python3 tools/media/shots.py run --shot app-run-results --theme both
+    outputs: [docs/assets/shots/app-run-results_light.webp, docs/assets/shots/app-run-results_dark.webp]
+  - id: app-run-results-phone
+    kind: screenshot
+    # as app-run-results, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-run-results-phone --theme both
+    outputs: [docs/assets/shots/app-run-results-phone_light.webp, docs/assets/shots/app-run-results-phone_dark.webp]
+  - id: app-results-browser
+    kind: screenshot
+    # live, as app-run-detail, the results browser in multiqc/ (P1 Task 32 part two)
+    generator: python3 tools/media/shots.py run --shot app-results-browser --theme both
+    outputs: [docs/assets/shots/app-results-browser_light.webp, docs/assets/shots/app-results-browser_dark.webp]
+  - id: app-run-resume
+    kind: screenshot
+    # live, as app-run-detail-failed, with Resume clicked: the dialog (P1 Task 32 part two)
+    generator: python3 tools/media/shots.py run --shot app-run-resume --theme both
+    outputs: [docs/assets/shots/app-run-resume_light.webp, docs/assets/shots/app-run-resume_dark.webp]
+  - id: app-run-resume-phone
+    kind: screenshot
+    # as app-run-resume, at 390 x 844: the bottom sheet
+    generator: python3 tools/media/shots.py run --shot app-run-resume-phone --theme both
+    outputs: [docs/assets/shots/app-run-resume-phone_light.webp, docs/assets/shots/app-run-resume-phone_dark.webp]
+  - id: app-launch-copy
+    kind: screenshot
+    # live, /launch?from=SPECTIO_DEMO_FAILED_RUN: Copy to a new launch (P1 Task 32 part two)
+    generator: python3 tools/media/shots.py run --shot app-launch-copy --theme both
+    outputs: [docs/assets/shots/app-launch-copy_light.webp, docs/assets/shots/app-launch-copy_dark.webp]
+  - id: app-launch-copy-phone
+    kind: screenshot
+    # as app-launch-copy, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-launch-copy-phone --theme both
+    outputs: [docs/assets/shots/app-launch-copy-phone_light.webp, docs/assets/shots/app-launch-copy-phone_dark.webp]
+  - id: app-run-rules
+    kind: screenshot
+    # live, a finished Snakemake run launched from the UI (synthetic pipeline copy, chunks 0): the Summary's Rules table with the Checkpoint chip on split, the DAG-updated line and the states legend (P1 Task 35, batch P3-B04)
+    generator: python3 tools/media/shots.py run --shot app-run-rules --theme both
+    outputs: [docs/assets/shots/app-run-rules_light.webp, docs/assets/shots/app-run-rules_dark.webp]
+  - id: app-run-by-process
+    kind: screenshot
+    # live, a finished Nextflow run, Tasks, By process, at 1680 x 1000: the efficiency, request and usage columns (P1 Task 35)
+    generator: python3 tools/media/shots.py run --shot app-run-by-process --theme both
+    outputs: [docs/assets/shots/app-run-by-process_light.webp, docs/assets/shots/app-run-by-process_dark.webp]
+  - id: app-run-by-process-phone
+    kind: screenshot
+    # live, as app-run-by-process at 390 x 844: the waste lines and the process cards
+    generator: python3 tools/media/shots.py run --shot app-run-by-process-phone --theme both
+    outputs: [docs/assets/shots/app-run-by-process-phone_light.webp, docs/assets/shots/app-run-by-process-phone_dark.webp]
+  - id: app-run-job-outputs
+    kind: screenshot
+    # live, the Snakemake run, rule merge: the job sheet on its Outputs tab (the rule has no log file)
+    generator: python3 tools/media/shots.py run --shot app-run-job-outputs --theme both
+    outputs: [docs/assets/shots/app-run-job-outputs_light.webp, docs/assets/shots/app-run-job-outputs_dark.webp]
+  - id: app-run-task-efficiency
+    kind: screenshot
+    # live, the Nextflow run, process FINAL_REPORT: the task sheet with Efficiency from the engine's trace
+    generator: python3 tools/media/shots.py run --shot app-run-task-efficiency --theme both
+    outputs: [docs/assets/shots/app-run-task-efficiency_light.webp, docs/assets/shots/app-run-task-efficiency_dark.webp]
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines
@@ -590,3 +758,54 @@ media:
     # under the demo host name demo-hpc-login1 (its own UTS namespace: root or user namespaces)
     generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-serve.yaml'
     outputs: [docs/assets/casts/spectio-serve.cast]
+  - id: spectio-sign-in
+    kind: cast
+    # the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines,
+    # under the demo host name demo-hpc-login1 (its own UTS namespace: root or user namespaces);
+    # the ticket and the session secret are masked by a sed that the cast shows
+    generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-sign-in.yaml'
+    outputs: [docs/assets/casts/spectio-sign-in.cast]
+  - id: spectio-open
+    kind: cast
+    # the real CLI from the checkout's .venv (uv sync first) against a real local-mode server, with
+    # the fake ssh of packages/spectio/tests/fakebin (no sshd, no forwarding, so --no-browser), under
+    # the demo host name demo-hpc-login1 (its own UTS namespace); the ticket is masked by a sed that
+    # the cast shows
+    generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-open.yaml'
+    outputs: [docs/assets/casts/spectio-open.cast]
+  - id: spectio-tmux
+    kind: cast
+    # needs tmux on PATH; `pytest -m tmux` on a real tmux, then the SLURM start text of the real CLI
+    # with five fake SLURM scripts, under the demo host name demo-hpc-login1 (its own UTS namespace);
+    # the user name is replaced by alice and the ticket masked
+    generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-tmux.yaml'
+    outputs: [docs/assets/casts/spectio-tmux.cast]
+  - id: spectio-detach
+    kind: cast
+    # needs tmux on PATH (3.4 when made); the real `spectio serve --detach` from the checkout's .venv
+    # (uv sync first), in a demo HOME with fake engines and a tmux socket of its own, under the demo
+    # host name demo-hpc-login1 (its own UTS namespace); the user name is replaced by alice and the
+    # ticket masked by a sed the cast shows
+    generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-detach.yaml'
+    outputs: [docs/assets/casts/spectio-detach.cast]
+  - id: spectio-terminal-run
+    kind: cast
+    # real Nextflow on the synthetic pipeline, real nf-spectio built by engine-bridges/nf-spectio/build.sh
+    # into a plugins directory, real `spectio serve` (uv sync first; Java and Nextflow on PATH), under
+    # the demo host name demo-hpc-login1 (its own UTS namespace); the ticket is masked by a sed the
+    # cast shows
+    generator: unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-terminal-run.yaml'
+    outputs: [docs/assets/casts/spectio-terminal-run.cast]
+  - id: spectio-wheel
+    kind: cast
+    # builds the three packages for real with `uv build --all-packages` and installs spectio alone with
+    # `uv tool install` into a temporary UV_TOOL_DIR; needs web/dist (npm --prefix web ci
+    # --ignore-scripts && npm --prefix web run build), Java and Nextflow on PATH, and network for uv
+    generator: python3 tools/media/cast.py tools/media/casts/spectio-wheel.yaml
+    outputs: [docs/assets/casts/spectio-wheel.cast]
+  - id: spectio-bridges-release
+    kind: cast
+    # tests/packaging/test_bridges_release.sh for real: Gradle wrapper, Nextflow, uv, a fresh
+    # Snakemake 9; needs Java, Nextflow, uv and network for the Maven repositories; publishes nothing
+    generator: python3 tools/media/cast.py tools/media/casts/spectio-bridges-release.yaml
+    outputs: [docs/assets/casts/spectio-bridges-release.cast]

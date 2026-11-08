@@ -1,12 +1,13 @@
 """What the runner hands to the server; the runner never imports the server (architecture §6)."""
 
 from collections import Counter
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Any, Literal, Protocol
+from typing import Any, Literal, Protocol, TypeVar
 
 from spectio.config import SlurmOpts
+from spectio.runner.observed import ObservedRun
 from spectio_sdk.events import SpoolEvent
 
 
@@ -67,12 +68,29 @@ Engine = Literal["nextflow", "snakemake"]
 
 
 @dataclass(frozen=True)
+class ResumeSource:
+    """Where a Resume runs (P1 Task 30; api §5.1 note 2026-10-28; dev-env §15.3 req. 16): the
+    parent's launch and work directories, the device and inode the runner found the launch
+    directory at, the parent's Nextflow session (None: `-resume` with no ID), and whether
+    Snakemake's `--unlock` runs first (the parent's head is proven gone)."""
+
+    launch_dir: Path
+    work_dir: Path
+    device: int
+    inode: int
+    engine_session_id: str | None = None
+    unlock: bool = False
+
+
+@dataclass(frozen=True)
 class LaunchSpec:
     """One launch of a run, as the head script runs it (P1 Task 9, Assumption 13).
 
     `engine_cmd` is a shell command from `spectio.toml` (the user's own); every other value is
     quoted or written to a file, never read as shell words. `slurm` is None on the local
     executor. `env` holds extra variables for the engine, set after the login profile.
+    `launch_dir` holds the launch's `.spectio/`; the engine runs there too, except for a Resume,
+    which runs in `resume_of`'s directories.
     """
 
     run_id: str
@@ -88,12 +106,34 @@ class LaunchSpec:
     env: dict[str, str] = field(default_factory=dict)
     nxf_opts: str | None = None
     extra_args: list[str] = field(default_factory=list)
+    resume_of: ResumeSource | None = None
+
+    @property
+    def engine_dir(self) -> Path:
+        """The directory the engine runs in."""
+        return self.launch_dir if self.resume_of is None else self.resume_of.launch_dir
+
+    @property
+    def engine_work_dir(self) -> Path:
+        return self.work_dir if self.resume_of is None else self.resume_of.work_dir
+
+
+@dataclass(frozen=True)
+class TerminalHead:
+    """The head of a run started from a terminal, from its pointer (architecture §13.8): the
+    PID check only, on its host and boot; no launcher ever sees it (req. 12, No signal)."""
+
+    host: str
+    pid: int
+    start: str
+    boot_id: str
 
 
 @dataclass(frozen=True)
 class LaunchRef:
     """A launch the runner watches: a `launches` row (api §7). `native_id` is the head's id as
-    the launcher gave it, None until the head is started."""
+    the launcher gave it, None until the head is started. `terminal` is set for a run started
+    from a terminal (`cli-observed`), whose `launch_dir` is its pointer's, and `native_id` None."""
 
     launch_id: str
     run_id: str
@@ -101,6 +141,7 @@ class LaunchRef:
     engine: Engine
     launch_dir: Path
     native_id: str | None = None
+    terminal: TerminalHead | None = None
 
 
 @dataclass(frozen=True)
@@ -124,10 +165,29 @@ class RunnerSink(Protocol):
     def cursor(self, launch_id: str) -> dict[str, int]: ...
     def ingest(self, launch_id: str, batch: SpoolBatch) -> None: ...
     def head_report(self, launch_id: str, report: HeadReport) -> None: ...
+    def add_observed(self, run: ObservedRun) -> bool:
+        """Add a run started from a terminal, unless the index has it; True when the index
+        holds it as an ended `cli-observed` run (its pointer then moves to `ended/`)."""
+        ...
+
+
+T = TypeVar("T")
+
+
+class Stalled(Exception):
+    """The file system did not answer in time, or every file reader is waiting."""
+
+
+class FileRunner(Protocol):
+    """Runs a whole file-system job with a timeout: the server's `FilePool`. Raises `Stalled`
+    when it does not answer in time (SEC-P3T25-01)."""
+
+    def run(self, fn: Callable[[], T], timeout_s: float) -> T: ...
 
 
 class Launcher(Protocol):
-    """Starts and watches heads (schedulers §3.1.1): `LocalLauncher` here, tmux in Task 10."""
+    """Starts and watches heads (schedulers §3.1.1): `LocalLauncher`, and `TmuxLauncher` on a
+    SLURM login node (P1 Task 10)."""
 
     def submit(self, spec: LaunchSpec) -> str: ...
     def poll(self, ids: list[str]) -> dict[str, HeadReport]: ...

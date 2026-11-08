@@ -10,23 +10,29 @@ symlink between a check and the open:
 - `fstat` on each: owned by the user, and the last one a regular file (or a directory, for a
   listing); a FIFO, a device or another owner's file is refused;
 - a last component that is a symlink (`ELOOP`) is read with `readlinkat` and followed only when
-  its target lies in the run's work directory (Nextflow's `publishDir` in `'symlink'` mode); the
-  target is then walked the same way from the work directory's descriptor, and a second symlink
-  is refused.
+  its target lies in a task directory of the run's work directory, `<2 hex>/<30 hex>/…`
+  (Nextflow's `publishDir` in `'symlink'` mode), and no part of it starts with `.`: a task's own
+  files there (`.command.env`, `.command.run`, `.exitcode`) are never served through a link
+  (SEC-P3T28-05 r3); the target is then walked the same way from the work directory's
+  descriptor, and a second symlink is refused.
 
 The test of the link target is on its text (the work directory's path as the run was given it):
 no `realpath`, which would follow links on the way. Listings read entries with
 `fstatat(AT_SYMLINK_NOFOLLOW)`, hide those of another owner and anything but files, folders and
-links, and show a link to anywhere but the work directory as `link_outside`.
+links, and show a link to anywhere but the work directory as `link_outside`. A listing stops
+reading at its cap, hidden entries included (dev-env §15.3 req. 14).
 """
 
 import errno
 import os
 import posixpath
+import re
 import stat
 from dataclasses import dataclass
 from pathlib import PurePosixPath
 from typing import BinaryIO, Literal
+
+from spectio_server.files.redact import FORMAT_CHARS
 
 TAIL = 65536  # the bytes a read returns by default
 MAX_READ = 1048576  # the most one read or one Range response returns
@@ -35,6 +41,7 @@ PATH_MAX = 4096  # bytes in a whole name (Linux `PATH_MAX`)
 
 _DIR = os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC
 _FILE = os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK | os.O_NOCTTY | os.O_CLOEXEC
+_TASK_DIR = (re.compile(r"[0-9a-f]{2}"), re.compile(r"[0-9a-f]{30}"))
 
 
 class NotAllowed(Exception):
@@ -67,18 +74,29 @@ class Listing:
     truncated: bool
 
 
+_UNSERVED = re.compile(rf"[\x00-\x1f\x7f-\x9f{FORMAT_CHARS}]")
+
+
+def servable_name(name: str) -> bool:
+    """`name` encodes as UTF-8 (no lone surrogate: SEC-P3T28-07 r4) and has no C0, DEL or C1
+    control, nor a format or bidi character of `strip_escapes` (SEC-P3T31-04)."""
+    try:
+        name.encode()
+    except UnicodeEncodeError:
+        return False
+    return _UNSERVED.search(name) is None
+
+
 def safe_rel(name: str) -> PurePosixPath:
     """`name` as a relative path of plain components; raises NotAllowed for an absolute path, an
-    empty, `.` or `..` component, a control character (NUL included), or a name longer than
+    empty, `.` or `..` component, a name `servable_name` refuses, or a name longer than
     `NAME_MAX` bytes a component or `PATH_MAX` bytes in all (SEC-P3T28-04)."""
-    if not name or name.startswith("/") or any(ord(c) < 0x20 or ord(c) == 0x7F for c in name):
+    if not name or name.startswith("/") or not servable_name(name):
         raise NotAllowed("not a name this server serves")
     parts = name.split("/")
     if any(part in ("", ".", "..") for part in parts):
         raise NotAllowed("not a name this server serves")
-    if len(name.encode(errors="surrogatepass")) > PATH_MAX or any(
-        len(part.encode(errors="surrogatepass")) > NAME_MAX for part in parts
-    ):
+    if len(name.encode()) > PATH_MAX or any(len(part.encode()) > NAME_MAX for part in parts):
         raise NotAllowed("not a name this server serves")
     return PurePosixPath(*parts)
 
@@ -126,7 +144,14 @@ def _link_target(root: Root, rel: PurePosixPath, dir_fd: int, work: Root | None)
     base = None if work is None else str(work.path)
     if base is None or not whole.startswith(base.rstrip("/") + "/"):
         raise NotAllowed(f"{rel.name}: a link outside the run")
-    return safe_rel(whole[len(base.rstrip("/")) + 1 :])
+    inside = safe_rel(whole[len(base.rstrip("/")) + 1 :])
+    task = inside.parts[:2]
+    in_task = len(inside.parts) > 2 and all(
+        p.fullmatch(part) for p, part in zip(_TASK_DIR, task, strict=True)
+    )
+    if not in_task or any(part.startswith(".") for part in inside.parts[2:]):
+        raise NotAllowed(f"{rel.name}: a link outside the run's published files")
+    return inside
 
 
 def _open_fd(root: Root, rel: PurePosixPath, work: Root | None, follow: bool) -> int:
@@ -152,6 +177,28 @@ def _open_fd(root: Root, rel: PurePosixPath, work: Root | None, follow: bool) ->
     return fd
 
 
+def open_dir(root: Root, rel: PurePosixPath) -> Root:
+    """The folder `rel` below `root`, walked as the module says, as a root of its own; the
+    caller closes its descriptor."""
+    rel = safe_rel(str(rel))
+    return Root(_walk_dirs(root, rel.parts), root.path / rel)
+
+
+def open_root(path: str) -> Root:
+    """A root given by its absolute path (a results directory outside the launch directory):
+    the folders above it are taken as the system resolves them, the last one is opened with
+    `O_NOFOLLOW` and must be the user's. The caller closes its descriptor."""
+    if not path.startswith("/"):
+        raise NotAllowed("not an absolute path")
+    fd = _openat(-1, path, _DIR)  # an absolute path: the descriptor is not used
+    try:
+        _mine(fd, posixpath.basename(path) or path)
+    except BaseException:
+        os.close(fd)
+        raise
+    return Root(fd, PurePosixPath(path))
+
+
 def open_confined(root: Root, rel: PurePosixPath, *, work: Root | None = None) -> BinaryIO:
     """The regular file `rel` below `root`, walked as the module says; raises NotAllowed or
     NotFound. A last-component link is followed only into `work`."""
@@ -160,18 +207,19 @@ def open_confined(root: Root, rel: PurePosixPath, *, work: Root | None = None) -
 
 
 def list_confined(root: Root, rel: PurePosixPath, cap: int, *, work: Root | None = None) -> Listing:
-    """The entries of the folder `rel` below `root` (`.` for the root), at most `cap`, in the
-    order the file system gives them."""
+    """The entries of the folder `rel` below `root` (`.` for the root), of the first `cap` read,
+    in the order the file system gives them; `truncated` when there was one more."""
     parts = () if str(rel) == "." else safe_rel(str(rel)).parts
     fd = _walk_dirs(root, parts)
     entries: list[Entry] = []
-    truncated = False
+    truncated, read = False, 0
     try:
         with os.scandir(fd) as found:
-            for item in found:
-                if len(entries) >= cap:
+            for item in found:  # stops reading at the cap, hidden entries counted (req. 14)
+                if read >= cap:
                     truncated = True
                     break
+                read += 1
                 entry = _entry(root, PurePosixPath(*parts, item.name), fd, work)
                 if entry is not None:
                     entries.append(entry)

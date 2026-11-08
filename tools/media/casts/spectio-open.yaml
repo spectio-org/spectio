@@ -1,0 +1,61 @@
+# Batch P3-B02, P3 Task 24: `spectio open <host>` on a "laptop" against a "cluster", run for real
+# from the repository's .venv, with two stand-ins and no real sshd:
+#   - the ssh is packages/spectio/tests/fakebin/ssh, the fake of the tests: it logs its argument
+#     lists, runs a remote command with /bin/sh in a shared home of its own (fake-ssh/home) and,
+#     for the tunnel (-N), only listens on the local port; it forwards nothing, so the cast runs
+#     with --no-browser;
+#   - the cluster is that shared home. The server in it is a real `spectio serve` (local mode),
+#     and the remote `spectio login --print-link --json` is the real one.
+# What the cast shows is the real command, the real server.json, the real ticket, the exact ssh
+# argument lists, and the exit 2 for a missing remote spectio. What it does not show: a real sshd,
+# a login shell of an HPC site, a browser (Task 24 Step 4 is by hand on an EMBL login node).
+# The host name is a demo one: run the generator in its own UTS namespace (root or user
+# namespaces), as docs/assets/media.yaml does:
+#   unshare --uts sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-open.yaml'
+# The ticket is random, so the command that prints it masks it with a visible sed. Port 18082 on
+# the cluster, 18090 on the laptop. Needs `uv sync` first (the .venv of the checkout).
+title: "P3 Task 24: spectio open demo-hpc (fake ssh, real server and ticket)"
+cols: 140
+rows: 34
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: tmp
+env:
+  HOME: "{workdir}/laptop"
+  FAKE_SSH_DIR: "{workdir}/fake-ssh"
+  PATH: "{workdir}/laptop-bin:{repo}/.venv/bin:$PATH"
+setup:
+  - |
+    mkdir -m 700 laptop fake-ssh fake-ssh/bin fake-ssh/home laptop-bin bin
+    cp {repo}/packages/spectio/tests/fakebin/ssh laptop-bin/ssh
+    printf '#!/bin/sh\nexec /bin/sh -c "$2"\n' > fake-ssh/bin/rshell
+    ln -s {repo}/.venv/bin/spectio fake-ssh/bin/spectio
+    printf '#!/bin/sh\necho "nextflow version 26.10.4 (fake, for this cast)"\n' > bin/nextflow
+    printf '#!/bin/sh\necho "9.27.1"\n' > bin/snakemake
+    chmod +x fake-ssh/bin/rshell bin/nextflow bin/snakemake laptop-bin/ssh
+    echo 'export PATH="{workdir}/bin:$PATH"' > fake-ssh/home/.bash_profile
+    HOME={workdir}/fake-ssh/home env -u TMPDIR spectio init --local --port 18082 > /dev/null 2>&1
+replace:
+  "{workdir}/": "~/"
+  "{workdir}": "~"
+  "~/fake-ssh/home": "<cluster home>"
+steps:
+  - comment: "1. the cluster: a server runs in the shared home (a fake home here), on node demo-hpc-login1"
+  - run: "HOME=$PWD/fake-ssh/home env -u TMPDIR spectio serve > fake-ssh/serve.out 2> fake-ssh/serve.err &"
+  - run: "sleep 3; sed -E 's/#[A-Za-z0-9_-]{43}/#<ticket>/' fake-ssh/serve.out | head -n 2"
+  - run: "cat fake-ssh/home/.spectio/server.json"
+  - pause: 1.5
+  - clear: true
+  - comment: "2. the laptop: one command. It reads server.json over ssh, opens the tunnel, asks for a ticket"
+  - run: "(sleep 5; touch fake-ssh/close) > /dev/null 2>&1 & spectio open demo-hpc --no-browser --local-port 18090 | sed -E 's/#[A-Za-z0-9_-]{43}/#<ticket>/'"
+  - pause: 2.0
+  - comment: "3. the three ssh calls it made: -- before the destination, the link built on the laptop"
+  - run: "jq -c . fake-ssh/calls.jsonl"
+  - pause: 3.0
+  - clear: true
+  - comment: "4. the server stops; the remote spectio goes missing: exit 2, the install line, nothing installed"
+  - run: "kill -TERM $(jq .pid fake-ssh/home/.spectio/server.json); sleep 2; rm fake-ssh/bin/spectio"
+  - run: "spectio open demo-hpc --no-browser"
+    expect_exit: 2
+  - pause: 2.5

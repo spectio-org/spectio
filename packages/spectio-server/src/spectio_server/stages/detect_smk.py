@@ -25,6 +25,7 @@ MAX_FILES = 200
 MAX_FILE_BYTES = 1048576
 INCLUDE = re.compile(r"""^\s*include:\s*["']([^"']+)["']""")
 RULE = re.compile(r"^\s*(?:local)?(?:rule|checkpoint)\s+(\w+)\s*:")
+CHECKPOINT = re.compile(r"^\s*checkpoint\s+(\w+)\s*:")  # P1 Task 34
 USE_AS = re.compile(r"^\s*use rule\s+.*\bas\s+(\w+)")
 # `snakemake --list-rules` prints `name (docstring)` for a rule with a docstring.
 LISTED = re.compile(r"([A-Za-z_]\w*)(?:\s+\(.*\))?")
@@ -73,6 +74,7 @@ def read_rules_txt(data: bytes) -> list[str]:
 class _File:
     path: Path
     rules: list[str] = field(default_factory=list)
+    checkpoints: list[str] = field(default_factory=list)
 
 
 def _walk(root: Path, path: Path, seen: set[Path], files: list[_File]) -> None:
@@ -93,6 +95,8 @@ def _walk(root: Path, path: Path, seen: set[Path], files: list[_File]) -> None:
             _walk(root, real.parent / m.group(1), seen, files)
         elif m := RULE.match(line) or USE_AS.match(line):
             entry.rules.append(m.group(1))
+            if CHECKPOINT.match(line):
+                entry.checkpoints.append(m.group(1))
 
 
 def rule_files(main: Path) -> list[_File]:

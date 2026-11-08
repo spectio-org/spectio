@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { FakeEventSource, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
+import { DETAIL, FakeEventSource, NO_RESOURCES, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -27,7 +27,7 @@ const PROCESSES = {
   ],
 };
 const TASKS = {
-  items: [{ id: "tsk_1", process: "NFCORE:RNASEQ:ALIGN", tag: "S01", name: "ALIGN (S01)", state: "failed", stage_id: null }],
+  items: [{ id: "tsk_1", process: "NFCORE:RNASEQ:ALIGN", tag: "S01", name: "ALIGN (S01)", state: "failed", stage_id: null, attempt_n: 1, resources: NO_RESOURCES }],
   next: null,
 };
 
@@ -42,7 +42,7 @@ function detail(over: Record<string, unknown> = {}, more: Record<string, unknown
     [`${URL_}/stages`]: { items: [] },
     [`${URL_}/tasks`]: TASKS,
     [`${URL_}/logs?source=engine`]: () => new Response("N E X T F L O W  ~  version 26.10.4\n"),
-    [URL_]: { ...run(over), params: { outdir: "results", depth: 3 } },
+    [URL_]: { ...DETAIL, ...run(over), params: { outdir: "results", depth: 3 } },
     ...more,
   });
 }
@@ -59,7 +59,7 @@ test("the header names the run, its state word and short id; the crumb is the ru
 });
 
 test("Cancel asks first in a modal dialog, returns focus, then posts :cancel", async () => {
-  const cancelled = vi.fn((_url: URL, _init?: RequestInit) => json(202, { ...run({ state: "cancelling" }), params: {} }));
+  const cancelled = vi.fn((_url: URL, _init?: RequestInit) => json(202, { ...DETAIL, ...run({ state: "cancelling" }) }));
   detail({}, { [`${URL_}:cancel`]: cancelled });
   app(`/runs/${ID}`);
   const cancel = await screen.findByRole("button", { name: "Cancel run" });
@@ -85,11 +85,17 @@ test("Cancel asks first in a modal dialog, returns focus, then posts :cancel", a
 });
 
 test("no Cancel on a terminal run, nor on a run started from a terminal", async () => {
-  detail({ origin: "cli-observed", head: { session: null, node: "login1", alive: true, exit_code: null } });
+  detail({ origin: "cli-observed", head: { session: null, node: "login2", alive: true, exit_code: null, checked: false } });
   app(`/runs/${ID}`);
   await screen.findByRole("heading", { level: 1 });
   expect(screen.queryByRole("button", { name: "Cancel run" })).toBeNull();
-  expect(screen.getByText("Not checked (started from a terminal)")).toBeInTheDocument();
+  expect(screen.getByText("Not checked (on login2, started from a terminal)")).toBeInTheDocument();
+});
+
+test("a run started from a terminal on this host and boot has its head checked", async () => {
+  detail({ origin: "cli-observed", head: { session: null, node: "login1", alive: true, exit_code: null, checked: true } });
+  app(`/runs/${ID}`);
+  expect(await screen.findByText("Alive")).toBeInTheDocument();
 });
 
 test("the facts say the head is not started yet while head is null", async () => {
@@ -132,7 +138,7 @@ test("with stages, the stage list and the header line", async () => {
 test("the stages note says why declared stages were not applied, (P1 Task 27)", async () => {
   const note = "2 lab overlays match this run (a.spectio.yml, b.spectio.yml): none was applied.";
   detail({ summary: { tasks: { done: 0, total: 0, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" } }, {
-    [URL_]: { ...run(), params: {}, stages_note: note },
+    [URL_]: { ...DETAIL, ...run(), stages_note: note },
   });
   app(`/runs/${ID}`);
   expect(await screen.findByRole("note")).toHaveTextContent(note);
@@ -142,7 +148,7 @@ test("the stages note says why declared stages were not applied, (P1 Task 27)", 
 test("the stages note over detected stages", async () => {
   const note = "The stages of spectio.yml were not applied: NFCORE:QC matches 2 stages.";
   detail({}, {
-    [URL_]: { ...run(), params: {}, stages_note: note },
+    [URL_]: { ...DETAIL, ...run(), stages_note: note },
     [`${URL_}/stages`]: { items: [{ id: "detected:1", position: 1, name: "QC", source: "detected", state: "running", task_counts: {} }] },
   });
   app(`/runs/${ID}`);
@@ -179,7 +185,7 @@ test("the parameters table, and a log loaded on click", async () => {
 
 test("a frame for this run refetches it; none once it is terminal", async () => {
   let state = "running";
-  const mock = detail({}, { [URL_]: () => json(200, { ...run({ state }), params: {} }) });
+  const mock = detail({}, { [URL_]: () => json(200, { ...DETAIL, ...run({ state }), params: {} }) });
   app(`/runs/${ID}`);
   await screen.findByRole("heading", { level: 1 });
   const count = () => fetched(mock).filter((u) => u === URL_).length;
@@ -268,7 +274,7 @@ test("UX-PAR-25/16: a failed run opens on Why it failed, never blank, with a way
     state: "failed",
     ended_at: "2026-10-31T08:00:00+00:00",
     failure: { class: "tool_error", message: "", task_id: null, attempt_n: 1 },
-    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1 },
+    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1, checked: true },
     summary: { tasks: { done: 24, total: 32, failed: 2, cached: 0 }, last_failure: null, stage_mode: "quarters" },
   }, { [`${URL_}/logs?source=head-err`]: () => new Response("line 1\nError in rule x\n") });
   app(`/runs/${ID}`);
@@ -289,7 +295,8 @@ test("UX-PAR-23: the Summary aside opens the head by hand and tails the engine l
   detail({}, { "/api/v1/version": { ...VERSION, executor: "slurm" } });
   app(`/runs/${ID}`);
   const attach = await screen.findByRole("region", { name: "Open the head by hand" });
-  expect(within(attach).getByText(`tmux attach -t spectio-${ID}`, { exact: false })).toBeInTheDocument();
+  // Each value quoted, the session targeted exactly (SEC-P3PARA-01; dev-env §15.3 req. 11).
+  expect(within(attach).getByText(`ssh -- 'login1' tmux attach -t '=spectio-${ID}'`, { normalizer: (t) => t.replace(/\s+/g, " ") })).toBeInTheDocument();
   expect(within(attach).getByRole("button", { name: "Copy the commands to open the head by hand" })).toBeInTheDocument();
   const log = screen.getByRole("region", { name: "Engine log · last lines" });
   expect(await within(log).findByText(/N E X T F L O W/)).toBeInTheDocument();
@@ -341,11 +348,21 @@ test("Download attaches its anchor to the page and revokes the URL after the cli
 });
 
 test("UX-PAR-23: with the local executor the head has no terminal: its process instead", async () => {
-  detail({ head: { session: "18823.3644058", node: "login1", alive: true, exit_code: null } });
+  detail({ head: { session: "18823.3644058", node: "login1", alive: true, exit_code: null, checked: true } });
   app(`/runs/${ID}`);
   const attach = await screen.findByRole("region", { name: "Open the head by hand" });
   expect(within(attach).getByText("ps -o pid,etime,args --sid 18823")).toBeInTheDocument();
   expect(within(attach).queryByText(/tmux/)).toBeNull();
+});
+
+test.each([
+  ["a node that starts with -", { session: `spectio-${ID}`, node: "-oProxyCommand=x" }],
+  ["a session with shell words", { session: "spectio-$(rm -rf ~)", node: "login1" }],
+])("SEC-P3PARA-01: no head commands to copy for %s", async (_, head) => {
+  detail({ head: { ...head, alive: true, exit_code: null, checked: true } }, { "/api/v1/version": { ...VERSION, executor: "slurm" } });
+  app(`/runs/${ID}`);
+  await screen.findByRole("region", { name: "Engine log · last lines" });
+  expect(screen.queryByRole("region", { name: "Open the head by hand" })).toBeNull();
 });
 
 test("UX-PAR-27: the Logs tab opens on the engine log, with Reload and Download", async () => {
@@ -372,7 +389,7 @@ test("UX-PAR-29: the Cancel dialog says what stops and how, for the server's exe
 });
 
 test("P3-parB: a run that has ended but whose head end is not yet reported shows Head Ending, not Alive", async () => {
-  detail({ state: "succeeded", head: { session: "18823.3644058", node: "login1", alive: true, exit_code: null } });
+  detail({ state: "succeeded", head: { session: "18823.3644058", node: "login1", alive: true, exit_code: null, checked: true } });
   app(`/runs/${ID}`);
   expect(await screen.findByText("Ending")).toBeInTheDocument();
   expect(screen.queryByText("Alive")).toBeNull();
@@ -471,7 +488,7 @@ test("P3-parC: the aside's All logs opens the Logs tab on the tail's source, wit
   detail({
     state: "failed",
     ended_at: "2026-10-31T08:00:00+00:00",
-    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1 },
+    head: { session: `spectio-${ID}`, node: "login1", alive: false, exit_code: 1, checked: true },
   }, { [`${URL_}/logs?source=head-err`]: () => new Response("Error in rule x\n") });
   const router = app(`/runs/${ID}`);
   const tail = await screen.findByRole("region", { name: "Head errors · last lines" });
@@ -633,7 +650,7 @@ test("P3-parD: First to fail follows the failed tasks' pages to find the task (C
     },
     {
       [`${URL_}/tasks?state=failed&limit=50&cursor=p2`]: {
-        items: [{ id: "tsk_9", process: "NFCORE:RNASEQ:ALIGN", tag: "S09", name: "ALIGN (S09)", state: "failed", stage_id: null }],
+        items: [{ id: "tsk_9", process: "NFCORE:RNASEQ:ALIGN", tag: "S09", name: "ALIGN (S09)", state: "failed", stage_id: null, attempt_n: 1, resources: NO_RESOURCES }],
         next: null,
       },
       [`${URL_}/tasks?state=failed&limit=50`]: { ...TASKS, next: "p2" },
@@ -643,4 +660,83 @@ test("P3-parD: First to fail follows the failed tasks' pages to find the task (C
   const why = await screen.findByRole("region", { name: "Why it failed" });
   expect(await within(why).findByText(/First to fail/)).toHaveTextContent("First to fail: ALIGN (S09)");
   expect(fetched(mock)).toContain(`${URL_}/tasks?state=failed&limit=50&cursor=p2`);
+});
+
+// Process and rule states, checkpoints and "at least" (P1 Task 35; ui-spec §5.2; boards
+// LiteRunDetailSnakemake, LiteRunDetail, MLiteRunDetail).
+const SNAKEMAKE = { engine: "snakemake", engine_version: "9.5.1", location: "/g/demo-lab/mosaicatcher", name: "mosaicatcher-pipeline", version: "2.5.1" };
+const RULES = {
+  items: [
+    { process: "segmentation", stage_id: null, counts: { running: 1 }, retries: 0, status: "running", is_checkpoint: true, lower_bound: false },
+    { process: "regenotype_SNVs", stage_id: null, counts: {}, retries: 0, status: "not_needed", is_checkpoint: false, lower_bound: false },
+    { process: "segmentation_selection", stage_id: null, counts: {}, retries: 0, status: "awaiting_checkpoint", is_checkpoint: false, lower_bound: false },
+    { process: "plot_SV_calls", stage_id: null, counts: { pending: 3 }, retries: 0, status: "pending", is_checkpoint: false, lower_bound: true },
+    { process: "samtools_faindex", stage_id: null, counts: {}, retries: 0, status: "up_to_date", is_checkpoint: false, lower_bound: false },
+  ],
+};
+const snakemakeRun = () =>
+  detail(
+    {
+      workflow: SNAKEMAKE,
+      task_counts: { succeeded: 242, running: 1, pending: 3 },
+      summary: { tasks: { done: 242, total: 347, failed: 0, cached: 0, lower_bound: true }, last_failure: null, stage_mode: "quarters", open_checkpoints: ["segmentation"], dag_updates: 1 },
+    },
+    { [`${URL_}/processes`]: RULES },
+  );
+
+test("with every rule up to date the run reads 'Nothing to run' (ui-spec §5.2, CR-P3T35-04)", async () => {
+  const upToDate = (process: string) => ({ process, stage_id: null, counts: {}, retries: 0, status: "up_to_date", is_checkpoint: false, lower_bound: false });
+  detail(
+    { workflow: SNAKEMAKE, task_counts: {}, summary: { tasks: { done: 0, total: 0, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" } },
+    { [`${URL_}/processes`]: { items: [upToDate("samtools_faindex"), upToDate("plot_SV_calls")] } },
+  );
+  app(`/runs/${ID}`);
+  expect(await screen.findByText("Nothing to run: all outputs are up to date")).toBeInTheDocument();
+});
+
+test("a rule waiting for a checkpoint reads 'Waiting for checkpoint <rule>', not Pending", async () => {
+  snakemakeRun();
+  app(`/runs/${ID}`);
+  const table = await screen.findByRole("table", { name: "Rules" });
+  const row = (name: string) => within(table).getByRole("button", { name: `Open rule ${name}` }).closest("tr")!;
+  expect(within(row("segmentation_selection")).getByText("Waiting for checkpoint segmentation")).toBeInTheDocument();
+  expect(within(row("segmentation_selection")).queryByText("Pending")).toBeNull();
+  expect(within(row("samtools_faindex")).getByText("Up to date")).toBeInTheDocument();
+  expect(within(row("segmentation")).getByText("Checkpoint")).toBeInTheDocument();
+  expect(within(row("plot_SV_calls")).getByText("0 / at least 3")).toBeInTheDocument();
+  // Not needed is greyed and listed after the others
+  const names = within(table).getAllByRole("button", { name: /^Open rule / }).map((b) => b.getAttribute("aria-label"));
+  expect(names[names.length - 1]).toBe("Open rule regenotype_SNVs");
+  expect(within(row("regenotype_SNVs")).getByText("Not needed in this run")).toBeInTheDocument();
+  expect(row("regenotype_SNVs")).toHaveAttribute("data-quiet");
+});
+
+test("the header reads 'at least n jobs' while a checkpoint is open", async () => {
+  snakemakeRun();
+  app(`/runs/${ID}`);
+  const header = await runHeader();
+  expect(within(header).getByText("242 / at least 347 jobs")).toBeInTheDocument();
+  expect(await screen.findByText("The DAG grows after checkpoint segmentation: more jobs may come.")).toBeInTheDocument();
+  expect(screen.getByText(/^DAG updated after a checkpoint/)).toBeInTheDocument();
+});
+
+test("a Nextflow process with no task reads 'No task (condition or empty input)'", async () => {
+  detail(
+    { state: "succeeded", ended_at: "2026-10-31T09:00:00+00:00", engine_settings: { cleanup: true, notemp: null } },
+    {
+      [`${URL_}/processes`]: {
+        items: [
+          { process: "NFCORE:RNASEQ:FASTQC", stage_id: null, counts: { succeeded: 12 }, retries: 0, status: "done" },
+          { process: "NFCORE:RNASEQ:UMITOOLS_DEDUP", stage_id: null, counts: {}, retries: 0, status: "no_tasks" },
+        ],
+      },
+    },
+  );
+  app(`/runs/${ID}`);
+  const table = await screen.findByRole("table", { name: "Processes" });
+  const row = within(table).getByRole("button", { name: "Open process NFCORE:RNASEQ:UMITOOLS_DEDUP" }).closest("tr")!;
+  expect(within(row).getByText("No task (condition or empty input)")).toBeInTheDocument();
+  expect(within(row).queryByText("Not run")).toBeNull();
+  expect(screen.getByText(/Processes the script does not call in this run are not listed\./)).toBeInTheDocument();
+  expect(within(await runHeader()).getByText("Work directory cleaned after success (cleanup = true)")).toBeInTheDocument();
 });

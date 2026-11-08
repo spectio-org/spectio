@@ -6,10 +6,12 @@ would, with paths under the run's directories (`make_run_dirs`).
 """
 
 import errno
+import os
 import threading
 import time
 from collections import Counter
 from collections.abc import Iterator
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -22,11 +24,12 @@ from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server.api import taskfiles as api_taskfiles
 from spectio_server.files import taskfiles
+from spectio_server.files.pool import FilePool
 from spectio_server.ids import new_id
 from spectio_server.projector.ingest import ingest
 from spectio_server.stages import freeze
 from spectio_server.stages.freeze import StageSources
-from spectio_server.store.schema import attempts, runs, tasks
+from spectio_server.store.schema import attempts, events, run_stages, runs, tasks
 from spectio_server.store.writer import Writer
 
 from .conftest import add_run
@@ -226,6 +229,46 @@ def test_unknown_attempt_404(nf_task: NfTask) -> None:
     problem(nf_task.client.get(f"{API}/tasks/tsk_nope/attempts/1/files"), 404, "not-found")
 
 
+CHILD = "run_01K8T2F1XTVRES0000000000F9"
+
+
+def test_resumed_child_reads_the_lineage_dirs(
+    authed_client: TestClient, writer: Writer, settings: Settings
+) -> None:
+    """A Resume runs in its lineage root's directories (CR-P3T30-01): the child's task
+    directory under the parent's work directory is kept, and its files are listed from there;
+    a Snakemake child's engine log is read from the parent's launch directory."""
+    add_run(writer, settings, RUN, "nf", "failed")
+    parent = make_run_dirs(settings.runs_root, RUN)
+    lineage: dict[str, Any] = {"parent_run_id": RUN, "lineage_id": RUN, "relaunch_mode": "resume"}
+    launch_id = add_run(writer, settings, CHILD, "nf-resume", "running", **lineage)
+    make_run_dirs(settings.runs_root, CHILD)
+    task_dir = parent.work_dir.joinpath(*HASH)
+    task_dir.mkdir(parents=True)
+    (task_dir / ".command.err").write_text("err\n")
+    workdir = str(task_dir)
+    data = {"process": "ALIGN", "attempt": 1, "workDir": workdir, "trace": {"workdir": workdir}}
+    started = event(1, "nextflow.onTaskStart", **data).model_copy(update={"run": CHILD})
+    push(writer, settings, launch_id, started)
+    with writer.engine.connect() as conn:
+        task_id, kept = conn.execute(
+            select(tasks.c.id, attempts.c.work_dir)
+            .join(attempts, attempts.c.task_id == tasks.c.id)
+            .where(tasks.c.run_id == CHILD)
+        ).one()
+    assert kept == workdir
+    body = authed_client.get(f"{API}/tasks/{task_id}/attempts/1/files").json()
+    assert body["work_dir"] == workdir
+    assert {f["name"]: f["state"] for f in body["files"]}[".command.err"] == "present"
+
+    smk = "run_01K8T2F1XTVRES0000000000FA"
+    add_run(writer, settings, smk, "smk-resume", "running", engine="snakemake", **lineage)
+    make_run_dirs(settings.runs_root, smk)
+    (parent.launch_dir / ".snakemake" / "log").mkdir(parents=True)
+    (parent.launch_dir / ".snakemake" / "log" / "a.snakemake.log").write_text("smk log\n")
+    assert authed_client.get(f"{API}/runs/{smk}/logs").text == "smk log\n"
+
+
 # --- Snakemake names: equal to a recorded path, byte for byte (SEC-156) ---------------------
 
 
@@ -287,8 +330,7 @@ def test_req13_spectio_dir(
         problem(authed_client.get(f"{base}/{name}"), 422, "file-not-allowed")
     launch = settings.runs_root / RUN / "launch" / ".spectio"
     (launch / "head.err").write_text("head err\n")
-    (launch / "nextflow.log").write_text("nf log\n")
-    logs = f"{API}/runs/{RUN}/logs"
+    logs = f"{API}/runs/{RUN}/logs"  # `.spectio/nextflow.log`: test_engine_log_from_the_run
     assert authed_client.get(logs, params={"source": "head-out"}).text == "head\n"
     assert authed_client.get(logs, params={"source": "head-err"}).text == "head err\n"
 
@@ -305,10 +347,54 @@ def test_engine_log_from_the_run(
     found = authed_client.get(f"{API}/runs/{RUN}/logs")
     assert found.text == "this run's log\n"
     assert found.headers["referrer-policy"] == "no-referrer"
+
+    # A run from a terminal: its own launch directory, outside the runs root (P1 Task 25).
+    terminal = settings.runs_root.parent / "project"
+    terminal.mkdir()
+    terminal.chmod(0o770)  # a project directory is often group-writable: not checked
+    (terminal / ".nextflow.log").write_text("the project's log\n")
+    observed = {"origin": "cli-observed", "launch_dir": str(terminal)}
     writer.submit(
-        lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(origin="cli-observed"))
+        lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(**observed))
     ).result()
-    assert authed_client.get(f"{API}/runs/{RUN}/logs").text == "the terminal's log\n"
+    assert authed_client.get(f"{API}/runs/{RUN}/logs").text == "the project's log\n"
+
+
+@pytest.mark.parametrize("how", ["symlink", "fifo", "foreign", "in_runs_root", "relative"])
+def test_terminal_log_symlink_fifo_foreign_refused(
+    authed_client: TestClient, writer: Writer, settings: Settings, how: str
+) -> None:
+    """Req. 12, "Server, reads": a terminal run's engine log is read only when it is a regular
+    file of the user, opened with O_NOFOLLOW|O_NONBLOCK; otherwise "log not readable". Its
+    launch directory must still pass the scan's check."""
+    add_run(writer, settings, RUN, "nf", "running")
+    terminal = settings.runs_root.parent / "project"
+    terminal.mkdir()
+    log = terminal / ".nextflow.log"
+    secret = settings.runs_root.parent / "secret"
+    secret.write_text("not the log\n")
+    launch_dir = str(terminal)
+    if how == "symlink":
+        log.symlink_to(secret)
+    elif how == "fifo":
+        os.mkfifo(log)
+    elif how == "foreign":
+        if os.geteuid() != 0:
+            pytest.skip("needs root to make another user's file")
+        log.write_text("theirs\n")
+        os.chown(log, 4242, 4242)
+    elif how == "in_runs_root":
+        launch_dir = str(make_run_dirs(settings.runs_root, RUN).launch_dir)
+        (Path(launch_dir) / ".nextflow.log").write_text("a driven run's log\n")
+    else:
+        launch_dir = "project"
+    observed = {"origin": "cli-observed", "launch_dir": launch_dir}
+    writer.submit(
+        lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(**observed))
+    ).result()
+    found = authed_client.get(f"{API}/runs/{RUN}/logs")
+    assert found.status_code == 404, found.text
+    assert "log not readable" in found.json()["detail"]
 
 
 # --- A stalled file system never stops the events (req. 13, SEC-157) --------------------------
@@ -359,7 +445,7 @@ def test_req13_freeze_reads_off_the_writer(
 
     monkeypatch.setattr(freeze, "_sources", stalled)
     monkeypatch.setattr(freeze, "FREEZE_TIMEOUT_S", 0.2)
-    sources = StageSources(None, settings.runs_root, pool=api_taskfiles.FilePool())
+    sources = StageSources(None, settings.runs_root, pool=FilePool())
     began = time.monotonic()
     batch = SpoolBatch([event(1, "nextflow.onFlowBegin")], {}, Counter())
     writer.submit(lambda c: ingest(c, launch_id, batch, sources)).result()
@@ -367,3 +453,10 @@ def test_req13_freeze_reads_off_the_writer(
     release.set()
     with writer.engine.connect() as conn:
         assert conn.execute(select(runs.c.state)).scalar_one() == "running"
+        assert conn.execute(select(run_stages.c.id)).all() == []  # no stages (CR-P3T28-05 r2)
+        frozen = conn.execute(
+            select(events.c.payload).where(events.c.type == freeze.FROZEN)
+        ).scalar_one()
+    assert frozen["note"] == (
+        "The stage sources were not read in time (the file system did not answer)."
+    )

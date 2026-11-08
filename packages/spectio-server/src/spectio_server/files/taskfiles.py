@@ -92,13 +92,14 @@ class AttemptFiles:
     """What the files of one attempt are found from: its run, engine and state, and the paths
     its events recorded."""
 
-    run_id: str
+    run_id: str  # the run whose directories the engine used: a Resume's lineage root
     engine: str
     state: str
     work_dir: str | None  # Nextflow: the attempt's work directory, as recorded
     native_id: str | None
     logs: tuple[tuple[str, str], ...]  # Snakemake: (path relative to the launch dir, kind)
     runs_root: Path
+    outputs: tuple[str, ...] | None = None  # Snakemake: its `job_info` outputs (P1 Task 34)
 
 
 @dataclass(frozen=True)
@@ -155,13 +156,18 @@ def launch_rel(launch_dir: Path, value: str) -> PurePosixPath | None:
             rel = safe_rel(value)
         except NotAllowed:
             rel = None
-    if rel is None or (rel.parts[0] == ".spectio" and not _spectio_served(rel)):
+    if rel is None or (_in_spectio(rel) and not _spectio_served(rel)):
         return None
     return rel
 
 
+def _in_spectio(rel: PurePosixPath) -> bool:
+    """Under `.spectio/`, whatever the case: a file system may fold it (SEC-P3T28-07 r2)."""
+    return rel.parts[0].casefold() == ".spectio"
+
+
 def _spectio_served(rel: PurePosixPath) -> bool:
-    return len(rel.parts) == 2 and rel.parts[1] in SPECTIO_SERVED
+    return rel.parts[0] == ".spectio" and len(rel.parts) == 2 and rel.parts[1] in SPECTIO_SERVED
 
 
 def native_id(value: object) -> str | None:
@@ -286,6 +292,29 @@ def _smk_files(attempt: AttemptFiles) -> list[TaskFile]:
         return _all(attempt, kinds, "absent", f"Not served: {exc}.")
 
 
+def output_states(attempt: AttemptFiles) -> dict[str, State]:
+    """Whether each output of a Snakemake attempt is in the launch directory (`present`), not
+    yet (the job runs) or `absent`, found with no link followed (P1 Task 34)."""
+    paths = [p for p in attempt.outputs or () if p != "<TBD>"]
+    try:
+        with run_root(attempt.runs_root, attempt.run_id, "launch") as launch:
+            return {p: _output_state(attempt, launch, p) for p in paths}
+    except NotFound:  # Cleaned: the launch directory is gone
+        return dict.fromkeys(paths, "absent")
+    except NotAllowed:
+        return dict.fromkeys(paths, "absent")
+
+
+def _output_state(attempt: AttemptFiles, root: Root, path: str) -> State:
+    try:
+        found = stat_confined(root, safe_rel(path))
+    except (NotFound, NotAllowed):
+        found = None
+    if found is not None:
+        return "present"
+    return "not_yet" if attempt.state in OPEN_STATES else "absent"
+
+
 # --- Reading --------------------------------------------------------------------------------
 
 
@@ -296,7 +325,7 @@ def check_name(attempt: AttemptFiles, name: str) -> Kind:
         recorded = {p for p, _ in attempt.logs}
         if name not in recorded:  # byte for byte (SEC-156)
             raise NotAllowed("not a file of this job")
-        if rel.parts[0] == ".spectio" and not _spectio_served(rel):
+        if _in_spectio(rel) and not _spectio_served(rel):
             raise NotAllowed("not a file of this job")
         return log_kind(rel)
     if name not in NF_FILES:
