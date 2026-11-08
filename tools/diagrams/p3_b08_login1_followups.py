@@ -361,7 +361,7 @@ def build(theme: Theme) -> Sketch:
         s.text(x, by + 16, label, size=12.5, anchor="start")
         bar(s, x + 108, by, n * k, 20, fill)
         s.text(x + 116 + n * k, by + 16, txt, size=12.5, anchor="start")
-    s.text(x + 108, y + 136, "pytest before: and 1 skipped, 30 deselected", size=12, anchor="start",
+    s.text(x + 108, y + 136, "pytest before: 1 skipped, 30 deselected", size=12, anchor="start",
            colour=t.dim)
     s.warning(x + 8, y + 160, size=8)
     s.text(x + 24, y + 165, "after the edits only `packages/spectio-server`", size=12.5,

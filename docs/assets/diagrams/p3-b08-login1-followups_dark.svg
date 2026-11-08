@@ -696,7 +696,7 @@
   <path d="M1207.0,1098.0 C1174.0,1098.3 1141.1,1098.2 1108.0,1098.1" fill="none" stroke="#e3e3e3" stroke-width="1.2" stroke-linecap="round"/>
   <path d="M1107.9,1097.8 C1108.1,1091.3 1108.2,1084.4 1108.0,1077.9" fill="none" stroke="#e3e3e3" stroke-width="1.2" stroke-linecap="round"/>
   <text x="1215.0" y="1094.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#e3e3e3" text-anchor="start" font-weight="normal">330 passed</text>
-  <text x="1108.0" y="1124.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">pytest before: and 1 skipped, 30 deselected</text>
+  <text x="1108.0" y="1124.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#9aa0ac" text-anchor="start" font-weight="normal">pytest before: 1 skipped, 30 deselected</text>
   <path d="M1008.0,1140.0 L1016.0,1154.4 L1000.0,1154.4 Z" fill="#363020" stroke="none"/>
   <path d="M1007.8,1139.7 C1009.9,1144.4 1014.1,1149.8 1016.1,1154.4" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1015.6,1154.1 C1010.1,1155.1 1006.1,1154.2 1000.4,1154.8" fill="none" stroke="#ffa94d" stroke-width="1.5" stroke-linecap="round"/>
