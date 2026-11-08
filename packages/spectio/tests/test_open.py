@@ -359,6 +359,46 @@ def test_tunnel_argv_hardened(fake_ssh: FakeSsh) -> None:
         assert not any("HostKey" in w or "KnownHosts" in w for w in call)
 
 
+SOCKET_STATE = {**STATE, "socket": "/scratch/spectio-1000/spectio.sock"}
+
+
+def test_tunnel_forwards_to_the_socket_of_server_json(fake_ssh: FakeSsh) -> None:
+    """SLURM and shared hosts serve only on a Unix socket (inbox #109 rule 5): the laptop's end
+    stays a loopback port, the cluster's end is the socket; the link names the laptop's port."""
+    fake_ssh.state(SOCKET_STATE)
+    result = spectio_open("cluster", "--local-port", "18556")
+    assert result.exit_code == 0, result.output
+    assert tunnel(fake_ssh) == [
+        "-N",
+        "-o",
+        "ExitOnForwardFailure=yes",
+        "-L",
+        "127.0.0.1:18556:/scratch/spectio-1000/spectio.sock",
+        "--",
+        "login3",
+    ]
+    assert opened(fake_ssh) == f"http://127.0.0.1:18556/auth/link#{TICKET}"
+
+
+@pytest.mark.parametrize(
+    "sock",
+    [
+        "relative/spectio.sock",
+        "/scratch/spectio-1000/other.sock",  # not the server's name
+        "/scratch/a:b/spectio.sock",  # a colon would cut ssh's -L spec
+        "/scratch/a b/spectio.sock",
+        "/scratch/\x1b]0;/spectio.sock",
+        "/" + "d" * 110 + "/spectio.sock",  # over the AF_UNIX limit
+        7,
+    ],
+)
+def test_rejects_bad_socket_from_state_file(fake_ssh: FakeSsh, sock: object) -> None:
+    fake_ssh.state({**STATE, "socket": sock})
+    result = spectio_open("cluster")
+    assert result.exit_code == 3, result.output
+    assert len(fake_ssh.calls()) == 1  # the state read; no tunnel
+
+
 def test_remote_quoting_two_layers(fake_ssh: FakeSsh) -> None:
     fake_ssh.state(STATE)
     cmd = """SPECTIO_X='it'"'"'s "q" $HOME `x`' spectio"""

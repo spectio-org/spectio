@@ -2,13 +2,15 @@
 req. 8): the `ssh` argument lists, the remote scripts quoted for both shell layers, and the
 checks on every value that comes back.
 
-The cluster is a trust boundary (dev-env §15.3, boundary (i)): a node, port or PID read from
-`server.json` is checked before use, a cluster value never goes inside `-o`, `--` comes before
+The cluster is a trust boundary (dev-env §15.3, boundary (i)): a node, port, socket or PID read
+from `server.json` is checked before use, a cluster value never goes inside `-o`, `--` comes before
 every destination, and the browser link is built here from a checked ticket, never taken from
 what the remote prints.
 """
 
 import json
+import os
+import re
 import shlex
 import socket
 from dataclasses import dataclass
@@ -16,9 +18,12 @@ from typing import Any
 
 from spectio.cli.login import NODE, SENTINEL, TICKET
 from spectio.config import LOOPBACK
+from spectio.ports import SOCKET, SUN_PATH_MAX
 
 STATE_MARK = "spectio-state-v1"  # tells the state file from what the remote profile prints
 STARTING_MARK = "spectio-starting-v1"  # serve --detach exited 3: its server is still booting
+# The remote end of `-L`: no `:` (ssh would cut the spec there), no space or control character.
+_SOCKET_PATH = re.compile(r"/[A-Za-z0-9._/-]+")
 _READ_STATE = f'echo {STATE_MARK}; cat -- "$HOME/.spectio/server.json" 2>/dev/null; exit 0'
 
 
@@ -33,6 +38,7 @@ class State:
     node: str
     port: int
     pid: int
+    socket: str | None = None  # the server's Unix socket (SLURM and shared hosts, inbox #109)
 
 
 def check_node(value: object, what: str) -> str:
@@ -47,14 +53,30 @@ def check_port(value: object, what: str) -> int:
     return value
 
 
+def check_socket(value: object, db_dir: object) -> str:
+    """The socket of server.json: `SOCKET` in its database directory, a path ssh's `-L` keeps
+    whole, within the AF_UNIX limit."""
+    if (
+        not isinstance(value, str)
+        or not _SOCKET_PATH.fullmatch(value)
+        or value != f"{db_dir}/{SOCKET}"
+        or len(os.fsencode(value)) > SUN_PATH_MAX
+    ):
+        raise Unsafe(f"the socket in server.json is not {SOCKET} in its database directory")
+    return value
+
+
 def ssh_argv(ssh: str, node: str, script: str) -> list[str]:
     """`ssh -- node CMD`: sshd hands CMD to the user's shell (layer one), which runs `script`
     through `"$SHELL" -lc` (layer two), so PATH, modules and rc files apply."""
     return [ssh, "--", node, '"$SHELL" -lc ' + shlex.quote(script)]
 
 
-def tunnel_argv(ssh: str, node: str, local_port: int, port: int) -> list[str]:
-    forward = f"{LOOPBACK}:{local_port}:{LOOPBACK}:{port}"
+def tunnel_argv(
+    ssh: str, node: str, local_port: int, port: int, sock: str | None = None
+) -> list[str]:
+    """The tunnel from a laptop port to the server's socket, or to its port on the node."""
+    forward = f"{LOOPBACK}:{local_port}:" + (f"{LOOPBACK}:{port}" if sock is None else sock)
     return [ssh, "-N", "-o", "ExitOnForwardFailure=yes", "-L", forward, "--", node]
 
 
@@ -103,7 +125,10 @@ def parse_state(stdout: str) -> State | None:
     pid = record.get("pid")
     if type(pid) is not int:
         raise Unsafe(f"the PID in server.json is not an integer: {pid!r}")
-    return State(node, port, pid)
+    sock = record.get("socket")
+    if sock is not None:
+        sock = check_socket(sock, record.get("db_dir"))
+    return State(node, port, pid, sock)
 
 
 def parse_ticket(stdout: str) -> str:

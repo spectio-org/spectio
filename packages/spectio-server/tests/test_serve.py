@@ -425,8 +425,9 @@ def test_serve_local_start_text(settings: Settings) -> None:
 
 
 def test_serve_decides_the_api_once(settings: Settings, monkeypatch: pytest.MonkeyPatch) -> None:
-    """The mounted routers and the start text come from one scan (CR-P3T17-04)."""
-    answers = iter([None, "a process of uid 1001 runs here"])  # a user logs in meanwhile
+    """The mounted routers and the start text come from one scan (CR-P3T17-04). The scan that
+    chose TCP comes first; on TCP the app scans again, and would leave the API off."""
+    answers = iter([None, None, "a process of uid 1001 runs here"])  # a user logs in meanwhile
     monkeypatch.setattr(app_mod, "shared_host", lambda: next(answers))
     with started(settings) as server:
         assert server.no_api is None
@@ -447,11 +448,12 @@ def test_serve_decides_the_api_once(settings: Settings, monkeypatch: pytest.Monk
 def test_serve_slurm_start_text_and_tmux_runner(settings: Settings) -> None:
     slurm = settings.model_copy(update={"executor": "slurm"})
     port = settings.port
-    text = start_text(slurm, "login1", "alice", None, LINK)
-    assert f"ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} alice@login1" in text
+    sock = Path("/tmp/spectio-1000/spectio.sock")  # noqa: S108
+    text = start_text(slurm, "login1", "alice", None, LINK, sock)
+    assert f"ssh -N -L 127.0.0.1:{port}:{sock} alice@login1" in text  # inbox #109 rule 5
     assert f"2. Then open this link (single use, valid 15 minutes):\n   {LINK}\n" in text
     assert "tmux session on login1: tmux attach -t spectio-<run ID>" in text
-    assert "spectio init --local" in text and "Task" not in text  # NO_API (inbox #109 rule 5)
+    assert "spectio init --local" not in text and "Task" not in text  # the API is served
     assert slurm.db_dir is not None
     booted = boot(slurm, slurm.db_dir)
     try:
@@ -539,23 +541,30 @@ def test_sink_leases_once_until_the_lease_ends(settings: Settings, writer: Write
 @pytest.mark.parametrize("sig", [signal.SIGTERM, signal.SIGHUP])
 def test_sigterm_stops_cleanly(settings: Settings, sig: signal.Signals) -> None:
     """`spectio serve` in the foreground: the start text, then SIGTERM, or SIGHUP as
-    `tmux kill-session` sends it (CON-PRE-10), stops it with the state file removed and the lock
-    free."""
+    `tmux kill-session` sends it (CON-PRE-10), stops it with the state file and the socket
+    removed and the lock free. A SLURM environment, so that the child, which scans the host
+    itself, listens on its socket whatever the test host is (inbox #109 rule 5)."""
+    assert settings.db_dir is not None
+    sock = settings.db_dir / "spectio.sock"
     spectio = Path(sys.executable).parent / "spectio"
     proc = subprocess.Popen(
-        [str(spectio), "serve"], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True
+        [str(spectio), "serve"],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+        text=True,
+        env={**os.environ, "SPECTIO_EXECUTOR": "slurm"},
     )
     try:
         assert proc.stdout is not None
         first = proc.stdout.readline()
-        assert first.startswith("Spectio ") and f"port {settings.port}" in first
-        assert (settings.data_dir / "server.json").exists()
+        assert first.startswith("Spectio ") and f"on the Unix socket {sock}." in first
+        assert (settings.data_dir / "server.json").exists() and sock.exists()
         proc.send_signal(sig)
         assert proc.wait(20) == 0
     finally:
         proc.kill()
         proc.wait()
-    assert not (settings.data_dir / "server.json").exists()
+    assert not (settings.data_dir / "server.json").exists() and not sock.exists()
     with started(settings):  # the lock is free
         pass
 

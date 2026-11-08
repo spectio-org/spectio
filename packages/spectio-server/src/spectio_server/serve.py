@@ -7,8 +7,13 @@ The start, in order, each refusal a `ServeError` (exit 2) before anything is lef
    others (req. 10);
 2. the database directory and its parents checked (`checked_db_dir`), then `<db dir>/serve.lock`
    (flock, node-local): one server per user and node;
-3. the recorded port, bound on 127.0.0.1 only; a taken port is refused, naming its owner's uid,
-   never replaced by another (Assumption 10);
+3. on a machine only the user uses, in local mode, the recorded port, bound on 127.0.0.1 only;
+   a taken port is refused, naming its owner's uid, never replaced by another (Assumption 10).
+   On SLURM and shared hosts (`no_api_reason`), never a TCP port: the Unix socket `SOCKET` in
+   the 0700 database directory, where the kernel refuses other users at `connect` (inbox #109
+   rule 5, Thomas 2026-11-08; FU-P3-72). A path over `SUN_PATH_MAX` bytes is refused; a socket
+   file nothing answers on (a dead server's) is replaced, one that answers is refused; the
+   socket is removed at a clean stop;
 4. the state file `<data dir>/server.json` in the 0700 data directory, written whole under a
    temporary name and linked into place, which fails if it exists (Assumption 9): one that names
    another node is refused unless `--force`; one that names this node is a dead server's, since
@@ -17,8 +22,10 @@ The start, in order, each refusal a `ServeError` (exit 2) before anything is lef
    then one runner tick (adopt the heads, replay the spools), the runner thread and uvicorn.
 
 Heads start with the local launcher on a local environment and with the tmux launcher on a
-SLURM one (P1 Task 10), in a tmux session per run on this login node. On a SLURM environment the
-API is not served: the host is shared (`NO_API`, inbox #109 rule 5).
+SLURM one (P1 Task 10), in a tmux session per run on this login node. Behind the socket the API
+and the screens are served, with the session as a second barrier; the laptop reaches them with
+`ssh -N -L 127.0.0.1:<port>:<socket> <user>@<node>`, `<port>` the recorded one, which names the
+link and the session cookie there.
 
 Each start writes a new server key next to the database (`auth.secrets`, P1 Task 12) and prints
 a first token link; `spectio login --print-link` asks for another one. In the pane of
@@ -33,6 +40,7 @@ import os
 import pwd
 import signal
 import socket
+import stat
 import threading
 from collections.abc import Iterator
 from contextlib import ExitStack, contextmanager
@@ -46,12 +54,12 @@ from sqlalchemy import Engine
 
 from spectio.config import LOOPBACK, Settings
 from spectio.fsmodes import open_secure_dir, write_file
-from spectio.ports import port_owner
+from spectio.ports import SOCKET, SUN_PATH_MAX, port_owner
 from spectio.runner.local import LocalLauncher
 from spectio.runner.loop import RunnerLoop
 from spectio.runner.rundir import open_private, private_dir, read_small
 from spectio.runner.tmux import TmuxLauncher
-from spectio_server.app import NO_API, create_app
+from spectio_server.app import create_app, no_api_reason
 from spectio_server.auth.routes import NO_PASTE, link_url
 from spectio_server.auth.secrets import ServerKey
 from spectio_server.bootstrap import ensure_tenancy
@@ -94,6 +102,7 @@ class Started:
     booted: Booted
     no_api: str | None  # why the API is not served, as create_app decided (CR-P3T17-04)
     link: str | None  # the first token link: single use, 15 minutes; None in a detached pane
+    socket_path: Path | None  # the Unix socket it listens on; None on a TCP port
     stop: threading.Event = field(default_factory=threading.Event)
 
     def run(self) -> None:
@@ -108,13 +117,20 @@ def _user() -> str:
 
 
 def start_text(
-    settings: Settings, node: str, user: str, no_api: str | None, link: str | None
+    settings: Settings,
+    node: str,
+    user: str,
+    no_api: str | None,
+    link: str | None,
+    socket_path: Path | None = None,
 ) -> str:
-    """What `spectio serve` prints; with no `link` (a detached pane), where to get one."""
+    """What `spectio serve` prints; with no `link` (a detached pane), where to get one. With a
+    `socket_path`, the tunnel ends on it; `port` is then the laptop's end."""
     port = settings.port
     once = "(single use, valid 15 minutes):"
-    lines = [f"Spectio {version('spectio')} is running on {node}, port {port}."]
-    if settings.executor == "local":
+    where = f"port {port}" if socket_path is None else f"on the Unix socket {socket_path}"
+    lines = [f"Spectio {version('spectio')} is running on {node}, {where}."]
+    if settings.executor == "local" and socket_path is None:
         if link is None:
             lines.append(
                 "Get a link to open in a browser on this machine: spectio login --print-link"
@@ -124,18 +140,19 @@ def start_text(
         if no_api is not None:  # a shared machine (SEC-P3T17-06)
             lines.append(no_api)
     else:
+        target = f"127.0.0.1:{port}" if socket_path is None else str(socket_path)
         lines.append(
-            f"1. On your laptop, open a tunnel:  ssh -N -L 127.0.0.1:{port}:127.0.0.1:{port} "
-            f"{user}@{node}"
+            f"1. On your laptop, open a tunnel:  ssh -N -L 127.0.0.1:{port}:{target} {user}@{node}"
         )
         if link is None:
             lines.append(f"2. Then open the link that spectio login --print-link prints on {node}")
         else:
             lines += [f"2. Then open this link {once}", f"   {link}"]
-        lines += [
-            f"Each run's head runs in a tmux session on {node}: tmux attach -t spectio-<run ID>.",
-            NO_API,
-        ]
+        if settings.executor != "local":
+            tmux = "tmux attach -t spectio-<run ID>"
+            lines.append(f"Each run's head runs in a tmux session on {node}: {tmux}.")
+        if no_api is not None:
+            lines.append(no_api)
     lines += ["New link at any time: spectio login --print-link", NO_PASTE]
     return "\n".join(lines)
 
@@ -219,11 +236,63 @@ def _bind(port: int) -> socket.socket:
     return sock
 
 
-def _record(settings: Settings, db_dir: Path) -> bytes:
+def _clear_stale(path: Path) -> None:
+    """Remove a socket file that nothing answers on (a dead server's); refuse anything else."""
+    try:
+        st = os.lstat(path)
+    except FileNotFoundError:
+        return
+    if not stat.S_ISSOCK(st.st_mode):
+        raise ServeError(f"{path} exists and is not a socket: move it away")
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as probe:
+        probe.settimeout(2)
+        try:
+            probe.connect(str(path))
+        except (ConnectionRefusedError, FileNotFoundError):  # nothing listens: stale
+            path.unlink(missing_ok=True)
+            return
+        except OSError as exc:
+            raise ServeError(f"{path} cannot be checked ({exc.strerror}): move it away") from exc
+    raise ServeError(f"a server answers on {path}: stop it first")
+
+
+def _bind_unix(path: Path) -> socket.socket:
+    """Listen on `path`, in the checked 0700 database directory: that directory is the boundary
+    (the kernel checks it at `connect`); the socket's own 0600 is a second one."""
+    size = len(os.fsencode(path))
+    if size > SUN_PATH_MAX:
+        raise ServeError(
+            f"the socket path {path} is {size} bytes, over the {SUN_PATH_MAX} bytes a Unix "
+            "socket path may have on Linux: choose a shorter --db-dir (spectio init --db-dir)"
+        )
+    _clear_stale(path)
+    sock = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    try:
+        sock.bind(str(path))
+        os.chmod(path, 0o600)  # before listen: nothing is accepted before
+        sock.listen(128)
+    except OSError as exc:
+        sock.close()
+        raise ServeError(f"cannot listen on {path}: {exc.strerror}") from exc
+    return sock
+
+
+def _remove_socket(path: Path, pin: tuple[int, int]) -> None:
+    """Remove the socket file if it is still the one bound at start."""
+    try:
+        st = os.lstat(path)
+        if (st.st_dev, st.st_ino) == pin:
+            path.unlink()
+    except OSError as exc:
+        log.warning("%s not removed: %r", path, exc)
+
+
+def _record(settings: Settings, db_dir: Path, socket_path: Path | None) -> bytes:
     return json.dumps(
         {
             "host": socket.gethostname(),
             "port": settings.port,
+            "socket": None if socket_path is None else str(socket_path),
             "pid": os.getpid(),
             "db_dir": str(db_dir),
             "started_at": datetime.now(UTC).isoformat(),
@@ -285,12 +354,19 @@ def started(
             f"runs root {settings.runs_root} must be a directory of yours that others cannot "
             f"write (dev-env §15.3 req. 10): {exc}"
         ) from exc
+    behind = no_api_reason(settings)  # SLURM or a shared host: a socket only (inbox #109 r. 5)
     with ExitStack() as stack:  # undone in reverse order, whatever stops the server
         try:
             db_dir = checked_db_dir(settings.db_dir or default_db_dir())  # before the lock
             stack.callback(os.close, _lock(db_dir))
-            sock = stack.enter_context(_bind(settings.port))
-            record = _record(settings, db_dir)
+            socket_path = None if behind is None else db_dir / SOCKET
+            if socket_path is None:
+                sock = stack.enter_context(_bind(settings.port))
+            else:
+                sock = stack.enter_context(_bind_unix(socket_path))
+                st = os.lstat(socket_path)
+                stack.callback(_remove_socket, socket_path, (st.st_dev, st.st_ino))
+            record = _record(settings, db_dir, socket_path)
             _write_state(settings.data_dir, record, force)
             stack.callback(_remove_state, settings.data_dir, record)
             booted = boot(settings, db_dir)
@@ -301,7 +377,13 @@ def started(
             key = ServerKey.generate(db_dir)
         except OSError as exc:
             raise ServeError(str(exc)) from exc
-        api = create_app(settings, booted.writer, files=booted.files, server_key=key)
+        api = create_app(
+            settings,
+            booted.writer,
+            files=booted.files,
+            server_key=key,
+            on_socket=socket_path is not None,
+        )
         config = uvicorn.Config(
             api,
             host=LOOPBACK,
@@ -312,7 +394,8 @@ def started(
             timeout_graceful_shutdown=5,  # an open event stream never holds a stop (Task 18)
         )
         link = link_url(settings.port, api.state.tickets.mint()) if mint_link else None
-        server = Started(sock, uvicorn.Server(config), booted, api.state.no_api, link)
+        no_api = api.state.no_api
+        server = Started(sock, uvicorn.Server(config), booted, no_api, link, socket_path)
         thread = threading.Thread(
             target=booted.loop.run, args=(server.stop,), name="spectio-runner"
         )
@@ -338,7 +421,10 @@ def serve(settings: Settings, *, force: bool = False, mint_link: bool = True) ->
     try:
         with started(settings, force=force, mint_link=mint_link) as server:
             node = socket.gethostname()
-            print(start_text(settings, node, _user(), server.no_api, server.link), flush=True)
+            text = start_text(
+                settings, node, _user(), server.no_api, server.link, server.socket_path
+            )
+            print(text, flush=True)
             server.run()
     except KeyboardInterrupt:
         pass
