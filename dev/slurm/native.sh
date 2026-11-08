@@ -39,9 +39,9 @@ guard() { # up|down
   [ "$(id -u)" = 0 ] || die "run it as root, in a throwaway container"
   [ -z "$SITE_CONF" ] || [ "$SITE_CONF" = "$ETC/slurm.conf" ] ||
     die "SLURM_CONF=$SITE_CONF is set and is not $ETC/slurm.conf; leaving this Slurm alone"
-  local f first own= c name
+  local f first own='' c name
   for f in "$ETC/slurm.conf" "$ETC/slurmdbd.conf"; do
-    [ -e "$f" ] || continue
+    [ -e "$f" ] || [ -L "$f" ] || continue # a dangling link is foreign too
     first=
     IFS= read -r first <"$f" || true
     [[ $first == "$MARK"* ]] || die "$f exists and was not written by dev/slurm/native.sh; leaving this Slurm alone"

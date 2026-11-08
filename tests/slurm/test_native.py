@@ -2,7 +2,7 @@
 slurm.conf or slurmdbd.conf it did not write (no marker line) is there, so it never clobbers a site's
 config (FU-P3-66). Fakes only: every command the script could run is a recorder on PATH, `id -u` is faked,
 and the config directory is a temporary one (NATIVE_SLURM_ETC). Nothing is installed or started."""
-import os, shutil, stat, subprocess, tempfile, unittest
+import os, pathlib, shutil, stat, subprocess, tempfile, unittest
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 NATIVE = os.path.join(HERE, "..", "..", "dev", "slurm", "native.sh")
@@ -50,7 +50,7 @@ class NativeGuards(unittest.TestCase):
             return fh.read().split()
 
     def etc_files(self):
-        return {n: open(os.path.join(self.etc, n)).read() for n in sorted(os.listdir(self.etc))}
+        return {n: pathlib.Path(self.etc, n).read_text() for n in sorted(os.listdir(self.etc))}
 
     def test_not_root_refused(self):
         for cmd in ("up", "down"):
@@ -74,6 +74,18 @@ class NativeGuards(unittest.TestCase):
                     self.assertEqual(self.recorded(), [])
                     self.assertEqual(self.etc_files(), site)
                 os.remove(os.path.join(self.etc, name))
+
+    def test_dangling_config_link_refused(self):
+        """A link to a site config on a share not mounted yet is foreign, not absent."""
+        link = os.path.join(self.etc, "slurm.conf")
+        os.symlink(os.path.join(self.tmp, "unmounted", "slurm.conf"), link)
+        for cmd in ("up", "down"):
+            with self.subTest(cmd):
+                code, err = self.run_native(0, cmd)
+                self.assertNotEqual(code, 0)
+                self.assertIn("not written by", err)
+                self.assertEqual(self.recorded(), [])
+                self.assertTrue(os.path.islink(link))
 
     def test_inherited_site_slurm_conf_refused(self):
         for cmd in ("up", "down"):
