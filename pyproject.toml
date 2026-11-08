@@ -73,6 +73,7 @@ addopts = ["--import-mode=importlib", "-m", "not engines"]
 markers = [
   "engines: runs a real workflow engine (pipelines-synthetic.yml)",
   "tmux: runs a real tmux (P1 Task 10); skipped where tmux is not on PATH",
+  "native_slurm: runs a real Slurm (dev/slurm/native.sh up, FU-P3-66); skipped unless SPECTIO_NATIVE_SLURM=1",
 ]
 
 [tool.importlinter]
