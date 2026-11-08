@@ -126,6 +126,11 @@ def detach(*args: str) -> Any:
     return CliRunner().invoke(app, ["serve", "--detach", *args])
 
 
+def plain(text: str) -> str:
+    """Rich colours usage errors on CI (GITHUB_ACTIONS forces a terminal): drop the escapes."""
+    return re.sub(r"\x1b\[[0-9;]*m", "", text)
+
+
 def state_file(settings: Settings, **record: Any) -> None:
     body = {
         "host": login.hostname(),
@@ -345,7 +350,7 @@ def test_detach_wait_must_be_finite(settings: Settings, tmux: Tmux, wait: str) -
     """nan would make the deadline never pass (SEC-P3FU44-04)."""
     result = detach("--wait", wait)
     assert result.exit_code == 2, result.output
-    assert "--wait" in result.output
+    assert "--wait" in plain(result.output)
     assert tmux.calls() == []
 
 
@@ -354,7 +359,7 @@ def test_wait_and_no_link_need_detach(settings: Settings, tmux: Tmux, args: list
     """Never silently ignored: without --detach, they are refused (CR-P3FU44-05)."""
     result = CliRunner().invoke(app, ["serve", *args])
     assert result.exit_code == 2, result.output
-    assert "--detach" in result.output
+    assert "--detach" in plain(result.output)
     assert not (settings.data_dir / "server.json").exists()
 
 
