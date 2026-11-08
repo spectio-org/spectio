@@ -93,7 +93,7 @@ Decided by Thomas on 2026-11-08 ([inbox #109](../reviews/inbox.md#109-assumed-wr
 
 `spectio serve` chooses the socket by itself on a SLURM environment, and in local mode on a machine that looks shared (another user's process, a SLURM install). In local mode on a machine only you use it keeps `127.0.0.1:<port>`, opened in that machine's browser. It refuses to start when:
 
-- the database directory is not `0700` and yours: it changes nothing, and says `chmod 700 <dir>`;
+- the database directory is not `0700` and yours: it changes nothing, and says the directory must be one of yours with mode `0700`, naming its owner;
 - the socket path is over 107 bytes, the Linux limit: choose a shorter `--db-dir`;
 - a file at the socket's path is not a socket, or a server answers on it. A socket file nothing answers on, left by a server that died, is replaced.
 
