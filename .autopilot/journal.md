@@ -736,3 +736,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-08 · P3-fu80 → PR #176.
 - 2026-11-08 · P3-fu82 #175 merged; P3-fu80 #176 merged; P3-fu79 → #177 (wheel manifest fix for the favicon); P3-fu81 → #178 (blocked workflow finished by hand: round-2 fix, re-review approve).
 - 2026-11-08 · P3-fu79 #177 merged; P3-fu83 → #179 (round-2 major fixed after review, docs only, not re-reviewed).
+
+- 2026-11-08T21:5xZ · FU-P3-83 merged (#179, squash 68e24c02) after a merge of integration and a fence fix; all checks green. Thomas decided: the five login1 items join 0.0.1 (FU-P3-85..89), engine polling unchanged (decision log 2026-11-08).
