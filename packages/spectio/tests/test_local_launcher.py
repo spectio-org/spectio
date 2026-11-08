@@ -894,3 +894,32 @@ def test_resume_launch_refused_while_a_process_runs_there(
     report = sink.last(ref.launch_id)
     assert report.failure is not None and report.failure.class_ == "launch_error"
     assert "runs in" in report.failure.message
+
+
+def test_launch_on_a_nearly_full_disk_warns_once_and_starts(
+    runs_root: Path,
+    launcher: LocalLauncher,
+    caplog: pytest.LogCaptureFixture,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """FU-P3-74: a launch logs the `runs_disk` warning of `spectio doctor` once, and starts."""
+    full = shutil._ntuple_diskusage(100 * 2**30, 97 * 2**30, 3 * 2**30)
+    monkeypatch.setattr(shutil, "disk_usage", lambda path: full)
+    body = "while [ ! -e release ]; do sleep 0.05; done"
+    engine = stub_engine(runs_root.parent / "bin", body)
+    sink = FakeSink()
+    loop = make_loop(sink, runs_root, engine, launcher)
+    ref = sink.launch(runs_root, RUN_A)
+    command = sink.commands[0]
+    loop.tick()
+    sink.commands.append(command)  # delivered again: already started, no second warning
+    loop.tick()
+    assert sink.acks == [(command.id, True, None)] * 2
+    assert sink.reports[0][1].state == "starting"
+    warned = [r.getMessage() for r in caplog.records if r.levelno >= logging.WARNING]
+    assert warned == [
+        f"runs_disk {runs_root} is on a nearly full file system (3.0 GiB free, 97% used): point "
+        "SPECTIO_RUNS_ROOT (runs_root in spectio.toml, spectio init --runs-root) at a larger "
+        "scratch or group file system"
+    ]
+    (ref.launch_dir / "release").touch()

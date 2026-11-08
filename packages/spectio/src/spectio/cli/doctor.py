@@ -17,6 +17,7 @@ from spectio.runner.engines import (
     existing_copy,
     nf_plugin_copy,
 )
+from spectio.runner.rundir import runs_disk
 
 Result = tuple[str, str, str]  # status, check, detail
 _JAVA = re.compile(r'version "([0-9]+)(?:\.([0-9]+))?')
@@ -153,6 +154,8 @@ def checks(
             results.append(("fail", "db_dir", str(exc)))
         else:
             results += server.db_checks(db_dir, mountinfo, fallback=settings.db_dir is None)
+    status, detail = runs_disk(settings.runs_root)  # a `warn` at most (FU-P3-74)
+    results.append((status, "runs_disk", detail))
     here = socket.gethostname()
     if settings.host == here:
         results.append(("ok", "host", here))

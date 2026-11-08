@@ -38,6 +38,8 @@ There will be three ways to run Spectio, from the smallest to the largest. All o
 
 `spectio doctor` shows the uv on your path and warns when it is older than 0.13.7.
 
+**Put the runs directory on a file system with room.** Each run's launch and work directories go under the runs directory, `~/spectio-runs` by default. On an EMBL login node that is `/home`, an NFS file system that was 97% full on 2026-11-08 ([login-node audit](../research/2026-11-08-embl-login-node-audit.md#6-shared-home) §6). `spectio doctor` prints a `runs_disk` line with the free space there, and warns when that file system is 90% used or has less than 10 GiB free; a launch then logs the same warning in the server's output, and still starts. To move it, point `SPECTIO_RUNS_ROOT`, `runs_root` in `~/.spectio/spectio.toml`, or `spectio init --runs-root` at a larger scratch or group file system that the compute nodes also see. A directory you choose must exist already, be yours, and not be writable by others.
+
 **The runner on your cluster** is a small program on the login node or in the cluster. It only makes outgoing HTTPS calls to the server, so no port needs to be opened on the HPC side.
 
 **Checking what you install.** Every published image and chart will carry a signature, an SBOM and a provenance attestation that `gh attestation verify` checks; see [versioning and releases](../specs/dev-environment-and-testing.md#12-versioning-and-releases). *(decided — Thomas, 2026-10-27, inbox #26)*
