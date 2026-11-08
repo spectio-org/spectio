@@ -695,3 +695,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-08 00:45 · P3-t35 · built (11 boards first, then screens; review approve 1/1/16 with blocker and major fixed, security approve 0/0/1, 4 rounds); Playwright smoke 36 passed, 16 skipped; slurm-mini not run. Inbox #117, FU-P3-54, FU-P3-55. PR #153 opened (no-figure).
 - 2026-11-08 00:50 · P3-t35 · merged #153 (0115dbd). M9 tasks done; batch P3-B04 close (P3-t33, t34, t35) next.
 - 2026-11-08 01:25 · P3-B04 · batch close done (simplify -27/+8, re-review approve, figure, guide states-outputs-efficiency with five shots, doc-reviewer approve 13/14); FU-P3-56. PR #154 opened (no-figure).
+- 2026-11-08 01:30 · P3-B04 · merged #154 (b64451e). Promotion to main next.
