@@ -292,3 +292,12 @@ Thomas, in the session of 2026-11-04: review and document in larger batches, so 
    Its PR is merged like a task PR. Then **one promotion PR to `main`** per batch.
 4. **Models.** `doc-writer`, `doc-reviewer` and `code-simplifier` run on sonnet. The build worker, `code-reviewer`, `security-reviewer` and `diagram-artist` keep their models.
 5. **Cost by kind.** The orchestrator records each `p3-task` run as `--kind build-task` and each `p3-batch` run as `--kind docs` (`tools/autopilot/budget.py record-cost`). The 39 earlier `build` records are the old full flow, so the new kinds keep the comparison clean. Until three samples of a new kind exist, `budget.py` uses its default prior.
+
+## 12. Screenshots of each round for Thomas (Thomas, 2026-11-08)
+
+Thomas, in the session of 2026-11-08: "Je veux des screenshots des améliorations à chaque round" ([inbox #124](../reviews/inbox.md#124-decided-screenshots-of-each-rounds-improvements), [decision log](../decisions/log.md#2026-11-08-screenshots-of-each-round-for-thomas-inbox-124-thomas)).
+
+1. **When.** After each P3 task or batch merges, or when a step stops on a question, the orchestrator sends Thomas screenshots of what it changed, in the session (`SendUserFile`), with a one-line caption each.
+2. **What.** A screen change: the real UI, rendered with `tools/media/shots.py` or Playwright from the built wheel, desktop and, when the change touches it, phone. A CLI, test or CI change: a terminal capture of the real command output (the `RESULT` lines, the test summary). Before and after when there is a before.
+3. **Where.** Scratchpad PNGs are enough for the session. Shots that a Progress page or guide keeps go through `docs/assets/media.yaml` in the batch docs (§11), as before.
+4. **Hygiene.** Demo data only: no real hostnames, users, tokens or paths (documentation-system rules for media).

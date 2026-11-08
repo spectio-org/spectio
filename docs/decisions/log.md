@@ -1234,3 +1234,7 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 
 - **Context.** P1 Task 22's `e2e` job launches through `POST /api/v1/runs`, which answers `404` on SLURM and shared hosts by [#109](../reviews/inbox.md#109-assumed-writes-need-origin-and-json-as-built-p3-task-16) rule 5 (a); on the CI run of PR #164 both engines printed `RESULT e2e-launch-<engine> fail` for that reason only ([inbox #123](../reviews/inbox.md#123-question-p1-task-22-needs-the-api-on-slurm-which-109-rule-5-a-keeps-unmounted)).
 - **Decided (Thomas, 2026-11-08, in the session's question dialog): (b), keep it unmounted** until the by-hand check on a real login node (W6). No product change. PR #164 waits for Thomas (keep open, or merge with the `e2e` entry off, his call); step P3-t22 stays `waiting_human` and M5 stays open.
+
+## 2026-11-08 — Screenshots of each round for Thomas (inbox #124, Thomas)
+
+- **Decided (Thomas, 2026-11-08, in the session):** after each P3 task or batch, the orchestrator sends Thomas screenshots of the improvements: the real UI for screen changes, a terminal capture for CLI, test and CI changes ([autopilot §12](../playbooks/autopilot.md#12-screenshots-of-each-round-for-thomas-thomas-2026-11-08), [inbox #124](../reviews/inbox.md#124-decided-screenshots-of-each-rounds-improvements)).
