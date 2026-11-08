@@ -311,6 +311,30 @@ test("the log tail of an ended run reads Empty., and its lines carry the level t
   expect(await within(log).findByText("Empty.")).toBeInTheDocument();
 });
 
+test("FU-P3-80: a frame for this run reads the Summary log tail again; none once the run has ended", async () => {
+  let text = "line one\n";
+  let state = "running";
+  const mock = detail({}, {
+    [URL_]: () => json(200, { ...DETAIL, ...run({ state }), params: {} }),
+    [`${URL_}/logs?source=engine`]: () => new Response(text),
+  });
+  app(`/runs/${ID}`);
+  const log = await screen.findByRole("region", { name: "Engine log · last lines" });
+  expect(await within(log).findByText("line one")).toBeInTheDocument();
+  const count = () => fetched(mock).filter((u) => u.endsWith("logs?source=engine")).length;
+  text = "line one\nline two\n";
+  FakeEventSource.last!.frame({ run_id: ID });
+  expect(await within(log).findByText("line two", {}, { timeout: 3000 })).toBeInTheDocument();
+  state = "succeeded";
+  FakeEventSource.last!.frame({ run_id: ID });
+  expect(await screen.findByText("Succeeded", {}, { timeout: 3000 })).toBeInTheDocument();
+  await new Promise((r) => setTimeout(r, 300)); // the tail reads once more as the run ends
+  const before = count();
+  FakeEventSource.last!.frame({ run_id: ID });
+  await new Promise((r) => setTimeout(r, 1200));
+  expect(count()).toBe(before);
+});
+
 test("the log tail tints its lines by level, as the Logs tab does", async () => {
   detail({}, { [`${URL_}/logs?source=engine`]: () => new Response("all good\nWARN slow disk\nERROR boom\n") });
   app(`/runs/${ID}`);
