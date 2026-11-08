@@ -139,10 +139,6 @@ class Squeue(unittest.TestCase):
                              "jobs in squeue: ['12|x|/r/runs/run_1/work']; tmux session spectio-run_1: True")
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 class Local(unittest.TestCase):
     """Local mode (P2 §10.8, G7): the head runs in its own session (setsid), not in tmux, and there is no squeue."""
 
@@ -177,3 +173,7 @@ class Local(unittest.TestCase):
         self.assertIn(str(me), c.head_left((me, me, start)))
         self.assertIsNone(c.head_left((me, me, start + "0")))  # another process that reused the PID
         self.assertIsNone(c.head_left(None))
+
+
+if __name__ == "__main__":
+    unittest.main()
