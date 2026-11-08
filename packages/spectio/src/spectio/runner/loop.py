@@ -37,6 +37,7 @@ from spectio.runner.rundir import (
     private_dir,
     read_small,
     run_paths,
+    runs_disk,
     write_file,
 )
 from spectio.runner.spool import SPOOL_REFUSED, SPOOL_STALLED, try_read_spool
@@ -285,6 +286,9 @@ class RunnerLoop:
                 extra_args=engines.extra_args.get(ref.engine, []),
                 resume_of=resume,
             )
+            status, detail = runs_disk(self.settings.runs_root)
+            if status == "warn":  # never refused: the engine may still fit (FU-P3-74)
+                log.warning("runs_disk %s", detail)
             native_id = self.launcher.submit(spec)
         except EngineError as exc:
             return self._fail(ref, exc.class_, str(exc))
