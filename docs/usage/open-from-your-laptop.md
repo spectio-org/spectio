@@ -7,7 +7,7 @@ icon: material/laptop
 
     `spectio open` runs today from a checkout (batch [P3-B02](../progress/W5/P3-M5.md#task-24-laptop-access-the-ssh-config-entry-and-spectio-open), 2026-11-07). The first release is 0.0.1 ([development environment §15](../specs/dev-environment-and-testing.md#15-what-ships-in-which-version)). **It has not run against a real `sshd` or a login node yet:** the cast below uses a fake `ssh`, and the by-hand check on an EMBL login node is open ([Not built or not checked](#not-built-or-not-checked)).
 
-Spectio's server listens on `127.0.0.1` of a cluster login node. You reach it from your laptop through an SSH tunnel, with a one-time link. Two ways ship side by side. Both call your own `ssh`, so your `~/.ssh/config`, keys, `ProxyJump` and second factor work as they do today.
+On a cluster login node, Spectio's server listens on a Unix socket in its private database directory (`/tmp/spectio-<uid>/spectio.sock` by default), never on a TCP port: on a login node other users can reach any `127.0.0.1` port, but not a socket in a directory only you can open (2026-11-08, [why](#why-a-socket-on-a-cluster)). You reach it from your laptop through an SSH tunnel from a port of your laptop to that socket, with a one-time link. Two ways ship side by side. Both call your own `ssh`, so your `~/.ssh/config`, keys, `ProxyJump` and second factor work as they do today.
 
 The rules are owned by [development environment §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) (Access, and requirement 8). This page says what you type and see.
 
@@ -21,15 +21,17 @@ The rules are owned by [development environment §15.3](../specs/dev-environment
 
 ## Way 1: the SSH config entry
 
-1. **Find the port.** `spectio init` on the cluster picked a free port once and recorded it in `~/.spectio/spectio.toml` (`port = 8080` by default; another one when 8080 is taken). Read it there. The entry stays valid because the port does not change.
-2. **Add a `Host` block** to `~/.ssh/config` on the laptop, with the login node the server runs on:
+1. **Find the socket and the port.** `spectio serve` prints both in its tunnel line: `ssh -N -L 127.0.0.1:8080:/tmp/spectio-1000/spectio.sock alice@demo-hpc-login1`. The socket is `spectio.sock` in the database directory (`/tmp/spectio-<uid>` by default, or the `db_dir` of `~/.spectio/server.json`). The port is the laptop's end: `port` in `~/.spectio/spectio.toml` (8080 by default), which also names the link.
+2. **Add a `Host` block** to `~/.ssh/config` on the laptop, with the login node the server runs on. `LocalForward` takes a socket path as its second argument:
 
     ```text
     Host demo-hpc
         HostName demo-hpc-login1
         User alice
-        LocalForward 127.0.0.1:8080 127.0.0.1:8080
+        LocalForward 127.0.0.1:8080 /tmp/spectio-1000/spectio.sock
     ```
+
+    If the database directory moves (the `mkdtemp` fallback of a squatted `/tmp/spectio-<uid>`, or another `--db-dir`), so does the socket: copy the new path from the tunnel line.
 
 3. **Connect** with `ssh demo-hpc`. The tunnel lasts as long as the session.
 4. **Start the server** in that session if none runs: `spectio serve --detach` keeps it in a tmux session `spectio-server` and prints the link ([Keeping the server running](keep-the-server-running.md)). It was not run on a cluster here, **[to be validated]**.
@@ -50,7 +52,7 @@ In order:
 1. It runs `spectio --help` on the cluster and reads `~/.spectio/server.json`, over `ssh demo-hpc`, through your login shell (`"$SHELL" -lc`), so `PATH`, modules and your rc files apply.
 2. With a state file, it reaches the node the file names. `--node` overrides it.
 3. Without one, it starts a server on `--node`, else the `node` of `clusters.toml`, else `<host>`: `spectio init` only if `~/.spectio` is missing, then `spectio serve --detach --no-link`, so no link lands in the ssh output. If that exits 3 (started, no link yet), it asks for the ticket again every 2 s for up to 120 s. The real `--detach` was run on tmux 3.4 (see [Keeping the server running](keep-the-server-running.md)); the whole path through `spectio open` still runs against a fake remote `spectio` in the tests only.
-4. It opens the tunnel on a free local port (`--local-port` sets one), asks the node for a ticket with `spectio login --print-link --json`, builds the link itself and opens your browser. A URL printed by the cluster is never opened.
+4. It opens the tunnel from a free local port (`--local-port` sets one) to the socket that `server.json` names (to the server's port when it names none, in local mode), asks the node for a ticket with `spectio login --print-link --json`, builds the link itself and opens your browser. A URL printed by the cluster is never opened.
 5. Ctrl-C closes the tunnel. The server and its runs keep going.
 
 | Flag | Does |
@@ -81,8 +83,19 @@ remote_cmd = "module load spectio && spectio"
 ### What it checks before it uses a value from the cluster
 
 - a node is a host name (`^[A-Za-z0-9][A-Za-z0-9.-]{0,252}$`), a port is 1024 to 65535, a PID is an integer, a ticket is 43 characters of `A-Za-z0-9_-`;
+- a socket is `spectio.sock` in the `db_dir` of the same file, of `A-Za-z0-9._/-` only (a `:` would cut the `-L` argument), at most 107 bytes;
 - `--` comes before every `ssh` destination, and no cluster value goes inside `-o`;
-- the tunnel is `-N -o ExitOnForwardFailure=yes -L 127.0.0.1:<local>:127.0.0.1:<port>`, with no host-key option.
+- the tunnel is `-N -o ExitOnForwardFailure=yes -L 127.0.0.1:<local>:<socket>`, or `-L 127.0.0.1:<local>:127.0.0.1:<port>` with no socket, with no host-key option.
+
+## Why a socket on a cluster
+
+Decided by Thomas on 2026-11-08 ([inbox #109](../reviews/inbox.md#109-assumed-writes-need-origin-and-json-as-built-p3-task-16), [decision log](../decisions/log.md#2026-11-08-on-slurm-and-shared-hosts-the-api-is-served-only-on-a-unix-socket-inbox-109-rule-5-thomas)), after the [audit of an EMBL login node](../research/2026-11-08-embl-login-node-audit.md#11-recommendation-for-inbox-109-rule-5): the node has one network namespace for everyone, so `127.0.0.1` is not a per-user boundary. A socket in a `0700` directory is: the kernel refuses another user at `connect`, before any Spectio code runs. The one-time link and the session stay as a second barrier. Your browser still opens `http://127.0.0.1:<port>` on the laptop, and the session cookie is named after that port.
+
+`spectio serve` chooses the socket by itself on a SLURM environment, and in local mode on a machine that looks shared (another user's process, a SLURM install). In local mode on a machine only you use it keeps `127.0.0.1:<port>`, opened in that machine's browser. It refuses to start when:
+
+- the database directory is not `0700` and yours: it changes nothing, and says `chmod 700 <dir>`;
+- the socket path is over 107 bytes, the Linux limit: choose a shorter `--db-dir`;
+- a file at the socket's path is not a socket, or a server answers on it. A socket file nothing answers on, left by a server that died, is replaced.
 
 ## See it run
 
@@ -92,6 +105,7 @@ The cast runs the real `spectio open` and a real `spectio serve` in a demo home 
 
 ## Not built or not checked
 
+- **The socket on a real login node.** The tunnel to a socket was tried on an EMBL login node with a throwaway server ([audit §10](../research/2026-11-08-embl-login-node-audit.md#10-follow-up-tests-same-day)); `spectio serve` itself on a socket there, a second account refused at `connect`, and the server surviving a full logout are **[to be validated]**.
 - **A real `sshd` and a login node.** [P1 Task 24](../plans/P1-walking-skeleton.md#task-24-laptop-access-the-ssh-config-entry-and-spectio-open) Step 4 is by hand, once, on an EMBL login node, and is not done. Whether `"$SHELL" -lc` works there, and which login shell the nodes use, is **[to be validated]**. The remote scripts need a POSIX-family shell; a tcsh login shell fails with a syntax error.
 - **A first start through `spectio open` on a real login node.** `spectio serve --detach` is built (FU-P3-44), but the path from `spectio open` to it was not run over a real `sshd`, on SLURM or at EMBL.
 - **Is the server in `server.json` alive?** Not checked. After a crash or a node reboot a stale file makes the login fail, and the error names the file as a possible cause: remove it and run `spectio open` again (FU-P3-48).
