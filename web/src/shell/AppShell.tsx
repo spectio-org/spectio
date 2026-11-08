@@ -1,8 +1,9 @@
 import "./shell.css";
 import { useMediaQuery } from "@mantine/hooks";
 import { Outlet } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { type ServerVersion, getVersion } from "../api";
+import { useLiveStatus } from "../live";
 import { ServerContext } from "../server";
 import { CrumbContext } from "./crumb";
 import { LayoutContext } from "./layout";
@@ -21,13 +22,31 @@ const NOW = { getInitialValueInEffect: false };
 export function AppShell() {
   const [server, setServer] = useState<ServerVersion | null>(null);
   const [down, setDown] = useState<string | null>(null);
+  // The status follows the live stream (FU-P3-79): while it reconnects the server is not
+  // reached, and each reconnection reads GET /version again, as the server may have changed.
+  const live = useLiveStatus();
+  const [reads, setReads] = useState(0);
+  const lost = useRef(false);
+  useEffect(() => {
+    if (live === "reconnecting") lost.current = true;
+    else if (live === "live" && (lost.current || down)) {
+      lost.current = false;
+      setReads((n) => n + 1);
+    }
+    // `down` is read, not watched: a failed re-read while live must not trigger another one.
+  }, [live]);
   useEffect(() => {
     const controller = new AbortController();
     getVersion(controller.signal)
-      .then(setServer)
+      .then((v) => {
+        setServer(v);
+        setDown(null);
+      })
       .catch((e: Error) => controller.signal.aborted || setDown(e.message));
     return () => controller.abort();
-  }, []);
+  }, [reads]);
+  const reached = live === "reconnecting" || down ? null : server;
+  const unreached = live === "reconnecting" ? "The live stream is reconnecting." : down;
 
   const phone = useMediaQuery(PHONE, false, NOW) ?? false;
   const tablet = useMediaQuery(TABLET, false, NOW) ?? false;
@@ -42,9 +61,9 @@ export function AppShell() {
       <CrumbContext.Provider value={setCrumb}>
         <LayoutContext.Provider value={{ phone, titleRow: phone ? titleRow : null }}>
           <div className="sp-shell" data-layout={phone ? "phone" : tablet ? "tablet" : "desktop"}>
-            <TopBar phone={phone} server={server} down={down} crumb={crumb} titleRow={setTitleRow} />
+            <TopBar phone={phone} server={reached} down={unreached} crumb={crumb} titleRow={setTitleRow} />
             <div className="sp-body">
-              {!phone && <Sidebar open={open} onFold={() => setChosen(!open)} server={server} down={down} />}
+              {!phone && <Sidebar open={open} onFold={() => setChosen(!open)} server={reached} down={unreached} />}
               <main className="sp-main">
                 <Outlet />
               </main>
