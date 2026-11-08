@@ -9,7 +9,7 @@ from pathlib import Path
 
 import typer
 
-from spectio.config import NF_SPECTIO_VERSION, Settings, config_path
+from spectio.config import MIN_UV, NF_SPECTIO_VERSION, Settings, config_path
 from spectio.loginshell import run_login, which
 from spectio.runner.engines import (
     NEXTFLOW_VERSION,
@@ -20,6 +20,7 @@ from spectio.runner.engines import (
 
 Result = tuple[str, str, str]  # status, check, detail
 _JAVA = re.compile(r'version "([0-9]+)(?:\.([0-9]+))?')
+_UV = re.compile(r"^uv ([0-9]+)\.([0-9]+)\.([0-9]+)\b", re.MULTILINE)
 _PLUGINS_BLOCK = re.compile(r"\bplugins\s*\{[^}]*nf-spectio", re.DOTALL)
 
 
@@ -41,6 +42,36 @@ def _java() -> Result:
         return "warn", "java", "not found on PATH: Nextflow needs Java"
     major = match.group(2) if match.group(1) == "1" else match.group(1)  # 1.8 is Java 8
     return "ok", "java", str(major)
+
+
+def uv_version(out: str) -> tuple[int, int, int] | None:
+    """The version in the output of `uv --version` ("uv 0.13.7 (abc 2026-10-01)"), or None."""
+    match = _UV.search(out)
+    return (int(match[1]), int(match[2]), int(match[3])) if match else None
+
+
+def _uv() -> Result:
+    """The uv on the login PATH: only installing Spectio needs it, so an old one is a warning
+    and a missing one is fine (FU-P3-73)."""
+    path = which("uv")["uv"]
+    if not path:
+        return "ok", "uv", "not found on PATH: only installing Spectio needs it"
+    out = run_login('"$1" --version', path)
+    first = "".join((out.stderr or out.stdout).strip().splitlines()[:1])
+    if out.returncode != 0:
+        return "warn", "uv", f"`{path} --version` exited {out.returncode}: {first}"
+    version = uv_version(out.stdout)
+    if version is None:
+        return "warn", "uv", f"`{path} --version` printed no version: {first}"
+    found, minimum = (".".join(map(str, v)) for v in (version, MIN_UV))
+    if version < MIN_UV:
+        return (
+            "warn",
+            "uv",
+            f"{found} {path} is older than {minimum}: its Pythons may carry an SQLite that "
+            "Spectio refuses; upgrade it (uv self update, or its installer)",
+        )
+    return "ok", "uv", f"{found} {path}"
 
 
 def _tools(local: bool) -> list[Result]:
@@ -134,6 +165,7 @@ def checks(
     results.append(_engine("snakemake", engines.snakemake_cmd, "--version", SNAKEMAKE_VERSION))
     results.append(_java())
     results += _tools(settings.executor == "local")
+    results.append(_uv())
     results.append(_nxf_plugins(env))
     return results
 

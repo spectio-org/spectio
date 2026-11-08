@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from spectio.cli.doctor import run_doctor
+from spectio.cli.doctor import run_doctor, uv_version
 from spectio.config import Settings, write_config
 
 
@@ -229,3 +229,63 @@ def test_doctor_refuses_an_untrusted_copy(
     code, lines = doctor(capsys, configured(home, fakebin, executor="local"))
     found = line(lines, "nxf_plugins_default")
     assert code == 1 and found.startswith("fail") and "only you can write" in found, found
+
+
+@pytest.mark.parametrize(
+    ("out", "version"),
+    [
+        ("uv 0.13.7\n", (0, 13, 7)),
+        ("uv 0.13.7 (abc 2026-10-01)\n", (0, 13, 7)),
+        ("uv 0.9.29 (Homebrew 2025-11-01)", (0, 9, 29)),
+        ("uv 1.0.0-rc.1\n", (1, 0, 0)),
+        ("warning: a profile line\nuv 0.13.10\n", (0, 13, 10)),
+        ("uv-tool 0.13.7", None),
+        ("uv version unknown", None),
+        ("", None),
+    ],
+)
+def test_uv_version(out: str, version: tuple[int, int, int] | None) -> None:
+    assert uv_version(out) == version
+
+
+def fake_uv(home: Path, login: Callable[..., None], script: str) -> Path:
+    bindir = home.parent / "uvbin"
+    bindir.mkdir(exist_ok=True)
+    uv = bindir / "uv"
+    uv.write_text(f"#!/bin/sh\n{script}\n")
+    uv.chmod(0o755)
+    login(bindir)
+    return uv
+
+
+@pytest.mark.parametrize(
+    ("script", "expected"),
+    [
+        ("echo 'uv 0.13.7 (abc 2026-10-01)'", "ok uv 0.13.7 {uv}"),
+        ("echo 'uv 0.14.0'", "ok uv 0.14.0 {uv}"),
+        (
+            "echo 'uv 0.9.29'",
+            "warn uv 0.9.29 {uv} is older than 0.13.7: its Pythons may carry an SQLite that "
+            "Spectio refuses; upgrade it (uv self update, or its installer)",
+        ),
+        ("echo garbage", "warn uv `{uv} --version` printed no version: garbage"),
+        ("echo boom >&2; exit 3", "warn uv `{uv} --version` exited 3: boom"),
+    ],
+)
+def test_doctor_reports_uv(
+    home: Path,
+    login: Callable[..., None],
+    capsys: pytest.CaptureFixture[str],
+    script: str,
+    expected: str,
+) -> None:
+    settings = configured(home, executor="local")
+    uv = fake_uv(home, login, script)
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "uv") == expected.format(uv=uv)
+    assert not [x for x in lines if x.startswith("fail uv")]
+
+
+def test_doctor_without_uv(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _, lines = doctor(capsys, configured(home, executor="local"))
+    assert line(lines, "uv") == "ok uv not found on PATH: only installing Spectio needs it"

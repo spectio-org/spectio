@@ -27,6 +27,9 @@ from spectio.fsmodes import write_secret
 
 NF_SPECTIO_VERSION = "0.0.1"  # the nf-spectio the wheel carries (engine-bridges/nf-spectio)
 DEFAULT_PORT = 8080  # architecture §7.3
+# The oldest uv whose managed Pythons were seen to carry an SQLite with the WAL-reset fix: uv 0.9.29
+# gave SQLite 3.50.4, uv 0.13.7 with Python 3.13.14 gave 3.53.1 (login-node audit 2026-11-08 §8).
+MIN_UV = (0, 13, 7)
 LOOPBACK = "127.0.0.1"  # the only address 0.0.1 listens on (dev-env §15.3 req. 1)
 
 
