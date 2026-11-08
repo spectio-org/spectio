@@ -29,7 +29,7 @@ from spectio.runner.rundir import RunPaths, make_run_dirs
 from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
 from spectio_server.failure import Accounting, parse_smk_slurm_message
-from spectio_server.files.pool import FilePool
+from spectio_server.files.pool import FilePool, Stalled
 from spectio_server.projector.ingest import ingest
 from spectio_server.serve import boot
 from spectio_server.stages.freeze import StageSources
@@ -373,6 +373,102 @@ def test_sacct_job_without_dir_not_asked(settings: Settings, writer: Writer) -> 
     acct.want(RUN, [("8812401", None)], 0.0)
     assert acct._limiter.pending() == 0
     assert acct.status(RUN, "8812401") == "unavailable" and acct.rows(RUN) == {}
+
+
+def test_sacct_non_slurm_ids_never_resolved(
+    settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SEC-P3FU53-01: a native ID that is no SLURM job ID (a pod name, `nf-1`) reads
+    unavailable and never reaches the file pool, so it cannot starve the run's SLURM jobs; a
+    directory resolved once is not resolved again by a later view."""
+    Run(settings, writer)
+    acct = Accounting(settings.runs_root, Path("/usr/bin/false"), start_thread=False)
+    acct.load(RUN)
+    resolved: list[str] = []
+    real = os.path.realpath
+
+    def spy(d: str) -> str:
+        resolved.append(d)
+        return real(d)
+
+    monkeypatch.setattr(os.path, "realpath", spy)
+    pool: list[int] = []
+
+    def in_pool(job: Any) -> bool:
+        pool.append(1)
+        job()
+        return True
+
+    jobs = [(f"nf-{i}", f"/work/nf-{i}") for i in range(600)] + [("12345", "/work/slurm")]
+    acct.want(RUN, jobs, 0.0, in_pool)
+    assert resolved == ["/work/slurm"] and pool == [1]
+    assert acct._limiter.pending() == 1 and acct._asked == {"12345": {RUN}}
+    assert acct.status(RUN, "nf-0") == "unavailable"
+    acct._limiter._pending.clear()  # the limiter refused it (MAX_PENDING): asked again
+    acct._asked.clear()
+    acct.want(RUN, jobs, 0.0, in_pool)
+    assert resolved == ["/work/slurm"] and pool == [1]  # its directory is kept
+    assert acct._asked == {"12345": {RUN}}
+
+
+def test_sacct_resolve_one_in_flight_per_run(
+    settings: Settings, writer: Writer, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """CR-P3FU53-01: on a stalled file system, views that follow a stalled resolve send no
+    second one for the run, and each directory resolved before the stall is kept."""
+    Run(settings, writer)
+    acct = Accounting(settings.runs_root, Path("/usr/bin/false"), start_thread=False)
+    acct.load(RUN)
+    files = FilePool()
+    go = threading.Event()
+    real = os.path.realpath
+
+    def slow(d: str) -> str:
+        if d == "/work/b":
+            go.wait(10)
+        return real(d)
+
+    monkeypatch.setattr(os.path, "realpath", slow)
+    sent: list[int] = []
+
+    def in_pool(job: Any) -> bool:
+        sent.append(1)
+        try:
+            files.run(job, 0.05)
+            return True
+        except Stalled:
+            return False
+
+    jobs = [("1", "/work/a"), ("2", "/work/b")]
+    for _ in range(5):
+        acct.want(RUN, jobs, 0.0, in_pool)
+    assert sent == [1]
+    assert acct._asked == {"1": {RUN}}  # /work/a was resolved before the stall
+    go.set()
+    for _ in range(100):
+        if RUN not in acct._resolving:
+            break
+        time.sleep(0.01)
+    acct.want(RUN, jobs, 0.0, in_pool)
+    assert sent == [1] and acct._asked == {"1": {RUN}, "2": {RUN}}
+
+
+def test_sacct_resolve_cancelled_in_queue_sent_again(settings: Settings, writer: Writer) -> None:
+    """CR-P3FU53-01: a resolve the pool refused or cancelled before it ran holds no guard."""
+    Run(settings, writer)
+    acct = Accounting(settings.runs_root, Path("/usr/bin/false"), start_thread=False)
+    acct.load(RUN)
+    sent: list[Any] = []
+
+    def refused(job: Any) -> bool:
+        sent.append(job)
+        return False
+
+    acct.want(RUN, [("1", "/work/a")], 0.0, refused)
+    acct.want(RUN, [("1", "/work/a")], 0.0, refused)
+    assert len(sent) == 2 and acct._asked == {}
+    sent[0]()  # a cancelled job that runs anyway does nothing
+    assert acct._asked == {} and "/work/a" not in acct._real
 
 
 def test_sacct_run_asked_during_call_costs_no_try(

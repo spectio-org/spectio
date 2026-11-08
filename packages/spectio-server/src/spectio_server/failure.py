@@ -34,7 +34,7 @@ from sqlalchemy import Connection, func, select
 from spectio.config import Settings
 from spectio.runner import sacct
 from spectio.runner.rundir import private_dir, read_small, run_paths, write_file
-from spectio.runner.sacct import JOB_ID, SacctLimiter, SacctRow
+from spectio.runner.sacct import BATCH, JOB_ID, SacctLimiter, SacctRow
 from spectio_sdk.events import NextflowTrace
 from spectio_server import efficiency
 from spectio_server.files.confine import NotAllowed, NotFound, open_confined, read_at, safe_rel
@@ -60,17 +60,19 @@ BENCHMARK_CHUNK = 100  # benchmarks kept as each batch is read, even past a time
 ENDED = ("succeeded", "failed", "aborted")
 MIB = 1048576
 MAX_TRIES = 3  # sacct calls for a job it does not know yet, or not as ended; then null
-MAX_RESOLVE = 500  # directories one view resolves for new jobs; later views the rest (CON-PRE-14)
+MAX_RESOLVE = BATCH  # directories one view resolves for new jobs; later views the rest (CON-PRE-14)
+MAX_REAL = 200_000  # resolved directories kept; emptied when full (CR-P3FU53-01)
 # The states a job ends in (`sacct(1)`, JOB STATE CODES); a row in any other is not kept.
 TERMINAL = frozenset(
     {"COMPLETED", "FAILED", "OUT_OF_MEMORY", "TIMEOUT", "CANCELLED", "NODE_FAIL", "PREEMPTED"}
     | {"BOOT_FAIL", "DEADLINE"}
 )
 _MAX = 2**63 - 1
+_RUNNING = object()  # a run's resolve that has started
 
 Status = Literal["available", "pending", "unavailable"]
-# The `realpath` of each absolute directory, in the file pool; None when it did not answer.
-Resolve = Callable[[list[str]], dict[str, str] | None]
+# Runs a job in the file pool with the view's timeout; False when it did not end in time.
+InPool = Callable[[Callable[[], None]], bool]
 
 
 # --- Snakemake's SLURM executor plugin, in its own words -------------------------------------
@@ -300,6 +302,8 @@ class Accounting:
         self._called: dict[tuple[str, str], tuple[frozenset[str], float]] = {}  # the last call's
         self._logged: set[str] = set()  # runs whose dropped lines were logged
         self._tries: dict[tuple[str, str], int] = {}  # (run, job) → calls with no answer yet
+        self._real: dict[str, str] = {}  # directory → its `realpath`, kept as each is resolved
+        self._resolving: dict[str, object] = {}  # run → its resolve in flight (CR-P3FU53-01)
         self._wake = threading.Event()
         self._start_thread = start_thread
         self._thread: threading.Thread | None = None
@@ -371,37 +375,73 @@ class Accounting:
         run_id: str,
         jobs: Iterable[tuple[str | None, str | None]],
         since: float,
-        resolve: Resolve | None = None,
+        in_pool: InPool | None = None,
     ) -> None:
         """Ask `sacct` for the run's jobs, (job ID, the directory it was launched from), it has
         not answered yet, once the run's cache file was read. `since` is the run's launch,
-        epoch seconds. `resolve` gives each directory's `realpath`, in the file pool with its
-        timeout (CON-PRE-14), for up to MAX_RESOLVE directories; when it does not answer,
-        nothing is asked and a later view asks again. A job with no directory is never asked
-        (SEC-PRE-15). Returns once the jobs are queued."""
+        epoch seconds. A job is asked once its directory's `realpath` is known: up to
+        MAX_RESOLVE directories are resolved by one job sent through `in_pool` (the file pool,
+        with the view's timeout; CON-PRE-14), at most one per run in flight, each kept as it
+        is resolved, so a view that times out still leaves its work and a later view asks the
+        rest (CR-P3FU53-01). With no `in_pool` (tests) the job runs here. A job with no
+        directory (SEC-PRE-15) or whose ID is no SLURM job ID (SEC-P3FU53-01) is never asked.
+        Returns once the jobs are queued."""
         if not self.enabled:
             return
-        given = {job: os.path.normpath(where) for job, where in jobs if job and where}
+        given = {
+            job: os.path.normpath(where)
+            for job, where in jobs
+            if job and where and JOB_ID.fullmatch(job)
+        }
+        token = object()
         with self._lock:
             if run_id not in self._loaded:  # its file could not be read in time: ask nothing
                 return
             new = self._new(run_id, given)
-        if not new:
-            return
-        dirs = list(dict.fromkeys(new.values()))[:MAX_RESOLVE]
-        real = {where: where for where in dirs} if resolve is None else resolve(dirs)
-        if real is None:
-            return
+            dirs = [d for d in dict.fromkeys(new.values()) if d not in self._real][:MAX_RESOLVE]
+            send = bool(dirs) and run_id not in self._resolving
+            if send:
+                self._resolving[run_id] = token
+        if send:
+            job = self._resolve_job(run_id, token, dirs)
+            if in_pool is None:
+                job()
+            elif not in_pool(job):
+                with self._lock:  # refused, or cancelled before it ran: it never will
+                    if self._resolving.get(run_id) is token:
+                        del self._resolving[run_id]
         with self._lock:
-            new = {job: where for job, where in self._new(run_id, new).items() if where in real}
+            new = {j: where for j, where in self._new(run_id, new).items() if where in self._real}
             queued = self._limiter.request(new)  # the job IDs it took, as the limit allows
-            for job in queued:
-                where = new[job]
-                self._asked.setdefault(job, set()).add(run_id)
-                self._where[run_id, job] = frozenset({where, os.path.normpath(real[where])}), since
+            for job_id in queued:
+                where = new[job_id]
+                self._asked.setdefault(job_id, set()).add(run_id)
+                self._where[run_id, job_id] = frozenset({where, self._real[where]}), since
         if queued:
             self._ensure_thread()
             self._wake.set()
+
+    def _resolve_job(self, run_id: str, token: object, dirs: list[str]) -> Callable[[], None]:
+        """The `realpath` of each absolute directory, kept as it is computed; never run on the
+        accounting thread, and a WorkDir from `sacct` is never resolved (SEC-PRE-13)."""
+
+        def job() -> None:
+            with self._lock:
+                if self._resolving.get(run_id) is not token:  # given up before it started
+                    return
+                self._resolving[run_id] = _RUNNING
+            try:
+                for where in dirs:
+                    real = os.path.realpath(where) if os.path.isabs(where) else where
+                    with self._lock:
+                        if len(self._real) >= MAX_REAL:
+                            self._real.clear()
+                        self._real[where] = os.path.normpath(real)
+            finally:
+                with self._lock:
+                    self._resolving.pop(run_id, None)
+
+        return job
 
     def _new(self, run_id: str, given: dict[str, str]) -> dict[str, str]:
         """The jobs of `given` neither answered, failed nor asked for the run; under the lock."""
@@ -517,20 +557,17 @@ def _answers(row: SacctRow | None, dirs: frozenset[str]) -> bool:
     return os.path.normpath(row.work_dir) in dirs
 
 
-def _resolver(ctx: "Context") -> Resolve:
-    """`realpath` of each absolute directory, in the file pool with the view's timeout, never
-    on the accounting thread; a WorkDir from `sacct` is never resolved (SEC-PRE-13)."""
+def _resolver(ctx: "Context") -> InPool:
+    """A job in the file pool with the view's timeout: True when it ended in time."""
 
-    def resolve(dirs: list[str]) -> dict[str, str] | None:
-        def read() -> dict[str, str]:
-            return {d: os.path.realpath(d) if os.path.isabs(d) else d for d in dirs}
-
+    def in_pool(job: Callable[[], None]) -> bool:
         try:
-            return ctx.files.run(read, ctx.timeout_s)
+            ctx.files.run(job, ctx.timeout_s)
+            return True
         except Stalled:
-            return None
+            return False
 
-    return resolve
+    return in_pool
 
 
 def _launched(created_at: Any, started_at: Any) -> float:
