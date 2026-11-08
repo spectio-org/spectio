@@ -4,6 +4,14 @@
 Every subcommand is tiny and seeded, so both engines produce identical outputs for the
 same inputs. Failure injection lives here too, so both engines fail the same way.
 
+Every subcommand also writes log lines that do not depend on the run, so the task's stdout and
+stderr have something to show: INFO lines on stdout (arguments, inputs, progress, outputs), one
+WARN line on stderr, and ERROR lines on stderr when it fails. SYNTH_VERBOSITY sets how many:
+  quiet    nothing but the ERROR lines
+  normal   (the default) 5 to 20 lines on stdout, the WARN line on stderr
+  loud     1000 progress lines on stdout and 1000 DEBUG lines on stderr, each stream above 64 KiB
+The outputs are the same at every level.
+
 Subcommands:
   reads    SAMPLE N_READS SEED OUT            write a fake reads file (one read per line)
   stats    READS OUT_JSON                     per-sample QC metrics (reads, gc, dup rate, q30)
@@ -15,6 +23,24 @@ Subcommands:
   fail     MODE [ATTEMPT] [GB]                inject a failure: exit | oom | oom_once | oom_real | timeout | flaky
 """
 import hashlib, json, os, random, sys, time
+
+
+STEPS = {"quiet": 0, "normal": 3, "loud": 1000}  # progress lines; loud adds as many DEBUG lines
+SHOWN_INPUTS = 3  # input files named one per line; the rest are counted
+
+
+def _log(level, msg):
+    # INFO on stdout, the rest on stderr; flushed line by line, so a task killed with SIGKILL
+    # (fail oom) keeps what it wrote
+    print(f"{level:<5} {msg}", file=sys.stdout if level == "INFO" else sys.stderr, flush=True)
+
+
+def _describe(path):
+    if os.path.isdir(path):
+        return f"{path}/ ({len(os.listdir(path))} files)"
+    with open(path, "rb") as fh:
+        lines = sum(1 for _ in fh)
+    return f"{path} ({lines} lines, {os.path.getsize(path)} bytes)"
 
 
 def _rng(*parts):
@@ -90,30 +116,37 @@ def compare(counts, group_a, group_b, out_tsv):
     open(out_tsv, "w").write(f"group_a\tgroup_b\tmean_a\tmean_b\tdelta\n{group_a}\t{group_b}\t{ma:.4f}\t{mb:.4f}\t{ma - mb:.4f}\n")
 
 
+def _failed(mode, attempt, msg):
+    _log("ERROR", f"synthetic failure: {msg}")
+    _log("ERROR", f"synth fail: injected by fail_mode={mode} on attempt {attempt}")
+
+
 def fail(mode, attempt="1", gb="2"):
     if mode == "exit":
-        print("synthetic failure: tool exited with code 1", file=sys.stderr)
+        _failed(mode, attempt, "tool exited with code 1")
         sys.exit(1)
     if mode == "oom":  # what a scheduler-enforced OOM kill looks like to the engine
-        print("synthetic failure: simulated OOM kill (exit 137)", file=sys.stderr)
+        _failed(mode, attempt, "simulated OOM kill (exit 137)")
         os.kill(os.getpid(), 9)
     if mode == "oom_once":  # OOM on the first attempt only: a retry with more memory succeeds
         if int(attempt) == 1:
-            print("synthetic failure: simulated OOM kill on attempt 1 (exit 137)", file=sys.stderr)
+            _failed(mode, attempt, "simulated OOM kill on attempt 1 (exit 137)")
             os.kill(os.getpid(), 9)
         return
     if mode == "oom_real":  # really allocate memory; killed by Slurm / Kubernetes / docker limits
+        _log("INFO", f"synth fail: allocating {gb} GiB")
         blocks = []
         for _ in range(int(float(gb) * 1024)):
             blocks.append(bytearray(1024 * 1024))
         time.sleep(5)
         return
     if mode == "timeout":
+        _log("INFO", "synth fail: sleeping past the time limit")
         time.sleep(3600)
         return
     if mode == "flaky":
         if int(attempt) == 1:
-            print("synthetic failure: flaky on attempt 1", file=sys.stderr)
+            _failed(mode, attempt, "flaky on attempt 1")
             sys.exit(1)
         return
     if mode in ("none", ""):
@@ -121,6 +154,31 @@ def fail(mode, attempt="1", gb="2"):
     sys.exit(f"unknown failure mode {mode}")
 
 
-if __name__ == "__main__":
-    cmd, *args = sys.argv[1:]
+def main(cmd, args):
+    verbosity = os.environ.get("SYNTH_VERBOSITY", "normal")
+    if verbosity not in STEPS:
+        sys.exit(f"unknown SYNTH_VERBOSITY {verbosity!r}: one of {', '.join(STEPS)}")
+    steps = STEPS[verbosity]
+    inputs = [a for a in args if os.path.exists(a)]
+    if steps:
+        _log("INFO", f"synth {cmd}: arguments {' '.join(args)}")
+        _log("WARN", f"synth {cmd}: a synthetic task; its data are not real")
+        for a in inputs[:SHOWN_INPUTS]:
+            _log("INFO", f"synth {cmd}: input {_describe(a)}")
+        if len(inputs) > SHOWN_INPUTS:
+            _log("INFO", f"synth {cmd}: and {len(inputs) - SHOWN_INPUTS} more inputs")
+    for i in range(1, steps + 1):
+        block = hashlib.sha256(f"{cmd}|{i}".encode()).hexdigest()[:40]
+        _log("INFO", f"synth {cmd}: step {i:04d}/{steps} processed block {block}")
+        if verbosity == "loud":
+            _log("DEBUG", f"synth {cmd}: step {i:04d}/{steps} buffer state {block}")
     globals()[cmd](*args)
+    if steps:
+        for a in args:
+            if a not in inputs and os.path.exists(a):
+                _log("INFO", f"synth {cmd}: wrote {_describe(a)}")
+        _log("INFO", f"synth {cmd}: done")
+
+
+if __name__ == "__main__":
+    main(sys.argv[1], sys.argv[2:])

@@ -5,7 +5,9 @@ The listing names every file the attempt has or may have, with its state; a read
 last 64 KiB as `text/plain`, `?tail=` bytes (at most 1 MiB), or one `Range` (at most 1 MiB, 206).
 What may be read and how is `files.taskfiles`; this module reads the attempt's row, runs the
 file system part in the file pool (`app.state.files`) with `READ_TIMEOUT_S`, and maps refusals
-to problems: `422 file-not-allowed`, `404 log-not-found`, `410 log-cleaned`, `415 binary-file`,
+to problems: `422 file-not-allowed`, `404 log-not-found`, `410 log-cleaned`,
+`409 run-dir-unreachable` (the runs root is not there, or is not the run's: FU-P3-81),
+`415 binary-file`,
 and `503 runner-offline` when the file system did not answer in time.
 
 `n` is the attempt number the task's attempts show; when a resumed run has an attempt `n` in
@@ -35,10 +37,12 @@ from spectio_server.files.taskfiles import (
     AttemptFiles,
     Binary,
     Cleaned,
+    Unreachable,
     attempt_dir,
     list_task_files,
     output_states,
     read_task_file,
+    recorded_root,
 )
 from spectio_server.store.schema import (
     attempts,
@@ -72,6 +76,8 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
             attempts.c.native_id,
             attempts.c.logs,
             attempts.c.outputs,
+            runs.c.launch_dir,
+            runs.c.origin,
         )
         .join(tasks, tasks.c.id == attempts.c.task_id)
         .join(runs, runs.c.id == tasks.c.run_id)
@@ -99,6 +105,7 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
         tuple(p for p in row.outputs or [] if isinstance(p, str))
         if row.engine == "snakemake"
         else None,
+        recorded_root(row.launch_dir, row.origin),
     )
 
 
@@ -164,6 +171,7 @@ def in_pool(
 ) -> Any:
     """`job()` in the routes' file pool, its refusals mapped to problems (one mapping for every
     file route: CR-P3T28-01 r4): `503 runner-offline`, `415 binary-file`, `410 log-cleaned`,
+    `409 run-dir-unreachable`,
     `422 file-not-allowed` (`404 <missing>` with `refused_missing`, as a run log answers it),
     and `404 <missing>`. Any other file system error is `503` for `EIO` and `ESTALE`, else
     `404`, with a fixed text, and is logged (CR-P3T28-02 r4)."""
@@ -175,6 +183,8 @@ def in_pool(
         raise Problem(415, "binary-file", "Binary file", f"{exc}: not shown as text") from None
     except Cleaned as exc:
         raise Problem(410, "log-cleaned", "Cleaned", str(exc)) from None
+    except Unreachable as exc:
+        raise Problem(409, "run-dir-unreachable", "Run directory not reachable", str(exc)) from None
     except NotAllowed as exc:
         if refused_missing:
             raise not_found(str(exc), missing) from None

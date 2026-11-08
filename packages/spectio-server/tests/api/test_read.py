@@ -90,7 +90,9 @@ def test_run_detail_after_replay(authed_client: TestClient, replayed_flaky: str)
     assert sum(p["retries"] for p in processes) == 2  # two tasks retried once
     keys = {"process", "stage_id", "counts", "retries"}
     keys |= {"status", "is_checkpoint", "lower_bound", "efficiency"}  # P1 Task 34
+    keys |= {"pipeline_order"}  # FU-P3-82
     assert all(set(p) == keys for p in processes)
+    assert [p["pipeline_order"] for p in processes] == list(range(len(FLAKY_PROCESSES)))
     assert {p["status"] for p in processes} == {"done"}
 
 
@@ -449,6 +451,58 @@ def test_logs_snakemake_lineage_own_log(
         lambda c: c.execute(update(runs).where(runs.c.id == parent).values(ended_at=None))
     ).result()
     problem(engine_log(parent), 404, "log-not-found")
+
+
+def serving(settings: Settings, writer: Writer, runs_root: Path) -> TestClient:
+    """The same index served with another runs root, as after a serve with another config."""
+    return client_for(settings.model_copy(update={"runs_root": runs_root}), writer)
+
+
+def engine_log_of(client: TestClient, run_id: str) -> Any:
+    return client.get(f"{RUNS}/{run_id}/logs", params={"source": "engine"})
+
+
+def test_logs_gone_only_when_the_runs_root_is_there(
+    authed_client: TestClient, writer: Writer, settings: Settings, tmp_path: Path
+) -> None:
+    """FU-P3-81: a missing run directory is `410 log-cleaned` only when the runs root exists and
+    is the one the run was recorded under; otherwise a distinct problem names what was tried."""
+    add_run(writer, settings, rid(1), "nf", "failed")
+    tried = run_paths(settings.runs_root, rid(1)).launch_dir
+    body = problem(engine_log_of(authed_client, rid(1)), 410, "log-cleaned")
+    assert "directory is gone" in str(body["detail"])
+
+    missing = tmp_path / "scratch" / "runs"  # its runs root is not there
+    body = problem(
+        engine_log_of(serving(settings, writer, missing), rid(1)), 409, "run-dir-unreachable"
+    )
+    assert str(missing / rid(1) / "launch") in str(body["detail"])
+    assert "directory is gone" not in str(body["detail"])
+
+    other = tmp_path / "other-runs"  # the index holds a run of an earlier serve's runs root
+    other.mkdir(mode=0o700)
+    body = problem(
+        engine_log_of(serving(settings, writer, other), rid(1)), 409, "run-dir-unreachable"
+    )
+    detail = str(body["detail"])
+    assert str(other / rid(1) / "launch") in detail
+    assert str(settings.runs_root) in detail
+    assert str(tried) not in detail and "directory is gone" not in detail
+
+
+def test_logs_runs_root_through_a_symlink(
+    writer: Writer, settings: Settings, tmp_path: Path
+) -> None:
+    """A runs root reached through a symlink (/scratch often is one): its logs are read, and a
+    run recorded under the link's target, its directory gone, is cleaned, not elsewhere."""
+    add_run(writer, settings, rid(1), "nf", "failed")
+    add_run(writer, settings, rid(2), "nf", "failed")
+    (launch_dir(settings, rid(1)) / ".nextflow.log").write_text("found\n")
+    link = tmp_path / "scratch"
+    link.symlink_to(settings.runs_root)
+    client = serving(settings, writer, link)
+    assert engine_log_of(client, rid(1)).text == "found\n"
+    problem(engine_log_of(client, rid(2)), 410, "log-cleaned")
 
 
 @pytest.mark.parametrize("bad", ["%00", "a" * 300])

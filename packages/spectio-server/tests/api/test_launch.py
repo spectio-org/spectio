@@ -117,7 +117,10 @@ def test_inspect_detects_engines(authed_client: TestClient, synthetic: Path) -> 
     groups = [g["title"] for g in body["schema"]["$defs"].values()]
     assert groups == ["Input/output options", "Scenario", "Failure injection", "Resources"]
     assert (body["name"], body["version"]) == ("spectio/synthetic-scenarios", "0.1.0")
-    assert {"local", "slurm", "test"} <= set(body["profiles"])
+    assert {"local", "slurm", "test", "fail_demo"} <= set(body["profiles"])
+    # FU-P3-83: how many log lines each task writes, in both schemas
+    verbosity = body["schema"]["$defs"]["scenario_options"]["properties"]["verbosity"]
+    assert (verbosity["enum"], verbosity["default"]) == (["quiet", "normal", "loud"], "normal")
     assert body["engine_version"] == ENGINE_VERSIONS["nextflow"]
     assert body["engine_versions"] == ENGINE_VERSIONS  # UX-G2-04: the other engine's too
     assert (body["location"], body["revision"]) == (str(synthetic / "nextflow"), None)
@@ -125,10 +128,12 @@ def test_inspect_detects_engines(authed_client: TestClient, synthetic: Path) -> 
     smk = authed_client.get(INSPECT, params={"location": str(synthetic / "snakemake")}).json()
     assert smk["engine"] == "snakemake"
     assert smk["engine_files"] == ["workflow/Snakefile"]
-    assert smk["profiles"] == ["local", "slurm"]
+    assert smk["profiles"] == ["fail_demo", "local", "slurm"]
     assert smk["version"] is None  # Snakemake declares none [to be validated]
     assert smk["schema_source"] == "config.schema.yaml"  # workflow/schemas/ (P3-parD)
     assert [g["title"] for g in smk["schema"]["$defs"].values()] == groups
+    smk_verbosity = smk["schema"]["$defs"]["scenario_options"]["properties"]["verbosity"]
+    assert (smk_verbosity["enum"], smk_verbosity["default"]) == (verbosity["enum"], "normal")
     assert smk["engine_version"] == ENGINE_VERSIONS["snakemake"]
 
 
