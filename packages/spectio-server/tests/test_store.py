@@ -117,6 +117,20 @@ def test_refuses_old_sqlite(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, ver
         open_db(tmp_path)[0].dispose()
 
 
+def test_old_sqlite_names_its_python_and_the_way_out(monkeypatch: pytest.MonkeyPatch) -> None:
+    # FU-P3-73 (login-node audit 2026-11-08 §8): uv 0.9.29 gave Pythons with SQLite 3.50.4
+    monkeypatch.setattr(sys, "executable", "/home/u/.local/share/uv/python/bin/python3.13")
+    monkeypatch.setattr(sys, "version", "3.13.11 (main, Dec  1 2025) [Clang 21]")
+    with pytest.raises(UnsafeDatabase) as exc:
+        db.check_sqlite_version("3.50.4")
+    message = str(exc.value)
+    assert message.startswith("SQLite 3.50.4 lacks the WAL-reset fix")
+    assert "Python 3.13.11 (/home/u/.local/share/uv/python/bin/python3.13)" in message
+    assert "upgrade uv to 0.13.7 or later (uv self update, or its installer)" in message
+    assert "uv python install 3.13" in message
+    assert "reinstall Spectio with that Python" in message
+
+
 def test_pragmas(engine: Engine) -> None:
     with engine.connect() as conn:
         assert conn.exec_driver_sql("PRAGMA journal_mode").scalar() == "wal"

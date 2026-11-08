@@ -2,6 +2,7 @@
 `ok|warn|fail <check> <detail>` line per check, exit 1 on any `fail`."""
 
 import os
+import shutil
 import socket
 import sqlite3
 from collections.abc import Callable
@@ -10,8 +11,9 @@ from typing import Any
 
 import pytest
 
-from spectio.cli.doctor import run_doctor
+from spectio.cli.doctor import run_doctor, uv_version
 from spectio.config import Settings, write_config
+from spectio.runner.rundir import runs_disk
 
 
 def _dev(path: Path) -> str:
@@ -229,3 +231,163 @@ def test_doctor_refuses_an_untrusted_copy(
     code, lines = doctor(capsys, configured(home, fakebin, executor="local"))
     found = line(lines, "nxf_plugins_default")
     assert code == 1 and found.startswith("fail") and "only you can write" in found, found
+
+
+@pytest.mark.parametrize(
+    ("out", "version"),
+    [
+        ("uv 0.13.7\n", (0, 13, 7)),
+        ("uv 0.13.7 (abc 2026-10-01)\n", (0, 13, 7)),
+        ("uv 0.9.29 (Homebrew 2025-11-01)", (0, 9, 29)),
+        ("uv 1.0.0-rc.1\n", (1, 0, 0)),
+        ("warning: a profile line\nuv 0.13.10\n", (0, 13, 10)),
+        ("uv-tool 0.13.7", None),
+        ("uv version unknown", None),
+        ("", None),
+    ],
+)
+def test_uv_version(out: str, version: tuple[int, int, int] | None) -> None:
+    assert uv_version(out) == version
+
+
+def fake_uv(home: Path, login: Callable[..., None], script: str) -> Path:
+    bindir = home.parent / "uvbin"
+    bindir.mkdir(exist_ok=True)
+    uv = bindir / "uv"
+    uv.write_text(f"#!/bin/sh\n{script}\n")
+    uv.chmod(0o755)
+    login(bindir)
+    return uv
+
+
+@pytest.mark.parametrize(
+    ("script", "expected"),
+    [
+        ("echo 'uv 0.13.7 (abc 2026-10-01)'", "ok uv 0.13.7 {uv}"),
+        ("echo 'uv 0.14.0'", "ok uv 0.14.0 {uv}"),
+        (
+            "echo 'uv 0.9.29'",
+            "warn uv 0.9.29 {uv} is older than 0.13.7: its Pythons may carry an SQLite that "
+            "Spectio refuses; upgrade it (uv self update, or its installer)",
+        ),
+        ("echo garbage", "warn uv `{uv} --version` printed no version: garbage"),
+        ("echo boom >&2; exit 3", "warn uv `{uv} --version` exited 3: boom"),
+    ],
+)
+def test_doctor_reports_uv(
+    home: Path,
+    login: Callable[..., None],
+    capsys: pytest.CaptureFixture[str],
+    script: str,
+    expected: str,
+) -> None:
+    settings = configured(home, executor="local")
+    uv = fake_uv(home, login, script)
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "uv") == expected.format(uv=uv)
+    assert not [x for x in lines if x.startswith("fail uv")]
+
+
+def test_doctor_without_uv(home: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    _, lines = doctor(capsys, configured(home, executor="local"))
+    assert line(lines, "uv") == "ok uv not found on PATH: only installing Spectio needs it"
+
+
+GIB = 2**30
+KIB = 1024
+FIX = (
+    "point SPECTIO_RUNS_ROOT (runs_root in spectio.toml, spectio init --runs-root) at a larger "
+    "scratch or group file system"
+)
+
+
+def fake_disk(
+    monkeypatch: pytest.MonkeyPatch, used: int, free: int, seen: list[str] | None = None
+) -> None:
+    """`shutil.disk_usage` answers `used` and `free` bytes, and records the path it was asked."""
+
+    def disk_usage(path: str | os.PathLike[str]) -> Any:
+        if seen is not None:
+            seen.append(os.fspath(path))
+        return shutil._ntuple_diskusage(used + free, used, free)
+
+    monkeypatch.setattr(shutil, "disk_usage", disk_usage)
+
+
+@pytest.mark.parametrize(
+    ("used", "free", "status", "text"),
+    [
+        (89 * GIB, 11 * GIB, "ok", "11.0 GiB free, 89% used"),  # just under both thresholds
+        (90 * GIB, 10 * GIB, "warn", "10.0 GiB free, 90% used"),  # 90% used
+        (10 * GIB, 9 * GIB, "warn", "9.0 GiB free, 53% used"),  # under 10 GiB free
+        (100 * GIB, 900 * GIB, "ok", "900.0 GiB free, 10% used"),
+        # the EMBL /home of the login-node audit (2026-11-08 §6), `df` in KiB: 97% as df shows
+        (24486338560 * KIB, 1015029760 * KIB, "warn", "968.0 GiB free, 97% used"),
+    ],
+)
+def test_runs_disk_thresholds(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, used: int, free: int, status: str, text: str
+) -> None:
+    fake_disk(monkeypatch, used, free)
+    found, detail = runs_disk(tmp_path)
+    assert found == status
+    if status == "ok":
+        assert detail == f"{text} at {tmp_path}"
+    else:
+        assert detail == f"{tmp_path} is on a nearly full file system ({text}): {FIX}"
+
+
+def test_runs_disk_measures_the_nearest_existing_parent(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen: list[str] = []
+    fake_disk(monkeypatch, 95 * GIB, 5 * GIB, seen)
+    missing = tmp_path / "not" / "yet"
+    status, detail = runs_disk(missing)
+    assert seen == [str(tmp_path)] and not missing.exists()
+    assert (status, detail) == (
+        "warn",
+        f"{missing} (not created yet, measured at {tmp_path}) is on a nearly full file system "
+        f"(5.0 GiB free, 95% used): {FIX}",
+    )
+
+
+def test_runs_disk_unmeasurable(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    def refused(path: str | os.PathLike[str]) -> Any:
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(shutil, "disk_usage", refused)
+    assert runs_disk(tmp_path) == (
+        "warn",
+        f"cannot measure the free space of {tmp_path}: [Errno 13] Permission denied",
+    )
+
+
+def test_runs_disk_unsearchable_parent(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    # pathlib's is_dir() re-raises EACCES on Python 3.11 to 3.13 (SEC-P3FU74-01)
+    def refused(self: Path) -> bool:
+        raise PermissionError(13, "Permission denied")
+
+    monkeypatch.setattr(Path, "is_dir", refused)
+    missing = tmp_path / "locked" / "spectio-runs"
+    assert runs_disk(missing) == (
+        "warn",
+        f"cannot measure the free space of {missing}: [Errno 13] Permission denied",
+    )
+
+
+def test_doctor_reports_runs_disk(
+    home: Path, capsys: pytest.CaptureFixture[str], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FU-P3-74: a `warn`, never a `fail`, when the runs directory is on a nearly full disk."""
+    settings = configured(home, executor="local")
+    runs = home / "spectio-runs"
+    fake_disk(monkeypatch, 500 * GIB, 500 * GIB)
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "runs_disk") == f"ok runs_disk 500.0 GiB free, 50% used at {home}"
+    fake_disk(monkeypatch, 970 * GIB, 30 * GIB)
+    _, lines = doctor(capsys, settings)
+    assert line(lines, "runs_disk") == (
+        f"warn runs_disk {runs} (not created yet, measured at {home}) is on a nearly full file "
+        f"system (30.0 GiB free, 97% used): {FIX}"
+    )

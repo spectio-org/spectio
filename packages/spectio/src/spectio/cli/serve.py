@@ -1,5 +1,6 @@
-"""`spectio serve` (P1 Task 11): the server on 127.0.0.1, in the foreground, or with `--detach`
-in the tmux session `spectio-server` on this node (FU-P3-44; dev-env §15.3 req. 11). There is no
+"""`spectio serve` (P1 Task 11): the server on 127.0.0.1, or on SLURM and shared hosts on a
+Unix socket in its database directory (FU-P3-72), in the foreground, or with `--detach` in the
+tmux session `spectio-server` on this node (FU-P3-44; dev-env §15.3 req. 11). There is no
 `--host` flag: 0.0.1 listens on 127.0.0.1 only (dev-env §15.3 req. 1).
 
 `--detach`, in order:
@@ -142,9 +143,9 @@ def run_detach(force: bool, wait_s: float, show_link: bool) -> int:
         typer.echo(f"spectio serve: {exc}", err=True)
         return exc.code
     # The calling terminal only (req. 11); with --no-link (spectio open), no link at all.
-    typer.echo(
-        start_text(settings, socket.gethostname(), _user(), None, url if show_link else None)
-    )
+    link = url if show_link else None
+    sock = login.server_socket(settings)  # the tunnel ends on it (inbox #109 rule 5)
+    typer.echo(start_text(settings, socket.gethostname(), _user(), None, link, sock))
     if in_tmux:
         typer.echo(ATTACH)
     return 0

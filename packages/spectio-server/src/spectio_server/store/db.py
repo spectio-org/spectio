@@ -22,6 +22,8 @@ from alembic.config import Config
 from alembic.migration import MigrationContext
 from sqlalchemy import URL, Connection, Engine, create_engine, event
 
+from spectio.config import MIN_UV
+
 log = logging.getLogger(__name__)
 
 DB_FILE = "spectio.db"  # the file name is ours: the specs name only the directory
@@ -43,14 +45,19 @@ class UnsafeDatabase(Exception):
 
 
 def check_sqlite_version(version: str) -> None:
-    """The library Python loads must carry the WAL-reset fix (api §7, SQLite version rule)."""
+    """The library Python loads must carry the WAL-reset fix (api §7, SQLite version rule); the
+    refusal names that Python and the way out with uv (FU-P3-73)."""
     v = tuple(int(part) for part in version.split("."))
     if v >= (3, 51, 3) or (3, 50, 7) <= v < (3, 51) or (3, 44, 6) <= v < (3, 45):
         return
+    python = f"Python {sys.version.split()[0]} ({sys.executable or 'unknown path'})"
     raise UnsafeDatabase(
         f"SQLite {version} lacks the WAL-reset fix: Spectio needs SQLite >= 3.51.3, "
         "or >= 3.50.7 in the 3.50 series, or >= 3.44.6 in the 3.44 series "
-        "(the library Python loads, sqlite3.sqlite_version)"
+        f"(the library Python loads, sqlite3.sqlite_version; this is {python}). "
+        f"With uv: upgrade uv to {'.'.join(map(str, MIN_UV))} or later "
+        "(uv self update, or its installer), run uv python install 3.13, "
+        "and reinstall Spectio with that Python"
     )
 
 
@@ -186,9 +193,11 @@ def preferred_db_dir() -> Path:
     return base / f"spectio-{uid}"
 
 
-def default_db_dir() -> Path:
+def default_db_dir(*, fixed: bool = False) -> Path:
     """`preferred_db_dir()`, 0700; a squatted path is left as it is and a fresh `mkdtemp`
     directory is used instead (dev-environment-and-testing.md §15.3, Where data lives).
+    With `fixed` (a server behind its socket, whose tunnel names that path) a squatted path is
+    refused instead (SEC-P3FU72-01).
     """
     uid = os.getuid()
     path = preferred_db_dir()
@@ -200,6 +209,12 @@ def default_db_dir() -> Path:
     private, owner = _private_dir(path, uid)
     if private:
         return path
+    if fixed:
+        raise UnsafeDatabase(
+            f"{path} is not a private directory of yours ({_owner(owner)}), and the tunnel to "
+            "the socket names it: remove it if it is yours, or choose another with --db-dir "
+            "(spectio init --db-dir)"
+        )
     fallback = Path(tempfile.mkdtemp(prefix=f"spectio-{uid}-", dir=base))
     seen = "uid unknown" if owner is None else f"uid {owner}"
     log.warning("%s is not a private directory of this user (%s); using %s", path, seen, fallback)
