@@ -231,6 +231,8 @@ Added 2026-11-07 (Thomas, 2026-11-07, "je veux voir efficiency + params slurm pa
 
 *Note 2026-11-07 (as built, [P3 Task 34](../progress/W5/P3-M9.md#task-34-server-process-and-rule-states-outputs-slurm-request-and-efficiency); assumed — pending Thomas, [inbox #116](../reviews/inbox.md#116-assumed-process-states-outputs-slurm-request-and-efficiency-as-built-p3-task-34)):* the formulas above are built in `spectio_server/efficiency.py`, ratios rounded to 4 places. A local run is one whose environment kind is not `slurm`. The aggregate's mean and maximum count every measured job with the best source it has. The waste line is not built (P1 Task 35 shows the aggregate). The `sacct` values are checked on `slurm-mini` only when P1 Task 22 is built.
 
+*Note 2026-11-08, which `sacct` row is the job's (Thomas, [inbox #116](../reviews/inbox.md#116-assumed-process-states-outputs-slurm-request-and-efficiency-as-built-p3-task-34) rule 10 (b); the call is in [dev-env §15.3](dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 15, note 2026-11-08):* a job's `sacct` row is the one whose WorkDir is the directory it was launched from and whose `Submit` is not before the run's launch. A resized job's row is its final record, with CPU and memory efficiency null: the steps it ran before the resize sit under the RESIZING record and are not summed. **The Snakemake binding is weaker.** All the jobs of a Snakemake run have the run's launch directory as WorkDir, so the WorkDir ties a line to the run, not to the job; only the job ID and the `Submit` check tell two of the run's jobs apart. A Nextflow job has a work directory of its own.
+
 ## 4. Kubernetes in detail
 
 - **What the runner watches.**
