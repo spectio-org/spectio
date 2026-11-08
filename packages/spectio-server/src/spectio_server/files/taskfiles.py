@@ -207,13 +207,22 @@ def run_root(
         if not runs_root.is_dir():
             raise Unreachable(f"the runs root {runs_root} is not there: tried {tried}") from None
         _check_recorded(runs_root, recorded_root, tried)
-        raise Cleaned(f"the run's {part} directory is gone") from None
+        raise Cleaned(f"the run's {part} directory is gone: tried {tried}") from None
     except (OSError, ValueError) as exc:
         raise NotAllowed(f"the run's {part} directory is not private: {exc}") from None
     try:
         yield Root(fd, PurePosixPath(paths.launch_dir if part == "launch" else paths.work_dir))
     finally:
         os.close(fd)
+
+
+def recorded_root(launch_dir: str | None, origin: str | None) -> str | None:
+    """The runs root a run driven by Spectio was recorded under: its launch directory's
+    grandparent (`<root>/<run>/launch`). None for a run started in a terminal, whose launch
+    directory is the user's own project directory, not under a runs root (FU-P3-81)."""
+    if origin == "cli-observed" or not launch_dir:
+        return None
+    return str(PurePosixPath(launch_dir).parent.parent)
 
 
 def _check_recorded(runs_root: Path, recorded_root: str | None, tried: Path) -> None:

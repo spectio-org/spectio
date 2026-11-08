@@ -7,6 +7,7 @@ would, with paths under the run's directories (`make_run_dirs`).
 
 import errno
 import os
+import shutil
 import threading
 import time
 from collections import Counter
@@ -339,6 +340,25 @@ def test_other_runs_root_409(
     problem(found, 409, "run-dir-unreachable")
     assert str(settings.runs_root) in found.json()["detail"]
     problem(client.get(base), 409, "run-dir-unreachable")
+
+
+def test_terminal_run_is_not_under_a_runs_root(
+    authed_client: TestClient, writer: Writer, settings: Settings, smk_attempt: str
+) -> None:
+    """FU-P3-81 r2 (CR-P3FU81-03): a run started in a terminal records its own project as its
+    launch directory, not `<runs root>/<run>/launch`: its job files are never answered 409
+    naming the project's grandparent as a runs root."""
+    project = settings.runs_root.parent / "project"
+    project.mkdir()
+    shutil.rmtree(settings.runs_root / RUN)  # nothing under the runs root for this run
+    observed = {"origin": "cli-observed", "launch_dir": str(project)}
+    writer.submit(
+        lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(**observed))
+    ).result()
+    base = f"{API}/tasks/{smk_attempt}/attempts/1/files"
+    for found in (authed_client.get(base), authed_client.get(f"{base}/logs/a.log")):
+        assert found.status_code != 409, found.text
+        assert "runs root" not in found.text
 
 
 def test_nf_other_runs_root_409(nf_task: NfTask, tmp_path: Path) -> None:

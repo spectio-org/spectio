@@ -61,7 +61,7 @@ from spectio_server.files.confine import (
 )
 from spectio_server.files.confine import tail as tail_of
 from spectio_server.files.redact import strip_escapes
-from spectio_server.files.taskfiles import run_root
+from spectio_server.files.taskfiles import recorded_root, run_root
 from spectio_server.projector.runs import TERMINAL
 from spectio_server.store.schema import runs
 
@@ -124,7 +124,7 @@ def _launch_root(runs_root: Path, row: Any, source: str) -> Iterator[Root]:
     """The directory that holds the log: the run's launch directory under the runs root, or a
     terminal run's own (its `.spectio/` holds no head log: Spectio did not start its head)."""
     if row.origin != "cli-observed":
-        recorded = str(PurePosixPath(row.launch_dir).parent.parent) if row.launch_dir else None
+        recorded = recorded_root(row.launch_dir, row.origin)
         with run_root(runs_root, _launch_of(row, source), "launch", recorded) as launch:
             yield launch
         return
