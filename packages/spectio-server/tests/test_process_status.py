@@ -256,16 +256,40 @@ def test_pipeline_order_follows_rulegraph_links(
     assert pipeline_order(client) == [*chain, "unused"]
 
 
+def test_pipeline_order_rule_missing_from_rulegraph(
+    settings: Settings, writer: Writer, tmp_path: Path
+) -> None:
+    """A rule in no rule graph (one that joins the DAG after a checkpoint, as `align` on the demo
+    run) comes after every graph rule, never first (FU-P3-90). A later graph that has it places
+    it by its links: the links of every graph of the run are merged."""
+    client = client_for(settings, writer)
+    run = smk_run(settings, writer, tmp_path)
+    first = ["make_reads", "split", "merge", "report", "all"]
+    links = [{"sourcerule": a, "targetrule": b} for a, b in pairwise(first)]
+    run.push("snakemake.rulegraph", rulegraph={"nodes": RULEGRAPH["nodes"], "links": links})
+    assert pipeline_order(client) == [*first, "align", "unused"]
+    later = [{"sourcerule": "split", "targetrule": "align"}]  # from a later graph of the run
+    later.append({"sourcerule": "align", "targetrule": "merge"})
+    nodes = [{"rule": r} for r in ("split", "align", "merge")]
+    run.push("snakemake.rulegraph", rulegraph={"nodes": nodes, "links": later})
+    chain = ["make_reads", "split", "align", "merge", "report", "all"]
+    assert pipeline_order(client) == [*chain, "unused"]
+
+
 def test_pipeline_order_without_links(settings: Settings, writer: Writer, tmp_path: Path) -> None:
-    """A rule graph with no links (or none at all): the order of the Snakefile."""
+    """A rule graph with no links: its rules in the order of the Snakefile, then the rules in no
+    graph, in the same order."""
     client = client_for(settings, writer)
     smk_run(settings, writer, tmp_path)
-    assert pipeline_order(client) == RULES
-    assert [p["pipeline_order"] for p in processes(client).values()] == list(range(len(RULES)))
+    graph = ["all", "make_reads", "split", "merge", "report"]
+    assert pipeline_order(client) == [*graph, "align", "unused"]
+    ranks = sorted(p["pipeline_order"] for p in processes(client).values())
+    assert ranks == list(range(len(RULES)))
 
 
 def test_pipeline_order_cycle(settings: Settings, writer: Writer, tmp_path: Path) -> None:
-    """A malformed graph with a cycle never loses a rule: those left come in Snakefile order."""
+    """A malformed graph with a cycle never loses a rule: the graph rules left come after the
+    other graph rules, in Snakefile order, then the rules in no graph."""
     client = client_for(settings, writer)
     run = smk_run(settings, writer, tmp_path)
     links = [
@@ -276,8 +300,8 @@ def test_pipeline_order_cycle(settings: Settings, writer: Writer, tmp_path: Path
         "merge -> all",
     ]
     run.push("snakemake.rulegraph", rulegraph={"nodes": [], "links": links})
-    first = ["all", "make_reads", "align", "report", "unused"]
-    assert pipeline_order(client) == [*first, "split", "merge"]
+    first = ["all", "make_reads", "report"]  # smk_run's graph has the nodes, this one the links
+    assert pipeline_order(client) == [*first, "split", "merge", "align", "unused"]
 
 
 def test_pipeline_order_nextflow(settings: Settings, writer: Writer) -> None:

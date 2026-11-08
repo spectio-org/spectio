@@ -1916,3 +1916,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   6. after this step's PR is in: whether the same view now answers 409 or still 410, with its `detail`.
 - **Recommendation:** run the checks; the answer decides whether a further fix is needed.
 - **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the 409 answer is built; nothing else is changed until the checks come back. FU-P3-84: a stale index after a change of `runs_root` (`rebuild_index` only adds rows): list, or mark at boot, the rows whose `launch_dir` is not under the current runs root, so they are not shown as runs of this root. Next follow-up number: FU-P3-85 (FU-P3-82 is taken by another branch; renumber at the merge if the order changes).
+
+### #126 · Assumed: where a rule that is in no rule graph is listed (FU-P3-90)
+
+- **Covers:** step P3-fu90 (`autopilot/P3-fu90`); finding [DW-P3B08-01](code/P3-B08.md#findings); [ui-spec §4.4](../specs/ui-spec.md#44-run-detail), note 2026-11-08 (By process order), amended the same day; the [review record](code/P3-fu90.md).
+- **Context:** a rule that joins the DAG after a checkpoint (the demo run's `align`, which runs after `split`) is in no rule graph, because Snakemake 9.27.1 logs one graph per invocation and none after a later checkpoint re-evaluation. It has no link, so it cannot be placed by the graph. It was listed first, before the rules it reads from.
+- **Options:**
+  - (a) after every rule that is in a graph, in the list's order (built): on the demo run `align` comes after `all`, the target rule;
+  - (b) right after its checkpoint, found from the `is_checkpoint` item or from the output prefix it shares with a graph rule: closer to the true order, but a guess that the graph does not confirm;
+  - (c) place nothing: keep it first (the old behaviour, wrong).
+- **Recommendation:** (a) now; (b) once a later Snakemake logs the graph after the re-evaluation, which would make the rule appear in a graph and be placed by its links. **Assumed:** (a).
+- **Why a question:** the order is correct for every rule that is in a graph; for the rule in none, (a) never lists it before the rules it reads from, but it also lists it after the rules that read it (`merge`, `all` on the demo run), and a reader may expect it next to `split`.
