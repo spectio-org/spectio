@@ -165,6 +165,25 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-launch-copy-phone", "/launch?from=$SPECTIO_DEMO_FAILED_RUN", 390, 844,
              "0.0.1, live: the same prefilled form on a phone",
              themes=("light", "dark"), live=("wait:Prefilled from",)),
+        # P1 Tasks 34 and 35 (batch P3-B04): $SPECTIO_DEMO_RUN is a finished run of the synthetic Nextflow pipeline, and
+        # $SPECTIO_DEMO_SMK_RUN a finished run of the synthetic Snakemake pipeline (a copy with a config/config.yaml,
+        # launched from the UI; chunks 0, so the `split` checkpoint grows the DAG). Both on a local executor: no
+        # `sacct`, so no SLURM facts; the efficiency is the engine's own.
+        Shot("app-run-rules", "/runs/$SPECTIO_DEMO_SMK_RUN", 1440, 1500,
+             "0.0.1, live: a Snakemake run's rules: the Checkpoint chip on split, the DAG-updated line, the states legend",
+             themes=("light", "dark"), live=("wait:Checkpoint",)),
+        Shot("app-run-by-process", "/runs/$SPECTIO_DEMO_RUN?tab=tasks", 1680, 1000,
+             "0.0.1, live: Tasks, By process: CPU and memory efficiency per process, the request and the sort button of each column",
+             themes=("light", "dark"), live=("tab:By process", "wait:CPU eff. mean")),
+        Shot("app-run-by-process-phone", "/runs/$SPECTIO_DEMO_RUN?tab=tasks", 390, 844,
+             "0.0.1, live: By process on a phone: the waste lines and one card per process",
+             themes=("light", "dark"), live=("tab:By process", "wait:Sort by", "view:Over each task")),
+        Shot("app-run-job-outputs", "/runs/$SPECTIO_DEMO_SMK_RUN?tab=tasks&process=merge", 1440, 1000,
+             "0.0.1, live: a Snakemake job's sheet on its Outputs tab (the rule has no log file): the file, present, and what Snakemake does not say",
+             themes=("light", "dark"), live=("open:Files of", "wait:present")),
+        Shot("app-run-task-efficiency", "/runs/$SPECTIO_DEMO_RUN?tab=tasks&process=FINAL_REPORT", 1440, 1000,
+             "0.0.1, live: a Nextflow task's sheet: Efficiency from the engine's trace, with its source, and the 'low' flag",
+             themes=("light", "dark"), live=("open:Files of", "wait:from the Nextflow trace")),
     )
 }
 

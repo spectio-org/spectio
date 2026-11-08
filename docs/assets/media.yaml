@@ -518,6 +518,14 @@ media:
       - docs/assets/diagrams/p3-b03-wheel-terminal-release_dark.svg
       - docs/assets/diagrams/p3-b03-wheel-terminal-release_light.png
       - docs/assets/diagrams/p3-b03-wheel-terminal-release_dark.png
+  - id: p3-b04-dag-temp-efficiency
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b04_dag_temp_efficiency.py
+    outputs:
+      - docs/assets/diagrams/p3-b04-dag-temp-efficiency_light.svg
+      - docs/assets/diagrams/p3-b04-dag-temp-efficiency_dark.svg
+      - docs/assets/diagrams/p3-b04-dag-temp-efficiency_light.png
+      - docs/assets/diagrams/p3-b04-dag-temp-efficiency_dark.png
   - id: p3-t17-launch
     kind: diagram
     generator: python3 tools/diagrams/p3_t17_launch.py
@@ -692,6 +700,31 @@ media:
     # as app-launch-copy, at 390 x 844
     generator: python3 tools/media/shots.py run --shot app-launch-copy-phone --theme both
     outputs: [docs/assets/shots/app-launch-copy-phone_light.webp, docs/assets/shots/app-launch-copy-phone_dark.webp]
+  - id: app-run-rules
+    kind: screenshot
+    # live, a finished Snakemake run launched from the UI (synthetic pipeline copy, chunks 0): the Summary's Rules table with the Checkpoint chip on split, the DAG-updated line and the states legend (P1 Task 35, batch P3-B04)
+    generator: python3 tools/media/shots.py run --shot app-run-rules --theme both
+    outputs: [docs/assets/shots/app-run-rules_light.webp, docs/assets/shots/app-run-rules_dark.webp]
+  - id: app-run-by-process
+    kind: screenshot
+    # live, a finished Nextflow run, Tasks, By process, at 1680 x 1000: the efficiency, request and usage columns (P1 Task 35)
+    generator: python3 tools/media/shots.py run --shot app-run-by-process --theme both
+    outputs: [docs/assets/shots/app-run-by-process_light.webp, docs/assets/shots/app-run-by-process_dark.webp]
+  - id: app-run-by-process-phone
+    kind: screenshot
+    # live, as app-run-by-process at 390 x 844: the waste lines and the process cards
+    generator: python3 tools/media/shots.py run --shot app-run-by-process-phone --theme both
+    outputs: [docs/assets/shots/app-run-by-process-phone_light.webp, docs/assets/shots/app-run-by-process-phone_dark.webp]
+  - id: app-run-job-outputs
+    kind: screenshot
+    # live, the Snakemake run, rule merge: the job sheet on its Outputs tab (the rule has no log file)
+    generator: python3 tools/media/shots.py run --shot app-run-job-outputs --theme both
+    outputs: [docs/assets/shots/app-run-job-outputs_light.webp, docs/assets/shots/app-run-job-outputs_dark.webp]
+  - id: app-run-task-efficiency
+    kind: screenshot
+    # live, the Nextflow run, process FINAL_REPORT: the task sheet with Efficiency from the engine's trace
+    generator: python3 tools/media/shots.py run --shot app-run-task-efficiency --theme both
+    outputs: [docs/assets/shots/app-run-task-efficiency_light.webp, docs/assets/shots/app-run-task-efficiency_dark.webp]
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines

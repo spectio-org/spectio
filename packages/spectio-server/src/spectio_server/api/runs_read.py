@@ -24,12 +24,14 @@ from sqlalchemy import Connection, Row, Select, and_, func, select
 from spectio.config import Settings
 from spectio.runner.local import checkable
 from spectio.runner.rundir import RUN_ID
+from spectio_server import efficiency
 from spectio_server.api import models
 from spectio_server.api.problems import Invalid, not_found
 from spectio_server.failure import Context, build_failures, dir_run_id, task_resources
 from spectio_server.files.pool import READ_TIMEOUT_S
 from spectio_server.resume import command, resume_refusal, resumed_as
 from spectio_server.stages.freeze import FROZEN as STAGES_FROZEN
+from spectio_server.stages.state import RunFacts, checkpoint_open, process_status
 from spectio_server.store.schema import (
     RUN_STATES,
     TASK_STATES,
@@ -51,6 +53,9 @@ router = APIRouter()
 Limit = Annotated[int, Query(ge=1, le=200)]
 Cursor = Annotated[str | None, Query(max_length=512)]
 DONE_STATES = ("succeeded", "cached", "stored")  # the ends of a task that ran or was reused
+RULEGRAPH = "spectio.engine.snakemake.rulegraph"
+RUN_INFO = "spectio.engine.snakemake.run_info"
+DAG_UPDATED = "spectio.engine.snakemake.dag_updated"
 
 _last_n = (
     select(launches.c.run_id, func.max(launches.c.n).label("n"))
@@ -73,6 +78,7 @@ _RUN_COLUMNS = (
     runs.c.lineage_id,
     runs.c.launch_dir,
     runs.c.results_dir,
+    runs.c.engine_settings,
     workflows.c.engine,
     workflows.c.location,
     workflows.c.name.label("workflow_name"),
@@ -126,7 +132,46 @@ def _stage_modes(conn: Connection, run_ids: list[str]) -> dict[str, str]:
     return {r.run_id: r.source for r in rows}  # one source per run: the freeze writes one
 
 
-def run_json(row: Row[Any], profiles: list[str], stage_mode: str | None = None) -> dict[str, Any]:
+def _checkpoints(conn: Connection, rows: list[Row[Any]]) -> dict[str, tuple[list[str], int]]:
+    """Per run, its open checkpoints (rules that may add jobs, P1 Task 34) and its count of
+    `snakemake.dag_updated`."""
+    ids = [r.id for r in rows]
+    state = {r.id: r.state for r in rows}
+    marked = conn.execute(
+        select(run_processes.c.run_id, run_processes.c.name, run_processes.c.jobs_planned)
+        .where(run_processes.c.run_id.in_(ids), run_processes.c.is_checkpoint)
+        .order_by(run_processes.c.position)
+    ).all()
+    counts: dict[tuple[str, str], dict[str, int]] = {}
+    if marked:
+        for run_id, rule, task_state, n in conn.execute(
+            select(tasks.c.run_id, tasks.c.process_or_rule, tasks.c.state, func.count())
+            .where(
+                tasks.c.run_id.in_(ids),
+                tasks.c.process_or_rule.in_({m.name for m in marked}),
+            )
+            .group_by(tasks.c.run_id, tasks.c.process_or_rule, tasks.c.state)
+        ):
+            counts.setdefault((run_id, rule), {})[task_state] = n
+    found: dict[str, tuple[list[str], int]] = {i: ([], 0) for i in ids}
+    for m in marked:
+        if checkpoint_open(counts.get((m.run_id, m.name), {}), m.jobs_planned, state[m.run_id]):
+            found[m.run_id][0].append(m.name)
+    for run_id, n in conn.execute(
+        select(events.c.run_id, func.count())
+        .where(events.c.run_id.in_(ids), events.c.type == DAG_UPDATED)
+        .group_by(events.c.run_id)
+    ):
+        found[run_id] = (found[run_id][0], n)
+    return found
+
+
+def run_json(
+    row: Row[Any],
+    profiles: list[str],
+    stage_mode: str | None = None,
+    checkpoints: tuple[list[str], int] = ([], 0),
+) -> dict[str, Any]:
     counts: dict[str, int] = row.task_counts or {}
     total = row.tasks_expected if row.tasks_expected is not None else sum(counts.values())
     head = None
@@ -172,9 +217,12 @@ def run_json(row: Row[Any], profiles: list[str], stage_mode: str | None = None) 
                 "total": total,
                 "failed": counts.get("failed", 0),
                 "cached": counts.get("cached", 0),
+                "lower_bound": bool(checkpoints[0]),
             },
             "last_failure": row.failure,
             "stage_mode": stage_mode or "quarters",
+            "open_checkpoints": checkpoints[0],
+            "dag_updates": checkpoints[1],
         },
     }
 
@@ -193,7 +241,12 @@ def context(request: Request) -> Context:
     """What a view reads files and accounting with (P1 Task 29)."""
     state = request.app.state
     return Context(
-        state.settings.runs_root, state.files, state.accounting, READ_TIMEOUT_S, state.settings
+        state.settings.runs_root,
+        state.files,
+        state.accounting,
+        READ_TIMEOUT_S,
+        state.settings,
+        state.measures,
     )
 
 
@@ -202,7 +255,10 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
     its command, parent, children and whether it can be resumed (P1 Task 30)."""
     row = run_row(conn, run_id)
     found = run_json(
-        row, _profiles(conn, [run_id]).get(run_id, []), _stage_modes(conn, [run_id]).get(run_id)
+        row,
+        _profiles(conn, [run_id]).get(run_id, []),
+        _stage_modes(conn, [run_id]).get(run_id),
+        _checkpoints(conn, [row])[run_id],
     )
     frozen = conn.execute(
         select(events.c.payload).where(events.c.run_id == run_id, events.c.type == STAGES_FROZEN)
@@ -227,6 +283,11 @@ def run_detail(conn: Connection, run_id: str, ctx: Context) -> dict[str, Any]:
         "resumed_as": resumed_as(conn, run_id),
         "actions": {"resume": {"allowed": reason is None, "reason": reason}},
         "results_dir": results_of(row),
+        "engine_settings": {
+            # `notemp` is the command line's, which no event carries: null (P1 Task 34)
+            "cleanup": (row.engine_settings or {}).get("cleanup"),
+            "notemp": None,
+        },
     }
 
 
@@ -320,7 +381,10 @@ def list_runs(
         rows = conn.execute(query).all()
         page = [r.id for r in rows[:limit]]
         profiles, modes = _profiles(conn, page), _stage_modes(conn, page)
-    items = [run_json(r, profiles.get(r.id, []), modes.get(r.id)) for r in rows[:limit]]
+        marked = _checkpoints(conn, list(rows[:limit]))
+    items = [
+        run_json(r, profiles.get(r.id, []), modes.get(r.id), marked[r.id]) for r in rows[:limit]
+    ]
     last = rows[limit - 1] if len(rows) > limit else None
     next_ = None if last is None else _encode([getattr(last, key.name).isoformat(), last.id])
     return {"items": items, "next": next_}
@@ -360,12 +424,19 @@ def get_run(request: Request, run_id: str) -> dict[str, Any]:
 def list_processes(request: Request, run_id: str) -> dict[str, Any]:
     """One item per process or rule: those the projector recorded (`onProcessCreate`, the rule
     files at the freeze, a first task), in that order, with the stage they froze with; then any
-    known from tasks only (a database from before P1 Task 27), in their first task's order."""
+    known from tasks only (a database from before P1 Task 27), in their first task's order.
+    Each has its `status`, and the `efficiency` of its jobs (P1 Task 34)."""
     with read(request) as conn:
-        run_row(conn, run_id)
+        run = run_row(conn, run_id)
         mine = tasks.c.run_id == run_id
         known = conn.execute(
-            select(run_processes.c.name, run_processes.c.stage_id)
+            select(
+                run_processes.c.name,
+                run_processes.c.stage_id,
+                run_processes.c.ended,
+                run_processes.c.jobs_planned,
+                run_processes.c.is_checkpoint,
+            )
             .where(run_processes.c.run_id == run_id)
             .order_by(run_processes.c.position)
         ).all()
@@ -388,23 +459,72 @@ def list_processes(request: Request, run_id: str) -> dict[str, Any]:
                 .group_by(tasks.c.process_or_rule)
             ).all()
         )
+        facts = _run_facts(conn, run)
+        jobs = task_resources(conn, run_id, dir_run_id(run), run.engine, None, context(request))
     by_process: dict[str, dict[str, int]] = {}
     for process, state, n in counts:
         by_process.setdefault(process, {})[state] = n
-    order: dict[str, str | None] = dict(known)
+    of_process: dict[str, list[dict[str, Any]]] = {}
+    for job in jobs.values():
+        of_process.setdefault(job["process"], []).append(job)
+    rows = {r.name: r for r in known}
+    order: dict[str, str | None] = {r.name: r.stage_id for r in known}
     for process, stage_id in from_tasks:
         order.setdefault(process, stage_id)
-    return {
-        "items": [
+    items = []
+    for process, stage_id in order.items():
+        r = rows.get(process)
+        planned = r.jobs_planned if r is not None else None
+        mine_counts = by_process.get(process, {})
+        status = process_status(
+            process, mine_counts, bool(r is not None and r.ended), planned, facts
+        )
+        items.append(
             {
                 "process": process,
                 "stage_id": stage_id,
-                "counts": by_process.get(process, {}),
+                "counts": mine_counts,
                 "retries": retries.get(process, 0),
+                "status": status,
+                "is_checkpoint": bool(r is not None and r.is_checkpoint),
+                "lower_bound": facts.checkpoint_open,
+                "efficiency": efficiency.aggregate(of_process.get(process, []), planned),
             }
-            for process, stage_id in order.items()
-        ]
-    }
+        )
+    return {"items": items}
+
+
+def _run_facts(conn: Connection, run: Row[Any]) -> RunFacts:
+    """What the process statuses read of the run (Snakemake: its `run_info`, rule graph, open
+    checkpoints, and whether jobs are to come after a DAG update)."""
+    if run.engine != "snakemake":
+        return RunFacts(run.engine, run.state)
+    mine = events.c.run_id == run.id
+    planned = conn.execute(
+        select(events.c.id).where(mine, events.c.type == RUN_INFO).limit(1)
+    ).first()
+    graph = conn.execute(
+        select(events.c.payload)
+        .where(mine, events.c.type == RULEGRAPH)
+        .order_by(events.c.seq.desc())
+        .limit(1)
+    ).scalar()
+    nodes = ((graph or {}).get("rulegraph") or {}).get("nodes")
+    rules = frozenset(
+        n["rule"]
+        for n in (nodes if isinstance(nodes, list) else [])
+        if isinstance(n, dict) and isinstance(n.get("rule"), str)
+    )
+    open_, dag_updates = _checkpoints(conn, [run])[run.id]
+    known = sum((run.task_counts or {}).values())
+    return RunFacts(
+        run.engine,
+        run.state,
+        planned is not None,
+        rules,
+        bool(open_),
+        dag_updates > 0 and (run.tasks_expected or 0) > known,
+    )
 
 
 @router.get("/runs/{run_id}/stages", response_model=models.StageList)
@@ -450,9 +570,7 @@ def list_tasks(
         run = run_row(conn, run_id)
         rows = conn.execute(query).all()
         page = [r.id for r in rows[:limit]]
-        resources = task_resources(
-            conn, run_id, dir_run_id(run), run.engine, page, context(request)
-        )
+        jobs = task_resources(conn, run_id, dir_run_id(run), run.engine, page, context(request))
     items = [
         {
             "id": r.id,
@@ -461,8 +579,10 @@ def list_tasks(
             "name": r.name,
             "state": r.state,
             "stage_id": r.stage_id,
-            "attempt_n": resources[r.id][0],
-            "resources": resources[r.id][1],
+            "attempt_n": jobs[r.id]["attempt_n"],
+            "resources": jobs[r.id]["resources"],
+            "slurm": jobs[r.id]["slurm"],
+            "efficiency": jobs[r.id]["efficiency"],
         }
         for r in rows[:limit]
     ]

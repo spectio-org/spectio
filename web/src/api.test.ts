@@ -3,7 +3,7 @@
 // be the schema's properties, so a field added to or dropped from a response model fails here.
 import { expect, test } from "vitest";
 import snapshot from "../../packages/spectio-server/openapi/0.0.1.json";
-import type { CodeLoading, Failure, LaunchTemplate, Process, ResultEntry, ResultReport, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Stage, Task, TaskFile, TaskFiles } from "./api";
+import type { CodeLoading, Efficiency, EngineSettings, Failure, LaunchTemplate, Process, ProcessEfficiency, ResultEntry, ResultReport, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Slurm, SlurmAllocated, SlurmRequest, Stage, Task, TaskFile, TaskFiles, TaskOutput } from "./api";
 
 const schemas = snapshot.components.schemas as unknown as Record<
   string,
@@ -23,7 +23,13 @@ const run = {
   failure: null,
   head: { session: null, node: "", alive: false, exit_code: null, checked: true },
   task_counts: {},
-  summary: { tasks: { done: 0, total: 0, failed: 0, cached: 0 }, last_failure: null, stage_mode: "quarters" },
+  summary: {
+    tasks: { done: 0, total: 0, failed: 0, cached: 0, lower_bound: false },
+    last_failure: null,
+    stage_mode: "quarters",
+    open_checkpoints: [],
+    dag_updates: 0,
+  },
 } satisfies Run;
 
 const scheduler = {
@@ -61,11 +67,72 @@ const resources = {
   source: null,
 } satisfies Resources;
 
+const request = {
+  partition: null,
+  account: null,
+  qos: null,
+  cpus: 2,
+  mem_bytes: null,
+  mem_per_cpu_bytes: null,
+  time_limit_s: null,
+  gres: null,
+  constraint: null,
+  nodes: null,
+  tasks: null,
+} satisfies SlurmRequest;
+
+const allocated = {
+  partition: null,
+  account: null,
+  qos: null,
+  ncpus: 2,
+  req_mem_bytes: null,
+  time_limit_s: null,
+  alloc_tres: null,
+  nnodes: null,
+} satisfies SlurmAllocated;
+
+const slurm = { request, allocated, custom_options: null } satisfies Slurm;
+
+const efficiency = {
+  cpu: 0.4,
+  mem: null,
+  elapsed_s: 65,
+  peak_rss_bytes: null,
+  state: "available",
+  source: "sacct",
+  reason: null,
+} satisfies Efficiency;
+
+const processEfficiency = {
+  jobs: { done: 1, total: 2 },
+  measured: 1,
+  cpu_mean: 0.4,
+  cpu_max: 0.4,
+  mem_mean: null,
+  mem_max: null,
+  requested: { cpus: 2, mem_bytes: null, time_limit_s: null, varies: false },
+  used: { peak_rss_bytes_max: null, elapsed_s_max: 65 },
+} satisfies ProcessEfficiency;
+
+const output = { path: "out/a.txt", state: "temp_removed", protected: false, removed_at: "" } satisfies TaskOutput;
+const engineSettings = { cleanup: null, notemp: null } satisfies EngineSettings;
+
 const taskFile = { name: ".command.log", kind: "job_log", size: null, mtime: null, state: "not_yet", note: null } satisfies TaskFile;
 
 const SAMPLES: Record<string, object> = {
   TaskFile: taskFile,
-  TaskFiles: { task_id: "", attempt: 1, work_dir: null, native_id: null, files: [taskFile] } satisfies TaskFiles,
+  TaskFiles: { task_id: "", attempt: 1, work_dir: null, native_id: null, files: [taskFile], outputs: [output] } satisfies TaskFiles,
+  TaskOutput: output,
+  EngineSettings: engineSettings,
+  SlurmRequest: request,
+  SlurmAllocated: allocated,
+  Slurm: slurm,
+  Efficiency: efficiency,
+  ProcessEfficiency: processEfficiency,
+  JobCount: processEfficiency.jobs,
+  Requested: processEfficiency.requested,
+  Used: processEfficiency.used,
   Run: run,
   RunDetail: {
     ...run,
@@ -78,6 +145,7 @@ const SAMPLES: Record<string, object> = {
     resumed_as: [],
     actions: { resume: { allowed: false, reason: "running" } },
     results_dir: null,
+    engine_settings: engineSettings,
   } satisfies RunDetail,
   ResultEntry: { name: "", type: "file", size: null, mtime: null } satisfies ResultEntry,
   ResultReport: { path: "", title: "", group: null } satisfies ResultReport,
@@ -99,7 +167,16 @@ const SAMPLES: Record<string, object> = {
   RunSummary: run.summary,
   TaskSummary: run.summary.tasks,
   ServerVersion: { version: "", node: "", runs_root: "", account: "", executor: "" } satisfies ServerVersion,
-  Process: { process: "", stage_id: null, counts: {}, retries: 0 } satisfies Process,
+  Process: {
+    process: "",
+    stage_id: null,
+    counts: {},
+    retries: 0,
+    status: "awaiting_checkpoint",
+    is_checkpoint: false,
+    lower_bound: true,
+    efficiency: processEfficiency,
+  } satisfies Process,
   Stage: { id: "", position: 0, name: null, source: "detected", state: "running", task_counts: {} } satisfies Stage,
   Task: {
     id: "",
@@ -110,6 +187,8 @@ const SAMPLES: Record<string, object> = {
     stage_id: null,
     attempt_n: 1,
     resources,
+    slurm,
+    efficiency,
   } satisfies Task,
 };
 

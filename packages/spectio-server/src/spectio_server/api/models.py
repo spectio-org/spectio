@@ -59,12 +59,15 @@ class TaskSummary(BaseModel):
     total: int
     failed: int
     cached: int
+    lower_bound: bool  # a checkpoint is open: the total may grow (P1 Task 34)
 
 
 class RunSummary(BaseModel):
     tasks: TaskSummary
     last_failure: dict[str, JsonValue] | None
     stage_mode: Literal["declared", "detected", "quarters"]  # api §7 (P1 Task 27)
+    open_checkpoints: list[str]  # Snakemake checkpoint rules with a job left (P1 Task 34)
+    dag_updates: int  # the count of `snakemake.dag_updated`
 
 
 class Run(BaseModel):
@@ -151,6 +154,14 @@ class Actions(BaseModel):
     resume: ResumeAction
 
 
+class EngineSettings(BaseModel):
+    """What the engine said of its temporary files (P1 Task 34): Nextflow's `cleanup`;
+    Snakemake's `--notemp`, null in 0.0.1 (no event carries it)."""
+
+    cleanup: bool | None
+    notemp: bool | None
+
+
 class RunDetail(Run):
     params: dict[str, JsonValue]
     stages_note: str | None  # why declared stages were not applied (P1 Task 27)
@@ -161,6 +172,7 @@ class RunDetail(Run):
     resumed_as: list[RunRef]
     actions: Actions
     results_dir: str | None  # null when unknown, and for a run started from a terminal
+    engine_settings: EngineSettings
 
 
 class TemplateWorkflow(BaseModel):
@@ -212,11 +224,60 @@ class ServerVersion(BaseModel):
     executor: str
 
 
+ProcessStatus = Literal[
+    "pending",
+    "running",
+    "done",
+    "failed",
+    "stopped",
+    "awaiting_checkpoint",
+    "not_needed",
+    "up_to_date",
+    "no_tasks",
+]
+
+
+class JobCount(BaseModel):
+    done: int
+    total: int  # a lower bound while a checkpoint is open
+
+
+class Requested(BaseModel):
+    """The most common request of the jobs; `varies` when they differ."""
+
+    cpus: int | None
+    mem_bytes: int | None
+    time_limit_s: int | None
+    varies: bool
+
+
+class Used(BaseModel):
+    peak_rss_bytes_max: int | None
+    elapsed_s_max: float | None
+
+
+class ProcessEfficiency(BaseModel):
+    """Over the last attempts of its tasks (schedulers §3.6): ratios, 0.63 for 63 %."""
+
+    jobs: JobCount
+    measured: int
+    cpu_mean: float | None
+    cpu_max: float | None
+    mem_mean: float | None
+    mem_max: float | None
+    requested: Requested
+    used: Used
+
+
 class Process(BaseModel):
     process: str
     stage_id: str | None
     counts: dict[str, int]
     retries: int
+    status: ProcessStatus  # computed, never stored (P1 Task 34; ui-spec §5.2)
+    is_checkpoint: bool
+    lower_bound: bool
+    efficiency: ProcessEfficiency
 
 
 class ProcessList(BaseModel):
@@ -249,6 +310,56 @@ class Resources(BaseModel):
     source: Literal["trace", "benchmark", "sacct"] | None
 
 
+class SlurmRequest(BaseModel):
+    """What the engine asked SLURM for (api §5 note of 2026-11-07)."""
+
+    partition: str | None
+    account: str | None
+    qos: str | None
+    cpus: int | None
+    mem_bytes: int | None
+    mem_per_cpu_bytes: int | None
+    time_limit_s: int | None
+    gres: str | None
+    constraint: str | None
+    nodes: int | None
+    tasks: int | None
+
+
+class SlurmAllocated(BaseModel):
+    """What SLURM gave the job, from `sacct` once it ended."""
+
+    partition: str | None
+    account: str | None
+    qos: str | None
+    ncpus: int | None
+    req_mem_bytes: int | None
+    time_limit_s: int | None
+    alloc_tres: str | None
+    nnodes: int | None
+
+
+class Slurm(BaseModel):
+    """`custom_options`: `slurm_extra` or `clusterOptions` was set, the text never kept."""
+
+    request: SlurmRequest
+    allocated: SlurmAllocated | None
+    custom_options: bool | None
+
+
+class Efficiency(BaseModel):
+    """A job's CPU and memory efficiency (schedulers §3.6), `cpu` and `mem` ratios, never
+    clamped; `peak_rss_bytes` and `elapsed_s` the values they come from."""
+
+    cpu: float | None
+    mem: float | None
+    elapsed_s: float | None
+    peak_rss_bytes: int | None
+    state: Literal["running", "pending_accounting", "available", "unavailable"]
+    source: Literal["sacct", "trace", "benchmark"] | None
+    reason: Literal["local", "no_job_id", "accounting_off", "not_found", "cached"] | None
+
+
 class Task(BaseModel):
     id: str
     process: str
@@ -258,6 +369,8 @@ class Task(BaseModel):
     stage_id: str | None
     attempt_n: int | None  # the last attempt's number, for its files (P1 Tasks 28, 29)
     resources: Resources
+    slurm: Slurm | None  # null on a local run (P1 Task 34)
+    efficiency: Efficiency
 
 
 class TaskList(BaseModel):
@@ -291,12 +404,22 @@ class TaskFile(BaseModel):
     note: str | None
 
 
+class TaskOutput(BaseModel):
+    """One output of a Snakemake job's `job_info`: `tbd` for a checkpoint's `<TBD>`."""
+
+    path: str
+    state: Literal["present", "not_yet", "absent", "temp_removed", "tbd"]
+    protected: bool
+    removed_at: str | None
+
+
 class TaskFiles(BaseModel):
     task_id: str
     attempt: int
     work_dir: str | None  # Nextflow: the task's work directory; Snakemake: the launch directory
     native_id: str | None  # the executor's job ID (SLURM), when known
     files: list[TaskFile]
+    outputs: list[TaskOutput] | None  # Snakemake's; null for a Nextflow attempt (P1 Task 34)
 
 
 class ResultEntry(BaseModel):

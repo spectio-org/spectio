@@ -37,9 +37,17 @@ from spectio_server.files.taskfiles import (
     Cleaned,
     attempt_dir,
     list_task_files,
+    output_states,
     read_task_file,
 )
-from spectio_server.store.schema import attempts, runs, tasks, workflow_versions, workflows
+from spectio_server.store.schema import (
+    attempts,
+    run_output_events,
+    runs,
+    tasks,
+    workflow_versions,
+    workflows,
+)
 
 log = logging.getLogger(__name__)
 router = APIRouter()
@@ -63,6 +71,7 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
             attempts.c.work_dir,
             attempts.c.native_id,
             attempts.c.logs,
+            attempts.c.outputs,
         )
         .join(tasks, tasks.c.id == attempts.c.task_id)
         .join(runs, runs.c.id == tasks.c.run_id)
@@ -87,6 +96,9 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
         row.native_id,
         logs,
         runs_root,
+        tuple(p for p in row.outputs or [] if isinstance(p, str))
+        if row.engine == "snakemake"
+        else None,
     )
 
 
@@ -95,6 +107,48 @@ def _attempt(request: Request, task_id: str, n: int) -> AttemptFiles:
         found = load_attempt(conn, task_id, n, request.app.state.settings.runs_root)
     if found is None:
         raise not_found(f"no attempt {n} of task {task_id[:64]!r}")
+    return found
+
+
+def _marks(request: Request, task_id: str, paths: tuple[str, ...]) -> dict[str, dict[str, Any]]:
+    """The removal and write-protection texts of the task's run for these outputs, by path:
+    {kind: when} (P1 Task 34)."""
+    found: dict[str, dict[str, Any]] = {}
+    with read(request) as conn:
+        rows = conn.execute(
+            select(run_output_events.c.path, run_output_events.c.kind, run_output_events.c.at)
+            .join(tasks, tasks.c.run_id == run_output_events.c.run_id)
+            .where(
+                tasks.c.id == task_id,
+                run_output_events.c.kind.in_(("temp_removed", "protected")),
+                run_output_events.c.path.in_(paths),
+            )
+        )
+        for path, kind, at in rows:
+            found.setdefault(path, {})[kind] = at
+    return found
+
+
+def _outputs(request: Request, task_id: str, attempt: AttemptFiles) -> list[dict[str, Any]] | None:
+    """Each output of a Snakemake attempt with its state (api §5 note of 2026-11-07, Job files);
+    None for a Nextflow attempt."""
+    if attempt.outputs is None:
+        return None
+    marks = _marks(request, task_id, attempt.outputs) if attempt.outputs else {}
+    states = in_pool(request, lambda: output_states(attempt)) if attempt.outputs else {}
+    found = []
+    for path in attempt.outputs:
+        mine = marks.get(path, {})
+        removed = mine.get("temp_removed")
+        state = "tbd" if path == "<TBD>" else "temp_removed" if "temp_removed" in mine else None
+        found.append(
+            {
+                "path": path,
+                "state": state or states.get(path, "absent"),
+                "protected": "protected" in mine,
+                "removed_at": None if removed is None else removed.isoformat(),
+            }
+        )
     return found
 
 
@@ -144,6 +198,7 @@ def _iso(mtime: float | None) -> str | None:
 def task_files(request: Request, task_id: str, n: int) -> Response:
     attempt = _attempt(request, task_id, n)
     files = in_pool(request, lambda: list_task_files(attempt))
+    outputs = _outputs(request, task_id, attempt)
     body = TaskFiles.model_validate(
         {
             "task_id": task_id,
@@ -161,6 +216,7 @@ def task_files(request: Request, task_id: str, n: int) -> Response:
                 }
                 for f in files
             ],
+            "outputs": outputs,
         }
     )
     return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)

@@ -68,6 +68,16 @@ function headWord(run: RunDetail): string {
   return "Exited";
 }
 
+/** The engine's own settings that change what the job files show (ui-spec §5.2). */
+function engineSettings(run: RunDetail): [string, ReactNode][] {
+  const s = run.engine_settings;
+  const said = [
+    s?.cleanup && "Work directory cleaned after success (cleanup = true)",
+    s?.notemp && "Temporary files kept (--notemp)",
+  ].filter((x): x is string => !!x);
+  return said.length ? [["Engine settings", <span className="sp-lines">{said.map((t) => <span key={t}>{t}</span>)}</span>]] : [];
+}
+
 function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }) {
   const w = run.workflow;
   const ended = isTerminal(run.state);
@@ -104,6 +114,7 @@ function Facts({ run, server }: { run: RunDetail; server: ServerVersion | null }
     ],
     ["Run directory", <span className="sp-mono">{runDirectory(run, server) ?? "—"}</span>],
     ["Executor", server ? executorLabel(server.executor) : "—"],
+    ...engineSettings(run),
     ["Failure", run.state === "failed" ? failureText(run) : "—"],
   ];
   // a Resume and its parent link to each other (LiteRunActions G); the parent is named by its short ID

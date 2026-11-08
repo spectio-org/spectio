@@ -99,6 +99,7 @@ class AttemptFiles:
     native_id: str | None
     logs: tuple[tuple[str, str], ...]  # Snakemake: (path relative to the launch dir, kind)
     runs_root: Path
+    outputs: tuple[str, ...] | None = None  # Snakemake: its `job_info` outputs (P1 Task 34)
 
 
 @dataclass(frozen=True)
@@ -289,6 +290,29 @@ def _smk_files(attempt: AttemptFiles) -> list[TaskFile]:
         return _all(attempt, kinds, "cleaned", "The launch directory is gone.")
     except NotAllowed as exc:
         return _all(attempt, kinds, "absent", f"Not served: {exc}.")
+
+
+def output_states(attempt: AttemptFiles) -> dict[str, State]:
+    """Whether each output of a Snakemake attempt is in the launch directory (`present`), not
+    yet (the job runs) or `absent`, found with no link followed (P1 Task 34)."""
+    paths = [p for p in attempt.outputs or () if p != "<TBD>"]
+    try:
+        with run_root(attempt.runs_root, attempt.run_id, "launch") as launch:
+            return {p: _output_state(attempt, launch, p) for p in paths}
+    except NotFound:  # Cleaned: the launch directory is gone
+        return dict.fromkeys(paths, "absent")
+    except NotAllowed:
+        return dict.fromkeys(paths, "absent")
+
+
+def _output_state(attempt: AttemptFiles, root: Root, path: str) -> State:
+    try:
+        found = stat_confined(root, safe_rel(path))
+    except (NotFound, NotAllowed):
+        found = None
+    if found is not None:
+        return "present"
+    return "not_yet" if attempt.state in OPEN_STATES else "absent"
 
 
 # --- Reading --------------------------------------------------------------------------------

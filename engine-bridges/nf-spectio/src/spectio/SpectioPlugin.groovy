@@ -433,7 +433,12 @@ class SpectioObserver implements TraceObserverV2 {
         'queue', '%cpu', '%mem', 'rss', 'vmem', 'peak_rss', 'peak_vmem', 'rchar', 'wchar', 'syscr', 'syscw',
         'read_bytes', 'write_bytes', 'vol_ctxt', 'inv_ctxt', 'workdir', 'scratch', 'error_action',
         'cpu_model', 'accelerator', 'accelerator_type']
+    // Every task hook (P1 Task 28), and the request the trace record carries from submission
+    // on (TaskHandler.groovy:203-231, v26.10.4; P1 Task 33); the measured keys are final only.
     static final List<String> WHERE_KEYS = ['native_id', 'workdir']
+    static final List<String> REQUEST_KEYS = ['cpus', 'memory', 'time', 'disk', 'queue', 'accelerator',
+                                              'accelerator_type', 'attempt']
+    static final int MAX_CONFIG_DEPTH = 8
 
     private final Spool spool
     private volatile Session session
@@ -465,7 +470,7 @@ class SpectioObserver implements TraceObserverV2 {
         // Every task event carries the work directory and the executor's job ID (P1 Task 28):
         // the trace record of the other hooks is cut to those two (TaskHandler.groovy:218,
         // GridTaskHandler.groovy:528, nextflow v26.10.4).
-        data.trace = trace(ev?.trace?.store, withTrace ? TRACE_KEYS : WHERE_KEYS)
+        data.trace = trace(ev?.trace?.store, withTrace ? TRACE_KEYS : WHERE_KEYS + REQUEST_KEYS)
         return data
     }
 
@@ -480,9 +485,22 @@ class SpectioObserver implements TraceObserverV2 {
         return out
     }
 
+    /** True when the process config, or one of its selectors (`withName:`, `withLabel:`), sets
+     *  `clusterOptions`. Raw sbatch text: only that it is set is sent (SEC-P3T1-11). A directive
+     *  written in the script itself is not in the config, so not seen here. */
+    static boolean setsClusterOptions(Object config, int depth = 0) {
+        if (!(config instanceof Map) || depth > MAX_CONFIG_DEPTH)
+            return false
+        return ((Map) config).any { k, v -> k == 'clusterOptions' ? v != null : setsClusterOptions(v, depth + 1) }
+    }
     @Override void onFlowCreate(Session s) {
         session = s
-        emit('onFlowCreate') { [nextflow: str(BuildInfo.version), resume: s.resumeMode as Boolean, workDir: str(s.workDir)] }
+        emit('onFlowCreate') {
+            // As Session.cleanup() reads it: `!config.cleanup` by Groovy truth (Session.groovy:1375-1410;
+            // its bytecode read in the 26.10.4 jar, 2026-11-07).
+            [nextflow: str(BuildInfo.version), resume: s.resumeMode as Boolean, workDir: str(s.workDir),
+             cleanup: s.config?.cleanup ? true : false, clusterOptionsSet: setsClusterOptions(s.config?.process)]
+        }
     }
 
     @Override void onFlowBegin() { emit('onFlowBegin') { [:] } }

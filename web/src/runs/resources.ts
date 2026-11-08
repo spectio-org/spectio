@@ -42,3 +42,10 @@ export function resourcesLine(r: Resources): string {
     `limit ${seconds(r.time_s)}${near.time ? ", near limit" : ""}`,
   ].join(" · ");
 }
+
+/** A ratio as a percentage: 0.63 → "63 %"; "—" when unknown. */
+export const percent = (ratio: number | null | undefined): string => (ratio == null ? "—" : `${Math.round(ratio * 100)} %`);
+
+/** Efficiency under 25 % reads "low" (ui-spec §4.4 note 2026-11-07); memory above 90 % "near limit". */
+export const isLow = (ratio: number | null | undefined): boolean => ratio != null && ratio < 0.25;
+export const isNear = (ratio: number | null | undefined): boolean => ratio != null && ratio > 0.9;

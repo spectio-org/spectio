@@ -13,7 +13,11 @@ flight, one call per `INTERVAL_S`.
 The fields asked for (`FORMAT`, `WorkDir` among them) and their units, and whether `-j` alone
 returns other users' jobs, are [to be validated] on `slurm-mini` (P1 Task 22) and at EMBL: a
 number with no unit is read as bytes, `K`, `M`, `G`, `T` as powers of 1024, and an older
-`ReqMem` suffix `n` (per node) or `c` (per CPU) is dropped.
+`ReqMem` suffix `n` (per node) or `c` (per CPU) is multiplied by `NNodes` or `NCPUS`, so
+`req_mem_bytes` is the job's whole request. The efficiency fields (P1 Task 34, schedulers §3.6):
+`TotalCPU` is summed over the job's step rows (`<id>.batch`, `<id>.extern`, `<id>.<n>`), as `seff`
+does, and the allocation row's own is used only when no step row has one; the step rows join
+their job by ID, having no WorkDir of their own [to be validated] on `slurm-mini`.
 """
 
 import contextlib
@@ -32,7 +36,11 @@ from pathlib import Path
 log = logging.getLogger(__name__)
 
 JOB_ID = re.compile(r"[0-9]{1,12}(_[0-9]{1,8})?")
-FORMAT = "JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,WorkDir"
+FORMAT = (
+    "JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,TotalCPU,NCPUS,NNodes,"
+    "Partition,Account,QOS,AllocTRES,WorkDir"
+)
+_FIELDS = FORMAT.count(",") + 1
 TIMEOUT_S = 10.0
 INTERVAL_S = 60.0
 BATCH = 100
@@ -42,10 +50,13 @@ MAX_REASON = 256
 
 _STATE = re.compile(r"[A-Z_]{1,32}")
 _EXIT = re.compile(r"([0-9]{1,3}):[0-9]{1,3}")
-_MEMORY = re.compile(r"([0-9]{1,15}(?:\.[0-9]{1,6})?)([KMGTP]?)[nc]?")
+_MEMORY = re.compile(r"([0-9]{1,15}(?:\.[0-9]{1,6})?)([KMGTP]?)([nc]?)")
 _DURATION = re.compile(
-    r"(?:([0-9]{1,5})-)?(?:([0-9]{1,2}):)?([0-9]{1,2}):([0-9]{1,2})(?:\.[0-9]+)?"
+    r"(?:([0-9]{1,5})-)?(?:([0-9]{1,2}):)?([0-9]{1,2}):([0-9]{1,2})(\.[0-9]{1,6})?"
 )
+_COUNT = re.compile(r"[0-9]{1,9}")
+_NAME = re.compile(r"[A-Za-z0-9_.,:+-]{1,128}")  # a partition, an account, a QOS
+_TRES = re.compile(r"[A-Za-z0-9_.,:/=+-]{1,1024}")
 _REASON = re.compile(rf"[A-Za-z0-9_.,:;()/ -]{{1,{MAX_REASON}}}")
 _WORK_DIR = re.compile(r"/[^\x00-\x1f\x7f]{0,4095}")
 _UNITS = {"": 1, "K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4, "P": 1024**5}
@@ -65,6 +76,15 @@ class SacctRow:
     req_mem_bytes: int | None
     time_limit_s: int | None
     work_dir: str | None = None  # the job's WorkDir, as sacct gave it
+    # The efficiency fields (P1 Task 34): CPU seconds over the job's steps, the allocation's
+    # CPUs and nodes, and where and as whom SLURM ran it.
+    total_cpu_s: float | None = None
+    ncpus: int | None = None
+    nnodes: int | None = None
+    partition: str | None = None
+    account: str | None = None
+    qos: str | None = None
+    alloc_tres: str | None = None
 
 
 def check_ids(ids: Iterable[str]) -> list[str]:
@@ -152,33 +172,63 @@ def _kill(proc: "subprocess.Popen[bytes]") -> None:
 
 def parse_sacct(text: str, wanted: set[str]) -> dict[str, SacctRow]:
     """The rows of `--parsable2 --noheader` output for the `wanted` jobs: the job's own line for
-    its state, limits and WorkDir, the largest `MaxRSS` of its steps (`<id>.batch`, `<id>.0` …).
-    WorkDir is the last field: a `|` in it is kept."""
-    rows: dict[str, SacctRow] = {}
+    its state, limits, allocation and WorkDir; the largest `MaxRSS` of its lines and the sum of
+    its steps' `TotalCPU` (`<id>.batch`, `<id>.0` …). A step counts only after its job's line
+    (sacct prints steps after their job [to be validated] on slurm-mini); two job lines for one
+    ID (a reused ID, a forged line) give no row (SEC-P3T34-04). WorkDir is the last field: a `|`
+    in it is kept."""
+    rows: dict[str, SacctRow | None] = {}  # None: two job lines for the ID
     rss: dict[str, int] = {}
+    cpu: dict[str, float] = {}
     for line in text.splitlines():
-        parts = line.split("|", 8)
-        if len(parts) != 9:
+        parts = line.split("|", _FIELDS - 1)
+        if len(parts) != _FIELDS:
             continue
-        job, state, exit_code, reason, max_rss, elapsed, req_mem, time_limit, work_dir = parts
+        job, state, exit_code, reason, max_rss, elapsed, req_mem, time_limit = parts[:8]
+        total_cpu, ncpus, nnodes, partition, account, qos, tres, work_dir = parts[8:]
         base, _, step = job.partition(".")
         if base not in wanted:
             continue
-        if (used := _memory(max_rss)) is not None:
-            rss[base] = max(used, rss.get(base, 0))
         if step:
+            if rows.get(base) is None:
+                continue  # before its job's line, or of an ambiguous ID
+            if (used := _memory(max_rss)) is not None:
+                rss[base] = max(used, rss.get(base, 0))
+            if (spent := _cpu_seconds(total_cpu)) is not None:
+                cpu[base] = cpu.get(base, 0.0) + spent
             continue
+        if base in rows:
+            rows[base] = None
+            continue
+        if (used := _memory(max_rss)) is not None:
+            rss[base] = used
+        cpus, nodes = _count(ncpus), _count(nnodes)
         rows[base] = SacctRow(
             state=_state(state),
             exit_code=_exit(exit_code),
             reason=_reason(reason),
             max_rss_bytes=None,
             elapsed_s=_duration(elapsed),
-            req_mem_bytes=_memory(req_mem),
+            req_mem_bytes=_req_mem(req_mem, cpus, nodes),
             time_limit_s=_duration(time_limit),
             work_dir=work_dir if _WORK_DIR.fullmatch(work_dir) else None,
+            total_cpu_s=_cpu_seconds(total_cpu),
+            ncpus=cpus,
+            nnodes=nodes,
+            partition=_text(partition, _NAME),
+            account=_text(account, _NAME),
+            qos=_text(qos, _NAME),
+            alloc_tres=_text(tres, _TRES),
         )
-    return {job: replace(row, max_rss_bytes=rss.get(job)) for job, row in rows.items()}
+    return {
+        job: replace(
+            row,
+            max_rss_bytes=rss.get(job),
+            total_cpu_s=round(cpu[job], 6) if job in cpu else row.total_cpu_s,
+        )
+        for job, row in rows.items()
+        if row is not None
+    }
 
 
 def _state(value: str) -> str | None:
@@ -204,15 +254,41 @@ def _memory(value: str) -> int | None:
     return int(float(found[1]) * _UNITS[found[2]])
 
 
+def _req_mem(value: str, cpus: int | None, nodes: int | None) -> int | None:
+    """The job's whole memory request: an older `ReqMem` per CPU (`c`) or per node (`n`) times
+    NCPUS or NNodes, None when that count is not known."""
+    found = _MEMORY.fullmatch(value)
+    amount = _memory(value)
+    if found is None or amount is None or not found[3]:
+        return amount
+    times = cpus if found[3] == "c" else nodes
+    return None if times is None else amount * times
+
+
+def _count(value: str) -> int | None:
+    return int(value) if _COUNT.fullmatch(value) else None
+
+
+def _text(value: str, pattern: re.Pattern[str]) -> str | None:
+    return value if pattern.fullmatch(value) else None
+
+
 def _duration(value: str) -> int | None:
     """`[D-]HH:MM:SS` or `MM:SS[.ms]`; None for `UNLIMITED`, `Partition_Limit` or anything else."""
+    seconds = _cpu_seconds(value)
+    return None if seconds is None else int(seconds)
+
+
+def _cpu_seconds(value: str) -> float | None:
+    """A duration with its fraction (`TotalCPU` is `[D-][HH:]MM:SS.mmm`), None when it is not."""
     found = _DURATION.fullmatch(value)
     if found is None:
         return None
-    days, hours, minutes, seconds = (int(g) if g else 0 for g in found.groups())
+    days, hours, minutes, seconds = (int(g) if g else 0 for g in found.groups()[:4])
     if found[1] and not found[2]:  # "D-MM:SS" is not a sacct form
         return None
-    return ((days * 24 + hours) * 60 + minutes) * 60 + seconds
+    whole = ((days * 24 + hours) * 60 + minutes) * 60 + seconds
+    return whole + float(found[5]) if found[5] else float(whole)
 
 
 # --- The limiter ----------------------------------------------------------------------------

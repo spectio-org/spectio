@@ -248,6 +248,56 @@ def test_task_events_carry_workdir_and_native_id(nf_run: Path) -> None:
             assert trace.get("native_id"), ev.type
 
 
+REQUEST_KEYS = {"cpus", "memory", "time", "disk", "queue", "accelerator", "accelerator_type"}
+CLUSTER_OPTIONS = "--qos=planted-cluster-options-7f3a"  # never sent: only that it is set
+
+
+def flow_create(launch_dir: Path) -> dict[str, Any]:
+    (create,) = [
+        json.loads(x)["data"] for x in spool_lines(launch_dir) if '"nextflow.onFlowCreate"' in x
+    ]
+    return create  # type: ignore[no-any-return]
+
+
+def test_nf_flow_create_cleanup(nextflow: str, nf_run: Path, tmp_path: Path) -> None:
+    """P1 Task 33: `onFlowCreate` sends `cleanup` (the session's `config.cleanup`) and
+    `clusterOptionsSet`, true when the process config sets `clusterOptions`, here in a
+    `withName` selector; the text itself is never sent (SEC-P3T1-11)."""
+    default = flow_create(nf_run)
+    assert (default["cleanup"], default["clusterOptionsSet"]) == (False, False)
+    extra = tmp_path / "extra.config"
+    extra.write_text(
+        "cleanup = true\n"
+        f"process {{ withName: 'MAKE_READS' {{ clusterOptions = '{CLUSTER_OPTIONS}' }} }}\n"
+    )
+    launch_dir = tmp_path / "launch"
+    done = run_nf(nextflow, launch_dir, "-c", str(extra))
+    assert done.returncode == 0, done.stdout + done.stderr
+    create = flow_create(launch_dir)
+    assert (create["cleanup"], create["clusterOptionsSet"]) == (True, True)
+    raw = "\n".join(spool_lines(launch_dir))
+    assert CLUSTER_OPTIONS not in raw and 'clusterOptions"' not in raw
+
+
+def test_nf_request_at_submit(nf_run: Path) -> None:
+    """P1 Task 33: the pending, submit and start hooks send the request keys of the trace
+    record (`TaskHandler.groovy:203-231`, v26.10.4) beside `native_id` and `workdir`; the
+    measured keys stay for the final hooks."""
+    events = [SpoolEvent.model_validate_json(line) for line in spool_lines(nf_run)]
+    hooks = ("onTaskPending", "onTaskSubmit", "onTaskStart")
+    early = [e for e in events if e.type.split(".")[1] in hooks]
+    assert {e.type.split(".")[1] for e in early} == set(hooks)
+    for ev in early:
+        trace = ev.data["trace"]
+        assert isinstance(trace, dict), ev.type
+        assert set(trace) <= REQUEST_KEYS | {"attempt", "native_id", "workdir"}, ev.type
+        for key in ("cpus", "memory", "time", "attempt"):
+            assert trace.get(key), (ev.type, key, trace)
+        assert "queue" in trace, ev.type  # null on the local executor
+        for measured in ("%cpu", "peak_rss", "realtime"):
+            assert measured not in trace, ev.type
+
+
 @pytest.mark.parametrize("how", ["mode_0500", "events_is_a_file"])
 def test_unwritable_spool_never_fails_run(nextflow: str, tmp_path: Path, how: str) -> None:
     launch_dir = tmp_path / "launch"

@@ -82,7 +82,7 @@ def ingest(
             if engine == "nextflow":
                 nextflow.project(p, hook, data)
             else:
-                snakemake.project(p, data)
+                snakemake.project(p, data, hook)
         except OperationalError:
             raise  # a storage fault: the whole batch rolls back and the cursor stays
         except Exception:
