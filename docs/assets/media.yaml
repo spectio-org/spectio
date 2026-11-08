@@ -550,6 +550,14 @@ media:
       - docs/assets/diagrams/p3-b07-socket-uv-disk_dark.svg
       - docs/assets/diagrams/p3-b07-socket-uv-disk_light.png
       - docs/assets/diagrams/p3-b07-socket-uv-disk_dark.png
+  - id: p3-b08-login1-followups
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b08_login1_followups.py
+    outputs:
+      - docs/assets/diagrams/p3-b08-login1-followups_light.svg
+      - docs/assets/diagrams/p3-b08-login1-followups_dark.svg
+      - docs/assets/diagrams/p3-b08-login1-followups_light.png
+      - docs/assets/diagrams/p3-b08-login1-followups_dark.png
   - id: p3-t17-launch
     kind: diagram
     generator: python3 tools/diagrams/p3_t17_launch.py
@@ -749,6 +757,26 @@ media:
     # live, the Nextflow run, process FINAL_REPORT: the task sheet with Efficiency from the engine's trace
     generator: python3 tools/media/shots.py run --shot app-run-task-efficiency --theme both
     outputs: [docs/assets/shots/app-run-task-efficiency_light.webp, docs/assets/shots/app-run-task-efficiency_dark.webp]
+  - id: app-run-by-rule-order
+    kind: screenshot
+    # live, the Snakemake run, Jobs, By rule at 1440 x 1000: the Order radio group, Pipeline order checked (batch P3-B08, FU-P3-82)
+    generator: python3 tools/media/shots.py run --shot app-run-by-rule-order --theme both
+    outputs: [docs/assets/shots/app-run-by-rule-order_light.webp, docs/assets/shots/app-run-by-rule-order_dark.webp]
+  - id: app-run-by-rule-order-phone
+    kind: screenshot
+    # live, as app-run-by-rule-order at 390 x 844: the radio group above the Sort by select
+    generator: python3 tools/media/shots.py run --shot app-run-by-rule-order-phone --theme both
+    outputs: [docs/assets/shots/app-run-by-rule-order-phone_light.webp, docs/assets/shots/app-run-by-rule-order-phone_dark.webp]
+  - id: app-run-process-columns
+    kind: screenshot
+    # live, the Nextflow run, the sheet of process ALIGN: its tasks under a Task and State header (batch P3-B08, FU-P3-80)
+    generator: python3 tools/media/shots.py run --shot app-run-process-columns --theme both
+    outputs: [docs/assets/shots/app-run-process-columns_light.webp, docs/assets/shots/app-run-process-columns_dark.webp]
+  - id: app-run-failed-synth
+    kind: screenshot
+    # live, a Nextflow run launched with the profile fail_demo: Why it failed and the failed COMPARE task's .command.log with its WARN, INFO and ERROR lines (batch P3-B08, FU-P3-83)
+    generator: python3 tools/media/shots.py run --shot app-run-failed-synth --theme both
+    outputs: [docs/assets/shots/app-run-failed-synth_light.webp, docs/assets/shots/app-run-failed-synth_dark.webp]
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines

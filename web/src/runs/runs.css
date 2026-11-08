@@ -1162,9 +1162,6 @@
   outline: 2px solid var(--sp-line-focus);
   outline-offset: -2px;
 }
-.sp-sheet-row .sp-chip {
-  margin: 0;
-}
 /* A process's tasks (FU-P3-80): the same two columns on every row and in the header above them. */
 .sp-task-head,
 .sp-task-rows .sp-sheet-row {

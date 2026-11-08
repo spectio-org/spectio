@@ -226,18 +226,13 @@ def recorded_root(launch_dir: str | None, origin: str | None) -> str | None:
 
 
 def _check_recorded(runs_root: Path, recorded_root: str | None, tried: Path) -> None:
-    """Unreachable when the run was recorded under another runs root than this server's."""
-    if recorded_root is not None and not _same_dir(recorded_root, runs_root):
+    """Unreachable when the run was recorded under another runs root than this server's: the two
+    spellings are compared once resolved (/scratch is often a symlink), nothing opened."""
+    if recorded_root is not None and os.path.realpath(recorded_root) != os.path.realpath(runs_root):
         raise Unreachable(
             f"the run was recorded under the runs root {recorded_root}, not this server's "
             f"{runs_root}: tried {tried}"
-        ) from None
-
-
-def _same_dir(recorded: str, runs_root: Path) -> bool:
-    """Whether two spellings name one directory (/scratch is often a symlink): compared once
-    resolved, nothing opened."""
-    return os.path.realpath(recorded) == os.path.realpath(runs_root)
+        )
 
 
 def attempt_dir(attempt: AttemptFiles) -> str | None:

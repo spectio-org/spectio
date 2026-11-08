@@ -184,6 +184,21 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-run-task-efficiency", "/runs/$SPECTIO_DEMO_RUN?tab=tasks&process=FINAL_REPORT", 1440, 1000,
              "0.0.1, live: a Nextflow task's sheet: Efficiency from the engine's trace, with its source, and the 'low' flag",
              themes=("light", "dark"), live=("open:Files of", "wait:from the Nextflow trace")),
+        # Batch P3-B08 (FU-P3-80, 82, 83): the same runs as above, and a Nextflow run launched with the profile
+        # `fail_demo` ($SPECTIO_DEMO_FAILED_RUN; COMPARE for treatA exits 1). The order radios on a Snakemake run
+        # (By rule, pipeline order), the process sheet with its named columns, and a failed task's stderr.
+        Shot("app-run-by-rule-order", "/runs/$SPECTIO_DEMO_SMK_RUN?tab=tasks", 1440, 1000,
+             "0.0.1, live: Tasks, By rule, in pipeline order: the Order radio group, Pipeline order checked, and A to Z beside it",
+             themes=("light", "dark"), live=("tab:By rule", "wait:Pipeline order")),
+        Shot("app-run-by-rule-order-phone", "/runs/$SPECTIO_DEMO_SMK_RUN?tab=tasks", 390, 844,
+             "0.0.1, live: By rule on a phone: the Order radio group above the Sort by select, which also lists Pipeline order",
+             themes=("light", "dark"), live=("tab:By rule", "wait:Sort by", "view:Sort by")),
+        Shot("app-run-failed-synth", "/runs/$SPECTIO_DEMO_FAILED_RUN", 1440, 1180,
+             "0.0.1, live: a run launched with the profile fail_demo: Why it failed, and the job files of the failed COMPARE task, with its ERROR lines",
+             themes=("light", "dark"), live=("wait:Why it failed", "open:Open the job files of", "wait:Attempt")),
+        Shot("app-run-process-columns", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
+             "0.0.1, live: the sheet of one process, its tasks in two columns, Task and State, under a header",
+             themes=("light", "dark"), live=("wait:65 / 65 tasks", "open:Open process ALIGN", "wait:Open in Tasks")),
     )
 }
 
