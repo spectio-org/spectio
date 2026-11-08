@@ -12,9 +12,14 @@
 # refuses when a slurm.conf or slurmdbd.conf it did not write (no marker line) is there, before any apt,
 # daemon start or file write. The database password is generated per install into a root-only file; it is
 # never printed, never on a command line and never in a shell variable. MariaDB listens on 127.0.0.1 only.
-# NATIVE_SLURM_ETC (default /etc/slurm) is for the tests (tests/slurm/test_native.py).
+# It also refuses an inherited SLURM_CONF that is not its own, `down` without its own slurm.conf, and `up`
+# without its own slurm.conf while a Slurm daemon runs or a configless cache is there (SEC-P3FU66-01).
+# NATIVE_SLURM_ETC (default /etc/slurm) and NATIVE_SLURM_PROC (default /proc) are for the tests
+# (tests/slurm/test_native.py).
 set -euo pipefail
 ETC=${NATIVE_SLURM_ETC:-/etc/slurm}
+PROC=${NATIVE_SLURM_PROC:-/proc}
+SITE_CONF=${SLURM_CONF:-} # inherited, before this script sets its own below
 [[ $ETC =~ ^/[A-Za-z0-9._/-]+$ ]] || { echo "NATIVE_SLURM_ETC must be a plain absolute path: $ETC" >&2; exit 1; }
 [ "$ETC" = /etc/slurm ] || export SLURM_CONF=$ETC/slurm.conf
 MARK='# Written by dev/slurm/native.sh'
@@ -25,15 +30,31 @@ PACKAGES=(slurm-wlm slurmdbd mariadb-server munge)
 log() { printf '[%s] %s\n' "$(date -u +%H:%M:%S)" "$*"; }
 die() { echo "native.sh: $*" >&2; exit 1; }
 
+# Configless slurmd caches the configs it fetched here [to be validated: slurm.conf(5) SlurmdSpoolDir,
+# configless docs]; either one means a site's slurmctld serves this node.
+CONFIGLESS=(/run/slurm/conf /var/spool/slurmd/conf-cache)
+
 # Builtins and `id` only: nothing runs, starts or is written before these pass.
-guard() {
+guard() { # up|down
   [ "$(id -u)" = 0 ] || die "run it as root, in a throwaway container"
-  local f first
+  [ -z "$SITE_CONF" ] || [ "$SITE_CONF" = "$ETC/slurm.conf" ] ||
+    die "SLURM_CONF=$SITE_CONF is set and is not $ETC/slurm.conf; leaving this Slurm alone"
+  local f first own= c name
   for f in "$ETC/slurm.conf" "$ETC/slurmdbd.conf"; do
     [ -e "$f" ] || continue
     first=
     IFS= read -r first <"$f" || true
     [[ $first == "$MARK"* ]] || die "$f exists and was not written by dev/slurm/native.sh; leaving this Slurm alone"
+    [ "$f" != "$ETC/slurm.conf" ] || own=1
+  done
+  [ -n "$own" ] && return 0
+  [ "$1" = up ] || die "no $ETC/slurm.conf written by dev/slurm/native.sh: nothing of native.sh to stop"
+  for c in "$PROC"/[0-9]*/comm; do
+    { IFS= read -r name <"$c"; } 2>/dev/null || continue # a process that has gone, or no match at all
+    case $name in slurmctld | slurmd | slurmdbd) die "$name is already running and is not native.sh's; leaving this Slurm alone" ;; esac
+  done
+  for c in "${CONFIGLESS[@]}"; do
+    [ ! -e "$c" ] || die "$c exists: this node runs a configless Slurm; leaving it alone"
   done
 }
 
@@ -184,8 +205,8 @@ status() {
 }
 
 case "${1:-}" in
-  up) guard && up ;;
-  down) guard && down ;;
+  up) guard up && up ;;
+  down) guard down && down ;;
   status) status ;;
   *) echo "usage: bash dev/slurm/native.sh up|down|status" >&2; exit 2 ;;
 esac

@@ -23,8 +23,10 @@ class NativeGuards(unittest.TestCase):
         self.bin = os.path.join(self.tmp, "bin")
         self.etc = os.path.join(self.tmp, "etc")
         self.calls = os.path.join(self.tmp, "calls")
+        self.proc = os.path.join(self.tmp, "proc")
         os.mkdir(self.bin)
         os.mkdir(self.etc)
+        os.mkdir(self.proc)
         for name in COMMANDS:
             self._fake(name, f'echo "{name}" >>"{self.calls}"; exit 97')
 
@@ -34,10 +36,10 @@ class NativeGuards(unittest.TestCase):
             fh.write(f"#!/bin/sh\n{body}\n")
         os.chmod(path, stat.S_IRWXU)
 
-    def run_native(self, uid, *args):
+    def run_native(self, uid, *args, **extra_env):
         self._fake("id", f'[ "$1" = -u ] && echo {uid} || exit 97')
         # Only the fakes on PATH: no real tool can be reached, an unfaked one is "not found".
-        env = {"PATH": self.bin, "NATIVE_SLURM_ETC": self.etc}
+        env = {"PATH": self.bin, "NATIVE_SLURM_ETC": self.etc, "NATIVE_SLURM_PROC": self.proc, **extra_env}
         p = subprocess.run([BASH, NATIVE, *args], env=env, capture_output=True, text=True, timeout=30)
         return p.returncode, p.stderr
 
@@ -72,6 +74,43 @@ class NativeGuards(unittest.TestCase):
                     self.assertEqual(self.recorded(), [])
                     self.assertEqual(self.etc_files(), site)
                 os.remove(os.path.join(self.etc, name))
+
+    def test_inherited_site_slurm_conf_refused(self):
+        for cmd in ("up", "down"):
+            with self.subTest(cmd):
+                code, err = self.run_native(0, cmd, SLURM_CONF="/opt/site/slurm.conf")
+                self.assertNotEqual(code, 0)
+                self.assertIn("SLURM_CONF", err)
+                self.assertEqual(self.recorded(), [])
+                self.assertEqual(self.etc_files(), {})
+
+    def test_down_without_own_config_refused(self):
+        code, err = self.run_native(0, "down")
+        self.assertNotEqual(code, 0)
+        self.assertIn("nothing of native.sh to stop", err)
+        self.assertEqual(self.recorded(), [])
+        self.assertEqual(self.etc_files(), {})
+
+    def test_up_refused_when_slurm_daemon_runs(self):
+        for daemon in ("slurmctld", "slurmd", "slurmdbd"):
+            with self.subTest(daemon):
+                pid = os.path.join(self.proc, "4242")
+                os.makedirs(pid, exist_ok=True)
+                with open(os.path.join(pid, "comm"), "w") as fh:
+                    fh.write(f"{daemon}\n")
+                code, err = self.run_native(0, "up")
+                self.assertNotEqual(code, 0)
+                self.assertIn(f"{daemon} is already running", err)
+                self.assertEqual(self.recorded(), [])
+                self.assertEqual(self.etc_files(), {})
+
+    def test_up_with_unrelated_processes_passes_the_guards(self):
+        pid = os.path.join(self.proc, "1")
+        os.mkdir(pid)
+        with open(os.path.join(pid, "comm"), "w") as fh:
+            fh.write("bash\n")
+        self.run_native(0, "up")
+        self.assertEqual(self.recorded()[0], "dpkg-query")
 
     def test_marker_config_passes_the_guards(self):
         # Its own config: the guards let it through, and the first command it runs is the package check.
