@@ -19,7 +19,7 @@ import pytest
 
 from spectio.config import EngineOpts, Settings
 from spectio.runner import loop as loop_mod
-from spectio.runner.local import LocalLauncher
+from spectio.runner.local import LocalLauncher, read_head_exit
 from spectio.runner.loop import RunnerLoop
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import (
@@ -127,6 +127,16 @@ def test_local_launch_exit_file(runs_root: Path, launcher: LocalLauncher) -> Non
     pid, pgid, start, *_ = (spectio_dir / "head.pid").read_text().split()
     assert pid == pgid  # setsid: the head leads its own group
     assert native_id == f"{pid}.{start}"  # unique per process, not a bare PID (SEC-P3T09-04)
+
+
+@pytest.mark.usefixtures("term_in_tail")
+def test_term_while_head_exit_is_written(runs_root: Path, launcher: LocalLauncher) -> None:
+    # The group's SIGTERM in the head's tail leaves a head.exit that parses (FU-P3-77).
+    spec = spec_for(runs_root, stub_engine(runs_root.parent / "bin", "exit 3"))
+    native_id = launcher.submit(spec)
+    wait_for((spec.launch_dir / ".spectio" / "head.exit").exists)
+    assert read_head_exit(spec.launch_dir) == 3
+    assert ended(launcher, native_id).exit_code == 3
 
 
 def test_adopt_after_restart(runs_root: Path, launcher: LocalLauncher) -> None:
