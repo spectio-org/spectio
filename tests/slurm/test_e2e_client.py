@@ -139,5 +139,41 @@ class Squeue(unittest.TestCase):
                              "jobs in squeue: ['12|x|/r/runs/run_1/work']; tmux session spectio-run_1: True")
 
 
+class Local(unittest.TestCase):
+    """Local mode (P2 §10.8, G7): the head runs in its own session (setsid), not in tmux, and there is no squeue."""
+
+    def test_the_checks_of_each_mode(self):
+        self.assertEqual(c.checks_of({"executor": "local"}), c.LOCAL_CHECKS)
+        self.assertEqual(c.checks_of({"executor": "slurm"}), c.CHECKS)
+        self.assertEqual(c.checks_of({}), c.CHECKS)  # the default executor is slurm
+        self.assertNotIn("head in tmux, no sbatch", c.LOCAL_CHECKS)
+
+    def test_the_committed_local_scenarios_name_every_local_check(self):
+        for name in ("happy-local.yaml", "happy-local-snakemake.yaml"):
+            lines = c.scenario_expect(os.path.join(HERE, "..", "scenarios", name))
+            self.assertEqual(sorted(lines), sorted(c.LOCAL_CHECKS), name)
+
+    def test_head_pid_as_the_head_script_writes_it(self):
+        line = "4242 4242 987654 0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a5b node-1\n"
+        self.assertEqual(c.head_pid(line), (4242, 4242, "987654"))
+        for bad in ("", "4242 4242 987654\n", "x 4242 987654 0f1e2d3c-4b5a-6978-8a9b-0c1d2e3f4a5b n\n"):
+            self.assertIsNone(c.head_pid(bad), bad)
+
+    def test_own_session(self):
+        self.assertIsNone(c.own_session((4242, 4242, "98"), {"session": "4242.98", "alive": True}))
+        self.assertIn("group 1", c.own_session((4242, 1, "98"), {"session": "4242.98", "alive": True}))
+        self.assertIn("4242.98", c.own_session((4242, 4242, "98"), {"session": "4242.97", "alive": True}))
+        self.assertIn("not alive", c.own_session((4242, 4242, "98"), {"session": "4242.98", "alive": False}))
+        self.assertIn("no head.pid", c.own_session(None, {"session": "4242.98", "alive": True}))
+
+    def test_a_head_is_left_while_its_process_lives(self):
+        me = os.getpid()
+        start = c.proc_start(me)
+        self.assertIsNotNone(start)
+        self.assertIn(str(me), c.head_left((me, me, start)))
+        self.assertIsNone(c.head_left((me, me, start + "0")))  # another process that reused the PID
+        self.assertIsNone(c.head_left(None))
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -1,6 +1,7 @@
 # The synthetic Nextflow pipeline, scenario happy, with the local executor (docs/specs/dev-environment-and-testing.md §5).
-# `python3 dev/scenario.py up happy-local` creates its environment; only `scheduler` is used until
-# there is product code: the other fields say what the scenario will run and expect.
+# `python3 dev/scenario.py up happy-local` creates its environment. The expect lines are checked by
+# `bash tests/local/e2e.sh launch nextflow` (P2 §10.8, G7): each one names a check of tests/slurm/e2e_client.py
+# in local mode, and a line that names none fails the run.
 deployment: bundle                        # bundle | compose
 scheduler: local                          # local | slurm-mini | slurm-site | slurm-rest | k8s-mini | k8s-kueue
 engine: nextflow 26.10
@@ -9,3 +10,8 @@ params: [scenario=happy, profile=test]    # tests/pipelines/synthetic/scenarios.
 gate: none                                # gate script: who decides what, when
 expect:
   - run succeeded
+  - head in its own session
+  - counts equal the golden
+  - head.exit 0, as the run reads it
+  - no spool drop
+  - no head left

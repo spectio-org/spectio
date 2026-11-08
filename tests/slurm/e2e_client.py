@@ -7,7 +7,9 @@ submitter, or this host in native mode) as the user that runs `spectio serve`.
 It signs in as a browser does (a link from `spectio login --print-link --json`, the exchange with
 `Host` and `Origin`), launches the pipeline with `POST /api/v1/runs`, polls the run until it ends,
 and checks each item of CHECKS. The `expect` lines of --scenario must each name one of them. One
-`ok` or `FAIL` line per check; exit 0 when every check passed, 1 otherwise.
+`ok` or `FAIL` line per check; exit 0 when every check passed, 1 otherwise. When the config's executor
+is `local` (tests/local/e2e.sh, P2 §10.8), the head runs in its own session (setsid), not in tmux, and
+there is no squeue: LOCAL_CHECKS replace the two cluster checks.
 """
 import argparse
 import json
@@ -36,6 +38,16 @@ CHECKS = (
     "no spool drop",
     "no job or session left",
 )
+LOCAL_CHECKS = (
+    "run succeeded",
+    "head in its own session",
+    "counts equal the golden",
+    "head.exit 0, as the run reads it",
+    "no spool drop",
+    "no head left",
+)
+# `.spectio/head.pid` as the head script writes it (spectio.runner.local._PID_LINE): PID, group, start.
+HEAD_PID = re.compile(r"([1-9][0-9]{0,9}) ([1-9][0-9]{0,9}) ([0-9]{1,20}) [0-9a-f-]{36} [A-Za-z0-9._-]{1,255}\n")
 DIRECT = urllib.request.build_opener(urllib.request.ProxyHandler({}))  # loopback, never a proxy
 
 
@@ -124,6 +136,53 @@ def scenario_expect(path: str) -> list[str]:
     return lines
 
 
+def checks_of(config: dict) -> tuple[str, ...]:
+    return LOCAL_CHECKS if config.get("executor") == "local" else CHECKS
+
+
+def head_pid(text: str) -> tuple[int, int, str] | None:
+    """PID, process group and start time of a head.pid line, None when it is not one."""
+    m = HEAD_PID.fullmatch(text)
+    return (int(m[1]), int(m[2]), m[3]) if m else None
+
+
+def read_head_pid(run_dir: str) -> tuple[int, int, str] | None:
+    try:
+        return head_pid(Path(run_dir, "launch", ".spectio", "head.pid").read_text())
+    except OSError:
+        return None
+
+
+def own_session(head: tuple[int, int, str] | None, api_head: dict) -> str | None:
+    """None when the API shows the local head alive, as head.pid names it, leading its own group."""
+    if head is None:
+        return "no head.pid"
+    pid, pgid, start = head
+    if pgid != pid:
+        return f"head {pid} is in group {pgid}, not its own session"
+    if api_head.get("session") != f"{pid}.{start}":
+        return f"the API's head is {api_head.get('session')}, head.pid says {pid}.{start}"
+    if api_head.get("alive") is not True:
+        return f"the API's head {pid}.{start} is not alive while the run is running"
+    return None
+
+
+def proc_start(pid: int) -> str | None:
+    """The start time of a live process (field 22 of /proc/<pid>/stat), None when gone or a zombie."""
+    try:
+        fields = Path(f"/proc/{pid}/stat").read_text().rsplit(") ", 1)[1].split()
+    except (OSError, IndexError):
+        return None
+    return None if fields[0] == "Z" else fields[19]
+
+
+def head_left(head: tuple[int, int, str] | None) -> str | None:
+    """What is left of a local head: its process, when it still lives with head.pid's start time."""
+    if head is None or proc_start(head[0]) != head[2]:
+        return None
+    return f"head {head[0]} still running"
+
+
 def run_jobs(lines: list[str], run_dir: str) -> list[str]:
     """The `id|name|workdir` lines of squeue whose work directory is in the run's directory."""
     return [line for line in lines if line and (line.split("|")[-1] + "/").startswith(run_dir.rstrip("/") + "/")]
@@ -204,6 +263,8 @@ def spool_drops(db: Path, run_id: str) -> list[tuple]:
 def launch(args: argparse.Namespace) -> int:
     config = tomllib.loads(Path(args.config).read_text())
     port, runs_root, db_dir = config["port"], config["runs_root"], config["db_dir"]
+    names = checks_of(config)
+    local = names == LOCAL_CHECKS
     api = Api(port)
     out = subprocess.run(["spectio", "login", "--print-link", "--json"],  # noqa: S603, S607
                          capture_output=True, text=True, timeout=60)
@@ -215,6 +276,8 @@ def launch(args: argparse.Namespace) -> int:
     run, _ = api.expect(201, "POST", "/api/v1/runs", body)
     run_id = run["id"]
     session = f"spectio-{run_id}"
+    run_dir = f"{runs_root}/{run_id}"
+    local_head: str | None = "the run was never seen running"
     print(f"run {run_id} launched; polling", flush=True)
     states, head_seen, tmux_seen, jobs_seen = [run["state"]], False, False, set()
     squeue_error: str | None = "no sample"  # None once a squeue sample has answered
@@ -228,19 +291,25 @@ def launch(args: argparse.Namespace) -> int:
         if detail["state"] != states[-1]:
             print(f"  {detail['state']} tasks={detail['task_counts']}", flush=True)
         states.append(detail["state"])
-        if detail["state"] == "running":
+        if detail["state"] == "running" and local:
+            local_head = local_head and own_session(read_head_pid(run_dir), detail.get("head") or {})
+        elif detail["state"] == "running":
             head = detail.get("head") or {}
             head_seen |= head.get("session") == session and head.get("alive") is True
             tmux_seen |= tmux_has(session)
+        if local:
+            continue
         try:
             jobs_seen.update(squeue())
             squeue_error = None
         except Failed as exc:  # skip the sample
             squeue_error = squeue_error and str(exc)
-    checks: dict[str, str | None] = dict.fromkeys(CHECKS)
+    checks: dict[str, str | None] = dict.fromkeys(names)
     checks["run succeeded"] = states_problem(states)
     heads = head_jobs(sorted(jobs_seen))
-    if not (head_seen and tmux_seen) or heads:
+    if local:
+        checks["head in its own session"] = local_head
+    elif not (head_seen and tmux_seen) or heads:
         checks["head in tmux, no sbatch"] = (
             f"the API showed {session} alive: {head_seen}; tmux had it: {tmux_seen}; head jobs in squeue: {heads}")
     elif squeue_error:
@@ -248,7 +317,6 @@ def launch(args: argparse.Namespace) -> int:
     items, _ = api.expect(200, "GET", f"/api/v1/runs/{run_id}/processes")
     diff = count_diff(golden_counts(Path(args.golden).read_text()), process_counts(items["items"]))
     checks["counts equal the golden"] = "; ".join(diff) or None
-    run_dir = f"{runs_root}/{run_id}"
     # The run ends on the engine's last event; its head's exit is read at the next head watch.
     until = time.monotonic() + LEFT_S
     while detail["state"] in ENDED and (detail.get("head") or {}).get("exit_code") is None:
@@ -267,17 +335,18 @@ def launch(args: argparse.Namespace) -> int:
     drops = spool_drops(Path(db_dir) / "spectio.db", run_id)
     checks["no spool drop"] = f"spool_drops: {drops}" if drops else None
     left_until = time.monotonic() + LEFT_S
-    while (left := left_over(run_dir, session)) is not None:
+    head_at_end = read_head_pid(run_dir)
+    while (left := head_left(head_at_end) if local else left_over(run_dir, session)) is not None:
         if time.monotonic() > left_until:
-            checks["no job or session left"] = left
+            checks["no head left" if local else "no job or session left"] = left
             break
         time.sleep(POLL_S)
     lines = scenario_expect(args.scenario) if args.scenario else []
-    problems = expect_problems(lines + [k for k in CHECKS if k not in lines], checks)
-    for name in CHECKS:
+    problems = expect_problems(lines + [k for k in names if k not in lines], checks)
+    for name in names:
         print(f"{'ok  ' if checks[name] is None else 'FAIL'} {name}{'' if checks[name] is None else ': ' + checks[name]}")
     for line in problems:
-        if line.split(":", 1)[0] not in CHECKS:
+        if line.split(":", 1)[0] not in names:
             print(f"FAIL {line}")
     print(f"run {run_id}: {detail['state']}, tasks {detail['task_counts']}")
     return 1 if problems else 0
