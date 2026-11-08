@@ -36,7 +36,7 @@ delimiter = [a for a in sys.argv if a.startswith("--delimiter=")][0].split("=", 
 sys.stdout.write(open(os.path.join(here, "out.txt")).read().replace("{{D}}", delimiter))
 """
 
-# What `sacct --parsable2 --noheader --delimiter=<D> --format=JobID,State,…,Submit,WorkDir`
+# What `sacct --parsable2 --noheader --delimiter=<D> --format=JobID,State,…,WorkDir,Submit`
 # prints (the shape of the T3 probes, tests/fixtures/slurm/slurm-26.05.5/sacct-probes.json, with
 # the efficiency fields of P1 Task 34 and Submit of FU-P3-53; real fields, WorkDir among them,
 # and a 16-character delimiter, [to be validated] on slurm-mini). The fake prints `out.txt` with
@@ -173,7 +173,7 @@ def test_req15_argv_and_id_check(fakebin: Fake) -> None:
         "8812477,8812345_3,9999",
         f"--user={os.geteuid()}",  # the server user's own jobs only
         "--format=JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,TotalCPU,NCPUS,"
-        "NNodes,Partition,Account,QOS,AllocTRES,Submit,WorkDir",
+        "NNodes,Partition,Account,QOS,AllocTRES,WorkDir,Submit",
     ]
     assert "--duplicates" not in call["argv"] and "-D" not in call["argv"]  # CON-PRE-15
     assert found is not None and set(found) == {"8812477", "8812345_3"}
@@ -507,13 +507,15 @@ def test_eff_sacct_submit_before_launch_dropped() -> None:
 
 
 def test_sacct_line_split_wrongly_dropped() -> None:
-    """SEC-PRE-11: a line with more or fewer fields than FORMAT is dropped. A newline in a WorkDir
-    cannot forge a job line, since the forger does not know the call's delimiter; a `|` there is
-    data."""
+    """SEC-PRE-11, SEC-P3FU53-02: a line with more or fewer fields than FORMAT is dropped. WorkDir
+    is not the last field, so a newline in it splits its line into two fragments, neither with
+    FORMAT's fields: no truncated WorkDir binds, and the forger, who does not know the call's
+    delimiter, cannot forge a line. A `|` there is data."""
     forged = "|".join(["7", "COMPLETED", "0:0"] + [""] * 13 + ["/w"])
+    assert parse(line(JobID="7", State="FAILED", WorkDir="/w\nzzz"), ("7", "/w")) == {}
     text = "\n".join(
         [
-            line(JobID="7", State="FAILED", WorkDir="/x\n" + forged),  # two lines, both dropped
+            line(JobID="7", State="FAILED", WorkDir="/x\n" + forged),  # two fragments, both dropped
             line(JobID="8", State="FAILED", WorkDir="/w" + D + "x"),  # one field too many
             line(JobID="9", State="FAILED", WorkDir="/w|y"),
         ]
@@ -529,7 +531,7 @@ def test_req15_eff_fields(fakebin: Fake) -> None:
     found = sacct_jobs({**ASKED, "8812999": {"/w": LAUNCH}}, sacct=fakebin.path)
     assert found is not None and set(found) == {"8812477", "8812345_3"}
     assert fakebin.calls()[0]["argv"][-1] == f"--format={sacct.FORMAT}"
-    assert sacct.FORMAT.endswith(",Submit,WorkDir") and sacct.FORMAT.count(",") == 16
+    assert sacct.FORMAT.endswith(",WorkDir,Submit") and sacct.FORMAT.count(",") == 16
 
 
 def test_sacct_output_capped(fakebin: Fake) -> None:

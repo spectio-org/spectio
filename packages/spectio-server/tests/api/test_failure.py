@@ -72,7 +72,7 @@ for job in ids if state != "-" else ():
     where = dirs.get(job, "/elsewhere")
     lines = [
         [job, state, "0:125", "None", "0", "00:01:05", "2G", "00:10:00", "00:52.000", "2", "1",
-         "htc", "lab", "normal", tres, submit, where],
+         "htc", "lab", "normal", tres, where, submit],
         [job + ".batch", state, "0:125", "", "2097152K", "00:01:05", "", "", "00:52.000", "2",
          "1", "", "", "", tres, "", ""],
     ]

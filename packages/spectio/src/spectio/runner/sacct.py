@@ -44,8 +44,8 @@ log = logging.getLogger(__name__)
 JOB_ID = re.compile(r"[0-9]{1,12}(_[0-9]{1,8})?")
 FORMAT = (
     "JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,TotalCPU,NCPUS,NNodes,"
-    "Partition,Account,QOS,AllocTRES,Submit,WorkDir"
-)
+    "Partition,Account,QOS,AllocTRES,WorkDir,Submit"
+)  # WorkDir not last: a newline in it leaves two fragments, neither with every field
 _FIELDS = FORMAT.count(",") + 1
 TIMEOUT_S = 10.0
 INTERVAL_S = 60.0
@@ -225,7 +225,7 @@ def parse_sacct(
             current = None
             continue
         job, state, exit_code, reason, max_rss, elapsed, req_mem, time_limit = parts[:8]
-        total_cpu, ncpus, nnodes, partition, account, qos, tres, submit, work_dir = parts[8:]
+        total_cpu, ncpus, nnodes, partition, account, qos, tres, work_dir, submit = parts[8:]
         base, _, step = job.partition(".")
         if step:
             if current is not None and current[0] == base:
