@@ -23,7 +23,7 @@ from typing import Any
 import typer
 
 from spectio.config import LOOPBACK, Settings
-from spectio.ports import SOCKET, SUN_PATH_MAX, port_owners
+from spectio.ports import SOCKET, is_server_socket, port_owners
 from spectio.runner.rundir import private_dir, read_small
 
 STATE = "server.json"
@@ -104,7 +104,7 @@ def _checked(record: dict[str, Any]) -> tuple[str, int, Path, Path | None]:
         raise Refused("server.json names a port outside 1024-65535: check it")
     if not isinstance(db_dir, str) or not db_dir.startswith("/"):
         raise Refused("server.json names no absolute database directory: check it")
-    if sock is not None and (sock != f"{db_dir}/{SOCKET}" or len(os.fsencode(sock)) > SUN_PATH_MAX):
+    if sock is not None and not is_server_socket(sock, db_dir):
         raise Refused(f"server.json names a socket other than {SOCKET} in {db_dir}: check it")
     return node, port, Path(db_dir), None if sock is None else Path(sock)
 
