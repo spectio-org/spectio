@@ -1,0 +1,907 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="1990" viewBox="0 0 1600 1990">
+  <rect width="1600" height="1990" fill="#ffffff"/>
+  <text x="50.0" y="58.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="27" fill="#1e1e1e" text-anchor="start" font-weight="normal">P3-B05 · <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="23.8">sacct</tspan> rows bound to the run's WorkDir, and <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="23.8">spectio serve --detach</tspan></text>
+  <text x="50.0" y="86.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="15.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">wave W5 · steps P3-fu53 and P3-fu44 · dev-env 15.3 req. 11 and 15 · schedulers 3.6 · PRs 156 and 157 into <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="13.6">autopilot/integration</tspan></text>
+  <path d="M29.6,140.6 C541.9,141.4 1055.8,140.8 1570.3,139.1" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M30.4,140.5 C545.2,141.4 1056.3,140.1 1570.7,140.9" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="50.0" y="130.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#5c5c5c" text-anchor="start" font-weight="normal">P3-fu53, PR 156, inbox 116 rule 10 b · a <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">sacct</tspan> line counts only for the directory the job was launched from, after the run's launch</text>
+  <path d="M54.0,178.0 L94.8,178.0 L102.0,169.0 L128.4,169.0 L135.6,178.0 L174.0,178.0 L174.0,251.0 L54.0,251.0 Z" fill="#e7f5ff" stroke="none"/>
+  <path d="M53.7,178.3 C68.5,177.5 80.2,177.6 95.1,178.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M94.7,178.3 C97.9,175.6 100.6,172.5 102.3,168.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M102.5,169.3 C110.3,168.4 118.7,169.5 128.5,169.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M128.6,168.9 C130.6,171.7 132.2,174.3 136.1,177.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M135.7,177.6 C149.1,178.6 161.4,178.2 173.9,178.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M174.2,177.8 C174.0,201.6 173.9,225.8 174.5,251.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M173.6,250.8 C134.1,250.3 94.0,251.6 53.9,251.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M54.2,250.6 C53.4,226.2 54.7,201.9 54.0,177.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="114.0" y="219.5" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="middle" font-weight="normal">task dir</text>
+  <rect x="182.0" y="205.1" width="15.4" height="7.8" rx="3.9" fill="none" stroke="#1e1e1e" stroke-width="2.2" transform="rotate(-35 189.7 209.0)"/>
+  <rect x="194.6" y="205.1" width="15.4" height="7.8" rx="3.9" fill="none" stroke="#1e1e1e" stroke-width="2.2" transform="rotate(-35 202.3 209.0)"/>
+  <path d="M212.4,209.0 C219.5,207.7 225.1,210.7 233.1,209.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M211.9,209.7 C217.3,210.3 226.7,207.5 234.8,209.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M234.4,209.1 C230.2,206.6 226.2,204.5 221.3,202.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M233.7,208.9 C230.6,210.5 225.9,213.7 221.3,215.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M240.0,178.0 L269.9,178.0 L275.2,169.0 L294.6,169.0 L299.8,178.0 L328.0,178.0 L328.0,251.0 L240.0,251.0 Z" fill="#e7f5ff" stroke="none"/>
+  <path d="M240.0,177.8 C249.9,177.0 259.3,178.0 269.7,177.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M270.3,178.4 C272.5,176.0 272.6,172.4 275.4,169.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M275.7,169.4 C281.3,168.6 287.3,168.8 294.1,168.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M295.0,168.7 C295.5,172.1 297.5,174.5 299.7,178.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M299.9,177.8 C309.6,177.2 318.8,178.8 328.1,178.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M328.0,177.6 C327.1,201.4 328.5,226.8 328.3,251.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M327.6,251.4 C299.1,250.6 268.8,251.4 239.8,250.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M239.9,251.3 C241.0,227.3 240.7,202.3 239.8,177.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="284.0" y="219.5" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="middle" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.4">realpath</tspan></text>
+  <path d="M296.1,277.1 C298.0,277.3 299.6,277.1 301.0,277.1" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M292.6,285.6 C293.5,286.7 294.8,287.6 295.9,289.0" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M284.1,289.0 C284.1,290.5 284.2,292.3 284.0,293.9" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M275.5,285.4 C274.3,286.9 273.3,287.6 272.0,289.1" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M271.9,277.1 C270.4,276.8 268.6,276.9 267.1,277.0" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M275.6,268.6 C274.0,267.6 273.0,266.1 271.9,264.9" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M284.1,265.0 C283.9,263.6 283.7,261.6 283.9,260.0" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M292.6,268.6 C293.7,267.5 294.9,266.3 295.9,264.9" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M296.0,277.0 L295.7,279.7 L294.8,282.2 L293.4,284.5 L291.5,286.4 L289.2,287.8 L286.7,288.7 L284.0,289.0 L281.3,288.7 L278.8,287.8 L276.5,286.4 L274.6,284.5 L273.2,282.2 L272.3,279.7 L272.0,277.0 L272.3,274.3 L273.2,271.8 L274.6,269.5 L276.5,267.6 L278.8,266.2 L281.3,265.3 L284.0,265.0 L286.7,265.3 L289.2,266.2 L291.5,267.6 L293.4,269.5 L294.8,271.8 L295.7,274.3 Z" fill="#ffe8cc" stroke="none"/>
+  <path d="M296.1,277.2 C295.9,277.9 295.9,278.5 295.6,279.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M295.7,279.6 C295.5,280.5 295.4,281.1 294.8,282.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M294.6,282.2 C294.5,283.1 293.8,283.6 293.3,284.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M293.5,284.6 C293.1,285.0 291.8,285.9 291.6,286.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M291.6,286.4 C290.5,286.6 289.8,287.2 289.3,287.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M289.2,287.9 C288.7,288.2 287.5,288.2 286.7,288.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M286.7,288.6 C285.6,288.9 285.2,288.6 283.8,289.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M284.1,289.0 C283.1,289.1 282.0,288.7 281.2,288.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M281.4,288.7 C280.5,288.7 279.3,287.9 278.9,287.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M278.7,287.9 C277.9,287.4 277.1,287.1 276.4,286.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M276.4,286.5 C275.9,285.9 275.3,284.8 274.5,284.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M274.6,284.4 C274.0,283.9 273.7,282.8 273.1,282.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M273.2,282.3 C272.6,281.3 272.5,280.3 272.2,279.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M272.2,279.7 C272.1,278.5 272.4,278.1 272.0,277.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M271.8,276.9 C272.1,276.4 271.9,274.9 272.4,274.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M272.4,274.2 C272.5,273.2 272.7,272.4 273.2,271.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M273.1,271.7 C273.3,270.9 274.0,270.2 274.5,269.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M274.6,269.4 C275.6,269.1 276.2,267.9 276.4,267.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M276.4,267.8 C277.0,267.3 278.0,266.5 278.9,266.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M278.6,266.0 C279.7,265.8 280.5,265.9 281.3,265.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M281.4,265.2 C282.1,265.3 283.1,264.9 284.0,265.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M284.1,264.9 C284.9,265.4 285.5,265.2 286.7,265.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M286.7,265.4 C287.3,265.6 288.2,265.8 289.1,266.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M289.2,266.3 C290.1,266.6 291.0,267.3 291.4,267.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M291.3,267.7 C292.4,268.4 293.1,268.7 293.4,269.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M293.3,269.4 C294.2,270.3 294.5,270.8 294.6,271.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M294.8,271.9 C295.4,272.7 295.4,273.3 295.8,274.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M295.9,274.2 C296.1,275.4 295.7,275.9 295.9,277.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M288.7,277.0 C288.3,277.6 288.3,277.7 288.3,277.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M288.6,278.0 C288.1,278.1 288.5,278.9 288.0,279.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M287.9,278.8 C288.2,279.1 287.5,279.4 287.5,279.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M287.4,279.8 C287.5,280.3 287.4,280.6 286.7,280.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M286.7,280.7 C286.7,281.0 286.1,281.2 286.1,281.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M286.1,281.1 C285.8,281.5 285.2,281.6 285.2,281.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M285.1,281.4 C284.8,281.2 284.5,281.3 284.2,281.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M284.2,281.6 C283.4,281.4 283.5,281.2 283.0,281.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M283.1,281.4 C282.7,281.6 282.4,281.4 282.0,281.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M281.9,281.1 C281.9,280.9 281.2,280.4 281.3,280.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M281.3,280.6 C281.0,280.6 280.6,280.0 280.3,279.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M280.3,279.9 C280.6,279.6 280.2,279.3 280.1,278.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M279.9,279.0 C280.0,278.6 279.5,278.1 279.6,278.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M279.6,278.0 C279.7,277.7 279.6,277.3 279.4,277.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M279.3,277.0 C279.8,276.8 279.2,276.3 279.6,276.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M279.4,275.8 C279.9,275.6 280.1,275.1 280.1,275.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M279.9,274.9 C280.0,274.5 280.0,274.6 280.4,274.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M280.4,274.3 C280.5,274.1 281.1,273.4 281.2,273.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M281.1,273.3 C281.3,273.3 281.7,273.3 281.9,272.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M281.9,273.0 C282.5,272.8 282.8,272.9 282.8,272.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M282.9,272.5 C283.0,272.7 283.9,272.5 283.8,272.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M283.9,272.5 C284.1,272.7 284.5,272.5 285.0,272.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M285.1,272.4 C285.0,272.3 285.5,272.6 286.0,273.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M285.8,273.0 C286.3,272.8 286.6,272.9 286.9,273.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M286.9,273.3 C286.8,273.5 287.2,273.9 287.6,274.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M287.4,274.3 C287.6,274.5 288.1,274.6 288.3,275.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M288.0,274.9 C287.9,275.3 288.6,275.9 288.5,275.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M288.5,276.0 C288.2,276.3 288.5,276.9 288.5,277.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="262.0" y="281.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">file pool</text>
+  <text x="50.0" y="315.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">expected: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">normpath</tspan> and <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">realpath</tspan></text>
+  <text x="50.0" y="335.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">with the run's launch time</text>
+  <text x="190.0" y="385.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">1 · where the job may be</text>
+  <text x="50.0" y="415.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">Nextflow's task dir, Snakemake's</text>
+  <text x="50.0" y="436.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">launch dir · 100 per view, one</text>
+  <text x="50.0" y="457.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">resolve per run at a time, each kept</text>
+  <text x="50.0" y="478.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">no dir, no SLURM job ID: not asked</text>
+  <rect x="355.0" y="165.0" width="280.0" height="150.0" rx="5" fill="#1e1e1e"/>
+  <path d="M354.8,164.9 C447.0,164.9 540.5,164.9 634.6,165.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M354.2,165.3 C448.9,165.8 541.8,164.0 634.6,164.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M634.3,165.8 C636.1,215.4 634.2,266.4 635.0,315.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M635.5,165.8 C633.5,216.3 636.4,265.0 634.8,315.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M634.9,315.3 C541.7,315.6 449.1,315.3 355.7,315.6" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M635.4,314.7 C540.2,315.7 447.8,313.8 355.4,315.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M355.0,314.8 C354.5,265.2 354.1,215.2 355.8,165.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M354.8,314.7 C354.3,263.6 354.2,216.3 355.0,164.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="370.0" cy="179.0" r="4.5" fill="#ff8787"/>
+  <circle cx="384.0" cy="179.0" r="4.5" fill="#ffd43b"/>
+  <circle cx="398.0" cy="179.0" r="4.5" fill="#69db7c"/>
+  <text x="369.0" y="209.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.5" fill="#f1f3f5" xml:space="preserve">$ sacct --parsable2 --noheader</text>
+  <text x="369.0" y="227.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.5" fill="#f1f3f5" xml:space="preserve">  --delimiter=RANDOM16</text>
+  <text x="369.0" y="245.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.5" fill="#f1f3f5" xml:space="preserve">  -j IDS --user=EUID</text>
+  <text x="369.0" y="263.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.5" fill="#f1f3f5" xml:space="preserve">  --format=17 fields</text>
+  <text x="369.0" y="281.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.5" fill="#f1f3f5" xml:space="preserve">env: PATH, TZ=UTC,</text>
+  <text x="369.0" y="299.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.5" fill="#f1f3f5" xml:space="preserve">  SLURM_TIME_FORMAT=standard</text>
+  <path d="M365.8,329.8 C371.0,333.6 375.2,339.3 379.4,343.9" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M366.3,343.7 C370.4,339.3 374.8,335.3 380.0,330.3" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <text x="389.0" y="342.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">never <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">--duplicates</tspan></text>
+  <text x="495.0" y="385.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">2 · one <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="16.7">sacct</tspan> call</text>
+  <text x="355.0" y="415.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">a new 16-character delimiter</text>
+  <text x="355.0" y="436.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">per call, letters and digits</text>
+  <text x="355.0" y="457.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">the server user's own jobs only</text>
+  <text x="355.0" y="478.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">one call in flight, one per 60 s</text>
+  <path d="M660.0,167.0 L896.0,167.0 L896.0,189.0 L660.0,189.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M659.8,167.1 C738.9,166.9 817.4,166.6 895.9,167.1" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M896.1,166.9 C895.8,174.6 895.9,181.3 896.1,188.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M895.9,189.0 C817.4,189.0 738.3,189.4 660.0,188.8" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M660.1,189.2 C659.6,181.6 659.9,174.3 659.9,167.0" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <text x="668.0" y="183.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">123</tspan>   <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">/w</tspan>   after launch</text>
+  <path d="M908.9,178.1 C910.2,179.4 911.9,182.2 913.8,183.8" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M913.6,183.8 C917.0,179.9 920.0,175.7 923.0,170.8" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M682.0,197.0 L896.0,197.0 L896.0,219.0 L682.0,219.0 Z" fill="#f1f3f5" stroke="none"/>
+  <path d="M681.9,197.1 C753.5,197.3 824.4,196.7 896.1,196.8" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M896.2,197.1 C895.7,204.0 896.0,211.8 895.9,219.0" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M895.9,218.9 C824.6,219.0 753.1,218.6 681.9,219.2" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M682.0,219.0 C682.0,211.9 681.9,204.2 682.0,197.0" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <text x="690.0" y="213.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">123.batch</tspan>   CPU, memory</text>
+  <path d="M909.2,208.2 C911.0,210.1 912.3,211.7 914.0,213.7" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M913.8,213.7 C916.7,209.6 920.1,204.7 922.8,200.9" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M660.0,227.0 L896.0,227.0 L896.0,249.0 L660.0,249.0 Z" fill="#ffe3e3" stroke="none"/>
+  <path d="M660.1,227.0 C739.0,226.7 817.4,227.0 896.2,227.0" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M896.1,227.2 C896.2,234.2 896.3,241.7 896.2,249.2" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M895.9,249.1 C817.6,249.0 738.8,248.6 659.9,248.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M660.2,248.9 C659.9,241.3 659.9,234.1 660.2,227.0" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <text x="668.0" y="243.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">123</tspan>   <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">/x</tspan></text>
+  <path d="M909.2,230.5 C913.7,234.7 917.3,241.2 922.9,245.1" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M909.0,244.9 C912.7,239.5 919.0,236.1 923.0,231.2" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M660.0,257.0 L896.0,257.0 L896.0,279.0 L660.0,279.0 Z" fill="#ffe3e3" stroke="none"/>
+  <path d="M660.0,256.8 C738.9,256.7 817.4,256.9 895.9,256.8" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M896.0,257.1 C895.8,264.5 895.6,271.5 895.9,278.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M896.0,278.8 C817.6,279.0 738.3,279.0 660.2,278.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M660.0,278.8 C659.7,271.6 660.0,264.1 659.9,257.0" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <text x="668.0" y="273.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">123</tspan>   <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">/w</tspan>   before launch</text>
+  <path d="M908.5,260.5 C914.0,266.0 919.4,269.5 923.5,275.6" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M909.1,274.9 C912.6,269.8 918.2,265.0 923.5,261.4" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M660.0,287.0 L896.0,287.0 L896.0,309.0 L660.0,309.0 Z" fill="#ffe3e3" stroke="none"/>
+  <path d="M660.0,287.1 C738.6,287.0 817.0,287.4 896.1,286.8" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M895.8,287.0 C896.2,294.5 896.1,301.4 896.1,309.1" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M896.1,309.0 C817.3,308.9 738.3,309.1 660.2,309.1" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M659.8,309.1 C659.7,301.8 660.4,294.0 659.8,286.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <text x="668.0" y="303.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">/w</tspan> cut by a newline</text>
+  <path d="M908.7,291.1 C914.8,296.7 918.7,299.3 922.5,304.5" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M909.4,304.9 C912.7,301.2 917.5,296.1 922.9,290.7" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <text x="660.0" y="335.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">dropped: other WorkDir, counted</text>
+  <text x="800.0" y="385.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">3 · each line, bound</text>
+  <text x="660.0" y="415.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">WorkDir <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">normpath</tspan>ed, never resolved</text>
+  <text x="660.0" y="436.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">Submit at most 300 s before launch</text>
+  <text x="660.0" y="457.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">a step joins the job line before it</text>
+  <text x="660.0" y="478.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">WorkDir</tspan> before <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">Submit</tspan>, not last</text>
+  <text x="965.0" y="177.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">before</text>
+  <path d="M1017.0,165.0 L1117.0,165.0 L1117.0,185.0 L1017.0,185.0 Z" fill="#f1f3f5" stroke="none"/>
+  <path d="M1017.1,164.9 C1050.5,165.1 1083.3,165.4 1117.2,164.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1117.0,165.2 C1117.3,172.0 1117.0,178.6 1117.1,184.8" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1116.8,185.0 C1083.8,185.1 1050.1,185.2 1017.0,185.1" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1017.0,184.9 C1017.1,178.0 1017.3,171.7 1016.9,164.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <text x="1025.0" y="179.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal">RESIZING</text>
+  <path d="M1017.0,189.0 L1117.0,189.0 L1117.0,209.0 L1017.0,209.0 Z" fill="#f1f3f5" stroke="none"/>
+  <path d="M1017.1,189.0 C1050.6,189.3 1084.0,188.8 1116.9,188.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1116.9,189.1 C1116.9,195.6 1117.1,202.7 1117.1,209.0" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1116.9,209.0 C1083.4,209.2 1050.0,209.2 1016.9,209.0" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1017.0,209.0 C1017.1,202.7 1017.0,195.9 1017.1,188.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <text x="1025.0" y="203.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal">COMPLETED</text>
+  <path d="M1122.7,187.6 C1131.8,188.0 1140.1,188.0 1148.1,186.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1122.4,187.8 C1132.0,187.5 1139.7,185.2 1149.1,186.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1149.0,187.1 C1145.8,185.5 1140.9,183.1 1136.2,180.6" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1149.5,187.0 C1145.1,189.0 1141.7,191.9 1136.3,193.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1155.4,179.3 C1161.2,185.2 1165.9,189.0 1170.9,195.5" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M1155.5,194.5 C1159.3,189.7 1166.6,183.4 1170.6,179.0" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1177.0" y="192.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">no row</text>
+  <path d="M965.1,222.9 C1058.1,223.2 1151.4,223.2 1245.1,222.9" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round"/>
+  <text x="965.0" y="249.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">now</text>
+  <path d="M1017.0,237.0 L1117.0,237.0 L1117.0,257.0 L1017.0,257.0 Z" fill="#f1f3f5" stroke="none"/>
+  <path d="M1017.0,237.1 C1050.1,237.1 1083.6,237.3 1116.9,237.2" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1116.8,237.0 C1117.3,243.3 1117.2,250.5 1116.8,257.0" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1117.0,256.9 C1083.5,256.7 1050.7,257.1 1017.1,257.1" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1017.2,256.8 C1016.7,250.1 1017.3,243.4 1017.1,236.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <text x="1025.0" y="251.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal">RESIZING</text>
+  <path d="M1021.1,247.1 C1051.7,247.1 1082.5,247.3 1113.1,247.1" fill="none" stroke="#c92a2a" stroke-width="1.6" stroke-linecap="round"/>
+  <path d="M1017.0,261.0 L1117.0,261.0 L1117.0,281.0 L1017.0,281.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M1017.0,261.2 C1050.4,261.0 1083.9,261.3 1117.1,261.1" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1117.0,260.9 C1117.0,267.5 1116.8,273.9 1116.9,280.8" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1117.1,280.9 C1083.5,280.9 1050.5,280.6 1016.9,280.9" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <path d="M1016.8,280.8 C1016.6,274.5 1017.0,267.5 1017.1,260.8" fill="none" stroke="#1e1e1e" stroke-width="1.1" stroke-linecap="round"/>
+  <text x="1025.0" y="275.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal">COMPLETED</text>
+  <path d="M1122.1,272.0 C1132.4,272.9 1139.2,272.9 1148.0,270.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1123.8,271.5 C1132.9,272.6 1138.6,271.4 1148.7,271.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1148.9,270.8 C1144.1,268.2 1140.1,266.3 1136.6,264.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1148.7,271.3 C1144.5,272.2 1139.9,275.6 1136.4,277.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1156.3,270.9 C1157.9,273.0 1159.4,275.1 1160.8,276.6" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M1160.5,276.4 C1164.1,272.7 1167.2,267.9 1170.0,264.1" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="1177.0" y="269.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">the row,</text>
+  <text x="1177.0" y="287.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">CPU and</text>
+  <text x="1177.0" y="305.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">memory None</text>
+  <text x="965.0" y="335.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">a forged line no longer removes it</text>
+  <text x="1105.0" y="385.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">4 · one row per job and dir</text>
+  <text x="965.0" y="415.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">RESIZING records left out</text>
+  <text x="965.0" y="436.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">one final record: the row</text>
+  <text x="965.0" y="457.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">two final records: still no row</text>
+  <text x="965.0" y="478.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">SEC-P3T34-04 and -06 answered</text>
+  <path d="M1316.0,201.0 L1315.6,204.6 L1314.4,207.9 L1312.5,211.0 L1310.0,213.5 L1306.9,215.4 L1303.6,216.6 L1300.0,217.0 L1296.4,216.6 L1293.1,215.4 L1290.0,213.5 L1287.5,211.0 L1285.6,207.9 L1284.4,204.6 L1284.0,201.0 L1284.4,197.4 L1285.6,194.1 L1287.5,191.0 L1290.0,188.5 L1293.1,186.6 L1296.4,185.4 L1300.0,185.0 L1303.6,185.4 L1306.9,186.6 L1310.0,188.5 L1312.5,191.0 L1314.4,194.1 L1315.6,197.4 Z" fill="#fff9db" stroke="none"/>
+  <path d="M1315.9,201.0 C1315.5,202.1 1315.9,203.4 1315.6,204.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1315.5,204.5 C1315.4,206.0 1315.0,206.8 1314.5,207.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1314.5,208.0 C1313.8,208.7 1313.3,209.7 1312.5,210.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1312.5,210.9 C1311.9,212.0 1310.6,212.9 1309.8,213.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1310.1,213.5 C1309.0,214.4 1307.8,214.6 1307.0,215.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1306.8,215.6 C1305.8,216.1 1304.4,216.5 1303.5,216.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1303.6,216.7 C1302.6,216.9 1300.9,217.1 1299.8,217.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1300.0,217.0 C1298.6,217.1 1297.8,217.0 1296.6,216.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1296.3,216.5 C1295.6,216.1 1294.2,216.0 1293.1,215.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1292.9,215.5 C1292.0,214.9 1290.8,214.0 1290.2,213.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1290.2,213.6 C1289.4,212.8 1288.0,211.6 1287.4,210.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1287.4,211.1 C1286.5,209.8 1286.4,209.0 1285.4,207.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1285.5,208.1 C1285.4,207.1 1285.0,205.8 1284.5,204.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1284.3,204.7 C1284.3,203.1 1284.3,202.2 1284.0,201.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1283.9,201.0 C1284.1,199.9 1284.0,198.4 1284.3,197.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1284.3,197.4 C1284.8,196.4 1284.9,195.3 1285.4,194.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1285.7,194.2 C1286.3,192.9 1287.1,192.3 1287.6,190.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1287.6,190.9 C1288.1,190.4 1289.3,189.4 1290.2,188.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1290.1,188.6 C1291.0,188.2 1292.1,187.0 1293.0,186.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1293.1,186.4 C1293.9,186.0 1295.0,185.9 1296.5,185.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1296.4,185.5 C1297.7,185.2 1298.5,185.2 1299.9,185.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1300.2,184.9 C1300.9,185.0 1302.3,185.2 1303.4,185.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1303.4,185.3 C1304.5,185.9 1305.5,186.5 1306.9,186.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1306.9,186.6 C1308.3,187.3 1309.2,187.9 1309.8,188.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1310.1,188.5 C1310.9,189.3 1311.7,190.2 1312.6,190.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1312.5,191.1 C1313.4,192.3 1313.7,193.3 1314.3,193.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1314.2,194.1 C1314.8,195.1 1315.3,196.7 1315.5,197.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1315.6,197.3 C1315.7,198.9 1315.9,200.1 1316.0,201.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="1300.0" y="206.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="middle" font-weight="normal">1</text>
+  <path d="M1368.0,201.0 L1367.6,204.6 L1366.4,207.9 L1364.5,211.0 L1362.0,213.5 L1358.9,215.4 L1355.6,216.6 L1352.0,217.0 L1348.4,216.6 L1345.1,215.4 L1342.0,213.5 L1339.5,211.0 L1337.6,207.9 L1336.4,204.6 L1336.0,201.0 L1336.4,197.4 L1337.6,194.1 L1339.5,191.0 L1342.0,188.5 L1345.1,186.6 L1348.4,185.4 L1352.0,185.0 L1355.6,185.4 L1358.9,186.6 L1362.0,188.5 L1364.5,191.0 L1366.4,194.1 L1367.6,197.4 Z" fill="#fff9db" stroke="none"/>
+  <path d="M1368.0,200.9 C1368.1,202.4 1367.8,203.2 1367.7,204.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1367.7,204.6 C1367.3,205.4 1366.8,207.0 1366.5,207.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1366.5,207.8 C1365.5,209.3 1365.0,210.1 1364.3,210.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1364.6,211.1 C1363.5,212.1 1363.0,213.0 1362.1,213.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1361.9,213.5 C1360.9,214.4 1359.7,214.7 1359.1,215.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1359.1,215.4 C1358.1,215.5 1356.7,216.2 1355.6,216.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1355.4,216.7 C1354.3,216.8 1353.0,216.9 1351.8,217.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1351.8,217.0 C1350.9,216.6 1349.9,216.7 1348.3,216.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1348.5,216.8 C1347.3,216.3 1346.5,215.9 1345.1,215.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1345.0,215.3 C1344.4,214.8 1343.2,214.5 1342.0,213.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1342.1,213.6 C1341.3,213.0 1340.0,211.5 1339.5,210.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1339.6,211.0 C1338.6,209.7 1338.3,208.7 1337.6,207.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1337.5,208.1 C1337.1,206.7 1336.5,205.6 1336.3,204.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1336.5,204.7 C1336.0,203.2 1335.9,202.0 1336.2,201.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1336.1,201.0 C1336.4,200.0 1336.3,199.0 1336.5,197.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1336.5,197.6 C1336.5,196.4 1336.9,195.5 1337.5,194.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1337.5,193.9 C1338.4,193.4 1338.7,192.2 1339.5,191.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1339.6,191.0 C1340.4,190.0 1341.4,189.4 1341.9,188.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1341.9,188.4 C1342.7,187.6 1344.0,187.3 1345.1,186.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1344.9,186.6 C1345.9,186.0 1347.0,185.5 1348.6,185.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1348.5,185.5 C1349.8,185.2 1350.8,185.2 1352.1,184.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1351.9,184.9 C1353.4,185.1 1354.7,185.5 1355.7,185.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1355.7,185.5 C1356.9,186.0 1357.6,186.4 1359.0,186.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1359.1,186.7 C1359.6,187.3 1361.2,187.9 1362.0,188.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1362.0,188.3 C1362.6,189.6 1363.5,190.5 1364.4,191.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1364.5,191.1 C1365.3,192.3 1365.7,193.3 1366.5,194.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1366.6,194.0 C1367.1,195.5 1367.4,196.6 1367.7,197.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1367.8,197.3 C1367.6,198.5 1367.7,199.8 1368.1,201.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="1352.0" y="206.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="middle" font-weight="normal">2</text>
+  <path d="M1420.0,201.0 L1419.6,204.6 L1418.4,207.9 L1416.5,211.0 L1414.0,213.5 L1410.9,215.4 L1407.6,216.6 L1404.0,217.0 L1400.4,216.6 L1397.1,215.4 L1394.0,213.5 L1391.5,211.0 L1389.6,207.9 L1388.4,204.6 L1388.0,201.0 L1388.4,197.4 L1389.6,194.1 L1391.5,191.0 L1394.0,188.5 L1397.1,186.6 L1400.4,185.4 L1404.0,185.0 L1407.6,185.4 L1410.9,186.6 L1414.0,188.5 L1416.5,191.0 L1418.4,194.1 L1419.6,197.4 Z" fill="#fff9db" stroke="none"/>
+  <path d="M1420.0,200.9 C1420.1,202.1 1420.0,203.5 1419.6,204.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1419.6,204.5 C1419.3,205.4 1418.8,206.7 1418.5,208.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1418.4,207.9 C1417.9,208.6 1417.3,210.2 1416.5,210.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1416.6,211.0 C1415.7,212.1 1414.7,212.4 1413.9,213.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1413.8,213.5 C1413.0,214.0 1411.8,214.6 1411.1,215.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1410.9,215.5 C1409.9,216.0 1408.6,216.4 1407.5,216.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1407.4,216.4 C1406.6,216.8 1405.2,216.6 1404.0,217.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1403.9,217.0 C1402.6,216.6 1401.6,217.0 1400.3,216.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1400.6,216.7 C1399.3,216.3 1398.2,216.1 1396.9,215.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1397.2,215.6 C1396.1,214.7 1394.7,214.5 1394.1,213.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1393.9,213.5 C1393.2,212.7 1392.5,212.1 1391.6,210.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1391.6,211.1 C1390.9,210.0 1390.2,208.9 1389.7,207.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1389.6,207.9 C1389.0,207.0 1388.7,205.8 1388.6,204.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1388.3,204.6 C1388.5,203.4 1388.4,202.4 1388.1,201.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1388.0,201.0 C1388.3,199.6 1388.2,198.3 1388.3,197.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1388.3,197.5 C1388.6,196.3 1389.4,195.4 1389.5,194.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1389.7,193.9 C1390.3,192.7 1390.6,191.8 1391.6,191.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1391.5,191.2 C1392.4,190.4 1393.2,189.0 1394.1,188.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1394.2,188.5 C1395.3,188.1 1396.3,187.5 1397.0,186.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1397.1,186.7 C1398.1,186.5 1399.3,185.5 1400.5,185.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1400.5,185.5 C1401.6,185.2 1403.0,185.3 1404.0,185.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1403.9,185.0 C1405.0,185.3 1406.5,185.6 1407.6,185.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1407.5,185.5 C1409.0,186.0 1409.7,185.9 1411.1,186.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1410.8,186.5 C1411.9,187.4 1413.2,187.6 1414.0,188.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1413.9,188.5 C1415.1,189.4 1415.6,190.4 1416.5,191.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1416.4,190.9 C1417.5,192.2 1417.9,193.4 1418.4,194.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1418.4,194.0 C1419.0,195.5 1419.2,196.1 1419.5,197.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1419.7,197.5 C1419.8,198.9 1420.1,199.6 1419.8,200.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="1404.0" y="206.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="middle" font-weight="normal">3</text>
+  <path d="M1446.8,201.7 C1454.2,200.3 1466.1,201.6 1473.3,201.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1446.2,201.2 C1454.2,202.9 1466.4,199.2 1473.8,201.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1474.4,200.7 C1469.8,198.8 1465.3,195.8 1461.5,194.6" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1474.3,201.3 C1470.3,202.7 1466.2,204.6 1461.4,208.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <text x="1512.0" y="206.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="middle" font-weight="normal">None</text>
+  <text x="1352.0" y="241.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">calls with no row</text>
+  <path d="M1276.0,261.0 L1304.0,261.0 L1316.0,273.0 L1316.0,313.0 L1276.0,313.0 Z" fill="#ffffff" stroke="none"/>
+  <path d="M1275.8,260.8 C1285.4,261.2 1294.8,261.7 1303.6,260.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1303.7,260.8 C1307.9,265.4 1312.2,269.1 1315.9,272.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1315.8,272.8 C1316.8,285.6 1316.7,299.4 1315.7,313.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1315.7,313.1 C1302.0,312.4 1290.1,312.9 1276.0,312.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1276.0,312.8 C1276.7,295.5 1276.5,278.2 1276.2,261.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1304.2,260.6 C1303.3,265.3 1303.7,268.8 1303.9,272.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1304.2,272.8 C1308.4,273.4 1312.4,273.3 1316.1,272.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1280.9,279.2 C1290.6,279.5 1300.3,278.8 1309.9,279.2" fill="none" stroke="#adb5bd" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1280.9,288.1 C1290.9,288.3 1300.7,288.0 1310.0,288.2" fill="none" stroke="#adb5bd" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="1326.0" y="281.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">sacct.json</tspan>, format</text>
+  <text x="1326.0" y="301.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">unchanged</text>
+  <text x="1410.0" y="385.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">5 · asked again, then kept</text>
+  <text x="1270.0" y="415.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">no row: up to 3 calls, then None</text>
+  <text x="1270.0" y="436.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">asked during a call: queued again,</text>
+  <text x="1270.0" y="457.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">no try counted, CON-PRE-16</text>
+  <text x="1270.0" y="478.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">dropped lines logged once per run</text>
+  <path d="M332.0,234.1 C339.8,233.6 346.5,233.6 352.9,234.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M331.4,235.9 C340.4,234.1 345.3,234.9 352.9,234.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M351.8,235.3 C347.7,232.6 343.5,230.2 339.9,228.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M352.3,234.9 C348.3,237.9 342.8,239.1 340.0,241.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M636.7,234.4 C643.2,237.0 650.6,235.6 657.1,234.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M636.4,234.5 C642.2,236.2 651.1,236.7 656.5,235.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M657.0,234.9 C653.1,233.1 649.0,230.7 644.8,228.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M656.9,235.2 C653.0,237.0 648.9,240.0 644.4,241.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M942.7,234.8 C948.7,234.4 954.6,236.0 961.0,235.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M941.8,235.9 C950.6,235.7 955.0,234.7 962.3,235.6" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M961.7,235.0 C958.7,233.5 954.1,231.4 950.1,227.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M961.9,234.8 C957.3,238.0 954.7,238.6 949.5,241.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1247.5,235.3 C1254.1,234.0 1260.9,236.6 1266.0,235.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1246.9,235.2 C1255.4,235.0 1260.1,236.6 1267.3,234.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1267.3,235.0 C1263.8,231.9 1259.3,230.5 1254.8,228.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1267.2,234.6 C1262.5,238.1 1258.4,239.6 1254.5,241.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M50.0,505.0 L330.0,505.0 L330.0,596.0 L50.0,596.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M50.0,504.8 C143.5,505.0 236.2,505.1 330.1,504.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M329.9,504.9 C330.4,535.7 329.8,565.9 329.9,595.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M330.1,595.9 C236.9,596.2 143.6,595.8 49.8,595.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M50.0,595.9 C50.4,565.9 50.5,534.9 49.9,505.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M59.8,518.2 C61.8,519.6 62.9,521.1 63.7,522.9" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M64.3,522.9 C67.2,519.5 68.8,515.8 72.3,512.2" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="82.0" y="523.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="bold">CON-PRE-14</text>
+  <text x="320.0" y="523.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">major, pre-review</text>
+  <text x="62.0" y="545.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">Slurm may record a resolved WorkDir</text>
+  <text x="62.0" y="564.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">where the engine gives a symlink</text>
+  <text x="62.0" y="583.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">built: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">normpath</tspan> and <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">realpath</tspan> both</text>
+  <path d="M50.0,606.0 L330.0,606.0 L330.0,697.0 L50.0,697.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M49.9,605.8 C143.6,606.3 236.7,606.2 330.2,605.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M330.1,606.2 C329.6,636.6 330.1,666.7 329.9,696.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M329.9,696.8 C236.7,697.5 143.4,697.1 49.9,697.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M50.0,697.0 C49.9,666.4 50.1,636.8 50.0,606.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M60.2,619.0 C61.8,621.1 62.1,622.1 64.0,623.9" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M64.3,623.6 C66.2,620.5 69.9,616.5 72.0,612.8" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="82.0" y="624.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="bold">CR-P3FU53-01 r1</text>
+  <text x="320.0" y="624.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">major</text>
+  <text x="62.0" y="646.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">no per-run guard: a slow file system</text>
+  <text x="62.0" y="665.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">got another 500 <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">realpath</tspan> per view</text>
+  <text x="62.0" y="684.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">fixed in e97cfdf, one resolve per run</text>
+  <path d="M50.0,707.0 L330.0,707.0 L330.0,798.0 L50.0,798.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M50.1,707.1 C143.1,707.0 236.7,706.6 329.9,707.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M329.8,707.2 C329.5,736.9 330.1,768.1 330.2,798.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M330.2,797.8 C236.4,798.4 143.3,798.4 50.1,797.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M49.8,797.9 C49.8,767.4 49.6,737.1 49.8,706.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M59.9,719.9 C61.6,722.2 62.3,723.5 63.9,724.7" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M63.7,724.8 C66.8,721.3 69.8,717.1 72.3,714.2" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="82.0" y="725.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="bold">SEC-P3FU53-01 r1</text>
+  <text x="320.0" y="725.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">major</text>
+  <text x="62.0" y="747.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">IDs never queued were resolved</text>
+  <text x="62.0" y="766.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">on every view: real jobs starved</text>
+  <text x="62.0" y="785.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">fixed in e97cfdf, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">JOB_ID</tspan> first</text>
+  <rect x="355.0" y="505.0" width="280.0" height="77.0" rx="4" fill="#f1f3f5" fill-opacity="0.45"/>
+  <path d="M355.4,505.0 C448.6,504.9 542.5,504.4 635.1,504.8" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M635.2,505.3 C635.3,529.7 634.6,555.5 634.6,582.1" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M634.6,582.4 C541.6,582.4 448.9,582.0 354.8,581.8" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M355.1,582.4 C355.5,555.5 355.9,530.0 354.5,504.6" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="367.0" y="529.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">open, FU-P3-62: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">realpath</tspan> follows</text>
+  <text x="367.0" y="550.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">links the pipeline makes,</text>
+  <text x="367.0" y="571.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">SEC-P3FU53-03 r1 and r2, minor</text>
+  <rect x="660.0" y="505.0" width="280.0" height="77.0" rx="4" fill="#f1f3f5" fill-opacity="0.45"/>
+  <path d="M660.4,505.3 C753.2,504.4 846.9,505.8 939.8,505.4" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M939.7,504.6 C939.2,530.5 940.5,556.9 939.7,582.2" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M939.5,582.0 C847.1,581.3 752.5,582.3 660.0,581.9" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M659.7,581.7 C660.8,556.8 659.2,531.3 660.2,505.3" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="672.0" y="529.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">fixed in 2af08fe, SEC-P3FU53-02:</text>
+  <text x="672.0" y="550.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">a newline in WorkDir bound a cut</text>
+  <text x="672.0" y="571.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">/w</tspan>; only the newline is tested</text>
+  <rect x="965.0" y="505.0" width="280.0" height="77.0" rx="4" fill="#f1f3f5" fill-opacity="0.45"/>
+  <path d="M965.2,504.7 C1058.8,505.3 1150.8,505.3 1245.3,505.1" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1245.2,505.1 C1245.4,529.9 1245.5,556.0 1244.7,582.4" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1245.4,582.5 C1151.5,581.6 1058.8,582.2 965.2,582.3" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M965.5,582.4 C964.4,556.8 965.9,530.8 965.2,504.8" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="977.0" y="529.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">3 rounds: code-reviewer changes,</text>
+  <text x="977.0" y="550.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">approve, approve; security-reviewer</text>
+  <text x="977.0" y="571.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">changes, approve, approve</text>
+  <rect x="1270.0" y="505.0" width="280.0" height="98.0" rx="4" fill="#f1f3f5" fill-opacity="0.45"/>
+  <path d="M1270.0,504.8 C1364.3,505.0 1457.4,505.3 1550.3,505.3" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1549.7,505.4 C1549.1,538.1 1550.7,569.4 1550.3,602.5" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1549.7,603.5 C1456.4,602.3 1363.2,602.3 1270.1,603.3" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1270.2,602.5 C1269.3,569.7 1269.5,538.0 1270.5,504.9" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="1282.0" y="529.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">not run: the <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">slurm-mini</tspan> cases,</text>
+  <text x="1282.0" y="550.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">FU-P3-60; <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">sacct</tspan> output in the</text>
+  <text x="1282.0" y="571.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">tests is synthetic, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">TZ</tspan> to be</text>
+  <text x="1282.0" y="592.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">validated</text>
+  <path d="M30.7,899.5 C542.0,901.4 1057.4,898.0 1569.9,899.6" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M30.4,900.3 C543.3,900.4 1057.0,898.2 1569.8,900.4" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="50.0" y="890.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#5c5c5c" text-anchor="start" font-weight="normal">P3-fu44, PR 157 · <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">spectio serve --detach</tspan> starts the server in the tmux session <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.3">spectio-server</tspan> and prints the link in the calling terminal, never in the pane</text>
+  <rect x="50.0" y="925.0" width="280.0" height="64.0" rx="5" fill="#1e1e1e"/>
+  <path d="M50.2,924.6 C142.7,924.7 238.2,925.5 330.8,925.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M50.4,924.8 C142.4,926.4 237.8,924.0 329.4,924.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M329.8,925.8 C330.5,946.8 328.7,966.6 329.5,989.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M329.4,925.2 C330.9,945.4 328.8,969.0 329.8,989.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M329.4,989.1 C235.4,987.4 144.3,989.2 50.4,989.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M330.5,989.5 C236.7,987.6 143.2,990.6 50.7,989.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M49.2,988.4 C49.4,966.4 50.1,947.3 49.2,925.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M49.5,989.6 C51.4,967.5 51.2,947.3 49.5,924.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="65.0" cy="939.0" r="4.5" fill="#ff8787"/>
+  <circle cx="79.0" cy="939.0" r="4.5" fill="#ffd43b"/>
+  <circle cx="93.0" cy="939.0" r="4.5" fill="#69db7c"/>
+  <text x="64.0" y="969.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12.5" fill="#f1f3f5" xml:space="preserve">$ spectio serve --detach</text>
+  <text x="50.0" y="1015.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">login.new_link</tspan> first:</text>
+  <path d="M53.0,1033.2 C54.3,1034.6 55.4,1035.2 56.5,1036.8" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M56.2,1036.8 C58.3,1034.3 60.9,1030.4 62.9,1027.7" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="72.0" y="1037.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">a link: print it, exit 0</text>
+  <path d="M53.4,1049.4 C56.2,1052.7 58.7,1055.4 62.6,1059.1" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M53.1,1058.5 C56.2,1055.3 60.6,1052.3 63.6,1049.2" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <text x="72.0" y="1058.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">other node: exit 2, or <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">--force</tspan></text>
+  <path d="M52.8,1070.5 C56.5,1072.6 58.9,1076.0 62.7,1080.3" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M52.7,1079.7 C57.3,1077.6 59.0,1074.0 63.0,1069.5" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <text x="72.0" y="1079.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">port held by another uid: exit 2</text>
+  <path d="M52.0,1090.0 L64.0,1090.0 L58.0,1096.0 Z" fill="#fff9db" stroke="none"/>
+  <path d="M51.8,1090.0 C55.9,1089.8 59.4,1089.4 64.0,1090.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M63.8,1090.4 C62.7,1092.5 59.8,1093.7 57.8,1096.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M58.2,1096.4 C56.5,1094.2 53.3,1092.6 52.4,1090.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M58.0,1096.0 L64.0,1102.0 L52.0,1102.0 Z" fill="#fff9db" stroke="none"/>
+  <path d="M58.0,1096.4 C60.0,1098.5 61.6,1099.3 63.7,1102.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M63.7,1101.9 C60.8,1102.3 56.1,1102.5 51.7,1102.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M51.8,1102.3 C53.7,1099.2 55.2,1098.2 57.8,1095.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="72.0" y="1100.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">starting: wait, start nothing</text>
+  <text x="190.0" y="1145.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">6 · a server already runs</text>
+  <text x="50.0" y="1175.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">a foreground <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">spectio serve</tspan> counts</text>
+  <text x="50.0" y="1196.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">none runs: start one in tmux</text>
+  <text x="50.0" y="1217.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">tmux 2.1 or later, else exit 2</text>
+  <text x="50.0" y="1238.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">spectio_server</tspan> importable first</text>
+  <path d="M359.0,925.0 L527.0,925.0 L539.0,937.0 L539.0,1057.0 L359.0,1057.0 Z" fill="#e7f5ff" stroke="none"/>
+  <path d="M359.4,925.2 C415.5,924.6 471.5,925.4 527.1,925.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M526.7,925.1 C530.5,929.4 535.2,933.1 538.7,937.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M538.7,936.9 C539.0,977.2 538.9,1017.4 538.7,1056.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M539.0,1057.3 C478.8,1056.7 419.0,1057.0 359.1,1057.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M358.7,1057.4 C358.2,1012.4 358.3,969.4 358.8,925.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M527.1,924.6 C527.2,928.5 527.7,932.4 527.3,936.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M527.4,936.6 C530.3,936.7 535.0,936.6 539.2,937.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="369.0" y="953.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">/usr/bin/env -i</tspan></text>
+  <text x="369.0" y="981.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">NAME=value</tspan>, allowed</text>
+  <text x="369.0" y="1009.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">python -P -m spectio</tspan></text>
+  <text x="369.0" y="1037.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">serve --pane</tspan></text>
+  <path d="M603.1,965.0 C604.5,965.0 606.3,965.0 608.0,965.0" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M598.3,976.4 C599.7,977.6 600.7,978.5 601.8,979.7" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M587.1,981.1 C586.9,982.7 586.7,984.3 587.0,985.9" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M575.7,976.4 C574.7,977.5 573.5,978.4 572.1,979.8" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M571.0,965.0 C569.1,964.7 567.8,965.1 565.9,965.1" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M575.7,953.7 C574.7,952.4 573.3,951.6 572.2,950.3" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M586.9,949.0 C587.0,947.3 587.2,945.8 587.1,943.9" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M598.4,953.8 C599.2,952.5 600.8,951.3 601.7,950.1" fill="none" stroke="#1e1e1e" stroke-width="3" stroke-linecap="round"/>
+  <path d="M603.0,965.0 L602.6,968.6 L601.4,971.9 L599.5,975.0 L597.0,977.5 L593.9,979.4 L590.6,980.6 L587.0,981.0 L583.4,980.6 L580.1,979.4 L577.0,977.5 L574.5,975.0 L572.6,971.9 L571.4,968.6 L571.0,965.0 L571.4,961.4 L572.6,958.1 L574.5,955.0 L577.0,952.5 L580.1,950.6 L583.4,949.4 L587.0,949.0 L590.6,949.4 L593.9,950.6 L597.0,952.5 L599.5,955.0 L601.4,958.1 L602.6,961.4 Z" fill="#f1f3f5" stroke="none"/>
+  <path d="M603.1,965.0 C602.9,966.2 602.7,967.5 602.6,968.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M602.6,968.7 C602.2,969.4 601.5,970.9 601.4,972.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M601.5,971.9 C600.8,973.0 599.9,973.9 599.7,974.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M599.4,974.8 C598.6,976.2 597.6,976.9 596.9,977.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M597.1,977.4 C596.1,977.9 595.3,978.5 593.8,979.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M594.1,979.4 C593.1,979.7 592.0,980.0 590.5,980.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M590.5,980.5 C589.3,980.6 588.3,980.7 587.0,980.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M586.9,981.2 C585.6,980.8 584.5,980.7 583.4,980.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M583.6,980.6 C582.2,980.1 581.4,979.9 579.9,979.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M580.0,979.4 C578.8,978.6 577.9,978.4 577.0,977.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M577.0,977.6 C576.4,976.5 575.1,975.7 574.5,974.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M574.6,975.1 C573.6,973.8 573.0,972.9 572.5,971.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M572.5,972.0 C572.4,970.9 571.7,969.7 571.4,968.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M571.4,968.6 C571.3,967.1 571.3,966.3 570.9,964.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M571.1,964.9 C570.8,963.6 571.6,962.7 571.3,961.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M571.4,961.3 C571.5,960.2 572.4,959.4 572.7,958.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M572.6,958.2 C573.5,957.4 574.2,955.8 574.3,955.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M574.4,954.9 C575.7,954.1 575.9,953.6 577.0,952.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M577.1,952.6 C578.2,951.5 579.3,951.1 579.9,950.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M579.9,950.7 C581.3,950.0 582.2,949.8 583.5,949.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M583.3,949.2 C584.8,949.1 586.0,949.0 587.0,949.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M587.0,948.9 C588.3,949.1 589.7,949.1 590.6,949.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M590.5,949.3 C591.7,949.8 592.5,950.5 594.1,950.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M594.0,950.7 C594.6,951.4 595.7,952.0 596.8,952.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M597.1,952.5 C597.5,953.7 598.8,954.0 599.5,955.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M599.5,955.1 C600.1,956.2 601.0,957.2 601.3,958.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M601.5,958.1 C601.6,959.3 602.0,960.3 602.7,961.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M602.6,961.3 C602.9,963.0 602.6,964.0 603.2,965.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M592.9,964.9 C592.7,965.2 592.7,965.6 592.8,966.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M592.8,966.5 C592.6,967.0 592.4,967.4 592.4,967.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M592.6,967.5 C592.3,968.4 592.0,968.1 591.9,968.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M591.8,968.7 C591.8,969.4 591.1,969.6 590.8,969.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M590.8,969.8 C590.4,969.9 590.0,970.0 589.7,970.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M589.8,970.6 C589.0,971.0 588.5,970.5 588.3,970.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M588.4,971.0 C587.8,971.0 587.3,971.2 587.1,971.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M587.1,971.0 C586.7,971.1 586.4,971.1 585.6,971.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M585.8,970.8 C584.9,970.5 584.7,970.6 584.4,970.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M584.5,970.5 C584.1,969.9 583.7,970.3 583.2,969.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M583.2,969.9 C583.1,969.3 582.4,969.0 582.3,968.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M582.3,969.0 C582.1,968.5 581.6,968.0 581.4,967.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M581.5,967.7 C581.2,967.4 581.2,966.7 581.0,966.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M581.1,966.5 C580.8,965.8 580.9,965.5 581.1,964.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M581.0,964.9 C580.8,964.2 580.8,964.4 581.0,963.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M581.0,963.7 C581.3,963.2 581.1,962.9 581.4,962.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M581.5,962.2 C582.0,962.2 581.8,961.5 582.2,961.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M582.3,961.1 C582.9,960.6 582.8,960.4 583.2,960.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M583.3,960.1 C583.4,960.0 583.9,959.4 584.3,959.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M584.4,959.4 C584.6,959.4 585.2,959.0 585.5,958.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M585.8,959.1 C586.4,958.8 586.7,958.7 587.0,959.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M587.0,958.9 C587.3,959.0 588.2,959.1 588.5,959.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M588.3,959.2 C588.5,959.6 588.9,959.1 589.8,959.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M589.5,959.6 C590.2,959.9 590.2,960.1 590.9,960.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M590.6,960.3 C591.4,960.8 591.6,960.5 591.7,961.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M591.8,961.4 C591.7,961.7 592.4,961.7 592.5,962.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M592.3,962.4 C592.8,963.1 592.6,963.1 592.8,963.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M592.8,963.6 C593.0,964.2 592.8,964.4 593.0,964.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M567.0,945.0 C580.0,957.9 592.8,971.1 607.4,984.4" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M567.3,985.1 C581.3,971.3 594.2,957.2 607.1,944.8" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <text x="587.0" y="1007.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">tmux's global</text>
+  <text x="587.0" y="1025.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="middle" font-weight="normal">environment</text>
+  <text x="355.0" y="1085.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">argv words, no shell, no secret</text>
+  <text x="495.0" y="1145.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">7 · the pane's command</text>
+  <text x="355.0" y="1175.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">KEEP</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">PATH</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">TMUX_TMPDIR</tspan> and</text>
+  <text x="355.0" y="1196.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">the settings variables, by name</text>
+  <text x="355.0" y="1217.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">SPECTIO_CONFIG</tspan> made absolute</text>
+  <text x="355.0" y="1238.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">a word ending in <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">;</tspan>: exit 2</text>
+  <rect x="660.0" y="925.0" width="280.0" height="104.0" rx="5" fill="#1e1e1e"/>
+  <path d="M660.5,925.4 C751.9,924.8 846.3,925.2 939.7,924.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M660.7,925.2 C753.6,925.4 846.0,925.7 939.2,924.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M939.4,924.2 C940.5,959.3 940.8,994.3 940.7,1029.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M940.3,924.3 C938.5,960.0 939.7,995.3 940.4,1029.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M939.5,1029.0 C848.1,1027.6 752.1,1030.1 660.5,1028.6" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M940.2,1029.7 C845.3,1029.9 754.4,1028.9 659.5,1029.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M659.4,1028.9 C660.6,994.4 661.4,958.8 660.5,924.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M660.2,1028.8 C660.2,992.9 659.4,958.6 659.8,925.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="675.0" cy="939.0" r="4.5" fill="#ff8787"/>
+  <circle cx="689.0" cy="939.0" r="4.5" fill="#ffd43b"/>
+  <circle cx="703.0" cy="939.0" r="4.5" fill="#69db7c"/>
+  <text x="674.0" y="969.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#f1f3f5" xml:space="preserve">$ spectio serve --pane</text>
+  <path d="M662.0,1007.0 L938.0,1007.0 L938.0,1027.0 L662.0,1027.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M661.9,1007.1 C754.3,1007.0 845.9,1007.2 937.9,1007.1" fill="none" stroke="#1e1e1e" stroke-width="1.0" stroke-linecap="round"/>
+  <path d="M938.1,1006.9 C937.8,1013.5 937.7,1020.3 938.1,1027.0" fill="none" stroke="#1e1e1e" stroke-width="1.0" stroke-linecap="round"/>
+  <path d="M938.0,1026.9 C845.8,1027.1 754.0,1027.0 661.9,1027.1" fill="none" stroke="#1e1e1e" stroke-width="1.0" stroke-linecap="round"/>
+  <path d="M661.9,1027.1 C662.1,1020.4 662.1,1013.4 662.1,1006.9" fill="none" stroke="#1e1e1e" stroke-width="1.0" stroke-linecap="round"/>
+  <text x="670.0" y="1022.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal">spectio-server</text>
+  <text x="660.0" y="1053.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">new-session -d -c /</tspan>, then</text>
+  <text x="660.0" y="1073.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">destroy-unattached off</tspan>, chained</text>
+  <path d="M663.4,1088.2 C667.1,1090.6 668.7,1094.3 673.5,1098.3" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M663.2,1098.5 C666.6,1093.7 670.1,1090.9 672.5,1088.3" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <text x="682.0" y="1097.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">all panes ended: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">kill-pane</tspan> by ID</text>
+  <text x="800.0" y="1145.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">8 · the session <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="16.7">spectio-server</tspan></text>
+  <text x="660.0" y="1175.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">it runs <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">serve --pane</tspan>: wait for it</text>
+  <text x="660.0" y="1196.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">something else: exit 2, never kill</text>
+  <text x="660.0" y="1217.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">the only kill: dead panes, by ID</text>
+  <text x="660.0" y="1238.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">duplicate session: the loser waits</text>
+  <path d="M969.0,925.0 L1107.0,925.0 L1119.0,937.0 L1119.0,1043.0 L969.0,1043.0 Z" fill="#ffffff" stroke="none"/>
+  <path d="M969.3,925.3 C1014.9,924.3 1060.7,924.7 1107.1,925.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1106.6,924.7 C1110.8,929.5 1115.5,933.7 1119.4,936.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1118.6,936.7 C1118.3,972.9 1119.7,1008.0 1119.0,1043.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1118.8,1043.2 C1068.2,1042.8 1018.6,1043.7 969.2,1042.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M969.4,1042.9 C968.5,1003.9 969.6,964.3 969.0,924.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1107.3,925.1 C1106.2,929.2 1107.0,932.8 1106.9,937.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1107.0,936.7 C1111.1,937.7 1115.3,936.9 1118.7,937.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="979.0" y="949.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="bold"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">server.json</tspan></text>
+  <text x="979.0" y="977.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">host</tspan></text>
+  <path d="M1100.1,972.7 C1100.6,974.2 1102.3,975.9 1103.3,976.9" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M1103.2,976.8 C1105.8,973.6 1108.1,970.5 1110.1,968.2" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="979.0" y="1001.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">pid</tspan></text>
+  <path d="M1100.0,997.0 C1101.4,998.5 1102.8,999.5 1103.4,1001.2" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M1103.6,1000.8 C1105.3,998.0 1107.5,995.1 1110.3,991.8" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="979.0" y="1025.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">started_at</tspan></text>
+  <path d="M1100.2,1021.0 C1101.0,1021.9 1102.0,1023.9 1103.4,1024.7" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M1103.1,1024.9 C1105.4,1022.1 1107.5,1018.5 1110.1,1015.8" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="1131.0" y="977.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">this node</text>
+  <text x="1131.0" y="1001.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">a live pane</text>
+  <text x="1131.0" y="1025.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">after this call</text>
+  <path d="M971.0,1067.0 L987.0,1067.0 L979.0,1075.0 Z" fill="#fff9db" stroke="none"/>
+  <path d="M970.8,1066.7 C975.7,1066.7 981.8,1066.4 986.7,1066.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M986.7,1067.0 C984.4,1070.0 981.7,1072.1 978.8,1074.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M979.0,1075.1 C976.2,1072.6 974.3,1070.2 970.9,1067.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M979.0,1075.0 L987.0,1083.0 L971.0,1083.0 Z" fill="#fff9db" stroke="none"/>
+  <path d="M979.2,1074.7 C981.5,1078.4 983.8,1079.8 987.1,1083.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M987.3,1083.3 C982.4,1082.7 976.1,1082.9 971.3,1082.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M971.4,1083.3 C973.1,1080.1 975.6,1077.7 979.1,1074.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="995.0" y="1080.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">polled each 0.2 s, a link try</text>
+  <text x="995.0" y="1100.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">each 1 s, while the server boots</text>
+  <text x="1105.0" y="1145.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">9 · wait for its own server</text>
+  <text x="965.0" y="1175.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">never writes or removes <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">server.json</tspan></text>
+  <text x="965.0" y="1196.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">started_at, 2 s of clock skew</text>
+  <text x="965.0" y="1217.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">--wait</tspan>: 120 s default, 0 to 3600</text>
+  <text x="965.0" y="1238.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">nan</tspan> or <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">inf</tspan>: exit 2</text>
+  <rect x="1270.0" y="925.0" width="280.0" height="72.0" rx="5" fill="#1e1e1e"/>
+  <path d="M1270.1,925.0 C1364.4,925.9 1455.6,926.5 1549.7,925.6" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1270.1,924.2 C1364.0,925.1 1457.9,923.5 1550.1,924.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1549.7,925.7 C1550.1,947.8 1551.2,971.8 1549.7,996.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1550.7,924.7 C1549.7,949.5 1549.0,972.6 1549.6,997.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1549.8,997.8 C1456.9,995.6 1361.8,997.0 1270.5,997.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1549.9,996.7 C1455.7,998.5 1363.2,997.2 1269.8,997.6" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1270.6,996.4 C1268.5,971.6 1269.6,949.1 1270.3,924.6" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1270.0,996.8 C1271.2,973.6 1268.7,948.8 1270.0,925.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="1285.0" cy="939.0" r="4.5" fill="#ff8787"/>
+  <circle cx="1299.0" cy="939.0" r="4.5" fill="#ffd43b"/>
+  <circle cx="1313.0" cy="939.0" r="4.5" fill="#69db7c"/>
+  <text x="1284.0" y="969.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#f1f3f5" xml:space="preserve">$ spectio serve --detach</text>
+  <text x="1284.0" y="990.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="12" fill="#f1f3f5" xml:space="preserve">Open this link</text>
+  <rect x="1508.0" y="977.6" width="13.2" height="6.7" rx="3.4" fill="none" stroke="#f1f3f5" stroke-width="2.2" transform="rotate(-35 1514.6 981.0)"/>
+  <rect x="1518.8" y="977.6" width="13.2" height="6.7" rx="3.4" fill="none" stroke="#f1f3f5" stroke-width="2.2" transform="rotate(-35 1525.4 981.0)"/>
+  <rect x="1270.0" y="1011.0" width="280.0" height="72.0" rx="5" fill="#1e1e1e"/>
+  <path d="M1269.9,1010.2 C1363.5,1012.4 1456.0,1011.7 1550.5,1011.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1269.7,1010.9 C1363.4,1010.2 1455.8,1009.9 1550.8,1010.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1549.9,1010.7 C1550.1,1036.4 1549.3,1060.5 1550.2,1082.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1549.4,1011.7 C1550.8,1034.9 1550.2,1057.4 1550.2,1082.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1550.1,1082.2 C1458.1,1083.7 1363.8,1084.6 1270.4,1082.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1550.7,1083.0 C1456.2,1084.0 1364.0,1083.4 1269.8,1082.3" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1270.0,1083.3 C1270.1,1060.0 1269.5,1035.5 1269.7,1011.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1269.3,1083.2 C1271.1,1057.5 1269.4,1034.5 1269.4,1011.5" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <circle cx="1285.0" cy="1025.0" r="4.5" fill="#ff8787"/>
+  <circle cx="1299.0" cy="1025.0" r="4.5" fill="#ffd43b"/>
+  <circle cx="1313.0" cy="1025.0" r="4.5" fill="#69db7c"/>
+  <text x="1284.0" y="1055.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.5" fill="#f1f3f5" xml:space="preserve">in the pane: no link,</text>
+  <text x="1284.0" y="1076.0" font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.5" fill="#f1f3f5" xml:space="preserve">spectio login --print-link</text>
+  <path d="M1523.8,1059.4 C1529.4,1063.8 1535.2,1069.8 1540.2,1075.4" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <path d="M1524.1,1074.7 C1528.2,1069.0 1534.4,1063.2 1539.7,1059.2" fill="none" stroke="#c92a2a" stroke-width="2" stroke-linecap="round"/>
+  <text x="1270.0" y="1105.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">exit 0 here, with the attach hint</text>
+  <text x="1410.0" y="1145.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="19" fill="#1e1e1e" text-anchor="middle" font-weight="normal">10 · the link here, never there</text>
+  <text x="1270.0" y="1175.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">exit 2: the pane ended, its reason</text>
+  <text x="1270.0" y="1196.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">read from <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">serve-detach.err</tspan></text>
+  <text x="1270.0" y="1217.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">exit 3: no link in time, it runs on</text>
+  <text x="1270.0" y="1238.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">spectio open</tspan>: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">--no-link</tspan>, 120 s</text>
+  <path d="M331.4,964.8 C337.5,964.3 343.5,965.1 351.9,965.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M331.1,964.6 C340.3,963.4 347.3,963.3 352.9,965.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M351.9,965.0 C347.1,962.9 343.1,959.9 340.1,958.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M351.9,964.6 C348.8,966.4 343.9,969.7 339.9,971.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M638.0,964.5 C643.6,965.7 649.7,965.7 657.4,966.0" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M636.8,964.9 C645.1,963.4 650.4,965.9 657.5,965.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M657.3,965.3 C653.4,963.5 649.0,960.0 644.5,958.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M656.6,965.5 C652.8,967.5 648.5,968.8 644.9,971.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M941.3,964.2 C949.2,963.5 955.3,963.1 962.4,964.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M941.1,965.9 C950.6,964.0 953.7,964.6 962.4,965.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M961.6,964.7 C958.7,963.3 953.3,960.0 949.3,958.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M961.8,964.6 C957.5,967.6 954.7,969.1 949.5,971.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1247.5,965.8 C1252.2,966.6 1261.5,966.9 1267.2,965.8" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1247.1,964.3 C1254.9,966.3 1261.0,965.4 1267.7,965.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1266.9,965.5 C1261.9,962.0 1258.2,961.5 1254.2,958.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1266.6,965.3 C1262.4,967.2 1259.5,968.9 1254.3,971.1" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <rect x="50.0" y="1265.0" width="280.0" height="77.0" rx="4" fill="#f1f3f5" fill-opacity="0.45"/>
+  <path d="M50.5,1265.4 C142.9,1264.9 236.9,1264.7 329.6,1264.6" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M330.4,1264.6 C329.1,1290.8 330.6,1317.0 330.0,1342.4" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M329.8,1342.3 C236.8,1341.9 142.9,1341.8 49.9,1341.7" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M49.8,1342.3 C49.1,1315.4 49.9,1290.7 50.1,1265.0" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="62.0" y="1289.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">2 rounds, both reviewers approve:</text>
+  <text x="62.0" y="1310.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">no blocker, no major, 16 minors;</text>
+  <text x="62.0" y="1331.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">5 fixed in 9ca6ef1, 10 open FU-P3-64</text>
+  <path d="M355.0,1265.0 L635.0,1265.0 L635.0,1356.0 L355.0,1356.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M355.2,1265.1 C448.5,1264.6 541.8,1265.5 635.1,1264.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M634.8,1265.0 C634.9,1295.3 635.2,1326.0 635.2,1355.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M635.0,1356.0 C541.3,1355.6 448.5,1356.5 355.1,1355.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M355.1,1356.0 C355.3,1325.9 355.0,1295.8 355.1,1265.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M365.3,1277.8 C366.2,1279.7 368.0,1281.3 368.9,1282.6" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M368.8,1282.7 C371.3,1279.5 373.8,1275.6 376.7,1271.7" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="387.0" y="1283.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="bold">SEC-PRE-01</text>
+  <text x="625.0" y="1283.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">major, pre-review</text>
+  <text x="367.0" y="1305.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">a running tmux server's environment</text>
+  <text x="367.0" y="1324.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">could reconfigure the child</text>
+  <text x="367.0" y="1343.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">built: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">env -i</tspan> and an allow-list</text>
+  <path d="M660.0,1265.0 L940.0,1265.0 L940.0,1356.0 L660.0,1356.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M660.0,1265.2 C753.1,1264.9 846.7,1265.0 940.0,1265.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M940.2,1264.9 C939.9,1295.2 939.6,1325.5 940.2,1356.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M939.8,1356.2 C846.4,1355.8 753.1,1356.4 660.1,1355.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M660.0,1355.8 C659.7,1326.2 660.1,1295.5 659.9,1264.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M670.0,1278.3 C670.7,1279.8 673.2,1281.5 673.7,1282.6" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M673.9,1282.6 C677.0,1279.2 679.5,1275.2 682.0,1272.1" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="692.0" y="1283.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="bold">CON-PRE-04</text>
+  <text x="930.0" y="1283.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">major, pre-review</text>
+  <text x="672.0" y="1305.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">a dead pane lost the refusal and,</text>
+  <text x="672.0" y="1324.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">with <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">remain-on-exit</tspan>, blocked starts</text>
+  <text x="672.0" y="1343.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">built: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">serve-detach.err</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">kill-pane</tspan></text>
+  <path d="M660.0,1366.0 L940.0,1366.0 L940.0,1457.0 L660.0,1457.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M660.1,1366.0 C753.6,1366.1 846.2,1366.3 939.9,1366.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M939.8,1366.0 C940.3,1396.7 939.9,1426.4 940.2,1457.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M940.0,1456.9 C846.7,1457.2 753.7,1457.3 659.9,1457.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M660.0,1456.9 C660.0,1426.8 659.9,1395.9 660.1,1366.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M670.3,1378.9 C671.2,1381.0 672.4,1382.1 674.0,1383.7" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M673.8,1383.6 C677.0,1380.0 679.1,1376.0 682.2,1373.0" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="692.0" y="1384.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="bold">CON-PRE-05</text>
+  <text x="930.0" y="1384.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">major, pre-review</text>
+  <text x="672.0" y="1406.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">destroy-unattached on</tspan> ends a</text>
+  <text x="672.0" y="1425.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">detached session at once</text>
+  <text x="672.0" y="1444.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">built: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">off</tspan>, chained in the same call</text>
+  <path d="M660.0,1467.0 L940.0,1467.0 L940.0,1558.0 L660.0,1558.0 Z" fill="#ffe3e3" stroke="none"/>
+  <path d="M660.0,1466.9 C752.9,1467.3 846.5,1466.6 940.1,1467.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M939.8,1467.0 C940.4,1497.7 940.4,1527.5 940.2,1557.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M939.9,1558.1 C846.2,1557.7 753.7,1557.8 659.8,1558.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M660.1,1558.0 C660.2,1527.4 659.8,1497.2 659.8,1467.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M676.0,1472.0 L684.0,1486.4 L668.0,1486.4 Z" fill="#fff9db" stroke="none"/>
+  <path d="M675.8,1472.3 C679.3,1477.5 681.2,1481.1 684.3,1486.5" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M683.7,1486.1 C678.4,1486.8 673.2,1485.6 668.3,1486.6" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M668.3,1486.7 C670.5,1482.0 672.7,1476.8 676.0,1472.1" fill="none" stroke="#e8590c" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="676.0" y="1484.8" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="9.6" fill="#e8590c" text-anchor="middle" font-weight="bold">!</text>
+  <text x="692.0" y="1485.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="bold">CON-PRE-06</text>
+  <text x="930.0" y="1485.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">major, pre-review</text>
+  <text x="672.0" y="1507.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">logind may kill a tmux server</text>
+  <text x="672.0" y="1526.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">started from a non-interactive ssh</text>
+  <text x="672.0" y="1545.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">not built: a <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">doctor</tspan> line, FU-P3-58</text>
+  <path d="M965.0,1265.0 L1245.0,1265.0 L1245.0,1356.0 L965.0,1356.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M965.0,1265.0 C1058.6,1265.2 1151.8,1265.1 1244.8,1265.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1245.0,1265.2 C1244.7,1295.4 1244.9,1325.2 1244.9,1356.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1245.2,1356.0 C1151.5,1356.0 1058.4,1355.7 964.9,1355.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M965.0,1355.9 C965.4,1325.4 965.0,1295.1 965.2,1264.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M975.1,1277.8 C976.9,1279.2 978.2,1281.0 979.2,1282.6" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M979.3,1283.0 C981.3,1279.6 983.8,1275.1 986.8,1272.3" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="997.0" y="1283.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="bold">CON-PRE-01</text>
+  <text x="1235.0" y="1283.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">major, pre-review</text>
+  <text x="977.0" y="1305.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">server.json</tspan> comes before the key:</text>
+  <text x="977.0" y="1324.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">the first link request is refused</text>
+  <text x="977.0" y="1343.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">built: retried until the deadline</text>
+  <rect x="965.0" y="1366.0" width="280.0" height="98.0" rx="4" fill="#f1f3f5" fill-opacity="0.45"/>
+  <path d="M964.7,1365.7 C1059.2,1365.6 1150.7,1365.2 1244.8,1365.9" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1244.7,1366.2 C1245.8,1398.0 1244.8,1431.5 1245.5,1463.5" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1244.8,1463.6 C1151.9,1464.3 1058.3,1464.0 965.1,1463.6" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M964.8,1464.2 C964.6,1431.2 964.6,1399.1 964.6,1365.7" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="977.0" y="1390.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">open, FU-P3-64: pane IDs restart</text>
+  <text x="977.0" y="1411.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">with a new tmux server,</text>
+  <text x="977.0" y="1432.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">SEC-P3FU44-05; values in tmux's</text>
+  <text x="977.0" y="1453.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">cmdline, SEC-P3FU44-01</text>
+  <path d="M1270.0,1265.0 L1550.0,1265.0 L1550.0,1356.0 L1270.0,1356.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M1269.9,1265.0 C1362.9,1264.7 1456.5,1264.6 1550.1,1265.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1550.1,1264.8 C1549.6,1295.8 1550.2,1325.5 1550.2,1356.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1550.0,1356.0 C1456.8,1356.1 1363.4,1356.3 1269.9,1356.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1269.8,1356.0 C1270.5,1325.3 1270.0,1295.0 1269.8,1264.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1280.1,1278.1 C1281.9,1279.4 1283.0,1281.3 1284.0,1282.6" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <path d="M1284.1,1282.8 C1286.9,1279.3 1289.3,1275.5 1292.2,1272.0" fill="none" stroke="#2f9e44" stroke-width="2.4" stroke-linecap="round"/>
+  <text x="1302.0" y="1283.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="bold">CON-PRE-02</text>
+  <text x="1540.0" y="1283.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">major, pre-review</text>
+  <text x="1282.0" y="1305.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">a first boot can take over 60 s</text>
+  <text x="1282.0" y="1324.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">and the caller gave up</text>
+  <text x="1282.0" y="1343.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">built: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">--wait</tspan> 120 s, then exit 3</text>
+  <rect x="1270.0" y="1366.0" width="280.0" height="77.0" rx="4" fill="#f1f3f5" fill-opacity="0.45"/>
+  <path d="M1269.9,1366.4 C1363.9,1365.9 1457.4,1366.5 1550.3,1365.8" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1549.5,1366.3 C1549.4,1391.4 1550.3,1416.8 1550.3,1443.4" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1549.7,1442.7 C1456.8,1443.6 1362.5,1443.0 1270.1,1442.9" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1269.7,1442.8 C1270.8,1418.3 1270.5,1392.0 1269.7,1366.4" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="1282.0" y="1390.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">not run: SLURM, an EMBL login node;</text>
+  <text x="1282.0" y="1411.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">tmux 3.4 only; <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">kill-pane</tspan></text>
+  <text x="1282.0" y="1432.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">against the fake tmux only</text>
+  <path d="M29.2,1645.0 C543.9,1645.1 1057.4,1647.1 1570.2,1646.0" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M30.3,1645.5 C543.0,1647.7 1056.3,1646.8 1570.7,1646.3" fill="none" stroke="#adb5bd" stroke-width="1.7" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="50.0" y="1678.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="14" fill="#1e1e1e" text-anchor="start" font-weight="bold">tests, to scale</text>
+  <text x="200.0" y="1678.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">the Python suite, 0.38 px per test</text>
+  <text x="50.0" y="1708.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">P3-fu53, 2af08fe</text>
+  <path d="M200.0,1692.0 L580.8,1692.0 L580.8,1712.0 L200.0,1712.0 Z" fill="#b2f2bb" stroke="none"/>
+  <path d="M199.9,1692.1 C327.0,1691.8 454.2,1691.7 580.7,1692.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M580.9,1692.0 C580.4,1698.9 581.0,1705.0 580.9,1712.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M580.9,1712.2 C454.0,1711.7 326.6,1712.3 200.2,1712.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M200.2,1711.8 C200.1,1705.3 199.6,1699.0 199.8,1692.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="590.8" y="1708.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">1002 passed</text>
+  <text x="50.0" y="1738.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">P3-fu44, 9ca6ef1</text>
+  <path d="M200.0,1722.0 L586.5,1722.0 L586.5,1742.0 L200.0,1742.0 Z" fill="#b2f2bb" stroke="none"/>
+  <path d="M199.9,1722.0 C328.9,1722.4 458.0,1722.4 586.3,1721.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M586.3,1721.9 C586.7,1728.8 586.2,1735.5 586.6,1741.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M586.3,1741.8 C457.7,1741.6 329.1,1742.2 199.8,1742.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M200.0,1741.9 C199.9,1735.4 199.7,1728.9 200.2,1721.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="596.5" y="1738.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">1017 passed</text>
+  <text x="50.0" y="1768.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">the batch, 56feaeb</text>
+  <path d="M200.0,1752.0 L594.4,1752.0 L594.4,1772.0 L200.0,1772.0 Z" fill="#b2f2bb" stroke="none"/>
+  <path d="M199.9,1751.9 C331.1,1752.2 462.8,1752.1 594.5,1752.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M594.5,1751.8 C594.7,1758.8 594.3,1765.1 594.2,1771.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M594.3,1772.2 C463.0,1772.3 331.2,1771.8 199.9,1771.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M200.1,1772.0 C200.1,1765.7 200.2,1758.3 199.8,1751.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="604.4" y="1768.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13" fill="#1e1e1e" text-anchor="start" font-weight="normal">1038 passed, 30 deselected</text>
+  <text x="50.0" y="1804.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">each step's own tests, written first, 6 px per test</text>
+  <text x="50.0" y="1832.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">test_sacct.py</tspan></text>
+  <path d="M200.0,1816.0 L344.0,1816.0 L344.0,1836.0 L200.0,1836.0 Z" fill="#ffe3e3" stroke="none"/>
+  <path d="M200.1,1816.0 C247.7,1815.9 296.0,1816.1 344.1,1816.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M344.2,1815.9 C344.1,1822.4 344.2,1829.5 344.0,1835.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M344.1,1836.0 C296.1,1836.0 247.7,1835.7 199.9,1836.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M199.9,1835.9 C199.6,1829.6 200.2,1822.8 200.1,1815.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="352.0" y="1832.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">24 failed first</text>
+  <path d="M480.0,1816.0 L666.0,1816.0 L666.0,1836.0 L480.0,1836.0 Z" fill="#b2f2bb" stroke="none"/>
+  <path d="M480.0,1816.1 C541.7,1816.2 603.8,1815.7 666.0,1815.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M665.9,1816.2 C666.3,1822.6 666.1,1829.2 666.0,1836.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M666.2,1835.8 C603.8,1836.0 541.7,1836.2 480.1,1836.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M480.1,1835.8 C479.8,1829.4 480.3,1822.8 480.0,1815.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="674.0" y="1832.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">31 pass</text>
+  <text x="50.0" y="1862.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">test_failure.py</tspan></text>
+  <path d="M200.0,1846.0 L272.0,1846.0 L272.0,1866.0 L200.0,1866.0 Z" fill="#ffe3e3" stroke="none"/>
+  <path d="M200.0,1846.1 C224.1,1845.6 247.7,1846.0 271.8,1846.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M271.9,1846.1 C272.1,1852.8 272.0,1859.7 271.9,1866.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M271.9,1865.8 C248.1,1866.1 224.3,1865.7 200.1,1866.1" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M200.0,1865.8 C200.4,1859.3 200.0,1852.8 200.1,1845.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="280.0" y="1862.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">12 failed first</text>
+  <path d="M480.0,1846.0 L684.0,1846.0 L684.0,1866.0 L480.0,1866.0 Z" fill="#b2f2bb" stroke="none"/>
+  <path d="M480.0,1846.0 C548.4,1845.8 616.0,1846.2 683.9,1846.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M683.9,1846.1 C684.3,1852.9 683.7,1859.6 684.0,1865.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M683.9,1866.1 C616.1,1866.3 548.2,1866.4 480.2,1866.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M479.8,1866.2 C479.7,1859.6 479.8,1852.4 479.9,1845.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="692.0" y="1862.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">34 pass</text>
+  <text x="50.0" y="1892.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">test_detach.py</tspan></text>
+  <path d="M200.0,1876.0 L326.0,1876.0 L326.0,1896.0 L200.0,1896.0 Z" fill="#ffe3e3" stroke="none"/>
+  <path d="M199.8,1875.9 C241.6,1876.0 283.7,1875.7 326.0,1875.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M325.9,1876.1 C326.1,1882.4 325.9,1889.5 326.0,1895.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M326.0,1895.9 C284.3,1895.8 242.0,1896.4 200.1,1895.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M200.0,1895.8 C199.6,1889.1 200.0,1882.3 199.9,1876.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="334.0" y="1892.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">21 failed first</text>
+  <path d="M480.0,1876.0 L666.0,1876.0 L666.0,1896.0 L480.0,1896.0 Z" fill="#b2f2bb" stroke="none"/>
+  <path d="M479.8,1876.1 C542.2,1876.2 603.9,1876.2 666.2,1876.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M665.9,1876.2 C666.0,1882.3 665.8,1889.4 665.9,1895.8" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M666.2,1895.8 C603.7,1895.9 541.7,1896.4 480.0,1895.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M480.1,1896.1 C480.3,1889.1 480.2,1882.9 480.1,1876.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="674.0" y="1892.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">31 pass</text>
+  <rect x="1000.0" y="1662.0" width="550.0" height="250.0" rx="4" fill="#f1f3f5" fill-opacity="0.5"/>
+  <path d="M999.9,1662.0 C1183.5,1661.3 1367.1,1662.7 1550.4,1661.9" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1550.5,1661.8 C1549.2,1745.0 1549.1,1829.1 1550.2,1911.8" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1549.9,1911.9 C1366.9,1912.0 1182.5,1912.0 999.7,1912.4" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <path d="M1000.3,1912.1 C999.6,1828.6 1000.1,1745.5 1000.2,1662.5" fill="none" stroke="#adb5bd" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="9 7"/>
+  <text x="1014.0" y="1688.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="bold">batch simplify, 56feaeb, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.9">cli/login.py</tspan></text>
+  <text x="1014.0" y="1716.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">before</text>
+  <path d="M1014.0,1726.0 L1026.6,1726.0 L1032.0,1731.4 L1032.0,1748.0 L1014.0,1748.0 Z" fill="#ffe3e3" stroke="none"/>
+  <path d="M1013.6,1726.0 C1017.7,1726.3 1023.0,1726.0 1026.8,1726.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1026.8,1726.3 C1029.1,1727.1 1029.8,1730.1 1032.1,1731.4" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1032.4,1731.4 C1032.3,1737.3 1031.8,1741.8 1032.3,1747.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1031.9,1747.6 C1026.3,1748.3 1020.3,1748.7 1013.7,1748.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1013.8,1748.2 C1014.7,1740.2 1013.8,1733.3 1014.2,1725.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1026.3,1725.9 C1027.3,1727.2 1026.9,1728.9 1026.6,1731.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1026.7,1731.2 C1029.0,1732.2 1030.1,1731.4 1031.6,1731.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="1040.0" y="1742.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">class NoServer(Refused)</tspan></text>
+  <path d="M1014.0,1754.0 L1026.6,1754.0 L1032.0,1759.4 L1032.0,1776.0 L1014.0,1776.0 Z" fill="#ffe3e3" stroke="none"/>
+  <path d="M1014.0,1753.7 C1017.9,1754.7 1023.0,1754.2 1026.5,1754.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1026.9,1753.8 C1027.9,1756.0 1029.8,1757.3 1032.2,1759.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1032.4,1759.8 C1032.3,1765.5 1031.4,1770.0 1032.3,1776.3" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1032.1,1775.9 C1026.1,1775.3 1019.4,1776.3 1014.2,1775.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1014.3,1775.7 C1014.1,1768.7 1014.3,1761.3 1014.1,1753.8" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1026.8,1754.1 C1026.2,1755.9 1026.2,1757.9 1026.9,1759.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1026.2,1759.0 C1029.2,1759.2 1030.3,1759.7 1032.0,1759.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="1040.0" y="1770.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">raise NoServer</tspan>, twice</text>
+  <path d="M1014.0,1782.0 L1026.6,1782.0 L1032.0,1787.4 L1032.0,1804.0 L1014.0,1804.0 Z" fill="#f1f3f5" stroke="none"/>
+  <path d="M1014.1,1782.1 C1018.6,1781.3 1022.3,1781.7 1026.4,1781.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1026.7,1781.7 C1027.6,1783.7 1030.7,1785.2 1032.2,1787.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1032.1,1787.0 C1031.9,1793.4 1031.9,1798.8 1032.1,1803.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1031.8,1803.7 C1025.6,1804.4 1019.6,1804.3 1013.6,1803.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1013.9,1803.8 C1014.3,1796.3 1013.9,1790.0 1014.2,1781.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1026.9,1781.7 C1026.6,1783.6 1027.4,1786.4 1026.8,1787.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1026.9,1787.6 C1028.0,1787.2 1029.7,1786.7 1031.8,1787.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="1040.0" y="1798.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal">caught nowhere</text>
+  <path d="M1245.1,1766.3 C1258.6,1765.4 1273.9,1767.4 1285.7,1765.7" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1247.0,1765.0 C1259.2,1764.9 1271.9,1765.8 1286.7,1765.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1285.9,1765.7 C1282.1,1764.0 1277.6,1762.3 1273.7,1759.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <path d="M1286.1,1766.3 C1282.6,1767.8 1278.4,1770.3 1273.3,1772.4" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
+  <text x="1300.0" y="1716.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">after</text>
+  <path d="M1300.0,1726.0 L1312.6,1726.0 L1318.0,1731.4 L1318.0,1748.0 L1300.0,1748.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M1299.9,1726.3 C1304.0,1725.7 1307.9,1725.6 1312.4,1726.0" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1312.4,1726.0 C1314.2,1727.8 1315.5,1730.2 1317.7,1731.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1318.0,1731.5 C1318.1,1736.9 1318.0,1742.3 1318.3,1748.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1317.6,1748.1 C1312.4,1748.1 1306.1,1748.4 1300.3,1747.7" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1300.0,1747.6 C1300.5,1740.3 1300.3,1733.3 1299.7,1725.9" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1312.3,1725.9 C1312.7,1728.0 1313.0,1729.2 1312.8,1731.6" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M1312.5,1731.2 C1315.1,1731.0 1316.3,1731.7 1317.8,1731.2" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="1326.0" y="1742.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#1e1e1e" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">raise Refused</tspan>, twice</text>
+  <text x="1300.0" y="1774.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">same messages, same exit codes</text>
+  <text x="1300.0" y="1794.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">kept: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">OtherNode</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">PortHeld</tspan>,</text>
+  <text x="1300.0" y="1814.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal"><tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="10.6">NotReady</tspan>, all caught</text>
+  <path d="M1056.0,1848.0 L1140.0,1848.0 L1140.0,1864.0 L1056.0,1864.0 Z" fill="#ffe3e3" stroke="none"/>
+  <path d="M1055.9,1847.9 C1083.9,1848.1 1112.2,1847.8 1139.9,1847.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1139.8,1847.8 C1139.9,1853.4 1139.7,1858.6 1139.8,1864.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1139.9,1864.1 C1111.9,1864.1 1083.8,1863.6 1055.8,1864.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1056.0,1864.0 C1056.3,1859.1 1055.7,1852.9 1055.9,1848.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="1014.0" y="1861.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">-6</text>
+  <path d="M1056.0,1870.0 L1084.0,1870.0 L1084.0,1886.0 L1056.0,1886.0 Z" fill="#ebfbee" stroke="none"/>
+  <path d="M1056.1,1870.0 C1065.1,1870.2 1074.3,1870.1 1084.2,1870.0" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1084.1,1869.9 C1084.3,1875.0 1084.0,1880.4 1083.8,1886.2" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1084.0,1885.8 C1074.6,1886.0 1065.5,1886.3 1056.1,1885.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <path d="M1056.0,1885.9 C1056.0,1880.8 1056.2,1875.4 1056.1,1869.9" fill="none" stroke="#1e1e1e" stroke-width="1.2" stroke-linecap="round"/>
+  <text x="1014.0" y="1883.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#1e1e1e" text-anchor="start" font-weight="normal">+2</text>
+  <text x="1300.0" y="1861.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">1038 passed before and after;</text>
+  <text x="1300.0" y="1881.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">ruff, mypy, lint-imports clean</text>
+  <text x="1300.0" y="1901.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="start" font-weight="normal">no re-review needed</text>
+  <text x="50.0" y="1926.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">IDs: CR code-reviewer · SEC security-reviewer</text>
+  <text x="50.0" y="1950.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="13.5" fill="#5c5c5c" text-anchor="start" font-weight="normal">pre-review IDs: SEC-PRE security-reviewer · CON-PRE constraints-hunter, on the design before any code</text>
+  <text x="1550.0" y="1974.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12.5" fill="#5c5c5c" text-anchor="end" font-weight="normal">source: <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">sacct.py</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">failure.py</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">cli/serve.py</tspan>, <tspan font-family="ui-monospace, SFMono-Regular, Menlo, Consolas, 'DejaVu Sans Mono', monospace" font-size="11.0">cli/login.py</tspan> at 56feaeb · review records P3-fu53, P3-fu44</text>
+</svg>

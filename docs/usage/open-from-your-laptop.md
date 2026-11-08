@@ -16,7 +16,7 @@ The rules are owned by [development environment §15.3](../specs/dev-environment
 | Installed on the laptop | nothing | the `spectio` package, with `uv tool install spectio` or `pipx` |
 | Tunnel | opened by `ssh <host>`, on a port fixed in the entry | opened for you, on a free local port |
 | Link | you copy it from the cluster | built on the laptop, opened in the browser |
-| First start of the server | you start it | it starts it (`spectio serve --detach`, **not built yet**) |
+| First start of the server | you start it | it starts it (`spectio serve --detach`, [built](keep-the-server-running.md)) |
 | Server on another login node | you change `HostName` | it reads `~/.spectio/server.json` and follows it |
 
 ## Way 1: the SSH config entry
@@ -32,7 +32,7 @@ The rules are owned by [development environment §15.3](../specs/dev-environment
     ```
 
 3. **Connect** with `ssh demo-hpc`. The tunnel lasts as long as the session.
-4. **Start the server** in that session if none runs. `spectio serve --detach`, which keeps it in a tmux session `spectio-server`, is not built ([FU-P3-44](../progress/W5/P3-M2.md#task-10-tmux-launcher-on-the-login-node)). Until it is, run `spectio serve` in a tmux session you start yourself. That path was not run on a cluster here, **[to be validated]**.
+4. **Start the server** in that session if none runs: `spectio serve --detach` keeps it in a tmux session `spectio-server` and prints the link ([Keeping the server running](keep-the-server-running.md)). It was not run on a cluster here, **[to be validated]**.
 5. **Open the link** that `spectio serve` prints, or a new one from `spectio login --print-link`, in the laptop's browser.
 
 If the server runs on another login node, `spectio serve` names it. Point `HostName` at that node.
@@ -49,7 +49,7 @@ In order:
 
 1. It runs `spectio --help` on the cluster and reads `~/.spectio/server.json`, over `ssh demo-hpc`, through your login shell (`"$SHELL" -lc`), so `PATH`, modules and your rc files apply.
 2. With a state file, it reaches the node the file names. `--node` overrides it.
-3. Without one, it starts a server on `--node`, else the `node` of `clusters.toml`, else `<host>`: `spectio init` only if `~/.spectio` is missing, then `spectio serve --detach`. **This path fails against the real CLI today**, because `--detach` is not built (FU-P3-44). The tests run it against a fake `spectio`.
+3. Without one, it starts a server on `--node`, else the `node` of `clusters.toml`, else `<host>`: `spectio init` only if `~/.spectio` is missing, then `spectio serve --detach --no-link`, so no link lands in the ssh output. If that exits 3 (started, no link yet), it asks for the ticket again every 2 s for up to 120 s. The real `--detach` was run on tmux 3.4 (see [Keeping the server running](keep-the-server-running.md)); the whole path through `spectio open` still runs against a fake remote `spectio` in the tests only.
 4. It opens the tunnel on a free local port (`--local-port` sets one), asks the node for a ticket with `spectio login --print-link --json`, builds the link itself and opens your browser. A URL printed by the cluster is never opened.
 5. Ctrl-C closes the tunnel. The server and its runs keep going.
 
@@ -93,7 +93,7 @@ The cast runs the real `spectio open` and a real `spectio serve` in a demo home 
 ## Not built or not checked
 
 - **A real `sshd` and a login node.** [P1 Task 24](../plans/P1-walking-skeleton.md#task-24-laptop-access-the-ssh-config-entry-and-spectio-open) Step 4 is by hand, once, on an EMBL login node, and is not done. Whether `"$SHELL" -lc` works there, and which login shell the nodes use, is **[to be validated]**. The remote scripts need a POSIX-family shell; a tcsh login shell fails with a syntax error.
-- **`spectio serve --detach`** (FU-P3-44). Until then a first start through `spectio open` does not work against the real CLI.
+- **A first start through `spectio open` on a real login node.** `spectio serve --detach` is built (FU-P3-44), but the path from `spectio open` to it was not run over a real `sshd`, on SLURM or at EMBL.
 - **Is the server in `server.json` alive?** Not checked. After a crash or a node reboot a stale file makes the login fail, and the error names the file as a possible cause: remove it and run `spectio open` again (FU-P3-48).
 - **Ctrl-C** during the wait for a second factor exits 0, not 3; the remote calls read the laptop's stdin; a local process listening on the chosen port before `ssh` binds it would receive the link (needs a hostile process on the laptop). All in FU-P3-48, with the [security review](../reviews/code/P3-t24.md#security-review-after-the-workflow-2026-11-07).
 - **The ticket** goes to the browser's command line and is echoed in the terminal. It is single use.
