@@ -698,3 +698,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-08 01:30 · P3-B04 · merged #154 (b64451e). Promotion to main next.
 - 2026-11-08 01:45 · promotion #155 merged into main (merge commit e253fdf): batch P3-B04, M9 done. Left in P1: Tasks 22, 23 (need spectio serve --detach FU-P3-44 and a Docker daemon). #111 waits for Thomas.
 - 2026-11-08 07:25 · P3-fu53 · Thomas chose (b) for inbox #116 rule 10, with a pre-review first (security-reviewer + constraints-hunter on the design). Built: sacct rows bound to WorkDir, random delimiter, RESIZING dropped, Submit check; review approve 0/1/9, security approve 0/1/6, 3 rounds. Inbox #119, FU-P3-60..62. PR #156 opened (no-figure).
+- 2026-11-08 07:32 · P3-fu53 · merged #156 (8f6775e). P3-fu44 still building.
