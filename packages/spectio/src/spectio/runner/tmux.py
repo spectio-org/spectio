@@ -42,6 +42,32 @@ TMUX_TIMEOUT_S = 10
 # every later pane of the user, so no SPECTIO_* setting goes there; no `TMUX` either, so that
 # the user's default server is used, not the one of a pane `spectio serve` runs in.
 _TMUX_ENV = (*KEEP, "PATH", "TMUX_TMPDIR")
+SERVER_SESSION = "spectio-server"  # `spectio serve --detach`; never a run's: run IDs are run_*
+
+
+def run_tmux(tmux: str, *args: str) -> subprocess.CompletedProcess[str]:
+    """One tmux call, an argument list with the `_TMUX_ENV` environment; TimeoutError after
+    `TMUX_TIMEOUT_S`."""
+    env = {k: os.environ[k] for k in _TMUX_ENV if k in os.environ}
+    try:
+        return subprocess.run(  # noqa: S603 - an argument list, no shell
+            [tmux, *args],
+            env=env,
+            stdin=subprocess.DEVNULL,
+            capture_output=True,
+            text=True,
+            errors="replace",
+            timeout=TMUX_TIMEOUT_S,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        raise TimeoutError(f"tmux {args[0]} did not answer in {TMUX_TIMEOUT_S} s") from None
+
+
+def parse_pane(stdout: str) -> tuple[str, int] | None:
+    """The pane ID and PID that `new-session -P -F PANE_FORMAT` printed, or None."""
+    match = _PANE_LINE.fullmatch(stdout)
+    return None if match is None else (match[1], int(match[2]))
 
 
 def session_name(run_id: str) -> str:
@@ -72,20 +98,7 @@ class TmuxLauncher:
         self._warned: set[str] = set()  # heads whose unreadable files are already logged
 
     def _run(self, *args: str) -> subprocess.CompletedProcess[str]:
-        env = {k: os.environ[k] for k in _TMUX_ENV if k in os.environ}
-        try:
-            return subprocess.run(  # noqa: S603 - an argument list, no shell
-                [self.tmux, *args],
-                env=env,
-                stdin=subprocess.DEVNULL,
-                capture_output=True,
-                text=True,
-                errors="replace",
-                timeout=TMUX_TIMEOUT_S,
-                check=False,
-            )
-        except subprocess.TimeoutExpired:
-            raise TimeoutError(f"tmux {args[0]} did not answer in {TMUX_TIMEOUT_S} s") from None
+        return run_tmux(self.tmux, *args)
 
     def _list_panes(self, session: str) -> dict[int, str]:
         """The panes of the session, pane PID → pane ID; empty when there is no such session."""
@@ -112,11 +125,11 @@ class TmuxLauncher:
         if started.returncode != 0:  # never killed: it may be another launch's live session
             stderr = started.stderr.strip() or f"tmux new-session exited {started.returncode}"
             raise OSError(stderr[:4096])
-        match = _PANE_LINE.fullmatch(started.stdout)
-        if match is None:
+        pane = parse_pane(started.stdout)
+        if pane is None:
             self._kill_unconfirmed(session)
             raise OSError(f"tmux new-session printed {started.stdout[:200]!r}, not a pane")
-        self._panes[session] = _Pane(spec.launch_dir, match[1], int(match[2]))
+        self._panes[session] = _Pane(spec.launch_dir, *pane)
         return session
 
     def _kill_unconfirmed(self, session: str) -> None:

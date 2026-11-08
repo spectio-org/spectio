@@ -18,6 +18,7 @@ from spectio.cli.login import NODE, SENTINEL, TICKET
 from spectio.config import LOOPBACK
 
 STATE_MARK = "spectio-state-v1"  # tells the state file from what the remote profile prints
+STARTING_MARK = "spectio-starting-v1"  # serve --detach exited 3: its server is still booting
 _READ_STATE = f'echo {STATE_MARK}; cat -- "$HOME/.spectio/server.json" 2>/dev/null; exit 0'
 
 
@@ -71,10 +72,13 @@ def probe_script(remote_cmd: str) -> str:
 
 
 def start_script(remote_cmd: str) -> str:
-    """`spectio init` if there is no data directory yet, `spectio serve --detach`, then the
-    state file as `probe_script` prints it."""
-    init, serve = command(remote_cmd, "init"), command(remote_cmd, "serve", "--detach")
-    return f'[ -d "$HOME/.spectio" ] || {init} || exit; {serve} || exit; {_READ_STATE}'
+    """`spectio init` if there is no data directory yet, `spectio serve --detach --no-link`
+    (its link would land in ssh's captured output, SEC-PRE-10), then the state file as
+    `probe_script` prints it. Exit 3 (started, no link yet) prints `STARTING_MARK` first."""
+    init = command(remote_cmd, "init")
+    serve = command(remote_cmd, "serve", "--detach", "--no-link")
+    still = f'{{ s=$?; [ "$s" -eq 3 ] || exit "$s"; echo {STARTING_MARK}; }}'
+    return f'[ -d "$HOME/.spectio" ] || {init} || exit; {serve} || {still}; {_READ_STATE}'
 
 
 def login_script(remote_cmd: str) -> str:
