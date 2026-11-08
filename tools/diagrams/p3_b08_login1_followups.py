@@ -181,9 +181,9 @@ def build(theme: Theme) -> Sketch:
     s.line(split, TOP + 8, split, TOP + 146, dashed=True, colour=t.accent, passes=1)
     s.text(split + 40, TOP + 168, "`9.5rem`", size=11.5, colour=t.dim)
     s.text(sx, TOP + 168, "one grid, every row", size=11.5, anchor="start", colour=t.dim)
-    s.arc(x + 258, TOP + 30, x + 258, TOP + 104, lift=16, colour=t.good)
-    s.text(x + 282, TOP + 124, "each", size=11.5, anchor="end", colour=t.dim)
-    s.text(x + 282, TOP + 140, "frame", size=11.5, anchor="end", colour=t.dim)
+    s.arc(x + 268, TOP + 30, x + 268, TOP + 104, lift=16, colour=t.good)
+    s.text(x + 294, TOP + 124, "each", size=11.5, anchor="end", colour=t.dim)
+    s.text(x + 294, TOP + 140, "frame", size=11.5, anchor="end", colour=t.dim)
     s.step(x + CW / 2, CAP, 2, "task rows, named columns")
     lines(s, x, CAP + 30, ("`Task` or `Job`, then `State`; no tag chip",
                            "read again on each frame while active",
