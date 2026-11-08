@@ -31,7 +31,7 @@ The rules are owned by [development environment §15.3](../specs/dev-environment
         LocalForward 127.0.0.1:8080 /tmp/spectio-1000/spectio.sock
     ```
 
-    If the database directory moves (the `mkdtemp` fallback of a squatted `/tmp/spectio-<uid>`, or another `--db-dir`), so does the socket: copy the new path from the tunnel line.
+    A static socket path is safe only while the tunnel line still shows it. Behind a socket, `spectio serve` refuses a default `/tmp/spectio-<uid>` that another user created first (after a reboot or a `/tmp` purge): it names that user's uid and asks for `--db-dir`, and never moves to a `mkdtemp` directory that this entry would miss. With another `--db-dir` the socket moves too: copy the new path from the tunnel line. Way 2, `spectio open`, reads the path from `server.json` each time and is the safer choice.
 
 3. **Connect** with `ssh demo-hpc`. The tunnel lasts as long as the session.
 4. **Start the server** in that session if none runs: `spectio serve --detach` keeps it in a tmux session `spectio-server` and prints the link ([Keeping the server running](keep-the-server-running.md)). It was not run on a cluster here, **[to be validated]**.

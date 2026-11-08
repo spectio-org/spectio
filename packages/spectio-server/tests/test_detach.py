@@ -237,6 +237,25 @@ def test_detach_on_a_socket_prints_the_tunnel_to_it(
     assert f"ssh -N -L 127.0.0.1:{settings.port}:{sock} " in result.stdout
 
 
+def test_detach_after_unclean_stop_on_a_socket_starts_a_server(
+    settings: Settings, tmux: Tmux, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A server killed on SLURM (SIGKILL, OOM, logout) leaves its socket, server.json and key:
+    nothing listens, so a new server starts, as on TCP (CR-P3FU72-01)."""
+    monkeypatch.setenv("SPECTIO_EXECUTOR", "slurm")
+    assert settings.db_dir is not None
+    sock = settings.db_dir / "spectio.sock"
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as dead:
+        dead.bind(str(sock))  # bound then closed: the file stays, nothing listens
+    (settings.db_dir / "server.key").write_text("stale-key\n")
+    (settings.db_dir / "server.key").chmod(0o600)
+    state_file(settings, pid=2**22 + 1, socket=str(sock))  # above pid_max: a dead PID
+    result = detach()
+    assert result.exit_code == 0, result.output
+    assert tmux.pane() is not None and "new-session" in tmux.commands()
+    assert link_re(settings.port).search(result.stdout), result.stdout
+
+
 def test_detach_already_running_prints_new_link_exit_0(
     running_server: Settings, tmux: Tmux
 ) -> None:

@@ -151,6 +151,12 @@ def new_link(settings: Settings, timeout: float = 10) -> str:
     where = f"port {port}" if socket_path is None else str(socket_path)
     origin = f"http://{LOOPBACK}:{port}"
     conn = _connection(port, socket_path, timeout)
+    if socket_path is not None:  # a dead server's socket file: none runs, as no owner on TCP
+        try:
+            conn.connect()
+        except (ConnectionRefusedError, FileNotFoundError):
+            conn.close()
+            raise Refused(f"no server of yours on {socket_path} (nothing listens there)") from None
     try:
         conn.request(
             "POST",

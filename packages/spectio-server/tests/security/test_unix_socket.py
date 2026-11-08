@@ -184,6 +184,25 @@ def test_loose_db_dir_refused_and_left_as_it_is(settings: Settings) -> None:
     assert not (settings.data_dir / STATE).exists()
 
 
+def test_squatted_default_db_dir_refused_behind_a_socket(
+    settings: Settings, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The guide's tunnel names /tmp/spectio-<uid>/spectio.sock: a squatted default directory
+    is refused behind a socket, never swapped for a mkdtemp one (SEC-P3FU72-01)."""
+    base = tmp_path / "tmp"
+    base.mkdir(mode=0o700)
+    monkeypatch.setenv("TMPDIR", str(base))
+    squatted = base / f"spectio-{os.getuid()}"
+    squatted.mkdir(mode=0o755)
+    found = slurm(settings).model_copy(update={"db_dir": None})
+    with pytest.raises(ServeError, match=rf"{squatted}.*uid {os.getuid()}.*--db-dir"):
+        with started(found):
+            pass
+    assert sorted(p.name for p in base.iterdir()) == [squatted.name]  # no fallback, no socket
+    assert not any(squatted.iterdir())
+    assert not (settings.data_dir / STATE).exists()
+
+
 def test_stale_socket_replaced(settings: Settings) -> None:
     """A socket file a dead server left: nothing answers on it, so it is removed and bound."""
     assert settings.db_dir is not None

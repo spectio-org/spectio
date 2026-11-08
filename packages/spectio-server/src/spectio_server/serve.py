@@ -357,7 +357,7 @@ def started(
     behind = no_api_reason(settings)  # SLURM or a shared host: a socket only (inbox #109 r. 5)
     with ExitStack() as stack:  # undone in reverse order, whatever stops the server
         try:
-            db_dir = checked_db_dir(settings.db_dir or default_db_dir())  # before the lock
+            db_dir = checked_db_dir(settings.db_dir or default_db_dir(fixed=behind is not None))
             stack.callback(os.close, _lock(db_dir))
             socket_path = None if behind is None else db_dir / SOCKET
             if socket_path is None:
