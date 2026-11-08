@@ -728,3 +728,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-08 · P3-fu74 · PR #171 merged (47d78c4).
 - 2026-11-08 · P3-B07 · batch docs: simplify -13/+17 (re-review approve), figure, cast; doc-reviewer changes 12/14 after two revisions, its last finding (figure shell count) fixed by the orchestrator in f5b7a8e, not re-reviewed. PR #172.
 - 2026-11-08 · P3-t22 · merged integration again (d19ce3f6): M5 page conflict resolved keeping both sides; still waits for Thomas.
+
+- 2026-11-08 · P3-fu77 · root cause of the tmux launcher timeouts on PR #172 (product bug: a cancel SIGTERM killed `date` in the head tail, head.exit unparseable, run never ends); fix built (review and security approve, 1 round); PR #173. FU-P3-78 (dead head + malformed head.exit never ends) recorded for Thomas.
