@@ -1896,3 +1896,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 
 - **Covers:** PR #111 (P3-demo, `autopilot/P3-demo-pub`); FU-P3-29.
 - **Decided (Thomas, 2026-11-08, same dialog):** "Rafraîchir puis merger": `autopilot/integration` is merged into the branch and the recording is taken again, so the demo shows the current UI; Thomas merges it (it publishes demo data and changes `previews.yml`).
+
+### #123 · Question: P1 Task 22 needs the API on SLURM, which #109 rule 5 (a) keeps unmounted
+
+- **Covers:** [P1 Task 22](../plans/P1-walking-skeleton.md#task-22-end-to-end-on-slurm-mini-launch-and-monitor-both-engines) step 4 (the `e2e` job green); review finding CR-P3T22-01 (blocker); [#109](#109-assumed-writes-need-origin-and-json-as-built-p3-task-16) rule 5, answered (a) on 2026-11-07; [#121](#121-question-p1-task-22-slurm-mini-end-to-end-in-ci) (Thomas merges the workflow change); [P2](../plans/P2-execution.md) (M5 stays open until the `e2e` job is green).
+- **Context:** step P3-t22 (branch `autopilot/P3-t22`) adds `tests/slurm/e2e.sh` and `tests/slurm/e2e_client.py`, which sign in and launch with `POST /api/v1/runs`, and the `e2e` job of `.github/workflows/pipelines-slurm.yml`. On SLURM and shared hosts the server does not mount `/api/v1` (`NO_API`, `packages/spectio-server/src/spectio_server/app.py:94-101`), by your answer to #109 rule 5. So `POST /api/v1/runs` answers `404` and the job cannot pass. Its trigger paths now include `packages/**`, `web/**` and `engine-bridges/**`, so once merged it would be red on every product push. The cause is the posture decision, not the test code.
+- **Options:**
+  - (a) mount the API when `executor=slurm`, where the session and the checks of [dev-env §15.3](../specs/dev-environment-and-testing.md#153-001-on-a-cluster-architecture-and-safety-without-accounts) req. 2 to 7 hold; this changes the posture of #109 rule 5, #86 rule 1 and #85, and the change to `app.py` gets its own task, review (security review included) and unit tests;
+  - (b) keep it unmounted and leave M5 open: Task 22's PR stays unmerged (or merges with the `e2e` job off) until the by-hand check on a real login node (W6) reopens #109 rule 5 (b);
+  - (c) a launch path without the HTTP API for the test (a CLI launch on the login node, which 0.0.1 does not have yet), with the monitor checks read from the run directory; Task 22's step 4 and its plan text change accordingly.
+- **Recommendation:** none taken on your behalf: this is a security-posture default, reserved for you ([triage-policy](../playbooks/triage-policy.md#reserved-for-thomas-always-to-the-inbox)).
+- **Blocked:** step P3-t22 stays `waiting_human`. Its PR is not opened for promotion and not merged until you answer. If you pick (a), the change to `app.py` is built, reviewed and unit-tested in the task that owns it, then Task 22 is re-run.
