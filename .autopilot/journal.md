@@ -721,3 +721,6 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - 2026-11-08 · P3-fu72 · PR #169 merged (84ed074).
 - 2026-11-08 · P3-fu73 · build done (review approve, security approve, 1 round); PR #170 into autopilot/integration, label no-figure. Next: FU-P3-74.
+
+- 2026-11-08 · P3-fu73 · PR #170 merged (0da295d).
+- 2026-11-08 · P3-fu74 · build done (review approve, security approve, 2 rounds); PR #171 into autopilot/integration, label no-figure. Next: batch close P3-B07 (fu72, fu73, fu74).
