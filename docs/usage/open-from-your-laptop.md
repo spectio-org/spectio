@@ -22,7 +22,7 @@ The rules are owned by [development environment §15.3](../specs/dev-environment
 ## Way 1: the SSH config entry
 
 1. **Find the socket and the port.** `spectio serve` prints both in its tunnel line: `ssh -N -L 127.0.0.1:8080:/tmp/spectio-1000/spectio.sock alice@demo-hpc-login1`. The socket is `spectio.sock` in the database directory (`/tmp/spectio-<uid>` by default, or the `db_dir` of `~/.spectio/server.json`). The port is the laptop's end: `port` in `~/.spectio/spectio.toml` (8080 by default), which also names the link.
-2. **Add a `Host` block** to `~/.ssh/config` on the laptop, with the login node the server runs on. `LocalForward` takes a socket path as its second argument:
+2. **Add a `Host` block** to `~/.ssh/config` on the laptop, with the login node the server runs on. `LocalForward` takes a socket path as its second argument ([`ssh_config(5)`](https://man.openbsd.org/ssh_config#LocalForward): "Unix domain socket paths may be used in place of a TCP port"; the entry itself was not run on a login node, **[to be validated]**):
 
     ```text
     Host demo-hpc
