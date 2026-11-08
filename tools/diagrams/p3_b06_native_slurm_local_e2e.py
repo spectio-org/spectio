@@ -164,7 +164,7 @@ def build(theme: Theme) -> Sketch:
     s.page(x + 220, TOP1 + 2, 54, 66, fill="surface", lines=3)
     s.text(x + 247, TOP1 + 84, "`slurm`", size=11)
     s.arrow(x + 70, TOP1 + 72, x + 172, TOP1 + 112)
-    s.text(x + 96, TOP1 + 112, "stdin", size=12, colour=t.dim)
+    s.text(x + 112, TOP1 + 76, "stdin", size=12, colour=t.dim)
     s.bucket(x + 214, TOP1 + 100, 70, 44, fill="neutral")
     s.text(x + 214, TOP1 + 126, "MariaDB", size=12)
     s.text(x, TOP1 + 172, "never printed, never on a command line", size=12.5, anchor="start")

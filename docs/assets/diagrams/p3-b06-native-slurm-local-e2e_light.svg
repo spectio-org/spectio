@@ -142,7 +142,7 @@
   <path d="M729.8,237.8 C764.4,250.2 799.2,262.8 831.1,276.6" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M831.7,276.9 C829.6,274.0 825.8,270.2 822.6,266.2" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
   <path d="M831.7,276.7 C828.3,276.6 823.2,277.8 818.2,278.9" fill="none" stroke="#1e1e1e" stroke-width="1.7" stroke-linecap="round"/>
-  <text x="756.0" y="277.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="middle" font-weight="normal">stdin</text>
+  <text x="772.0" y="241.0" font-family="Excalifont, ui-sans-serif, system-ui, sans-serif" font-size="12" fill="#5c5c5c" text-anchor="middle" font-weight="normal">stdin</text>
   <path d="M839.0,265.0 L909.0,265.0 L897.0,309.0 L851.0,309.0 Z" fill="#f1f3f5" stroke="none"/>
   <path d="M839.3,264.8 C862.8,263.9 885.5,263.9 909.2,264.5" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M908.7,264.9 C905.5,278.6 901.1,293.6 897.2,309.1" fill="none" stroke="#1e1e1e" stroke-width="1.5" stroke-linecap="round"/>
