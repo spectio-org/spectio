@@ -1868,3 +1868,35 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Recommendation:** as built for rules 1, 2, 5 and 6; (a) for rules 3, 4 and 7.
 - **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the recommendation is applied. FU-P3-60: the `slurm-mini` cases (a resized job, a requeued job, a runs root behind a symlink, a newline in a WorkDir, a 16-character delimiter, `TZ=UTC` on `Submit`). FU-P3-61: rules 3 (b) and 4 (b) if Thomas wants them. FU-P3-62: rule 7 (b) and the other open findings of the [review record](code/P3-fu53.md#findings). Next follow-up number: FU-P3-63.
 - **Blocked:** nothing; the `slurm-mini` cases wait for P1 Task 22.
+- **Checked on native 23.11 (2026-11-08, FU-P3-66):** the multi-character `--delimiter` (rule 2's item among the **[to be validated]** items; 18 characters in the hand check, 10 in the worker's) and `TZ` honoured for `Submit` held on a one-node Slurm 23.11.4 with accounting (`dev/slurm/native.sh`, [review record](code/P3-fu66.md)). Both stay **[to be validated]** on the `slurm-mini` versions (25.11, 26.05); the other items (a resized job, a requeued job, a runs root behind a symlink, a newline in a WorkDir) were not run.
+
+### #120 · Question: `dev/slurm/native.sh`, native Slurm in cloud sessions (FU-P3-66)
+
+- **Covers:** FU-P3-66; the local check of 2026-11-08 08:30 in `.autopilot/journal.md` (native Slurm 23.11 with slurmdbd in the container, used to check FU-P3-53); [dev-env](../specs/dev-environment-and-testing.md) §2 (SLURM runs in sind) and the sind row of its tools table (sind needs Docker on cgroup v2, sind `README.md:40` at v0.15.0).
+- **Context:** cloud sessions run on cgroup v1, so sind does not start there and `slurm-mini` cannot run in a session. The FU-P3-53 check was done by hand with the distro's Slurm 23.11 packages and slurmdbd on MariaDB inside the container. A script `dev/slurm/native.sh` (`up`, `down`, `status`) would make that check repeatable. It installs system packages and writes `/etc/slurm`, so it is a development-layer change that needs your go-ahead. Guards it would have: it refuses to run as non-root; it refuses a `slurm.conf` it did not write (a marker line); the DB password is made per install, kept in a root-only file (mode 600), never printed, never on a command line, never committed; MariaDB is bound to 127.0.0.1; installs are apt only (no `curl | sh`); `down` stops the daemons and never deletes `/etc/slurm` or data. Tests: the guards, in CI without root; `sacct` parsing against the real 23.11 output where the script has run.
+- **Options:**
+  - (a) build `native.sh` as above, as a P3 task (step P3-fu66), with a security review of its diff; it does not replace sind or `slurm-mini`;
+  - (b) do not build it; keep `slurm-mini` checks for CI (P1 Task 22, see #121);
+  - (c) build it, but only as a spike under `spikes/native-slurm/`, not in `dev/`.
+- **Recommendation:** (a).
+- **Decided (Thomas, 2026-11-08, in the session's question dialog, after "Je ne vois pas les questions" was answered by showing it):** (a), "Script native.sh". The 09:00 journal correction was written by a reviewer that could not see the dialog; the answer is real. Step P3-fu66 runs now.
+
+### #121 · Question: P1 Task 22 (`slurm-mini` end to end) in CI
+
+- **Covers:** [P1 Task 22](../plans/P1-walking-skeleton.md#task-22-end-to-end-on-slurm-mini-launch-and-monitor-both-engines); [P2](../plans/P2-execution.md) ("only their runs go to CI"; M5 stays open until the `e2e` job is green); the `slurm-mini` cases waiting in #116, #119 (FU-P3-60).
+- **Context:** Task 22 runs both engines on `slurm-mini` in `pipelines-slurm.yml`, job `e2e`, on a CI runner with cgroup v2 where sind works. Enabling it changes a GitHub workflow, which the autopilot does not merge on its own.
+- **Options:**
+  - (a) build Task 22 after #120 is settled, open its PR, and leave the merge to you (workflow change);
+  - (b) build it now, independent of #120, same PR rule;
+  - (c) wait.
+- **Recommendation:** (a).
+- **Decided (Thomas, 2026-11-08, same dialog):** (a), "Task 22 en CI": built after P3-fu66; its PR changes `.github/workflows/pipelines-slurm.yml`, so Thomas merges it.
+
+### #122 · Decided: refresh the public demo PR #111, then Thomas merges it
+
+- **Covers:** PR #111 (P3-demo, `autopilot/P3-demo-pub`); FU-P3-29.
+- **Decided (Thomas, 2026-11-08, same dialog):** "Rafraîchir puis merger": `autopilot/integration` is merged into the branch and the recording is taken again, so the demo shows the current UI; Thomas merges it (it publishes demo data and changes `previews.yml`).
+
+### #124 · Decided: screenshots of each round's improvements
+
+- **Decided (Thomas, 2026-11-08, in the session):** "Je veux des screenshots des améliorations à chaque round". After each P3 task or batch, or a step stopped on a question, the orchestrator sends him screenshots of what changed ([autopilot §12](../playbooks/autopilot.md#12-screenshots-of-each-round-for-thomas-thomas-2026-11-08)). Same message: "Continue et sois autonome" (the standing rule of autopilot §10 applies; reserved items still go to him).

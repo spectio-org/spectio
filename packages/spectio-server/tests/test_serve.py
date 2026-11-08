@@ -585,6 +585,29 @@ def test_launch_active_until_the_ended_report(settings: Settings, writer: Writer
 
 
 @pytest.mark.parametrize(
+    ("engine", "head_state", "ended"),
+    [
+        ("nextflow", "succeeded", True),
+        ("nextflow", "failed", True),
+        ("snakemake", "succeeded", False),  # never an engine end: its exit code ends it
+    ],
+)
+def test_launch_engine_ended_once_its_end_event_is_in(
+    settings: Settings, writer: Writer, engine: str, head_state: str, ended: bool
+) -> None:
+    """G7: the runner learns that a Nextflow engine's own end event (`head_state` succeeded or
+    failed) is in, so that its head's exit code is reported without the spool grace; never for
+    a Snakemake launch, whose head's exit code ends it (SEC-P3G7-01)."""
+    root = settings.runs_root
+    head_files(make_run(root, run_id(1), engine=engine), code=None)
+    rebuild_index(writer, root)
+    sink = StoreSink(writer, root)
+    assert [r.engine_ended for r in sink.active_launches()] == [False]
+    writer.submit(lambda c: c.execute(update(launches).values(head_state=head_state))).result()
+    assert [r.engine_ended for r in sink.active_launches()] == [ended]
+
+
+@pytest.mark.parametrize(
     ("location", "added"),
     [
         ("https://github.com/nf-core/rnaseq", 1),
