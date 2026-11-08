@@ -718,3 +718,6 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-08 16:30 · #168 merged (ce8c235, EMBL login-node audit, from Thomas's local session). Inbox #109 rule 5 decided by Thomas: API and screens on SLURM/shared hosts only behind a Unix socket in a 0700 directory, never TCP. Follow-ups FU-P3-72 (socket), FU-P3-73 (uv/SQLite minimum), FU-P3-74 (full-disk warning), built in that order. #164: no conflict; its e2e client speaks TCP and will need the socket once FU-P3-72 lands (then its e2e can go green). Starting P3-fu72.
 
 - 2026-11-08 · P3-fu72 · build done (review approve, security approve, 3 rounds); PR #169 into autopilot/integration, label no-figure. Ready for Thomas's login1 checks. Next: FU-P3-73, FU-P3-74.
+
+- 2026-11-08 · P3-fu72 · PR #169 merged (84ed074).
+- 2026-11-08 · P3-fu73 · build done (review approve, security approve, 1 round); PR #170 into autopilot/integration, label no-figure. Next: FU-P3-74.
