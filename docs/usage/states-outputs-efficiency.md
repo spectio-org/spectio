@@ -1,7 +1,7 @@
 ---
 icon: material/chart-gantt
 ---
-# Process states, temporary outputs and efficiency
+# States, outputs and efficiency
 
 !!! note "Built on the integration branch, not released yet"
 
@@ -39,12 +39,13 @@ On **Tasks** (Snakemake: **Jobs**), pick **By process** (**By rule**). Each colu
 - **CPU eff.** and **Mem eff.** are shown as a mean and a maximum over the jobs measured. "low" and "near limit" are words, not only colours.
 - **CPUs asked, Memory asked, Time limit** show the most common request. **Requests** reads "vary" on a row when the jobs of the process asked for different values. The API has one flag for the three, so the page does not say which ([FU-P3-55](../progress/W5/P3-M9.md#follow-ups-of-batch-p3-b04)).
 - A line above the table lists the processes whose jobs used under 25 % of their memory.
+- **Read the screenshot with care:** it is a local run of very short jobs, so every process is flagged "low" with 0 % to 1 % memory and a 0 B peak. Real jobs on a cluster will not look like this.
 - The numbers come from `sacct` once a SLURM job has ended, else from the engine's trace (Nextflow) or its benchmark file (Snakemake). On a local executor there is no `sacct`. A Snakemake rule with no `benchmark:` shows "—", as in the synthetic pipeline.
 
-On a phone the table becomes one card per process, with a **Sort by** select.
+On a phone the table becomes one card per process, with a **Sort by** select. The shot below is scrolled to the first card, which is cut by the tab bar.
 
-![By process on a phone: the waste lines and one card per process](../assets/shots/app-run-by-process-phone_light.webp#only-light)
-![By process on a phone: the waste lines and one card per process](../assets/shots/app-run-by-process-phone_dark.webp#only-dark)
+![By process on a phone, scrolled to the waste lines and the first process card](../assets/shots/app-run-by-process-phone_light.webp#only-light)
+![By process on a phone, scrolled to the waste lines and the first process card](../assets/shots/app-run-by-process-phone_dark.webp#only-dark)
 
 ## One job
 
