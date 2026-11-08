@@ -55,8 +55,7 @@ steps:
   - run: "tmux list-sessions -F '#{session_name}'"
   - pause: 1.5
   - comment: "5. --wait and --no-link mean nothing without --detach: exit 2"
-  - run: "spectio serve --wait 5"
-    expect_exit: 2
+  - run: "spectio serve --wait 5; echo \"exit $?\""
   - pause: 1.2
   - clear: true
   - comment: "6. the stop: killing the session sends SIGHUP, which the server treats as SIGTERM"
