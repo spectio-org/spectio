@@ -47,6 +47,15 @@ up() { # mini|site|rest
   [ "$profile" = rest ] && printf '  - role: api                  # slurmrestd, JWT (Slurm 26.05 images only)\n    memory: 512m\n' >>"$cfg"
   sind create cluster --config "$cfg"
   log "sind cluster $profile up in $((SECONDS - t)) s"
+  # The heads run in tmux on the submitter (tests/slurm/e2e.sh, P1 Task 22). Whether the sind node image
+  # has tmux, and which package manager it has, is [to be validated] on the first e2e run.
+  # shellcheck disable=SC2016  # expanded in the node
+  sind exec "$profile" -- bash -c 'command -v tmux >/dev/null && exit 0
+    if command -v apt-get >/dev/null; then
+      DEBIAN_FRONTEND=noninteractive apt-get update -q && DEBIAN_FRONTEND=noninteractive apt-get install -y -q tmux
+    elif command -v dnf >/dev/null; then dnf install -y -q tmux
+    else echo "no tmux and no apt-get or dnf on the submitter" >&2; exit 1; fi
+    tmux -V'
   sind exec "$profile" -- sinfo -V
   sind exec "$profile" -- sinfo -o '%P %a %l %D %N %c %m'
   [ "$profile" = mini ] || sind exec "$profile" -- sacctmgr -n -P show assoc format=cluster,account,user,maxjobs
