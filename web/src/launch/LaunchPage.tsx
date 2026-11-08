@@ -24,6 +24,7 @@ import {
   inspect,
   launch,
 } from "../api";
+import { READ_ONLY } from "../demo/stub";
 import { ICONS, Icon, groupIcon } from "../icons";
 import { runName } from "../runs/RunState";
 import { executorLabel, plural, shortId } from "../runs/stateWord";
@@ -270,6 +271,7 @@ export function LaunchPage({
       if (wrong) return `Fix ${field.key}: ${wrong}`;
     }
     if (sending) return "Launching…";
+    if (import.meta.env.MODE === "demo") return READ_ONLY;
     return null;
   }
 

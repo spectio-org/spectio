@@ -1,0 +1,24 @@
+/* The demo banner (demo build only): the review tint, which reads in both schemes. */
+/* Its whole text wraps at every width (CR-P3DEMO-03); DemoBanner sets --sp-demo-banner-h to its
+   measured height, which the sticky sidebar leaves out of its own (shell.css .sp-sidebar,
+   CR-P3DEMO-02). */
+.sp-demo-banner {
+  display: flex;
+  gap: 4px;
+  padding: 6px 16px;
+  font-size: 13px;
+  line-height: 18px;
+  color: var(--sp-state-review-fg);
+  background: var(--sp-state-review-bg);
+  border-bottom: 1px solid var(--sp-line-hairline);
+}
+.sp-demo-banner a {
+  color: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  white-space: nowrap;
+}
+.sp-demo-banner a:focus-visible {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}

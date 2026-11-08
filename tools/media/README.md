@@ -7,7 +7,8 @@ This folder holds the scripts that produce every recording and screenshot in the
 | Terminal casts (asciinema v2) | `cast.py` | `casts/*.yaml` | `docs/assets/casts/<name>.cast` |
 | Screenshots (WebP) | `shots.py` | `REGISTRY` in the script | `docs/assets/shots/<name>_<theme>.webp` |
 | Terminal and browser side by side | `combo.py` | `combos/*.yaml` | `docs/assets/media/<name>.mp4`; the GIF preview goes to `tools/media/out/` (PR bodies, not committed) |
-| Demo-data hygiene | `fixtures.yaml`, `sanitize.py` | — | used by the three scripts above |
+| The public demo's recorded API | `record_demo.py` | a running demo `spectio serve` | `web/demo/fixtures.json` (committed), built into `/demo/` of the docs site |
+| Demo-data hygiene | `fixtures.yaml`, `sanitize.py` | — | used by the four scripts above |
 | Churn guard | `check_churn.sh` | — | pre-commit or CI |
 
 **Requirements:**
@@ -97,6 +98,47 @@ python3 tools/media/combo.py tools/media/combos/gate-review.yaml --html-only   #
 </video>
 ```
 A PR body cannot play a video, so it uses the GIF from `tools/media/out/` instead (generated on demand, never committed, so the PR stays under the 5 MB media budget). The poster is a shot, not the GIF. The video is at most 30 s: `speed` in the YAML plays the cast faster, and `combo.py` fails above 30 s.
+
+## The public demo: `record_demo.py`
+
+The demo at `https://spectio.pages.dev/demo/` (and `/demo/` of every PR preview) is the real web UI built with `npm --prefix web run build:demo`, whose API is answered from `web/demo/fixtures.json` (`web/src/demo/stub.ts`): reads only, writes refused, no request leaves the page. The file is public, so it holds demo data only. To record it again:
+
+1. Start the demo server as for the live shots: the account `alice`, the node name `login1` in its own UTS namespace, `HOME=/g/demo-lab`, the config `/g/demo-lab/spectio/data/spectio.toml` (`executor = "local"`, `port = 8766`, `runs_root = "/g/demo-lab/spectio/runs"`, `engines.snakemake_cmd` a Snakemake 9.27.1 venv from `dev/snakemake.lock.txt`), and a venv with this branch's three wheels (`uv build --all-packages`, after `npm --prefix web run build`), so the bridges come from the wheel's `spectio/_bridges`. Since inbox #109 rule 5 the API answers only on a machine that does not look shared, so the server's mount and PID namespaces hide `/etc/slurm`, `sinfo` and the other users' processes (this is not a SLURM run: there is no `sacct`):
+
+    ```bash
+    unshare --uts --mount --propagation private --pid --fork --mount-proc bash -c "hostname login1 \
+        && mount -t tmpfs none /etc/slurm && mount --bind /dev/null /usr/bin/sinfo \
+        && exec setpriv --reuid=alice --regid=alice --init-groups env -i HOME=/g/demo-lab USER=alice \
+        SPECTIO_CONFIG=/g/demo-lab/spectio/data/spectio.toml PATH=<venv>/bin:/usr/local/bin:/usr/bin:/bin \
+        bash -c 'cd /g/demo-lab && exec spectio serve'"
+    ```
+
+    The pipelines are copies under `/g/demo-lab/pipelines`: `synthetic` and `nf-core-demo` (copies of `tests/pipelines/synthetic/nextflow`; in the second, `manifest.name` is `nf-core/demo`), `synthetic-smk` (`tests/pipelines/synthetic/snakemake` with the `config/config.yaml` above), and `data` and `bin` beside them. Sign in as for the live shots: POST the ticket of the start link to `/api/v1/auth/magic-links:exchange` with an `Origin` header and keep the `Set-Cookie` pair.
+2. Launch the runs the demo shows, from the API (`POST /api/v1/runs`, as the UI does), one after the other. The 2026-11-08 recording has five:
+    - `synthetic`, profiles `test,local`, `outdir=results`: a plain run;
+    - `synthetic` with `fail_mode=oom` and `fail_process=MERGE`: it fails in `MERGE` after three attempts, exit code 137, so "Why it failed" and the job files show every attempt;
+    - `nf-core-demo`, `outdir=results`: a demo copy, not an nf-core pipeline;
+    - `cohort-2026-scale`: `synthetic` with `chunks=6`, `scale=2`, `seed=7`, `fail_mode=flaky` and `fail_process=ALIGN`: 221 tasks, 144 of them retried once, and parameters that are not the defaults;
+    - `synthetic-smk`, profile `local`, `chunks=0`: 88 jobs, the `split` checkpoint grows the DAG 12 times, and `make_reads` writes a `temp()` output that Snakemake removes.
+3. Record, then rebuild:
+
+    ```bash
+    SPECTIO_SESSION_COOKIE=<name>=<value> python3 tools/media/record_demo.py --base http://127.0.0.1:8766
+    # -> web/demo/fixtures.json: 255 answers, 1035918 bytes (2026-11-08)
+    npm --prefix web run build:demo                                    # -> web/dist-demo
+    ```
+
+What it records: `/version`, `/runs:summary?group_by=state`, the whole runs list, and per run the run, its processes (with their efficiency), stages, every task, the three logs (`head-out`, `head-err`, `engine`; the server's last 64 KiB of each), its launch template (Copy to a new launch) and its results folders (at most 20). The job files (each attempt's list, and the text of each present file) are recorded for a sample only, since every Nextflow task's wrapper is about 10 kB: in the newest Nextflow run, every failed run and every Snakemake run, the first task of each process, each failed task, and the first retried task of each process (`files_sample`). Another task's sheet says "The files could not be listed: Not in the demo's recorded data." Lists are stored whole, so the stub filters and pages them as the server does. The cookie is sent, never written. Before the check, Nextflow's `System: Linux <release>` banner line is cut to `System: Linux` (SEC-P3DEMO-02). The script refuses to write when `sanitize.leaks` (this file's `forbidden` terms), the recorder's own host name (as a whole word) or its own kernel release hits, or when the file would pass 1.5 MB. The guard knows only the recorder's machine: a server on another host is not covered (SEC-P3DEMO-06). `python3 -m unittest tools/media/test_record_demo.py` checks the committed file; no CI job runs it yet (FU-P3-29). The stub moves every time in the JSON answers so that the newest run ended an hour before the page was opened; the banner says so, and the log texts keep their recorded times.
+
+**What the demo cannot show.** A raw file is a link to the API (Download, Open in the report viewer, a results file), so on the static host it is not found: the report viewer and the downloads do not work in the demo. The runs are local, so there are no SLURM facts and no `sacct` efficiency (the API of 0.0.1 is not served on a SLURM host at all); efficiency comes from the Nextflow trace only; the synthetic Snakefile has no `benchmark:`, so its jobs show none. No run is running, cancelled or resumed.
+
+The demo's screenshot (`demo-runs`) is taken from the built demo served statically under `/demo/`:
+
+```bash
+rm -rf /tmp/demo-root/demo && mkdir -p /tmp/demo-root && cp -R web/dist-demo /tmp/demo-root/demo
+(cd /tmp/demo-root && python3 -m http.server 8903 --bind 127.0.0.1) &
+SPECTIO_URL=http://127.0.0.1:8903/demo python3 tools/media/shots.py run --shot demo-runs --theme light
+```
 
 ## Demo-data hygiene: `fixtures.yaml`
 

@@ -184,6 +184,11 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-run-task-efficiency", "/runs/$SPECTIO_DEMO_RUN?tab=tasks&process=FINAL_REPORT", 1440, 1000,
              "0.0.1, live: a Nextflow task's sheet: Efficiency from the engine's trace, with its source, and the 'low' flag",
              themes=("light", "dark"), live=("open:Files of", "wait:from the Nextflow trace")),
+        # P3-demo: the public demo build (npm run build:demo) served statically under /demo/, so
+        # SPECTIO_URL is http://…/demo and the route is in the hash (README.md, "The public demo").
+        Shot("demo-runs", "/#/runs", 1280, 800,
+             "0.0.1, the public demo: the runs list from the recording, under its banner",
+             live=("wait:cohort-2026-scale",)),
     )
 }
 
