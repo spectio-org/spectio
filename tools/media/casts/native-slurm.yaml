@@ -1,0 +1,40 @@
+# Batch P3-B06, FU-P3-66: dev/slurm/native.sh, a real one-node Slurm with accounting in the session's own
+# container, run for real (packages already installed, so `up` does not call apt; slurmctld, slurmd,
+# slurmdbd, MariaDB and munge are started and stopped by the script).
+# Run it as root, in a throwaway container, from the repository root:
+#   python3 tools/media/cast.py tools/media/casts/native-slurm.yaml
+# Needs the Ubuntu 24.04 packages slurm-wlm, slurmdbd, mariadb-server and munge installed (the script
+# installs them with apt when they are missing, which makes the first `up` much longer), and no other Slurm
+# on the machine. The job runs as root, the only account of such a container; the node name shown
+# is the demo name demo-hpc-node1 (see `replace`), not the container's host name. The time stamps in the script's log lines differ at each run.
+title: "FU-P3-66: dev/slurm/native.sh, a native one-node Slurm with accounting (up, one job, sacct, down)"
+cols: 130
+rows: 32
+idle_time_limit: 1.5
+typing_delay: 0.03
+line_delay: 0.04
+workdir: .
+replace:  # the container's host name is on the forbidden list of fixtures.yaml; the demo name takes its place
+  "node vm (": "node demo-hpc-node1 ("
+  "\nvm ": "\ndemo-hpc-node1 "
+steps:
+  - comment: "1. nothing runs yet (status exits 1 when a daemon is stopped)"
+  - run: "bash dev/slurm/native.sh status"
+    expect_exit: 1
+  - pause: 1.0
+  - comment: "2. up: configs, daemons, the cluster `local`, wait for the node to be idle"
+  - run: "bash dev/slurm/native.sh up"
+  - pause: 1.0
+  - clear: true
+  - comment: "3. status: five daemons, the node, the cluster"
+  - run: "bash dev/slurm/native.sh status"
+  - pause: 1.5
+  - comment: "4. a job through sbatch, then its row in the accounting database (-j: the database keeps earlier jobs too)"
+  - run: "id=$(sbatch --parsable --wait --job-name=demo-job --output=/dev/null --wrap 'sleep 2'); echo \"job $id\"; sacct -X -P -j $id -o JobID,JobName,Partition,State,ExitCode"
+  - pause: 1.5
+  - clear: true
+  - comment: "5. down: the daemons stop, packages and configs stay"
+  - run: "bash dev/slurm/native.sh down"
+  - run: "bash dev/slurm/native.sh status"
+    expect_exit: 1
+  - pause: 1.0
