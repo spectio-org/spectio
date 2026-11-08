@@ -1,6 +1,6 @@
 // The words of the run, stage and process states (ui-spec §3.1 and the §4.4 note of 2026-10-28,
 // "State word"), and the short formats the run screens share.
-import type { Counts, Process, RunState, Stage } from "../api";
+import type { Counts, Page, Process, RunState, Stage, Task } from "../api";
 
 const RUN_WORDS: Record<RunState, string> = {
   queued: "Queued",
@@ -199,3 +199,14 @@ export function when(iso: string | null, now = new Date()): string {
 const EXECUTORS: Record<string, string> = { slurm: "SLURM", local: "Local" };
 /** The server's executor as people write it (UX-PAR-33): "SLURM", "Local". */
 export const executorLabel = (executor: string): string => EXECUTORS[executor] ?? executor.toUpperCase();
+
+/** A list of tasks as shown: the rows, and the cursor of the next page. */
+export type Shown = { rows: Task[]; next: string | null };
+
+/** A refresh: the fresh first page, then the rows Load more added past it, and their cursor. */
+export function refresh(shown: Shown | null, page: Page<Task>): Shown {
+  const fresh = page.items ?? [];
+  const last = fresh[fresh.length - 1];
+  const tail = shown && last && page.next ? shown.rows.filter((t) => t.id > last.id) : [];
+  return tail.length ? { rows: [...fresh, ...tail], next: shown!.next } : { rows: fresh, next: page.next ?? null };
+}

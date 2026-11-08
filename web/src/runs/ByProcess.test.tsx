@@ -24,8 +24,9 @@ const eff = (over: Record<string, unknown>) => ({
 });
 const PROCESSES = {
   items: [
-    { process: "NFCORE:RNASEQ:STAR_ALIGN", stage_id: null, counts: { succeeded: 20 }, retries: 0, efficiency: eff({ jobs: { done: 20, total: 20 }, measured: 20, cpu_mean: 0.81, cpu_max: 0.95, mem_mean: 0.62, mem_max: 0.71, requested: { cpus: 12, mem_bytes: 72 * GIB, time_limit_s: 8 * 3600, varies: true } }) },
-    { process: "NFCORE:RNASEQ:FASTQC", stage_id: null, counts: { succeeded: 48 }, retries: 0, efficiency: eff({}) },
+    // listed A to Z, STAR_ALIGN first in the pipeline (FU-P3-82)
+    { process: "NFCORE:RNASEQ:FASTQC", stage_id: null, counts: { succeeded: 48 }, retries: 0, efficiency: eff({}), pipeline_order: 1 },
+    { process: "NFCORE:RNASEQ:STAR_ALIGN", stage_id: null, counts: { succeeded: 20 }, retries: 0, efficiency: eff({ jobs: { done: 20, total: 20 }, measured: 20, cpu_mean: 0.81, cpu_max: 0.95, mem_mean: 0.62, mem_max: 0.71, requested: { cpus: 12, mem_bytes: 72 * GIB, time_limit_s: 8 * 3600, varies: true } }), pipeline_order: 0 },
   ],
 };
 const TASKS = {
@@ -62,7 +63,7 @@ test("By process is a tab button; its sort buttons are native buttons; each row 
   const sorts = within(table).getAllByRole("button", { name: /^Sort by / });
   expect(sorts.length).toBeGreaterThan(5);
   for (const b of sorts) expect(b.tagName).toBe("BUTTON");
-  // the default order: lowest mean memory efficiency first
+  await userEvent.click(within(table).getByRole("button", { name: "Sort by Mem eff. mean" }));
   const memMean = within(table).getByRole("columnheader", { name: /Mem eff\. mean/ });
   expect(memMean).toHaveAttribute("aria-sort", "ascending");
   let rows = within(table).getAllByRole("row").slice(1);
@@ -102,7 +103,7 @@ test("on the phone By process is one card per process, with a Sort by select", a
   expect(screen.getByRole("combobox", { name: "Sort by" })).toBeInTheDocument();
   const cards = screen.getByRole("list", { name: "Tasks by process" });
   const first = within(cards).getAllByRole("listitem")[0];
-  expect(within(first).getByRole("button", { name: "Show the tasks of process NFCORE:RNASEQ:FASTQC" })).toBeInTheDocument();
+  expect(within(first).getByRole("button", { name: "Show the tasks of process NFCORE:RNASEQ:STAR_ALIGN" })).toBeInTheDocument();
   expect(within(first).getByText("Mem eff. mean · max")).toBeInTheDocument();
 });
 
@@ -164,4 +165,52 @@ test("on the phone 'requests vary' is one fact line, not a suffix on each value 
   expect(within(star).getByText("Requests").nextSibling?.textContent).toBe("vary");
   const fastqc = cards.find((c) => c.textContent?.includes("FASTQC"))!;
   expect(within(fastqc).queryByText("Requests")).toBeNull();
+});
+
+const names = (rows: HTMLElement[]) => rows.map((r) => within(r).getAllByRole("button")[0].getAttribute("aria-label")?.split(":").pop());
+
+test("By process opens in pipeline order; 'A to Z' and back are radio buttons, by keyboard too (FU-P3-82)", async () => {
+  served();
+  app(`/runs/${ID}?tab=tasks`);
+  await userEvent.click(await screen.findByRole("tab", { name: "By process" }));
+  const order = screen.getByRole("radiogroup", { name: "Order" });
+  const pipeline = within(order).getByRole("radio", { name: "Pipeline order" });
+  const az = within(order).getByRole("radio", { name: "A to Z" });
+  expect(pipeline.tagName).toBe("INPUT");
+  expect(pipeline).toBeChecked();
+  const table = screen.getByRole("table", { name: "Tasks by process" });
+  const body = () => within(table).getAllByRole("row").slice(1);
+  expect(names(body())).toEqual(["STAR_ALIGN", "FASTQC"]);
+  expect(within(table).queryAllByRole("columnheader").filter((h) => h.hasAttribute("aria-sort"))).toHaveLength(0);
+  await userEvent.click(az);
+  expect(az).toBeChecked();
+  expect(names(body())).toEqual(["FASTQC", "STAR_ALIGN"]);
+  // a column sort still works, and leaves neither order checked
+  await userEvent.click(within(table).getByRole("button", { name: "Sort by CPU eff. mean" }));
+  expect(names(body())).toEqual(["FASTQC", "STAR_ALIGN"]);
+  await userEvent.click(within(table).getByRole("button", { name: "Sort by CPU eff. mean" }));
+  expect(names(body())).toEqual(["STAR_ALIGN", "FASTQC"]);
+  expect(pipeline).not.toBeChecked();
+  expect(az).not.toBeChecked();
+  // by keyboard: Tab reaches the group, the arrows move between the two orders
+  az.focus();
+  await userEvent.keyboard(" ");
+  expect(names(body())).toEqual(["FASTQC", "STAR_ALIGN"]);
+  await userEvent.keyboard("{ArrowUp}");
+  expect(pipeline).toBeChecked();
+  expect(names(body())).toEqual(["STAR_ALIGN", "FASTQC"]);
+});
+
+test("on the phone the cards open in pipeline order, with the same two orders (FU-P3-82)", async () => {
+  viewport(390);
+  served();
+  app(`/runs/${ID}?tab=tasks`);
+  await userEvent.click(await screen.findByRole("tab", { name: "By process" }));
+  const cards = () => within(screen.getByRole("list", { name: "Tasks by process" })).getAllByRole("listitem");
+  expect(names(cards())).toEqual(["STAR_ALIGN", "FASTQC"]);
+  expect(screen.getByRole("combobox", { name: "Sort by" })).toHaveValue("pipeline:asc");
+  await userEvent.click(screen.getByRole("radio", { name: "A to Z" }));
+  expect(names(cards())).toEqual(["FASTQC", "STAR_ALIGN"]);
+  await userEvent.selectOptions(screen.getByRole("combobox", { name: "Sort by" }), "Pipeline order");
+  expect(names(cards())).toEqual(["STAR_ALIGN", "FASTQC"]);
 });

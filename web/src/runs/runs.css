@@ -1165,6 +1165,22 @@
 .sp-sheet-row .sp-chip {
   margin: 0;
 }
+/* A process's tasks (FU-P3-80): the same two columns on every row and in the header above them. */
+.sp-task-head,
+.sp-task-rows .sp-sheet-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 9.5rem;
+  gap: 10px;
+}
+.sp-task-rows .sp-sheet-row > .sp-mono {
+  overflow-wrap: anywhere;
+}
+.sp-task-head {
+  padding: 0 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sp-text-secondary);
+}
 .sp-sheet-facts {
   grid-template-columns: 1fr 1fr;
 }
@@ -1561,6 +1577,25 @@
   color: var(--sp-text-primary);
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
+}
+.sp-order {
+  /* By process: Pipeline order / A to Z (ui-spec §4.4 note 2026-11-08) */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--sp-text-secondary);
+}
+.sp-order label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  cursor: pointer;
+}
+.sp-order input:focus-visible {
+  outline: 2px solid var(--sp-indigo-500);
+  outline-offset: 2px;
 }
 .sp-sort {
   padding: 0;

@@ -176,6 +176,7 @@ const SAMPLES: Record<string, object> = {
     is_checkpoint: false,
     lower_bound: true,
     efficiency: processEfficiency,
+    pipeline_order: 0,
   } satisfies Process,
   Stage: { id: "", position: 0, name: null, source: "detected", state: "running", task_counts: {} } satisfies Stage,
   Task: {
