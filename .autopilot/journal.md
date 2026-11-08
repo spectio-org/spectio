@@ -696,3 +696,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-08 00:50 · P3-t35 · merged #153 (0115dbd). M9 tasks done; batch P3-B04 close (P3-t33, t34, t35) next.
 - 2026-11-08 01:25 · P3-B04 · batch close done (simplify -27/+8, re-review approve, figure, guide states-outputs-efficiency with five shots, doc-reviewer approve 13/14); FU-P3-56. PR #154 opened (no-figure).
 - 2026-11-08 01:30 · P3-B04 · merged #154 (b64451e). Promotion to main next.
+- 2026-11-08 01:45 · promotion #155 merged into main (merge commit e253fdf): batch P3-B04, M9 done. Left in P1: Tasks 22, 23 (need spectio serve --detach FU-P3-44 and a Docker daemon). #111 waits for Thomas.
