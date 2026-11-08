@@ -1,5 +1,6 @@
 """The `spectio` command (cli-and-shared-libraries.md §2)."""
 
+import math
 from importlib.metadata import version
 from pathlib import Path
 from typing import Annotated
@@ -82,7 +83,10 @@ def serve(
         bool, Opt("--detach", help="Run it in the tmux session spectio-server; print the link")
     ] = False,
     wait: Annotated[
-        float, Opt("--wait", min=0, help="--detach: seconds to wait for the link (exit 3 after)")
+        float,
+        Opt(
+            "--wait", min=0, max=3600, help="--detach: seconds to wait for the link (exit 3 after)"
+        ),
     ] = DETACH_WAIT_S,
     no_link: Annotated[bool, Opt("--no-link", hidden=True)] = False,  # spectio open's start
     pane: Annotated[bool, Opt("--pane", hidden=True)] = False,  # the pane --detach starts
@@ -91,6 +95,10 @@ def serve(
 
     Exit codes: 0, it served and stopped (with --detach, a link was printed); 2, refused;
     3, --detach started it but got no link in time: it is still starting."""
+    if not math.isfinite(wait):  # nan passes the range, and no deadline would pass
+        raise typer.BadParameter("must be a number of seconds", param_hint="'--wait'")
+    if not detach and (wait != DETACH_WAIT_S or no_link):
+        raise typer.BadParameter("only with --detach", param_hint="'--wait' or '--no-link'")
     if detach and not pane:
         raise typer.Exit(run_detach(force, wait, not no_link))
     raise typer.Exit(run_serve(force, pane))

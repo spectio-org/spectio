@@ -11,7 +11,7 @@ in the tmux session `spectio-server` on this node (FU-P3-44; dev-env §15.3 req.
    absolute `env -i` with an allow-list of variables as argv words (SEC-PRE-01): a running tmux
    server's global environment never reaches the child. The session exists already: wait for
    its pane if it runs `spectio serve --pane`, replace it if all its panes ended (the only
-   kill), else exit 2. Two `--detach` at once make one session: the loser waits.
+   kill, by pane ID), else exit 2. Two `--detach` at once make one session: the loser waits.
 3. Wait for a server.json of this node whose PID is a live pane of the session and which was
    written after this call began, then print the link here, never in the pane. The pane ended:
    exit 2 with the child's refusal (`serve-detach.err`). No link in time: exit 3, the session
@@ -53,7 +53,7 @@ PANE_ENV = tuple(
     dict.fromkeys((*KEEP, "PATH", "LD_LIBRARY_PATH", "TMUX_TMPDIR", "SPECTIO_CONFIG", *config._ENV))
 )
 _SERVER_PANES = "#{pane_id} #{pane_pid} #{pane_dead}"
-_SERVER_PANE = re.compile(r"%[0-9]{1,9} ([1-9][0-9]{0,9}) ([01])\n")
+_SERVER_PANE = re.compile(r"(%[0-9]{1,9}) ([1-9][0-9]{0,9}) ([01])\n?")
 _VERSION = re.compile(r"tmux (?:next-)?([0-9]+)\.([0-9]+)")
 # What tmux prints when there is no such session (or no tmux server at all); anything else
 # stops --detach (SEC-PRE-07).
@@ -195,7 +195,10 @@ def _check_version(tmux: str) -> None:
 def _pane_argv(force: bool) -> list[str]:
     if not os.access(ENV, os.X_OK):
         raise Stop(f"{ENV} is missing: --detach starts the server through it")
-    words = [f"{name}={os.environ[name]}" for name in PANE_ENV if name in os.environ]
+    env = {name: os.environ[name] for name in PANE_ENV if name in os.environ}
+    if env.get("SPECTIO_CONFIG"):  # the pane runs in `/`: the file this call read (SEC-P3FU44-02)
+        env["SPECTIO_CONFIG"] = os.path.abspath(env["SPECTIO_CONFIG"])
+    words = [f"{name}={value}" for name, value in env.items()]
     argv = [ENV, "-i", *words, sys.executable, "-P", "-m", "spectio", "serve", "--pane"]
     argv += ["--force"] if force else []
     for word in argv:  # tmux takes an argument that ends in `;` as a command separator
@@ -204,16 +207,24 @@ def _pane_argv(force: bool) -> list[str]:
     return argv
 
 
-def _server_panes(tmux: str) -> list[tuple[int, bool]] | None:
-    """The session's panes, (PID, dead), or None when there is no session."""
+def _server_panes(tmux: str) -> list[tuple[str, int, bool]] | None:
+    """The session's panes, (pane ID, PID, dead), or None when there is no session. An output
+    it cannot parse stops: a session has a pane, and a misread one could be killed."""
     found = _tmux(tmux, "list-panes", "-s", "-t", f"={SERVER_SESSION}", "-F", _SERVER_PANES)
     if found.returncode != 0:
         stderr = found.stderr.strip()
         if stderr.lower().startswith(_NO_SESSION):
             return None
         raise Stop(f"tmux list-panes failed: {stderr[:500] or found.returncode}")
-    lines = (_SERVER_PANE.fullmatch(line) for line in found.stdout.splitlines(keepends=True))
-    return [(int(m[1]), m[2] == "1") for m in lines if m is not None]
+    panes = []
+    for line in found.stdout.splitlines(keepends=True):
+        m = _SERVER_PANE.fullmatch(line)
+        if m is None:
+            raise Stop(f"tmux list-panes printed {line[:200]!r}, not {_SERVER_PANES!r}")
+        panes.append((m[1], int(m[2]), m[3] == "1"))
+    if not panes:
+        raise Stop(f"tmux list-panes printed no pane of session {SERVER_SESSION}")
+    return panes
 
 
 def _runs_pane_serve(pid: int) -> bool:
@@ -231,11 +242,14 @@ def _start(tmux: str, argv: list[str], again: bool = True) -> set[int]:
     """The PIDs of the panes to wait for: the session's, or the new session's one pane."""
     panes = _server_panes(tmux)
     if panes is not None:
-        live = {pid for pid, dead in panes if not dead}
+        live = {pid for _, pid, dead in panes if not dead}
         if not live:  # remain-on-exit: every pane ended, the session would block every start
-            killed = _tmux(tmux, "kill-session", "-t", f"={SERVER_SESSION}")
-            if killed.returncode != 0:
-                raise Stop(f"tmux kill-session failed: {killed.stderr.strip()[:500]}")
+            # By pane ID (the session goes with its last pane): never a session another
+            # --detach just made.
+            for pane_id, _, _ in panes:
+                killed = _tmux(tmux, "kill-pane", "-t", pane_id)
+                if killed.returncode != 0 and not killed.stderr.startswith("can't find"):
+                    raise Stop(f"tmux kill-pane failed: {killed.stderr.strip()[:500]}")
         elif any(_runs_pane_serve(pid) for pid in live):
             return live  # another --detach's server, starting: wait for it, never kill
         else:
@@ -274,7 +288,7 @@ def _wait_link(settings: Settings, deadline: float) -> str:
 def _wait_own(settings: Settings, tmux: str, seen: set[int], t0: float, deadline: float) -> str:
     retry_at = 0.0
     while True:
-        live = {pid for pid, dead in _server_panes(tmux) or [] if not dead}
+        live = {pid for _, pid, dead in _server_panes(tmux) or [] if not dead}
         if not live:
             raise Stop(f"the server stopped at start: {_why(settings, seen)}")
         seen |= live

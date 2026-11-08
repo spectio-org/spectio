@@ -246,9 +246,28 @@ def test_detach_session_of_dead_panes_is_replaced(settings: Settings, tmux: Tmux
     wait_for(lambda: not _alive(dead))
     result = detach()
     assert result.exit_code == 0, result.output
-    assert ["kill-session", "-t", f"={SESSION}"] in tmux.calls()
+    pane = tmux.pane()
+    assert pane is None or pane[1] != dead
+    assert "kill-session" not in tmux.commands()
+    (call,) = [c for c in tmux.calls() if c[0] == "kill-pane"]  # by pane ID (CR-P3FU44-01)
+    assert call[1] == "-t" and re.fullmatch(r"%[0-9]+", call[2])
     found = tmux.pane()
     assert found is not None and found[1] != dead and _alive(found[1])
+
+
+@pytest.mark.parametrize("listed", ["garbage\n", "", "%0 123 1\nnot a pane\n"])
+def test_detach_unparseable_list_panes_kills_nothing(
+    settings: Settings, tmux: Tmux, listed: str
+) -> None:
+    """An output it cannot parse (another tmux build): exit 2, nothing killed (SEC-P3FU44-03,
+    CR-P3FU44-01)."""
+    pid = tmux.start(sys.executable, "-c", "import time; time.sleep(60)", *PANE_TAIL[2:])
+    (tmux.state / "panes.out").write_text(listed)
+    result = detach()
+    assert result.exit_code == 2, result.output
+    assert "list-panes" in result.output
+    assert not {"kill-session", "kill-pane", "new-session"} & set(tmux.commands()[1:])
+    assert _alive(pid)
 
 
 def test_detach_child_exits_at_start_exits_2(settings: Settings, tmux: Tmux) -> None:
@@ -305,6 +324,38 @@ def test_detach_forwards_spectio_env_as_argv(
     assert f"TMUX_TMPDIR={tmux.state}" in words
     names = {word.partition("=")[0] for word in words}
     assert not names & {"SPECTIO_BOGUS", "TMUX", "LD_PRELOAD"}
+
+
+def test_detach_relative_spectio_config_made_absolute(
+    settings: Settings, tmux: Tmux, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """The pane runs in `/`: a relative SPECTIO_CONFIG is forwarded as the path the caller
+    read (SEC-P3FU44-02)."""
+    config = Path(os.environ["SPECTIO_CONFIG"])
+    monkeypatch.chdir(config.parent)
+    monkeypatch.setenv("SPECTIO_CONFIG", config.name)
+    result = detach()
+    assert result.exit_code == 0, result.output
+    call = tmux.new_session()
+    assert f"SPECTIO_CONFIG={config}" in call[11 : call.index(sys.executable)]
+
+
+@pytest.mark.parametrize("wait", ["nan", "inf", "-inf", "3601"])
+def test_detach_wait_must_be_finite(settings: Settings, tmux: Tmux, wait: str) -> None:
+    """nan would make the deadline never pass (SEC-P3FU44-04)."""
+    result = detach("--wait", wait)
+    assert result.exit_code == 2, result.output
+    assert "--wait" in result.output
+    assert tmux.calls() == []
+
+
+@pytest.mark.parametrize("args", [["--wait", "5"], ["--no-link"]])
+def test_wait_and_no_link_need_detach(settings: Settings, tmux: Tmux, args: list[str]) -> None:
+    """Never silently ignored: without --detach, they are refused (CR-P3FU44-05)."""
+    result = CliRunner().invoke(app, ["serve", *args])
+    assert result.exit_code == 2, result.output
+    assert "--detach" in result.output
+    assert not (settings.data_dir / "server.json").exists()
 
 
 def test_detach_refuses_a_word_tmux_would_split(
