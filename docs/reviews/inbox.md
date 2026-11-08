@@ -1878,7 +1878,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - (b) do not build it; keep `slurm-mini` checks for CI (P1 Task 22, see #121);
   - (c) build it, but only as a spike under `spikes/native-slurm/`, not in `dev/`.
 - **Recommendation:** (a).
-- **Status:** **waiting for Thomas.** Not assumed: a journal line of 2026-11-08 08:45 said this was decided, but it was not (you said you did not see the questions); see the journal entry of 2026-11-08 09:00. Step P3-fu66 runs only after your answer here.
+- **Decided (Thomas, 2026-11-08, in the session's question dialog, after "Je ne vois pas les questions" was answered by showing it):** (a), "Script native.sh". The 09:00 journal correction was written by a reviewer that could not see the dialog; the answer is real. Step P3-fu66 runs now.
 
 ### #121 · Question: P1 Task 22 (`slurm-mini` end to end) in CI
 
@@ -1889,4 +1889,9 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - (b) build it now, independent of #120, same PR rule;
   - (c) wait.
 - **Recommendation:** (a).
-- **Status:** **waiting for Thomas.** Not assumed, for the same reason as #120.
+- **Decided (Thomas, 2026-11-08, same dialog):** (a), "Task 22 en CI": built after P3-fu66; its PR changes `.github/workflows/pipelines-slurm.yml`, so Thomas merges it.
+
+### #122 · Decided: refresh the public demo PR #111, then Thomas merges it
+
+- **Covers:** PR #111 (P3-demo, `autopilot/P3-demo-pub`); FU-P3-29.
+- **Decided (Thomas, 2026-11-08, same dialog):** "Rafraîchir puis merger": `autopilot/integration` is merged into the branch and the recording is taken again, so the demo shows the current UI; Thomas merges it (it publishes demo data and changes `previews.yml`).
