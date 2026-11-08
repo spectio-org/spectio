@@ -478,6 +478,27 @@ These run against sind and kind in T3 and T4.
 
 The four groups are Input/output options, Scenario, Failure injection and Resources. `fail_mode` and the target process or rule are enums, so a launch with another value is refused with a `422`. The scenarios' behaviour is unchanged. No group sets a `maximum` yet, and `python_image` accepts any string (SEC-P3PARD-02, -03, follow-up FU-P3-28).
 
+*Note 2026-11-08, task logs and a run that errors out (FU-P3-83; the request: Thomas, login1 feedback, 2026-11-08, "jobs should write more logs to test the error/out views"):*
+
+**Task logs.** Every `synth.py` task writes deterministic lines (no time, no host), so the stdout and stderr views have something to show. The parameter `verbosity` (Scenario group of both schemas) sets how many:
+
+| `verbosity` | stdout | stderr |
+|---|---|---|
+| `quiet` | nothing | nothing on success |
+| `normal` (default) | 5 to 20 `INFO` lines: arguments, inputs, progress, outputs | one `WARN` line |
+| `loud` | about 1000 `INFO` lines, about 90 KB | about 1000 `DEBUG` lines, about 90 KB: both streams are above the 64 KiB a log view shows at first |
+
+A failing task adds `ERROR` lines on stderr at every level; the first one still reads `synthetic failure: …` (what `test_bridge_nextflow.py` looks for). The outputs are the same at every level, so the golden fixtures do not change (`test_synth.py` pins their checksums). Nextflow writes the lines to `.command.out` and `.command.err`. On Snakemake, each rule has two `log:` files, `<outdir>/logs/<rule>/<job>.out` and `.err`, so the job-files view lists rule logs; a job's stdout and stderr go there, not to the Snakemake log or the SLURM job log.
+
+**A run that errors out.** Use the ready-made profile `fail_demo`: `COMPARE` (Snakemake: `compare`) for `treatA` exits 1, after both gates, so the run ends `failed` with a tool error.
+
+| From | Nextflow | Snakemake |
+|---|---|---|
+| Launch form | profiles `test`, `local`, `fail_demo` | profile `fail_demo` (one profile per launch: it holds the `local` settings too) |
+| Command line | `nextflow run tests/pipelines/synthetic/nextflow -profile test,local,fail_demo` | `snakemake -s tests/pipelines/synthetic/snakemake/workflow/Snakefile --workflow-profile tests/pipelines/synthetic/snakemake/profiles/fail_demo` |
+
+Nextflow does not retry exit 1; Snakemake's `retries: 2` runs 3 attempts. Without the profile, set the Failure injection group: `fail_mode` `exit` and `fail_process` (Snakemake: `fail_rule`), optionally `fail_sample`; on the command line, `--fail_mode exit --fail_process COMPARE`, or `--config fail_mode=exit fail_rule=compare`. A value set in the launch form wins over the Nextflow profile (`-params-file`); on Snakemake the profile's `config:` wins over the form (`--config` over `--configfile`).
+
 ### 10.2 Real pipelines (`tests/pipelines/real/corpus.yaml`)
 
 Step pages: [F3](../progress/W0/F3.md), then [T7](../progress/W3/T7.md). Real pipelines run with their own test datasets. They are chosen to cover the scenario classes of [`checking-scenarios.md`](checking-scenarios.md) §1. Sources: `docs/research/corpus-and-ci-2026-10-26.md`. The CI results, the runner measurements and the reason for each tier move are in [corpus-ci-2026-10-27](../research/corpus-ci-2026-10-27.md).

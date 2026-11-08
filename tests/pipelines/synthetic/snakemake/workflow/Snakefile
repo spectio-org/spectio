@@ -5,9 +5,13 @@ Stages and gate targets:
   align  : checkpoint split (dynamic fan-out) -> align  (gate: --until qc_report align_done)
   quant  : merge -> compare (per group vs ctrl) -> final_report
 Failure injection (config): fail_mode=exit|oom|oom_once|oom_real|timeout|flaky fail_rule=NAME fail_sample=ID
+  (--workflow-profile profiles/fail_demo: compare for treatA exits 1, so the run fails)
+Job logs (config): verbosity=quiet|normal|loud, the lines bin/synth.py writes; each job's stdout and
+stderr go to its rule logs, {outdir}/logs/<rule>/<job>.out and .err
 Run with --retries 2 so OOM / flaky / timeout retries behave like the Nextflow twin.
 """
 import csv
+import shlex
 from pathlib import Path
 
 SYNTH = str(Path(workflow.basedir).parents[1] / "bin" / "synth.py")
@@ -22,6 +26,7 @@ config.setdefault("fail_rule", config.get("fail_process", ""))   # same flag nam
 config.setdefault("fail_sample", "")
 config.setdefault("fail_gb", 2)
 config.setdefault("time_limit_s", 120)
+config.setdefault("verbosity", "normal")   # quiet | normal | loud: log lines per job (bin/synth.py)
 
 OUT = config["outdir"]
 
@@ -51,7 +56,20 @@ def fail_hook(rule, sample=""):
     return cmd
 
 
-PRE = "export SPECTIO_ATTEMPT={resources.attempt} SPECTIO_TIME_LIMIT={resources.time_limit_s}; "
+PRE = (
+    "export SPECTIO_ATTEMPT={resources.attempt} SPECTIO_TIME_LIMIT={resources.time_limit_s} "
+    f"SYNTH_VERBOSITY={shlex.quote(str(config['verbosity']))}; "
+)
+
+
+def logs(job):
+    """The rule logs of one job: what its shell writes to stdout and to stderr."""
+    return dict(out=f"{OUT}/logs/{job}.out", err=f"{OUT}/logs/{job}.err")
+
+
+def body(cmd):
+    """The shell of a rule: the failure hook, then the command, both writing to the rule logs."""
+    return PRE + "( {params.hook} && " + cmd + " ) > {log.out} 2> {log.err}"
 
 
 def res(**extra):
@@ -74,16 +92,18 @@ rule all:
 rule make_reads:
     output: temp(f"{OUT}/work/reads/{{sample}}.reads.txt")
     params: n=lambda wc: SAMPLES[wc.sample]["n_reads"], hook=lambda wc: fail_hook("make_reads", wc.sample)
+    log: **logs("make_reads/{sample}")
     resources: **res()
-    shell: PRE + "{params.hook} && python3 " + SYNTH + " reads {wildcards.sample} {params.n} " + str(config["seed"]) + " {output}"
+    shell: body("python3 " + SYNTH + " reads {wildcards.sample} {params.n} " + str(config["seed"]) + " {output}")
 
 
 rule qc_stats:
     input: f"{OUT}/work/reads/{{sample}}.reads.txt"
     output: f"{OUT}/qc/per_sample/{{sample}}.qc.json"
     params: hook=lambda wc: fail_hook("qc_stats", wc.sample)
+    log: **logs("qc_stats/{sample}")
     resources: **res()
-    shell: PRE + "{params.hook} && python3 " + SYNTH + " stats {input} {output}"
+    shell: body("python3 " + SYNTH + " stats {input} {output}")
 
 
 rule qc_report:
@@ -93,8 +113,9 @@ rule qc_report:
         json=f"{OUT}/multiqc/multiqc_data.json",
         html=f"{OUT}/multiqc/multiqc_report.html",
     params: hook=fail_hook("qc_report")
+    log: **logs("qc_report")
     resources: **res()
-    shell: PRE + "{params.hook} && python3 " + SYNTH + " report {output.tsv} {output.json} {output.html} {input}"
+    shell: body("python3 " + SYNTH + " report {output.tsv} {output.json} {output.html} {input}")
 
 
 checkpoint split:
@@ -103,16 +124,18 @@ checkpoint split:
     params:
         n=lambda wc, input: config["chunks"] or (sum(1 for _ in open(input[0])) + 99) // 100,
         hook=lambda wc: fail_hook("split", wc.sample),
+    log: **logs("split/{sample}")
     resources: **res()
-    shell: PRE + "{params.hook} && python3 " + SYNTH + " split {input} {params.n} {output}"
+    shell: body("python3 " + SYNTH + " split {input} {params.n} {output}")
 
 
 rule align:
     input: f"{OUT}/work/chunks/{{sample}}/{{sample}}.chunk{{i}}.txt"
     output: f"{OUT}/work/aligned/{{sample}}/{{sample}}.chunk{{i}}.counts.tsv"
     params: hook=lambda wc: fail_hook("align", wc.sample)
+    log: **logs("align/{sample}.chunk{i}")
     resources: **res()
-    shell: PRE + "{params.hook} && python3 " + SYNTH + " align {input} {output}"
+    shell: body("python3 " + SYNTH + " align {input} {output}")
 
 
 def aligned_files(wc):
@@ -133,8 +156,9 @@ rule merge:
     input: f"{OUT}/work/align.done", counts=aligned_files
     output: f"{OUT}/quant/counts_matrix.tsv"
     params: hook=fail_hook("merge")
+    log: **logs("merge")
     resources: **res()
-    shell: PRE + "{params.hook} && python3 " + SYNTH + " merge {output} {input.counts}"
+    shell: body("python3 " + SYNTH + " merge {output} {input.counts}")
 
 
 rule compare:
@@ -144,13 +168,15 @@ rule compare:
         a=lambda wc: ",".join(GROUPS[wc.group]),
         b=",".join(GROUPS.get("ctrl", [])),
         hook=lambda wc: fail_hook("compare", wc.group),
+    log: **logs("compare/{group}")
     resources: **res()
-    shell: PRE + "{params.hook} && python3 " + SYNTH + " compare {input} {params.a} {params.b} {output}"
+    shell: body("python3 " + SYNTH + " compare {input} {params.a} {params.b} {output}")
 
 
 rule final_report:
     input: expand(f"{OUT}/quant/comparisons/{{group}}_vs_ctrl.tsv", group=OTHERS)
     output: f"{OUT}/final_report.html"
     params: hook=fail_hook("final_report")
+    log: **logs("final_report")
     resources: **res()
-    shell: PRE + "{params.hook} && {{ echo '<!doctype html><title>Final report</title><h1>Comparisons</h1><pre>'; cat {input}; echo '</pre>'; }} > {output}"
+    shell: body("{{ echo '<!doctype html><title>Final report</title><h1>Comparisons</h1><pre>'; cat {input}; echo '</pre>'; }} > {output}")
