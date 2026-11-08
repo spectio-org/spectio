@@ -1896,3 +1896,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 
 - **Covers:** PR #111 (P3-demo, `autopilot/P3-demo-pub`); FU-P3-29.
 - **Decided (Thomas, 2026-11-08, same dialog):** "Rafraîchir puis merger": `autopilot/integration` is merged into the branch and the recording is taken again, so the demo shows the current UI; Thomas merges it (it publishes demo data and changes `previews.yml`).
+
+### #124 · Decided: screenshots of each round's improvements
+
+- **Decided (Thomas, 2026-11-08, in the session):** "Je veux des screenshots des améliorations à chaque round". After each P3 task or batch, or a step stopped on a question, the orchestrator sends him screenshots of what changed ([autopilot §12](../playbooks/autopilot.md#12-screenshots-of-each-round-for-thomas-thomas-2026-11-08)). Same message: "Continue et sois autonome" (the standing rule of autopilot §10 applies; reserved items still go to him).

@@ -1229,3 +1229,7 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 
 - **Context.** Cloud sessions run on cgroup v1, so sind and `slurm-mini` do not start there; a native Slurm 23.11 with slurmdbd, installed from the Ubuntu packages, ran in the session and checked FU-P3-53 by hand ([inbox #120](../reviews/inbox.md#120-question-devslurmnativesh-native-slurm-in-cloud-sessions-fu-p3-66)).
 - **Decided (Thomas, 2026-11-08, in the session's question dialog):** build `dev/slurm/native.sh` (FU-P3-66, step P3-fu66) with a security review; then P1 Task 22 in CI, whose PR Thomas merges ([#121](../reviews/inbox.md#121-question-p1-task-22-slurm-mini-end-to-end-in-ci)); refresh PR #111 and leave its merge to Thomas ([#122](../reviews/inbox.md#122-decided-refresh-the-public-demo-pr-111-then-thomas-merges-it)).
+
+## 2026-11-08 — Screenshots of each round for Thomas (inbox #124, Thomas)
+
+- **Decided (Thomas, 2026-11-08, in the session):** after each P3 task or batch, the orchestrator sends Thomas screenshots of the improvements: the real UI for screen changes, a terminal capture for CLI, test and CI changes ([autopilot §12](../playbooks/autopilot.md#12-screenshots-of-each-round-for-thomas-thomas-2026-11-08), [inbox #124](../reviews/inbox.md#124-decided-screenshots-of-each-rounds-improvements)).
