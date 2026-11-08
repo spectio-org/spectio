@@ -12,7 +12,7 @@ import { lastSegment, type words } from "./stateWord";
 // with the same facts as label and value rows, and a Sort by select. No plot in 0.0.1.
 
 type Words = ReturnType<typeof words>;
-type Key = "name" | "jobs" | "measured" | "cpu_mean" | "cpu_max" | "mem_mean" | "mem_max" | "cpus" | "mem" | "time" | "peak" | "longest";
+type Key = "name" | "jobs" | "measured" | "cpu_mean" | "cpu_max" | "mem_mean" | "mem_max" | "cpus" | "mem" | "time" | "varies" | "peak" | "longest";
 
 /** A ratio and its badges: "low" under 25 %, and for memory "near limit" above 90 %. */
 function Ratio({ value, memory = false }: { value: number | null; memory?: boolean }) {
@@ -25,11 +25,11 @@ function Ratio({ value, memory = false }: { value: number | null; memory?: boole
   );
 }
 
-/** One requested value; "varies" when the jobs asked for different values. */
-const asked = (e: ProcessEfficiency, text: string): string => (e.requested.varies ? `${text}, varies` : text);
-const cpus = (e: ProcessEfficiency): string => asked(e, e.requested.cpus === null ? "—" : String(e.requested.cpus));
-const memory = (e: ProcessEfficiency): string => asked(e, bytes(e.requested.mem_bytes));
-const limit = (e: ProcessEfficiency): string => asked(e, seconds(e.requested.time_limit_s));
+// The requested values. The API has one `varies` flag for the three, so "vary" is one mark per
+// row, never on a value that may not have varied (CR-P3T35-05; per-value flags are FU-P3-55).
+const cpus = (e: ProcessEfficiency): string => (e.requested.cpus === null ? "—" : String(e.requested.cpus));
+const memory = (e: ProcessEfficiency): string => bytes(e.requested.mem_bytes);
+const limit = (e: ProcessEfficiency): string => seconds(e.requested.time_limit_s);
 
 const COLUMNS: { key: Key; label: (w: Words) => string; sort: (p: Process) => number | string | null; num?: boolean }[] = [
   { key: "name", label: (w) => w.Group, sort: (p) => lastSegment(p.process) },
@@ -42,6 +42,7 @@ const COLUMNS: { key: Key; label: (w: Words) => string; sort: (p: Process) => nu
   { key: "cpus", label: () => "CPUs asked", sort: (p) => p.efficiency?.requested.cpus ?? null, num: true },
   { key: "mem", label: () => "Memory asked", sort: (p) => p.efficiency?.requested.mem_bytes ?? null, num: true },
   { key: "time", label: () => "Time limit", sort: (p) => p.efficiency?.requested.time_limit_s ?? null, num: true },
+  { key: "varies", label: () => "Requests", sort: (p) => (p.efficiency ? Number(p.efficiency.requested.varies) : null) },
   { key: "peak", label: () => "Peak memory", sort: (p) => p.efficiency?.used.peak_rss_bytes_max ?? null },
   { key: "longest", label: () => "Longest", sort: (p) => p.efficiency?.used.elapsed_s_max ?? null, num: true },
 ];
@@ -59,6 +60,7 @@ function cells(e: ProcessEfficiency | undefined): ReactNode[] {
     cpus(e),
     memory(e),
     limit(e),
+    e.requested.varies ? "vary" : "",
     bytes(e.used.peak_rss_bytes_max),
     seconds(e.used.elapsed_s_max),
   ];
@@ -72,6 +74,7 @@ export function efficiencyFacts(e: ProcessEfficiency | undefined, w: Words): [st
     ["CPU eff. mean · max", <><Ratio value={e.cpu_mean} /> · <Ratio value={e.cpu_max} /></>],
     ["Mem eff. mean · max", <><Ratio value={e.mem_mean} memory /> · <Ratio value={e.mem_max} memory /></>],
     ["CPUs · memory · time limit asked", `${cpus(e)} · ${memory(e)} · ${limit(e)}`],
+    ...(e.requested.varies ? ([["Requests", "vary"]] as [string, ReactNode][]) : []),
     ["Peak memory · longest", `${bytes(e.used.peak_rss_bytes_max)} · ${seconds(e.used.elapsed_s_max)}`],
   ];
 }
@@ -125,7 +128,8 @@ export function ByProcess({ processes, w, onShow }: { processes: Process[]; w: W
       ))}
       <p className="sp-muted">
         Over each {w.unit}'s last attempt: from sacct once a {w.unit} has ended, before that from the engine's trace or
-        benchmark. Asked: the most common value; "varies" when the {w.units} asked for different values.
+        benchmark. Asked: the most common value; Requests "vary" when the {w.units} asked for different CPUs, memory or
+        time limits, without saying which.
       </p>
     </>
   );

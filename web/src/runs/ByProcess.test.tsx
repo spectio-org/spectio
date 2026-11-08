@@ -69,7 +69,7 @@ test("By process is a tab button; its sort buttons are native buttons; each row 
   expect(within(rows[0]).getByRole("button", { name: "Show the tasks of process NFCORE:RNASEQ:FASTQC" })).toBeInTheDocument();
   expect(rows[0].textContent).toContain("48 / 48");
   expect(rows[0].textContent).toContain("3 % low");
-  expect(rows[1].textContent).toContain("varies");
+  expect(rows[1].textContent).toContain("vary");
   await userEvent.click(within(table).getByRole("button", { name: "Sort by CPU eff. mean" }));
   rows = within(table).getAllByRole("row").slice(1);
   expect(rows[0].textContent).toContain("FASTQC");
@@ -134,4 +134,34 @@ test("the Task list and By process tabs each control their tab panel (CR-P3T35-0
   panel = screen.getByRole("tabpanel", { name: "By process" });
   expect(byProcess).toHaveAttribute("aria-controls", panel.id);
   expect(within(panel).getByRole("table", { name: "Tasks by process" })).toBeInTheDocument();
+});
+
+test("'vary' is one mark per row, never on a request value (CR-P3T35-05)", async () => {
+  served();
+  app(`/runs/${ID}?tab=tasks`);
+  await userEvent.click(await screen.findByRole("tab", { name: "By process" }));
+  const table = screen.getByRole("table", { name: "Tasks by process" });
+  const heads = within(table).getAllByRole("columnheader").map((h) => h.textContent);
+  const row = within(table).getAllByRole("row").find((r) => r.textContent?.includes("STAR_ALIGN"))!;
+  const cell = (name: string) => within(row).getAllByRole("cell")[heads.indexOf(name)].textContent;
+  expect(cell("CPUs asked")).toBe("12");
+  expect(cell("Memory asked")).toBe("72 GB");
+  expect(cell("Time limit")).toBe("8 h");
+  expect(cell("Requests")).toBe("vary");
+  expect(row.textContent?.match(/var/g)).toHaveLength(1);
+  const other = within(table).getAllByRole("row").find((r) => r.textContent?.includes("FASTQC"))!;
+  expect(other.textContent).not.toContain("var");
+});
+
+test("on the phone 'requests vary' is one fact line, not a suffix on each value (CR-P3T35-05)", async () => {
+  viewport(390);
+  served();
+  app(`/runs/${ID}?tab=tasks`);
+  await userEvent.click(await screen.findByRole("tab", { name: "By process" }));
+  const cards = within(screen.getByRole("list", { name: "Tasks by process" })).getAllByRole("listitem");
+  const star = cards.find((c) => c.textContent?.includes("STAR_ALIGN"))!;
+  expect(within(star).getByText("CPUs · memory · time limit asked").nextSibling?.textContent).toBe("12 · 72 GB · 8 h");
+  expect(within(star).getByText("Requests").nextSibling?.textContent).toBe("vary");
+  const fastqc = cards.find((c) => c.textContent?.includes("FASTQC"))!;
+  expect(within(fastqc).queryByText("Requests")).toBeNull();
 });
