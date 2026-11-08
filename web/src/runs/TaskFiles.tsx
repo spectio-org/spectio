@@ -233,7 +233,8 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
   const failed = task.state === "failed" || n < last;
   const files = [...(listing?.attempt === n ? listing.files : [])].sort((a, b) => ORDER.indexOf(a.kind) - ORDER.indexOf(b.kind));
   const outputs = listing?.attempt === n ? (listing.outputs ?? null) : null;
-  const onOutputs = picked === OUTPUTS && outputs !== null;
+  // with no file to show (a Snakemake job without a log: directive) the drawer opens on Outputs
+  const onOutputs = outputs !== null && (picked === OUTPUTS || files.length === 0);
   const shown = onOutputs ? undefined : (files.find((f) => f.name === picked) ?? first(files, failed));
   const visible = files.filter((f) => more || !MORE.has(f.kind) || f === shown);
   const hasMore = files.some((f) => MORE.has(f.kind));
@@ -277,7 +278,7 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
       {error && error.status === 503 && <Refused title={OFFLINE} body="The file system does not answer. Nothing was lost; try again in a moment." onRetry={reload} />}
       {error && error.status !== 503 && <Refused title="The files could not be listed" body={error.message} onRetry={reload} />}
       {!error && listing?.attempt !== n && <p className="sp-muted">Loading the files…</p>}
-      {!error && listing?.attempt === n && files.length === 0 && <p className="sp-muted">This attempt has no file to show.</p>}
+      {!error && listing?.attempt === n && files.length === 0 && outputs === null && <p className="sp-muted">This attempt has no file to show.</p>}
       {!error && current !== undefined && (
         <>
           {phone ? (

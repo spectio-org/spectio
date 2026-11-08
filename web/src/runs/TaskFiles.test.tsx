@@ -326,6 +326,20 @@ test("Outputs tab: a removed temporary output reads 'deleted by Snakemake (tempo
   expect(rows[2]).toBe("segmentation/<TBD> · decided after the checkpoint");
 });
 
+test("a Snakemake attempt with no log file opens on its Outputs tab", async () => {
+  const outputs = [{ path: "counts/S19.tsv", state: "present", protected: true, removed_at: null }];
+  detail(
+    { [`${FILES}/2/files`]: { ...listing([]), outputs } },
+    { workflow: { engine: "snakemake", engine_version: "9.5.1", location: "/g/x", name: null, version: null } },
+  );
+  const { sheet } = await openFiles();
+  const tab = await within(sheet).findByRole("tab", { name: "Outputs (1)" });
+  expect(tab).toHaveAttribute("aria-selected", "true");
+  const rows = within(within(sheet).getByRole("tabpanel")).getAllByRole("listitem").map((li) => li.textContent);
+  expect(rows).toEqual(["counts/S19.tsv · present · write-protected"]);
+  expect(within(sheet).queryByText("This attempt has no file to show.")).toBeNull();
+});
+
 test("with cleanup = true a cleaned work directory says cleanup removed it", async () => {
   detail(
     { [`${FILES}/2/files`]: listing([file(".command.log", "job_log", { state: "cleaned", size: null, mtime: null })]) },
