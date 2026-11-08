@@ -1229,3 +1229,8 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 
 - **Context.** Cloud sessions run on cgroup v1, so sind and `slurm-mini` do not start there; a native Slurm 23.11 with slurmdbd, installed from the Ubuntu packages, ran in the session and checked FU-P3-53 by hand ([inbox #120](../reviews/inbox.md#120-question-devslurmnativesh-native-slurm-in-cloud-sessions-fu-p3-66)).
 - **Decided (Thomas, 2026-11-08, in the session's question dialog):** build `dev/slurm/native.sh` (FU-P3-66, step P3-fu66) with a security review; then P1 Task 22 in CI, whose PR Thomas merges ([#121](../reviews/inbox.md#121-question-p1-task-22-slurm-mini-end-to-end-in-ci)); refresh PR #111 and leave its merge to Thomas ([#122](../reviews/inbox.md#122-decided-refresh-the-public-demo-pr-111-then-thomas-merges-it)).
+
+## 2026-11-08 — The API stays unmounted on SLURM; Task 22 waits (inbox #123, Thomas)
+
+- **Context.** P1 Task 22's `e2e` job launches through `POST /api/v1/runs`, which answers `404` on SLURM and shared hosts by [#109](../reviews/inbox.md#109-assumed-writes-need-origin-and-json-as-built-p3-task-16) rule 5 (a); on the CI run of PR #164 both engines printed `RESULT e2e-launch-<engine> fail` for that reason only ([inbox #123](../reviews/inbox.md#123-question-p1-task-22-needs-the-api-on-slurm-which-109-rule-5-a-keeps-unmounted)).
+- **Decided (Thomas, 2026-11-08, in the session's question dialog): (b), keep it unmounted** until the by-hand check on a real login node (W6). No product change. PR #164 waits for Thomas (keep open, or merge with the `e2e` entry off, his call); step P3-t22 stays `waiting_human` and M5 stays open.
