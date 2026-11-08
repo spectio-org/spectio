@@ -1902,3 +1902,17 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 ### #124 · Decided: screenshots of each round's improvements
 
 - **Decided (Thomas, 2026-11-08, in the session):** "Je veux des screenshots des améliorations à chaque round". After each P3 task or batch, or a step stopped on a question, the orchestrator sends him screenshots of what changed ([autopilot §12](../playbooks/autopilot.md#12-screenshots-of-each-round-for-thomas-thomas-2026-11-08)). Same message: "Continue et sois autonome" (the standing rule of autopilot §10 applies; reserved items still go to him).
+
+### #125 · Question: login1 checks for "the run's launch directory is gone" (FU-P3-81)
+
+- **Covers:** step P3-fu81 (`autopilot/P3-fu81`); its review findings CR-P3FU81-01 and CR-P3FU81-02 (round 1); `packages/spectio-server/src/spectio_server/files/taskfiles.py` (`run_root`); `packages/spectio-server/src/spectio_server/rebuild.py` (`rebuild_index`).
+- **Context:** on login1 the Logs tab of a Nextflow run (its engine log, `launch/.nextflow.log`) was answered `410 log-cleaned`, "the run's launch directory is gone", while the file exists at the path the UI shows. Step P3-fu81 now answers `409 run-dir-unreachable`, naming the directory tried, when the runs root is not there or the run was recorded under another runs root, on the Logs route and on both job-file routes. **The exact symptom was not reproduced.** The cause the step first named (the index in the database directory outlives a change of `runs_root`, and `rebuild_index` only adds rows) does not explain it: with a stale index, the path built from the current runs root would not exist, but you say it does. The login1 cause stays **[to be validated]**.
+- **Checks asked (on login1, as the account that runs `spectio serve`):**
+  1. the full problem body the browser received (DevTools, Network: the URL and its `detail`), and whether the run is a Resume (for job files and Snakemake logs, the lineage root names the directory read; a Nextflow engine log is read from the run's own ID);
+  2. the runs root in effect for the serve (`spectio doctor`, or the config file and `SPECTIO_RUNS_ROOT`), and `realpath` of it;
+  3. `ls -ld <runs root> <runs root>/<run ID> <runs root>/<run ID>/launch` (owner and mode: the server opens them private, without following links);
+  4. `sqlite3 <db dir>/spectio.db "select id, lineage_id, launch_dir, work_dir from runs where id = '<run ID>'"`;
+  5. `hostname` and the same `ls -ld`, run on the host and in the environment (container or namespace) of the `spectio serve` process, not only in a login1 shell: `/scratch` is often node-local, and a serve on another host shows exactly this symptom;
+  6. after this step's PR is in: whether the same view now answers 409 or still 410, with its `detail`.
+- **Recommendation:** run the checks; the answer decides whether a further fix is needed.
+- **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** the 409 answer is built; nothing else is changed until the checks come back. FU-P3-84: a stale index after a change of `runs_root` (`rebuild_index` only adds rows): list, or mark at boot, the rows whose `launch_dir` is not under the current runs root, so they are not shown as runs of this root. Next follow-up number: FU-P3-85 (FU-P3-82 is taken by another branch; renumber at the merge if the order changes).

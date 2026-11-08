@@ -7,6 +7,7 @@ would, with paths under the run's directories (`make_run_dirs`).
 
 import errno
 import os
+import shutil
 import threading
 import time
 from collections import Counter
@@ -32,7 +33,7 @@ from spectio_server.stages.freeze import StageSources
 from spectio_server.store.schema import attempts, events, run_stages, runs, tasks
 from spectio_server.store.writer import Writer
 
-from .conftest import add_run
+from .conftest import add_run, client_for
 
 RUN = "run_01K8T2F1XTVRES0000000000F8"
 HASH = ("3f", "0123456789abcdef0123456789abcd")
@@ -311,6 +312,71 @@ def smk_attempt(authed_client: TestClient, writer: Writer, settings: Settings) -
 
     writer.submit(write).result()
     return task_id
+
+
+def test_runs_root_missing_409(
+    writer: Writer, settings: Settings, smk_attempt: str, tmp_path: Path
+) -> None:
+    """FU-P3-81: a runs root that is not there is not a cleaned launch directory."""
+    missing = tmp_path / "scratch" / "runs"
+    client = client_for(settings.model_copy(update={"runs_root": missing}), writer)
+    base = f"{API}/tasks/{smk_attempt}/attempts/1/files"
+    found = client.get(f"{base}/logs/a.log")
+    problem(found, 409, "run-dir-unreachable")
+    assert str(missing / RUN / "launch") in found.json()["detail"]
+    problem(client.get(base), 409, "run-dir-unreachable")
+
+
+def test_other_runs_root_409(
+    writer: Writer, settings: Settings, smk_attempt: str, tmp_path: Path
+) -> None:
+    """FU-P3-81 r1: a run recorded under another runs root, served from one that exists, is
+    not a cleaned launch directory: the listing and the read both answer 409."""
+    other = tmp_path / "other-runs"
+    other.mkdir(mode=0o700)
+    client = client_for(settings.model_copy(update={"runs_root": other}), writer)
+    base = f"{API}/tasks/{smk_attempt}/attempts/1/files"
+    found = client.get(f"{base}/logs/a.log")
+    problem(found, 409, "run-dir-unreachable")
+    assert str(settings.runs_root) in found.json()["detail"]
+    problem(client.get(base), 409, "run-dir-unreachable")
+
+
+def test_terminal_run_is_not_under_a_runs_root(
+    authed_client: TestClient, writer: Writer, settings: Settings, smk_attempt: str
+) -> None:
+    """FU-P3-81 r2 (CR-P3FU81-03): a run started in a terminal records its own project as its
+    launch directory, not `<runs root>/<run>/launch`: its job files are never answered 409
+    naming the project's grandparent as a runs root."""
+    project = settings.runs_root.parent / "project"
+    project.mkdir()
+    shutil.rmtree(settings.runs_root / RUN)  # nothing under the runs root for this run
+    observed = {"origin": "cli-observed", "launch_dir": str(project)}
+    writer.submit(
+        lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(**observed))
+    ).result()
+    base = f"{API}/tasks/{smk_attempt}/attempts/1/files"
+    listing = authed_client.get(base)
+    assert listing.status_code == 200, listing.text
+    assert {f["state"] for f in listing.json()["files"]} == {"cleaned"}
+    found = authed_client.get(f"{base}/logs/a.log")
+    problem(found, 410, "log-cleaned")
+    assert found.json()["detail"].endswith(f"tried {settings.runs_root / RUN / 'launch'}")
+    for answer in (listing, found):
+        assert "runs root" not in answer.text
+        assert str(project) not in answer.text
+
+
+def test_nf_other_runs_root_409(nf_task: NfTask, tmp_path: Path) -> None:
+    """FU-P3-81 r1: a Nextflow work directory recorded under another runs root is not a missing
+    work directory (404) nor a cleaned one."""
+    other = tmp_path / "other-runs"
+    other.mkdir(mode=0o700)
+    nf_task.client = client_for(
+        nf_task.settings.model_copy(update={"runs_root": other}), nf_task.writer
+    )
+    problem(nf_task.get(".command.err"), 409, "run-dir-unreachable")
+    problem(nf_task.get(), 409, "run-dir-unreachable")
 
 
 def test_req13_smk_name_exact(authed_client: TestClient, smk_attempt: str) -> None:

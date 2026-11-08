@@ -16,7 +16,10 @@ directory is often group-writable); a refused log there is "log not readable" (r
 Below it, the read is the confined walk of `files.confine`
 (checking-scenarios §11.1): no symlink is followed, only a regular file of the user is read,
 and it runs in the file pool with a timeout (req. 13). Anything refused or missing is
-`404 log-not-found`; a file system that does not answer is `503 runner-offline`. Escape
+`404 log-not-found`; a launch directory that is gone is `410 log-cleaned`, but only when the runs
+root is there and is the one the run's row records (compared, never opened), else `409
+run-dir-unreachable`, which names the directory tried (FU-P3-81); a file system that does not
+answer is `503 runner-offline`. Escape
 sequences are removed from the text.
 
 `?follow=true` streams the same file: its last 64 KiB, then each line appended, read once per
@@ -58,7 +61,7 @@ from spectio_server.files.confine import (
 )
 from spectio_server.files.confine import tail as tail_of
 from spectio_server.files.redact import strip_escapes
-from spectio_server.files.taskfiles import run_root
+from spectio_server.files.taskfiles import recorded_root, run_root
 from spectio_server.projector.runs import TERMINAL
 from spectio_server.store.schema import runs
 
@@ -121,7 +124,8 @@ def _launch_root(runs_root: Path, row: Any, source: str) -> Iterator[Root]:
     """The directory that holds the log: the run's launch directory under the runs root, or a
     terminal run's own (its `.spectio/` holds no head log: Spectio did not start its head)."""
     if row.origin != "cli-observed":
-        with run_root(runs_root, _launch_of(row, source), "launch") as launch:
+        recorded = recorded_root(row.launch_dir, row.origin)
+        with run_root(runs_root, _launch_of(row, source), "launch", recorded) as launch:
             yield launch
         return
     try:
