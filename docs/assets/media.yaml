@@ -803,3 +803,11 @@ media:
     # Snakemake 9; needs Java, Nextflow, uv and network for the Maven repositories; publishes nothing
     generator: python3 tools/media/cast.py tools/media/casts/spectio-bridges-release.yaml
     outputs: [docs/assets/casts/spectio-bridges-release.cast]
+  - id: native-slurm
+    kind: cast
+    # dev/slurm/native.sh up, status, one sbatch job and its sacct row, down, run for real as root in a
+    # throwaway container with the Ubuntu 24.04 packages slurm-wlm, slurmdbd, mariadb-server and munge
+    # already installed (a first `up` installs them with apt); the container's host name is shown as the
+    # demo name demo-hpc-node1 by `replace` in the cast script (host names are on the forbidden list)
+    generator: python3 tools/media/cast.py tools/media/casts/native-slurm.yaml
+    outputs: [docs/assets/casts/native-slurm.cast]
