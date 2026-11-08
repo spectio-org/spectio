@@ -4,7 +4,6 @@ import { type KeyboardEvent, useCallback, useEffect, useId, useRef, useState } f
 import {
   ApiError,
   type LogSource,
-  type Page,
   type Process,
   type RunDetail,
   type ServerVersion,
@@ -41,6 +40,8 @@ import {
   neededFirst,
   plural,
   processState,
+  refresh,
+  type Shown,
   stageWord,
   sum,
   taskWord,
@@ -431,16 +432,18 @@ function HeadByHand({ run, server }: { run: RunDetail; server: ServerVersion | n
   );
 }
 
-/** The last lines of a log, read once when the section opens. */
+/** The last lines of a log, read when the section opens and again on each frame of an active run. */
 function LogTail({ id, source, ended, onAll }: { id: string; source: LogSource; ended: boolean; onAll: (s: LogSource) => void }) {
   const [text, setText] = useState<string | null>(null);
+  const [frames, setFrames] = useState(0); // read again on each frame while the run is active (FU-P3-80)
+  useFrames(() => setFrames((n) => n + 1), id, !ended);
   useEffect(() => {
     const controller = new AbortController();
     getLog(id, source, controller.signal)
       .then((t) => setText(t.trimEnd().split("\n").slice(-6).join("\n") || (ended ? "Empty." : "Empty so far.")))
       .catch((e: ApiError) => controller.signal.aborted || setText(e.status === 404 ? "Not written yet." : `Could not read it: ${e.message}`));
     return () => controller.abort();
-  }, [id, source, ended]);
+  }, [id, source, ended, frames]);
   const label = LOGS.find((l) => l.source === source)!.label;
   return (
     <>
@@ -520,8 +523,6 @@ const TASK_FILTERS: { label: string; states: string[] | null }[] = [
   { label: "Failed", states: ["failed"] },
 ];
 
-type Shown = { rows: Task[]; next: string | null };
-
 const EFF_SOURCE = "From sacct when the job has ended; before that from the engine's trace or benchmark";
 
 /** A job's efficiency on the phone: "CPU eff. 34 % · Mem eff. 3 %, low"; while it runs, when it
@@ -598,14 +599,6 @@ function FilesButton({ task, onOpen, wide = false }: { task: Task; onOpen: (d: D
       Files
     </Button>
   );
-}
-
-/** A refresh: the fresh first page, then the rows Load more added past it, and their cursor. */
-function refresh(shown: Shown | null, page: Page<Task>): Shown {
-  const fresh = page.items ?? [];
-  const last = fresh[fresh.length - 1];
-  const tail = shown && last && page.next ? shown.rows.filter((t) => t.id > last.id) : [];
-  return tail.length ? { rows: [...fresh, ...tail], next: shown!.next } : { rows: fresh, next: page.next ?? null };
 }
 
 function TasksPanel({

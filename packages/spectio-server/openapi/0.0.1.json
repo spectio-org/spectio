@@ -511,6 +511,10 @@
             "title": "Lower Bound",
             "type": "boolean"
           },
+          "pipeline_order": {
+            "title": "Pipeline Order",
+            "type": "integer"
+          },
           "process": {
             "title": "Process",
             "type": "string"
@@ -554,7 +558,8 @@
           "status",
           "is_checkpoint",
           "lower_bound",
-          "efficiency"
+          "efficiency",
+          "pipeline_order"
         ],
         "title": "Process",
         "type": "object"
@@ -2902,7 +2907,7 @@
     },
     "/api/v1/runs/{run_id}/processes": {
       "get": {
-        "description": "One item per process or rule: those the projector recorded (`onProcessCreate`, the rule\nfiles at the freeze, a first task), in that order, with the stage they froze with; then any\nknown from tasks only (a database from before P1 Task 27), in their first task's order.\nEach has its `status`, and the `efficiency` of its jobs (P1 Task 34).",
+        "description": "One item per process or rule: those the projector recorded (`onProcessCreate`, the rule\nfiles at the freeze, a first task), in that order, with the stage they froze with; then any\nknown from tasks only (a database from before P1 Task 27), in their first task's order.\nEach has its `status`, the `efficiency` of its jobs (P1 Task 34), and its `pipeline_order`\n(FU-P3-82).",
         "operationId": "list_processes_api_v1_runs__run_id__processes_get",
         "parameters": [
           {

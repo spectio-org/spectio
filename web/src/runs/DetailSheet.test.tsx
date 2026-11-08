@@ -5,7 +5,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { DETAIL, NO_RESOURCES, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
+import { DETAIL, FakeEventSource, NO_RESOURCES, app, fetched, json, run, serve, stubStream, viewport } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -29,7 +29,7 @@ const task = (n: number, state = "succeeded") => ({
   id: `tsk_${n}`,
   process: ALIGN,
   tag: `S0${n}`,
-  name: `ALIGN (S0${n})`,
+  name: null, // the server keeps a name only for an untagged task (inbox #77)
   state,
   stage_id: "st2",
   attempt_n: 1,
@@ -85,20 +85,80 @@ test("Escape closes the sheet and returns focus to the opener", async () => {
   await waitFor(() => expect(open).toHaveFocus());
 });
 
-test("the process's tasks are paged: name, tag and state, then Load more", async () => {
+test("the process's tasks are paged: one task and one state column under a header, then Load more", async () => {
   const mock = detail();
   app(`/runs/${ID}`);
   await userEvent.click(within(await alignTable()).getByRole("button", { name: `Open process ${ALIGN}` }));
   const sheet = await screen.findByRole("dialog", { name: "ALIGN" });
   const list = await within(sheet).findByRole("list", { name: "Tasks of ALIGN" });
-  const first = within(list).getByRole("button", { name: "Open task ALIGN (S01)" });
-  expect(within(first).getByText("S01")).toBeInTheDocument();
-  expect(within(first).getByText("Succeeded")).toBeInTheDocument();
-  expect(within(list).getByRole("button", { name: "Open task ALIGN (S02)" })).toHaveTextContent("Running");
+  // FU-P3-80: a visible header names the columns, and every row has the same two cells.
+  const head = sheet.querySelector(".sp-task-head")!;
+  expect(head).toBeVisible();
+  expect([...head.children].map((c) => c.textContent)).toEqual(["Task", "State"]);
+  const first = within(list).getByRole("button", { name: "Open task ALIGN (S01), Succeeded" });
+  expect([...first.children].map((c) => c.textContent)).toEqual(["ALIGN (S01)", "Succeeded"]);
+  expect(first.textContent!.match(/S01/g)).toHaveLength(1); // the tag once, not again as a chip
+  expect(within(list).getByRole("button", { name: "Open task ALIGN (S02), Running" })).toHaveTextContent("Running");
   expect(fetched(mock)).toContain(`${URL_}/tasks?process=${ALIGN}&limit=50`);
   await userEvent.click(within(sheet).getByRole("button", { name: "Load more tasks" }));
-  expect(await within(list).findByRole("button", { name: "Open task ALIGN (S03)" })).toHaveTextContent("Failed");
+  expect(await within(list).findByRole("button", { name: "Open task ALIGN (S03), Failed" })).toHaveTextContent("Failed");
   expect(within(sheet).queryByRole("button", { name: "Load more tasks" })).toBeNull();
+});
+
+test("FU-P3-80: a frame for this run reads the process's tasks again, keeping Load more's rows; none once it has ended", async () => {
+  let s02 = "running";
+  let state = "running";
+  const first = `${URL_}/tasks?process=${encodeURIComponent(ALIGN)}`;
+  const mock = detail({}, {
+    [first]: () => json(200, { items: [task(1), task(2, s02)], next: "c2" }),
+    [URL_]: () => json(200, { ...DETAIL, ...run({ state }), params: {} }),
+  });
+  app(`/runs/${ID}`);
+  await userEvent.click(within(await alignTable()).getByRole("button", { name: `Open process ${ALIGN}` }));
+  const sheet = await screen.findByRole("dialog", { name: "ALIGN" });
+  const list = await within(sheet).findByRole("list", { name: "Tasks of ALIGN" });
+  await userEvent.click(within(sheet).getByRole("button", { name: "Load more tasks" }));
+  await within(list).findByRole("button", { name: "Open task ALIGN (S03), Failed" });
+  s02 = "succeeded";
+  FakeEventSource.last!.frame({ run_id: ID });
+  expect(await within(list).findByRole("button", { name: "Open task ALIGN (S02), Succeeded" }, { timeout: 3000 })).toBeInTheDocument();
+  expect(within(list).getByRole("button", { name: "Open task ALIGN (S03), Failed" })).toBeInTheDocument();
+  expect(within(list).getAllByRole("button")).toHaveLength(3);
+  const count = () => fetched(mock).filter((u) => u === `${URL_}/tasks?process=${ALIGN}&limit=50`).length;
+  const runs = () => fetched(mock).filter((u) => u === URL_).length;
+  const read = runs();
+  state = "succeeded";
+  FakeEventSource.last!.frame({ run_id: ID });
+  await waitFor(() => expect(runs()).toBeGreaterThan(read), { timeout: 3000 });
+  await new Promise((r) => setTimeout(r, 1300)); // the same frame's own reads land
+  const before = count();
+  FakeEventSource.last!.frame({ run_id: ID });
+  await new Promise((r) => setTimeout(r, 1200));
+  expect(count()).toBe(before);
+});
+
+test("CR-P3FU80-02: a failed re-read shows the alert above the rows, keeps them and the focus, and a later frame clears it", async () => {
+  let fail = false;
+  const first = `${URL_}/tasks?process=${encodeURIComponent(ALIGN)}`;
+  detail({}, {
+    [first]: () => (fail ? json(500, { detail: "boom" }) : json(200, { items: [task(1), task(2, "running")], next: "c2" })),
+  });
+  app(`/runs/${ID}`);
+  await userEvent.click(within(await alignTable()).getByRole("button", { name: `Open process ${ALIGN}` }));
+  const sheet = await screen.findByRole("dialog", { name: "ALIGN" });
+  const list = await within(sheet).findByRole("list", { name: "Tasks of ALIGN" });
+  const row = within(list).getByRole("button", { name: "Open task ALIGN (S01), Succeeded" });
+  row.focus();
+  fail = true;
+  FakeEventSource.last!.frame({ run_id: ID });
+  expect(await within(sheet).findByRole("alert", {}, { timeout: 3000 })).toHaveTextContent("The tasks could not be read");
+  expect(row).toBeInTheDocument();
+  expect(row).toHaveFocus();
+  expect(within(list).getAllByRole("button")).toHaveLength(2);
+  fail = false;
+  FakeEventSource.last!.frame({ run_id: ID });
+  await waitFor(() => expect(within(sheet).queryByRole("alert")).toBeNull(), { timeout: 3000 });
+  expect(row).toHaveFocus();
 });
 
 test("Load more ignores a second click while its page is in flight (CR-P3PARD-06)", async () => {
@@ -119,8 +179,8 @@ test("Load more ignores a second click while its page is in flight (CR-P3PARD-06
   await waitFor(() => expect(more).toHaveAttribute("aria-busy", "true"));
   await userEvent.click(more);
   release();
-  expect(await within(list).findByRole("button", { name: "Open task ALIGN (S03)" })).toBeInTheDocument();
-  expect(within(list).getAllByRole("button", { name: "Open task ALIGN (S03)" })).toHaveLength(1);
+  expect(await within(list).findByRole("button", { name: "Open task ALIGN (S03), Failed" })).toBeInTheDocument();
+  expect(within(list).getAllByRole("button", { name: "Open task ALIGN (S03), Failed" })).toHaveLength(1);
   expect(fetched(mock).filter((u) => u.includes("cursor=c2"))).toHaveLength(1);
 });
 
@@ -151,7 +211,7 @@ test("a task row in the sheet opens the task detail: its facts and its files, no
   app(`/runs/${ID}`);
   await userEvent.click(within(await alignTable()).getByRole("button", { name: `Open process ${ALIGN}` }));
   const sheet = await screen.findByRole("dialog", { name: "ALIGN" });
-  await userEvent.click(await within(sheet).findByRole("button", { name: "Open task ALIGN (S02)" }));
+  await userEvent.click(await within(sheet).findByRole("button", { name: "Open task ALIGN (S02), Running" }));
   const taskSheet = await screen.findByRole("dialog", { name: "ALIGN (S02)" });
   const facts = within(taskSheet).getByRole("region", { name: "ALIGN (S02)" });
   expect(facts).toHaveFocus();
