@@ -10,7 +10,7 @@ from spectio.cli.doctor import run_doctor
 from spectio.cli.init import run_init
 from spectio.cli.login import run_login
 from spectio.cli.open import run_open
-from spectio.cli.serve import run_serve
+from spectio.cli.serve import DETACH_WAIT_S, run_detach, run_serve
 from spectio.config import Settings
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
@@ -78,9 +78,22 @@ def serve(
     force: Annotated[
         bool, Opt("--force", help="Start even if server.json names a server on another node")
     ] = False,
+    detach: Annotated[
+        bool, Opt("--detach", help="Run it in the tmux session spectio-server; print the link")
+    ] = False,
+    wait: Annotated[
+        float, Opt("--wait", min=0, help="--detach: seconds to wait for the link (exit 3 after)")
+    ] = DETACH_WAIT_S,
+    no_link: Annotated[bool, Opt("--no-link", hidden=True)] = False,  # spectio open's start
+    pane: Annotated[bool, Opt("--pane", hidden=True)] = False,  # the pane --detach starts
 ) -> None:
-    """Start the server on 127.0.0.1, at the port spectio init recorded."""
-    raise typer.Exit(run_serve(force))
+    """Start the server on 127.0.0.1, at the port spectio init recorded.
+
+    Exit codes: 0, it served and stopped (with --detach, a link was printed); 2, refused;
+    3, --detach started it but got no link in time: it is still starting."""
+    if detach and not pane:
+        raise typer.Exit(run_detach(force, wait, not no_link))
+    raise typer.Exit(run_serve(force, pane))
 
 
 @app.command()

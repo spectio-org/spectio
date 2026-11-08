@@ -5,7 +5,8 @@ req. 8; cli §2).
 1. Over `ssh <host>`, check that the remote `spectio` runs and read `~/.spectio/server.json`.
 2. With a state file, reach its node (`--node` overrides it). Without one, on `--node`, the
    `node` of `clusters.toml` or `<host>`: `spectio init` if there is no data directory, then
-   `spectio serve --detach`, and the state file it wrote.
+   `spectio serve --detach --no-link`, and the state file it wrote; if it exited 3 (its server
+   is still booting), the ticket of step 3 is asked again for up to `TICKET_WAIT_S`.
 3. Open the tunnel to that node on a free local port, get a ticket from `spectio login
    --print-link --json` there, build the link and open the browser. Wait until the tunnel ends
    or Ctrl-C; the server and its runs keep going.
@@ -31,6 +32,8 @@ import typer
 
 from spectio.config import LOOPBACK, check_config
 from spectio.open_remote import (
+    STARTING_MARK,
+    STATE_MARK,
     State,
     Unsafe,
     check_node,
@@ -49,6 +52,8 @@ from spectio.open_remote import (
 NOT_FOUND = 127  # the shell's status for a command it cannot find
 SSH_ERROR = 255  # ssh's own status: it did not reach the node or run the command
 TUNNEL_WAIT_S = 120  # ssh may ask for a password or a second factor first
+TICKET_WAIT_S = 120.0  # after serve --detach exit 3: the boot can rebuild a large index
+TICKET_RETRY_S = 2.0
 
 
 class Failed(Exception):
@@ -114,14 +119,27 @@ class Remote:
     def state(self) -> State | None:
         return parse_state(self.run(self.host, probe_script(self.remote_cmd)))
 
-    def start(self, node: str) -> State:
-        state = parse_state(self.run(node, start_script(self.remote_cmd)))
+    def start(self, node: str) -> tuple[State, bool]:
+        """The state file serve --detach wrote, and whether its server is still starting."""
+        stdout = self.run(node, start_script(self.remote_cmd))
+        state = parse_state(stdout)
         if state is None:
             raise Failed(f"spectio serve --detach on {node} wrote no server.json")
-        return state
+        before = stdout.partition(f"{STATE_MARK}\n")[0]
+        return state, f"{STARTING_MARK}\n" in before
 
-    def ticket(self, node: str) -> str:
-        return parse_ticket(self.run(node, login_script(self.remote_cmd)))
+    def ticket(self, node: str, starting: bool = False) -> str:
+        """A ticket; while a server just started is booting, asked again until a deadline."""
+        deadline = time.monotonic() + TICKET_WAIT_S
+        while True:
+            try:
+                return parse_ticket(self.run(node, login_script(self.remote_cmd)))
+            except Failed as exc:
+                if not starting or exc.code != 3 or exc.status == SSH_ERROR:
+                    raise
+                if time.monotonic() >= deadline:
+                    raise
+            time.sleep(TICKET_RETRY_S)
 
 
 def _wait_up(tunnel: subprocess.Popen[bytes], local_port: int) -> None:
@@ -150,14 +168,14 @@ def _open(
         raise Failed("ssh is not on PATH")
     remote = Remote(ssh, host, remote_cmd or config.get("remote_cmd") or "spectio")
     probed = remote.state()
-    state = probed or remote.start(node or first or host)
+    state, starting = (probed, False) if probed else remote.start(node or first or host)
     target = node or state.node
     lport = free_port() if local_port is None else check_port(local_port, "--local-port")
     with subprocess.Popen(tunnel_argv(ssh, target, lport, state.port)) as tunnel:  # noqa: S603
         try:
             _wait_up(tunnel, lport)
             try:
-                ticket = remote.ticket(target)
+                ticket = remote.ticket(target, starting)
             except Failed as exc:  # server.json is not checked for a live server yet (FU-P3-48)
                 # Only a probed file, on its own node, past ssh itself, can be the cause.
                 if probed is None or target != probed.node or exc.status == SSH_ERROR:
