@@ -51,10 +51,9 @@ def uv_version(out: str) -> tuple[int, int, int] | None:
     return (int(match[1]), int(match[2]), int(match[3])) if match else None
 
 
-def _uv() -> Result:
+def _uv(path: str | None) -> Result:
     """The uv on the login PATH: only installing Spectio needs it, so an old one is a warning
     and a missing one is fine (FU-P3-73)."""
-    path = which("uv")["uv"]
     if not path:
         return "ok", "uv", "not found on PATH: only installing Spectio needs it"
     out = run_login('"$1" --version', path)
@@ -75,12 +74,12 @@ def _uv() -> Result:
     return "ok", "uv", f"{found} {path}"
 
 
-def _tools(local: bool) -> list[Result]:
+def _tools(local: bool, paths: Mapping[str, str | None]) -> list[Result]:
     """tmux (the heads, the server's session) and sbatch (the engines' task jobs); the runs of
     local mode need neither (P1 Assumption 23)."""
     results: list[Result] = []
-    for name, path in which("tmux", "sbatch").items():
-        if path:
+    for name in ("tmux", "sbatch"):
+        if path := paths[name]:
             results.append(("ok", name, path))
         elif not local:
             results.append(("fail", name, "not found on PATH"))
@@ -167,8 +166,9 @@ def checks(
     results.append(_engine("nextflow", engines.nextflow_cmd, "-version", NEXTFLOW_VERSION))
     results.append(_engine("snakemake", engines.snakemake_cmd, "--version", SNAKEMAKE_VERSION))
     results.append(_java())
-    results += _tools(settings.executor == "local")
-    results.append(_uv())
+    paths = which("tmux", "sbatch", "uv")
+    results += _tools(settings.executor == "local", paths)
+    results.append(_uv(paths["uv"]))
     results.append(_nxf_plugins(env))
     return results
 

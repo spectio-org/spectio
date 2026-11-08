@@ -542,6 +542,14 @@ media:
       - docs/assets/diagrams/p3-b06-native-slurm-local-e2e_dark.svg
       - docs/assets/diagrams/p3-b06-native-slurm-local-e2e_light.png
       - docs/assets/diagrams/p3-b06-native-slurm-local-e2e_dark.png
+  - id: p3-b07-socket-uv-disk
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b07_socket_uv_disk.py
+    outputs:
+      - docs/assets/diagrams/p3-b07-socket-uv-disk_light.svg
+      - docs/assets/diagrams/p3-b07-socket-uv-disk_dark.svg
+      - docs/assets/diagrams/p3-b07-socket-uv-disk_light.png
+      - docs/assets/diagrams/p3-b07-socket-uv-disk_dark.png
   - id: p3-t17-launch
     kind: diagram
     generator: python3 tools/diagrams/p3_t17_launch.py
@@ -811,3 +819,12 @@ media:
     # demo name demo-hpc-node1 by `replace` in the cast script (host names are on the forbidden list)
     generator: python3 tools/media/cast.py tools/media/casts/native-slurm.yaml
     outputs: [docs/assets/casts/native-slurm.cast]
+  - id: spectio-cluster-checks
+    kind: cast
+    # the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines and a
+    # fake uv that prints 0.9.29; a 20 MB tmpfs (own mount namespace) holds the runs directory at 90%;
+    # SLURM_CONF set makes the host look shared, so serve listens on a Unix socket; the demo host name
+    # demo-hpc-login1 is set in the generator's own UTS namespace (root or user namespaces); the ticket
+    # is masked by a sed that the cast shows
+    generator: unshare --uts --mount sh -c 'hostname demo-hpc-login1 && python3 tools/media/cast.py tools/media/casts/spectio-cluster-checks.yaml'
+    outputs: [docs/assets/casts/spectio-cluster-checks.cast]
