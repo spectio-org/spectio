@@ -32,7 +32,7 @@ from spectio_server.stages.freeze import StageSources
 from spectio_server.store.schema import attempts, events, run_stages, runs, tasks
 from spectio_server.store.writer import Writer
 
-from .conftest import add_run
+from .conftest import add_run, client_for
 
 RUN = "run_01K8T2F1XTVRES0000000000F8"
 HASH = ("3f", "0123456789abcdef0123456789abcd")
@@ -311,6 +311,19 @@ def smk_attempt(authed_client: TestClient, writer: Writer, settings: Settings) -
 
     writer.submit(write).result()
     return task_id
+
+
+def test_runs_root_missing_409(
+    writer: Writer, settings: Settings, smk_attempt: str, tmp_path: Path
+) -> None:
+    """FU-P3-81: a runs root that is not there is not a cleaned launch directory."""
+    missing = tmp_path / "scratch" / "runs"
+    client = client_for(settings.model_copy(update={"runs_root": missing}), writer)
+    base = f"{API}/tasks/{smk_attempt}/attempts/1/files"
+    found = client.get(f"{base}/logs/a.log")
+    problem(found, 409, "run-dir-unreachable")
+    assert str(missing / RUN / "launch") in found.json()["detail"]
+    problem(client.get(base), 409, "run-dir-unreachable")
 
 
 def test_req13_smk_name_exact(authed_client: TestClient, smk_attempt: str) -> None:

@@ -87,6 +87,12 @@ class Cleaned(NotFound):
     """The work directory, or the launch directory, is gone."""
 
 
+class Unreachable(NotFound):
+    """The run's directory is not where this server looks (FU-P3-81): its runs root is not
+    there, or the run was recorded under another runs root (an index kept from a serve with
+    another one). Not a cleaned directory."""
+
+
 @dataclass(frozen=True)
 class AttemptFiles:
     """What the files of one attempt are found from: its run, engine and state, and the paths
@@ -186,12 +192,24 @@ def log_kind(rel: PurePosixPath) -> Kind:
 
 
 @contextmanager
-def run_root(runs_root: Path, run_id: str, part: str) -> Iterator[Root]:
-    """The run's launch or work directory, private (req. 10); Cleaned when it is gone."""
+def run_root(
+    runs_root: Path, run_id: str, part: str, recorded_root: str | None = None
+) -> Iterator[Root]:
+    """The run's launch or work directory, private (req. 10). When it cannot be found: Cleaned
+    only when the runs root is there and is the one the run was recorded under
+    (`recorded_root`, when known), else Unreachable, naming the directory tried."""
     paths = run_paths(runs_root, run_id)
     try:
         fd = open_private(runs_root, (run_id, part))
     except FileNotFoundError:
+        tried = paths.run_dir / part
+        if not runs_root.is_dir():
+            raise Unreachable(f"the runs root {runs_root} is not there: tried {tried}") from None
+        if recorded_root is not None and not _same_dir(recorded_root, runs_root):
+            raise Unreachable(
+                f"the run was recorded under the runs root {recorded_root}, not this server's "
+                f"{runs_root}: tried {tried}"
+            ) from None
         raise Cleaned(f"the run's {part} directory is gone") from None
     except (OSError, ValueError) as exc:
         raise NotAllowed(f"the run's {part} directory is not private: {exc}") from None
@@ -199,6 +217,12 @@ def run_root(runs_root: Path, run_id: str, part: str) -> Iterator[Root]:
         yield Root(fd, PurePosixPath(paths.launch_dir if part == "launch" else paths.work_dir))
     finally:
         os.close(fd)
+
+
+def _same_dir(recorded: str, runs_root: Path) -> bool:
+    """Whether two spellings name one directory (/scratch is often a symlink): compared once
+    resolved, nothing opened."""
+    return os.path.realpath(recorded) == os.path.realpath(runs_root)
 
 
 def attempt_dir(attempt: AttemptFiles) -> str | None:
@@ -273,6 +297,8 @@ def _nf_files(attempt: AttemptFiles) -> list[TaskFile]:
             if stat_confined(work, rel) is None:
                 raise NotFound(str(rel))
             return [_listed(attempt, work, rel / n, n, k) for n, k in NF_FILES.items()]
+    except Unreachable:
+        raise
     except NotFound:
         if attempt.state in OPEN_STATES:  # not visible yet on a shared file system
             return _all(attempt, NF_FILES, "not_yet", "The work directory is not visible yet.")
