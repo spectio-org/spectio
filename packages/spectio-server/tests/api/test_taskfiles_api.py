@@ -356,9 +356,15 @@ def test_terminal_run_is_not_under_a_runs_root(
         lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(**observed))
     ).result()
     base = f"{API}/tasks/{smk_attempt}/attempts/1/files"
-    for found in (authed_client.get(base), authed_client.get(f"{base}/logs/a.log")):
-        assert found.status_code != 409, found.text
-        assert "runs root" not in found.text
+    listing = authed_client.get(base)
+    assert listing.status_code == 200, listing.text
+    assert {f["state"] for f in listing.json()["files"]} == {"cleaned"}
+    found = authed_client.get(f"{base}/logs/a.log")
+    problem(found, 410, "log-cleaned")
+    assert found.json()["detail"].endswith(f"tried {settings.runs_root / RUN / 'launch'}")
+    for answer in (listing, found):
+        assert "runs root" not in answer.text
+        assert str(project) not in answer.text
 
 
 def test_nf_other_runs_root_409(nf_task: NfTask, tmp_path: Path) -> None:
