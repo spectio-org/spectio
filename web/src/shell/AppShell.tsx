@@ -29,10 +29,11 @@ export function AppShell() {
   const lost = useRef(false);
   useEffect(() => {
     if (live === "reconnecting") lost.current = true;
-    else if (live === "live" && lost.current) {
+    else if (live === "live" && (lost.current || down)) {
       lost.current = false;
       setReads((n) => n + 1);
     }
+    // `down` is read, not watched: a failed re-read while live must not trigger another one.
   }, [live]);
   useEffect(() => {
     const controller = new AbortController();
@@ -44,7 +45,7 @@ export function AppShell() {
       .catch((e: Error) => controller.signal.aborted || setDown(e.message));
     return () => controller.abort();
   }, [reads]);
-  const reached = live === "reconnecting" ? null : server;
+  const reached = live === "reconnecting" || down ? null : server;
   const unreached = live === "reconnecting" ? "The live stream is reconnecting." : down;
 
   const phone = useMediaQuery(PHONE, false, NOW) ?? false;

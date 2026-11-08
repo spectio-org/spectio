@@ -3,7 +3,7 @@ import { screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import html from "../../index.html?raw";
 import ours from "../assets/favicon.svg?raw";
-import { FakeEventSource, VERSION, app, fetched, serve, stubStream, viewport } from "../testing";
+import { FakeEventSource, VERSION, app, fetched, json, serve, stubStream, viewport } from "../testing";
 
 beforeEach(() => stubStream());
 afterEach(() => vi.unstubAllGlobals());
@@ -25,6 +25,30 @@ test("the sidebar foot reads Server not reached while the stream reconnects, the
   serve({ "/api/v1/version": { ...VERSION, version: "0.0.2" } });
   stream.open();
   expect(await within(sidebar).findByText("Spectio 0.0.2 · online")).toBeInTheDocument();
+});
+
+test("a failed re-read of /version after a reconnection reads Server not reached, not online", async () => {
+  serve({});
+  app("/launch");
+  const sidebar = await screen.findByRole("navigation", { name: "Main" });
+  expect(await within(sidebar).findByText("Spectio 0.0.1 · online")).toBeInTheDocument();
+  const stream = FakeEventSource.last!;
+  stream.open();
+  stream.fail();
+  serve({ "/api/v1/version": () => json(500, { title: "Internal error", detail: "boom" }) });
+  stream.open();
+  expect(await within(sidebar).findByText("Server not reached")).toBeInTheDocument();
+  expect(within(sidebar).queryByText(/online/)).toBeNull();
+});
+
+test("a first /version that failed is read again once the stream is live", async () => {
+  serve({ "/api/v1/version": () => json(500, { title: "Internal error", detail: "boom" }) });
+  app("/launch");
+  const sidebar = await screen.findByRole("navigation", { name: "Main" });
+  expect(await within(sidebar).findByText("Server not reached")).toBeInTheDocument();
+  serve({});
+  FakeEventSource.last!.open();
+  expect(await within(sidebar).findByText("Spectio 0.0.1 · online")).toBeInTheDocument();
 });
 
 test("the phone node pill goes offline while the stream reconnects, and back online", async () => {
