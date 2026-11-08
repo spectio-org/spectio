@@ -20,7 +20,7 @@ import errno
 import logging
 import re
 from datetime import UTC, datetime
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Annotated, Any
 from urllib.parse import quote
 
@@ -75,6 +75,8 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
             attempts.c.native_id,
             attempts.c.logs,
             attempts.c.outputs,
+            runs.c.launch_dir,
+            runs.c.work_dir.label("run_work_dir"),
         )
         .join(tasks, tasks.c.id == attempts.c.task_id)
         .join(runs, runs.c.id == tasks.c.run_id)
@@ -91,6 +93,7 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
         for log in row.logs or []
         if isinstance(log, dict) and isinstance(log.get("path"), str)
     )
+    recorded = row.launch_dir if row.engine == "snakemake" else row.run_work_dir
     return AttemptFiles(
         row.lineage_id or row.run_id,
         row.engine,
@@ -102,6 +105,7 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
         tuple(p for p in row.outputs or [] if isinstance(p, str))
         if row.engine == "snakemake"
         else None,
+        str(PurePosixPath(recorded).parent.parent) if recorded else None,
     )
 
 

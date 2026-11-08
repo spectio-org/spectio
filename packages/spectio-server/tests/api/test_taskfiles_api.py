@@ -326,6 +326,33 @@ def test_runs_root_missing_409(
     problem(client.get(base), 409, "run-dir-unreachable")
 
 
+def test_other_runs_root_409(
+    writer: Writer, settings: Settings, smk_attempt: str, tmp_path: Path
+) -> None:
+    """FU-P3-81 r1: a run recorded under another runs root, served from one that exists, is
+    not a cleaned launch directory: the listing and the read both answer 409."""
+    other = tmp_path / "other-runs"
+    other.mkdir(mode=0o700)
+    client = client_for(settings.model_copy(update={"runs_root": other}), writer)
+    base = f"{API}/tasks/{smk_attempt}/attempts/1/files"
+    found = client.get(f"{base}/logs/a.log")
+    problem(found, 409, "run-dir-unreachable")
+    assert str(settings.runs_root) in found.json()["detail"]
+    problem(client.get(base), 409, "run-dir-unreachable")
+
+
+def test_nf_other_runs_root_409(nf_task: NfTask, tmp_path: Path) -> None:
+    """FU-P3-81 r1: a Nextflow work directory recorded under another runs root is not a missing
+    work directory (404) nor a cleaned one."""
+    other = tmp_path / "other-runs"
+    other.mkdir(mode=0o700)
+    nf_task.client = client_for(
+        nf_task.settings.model_copy(update={"runs_root": other}), nf_task.writer
+    )
+    problem(nf_task.get(".command.err"), 409, "run-dir-unreachable")
+    problem(nf_task.get(), 409, "run-dir-unreachable")
+
+
 def test_req13_smk_name_exact(authed_client: TestClient, smk_attempt: str) -> None:
     base = f"{API}/tasks/{smk_attempt}/attempts/1/files"
     assert authed_client.get(f"{base}/logs/a.log").text == "rule a\n"

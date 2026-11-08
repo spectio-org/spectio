@@ -16,7 +16,7 @@ import os
 import re
 import stat
 from collections.abc import Iterator
-from contextlib import ExitStack, contextmanager
+from contextlib import AbstractContextManager, ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
 from typing import Literal
@@ -106,6 +106,7 @@ class AttemptFiles:
     logs: tuple[tuple[str, str], ...]  # Snakemake: (path relative to the launch dir, kind)
     runs_root: Path
     outputs: tuple[str, ...] | None = None  # Snakemake: its `job_info` outputs (P1 Task 34)
+    recorded_root: str | None = None  # the runs root the run was recorded under (FU-P3-81)
 
 
 @dataclass(frozen=True)
@@ -205,11 +206,7 @@ def run_root(
         tried = paths.run_dir / part
         if not runs_root.is_dir():
             raise Unreachable(f"the runs root {runs_root} is not there: tried {tried}") from None
-        if recorded_root is not None and not _same_dir(recorded_root, runs_root):
-            raise Unreachable(
-                f"the run was recorded under the runs root {recorded_root}, not this server's "
-                f"{runs_root}: tried {tried}"
-            ) from None
+        _check_recorded(runs_root, recorded_root, tried)
         raise Cleaned(f"the run's {part} directory is gone") from None
     except (OSError, ValueError) as exc:
         raise NotAllowed(f"the run's {part} directory is not private: {exc}") from None
@@ -217,6 +214,15 @@ def run_root(
         yield Root(fd, PurePosixPath(paths.launch_dir if part == "launch" else paths.work_dir))
     finally:
         os.close(fd)
+
+
+def _check_recorded(runs_root: Path, recorded_root: str | None, tried: Path) -> None:
+    """Unreachable when the run was recorded under another runs root than this server's."""
+    if recorded_root is not None and not _same_dir(recorded_root, runs_root):
+        raise Unreachable(
+            f"the run was recorded under the runs root {recorded_root}, not this server's "
+            f"{runs_root}: tried {tried}"
+        ) from None
 
 
 def _same_dir(recorded: str, runs_root: Path) -> bool:
@@ -233,9 +239,19 @@ def attempt_dir(attempt: AttemptFiles) -> str | None:
 
 
 def _work_rel(attempt: AttemptFiles) -> PurePosixPath | None:
+    """The attempt's work directory relative to the run's; raises Unreachable when it does not
+    fit because the run was recorded under another runs root."""
     if attempt.work_dir is None:
         return None
-    return task_work_rel(run_paths(attempt.runs_root, attempt.run_id).work_dir, attempt.work_dir)
+    work = run_paths(attempt.runs_root, attempt.run_id).work_dir
+    rel = task_work_rel(work, attempt.work_dir)
+    if rel is None:
+        _check_recorded(attempt.runs_root, attempt.recorded_root, work)
+    return rel
+
+
+def _root(attempt: AttemptFiles, part: str) -> AbstractContextManager[Root]:
+    return run_root(attempt.runs_root, attempt.run_id, part, attempt.recorded_root)
 
 
 # --- Listing ------------------------------------------------------------------------------
@@ -293,7 +309,7 @@ def _nf_files(attempt: AttemptFiles) -> list[TaskFile]:
             return _all(attempt, NF_FILES, "not_yet", "No work directory yet.")
         return _all(attempt, NF_FILES, "absent", "No work directory recorded for this attempt.")
     try:
-        with run_root(attempt.runs_root, attempt.run_id, "work") as work:
+        with _root(attempt, "work") as work:
             if stat_confined(work, rel) is None:
                 raise NotFound(str(rel))
             return [_listed(attempt, work, rel / n, n, k) for n, k in NF_FILES.items()]
@@ -310,7 +326,7 @@ def _nf_files(attempt: AttemptFiles) -> list[TaskFile]:
 def _smk_files(attempt: AttemptFiles) -> list[TaskFile]:
     kinds: dict[str, Kind] = {p: log_kind(PurePosixPath(p)) for p, _ in attempt.logs}
     try:
-        with run_root(attempt.runs_root, attempt.run_id, "launch") as launch:
+        with _root(attempt, "launch") as launch:
             return [_listed(attempt, launch, safe_rel(p), p, k) for p, k in kinds.items()]
     except Cleaned:
         return _all(attempt, kinds, "cleaned", "The launch directory is gone.")
@@ -323,7 +339,7 @@ def output_states(attempt: AttemptFiles) -> dict[str, State]:
     yet (the job runs) or `absent`, found with no link followed (P1 Task 34)."""
     paths = [p for p in attempt.outputs or () if p != "<TBD>"]
     try:
-        with run_root(attempt.runs_root, attempt.run_id, "launch") as launch:
+        with _root(attempt, "launch") as launch:
             return {p: _output_state(attempt, launch, p) for p in paths}
     except NotFound:  # Cleaned: the launch directory is gone
         return dict.fromkeys(paths, "absent")
@@ -372,13 +388,13 @@ def read_task_file(
     kind = check_name(attempt, name)
     with ExitStack() as stack:
         if attempt.engine == "snakemake":
-            root = stack.enter_context(run_root(attempt.runs_root, attempt.run_id, "launch"))
+            root = stack.enter_context(_root(attempt, "launch"))
             rel = safe_rel(name)
         else:
             dir_rel = _work_rel(attempt)
             if dir_rel is None:
                 raise NotFound("no work directory recorded for this attempt")
-            work = stack.enter_context(run_root(attempt.runs_root, attempt.run_id, "work"))
+            work = stack.enter_context(_root(attempt, "work"))
             root, rel = work, dir_rel / name
             if stat_confined(work, dir_rel) is None:
                 state = "not visible yet" if attempt.state in OPEN_STATES else "cleaned"
