@@ -66,9 +66,10 @@ const allocated = (a: SlurmAllocated): string =>
     .filter(Boolean)
     .join(" · ");
 
-function Facts({ facts }: { facts: [string, ReactNode][] }) {
+/** A label/value list; `variant` is the CSS class of its place (sheet or card). */
+export function Facts({ facts, variant = "sp-sheet-facts" }: { facts: [string, ReactNode][]; variant?: string }) {
   return (
-    <dl className="sp-facts sp-sheet-facts">
+    <dl className={`sp-facts ${variant}`}>
       {facts.map(([name, value]) => (
         <div key={name}>
           <dt>{name}</dt>

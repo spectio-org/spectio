@@ -6,7 +6,7 @@ import { usePhone } from "../shell/layout";
 import { bytes, nearLimit, seconds } from "./resources";
 import { efficiencyFacts } from "./ByProcess";
 import { NearLimit, Word, taskLabel } from "./RunState";
-import { SlurmFacts } from "./SlurmFacts";
+import { Facts, SlurmFacts } from "./SlurmFacts";
 import { TaskFiles } from "./TaskFiles";
 import { isTerminal, lastSegment, neededFirst, processState, stageWord, sum, taskWord, total, words } from "./stateWord";
 
@@ -136,14 +136,7 @@ function ProcessView({ run, stages, process, onOpen, onTasks }: { run: RunDetail
       {efficiency.length > 0 && (
         <section aria-label="Efficiency">
           <h3 className="sp-sheet-h">Efficiency</h3>
-          <dl className="sp-facts sp-sheet-facts">
-            {efficiency.map(([label, value]) => (
-              <div key={label}>
-                <dt>{label}</dt>
-                <dd>{value}</dd>
-              </div>
-            ))}
-          </dl>
+          <Facts facts={efficiency} />
         </section>
       )}
       <div>
@@ -233,14 +226,7 @@ function TaskView({ run, stages, processes, task, onOpen }: { run: RunDetail; st
   ];
   return (
     <>
-      <dl className="sp-facts sp-sheet-facts">
-        {facts.map(([name, value]) => (
-          <div key={name}>
-            <dt>{name}</dt>
-            <dd>{value}</dd>
-          </div>
-        ))}
-      </dl>
+      <Facts facts={facts} />
       <SlurmFacts task={task} />
       <h3 className="sp-sheet-h">Files</h3>
       <TaskFiles run={run} task={task} />

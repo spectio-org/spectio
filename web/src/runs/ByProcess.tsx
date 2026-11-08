@@ -3,6 +3,7 @@ import type { Process, ProcessEfficiency } from "../api";
 import { usePhone } from "../shell/layout";
 import { bytes, isLow, isNear, percent, seconds } from "./resources";
 import { Low, NearLimit, ProcessName } from "./RunState";
+import { Facts } from "./SlurmFacts";
 import { lastSegment, type words } from "./stateWord";
 
 // The By process (Snakemake: By rule) view of the Tasks tab (ui-spec §4.4 note 2026-11-07; boards
@@ -163,14 +164,7 @@ export function ByProcess({ processes, w, onShow }: { processes: Process[]; w: W
             <li key={p.process} className="sp-row-card">
               <Show process={p.process} w={w} onShow={onShow} />
               {p.efficiency ? (
-                <dl className="sp-facts sp-card-facts">
-                  {efficiencyFacts(p.efficiency, w).map(([name, value]) => (
-                    <div key={name}>
-                      <dt>{name}</dt>
-                      <dd>{value}</dd>
-                    </div>
-                  ))}
-                </dl>
+                <Facts facts={efficiencyFacts(p.efficiency, w)} variant="sp-card-facts" />
               ) : (
                 <span className="sp-muted">Not measured yet.</span>
               )}

@@ -91,6 +91,7 @@ nav:
       - Signing in: usage/sign-in.md
       - Opening from your laptop: usage/open-from-your-laptop.md
       - Runs started from a terminal: usage/runs-from-a-terminal.md
+      - States, outputs and efficiency: usage/states-outputs-efficiency.md
   - Features:
       - features/index.md
       - Runs: features/runs.md
