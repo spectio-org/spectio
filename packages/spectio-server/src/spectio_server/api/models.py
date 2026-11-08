@@ -278,6 +278,7 @@ class Process(BaseModel):
     is_checkpoint: bool
     lower_bound: bool
     efficiency: ProcessEfficiency
+    pipeline_order: int  # 0 first: the rule graph's topological order, else `items`' (FU-P3-82)
 
 
 class ProcessList(BaseModel):

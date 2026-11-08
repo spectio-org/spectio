@@ -1578,6 +1578,25 @@
   background: var(--sp-surface-raised);
   box-shadow: var(--sp-shadow);
 }
+.sp-order {
+  /* By process: Pipeline order / A to Z (ui-spec §4.4 note 2026-11-08) */
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  font-size: 14px;
+  color: var(--sp-text-secondary);
+}
+.sp-order label {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  cursor: pointer;
+}
+.sp-order input:focus-visible {
+  outline: 2px solid var(--sp-indigo-500);
+  outline-offset: 2px;
+}
 .sp-sort {
   padding: 0;
   border: 0;
