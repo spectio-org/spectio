@@ -13,7 +13,7 @@ import { providerProps } from "../shell/theme";
 import { DemoBanner } from "./DemoBanner";
 import { READ_ONLY, install } from "./stub";
 
-const FAILED = "run_01M68WEQRQPTPJ70JFS8VSQXHP";
+const FAILED = (JSON.parse(JSON.parse(raw)["/runs"].body).items as { id: string; state: string }[]).find((r) => r.state === "failed")!.id;
 let undo = () => {};
 const { createObjectURL, revokeObjectURL } = URL;
 beforeEach(() => {

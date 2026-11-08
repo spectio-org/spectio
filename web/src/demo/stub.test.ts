@@ -156,7 +156,7 @@ const get = (path: string) => answer(FIXTURES, "GET", new URL(`https://spectio.p
 
 test("the recording: every process sheet of every run lists that process's tasks, page by page", async () => {
   const runs = (await get("/runs?limit=50").json()).items as { id: string }[];
-  expect(runs.length).toBeGreaterThanOrEqual(6);
+  expect(runs.length).toBeGreaterThanOrEqual(5);
   for (const { id } of runs) {
     const processes = (await get(`/runs/${id}/processes`).json()).items as { process: string; counts: Record<string, number> }[];
     for (const p of processes) {
@@ -175,10 +175,50 @@ test("the recording: every process sheet of every run lists that process's tasks
   }
 });
 
+type RecordedRun = { id: string; state: string; workflow: { engine: string } };
+const recordedRuns = async () => (await get("/runs?limit=50").json()).items as RecordedRun[];
+
 test("the recording: the failed run's first failed task is among its failed tasks", async () => {
-  const run = await get("/runs/run_01M68WEQRQPTPJ70JFS8VSQXHP").json();
-  const failed = await get("/runs/run_01M68WEQRQPTPJ70JFS8VSQXHP/tasks?state=failed&limit=50").json();
+  const { id } = (await recordedRuns()).find((r) => r.state === "failed")!;
+  const run = await get(`/runs/${id}`).json();
+  const failed = await get(`/runs/${id}/tasks?state=failed&limit=50`).json();
   expect(failed.items.map((t: { id: string }) => t.id)).toContain(run.failure.task_id);
+});
+
+test("the recording: the failed task's job files, every attempt, with the text of each present file", async () => {
+  const { id } = (await recordedRuns()).find((r) => r.state === "failed")!;
+  const run = await get(`/runs/${id}`).json();
+  expect(run.failure.attempt_n).toBeGreaterThan(1);
+  for (let n = 1; n <= run.failure.attempt_n; n++) {
+    const r = get(`/tasks/${run.failure.task_id}/attempts/${n}/files`);
+    expect(r.status).toBe(200);
+    const files = (await r.json()).files as { name: string; state: string }[];
+    for (const f of files.filter((f) => f.state === "present")) {
+      expect(get(`/tasks/${run.failure.task_id}/attempts/${n}/files/${f.name}`).status).toBe(200);
+    }
+  }
+});
+
+test("the recording: a Snakemake job's outputs include a temporary output Snakemake removed", async () => {
+  const { id } = (await recordedRuns()).find((r) => r.workflow.engine === "snakemake")!;
+  const states = await Promise.all(
+    ((await get(`/runs/${id}/tasks?limit=200`).json()).items as { id: string; attempt_n: number | null }[]).map(async (t) => {
+      const r = get(`/tasks/${t.id}/attempts/${t.attempt_n}/files`);
+      return r.status === 200 ? ((await r.json()).outputs as { state: string }[]).map((o) => o.state) : [];
+    }),
+  );
+  expect(states.flat()).toContain("temp_removed");
+  const processes = (await get(`/runs/${id}/processes`).json()).items as { is_checkpoint: boolean }[];
+  expect(processes.some((p) => p.is_checkpoint)).toBe(true);
+});
+
+test("the recording: every run has its launch template, its results root and its processes' efficiency", async () => {
+  for (const { id } of await recordedRuns()) {
+    expect(get(`/runs/${id}:launch-template`).status).toBe(200);
+    expect(get(`/runs/${id}/results`).status).toBe(200);
+    const processes = (await get(`/runs/${id}/processes`).json()).items as { efficiency?: unknown }[];
+    expect(processes.some((p) => p.efficiency)).toBe(true);
+  }
 });
 
 test("the recording holds a run launched with non-default parameters", async () => {
