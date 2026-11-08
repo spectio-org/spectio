@@ -186,8 +186,8 @@ def build(theme: Theme) -> Sketch:
     s.text(x + 22, TOP1 + 172, "each wait: 60 tries, 1 s apart", size=12.5, anchor="start", colour=t.dim)
     s.step(x + CW / 2, CAP1, 4, "start, then wait for idle")
     lines(s, x, CAP1 + 30, ("in this order, until idle",
-                            "logged: up in 1 s, `demo-hpc-node1`,",
-                            "4 CPUs, 15574 MiB, partition `debug`",
+                            "first run logged: up in 1 s,",
+                            "`demo-hpc-node1`, 4 CPUs, partition `debug`",
                             "`status`: daemons, node, cluster"))
 
     # 5 sacct on a real Slurm
