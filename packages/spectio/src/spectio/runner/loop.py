@@ -356,18 +356,18 @@ class RunnerLoop:
         self._report(ref, report)
 
     def _report(self, ref: LaunchRef, report: HeadReport) -> None:
-        # once its engine's end event is in, an ended head waits for no spool grace and has no
-        # failure: the run is already ended, and the exit code is reported at once (G7)
-        if report.ended and report.failure is None and not ref.engine_ended:
-            if ref.engine == "snakemake" and report.exit_code is not None:
-                # its exit code ends the launch (Assumption 16): the head is gone, so one more
-                # read drains its spool, with no grace to wait (FU-P3-14, CR-P3T09-04)
+        if report.ended and report.failure is None:
+            if ref.engine_ended or (ref.engine == "snakemake" and report.exit_code is not None):
+                # the engine's end event is in (G7), or a Snakemake exit code ends the launch
+                # (Assumption 16): the head is gone, so one more read drains its spool, with no
+                # grace to wait (FU-P3-14, CR-P3T09-04, CR-P3G7-07)
                 self._read(ref)
             else:
                 first = self._ended_at.setdefault(ref.launch_id, time.monotonic())
                 if time.monotonic() - first < self.end_grace_s:
                     return  # its last events may still be in the spool (Assumption 15)
-            report = ended_failure(ref.engine, report)
+            if not ref.engine_ended:  # an engine that ended on its own event has no failure
+                report = ended_failure(ref.engine, report)
         if self._last.get(ref.launch_id) == report:
             return
         self._last[ref.launch_id] = report

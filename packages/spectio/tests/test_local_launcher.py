@@ -692,21 +692,38 @@ def test_snakemake_end_skips_the_spool_grace(runs_root: Path, launcher: LocalLau
     assert [len(b.events) for _, b in sink.batches if b.events] == [1]  # read before the end
 
 
-def test_nextflow_end_after_its_end_event_skips_the_spool_grace(
-    runs_root: Path, launcher: LocalLauncher
-) -> None:
+class LateEventLauncher(LocalLauncher):
+    """Writes a Nextflow spool event as it first sees the head ended: an event (`onFlowError`)
+    that came after the tick's spool read, and before its poll."""
+
+    def poll(self, ids: list[str]) -> dict[str, HeadReport]:
+        reports = super().poll(ids)
+        for native_id, report in reports.items():
+            spool = self._dirs[native_id] / ".spectio" / "events" / "nf-spectio-1-0001.jsonl"
+            if report.ended and not spool.exists():
+                fd = os.open(spool, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+                os.write(fd, (spool_line(RUN_A, 1, "onFlowError") + "\n").encode())
+                os.close(fd)
+        return reports
+
+
+@pytest.mark.parametrize("code", [0, 1])
+def test_nextflow_end_after_its_end_event_skips_the_spool_grace(runs_root: Path, code: int) -> None:
     """With the default spool grace (60 s), a Nextflow head that exits after its engine's end
     event was ingested (`engine_ended`) is reported at the poll that sees it, with its exit code
-    and no failure: its last events are already in, there is nothing to wait for (G7)."""
-    engine = stub_engine(runs_root.parent / "bin", "exit 0")
+    and no failure (G7), after one last read of its spool: an event can follow `onFlowComplete`
+    (`onFlowError`), and is ingested before the end (CR-P3G7-07)."""
+    engine = stub_engine(runs_root.parent / "bin", f"exit {code}")
     sink = FakeSink()
-    loop = make_loop(sink, runs_root, engine, launcher, end_grace_s=60)
+    loop = make_loop(sink, runs_root, engine, LateEventLauncher(), end_grace_s=60)
     ref = sink.launch(runs_root, RUN_A)
     sink.launches[ref.launch_id] = ref = replace(ref, engine_ended=True)
     sink.commands[-1] = replace(sink.commands[-1], launch=ref)
     run_until(loop, lambda: ref.launch_id not in sink.launches, timeout=10)
     report = sink.last(ref.launch_id)
-    assert (report.ended, report.exit_code, report.failure) == (True, 0, None), report
+    assert (report.ended, report.exit_code, report.failure) == (True, code, None), report
+    events = [e.type for _, b in sink.batches for e in b.events]
+    assert events == ["nextflow.onFlowError"]  # read before the end
 
 
 # --- Head files scoped by launch, and the Resume launch (P1 Task 30, CR-P3T09-11) -----------

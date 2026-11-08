@@ -134,8 +134,8 @@ class LaunchRef:
     """A launch the runner watches: a `launches` row (api §7). `native_id` is the head's id as
     the launcher gave it, None until the head is started. `terminal` is set for a run started
     from a terminal (`cli-observed`), whose `launch_dir` is its pointer's, and `native_id` None.
-    `engine_ended` is true once the engine's own end event (`onFlowComplete`) is ingested: its
-    head's end then waits for no more spool events."""
+    `engine_ended` is true once a Nextflow launch's own end event (`onFlowComplete`) is
+    ingested: its head's end is then reported after one last spool read, with no grace."""
 
     launch_id: str
     run_id: str

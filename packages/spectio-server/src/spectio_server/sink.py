@@ -165,7 +165,7 @@ class StoreSink:
             engine=cast(Engine, row.engine),
             launch_dir=run_paths(self.runs_root, row.run_id).launch_dir,
             native_id=row.head_native_id,
-            engine_ended=row.head_state in ENGINE_ENDED,
+            engine_ended=row.engine == "nextflow" and row.head_state in ENGINE_ENDED,
         )
 
     def _terminal_ref(self, row: Row[Any]) -> LaunchRef | None:
