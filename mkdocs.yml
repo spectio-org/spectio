@@ -93,6 +93,7 @@ nav:
       - Opening from your laptop: usage/open-from-your-laptop.md
       - Runs started from a terminal: usage/runs-from-a-terminal.md
       - States, outputs and efficiency: usage/states-outputs-efficiency.md
+      - Browsing and previewing files: usage/browse-and-preview-files.md
   - Features:
       - features/index.md
       - Runs: features/runs.md

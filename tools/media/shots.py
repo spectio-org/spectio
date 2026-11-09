@@ -199,6 +199,21 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-run-process-columns", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
              "0.0.1, live: the sheet of one process, its tasks in two columns, Task and State, under a header",
              themes=("light", "dark"), live=("wait:65 / 65 tasks", "open:Open process ALIGN", "wait:Open in Tasks")),
+        # Batch P3-B09 (FU-P3-85c, 85d, 85e): the file explorer and preview, on the finished Nextflow run
+        # ($SPECTIO_DEMO_RUN, launched from the UI with the profiles test,local) and the work directory of its
+        # COMPARE task for treatA_vs_ctrl ($SPECTIO_DEMO_TASK, attempt 1).
+        Shot("app-results-explorer", "/runs/$SPECTIO_DEMO_RUN/results", 1440, 1000,
+             "0.0.1, live: the results explorer at the top of the results directory: sort buttons, the filter, a Kind badge and a Download button per entry",
+             themes=("light", "dark"), live=("wait:final_report.html",)),
+        Shot("app-file-preview", "/runs/$SPECTIO_DEMO_RUN/results/file?path=quant/counts_matrix.tsv", 1440, 1000,
+             "0.0.1, live: the preview of a results file, a TSV shown as a table, with its path, size and the Download button",
+             themes=("light", "dark"), live=("wait:counts_matrix.tsv",)),
+        Shot("app-file-preview-phone", "/runs/$SPECTIO_DEMO_RUN/results/file?path=quant/counts_matrix.tsv", 390, 844,
+             "0.0.1, live: the same preview on a phone",
+             themes=("light", "dark"), live=("wait:counts_matrix.tsv",)),
+        Shot("app-workdir", "/runs/$SPECTIO_DEMO_RUN/workdir?task=$SPECTIO_DEMO_TASK&attempt=1", 1440, 1000,
+             "0.0.1, live: the work directory of one Nextflow task attempt, in the same explorer, with the way back to the task's sheet",
+             themes=("light", "dark"), live=("wait:treatA_vs_ctrl.tsv",)),
     )
 }
 
