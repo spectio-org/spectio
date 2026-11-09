@@ -134,6 +134,33 @@ media:
     # searched for MERGE (four matches, P3 UI parity D)
     generator: python3 tools/media/shots.py run --shot app-run-logs --theme both
     outputs: [docs/assets/shots/app-run-logs_light.webp, docs/assets/shots/app-run-logs_dark.webp]
+  - id: app-environments
+    kind: screenshot
+    # live (batch P3-B11, FU-P3-86f): a local server whose environments.toml holds two-cores (the default) and
+    # eight-cores; names and paths are demo ones (tools/media/README.md, batch P3-B11 shots)
+    generator: python3 tools/media/shots.py run --shot app-environments --theme both
+    outputs: [docs/assets/shots/app-environments_light.webp, docs/assets/shots/app-environments_dark.webp]
+  - id: app-environments-phone
+    kind: screenshot
+    # live, as app-environments, at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-environments-phone --theme both
+    outputs: [docs/assets/shots/app-environments-phone_light.webp, docs/assets/shots/app-environments-phone_dark.webp]
+  - id: app-environment-edit
+    kind: screenshot
+    # live, as app-environments: the form of two-cores on a local server
+    generator: python3 tools/media/shots.py run --shot app-environment-edit --theme both
+    outputs: [docs/assets/shots/app-environment-edit_light.webp, docs/assets/shots/app-environment-edit_dark.webp]
+  - id: app-launch-environment
+    kind: screenshot
+    # live, as app-launch (the synthetic pipeline picked from Try a test pipeline, scale set to 0), with the two
+    # environments of app-environments: Where it runs, the Summary and Before Launch (FU-P3-86g, -86h)
+    generator: python3 tools/media/shots.py run --shot app-launch-environment --theme both
+    outputs: [docs/assets/shots/app-launch-environment_light.webp, docs/assets/shots/app-launch-environment_dark.webp]
+  - id: app-run-environment
+    kind: screenshot
+    # live, as app-environments; SPECTIO_DEMO_RUN is a finished run launched with environment eight-cores (FU-P3-86g)
+    generator: python3 tools/media/shots.py run --shot app-run-environment --theme both
+    outputs: [docs/assets/shots/app-run-environment_light.webp, docs/assets/shots/app-run-environment_dark.webp]
   - id: budget-loop
     kind: cast
     generator: python3 tools/media/cast.py tools/media/casts/budget-loop.yaml
