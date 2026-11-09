@@ -3325,7 +3325,30 @@
                   "type": "null"
                 }
               ],
+              "enum": [
+                "image",
+                "tiff",
+                "zarr"
+              ],
               "title": "As"
+            }
+          },
+          {
+            "description": "with as=tiff or as=zarr: one closed bytes=<first>-<last>",
+            "in": "header",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "with as=tiff or as=zarr: one closed bytes=<first>-<last>",
+              "title": "Range"
             }
           }
         ],
@@ -3991,7 +4014,30 @@
                   "type": "null"
                 }
               ],
+              "enum": [
+                "image",
+                "tiff",
+                "zarr"
+              ],
               "title": "As"
+            }
+          },
+          {
+            "description": "with as=tiff or as=zarr: one closed bytes=<first>-<last>",
+            "in": "header",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "with as=tiff or as=zarr: one closed bytes=<first>-<last>",
+              "title": "Range"
             }
           }
         ],

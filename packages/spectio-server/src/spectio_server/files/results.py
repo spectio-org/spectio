@@ -344,26 +344,28 @@ def _kind(root: Root, rel: PurePosixPath, dir_fd: int, work: Root | None) -> str
 
 @dataclass(frozen=True)
 class Raw:
-    """A results file at its first opening: its size, its identity, and its first chunk."""
+    """A results file at its first opening: its size, its identity, and its first bytes."""
 
     size: int
     ident: tuple[int, int]  # (st_dev, st_ino), compared on every later chunk
-    first: bytes  # at most `CHUNK` bytes from the start; empty for a file over the cap
+    first: bytes  # at most `head` bytes from the start; empty for a file over the cap
 
 
 class Replaced(NotAllowed):
     """The file read for a later chunk is not the one first opened (api §5.3)."""
 
 
-def open_raw(where: Tree, rel: PurePosixPath, cap: int) -> Raw:
-    """The file `rel` at its first opening, its first chunk read only when its size is at most
-    `cap`; raises NotFound or NotAllowed."""
+def open_raw(where: Tree, rel: PurePosixPath, cap: int | None, head: int) -> Raw:
+    """The file `rel` at its first opening, its first `head` bytes (at most `CHUNK`) read only
+    when its size is at most `cap` (None: no cap); raises NotFound or NotAllowed. A ranged
+    imaging read asks 4 bytes or none, then reads its range from its own start (api §5.3.1)."""
     with where.roots() as (root, work):
         if root is None:
             raise NotFound(MISSING)
         with open_confined(root, rel, work=work) as f:
             st = os.fstat(f.fileno())
-            first = read_at(f, 0, min(st.st_size, CHUNK)) if st.st_size <= cap else b""
+            small = cap is None or st.st_size <= cap
+            first = read_at(f, 0, min(st.st_size, head, CHUNK)) if small and head else b""
             return Raw(st.st_size, (st.st_dev, st.st_ino), first)
 
 
