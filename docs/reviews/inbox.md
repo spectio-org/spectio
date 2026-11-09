@@ -2110,6 +2110,16 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Why a question:** (1) is a security hardening the spec left out; (2) is a contradiction in the spec that the code resolved one way; (3) changes which requests can use up the scarce slots.
 - **Assumed (2026-11-09, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a), (2a), (3a).
 
+### #141 · Assumed: environments boards, second part: Duplicate while the file is not ok, and the four boards left (FU-P3-86e2)
+
+- **Covers:** step P3-fu86e2 (`autopilot/P3-fu86e2`); finding [CR-P3FU86E2-02](code/P3-fu86e2.md#findings); [ui-spec §4.8.1](../specs/ui-spec.md#481-environments-in-001), the file's state line and the Boards line; part of the plan of [#133](#133-assumed-environments-local-slurm-define-a-new-one-fu-p3-86) and a follow-up of [#137](#137-assumed-environments-boards-first-part-what-is-deferred-and-what-an-unusable-card-shows-fu-p3-86e), choice 1.
+- **Context:** the worker drew three of the seven deferred boards. In the `refused` panel Duplicate is enabled while New environment waits; Duplicate opens the same create form, so the user fills it and Save gets `409 environments-file-unusable`. The spec listed only New environment, Edit, Delete and Make default as waiting. Four boards are still to draw: `MLiteLaunch`, `LiteLaunchSnakemake`, `LiteRunDetail` and `LiteStatesRun`.
+- **Open choices, each with the recommendation (assumed):**
+  1. **Duplicate while the file is not `ok` or `missing`.** (a) it waits like New environment, `aria-disabled` with the same reason; (b) it stays enabled and the form's Save shows the file's state; (c) it opens the form read only. **(a)**: one rule, "anything that would write waits", and the user is not sent to a form that cannot save; (b) is the dead end the reviewer found; (c) is a new state to draw and test.
+  2. **When the four boards are drawn.** (a) a further board task, before FU-P3-86f and -86g, as #137 chose for the seven; (b) beside the screens of -86f; (c) skipped. **(a)**: `LiteRunDetail` and `LiteStatesRun` carry the Environment fact and `MLiteLaunch` the phone Environment row, which -86f and -86g build; the rule of the board conventions is no screen without its board.
+- **Why a question:** (1) chooses between a consistent rule and a smaller list of waiting actions; (2) orders the screens against their boards for a second time.
+- **Assumed (2026-11-09, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a) in each choice. The spec says so for choice 1; the Duplicate button in the `refused` panel is changed by the next board task.
+
 ### #140 · Assumed: imaging viewer boards, first part: what is deferred and the colour of an off channel (FU-P3-102c)
 
 - **Covers:** step P3-fu102c (`autopilot/P3-fu102c`); findings [CR-P3FU102C-02](code/P3-fu102c.md#findings) (round 1) and the deferred boards; [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview), the Channels bullet and the Boards line; part of the plan of [#135](#135-assumed-tiff-ome-tiff-and-ome-zarr-viewers-in-001-fu-p3-102).
