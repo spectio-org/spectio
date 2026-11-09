@@ -32,10 +32,42 @@ interface Props {
   error?: string;
 }
 
-export function EnvironmentRow({ list, failed, chosen, onChoose, onRetry, onCreated, error }: Props) {
-  const server = useServer();
+export function EnvironmentRow(props: Props) {
   const phone = usePhone();
   const [adding, setAdding] = useState(false);
+  const close = () => setAdding(false);
+  const form = (
+    <>
+      <p className="sp-muted">Saved under a name, then listed and chosen in Where it runs. Your launch form is kept.</p>
+      <EnvironmentForm
+        initial={EMPTY}
+        etag={null}
+        saveLabel="Save and choose it"
+        onSaved={(item) => (close(), props.onCreated(item))}
+        onCancel={close}
+        onReload={props.onRetry}
+      />
+    </>
+  );
+  const dialog = { opened: adding, onClose: close, title: "New environment", returnFocus: true };
+  const dialogs = phone ? (
+    <Drawer {...dialog} position="bottom" size="100%" classNames={{ content: "sp-bottom-sheet", title: "sp-sheet-title" }}>{form}</Drawer>
+  ) : (
+    <Modal {...dialog} size="lg" centered>{form}</Modal>
+  );
+  // One tree whatever the list's state: the dialog keeps its place, and its values, while the list
+  // reloads or fails to (ui-spec §4.8.1 Reload, CR-P3FU86G-03).
+  return (
+    <>
+      <Choice {...props} onAdd={() => setAdding(true)} />
+      {dialogs}
+    </>
+  );
+}
+
+function Choice({ list, failed, chosen, onChoose, onRetry, error, onAdd }: Props & { onAdd: () => void }) {
+  const server = useServer();
+  const phone = usePhone();
   if (failed) {
     return (
       <div className="launch-env-state">
@@ -100,21 +132,6 @@ export function EnvironmentRow({ list, failed, chosen, onChoose, onRetry, onCrea
       </fieldset>
     );
   }
-  const close = () => setAdding(false);
-  const form = (
-    <>
-      <p className="sp-muted">Saved under a name, then listed and chosen in Where it runs. Your launch form is kept.</p>
-      <EnvironmentForm
-        initial={EMPTY}
-        etag={null}
-        saveLabel="Save and choose it"
-        onSaved={(item) => (close(), onCreated(item))}
-        onCancel={close}
-        onReload={onRetry}
-      />
-    </>
-  );
-  const dialog = { opened: adding, onClose: close, title: "New environment", returnFocus: true };
   return (
     <div className="launch-env">
       {file && (
@@ -128,7 +145,7 @@ export function EnvironmentRow({ list, failed, chosen, onChoose, onRetry, onCrea
       {left.length > 0 && <p className="sp-muted">{`Not offered: ${left.map((e) => `${e.name} (${e.unusable_reason})`).join("; ")}`}</p>}
       <Button
         variant="light"
-        onClick={() => !file && setAdding(true)}
+        onClick={() => !file && onAdd()}
         aria-disabled={file ? true : undefined}
         data-disabled={file ? true : undefined}
         aria-describedby={file ? "env-file-line" : undefined}
@@ -136,11 +153,6 @@ export function EnvironmentRow({ list, failed, chosen, onChoose, onRetry, onCrea
       >
         New environment
       </Button>
-      {phone ? (
-        <Drawer {...dialog} position="bottom" size="100%" classNames={{ content: "sp-bottom-sheet", title: "sp-sheet-title" }}>{form}</Drawer>
-      ) : (
-        <Modal {...dialog} size="lg" centered>{form}</Modal>
-      )}
     </div>
   );
 }

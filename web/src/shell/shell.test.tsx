@@ -28,9 +28,14 @@ function app(path = "/") {
 beforeEach(() => {
   window.localStorage.clear();
   viewport(1440);
+  // VERSION for GET /version only: any other path (/launch reads /environments) is a 404 problem
   vi.stubGlobal(
     "fetch",
-    vi.fn(async () => new Response(JSON.stringify(VERSION), { status: 200 })),
+    vi.fn(async (input: RequestInfo | URL) =>
+      String(input).endsWith("/api/v1/version")
+        ? new Response(JSON.stringify(VERSION), { status: 200 })
+        : new Response(JSON.stringify({ title: "Not found", detail: "no such path" }), { status: 404 }),
+    ),
   );
 });
 afterEach(() => vi.unstubAllGlobals());

@@ -172,6 +172,22 @@ test("New environment opens the form in a dialog; on Save it is listed and check
   expect(await screen.findByRole("radio", { name: "Long jobs, SLURM" })).toBeChecked();
 });
 
+test("a Reload that fails keeps the dialog and its values (CR-P3FU86G-03)", async () => {
+  let reads = 0;
+  launchWith((_u: URL, init?: RequestInit) => {
+    if (init?.method === "POST") return json(409, { type: "/problems/environments-file-changed", title: "Changed", detail: "x" });
+    return ++reads === 1 ? json(200, list(BUILTINS)) : json(500, { title: "boom", detail: "boom" });
+  });
+  await userEvent.click(await screen.findByRole("button", { name: "New environment" }));
+  const dialog = await screen.findByRole("dialog", { name: "New environment" });
+  await userEvent.type(within(dialog).getByRole("textbox", { name: "Name" }), "mylab-long");
+  await userEvent.click(within(dialog).getByRole("button", { name: "Save and choose it" }));
+  await userEvent.click(await within(dialog).findByRole("button", { name: "Reload" }));
+  expect(await screen.findByText("Environments could not be read")).toBeInTheDocument();
+  expect(screen.getByRole("dialog", { name: "New environment" })).toBeInTheDocument();
+  expect(within(screen.getByRole("dialog")).getByRole("textbox", { name: "Name" })).toHaveValue("mylab-long");
+});
+
 test("Cancel closes the dialog and gives focus back to New environment", async () => {
   launchWith(list(BUILTINS));
   const add = await screen.findByRole("button", { name: "New environment" });
