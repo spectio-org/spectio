@@ -18,6 +18,7 @@ launch's reading of a name (FU-P3-86c).
 import hashlib
 import json
 import logging
+from collections.abc import Iterable
 from pathlib import Path
 from typing import Any
 
@@ -33,7 +34,7 @@ from spectio_server.files.pool import READ_TIMEOUT_S, FilePool, Stalled
 log = logging.getLogger(__name__)
 router = APIRouter()
 
-BUILTIN = frozenset({"local", "slurm"})
+BUILTIN = RESERVED - {"new"}
 Entry = tuple[Environment, bool, bool, str | None]  # environment, builtin, usable, reason
 
 
@@ -97,19 +98,22 @@ def _usable(env: Environment, settings: Settings) -> tuple[bool, str | None]:
     return True, None
 
 
+def _entries(settings: Settings, defined: Iterable[Environment]) -> list[Entry]:
+    """The built-ins first, then the file's environments."""
+    entries: list[Entry] = [
+        (b.environment, True, b.usable, b.unusable_reason) for b in builtins(settings)
+    ]
+    return entries + [(e, False, *_usable(e, settings)) for e in defined]
+
+
 def view(request: Request) -> tuple[envfile.EnvFile, list[Entry], str]:
     """The file, every environment listed (built-ins first) and the default."""
     settings: Settings = request.app.state.settings
     store: Store = request.app.state.environments
     found = store.read(settings, request.app.state.files)
-    entries: list[Entry] = [
-        (b.environment, True, b.usable, b.unusable_reason) for b in builtins(settings)
-    ]
-    default: str = settings.executor  # the built-in of the server's kind
-    if found.state == "ok":
-        entries += [(e, False, *_usable(e, settings)) for e in found.environments]
-        default = found.default or default
-    return found, entries, default
+    # a file that is not `ok` has no environments and no default
+    default = found.default or settings.executor  # else the built-in of the server's kind
+    return found, _entries(settings, found.environments), default
 
 
 def _item(entry: Entry, default: str) -> dict[str, Any]:
@@ -285,11 +289,7 @@ def make_default(name: str, request: Request) -> Response:
     settings: Settings = request.app.state.settings
 
     def change(current: envfile.EnvFile) -> tuple[str | None, list[Environment]]:
-        entries: list[Entry] = [
-            (b.environment, True, b.usable, b.unusable_reason) for b in builtins(settings)
-        ]
-        entries += [(e, False, *_usable(e, settings)) for e in current.environments]
-        for env, _, usable, reason in entries:
+        for env, _, usable, reason in _entries(settings, current.environments):
             if env.name == name:
                 if not usable:
                     raise Invalid("name", reason or "not usable on this server")

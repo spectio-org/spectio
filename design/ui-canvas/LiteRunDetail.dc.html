@@ -211,7 +211,7 @@ renderVals() {
       fact('Exit code', '— (still running)'),
       fact('Failure', '—'),
       // the run's environment snapshot (runs.environment, api §5.4), never GET /version: ui-spec §4.8.1, Run detail
-      fact('Environment', 'mylab-long', 0, null, { badge: 'SLURM', sub: 'partition htc · SLURM account mylab · 2 h per job · 8 GiB per job', span: 2 }),
+      fact('Environment', 'mylab-long', 0, null, { badge: 'SLURM', sub: 'partition long · SLURM account mylab · 48 h per job · 32 GiB per job', span: 2 }),
       fact('Login node', 'login1 · runs the engine head'),
       fact('Executor', 'SLURM · runs the tasks'),
       fact('Pipeline directory', '/g/demo-lab/pipelines/nf-core-rnaseq_3.27.0', 1, null, { span: 2 }),
