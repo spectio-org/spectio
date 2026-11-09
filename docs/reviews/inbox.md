@@ -1952,6 +1952,7 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - **FU-P3-85e · server then UI, work directory.** The four `workdir` routes (listing, `stat`, `text`, `raw`; dot parts refused, staged inputs as the req. 13 note says, `410` and `409` as the Job files routes) with `test_req13_workdir_*`; then Browse work directory or "The work directory was removed" in the task sheet, the two `workdir` pages (in `static.ROUTES`) on the components of -85c and -85d, back to the sheet; boards LiteWorkdir, LiteTaskFiles and MLiteTaskFilesSheet. Security review: yes.
   - After the batch: `p3-batch` (simplify, Progress page, one figure, doc review); the guide [States, outputs and efficiency](../usage/states-outputs-efficiency.md) gains a "Files and previews" section.
 - **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** every recommendation above.
+- **Built differently (2026-11-09):** FU-P3-85e heads the work directory's card with the counts, not the task and the attempt: [#132](#132-assumed-the-work-directory-card-heading-keeps-the-counts-fu-p3-85e).
 
 ### #128 · Assumed: how much an escape sequence in a previewed file may hide (FU-P3-85a)
 
@@ -1996,3 +1997,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - (c) a neutral line with no noun: "The sheet could not be reopened."
 - **Recommendation:** (b), in FU-P3-97 or with FU-P3-96, which touches the same lines. It is the rule of the screen, and it costs one call and one test. **Assumed:** (b); until then the line is built as (a).
 - **Why a question:** the choice is between one word that is wrong on one engine and a rule the rest of the screen already follows.
+
+### #132 · Assumed: the work-directory card heading keeps the counts (FU-P3-85e)
+
+- **Covers:** step P3-fu85e (`autopilot/P3-fu85e`); finding [CR-P3FU85E-02](code/P3-fu85e.md#findings); [ui-spec §4.4.1](../specs/ui-spec.md#441-file-explorer-and-preview), Layout and the note of 2026-11-09; board `LiteWorkdir`; part of the plan of [#127](#127-assumed-file-explorer-and-preview-fu-p3-85).
+- **Context:** the spec says the work directory "uses the same card, headed 'Work directory · <task name> · attempt <n>'". The page's `h1` already reads that. The build and the board head the card "Work directory · n folders, m files", as the results card does.
+- **Options:**
+  - (a) keep the counts in the card heading, and read the spec's sentence as the `h1` (built);
+  - (b) head the card with the task and the attempt, as the spec says, and drop the counts from the work directory;
+  - (c) head the card with both, "Work directory · <task name> · attempt <n> · n folders, m files".
+- **Recommendation:** (a). The counts say how much is listed, which the `h1` does not; (b) repeats the `h1` one line below it; (c) makes a long line. **Assumed:** (a); the ui-spec note says so.
+- **Why a question:** the choice is between the spec's words and a card that matches the results card.
