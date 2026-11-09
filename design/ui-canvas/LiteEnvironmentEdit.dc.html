@@ -61,8 +61,8 @@ legend{padding:0;font-size:13px;font-weight:600;margin-bottom:6px}
         <fieldset>
           <legend>Executor</legend>
           <div style="display: flex; flex-direction: column; gap: 8px;">
-            <label class="radio"><input type="radio" name="e-exec" value="slurm" checked aria-describedby="e-x-slurm"><span style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">SLURM</span><span id="e-x-slurm" class="hint">The engine sends each task to SLURM with sbatch</span></span></label>
-            <label class="radio"><input type="radio" name="e-exec" value="local" aria-describedby="e-x-local"><span style="display: flex; flex-direction: column; gap: 2px;"><span style="font-size: 14px; font-weight: 600;">Local</span><span id="e-x-local" class="hint">Tasks run on login1, the login node: keep them small</span></span></label>
+            <label class="radio"><input type="radio" name="e-exec" value="slurm" checked aria-labelledby="e-x-slurm-n" aria-describedby="e-x-slurm"><span style="display: flex; flex-direction: column; gap: 2px;"><span id="e-x-slurm-n" style="font-size: 14px; font-weight: 600;">SLURM</span><span id="e-x-slurm" class="hint">The engine sends each task to SLURM with sbatch</span></span></label>
+            <label class="radio"><input type="radio" name="e-exec" value="local" aria-labelledby="e-x-local-n" aria-describedby="e-x-local"><span style="display: flex; flex-direction: column; gap: 2px;"><span id="e-x-local-n" style="font-size: 14px; font-weight: 600;">Local</span><span id="e-x-local" class="hint">Tasks run on login1, the login node: keep them small</span></span></label>
           </div>
         </fieldset>
 
@@ -83,8 +83,8 @@ legend{padding:0;font-size:13px;font-weight:600;margin-bottom:6px}
           </fieldset>
           <div class="ef">
             <label for="e-mem">Memory per job</label>
-            <span style="display: flex; gap: 8px; max-width: 280px;"><input type="number" id="e-mem" value="8" min="0" step="0.1" aria-describedby="e-mem-hint" style="flex: 1 1 auto;"><select aria-label="Memory unit" style="width: 92px; flex-shrink: 0;"><option>MiB</option><option selected>GiB</option></select></span>
-            <span id="e-mem-hint" class="hint">Whole MiB, or GiB with one decimal. Leave empty to use SLURM's default.</span>
+            <span style="display: flex; gap: 8px; max-width: 280px;"><input type="number" id="e-mem" value="8" min="0.1" max="4096" step="0.1" aria-describedby="e-mem-hint" style="flex: 1 1 auto;"><select aria-label="Memory per job, unit" style="width: 92px; flex-shrink: 0;"><option>MiB</option><option selected>GiB</option></select></span>
+            <span id="e-mem-hint" class="hint">Whole MiB, or GiB with one decimal; 1 MiB to 4,096 GiB. Leave empty to use SLURM's default.</span>
           </div>
           <p class="hint" style="margin: 0; padding-top: 10px; border-top: 1px solid #EEEFF5;">With a Snakemake workflow profile: when you choose a Snakemake profile at Launch, the profile's resources and partition are used, not these.</p>
         </fieldset>
@@ -110,16 +110,16 @@ legend{padding:0;font-size:13px;font-weight:600;margin-bottom:6px}
         <section aria-labelledby="s-local-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 12px;">
           <h3 id="s-local-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Local chosen: the SLURM fields give way to the limits</h3>
           <div style="display: flex; gap: 12px; flex-wrap: wrap;">
-            <div class="ef" style="flex: 1 1 160px;"><label for="l-cpu">CPUs at most</label><input type="number" id="l-cpu" value="2" min="1" aria-describedby="l-hint"></div>
-            <div class="ef" style="flex: 1 1 220px;"><label for="l-mem">Memory at most</label><span style="display: flex; gap: 8px;"><input type="number" id="l-mem" value="8" min="0" step="0.1" aria-describedby="l-hint" style="flex: 1 1 auto;"><select aria-label="Memory unit" style="width: 92px; flex-shrink: 0;"><option>MiB</option><option selected>GiB</option></select></span></div>
+            <div class="ef" style="flex: 1 1 160px;"><label for="l-cpu">CPUs at most</label><input type="number" id="l-cpu" value="2" min="1" max="256" aria-describedby="l-hint"></div>
+            <div class="ef" style="flex: 1 1 220px;"><label for="l-mem">Memory at most</label><span style="display: flex; gap: 8px;"><input type="number" id="l-mem" value="8" min="0.1" max="4096" step="0.1" aria-describedby="l-hint" style="flex: 1 1 auto;"><select aria-label="Memory at most, unit" style="width: 92px; flex-shrink: 0;"><option>MiB</option><option selected>GiB</option></select></span></div>
           </div>
-          <span id="l-hint" class="hint">The most the tasks may ask for at once.</span>
+          <span id="l-hint" class="hint">The most the tasks may ask for at once: 1 to 256 CPUs, 1 MiB to 4,096 GiB.</span>
         </section>
         <section aria-labelledby="s-ro-h" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 6px;">
           <h3 id="s-ro-h" style="margin: 0; font-size: 14.5px; font-weight: 600;">Editing mylab-long</h3>
           <span class="hint">Name is read only (<span style="font-family: 'JetBrains Mono', monospace;">mylab-long</span>); memory divisible by 1024 is shown in GiB; beside Save: "Saving rewrites ~/.spectio/environments.toml; comments in it are not kept."</span>
         </section>
-        <span style="font-size: 11.5px; color: #6E7287;">Data: fixture values on a SLURM server (login1). Fields, ranges and errors are api §5.4's; 412 and 409 with Reload are drawn on LiteEnvironmentsStates (FU-P3-86e2).</span>
+        <span style="font-size: 11.5px; color: #6E7287;">Data: fixture values on a SLURM server (login1). Fields, ranges and errors are api §5.4's; the bounds follow the unit chosen (MiB: 1 to 4,194,304); 412 and 409 with Reload are drawn on LiteEnvironmentsStates.</span>
       </section>
     </main>
 </div>
