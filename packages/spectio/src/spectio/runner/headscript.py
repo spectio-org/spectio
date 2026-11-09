@@ -142,7 +142,6 @@ def engine_args(spec: LaunchSpec) -> list[str]:
             # The SLURM plugin deletes a job's log when the job succeeds; kept, every job has
             # its log while the run directory exists (architecture §13.7, `slurm.py:209-243`).
             args += ["--executor", "slurm", "--slurm-keep-successful-logs"]
-            args += ["--local-cores", str(LOCAL_CORES)]
         if profiles:
             # The profile owns resources and concurrency: `--default-resources` here would
             # replace its whole `default-resources` (CR-P3T09-06), so [slurm] partition and
@@ -161,7 +160,12 @@ def engine_args(spec: LaunchSpec) -> list[str]:
                     args += ["--default-resources", *resources]
             if not any(_sets_concurrency(arg) for arg in spec.extra_args):
                 args += ["--cores", "all"] if spec.slurm is None else ["--jobs", str(SLURM_JOBS)]
-    return args + spec.extra_args
+    args += spec.extra_args
+    if spec.engine == "snakemake" and spec.slurm is not None:
+        # Last, after `extra_args`, so that none lifts it: local rules otherwise use every core
+        # of the login node (api §5.4, SEC-P3FU86A-02)
+        args += ["--local-cores", str(LOCAL_CORES)]
+    return args
 
 
 def _snakemake_base(spec: LaunchSpec) -> list[str]:
@@ -276,9 +280,10 @@ def nextflow_config(spec: LaunchSpec) -> str:
     if spec.slurm is not None:
         lines.append("process.executor = 'slurm'")
         if spec.slurm.partition:
-            lines.append(f"process.queue = {_groovy(spec.slurm.partition)}")
+            lines.append(f"process.queue = {_groovy(slurm_name(spec.slurm.partition))}")
         if spec.slurm.account:
-            lines.append(f"process.clusterOptions = {_groovy('--account=' + spec.slurm.account)}")
+            account = "--account=" + slurm_name(spec.slurm.account)  # SEC-PRE-FU86-01, again
+            lines.append(f"process.clusterOptions = {_groovy(account)}")
     return "\n".join(lines) + "\n"
 
 

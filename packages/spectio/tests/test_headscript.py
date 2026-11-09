@@ -26,7 +26,12 @@ from spectio.runner.engines import (
     nf_plugin_copy,
     unpack_nf_spectio,
 )
-from spectio.runner.headscript import engine_args, render_head_script, write_launch_files
+from spectio.runner.headscript import (
+    engine_args,
+    nextflow_config,
+    render_head_script,
+    write_launch_files,
+)
 from spectio.runner.resume import check_dirs
 from spectio.runner.rundir import make_run_dirs
 from spectio.runner.types import LaunchSpec, ResumeSource
@@ -168,15 +173,22 @@ def test_engine_finds_the_unpacked_nf_spectio(
 
 
 def test_nextflow_config_on_slurm(home: Path, bridges: Path) -> None:
-    # A quote no `[slurm]` name can hold any more (SEC-PRE-FU86-01): `_groovy` escapes it
-    slurm = SlurmOpts.model_construct(partition="htc", account="lab'x")
-    spec = make_spec(home / "runs", slurm=slurm)
+    spec = make_spec(home / "runs", slurm=SlurmOpts(partition="htc", account="lab"))
     write_launch_files(spec)
     config = (spec.launch_dir / ".spectio" / "spectio.config").read_text()
     assert "process.executor = 'slurm'" in config
     assert "process.queue = 'htc'" in config
-    assert "process.clusterOptions = '--account=lab\\'x'" in config
+    assert "process.clusterOptions = '--account=lab'" in config
     assert "plugins" not in config
+    # A quote no `[slurm]` name can hold (SEC-PRE-FU86-01): checked again here, as Snakemake's
+    # values are (CR-P3FU86A-04), so a hand-built SlurmOpts never reaches `_groovy`
+    for bad in (
+        SlurmOpts.model_construct(account="lab'x"),
+        SlurmOpts.model_construct(partition="h'tc"),
+    ):
+        spec = make_spec(home / "runs", slurm=bad)
+        with pytest.raises(ValueError, match="not a SLURM name"):
+            nextflow_config(spec)
 
 
 def test_head_script_snakemake_args(home: Path, bridges: Path) -> None:
@@ -233,9 +245,24 @@ def test_snakemake_concurrency_without_a_profile(
     assert not {"--cores", "--jobs"} - {added[0]} & set(args)
     if slurm is not None:  # no profile: Spectio's partition and account apply
         assert args[args.index("--default-resources") + 1] == "slurm_partition='htc'"
+    last = [] if slurm is None else ["--local-cores", "2"]  # after extra_args (SEC-P3FU86A-02)
     for given in (["-j", "8"], ["--cores=2"], ["-c4"], ["--jobs", "3"]):
         args = engine_args(replace(spec, extra_args=given))
-        assert args[-len(given) :] == given and added[0] not in args[: -len(given)]
+        end = len(args) - len(last)
+        assert args[end:] == last and args[end - len(given) : end] == given
+        assert added[0] not in args[: end - len(given)]
+
+
+def test_snakemake_slurm_local_cores_last(home: Path, bridges: Path) -> None:
+    """SEC-P3FU86A-02: `--local-cores 2` comes after `extra_args`, with a workflow profile too,
+    so an earlier `--local-cores` in `extra_args` never lifts it (api §5.4)."""
+    spec = snakemake_spec(home, slurm=SlurmOpts(partition="htc"))
+    for given, profiles in ((["--local-cores", "64"], []), (["--local-cores=64"], ["slurm"])):
+        args = engine_args(replace(spec, extra_args=given, profiles=profiles))
+        assert args[-2:] == ["--local-cores", "2"] and args.count("--local-cores") == 1 + (
+            given[0] == "--local-cores"
+        )
+    assert "--local-cores" not in engine_args(snakemake_spec(home))
 
 
 def test_workflow_profile_keeps_its_default_resources(home: Path, bridges: Path) -> None:

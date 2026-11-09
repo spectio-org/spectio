@@ -32,7 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import Connection, func, select
 
 from spectio.config import Settings
-from spectio.environments import executor_of
+from spectio.environments import executor_of, read_as
 from spectio.runner import sacct
 from spectio.runner.rundir import private_dir, read_small, run_paths, write_file
 from spectio.runner.sacct import BATCH, JOB_ID, SacctLimiter, SacctRow
@@ -645,10 +645,11 @@ class Context:
     measures: Measures
 
 
-def on_slurm(environment: dict[str, Any] | None) -> bool:
-    """The run's own executor is SLURM: from its `runs.environment`, never the server's
-    settings or an `environments` row (SEC-PRE-FU86-R1-01). Unknown is not SLURM."""
-    return executor_of(environment) == "slurm"
+def on_slurm(environment: dict[str, Any] | None, settings: Settings) -> bool:
+    """The run's executor is SLURM: from its `runs.environment`, never an `environments` row
+    (SEC-PRE-FU86-R1-01); `not_recorded` is the server's built-in (`read_as`, api §5.4).
+    `not_readable` and a run started from a terminal are not SLURM."""
+    return executor_of(read_as(environment, settings)) == "slurm"
 
 
 def _last_attempt() -> Any:
@@ -715,7 +716,7 @@ def build_failures(
         select(runs.c.created_at, runs.c.started_at, runs.c.environment).where(runs.c.id == run_id)
     ).one()
     # Snakemake's state comes from its own message (§13.7); a run not on SLURM never asks
-    if engine == "nextflow" and on_slurm(run.environment):
+    if engine == "nextflow" and on_slurm(run.environment, ctx.settings):
         jobs = ((r.native_id, r.work_dir) for r in rows)
         ctx.accounting.want(run_id, jobs, _launched(run.created_at, run.started_at), _resolver(ctx))
     cached = ctx.accounting.rows(run_id)
@@ -832,7 +833,7 @@ def task_resources(
             runs.c.environment, runs.c.engine_settings, runs.c.created_at, runs.c.started_at
         ).where(runs.c.id == run_id)
     ).one()
-    slurm_run, smk = on_slurm(run.environment), engine == "snakemake"
+    slurm_run, smk = on_slurm(run.environment, ctx.settings), engine == "snakemake"
     query = (
         select(
             tasks.c.id,
@@ -900,6 +901,8 @@ def task_resources(
         ctx.accounting.want(run_id, jobs, since, _resolver(ctx))
         cached = ctx.accounting.rows(run_id)
     off = "local" if not slurm_run else None if ctx.accounting.enabled else "accounting_off"
+    if (run.environment or {}).get("state") == "not_readable":
+        off = "not_found"  # its executor is unknown: no `sacct` line binds its jobs, nor "local"
     cluster_options = True if (run.engine_settings or {}).get("cluster_options") is True else None
     found: dict[str, dict[str, Any]] = {}
     for r in rows:

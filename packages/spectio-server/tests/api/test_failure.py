@@ -154,8 +154,8 @@ class Run:
     def __init__(
         self, settings: Settings, writer: Writer, engine: str = "nextflow", *, slurm: bool = False
     ) -> None:
-        """`slurm`: the run's own environment is SLURM (FU-P3-86a); the test settings are
-        local, so it is otherwise `not_recorded`, never asked of `sacct`."""
+        """`slurm`: the run's own environment is SLURM (FU-P3-86a); otherwise it is
+        `not_recorded`, read as the server's built-in: `local` in the test settings."""
         self.settings, self.writer = settings, writer
         own: dict[str, Any] = {"environment": SLURM_RUN} if slurm else {}
         self.launch_id = add_run(writer, settings, RUN, "r", "running", engine=engine, **own)

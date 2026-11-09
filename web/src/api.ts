@@ -75,7 +75,6 @@ export type StageState = "not_started" | "running" | "awaiting_review" | "comple
 export type Counts = Record<string, number>;
 export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 
-/** Schema `Run`: an item of `GET /runs`. */
 /** Schema `RunEnvironment`: the run's own environment, as resolved at launch (FU-P3-86a, api
  * §5.4); its fields are null unless `state` is `recorded`. */
 export interface RunEnvironment {
@@ -87,6 +86,7 @@ export interface RunEnvironment {
   state: "recorded" | "not_recorded" | "not_readable";
 }
 
+/** Schema `Run`: an item of `GET /runs`. */
 export interface Run {
   id: string;
   name: string | null;

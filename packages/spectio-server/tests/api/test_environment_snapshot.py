@@ -27,7 +27,6 @@ from spectio_server.store.schema import environments, launches, principals, runs
 from spectio_server.store.writer import Writer
 
 from ..test_serve import make_run, run_id
-from .conftest import add_run, client_for
 from .test_failure import Fake, accounting, event, push
 
 API = "/api/v1"
@@ -158,20 +157,65 @@ def test_req18_snapshot_local_to_slurm_rename(
     assert "--local-cores" in argv
 
 
-def test_req18_snapshot_unknown_executor_is_not_slurm(
-    settings: Settings, writer: Writer, fakebin: Fake
+def on_a_slurm_server(client: TestClient, settings: Settings, fakebin: Fake) -> Any:
+    """The server becomes SLURM (`[slurm] partition = "htc"`); returns its accounting."""
+    app = client.app
+    slurm = settings.model_copy(update={"executor": "slurm", "slurm": SlurmOpts(partition="htc")})
+    app.state.settings = slurm  # type: ignore[attr-defined]
+    acct = app.state.accounting = accounting(slurm, fakebin)  # type: ignore[attr-defined]
+    return acct
+
+
+def test_req18_snapshot_not_recorded_is_the_server_kind(
+    authed_client: TestClient,
+    synthetic: Path,
+    settings: Settings,
+    writer: Writer,
+    fakebin: Fake,
 ) -> None:
-    """A run with no recorded executor (a manifest from before FU-P3-86) never asks `sacct`,
-    whatever the server's kind is."""
-    rid = run_id(1)
-    add_run(writer, settings, rid, "old", engine="snakemake")  # its manifest has no snapshot
-    assert column(writer, rid)["state"] == "not_recorded"
-    writer.submit(lambda c: c.execute(update(environments).values(kind="slurm"))).result()
-    client = client_for(settings, writer)
-    client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    jobs(client, writer, settings, rid, "8812401")
-    found = client.get(f"{API}/runs/{rid}/tasks").json()["items"]
-    assert found[0]["efficiency"]["reason"] == "local" and fakebin.ids() == []
+    """CR-P3FU86A-02, SEC-P3FU86A-01: a run with no recorded environment (a manifest from before
+    FU-P3-86) is read as the built-in of the server's kind (api §5.4, Resume), today's
+    behaviour: on a SLURM server its copied command is the SLURM one, never `--cores all`, and
+    its jobs are asked of `sacct`."""
+    rid = launch(authed_client, synthetic)
+    old = envs.run_column(None)
+    writer.submit(lambda c: c.execute(update(runs).values(environment=old))).result()
+    acct = on_a_slurm_server(authed_client, settings, fakebin)
+    argv = authed_client.get(f"{API}/runs/{rid}").json()["command"]["argv"]
+    assert argv[argv.index("--executor") + 1] == "slurm"
+    assert argv[argv.index("--default-resources") + 1] == "slurm_partition='htc'"
+    assert argv[-2:] == ["--local-cores", "2"] and "--cores" not in argv
+    jobs(authed_client, writer, settings, rid, "8812401")
+    fakebin.at("8812401", run_paths(settings.runs_root, rid).launch_dir)
+    (found,) = authed_client.get(f"{API}/runs/{rid}/tasks").json()["items"]
+    assert found["efficiency"]["reason"] is None
+    while acct.step():
+        pass
+    assert fakebin.ids() == ["8812401"]
+
+
+def test_req18_snapshot_not_readable_has_no_command(
+    authed_client: TestClient,
+    synthetic: Path,
+    settings: Settings,
+    writer: Writer,
+    fakebin: Fake,
+) -> None:
+    """A run whose snapshot fails the validators has no copied command and is never called
+    local; its jobs are never asked of `sacct` (CR-P3FU86A-02)."""
+    rid = launch(authed_client, synthetic)
+    bad = envs.run_column({"name": "x'"})
+    assert bad["state"] == "not_readable"
+    writer.submit(lambda c: c.execute(update(runs).values(environment=bad))).result()
+    acct = on_a_slurm_server(authed_client, settings, fakebin)
+    assert authed_client.get(f"{API}/runs/{rid}").json()["command"] is None
+    jobs(authed_client, writer, settings, rid, "8812401")
+    (found,) = authed_client.get(f"{API}/runs/{rid}/tasks").json()["items"]
+    assert found["efficiency"]["state"] == "unavailable"
+    assert found["efficiency"]["reason"] == "not_found" and found["slurm"] is None
+    while acct.step():
+        pass
+    assert fakebin.ids() == []
 
 
 def test_req18_snapshot_ensure_tenancy_by_name(settings: Settings, writer: Writer) -> None:

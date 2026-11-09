@@ -350,7 +350,9 @@ def test_eff_states(settings: Settings, writer: Writer, fakebin: Fake, engine: s
 def test_eff_unavailable(
     settings: Settings, writer: Writer, fakebin: Fake, engine: str, case: str
 ) -> None:
-    """`unavailable` with its reason, the engine's measure kept; a local run never asks."""
+    """`unavailable` with its reason, the engine's measure kept; a local run never asks. The
+    `local` case is a `not_recorded` run on a local server, read as the server's built-in
+    `local` (api §5.4, CR-P3FU86A-02); on a SLURM server it would be asked."""
     client = client_for(settings, writer)
     acct = accounting(settings, fakebin, enabled=case != "accounting_off")
     client.app.state.accounting = acct  # type: ignore[attr-defined]

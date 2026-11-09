@@ -123,7 +123,7 @@ def _slurm(settings: Settings) -> Builtin:
     label = "SLURM (from spectio init)"
     try:
         values = SlurmValues(partition=settings.slurm.partition, account=settings.slurm.account)
-    except ValidationError as exc:
+    except ValidationError as exc:  # only a hand-built Settings: SlurmOpts checks each value
         key = next(str(e["loc"][0]) for e in exc.errors())
         reason = f"{key} in spectio.toml is not a valid name: run spectio init"
         empty = Environment(name="slurm", label=label, executor="slurm", slurm=SlurmValues())
@@ -154,6 +154,18 @@ def run_column(raw: object) -> dict[str, Any]:
     except ValidationError:
         return {**_UNKNOWN, "state": "not_readable"}
     return {**found.model_dump(mode="json"), "state": "recorded"}
+
+
+def read_as(column: dict[str, Any] | None, settings: Settings) -> dict[str, Any] | None:
+    """The snapshot a run is read with (api §5.4, Resume): its own when `recorded`; the
+    built-in of the server's kind when `not_recorded` (a run from before FU-P3-86: today's
+    behaviour, CR-P3FU86A-02); None when `not_readable` or for a run started from a terminal."""
+    state = None if column is None else column.get("state")
+    if column is None or state == "not_readable":
+        return None
+    if state == "not_recorded":
+        return snapshot(server_builtin(settings).environment)
+    return column
 
 
 def executor_of(column: dict[str, Any] | None) -> str | None:

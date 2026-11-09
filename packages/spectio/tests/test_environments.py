@@ -154,6 +154,21 @@ def test_req18_snapshot_column_states() -> None:
     assert "profiles" not in envs.snapshot(env)  # a snapshot keeps what the run ran with
 
 
+def test_req18_snapshot_read_as() -> None:
+    """api §5.4, Resume: `recorded` is the run's own; `not_recorded` (a run from before
+    FU-P3-86) the built-in of the server's kind, today's behaviour; `not_readable` and a run
+    started from a terminal, nothing (CR-P3FU86A-02)."""
+    own = envs.run_column(envs.snapshot(envs.Environment.model_validate(slurm_env())))
+    slurm, local = settings_of("slurm", partition="htc"), settings_of("local")
+    assert envs.read_as(own, local) == own
+    old = envs.run_column(None)
+    assert envs.read_as(old, slurm) == envs.snapshot(envs.server_builtin(slurm).environment)
+    assert envs.executor_of(envs.read_as(old, slurm)) == "slurm"
+    assert envs.executor_of(envs.read_as(old, local)) == "local"
+    assert envs.read_as(envs.run_column([1]), slurm) is None
+    assert envs.read_as(None, slurm) is None
+
+
 def smk_spec(tmp_path: Path, **kw: Any) -> LaunchSpec:
     location = tmp_path / "pipeline"
     (location / "workflow").mkdir(parents=True, exist_ok=True)
