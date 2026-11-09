@@ -136,8 +136,16 @@ a:focus-visible,button:focus-visible,h2:focus-visible,h3:focus-visible{outline:2
             </div>
             <span id="del2-why" class="why" style="text-align: right;">Reload first: the environment changed</span>
           </section>
-          <p role="alert" class="banner b-err" style="padding: 8px 10px;"><span>The file changed on disk since this page read it. Reload reads it again; nothing was deleted.</span></p>
-          <span class="note">412 etag-mismatch (top) and 409 environments-file-changed (bottom) are shown in place in the dialog. 409 environments-file-unusable reads "The environments file cannot be changed right now", then the file's state as in C to E. Each is a role="alert"; focus stays in the dialog.</span>
+          <section role="dialog" aria-modal="true" aria-labelledby="del3-title" aria-describedby="del3-cap" class="dlg">
+            <span id="del3-cap" class="why">409 variant</span>
+            <h3 id="del3-title">Delete mylab-long?</h3>
+            <p role="alert" class="banner b-err" style="padding: 8px 10px;"><span>The file changed on disk since this page read it. Reload reads it again; nothing was deleted.</span></p>
+            <div style="display: flex; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+              <button type="button" class="btn btn-sec">Cancel</button>
+              <button type="button" class="btn btn-sec">Reload</button>
+            </div>
+          </section>
+          <span class="note">412 etag-mismatch (top) and 409 environments-file-changed (bottom, the 409 variant of the same dialog) are shown in place in the dialog. 409 environments-file-unusable reads "The environments file cannot be changed right now", then the file's state as in C to E. Each is a role="alert"; focus stays in the dialog.</span>
         </section>
 
         <section class="pnl" aria-labelledby="t-j">
