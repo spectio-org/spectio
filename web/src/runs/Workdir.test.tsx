@@ -1,7 +1,7 @@
 // The work directory of one Nextflow attempt (ui-spec §4.4.1, FU-P3-85e; board LiteWorkdir; api
 // §5.3): the results explorer and preview on the attempt's `workdir` routes, with the task's name
-// in the h1, the back link and the title; an HTML file is never opened; a dot name is refused.
-import { screen, waitFor, within } from "@testing-library/react";
+// in the h1, the folder page's back link and the title; an HTML file is never opened; a dot name is refused.
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, app, fetched, json, run, serve, stubStream } from "../testing";
 
@@ -86,18 +86,21 @@ test("a dot name in the URL is refused before any read; 410 says the directory w
   expect(await screen.findByText("The work directory is not there yet")).toBeInTheDocument();
 });
 
-test("the file page of an HTML file: not opened, Download only, the task in the title", async () => {
+test("the file page of an HTML file: not opened, Download only, back to its folder, the task in the title", async () => {
   const path = "S19.featureCounts.html";
   const mock = work({ [`${API}/stat/${path}`]: { root: WORK, path, name: path, type: "file", size: 90112, mtime: T } });
-  app(`/runs/${ID}/workdir/file?task=tsk_19&attempt=2&path=${path}`);
+  app(`/runs/${ID}/workdir/file?task=tsk_19&attempt=2&sort=size&q=S19&path=${path}`);
   expect(await screen.findByText("Spectio does not open HTML from a work directory. Download it to open it.")).toBeInTheDocument();
   expect(screen.getByText(/^HTML \(not opened\) · 88 KiB/)).toBeInTheDocument();
   const downloads = screen.getAllByRole("link", { name: `Download ${path}` });
   for (const d of downloads) expect(d.getAttribute("href")).toBe(`${API}/raw/${path}?download=true`);
   expect(screen.queryByRole("link", { name: /report viewer/ })).toBeNull();
-  const back = await screen.findByRole("link", { name: `${NAME} · attempt 2` });
-  expect(query(back)).toEqual({ task: "tsk_19", attempt: "2" });
+  // CR-P3FU85E-01: back to its folder, with sort, q and focus (ui-spec §4.4.1 Preview)
   const bar = screen.getByRole("navigation", { name: "Folder" });
+  const backs = screen.getAllByRole("link", { name: "work directory" }).filter((a) => !bar.contains(a));
+  expect(backs).toHaveLength(1);
+  expect(pathOf(backs[0])).toBe(`/runs/${ID}/workdir`);
+  expect(query(backs[0])).toEqual({ sort: "size", q: "S19", focus: path, task: "tsk_19", attempt: "2" });
   expect(query(within(bar).getByRole("link", { name: "work directory" }))).toEqual({ task: "tsk_19", attempt: "2" });
   await waitFor(() => expect(document.title).toBe(`${path} · ${NAME} · rnaseq-2026-10-25 · Spectio`));
   expect(fetched(mock).some((u) => u.includes("/results"))).toBe(false);
@@ -118,6 +121,20 @@ test("the file page: a text file read from the workdir text route; a dot name or
   expect(fetched(mock).some((u) => u.startsWith(`${API}/text/${path}`))).toBe(true);
   await router.navigate({ to: "/runs/$id/workdir/file", params: { id: ID }, search: { task: "tsk_19", attempt: 2, path: "x.txt" } });
   expect(await screen.findByText("Not a file of this job's work directory.")).toBeInTheDocument();
+});
+
+test.each([
+  [409, "The run's directory is not reachable", "the runs root /scratch/amartin/spectio-runs is not there"],
+  [503, "Spectio cannot read the cluster's files right now", null],
+])("CR-P3FU85E-03: the folder page answered %i says '%s', with Retry", async (status, title, detail) => {
+  let calls = 0;
+  work({ [API]: () => (++calls === 1 ? json(status, { title: "No", detail: "the runs root /scratch/amartin/spectio-runs is not there" }) : json(200, ROOT_LISTING)) });
+  app(`/runs/${ID}/workdir?task=tsk_19&attempt=2`);
+  const alert = await screen.findByRole("alert");
+  expect(within(alert).getByText(title)).toBeInTheDocument();
+  if (detail) expect(within(alert).getByText(detail)).toBeInTheDocument();
+  fireEvent.click(within(alert).getByRole("button", { name: "Retry" }));
+  expect(await screen.findByRole("heading", { level: 2, name: "Work directory · 1 folder, 3 files" })).toBeInTheDocument();
 });
 
 test("without a task and an attempt the page is not found", async () => {

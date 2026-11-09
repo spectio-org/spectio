@@ -27,7 +27,7 @@ import {
 } from "./preview";
 import { isResultPath } from "./ReportViewer";
 import { hasDotPart } from "./explorer";
-import { BackToRun, BackToTask, Crumbs, type ResultsSearch, useTaskName } from "./ResultsBrowser";
+import { BackToRun, Crumbs, type ResultsSearch, useTaskName } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
 import { runName } from "./RunState";
 import { isTerminal, when } from "./stateWord";
@@ -496,7 +496,9 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
     <Work.Provider value={work}>
       <div className="sp-runs sp-file-page">
         {work ? (
-          <BackToTask id={id} work={work} name={taskName} />
+          <Link className="sp-report-back" to="/runs/$id/workdir" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name, task, attempt }}>
+            <Icon path={ICONS.chevronLeft} size={14} /> {file ? folder.split("/").pop() || "work directory" : "Work directory"}
+          </Link>
         ) : task && attempt ? (
           <BackToRun id={id} run={run} task={task} attempt={attempt} />
         ) : (

@@ -352,7 +352,7 @@ export function useTaskName(id: string, work?: WorkRoot): string | null {
 }
 
 /** A work directory's link back: the run, with the task sheet open on that attempt. */
-export function BackToTask({ id, work, name }: { id: string; work: WorkRoot; name: string | null }) {
+function BackToTask({ id, work, name }: { id: string; work: WorkRoot; name: string | null }) {
   return (
     <Link className="sp-report-back" to="/runs/$id" params={{ id }} search={{ task: work.task, attempt: work.attempt }}>
       <Icon path={ICONS.chevronLeft} size={14} /> {name ?? "Task"} · attempt {work.attempt}
@@ -391,7 +391,9 @@ export function ResultsBrowser({ id, search, work }: { id: string; search: Resul
   const [run, setRun] = useState<RunDetail | null>(null);
   const [missing, setMissing] = useState(false);
   const [results, setResults] = useState<Results | null>(null);
-  const [error, setError] = useState<string | null>(null);
+  // a refusal in words (ui-spec §4.4.1 States), with Retry when trying again may help
+  const [error, setError] = useState<{ title: string; body?: string; retry?: boolean } | null>(null);
+  const [reads, setReads] = useState(0);
   const valid = path === "" || (isResultPath(path) && !(work && hasDotPart(path)));
   const taskName = useTaskName(id, work);
   const where_ = work ? "this job's work directory" : "this run's results";
@@ -399,7 +401,7 @@ export function ResultsBrowser({ id, search, work }: { id: string; search: Resul
     const controller = new AbortController();
     getRun(id, controller.signal)
       .then(setRun)
-      .catch((e: ApiError) => controller.signal.aborted || (e.status === 404 ? setMissing(true) : setError(e.message)));
+      .catch((e: ApiError) => controller.signal.aborted || (e.status === 404 ? setMissing(true) : setError({ title: e.message })));
     return () => controller.abort();
   }, [id]);
   useEffect(() => {
@@ -413,16 +415,20 @@ export function ResultsBrowser({ id, search, work }: { id: string; search: Resul
         if (controller.signal.aborted) return;
         setError(
           e.status === 404 && path
-            ? `No such folder in ${where_}.`
+            ? { title: `No such folder in ${where_}.` }
             : e.status === 422
-              ? `Not a folder of ${where_}.`
+              ? { title: `Not a folder of ${where_}.` }
               : e.status === 410 && work
-                ? "The work directory was removed"
-                : e.message,
+                ? { title: "The work directory was removed" }
+                : e.status === 409
+                  ? { title: "The run's directory is not reachable", body: e.message, retry: true }
+                  : e.status === 503
+                    ? { title: "Spectio cannot read the cluster's files right now", body: "The file system does not answer. Nothing was lost; try again in a moment.", retry: true }
+                    : { title: e.message },
         );
       });
     return () => controller.abort();
-  }, [id, path, valid, work?.task, work?.attempt]);
+  }, [id, path, valid, work?.task, work?.attempt, reads]);
 
   const name = run ? runName(run) : null;
   usePageCrumb(name);
@@ -452,8 +458,18 @@ export function ResultsBrowser({ id, search, work }: { id: string; search: Resul
       </div>
       {!valid ? (
         <p role="alert">Not a folder of {where_}.</p>
+      ) : error?.retry ? (
+        <div className="sp-note" role="alert">
+          <strong>{error.title}</strong>
+          {error.body && <span>{error.body}</span>}
+          <div className="sp-actions">
+            <Button variant="default" size="xs" onClick={() => setReads((r) => r + 1)}>
+              Retry
+            </Button>
+          </div>
+        </div>
       ) : error ? (
-        <p role="alert">{error}</p>
+        <p role="alert">{error.title}</p>
       ) : results ? (
         <Listing key={path} id={id} folder={path} results={results} search={search} work={work} />
       ) : (
