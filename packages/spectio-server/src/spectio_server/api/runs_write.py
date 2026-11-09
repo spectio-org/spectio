@@ -24,6 +24,7 @@ from referencing import Registry
 from referencing.exceptions import Unresolvable
 from sqlalchemy import Connection, insert
 
+from spectio.environments import server_builtin, snapshot
 from spectio.runner.headscript import PROFILE
 from spectio.runner.rundir import RunManifest, Workflow, run_paths, write_run_manifest
 from spectio_server.api.problems import Invalid
@@ -156,6 +157,8 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         params=body.params,
         profiles=body.profiles,
         created_at=now,
+        # the built-in of the server's kind until the launch body names one (FU-P3-86c)
+        environment=snapshot(server_builtin(request.app.state.settings).environment),
     )
     write_run_manifest(paths.run_dir, manifest)
     payload = {

@@ -28,6 +28,7 @@ from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, ConfigDict, JsonValue
 from sqlalchemy import Connection, insert, select
 
+from spectio.environments import server_builtin, snapshot
 from spectio.runner.loop import LaunchPayload
 from spectio.runner.resume import NotResumable
 from spectio.runner.rundir import (
@@ -181,6 +182,8 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         profiles=profiles,
         created_at=now,
         parent_run_id=run_id,
+        # the built-in of the server's kind until Resume's rules apply (FU-P3-86c)
+        environment=snapshot(server_builtin(settings).environment),
     )
     payload = {
         "location": str(resolved.directory),

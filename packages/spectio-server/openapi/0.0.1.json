@@ -196,6 +196,94 @@
         "title": "EngineSettings",
         "type": "object"
       },
+      "EnvironmentLocal": {
+        "properties": {
+          "cpus": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpus"
+          },
+          "mem_mib": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Mib"
+          }
+        },
+        "required": [
+          "cpus",
+          "mem_mib"
+        ],
+        "title": "EnvironmentLocal",
+        "type": "object"
+      },
+      "EnvironmentSlurm": {
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "mem_mib": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Mib"
+          },
+          "partition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partition"
+          },
+          "time_min": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Min"
+          }
+        },
+        "required": [
+          "partition",
+          "account",
+          "time_min",
+          "mem_mib"
+        ],
+        "title": "EnvironmentSlurm",
+        "type": "object"
+      },
       "Exchange": {
         "additionalProperties": false,
         "properties": {
@@ -1072,6 +1160,16 @@
             ],
             "title": "Ended At"
           },
+          "environment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunEnvironment"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "failure": {
             "anyOf": [
               {
@@ -1186,6 +1284,7 @@
           "ended_at",
           "workflow",
           "profiles",
+          "environment",
           "failure",
           "head",
           "task_counts",
@@ -1226,6 +1325,16 @@
           },
           "engine_settings": {
             "$ref": "#/components/schemas/EngineSettings"
+          },
+          "environment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RunEnvironment"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
           "failure": {
             "anyOf": [
@@ -1399,6 +1508,7 @@
           "ended_at",
           "workflow",
           "profiles",
+          "environment",
           "failure",
           "head",
           "task_counts",
@@ -1415,6 +1525,87 @@
           "engine_settings"
         ],
         "title": "RunDetail",
+        "type": "object"
+      },
+      "RunEnvironment": {
+        "description": "The run's own environment, as resolved at launch (FU-P3-86a, api \u00a75.4); its fields are\nnull unless `state` is `recorded`.",
+        "properties": {
+          "executor": {
+            "anyOf": [
+              {
+                "enum": [
+                  "local",
+                  "slurm"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Executor"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "local": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvironmentLocal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "slurm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvironmentSlurm"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "state": {
+            "enum": [
+              "recorded",
+              "not_recorded",
+              "not_readable"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "executor",
+          "slurm",
+          "local",
+          "state"
+        ],
+        "title": "RunEnvironment",
         "type": "object"
       },
       "RunList": {

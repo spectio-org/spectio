@@ -75,6 +75,17 @@ export type StageState = "not_started" | "running" | "awaiting_review" | "comple
 export type Counts = Record<string, number>;
 export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 
+/** Schema `RunEnvironment`: the run's own environment, as resolved at launch (FU-P3-86a, api
+ * §5.4); its fields are null unless `state` is `recorded`. */
+export interface RunEnvironment {
+  name: string | null;
+  label: string | null;
+  executor: "local" | "slurm" | null;
+  slurm: { partition: string | null; account: string | null; time_min: number | null; mem_mib: number | null } | null;
+  local: { cpus: number | null; mem_mib: number | null } | null;
+  state: "recorded" | "not_recorded" | "not_readable";
+}
+
 /** Schema `Run`: an item of `GET /runs`. */
 export interface Run {
   id: string;
@@ -92,6 +103,8 @@ export interface Run {
     version: string | null;
   };
   profiles: string[];
+  /** Null for a run started from a terminal (optional until the screens of FU-P3-86g read it). */
+  environment?: RunEnvironment | null;
   failure: { [key: string]: Json } | null;
   /** `checked` false: a run started from a terminal on another host or boot, whose head the
    * server cannot see (architecture §13.8). */

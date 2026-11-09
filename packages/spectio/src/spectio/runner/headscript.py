@@ -16,7 +16,7 @@ import shlex
 import shutil
 from pathlib import Path
 
-from spectio.config import NF_SPECTIO_VERSION
+from spectio.config import NF_SPECTIO_VERSION, slurm_name
 from spectio.loginshell import KEEP
 from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, nf_plugin_copy, unpack_nf_spectio
 from spectio.runner.rundir import RUN_ID, private_dir, write_file
@@ -32,6 +32,9 @@ ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # (tests/pipelines/synthetic/snakemake/profiles/slurm/config.yaml); whether sites' per-user
 # limits (MaxSubmitJobs) want less is [to be validated].
 SLURM_JOBS = 100
+# The cores of local rules on a SLURM launch: else every core of the login node (Snakemake
+# 9.27.1 `cli.py:586`; SEC-PRE-FU86-R1-02).
+LOCAL_CORES = 2
 # `snakemake --list-rules` before the run (P1 Task 27): the rules the server groups into stages,
 # with this launch's configuration, in `.spectio/rules.txt`. It never holds the run back: a
 # listing that fails or takes more than LIST_RULES_S leaves no file, and one line on stderr
@@ -147,12 +150,22 @@ def engine_args(spec: LaunchSpec) -> list[str]:
         else:
             if spec.slurm is not None:
                 slurm = {"partition": spec.slurm.partition, "account": spec.slurm.account}
-                resources = [f"slurm_{key}={value}" for key, value in slurm.items() if value]
+                # Python string literals: Snakemake evaluates each value after expanding `~`
+                # and `$` (9.27.1 `resources.py:801-825`); a SLURM name holds no quote
+                # (SEC-PRE-FU86-01), checked again here.
+                resources = [
+                    f"slurm_{key}='{slurm_name(value)}'" for key, value in slurm.items() if value
+                ]
                 if resources:
                     args += ["--default-resources", *resources]
             if not any(_sets_concurrency(arg) for arg in spec.extra_args):
                 args += ["--cores", "all"] if spec.slurm is None else ["--jobs", str(SLURM_JOBS)]
-    return args + spec.extra_args
+    args += spec.extra_args
+    if spec.engine == "snakemake" and spec.slurm is not None:
+        # Last, after `extra_args`, so that none lifts it: local rules otherwise use every core
+        # of the login node (api §5.4, SEC-P3FU86A-02)
+        args += ["--local-cores", str(LOCAL_CORES)]
+    return args
 
 
 def _snakemake_base(spec: LaunchSpec) -> list[str]:
@@ -267,9 +280,10 @@ def nextflow_config(spec: LaunchSpec) -> str:
     if spec.slurm is not None:
         lines.append("process.executor = 'slurm'")
         if spec.slurm.partition:
-            lines.append(f"process.queue = {_groovy(spec.slurm.partition)}")
+            lines.append(f"process.queue = {_groovy(slurm_name(spec.slurm.partition))}")
         if spec.slurm.account:
-            lines.append(f"process.clusterOptions = {_groovy('--account=' + spec.slurm.account)}")
+            account = "--account=" + slurm_name(spec.slurm.account)  # SEC-PRE-FU86-01, again
+            lines.append(f"process.clusterOptions = {_groovy(account)}")
     return "\n".join(lines) + "\n"
 
 

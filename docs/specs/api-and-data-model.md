@@ -446,6 +446,12 @@ The **default** environment is the built-in of the server's own kind (`slurm`, o
     - a `local` run on a SLURM server gets `--cores 2` last, with `--jobs 8` in `extra_args` and with a workflow profile; a `slurm` run gets `--local-cores 2`; `executor.$local.cpus = 2`; `slurm_partition='htc'` quoted;
     - the OpenAPI snapshot gains the six routes and the `environment` fields.
 
+*Built 2026-11-09, FU-P3-86a ([review record](../reviews/code/P3-fu86a.md), [inbox #133](../reviews/inbox.md#133-assumed-environments-local-slurm-define-a-new-one-fu-p3-86)):* the run snapshot is built; the routes, the file and the launch with `environment` are not (FU-P3-86b to -86d).
+- `runs.environment` (migration `0011`) is written at launch and Resume with the built-in of the server's kind, and at rebuild from the manifest. A run from before this change is `not_recorded` with every field null, whether the migration backfilled it or a rebuild read its manifest, so an index rebuild changes no reading. `GET /runs` and `GET /runs/{id}` carry `environment`.
+- `spectio.environments.read_as(column, settings)` is the one reading of a snapshot. `recorded` is the run's own snapshot. `not_recorded` is the built-in of the server's kind, as the Resume list above says, so on a SLURM server its jobs are asked of `sacct` and its copied command is the SLURM one. `not_readable`, and a run started from a terminal, read as nothing.
+- **A `not_readable` run** has `command: null` on `GET /runs/{id}`, and its tasks have `efficiency.state: "unavailable"` with `reason: "not_found"` and `slurm: null`. Its jobs are never asked of `sacct`, and its reason is never `local`, since its executor is unknown. `not_found` is already in the list of `efficiency` reasons of §5 (the task items); this is the case it covers here.
+- Every Snakemake SLURM launch ends with `--local-cores 2`, after `extra_args` and with a workflow profile too. A bare `--` in `extra_args` makes that argument a target; this and the Resume rules of a `not_readable` parent (the `422` above) are for FU-P3-86c (inbox #133).
+
 ## 6. Identity, tenancy and permissions
 
 Sign-in methods, sessions, tokens, magic links, share links and pipeline provisioning are specified in [`authentication-and-access.md`](authentication-and-access.md). This section owns principals, tenancy and roles.

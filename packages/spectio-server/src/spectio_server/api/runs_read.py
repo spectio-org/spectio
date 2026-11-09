@@ -80,6 +80,7 @@ _RUN_COLUMNS = (
     runs.c.launch_dir,
     runs.c.results_dir,
     runs.c.engine_settings,
+    runs.c.environment,
     workflows.c.engine,
     workflows.c.location,
     workflows.c.name.label("workflow_name"),
@@ -209,6 +210,7 @@ def run_json(
             "version": row.workflow_version,
         },
         "profiles": profiles,
+        "environment": row.environment,  # null for a run started from a terminal (FU-P3-86a)
         "failure": row.failure,
         "head": head,
         "task_counts": counts,
