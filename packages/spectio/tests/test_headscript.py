@@ -18,7 +18,7 @@ from pathlib import Path
 import pytest
 
 from spectio import loginshell
-from spectio.config import SlurmOpts
+from spectio.environments import LocalValues, SlurmValues
 from spectio.runner.engines import (
     EngineMissing,
     EngineTooOld,
@@ -173,7 +173,7 @@ def test_engine_finds_the_unpacked_nf_spectio(
 
 
 def test_nextflow_config_on_slurm(home: Path, bridges: Path) -> None:
-    spec = make_spec(home / "runs", slurm=SlurmOpts(partition="htc", account="lab"))
+    spec = make_spec(home / "runs", slurm=SlurmValues(partition="htc", account="lab"))
     write_launch_files(spec)
     config = (spec.launch_dir / ".spectio" / "spectio.config").read_text()
     assert "process.executor = 'slurm'" in config
@@ -181,10 +181,10 @@ def test_nextflow_config_on_slurm(home: Path, bridges: Path) -> None:
     assert "process.clusterOptions = '--account=lab'" in config
     assert "plugins" not in config
     # A quote no `[slurm]` name can hold (SEC-PRE-FU86-01): checked again here, as Snakemake's
-    # values are (CR-P3FU86A-04), so a hand-built SlurmOpts never reaches `_groovy`
+    # values are (CR-P3FU86A-04), so a hand-built SlurmValues never reaches `_groovy`
     for bad in (
-        SlurmOpts.model_construct(account="lab'x"),
-        SlurmOpts.model_construct(partition="h'tc"),
+        SlurmValues.model_construct(account="lab'x"),
+        SlurmValues.model_construct(partition="h'tc"),
     ):
         spec = make_spec(home / "runs", slurm=bad)
         with pytest.raises(ValueError, match="not a SLURM name"):
@@ -202,7 +202,7 @@ def test_head_script_snakemake_args(home: Path, bridges: Path) -> None:
         engine_cmd=shlex.quote(str(engine)),
         location=location,
         profiles=["slurm"],
-        slurm=SlurmOpts(partition="htc"),
+        slurm=SlurmValues(partition="htc"),
     )
     assert run_head(spec).returncode == 0
     spectio_dir = spec.launch_dir / ".spectio"
@@ -230,10 +230,10 @@ def snakemake_spec(home: Path, **kw: object) -> LaunchSpec:
 
 @pytest.mark.parametrize(
     ("slurm", "added"),
-    [(None, ["--cores", "all"]), (SlurmOpts(partition="htc"), ["--jobs", "100"])],
+    [(None, ["--cores", "all"]), (SlurmValues(partition="htc"), ["--jobs", "100"])],
 )
 def test_snakemake_concurrency_without_a_profile(
-    home: Path, bridges: Path, slurm: SlurmOpts | None, added: list[str]
+    home: Path, bridges: Path, slurm: SlurmValues | None, added: list[str]
 ) -> None:
     """CR-P3T09-04: Snakemake 9 refuses to run without --cores (local) or --jobs (SLURM); with
     no workflow profile and no such option in extra_args, the head passes one."""
@@ -256,7 +256,7 @@ def test_snakemake_concurrency_without_a_profile(
 def test_snakemake_slurm_local_cores_last(home: Path, bridges: Path) -> None:
     """SEC-P3FU86A-02: `--local-cores 2` comes after `extra_args`, with a workflow profile too,
     so an earlier `--local-cores` in `extra_args` never lifts it (api §5.4)."""
-    spec = snakemake_spec(home, slurm=SlurmOpts(partition="htc"))
+    spec = snakemake_spec(home, slurm=SlurmValues(partition="htc"))
     for given, profiles in ((["--local-cores", "64"], []), (["--local-cores=64"], ["slurm"])):
         args = engine_args(replace(spec, extra_args=given, profiles=profiles))
         assert args[-2:] == ["--local-cores", "2"] and args.count("--local-cores") == 1 + (
@@ -271,7 +271,9 @@ def test_workflow_profile_keeps_its_default_resources(home: Path, bridges: Path)
     profile = home / "pipeline" / "profiles" / "slurm"
     profile.mkdir(parents=True)
     (profile / "config.yaml").write_text("jobs: 5\ndefault-resources:\n  runtime: 5\n")
-    spec = snakemake_spec(home, profiles=["slurm"], slurm=SlurmOpts(partition="htc", account="lab"))
+    spec = snakemake_spec(
+        home, profiles=["slurm"], slurm=SlurmValues(partition="htc", account="lab")
+    )
     args = engine_args(spec)
     assert args[args.index("--workflow-profile") + 1] == str(profile)
     assert not {"--default-resources", "--jobs", "--cores"} & set(args)
@@ -722,3 +724,123 @@ def test_req16_session_id_uuid_in_the_head(home: Path, bridges: Path, session: s
     spec = replace(spec, resume_of=replace(spec.resume_of, engine_session_id=session))
     with pytest.raises(ValueError, match="UUID"):
         render_head_script(spec)
+
+
+# --- FU-P3-86c: the environment's values (api §5.4, How values reach the engines) ----------
+
+CAPS = LocalValues(cpus=2, mem_mib=8192)  # the built-in `local` of a SLURM server
+
+
+def test_req18_snapshot_nextflow_values(home: Path) -> None:
+    slurm = SlurmValues(partition="htc", account="lab", time_min=90, mem_mib=4096)
+    config = nextflow_config(make_spec(home / "runs", slurm=slurm))
+    assert "process.time = '90m'" in config and "process.memory = '4096 MB'" in config
+    config = nextflow_config(make_spec(home / "runs", local=CAPS))
+    assert "process.executor = 'local'" in config
+    assert "executor {\n  $local {\n    cpus = 2\n    memory = '8192 MB'\n  }\n}" in config
+    assert "$local" not in nextflow_config(make_spec(home / "runs"))
+
+
+def test_req18_snapshot_snakemake_slurm_values(home: Path, bridges: Path) -> None:
+    slurm = SlurmValues(partition="htc", account="lab", time_min=90, mem_mib=4096)
+    args = engine_args(snakemake_spec(home, slurm=slurm))
+    at = args.index("--default-resources")
+    assert args[at + 1 : at + 5] == [
+        "slurm_partition='htc'",
+        "slurm_account='lab'",
+        "runtime=90",
+        "mem_mb=4096",
+    ]
+    assert args[-2:] == ["--local-cores", "2"]
+
+
+@pytest.mark.parametrize("profiles", [[], ["slurm"]])
+@pytest.mark.parametrize("given", [[], ["--jobs", "8"], ["--cores", "16"], ["-c32"]])
+def test_req18_snapshot_local_cores_last(
+    home: Path, bridges: Path, profiles: list[str], given: list[str]
+) -> None:
+    """SEC-PRE-FU86-R1-02: a capped `local` environment gets `--cores <cpus>` last, after
+    `extra_args` and with a workflow profile too, then `--resources mem_mb` after a bare
+    `--default-resources` (Snakemake's own defaults)."""
+    spec = snakemake_spec(home, local=CAPS, profiles=profiles, extra_args=given)
+    args = engine_args(spec)
+    tail = ["--default-resources", "--resources", "mem_mb=8192", "--cores", "2"]
+    assert args[-5:] == tail
+    assert args[-5 - len(given) : -5] == given
+    assert "--local-cores" not in args and "all" not in args
+
+
+def test_req18_snapshot_later_cores_wins_on_snakemake(home: Path) -> None:
+    """The [to be validated] of api §5.4: a later `--cores` wins over an earlier `--jobs`, `-j`,
+    `--cores` or a workflow profile's `cores` (Snakemake 9.27.1 `cli.py:2103-2109`: `--jobs`
+    is an alias only while `--cores` is unset)."""
+    snakemake = shutil.which("snakemake")
+    if snakemake is None:
+        pytest.skip("no snakemake on PATH")
+    where = home / "smk"
+    (where / "prof").mkdir(parents=True)
+    (where / "Snakefile").write_text(
+        'rule all:\n    output: "out.txt"\n    shell: "echo {workflow.cores} > {output}"\n'
+    )
+    (where / "prof" / "config.yaml").write_text("cores: 8\n")
+    for given in (["--jobs", "8"], ["-j", "8"], ["--cores", "8"], ["--workflow-profile", "prof"]):
+        (where / "out.txt").unlink(missing_ok=True)
+        subprocess.run(
+            [
+                snakemake,
+                "-q",
+                *given,
+                "--default-resources",
+                "--resources",
+                "mem_mb=8192",
+                "--cores",
+                "2",
+            ],
+            cwd=where,
+            capture_output=True,
+            check=True,
+            timeout=120,
+        )
+        assert (where / "out.txt").read_text().strip() == "2", given
+
+
+def test_req18_snapshot_bare_double_dash_refused(home: Path, bridges: Path) -> None:
+    """SEC-P3FU86A-R3-01: a bare `--` in a Snakemake `extra_args` would turn the caps after it
+    into targets, so the launch is refused."""
+    for env in ({"slurm": SlurmValues()}, {"local": CAPS}):
+        spec = snakemake_spec(home, extra_args=["--", "all"], **env)
+        with pytest.raises(ValueError, match="bare --"):
+            engine_args(spec)
+
+
+@pytest.mark.parametrize(
+    "bad",
+    [
+        {"local": LocalValues.model_construct(cpus=True, mem_mib=None)},
+        {"local": LocalValues.model_construct(cpus=257, mem_mib=None)},
+        {"local": LocalValues.model_construct(cpus=None, mem_mib="1; rm")},  # type: ignore[arg-type]
+        {"slurm": SlurmValues.model_construct(time_min=5.0)},  # type: ignore[arg-type]
+        {"slurm": SlurmValues.model_construct(mem_mib=0)},
+    ],
+)
+def test_req18_snapshot_values_checked_where_used(
+    home: Path, bridges: Path, bad: dict[str, object]
+) -> None:
+    """SEC-PRE-FU86-R1-06: each integer is `type(v) is int` in its bounds where it is used."""
+    for build in (engine_args, nextflow_config):
+        with pytest.raises(ValueError, match="not an integer"):
+            build(snakemake_spec(home, **bad))
+
+
+def test_req18_snapshot_head_out_names_the_environment(home: Path, bridges: Path) -> None:
+    """SEC-PRE-FU86-R1-10: the first line of head.out names the environment and its values."""
+    engine = shlex.quote(str(stub_engine(home / "bin")))
+    slurm = SlurmValues(partition="htc", account="mylab")
+    spec = make_spec(home / "runs", engine_cmd=engine, environment="mylab", slurm=slurm)
+    assert run_head(spec).returncode == 0
+    first = (spec.launch_dir / ".spectio" / "head.out").read_text().splitlines()[0]
+    assert first == "Spectio: environment mylab (SLURM: partition htc, account mylab)"
+    local = make_spec(home / "runs", engine_cmd=engine, environment="local", local=CAPS)
+    assert run_head(local).returncode == 0
+    first = (local.launch_dir / ".spectio" / "head.out").read_text().splitlines()[0]
+    assert first == "Spectio: environment local (local: cpus 2, memory 8192 MiB)"

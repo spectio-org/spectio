@@ -17,12 +17,12 @@ import shutil
 from pathlib import Path
 
 from spectio.config import NF_SPECTIO_VERSION, slurm_name
+from spectio.environments import PROFILE, LocalValues, SlurmValues
 from spectio.loginshell import KEEP
 from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, nf_plugin_copy, unpack_nf_spectio
 from spectio.runner.rundir import RUN_ID, private_dir, write_file
 from spectio.runner.types import LaunchSpec
 
-PROFILE = re.compile(r"[A-Za-z0-9_][A-Za-z0-9_.-]{0,63}")  # never a path, a comma or an option
 ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # Snakemake 9 refuses to run without --cores (local) or --jobs (remote executors):
 # CR-P3T09-04, verified on 9.27.1 (docs/reviews/code/P3-t09.md). With no workflow profile and
@@ -81,6 +81,7 @@ LOCKED = 75  # head.exit's code when another head holds the lock
 # head.exit's epoch is bash's own `%(%s)T` (bash >= 4.2), not `$(date)`: a Cancel's SIGTERM to
 # the group kills a child of the tail, which left an epoch-less head.exit that never parses, and
 # a run that never ends (FU-P3-77).
+# head.out starts with the environment's line (`banner`), before the login profile's output.
 _HEAD = """#!/usr/bin/env bash
 um=$(umask); umask 077
 # Spectio head script: run {run_id}, launch {launch_n}. Written by Spectio at each launch.
@@ -99,8 +100,9 @@ elif ! (set -C; printf '%s\\n' {run_id} > "$lock") 2>/dev/null; then
   echo "spectio: $lock exists: another Spectio head runs there" > .spectio/head.out
   code={locked}
 else
+  {banner} > .spectio/head.out
   (umask "$um"; exec env -i "${{keep[@]}}" bash -l -c {inner} spectio-head) 2>&1 |
-    (trap '' INT TERM; exec tee .spectio/head.out)
+    (trap '' INT TERM; exec tee -a .spectio/head.out)
   code=${{PIPESTATUS[0]}}
   {{ [ "$(< "$lock")" = {run_id} ]; }} 2>/dev/null && {rm} -f -- "$lock"
 fi
@@ -144,27 +146,76 @@ def engine_args(spec: LaunchSpec) -> list[str]:
             args += ["--executor", "slurm", "--slurm-keep-successful-logs"]
         if profiles:
             # The profile owns resources and concurrency: `--default-resources` here would
-            # replace its whole `default-resources` (CR-P3T09-06), so [slurm] partition and
-            # account apply only to a launch without a profile.
+            # replace its whole `default-resources` (CR-P3T09-06), so the environment's SLURM
+            # values apply only to a launch without a profile.
             args += ["--workflow-profile", str(spec.location / "profiles" / profiles[0])]
         else:
             if spec.slurm is not None:
-                slurm = {"partition": spec.slurm.partition, "account": spec.slurm.account}
-                # Python string literals: Snakemake evaluates each value after expanding `~`
-                # and `$` (9.27.1 `resources.py:801-825`); a SLURM name holds no quote
-                # (SEC-PRE-FU86-01), checked again here.
-                resources = [
-                    f"slurm_{key}='{slurm_name(value)}'" for key, value in slurm.items() if value
-                ]
+                resources = _slurm_resources(spec.slurm)
                 if resources:
                     args += ["--default-resources", *resources]
             if not any(_sets_concurrency(arg) for arg in spec.extra_args):
-                args += ["--cores", "all"] if spec.slurm is None else ["--jobs", str(SLURM_JOBS)]
+                if spec.slurm is not None:
+                    args += ["--jobs", str(SLURM_JOBS)]
+                elif _cap(spec.local, "cpus") is None:
+                    args += ["--cores", "all"]
     args += spec.extra_args
-    if spec.engine == "snakemake" and spec.slurm is not None:
-        # Last, after `extra_args`, so that none lifts it: local rules otherwise use every core
-        # of the login node (api §5.4, SEC-P3FU86A-02)
-        args += ["--local-cores", str(LOCAL_CORES)]
+    if spec.engine == "snakemake":
+        # Last, after `extra_args` and a workflow profile, so that none lifts them (api §5.4,
+        # SEC-P3FU86A-02, SEC-PRE-FU86-R1-02); a later `--cores` wins over an earlier `--jobs`
+        # or a profile's `cores` (Snakemake 9.27.1 `cli.py:2103-2109`). A bare `--` would turn
+        # them into targets (SEC-P3FU86A-R3-01).
+        if "--" in spec.extra_args:
+            raise ValueError("a bare -- in [engines] extra_args.snakemake is not allowed")
+        if spec.slurm is not None:
+            args += ["--local-cores", str(LOCAL_CORES)]
+        else:
+            args += _local_caps(spec.local)
+    return args
+
+
+def _int(value: object, low: int, high: int) -> int:
+    """`value` when it is an int in its bounds: checked again where it is used
+    (SEC-PRE-FU86-R1-06)."""
+    if type(value) is not int or not low <= value <= high:
+        raise ValueError(f"{value!r} is not an integer from {low} to {high}")
+    return value
+
+
+MEM_MIB = (1, 4_194_304)
+
+
+def _cap(local: LocalValues | None, key: str) -> int | None:
+    value = None if local is None else getattr(local, key)
+    if value is None:
+        return None
+    return _int(value, *((1, 256) if key == "cpus" else MEM_MIB))
+
+
+def _slurm_resources(slurm: SlurmValues) -> list[str]:
+    """`--default-resources` values: partition and account as Python string literals, since
+    Snakemake evaluates each value after expanding `~` and `$` (9.27.1 `resources.py:801-825`)
+    and a SLURM name holds no quote (SEC-PRE-FU86-01), checked again here; integers as such."""
+    found = [
+        f"slurm_{key}='{slurm_name(value)}'"
+        for key, value in (("partition", slurm.partition), ("account", slurm.account))
+        if value
+    ]
+    if slurm.time_min is not None:
+        found.append(f"runtime={_int(slurm.time_min, 1, 43_200)}")
+    if slurm.mem_mib is not None:
+        found.append(f"mem_mb={_int(slurm.mem_mib, *MEM_MIB)}")
+    return found
+
+
+def _local_caps(local: LocalValues | None) -> list[str]:
+    """The caps of a `local` environment: a bare `--default-resources` (Snakemake's own, so a
+    rule that declares no memory still counts some) then `--resources mem_mb`, and `--cores`."""
+    args = []
+    if (mem := _cap(local, "mem_mib")) is not None:
+        args += ["--default-resources", "--resources", f"mem_mb={mem}"]
+    if (cpus := _cap(local, "cpus")) is not None:
+        args += ["--cores", str(cpus)]
     return args
 
 
@@ -254,6 +305,7 @@ def render_head_script(spec: LaunchSpec) -> str:
             cancel=shlex.quote(own + "/cancel"),
         )
     inner += f"{command}\n"
+    line = banner(spec)
     return _HEAD.format(
         run_id=spec.run_id,
         launch_n=spec.launch_n,
@@ -263,6 +315,7 @@ def render_head_script(spec: LaunchSpec) -> str:
         lock=shlex.quote(str(spec.engine_dir / LOCK)),
         locked=LOCKED,
         rm=tools["rm"],
+        banner=":" if line is None else f"printf '%s\\n' {shlex.quote(line)}",
     )
 
 
@@ -274,17 +327,55 @@ def _groovy(value: str) -> str:
 
 
 def nextflow_config(spec: LaunchSpec) -> str:
-    """`.spectio/spectio.config`: the SLURM executor on a SLURM environment; never a
-    `plugins` block, which would replace the pipeline's plugins (inbox #69)."""
+    """`.spectio/spectio.config`: the environment's executor and values (api §5.4); never a
+    `plugins` block, which would replace the pipeline's plugins (inbox #69). Generic `process`
+    settings, so the pipeline's selectors still win."""
     lines = ["// Written by Spectio for this launch."]
     if spec.slurm is not None:
+        slurm = spec.slurm
         lines.append("process.executor = 'slurm'")
-        if spec.slurm.partition:
-            lines.append(f"process.queue = {_groovy(slurm_name(spec.slurm.partition))}")
-        if spec.slurm.account:
-            account = "--account=" + slurm_name(spec.slurm.account)  # SEC-PRE-FU86-01, again
+        if slurm.partition:
+            lines.append(f"process.queue = {_groovy(slurm_name(slurm.partition))}")
+        if slurm.account:
+            account = "--account=" + slurm_name(slurm.account)  # SEC-PRE-FU86-01, again
             lines.append(f"process.clusterOptions = {_groovy(account)}")
+        if slurm.time_min is not None:
+            lines.append(f"process.time = '{_int(slurm.time_min, 1, 43_200)}m'")
+        if slurm.mem_mib is not None:
+            lines.append(f"process.memory = '{_int(slurm.mem_mib, *MEM_MIB)} MB'")
+        return "\n".join(lines) + "\n"
+    lines.append("process.executor = 'local'")
+    caps = []
+    if (cpus := _cap(spec.local, "cpus")) is not None:
+        caps.append(f"    cpus = {cpus}")
+    if (mem := _cap(spec.local, "mem_mib")) is not None:
+        caps.append(f"    memory = '{mem} MB'")
+    if caps:  # scoped to the local executor
+        lines += ["executor {", "  $local {", *caps, "  }", "}"]
     return "\n".join(lines) + "\n"
+
+
+def banner(spec: LaunchSpec) -> str | None:
+    """The first line of head.out: the environment and its values (SEC-PRE-FU86-R1-10)."""
+    if spec.environment is None:
+        return None
+    if spec.slurm is not None:
+        values = [(k, getattr(spec.slurm, k)) for k in ("partition", "account")]
+        named = [f"{k} {v}" for k, v in values if v]
+        if spec.slurm.time_min is not None:
+            named.append(f"time {spec.slurm.time_min} min")
+        if spec.slurm.mem_mib is not None:
+            named.append(f"memory {spec.slurm.mem_mib} MiB")
+        kind = "SLURM"
+    else:
+        named = []
+        if (cpus := _cap(spec.local, "cpus")) is not None:
+            named.append(f"cpus {cpus}")
+        if (mem := _cap(spec.local, "mem_mib")) is not None:
+            named.append(f"memory {mem} MiB")
+        kind = "local"
+    values_text = f"{kind}: {', '.join(named)}" if named else kind
+    return f"Spectio: environment {spec.environment} ({values_text})"
 
 
 def write_launch_files(spec: LaunchSpec) -> Path:

@@ -196,6 +196,183 @@
         "title": "EngineSettings",
         "type": "object"
       },
+      "Environment": {
+        "additionalProperties": false,
+        "description": "A definition: a snapshot's fields and the default profile of each engine.",
+        "properties": {
+          "executor": {
+            "enum": [
+              "local",
+              "slurm"
+            ],
+            "title": "Executor",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "local": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LocalValues"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/Profiles",
+            "default": {}
+          },
+          "slurm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SlurmValues"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "name",
+          "executor"
+        ],
+        "title": "Environment",
+        "type": "object"
+      },
+      "EnvironmentItem": {
+        "description": "One environment of `GET /environments` (FU-P3-86d, api \u00a75.4): a built-in or one of the\nfile's; `usable: false` with its reason, such as a SLURM one on a local server.",
+        "properties": {
+          "builtin": {
+            "title": "Builtin",
+            "type": "boolean"
+          },
+          "default": {
+            "title": "Default",
+            "type": "boolean"
+          },
+          "etag": {
+            "title": "Etag",
+            "type": "string"
+          },
+          "executor": {
+            "enum": [
+              "local",
+              "slurm"
+            ],
+            "title": "Executor",
+            "type": "string"
+          },
+          "label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label"
+          },
+          "local": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvironmentLocal"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "profiles": {
+            "$ref": "#/components/schemas/EnvironmentProfiles"
+          },
+          "slurm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EnvironmentSlurm"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "unusable_reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unusable Reason"
+          },
+          "usable": {
+            "title": "Usable",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "name",
+          "label",
+          "executor",
+          "builtin",
+          "default",
+          "usable",
+          "unusable_reason",
+          "slurm",
+          "local",
+          "profiles",
+          "etag"
+        ],
+        "title": "EnvironmentItem",
+        "type": "object"
+      },
+      "EnvironmentList": {
+        "properties": {
+          "default": {
+            "title": "Default",
+            "type": "string"
+          },
+          "file": {
+            "$ref": "#/components/schemas/EnvironmentsFile"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/EnvironmentItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "default",
+          "file"
+        ],
+        "title": "EnvironmentList",
+        "type": "object"
+      },
       "EnvironmentLocal": {
         "properties": {
           "cpus": {
@@ -226,6 +403,38 @@
           "mem_mib"
         ],
         "title": "EnvironmentLocal",
+        "type": "object"
+      },
+      "EnvironmentProfiles": {
+        "properties": {
+          "nextflow": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextflow"
+          },
+          "snakemake": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snakemake"
+          }
+        },
+        "required": [
+          "nextflow",
+          "snakemake"
+        ],
+        "title": "EnvironmentProfiles",
         "type": "object"
       },
       "EnvironmentSlurm": {
@@ -282,6 +491,43 @@
           "mem_mib"
         ],
         "title": "EnvironmentSlurm",
+        "type": "object"
+      },
+      "EnvironmentsFile": {
+        "properties": {
+          "detail": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "state": {
+            "enum": [
+              "missing",
+              "ok",
+              "refused",
+              "invalid",
+              "unreachable"
+            ],
+            "title": "State",
+            "type": "string"
+          }
+        },
+        "required": [
+          "path",
+          "state",
+          "detail"
+        ],
+        "title": "EnvironmentsFile",
         "type": "object"
       },
       "Exchange": {
@@ -483,6 +729,17 @@
         "additionalProperties": false,
         "description": "The 0.0.1 body of `POST /runs` (api \u00a75 note of 2026-10-30).",
         "properties": {
+          "environment": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment"
+          },
           "name": {
             "anyOf": [
               {
@@ -531,6 +788,21 @@
             "title": "Code Loading",
             "type": "array"
           },
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "environment_notice": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Environment Notice"
+          },
           "non_default": {
             "items": {
               "type": "string"
@@ -561,7 +833,9 @@
           "profiles",
           "params",
           "non_default",
-          "code_loading"
+          "code_loading",
+          "environment",
+          "environment_notice"
         ],
         "title": "LaunchTemplate",
         "type": "object"
@@ -577,6 +851,40 @@
           "url"
         ],
         "title": "Link",
+        "type": "object"
+      },
+      "LocalValues": {
+        "additionalProperties": false,
+        "description": "The most the tasks may request at once; the user's cgroup stays the only hard cap.",
+        "properties": {
+          "cpus": {
+            "anyOf": [
+              {
+                "maximum": 256.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpus"
+          },
+          "mem_mib": {
+            "anyOf": [
+              {
+                "maximum": 4194304.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Mib"
+          }
+        },
+        "title": "LocalValues",
         "type": "object"
       },
       "Process": {
@@ -740,6 +1048,35 @@
           "items"
         ],
         "title": "ProcessList",
+        "type": "object"
+      },
+      "Profiles": {
+        "additionalProperties": false,
+        "properties": {
+          "nextflow": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Nextflow"
+          },
+          "snakemake": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Snakemake"
+          }
+        },
+        "title": "Profiles",
         "type": "object"
       },
       "RelaunchIn": {
@@ -2165,6 +2502,61 @@
         "title": "SlurmRequest",
         "type": "object"
       },
+      "SlurmValues": {
+        "additionalProperties": false,
+        "properties": {
+          "account": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Account"
+          },
+          "mem_mib": {
+            "anyOf": [
+              {
+                "maximum": 4194304.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mem Mib"
+          },
+          "partition": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Partition"
+          },
+          "time_min": {
+            "anyOf": [
+              {
+                "maximum": 43200.0,
+                "minimum": 1.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Time Min"
+          }
+        },
+        "title": "SlurmValues",
+        "type": "object"
+      },
       "Stage": {
         "properties": {
           "id": {
@@ -2929,6 +3321,208 @@
         "tags": [
           "auth"
         ]
+      }
+    },
+    "/api/v1/environments": {
+      "get": {
+        "operationId": "list_environments_api_v1_environments_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Environments"
+      },
+      "post": {
+        "operationId": "create_environment_api_v1_environments_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Environment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Environment"
+      }
+    },
+    "/api/v1/environments/{name}": {
+      "delete": {
+        "operationId": "delete_environment_api_v1_environments__name__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Environment"
+      },
+      "get": {
+        "operationId": "get_environment_api_v1_environments__name__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Environment"
+      },
+      "put": {
+        "operationId": "replace_environment_api_v1_environments__name__put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Environment"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EnvironmentItem"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Replace Environment"
+      }
+    },
+    "/api/v1/environments/{name}:make-default": {
+      "post": {
+        "operationId": "make_default_api_v1_environments__name__make_default_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "name",
+            "required": true,
+            "schema": {
+              "title": "Name",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Make Default"
       }
     },
     "/api/v1/events/stream": {

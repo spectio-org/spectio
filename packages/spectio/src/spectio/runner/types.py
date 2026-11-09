@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal, Protocol, TypeVar
 
-from spectio.config import SlurmOpts
+from spectio.environments import LocalValues, SlurmValues
 from spectio.runner.observed import ObservedRun
 from spectio_sdk.events import SpoolEvent
 
@@ -87,8 +87,10 @@ class LaunchSpec:
     """One launch of a run, as the head script runs it (P1 Task 9, Assumption 13).
 
     `engine_cmd` is a shell command from `spectio.toml` (the user's own); every other value is
-    quoted or written to a file, never read as shell words. `slurm` is None on the local
-    executor. `env` holds extra variables for the engine, set after the login profile.
+    quoted or written to a file, never read as shell words. `environment` names the run's
+    environment, and `slurm` (on the SLURM executor) or `local` (its caps, None for none) are
+    its values (FU-P3-86c, api §5.4); `slurm` is None on the local executor. `env` holds extra
+    variables for the engine, set after the login profile.
     `launch_dir` holds the launch's `.spectio/`; the engine runs there too, except for a Resume,
     which runs in `resume_of`'s directories.
     """
@@ -102,7 +104,9 @@ class LaunchSpec:
     work_dir: Path
     profiles: list[str] = field(default_factory=list)
     params: dict[str, Any] = field(default_factory=dict)
-    slurm: SlurmOpts | None = None
+    environment: str | None = None
+    slurm: SlurmValues | None = None
+    local: LocalValues | None = None
     env: dict[str, str] = field(default_factory=dict)
     nxf_opts: str | None = None
     extra_args: list[str] = field(default_factory=list)

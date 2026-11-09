@@ -24,9 +24,9 @@ from referencing import Registry
 from referencing.exceptions import Unresolvable
 from sqlalchemy import Connection, insert
 
-from spectio.environments import server_builtin, snapshot
-from spectio.runner.headscript import PROFILE
+from spectio.environments import PROFILE, Name, snapshot
 from spectio.runner.rundir import RunManifest, Workflow, run_paths, write_run_manifest
+from spectio_server.api.environments import choose
 from spectio_server.api.problems import Invalid
 from spectio_server.api.workflows import (
     ENTRY_FILES,
@@ -64,6 +64,7 @@ class LaunchIn(BaseModel):
     name: str | None = Field(None, min_length=1, max_length=200)
     profiles: list[str] = Field(default_factory=list, max_length=20)
     params: dict[str, JsonValue] = Field(default_factory=dict)
+    environment: Name | None = None  # by name; the default when absent (FU-P3-86c, api §5.4)
 
     @field_validator("params")
     @classmethod
@@ -144,6 +145,8 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
     except Invalid as exc:
         raise exc.under("workflow") from None
     _check_params(found, body.params)
+    # the values as resolved now: the run keeps them whatever the file says later (req. 18)
+    environment = snapshot(choose(request, body.environment))
 
     runs_root = request.app.state.settings.runs_root
     run_id = new_id("run")
@@ -157,14 +160,14 @@ def create_run(body: LaunchIn, request: Request, response: Response) -> dict[str
         params=body.params,
         profiles=body.profiles,
         created_at=now,
-        # the built-in of the server's kind until the launch body names one (FU-P3-86c)
-        environment=snapshot(server_builtin(request.app.state.settings).environment),
+        environment=environment,
     )
     write_run_manifest(paths.run_dir, manifest)
     payload = {
         "location": str(resolved.directory),
         "profiles": body.profiles,
         "params": body.params,
+        "environment": environment,
     }
     writer: Writer = request.app.state.writer
     try:
