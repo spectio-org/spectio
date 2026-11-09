@@ -10,7 +10,9 @@ of run SEEDED; head.pid names a head that has ended (no such process) and head.e
 
 The run's `params.outdir` is `results`, which holds the reports of `tests/fixtures/results` for the
 report viewer's check (P1 Task 31, req. 14): a real MultiQC 1.35 report at
-`multiqc/multiqc_report.html` and a hostile one at `hostile/hostile_report.html`.
+`multiqc/multiqc_report.html` and a hostile one at `hostile/hostile_report.html`; and a hostile SVG
+at `hostile/hostile_image.svg` for the file preview's check (FU-P3-85c, api §5.3); and a 200 KiB
+`logs/big.log`, over one 64 KiB read, for its Load more focus check.
 """
 
 import gzip
@@ -86,6 +88,12 @@ def main(runs_root: Path) -> None:
     (results / "hostile" / "hostile_report.html").write_bytes(
         (RESULTS / "hostile_report.html").read_bytes()
     )
+    (results / "hostile" / "hostile_image.svg").write_bytes(
+        (RESULTS / "hostile_image.svg").read_bytes()
+    )
+    (results / "logs").mkdir()
+    big = "".join(f"line {i:06d} {'x' * 51}\n" for i in range(200 * 1024 // 64))
+    (results / "logs" / "big.log").write_text(big)
     print(SEEDED)
 
 

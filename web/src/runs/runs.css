@@ -1617,3 +1617,132 @@
   grid-template-columns: 1fr;
   gap: 0;
 }
+
+/* FU-P3-85c: the preview of one results file (ui-spec §4.4.1; boards LiteFilePreview,
+   MLiteFilePreview, LiteFilePreviewStates). Line numbers sit in a gutter that is not selected;
+   with Wrap on, each line is a grid row of number and text. */
+.sp-log[data-wrap] {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sp-log-row {
+  display: grid;
+  grid-template-columns: 6ch minmax(0, 1fr);
+  column-gap: 12px;
+}
+.sp-log-n {
+  text-align: right;
+  color: var(--sp-text-faint);
+  user-select: none;
+}
+.sp-file-name,
+.sp-file-page .sp-pathbar [aria-current],
+.sp-file-page .sp-copy-line .sp-mono {
+  overflow-wrap: anywhere;
+  min-width: 0;
+}
+.sp-file-facts {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  color: var(--sp-text-secondary);
+}
+.sp-file-viewer {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+.sp-file-pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+.sp-file-cut {
+  font-family: var(--sp-font-mono);
+}
+.sp-file-cap {
+  margin: 0;
+  font-weight: 600;
+}
+.sp-file-comments {
+  margin: 0;
+  font-family: var(--sp-font-mono);
+  font-size: 12px;
+  color: var(--sp-text-secondary);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.sp-file-table {
+  max-height: min(70vh, 640px);
+  overflow: auto;
+  border-radius: 12px;
+  box-shadow: 0 0 0 1px var(--sp-line-border);
+}
+.sp-file-table caption {
+  caption-side: top;
+  text-align: left;
+  padding: 6px 10px;
+}
+.sp-file-table td,
+.sp-file-table th {
+  white-space: pre;
+}
+.sp-file-table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: var(--sp-surface-subtle);
+}
+.sp-file-table tr > :first-child {
+  position: sticky;
+  left: 0;
+  background: var(--sp-surface-raised);
+}
+.sp-file-table thead tr > :first-child {
+  z-index: 2;
+  background: var(--sp-surface-subtle);
+}
+/* an image sits on a fixed light backdrop in both themes */
+.sp-file-backdrop {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 12px;
+  border-radius: 12px;
+  background: #f4f4f6;
+  color: #33364a;
+}
+.sp-file-image {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+.sp-file-image[data-actual] {
+  max-width: none;
+}
+.sp-file-scroll {
+  max-width: 100%;
+  max-height: 70vh;
+  overflow: auto;
+}
+.sp-file-natural {
+  font-size: 12px;
+}
+@media (max-width: 767.98px) {
+  .sp-file-pager {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .sp-file-pager .sp-file-more,
+  .sp-file-pager .sp-segments button {
+    min-height: 44px;
+  }
+  .sp-file-pager .sp-segments {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+}
