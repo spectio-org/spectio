@@ -76,10 +76,10 @@ function DownloadLink({ href, name, label = "Download" }: { href: string; name: 
 }
 
 /** Text shown whole: at most 20,000 lines, each cut at 10,000 characters, in LogViewer. */
-function Lines({ text, label, levels, gutter, after }: { text: string; label: string; levels: boolean; gutter: boolean; after?: ReactNode }) {
+function Lines({ shown, label, levels, gutter, after }: { shown: ReturnType<typeof capLines>; label: string; levels: boolean; gutter: boolean; after?: ReactNode }) {
   const phone = usePhone();
   const [wrap, setWrap] = useState(phone);
-  const { lines, capped } = capLines(text);
+  const { lines, capped } = shown;
   return (
     <>
       <div className="sp-actions">
@@ -106,9 +106,11 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
   const [error, setError] = useState<ApiError | null>(null);
   const [loading, setLoading] = useState(false);
   const capLine = useRef<HTMLParagraphElement>(null);
+  const moreRead = useRef<AbortController | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
+    moreRead.current?.abort(); // a Load more still in flight belongs to the read this one replaces
     setRead(null);
     setError(null);
     const opts = whole || end ? { tail: READ } : { from: 0, to: READ - 1 };
@@ -129,14 +131,17 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
   if (total === 0 || read?.text === "") return <Note title="This file is empty." />;
   if (!read) return <p className="sp-muted">Loading the file…</p>;
 
-  const more = !end && !whole && next !== null && next < total && !capped;
+  const shown = capLines(read.text);
+  const more = !end && !whole && next !== null && next < total && !capped && !shown.capped;
   const loadMore = () => {
-    if (next === null) return;
+    if (next === null || loading) return;
+    const controller = new AbortController();
+    moreRead.current = controller;
     setLoading(true);
-    readResultText(id, file.path, { from: next, to: Math.min(next + READ, SHOWN_MAX) - 1 })
-      .then((r) => setRead((shown) => ({ text: (shown?.text ?? "") + r.text, next: r.next })))
-      .catch((e: ApiError) => setError(e))
-      .finally(() => setLoading(false));
+    readResultText(id, file.path, { from: next, to: Math.min(next + READ, SHOWN_MAX) - 1 }, controller.signal)
+      .then((r) => controller.signal.aborted || setRead((s) => ({ text: (s?.text ?? "") + r.text, next: r.next })))
+      .catch((e: ApiError) => controller.signal.aborted || setError(e))
+      .finally(() => moreRead.current === controller && setLoading(false));
   };
   const shownBytes = whole ? total : end ? READ : (next ?? 0);
   const pair = !whole && (
@@ -152,7 +157,7 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
   const pager = (
     <>
       {more && (
-        <Button variant="default" className="sp-file-more" onClick={loadMore} loading={loading}>
+        <Button variant="default" className="sp-file-more" onClick={loadMore} aria-busy={loading}>
           Load more
         </Button>
       )}
@@ -169,11 +174,11 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
       <div className="sp-file-line">
         {!phone && pair}
         <span className="sp-muted">
-          {whole ? `Whole file · ${size(total)}` : end ? `Last 64 KiB of ${size(total)}: line numbers not known` : `Search covers the ${kib(shownBytes)} shown`}
+          {whole ? `Whole file · ${size(total)}` : end ? `Last 64 KiB of ${size(total)}: line numbers not known` : shown.capped ? "Search covers the 20,000 lines shown" : `Search covers the ${kib(shownBytes)} shown`}
         </span>
       </div>
       <Lines
-        text={read.text}
+        shown={shown}
         label={`${file.name}, ${whole ? "whole file" : end ? "last 64 KiB" : "from the start"}`}
         levels={levels}
         gutter={!end}
@@ -221,7 +226,7 @@ function JsonView({ id, file, retry }: { id: string; file: ResultStat; retry: ()
     return (
       <div className="sp-file-viewer">
         <p className="sp-muted">{view.fallback}</p>
-        <Lines text={text} label={`${file.name}, whole file`} levels={false} gutter />
+        <Lines shown={capLines(text)} label={`${file.name}, whole file`} levels={false} gutter />
       </div>
     );
   }
@@ -233,7 +238,7 @@ function JsonView({ id, file, retry }: { id: string; file: ResultStat; retry: ()
         </Button>
         {!raw && <span className="sp-muted">Formatted view: large numbers and repeated keys may differ</span>}
       </div>
-      <Lines key={String(raw)} text={raw ? text : view.text} label={`${file.name}, ${raw ? "whole file" : "formatted"}`} levels={false} gutter />
+      <Lines key={String(raw)} shown={capLines(raw ? text : view.text)} label={`${file.name}, ${raw ? "whole file" : "formatted"}`} levels={false} gutter />
     </div>
   );
 }

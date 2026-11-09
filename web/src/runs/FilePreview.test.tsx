@@ -134,6 +134,46 @@ test("at most 20,000 lines are rendered", async () => {
   expect(viewer.children.length).toBe(20000);
 }, 30000);
 
+test("at 20,000 lines from the start Load more stops, and nothing says the text is cut at 64 KiB", async () => {
+  const size = 200 * KIB;
+  files("lines.txt", size, { [`${RUN}/results/text/lines.txt`]: () => partial("\n".repeat(64 * KIB), 0, 64 * KIB - 1, size) });
+  open("lines.txt");
+  expect(await screen.findByText("Showing the first 20,000 lines. Download to see the rest.", {}, { timeout: 10000 })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+  expect(screen.queryByText(/… cut at/)).toBeNull();
+  expect(screen.getByText("Search covers the 20,000 lines shown")).toBeInTheDocument();
+}, 30000);
+
+test("a Load more still in flight is dropped when End is pressed, and the button stays enabled and focused while it loads", async () => {
+  const size = 200 * KIB;
+  let land: (r: Response) => void = () => {};
+  const reads: string[] = [];
+  files("slow.log", size, {
+    [`${RUN}/results/text/slow.log`]: (url: URL, init?: RequestInit) => {
+      const range = rangeOf(init);
+      reads.push(range ?? url.search);
+      if (range === "bytes=0-65535") return partial("from the start\n", 0, 65535, size);
+      if (range) return new Promise<Response>((resolve) => (land = resolve));
+      return text("tial\nthe end\n");
+    },
+  });
+  open("slow.log");
+  await heading("slow.log");
+  const more = await screen.findByRole("button", { name: "Load more" });
+  more.focus();
+  fireEvent.click(more);
+  await waitFor(() => expect(more).toHaveAttribute("aria-busy", "true"));
+  expect(more).not.toBeDisabled();
+  expect(more).toHaveFocus();
+  fireEvent.click(more); // ignored while it loads
+  expect(reads.filter((r) => r.startsWith("bytes=65536"))).toHaveLength(1);
+  fireEvent.click(screen.getByRole("button", { name: "End" }));
+  const viewer = await screen.findByLabelText(/slow.log, last 64 KiB/, { selector: "pre" });
+  await waitFor(() => expect(viewer.textContent).toBe("the end\n"));
+  await act(async () => land(partial("stale chunk\n", 65536, 131071, size)));
+  expect(screen.getByLabelText(/slow.log, last 64 KiB/, { selector: "pre" }).textContent).toBe("the end\n");
+});
+
 test("Wrap lines is a pressed button, off on a desktop", async () => {
   files("a.txt", 4, { [`${RUN}/results/text/a.txt`]: () => text("abc\n") });
   open("a.txt");

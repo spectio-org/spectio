@@ -8,6 +8,7 @@ import { resolveTarget } from './base-url';
 //   SPECTIO_E2E_BASE_URL=http://127.0.0.1:8765 SPECTIO_E2E_SEEDED=1 npx playwright test preview.spec.ts
 // The SVG has a <script>, an outside <image href> and a foreignObject <img onerror>: in an <img>
 // none of them may run or fetch; a top-level navigation to the same URL must download the file.
+// The seeded logs/big.log (200 KiB) checks that Load more keeps focus in a real browser.
 
 const target = resolveTarget(process.env);
 const SEEDED = 'run_01K8T27SEEDED0000000000000';
@@ -42,9 +43,13 @@ test('an SVG in the preview loads in an <img>, runs nothing and fetches nothing'
   await expect(page.getByText('This image could not be shown here')).toHaveCount(0);
 });
 
-test('a top-level navigation to the image URL downloads it, with no SVG document', async ({ page }) => {
+test('the image URL, once loaded in an <img>, downloads on a top-level navigation, with no SVG document', async ({ page }) => {
   const seen = watch(page);
-  await page.goto(`/runs/${SEEDED}`); // a page of the origin, so the navigation is same-origin
+  // first the <img>: its inline image/svg+xml answer is now in this context's cache
+  await page.goto(`/runs/${SEEDED}/results/file?path=${encodeURIComponent(SVG)}`);
+  const img = page.getByRole('img', { name: 'hostile_image.svg' });
+  await expect.poll(() => img.evaluate((el: HTMLImageElement) => el.complete && el.naturalWidth)).toBe(120);
+  // then the same URL as a document, from that same page
   const download = page.waitForEvent('download');
   await page.goto(RAW).catch(() => {}); // a download aborts the navigation
   const file = await download;
@@ -54,4 +59,16 @@ test('a top-level navigation to the image URL downloads it, with no SVG document
   // the page is still the run's: no SVG document replaced it
   expect(await page.evaluate(() => document.documentElement.namespaceURI)).toBe('http://www.w3.org/1999/xhtml');
   expect(await page.evaluate(() => document.documentElement.getAttribute('data-ran'))).toBeNull();
+});
+
+test('Load more keeps focus while it loads and after', async ({ page }) => {
+  await page.goto(`/runs/${SEEDED}/results/file?path=${encodeURIComponent('logs/big.log')}`);
+  const more = page.getByRole('button', { name: 'Load more' });
+  await more.focus();
+  await page.keyboard.press('Enter');
+  await expect(page.getByText('128 KiB shown', { exact: true })).toBeVisible();
+  await expect(more).toBeFocused();
+  await page.keyboard.press('Enter'); // focus still on it: the keyboard loads the next read
+  await expect(page.getByText('192 KiB shown', { exact: true })).toBeVisible();
+  await expect(more).toBeFocused();
 });
