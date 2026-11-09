@@ -52,6 +52,8 @@ The same card shows the work directory of a task, under the heading "Work direct
 
 *A 250-byte TSV from the same run. The heading takes focus when the page opens.*
 
+*The line under the header row, showing the file name, is a known display defect (DW-P3B09-02): it is the table caption, not content.*
+
 The page shows the file's name, its kind, size and time, its full path with **Copy path**, **Download**, then one viewer by kind:
 
 | Kind | What you get |

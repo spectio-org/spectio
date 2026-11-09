@@ -327,7 +327,7 @@ def build(theme: Theme) -> Sketch:
             "applied: inline only in an `<img>`", w=w)
     y = pin(s, x, y + 10, "UX-PRE-FU85-R1-02", "R1",
             ("415 or 422 for a wrong image;", "an `<img>` cannot see a status"),
-            "applied: 422, one `onerror` state", w=w)
+            "applied: 422, one error state", w=w)
     note(s, x, y + 10, ("1 round, approve both · open,", "minor: CR-P3FU85B-01, `Vary` on",
                         "problems; inbox 129: a GIF's", "first frame, a size of 0, a",
                         "reused inode, SEC-P3FU85B-01 to -03"), w=w)
