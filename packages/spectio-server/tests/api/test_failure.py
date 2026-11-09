@@ -15,6 +15,7 @@ import sys
 import threading
 import time
 from collections import Counter
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -22,19 +23,20 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import inspect, select
+from sqlalchemy import inspect, select, update
 
 from spectio.config import Settings
 from spectio.runner.rundir import RunPaths, make_run_dirs
 from spectio.runner.types import SpoolBatch
 from spectio_sdk.events import SpoolEvent
+from spectio_server import failure
 from spectio_server.failure import Accounting, parse_smk_slurm_message
 from spectio_server.files.pool import FilePool, Stalled
 from spectio_server.projector.ingest import ingest
 from spectio_server.serve import boot
 from spectio_server.stages.freeze import StageSources
 from spectio_server.store.db import open_db
-from spectio_server.store.schema import attempts, events, tasks
+from spectio_server.store.schema import attempts, events, runs, tasks
 from spectio_server.store.writer import Writer
 
 from ..test_serve import FIXTURE_RUN, FIXTURES, head_files, make_run, run_id, settle
@@ -60,6 +62,8 @@ with open(os.path.join(here, "calls.jsonl"), "a") as f:
 delay = os.path.join(here, "delay")
 if os.path.exists(delay):
     time.sleep(float(open(delay).read()))
+if os.path.exists(os.path.join(here, "fail")):  # slurmdbd unreachable: no answer
+    sys.exit(1)
 ids = sys.argv[sys.argv.index("-j") + 1].split(",")
 lag = os.path.join(here, "lag")  # a state per call, "-" for no row; then OUT_OF_MEMORY
 text = open(lag).read() if os.path.exists(lag) else ""
@@ -185,6 +189,13 @@ class Run:
         )
         return workdir
 
+    def end(self) -> None:
+        """The run reaches a terminal state (its end-of-run sweep, CON-SLURM-POLL-01)."""
+        done = {"state": "succeeded", "ended_at": datetime.now(UTC)}
+        self.writer.submit(
+            lambda c: c.execute(update(runs).where(runs.c.id == RUN).values(**done))
+        ).result()
+
     def task_ids(self) -> list[str]:
         with self.writer.engine.connect() as conn:
             return list(conn.execute(select(tasks.c.id).order_by(tasks.c.id)).scalars())
@@ -194,6 +205,14 @@ def write_private(path: Path, text: str) -> None:
     path.parent.mkdir(mode=0o700, parents=True, exist_ok=True)
     path.write_text(text)
     path.chmod(0o600)
+
+
+class Clock:
+    def __init__(self) -> None:
+        self.now = 1000.0
+
+    def __call__(self) -> float:
+        return self.now
 
 
 def detail(client: TestClient) -> dict[str, Any]:
@@ -297,25 +316,25 @@ def test_nf_failure_summary(settings: Settings, writer: Writer, fakebin: Fake) -
         "accounting": "available",
     }
     assert not acct.step() and len(fakebin.calls()) == 1  # cached: never asked again
-    assert acct._tries == {}  # CR-P3T29-04: an answered job keeps no count
+    assert acct._followed == set()  # CR-P3T29-04: an answered job keeps no state
 
 
 def test_sacct_other_workdir_not_kept(settings: Settings, writer: Writer, fakebin: Fake) -> None:
     """SEC-P3T29-01: a row whose WorkDir is not the attempt's work directory is another job
     with the same number (a local PID, another user's job): counted as no row, never cached."""
+    clock = Clock()
     client = client_for(settings, writer)
-    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    acct = client.app.state.accounting = accounting(settings, fakebin, clock=clock)  # type: ignore[attr-defined]
     run = Run(settings, writer, slurm=True)
     run.nf_task(0, 1, "FAILED", "TERMINATE")  # the fake answers WorkDir /elsewhere
     detail(client)
     assert acct.step() and fakebin.ids() == ["8812401"]
-    assert acct.status(RUN, "8812401") == "unavailable"
+    assert acct.status(RUN, "8812401") == "pending"  # its follow-up
     assert acct.rows(RUN) == {}
     cache = run.paths.run_dir / ".spectio" / "sacct.json"
     assert not cache.exists()
-    for _ in range(2):  # as a missing row: asked again, up to MAX_TRIES, then null
-        detail(client)
-        assert acct.step()
+    clock.now += failure.FOLLOW_UP_S  # as a missing row: one follow-up, then null
+    assert acct.step()
     scheduler = detail(client)["failures"][0]["scheduler"]
     assert scheduler["accounting"] == "unavailable" and scheduler["state_source"] is None
     assert scheduler["usage_source"] is None
@@ -373,7 +392,7 @@ def test_sacct_submit_before_launch_not_kept(
     fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
     detail(client)
     assert acct.step()
-    assert acct.rows(RUN) == {} and acct._tries == {(RUN, "8812401"): 1}
+    assert acct.rows(RUN) == {} and acct._followed == {(RUN, "8812401")}  # a follow-up due
 
 
 def test_sacct_job_without_dir_not_asked(settings: Settings, writer: Writer) -> None:
@@ -504,8 +523,8 @@ def test_sacct_run_asked_during_call_costs_no_try(
 
     acct._limiter._call = call
     assert acct.step()
-    assert acct._tries == {(RUN, "8812401"): 1}  # RUN was in the call; `other` was not
-    assert acct._limiter.pending() == 1 and acct._asked == {"8812401": {other}}
+    assert acct._followed == {(RUN, "8812401")}  # RUN was in the call; `other` was not
+    assert acct._limiter.pending() == 1 and acct._asked == {"8812401": {other, RUN}}
     acct._limiter._call = called
     assert acct.step()
     row = acct.rows(other)["8812401"]  # the fake's default WorkDir is `other`'s directory
@@ -621,8 +640,8 @@ def smk_job(run: Run, jobid: int, rule: str, sample: str, **info: Any) -> None:
 
 def test_resources_smk(settings: Settings, writer: Writer, fakebin: Fake) -> None:
     """threads and mem_mb requested; a benchmark file gives the measures (source benchmark);
-    without one, sacct for the job's SLURM ID, in a batch (source sacct). On a SLURM run: a
-    local one never asks sacct (P1 Task 34, schedulers §3.6)."""
+    without one, sacct for the job's SLURM ID, in the run's end sweep (source sacct). On a
+    SLURM run: a local one never asks sacct (P1 Task 34, schedulers §3.6)."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
     run = Run(settings, writer, "snakemake", slurm=True)
@@ -639,6 +658,7 @@ def test_resources_smk(settings: Settings, writer: Writer, fakebin: Fake) -> Non
     run.push("snakemake.job_finished", job_id=2)
     smk_job(run, 3, "align", "S3")  # still running: nothing measured, nothing asked
     run.push("snakemake.slurm_submitted", jobid=3, external_jobid="8812478")
+    run.end()
 
     items = {i["tag"]: i for i in task_items(client)}
     requested = {"cpus": 4, "memory_bytes": 2000 * 1024**2, "time_s": 1800.0}
@@ -783,41 +803,97 @@ def test_req15_rebuild_no_calls(settings: Settings, fakebin: Fake) -> None:
         booted.close()
 
 
-@pytest.mark.parametrize("lag", ["-", "RUNNING"])
-def test_sacct_lag_asked_again(settings: Settings, writer: Writer, fakebin: Fake, lag: str) -> None:
-    """A job sacct does not know yet, or knows in a state that is not terminal (slurmdbd lags,
-    [to be validated] on `slurm-mini`, P1 Task 22), is kept neither in memory nor in
-    `sacct.json`: the next view asks it again and then shows it."""
+@pytest.mark.parametrize(
+    ("lag", "kept"),
+    [("-", "row"), ("-,-", "null"), ("RUNNING,RUNNING", "given_up"), ("-,RUNNING", "given_up")],
+)
+def test_sacct_follow_up(
+    settings: Settings, writer: Writer, fakebin: Fake, lag: str, kept: str
+) -> None:
+    """CON-SLURM-POLL-01, -02: a job sacct does not know yet, or not as ended (slurmdbd lags,
+    [to be validated] on `slurm-mini`), gets one follow-up FOLLOW_UP_S later, with no view;
+    null is stored only when that answer has no line for the job, else it is given up in
+    memory and nothing is written."""
     (fakebin.dir / "lag").write_text(lag)
+    clock = Clock()
     client = client_for(settings, writer)
-    acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
+    acct = client.app.state.accounting = accounting(settings, fakebin, clock=clock)  # type: ignore[attr-defined]
     run = Run(settings, writer, slurm=True)
     fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
     detail(client)
     assert acct.step()
-    assert acct.rows(RUN) == {}
-    assert not (run.paths.run_dir / ".spectio" / "sacct.json").exists()
+    cache = run.paths.run_dir / ".spectio" / "sacct.json"
+    assert acct.rows(RUN) == {} and not cache.exists()
     assert detail(client)["failures"][0]["scheduler"]["accounting"] == "pending"
+    assert not acct.step()  # not due yet, and the view asked nothing more
+    clock.now += failure.FOLLOW_UP_S
     assert acct.step() and fakebin.ids() == ["8812401", "8812401"]
     scheduler = detail(client)["failures"][0]["scheduler"]
-    assert scheduler["accounting"] == "available" and scheduler["state"] == "OUT_OF_MEMORY"
-    assert acct._tries == {}  # CR-P3T29-04: pruned once the answer is final
+    if kept == "row":
+        assert scheduler["accounting"] == "available" and scheduler["state"] == "OUT_OF_MEMORY"
+    elif kept == "null":
+        assert acct.rows(RUN) == {"8812401": None}
+        assert json.loads(cache.read_text())["jobs"] == {"8812401": None}
+    else:
+        assert acct.rows(RUN) == {} and not cache.exists() and acct.failed(RUN, "8812401")
+    if kept != "row":
+        assert scheduler["accounting"] == "unavailable"
+    clock.now += failure.FOLLOW_UP_S
+    assert not acct.step() and len(fakebin.calls()) == 2  # one follow-up, no more
+    assert acct._followed == set() and acct._deadline == {}  # nothing kept once final
 
 
-def test_sacct_lag_capped(settings: Settings, writer: Writer, fakebin: Fake) -> None:
-    """A job sacct never answers is asked MAX_TRIES times, then recorded as null."""
-    (fakebin.dir / "lag").write_text("-,-,-,-")
+@pytest.mark.parametrize("ended_h", [None, 25])
+def test_sacct_failed_call_requeued(
+    settings: Settings, writer: Writer, fakebin: Fake, ended_h: int | None
+) -> None:
+    """CON-SLURM-POLL-02: a failed call puts its IDs back in the queue, doubles the interval,
+    and stores nothing; a job is given up GIVE_UP_S after it ended, not after a count."""
+    (fakebin.dir / "fail").write_text("")
+    clock = Clock()
+    run = Run(settings, writer)
+    acct = Accounting(settings.runs_root, fakebin.path, start_thread=False, clock=clock)
+    acct.load(RUN)
+    ended = None if ended_h is None else time.time() - ended_h * 3600
+    acct.want(RUN, [("8812401", str(run.paths.work_dir))], 0.0, ended=ended)
+    assert acct.step()
+    if ended_h is not None:  # ended over a day ago: the first failure gives it up
+        assert acct.failed(RUN, "8812401") and acct._limiter.wait_s() is None
+        return
+    assert acct.status(RUN, "8812401") == "pending" and not acct.failed(RUN, "8812401")
+    assert acct._limiter.wait_s() == 120  # 60 s doubled
+    clock.now += 120
+    assert acct.step() and acct._limiter.wait_s() == 240
+    clock.now += failure.GIVE_UP_S
+    assert acct.step() and len(fakebin.calls()) == 3
+    assert acct.failed(RUN, "8812401") and acct.status(RUN, "8812401") == "unavailable"
+    assert acct.rows(RUN) == {} and acct._limiter.wait_s() is None
+
+
+def test_sacct_live_run_asks_failures_and_opened_panel(
+    settings: Settings, writer: Writer, fakebin: Fake
+) -> None:
+    """CON-SLURM-POLL-01: while a run is live, its Tasks and By process views ask sacct
+    nothing; a task whose SLURM panel is opened (`?task=`) is asked; the run's end sweeps
+    every ended job once."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
     run = Run(settings, writer, slurm=True)
-    run.nf_task(0, 1, "FAILED", "TERMINATE")
-    for _ in range(3):
-        detail(client)
-        assert acct.step()
-    assert acct.rows(RUN) == {"8812401": None}
-    assert detail(client)["failures"][0]["scheduler"]["accounting"] == "unavailable"
-    assert not acct.step() and len(fakebin.calls()) == 3
-    assert acct._tries == {}  # CR-P3T29-04: capped, so no count kept
+    for i in range(3):
+        fakebin.at(str(8812401 + 10 * i), run.nf_task(i, 1, "COMPLETED"))
+    task_items(client)
+    client.get(f"{API}/runs/{RUN}/processes")
+    assert not acct.step() and fakebin.calls() == []
+    opened = run.task_ids()[1]
+    found = client.get(f"{API}/runs/{RUN}/tasks", params={"task": opened})
+    assert [i["id"] for i in found.json()["items"]] == [opened]
+    assert acct.step() and fakebin.ids() == ["8812411"]
+    assert found.json()["items"][0]["efficiency"]["state"] == "pending_accounting"
+    run.end()
+    task_items(client)
+    task_items(client)  # one sweep: a second view queues nothing again
+    assert acct.step() and sorted(fakebin.ids()[1:]) == ["8812401", "8812421"]
+    assert not acct.step()
 
 
 def test_req15_cache_file(
@@ -913,7 +989,7 @@ def test_req15_hung_sacct_never_blocks(settings: Settings, writer: Writer, fakeb
     (fakebin.dir / "delay").write_text("30")
     client = client_for(settings, writer)
     acct = client.app.state.accounting = Accounting(  # type: ignore[attr-defined]
-        settings.runs_root, fakebin.path, interval_s=0, timeout_s=1.0
+        settings.runs_root, fakebin.path, timeout_s=1.0
     )
     run = Run(settings, writer, slurm=True)
     run.nf_task(0, 1, "FAILED", "TERMINATE")
@@ -927,9 +1003,11 @@ def test_req15_hung_sacct_never_blocks(settings: Settings, writer: Writer, fakeb
     writer.submit(lambda conn: None).result(timeout=1)
     assert time.monotonic() - started < 1
     deadline = time.monotonic() + 5
-    while acct.status(RUN, "8812401") == "pending" and time.monotonic() < deadline:
+    while acct._limiter.wait_s() is None and time.monotonic() < deadline:
         time.sleep(0.05)
-    assert acct.status(RUN, "8812401") == "unavailable"  # killed at 1 s, not asked again
+    wait = acct._limiter.wait_s()  # killed at 1 s, put back, asked again after a back-off
+    assert wait is not None and wait > 60 and len(fakebin.calls()) == 1
+    assert acct.status(RUN, "8812401") == "pending"
 
 
 def test_old_database_opens(settings: Settings) -> None:

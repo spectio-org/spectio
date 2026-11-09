@@ -2109,3 +2109,19 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   3. **A name that steps 4 and 5 will refuse.** (a) it takes a slot and a 4-byte pool read first, then `422` (built; `_imaging_name` runs after `open_raw`); (b) check the name before the slot, since the checks are pure functions of the path. A request is cheap, but on a stalled mount a refused request holds a slot until its pool job returns. **(a)** for now, with (b) as the follow-up of the server: it moves a check, not behaviour a client can see, except under load.
 - **Why a question:** (1) is a security hardening the spec left out; (2) is a contradiction in the spec that the code resolved one way; (3) changes which requests can use up the scarce slots.
 - **Assumed (2026-11-09, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a), (2a), (3a).
+
+### #140 · Assumed: the SLURM query budget (FU-P3-106a)
+
+- **Covers:** step P3-fu106a (`autopilot/P3-fu106a`); the constraints audit of 2026-11-09, findings CON-SLURM-POLL-01 to -12; [schedulers §3.8](../specs/schedulers-and-monitoring.md#38-slurm-query-budget) (new, numbered 3.8 because FU-P3-105's branch adds §3.7 and inbox #139).
+- **Context:** Thomas (2026-11-09): do not saturate or over-poll SLURM; the engines already poll often. Today Spectio's only SLURM call is `sacct`. FU-P3-106a builds the `sacct` part of the budget: on a live run only a failure when opened and a job whose SLURM facts are opened are asked; every other ended job waits for one sweep when the run ends, plus one follow-up 10 min later; a failed call is put back with a back-off of 60 s doubled up to 600 s; a job is given up 24 h after it ended; `null` only when slurmdbd answered without the job; timeout 30 s; a call over 5 s is back-pressure; every call carries `-S` and `-E now`.
+- **Questions for the EMBL SLURM admins** (to send; the answers set the numbers of §3.8):
+  1. The `rl_*` values of `SlurmctldParameters` (`rl_bucket_size`, `rl_refill_rate`, `rl_refill_period`, `rl_table_size`): `rl_enable` is on ([login-node audit](../research/2026-11-08-embl-login-node-audit.md), line 67).
+  2. `MinJobAge`: how long an ended job stays visible to `squeue` before only `sacct` knows it.
+  3. `MaxQueryTimeRange` in `slurmdbd.conf`: the longest `-S`…`-E` window a `sacct` call may ask.
+  4. How many `squeue` and `sacct` calls per user per minute are acceptable from a service such as Spectio, on top of the engines'.
+- **Open choices, each with the recommendation (assumed):**
+  1. **Live efficiency.** (a) the engine's own measure while the run is live, `sacct` at its end (built); (b) `sacct` for every ended job as it ends (the former rule: one call a minute while jobs end). **(a)**: Nextflow's trace already measures each job; the source is shown.
+  2. **When the sweep runs.** (a) on the first Tasks or By process view after the run ended (built): no view, no call; (b) when the projector sees the run end, with no view. **(a)** for now; (b) needs the accounting reachable from the writer and is FU-P3-106b if wanted.
+  3. **The 24 h give-up's clock.** (a) the run's end when known, else the time the job was queued (built: attempts carry no end time); (b) each attempt's own end, which needs a column. **(a)**.
+- **Follow-up FU-P3-106b:** CON-SLURM-POLL-09 to -12 (the engine budget Spectio generates, `slurmrestd`, counting Spectio's own calls in the log and on the Health page, a budget per user and site) and the spikes S1 to S5 of §3.8.
+- **Assumed (2026-11-09, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (1a), (2a), (3a).

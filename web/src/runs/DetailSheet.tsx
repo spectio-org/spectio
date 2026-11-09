@@ -227,6 +227,18 @@ function TaskView({ run, stages, processes, task, attempt, onOpen }: { run: RunD
   const known = processes.some((p) => p.process === task.process);
   const r = task.resources;
   const near = nearLimit(r);
+  // CON-SLURM-POLL-01: opening a job's SLURM facts reads that one task, which asks its job of
+  // sacct while the run is live; the facts then show what the server has.
+  const [fresh, setFresh] = useState<Task | null>(null);
+  useEffect(() => {
+    setFresh(null);
+    if (!task.slurm) return;
+    const controller = new AbortController();
+    listTasks(run.id, { task: task.id, limit: 1 }, controller.signal)
+      .then((page) => setFresh(page.items?.find((t) => t.id === task.id) ?? null))
+      .catch(() => undefined); // the list's own facts stay
+    return () => controller.abort();
+  }, [run.id, task.id]);
   const facts: [string, ReactNode][] = [
     ["ID", <span className="sp-mono">{task.id}</span>],
     ["Tag", task.tag ?? "—"],
@@ -250,7 +262,7 @@ function TaskView({ run, stages, processes, task, attempt, onOpen }: { run: RunD
   return (
     <>
       <Facts facts={facts} />
-      <SlurmFacts task={task} />
+      <SlurmFacts task={fresh ?? task} />
       <h3 className="sp-sheet-h">Files</h3>
       <TaskFiles run={run} task={task} attempt={attempt} />
     </>

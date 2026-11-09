@@ -498,7 +498,7 @@ export function listStages(id: string, signal?: AbortSignal): Promise<{ items: S
 
 export function listTasks(
   id: string,
-  params: { state?: string; process?: string; cursor?: string | null; limit?: number },
+  params: { state?: string; process?: string; task?: string; cursor?: string | null; limit?: number },
   signal?: AbortSignal,
 ): Promise<Page<Task>> {
   return call(`${run(id)}/tasks${query({ ...params })}`, { signal });

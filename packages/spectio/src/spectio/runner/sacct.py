@@ -9,8 +9,10 @@ server user's own jobs asked (`--user=<euid>`), never with `--duplicates`; its o
 `MAX_OUTPUT` and parsed as data, field by field, with a random delimiter per call. A job line is
 kept only when its `WorkDir` is one the caller expects for that job (the directory it was
 launched from, SEC-P3T29-01) and its `Submit` is not before the run's launch (inbox #116 rule
-10 (b), FU-P3-53). `SacctLimiter` holds the server-wide pace: one call in flight, one call per
-`INTERVAL_S`.
+10 (b), FU-P3-53). Each call is bounded in time too: `-S` the earliest launch of its jobs less
+`SUBMIT_SKEW_S`, `-E now`, never from Epoch 0 (CON-SLURM-POLL-03). `SacctLimiter` holds the
+server-wide pace: one call in flight, one call per `INTERVAL_S`, doubled up to `MAX_INTERVAL_S`
+after a failed or slow call (CON-SLURM-POLL-02; schedulers §3.8, the SLURM query budget).
 
 The fields asked for (`FORMAT`, `WorkDir` among them) and their units, and whether `-j` alone
 returns other users' jobs, are [to be validated] on `slurm-mini` (P1 Task 22) and at EMBL: a
@@ -47,8 +49,10 @@ FORMAT = (
     "Partition,Account,QOS,AllocTRES,WorkDir,Submit"
 )  # WorkDir not last: a newline in it leaves two fragments, neither with every field
 _FIELDS = FORMAT.count(",") + 1
-TIMEOUT_S = 10.0
+TIMEOUT_S = 30.0
 INTERVAL_S = 60.0
+MAX_INTERVAL_S = 600.0  # the back-off's ceiling
+SLOW_S = 5.0  # a call slower than this is back-pressure: the next one waits longer
 BATCH = 100
 MAX_PENDING = 100_000  # IDs waiting for a call; more are dropped until the queue drains
 MAX_OUTPUT = 1048576
@@ -138,7 +142,9 @@ def new_delimiter() -> str:
     return "".join(secrets.choice(_DELIMITER_CHARS) for _ in range(DELIMITER_LEN))
 
 
-def sacct_argv(path: Path, ids: list[str], delimiter: str) -> list[str]:
+def sacct_argv(path: Path, ids: list[str], delimiter: str, start: float) -> list[str]:
+    """The call; `start` (epoch seconds) is its `-S`, written in UTC as `TZ=UTC` reads it."""
+    since = datetime.fromtimestamp(max(0.0, start), UTC).strftime("%Y-%m-%dT%H:%M:%S")
     return [
         str(path),
         "--parsable2",
@@ -147,6 +153,10 @@ def sacct_argv(path: Path, ids: list[str], delimiter: str) -> list[str]:
         "-j",
         ",".join(ids),
         f"--user={os.geteuid()}",
+        "-S",
+        since,
+        "-E",
+        "now",
         f"--format={FORMAT}",
     ]
 
@@ -164,7 +174,8 @@ def sacct_jobs(
     ids = check_ids(wanted)
     check_tool(sacct)
     delimiter = new_delimiter()
-    argv = sacct_argv(sacct, ids, delimiter)
+    start = min(since for dirs in wanted.values() for since in dirs.values()) - SUBMIT_SKEW_S
+    argv = sacct_argv(sacct, ids, delimiter, start)
     with subprocess.Popen(  # noqa: S603 - an argument list of checked values, no shell
         argv,
         env=sacct_env(sacct),
@@ -367,9 +378,11 @@ Call = Callable[[list[str]], Found | None]
 
 class SacctLimiter:
     """The server's one gate to `sacct`: IDs are queued once each (at most `max_pending`), and
-    `run_once` makes one call for the next `batch` of them when `interval_s` has passed since
-    the last call started and no call is in flight. The caller's thread runs the call: the
-    server runs it on a thread of its own, never the writer's or a request's."""
+    `run_once` makes one call for the next `batch` of them when the interval has passed since
+    the last call started and no call is in flight. The interval is `interval_s`, doubled after
+    a call that failed or took over `slow_s`, up to `max_interval_s`, and reset by a quick
+    answer. `later` queues IDs once a delay has passed (a follow-up). The caller's thread runs
+    the call: the server runs it on a thread of its own, never the writer's or a request's."""
 
     def __init__(
         self,
@@ -378,10 +391,15 @@ class SacctLimiter:
         interval_s: float = INTERVAL_S,
         batch: int = BATCH,
         max_pending: int = MAX_PENDING,
+        max_interval_s: float = MAX_INTERVAL_S,
+        slow_s: float = SLOW_S,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self._call = call
-        self._interval = interval_s
+        self._base = self._interval = interval_s
+        self._max_interval = max_interval_s
+        self._slow = slow_s
+        self._later: dict[str, float] = {}  # job ID → when it is queued
         self._batch = batch
         self._max_pending = max_pending
         self._clock = clock
@@ -403,23 +421,45 @@ class SacctLimiter:
                 queued.append(job)
         return queued
 
+    def later(self, ids: Iterable[str], delay_s: float) -> list[str]:
+        """Queue the job IDs among `ids` once `delay_s` has passed; returns those taken (none
+        past `max_pending`)."""
+        taken = []
+        with self._lock:
+            due = self._clock() + delay_s
+            for job in ids:
+                if JOB_ID.fullmatch(job) and len(self._later) < self._max_pending:
+                    self._later[job] = due
+                    taken.append(job)
+        return taken
+
+    def _due(self, now: float) -> None:
+        """Move the follow-ups due by `now` into the queue; under the lock."""
+        for job, due in list(self._later.items()):
+            if due <= now and (job in self._pending or len(self._pending) < self._max_pending):
+                self._pending[job] = None
+                del self._later[job]
+
     def pending(self) -> int:
         with self._lock:
             return len(self._pending)
 
     def wait_s(self) -> float | None:
-        """Seconds until the next call may start; None when nothing is queued."""
+        """Seconds until the next call may start; None when nothing is queued or due later."""
         with self._lock:
-            if not self._pending:
+            now = self._clock()
+            self._due(now)
+            if not self._pending and not self._later:
                 return None
-            if self._last is None:
-                return 0.0
-            return max(0.0, self._last + self._interval - self._clock())
+            ready = 0.0 if self._pending else min(self._later.values()) - now
+            pace = 0.0 if self._last is None else self._last + self._interval - now
+            return max(0.0, ready, pace)
 
     def run_once(self) -> tuple[list[str], Found | None] | None:
         """One call when one is due: the IDs asked and the rows (None: the call failed).
         None when nothing is queued, it is too soon, or a call is in flight."""
         with self._lock:
+            self._due(self._clock())
             if self._busy or not self._pending:
                 return None
             if self._last is not None and self._clock() < self._last + self._interval:
@@ -427,13 +467,18 @@ class SacctLimiter:
             ids = list(self._pending)[: self._batch]
             for job in ids:
                 del self._pending[job]
-            self._busy, self._last = True, self._clock()
+            started = self._clock()
+            self._busy, self._last = True, started
+        rows: Found | None = None
         try:
             rows = self._call(ids)
         except Exception:  # a refusal or a crash: those IDs get no answer, the next call runs
             log.exception("sacct call failed")
-            rows = None
         finally:
             with self._lock:
                 self._busy = False
+                if rows is None or self._clock() - started > self._slow:  # back-pressure
+                    self._interval = min(self._max_interval, 2 * self._interval)
+                else:
+                    self._interval = self._base
         return ids, rows

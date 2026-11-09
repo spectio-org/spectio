@@ -172,6 +172,10 @@ def test_req15_argv_and_id_check(fakebin: Fake) -> None:
         "-j",
         "8812477,8812345_3,9999",
         f"--user={os.geteuid()}",  # the server user's own jobs only
+        "-S",  # CON-SLURM-POLL-03: the run's launch less the submit skew, never Epoch 0
+        "2026-11-08T08:55:00",
+        "-E",
+        "now",
         "--format=JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,TotalCPU,NCPUS,"
         "NNodes,Partition,Account,QOS,AllocTRES,WorkDir,Submit",
     ]
@@ -183,6 +187,17 @@ def test_req15_argv_and_id_check(fakebin: Fake) -> None:
     with pytest.raises(sacct.Refused):  # 100 IDs per call
         sacct_jobs({str(n): {"/w": LAUNCH} for n in range(101)}, sacct=fakebin.path)
     assert len(fakebin.calls()) == 1  # every refusal before any call
+
+
+def test_sacct_window_from_earliest_launch(fakebin: Fake) -> None:
+    """CON-SLURM-POLL-03: `-S` is the earliest launch of the batch less SUBMIT_SKEW_S."""
+    sacct_jobs(
+        {"8812477": {"/a": LAUNCH + 3600, "/b": LAUNCH}, "9999": {"/w": LAUNCH + 60}},
+        sacct=fakebin.path,
+    )
+    argv = fakebin.calls()[0]["argv"]
+    start = argv.index("-S")
+    assert argv[start : start + 4] == ["-S", "2026-11-08T08:55:00", "-E", "now"]
 
 
 def test_sacct_delimiter_random_per_call(fakebin: Fake) -> None:
@@ -274,7 +289,7 @@ def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
             )
         },
     }  # 9999: no row, so not in the result
-    assert sacct.TIMEOUT_S == 10
+    assert sacct.TIMEOUT_S == 30  # CON-SLURM-POLL-02
     fakebin.delay(30)
     started = time.monotonic()
     assert sacct_jobs(ASKED, timeout_s=0.5, sacct=fakebin.path) is None
@@ -600,3 +615,42 @@ def test_req15_limiter_bounded() -> None:
     limiter = SacctLimiter(lambda ids: {}, max_pending=10)
     limiter.request([str(n) for n in range(1, 50)])
     assert limiter.pending() == 10
+
+
+def test_sacct_limiter_backs_off() -> None:
+    """CON-SLURM-POLL-02: a failed call doubles the interval from 60 s up to 600 s, a success
+    resets it, and a call slower than SLOW_S counts as back-pressure."""
+    clock = Clock()
+    answers: list[sacct.Found | None] = [None, None, None, None, None, {}, {}, {}]
+    slow = [False] * 6 + [True, False]
+    starts: list[float] = []
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        starts.append(clock.now)
+        if slow[len(starts) - 1]:
+            clock.now += 6
+        return answers[len(starts) - 1]
+
+    limiter = SacctLimiter(call, clock=clock)
+    limiter.request(["1"])
+    for _ in answers:
+        wait = limiter.wait_s()
+        assert wait is not None
+        clock.now += wait
+        done = limiter.run_once()
+        assert done is not None
+        limiter.request(done[0])  # the caller puts a failed call's IDs back
+    gaps = [b - a for a, b in itertools.pairwise(starts)]
+    assert gaps == [120, 240, 480, 600, 600, 60, 120]
+
+
+def test_sacct_limiter_follow_up() -> None:
+    """A follow-up is queued once its delay has passed, not before."""
+    clock = Clock()
+    limiter = SacctLimiter(lambda ids: {}, clock=clock)
+    limiter.later(["7"], 600)
+    assert limiter.wait_s() == 600 and limiter.pending() == 0
+    assert limiter.run_once() is None
+    clock.now += 600
+    assert limiter.run_once() == (["7"], {})
+    assert limiter.wait_s() is None

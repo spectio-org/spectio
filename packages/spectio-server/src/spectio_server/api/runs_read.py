@@ -621,12 +621,16 @@ def list_tasks(
     run_id: str,
     state: Annotated[str | None, Query(max_length=200)] = None,
     process: Annotated[str | None, Query(max_length=1024)] = None,
+    task: Annotated[str | None, Query(max_length=64)] = None,
     limit: Limit = 50,
     cursor: Cursor = None,
 ) -> dict[str, Any]:
-    """The run's tasks in first-seen order (by ID)."""
+    """The run's tasks in first-seen order (by ID). `task`: that one task, whose SLURM panel
+    is open, so its ended job is asked of `sacct` while the run is live (CON-SLURM-POLL-01)."""
     states = _states(state, TASK_STATES)
     query = select(tasks).where(tasks.c.run_id == run_id)
+    if task is not None:
+        query = query.where(tasks.c.id == task)
     if states is not None:
         query = query.where(tasks.c.state.in_(states))
     if process is not None:
@@ -636,7 +640,9 @@ def list_tasks(
         run = run_row(conn, run_id)
         rows = conn.execute(query).all()
         page = [r.id for r in rows[:limit]]
-        jobs = task_resources(conn, run_id, dir_run_id(run), run.engine, page, context(request))
+        jobs = task_resources(
+            conn, run_id, dir_run_id(run), run.engine, page, context(request), opened=task
+        )
     items = [
         {
             "id": r.id,
