@@ -27,9 +27,10 @@ import {
   launch,
   listEnvironments,
 } from "../api";
+import { label as envLabel } from "../environments/fields";
 import { ICONS, Icon, groupIcon } from "../icons";
 import { runName } from "../runs/RunState";
-import { plural, shortId } from "../runs/stateWord";
+import { executorLabel, plural, shortId } from "../runs/stateWord";
 import { useServer } from "../server";
 import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
@@ -71,6 +72,24 @@ const SOURCES: Record<Inspected["schema_source"], string> = {
 };
 
 type Errors = Record<string, string>; // by form key: location, revision, engine, name, profile, environment, params.<key>, form
+
+/** One line of "Before Launch" (ui-spec §4.6 layout note, FU-P3-86h): its words, and the form key
+ * (location, engine, environment, params.<key>) of the field its link moves focus to. */
+interface Reason {
+  text: string;
+  to?: string;
+}
+
+/** The id of a parameter's input: keys are data, so encoded (no space in an id). */
+const paramId = (key: string) => `param-${encodeURIComponent(key)}`;
+
+/** The element a reason's link focuses, or whose first control it focuses. */
+function targetId(to: string): string {
+  if (to === "location") return "launch-location";
+  if (to === "engine") return "engine-buttons";
+  if (to === "environment") return "launch-where-body";
+  return paramId(to.slice("params.".length));
+}
 
 /** Where a 422 error of `POST /runs` or of inspect is shown (fields are dotted, inbox #86): a
  * param error lands on the field of the longest key that names it or a value inside it
@@ -155,6 +174,8 @@ export function LaunchPage({
   const [envs, setEnvs] = useState<EnvironmentList | null>(null);
   const [envsFailed, setEnvsFailed] = useState(false);
   const [envName, setEnvName] = useState<string | null>(null);
+  // The form key a "Before Launch" link is moving focus to: its sections open (FU-P3-86h)
+  const [goTo, setGoTo] = useState<string | null>(null);
   const inFlight = useRef<AbortController | null>(null);
   const revisionField = useRef<HTMLInputElement>(null);
 
@@ -277,29 +298,43 @@ export function LaunchPage({
     return () => controller.abort();
   }, [copyFrom]);
 
-  function reason(): string | null {
-    if (loading) return "Wait for the pipeline to load";
-    if (!loaded) return "Load a pipeline first";
+  /** Every reason Launch waits, in order (ui-spec §4.6): the list of "Before Launch". */
+  function reasons(): Reason[] {
+    if (loading) return [{ text: "Wait for the pipeline to load", to: "location" }];
+    if (!loaded) return [{ text: "Load a pipeline first", to: "location" }];
     if (loaded.engine_files.length === 0) {
-      return "No main.nf or Snakefile in this directory: check the path";
+      return [{ text: "No main.nf or Snakefile in this directory: check the path", to: "location" }];
     }
-    if (!engine) return "Choose the engine";
-    if (!chosen && !envsFailed) return "Choose where it runs";
-    if (!ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f))) {
+    const found: Reason[] = [];
+    if (!engine) found.push({ text: "Choose the engine", to: "engine" });
+    if (!chosen && !envsFailed) found.push({ text: "Choose where it runs", to: "environment" });
+    if (engine && !ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f))) {
       const other = NAMES[engine === "nextflow" ? "snakemake" : "nextflow"];
-      return `No ${ENGINE_FILES[engine].join(" or ")} in this directory: press ${other} or check the path`;
+      found.push({ text: `No ${ENGINE_FILES[engine].join(" or ")} in this directory: press ${other} or check the path`, to: "engine" });
     }
     for (const field of fields) {
       const wrong = checkValue(field, own(values, field.key));
-      if (wrong === REQUIRED) return `Fill the required field: ${field.key}`;
-      if (wrong) return `Fix ${field.key}: ${wrong}`;
+      const to = `params.${field.key}`;
+      if (wrong === REQUIRED) found.push({ text: `Fill the required field: ${field.key}`, to });
+      else if (wrong) found.push({ text: `Fix ${field.key}: ${wrong}`, to });
     }
-    if (sending) return "Launching…";
-    return null;
+    if (sending) found.push({ text: "Launching…" });
+    return found;
+  }
+
+  /** A reason's link: opens the sections that hold its field, then moves focus there. */
+  function focusField(to: string) {
+    setGoTo(to);
+    setTimeout(() => {
+      const at = document.getElementById(targetId(to));
+      const control = at?.matches("input, select, textarea, button") ? at : at?.querySelector<HTMLElement>("input, select, textarea, button");
+      control?.focus();
+      setGoTo(null);
+    }, 0);
   }
 
   async function submit() {
-    if (reason() || !loaded || !engine) {
+    if (reasons().length || !loaded || !engine) {
       setTried(true);
       return;
     }
@@ -331,7 +366,9 @@ export function LaunchPage({
     prefill && typeof copiedOutdir === "string" && own(values, "outdir") === copiedOutdir
       ? { outdir: `Warning: same as ${prefill.name}. Change it to keep the two runs' results apart.` }
       : {};
-  const why = reason();
+  const missing = reasons();
+  const warnings: Reason[] = notes.outdir && prefill ? [{ text: `Warning, not a blocker: outdir is the same as ${prefill.name}`, to: "params.outdir" }] : [];
+  const why = missing[0]?.text ?? null;
   // The pinned bar on the phone says what Launch sends (UX-PAR-34).
   const summary =
     phone && loaded && engine && !why
@@ -345,8 +382,8 @@ export function LaunchPage({
           .filter(Boolean)
           .join(" · ")
       : null;
-  // One action in two places on a desktop (LiteLaunch: the page head and under the aside), one
-  // description; the phone has the pinned bar only.
+  // One action in two places on a desktop (LiteLaunch: the page head and under the aside), both
+  // described by the "Before Launch" list; the phone has the pinned bar only.
   const launchButton = (
     <Button
       type="button"
@@ -354,12 +391,14 @@ export function LaunchPage({
       onClick={submit}
       aria-disabled={why ? true : undefined}
       data-disabled={why ? true : undefined}
-      aria-describedby={why || summary ? "launch-reason" : undefined}
+      aria-describedby={summary ? "launch-missing launch-reason" : "launch-missing"}
     >
       Launch
     </Button>
   );
   const local = server?.executor === "local";
+  const headLine = server ? (local ? `a process on ${server.node}` : `a tmux session on ${server.node}`) : "…";
+  const runDirectory = server ? `${server.runs_root}/<run ID>` : "…";
   /** The Tasks row reads the chosen environment, never `GET /version` (ui-spec §4.8.1). */
   const tasksLine = () => {
     const by = engine ? NAMES[engine] : "the engine";
@@ -394,7 +433,7 @@ export function LaunchPage({
         phoneBar="title"
         action={
           <span className="launch-head">
-            {/* a visual copy of the reason under the aside's Launch, which describes both buttons */}
+            {/* a visual copy of the first reason of "Before Launch", which describes both buttons */}
             {why && (
               <span className="launch-head-reason" aria-hidden="true">
                 {why}
@@ -412,11 +451,12 @@ export function LaunchPage({
       {prefill && <PrefillBanner prefill={prefill} onClear={onClear} />}
       <div className="launch-grid">
         <Stack gap="md">
-          <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card>
+          <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card reveal={goTo === "location" || goTo === "engine"}>
             <TryPipelines runs={recent} onPick={pick} />
             <Group align="flex-start" gap="sm" wrap="wrap">
               <TextInput
                 style={{ flex: "999 1 280px" }}
+                id="launch-location"
                 label="Pipeline"
                 inputWrapperOrder={["label", "input", "description", "error"]}
                 value={location}
@@ -528,7 +568,7 @@ export function LaunchPage({
               </SimpleGrid>
             </Stack>
           </FoldSection>
-          <FoldSection id="launch-where" icon={ICONS.server} title="Where it runs" card>
+          <FoldSection id="launch-where" icon={ICONS.server} title="Where it runs" card reveal={goTo === "environment"}>
             <EnvironmentRow
               list={envs}
               failed={envsFailed}
@@ -545,7 +585,7 @@ export function LaunchPage({
                   <span className="launch-engine">
                     <EngineMark engine={engine} size={16} named />
                     {`${NAMES[engine]} ${loaded?.engine_versions[engine] ?? "(version not found)"}`}
-                    {server && (local ? `, as a process on ${server.node}` : `, in a tmux session on ${server.node}`)}
+                    {server && `, as ${headLine}`}
                   </span>
                 ) : (
                   "Not chosen yet"
@@ -554,14 +594,14 @@ export function LaunchPage({
               <dt>Tasks</dt>
               <dd>{tasksLine()}</dd>
               <dt>Run directory</dt>
-              <dd>{server ? `${server.runs_root}/<run ID>` : "…"}</dd>
+              <dd>{runDirectory}</dd>
             </dl>
             <Text size="xs" c="dimmed" mt="sm">
               The login node and the run directory are fixed for this server.
             </Text>
           </FoldSection>
           {loaded && (
-            <FoldSection id="launch-params" icon={ICONS.sliders} title="Parameters">
+            <FoldSection id="launch-params" icon={ICONS.sliders} title="Parameters" reveal={!!goTo?.startsWith("params.")}>
               {sections.length > 1 && (
                 <Text size="sm" c="dimmed" mb="sm">
                   {`One section per ${grouped ? "schema group" : "map of the config, its keys dotted"} · ${changed === 1 ? "1 value differs from its default" : `${changed} values differ from their defaults`}`}
@@ -588,6 +628,7 @@ export function LaunchPage({
                     key={`${loaded.location}:${i}`}
                     id={`params-g${i}`}
                     section={section}
+                    reveal={section.fields.some((f) => goTo === `params.${f.key}`)}
                     notes={notes}
                     values={values}
                     errors={errors}
@@ -601,12 +642,63 @@ export function LaunchPage({
           )}
         </Stack>
         <Stack className="launch-aside" gap="md" component="aside" aria-label="Launch">
+          <section className="sp-card launch-summary" aria-labelledby="launch-summary-title">
+            <h2 id="launch-summary-title" className="launch-summary-title">
+              Summary
+            </h2>
+            <dl className="facts">
+              <dt>Pipeline</dt>
+              <dd>
+                {loaded
+                  ? [`${loaded.name}${loaded.version ? ` ${loaded.version}` : ""}`, profile && `profile ${profile}`].filter(Boolean).join(" · ")
+                  : "Not loaded yet"}
+              </dd>
+              <dt>Engine</dt>
+              <dd>{engine ? `${NAMES[engine]} ${loaded?.engine_versions[engine] ?? "(version not found)"}` : "Not chosen yet"}</dd>
+              <dt>Environment</dt>
+              <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : "…"}</dd>
+              <dt>Engine head</dt>
+              <dd>{headLine}</dd>
+              <dt>Tasks</dt>
+              <dd>{tasksLine()}</dd>
+              <dt>Run directory</dt>
+              <dd>{runDirectory}</dd>
+            </dl>
+            <h3 id="launch-missing-title" className="launch-missing-title">
+              Before Launch
+            </h3>
+            <div id="launch-missing" role="status" aria-labelledby="launch-missing-title" className="launch-missing">
+              {missing.length === 0 && <p>Nothing is missing.</p>}
+              {missing.length + warnings.length > 0 && (
+                <ul>
+                  {[...missing, ...warnings].map((r) => (
+                    <li key={r.text} data-warning={warnings.includes(r) || undefined}>
+                      {r.to ? (
+                        <a
+                          href={`#${targetId(r.to)}`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            focusField(r.to!);
+                          }}
+                        >
+                          {r.text}
+                        </a>
+                      ) : (
+                        r.text
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </section>
           {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} />}
           <div className="launch-bar">
             <div className="launch-bar-row">
               {launchButton}
-              {(why || summary) && (
-                <Text id="launch-reason" size="sm" c="dimmed" className="launch-reason">
+              {/* the phone's bar: the first reason (a visual copy), or what Launch sends */}
+              {phone && (why || summary) && (
+                <Text id={summary ? "launch-reason" : undefined} size="sm" c="dimmed" className="launch-reason" aria-hidden={why ? true : undefined}>
                   {why ?? summary}
                 </Text>
               )}
@@ -662,6 +754,7 @@ function PrefillBanner({ prefill, onClear }: { prefill: Prefill; onClear?: () =>
 function ParamGroup({
   id,
   section,
+  reveal,
   notes,
   values,
   errors,
@@ -670,6 +763,8 @@ function ParamGroup({
 }: {
   id: string;
   section: Section;
+  /** A "Before Launch" link is moving focus to one of its fields. */
+  reveal: boolean;
   notes: Record<string, string>;
   values: Values;
   errors: Errors;
@@ -711,7 +806,7 @@ function ParamGroup({
         </Fragment>
       ))}
       defaultOpen={empty > 0 || changed > 0}
-      reveal={failed}
+      reveal={failed || reveal}
       card
     >
       <ParamRows fields={section.fields} notes={notes} values={values} errors={errors} tried={tried} onChange={onChange} />
@@ -767,7 +862,7 @@ function ParamsPreview({ engine, fields, values, rows }: { engine: Engine; field
     text = null;
   }
   return (
-    <FoldSection id="launch-preview" icon={ICONS.fileCode} title={label} card className="launch-preview-card">
+    <FoldSection id="launch-preview" icon={ICONS.fileCode} title={label} card className="launch-preview-card" defaultOpen={false}>
       <Text size="sm" className="launch-preview-note" mb="sm">
         {snakemake
           ? "Only the values set, and a nested map whole once one of its values is set. Spectio writes them to .spectio/params.json in the run directory, passed with --configfile; shown here as YAML."
@@ -833,6 +928,7 @@ function ParamField({
     </>
   );
   const common = {
+    id: paramId(field.key),
     label,
     description,
     error,
@@ -847,6 +943,7 @@ function ParamField({
       return (
         <div className="launch-param">
           <Checkbox
+            id={paramId(field.key)}
             className="launch-param-check"
             label={label}
             aria-describedby={descriptionId}
