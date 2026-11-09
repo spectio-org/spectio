@@ -392,3 +392,12 @@ test("a 503's body is cancelled before the request is asked again", async () => 
   expect((await read).status).toBe(206);
   expect(cancelled).toBe(true);
 });
+
+test("the OME-XML check decides from the content, whatever the root or the parser says", () => {
+  const foreign = '<TiffData><UUID FileName="b.ome.tif">urn:uuid:2</UUID></TiffData>';
+  expect(omeFiles(ome('<parsererror xmlns="http://www.w3.org/1999/xhtml"/>' + foreign), "a.ome.tif")).toBe("others");
+  const wrapped = (root: string) => `<${root}>${ome(foreign).replace(/^<\?xml[^>]*\?>/, "")}</${root.split(" ")[0]}>`;
+  expect(omeFiles(wrapped('parsererror xmlns="http://www.mozilla.org/newlayout/xml/parsererror.xml"'), "a.ome.tif")).toBe("others");
+  expect(omeFiles(wrapped("Wrapper"), "a.ome.tif")).toBe("others");
+  expect(omeFiles("ImageJ=1.54f\nimages=3\nslices=3", "a.tif")).toBe("none");
+});

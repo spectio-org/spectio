@@ -114,7 +114,7 @@ export async function walkIfds(tiff: GeoTIFF, client: PinnedClient, max = IFDS_M
 
 /** Whether a first IFD's ImageDescription is OME-XML, and if so whether it names this file only
  * (a `TiffData` whose `UUID` names another file, or more than one file, is refused). Parsed as
- * XML, never as HTML. */
+ * XML, never as HTML; any document with an `OME` or `TiffData` element is OME. */
 export function omeFiles(description: string | undefined, name: string): "none" | "one" | "others" | "too-large" {
   if (!description) return "none";
   if (description.length > OME_XML_MAX) return "too-large";
@@ -122,10 +122,9 @@ export function omeFiles(description: string | undefined, name: string): "none" 
   while (end && description.charCodeAt(end - 1) === 0) end--;
   description = description.slice(0, end);
   const doc = new DOMParser().parseFromString(description, "application/xml");
-  // a parse failure is the parser's own error element (Firefox and jsdom: the root; Chromium and
-  // WebKit: an XHTML element inside), never an element that merely has its name
-  const failed = doc.documentElement.namespaceURI === "http://www.mozilla.org/newlayout/xml/parsererror.xml" || doc.getElementsByTagNameNS("http://www.w3.org/1999/xhtml", "parsererror").length > 0;
-  if (failed || doc.documentElement.localName !== "OME") return "none";
+  // fail closed: decided from the content, whatever the root and whether the parser reported a
+  // failure (a forged parsererror element, a wrapper root or a partial parse is still scanned)
+  if (doc.getElementsByTagNameNS("*", "OME").length === 0 && doc.getElementsByTagNameNS("*", "TiffData").length === 0) return "none";
   const base = name.split("/").pop();
   const uuids = new Set<string>();
   for (const uuid of Array.from(doc.getElementsByTagNameNS("*", "UUID"))) {
