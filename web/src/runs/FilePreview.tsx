@@ -417,6 +417,11 @@ function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind:
       );
     case "image":
       return <ImageView id={id} file={file} />;
+    case "tiff":
+    case "ometiff":
+    case "omezarr":
+      return <Note title="Image viewer: coming" />; // FU-P3-102d2 and later
+
     case "json":
       return <JsonView id={id} file={file} retry={retry} />;
     case "table":
@@ -477,8 +482,9 @@ export function FilePreview({ id, search, work }: { id: string; search: ResultsS
 
   if (missing) return <NotFound />;
   const { sort, q, task, attempt } = search;
-  if (file?.type === "dir" && work) return <Navigate to="/runs/$id/workdir" params={{ id }} search={{ path: file.path, sort, q, task, attempt }} replace />;
-  if (file?.type === "dir") return <Navigate to="/runs/$id/results" params={{ id }} search={{ path: file.path, sort, q, task, attempt }} replace />;
+  const image = file?.type === "dir" && fileKind(file.name) === "omezarr"; // the one folder previewed
+  if (file?.type === "dir" && !image && work) return <Navigate to="/runs/$id/workdir" params={{ id }} search={{ path: file.path, sort, q, task, attempt }} replace />;
+  if (file?.type === "dir" && !image) return <Navigate to="/runs/$id/results" params={{ id }} search={{ path: file.path, sort, q, task, attempt }} replace />;
 
   const retry = () => setReads((r) => r + 1);
   const shown = file?.path ?? "";

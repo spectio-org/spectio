@@ -3787,7 +3787,7 @@
     },
     "/api/v1/runs/{run_id}/processes": {
       "get": {
-        "description": "One item per process or rule: those the projector recorded (`onProcessCreate`, the rule\nfiles at the freeze, a first task), in that order, with the stage they froze with; then any\nknown from tasks only (a database from before P1 Task 27), in their first task's order.\nEach has its `status`, the `efficiency` of its jobs (P1 Task 34), and its `pipeline_order`\n(FU-P3-82).",
+        "description": "One item per process or rule in first-seen order (ui-spec \u00a74.4): for Snakemake the rules\nby their first job, then those the freeze recorded in the rule files' order (FU-P3-107);\nfor Nextflow those the projector recorded (`onProcessCreate`, a first task), in that order;\nthen any known from tasks only (a database from before P1 Task 27), in their first task's\norder. Each keeps the stage it froze with.\nEach has its `status`, the `efficiency` of its jobs (P1 Task 34), and its `pipeline_order`\n(FU-P3-82).",
         "operationId": "list_processes_api_v1_runs__run_id__processes_get",
         "parameters": [
           {

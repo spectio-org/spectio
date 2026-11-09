@@ -30,6 +30,13 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 .eng .tick{display:none}.eng[aria-pressed="true"] .tick{display:block}
 .btn-go{height:44px;padding:0 22px;border:none;border-radius:12px;background:#7750D4;color:#FFFFFF;font:600 14px 'Inter',sans-serif;cursor:pointer;flex-shrink:0}
 .btn-go:disabled{background:#C4C7D4;cursor:not-allowed}
+.btn-go[aria-disabled="true"]{background:#C4C7D4;cursor:not-allowed}
+/* FU-P3-86e3 layout: Pipeline, Where it runs and Parameters in the main column; the aside sums up and holds Launch. */
+.sum{margin:0;display:flex;flex-direction:column;gap:7px;font-size:12.5px}
+.sum > div{display:flex;gap:10px;align-items:baseline}
+.sum dt{flex:0 0 92px;color:#6E7287;font-size:12px}
+.sum dd{margin:0;font-weight:500;overflow-wrap:anywhere;min-width:0}
+.env-g{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:6px}
 .env-r{display:flex;gap:10px;align-items:flex-start;padding:9px 10px;border-radius:11px;box-shadow:inset 0 0 0 1px #DFE1EA;cursor:pointer;font-size:13px}
 .env-r:has(input:checked){box-shadow:inset 0 0 0 2px #0284C7;background:#F0F9FF}
 .env-r input{width:16px;height:16px;margin:2px 0 0;flex-shrink:0;accent-color:#0369A1}
@@ -60,7 +67,7 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
           <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Launch a workflow</h1>
           <span style="font-size: 14px; color: #4D5065;">A directory or a Git repository: Spectio guesses the engine and builds the form from its schema.</span>
         </div>
-        <button type="button" class="btn-go" aria-describedby="launch-what">Launch</button>
+        <button type="button" class="btn-go" aria-describedby="launch-missing launch-what">Launch</button>
       </div>
       <div style="border-radius: 14px; background: #F4F1FD; box-shadow: inset 0 0 0 1px #DCD3F7; padding: 12px 16px; display: flex; gap: 14px; align-items: center; flex-wrap: wrap;">
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4D368B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M8 8h11v11H8z M5 16V5h11"/></svg>
@@ -71,6 +78,8 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
         <a href="LiteLaunch.dc.html" style="height: 36px; padding: 0 12px; border-radius: 10px; box-shadow: inset 0 0 0 1px #DFE1EA; background: #FFFFFF; font: 600 13px 'Inter', sans-serif; color: #22253A; text-decoration: none; display: flex; align-items: center; flex-shrink: 0;">Clear and start empty</a>
       </div>
 
+      <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
+        <div class="launch-main" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
       <section class="cx" style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 20px;"><h2 id="h-pipeline" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-1" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 6a2 2 0 1 0 0 .01 M19 18a2 2 0 1 0 0 .01 M7 6h6a4 4 0 0 1 0 8h-2a4 4 0 0 0 0 8h6"/></svg></span><span style="min-width: 0;">Pipeline</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">nf-core/rnaseq 3.27.0 · Nextflow · singularity</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-1"><div style="display: flex; flex-direction: column; gap: 14px; margin-top: 8px;">
         
         <div style="display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-start;">
@@ -112,9 +121,27 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
           </div>
         </div>
       </div></div></section>
-
-      <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
-        <section aria-labelledby="h-params" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column; gap: 10px;">
+          <section class="cx" style="border-radius: 20px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 20px;"><h2 id="h-where" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-3" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><span style="min-width: 0;">Where it runs</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Login node · login1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-3"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
+            
+            <!-- ui-spec §4.8.1: the Environment choice, first row of "Where it runs" (main column, FU-P3-86e3); drawn with local selected on a SLURM server. -->
+            <fieldset style="margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px;">
+              <legend style="padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Environment</legend>
+              <div class="env-g">
+              <label class="env-r"><input type="radio" name="env" value="slurm" aria-labelledby="env-n-slurm" aria-describedby="env-d-slurm"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;"><span id="env-n-slurm">SLURM (from spectio init)<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span></span><span id="env-d-slurm" style="font-size: 12px; color: #4D5065;">partition htc · SLURM account mylab</span></span></label>
+              <label class="env-r"><input type="radio" name="env" value="local" checked aria-labelledby="env-n-local" aria-describedby="env-d-local"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;"><span id="env-n-local">Login node<span class="env-sr">,</span> <span class="env-b" style="background: #F1F2F6; color: #33364A;">Local</span></span></span><span id="env-d-local" style="font-size: 12px; color: #4D5065;">on login1 (the login node) · at most 2 CPUs and 8 GiB</span></span></label>
+              <label class="env-r"><input type="radio" name="env" value="mylab-long" aria-labelledby="env-n-long" aria-describedby="env-df-long env-d-long"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;"><span id="env-n-long">Long jobs, mylab<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span><span id="env-df-long"><span class="env-b" style="background: #E8F6EF; color: #157A4B;">Default</span></span></span><span id="env-d-long" style="font-size: 12px; color: #4D5065;">partition long · SLURM account mylab · 48 h per job · 32 GiB per job</span></span></label>
+              <label class="env-r"><input type="radio" name="env" value="gpu-test" aria-labelledby="env-n-gpu" aria-describedby="env-d-gpu"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;"><span id="env-n-gpu">gpu-test<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span></span><span id="env-d-gpu" style="font-size: 12px; color: #4D5065;">partition gpu · 16 GiB per job</span></span></label>
+              </div>
+              <button type="button" class="btn-env" aria-haspopup="dialog">New environment</button>
+            </fieldset>
+            <dl style="margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
+              <sc-for list="{{where}}" as="w" hint-placeholder-count="4">
+                <div style="display: flex; gap: 10px; align-items: baseline;"><dt style="flex: 0 0 92px; color: #6E7287; font-size: 12px;">{{w.k}}</dt><dd style="margin: 0; font-weight: 500; overflow-wrap: anywhere;"><sc-if value="{{w.logo}}" hint-placeholder-val="{{false}}"><img src="{{w.logo}}" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 6px;"></sc-if>{{w.v}}</dd></div>
+              </sc-for>
+            </dl>
+            <span style="font-size: 12px; color: #4D5065;">The login node and the run directory are fixed for this server.</span>
+          </div></div></section>
+        <section aria-labelledby="h-params" style="min-width: 0; display: flex; flex-direction: column; gap: 10px;">
           <section class="cx"><h2 id="h-params" style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 20px;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-2" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 30px; height: 30px; border-radius: 10px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 6h10 M18 6h2 M16 4v4 M4 12h4 M12 12h8 M10 10v4 M4 18h12 M18 16v4"/></svg></span><span style="min-width: 0;">Parameters</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">11 groups · 4 changed</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-2"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;"><div style="display: flex; justify-content: flex-end; align-items: baseline; gap: 10px; flex-wrap: wrap;">
             
             <span style="font-size: 12.5px; color: #4D5065;">One section per schema group · 4 values differ from their defaults</span>
@@ -193,27 +220,26 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
           <span style="font-size: 11.5px; color: #6E7287;">Data: groups, parameter names, help texts and defaults from nf-core/rnaseq 3.27.0 nextflow_schema.json (a1fcddd: 136 parameters, 22 of them hidden; the first three of each group are drawn); paths, values, the login node and the states below are fixture data.</span>
         </div></div></section>
 </section>
+        </div>
 
-        <aside class="launch-aside" style="flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
-          <section class="cx" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px;"><h2 id="h-where" style="margin: 0; font-size: 15px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-3" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16v5H4z M4 14h16v5H4z M8 7.5h.01 M8 16.5h.01"/></svg></span><span style="min-width: 0;">Where it runs</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">Login node · login1</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-3"><div style="display: flex; flex-direction: column; gap: 10px; margin-top: 8px;">
-            
-            <!-- ui-spec §4.8.1: the Environment choice, first row of "Where it runs"; drawn with local selected on a SLURM server. -->
-            <fieldset style="margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 6px;">
-              <legend style="padding: 0; margin-bottom: 6px; font-size: 13px; font-weight: 600;">Environment</legend>
-              <label class="env-r"><input type="radio" name="env" value="slurm" aria-labelledby="env-n-slurm" aria-describedby="env-d-slurm"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;"><span id="env-n-slurm">SLURM (from spectio init)<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span></span><span id="env-d-slurm" style="font-size: 12px; color: #4D5065;">partition htc · SLURM account mylab</span></span></label>
-              <label class="env-r"><input type="radio" name="env" value="local" checked aria-labelledby="env-n-local" aria-describedby="env-d-local"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;"><span id="env-n-local">Login node<span class="env-sr">,</span> <span class="env-b" style="background: #F1F2F6; color: #33364A;">Local</span></span></span><span id="env-d-local" style="font-size: 12px; color: #4D5065;">on login1 (the login node) · at most 2 CPUs and 8 GiB</span></span></label>
-              <label class="env-r"><input type="radio" name="env" value="mylab-long" aria-labelledby="env-n-long" aria-describedby="env-df-long env-d-long"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;"><span id="env-n-long">Long jobs, mylab<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span><span id="env-df-long"><span class="env-b" style="background: #E8F6EF; color: #157A4B;">Default</span></span></span><span id="env-d-long" style="font-size: 12px; color: #4D5065;">partition long · SLURM account mylab · 48 h per job · 32 GiB per job</span></span></label>
-              <label class="env-r"><input type="radio" name="env" value="gpu-test" aria-labelledby="env-n-gpu" aria-describedby="env-d-gpu"><span style="display: flex; flex-direction: column; gap: 1px; min-width: 0;"><span style="font-weight: 600;"><span id="env-n-gpu">gpu-test<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span></span><span id="env-d-gpu" style="font-size: 12px; color: #4D5065;">partition gpu · 16 GiB per job</span></span></label>
-              <button type="button" class="btn-env" aria-haspopup="dialog">New environment</button>
-            </fieldset>
-            <dl style="margin: 0; display: flex; flex-direction: column; gap: 8px; font-size: 13px;">
-              <sc-for list="{{where}}" as="w" hint-placeholder-count="4">
-                <div style="display: flex; gap: 10px; align-items: baseline;"><dt style="flex: 0 0 92px; color: #6E7287; font-size: 12px;">{{w.k}}</dt><dd style="margin: 0; font-weight: 500; overflow-wrap: anywhere;"><sc-if value="{{w.logo}}" hint-placeholder-val="{{false}}"><img src="{{w.logo}}" width="16" height="16" alt="" style="display: inline-block; vertical-align: -3px; object-fit: contain; margin-right: 6px;"></sc-if>{{w.v}}</dd></div>
-              </sc-for>
+        <aside class="launch-aside" style="flex: 1 1 340px; max-width: 420px; min-width: 0; display: flex; flex-direction: column; gap: 12px;">
+          <section aria-labelledby="h-sum" style="border-radius: 16px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 14px 16px; display: flex; flex-direction: column; gap: 10px;">
+            <h2 id="h-sum" style="margin: 0; font-size: 15px; font-weight: 600;">Summary</h2>
+            <dl class="sum">
+              <div><dt>Pipeline</dt><dd>nf-core/rnaseq 3.27.0 · profile singularity</dd></div>
+              <div><dt>Engine</dt><dd><img src="/_blob/636203cdee0bc09b61efe0fa351e239b" width="14" height="14" alt="" style="display: inline-block; vertical-align: -2px; margin-right: 5px;">Nextflow 25.10.4</dd></div>
+              <div><dt>Environment</dt><dd>Login node · Local</dd></div>
+              <div><dt>Engine head</dt><dd>tmux session on login1</dd></div>
+              <div><dt>Tasks</dt><dd>run on login1 by Nextflow · at most 2 CPUs</dd></div>
+              <div><dt>Run directory</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; font-weight: 400;">/scratch/amartin/spectio-runs/&lt;run ID&gt;</dd></div>
             </dl>
-            <span style="font-size: 12px; color: #4D5065;">The login node and the run directory are fixed for this server.</span>
-          </div></div></section>
-          <section class="cx" style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px;"><h2 id="h-preview" style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;"><button type="button" class="cx-btn" aria-expanded="true" aria-controls="cx-4" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M10 12l-2 2 2 2 M14 12l2 2-2 2"/></svg></span><span style="min-width: 0;">params.json preview</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">values you set</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-4"><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+            <h3 id="h-missing" style="margin: 4px 0 0; font-size: 13px; font-weight: 600;">Before Launch</h3>
+            <div id="launch-missing" role="status" style="display: flex; flex-direction: column; gap: 6px; font-size: 12.5px; line-height: 1.45;">
+              <span style="display: flex; gap: 7px; align-items: baseline; color: #157A4B; font-weight: 600;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; align-self: center;"><path d="M5 12l5 5L20 7"/></svg>Nothing is missing: 2 required fields filled.</span>
+              <span style="display: flex; gap: 7px; align-items: baseline; color: #8F5806;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; align-self: center;"><path d="M12 4l9 16H3z M12 10v4 M12 17h.01"/></svg><span>A warning, not a blocker: <a href="#p-outdir">outdir</a> is the same as rnaseq-2026-10-25.</span></span>
+            </div>
+          </section>
+          <section class="cx" style="border-radius: 16px; background: #0F1020; color: #E6E7EF; padding: 14px 16px;"><h2 id="h-preview" style="margin: 0; font-size: 14px; font-weight: 600; color: #FFFFFF;"><button type="button" class="cx-btn" aria-expanded="false" aria-controls="cx-4" style="display: flex; align-items: center; gap: 10px; min-height: 40px;"><span style="width: 26px; height: 26px; border-radius: 8px; background: #F7F7FB; color: #4D5065; display: flex; align-items: center; justify-content: center; flex-shrink: 0;"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5 M10 12l-2 2 2 2 M14 12l2 2-2 2"/></svg></span><span style="min-width: 0;">params.json preview</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0;">values you set</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="cx-4" hidden><div style="display: flex; flex-direction: column; gap: 8px; margin-top: 8px;">
             
             <pre tabindex="0" style="margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 11.5px; line-height: 1.55; white-space: pre-wrap;">{
   "input": "/g/demo-lab/rnaseq/liver-tc/samplesheet.csv",
@@ -223,7 +249,7 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
 }</pre>
             <span style="font-size: 11.5px; color: #A6A9BA;">Only values you set · written to the run directory and passed with -params-file</span>
           </div></div></section>
-          <button type="button" class="btn-go" aria-describedby="launch-what" style="height: 46px;">Launch</button>
+          <button type="button" class="btn-go" aria-describedby="launch-missing launch-what" style="height: 46px;">Launch</button>
           <span id="launch-what" style="font-size: 12px; color: #4D5065;">Starts the engine in a new tmux session on login1 and opens the run page. The run shows Queued until the engine has started.</span>
         </aside>
       </div>
@@ -566,7 +592,7 @@ renderVals() {
   ],
   "where": [
     {
-      "k": "Engine",
+      "k": "Engine head",
       "v": "Nextflow 25.10.4, in a tmux session on login1",
       "logo": "/_blob/636203cdee0bc09b61efe0fa351e239b"
     },
