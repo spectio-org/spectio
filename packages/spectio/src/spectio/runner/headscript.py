@@ -16,7 +16,7 @@ import shlex
 import shutil
 from pathlib import Path
 
-from spectio.config import NF_SPECTIO_VERSION
+from spectio.config import NF_SPECTIO_VERSION, slurm_name
 from spectio.loginshell import KEEP
 from spectio.runner.engines import SNAKEMAKE_LOGGER, bridge, nf_plugin_copy, unpack_nf_spectio
 from spectio.runner.rundir import RUN_ID, private_dir, write_file
@@ -32,6 +32,9 @@ ENV_NAME = re.compile(r"[A-Za-z_][A-Za-z0-9_]*")
 # (tests/pipelines/synthetic/snakemake/profiles/slurm/config.yaml); whether sites' per-user
 # limits (MaxSubmitJobs) want less is [to be validated].
 SLURM_JOBS = 100
+# The cores of local rules on a SLURM launch: else every core of the login node (Snakemake
+# 9.27.1 `cli.py:586`; SEC-PRE-FU86-R1-02).
+LOCAL_CORES = 2
 # `snakemake --list-rules` before the run (P1 Task 27): the rules the server groups into stages,
 # with this launch's configuration, in `.spectio/rules.txt`. It never holds the run back: a
 # listing that fails or takes more than LIST_RULES_S leaves no file, and one line on stderr
@@ -139,6 +142,7 @@ def engine_args(spec: LaunchSpec) -> list[str]:
             # The SLURM plugin deletes a job's log when the job succeeds; kept, every job has
             # its log while the run directory exists (architecture §13.7, `slurm.py:209-243`).
             args += ["--executor", "slurm", "--slurm-keep-successful-logs"]
+            args += ["--local-cores", str(LOCAL_CORES)]
         if profiles:
             # The profile owns resources and concurrency: `--default-resources` here would
             # replace its whole `default-resources` (CR-P3T09-06), so [slurm] partition and
@@ -147,7 +151,12 @@ def engine_args(spec: LaunchSpec) -> list[str]:
         else:
             if spec.slurm is not None:
                 slurm = {"partition": spec.slurm.partition, "account": spec.slurm.account}
-                resources = [f"slurm_{key}={value}" for key, value in slurm.items() if value]
+                # Python string literals: Snakemake evaluates each value after expanding `~`
+                # and `$` (9.27.1 `resources.py:801-825`); a SLURM name holds no quote
+                # (SEC-PRE-FU86-01), checked again here.
+                resources = [
+                    f"slurm_{key}='{slurm_name(value)}'" for key, value in slurm.items() if value
+                ]
                 if resources:
                     args += ["--default-resources", *resources]
             if not any(_sets_concurrency(arg) for arg in spec.extra_args):

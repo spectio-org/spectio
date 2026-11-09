@@ -15,13 +15,13 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import insert, update
+from sqlalchemy import insert
 
 from spectio.config import Settings
 from spectio.runner.sacct import SacctRow
 from spectio_server import efficiency, failure
 from spectio_server.api import runs_read
-from spectio_server.store.schema import attempts, environments, tasks
+from spectio_server.store.schema import attempts, tasks
 from spectio_server.store.writer import Writer
 
 from .api.conftest import client_for, lone_host  # noqa: F401 - autouse: a lone host, any test host
@@ -45,11 +45,6 @@ BENCH_HEAD = "s\th:m:s\tmax_rss\tmax_vms\tmax_uss\tmax_pss\tio_in\tio_out\tmean_
 @pytest.fixture
 def fakebin(tmp_path: Path) -> Fake:
     return Fake(tmp_path)
-
-
-def on_slurm(writer: Writer) -> None:
-    """The run's environment is a SLURM one (the test settings are local)."""
-    writer.submit(lambda c: c.execute(update(environments).values(kind="slurm"))).result()
 
 
 def processes(client: TestClient) -> dict[str, dict[str, Any]]:
@@ -152,8 +147,7 @@ def test_slurm_request_smk(settings: Settings, writer: Writer) -> None:
     """From `job_info.resources`; `slurm_extra` set gives `custom_options` true, never its text;
     a text value out of charset is null; a `localrule` job has no SLURM request."""
     client = client_for(settings, writer)
-    on_slurm(writer)
-    run = Run(settings, writer, "snakemake")
+    run = Run(settings, writer, "snakemake", slurm=True)
     asked = {
         "slurm_partition": "htc",
         "slurm_account": "lab",
@@ -219,8 +213,7 @@ def test_slurm_request_nf(settings: Settings, writer: Writer, fakebin: Fake) -> 
     while not known; `allocated` from `sacct` once the job ended."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    on_slurm(writer)
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     workdir = run.paths.work_dir.joinpath(*HASHES[0])
     workdir.mkdir(parents=True)
     trace = {
@@ -333,8 +326,7 @@ def test_eff_states(settings: Settings, writer: Writer, fakebin: Fake, engine: s
     """running → pending_accounting with the engine's measure → available with sacct's."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    on_slurm(writer)
-    run = Run(settings, writer, engine)
+    run = Run(settings, writer, engine, slurm=True)
     fakebin.at(NATIVE, submit(run, engine))
     (item,) = task_items(client)
     assert item["efficiency"] == {**NOTHING, "state": "running"}
@@ -362,11 +354,9 @@ def test_eff_unavailable(
     client = client_for(settings, writer)
     acct = accounting(settings, fakebin, enabled=case != "accounting_off")
     client.app.state.accounting = acct  # type: ignore[attr-defined]
-    if case != "local":
-        on_slurm(writer)
     if case == "not_found":
         (fakebin.dir / "lag").write_text("-,-,-")
-    run = Run(settings, writer, engine)
+    run = Run(settings, writer, engine, slurm=case != "local")
     fakebin.at(NATIVE, submit(run, engine, native=None if case == "no_job_id" else NATIVE))
     finish(run, engine)
     for _ in range(3 if case == "not_found" else 1):
@@ -434,8 +424,7 @@ def test_req15_5000_jobs(settings: Settings, writer: Writer, fakebin: Fake, engi
     at most 100 IDs, each asked once."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    on_slurm(writer)
-    Run(settings, writer, engine)
+    Run(settings, writer, engine, slurm=True)
     now = datetime.now(UTC)
 
     def many(conn: Any) -> None:

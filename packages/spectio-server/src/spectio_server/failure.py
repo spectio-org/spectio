@@ -32,6 +32,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlalchemy import Connection, func, select
 
 from spectio.config import Settings
+from spectio.environments import executor_of
 from spectio.runner import sacct
 from spectio.runner.rundir import private_dir, read_small, run_paths, write_file
 from spectio.runner.sacct import BATCH, JOB_ID, SacctLimiter, SacctRow
@@ -46,7 +47,7 @@ from spectio_server.files.taskfiles import (
     read_task_file,
     run_root,
 )
-from spectio_server.store.schema import attempts, environments, runs, tasks
+from spectio_server.store.schema import attempts, runs, tasks
 
 log = logging.getLogger(__name__)
 
@@ -310,11 +311,11 @@ class Accounting:
 
     @classmethod
     def from_settings(cls, settings: Settings, **kwargs: Any) -> "Accounting":
-        """On a SLURM environment with `[slurm] accounting` on and a `sacct` path recorded by
-        `spectio init`; otherwise off ("SLURM accounting unavailable")."""
+        """With `[slurm] accounting` on and a `sacct` path recorded by `spectio init` (which
+        records one on a SLURM server only); otherwise off ("SLURM accounting unavailable").
+        Whether a run's jobs are asked is the run's own executor (`on_slurm`, FU-P3-86a)."""
         slurm = settings.slurm
-        on = settings.executor == "slurm" and slurm.accounting
-        return cls(settings.runs_root, slurm.sacct, enabled=on, **kwargs)
+        return cls(settings.runs_root, slurm.sacct, enabled=slurm.accounting, **kwargs)
 
     def _call(self, ids: list[str]) -> sacct.Found | None:
         """The limiter's call: the pairs asked for `ids` are copied under the lock, and `sacct`
@@ -644,6 +645,12 @@ class Context:
     measures: Measures
 
 
+def on_slurm(environment: dict[str, Any] | None) -> bool:
+    """The run's own executor is SLURM: from its `runs.environment`, never the server's
+    settings or an `environments` row (SEC-PRE-FU86-R1-01). Unknown is not SLURM."""
+    return executor_of(environment) == "slurm"
+
+
 def _last_attempt() -> Any:
     """The ID of the task's last attempt (api §7.2: its state is the task's)."""
     other = attempts.alias("newest")
@@ -704,12 +711,13 @@ def build_failures(
         tails = ctx.files.run(read, ctx.timeout_s)
     except Stalled:
         tails = [None] * len(rows)
-    if engine == "nextflow":  # Snakemake's state comes from its own message (§13.7)
-        run = conn.execute(
-            select(runs.c.created_at, runs.c.started_at).where(runs.c.id == run_id)
-        ).one()
+    run = conn.execute(
+        select(runs.c.created_at, runs.c.started_at, runs.c.environment).where(runs.c.id == run_id)
+    ).one()
+    # Snakemake's state comes from its own message (§13.7); a run not on SLURM never asks
+    if engine == "nextflow" and on_slurm(run.environment):
         jobs = ((r.native_id, r.work_dir) for r in rows)
-        ctx.accounting.want(run_id, jobs, _launched(*run), _resolver(ctx))
+        ctx.accounting.want(run_id, jobs, _launched(run.created_at, run.started_at), _resolver(ctx))
     cached = ctx.accounting.rows(run_id)
     culprit = (failure or {}).get("task_id"), (failure or {}).get("attempt_n")
     message = (failure or {}).get("message") or None
@@ -820,11 +828,11 @@ def task_resources(
     with a job ID is asked of `sacct` here (answered on a later read; schedulers §3.6), which
     a local run never is."""
     run = conn.execute(
-        select(environments.c.kind, runs.c.engine_settings, runs.c.created_at, runs.c.started_at)
-        .join(environments, environments.c.id == runs.c.environment_id)
-        .where(runs.c.id == run_id)
+        select(
+            runs.c.environment, runs.c.engine_settings, runs.c.created_at, runs.c.started_at
+        ).where(runs.c.id == run_id)
     ).one()
-    on_slurm, smk = run.kind == "slurm", engine == "snakemake"
+    slurm_run, smk = on_slurm(run.environment), engine == "snakemake"
     query = (
         select(
             tasks.c.id,
@@ -864,7 +872,7 @@ def task_resources(
         if not ctx.measures.claim(run_id):
             return {}
         try:
-            if on_slurm:
+            if slurm_run:
                 ctx.accounting.load(run_id)
             seen = ctx.measures.get(a for a, _ in unread)
             todo = [(a, p) for a, p in unread if a not in seen]
@@ -878,20 +886,20 @@ def task_resources(
             ctx.measures.release(run_id)
 
     try:
-        if (on_slurm and not ctx.accounting.loaded(run_id)) or unread:
+        if (slurm_run and not ctx.accounting.loaded(run_id)) or unread:
             known.update(ctx.files.run(read, ctx.timeout_s))
     except Stalled:
         pass
     measured = {a: m for a, m in known.items() if m is not None}
     cached: dict[str, SacctRow | None] = {}
-    if on_slurm:
+    if slurm_run:
         launch = str(run_paths(ctx.runs_root, dirs).launch_dir)
         ended = (r for r in rows if r.state in ENDED)
         jobs = ((r.native_id, launch if smk else r.work_dir) for r in ended)
         since = _launched(run.created_at, run.started_at)
         ctx.accounting.want(run_id, jobs, since, _resolver(ctx))
         cached = ctx.accounting.rows(run_id)
-    off = "local" if not on_slurm else None if ctx.accounting.enabled else "accounting_off"
+    off = "local" if not slurm_run else None if ctx.accounting.enabled else "accounting_off"
     cluster_options = True if (run.engine_settings or {}).get("cluster_options") is True else None
     found: dict[str, dict[str, Any]] = {}
     for r in rows:
@@ -922,7 +930,7 @@ def task_resources(
             # the job to a line, so it is never asked (SEC-PRE-15)
             reason = "not_found"
         slurm = None
-        if on_slurm and r.slurm is not None:
+        if slurm_run and r.slurm is not None:
             slurm = {
                 "request": {**dict.fromkeys(REQUEST), **(r.slurm.get("request") or {})},
                 "allocated": efficiency.allocated(row) if row is not None else None,

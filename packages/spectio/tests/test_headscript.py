@@ -168,7 +168,9 @@ def test_engine_finds_the_unpacked_nf_spectio(
 
 
 def test_nextflow_config_on_slurm(home: Path, bridges: Path) -> None:
-    spec = make_spec(home / "runs", slurm=SlurmOpts(partition="htc", account="lab'x"))
+    # A quote no `[slurm]` name can hold any more (SEC-PRE-FU86-01): `_groovy` escapes it
+    slurm = SlurmOpts.model_construct(partition="htc", account="lab'x")
+    spec = make_spec(home / "runs", slurm=slurm)
     write_launch_files(spec)
     config = (spec.launch_dir / ".spectio" / "spectio.config").read_text()
     assert "process.executor = 'slurm'" in config
@@ -230,7 +232,7 @@ def test_snakemake_concurrency_without_a_profile(
     assert args[flag : flag + 2] == added
     assert not {"--cores", "--jobs"} - {added[0]} & set(args)
     if slurm is not None:  # no profile: Spectio's partition and account apply
-        assert args[args.index("--default-resources") + 1] == "slurm_partition=htc"
+        assert args[args.index("--default-resources") + 1] == "slurm_partition='htc'"
     for given in (["-j", "8"], ["--cores=2"], ["-c4"], ["--jobs", "3"]):
         args = engine_args(replace(spec, extra_args=given))
         assert args[-len(given) :] == given and added[0] not in args[: -len(given)]

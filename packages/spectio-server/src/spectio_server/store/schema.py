@@ -161,6 +161,8 @@ environments = Table(
     Column("owning_group_id", String),
     Column("kind", String, nullable=False),  # slurm, k8s, local…: open-ended, no CHECK
     Column("config", Json),
+    # 0.0.1: the server's built-in (`local` or `slurm`), which `ensure_tenancy` keys on (FU-P3-86a)
+    Column("name", String),
 )
 
 runners = Table(
@@ -233,6 +235,9 @@ runs = Table(
     # What the engine said of the run (P1 Task 34): {cleanup, notemp, cluster_options}, the
     # last a flag, never the text; the API shows `cleanup` and `notemp`.
     Column("engine_settings", Json),
+    # The run's own environment, {name, label, executor, slurm, local, state} (FU-P3-86a, api
+    # §5.4): the source of every per-run executor decision; null for a run from a terminal.
+    Column("environment", Json),
     _check("runs", "state", RUN_STATES),
     _check("runs", "origin", RUN_ORIGINS, nullable=True),
     Index("ix_runs_project_created", "project_id", "created_at"),
