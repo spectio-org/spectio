@@ -3,6 +3,7 @@
 checked, at most 64 KiB, in five states; written whole, through the directory's descriptor, only
 over a file whose identity is that of the read."""
 
+import errno
 import os
 import stat
 from pathlib import Path
@@ -11,6 +12,7 @@ import pytest
 
 from spectio import envfile
 from spectio.environments import Environment
+from spectio.runner.types import Stalled
 
 NAMES = frozenset({"local", "slurm"})
 GOOD = """default = "mylab"
@@ -149,6 +151,33 @@ def test_req18_file_invalid_detail_has_no_file_bytes(path: Path) -> None:
     put(path, "[environments.x]\nexecutor = 'local'\nlocal = { cpus = 'secret' }\n")
     detail = read(path).detail or ""
     assert "secret" not in detail and "environments.x.local.cpus" in detail
+    key = "SECRETa'b\\\"cTOKEN"  # both quote kinds: its repr holds a backslash escape
+    put(path, f'[environments."{key}"]\n[environments."{key}"]\n')
+    detail = read(path).detail or ""
+    assert detail.endswith("(at line 2, column 34)")
+    assert not any(part in detail for part in ("SECRET", "TOKEN", "'", '"', "\\"))
+
+
+@pytest.mark.parametrize("where", ["directory", "file"])
+def test_req18_file_open_io_error_unreachable(
+    path: Path, monkeypatch: pytest.MonkeyPatch, where: str
+) -> None:
+    """ESTALE at open time, of the file or of its directory, is `unreachable` as at read time,
+    not `refused`; a write raises Stalled (CR-P3FU86BCD-03)."""
+    put(path, GOOD)
+    target = path.parent if where == "directory" else path.name
+    real_open = os.open
+
+    def stale(name: object, *args: object, **kwargs: object) -> int:
+        if name == target:
+            raise OSError(errno.ESTALE, os.strerror(errno.ESTALE))
+        return real_open(name, *args, **kwargs)  # type: ignore[arg-type]
+
+    monkeypatch.setattr(os, "open", stale)
+    found = read(path)
+    assert found.state == "unreachable" and found.detail
+    with pytest.raises(Stalled):
+        envfile.update(path, NAMES, lambda current: (None, []))
 
 
 def test_req18_file_write_renders_and_renames(path: Path) -> None:

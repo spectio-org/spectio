@@ -4,8 +4,9 @@ Where definitions live; dev-env §15.3 req. 18).
 Read without following a symbolic link: the directory opened `O_DIRECTORY|O_NOFOLLOW`, the file
 `openat` with `O_NOFOLLOW|O_NONBLOCK` (a FIFO never blocks), both checked with `fstat` (this
 user's, or root's for the directory, and not writable by group or others), at most 64 KiB + 1
-byte read. Five states: `missing`, `ok`, `refused` (the owner or mode checks), `invalid` (it
-does not parse, breaks a rule or is over a cap) and `unreachable`: an I/O error reading it
+byte read. Five states: `missing`, `ok`, `refused` (the owner or mode checks, or an open that
+fails with EACCES, EPERM, ELOOP or ENOTDIR), `invalid` (it does not parse, breaks a rule or is
+over a cap) and `unreachable`: any other I/O error opening or reading the file or its directory
 (ESTALE or EIO on NFS), or the server's file pool's timeout. `check_config` follows links, so
 it is not used here.
 
@@ -47,7 +48,8 @@ State = Literal["missing", "ok", "refused", "invalid", "unreachable"]
 Identity = tuple[int, int, int, int, str]  # st_dev, st_ino, st_size, st_mtime_ns, SHA-256
 Change = Callable[["EnvFile"], tuple[str | None, list[Environment]]]
 _SUBTABLES = ("slurm", "local", "profiles")
-_QUOTED = re.compile(r"'[^']*'|\"[^\"]*\"")  # a character of the file, in a parser message
+_AT = re.compile(r" ?\((at line \d+, column \d+|at end of document)\)\Z")  # tomllib's place
+_REFUSED = (errno.EACCES, errno.EPERM, errno.ELOOP, errno.ENOTDIR)  # else an open is unreachable
 _WRITE = threading.Lock()  # one write at a time in this process
 
 
@@ -92,9 +94,14 @@ class _Refused(Exception):
     pass
 
 
+class _Unreachable(Exception):
+    pass
+
+
 def _open_dir(directory: Path) -> int:
     """A descriptor on the file's directory: this user's or root's, not writable by group or
-    others, not a symbolic link. Raises FileNotFoundError, or _Refused with the reason."""
+    others, not a symbolic link. Raises FileNotFoundError, or _Refused or _Unreachable with the
+    reason."""
     try:
         fd = os.open(directory, os.O_RDONLY | os.O_DIRECTORY | os.O_NOFOLLOW | os.O_CLOEXEC)
     except FileNotFoundError:
@@ -102,12 +109,14 @@ def _open_dir(directory: Path) -> int:
     except OSError as exc:
         if exc.errno in (errno.ELOOP, errno.ENOTDIR):
             raise _Refused(f"{directory} is not a real directory (a symbolic link?)") from None
-        raise _Refused(f"{directory} cannot be opened: {exc.strerror}") from None
+        if exc.errno in _REFUSED:
+            raise _Refused(f"{directory} cannot be opened: {exc.strerror}") from None
+        raise _Unreachable(f"{directory} cannot be opened: {exc.strerror}") from None
     try:
         st = os.fstat(fd)
     except OSError as exc:
         os.close(fd)
-        raise _Refused(f"{directory} cannot be read: {exc.strerror}") from None
+        raise _Unreachable(f"{directory} cannot be read: {exc.strerror}") from None
     if st.st_uid not in (0, os.geteuid()) or st.st_mode & 0o022:
         os.close(fd)
         raise _Refused(f"{directory} must be yours and not writable by others ({_mode(st)})")
@@ -124,7 +133,8 @@ def _read_in(dir_fd: int, name: str, cached: EnvFile | None) -> EnvFile:
     except OSError as exc:
         if exc.errno == errno.ELOOP:
             return EnvFile("refused", f"{name} is a symbolic link")
-        return EnvFile("refused", f"{name} cannot be opened: {exc.strerror}")
+        state: State = "refused" if exc.errno in _REFUSED else "unreachable"
+        return EnvFile(state, _clean(f"{name} cannot be opened: {exc.strerror}"))
     try:
         st = os.fstat(fd)
         if not stat.S_ISREG(st.st_mode):
@@ -168,8 +178,11 @@ def parse(data: bytes, builtin_names: Collection[str] | None = None) -> EnvFile:
         doc = tomllib.loads(data.decode("utf-8"))
     except UnicodeDecodeError:
         return _invalid("not UTF-8 text")
-    except tomllib.TOMLDecodeError as exc:  # its message names the line and column
-        return _invalid(f"not TOML: {_QUOTED.sub('…', str(exc))}")
+    except tomllib.TOMLDecodeError as exc:  # its message may quote the file: keep its place only
+        message = str(exc)
+        place = _AT.search(message)
+        head = re.split(r"['\"(]", message[: place.start() if place else len(message)])[0]
+        return _invalid(f"not TOML: {head.strip()} {place.group(0).strip() if place else ''}")
     except (RecursionError, ValueError):  # deep nesting (SEC-PRE-FU86-R1-05)
         return _invalid("not TOML: nested too deeply")
     unknown = set(doc) - {"default", "environments"}
@@ -209,13 +222,15 @@ def check_default(found: EnvFile, builtin_names: Collection[str]) -> EnvFile:
 
 
 def read_file(path: Path, builtin_names: Collection[str], cached: EnvFile | None = None) -> EnvFile:
-    """The file at `path` (`environments_path()`), in one of its states but `unreachable`."""
+    """The file at `path` (`environments_path()`), in one of its five states."""
     try:
         dir_fd = _open_dir(path.parent)
     except FileNotFoundError:
         return EnvFile("missing")
     except _Refused as exc:
         return EnvFile("refused", str(exc))
+    except _Unreachable as exc:
+        return EnvFile("unreachable", _clean(str(exc)))
     try:
         return check_default(_read_in(dir_fd, path.name, cached), builtin_names)
     finally:
@@ -257,6 +272,8 @@ def update(path: Path, builtin_names: Collection[str], change: Change) -> EnvFil
             raise Unusable("missing", f"{path.parent} does not exist: run spectio init") from None
         except _Refused as exc:
             raise Unusable("refused", str(exc)) from None
+        except _Unreachable as exc:
+            raise Stalled(str(exc)) from None
         try:
             current = check_default(_read_in(dir_fd, path.name, None), builtin_names)
             if current.state == "unreachable":
