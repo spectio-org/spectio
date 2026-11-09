@@ -219,6 +219,9 @@
    (UX-G2-17). */
 .launch-grid {
   display: grid;
+  /* minmax(0, 1fr), not the implicit auto column: a long unbreakable path in Try a test pipeline
+     must not widen the Pipeline card past the phone's width (Load then sat under the input). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 @media (min-width: 1200px) {
