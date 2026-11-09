@@ -182,7 +182,21 @@ def result_file(
     as_: Annotated[str | None, Query(alias="as")] = None,
 ) -> Response:
     where, _ = _where(request, run_id)
-    rel = _file_rel(path)
+    return raw_response(request, where, _file_rel(path), download, as_, reports=True)
+
+
+def raw_response(
+    request: Request,
+    where: files.Tree,
+    rel: PurePosixPath,
+    download: bool,
+    as_: str | None,
+    *,
+    reports: bool,
+) -> StreamingResponse:
+    """The raw route's answer for the file `rel` below `where` (results, or a work directory,
+    FU-P3-85e): the image of api §5.3's table, a report with the sandbox CSP when `reports`,
+    else an attachment."""
     raw = in_pool(request, lambda: files.open_raw(where, rel, MAX_RAW), missing="not-found")
     if raw.size > MAX_RAW:
         raise Problem(413, "file-too-large", "File too large", f"more than {MAX_RAW} bytes")
@@ -197,7 +211,7 @@ def result_file(
         except NotAllowed as exc:
             raise Problem(422, "file-not-allowed", "File not allowed", str(exc)) from None
         headers["Content-Security-Policy"] = ATTACHMENT_CSP
-    elif rel.suffix.lower() in files.REPORT_SUFFIXES and not download:
+    elif reports and rel.suffix.lower() in files.REPORT_SUFFIXES and not download:
         media = "text/html; charset=utf-8"
         headers["Content-Security-Policy"] = REPORT_CSP
     else:
@@ -216,10 +230,10 @@ def result_file(
                     lambda at=start: files.read_chunk(where, rel, at, raw.size - at, raw.ident),
                 )
             except Problem as exc:
-                log.warning("results file %s of %s cut at %d: %s", rel, run_id, start, exc)
+                log.warning("%s cut at %d: %s", request.url.path, start, exc)
                 raise
             if not data:
-                log.warning("results file %s of %s cut at %d: it shrank", rel, run_id, start)
+                log.warning("%s cut at %d: it shrank", request.url.path, start)
                 raise ShortFile(f"{rel}: shrank at {start}")
             yield data
             start += len(data)

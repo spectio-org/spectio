@@ -25,12 +25,15 @@ from spectio.runner.rundir import open_private, run_paths
 from spectio_server.files.confine import (
     MAX_READ,
     TAIL,
+    Entry,
     NotAllowed,
     NotFound,
     Root,
     open_confined,
+    open_dir,
     read_at,
     safe_rel,
+    servable_name,
     size_of,
     stat_confined,
 )
@@ -106,6 +109,7 @@ class AttemptFiles:
     runs_root: Path
     outputs: tuple[str, ...] | None = None  # Snakemake: its `job_info` outputs (P1 Task 34)
     recorded_root: str | None = None  # the runs root the run was recorded under (FU-P3-81)
+    observed: bool = False  # a run started from a terminal (origin `cli-observed`)
 
 
 @dataclass(frozen=True)
@@ -358,6 +362,64 @@ def _output_state(attempt: AttemptFiles, root: Root, path: str) -> State:
     if found is not None:
         return "present"
     return "not_yet" if attempt.state in OPEN_STATES else "absent"
+
+
+# --- The work directory as a root (FU-P3-85e) -------------------------------------------------
+
+
+@dataclass(frozen=True)
+class TaskDir:
+    """A Nextflow attempt's work directory as a root of the explorer (api §5.3): the reads of
+    `files.results` take it as they take a results directory. Its names that start with `.`
+    (the job files, `.command.*` and `.exitcode`) are never listed nor served here; a last-
+    component link is followed only into a task directory of the same run (req. 13 note of
+    2026-11-08), as a published result is."""
+
+    attempt: AttemptFiles
+
+    def roots(self) -> AbstractContextManager[tuple[Root | None, Root | None]]:
+        return _task_roots(self.attempt)
+
+    @staticmethod
+    def shown(entry: Entry) -> bool:
+        return not entry.name.startswith(".") and servable_name(entry.name)
+
+
+def check_work_rel(path: str) -> PurePosixPath | None:
+    """`path` as a relative path below a work directory, None for the directory itself (`""`);
+    raises NotAllowed as `safe_rel` does, and for a part that starts with `.`."""
+    if path == "":
+        return None
+    rel = safe_rel(path)
+    if any(part.startswith(".") for part in rel.parts):
+        raise NotAllowed("not served here: a name that starts with '.'")
+    return rel
+
+
+@contextmanager
+def _task_roots(attempt: AttemptFiles) -> Iterator[tuple[Root | None, Root | None]]:
+    """The attempt's work directory (None while a running attempt's is not visible yet) and the
+    run's, its links' only target. NotFound for a Snakemake attempt, one of a run started from
+    a terminal or with no work directory recorded; Cleaned once an ended attempt's is gone;
+    Unreachable as the Job files routes (FU-P3-81)."""
+    if attempt.engine != "nextflow" or attempt.observed:
+        raise NotFound("no work directory Spectio can show for this attempt")
+    rel = _work_rel(attempt)
+    if rel is None:
+        raise NotFound("no work directory recorded for this attempt")
+    with _root(attempt, "work") as work:
+        task: Root | None
+        try:
+            task = open_dir(work, rel)
+        except NotFound:
+            if attempt.state not in OPEN_STATES:
+                raise Cleaned(f"the work directory was cleaned: tried {attempt.work_dir}") from None
+            task = None  # not visible yet on a shared file system
+        try:
+            yield task, work
+        finally:
+            if task is not None:
+                os.close(task.fd)
 
 
 # --- Reading --------------------------------------------------------------------------------

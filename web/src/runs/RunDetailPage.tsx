@@ -1008,7 +1008,7 @@ const FIND_PAGES = 10; // of 200 tasks: the first 2,000 tasks of a run, in ID or
 
 /** One task of the run by its ID, from the run's task listing (no route reads one task alone yet:
  * `GET /tasks/{id}` is FU-P3-96), so a task past the first 2,000 is not found. */
-async function findTask(runId: string, taskId: string, signal: AbortSignal): Promise<Task | null> {
+export async function findTask(runId: string, taskId: string, signal: AbortSignal): Promise<Task | null> {
   let cursor: string | null = null;
   for (let n = 0; n < FIND_PAGES; n += 1) {
     const page: Page<Task> = await listTasks(runId, { limit: 200, cursor }, signal);

@@ -111,6 +111,7 @@ def load_attempt(conn: Connection, task_id: str, n: int, runs_root: Path) -> Att
         if row.engine == "snakemake"
         else None,
         recorded_root(row.launch_dir, row.origin),
+        row.origin == "cli-observed",
     )
 
 

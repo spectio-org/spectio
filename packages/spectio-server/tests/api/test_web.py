@@ -86,6 +86,17 @@ def test_file_preview_is_a_screen(web: TestClient) -> None:
     assert "img-src 'self'" in r.headers["content-security-policy"]
 
 
+def test_workdir_pages_are_screens(web: TestClient) -> None:
+    """The work directory's folder and file pages answer the screens (ui-spec §4.4.1,
+    FU-P3-85e)."""
+    query = "task=tsk_01K8T2F1XTVRES000000000000&attempt=1&path=qc"
+    for page in ("workdir", "workdir/file"):
+        r = web.get(f"/runs/run_01K8T2F1XTVRES000000000000/{page}?{query}")
+        assert r.status_code == 200, page
+        assert r.text == INDEX
+        assert "img-src 'self'" in r.headers["content-security-policy"]
+
+
 def test_head_on_screens_and_assets(web: TestClient) -> None:
     """A HEAD gets the GET's status and headers, no body (FU-P3-22: it was 405)."""
     for path in ("/", "/runs", "/runs/run_01K8T2F1XTVRES000000000000", "/assets/index-AbC1.js"):
