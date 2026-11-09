@@ -810,3 +810,9 @@ One entry per tick: time, steps started and finished, verification results, tria
 - Live screenshots of Launch taken from a local `spectio serve` on its Unix socket only (Playwright relays each request over the socket, Host header kept): no TCP port. Seen: Engine head reads "Not chosen yet" in Where it runs but "a process on vm" in the summary; minor for FU-P3-108.
 - Batch P3-B11 (86f, 86g, 86h, 109; d2147ede..b35198e2) started; FU-P3-102c2 boards in flight. After B11: promote, then ask login1 for retest d.
 - 2026-11-09 — Thomas: pause at the next wave. In flight finish (batch P3-B11 docs, FU-P3-102c2 boards, their PRs, the B11 promotion); no new task starts until Thomas resumes.
+
+## 2026-11-09 — 215, 216 merged; promotion P3-B11 (#217); paused
+- Merged #215 (FU-P3-102c2 boards; the worker could not run ux-reviewer, so the orchestrator ran it: approve 0/0/7; 11 minors open for FU-P3-108 and FU-P3-102d/g) and #216 (batch P3-B11 docs). #216 docs-gate first failed on the screenshot churn guard (nine Launch shots retaken on purpose); the `screenshots` label opts in. Promoted to main (#217, merge 74b4c939), with the same label.
+- Costs (subagent tokens): 102c2 ~309k + ux-reviewer ~69k, B11 ~859k.
+- login1 asked for retest d on main 74b4c939 (report-2026-11-09d.md).
+- Paused at Thomas's request: no new task starts until he resumes. Next on resume: FU-P3-102d2.
