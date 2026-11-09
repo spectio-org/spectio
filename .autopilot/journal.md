@@ -758,3 +758,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-09T01:1xZ · P3-fu85b (FU-P3-85b) built: review approve 0/0/1, security approve 0/0/3, round 1. A wrong attribution trailer on the docs commit was fixed before the push. PR #185 opened, subscribed. Inbox #129 assumed. Cost recorded: 16 USD.
 
 - 2026-11-09T01:4xZ · FU-P3-85b merged (#185, squash 0426dc8e). Next: FU-P3-85c (UI preview page).
+
+- 2026-11-09T02:5xZ · P3-fu85c (FU-P3-85c) built: review approve 0/0/3, security approve 0/0/0, 4 rounds. The ci.yml line for preview.spec.ts is moved to branch autopilot/ci-preview-e2e (its PR opens after #186 merges and waits for Thomas). PR #186 opened, subscribed. Inbox #130 assumed. FU-P3-94, FU-P3-95 opened. Cost recorded: 20 USD.
