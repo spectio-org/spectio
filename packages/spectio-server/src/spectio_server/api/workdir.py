@@ -18,7 +18,13 @@ from fastapi.responses import Response
 
 from spectio_server.api.models import ResultStat, WorkDir
 from spectio_server.api.problems import Problem
-from spectio_server.api.results import entry_dicts, raw_response, stat_response
+from spectio_server.api.results import (
+    AsQuery,
+    RangeHeader,
+    entry_dicts,
+    raw_response,
+    stat_response,
+)
 from spectio_server.api.taskfiles import (
     HEADERS,
     _attempt,
@@ -102,7 +108,8 @@ def workdir_raw(
     n: int,
     path: str,
     download: bool = False,
-    as_: Annotated[str | None, Query(alias="as")] = None,
+    as_: AsQuery = None,
+    range_: RangeHeader = None,
 ) -> Response:
     tree, _ = _tree(request, task_id, n)
-    return raw_response(request, tree, _rel(path), download, as_, reports=False)
+    return raw_response(request, tree, _rel(path), download, as_, range_, reports=False)
