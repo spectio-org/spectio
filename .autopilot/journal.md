@@ -762,3 +762,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-09T02:5xZ · P3-fu85c (FU-P3-85c) built: review approve 0/0/3, security approve 0/0/0, 4 rounds. The ci.yml line for preview.spec.ts is moved to branch autopilot/ci-preview-e2e (its PR opens after #186 merges and waits for Thomas). PR #186 opened, subscribed. Inbox #130 assumed. FU-P3-94, FU-P3-95 opened. Cost recorded: 20 USD.
 
 - 2026-11-09T02:0xZ · FU-P3-85c merged (#186, squash ebdb3d60). PR #187 (ci: preview.spec.ts in the e2e job) opened; it touches .github/workflows/ and waits for Thomas. Next: FU-P3-85d (explorer card, sort, filter, URL state).
+
+- 2026-11-09T02:4xZ · P3-fu85d (FU-P3-85d) built: review approve 0/0/8, security approve 0/0/2, 2 rounds. PR #188 opened, subscribed. Inbox #131 assumed. FU-P3-96, FU-P3-97 opened. PR #187 CI green (e2e-local runs preview.spec.ts), waits for Thomas. Cost recorded: 12 USD.
