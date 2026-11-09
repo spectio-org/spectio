@@ -774,3 +774,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-09T04:4xZ · Batch P3-B09 built: simplify -61/+54 (re-review approve 0/0/2, security 0/0/1), figure, 4 shots, guide browse-and-preview-files, doc-reviewer approve 13/14 (required change applied). PR #190 opened, subscribed. Seen on the shot app-workdir: the topbar breadcrumb repeats the run name instead of ending with "Work directory"; added to FU-P3-98. Cost recorded: 14 USD.
 
 - 2026-11-09T05:0xZ · Batch P3-B09 merged (#190, squash f0a070cb). Promotion to main opened.
+
+- 2026-11-09T05:1xZ · Promotion to main merged (#191, merge f31a3a6e): batch P3-B09. Next: FU-P3-86 environments, design step running (spec note, inbox item, R1 security and UX review before code).
