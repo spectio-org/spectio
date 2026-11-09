@@ -1,6 +1,6 @@
 import { Button } from "@mantine/core";
 import { Link, Navigate } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { type ApiError, type ResultStat, type RunDetail, type TextRead, getRun, readResultText, resultUrl, statResult } from "../api";
 import { ICONS, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
@@ -76,7 +76,7 @@ function DownloadLink({ href, name, label = "Download" }: { href: string; name: 
 }
 
 /** Text shown whole: at most 20,000 lines, each cut at 10,000 characters, in LogViewer. */
-function Lines({ shown, label, levels, gutter, after }: { shown: ReturnType<typeof capLines>; label: string; levels: boolean; gutter: boolean; after?: ReactNode }) {
+function Lines({ shown, label, levels, gutter, after, cap }: { shown: ReturnType<typeof capLines>; label: string; levels: boolean; gutter: boolean; after?: ReactNode; cap?: ReactNode }) {
   const phone = usePhone();
   const [wrap, setWrap] = useState(phone);
   const { lines, capped } = shown;
@@ -87,12 +87,14 @@ function Lines({ shown, label, levels, gutter, after }: { shown: ReturnType<type
           Wrap lines
         </Button>
       </div>
-      <LogViewer text={lines.map((l) => `${l}\n`).join("")} label={label} start="top" levels={levels} gutterFrom={gutter ? 1 : undefined} wrap={wrap} />
+      <LogViewer text={lines.map((l) => `${l}\n`).join("")} label={label} start="top" levels={levels} gutterFrom={gutter ? 1 : undefined} wrap={wrap} searchButton={phone} />
       {after}
-      {capped && <p className="sp-file-cap">Showing the first 20,000 lines. Download to see the rest.</p>}
+      {cap ?? (capped && <p className="sp-file-cap">{LINES_CAP}</p>)}
     </>
   );
 }
+
+const LINES_CAP = "Showing the first 20,000 lines. Download to see the rest.";
 
 type Read = { text: string; next: number | null };
 
@@ -122,16 +124,17 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
 
   const next = read?.next ?? null;
   const capped = next !== null && next >= SHOWN_MAX && next < total;
+  const shown = useMemo(() => capLines(read?.text ?? ""), [read]);
+  const stopped = capped || shown.capped; // either cap ends Load more: focus moves to the line that says so
   useEffect(() => {
-    if (capped) capLine.current?.focus();
-  }, [capped]);
+    if (stopped) capLine.current?.focus();
+  }, [stopped]);
 
   if (error?.status === 415) return <Binary id={id} file={file} />;
   if (error) return <Problem error={error} onRetry={retry} />;
   if (total === 0 || read?.text === "") return <Note title="This file is empty." />;
   if (!read) return <p className="sp-muted">Loading the file…</p>;
 
-  const shown = capLines(read.text);
   const more = !end && !whole && next !== null && next < total && !capped && !shown.capped;
   const loadMore = () => {
     if (next === null || loading) return;
@@ -185,12 +188,14 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
         after={
           <>
             {more && <span className="sp-muted sp-file-cut">… cut at {kib(next ?? 0)}</span>}
-            {capped && (
-              <p ref={capLine} tabIndex={-1} className="sp-file-cap">
-                Showing the first 1 MiB of {size(total)}. Download to see the rest.
-              </p>
-            )}
           </>
+        }
+        cap={
+          stopped && (
+            <p ref={capLine} tabIndex={-1} className="sp-file-cap">
+              {shown.capped ? LINES_CAP : `Showing the first 1 MiB of ${size(total)}. Download to see the rest.`}
+            </p>
+          )
         }
       />
       <div className="sp-file-pager">

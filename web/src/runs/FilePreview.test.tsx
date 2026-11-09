@@ -144,6 +144,26 @@ test("at 20,000 lines from the start Load more stops, and nothing says the text 
   expect(screen.getByText("Search covers the 20,000 lines shown")).toBeInTheDocument();
 }, 30000);
 
+test("a Load more that crosses 20,000 lines moves focus to the one line that says so (CR-P3FU85C-04)", async () => {
+  const size = 200 * KIB;
+  files("rows.txt", size, {
+    [`${RUN}/results/text/rows.txt`]: (_url: URL, init?: RequestInit) => {
+      const [first, last] = rangeOf(init)!.slice(6).split("-").map(Number);
+      return partial("abc\n".repeat((last - first + 1) / 4), first, last, size);
+    },
+  });
+  open("rows.txt");
+  await heading("rows.txt");
+  const more = await screen.findByRole("button", { name: "Load more" });
+  more.focus();
+  fireEvent.click(more);
+  const cap = await screen.findByText("Showing the first 20,000 lines. Download to see the rest.", {}, { timeout: 10000 });
+  expect(screen.queryByRole("button", { name: "Load more" })).toBeNull();
+  expect(cap).toHaveAttribute("tabindex", "-1");
+  await waitFor(() => expect(cap).toHaveFocus());
+  expect(screen.getAllByText(/^Showing the first/)).toHaveLength(1);
+}, 30000);
+
 test("a Load more still in flight is dropped when End is pressed, and the button stays enabled and focused while it loads", async () => {
   const size = 200 * KIB;
   let land: (r: Response) => void = () => {};
@@ -182,6 +202,25 @@ test("Wrap lines is a pressed button, off on a desktop", async () => {
   fireEvent.click(wrap);
   expect(wrap).toHaveAttribute("aria-pressed", "true");
   expect(screen.getByLabelText(/a.txt, whole file/, { selector: "pre" })).toHaveAttribute("data-wrap");
+});
+
+test("on the phone the search is behind a Search button that opens it and moves focus into it (CR-P3FU85C-05)", async () => {
+  viewport(390);
+  files("a.log", 4, { [`${RUN}/results/text/a.log`]: () => text("abc\n") });
+  open("a.log");
+  const search = await screen.findByRole("button", { name: "Search" });
+  expect(search).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByRole("searchbox")).toBeNull();
+  fireEvent.click(search);
+  expect(search).toHaveAttribute("aria-expanded", "true");
+  await waitFor(() => expect(screen.getByRole("searchbox", { name: /Search the a.log/ })).toHaveFocus());
+});
+
+test("on a desktop the search field is shown, with no Search button", async () => {
+  files("a.log", 4, { [`${RUN}/results/text/a.log`]: () => text("abc\n") });
+  open("a.log");
+  expect(await screen.findByRole("searchbox", { name: /Search the a.log/ })).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Search" })).toBeNull();
 });
 
 test("on the phone Wrap lines starts on", async () => {

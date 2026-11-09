@@ -76,7 +76,7 @@ export function LogLines({ text }: { text: string }) {
 /** The whole viewer: the search and level tools, then the lines. A run log opens at its end with
  * level tints and filter; the file preview (ui-spec §4.4.1) passes `start: "top"`, `levels`
  * only for .log, .out and .err, `gutterFrom` (the first line's number; no gutter for an End
- * read) and `wrap`. */
+ * read), `wrap`, and on the phone `searchButton`: the search behind a Search button. */
 export function LogViewer({
   text,
   label,
@@ -84,6 +84,7 @@ export function LogViewer({
   levels = true,
   gutterFrom,
   wrap = false,
+  searchButton = false,
 }: {
   text: string | null;
   label: string;
@@ -91,12 +92,15 @@ export function LogViewer({
   levels?: boolean;
   gutterFrom?: number;
   wrap?: boolean;
+  searchButton?: boolean;
 }) {
   const [typed, setTyped] = useState("");
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState<Level>("all");
   const [current, setCurrent] = useState(0);
+  const [searching, setSearching] = useState(!searchButton);
   const viewer = useRef<HTMLPreElement>(null);
+  const field = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const timer = setTimeout(() => setQuery(typed), 150);
@@ -139,6 +143,10 @@ export function LogViewer({
     if (start === "end" && text !== null && viewer.current) viewer.current.scrollTop = viewer.current.scrollHeight;
   }, [text, start]);
 
+  useEffect(() => {
+    if (searchButton && searching) field.current?.focus(); // Search opened: focus moves into the field
+  }, [searchButton, searching]);
+
   const step = (by: number) => matches.length && setCurrent((at + by + matches.length) % matches.length);
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Escape") {
@@ -155,30 +163,40 @@ export function LogViewer({
   return (
     <>
       <div className="sp-filters sp-log-search">
-        <label className="sp-search-field">
-          <Icon path={ICONS.search} size={16} />
-          <input
-            type="search"
-            aria-label={`Search the ${name}`}
-            placeholder={`Search the ${name}`}
-            value={typed}
-            onChange={(e) => setTyped(e.currentTarget.value)}
-            onKeyDown={onKey}
-            spellCheck={false}
-            autoComplete="off"
-          />
-        </label>
-        <span className="sp-muted sp-log-count" data-testid="log-search-count" aria-live="polite">
-          {query ? (matches.length ? `${at + 1} / ${matches.length}` : "No match") : ""}
-        </span>
-        <span className="sp-actions">
-          <button type="button" className="sp-key" aria-label="Previous match" disabled={!matches.length} onClick={() => step(-1)}>
-            <Icon path={ICONS.chevronLeft} size={16} />
+        {searchButton && (
+          <button type="button" className="sp-key" aria-expanded={searching} onClick={() => setSearching(!searching)}>
+            Search
           </button>
-          <button type="button" className="sp-key" aria-label="Next match" disabled={!matches.length} onClick={() => step(1)}>
-            <Icon path={ICONS.chevronRight} size={16} />
-          </button>
-        </span>
+        )}
+        {searching && (
+          <>
+            <label className="sp-search-field">
+              <Icon path={ICONS.search} size={16} />
+              <input
+                ref={field}
+                type="search"
+                aria-label={`Search the ${name}`}
+                placeholder={`Search the ${name}`}
+                value={typed}
+                onChange={(e) => setTyped(e.currentTarget.value)}
+                onKeyDown={onKey}
+                spellCheck={false}
+                autoComplete="off"
+              />
+            </label>
+            <span className="sp-muted sp-log-count" data-testid="log-search-count" aria-live="polite">
+              {query ? (matches.length ? `${at + 1} / ${matches.length}` : "No match") : ""}
+            </span>
+            <span className="sp-actions">
+              <button type="button" className="sp-key" aria-label="Previous match" disabled={!matches.length} onClick={() => step(-1)}>
+                <Icon path={ICONS.chevronLeft} size={16} />
+              </button>
+              <button type="button" className="sp-key" aria-label="Next match" disabled={!matches.length} onClick={() => step(1)}>
+                <Icon path={ICONS.chevronRight} size={16} />
+              </button>
+            </span>
+          </>
+        )}
         {levels && (
           <div className="sp-segments" role="group" aria-label="Show lines">
             {LEVELS.map((l) => (
