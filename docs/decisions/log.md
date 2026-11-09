@@ -1279,3 +1279,8 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 
 - **Decided (Thomas):** tables are displayed with AG Grid (FU-P3-101, 0.0.1, with FU-P3-88); TIFF, OME-TIFF and OME-Zarr join the list of viewers (FU-P3-102, assumed after 0.0.1). [Inbox #134](../reviews/inbox.md#134-decided-and-assumed-tables-in-ag-grid-tiff-ome-tiff-and-ome-zarr-viewers-fu-p3-101-fu-p3-102).
 - **Decided (Thomas):** a shorter build cycle: tests by scope, coupled tasks built together, re-review only what was raised, per-task docs without an agent; a CI path filter waits for Thomas as a workflow change. [Autopilot §13](../playbooks/autopilot.md#13-a-shorter-build-cycle-thomas-2026-11-09).
+
+## 2026-11-09 — Imaging viewers now, and a 15-minute task cycle (Thomas)
+
+- **Decided (Thomas):** "Mets les viewer mtn": TIFF, OME-TIFF and OME-Zarr viewers (FU-P3-102) are in 0.0.1 and start now. [Inbox #134](../reviews/inbox.md#134-decided-and-assumed-tables-in-ag-grid-tiff-ome-tiff-and-ome-zarr-viewers-fu-p3-101-fu-p3-102).
+- **Decided (Thomas):** a task takes 10 to 15 minutes from start to merge, 30 at most; tasks are sized and reviewed to fit. [Autopilot §13](../playbooks/autopilot.md#13-a-shorter-build-cycle-thomas-2026-11-09) item 5.
