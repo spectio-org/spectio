@@ -478,7 +478,8 @@ def _meta(run: _Run, names: list[str]) -> dict[str, str]:
 def _snakemake(
     sources: StageSources | None, run_id: str, run: _Run, snakefile_main: str | None
 ) -> tuple[list[str], list[StageDef], list[str]]:
-    """The run's rules (from `rules.txt` when the head wrote it, else from the rule files), the
+    """The run's rules (those of `rules.txt` when the head wrote it, else of the rule files) in the
+    rule files' order (snakemake/workflow.py:734-740, 9.27.1, sorts `--list-rules`), the
     detected stages, and the rules the rule files declare with `checkpoint <name>:`."""
     defined = _rules_txt(sources, run_id)
     main = _main_snakefile(run, snakefile_main)
@@ -490,7 +491,11 @@ def _snakemake(
         files = rule_files(main)
     except Unsafe:
         files = []
-    universe += defined if defined is not None else [r for f in files for r in f.rules]
+    declared = [r for f in files for r in f.rules]
+    if defined is not None:  # `--list-rules` sorts by name: the rule files' order first
+        listed = set(defined)
+        declared = [r for r in declared if r in listed] + defined
+    universe += declared
     checkpoints = [r for f in files for r in f.checkpoints]
     return list(dict.fromkeys(universe)), detected, checkpoints
 
