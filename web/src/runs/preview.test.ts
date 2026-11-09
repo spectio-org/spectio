@@ -1,7 +1,7 @@
 // The pure parts of the file preview (ui-spec §4.4.1, FU-P3-85c): kinds from the name, the DOM
 // and CPU caps of the text, JSON and table viewers, and the End read's first whole line.
 import { expect, test } from "vitest";
-import { capLines, fileKind, jsonView, parseTable, wholeLines } from "./preview";
+import { capLines, fileKind, jsonView, kindWord, parseTable, wholeLines } from "./preview";
 
 test("the kind comes from the name only, without case", () => {
   expect(fileKind("a/S01.LOG")).toBe("text");
@@ -15,6 +15,16 @@ test("the kind comes from the name only, without case", () => {
   expect(fileKind("S01.bam")).toBe("binary");
   expect(fileKind("quant.sf")).toBe("file");
   expect(fileKind("README")).toBe("file");
+});
+
+test("TIFF, OME-TIFF and OME-Zarr are kinds of their own (ui-spec §4.4.1, imaging)", () => {
+  expect(fileKind("gel.TIF")).toBe("tiff");
+  expect(fileKind("plot.tiff")).toBe("tiff");
+  expect(fileKind("a/slide.ome.tif")).toBe("ometiff");
+  expect(fileKind("slide.OME.TIFF")).toBe("ometiff");
+  expect(fileKind("out/cells.ome.zarr")).toBe("omezarr");
+  expect(kindWord("ometiff", false)).toBe("OME-TIFF");
+  expect(kindWord("omezarr", true)).toBe("OME-Zarr");
 });
 
 test("1 MiB of newlines renders at most 20,000 lines", () => {
