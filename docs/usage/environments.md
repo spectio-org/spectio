@@ -44,7 +44,7 @@ In every state but `ok`, only the built-ins are listed. A file that is `refused`
 
 ## On screen
 
-The pages are in the sidebar under **Environments**, and the form of a new one opens from **Launch**. The screens below are the real app, from a local server run as `alice` on `demo-hpc-login1` with two environments in the file.
+The pages are in the sidebar under **Environments**, and the form of a new one opens from **Launch**. The screens below are the real app, from a local server run as `alice` on `login1` with two environments in the file.
 
 ### The Environments page
 
@@ -91,7 +91,7 @@ A run launched from the screen with `one-core` chosen was `succeeded`, its `GET 
 
 ## Using them (the API)
 
-The screens call these routes. All of them are under `/api/v1`, need a signed-in session, and write only with a same-origin request. These calls ran against a real `spectio serve` (local mode, Nextflow 26.10.4), signed in as `alice` on `demo-hpc-login1`. Long answers are shortened here to the fields that matter.
+The screens call these routes. All of them are under `/api/v1`, need a signed-in session, and write only with a same-origin request. These calls ran against a real `spectio serve` (local mode, Nextflow 26.10.4), signed in as `alice` on `login1`. Long answers are shortened here to the fields that matter.
 
 **List.** With no file, the built-in only:
 

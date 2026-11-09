@@ -42,8 +42,9 @@ boards (LiteEnvironments, LiteRunDetail) and of the demo host; the code does not
 - lines per step: `git show --shortstat <merge> -- . ':!docs' ':!.autopilot'` for a4f22ad6,
   be551cfc, f5d132a9 and b35198e2; the simplifier: `git show --shortstat 45cc279c` (+2 -2);
 - tests: before the batch, the P3-B10 record (pytest 1424 passed, the simplifier's run; vitest
-  465 passed, doc-writer's run); after, the P3-B11 simplifier's report (pytest 1429 passed, on
-  the baseline only; vitest 519 passed and tsc clean, after `npm ci`, on the edited tree only).
+  465 passed, doc-writer's run); after, the P3-B11 gate re-run by doc-writer on the final tree
+  6a829ea2 (pytest 1429 passed, vitest 519 passed, ruff, mypy, lint-imports, tsc clean; docs/
+  reviews/code/P3-B11.md "Gate"). The Playwright specs were not run there.
 """
 
 from __future__ import annotations
@@ -423,9 +424,13 @@ def build(theme: Theme) -> Sketch:
              "fixed in `a01fdc2f`: `EngineVersions`, verified r2")
     note(s, x, yy + 10, ("first-click time on login1 not measured,",
                          "to be validated"), warn=True)
-    note(s, x, yy + 74, ("open, minor: CR-P3FU109-02 the ui-spec line on",
-                         "tab history; SEC-P3FU109-01 the shipped-with",
+    note(s, x, yy + 74, ("open, minor: SEC-P3FU109-01, the shipped-with",
                          "label comes from a name anyone can set"))
+    s.tick(x + 6, yy + 142, size=6)
+    s.text(x + 20, yy + 147, "closed by the docs PR: CR-P3FU109-02,", size=12, anchor="start")
+    s.text(x + 20, yy + 165, "ui-spec 4.4 now says a tab change adds", size=12, anchor="start",
+           colour=t.dim)
+    s.text(x + 20, yy + 183, "a history entry", size=12, anchor="start", colour=t.dim)
 
     for a, b in zip(COLS[:3], COLS[1:]):
         s.arrow(a + CW + 6, CAP - 6, b - 8, CAP - 6, colour=t.muted)
@@ -496,14 +501,13 @@ def build(theme: Theme) -> Sketch:
         bar(s, x + 158, ty, n * k, 19, fill)
         s.text(x + 164 + n * k, ty + 14, f"{n}", size=12, anchor="start")
     s.tick(x + 6, y0 + 186, size=6)
-    s.text(x + 20, y0 + 191, "ruff, format, mypy, lint-imports, `uv lock --check`,", size=12,
+    s.text(x + 20, y0 + 191, "full gate re-run on the final tree (`6a829ea2`):", size=12,
            anchor="start")
-    s.text(x + 20, y0 + 209, "pytest: run once, on the baseline only", size=12, anchor="start",
-           colour=t.dim)
-    s.tick(x + 6, y0 + 232, size=6)
-    s.text(x + 20, y0 + 237, "vitest and `tsc --noEmit`: after `npm ci`, on the", size=12,
-           anchor="start")
-    s.text(x + 20, y0 + 255, "edited tree only; no unedited web baseline", size=12,
+    s.text(x + 20, y0 + 209, "pytest 1429, ruff, format, mypy, lint-imports,", size=12,
+           anchor="start", colour=t.dim)
+    s.text(x + 20, y0 + 227, "`uv lock --check`, vitest 519, `tsc --noEmit`", size=12,
+           anchor="start", colour=t.dim)
+    s.text(x + 20, y0 + 255, "Playwright specs: not run here, ran in each PR's CI", size=12,
            anchor="start", colour=t.dim)
 
     s.text(50, H - 50, "pins: every blocker and major of the batch, all fixed or split out · r1, r2: "
