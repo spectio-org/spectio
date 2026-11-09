@@ -22,7 +22,7 @@ import pytest
 from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
-from sqlalchemy import inspect, select, update
+from sqlalchemy import inspect, select
 
 from spectio.config import Settings
 from spectio.runner.rundir import RunPaths, make_run_dirs
@@ -34,7 +34,7 @@ from spectio_server.projector.ingest import ingest
 from spectio_server.serve import boot
 from spectio_server.stages.freeze import StageSources
 from spectio_server.store.db import open_db
-from spectio_server.store.schema import attempts, environments, events, tasks
+from spectio_server.store.schema import attempts, events, tasks
 from spectio_server.store.writer import Writer
 
 from ..test_serve import FIXTURE_RUN, FIXTURES, head_files, make_run, run_id, settle
@@ -43,6 +43,14 @@ from .conftest import add_run, client_for
 API = "/api/v1"
 RUN = "run_01K8T2F1XTVRES0000000000F9"
 HASHES = [(f"{n:02x}", f"{n:030x}") for n in range(40)]
+SLURM_RUN = {  # `runs.environment` of a run launched on the built-in `slurm`
+    "name": "slurm",
+    "label": "SLURM (from spectio init)",
+    "executor": "slurm",
+    "slurm": {"partition": None, "account": None, "time_min": None, "mem_mib": None},
+    "local": None,
+    "state": "recorded",
+}
 
 FAKE = """#!{python}
 import json, os, sys, time
@@ -143,9 +151,14 @@ def push(writer: Writer, settings: Settings, launch_id: str, *found: SpoolEvent)
 class Run:
     """A run of `engine`, its directories made, fed with synthetic events."""
 
-    def __init__(self, settings: Settings, writer: Writer, engine: str = "nextflow") -> None:
+    def __init__(
+        self, settings: Settings, writer: Writer, engine: str = "nextflow", *, slurm: bool = False
+    ) -> None:
+        """`slurm`: the run's own environment is SLURM (FU-P3-86a); otherwise it is
+        `not_recorded`, read as the server's built-in: `local` in the test settings."""
         self.settings, self.writer = settings, writer
-        self.launch_id = add_run(writer, settings, RUN, "r", "running", engine=engine)
+        own: dict[str, Any] = {"environment": SLURM_RUN} if slurm else {}
+        self.launch_id = add_run(writer, settings, RUN, "r", "running", engine=engine, **own)
         self.paths: RunPaths = make_run_dirs(settings.runs_root, RUN)
         (self.paths.run_dir / ".spectio").mkdir(mode=0o700, exist_ok=True)
         self.seq = 0
@@ -247,7 +260,7 @@ def test_nf_failure_summary(settings: Settings, writer: Writer, fakebin: Fake) -
     from sacct on the first view; the last 20 lines of `.command.log`."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     run.nf_task(0, 1, "FAILED", "RETRY")
     workdir = run.nf_task(0, 2, "FAILED", "TERMINATE", exit="137", memory="2147483648")
     fakebin.at("8812402", workdir)
@@ -292,7 +305,7 @@ def test_sacct_other_workdir_not_kept(settings: Settings, writer: Writer, fakebi
     with the same number (a local PID, another user's job): counted as no row, never cached."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     run.nf_task(0, 1, "FAILED", "TERMINATE")  # the fake answers WorkDir /elsewhere
     detail(client)
     assert acct.step() and fakebin.ids() == ["8812401"]
@@ -315,9 +328,8 @@ def test_sacct_resized_job_available(settings: Settings, writer: Writer, fakebin
     `not_found` (SEC-P3T34-06); its CPU and memory efficiency are None."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    writer.submit(lambda c: c.execute(update(environments).values(kind="slurm"))).result()
     (fakebin.dir / "resized").write_text("")
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
     detail(client)
     assert acct.step()
@@ -338,7 +350,7 @@ def test_sacct_symlinked_workdir(
     asked; the WorkDir sacct gives is never resolved."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     workdir = run.nf_task(0, 1, "FAILED", "TERMINATE")
     real = tmp_path / "real-work"
     workdir.rename(real)
@@ -357,7 +369,7 @@ def test_sacct_submit_before_launch_not_kept(
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
     (fakebin.dir / "submit").write_text("2020-01-01T00:00:00")
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
     detail(client)
     assert acct.step()
@@ -613,8 +625,7 @@ def test_resources_smk(settings: Settings, writer: Writer, fakebin: Fake) -> Non
     local one never asks sacct (P1 Task 34, schedulers §3.6)."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    writer.submit(lambda c: c.execute(update(environments).values(kind="slurm"))).result()
-    run = Run(settings, writer, "snakemake")
+    run = Run(settings, writer, "snakemake", slurm=True)
     smk_job(run, 1, "align", "S1", benchmark="benchmarks/align_S1.tsv")
     write_private(
         run.paths.launch_dir / "benchmarks" / "align_S1.tsv",
@@ -780,7 +791,7 @@ def test_sacct_lag_asked_again(settings: Settings, writer: Writer, fakebin: Fake
     (fakebin.dir / "lag").write_text(lag)
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
     detail(client)
     assert acct.step()
@@ -798,7 +809,7 @@ def test_sacct_lag_capped(settings: Settings, writer: Writer, fakebin: Fake) -> 
     (fakebin.dir / "lag").write_text("-,-,-,-")
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     run.nf_task(0, 1, "FAILED", "TERMINATE")
     for _ in range(3):
         detail(client)
@@ -816,7 +827,7 @@ def test_req15_cache_file(
     symlink planted there is replaced, never followed."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     fakebin.at("8812401", run.nf_task(0, 1, "FAILED", "TERMINATE"))
     elsewhere = tmp_path / "elsewhere.json"
     elsewhere.write_text("{}")
@@ -834,7 +845,7 @@ def test_req15_cache_file_refused(settings: Settings, writer: Writer, fakebin: F
     """A cache file others can write is not read: the job is asked again."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     run.nf_task(0, 1, "FAILED", "TERMINATE")
     cache = run.paths.run_dir / ".spectio" / "sacct.json"
     write_private(cache, json.dumps({"v": 1, "jobs": {"8812401": {"state": "COMPLETED"}}}))
@@ -848,7 +859,7 @@ def test_cache_file_too_deep(settings: Settings, writer: Writer, fakebin: Fake) 
     file does; the view answers and the job is asked."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     run.nf_task(0, 1, "FAILED", "TERMINATE")
     write_private(run.paths.run_dir / ".spectio" / "sacct.json", '{"v":1,"jobs":' + "[" * 100000)
     assert detail(client)["failures"][0]["scheduler"]["accounting"] == "pending"
@@ -904,7 +915,7 @@ def test_req15_hung_sacct_never_blocks(settings: Settings, writer: Writer, fakeb
     acct = client.app.state.accounting = Accounting(  # type: ignore[attr-defined]
         settings.runs_root, fakebin.path, interval_s=0, timeout_s=1.0
     )
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     run.nf_task(0, 1, "FAILED", "TERMINATE")
     detail(client)  # asks; the thread calls the fake, which sleeps
     deadline = time.monotonic() + 5

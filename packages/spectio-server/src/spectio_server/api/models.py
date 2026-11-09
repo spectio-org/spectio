@@ -70,6 +70,30 @@ class RunSummary(BaseModel):
     dag_updates: int  # the count of `snakemake.dag_updated`
 
 
+class EnvironmentSlurm(BaseModel):
+    partition: str | None
+    account: str | None
+    time_min: int | None
+    mem_mib: int | None
+
+
+class EnvironmentLocal(BaseModel):
+    cpus: int | None
+    mem_mib: int | None
+
+
+class RunEnvironment(BaseModel):
+    """The run's own environment, as resolved at launch (FU-P3-86a, api §5.4); its fields are
+    null unless `state` is `recorded`."""
+
+    name: str | None
+    label: str | None
+    executor: Literal["local", "slurm"] | None
+    slurm: EnvironmentSlurm | None
+    local: EnvironmentLocal | None
+    state: Literal["recorded", "not_recorded", "not_readable"]
+
+
 class Run(BaseModel):
     id: str
     name: str | None
@@ -80,6 +104,7 @@ class Run(BaseModel):
     ended_at: str | None
     workflow: WorkflowRef
     profiles: list[str]
+    environment: RunEnvironment | None  # null for a run started from a terminal
     failure: dict[str, JsonValue] | None
     head: Head | None
     task_counts: dict[str, int]

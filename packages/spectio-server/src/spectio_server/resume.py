@@ -14,7 +14,8 @@ from typing import Any
 
 from sqlalchemy import Connection, Row, select
 
-from spectio.config import Settings
+from spectio.config import Settings, SlurmOpts
+from spectio.environments import executor_of, read_as
 from spectio.runner.headscript import SESSION_ID, engine_args
 from spectio.runner.loop import LaunchPayload
 from spectio.runner.resume import NotResumable, prove
@@ -95,12 +96,26 @@ def _words(cmd: str) -> list[str]:
         return [cmd]
 
 
+def _slurm(environment: dict[str, Any] | None, settings: Settings) -> SlurmOpts | None:
+    """The run's SLURM partition and account, from its `runs.environment` (FU-P3-86a), or the
+    server's built-in for a `not_recorded` run (`read_as`, api §5.4)."""
+    own = read_as(environment, settings)
+    if executor_of(own) != "slurm":
+        return None
+    values = (own or {}).get("slurm") or {}
+    return SlurmOpts(partition=values.get("partition"), account=values.get("account"))
+
+
 def command(conn: Connection, row: Row[Any], settings: Settings) -> dict[str, Any] | None:
     """`{argv, text}`: the engine command as the head script runs it (dev-env §15.3 req. 16),
     the parameters as their file; `text` quotes every word for a POSIX shell. None for a run
-    started from a terminal, or one with no launch command. Today's settings: an `engine_cmd`
-    or `extra_args` changed since the launch shows the new ones."""
+    started from a terminal, one with no launch command, or one whose snapshot is `not_readable`.
+    Today's settings: an `engine_cmd` or `extra_args` changed since the launch shows the new
+    ones; the executor and its SLURM values are the run's own, the server's built-in for a
+    `not_recorded` run (FU-P3-86a, api §5.4)."""
     if row.origin == "cli-observed" or row.engine not in ("nextflow", "snakemake"):
+        return None
+    if (row.environment or {}).get("state") == "not_readable":  # its executor is unknown
         return None
     payload = launch_payload(conn, row.id)
     if payload is None:
@@ -123,7 +138,7 @@ def command(conn: Connection, row: Row[Any], settings: Settings) -> dict[str, An
         work_dir=paths.work_dir,
         profiles=payload.profiles,
         params=payload.params,
-        slurm=settings.slurm if settings.executor == "slurm" else None,
+        slurm=_slurm(row.environment, settings),
         extra_args=engines.extra_args.get(row.engine, []),
         resume_of=resume,
     )

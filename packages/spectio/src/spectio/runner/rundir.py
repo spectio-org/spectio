@@ -69,6 +69,10 @@ class RunManifest(BaseModel):
     created_at: AwareDatetime
     # A Resume's parent (P1 Task 30): the child runs in its lineage's directories
     parent_run_id: str | None = Field(None, pattern=rf"^{RUN_ID.pattern}$")
+    # The run's environment as resolved at launch (FU-P3-86a, api §5.4): read at rebuild with
+    # the validators of `spectio.environments`, so a bad one makes it `not_readable`, not the
+    # run unreadable; none before FU-P3-86 (`not_recorded`).
+    environment: dict[str, JsonValue] | None = None
 
 
 def run_paths(runs_root: Path, run_id: str) -> RunPaths:
