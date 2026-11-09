@@ -433,6 +433,18 @@ class ResultEntry(BaseModel):
     mtime: str | None
 
 
+class ResultStat(BaseModel):
+    """The listing's entry for one results path (api §5.3), with the root and the path the
+    server answered for."""
+
+    root: str
+    path: str
+    name: str
+    type: Literal["dir", "file", "link_outside"]
+    size: int | None
+    mtime: str | None
+
+
 class ResultReport(BaseModel):
     path: str  # relative to the results root
     title: str

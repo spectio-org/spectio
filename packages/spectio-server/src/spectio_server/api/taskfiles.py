@@ -13,7 +13,9 @@ and `503 runner-offline` when the file system did not answer in time.
 `n` is the attempt number the task's attempts show; when a resumed run has an attempt `n` in
 more than one launch, the latest launch's is served (assumed, inbox #94). A `Content-Range`
 counts the file's bytes, while the body has its escape sequences removed (and, for
-`.command.run`, counts the bytes of the hidden text): assumed, inbox #94.
+`.command.run`, counts the bytes of the hidden text): assumed, inbox #94. The read is the one
+reader of every text route (`files.taskfiles.read_text`, api §5.3): a range ends on a whole
+UTF-8 sequence, an empty file is `200`, and the answer carries the text CSP.
 """
 
 import errno
@@ -37,6 +39,7 @@ from spectio_server.files.taskfiles import (
     AttemptFiles,
     Binary,
     Cleaned,
+    Served,
     Unreachable,
     attempt_dir,
     list_task_files,
@@ -56,11 +59,13 @@ from spectio_server.store.schema import (
 log = logging.getLogger(__name__)
 router = APIRouter()
 
-HEADERS = {
+HEADERS = {  # of every file and listing route
     "X-Content-Type-Options": "nosniff",
     "Cache-Control": "no-store",
     "Referrer-Policy": "no-referrer",
+    "Cross-Origin-Resource-Policy": "same-origin",  # api §5.3 Shared changes
 }
+TEXT_CSP = "sandbox; default-src 'none'"  # every text read (dev-env §15.3 req. 14, 2026-11-08)
 _RANGE = re.compile(r"bytes=([0-9]{1,15})-([0-9]{0,15})")
 
 
@@ -263,11 +268,17 @@ def task_file(
     if download:
         base = name.rsplit("/", 1)[-1]
         headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(base, safe='')}"
-    status = 200
-    if served.partial and served.start >= served.size:
+    return text_response(served, headers)
+
+
+def text_response(served: Served, headers: dict[str, str]) -> Response:
+    """A text read as `text/plain` with the text CSP: `206` with its `Content-Range` (the bytes
+    actually read, and the total) for a range, `422` on `Range` for one past the end."""
+    headers = {**headers, "Content-Security-Policy": TEXT_CSP}
+    if not served.partial:
+        return Response(served.text, 200, headers=headers, media_type="text/plain; charset=utf-8")
+    if served.start >= served.size:
         raise Invalid("Range", f"the file has {served.size} bytes")
-    if served.partial:
-        status = 206
-        last = max(served.start, served.end - 1)
-        headers["Content-Range"] = f"bytes {served.start}-{last}/{served.size}"
-    return Response(served.text, status, headers=headers, media_type="text/plain; charset=utf-8")
+    last = max(served.start, served.end - 1)
+    headers["Content-Range"] = f"bytes {served.start}-{last}/{served.size}"
+    return Response(served.text, 206, headers=headers, media_type="text/plain; charset=utf-8")

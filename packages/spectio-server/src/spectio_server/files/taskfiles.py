@@ -15,11 +15,11 @@ the file system is meant to run in the file pool (`files.pool`).
 import os
 import re
 import stat
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import AbstractContextManager, ExitStack, contextmanager
 from dataclasses import dataclass
 from pathlib import Path, PurePosixPath
-from typing import Literal
+from typing import BinaryIO, Literal
 
 from spectio.runner.rundir import open_private, run_paths
 from spectio_server.files.confine import (
@@ -33,7 +33,6 @@ from spectio_server.files.confine import (
     safe_rel,
     size_of,
     stat_confined,
-    tail,
 )
 from spectio_server.files.redact import redact_command_run, strip_escapes
 
@@ -413,33 +412,66 @@ def read_task_file(
                 "deleted_after_success": "deleted by the SLURM executor plugin after success",
             }.get(missing.state, "not there")
             raise NotFound(f"{name}: {reason}") from None
-        if b"\x00" in read_at(f, 0, SNIFF):
-            raise Binary(name)
-        if kind == "wrapper":  # hidden from its start, so the lexer sees the whole file
-            hidden = redact_command_run(read_at(f, 0, MAX_READ).decode("utf-8", "replace"))
-            return _cut(hidden.encode(), max_bytes, byte_range)
-        size = size_of(f)
-        if byte_range is not None:
-            start, last = byte_range
-            if start >= size:
-                return Served("", size, size, size, True)
-            end = min(size, start + MAX_READ, size if last is None else last + 1)
-            data = read_at(f, start, end - start)
-            return Served(_text(data), start, start + len(data), size, True)
-        data = tail(f, max_bytes)
-        return Served(_text(data), size - len(data), size, size, False)
+        hide = redact_command_run if kind == "wrapper" else None
+        return read_text(f, name, max_bytes=max_bytes, byte_range=byte_range, hide=hide)
 
 
-def _cut(data: bytes, max_bytes: int, byte_range: tuple[int, int | None] | None) -> Served:
-    """The tail or the range of text already read whole (the hidden `.command.run`)."""
-    size = len(data)
-    if byte_range is not None:
-        start, last = byte_range
-        start = min(start, size)
-        end = min(size, start + MAX_READ, size if last is None else last + 1)
-        return Served(_text(data[start:end]), start, end, size, True)
-    start = max(0, size - min(max_bytes, MAX_READ))
-    return Served(_text(data[start:]), start, size, size, False)
+def read_text(
+    f: BinaryIO,
+    name: str,
+    *,
+    max_bytes: int = TAIL,
+    byte_range: tuple[int, int | None] | None = None,
+    hide: Callable[[str], str] | None = None,
+) -> Served:
+    """The one reader of the text routes, Job files and results (api §5.3): the last
+    `max_bytes` of an open file, or `byte_range` (start, last or None), at most MAX_READ bytes,
+    with escape sequences removed. A range read inside the file ends at its last whole UTF-8
+    sequence; an empty file is an empty read, never a range. `hide` is applied to the file's
+    first MAX_READ bytes before any cut (`.command.run`, whose offsets are then those of the
+    hidden text). Raises Binary for a NUL in the first SNIFF bytes."""
+    if b"\x00" in read_at(f, 0, SNIFF):
+        raise Binary(name)
+    if hide is None:
+        return _served(lambda at, n: read_at(f, at, n), size_of(f), max_bytes, byte_range)
+    hidden = hide(read_at(f, 0, MAX_READ).decode("utf-8", "replace")).encode()
+    return _served(lambda at, n: hidden[at : at + n], len(hidden), max_bytes, byte_range)
+
+
+def _served(
+    read: Callable[[int, int], bytes],
+    size: int,
+    max_bytes: int,
+    byte_range: tuple[int, int | None] | None,
+) -> Served:
+    if size == 0:
+        return Served("", 0, 0, 0, False)  # 200 with an empty body, a Range too
+    if byte_range is None:
+        start = max(0, size - min(max_bytes, MAX_READ))
+        data = read(start, size - start)
+        return Served(_text(data), start, start + len(data), size, False)
+    start, last = byte_range
+    if start >= size:
+        return Served("", start, start, size, True)  # refused by the route (422)
+    end = min(size, start + MAX_READ, size if last is None else last + 1)
+    data = read(start, end - start)
+    if start + len(data) < size:
+        data = data[: _whole_utf8(data)]
+    return Served(_text(data), start, start + len(data), size, True)
+
+
+def _whole_utf8(data: bytes) -> int:
+    """The length of `data` without a UTF-8 sequence cut at its end, so the next read starts on
+    a whole character; all of it when that would leave nothing, or the bytes are not UTF-8."""
+    for back in range(1, min(4, len(data)) + 1):
+        byte = data[-back]
+        if byte < 0x80:
+            return len(data)
+        if byte >= 0xC0:  # the lead byte of the last sequence
+            need = 2 if byte < 0xE0 else 3 if byte < 0xF0 else 4
+            cut = len(data) - back
+            return cut if need > back and cut > 0 else len(data)
+    return len(data)
 
 
 def _text(data: bytes) -> str:

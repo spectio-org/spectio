@@ -1952,3 +1952,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - **FU-P3-85e · server then UI, work directory.** The four `workdir` routes (listing, `stat`, `text`, `raw`; dot parts refused, staged inputs as the req. 13 note says, `410` and `409` as the Job files routes) with `test_req13_workdir_*`; then Browse work directory or "The work directory was removed" in the task sheet, the two `workdir` pages (in `static.ROUTES`) on the components of -85c and -85d, back to the sheet; boards LiteWorkdir, LiteTaskFiles and MLiteTaskFilesSheet. Security review: yes.
   - After the batch: `p3-batch` (simplify, Progress page, one figure, doc review); the guide [States, outputs and efficiency](../usage/states-outputs-efficiency.md) gains a "Files and previews" section.
 - **Assumed (2026-11-08, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** every recommendation above.
+
+### #128 · Assumed: how much an escape sequence in a previewed file may hide (FU-P3-85a)
+
+- **Covers:** step P3-fu85a (`autopilot/P3-fu85a`); finding [SEC-P3FU85A-02](code/P3-fu85a.md#findings); [api §5.3](../specs/api-and-data-model.md#53-run-files-explorer-and-preview), Shared changes (`strip_escapes`); the [review record](code/P3-fu85a.md).
+- **Context:** `strip_escapes` removes an OSC (`ESC ]` or `0x9d`, up to a BEL, ST or `ESC \`) whole when its terminator comes within 4096 characters; otherwise only its introducer goes. The body may hold newlines, so a file can hide up to 4 KiB of whole lines from the preview (`strip_escapes('a\x1b]0;t\nsecret\nmore\x07b') == 'ab'`). The raw route and Download still give the file as it is. Before this step an OSC with no terminator hid the rest of the text, so the hidden span is smaller than it was.
+- **Options:**
+  - (a) keep 4096 characters, newlines included (built, as api §5.3 says);
+  - (b) the OSC body stops at a newline, so a line is never hidden whole; a real OSC (a title, a hyperlink) has none **[to be validated]**;
+  - (c) show a visible mark where a sequence was removed.
+- **Recommendation:** (a) for 0.0.1, because the spec is built and tested; (b) in FU-P3-93 if Thomas wants the preview to be a faithful view of lines. **Assumed:** (a).
+- **Why a question:** the choice is between hiding nothing a reader can see in the file's lines and keeping the one rule that also serves run logs and Job files, where a terminal program may print a long title.
