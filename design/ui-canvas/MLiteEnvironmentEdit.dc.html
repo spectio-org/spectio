@@ -1,0 +1,98 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Spectio 0.0.1 — edit an environment (phone)</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@600&amp;family=Inter:wght@400;500;600&amp;family=JetBrains+Mono:wght@400&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+main > *{flex-shrink:0}
+a{color:#6344B2}
+a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+input[type="text"],input[type="number"],select{font:16px 'Inter',sans-serif;border-radius:12px;border:1px solid #C4C7D4;padding:10px 12px;background:#FFFFFF;color:#0F1020;box-sizing:border-box;width:100%;min-height:48px}
+input[readonly]{background:#F7F7FB;color:#33364A}
+.ef{display:flex;flex-direction:column;gap:6px;min-width:0}
+.ef > label,.ef > .lbl{font-size:14px;font-weight:600}
+.hint{font-size:13px;color:#4D5065;line-height:1.45}
+fieldset{margin:0;padding:0;border:0;min-width:0}
+legend{padding:0;font-size:14px;font-weight:600;margin-bottom:8px}
+.radio{display:flex;gap:12px;align-items:flex-start;padding:12px;min-height:44px;box-sizing:border-box;border-radius:14px;box-shadow:inset 0 0 0 1px #DFE1EA;background:#FFFFFF}
+.radio:has(input:checked){box-shadow:inset 0 0 0 2px #0284C7;background:#F0F9FF}
+.radio input{margin:2px 0 0;width:20px;height:20px;flex-shrink:0;accent-color:#0369A1}
+.box{border-radius:16px;background:#FFFFFF;box-shadow:0 0 0 1px rgba(15,16,32,0.07);padding:14px;display:flex;flex-direction:column;gap:14px}
+.act{min-height:48px;width:100%;border-radius:14px;border:none;background:#FFFFFF;box-shadow:inset 0 0 0 1px #DFE1EA;color:#22253A;font:600 15px 'Inter',sans-serif;cursor:pointer}
+.act.danger{color:#B02A2A;box-shadow:inset 0 0 0 1px #F2B8B8}
+</style>
+</helmet>
+<!-- Width follows the viewport: drawn at 360 px. /environments/mylab-long on the phone (ui-spec §4.8.1, UX-PRE-FU86-R1-22). -->
+<div style="width: 100%; height: 100vh; min-height: 640px; position: relative; overflow: hidden; background: #F7F7FB; color: #0F1020; font-family: 'Inter', system-ui, sans-serif;">
+  <div style="position: absolute; inset: 0 0 auto 0; z-index: 2;"><dc-import name="MLiteTopbar" title="Long jobs, mylab" sub="mylab-long · SLURM · Default" back="MLiteEnvironments.dc.html" backLabel="Back to environments" hint-size="100%,104px"></dc-import></div>
+  <main style="position: absolute; top: 104px; left: 0; right: 0; bottom: 0; overflow-y: auto; padding: 12px 12px calc(200px + env(safe-area-inset-bottom)); scroll-padding-bottom: 200px; box-sizing: border-box; display: flex; flex-direction: column; gap: 12px;">
+    <form id="menv-form" aria-label="Edit mylab-long" novalidate style="display: flex; flex-direction: column; gap: 12px;">
+      <div class="box">
+        <div class="ef"><label for="m-name">Name</label><input type="text" id="m-name" value="mylab-long" readonly aria-describedby="m-name-hint" style="font-family: 'JetBrains Mono', monospace; font-size: 15px;"><span id="m-name-hint" class="hint">Cannot change: Duplicate, then Delete.</span></div>
+        <div class="ef"><label for="m-label">Label <span style="font-weight: 400; color: #4D5065;">(optional)</span></label><input type="text" id="m-label" value="Long jobs, mylab"></div>
+      </div>
+      <fieldset class="box">
+        <legend style="float: left; width: 100%; margin: 0;">Executor</legend>
+        <label class="radio"><input type="radio" name="m-exec" value="slurm" checked aria-labelledby="m-x-slurm-n" aria-describedby="m-x-slurm"><span style="display: flex; flex-direction: column; gap: 2px;"><span id="m-x-slurm-n" style="font-size: 15px; font-weight: 600;">SLURM</span><span id="m-x-slurm" class="hint">The engine sends each task to SLURM with sbatch</span></span></label>
+        <label class="radio"><input type="radio" name="m-exec" value="local" aria-labelledby="m-x-local-n" aria-describedby="m-x-local"><span style="display: flex; flex-direction: column; gap: 2px;"><span id="m-x-local-n" style="font-size: 15px; font-weight: 600;">Local</span><span id="m-x-local" class="hint">Tasks run on login1, the login node: keep them small</span></span></label>
+      </fieldset>
+      <fieldset class="box">
+        <legend style="float: left; width: 100%; margin: 0;">SLURM <span style="font-weight: 400; color: #4D5065;">· each field is optional</span></legend>
+        <div class="ef"><label for="m-part">Partition</label><input type="text" id="m-part" value="long" spellcheck="false" autocapitalize="none" aria-describedby="m-def"></div>
+        <div class="ef"><label for="m-acct">SLURM account</label><input type="text" id="m-acct" value="mylab" spellcheck="false" autocapitalize="none" aria-describedby="m-acct-hint m-def"><span id="m-acct-hint" class="hint">As in sbatch --account</span></div>
+        <fieldset aria-describedby="m-time-hint">
+          <legend>Time per job</legend>
+          <div style="display: flex; gap: 10px;">
+            <span class="ef" style="flex: 1 1 0;"><input type="number" inputmode="numeric" id="m-time-h" value="48" min="0" max="720"><label for="m-time-h" style="font-size: 13px; font-weight: 400;">hours</label></span>
+            <span class="ef" style="flex: 1 1 0;"><input type="number" inputmode="numeric" id="m-time-m" value="0" min="0" max="59"><label for="m-time-m" style="font-size: 13px; font-weight: 400;">minutes</label></span>
+          </div>
+          <span id="m-time-hint" class="hint" style="display: block; margin-top: 4px;">Read back as 48 h. Hours 0 to 720, minutes 0 to 59.</span>
+        </fieldset>
+        <div class="ef"><label for="m-mem">Memory per job</label>
+          <span style="display: flex; gap: 8px;"><input type="number" inputmode="decimal" id="m-mem" value="32" min="0.1" max="4096" step="0.1" aria-describedby="m-mem-hint m-def" style="flex: 1 1 auto;"><select aria-label="Memory per job, unit" style="width: 96px; flex-shrink: 0;"><option>MiB</option><option selected>GiB</option></select></span>
+          <span id="m-mem-hint" class="hint">Whole MiB, or GiB with one decimal; 1 MiB to 4,096 GiB.</span></div>
+        <span id="m-def" class="hint">Leave a field empty to use SLURM's default.</span>
+        <p class="hint" style="margin: 0; padding-top: 10px; border-top: 1px solid #EEEFF5;">When you choose a Snakemake profile at Launch, the profile's resources and partition are used, not these.</p>
+      </fieldset>
+      <fieldset class="box">
+        <legend style="float: left; width: 100%; margin: 0;">Default profiles <span style="font-weight: 400; color: #4D5065;">(optional)</span></legend>
+        <div class="ef"><label for="m-pnf">Default Nextflow profile</label><input type="text" id="m-pnf" value="singularity" spellcheck="false" autocapitalize="none" aria-describedby="m-prof-hint"></div>
+        <div class="ef"><label for="m-psm">Default Snakemake profile</label><input type="text" id="m-psm" value="slurm" spellcheck="false" autocapitalize="none" aria-describedby="m-prof-hint"></div>
+        <span id="m-prof-hint" class="hint">They preselect the profile at Launch when the pipeline has it; you can change it there.</span>
+      </fieldset>
+    </form>
+    <section aria-labelledby="m-more-h" style="display: flex; flex-direction: column; gap: 8px;">
+      <h2 id="m-more-h" style="margin: 4px 0 0; font-size: 14px; font-weight: 600;">More for this environment</h2>
+      <a href="MLiteEnvironmentEdit.dc.html" class="act" style="display: flex; align-items: center; justify-content: center; text-decoration: none; box-sizing: border-box;">Duplicate mylab-long</a>
+      <button type="button" class="act danger" aria-haspopup="dialog">Delete mylab-long</button>
+      <span class="hint">Make default is not offered: it is the default. Delete opens a bottom sheet with the dialog's words (LiteEnvironmentsStates H); focus returns here.</span>
+    </section>
+    <span style="font-size: 11.5px; color: #6E7287; overflow-wrap: anywhere;">/environments/new is the same form with Name editable, empty fields and no "More" section; a built-in shows its values read only, with Duplicate. Data: fixture values on a SLURM server (login1).</span>
+  </main>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; background: #FFFFFF; box-shadow: 0 -1px 0 rgba(15,16,32,0.08); padding: 10px 12px 82px; display: flex; flex-direction: column; gap: 4px;">
+    <div style="display: flex; gap: 8px;">
+      <a href="MLiteEnvironments.dc.html" style="flex: 0 0 auto; min-height: 48px; padding: 0 18px; border-radius: 14px; background: #F1F2F6; color: #22253A; font-weight: 600; font-size: 15px; text-decoration: none; display: flex; align-items: center;">Cancel</a>
+      <button type="submit" form="menv-form" aria-describedby="m-save-note" style="flex: 1 1 auto; min-height: 48px; border-radius: 14px; border: none; background: #0369A1; color: #FFFFFF; font: 600 15px 'Inter', sans-serif; cursor: pointer;">Save</button>
+    </div>
+    <span id="m-save-note" style="font-size: 12px; color: #4D5065; line-height: 1.4;">Saving rewrites ~/.spectio/environments.toml; comments in it are not kept.</span>
+  </div>
+  <div style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3;"><dc-import name="MLiteTabbar" active="environments" hint-size="100%,72px"></dc-import></div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":360,"height":800}}'>
+class Component extends DCLogic {
+renderVals() {
+  return {};
+}
+}
+</script>
+</body>
+</html>
