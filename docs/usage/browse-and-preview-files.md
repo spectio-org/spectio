@@ -50,9 +50,7 @@ The same card shows the work directory of a task, under the heading "Work direct
 ![Preview of quant/counts_matrix.tsv: a table of twelve samples with total, mapped and mapped_rate, under the path, Copy path and Download](../assets/shots/app-file-preview_light.webp#only-light)
 ![Preview of quant/counts_matrix.tsv: a table of twelve samples with total, mapped and mapped_rate, under the path, Copy path and Download](../assets/shots/app-file-preview_dark.webp#only-dark)
 
-*A 250-byte TSV from the same run. The heading takes focus when the page opens.*
-
-*The line under the header row, showing the file name, is a known display defect (DW-P3B09-02): it is the table caption, not content.*
+*A 250-byte TSV from the same run. The heading takes focus when the page opens. In the table, the line "counts_matrix.tsv" under the header row (`sample`, `total`, `mapped`, `mapped_rate`) is the table's caption, not a row of the file: it should sit above the header. This is a known display fault in 0.0.1, with a fix planned ([follow-up FU-P3-100](../progress/W5/P3-M9.md#follow-ups-of-batch-p3-b09)).*
 
 The page shows the file's name, its kind, size and time, its full path with **Copy path**, **Download**, then one viewer by kind:
 
