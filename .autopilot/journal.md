@@ -764,3 +764,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-09T02:0xZ · FU-P3-85c merged (#186, squash ebdb3d60). PR #187 (ci: preview.spec.ts in the e2e job) opened; it touches .github/workflows/ and waits for Thomas. Next: FU-P3-85d (explorer card, sort, filter, URL state).
 
 - 2026-11-09T02:4xZ · P3-fu85d (FU-P3-85d) built: review approve 0/0/8, security approve 0/0/2, 2 rounds. PR #188 opened, subscribed. Inbox #131 assumed. FU-P3-96, FU-P3-97 opened. PR #187 CI green (e2e-local runs preview.spec.ts), waits for Thomas. Cost recorded: 12 USD.
+
+- 2026-11-09T03:0xZ · FU-P3-85d merged (#188, squash 3b7b7093). e2e-local failed twice on the old results-browser test; the test follows the explorer now (two commits on the branch). Next: FU-P3-85e (work-directory routes and UI).
