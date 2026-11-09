@@ -67,6 +67,11 @@ input:disabled{background:#F7F7FB;color:#6E7287;border-color:#DFE1EA;cursor:not-
           <h1 style="margin: 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 28px;">Launch a workflow</h1>
           <span style="font-size: 14px; color: #4D5065;">A directory or a Git repository: Spectio guesses the engine and builds the form from its schema.</span>
         </div>
+        <div style="display: flex; align-items: center; gap: 12px; flex-wrap: wrap; justify-content: flex-end;">
+          <!-- a visual copy of the aside's "Before Launch" reason, which describes both Launch buttons (ui-spec §4.6) -->
+          <span aria-hidden="true" style="font-size: 12.5px; font-weight: 600; color: #B02A2A;">Fill the required field: samples</span>
+          <button type="button" class="btn-go" aria-disabled="true" aria-describedby="launch-missing launch-what">Launch</button>
+        </div>
       </div>
 
       <div style="display: flex; gap: 20px; flex-wrap: wrap; align-items: flex-start;">
