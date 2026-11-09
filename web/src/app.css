@@ -155,10 +155,73 @@
   overflow-wrap: anywhere;
 }
 
+/* The Environment row of Where it runs (ui-spec §4.8.1; LiteLaunch, MLiteLaunch): one card per
+   radio, two per line on a desktop, full width and at least 44 px on the phone. */
+.launch-env {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.launch-env p,
+.launch-env-state p {
+  margin: 0;
+}
+.launch-envs {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.launch-envs legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-weight: 600;
+  font-size: var(--mantine-font-size-sm);
+}
+.launch-env-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid var(--sp-line-border);
+  border-radius: 10px;
+  cursor: pointer;
+}
+.launch-env-option:has(input:checked) {
+  border-color: var(--sp-section-environments);
+  background: var(--sp-section-environments-bg);
+}
+.launch-env-option input {
+  margin-top: 3px;
+}
+.launch-env-name {
+  font-weight: 600;
+}
+.launch-env-sum {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--mantine-font-size-sm);
+  color: var(--sp-text-muted);
+}
+@media (max-width: 767.98px) {
+  .launch-envs {
+    grid-template-columns: 1fr;
+  }
+}
+
 /* The aside is sticky only when it fits: at most the viewport's height, with its own scroll
    (UX-G2-17). */
 .launch-grid {
   display: grid;
+  /* minmax(0, 1fr), not the implicit auto column: a long unbreakable path in Try a test pipeline
+     must not widen the Pipeline card past the phone's width (Load then sat under the input). */
+  grid-template-columns: minmax(0, 1fr);
   gap: 16px;
 }
 @media (min-width: 1200px) {

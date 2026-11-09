@@ -30,7 +30,13 @@ function json(status: number, body: unknown): Response {
 }
 
 const fetchMock = vi.fn<typeof fetch>();
-beforeEach(() => vi.stubGlobal("fetch", fetchMock));
+// The Environment row reads its list on its own (LaunchEnvironment.test.tsx): it fails here, so the
+// form sends no environment and the calls below are the form's own.
+beforeEach(() =>
+  vi.stubGlobal("fetch", (url: RequestInfo | URL, init?: RequestInit) =>
+    String(url) === "/api/v1/environments" ? Promise.resolve(json(500, { title: "x" })) : fetchMock(url, init),
+  ),
+);
 afterEach(() => {
   fetchMock.mockReset();
   vi.unstubAllGlobals();
@@ -315,7 +321,8 @@ test("UX-PAR-33: the Loaded card's status, and Where it runs names the engine an
   expect(within(card as HTMLElement).getByText("Loaded")).toBeInTheDocument();
   // inbox #91 (b): a manifest name starting "nf-core/" shows the nf-core mark
   expect(within(card as HTMLElement).getByRole("img", { name: "nf-core" })).toBeInTheDocument();
-  const where = screen.getByRole("complementary", { name: "Where it runs and launch" });
+  // "Where it runs" is a section of the main column (ui-spec §4.6, FU-P3-86e3)
+  const where = screen.getByRole("region", { name: "Where it runs" });
   expect(within(where).getByText("Tasks")).toBeInTheDocument();
   expect(within(where).getByText(/fixed for this server/)).toBeInTheDocument();
 });

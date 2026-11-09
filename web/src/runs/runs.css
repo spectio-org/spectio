@@ -1413,6 +1413,10 @@
   flex-direction: column;
   gap: 2px;
 }
+/* The executor beside an environment's name (LiteRunDetail, LiteLaunch). */
+.sp-env-badge {
+  margin-left: 8px;
+}
 
 /* Results and reports (LiteRunDetail) and the results browser (LiteResults). */
 .sp-results {

@@ -15,6 +15,8 @@ import {
   ApiError,
   ENGINE_FILES,
   type Engine,
+  type EnvironmentItem,
+  type EnvironmentList,
   type FieldError,
   type Inspected,
   type LaunchTemplate,
@@ -23,16 +25,18 @@ import {
   getRun,
   inspect,
   launch,
+  listEnvironments,
 } from "../api";
 import { ICONS, Icon, groupIcon } from "../icons";
 import { runName } from "../runs/RunState";
-import { executorLabel, plural, shortId } from "../runs/stateWord";
+import { plural, shortId } from "../runs/stateWord";
 import { useServer } from "../server";
 import { EngineMark, PipelineMark, markFor } from "../shell/EngineMark";
 import { FoldSection } from "../shell/FoldSection";
 import { PageHead } from "../shell/PageHead";
 import { usePhone } from "../shell/layout";
 import { EngineButtons } from "./EngineButtons";
+import { EnvironmentRow } from "./EnvironmentRow";
 import { guessEngine } from "./guessEngine";
 import { TryPipelines } from "./TryPipelines";
 import {
@@ -66,14 +70,14 @@ const SOURCES: Record<Inspected["schema_source"], string> = {
   none: "no parameter schema: add parameters as name and value",
 };
 
-type Errors = Record<string, string>; // by form key: location, revision, engine, name, profile, params.<key>, form
+type Errors = Record<string, string>; // by form key: location, revision, engine, name, profile, environment, params.<key>, form
 
 /** Where a 422 error of `POST /runs` or of inspect is shown (fields are dotted, inbox #86): a
  * param error lands on the field of the longest key that names it or a value inside it
  * (`params.ref.release` on `ref.release`, UX-PAR-31). */
 function formKey(field: string, keys: string[]): string {
   const bare = field.replace(/^workflow\./, "");
-  if (["location", "revision", "engine", "name"].includes(bare)) return bare;
+  if (["location", "revision", "engine", "name", "environment"].includes(bare)) return bare;
   if (bare.startsWith("profiles")) return "profile";
   if (!bare.startsWith("params.")) return "form";
   const rest = bare.slice("params.".length);
@@ -137,7 +141,8 @@ export function LaunchPage({
   const [loaded, setLoaded] = useState<Inspected | null>(null);
   const [loading, setLoading] = useState(false);
   const [engine, setEngine] = useState<Engine | null>(null);
-  const [profile, setProfile] = useState("");
+  // Profile as the user set it; until then, the chosen environment's default profile (§4.8.1)
+  const [picked, setPicked] = useState<string | null>(null);
   const [name, setName] = useState("");
   const [values, setValues] = useState<Values>({});
   const [rows, setRows] = useState<Row[]>([]);
@@ -147,13 +152,31 @@ export function LaunchPage({
   const [tried, setTried] = useState(false);
   const [prefill, setPrefill] = useState<Prefill | null>(null);
   const [prefillError, setPrefillError] = useState<string | null>(null);
+  const [envs, setEnvs] = useState<EnvironmentList | null>(null);
+  const [envsFailed, setEnvsFailed] = useState(false);
+  const [envName, setEnvName] = useState<string | null>(null);
   const inFlight = useRef<AbortController | null>(null);
   const revisionField = useRef<HTMLInputElement>(null);
 
+  const loadEnvs = () =>
+    listEnvironments().then(
+      (list) => (setEnvs(list), setEnvsFailed(false)),
+      () => setEnvsFailed(true),
+    );
   useEffect(() => {
     document.title = "Launch a workflow · Spectio";
+    void loadEnvs();
     return () => inFlight.current?.abort();
   }, []);
+  // The chosen environment: the user's or Copy's, else the default (ui-spec §4.8.1)
+  const offered = envs?.items.filter((e) => e.usable) ?? [];
+  const chosen: EnvironmentItem | null =
+    offered.find((e) => e.name === envName) ?? offered.find((e) => e.name === envs?.default) ?? offered[0] ?? null;
+  const wanted = chosen && engine ? chosen.profiles[engine] : null;
+  const inPipeline = !!wanted && !!loaded?.profiles.includes(wanted);
+  const profile = picked ?? (inPipeline ? wanted! : "");
+  const profileNote =
+    picked === null && wanted && loaded && !inPipeline ? `The environment's profile ${wanted} is not in this pipeline: none selected` : null;
 
   const repo = location.trim() !== "" && !location.trim().startsWith("/");
   const github = SHORT_NAME.test(location.trim()) ? `https://github.com/${location.trim()}` : null;
@@ -204,13 +227,14 @@ export function LaunchPage({
         const params = copy.template.params;
         const { values: filled, left } = shape.length ? valuesFrom(shape, params) : { values: {}, left: [] };
         setEngine(was);
-        setProfile(copy.template.profiles[0] ?? "");
+        setPicked(copy.template.profiles[0] ?? ""); // the copied run's profile wins
+        setEnvName(copy.template.environment);
         setValues(filled);
         setRows(shape.length ? [] : Object.entries(params).map(([key, v]) => ({ key, value: typeof v === "string" ? v : JSON.stringify(v) })));
         setPrefill({ ...copy, left });
       } else {
         setEngine(guessEngine(found.engine_files));
-        setProfile("");
+        setPicked(null);
         setValues({});
         setRows([]);
       }
@@ -260,6 +284,7 @@ export function LaunchPage({
       return "No main.nf or Snakefile in this directory: check the path";
     }
     if (!engine) return "Choose the engine";
+    if (!chosen && !envsFailed) return "Choose where it runs";
     if (!ENGINE_FILES[engine].some((f) => loaded.engine_files.includes(f))) {
       const other = NAMES[engine === "nextflow" ? "snakemake" : "nextflow"];
       return `No ${ENGINE_FILES[engine].join(" or ")} in this directory: press ${other} or check the path`;
@@ -286,6 +311,7 @@ export function LaunchPage({
         workflow: { location: loaded.location, revision: loaded.revision, engine },
         ...(name.trim() ? { name: name.trim() } : {}),
         profiles: profile ? [profile] : [],
+        ...(chosen ? { environment: chosen.name } : {}),
         params,
       });
       onLaunched(run.id);
@@ -313,6 +339,7 @@ export function LaunchPage({
           `${loaded.name}${loaded.version ? ` ${loaded.version}` : ""}`,
           NAMES[engine],
           profile,
+          chosen && (chosen.label ?? chosen.name),
           `${plural(changed, "value", "values")} changed`,
         ]
           .filter(Boolean)
@@ -333,6 +360,20 @@ export function LaunchPage({
     </Button>
   );
   const local = server?.executor === "local";
+  /** The Tasks row reads the chosen environment, never `GET /version` (ui-spec §4.8.1). */
+  const tasksLine = () => {
+    const by = engine ? NAMES[engine] : "the engine";
+    if (!chosen) return envsFailed ? `by ${by}, in the server's default environment` : "…";
+    const fromProfile = engine === "snakemake" && profile;
+    if (chosen.executor === "slurm") {
+      const how = fromProfile
+        ? `resources and partition from the profile ${profile} (this environment's are not passed)`
+        : chosen.slurm?.partition && `partition ${chosen.slurm.partition}`;
+      return [`sent to SLURM by ${by}`, how].filter(Boolean).join(" · ");
+    }
+    const how = fromProfile ? "concurrency from the profile" : chosen.local?.cpus && `at most ${chosen.local.cpus} CPUs`;
+    return [`run on ${server?.node ?? "the server"} by ${by}`, how].filter(Boolean).join(" · ");
+  };
   const guessed = loaded && guessEngine(loaded.engine_files);
   const engineNote = !loaded
     ? "Load the pipeline to guess the engine"
@@ -369,114 +410,156 @@ export function LaunchPage({
         </Text>
       )}
       {prefill && <PrefillBanner prefill={prefill} onClear={onClear} />}
-      <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card>
-        <TryPipelines runs={recent} onPick={pick} />
-        <Group align="flex-start" gap="sm" wrap="wrap">
-          <TextInput
-            style={{ flex: "999 1 280px" }}
-            label="Pipeline"
-            inputWrapperOrder={["label", "input", "description", "error"]}
-            value={location}
-            onChange={(e) => edit(setLocation, e.currentTarget.value)}
-            error={errors.location}
-            description={
-              <>
-                An absolute path your account can read, a GitHub or nf-core name such as
-                nf-core/rnaseq, or an https:// or ssh URL.
-                {github && (
-                  <>
-                    <br />
-                    <span>Read as GitHub: {github}</span>
-                  </>
-                )}
-              </>
-            }
-            spellCheck={false}
-            autoComplete="off"
-          />
-          {repo && (
-            <TextInput
-              style={{ flex: "1 1 220px", maxWidth: 260 }}
-              ref={revisionField}
-              label="Revision"
-              inputWrapperOrder={["label", "input", "description", "error"]}
-              withAsterisk
-              required
-              value={revision}
-              onChange={(e) => edit(setRevision, e.currentTarget.value)}
-              error={errors.revision}
-              description="Tag, branch or commit; required for a Git repository."
-              spellCheck={false}
-              autoComplete="off"
-            />
-          )}
-          <Button
-            type="button"
-            variant="default"
-            mt={24}
-            onClick={() => load()}
-            aria-busy={loading || undefined}
-          >
-            {loading ? (repo ? "Fetching…" : "Loading…") : "Load"}
-          </Button>
-        </Group>
-        {loaded && (
-          <Paper bg="var(--sp-surface-subtle)" p="sm" mt="sm" className="launch-loaded" data-loaded>
-            <span className="launch-loaded-mark">
-              {markFor(guessed, loaded.name) ? (
-                <PipelineMark engine={guessed} name={loaded.name} size={24} />
-              ) : (
-                <Icon path={ICONS.folder} size={20} />
-              )}
-            </span>
-            <div className="sp-grow">
-              <Text fw={600}>
-                {loaded.name}
-                {loaded.version ? ` ${loaded.version}` : ""}
-              </Text>
-              <Text size="sm" c="dimmed">
-                {loaded.revision ? `A Git repository at ${loaded.revision}` : "A directory on this machine"}
-                {loaded.engine_files.length ? ` · ${loaded.engine_files.join(", ")} found` : ""}
-                {` · ${SOURCES[loaded.schema_source]}`}
-              </Text>
-            </div>
-            <span className="launch-loaded-status">
-              <Icon path={ICONS.check} size={14} stroke={2.4} />
-              <span>Loaded</span>
-            </span>
-          </Paper>
-        )}
-        <Stack gap="md" mt="md">
-          <EngineButtons
-            value={engine}
-            onChange={(e) => setEngine(e)}
-            note={engineNote}
-            error={errors.engine}
-          />
-          <SimpleGrid cols={{ base: 1, sm: 2 }}>
-            <NativeSelect
-              label="Profile"
-              inputWrapperOrder={["label", "input", "description", "error"]}
-              value={profile}
-              onChange={(e) => setProfile(e.currentTarget.value)}
-              data={[{ value: "", label: "(none)" }, ...(loaded?.profiles ?? [])]}
-              description={engine ? PROFILE_HINTS[engine] : "From the pipeline's own configuration; passed to the engine as its profile."}
-              error={errors.profile}
-            />
-            <TextInput
-              label="Run name (optional)"
-              inputWrapperOrder={["label", "input", "description", "error"]}
-              value={name}
-              onChange={(e) => setName(e.currentTarget.value)}
-              description="Left empty, Spectio names the run after the pipeline."
-              error={errors.name}
-              autoComplete="off"
-            />
-          </SimpleGrid>
-        </Stack>
-      </FoldSection>
       <div className="launch-grid">
         <Stack gap="md">
+          <FoldSection id="launch-pipeline" icon={ICONS.route} title="Pipeline" card>
+            <TryPipelines runs={recent} onPick={pick} />
+            <Group align="flex-start" gap="sm" wrap="wrap">
+              <TextInput
+                style={{ flex: "999 1 280px" }}
+                label="Pipeline"
+                inputWrapperOrder={["label", "input", "description", "error"]}
+                value={location}
+                onChange={(e) => edit(setLocation, e.currentTarget.value)}
+                error={errors.location}
+                description={
+                  <>
+                    An absolute path your account can read, a GitHub or nf-core name such as
+                    nf-core/rnaseq, or an https:// or ssh URL.
+                    {github && (
+                      <>
+                        <br />
+                        <span>Read as GitHub: {github}</span>
+                      </>
+                    )}
+                  </>
+                }
+                spellCheck={false}
+                autoComplete="off"
+              />
+              {repo && (
+                <TextInput
+                  style={{ flex: "1 1 220px", maxWidth: 260 }}
+                  ref={revisionField}
+                  label="Revision"
+                  inputWrapperOrder={["label", "input", "description", "error"]}
+                  withAsterisk
+                  required
+                  value={revision}
+                  onChange={(e) => edit(setRevision, e.currentTarget.value)}
+                  error={errors.revision}
+                  description="Tag, branch or commit; required for a Git repository."
+                  spellCheck={false}
+                  autoComplete="off"
+                />
+              )}
+              <Button
+                type="button"
+                variant="default"
+                mt={24}
+                onClick={() => load()}
+                aria-busy={loading || undefined}
+              >
+                {loading ? (repo ? "Fetching…" : "Loading…") : "Load"}
+              </Button>
+            </Group>
+            {loaded && (
+              <Paper bg="var(--sp-surface-subtle)" p="sm" mt="sm" className="launch-loaded" data-loaded>
+                <span className="launch-loaded-mark">
+                  {markFor(guessed, loaded.name) ? (
+                    <PipelineMark engine={guessed} name={loaded.name} size={24} />
+                  ) : (
+                    <Icon path={ICONS.folder} size={20} />
+                  )}
+                </span>
+                <div className="sp-grow">
+                  <Text fw={600}>
+                    {loaded.name}
+                    {loaded.version ? ` ${loaded.version}` : ""}
+                  </Text>
+                  <Text size="sm" c="dimmed">
+                    {loaded.revision ? `A Git repository at ${loaded.revision}` : "A directory on this machine"}
+                    {loaded.engine_files.length ? ` · ${loaded.engine_files.join(", ")} found` : ""}
+                    {` · ${SOURCES[loaded.schema_source]}`}
+                  </Text>
+                </div>
+                <span className="launch-loaded-status">
+                  <Icon path={ICONS.check} size={14} stroke={2.4} />
+                  <span>Loaded</span>
+                </span>
+              </Paper>
+            )}
+            <Stack gap="md" mt="md">
+              <EngineButtons
+                value={engine}
+                onChange={(e) => setEngine(e)}
+                note={engineNote}
+                error={errors.engine}
+              />
+              <SimpleGrid cols={{ base: 1, sm: 2 }}>
+                <NativeSelect
+                  label="Profile"
+                  inputWrapperOrder={["label", "input", "description", "error"]}
+                  value={profile}
+                  onChange={(e) => setPicked(e.currentTarget.value)}
+                  data={[{ value: "", label: "(none)" }, ...(loaded?.profiles ?? [])]}
+                  description={
+                <>
+                  {engine ? PROFILE_HINTS[engine] : "From the pipeline's own configuration; passed to the engine as its profile."}
+                  {profileNote && (
+                    <>
+                      <br />
+                      <span>{profileNote}</span>
+                    </>
+                  )}
+                </>
+              }
+                  error={errors.profile}
+                />
+                <TextInput
+                  label="Run name (optional)"
+                  inputWrapperOrder={["label", "input", "description", "error"]}
+                  value={name}
+                  onChange={(e) => setName(e.currentTarget.value)}
+                  description="Left empty, Spectio names the run after the pipeline."
+                  error={errors.name}
+                  autoComplete="off"
+                />
+              </SimpleGrid>
+            </Stack>
+          </FoldSection>
+          <FoldSection id="launch-where" icon={ICONS.server} title="Where it runs" card>
+            <EnvironmentRow
+              list={envs}
+              failed={envsFailed}
+              chosen={chosen}
+              onChoose={setEnvName}
+              onRetry={loadEnvs}
+              onCreated={(item) => void loadEnvs().then(() => setEnvName(item.name))}
+              error={errors.environment}
+            />
+            <dl className="facts">
+              <dt>Engine head</dt>
+              <dd>
+                {engine ? (
+                  <span className="launch-engine">
+                    <EngineMark engine={engine} size={16} named />
+                    {`${NAMES[engine]} ${loaded?.engine_versions[engine] ?? "(version not found)"}`}
+                    {server && (local ? `, as a process on ${server.node}` : `, in a tmux session on ${server.node}`)}
+                  </span>
+                ) : (
+                  "Not chosen yet"
+                )}
+              </dd>
+              <dt>Tasks</dt>
+              <dd>{tasksLine()}</dd>
+              <dt>Run directory</dt>
+              <dd>{server ? `${server.runs_root}/<run ID>` : "…"}</dd>
+            </dl>
+            <Text size="xs" c="dimmed" mt="sm">
+              The login node and the run directory are fixed for this server.
+            </Text>
+          </FoldSection>
           {loaded && (
             <FoldSection id="launch-params" icon={ICONS.sliders} title="Parameters">
               {sections.length > 1 && (
@@ -517,43 +600,7 @@ export function LaunchPage({
             </FoldSection>
           )}
         </Stack>
-        <Stack className="launch-aside" gap="md" component="aside" aria-label="Where it runs and launch">
-          <FoldSection id="launch-where" icon={ICONS.server} title="Where it runs" card>
-            <dl className="facts">
-              <dt>Executor</dt>
-              <dd>{server ? executorLabel(server.executor) : "…"}</dd>
-              <dt>Node</dt>
-              <dd>{server?.node ?? "…"}</dd>
-              <dt>Engine</dt>
-              <dd>
-                {engine ? (
-                  <span className="launch-engine">
-                    <EngineMark engine={engine} size={16} named />
-                    {`${NAMES[engine]} ${loaded?.engine_versions[engine] ?? "(version not found)"}`}
-                    {server && (local ? `, as a process on ${server.node}` : `, in a tmux session on ${server.node}`)}
-                  </span>
-                ) : (
-                  "Not chosen yet"
-                )}
-              </dd>
-              <dt>Tasks</dt>
-              <dd>
-                {!server
-                  ? "…"
-                  : local
-                    ? `run on ${server.node} by ${engine ? NAMES[engine] : "the engine"}`
-                    : `sent to ${executorLabel(server.executor)} by ${engine ? NAMES[engine] : "the engine"}${
-                        engine === "snakemake" ? " (--executor slurm)" : engine === "nextflow" ? " (executor slurm)" : ""
-                      }`}
-              </dd>
-              <dt>Run directory</dt>
-              <dd>{server ? `${server.runs_root}/<run ID>` : "…"}</dd>
-            </dl>
-            <Text size="xs" c="dimmed" mt="sm">
-              The executor, the login node and the run directory are fixed for this server: there is nothing
-              to choose in 0.0.1.
-            </Text>
-          </FoldSection>
+        <Stack className="launch-aside" gap="md" component="aside" aria-label="Launch">
           {loaded && engine && <ParamsPreview engine={engine} fields={fields} values={values} rows={rows} />}
           <div className="launch-bar">
             <div className="launch-bar-row">
@@ -589,6 +636,7 @@ function PrefillBanner({ prefill, onClear }: { prefill: Prefill; onClear?: () =>
       </Text>
       {prefill.left.length > 0 && <Text size="sm">{`Not in this pipeline's form, and not sent: ${prefill.left.join(", ")}.`}</Text>}
       {profiles.length > 1 && <Text size="sm">{`Profiles ${profiles.join(", ")}: the form takes one, ${profiles[0]} is kept.`}</Text>}
+      {prefill.template.environment_notice && <Text size="sm">{prefill.template.environment_notice}</Text>}
       {prefill.template.code_loading.length > 0 && (
         <ul className="launch-loading">
           {prefill.template.code_loading.map((c) => (
