@@ -5,6 +5,7 @@ and 9 (script loads, read slots) and the session and cross-site tests are FU-P3-
 
 import os
 import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -416,6 +417,33 @@ def test_req14_imaging_read_slots(
             cm.__exit__(None, None, None)
         for _ in range(4):
             assert http.get(url, headers=range_).status_code == 206
+
+
+def test_req14_imaging_slot_back_on_client_gone(
+    served: str, session: dict[str, str], results: Results, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """Step 9: a slot comes back when its client goes away before the body, with no garbage
+    collection (CR-P3FU102B-01)."""
+    put(results, "a.tif", TIFF)
+    real, go = files_results.read_chunk, threading.Event()
+
+    def held(*args: Any) -> bytes:
+        assert go.wait(10)
+        return real(*args)
+
+    monkeypatch.setattr(files_results, "read_chunk", held)
+    url = f"{API}/runs/{RUN}/results/raw/a.tif?as=tiff"
+    range_ = {**FETCH, "Range": "bytes=0-9"}
+    with httpx2.Client(base_url=served, timeout=10, cookies=session) as http:
+        for _ in range(3):
+            with http.stream("GET", url, headers=range_) as s:
+                assert s.status_code == 206
+        go.set()
+        deadline = time.monotonic() + 1
+        while (found := http.get(url, headers=range_)).status_code == 503:
+            assert time.monotonic() < deadline, "the slots stayed taken"
+            time.sleep(0.05)
+        assert found.status_code == 206
 
 
 def test_req14_imaging_slot_back_on_abort_and_refusal(

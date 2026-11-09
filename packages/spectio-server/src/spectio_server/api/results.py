@@ -38,6 +38,7 @@ from urllib.parse import quote
 
 from fastapi import APIRouter, Header, Query, Request
 from fastapi.responses import Response, StreamingResponse
+from starlette.types import Receive, Scope, Send
 
 from spectio_server.api.models import Results, ResultStat
 from spectio_server.api.problems import Invalid, Problem, not_found
@@ -321,8 +322,8 @@ def _closed_range(value: str | None, size: int) -> tuple[int, int]:
 def _imaging(
     request: Request, where: files.Tree, rel: PurePosixPath, as_: str, range_: str | None
 ) -> StreamingResponse:
-    """An imaging read, holding a read slot (step 9, taken before the pool) until its body ends,
-    aborts or is dropped: the TIFF range or the Zarr key, never an attachment."""
+    """An imaging read, holding a read slot (step 9, taken before the pool) until its response
+    ends, aborts or loses its client: the TIFF range or the Zarr key, never an attachment."""
     slot: threading.BoundedSemaphore = request.app.state.imaging_slots
     if not slot.acquire(blocking=False):
         raise Problem(503, "runner-offline", "Busy reading images", "busy reading images")
@@ -331,12 +332,7 @@ def _imaging(
     except BaseException:
         slot.release()
         raise
-    return StreamingResponse(
-        _Held(slot, body),
-        status_code=status,
-        media_type="application/octet-stream",
-        headers=headers,
-    )
+    return _Held(slot, body, status_code=status, headers=headers)
 
 
 def _imaging_body(
@@ -367,30 +363,32 @@ def _imaging_body(
     return _chunks(request, where, rel, raw, b"", first, last + 1), 206, headers
 
 
-class _Held:
-    """An imaging answer's body: its read slot is given back once, when the body ends or fails,
-    or when the response drops it unread (a client gone before the first chunk)."""
+class _Held(StreamingResponse):
+    """An imaging answer: its read slot is given back once, when the response ends, fails or
+    its client goes away (CR-P3FU102B-01), or when a response never sent is dropped."""
 
-    def __init__(self, slot: threading.BoundedSemaphore, body: Iterator[bytes]) -> None:
+    def __init__(
+        self,
+        slot: threading.BoundedSemaphore,
+        body: Iterator[bytes],
+        status_code: int,
+        headers: dict[str, str],
+    ) -> None:
         self._slot: threading.BoundedSemaphore | None = slot
-        self._body = body
+        super().__init__(body, status_code, headers, "application/octet-stream")
 
-    def __iter__(self) -> "_Held":
-        return self
-
-    def __next__(self) -> bytes:
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         try:
-            return next(self._body)
-        except BaseException:  # StopIteration too: the body ended
-            self.release()
-            raise
+            await super().__call__(scope, receive, send)
+        finally:
+            self._release()
 
-    def release(self) -> None:
+    def _release(self) -> None:
         slot, self._slot = self._slot, None
         if slot is not None:
             slot.release()
 
-    __del__ = release
+    __del__ = _release
 
 
 def _chunks(
