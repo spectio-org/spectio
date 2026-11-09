@@ -2,7 +2,7 @@
 // and the caps that keep the text, JSON and table viewers inside a bounded DOM and CPU budget.
 // Everything here returns text; the page puts it in the DOM as text nodes only.
 
-export type Kind = "text" | "table" | "json" | "image" | "html" | "pdf" | "binary" | "file";
+export type Kind = "text" | "table" | "json" | "image" | "tiff" | "ometiff" | "omezarr" | "html" | "pdf" | "binary" | "file";
 
 export const KIND_WORDS: Record<Kind | "folder" | "link", string> = {
   folder: "Folder",
@@ -10,6 +10,9 @@ export const KIND_WORDS: Record<Kind | "folder" | "link", string> = {
   table: "Table",
   json: "JSON",
   image: "Image",
+  tiff: "TIFF",
+  ometiff: "OME-TIFF",
+  omezarr: "OME-Zarr",
   html: "HTML report",
   pdf: "PDF",
   binary: "Binary",
@@ -26,6 +29,7 @@ const BY_SUFFIX: [Kind, Set<string>][] = [
   ["table", words("csv tsv tab")],
   ["json", words("json")],
   ["image", words("png jpg jpeg gif webp svg")],
+  ["tiff", words("tif tiff")],
   ["html", words("html htm")],
   ["pdf", words("pdf")],
   [
@@ -40,6 +44,8 @@ const BY_SUFFIX: [Kind, Set<string>][] = [
  * compare without case. */
 export function fileKind(name: string): Kind {
   const base = name.split("/").pop() ?? name;
+  if (/.\.ome\.tiff?$/i.test(base)) return "ometiff";
+  if (/.\.ome\.zarr$/i.test(base)) return "omezarr"; // a folder (ui-spec §4.4.1, imaging)
   const dot = base.lastIndexOf(".");
   const suffix = dot > 0 ? base.slice(dot + 1).toLowerCase() : "";
   return BY_SUFFIX.find(([, set]) => set.has(suffix))?.[0] ?? "file";
