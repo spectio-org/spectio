@@ -134,7 +134,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,[t
               <span style="flex-grow: 1;"></span>
               <span class="iv-keys">Arrows pan · + or = zoom in · − zoom out · 0 fits</span>
             </div>
-            <div id="iv-b-facts" class="iv-facts">494 × 464 px · 40 channels · 1 plane · 1 time point · float32 · 1 µm × 1 µm per pixel</div>
+            <div id="iv-b-facts" class="iv-facts">464 × 494 px · 40 channels · 1 plane · 1 time point · float32 · 1 µm × 1 µm per pixel</div>
           </div>
           <div class="iv-panel">
             <h3>Channels · 6 of 40 on</h3>
@@ -203,7 +203,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible,[t
         </div>
       </div>
 
-      <span style="font-size: 11.5px; color: #6E7287; line-height: 1.5;">Data: the pictures are the board thumbnails of design/ui-canvas/images (SOURCES.md): A, nf-core/test-datasets mcmicro lunaphore_example.ome.tiff drawn as a 3-channel fixture (DAPI, TNNT2, WGA, with the colours of its metadata; the sizes, planes and time points are fixture values); B, IDR idr0076 imaging mass cytometry, with 40 channel names shaped on an IMC breast-cancer panel (fixture names); C, IDR idr0073 whole slide 9798462, RGB; D, IDR idr0033 Cell Painting well C2, channel 1. On screen the picture is a canvas: WebGL (Viv) in A to C, a 2D canvas in D. Each viewer is a focusable section named "&lt;file&gt;, image viewer" with the facts line as its description; the status line above it is role="status"; the switches are &lt;button role="switch" aria-checked&gt; named "Show channel &lt;n&gt;, &lt;name&gt;"; only a channel that is on shows its contrast ranges and Reset; above 12 channels the Filter channels field and the "Channels" scroll region; the 7th-channel line is polite and the channel stays off; zoom has buttons, keys and a text value. The Z and T ranges change the view after 200 ms without a change; the URL keeps &amp;z=, &amp;t=, &amp;ch= and &amp;viewer=ome (ui-spec §4.4.1, imaging note of 2026-11-09; api §5.3.1). States: LiteImageViewerStates (FU-P3-102c2). Phone: MLiteImageViewer.</span>
+      <span style="font-size: 11.5px; color: #6E7287; line-height: 1.5;">Data: the pictures are the board thumbnails of design/ui-canvas/images (SOURCES.md): A, nf-core/test-datasets mcmicro lunaphore_example.ome.tiff drawn as a 3-channel fixture (DAPI, TNNT2, WGA, with the colours of its metadata; the sizes, planes and time points are fixture values); B, IDR idr0076 imaging mass cytometry, with 40 channel names shaped on an IMC breast-cancer panel (fixture names); C, IDR idr0073 whole slide 9798462, RGB; D, IDR idr0033 Cell Painting well C2, channel 1. On screen the picture is a canvas: WebGL (Viv) in A to C, a 2D canvas in D. Each viewer is a focusable section named "&lt;file&gt;, image viewer" with the facts line as its description; the status line above it is role="status"; the switches are &lt;button role="switch" aria-checked&gt; named "Show channel &lt;n&gt;, &lt;name&gt;"; only a channel that is on shows its contrast ranges and Reset; an off channel reads "Off" with a grey swatch and has no colour: switching it on gives it the colour of its OME metadata, or else the first palette colour no channel that is on uses, so two channels that are on never share a colour; above 12 channels the Filter channels field and the "Channels" scroll region; the 7th-channel line is polite and the channel stays off; zoom has buttons, keys and a text value. The Z and T ranges change the view after 200 ms without a change; the URL keeps &amp;z=, &amp;t=, &amp;ch= and &amp;viewer=ome (ui-spec §4.4.1, imaging note of 2026-11-09; api §5.3.1). States: LiteImageViewerStates (FU-P3-102c2). Phone: MLiteImageViewer.</span>
     </main>
 </div>
 </x-dc>
@@ -214,10 +214,11 @@ renderVals() {
   const fmt = (v, d) => v.toLocaleString('en-US', { maximumFractionDigits: d, minimumFractionDigits: d });
   const row = (name, i, on, min, max, lo, hi, d, meta) => {
     const [hex, colour] = meta || palette[i % palette.length];
-    return { n: i + 1, name, on, hex: on ? hex : '#C9CBD8', colour: colour + (on ? '' : ' when on'),
+    return { n: i + 1, name, on, hex: on ? hex : '#C9CBD8', colour: on ? colour : 'Off',
       min, max, step: (max - min) / 256, lo, hi, loText: fmt(lo, d), hiText: fmt(hi, d), minText: fmt(min, d), maxText: fmt(max, d) };
   };
   // A's colours come from the file's OME metadata (DAPI blue, TNNT2 red, WGA green); B uses the fixed palette.
+  // An off channel has no colour ('Off', grey swatch): it takes a free palette colour only when switched on.
   const three = [['DAPI', 410, 3980, palette[0]], ['TNNT2', 220, 1870, palette[2]], ['WGA', 615, 5240, palette[1]]]
     .map(([name, lo, hi, meta], i) => row(name, i, true, 0, 65535, lo, hi, 0, meta));
   const panel = ['Histone H3 (In113)', 'Pan-cytokeratin AE1/AE3 (Nd148)', 'CD45 leukocyte common antigen (Sm152)', 'Smooth muscle actin (Pr141)',
