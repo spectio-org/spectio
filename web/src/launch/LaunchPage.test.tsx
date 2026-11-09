@@ -555,6 +555,22 @@ test("FU-P3-86h: a reason's link opens the folded section of its field", async (
   await waitFor(() => expect(screen.getByRole("textbox", { name: /^input/ })).toHaveFocus());
 });
 
+test("CR-P3FU86H-01: a reason's link opens a folded group that already has a server error", async () => {
+  page();
+  await load(NF_CORE);
+  const input = screen.getByRole("textbox", { name: /^input/ });
+  await userEvent.type(input, "/data/s.csv");
+  fetchMock.mockResolvedValueOnce(json(422, { status: 422, errors: [{ field: "params.outdir", message: "is not writable" }] }));
+  await userEvent.click(launch());
+  await waitFor(() => expect(screen.getByRole("textbox", { name: /^outdir/ })).toHaveAttribute("aria-invalid", "true"));
+  await userEvent.clear(input);
+  const io = toggle(/^Input\/output options/);
+  await userEvent.click(io);
+  expect(io).toHaveAttribute("aria-expanded", "false");
+  await userEvent.click(within(before()).getByRole("link", { name: "Fill the required field: input" }));
+  await waitFor(() => expect(screen.getByRole("textbox", { name: /^input/ })).toHaveFocus());
+});
+
 test("FU-P3-86h: Load a pipeline first links the Pipeline field; nothing missing says so", async () => {
   page();
   await userEvent.click(within(before()).getByRole("link", { name: "Load a pipeline first" }));

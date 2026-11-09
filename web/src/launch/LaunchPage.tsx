@@ -656,7 +656,7 @@ export function LaunchPage({
               <dt>Engine</dt>
               <dd>{engine ? `${NAMES[engine]} ${loaded?.engine_versions[engine] ?? "(version not found)"}` : "Not chosen yet"}</dd>
               <dt>Environment</dt>
-              <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : "…"}</dd>
+              <dd>{chosen ? `${envLabel(chosen)} · ${executorLabel(chosen.executor)}` : envsFailed ? "the server's default" : envs === null ? "…" : "Not chosen yet"}</dd>
               <dt>Engine head</dt>
               <dd>{headLine}</dd>
               <dt>Tasks</dt>
@@ -806,7 +806,7 @@ function ParamGroup({
         </Fragment>
       ))}
       defaultOpen={empty > 0 || changed > 0}
-      reveal={failed || reveal}
+      reveal={reveal ? "link" : failed}
       card
     >
       <ParamRows fields={section.fields} notes={notes} values={values} errors={errors} tried={tried} onChange={onChange} />

@@ -97,6 +97,15 @@ test("over six environments: a native select", async () => {
   expect(select).toHaveAccessibleDescription("partition htc · SLURM account mylab");
 });
 
+test("a list with nothing usable: the summary says Not chosen yet, not still loading (CR-P3FU86H-02)", async () => {
+  launchWith(list([item("broken", { usable: false, unusable_reason: "partition is not a valid name" })]));
+  await screen.findByText("Not offered: broken (partition is not a valid name)");
+  await load();
+  const summary = screen.getByRole("region", { name: "Summary" });
+  expect(within(summary).getByText("Environment").nextElementSibling).toHaveTextContent("Not chosen yet");
+  expect(screen.getByRole("link", { name: "Choose where it runs" })).toBeInTheDocument();
+});
+
 test("the list cannot be read: Retry, and Launch sends no environment", async () => {
   const posted = launchWith(() => json(500, { title: "boom", detail: "boom" }));
   expect(await screen.findByText("Environments could not be read")).toBeInTheDocument();
