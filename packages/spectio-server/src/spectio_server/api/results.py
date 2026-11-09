@@ -22,7 +22,7 @@ results directory: unknown, or a run started from a terminal (`cli-observed`), w
 """
 
 import logging
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from pathlib import PurePosixPath
 from typing import Annotated, Any
 from urllib.parse import quote
@@ -33,7 +33,14 @@ from fastapi.responses import Response, StreamingResponse
 from spectio_server.api.models import Results, ResultStat
 from spectio_server.api.problems import Invalid, Problem, not_found
 from spectio_server.api.runs_read import read, results_of, run_row
-from spectio_server.api.taskfiles import HEADERS, _byte_range, _iso, in_pool, text_response
+from spectio_server.api.taskfiles import (
+    HEADERS,
+    TEXT_CSP,
+    _byte_range,
+    _iso,
+    in_pool,
+    text_response,
+)
 from spectio_server.failure import dir_run_id
 from spectio_server.files import images
 from spectio_server.files import results as files
@@ -54,7 +61,6 @@ REPORT_CSP = (
     "img-src data: blob:; font-src data:; connect-src 'none'; form-action 'none'; "
     "frame-ancestors 'self'"
 )
-ATTACHMENT_CSP = "sandbox; default-src 'none'"
 
 
 def _where(request: Request, run_id: str) -> tuple[files.Where, bool]:
@@ -100,12 +106,31 @@ def run_results(request: Request, run_id: str, path: str = "") -> Response:
             "root": where.results_dir,
             "path": path,
             "exists": exists,
-            "entries": [
-                {"name": e.name, "type": e.type, "size": e.size, "mtime": _iso(e.mtime)}
-                for e in entries
-            ],
+            "entries": entry_dicts(entries),
             "truncated": truncated,
             "reports": [{"path": r.path, "title": r.title, "group": r.group} for r in reports],
+        }
+    )
+    return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)
+
+
+def entry_dicts(entries: Iterable[Any]) -> list[dict[str, Any]]:
+    """The listing's entries, as the `Results` and `WorkDir` models take them."""
+    return [
+        {"name": e.name, "type": e.type, "size": e.size, "mtime": _iso(e.mtime)} for e in entries
+    ]
+
+
+def stat_response(root: str | None, path: str, e: Any) -> Response:
+    """The `ResultStat` answer for the entry `e` of `path` under `root`."""
+    body = ResultStat.model_validate(
+        {
+            "root": root,
+            "path": path,
+            "name": e.name,
+            "type": e.type,
+            "size": e.size,
+            "mtime": _iso(e.mtime),
         }
     )
     return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)
@@ -123,17 +148,7 @@ def result_stat(request: Request, run_id: str, path: str) -> Response:
     where, _ = _where(request, run_id)
     rel = _file_rel(path)
     e = in_pool(request, lambda: files.stat_result(where, rel), missing="not-found")
-    body = ResultStat.model_validate(
-        {
-            "root": where.results_dir,
-            "path": path,
-            "name": e.name,
-            "type": e.type,
-            "size": e.size,
-            "mtime": _iso(e.mtime),
-        }
-    )
-    return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)
+    return stat_response(where.results_dir, path, e)
 
 
 @router.get("/runs/{run_id}/results/text/{path:path}", response_class=Response)
@@ -210,13 +225,13 @@ def raw_response(
             images.check(media, raw.first)
         except NotAllowed as exc:
             raise Problem(422, "file-not-allowed", "File not allowed", str(exc)) from None
-        headers["Content-Security-Policy"] = ATTACHMENT_CSP
+        headers["Content-Security-Policy"] = TEXT_CSP
     elif reports and rel.suffix.lower() in files.REPORT_SUFFIXES and not download:
         media = "text/html; charset=utf-8"
         headers["Content-Security-Policy"] = REPORT_CSP
     else:
         media = "application/octet-stream"
-        headers["Content-Security-Policy"] = ATTACHMENT_CSP
+        headers["Content-Security-Policy"] = TEXT_CSP
         headers["Content-Disposition"] = f"attachment; filename*=UTF-8''{quote(rel.name, safe='')}"
 
     def chunks() -> Iterator[bytes]:

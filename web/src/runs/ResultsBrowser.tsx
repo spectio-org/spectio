@@ -6,7 +6,7 @@ import { ICONS, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
-import { type EntryKind, type Sort, SORTS, counts, entryKind, filterEntries, hasDotPart, sortEntries, taskSearch } from "./explorer";
+import { type EntryKind, OFFLINE, OFFLINE_WHY, type Sort, SORTS, counts, entryKind, filterEntries, hasDotPart, join, sortEntries, taskSearch } from "./explorer";
 import { kindWord, size } from "./preview";
 import { isPlainText, isResultPath } from "./ReportViewer";
 import { NotFound, findTask } from "./RunDetailPage";
@@ -51,7 +51,6 @@ export function resultsSearch(search: Record<string, unknown>): ResultsSearch {
   };
 }
 
-const join = (folder: string, name: string) => (folder ? `${folder}/${name}` : name);
 const LIVE_DELAY = 150; // ms after typing stops: the filter's count and its URL
 
 const KIND_ICONS: Record<EntryKind, string> = {
@@ -222,7 +221,7 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
               return i === 1 ? [<th key="kind" scope="col">Kind</th>, th] : th;
             })}
             <th scope="col">
-              <span className="sp-vh">Download</span>
+              <span className="sp-sr">Download</span>
             </th>
           </tr>
         </thead>
@@ -285,7 +284,7 @@ function Listing({ id, folder, results, search, work }: { id: string; folder: st
               </select>
             </label>
           )}
-          <span role="status" className="sp-vh">
+          <span role="status" className="sp-sr">
             {said}
           </span>
         </div>
@@ -423,7 +422,7 @@ export function ResultsBrowser({ id, search, work }: { id: string; search: Resul
                 : e.status === 409
                   ? { title: "The run's directory is not reachable", body: e.message, retry: true }
                   : e.status === 503
-                    ? { title: "Spectio cannot read the cluster's files right now", body: "The file system does not answer. Nothing was lost; try again in a moment.", retry: true }
+                    ? { title: OFFLINE, body: OFFLINE_WHY, retry: true }
                     : { title: e.message },
         );
       });

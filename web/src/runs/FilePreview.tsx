@@ -26,7 +26,7 @@ import {
   wholeLines,
 } from "./preview";
 import { isResultPath } from "./ReportViewer";
-import { hasDotPart } from "./explorer";
+import { OFFLINE, OFFLINE_WHY, hasDotPart, join } from "./explorer";
 import { BackToRun, Crumbs, type ResultsSearch, useTaskName } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
 import { runName } from "./RunState";
@@ -42,7 +42,6 @@ import { isTerminal, when } from "./stateWord";
 /** The work directory the viewers read from; undefined for the run's results. */
 const Work = createContext<WorkRoot | undefined>(undefined);
 
-const join = (folder: string, name: string) => (folder ? `${folder}/${name}` : name);
 const parent = (path: string) => path.split("/").slice(0, -1).join("/");
 const kib = (n: number) => `${Math.round(n / KIB)} KiB`;
 const clock = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -60,7 +59,7 @@ function Problem({ error, onRetry }: { error: ApiError; onRetry: () => void }) {
           : error.status === 422
             ? [notAFile(work), null, false]
             : error.status === 503
-              ? ["Spectio cannot read the cluster's files right now", "The file system does not answer. Nothing was lost; try again in a moment.", true]
+              ? [OFFLINE, OFFLINE_WHY, true]
               : ["The file could not be read", error.message, true];
   return <Note title={title} body={body} actions={retry ? <Button variant="default" size="xs" onClick={onRetry}>Retry</Button> : null} />;
 }
@@ -198,11 +197,7 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
         label={`${file.name}, ${whole ? "whole file" : end ? "last 64 KiB" : "from the start"}`}
         levels={levels}
         gutter={!end}
-        after={
-          <>
-            {more && <span className="sp-muted sp-file-cut">… cut at {kib(next ?? 0)}</span>}
-          </>
-        }
+        after={more && <span className="sp-muted sp-file-cut">… cut at {kib(next ?? 0)}</span>}
         cap={
           stopped && (
             <p ref={capLine} tabIndex={-1} className="sp-file-cap">

@@ -558,6 +558,14 @@ media:
       - docs/assets/diagrams/p3-b08-login1-followups_dark.svg
       - docs/assets/diagrams/p3-b08-login1-followups_light.png
       - docs/assets/diagrams/p3-b08-login1-followups_dark.png
+  - id: p3-b09-file-explorer
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b09_file_explorer.py
+    outputs:
+      - docs/assets/diagrams/p3-b09-file-explorer_light.svg
+      - docs/assets/diagrams/p3-b09-file-explorer_dark.svg
+      - docs/assets/diagrams/p3-b09-file-explorer_light.png
+      - docs/assets/diagrams/p3-b09-file-explorer_dark.png
   - id: p3-t17-launch
     kind: diagram
     generator: python3 tools/diagrams/p3_t17_launch.py
@@ -777,6 +785,26 @@ media:
     # live, a Nextflow run launched with the profile fail_demo: Why it failed and the failed COMPARE task's .command.log with its WARN, INFO and ERROR lines (batch P3-B08, FU-P3-83)
     generator: python3 tools/media/shots.py run --shot app-run-failed-synth --theme both
     outputs: [docs/assets/shots/app-run-failed-synth_light.webp, docs/assets/shots/app-run-failed-synth_dark.webp]
+  - id: app-results-explorer
+    kind: screenshot
+    # live, the finished Nextflow run, the results directory at 1440 x 1000: sort buttons, the filter, a Kind badge and a Download button per entry (batch P3-B09, FU-P3-85d)
+    generator: python3 tools/media/shots.py run --shot app-results-explorer --theme both
+    outputs: [docs/assets/shots/app-results-explorer_light.webp, docs/assets/shots/app-results-explorer_dark.webp]
+  - id: app-file-preview
+    kind: screenshot
+    # live, the same run, quant/counts_matrix.tsv at 1440 x 1000: a TSV shown as a table, with its path, Copy path and Download (batch P3-B09, FU-P3-85c)
+    generator: python3 tools/media/shots.py run --shot app-file-preview --theme both
+    outputs: [docs/assets/shots/app-file-preview_light.webp, docs/assets/shots/app-file-preview_dark.webp]
+  - id: app-file-preview-phone
+    kind: screenshot
+    # live, as app-file-preview at 390 x 844
+    generator: python3 tools/media/shots.py run --shot app-file-preview-phone --theme both
+    outputs: [docs/assets/shots/app-file-preview-phone_light.webp, docs/assets/shots/app-file-preview-phone_dark.webp]
+  - id: app-workdir
+    kind: screenshot
+    # live, the COMPARE (treatA_vs_ctrl) task's work directory at 1440 x 1000, with SPECTIO_DEMO_TASK its task ID: the same explorer on a second root (batch P3-B09, FU-P3-85e)
+    generator: python3 tools/media/shots.py run --shot app-workdir --theme both
+    outputs: [docs/assets/shots/app-workdir_light.webp, docs/assets/shots/app-workdir_dark.webp]
   - id: spectio-init-doctor
     kind: cast
     # runs the real CLI from the checkout's .venv (uv sync first), in a demo HOME with fake engines

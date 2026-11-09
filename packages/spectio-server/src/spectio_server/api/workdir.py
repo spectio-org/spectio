@@ -18,12 +18,11 @@ from fastapi.responses import Response
 
 from spectio_server.api.models import ResultStat, WorkDir
 from spectio_server.api.problems import Problem
-from spectio_server.api.results import raw_response
+from spectio_server.api.results import entry_dicts, raw_response, stat_response
 from spectio_server.api.taskfiles import (
     HEADERS,
     _attempt,
     _byte_range,
-    _iso,
     in_pool,
     text_response,
 )
@@ -62,10 +61,7 @@ def workdir(request: Request, task_id: str, n: int, path: str = "") -> Response:
             "root": root,
             "path": path,
             "exists": exists,
-            "entries": [
-                {"name": e.name, "type": e.type, "size": e.size, "mtime": _iso(e.mtime)}
-                for e in entries
-            ],
+            "entries": entry_dicts(entries),
             "truncated": truncated,
         }
     )
@@ -77,17 +73,7 @@ def workdir_stat(request: Request, task_id: str, n: int, path: str) -> Response:
     tree, root = _tree(request, task_id, n)
     rel = _rel(path)
     e = in_pool(request, lambda: files.stat_result(tree, rel), missing="not-found")
-    body = ResultStat.model_validate(
-        {
-            "root": root,
-            "path": path,
-            "name": e.name,
-            "type": e.type,
-            "size": e.size,
-            "mtime": _iso(e.mtime),
-        }
-    )
-    return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)
+    return stat_response(root, path, e)
 
 
 @router.get(f"{BASE}/text/{{path:path}}", response_class=Response)
