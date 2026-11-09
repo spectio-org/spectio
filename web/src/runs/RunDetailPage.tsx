@@ -1006,7 +1006,8 @@ function CancelDialog({ run, server, opened, onClose, onConfirm }: { run: RunDet
 
 const FIND_PAGES = 10; // of 200 tasks: the first 2,000 tasks of a run, in ID order
 
-/** One task of the run by its ID, from the run's task listing (no route reads one task alone). */
+/** One task of the run by its ID, from the run's task listing (no route reads one task alone yet:
+ * `GET /tasks/{id}` is FU-P3-96), so a task past the first 2,000 is not found. */
 async function findTask(runId: string, taskId: string, signal: AbortSignal): Promise<Task | null> {
   let cursor: string | null = null;
   for (let n = 0; n < FIND_PAGES; n += 1) {
@@ -1050,14 +1051,17 @@ export function RunDetailPage({ id }: { id: string }) {
   const [taskFilter, setTaskFilter] = useState<number | null>(null);
   // the detail sheet's views, the shown one last (DetailSheet)
   const [views, setViews] = useState<Detail[]>([]);
+  const [sheetLost, setSheetLost] = useState(false);
   // &task=&attempt= (back from a Preview of the sheet's Outputs): that task's sheet, on that attempt
   const { task: openTask, attempt: openAttempt } = search;
   useEffect(() => {
+    setSheetLost(false);
     if (!valid || !openTask || !openAttempt) return;
     const controller = new AbortController();
+    // not found or not read: the page shows without the sheet, and says so
     findTask(id, openTask, controller.signal)
-      .then((task) => task && setViews([{ kind: "task", task, attempt: openAttempt }]))
-      .catch(() => undefined); // not found or not read: the page shows without the sheet
+      .then((task) => (task ? setViews([{ kind: "task", task, attempt: openAttempt }]) : setSheetLost(true)))
+      .catch(() => controller.signal.aborted || setSheetLost(true));
     return () => controller.abort();
   }, [id, valid, openTask, openAttempt]);
   const closeSheet = () => {
@@ -1153,6 +1157,7 @@ export function RunDetailPage({ id }: { id: string }) {
         cancelError={cancelError}
         onChip={showTasks}
       />
+      {sheetLost && <p role="status">This job's sheet could not be reopened.</p>}
       <DetailSheet
         run={run}
         stages={stages}

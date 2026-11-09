@@ -392,9 +392,10 @@ test("the run's URL with &task= and &attempt= reopens the sheet on that attempt,
   expect(router.history.length).toBe(before);
 });
 
-test("a task the run's listing does not have opens no sheet", async () => {
+test("a task the run's listing does not have opens no sheet and says so (CR-P3FU85D-01)", async () => {
   detail({ [`${FILES}/2/files`]: listing([]) });
   app(`/runs/${ID}?task=tsk_99&attempt=1`);
   await screen.findByRole("heading", { level: 1 });
-  await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
+  expect(await screen.findByText("This job's sheet could not be reopened.")).toHaveAttribute("role", "status");
+  expect(screen.queryByRole("dialog")).toBeNull();
 });
