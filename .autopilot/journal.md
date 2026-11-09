@@ -750,3 +750,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-09T00:0xZ · FU-P3-85 design (P3-fu85-spec): note written, independent pre-review R1 (security changes 0/2/9, ux changes 0/5/15) all applied (1603104c). PR #183 opened, subscribed. Inbox #127 assumed. Build plan FU-P3-85a..e. Cost recorded: 25 USD.
 
 - 2026-11-09T00:1xZ · FU-P3-85 design merged (#183, squash 2b23c415). Next: FU-P3-85a (server: results stat and text routes, strip_escapes fix, CORP).
+
+- 2026-11-09T00:3xZ · P3-fu85a (FU-P3-85a) built: review approve 0/0/1, security approve 0/0/3, round 1. PR #184 opened, subscribed. Inbox #128 assumed. FU-P3-93 opened. Cost recorded: 18 USD.
