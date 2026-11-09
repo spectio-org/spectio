@@ -564,11 +564,11 @@ test('the results browser shows one folder; an HTML file opens in the viewer, an
   const phone = info.project.name === 'phone';
   const table = page.getByRole(phone ? 'list' : 'table', { name: 'fastqc' });
   // FU-P3-85d: a file's name opens its preview; on the desktop, Download is the row's icon button.
-  await expect(table.getByRole('link', { name: /versions\.yml/ })).toHaveAttribute('href', `/runs/${RUN}/results/file?path=${encodeURIComponent('fastqc/versions.yml')}`);
+  await expect(table.getByRole('link', { name: /^versions\.yml/ })).toHaveAttribute('href', `/runs/${RUN}/results/file?path=${encodeURIComponent('fastqc/versions.yml')}`);
   if (!phone) {
     await expect(table.getByRole('link', { name: 'Download versions.yml' })).toHaveAttribute('href', `/api/v1/runs/${RUN}/results/raw/fastqc/versions.yml?download=true`);
   }
   await expect(table.getByText('not followed')).toBeVisible();
-  await table.getByRole('link', { name: /S01_fastqc\.html/ }).click();
+  await table.getByRole('link', { name: /^S01_fastqc\.html/ }).click();
   await expect(page.getByText('Untrusted report: fastqc/S01_fastqc.html')).toBeVisible();
 });
