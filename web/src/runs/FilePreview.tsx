@@ -125,10 +125,12 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
   const next = read?.next ?? null;
   const capped = next !== null && next >= SHOWN_MAX && next < total;
   const shown = useMemo(() => capLines(read?.text ?? ""), [read]);
-  const stopped = capped || shown.capped; // either cap ends Load more: focus moves to the line that says so
+  const stopped = capped || shown.capped; // either cap ends Load more
+  // focus moves to the line that says so only when a Load more reached it, not on the first read
+  const stoppedByMore = stopped && !end && !whole && (next ?? 0) > READ;
   useEffect(() => {
-    if (stopped) capLine.current?.focus();
-  }, [stopped]);
+    if (stoppedByMore) capLine.current?.focus();
+  }, [stoppedByMore]);
 
   if (error?.status === 415) return <Binary id={id} file={file} />;
   if (error) return <Problem error={error} onRetry={retry} />;

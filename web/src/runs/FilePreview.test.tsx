@@ -134,6 +134,15 @@ test("at most 20,000 lines are rendered", async () => {
   expect(viewer.children.length).toBe(20000);
 }, 30000);
 
+test("a first read of more than 20,000 lines leaves focus on the file name (CR-P3FU85C-06)", async () => {
+  files("newlines.txt", 64 * KIB, { [`${RUN}/results/text/newlines.txt`]: () => text("\n".repeat(64 * KIB)) });
+  open("newlines.txt");
+  const h1 = await heading("newlines.txt");
+  await waitFor(() => expect(h1).toHaveFocus());
+  await screen.findByText("Showing the first 20,000 lines. Download to see the rest.", {}, { timeout: 10000 });
+  expect(h1).toHaveFocus();
+}, 30000);
+
 test("at 20,000 lines from the start Load more stops, and nothing says the text is cut at 64 KiB", async () => {
   const size = 200 * KIB;
   files("lines.txt", size, { [`${RUN}/results/text/lines.txt`]: () => partial("\n".repeat(64 * KIB), 0, 64 * KIB - 1, size) });

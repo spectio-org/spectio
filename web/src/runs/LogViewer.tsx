@@ -98,7 +98,8 @@ export function LogViewer({
   const [query, setQuery] = useState("");
   const [shown, setShown] = useState<Level>("all");
   const [current, setCurrent] = useState(0);
-  const [searching, setSearching] = useState(!searchButton);
+  const [searching, setSearching] = useState(false);
+  const open = !searchButton || searching; // a desktop always shows the field; the phone, once Search is pressed
   const viewer = useRef<HTMLPreElement>(null);
   const field = useRef<HTMLInputElement>(null);
 
@@ -144,8 +145,8 @@ export function LogViewer({
   }, [text, start]);
 
   useEffect(() => {
-    if (searchButton && searching) field.current?.focus(); // Search opened: focus moves into the field
-  }, [searchButton, searching]);
+    if (searching) field.current?.focus(); // Search pressed: focus moves into the field
+  }, [searching]);
 
   const step = (by: number) => matches.length && setCurrent((at + by + matches.length) % matches.length);
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -164,11 +165,11 @@ export function LogViewer({
     <>
       <div className="sp-filters sp-log-search">
         {searchButton && (
-          <button type="button" className="sp-key" aria-expanded={searching} onClick={() => setSearching(!searching)}>
+          <button type="button" className="sp-key" aria-expanded={open} onClick={() => setSearching(!open)}>
             Search
           </button>
         )}
-        {searching && (
+        {open && (
           <>
             <label className="sp-search-field">
               <Icon path={ICONS.search} size={16} />

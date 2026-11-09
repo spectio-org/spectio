@@ -203,3 +203,15 @@ test("wrap off keeps lines on one row; wrap on wraps them, numbers beside their 
   expect(viewer()).not.toHaveClass("sp-nowrap");
   expect(viewer()).toHaveAttribute("data-wrap");
 });
+
+test("across the 768 px breakpoint the search follows: field on a desktop, closed and unfocused on the phone (CR-P3FU85C-07)", () => {
+  const { rerender } = render(<LogViewer text={LOG} label="Engine log" searchButton />);
+  expect(screen.queryByRole("searchbox")).toBeNull();
+  rerender(<LogViewer text={LOG} label="Engine log" />); // phone to desktop
+  expect(field()).toBeInTheDocument();
+  expect(screen.queryByRole("button", { name: "Search" })).toBeNull();
+  rerender(<LogViewer text={LOG} label="Engine log" searchButton />); // desktop to phone
+  expect(screen.getByRole("button", { name: "Search" })).toHaveAttribute("aria-expanded", "false");
+  expect(screen.queryByRole("searchbox")).toBeNull();
+  expect(document.body).toHaveFocus();
+});
