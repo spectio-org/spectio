@@ -139,6 +139,65 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
         </div>
       </section>
       <span style="font-size: 12.5px; color: #4D5065;">Read-only. A folder's size is not counted. A file's name opens its preview; an HTML report opens in Spectio's report viewer.</span>
+      <h2 style="margin: 8px 0 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">Imaging rows</h2>
+      <div style="display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 14px; align-items: start;">
+        <section class="lr-card" aria-labelledby="lr-img-title">
+          <div class="lr-head"><h3 id="lr-img-title" style="margin: 0; font-size: 15px; font-weight: 600; flex-grow: 1;">results / registration · 1 folder, 2 files</h3></div>
+          <div style="overflow-x: auto;">
+          <table class="lr-table" aria-label="registration" style="min-width: 560px;">
+            <caption class="vh">Contents of results/registration, read-only; folders first</caption>
+            <thead><tr>
+              <th scope="col" aria-sort="ascending"><button type="button" class="lr-sort" data-on="">Name <span aria-hidden="true">↑</span></button></th>
+              <th scope="col">Kind</th>
+              <th scope="col" style="text-align: right;"><button type="button" class="lr-sort">Size</button></th>
+              <th scope="col"><button type="button" class="lr-sort">Modified</button></th>
+              <th scope="col"><span class="vh">Download</span></th>
+            </tr></thead>
+            <tbody>
+              <tr>
+                <th scope="row"><span class="lr-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h6l2 2h10v10H3z"/></svg><a href="LiteImageViewer.dc.html">registered.ome.zarr</a></span></th>
+                <td><dc-import name="LiteKind" kind="omezarr" hint-size="140px,22px"></dc-import></td>
+                <td class="lr-num">—</td>
+                <td class="lr-muted">2 Nov 16:30</td>
+                <td class="lr-act"></td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="lr-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><a href="LiteImageViewer.dc.html">lunaphore_example.ome.tiff</a></span></th>
+                <td><dc-import name="LiteKind" kind="ometiff" hint-size="140px,22px"></dc-import></td>
+                <td class="lr-num">1.84 GiB</td>
+                <td class="lr-muted">2 Nov 14:20</td>
+                <td class="lr-act"><a class="lr-dl" href="#" download aria-label="Download lunaphore_example.ome.tiff"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11 M7 10l5 5 5-5 M5 20h14"/></svg></a></td>
+              </tr>
+              <tr>
+                <th scope="row"><span class="lr-name"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="1.6" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z M14 3v5h5"/></svg><a href="LiteImageViewer.dc.html">qc_overview.tif</a></span></th>
+                <td><dc-import name="LiteKind" kind="tiff" hint-size="140px,22px"></dc-import></td>
+                <td class="lr-num">2.3 MiB</td>
+                <td class="lr-muted">2 Nov 15:40</td>
+                <td class="lr-act"><a class="lr-dl" href="#" download aria-label="Download qc_overview.tif"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 4v11 M7 10l5 5 5-5 M5 20h14"/></svg></a></td>
+              </tr>
+            </tbody>
+          </table>
+          </div>
+          <span class="lr-muted" style="display: block; padding: 8px 16px 12px; line-height: 1.45;">An <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">*.ome.zarr</code> folder stays with the folders (first in every sort), with no size and no Download; its name opens the image's preview page, not the folder page. The OME-TIFF and TIFF names open the preview page with the image viewer or the flat view.</span>
+        </section>
+        <section class="lr-state" aria-labelledby="lr-zarr-title">
+          <span class="lr-cap">THE FOLDER PAGE OF AN *.OME.ZARR FOLDER</span>
+          <h3 id="lr-zarr-title" style="margin: 0; font-size: 15px; font-weight: 600; overflow-wrap: anywhere;">registered.ome.zarr · 3 folders, 1 file</h3>
+          <div style="display: flex; align-items: center; gap: 6px 10px; flex-wrap: wrap; border-radius: 12px; background: #F7F7FB; padding: 6px 10px;">
+            <nav aria-label="Folder" style="font-size: 13px; font-weight: 600; display: flex; gap: 6px; flex-wrap: wrap;"><a href="#">results</a><span aria-hidden="true" style="color: #6E7287;">/</span><a href="#">registration</a><span aria-hidden="true" style="color: #6E7287;">/</span><span aria-current="page" style="overflow-wrap: anywhere;">registered.ome.zarr</span></nav>
+            <span style="flex-grow: 1;"></span>
+            <button type="button" class="lr-btn" aria-label="Copy path">Copy path</button>
+            <a href="LiteImageViewer.dc.html" class="lr-btn" style="display: inline-flex; align-items: center; text-decoration: none; box-shadow: inset 0 0 0 1px #7750D4; color: #4D368B;">Open as an image</a>
+          </div>
+          <ul style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px;">
+            <li style="display: flex; gap: 8px; align-items: center;"><a href="#" style="font-weight: 600;">0</a><dc-import name="LiteKind" kind="folder" hint-size="140px,22px"></dc-import></li>
+            <li style="display: flex; gap: 8px; align-items: center;"><a href="#" style="font-weight: 600;">1</a><dc-import name="LiteKind" kind="folder" hint-size="140px,22px"></dc-import></li>
+            <li style="display: flex; gap: 8px; align-items: center;"><a href="#" style="font-weight: 600;">2</a><dc-import name="LiteKind" kind="folder" hint-size="140px,22px"></dc-import></li>
+            <li style="display: flex; gap: 8px; align-items: center;"><a href="LiteFilePreview.dc.html" style="font-weight: 600;">zarr.json</a><dc-import name="LiteKind" kind="json" hint-size="140px,22px"></dc-import><span class="lr-muted">1.2 KiB</span></li>
+          </ul>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">Reached with the preview page's Browse folder. Open as an image goes back to the preview page. The list is the explorer's table, cut short here.</span>
+        </section>
+      </div>
       <h2 style="margin: 8px 0 0; font-family: 'Outfit', sans-serif; font-weight: 600; font-size: 18px;">States</h2>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px;">
         <section aria-label="A · filtered" class="lr-state">
@@ -164,7 +223,7 @@ a:focus-visible,button:focus-visible,input:focus-visible,select:focus-visible{ou
           <span style="font-size: 12.5px; color: #33364A; line-height: 1.5;">The preview's back link adds <code style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px;">&amp;focus=versions.yml</code>: the folder scrolls that row into view and its link takes focus.</span>
         </section>
       </div>
-      <span style="font-size: 11.5px; color: #6E7287;">Data: fixture listing shaped on nf-core/rnaseq's fastqc/ folder; fields from GET /runs/{id}/results (api §5, note 2026-10-28): entries name, type, size, mtime; truncated; exists; link_outside. The card is RunOutputs' "Published files" (ui-spec §4.4.1, Explorer); the counts are of the entries listed. Kind badges come from LiteKind, the one list of kinds; folders stay first in every sort; Download is an icon button named "Download &lt;name&gt;".</span>
+      <span style="font-size: 11.5px; color: #6E7287;">Data: fixture listing shaped on nf-core/rnaseq's fastqc/ folder; fields from GET /runs/{id}/results (api §5, note 2026-10-28): entries name, type, size, mtime; truncated; exists; link_outside. The card is RunOutputs' "Published files" (ui-spec §4.4.1, Explorer); the counts are of the entries listed. Kind badges come from LiteKind, the one list of kinds; folders stay first in every sort; Download is an icon button named "Download &lt;name&gt;". Imaging rows: fixture listing shaped on nf-core/mcmicro's registration/ folder (ui-spec §4.4.1, imaging note of 2026-11-09); the viewer and its states are LiteImageViewer and LiteImageViewerStates.</span>
     </main>
 </div>
 </x-dc>
