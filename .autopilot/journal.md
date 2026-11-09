@@ -752,3 +752,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-09T00:1xZ · FU-P3-85 design merged (#183, squash 2b23c415). Next: FU-P3-85a (server: results stat and text routes, strip_escapes fix, CORP).
 
 - 2026-11-09T00:3xZ · P3-fu85a (FU-P3-85a) built: review approve 0/0/1, security approve 0/0/3, round 1. PR #184 opened, subscribed. Inbox #128 assumed. FU-P3-93 opened. Cost recorded: 18 USD.
+
+- 2026-11-09T00:5xZ · FU-P3-85a merged (#184, squash b01788f0). Next: FU-P3-85b (image mode of the raw route).
