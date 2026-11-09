@@ -770,3 +770,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-09T03:5xZ · P3-fu85e (FU-P3-85e) built: review approve 0/0/7, security approve 0/0/2, 2 rounds. PR #189 opened, subscribed. Inbox #132 assumed. FU-P3-98 opened. Safety check-ins for #164 and #111 stopped after 3 empty ones. Cost recorded: 16 USD.
 
 - 2026-11-09T04:0xZ · FU-P3-85e merged (#189, squash a89d6fde). FU-P3-85 complete (85a-e). Next: batch P3-B09 (FU-P3-90, 85 design, 85a-e), then promotion to main.
+
+- 2026-11-09T04:4xZ · Batch P3-B09 built: simplify -61/+54 (re-review approve 0/0/2, security 0/0/1), figure, 4 shots, guide browse-and-preview-files, doc-reviewer approve 13/14 (required change applied). PR #190 opened, subscribed. Seen on the shot app-workdir: the topbar breadcrumb repeats the run name instead of ending with "Work directory"; added to FU-P3-98. Cost recorded: 14 USD.
