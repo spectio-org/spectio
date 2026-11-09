@@ -16,6 +16,7 @@ import { ICONS, Icon } from "../icons";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
 import { LogLines } from "./LogViewer";
+import { OFFLINE, OFFLINE_WHY } from "./explorer";
 import { isResultPath } from "./ReportViewer";
 import { duration, when } from "./stateWord";
 
@@ -50,7 +51,6 @@ const WHY: Record<Exclude<TaskFile["state"], "present">, [string, string]> = {
     "Its files are gone, for example after nextflow clean or a scratch purge. The run's results and logs are not affected.",
   ],
 };
-const OFFLINE = "Spectio cannot read the cluster's files right now";
 const CLEANUP: [string, string] = [
   "This job's work directory was removed by cleanup = true",
   "Nextflow removes the work directories after a successful run when cleanup = true. The run's results are not affected.",
@@ -180,7 +180,7 @@ function FilePanel({ task, n, file, running, cleanup, onReload }: { task: Task; 
     const [title, body] = cleanup ? CLEANUP : WHY.cleaned;
     return <Refused title={title} body={body} />;
   }
-  if (error?.status === 503) return <Refused title={OFFLINE} body="The file system does not answer. Nothing was lost; try again in a moment." onRetry={() => setReads((r) => r + 1)} />;
+  if (error?.status === 503) return <Refused title={OFFLINE} body={OFFLINE_WHY} onRetry={() => setReads((r) => r + 1)} />;
   if (error?.status === 404) return <Refused title="This file is not there now" body="It was listed, then not found: reload the list." onRetry={() => (onReload(), setReads((r) => r + 1))} />;
   if (error) return <Refused title="The file could not be read" body={error.message} onRetry={() => setReads((r) => r + 1)} />;
   const size = file.size ?? 0;
@@ -303,7 +303,7 @@ export function TaskFiles({ run, task, attempt }: { run: RunDetail; task: Task; 
             ))}
         </div>
       )}
-      {error && error.status === 503 && <Refused title={OFFLINE} body="The file system does not answer. Nothing was lost; try again in a moment." onRetry={reload} />}
+      {error && error.status === 503 && <Refused title={OFFLINE} body={OFFLINE_WHY} onRetry={reload} />}
       {error && error.status !== 503 && <Refused title="The files could not be listed" body={error.message} onRetry={reload} />}
       {!error && listing?.attempt !== n && <p className="sp-muted">Loading the files…</p>}
       {!error && listing?.attempt === n && files.length === 0 && outputs === null && <p className="sp-muted">This attempt has no file to show.</p>}

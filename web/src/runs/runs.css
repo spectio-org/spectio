@@ -1537,14 +1537,6 @@
 /* The results explorer (ui-spec §4.4.1, Explorer; LiteResults, MLiteResults): one card, its head
    with the counts, the filter and (phone) Sort by; Kind as a text badge with an icon; header sort
    buttons; on the phone one 44 px link per row, the name wrapping anywhere. */
-.sp-vh {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip: rect(0 0 0 0);
-  white-space: nowrap;
-}
 .sp-explorer {
   display: flex;
   flex-direction: column;

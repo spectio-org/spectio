@@ -12,6 +12,12 @@ export type EntryKind = Kind | "folder" | "link";
 export const entryKind = (entry: Pick<ResultEntry, "name" | "type">): EntryKind =>
   entry.type === "dir" ? "folder" : entry.type === "link_outside" ? "link" : fileKind(entry.name);
 
+export const join = (folder: string, name: string) => (folder ? `${folder}/${name}` : name);
+
+/** The 503 answer of the file routes in words: the cluster's file system does not answer. */
+export const OFFLINE = "Spectio cannot read the cluster's files right now";
+export const OFFLINE_WHY = "The file system does not answer. Nothing was lost; try again in a moment.";
+
 /** A work directory's path with a part that starts with `.`: refused before any read, as the
  * server refuses it (FU-P3-85e); the job's own files are in the task sheet. */
 export const hasDotPart = (path: string) => path.split("/").some((part) => part.startsWith("."));
