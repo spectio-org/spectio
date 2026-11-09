@@ -612,10 +612,10 @@ def build(theme: Theme) -> Sketch:
     s.text(x + 24, y0 + 209, "ruff, format, mypy, lint-imports, `uv lock --check`:", size=12,
            anchor="start")
     s.text(x + 24, y0 + 228, "clean, as in the baseline", size=12, anchor="start", colour=t.dim)
-    s.warning(x + 8, y0 + 250, size=8)
-    s.text(x + 24, y0 + 255, "web gate not run: no `node_modules` in the", size=12,
+    s.tick(x + 8, y0 + 250, size=6)
+    s.text(x + 24, y0 + 255, "web gate, run by `doc-writer` after the commit:", size=12,
            anchor="start")
-    s.text(x + 24, y0 + 274, "worktree; the commit touches no web file", size=12, anchor="start",
+    s.text(x + 24, y0 + 274, "`vitest` 465 passed, `tsc --noEmit` exit 0", size=12, anchor="start",
            colour=t.dim)
     s.text(x + 24, y0 + 300, "re-review CR-P3B10-01 minor: `view()` now relies on a", size=12,
            anchor="start")
