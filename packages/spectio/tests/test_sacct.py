@@ -551,7 +551,8 @@ def test_req15_eff_fields(fakebin: Fake) -> None:
 
 def test_sacct_output_capped(fakebin: Fake) -> None:
     fakebin.output((line(JobID="8812477", State="FAILED", WorkDir="/w") + "\n") * 40000)  # > 1 MiB
-    assert sacct_jobs(want(("8812477", "/w")), sacct=fakebin.path) is None
+    with pytest.raises(sacct.TooMuch):  # final for one ID; the limiter splits a batch
+        sacct_jobs(want(("8812477", "/w")), sacct=fakebin.path)
 
 
 class Clock:
@@ -654,3 +655,46 @@ def test_sacct_limiter_follow_up() -> None:
     clock.now += 600
     assert limiter.run_once() == (["7"], {})
     assert limiter.wait_s() is None
+
+
+def test_sacct_limiter_request_takes_follow_up() -> None:
+    """CR-P3FU106A-03: a job asked again before its follow-up is due rides along with that
+    call; the follow-up never fires on its own later."""
+    clock = Clock()
+    limiter = SacctLimiter(lambda ids: {}, clock=clock)
+    limiter.later(["7"], 600)
+    limiter.request(["7"])
+    assert limiter.run_once() == (["7"], {})
+    assert limiter.wait_s() is None
+
+
+def test_sacct_limiter_classifies_failures() -> None:
+    """SEC-P3FU106A-01: a refused call is final; an answer over the cap splits its batch at
+    once and is final for one ID; a call that fails twice is split, so one ID that fails
+    every call cannot hold its batch-mates."""
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        if "9" in ids:
+            raise sacct.Refused("not a tool")
+        if "5" in ids:
+            raise sacct.TooMuch("over the cap")
+        return None if "3" in ids else {}
+
+    limiter = SacctLimiter(call, interval_s=0)
+    limiter.request(["9"])
+    assert limiter.run_once() == (["9"], sacct.FINAL)
+    limiter.request(["5", "6"])
+    assert limiter.run_once() == (["5", "6"], None)
+    limiter.request(["5", "6"])  # the caller puts them back: halved at once
+    assert limiter.run_once() == (["5"], sacct.FINAL)
+    assert limiter.run_once() == (["6"], {})
+    answered = []
+    limiter.request(["1", "2", "3", "4"])
+    for _ in range(6):
+        done = limiter.run_once()
+        assert done is not None
+        if done[1] is None:
+            limiter.request(done[0])
+        else:
+            answered += done[0]
+    assert sorted(answered) == ["1", "2", "4"] and limiter.pending() == 1

@@ -12,7 +12,10 @@ launched from, SEC-P3T29-01) and its `Submit` is not before the run's launch (in
 10 (b), FU-P3-53). Each call is bounded in time too: `-S` the earliest launch of its jobs less
 `SUBMIT_SKEW_S`, `-E now`, never from Epoch 0 (CON-SLURM-POLL-03). `SacctLimiter` holds the
 server-wide pace: one call in flight, one call per `INTERVAL_S`, doubled up to `MAX_INTERVAL_S`
-after a failed or slow call (CON-SLURM-POLL-02; schedulers §3.8, the SLURM query budget).
+after a failed or slow call (CON-SLURM-POLL-02; schedulers §3.8, the SLURM query budget). A
+call that would fail every time (a refused tool, too much output for one ID) is final, and a
+batch that fails twice, or says too much, is split, so one ID cannot hold the others
+(SEC-P3FU106A-01).
 
 The fields asked for (`FORMAT`, `WorkDir` among them) and their units, and whether `-j` alone
 returns other users' jobs, are [to be validated] on `slurm-mini` (P1 Task 22) and at EMBL: a
@@ -39,7 +42,9 @@ from collections import Counter
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, replace
 from datetime import UTC, datetime
+from enum import Enum
 from pathlib import Path
+from typing import Literal
 
 log = logging.getLogger(__name__)
 
@@ -80,6 +85,17 @@ class Refused(ValueError):
     """A job ID or a tool path that is never passed to `sacct`."""
 
 
+class TooMuch(Exception):
+    """`sacct` said more than MAX_OUTPUT: asked again, the same IDs would say as much."""
+
+
+class Unanswered(Enum):
+    FINAL = "final"  # a call that fails every time it is made: its IDs are given up
+
+
+FINAL = Unanswered.FINAL
+
+
 @dataclass(frozen=True)
 class SacctRow:
     state: str | None
@@ -105,6 +121,7 @@ class SacctRow:
 Wanted = Mapping[str, Mapping[str, float]]
 # Job ID → {normalised WorkDir: its row}; a job or a directory with no row is absent.
 Found = dict[str, dict[str, SacctRow]]
+Answer = Found | None | Literal[Unanswered.FINAL]  # None: failed, to be asked again
 
 
 def check_ids(ids: Iterable[str]) -> list[str]:
@@ -169,8 +186,8 @@ def sacct_jobs(
     dropped: Counter[str] | None = None,
 ) -> Found | None:
     """The rows `sacct` gives for the `wanted` jobs and directories (`parse_sacct`); None when
-    it failed, timed out or said too much. Raises Refused, before any call, for an ID or a
-    tool that is not accepted."""
+    it failed or timed out. Raises Refused, before any call, for an ID or a tool that is not
+    accepted, and TooMuch when it said more than MAX_OUTPUT."""
     ids = check_ids(wanted)
     check_tool(sacct)
     delimiter = new_delimiter()
@@ -193,7 +210,9 @@ def sacct_jobs(
             code = proc.wait()
         finally:
             timer.cancel()
-    if code != 0 or len(data) > MAX_OUTPUT:
+    if len(data) > MAX_OUTPUT:
+        raise TooMuch(f"sacct said over {MAX_OUTPUT} bytes for {len(ids)} IDs")
+    if code != 0:
         log.warning(
             "sacct gave no answer for %d IDs (exit %s, %d bytes)", len(ids), code, len(data)
         )
@@ -382,7 +401,10 @@ class SacctLimiter:
     the last call started and no call is in flight. The interval is `interval_s`, doubled after
     a call that failed or took over `slow_s`, up to `max_interval_s`, and reset by a quick
     answer. `later` queues IDs once a delay has passed (a follow-up). The caller's thread runs
-    the call: the server runs it on a thread of its own, never the writer's or a request's."""
+    the call: the server runs it on a thread of its own, never the writer's or a request's.
+    A Refused call, or one that said too much for one ID, is FINAL. Each ID of a failed call
+    keeps the size of the call it was in, halved when it fails again or said too much: a call
+    holds at most as many IDs as the first queued one allows (SEC-P3FU106A-01)."""
 
     def __init__(
         self,
@@ -404,6 +426,7 @@ class SacctLimiter:
         self._max_pending = max_pending
         self._clock = clock
         self._pending: dict[str, None] = {}  # insertion order: first asked, first called
+        self._size: dict[str, int] = {}  # job ID of a failed call → at most this many per call
         self._last: float | None = None
         self._busy = False
         self._lock = threading.Lock()
@@ -418,6 +441,7 @@ class SacctLimiter:
                 if job not in self._pending and len(self._pending) >= self._max_pending:
                     break
                 self._pending[job] = None
+                self._later.pop(job, None)  # its follow-up rides along with this call
                 queued.append(job)
         return queued
 
@@ -455,29 +479,45 @@ class SacctLimiter:
             pace = 0.0 if self._last is None else self._last + self._interval - now
             return max(0.0, ready, pace)
 
-    def run_once(self) -> tuple[list[str], Found | None] | None:
-        """One call when one is due: the IDs asked and the rows (None: the call failed).
-        None when nothing is queued, it is too soon, or a call is in flight."""
+    def run_once(self) -> tuple[list[str], Answer] | None:
+        """One call when one is due: the IDs asked and the rows (None: the call failed, FINAL:
+        it would fail every time). None when nothing is queued, it is too soon, or a call is
+        in flight."""
         with self._lock:
             self._due(self._clock())
             if self._busy or not self._pending:
                 return None
             if self._last is not None and self._clock() < self._last + self._interval:
                 return None
-            ids = list(self._pending)[: self._batch]
+            size = self._size.get(next(iter(self._pending)), self._batch)
+            ids = list(self._pending)[: min(size, self._batch)]
+            failed = {job: self._size.pop(job) for job in ids if job in self._size}
             for job in ids:
                 del self._pending[job]
             started = self._clock()
             self._busy, self._last = True, started
-        rows: Found | None = None
+        rows: Answer = None
+        again = False  # a failed call that already failed once, or said too much
         try:
             rows = self._call(ids)
-        except Exception:  # a refusal or a crash: those IDs get no answer, the next call runs
+        except Refused as exc:  # the tool or an ID: every call of them would be refused
+            log.warning("sacct not called for %d IDs: %s", len(ids), exc)
+            rows = FINAL
+        except TooMuch as exc:  # split, until one ID alone says too much
+            log.warning("%s", exc)
+            rows, again = (None, True) if len(ids) > 1 else (FINAL, False)
+        except Exception:  # a crash: those IDs get no answer, the next call runs
             log.exception("sacct call failed")
         finally:
             with self._lock:
                 self._busy = False
-                if rows is None or self._clock() - started > self._slow:  # back-pressure
+                if rows is None:  # to be asked again: halved when it failed before
+                    # (and the sizes of IDs the caller gave up since are dropped)
+                    self._size = {j: n for j, n in self._size.items() if j in self._pending}
+                    for job in ids:
+                        n = min(failed.get(job, len(ids)), len(ids))
+                        self._size[job] = max(1, n // 2) if again or job in failed else n
+                if not isinstance(rows, dict) or self._clock() - started > self._slow:
                     self._interval = min(self._max_interval, 2 * self._interval)
                 else:
                     self._interval = self._base

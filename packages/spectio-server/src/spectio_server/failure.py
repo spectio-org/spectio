@@ -270,8 +270,10 @@ class Accounting:
     checked directory and read back with no link followed. A run's file is read (`load`, in
     the file pool) before any of its jobs is asked (`want`), so a cached job is never asked
     again, after a rebuild too. A job whose call failed (an error, a timeout) is put back in
-    the queue, as the limiter backs off, until GIVE_UP_S after it ended; then it is given up
-    in memory, never stored (CON-SLURM-POLL-02). Only a row in a TERMINAL state is kept: a job
+    the queue, as the limiter backs off and splits a batch that fails again, until GIVE_UP_S
+    after it ended; then it is given up in memory, never stored (CON-SLURM-POLL-02). A call
+    that would fail every time (a refused tool, too much output for one ID) gives its jobs up
+    at once (SEC-P3FU106A-01). Only a row in a TERMINAL state is kept: a job
     `sacct` does not know yet, or not as ended (slurmdbd records a job after it ends, with a
     lag, [to be validated] on `slurm-mini`, P1 Task 22), is asked once more FOLLOW_UP_S later,
     with no view; then it is kept as None when that answer had no line for it, else given up
@@ -512,12 +514,15 @@ class Accounting:
             called, self._called = self._called, {}
             now = self._clock()
             for job in ids:
-                answer = found.get(job, {}) if found is not None else {}
+                answer = found.get(job, {}) if isinstance(found, dict) else {}
                 again, follow = set(), set()  # the runs that wait: asked now, or later
                 for run_id in self._asked.pop(job, set()):
                     key = run_id, job
                     if key not in called:  # asked during the call: not in it, no follow-up
                         again.add(run_id)
+                        continue
+                    if found is sacct.FINAL:  # it would fail every time: given up at once
+                        self._give_up(key)
                         continue
                     if found is None:  # no answer: asked again, as the limiter backs off
                         if now < self._deadline.get(key, now):

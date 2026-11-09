@@ -65,6 +65,9 @@ if os.path.exists(delay):
 if os.path.exists(os.path.join(here, "fail")):  # slurmdbd unreachable: no answer
     sys.exit(1)
 ids = sys.argv[sys.argv.index("-j") + 1].split(",")
+bad = os.path.join(here, "bad")  # an ID whose every call fails
+if os.path.exists(bad) and open(bad).read() in ids:
+    sys.exit(1)
 lag = os.path.join(here, "lag")  # a state per call, "-" for no row; then OUT_OF_MEMORY
 text = open(lag).read() if os.path.exists(lag) else ""
 states = text.split(",") if text else []
@@ -868,6 +871,45 @@ def test_sacct_failed_call_requeued(
     assert acct.step() and len(fakebin.calls()) == 3
     assert acct.failed(RUN, "8812401") and acct.status(RUN, "8812401") == "unavailable"
     assert acct.rows(RUN) == {} and acct._limiter.wait_s() is None
+
+
+def test_sacct_bad_id_holds_no_batch(settings: Settings, writer: Writer, fakebin: Fake) -> None:
+    """SEC-P3FU106A-01: a call that fails whenever one ID is in it is split after its second
+    failure, so the other IDs of the batch are answered on later calls; the bad one is asked
+    alone until GIVE_UP_S, then given up."""
+    (fakebin.dir / "bad").write_text("8812403")
+    clock = Clock()
+    run = Run(settings, writer)
+    acct = Accounting(settings.runs_root, fakebin.path, start_thread=False, clock=clock)
+    acct.load(RUN)
+    jobs = [f"881240{n}" for n in range(8)]
+    for job in jobs:
+        fakebin.at(job, run.paths.work_dir)
+    acct.want(RUN, [(job, str(run.paths.work_dir)) for job in jobs], 0.0)
+    for _ in range(7):  # 8 fail, 8 fail, then 4 + 4, 2 + 2, 1 + 1
+        wait = acct._limiter.wait_s()
+        assert wait is not None
+        clock.now += wait
+        assert acct.step()
+    assert sorted(acct.rows(RUN)) == [job for job in jobs if job != "8812403"]
+    assert acct.status(RUN, "8812403") == "pending"
+    clock.now += failure.GIVE_UP_S
+    assert acct.step() and fakebin.calls()[-1][fakebin.calls()[-1].index("-j") + 1] == "8812403"
+    assert acct.failed(RUN, "8812403") and acct._limiter.wait_s() is None
+
+
+def test_sacct_refused_tool_gives_up_at_once(
+    settings: Settings, writer: Writer, fakebin: Fake
+) -> None:
+    """SEC-P3FU106A-01: a tool others can write is refused on every call: never run, its
+    jobs given up at once, not asked again for a day."""
+    fakebin.path.chmod(0o777)
+    run = Run(settings, writer)
+    acct = Accounting(settings.runs_root, fakebin.path, start_thread=False, clock=Clock())
+    acct.load(RUN)
+    acct.want(RUN, [("8812401", str(run.paths.work_dir))], 0.0)
+    assert acct.step() and fakebin.calls() == []
+    assert acct.failed(RUN, "8812401") and acct._limiter.wait_s() is None
 
 
 def test_sacct_live_run_asks_failures_and_opened_panel(

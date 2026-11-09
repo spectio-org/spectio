@@ -31,8 +31,9 @@ const TASK = {
   efficiency: { cpu: 0.69, mem: 1.0, elapsed_s: 360, peak_rss_bytes: 8 * GIB, state: "available", source: "sacct", reason: null },
 };
 
-function open(task: Record<string, unknown>) {
+function open(task: Record<string, unknown>, more: Record<string, unknown> = {}) {
   const mock = serve({
+    ...more,
     [`${URL_}/processes`]: { items: [{ process: PROCESS, stage_id: null, counts: { failed: 1 }, retries: 0 }] },
     [`${URL_}/stages`]: { items: [] },
     [`${URL_}/tasks`]: { items: [task], next: null },
@@ -103,6 +104,14 @@ test("opening a job's SLURM facts reads that one task, so sacct is asked while t
   const mock = open(TASK);
   await sheet();
   expect(fetched(mock)).toContain(`${URL_}/tasks?task=tsk_19&limit=1`);
+});
+
+test("the sheet shows the one task's fresh SLURM facts, not the list's", async () => {
+  const fresh = { ...TASK, efficiency: { ...TASK.efficiency, cpu: 0.42 } };
+  open(TASK, { [`${URL_}/tasks?task=tsk_19`]: { items: [fresh], next: null } });
+  const drawer = await sheet();
+  const efficiency = within(drawer).getByRole("region", { name: "Efficiency" });
+  expect(await within(efficiency).findByText(/^42 %/)).toBeInTheDocument();
 });
 
 test("a task with no SLURM block asks nothing more when opened", async () => {

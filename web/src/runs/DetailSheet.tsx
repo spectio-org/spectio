@@ -228,17 +228,19 @@ function TaskView({ run, stages, processes, task, attempt, onOpen }: { run: RunD
   const r = task.resources;
   const near = nearLimit(r);
   // CON-SLURM-POLL-01: opening a job's SLURM facts reads that one task, which asks its job of
-  // sacct while the run is live; the facts then show what the server has.
+  // sacct while the run is live; the facts then show what the server has, for this task only
+  // (another task's answer is never shown while the next one is read).
   const [fresh, setFresh] = useState<Task | null>(null);
+  const onSlurm = !!task.slurm;
   useEffect(() => {
     setFresh(null);
-    if (!task.slurm) return;
+    if (!onSlurm) return;
     const controller = new AbortController();
     listTasks(run.id, { task: task.id, limit: 1 }, controller.signal)
       .then((page) => setFresh(page.items?.find((t) => t.id === task.id) ?? null))
       .catch(() => undefined); // the list's own facts stay
     return () => controller.abort();
-  }, [run.id, task.id]);
+  }, [run.id, task.id, onSlurm]);
   const facts: [string, ReactNode][] = [
     ["ID", <span className="sp-mono">{task.id}</span>],
     ["Tag", task.tag ?? "—"],
@@ -262,7 +264,7 @@ function TaskView({ run, stages, processes, task, attempt, onOpen }: { run: RunD
   return (
     <>
       <Facts facts={facts} />
-      <SlurmFacts task={fresh ?? task} />
+      <SlurmFacts task={fresh?.id === task.id ? fresh : task} />
       <h3 className="sp-sheet-h">Files</h3>
       <TaskFiles run={run} task={task} attempt={attempt} />
     </>
