@@ -30,6 +30,7 @@ spectio_server/efficiency.py
 spectio_server/failure.py
 spectio_server/files/__init__.py
 spectio_server/files/confine.py
+spectio_server/files/images.py
 spectio_server/files/pool.py
 spectio_server/files/redact.py
 spectio_server/files/results.py

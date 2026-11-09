@@ -45,7 +45,6 @@ from spectio_server.files.confine import (
     read_at,
     safe_rel,
     servable_name,
-    size_of,
 )
 from spectio_server.files.taskfiles import Served, read_text, run_root
 
@@ -326,21 +325,43 @@ def _kind(root: Root, rel: PurePosixPath, dir_fd: int, work: Root | None) -> str
 # --- Raw files ---------------------------------------------------------------------------
 
 
-def file_size(where: Where, rel: PurePosixPath) -> int:
-    """The size of the results file `rel`; raises NotFound or NotAllowed."""
+@dataclass(frozen=True)
+class Raw:
+    """A results file at its first opening: its size, its identity, and its first chunk."""
+
+    size: int
+    ident: tuple[int, int]  # (st_dev, st_ino), compared on every later chunk
+    first: bytes  # at most `CHUNK` bytes from the start; empty for a file over the cap
+
+
+class Replaced(NotAllowed):
+    """The file read for a later chunk is not the one first opened (api §5.3)."""
+
+
+def open_raw(where: Where, rel: PurePosixPath, cap: int) -> Raw:
+    """The results file `rel` at its first opening, its first chunk read only when its size is
+    at most `cap`; raises NotFound or NotAllowed."""
     with _roots(where) as (root, work):
         if root is None:
             raise NotFound("the results directory does not exist yet")
         with open_confined(root, rel, work=work) as f:
-            return size_of(f)
+            st = os.fstat(f.fileno())
+            first = read_at(f, 0, min(st.st_size, CHUNK)) if st.st_size <= cap else b""
+            return Raw(st.st_size, (st.st_dev, st.st_ino), first)
 
 
-def read_chunk(where: Where, rel: PurePosixPath, start: int, n: int) -> bytes:
-    """At most `n` bytes (at most `CHUNK`) of the results file `rel` from `start`."""
+def read_chunk(
+    where: Where, rel: PurePosixPath, start: int, n: int, ident: tuple[int, int]
+) -> bytes:
+    """At most `n` bytes (at most `CHUNK`) of the results file `rel` from `start`; raises
+    Replaced when the file opened is not `ident`."""
     with _roots(where) as (root, work):
         if root is None:
             raise NotFound("the results directory does not exist yet")
         with open_confined(root, rel, work=work) as f:
+            st = os.fstat(f.fileno())
+            if (st.st_dev, st.st_ino) != ident:
+                raise Replaced(f"{rel}: replaced while it was read")
             return read_at(f, start, min(n, CHUNK))
 
 
