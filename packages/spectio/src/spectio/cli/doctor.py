@@ -9,7 +9,9 @@ from pathlib import Path
 
 import typer
 
+from spectio import envfile
 from spectio.config import MIN_UV, NF_SPECTIO_VERSION, Settings, config_path
+from spectio.environments import builtins
 from spectio.loginshell import run_login, which
 from spectio.runner.engines import (
     NEXTFLOW_VERSION,
@@ -133,6 +135,17 @@ def _nxf_plugins(env: Mapping[str, str]) -> Result:
     return result
 
 
+def _environments(settings: Settings) -> Result:
+    """The environments file (FU-P3-86b, api §5.4): its path, state and the default. A file
+    that cannot be used is a warning: launches with a built-in still work."""
+    path = envfile.environments_path()
+    found = envfile.read_file(path, [b.environment.name for b in builtins(settings)])
+    default = (found.state == "ok" and found.default) or settings.executor
+    state = found.state if found.detail is None else f"{found.state} ({found.detail})"
+    status = "ok" if found.state in ("missing", "ok") else "warn"
+    return status, "environments", f"{path}: {state}, default {default}"
+
+
 def checks(
     settings: Settings, env: Mapping[str, str], mountinfo: Path | None = None
 ) -> list[Result]:
@@ -153,6 +166,7 @@ def checks(
             results.append(("fail", "db_dir", str(exc)))
         else:
             results += server.db_checks(db_dir, mountinfo, fallback=settings.db_dir is None)
+    results.append(_environments(settings))
     status, detail = runs_disk(settings.runs_root)  # a `warn` at most (FU-P3-74)
     results.append((status, "runs_disk", detail))
     here = socket.gethostname()

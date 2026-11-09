@@ -14,8 +14,8 @@ from typing import Any
 
 from sqlalchemy import Connection, Row, select
 
-from spectio.config import Settings, SlurmOpts
-from spectio.environments import executor_of, read_as
+from spectio.config import Settings
+from spectio.environments import as_snapshot, launch_fields, read_as
 from spectio.runner.headscript import SESSION_ID, engine_args
 from spectio.runner.loop import LaunchPayload
 from spectio.runner.resume import NotResumable, prove
@@ -96,16 +96,6 @@ def _words(cmd: str) -> list[str]:
         return [cmd]
 
 
-def _slurm(environment: dict[str, Any] | None, settings: Settings) -> SlurmOpts | None:
-    """The run's SLURM partition and account, from its `runs.environment` (FU-P3-86a), or the
-    server's built-in for a `not_recorded` run (`read_as`, api §5.4)."""
-    own = read_as(environment, settings)
-    if executor_of(own) != "slurm":
-        return None
-    values = (own or {}).get("slurm") or {}
-    return SlurmOpts(partition=values.get("partition"), account=values.get("account"))
-
-
 def command(conn: Connection, row: Row[Any], settings: Settings) -> dict[str, Any] | None:
     """`{argv, text}`: the engine command as the head script runs it (dev-env §15.3 req. 16),
     the parameters as their file; `text` quotes every word for a POSIX shell. None for a run
@@ -115,7 +105,8 @@ def command(conn: Connection, row: Row[Any], settings: Settings) -> dict[str, An
     `not_recorded` run (FU-P3-86a, api §5.4)."""
     if row.origin == "cli-observed" or row.engine not in ("nextflow", "snakemake"):
         return None
-    if (row.environment or {}).get("state") == "not_readable":  # its executor is unknown
+    own = read_as(row.environment, settings)
+    if own is None:  # `not_readable`: its executor is unknown
         return None
     payload = launch_payload(conn, row.id)
     if payload is None:
@@ -138,7 +129,7 @@ def command(conn: Connection, row: Row[Any], settings: Settings) -> dict[str, An
         work_dir=paths.work_dir,
         profiles=payload.profiles,
         params=payload.params,
-        slurm=_slurm(row.environment, settings),
+        **launch_fields(as_snapshot(own)),
         extra_args=engines.extra_args.get(row.engine, []),
         resume_of=resume,
     )

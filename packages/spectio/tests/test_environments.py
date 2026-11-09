@@ -188,11 +188,11 @@ def smk_spec(tmp_path: Path, **kw: Any) -> LaunchSpec:
 def test_req18_snapshot_snakemake_resources_are_string_literals(tmp_path: Path) -> None:
     """SEC-PRE-FU86-01: Snakemake evaluates each `--default-resources` value as Python, so
     partition and account go as string literals."""
-    spec = smk_spec(tmp_path, slurm=SlurmOpts(partition="htc", account="my.lab"))
+    spec = smk_spec(tmp_path, slurm=envs.SlurmValues(partition="htc", account="my.lab"))
     args = engine_args(spec)
     at = args.index("--default-resources")
     assert args[at + 1 : at + 3] == ["slurm_partition='htc'", "slurm_account='my.lab'"]
-    bad = SlurmOpts.model_construct(partition="htc'+__import__('os')+'", account=None)
+    bad = envs.SlurmValues.model_construct(partition="htc'+__import__('os')+'", account=None)
     with pytest.raises(ValueError, match="not a SLURM name"):  # checked again where it is used
         engine_args(smk_spec(tmp_path, slurm=bad))
 
@@ -202,6 +202,6 @@ def test_req18_snapshot_local_cores_on_every_slurm_launch(
     tmp_path: Path, profiles: list[str]
 ) -> None:
     """SEC-PRE-FU86-R1-02: local rules otherwise use every core of the login node."""
-    args = engine_args(smk_spec(tmp_path, slurm=SlurmOpts(), profiles=profiles))
+    args = engine_args(smk_spec(tmp_path, slurm=envs.SlurmValues(), profiles=profiles))
     assert args[args.index("--local-cores") + 1] == "2"
     assert "--local-cores" not in engine_args(smk_spec(tmp_path))

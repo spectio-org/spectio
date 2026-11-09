@@ -28,7 +28,7 @@ from fastapi import APIRouter, Request, Response
 from pydantic import BaseModel, ConfigDict, JsonValue
 from sqlalchemy import Connection, insert, select
 
-from spectio.environments import server_builtin, snapshot
+from spectio.environments import NotAllowed, resume_snapshot
 from spectio.runner.loop import LaunchPayload
 from spectio.runner.resume import NotResumable
 from spectio.runner.rundir import (
@@ -39,6 +39,7 @@ from spectio.runner.rundir import (
     write_run_manifest,
 )
 from spectio_server.api import models
+from spectio_server.api.environments import view
 from spectio_server.api.problems import Invalid, Problem
 from spectio_server.api.runs_read import context, read, run_detail, run_row
 from spectio_server.api.workflows import inspect_dir, resolve, schema_defaults
@@ -160,6 +161,10 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         raise _not_in_this_version("Spectio did not start this run's head: it cannot resume it.")
     if reason is not None:
         raise _conflict(reason, REFUSED[reason])
+    try:  # the launch rules again, on the parent's own snapshot (api §5.4, Resume)
+        environment = resume_snapshot(parent.environment, settings).model_dump(mode="json")
+    except NotAllowed as exc:
+        raise Invalid("environment", str(exc)) from None
     profiles = _profiles(settings.runs_root, run_id, launched)
     if profiles is None:
         raise _conflict("profiles_unknown", "The run's profiles cannot be read from its manifest.")
@@ -182,8 +187,7 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
         profiles=profiles,
         created_at=now,
         parent_run_id=run_id,
-        # the built-in of the server's kind until Resume's rules apply (FU-P3-86c)
-        environment=snapshot(server_builtin(settings).environment),
+        environment=environment,
     )
     payload = {
         "location": str(resolved.directory),
@@ -196,6 +200,7 @@ def relaunch(body: RelaunchIn, request: Request, run_id: str, response: Response
             "device": device,
             "inode": inode,
         },
+        "environment": environment,
     }
     paths = run_paths(settings.runs_root, child_id)
     write_run_manifest(paths.run_dir, manifest)
@@ -307,10 +312,25 @@ def launch_template(request: Request, run_id: str) -> dict[str, Any]:
         )
     except Stalled as exc:
         raise Problem(503, "runner-offline", "File system not answering", str(exc)) from None
+    name, notice = _template_environment(request, row.environment)
     return {
         "workflow": {"location": row.location, "revision": row.revision, "engine": row.engine},
         "profiles": _profiles(settings.runs_root, run_id, payload) or [],
         "params": params,
         "non_default": [k for k in params if k not in defaults or params[k] != defaults[k]],
         "code_loading": loading,
+        "environment": name,
+        "environment_notice": notice,
     }
+
+
+def _template_environment(
+    request: Request, column: dict[str, Any] | None
+) -> tuple[str, str | None]:
+    """The run's environment by name, with its current values, or the default with a notice
+    when that name is gone (api §5.4, A run keeps what it ran with)."""
+    _, entries, default = view(request)
+    name = None if column is None or column.get("state") != "recorded" else column.get("name")
+    if name is None or any(env.name == name for env, *_ in entries):
+        return name or default, None
+    return default, f"The environment {name} of this run no longer exists: {default} is chosen."
