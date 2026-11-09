@@ -109,6 +109,34 @@ test('home at / shows the count cards, the active runs and the runs that ended',
   await expect(page.getByRole('region', { name: 'Your pipelines' })).toContainText('/g/demo-lab/pipelines/rnaseq');
 });
 
+test('FU-P3-109: Home\'s Your pipelines and Where your runs go keep long paths inside the page, shown whole', async ({ page }, info) => {
+  if (info.project.name === 'desktop') await page.setViewportSize({ width: 1440, height: 1180 });
+  const long = '/g/demo-lab/' + 'a-very-long-directory-name-without-any-break/'.repeat(4) + 'rnaseq';
+  const root = '/scratch/amartin/' + 'spectio-runs-on-a-long-shared-scratch-volume/'.repeat(3) + 'runs';
+  const server = await (await page.request.get('/api/v1/version')).json();
+  await page.route('**/api/v1/version', (r) => r.fulfill(json({ ...server, runs_root: root })));
+  await page.route('**/api/v1/runs:summary*', (r) => r.fulfill(json({ groups: [{ key: 'succeeded', count: 1 }] })));
+  const ended = mockRun({ state: 'succeeded', ended_at: '2026-10-31T08:00:00+00:00',
+    workflow: { engine: 'nextflow', engine_version: '26.10.4', location: long, name: null, version: null } });
+  await page.route('**/api/v1/runs?*', (r) => r.fulfill(json({ items: [ended], next: null })));
+  await page.goto('/');
+  const pipelines = page.getByRole('region', { name: 'Your pipelines' });
+  const where = page.getByRole('region', { name: 'Where your runs go' });
+  await expect(pipelines.getByRole('link', { name: `Launch ${long}, ${long}` })).toBeVisible();
+  await expect(where).toContainText(root);
+  // nothing runs past the right edge: no page scroll, every card within the viewport
+  const width = page.viewportSize()!.width;
+  expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  for (const card of [pipelines, where]) {
+    const box = (await card.boundingBox())!;
+    expect(box.x + box.width).toBeLessThanOrEqual(width);
+  }
+  // the whole value is on screen as text, not cut by an ellipsis (no hover needed)
+  for (const text of [pipelines.getByText(long).last(), where.getByText(root)]) {
+    expect(await text.evaluate((el) => el.scrollWidth <= el.clientWidth + 1)).toBe(true);
+  }
+});
+
 test('the detail shows the flat list with no stage, and the stages when /stages has items', async ({ page }, info) => {
   // The phone shows the processes as stacked cards, not a table (UX-PAR-10).
   const processes = info.project.name === 'phone' ? 'list' : 'table';
@@ -425,7 +453,7 @@ test('Launch: a wrong value shows its error on the field; each row says required
   const depth = page.getByRole('textbox', { name: 'depth (optional)' });
   await depth.fill('12');
   await expect(depth).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.getByText('Must be at most 9.')).toBeVisible();
+  await expect(page.getByText('Must be at most 9.', { exact: true })).toBeVisible(); // Before Launch says it too (FU-P3-86h)
   await expect(page.getByRole('button', { name: 'Launch', exact: true }).last()).toHaveAttribute('aria-disabled', 'true');
 });
 

@@ -135,7 +135,7 @@ def create_app(
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)
-    app.state.engine_versions = workflows.engine_versions(settings)
+    app.state.engine_versions = workflows.EngineVersions(settings)
     app.state.server_key = server_key or ServerKey.new()
     app.state.tickets = TicketStore()
     app.state.sessions = SessionStore()
