@@ -31,6 +31,8 @@ export interface LaunchBody {
   workflow: { location: string; revision: string | null; engine: Engine };
   name?: string;
   profiles: string[];
+  /** An environment's name (api §5.4); absent: the server's default. */
+  environment?: string;
   params: Record<string, unknown>;
 }
 
@@ -103,7 +105,7 @@ export interface Run {
     version: string | null;
   };
   profiles: string[];
-  /** Null for a run started from a terminal (optional until the screens of FU-P3-86g read it). */
+  /** Null for a run started from a terminal; read by the run's facts and Resume (FU-P3-86g). */
   environment?: RunEnvironment | null;
   failure: { [key: string]: Json } | null;
   /** `checked` false: a run started from a terminal on another host or boot, whose head the

@@ -40,9 +40,11 @@ interface Props {
   onReload: () => void;
   /** A built-in: its values, read only, and no Save. */
   readOnly?: boolean;
+  /** Save's words: "Save and choose it" in Launch's dialog (LiteLaunchNewEnvironment). */
+  saveLabel?: string;
 }
 
-export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, readOnly = false }: Props) {
+export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, readOnly = false, saveLabel = "Save" }: Props) {
   const server = useServer();
   const onSlurm = server?.executor !== "local";
   const [typed, setDraft] = useState<Draft>(initial);
@@ -105,6 +107,7 @@ export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, re
     <form className="sp-env-form" onSubmit={(e) => (e.preventDefault(), save())} noValidate>
       {text("name", "Name", "Lowercase letters, digits and '-', up to 32, starting with a letter. Used in links.", {
         readOnly: readOnly || !!etag,
+        "data-autofocus": true, // a dialog opens with focus here (ui-spec §4.8.1, New environment)
       })}
       {text("label", "Label (optional)")}
       {onSlurm ? (
@@ -176,7 +179,7 @@ export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, re
           data-disabled={why ? true : undefined}
           aria-describedby={why ? "env-save-why" : undefined}
         >
-          Save
+          {saveLabel}
         </Button>
         <Button variant="default" onClick={onCancel}>
           Cancel
