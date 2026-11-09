@@ -7,6 +7,7 @@ asked for stay [to be validated] on a real SLURM.
 
 import itertools
 import json
+import logging
 import os
 import re
 import sys
@@ -172,6 +173,10 @@ def test_req15_argv_and_id_check(fakebin: Fake) -> None:
         "-j",
         "8812477,8812345_3,9999",
         f"--user={os.geteuid()}",  # the server user's own jobs only
+        "-S",  # CON-SLURM-POLL-03: the run's launch less the submit skew, never Epoch 0
+        "2026-11-08T08:55:00",
+        "-E",
+        "now",
         "--format=JobID,State,ExitCode,Reason,MaxRSS,Elapsed,ReqMem,Timelimit,TotalCPU,NCPUS,"
         "NNodes,Partition,Account,QOS,AllocTRES,WorkDir,Submit",
     ]
@@ -183,6 +188,17 @@ def test_req15_argv_and_id_check(fakebin: Fake) -> None:
     with pytest.raises(sacct.Refused):  # 100 IDs per call
         sacct_jobs({str(n): {"/w": LAUNCH} for n in range(101)}, sacct=fakebin.path)
     assert len(fakebin.calls()) == 1  # every refusal before any call
+
+
+def test_sacct_window_from_earliest_launch(fakebin: Fake) -> None:
+    """CON-SLURM-POLL-03: `-S` is the earliest launch of the batch less SUBMIT_SKEW_S."""
+    sacct_jobs(
+        {"8812477": {"/a": LAUNCH + 3600, "/b": LAUNCH}, "9999": {"/w": LAUNCH + 60}},
+        sacct=fakebin.path,
+    )
+    argv = fakebin.calls()[0]["argv"]
+    start = argv.index("-S")
+    assert argv[start : start + 4] == ["-S", "2026-11-08T08:55:00", "-E", "now"]
 
 
 def test_sacct_delimiter_random_per_call(fakebin: Fake) -> None:
@@ -274,7 +290,7 @@ def test_sacct_parse_and_timeout(fakebin: Fake) -> None:
             )
         },
     }  # 9999: no row, so not in the result
-    assert sacct.TIMEOUT_S == 10
+    assert sacct.TIMEOUT_S == 30  # CON-SLURM-POLL-02
     fakebin.delay(30)
     started = time.monotonic()
     assert sacct_jobs(ASKED, timeout_s=0.5, sacct=fakebin.path) is None
@@ -536,7 +552,8 @@ def test_req15_eff_fields(fakebin: Fake) -> None:
 
 def test_sacct_output_capped(fakebin: Fake) -> None:
     fakebin.output((line(JobID="8812477", State="FAILED", WorkDir="/w") + "\n") * 40000)  # > 1 MiB
-    assert sacct_jobs(want(("8812477", "/w")), sacct=fakebin.path) is None
+    with pytest.raises(sacct.TooMuch):  # final for one ID; the limiter splits a batch
+        sacct_jobs(want(("8812477", "/w")), sacct=fakebin.path)
 
 
 class Clock:
@@ -600,3 +617,153 @@ def test_req15_limiter_bounded() -> None:
     limiter = SacctLimiter(lambda ids: {}, max_pending=10)
     limiter.request([str(n) for n in range(1, 50)])
     assert limiter.pending() == 10
+
+
+def test_sacct_limiter_backs_off() -> None:
+    """CON-SLURM-POLL-02: a failed call doubles the interval from 60 s up to 600 s, a success
+    resets it, and a call slower than SLOW_S counts as back-pressure."""
+    clock = Clock()
+    answers: list[sacct.Found | None] = [None, None, None, None, None, {}, {}, {}]
+    slow = [False] * 6 + [True, False]
+    starts: list[float] = []
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        starts.append(clock.now)
+        if slow[len(starts) - 1]:
+            clock.now += 6
+        return answers[len(starts) - 1]
+
+    limiter = SacctLimiter(call, clock=clock)
+    limiter.request(["1"])
+    for _ in answers:
+        wait = limiter.wait_s()
+        assert wait is not None
+        clock.now += wait
+        done = limiter.run_once()
+        assert done is not None
+        limiter.request(done[0])  # the caller puts a failed call's IDs back
+    gaps = [b - a for a, b in itertools.pairwise(starts)]
+    assert gaps == [120, 240, 480, 600, 600, 60, 120]
+
+
+def test_sacct_limiter_follow_up() -> None:
+    """A follow-up is queued once its delay has passed, not before."""
+    clock = Clock()
+    limiter = SacctLimiter(lambda ids: {}, clock=clock)
+    limiter.later(["7"], 600)
+    assert limiter.wait_s() == 600 and limiter.pending() == 0
+    assert limiter.run_once() is None
+    clock.now += 600
+    assert limiter.run_once() == (["7"], {})
+    assert limiter.wait_s() is None
+
+
+def test_sacct_limiter_request_takes_follow_up() -> None:
+    """CR-P3FU106A-03: a job asked again before its follow-up is due rides along with that
+    call; the follow-up never fires on its own later."""
+    clock = Clock()
+    limiter = SacctLimiter(lambda ids: {}, clock=clock)
+    limiter.later(["7"], 600)
+    limiter.request(["7"])
+    assert limiter.run_once() == (["7"], {})
+    assert limiter.wait_s() is None
+
+
+def test_sacct_limiter_classifies_failures() -> None:
+    """SEC-P3FU106A-01: a refused call is final; an answer over the cap splits its batch in
+    two and is final for one ID; any other failure puts the batch back unchanged."""
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        if "9" in ids:
+            raise sacct.Refused("not a tool")
+        if "5" in ids:
+            raise sacct.TooMuch("over the cap")
+        return None if "3" in ids else {}
+
+    limiter = SacctLimiter(call, interval_s=0)
+    limiter.request(["9"])
+    assert limiter.run_once() == (["9"], sacct.FINAL)
+    limiter.request(["5", "6"])
+    assert limiter.run_once() == (["5", "6"], None)
+    limiter.request(["5", "6"])  # the caller puts them back: split in two
+    assert limiter.run_once() == (["5"], sacct.FINAL)
+    assert limiter.run_once() == (["6"], {})
+    limiter.request(["1", "2", "3", "4"])
+    for _ in range(5):  # a failure that is not TooMuch splits nothing
+        assert limiter.run_once() == (["1", "2", "3", "4"], None)
+        limiter.request(["1", "2", "3", "4"])
+
+
+def test_sacct_limiter_splits_until_one_over_cap() -> None:
+    """Only TooMuch splits: each half is asked on its own, a half that answers is done, and the
+    split survives a later failure of another kind (the half is not merged back)."""
+    timeouts = {"1"}
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        if "7" in ids:
+            raise sacct.TooMuch("over the cap")
+        if timeouts & set(ids):
+            timeouts.clear()
+            return None
+        return {}
+
+    limiter = SacctLimiter(call, interval_s=0)
+    asked = []
+    limiter.request(str(n) for n in range(1, 9))
+    while (done := limiter.run_once()) is not None:
+        asked.append(done)
+        if done[1] is None:
+            limiter.request(done[0])  # the caller puts a failed call's IDs back
+    assert asked == [
+        (["1", "2", "3", "4", "5", "6", "7", "8"], None),
+        (["1", "2", "3", "4"], None),  # a timeout: put back, still half the batch
+        (["5", "6", "7", "8"], None),
+        (["1", "2", "3", "4"], {}),
+        (["5", "6"], {}),
+        (["7", "8"], None),
+        (["7"], sacct.FINAL),
+        (["8"], {}),
+    ]
+    assert limiter._size == {}
+
+
+def test_sacct_limiter_logs_refusal_and_retries_os_error(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """A policy refusal is final and logged once at warning, with no traceback; an OSError of
+    the tool's stat (ENOENT, EIO, ESTALE) is retried like a timeout (CR-P3FU106A-04)."""
+    errors: list[Exception] = [sacct.Refused("sacct at /x belongs to uid 7"), OSError(5, "EIO")]
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        raise errors.pop(0)
+
+    limiter = SacctLimiter(call, interval_s=0)
+    limiter.request(["1"])
+    with caplog.at_level(logging.WARNING, logger="spectio.runner.sacct"):
+        assert limiter.run_once() == (["1"], sacct.FINAL)
+        limiter.request(["2"])
+        assert limiter.run_once() == (["2"], None)
+    assert [r.levelno for r in caplog.records] == [logging.WARNING, logging.WARNING]
+    assert all(r.exc_info is None for r in caplog.records)
+    assert "uid 7" in caplog.records[0].getMessage()
+
+
+def test_sacct_limiter_outage_not_split_down() -> None:
+    """CR-P3FU106A-05: a whole-slurmdbd outage fails every call; nothing is split, so once
+    sacct answers, 100 IDs drain in one call."""
+    calls = 0
+
+    def call(ids: list[str]) -> sacct.Found | None:
+        nonlocal calls
+        calls += 1
+        assert len(ids) == 100
+        return None if calls <= 50 else {}
+
+    limiter = SacctLimiter(call, interval_s=0)
+    limiter.request(str(n) for n in range(1, 101))
+    while limiter.pending():
+        done = limiter.run_once()
+        assert done is not None
+        if done[1] is None:
+            limiter.request(done[0])  # the caller puts a failed call's IDs back
+    assert calls == 51

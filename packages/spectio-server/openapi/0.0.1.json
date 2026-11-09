@@ -4106,7 +4106,7 @@
     },
     "/api/v1/runs/{run_id}/tasks": {
       "get": {
-        "description": "The run's tasks in first-seen order (by ID).",
+        "description": "The run's tasks in first-seen order (by ID). `task`: that one task, whose SLURM panel\nis open, so its ended job is asked of `sacct` while the run is live (CON-SLURM-POLL-01).",
         "operationId": "list_tasks_api_v1_runs__run_id__tasks_get",
         "parameters": [
           {
@@ -4150,6 +4150,23 @@
                 }
               ],
               "title": "Process"
+            }
+          },
+          {
+            "in": "query",
+            "name": "task",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Task"
             }
           },
           {
