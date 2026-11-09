@@ -72,6 +72,9 @@ class Store:
             return files.run(lambda: envfile.update(self.path, names, change), READ_TIMEOUT_S)
         except Stalled as exc:
             raise _offline(exc) from None
+        except OSError as exc:  # ENOSPC, EDQUOT, EIO on the write (CR-P3FU86BCD-01)
+            detail = f"the environments file cannot be written: {exc.strerror}"
+            raise _offline(Exception(detail)) from None
         except envfile.Unusable as exc:
             detail = f"The environments file is {exc.state}: {exc.detail}"
             raise Problem(

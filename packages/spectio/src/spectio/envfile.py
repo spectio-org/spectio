@@ -5,15 +5,17 @@ Read without following a symbolic link: the directory opened `O_DIRECTORY|O_NOFO
 `openat` with `O_NOFOLLOW|O_NONBLOCK` (a FIFO never blocks), both checked with `fstat` (this
 user's, or root's for the directory, and not writable by group or others), at most 64 KiB + 1
 byte read. Five states: `missing`, `ok`, `refused` (the owner or mode checks), `invalid` (it
-does not parse, breaks a rule or is over a cap) and `unreachable`, which only the server's file
-pool decides (its timeout). `check_config` follows links, so it is not used here.
+does not parse, breaks a rule or is over a cap) and `unreachable`: an I/O error reading it
+(ESTALE or EIO on NFS), or the server's file pool's timeout. `check_config` follows links, so
+it is not used here.
 
 A write (`update`) holds one process lock: it reads the file again, applies the change, renders
 the text and parses it back strictly, checks that the file's identity (`fstat` fields and the
 SHA-256 of its bytes) is still that of its read, then writes a 0600 temporary through the
 directory's descriptor and renames it into place (`fsmodes.write_file`, req. 5). A `refused` or
-`invalid` file is never overwritten. Accepted risk (api §5.4): the lock is per process, so a hand
-edit on NFS in the few milliseconds between the check and the rename is lost.
+`invalid` file is never overwritten; an `unreachable` one raises Stalled, and an I/O error of
+the write itself (ENOSPC, EDQUOT) is raised as it is. Accepted risk (api §5.4): the lock is per
+process, so a hand edit on NFS in the few milliseconds between the check and the rename is lost.
 """
 
 import errno
@@ -101,7 +103,11 @@ def _open_dir(directory: Path) -> int:
         if exc.errno in (errno.ELOOP, errno.ENOTDIR):
             raise _Refused(f"{directory} is not a real directory (a symbolic link?)") from None
         raise _Refused(f"{directory} cannot be opened: {exc.strerror}") from None
-    st = os.fstat(fd)
+    try:
+        st = os.fstat(fd)
+    except OSError as exc:
+        os.close(fd)
+        raise _Refused(f"{directory} cannot be read: {exc.strerror}") from None
     if st.st_uid not in (0, os.geteuid()) or st.st_mode & 0o022:
         os.close(fd)
         raise _Refused(f"{directory} must be yours and not writable by others ({_mode(st)})")
@@ -134,6 +140,8 @@ def _read_in(dir_fd: int, name: str, cached: EnvFile | None) -> EnvFile:
         while size <= MAX_BYTES and (chunk := os.read(fd, MAX_BYTES + 1 - size)):
             chunks.append(chunk)
             size += len(chunk)
+    except OSError as exc:  # ESTALE, EIO: only the built-ins are listed (CR-P3FU86BCD-01)
+        return EnvFile("unreachable", _clean(f"{name} cannot be read: {exc.strerror}"))
     finally:
         os.close(fd)
     data = b"".join(chunks)
@@ -237,8 +245,9 @@ def render(default: str | None, envs: Iterable[Environment]) -> bytes:
 
 def update(path: Path, builtin_names: Collection[str], change: Change) -> EnvFile:
     """Apply `change` (the current file → its new default and environments) and write the file
-    whole. Raises Unusable, Changed, Stalled when an earlier write still holds the lock, and
-    whatever `change` raises (nothing is written then). Returns the file as written."""
+    whole. Raises Unusable, Changed, Stalled when an earlier write still holds the lock or the
+    file is `unreachable`, OSError when the write fails, and whatever `change` raises (nothing
+    is written then). Returns the file as written."""
     if not _WRITE.acquire(timeout=LOCK_TIMEOUT_S):
         raise Stalled("another write of the environments file has not ended")
     try:
@@ -250,6 +259,8 @@ def update(path: Path, builtin_names: Collection[str], change: Change) -> EnvFil
             raise Unusable("refused", str(exc)) from None
         try:
             current = check_default(_read_in(dir_fd, path.name, None), builtin_names)
+            if current.state == "unreachable":
+                raise Stalled(current.detail or "the environments file cannot be read")
             if current.state not in ("missing", "ok"):
                 raise Unusable(current.state, current.detail)
             default, envs = change(current)
@@ -262,7 +273,10 @@ def update(path: Path, builtin_names: Collection[str], change: Change) -> EnvFil
             )
             if written.state != "ok" or list(written.environments) != asked:
                 raise ValueError(f"the rendered file does not read back: {written.detail}")
-            if _read_in(dir_fd, path.name, None).identity != current.identity:
+            again = _read_in(dir_fd, path.name, None)
+            if again.state == "unreachable":
+                raise Stalled(again.detail or "the environments file cannot be read")
+            if again.identity != current.identity:
                 raise Changed("the environments file changed since it was read: read it again")
             write_file(dir_fd, path.name, data)
         finally:

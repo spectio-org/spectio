@@ -4,6 +4,7 @@ their absence where the API is not served, the session, cross-site and `Origin` 
 req. 2 and 7 per route, the launch body's `environment`, Resume's rules and the runner's
 reading of the payload's snapshot (SEC-P3FU86A-R3-02)."""
 
+import errno
 import os
 from pathlib import Path
 from typing import Any
@@ -271,6 +272,45 @@ def test_req18_routes_unreachable(
     problem(authed_client.post(ENVS, json=MYLAB), 503, "runner-offline")
     problem(authed_client.get(f"{ENVS}/mylab"), 503, "runner-offline")
     problem(launch(authed_client, synthetic, environment="mylab"), 503, "runner-offline")
+    assert launch(authed_client, synthetic).status_code == 201
+
+
+def test_req18_routes_io_error_on_read(
+    authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """An I/O error reading the file (ESTALE on NFS): `unreachable`, only the built-ins listed,
+    `503` on writes and on a launch naming a file environment; a built-in launch still works
+    (CR-P3FU86BCD-01)."""
+    create(authed_client)
+    read = os.read
+
+    def stale(fd: int, n: int) -> bytes:
+        if os.readlink(f"/proc/self/fd/{fd}") == str(path()):
+            raise OSError(errno.ESTALE, os.strerror(errno.ESTALE))
+        return read(fd, n)
+
+    monkeypatch.setattr(os, "read", stale)  # the module envfile reads with
+    hand_write(path().read_text().replace("cpus = 4", "cpus = 6"))  # a new identity: read again
+    body = authed_client.get(ENVS).json()
+    assert body["file"]["state"] == "unreachable" and body["file"]["detail"]
+    assert [i["name"] for i in body["items"]] == ["local"] and body["default"] == "local"
+    problem(authed_client.post(ENVS, json={**MYLAB, "name": "other"}), 503, "runner-offline")
+    problem(launch(authed_client, synthetic, environment="mylab"), 503, "runner-offline")
+    assert launch(authed_client, synthetic).status_code == 201
+
+
+def test_req18_routes_io_error_on_write(
+    authed_client: TestClient, synthetic: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """A full home (ENOSPC) when the file is written: `503`, nothing written (CR-P3FU86BCD-01)."""
+
+    def full(*args: Any, **kwargs: Any) -> None:
+        raise OSError(errno.ENOSPC, os.strerror(errno.ENOSPC))
+
+    monkeypatch.setattr(envfile, "write_file", full)
+    problem(authed_client.post(ENVS, json=MYLAB), 503, "runner-offline")
+    assert not path().exists()
+    assert authed_client.get(ENVS).json()["file"]["state"] == "missing"
     assert launch(authed_client, synthetic).status_code == 201
 
 
