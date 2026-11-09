@@ -316,6 +316,12 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.launch-try-what {
+  flex-basis: 100%;
+  margin: 0;
+  font-size: 13px;
+  color: var(--sp-text-muted);
+}
 .launch-try-none {
   margin: 0 0 12px;
   font-size: 14px;

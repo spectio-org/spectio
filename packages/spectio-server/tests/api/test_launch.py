@@ -675,3 +675,25 @@ def test_inspect_symlinked_profile_not_listed(authed_client: TestClient, tmp_pat
     response = authed_client.get(INSPECT, params={"location": str(root)})
     assert response.status_code == 200, response.text
     assert response.json()["profiles"] == ["local"]
+
+
+def test_engine_versions_are_checked_once_per_ttl_not_on_every_inspect(
+    settings: Settings, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """FU-P3-109: each check is a login shell (and a JVM for Nextflow), about a second or more
+    per inspect; the versions are kept for `ttl_s`, then checked again (an engine upgrade shows)."""
+    checks: list[str] = []
+
+    def check(engine: str, cmd: str | None = None) -> EngineInfo:
+        checks.append(engine)
+        return EngineInfo(f"/bin/{engine}", "26.10.4" if engine == "nextflow" else "9.1.0")
+
+    monkeypatch.setattr(wf, "check_engine", check)
+    now = [100.0]
+    versions = wf.engine_versions(settings, ttl_s=60, clock=lambda: now[0])
+    first = versions()
+    assert versions() == first == {"nextflow": "26.10.4", "snakemake": "9.1.0"}
+    assert checks == ["nextflow", "snakemake"]
+    now[0] += 61
+    versions()
+    assert checks == ["nextflow", "snakemake", "nextflow", "snakemake"]

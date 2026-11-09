@@ -24,6 +24,8 @@ import shutil
 import signal
 import stat
 import subprocess
+import threading
+import time
 import unicodedata
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -43,6 +45,7 @@ router = APIRouter()
 
 GIT_SCHEMES: tuple[str, ...] = ("https", "ssh")  # api §5; a test adds "file" for a local repo
 GIT_TIMEOUT_S = 300
+VERSIONS_TTL_S = 300.0  # how long the engines' versions are kept (FU-P3-109)
 MAX_LOCATION = 4096  # characters (FU-P3-17)
 GITHUB = "https://github.com"
 SHORT_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_][A-Za-z0-9._-]{0,99}")
@@ -422,10 +425,16 @@ def inspect_dir(directory: Path, default_name: str) -> Found:
     )
 
 
-def engine_versions(settings: Settings) -> Callable[[], dict[str, str | None]]:
-    """The version of each engine the server would launch with, or None (UX-296, UX-G2-04)."""
+def engine_versions(
+    settings: Settings, ttl_s: float = VERSIONS_TTL_S, clock: Callable[[], float] = time.monotonic
+) -> Callable[[], dict[str, str | None]]:
+    """The version of each engine the server would launch with, or None (UX-296, UX-G2-04).
+    Each check runs a login shell, and Nextflow starts a JVM: a second or more on every inspect
+    (FU-P3-109). The answer is kept for `ttl_s`, so an engine upgraded meanwhile shows after it."""
+    lock = threading.Lock()
+    kept: tuple[float, dict[str, str | None]] | None = None
 
-    def versions() -> dict[str, str | None]:
+    def check() -> dict[str, str | None]:
         found: dict[str, str | None] = {}
         for engine in ENTRY_FILES:
             cmd = getattr(settings.engines, f"{engine}_cmd")
@@ -434,6 +443,13 @@ def engine_versions(settings: Settings) -> Callable[[], dict[str, str | None]]:
             except (EngineError, OSError):
                 found[engine] = None
         return found
+
+    def versions() -> dict[str, str | None]:
+        nonlocal kept
+        with lock:  # concurrent inspects wait for one check, not one each
+            if kept is None or clock() - kept[0] >= ttl_s:
+                kept = (clock(), check())
+            return dict(kept[1])
 
     return versions
 

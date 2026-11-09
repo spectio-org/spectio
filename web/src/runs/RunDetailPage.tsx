@@ -1039,12 +1039,14 @@ export function RunDetailPage({ id }: { id: string }) {
   const navigate = useNavigate({ from: "/runs/$id" });
   const tab: Tab = search.tab ?? "summary";
   const logSource = search.source ?? "engine";
-  // the last picked log source, so Logs reopens on it after another tab
+  // the last log source shown, so Logs reopens on it after another tab (also after Back or Forward)
   const lastSource = useRef(logSource);
+  if (tab === "logs") lastSource.current = logSource;
+  // each view is a history entry: Back and Forward step through them (FU-P3-109)
   const go = useCallback(
     (to: Tab, opts: { source?: LogSource; process?: string } = {}) => {
       if (to === "logs") lastSource.current = opts.source ?? lastSource.current;
-      return navigate({ search: runSearch({ tab: to, source: lastSource.current, process: opts.process }), replace: true });
+      return navigate({ search: runSearch({ tab: to, source: lastSource.current, process: opts.process }) });
     },
     [navigate],
   );

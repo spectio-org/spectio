@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
 import { DETAIL, FakeEventSource, NO_RESOURCES, VERSION, app, fetched, json, run, serve, stubStream } from "../testing";
@@ -488,6 +488,28 @@ test("P3-parC: the tab and the log source are in the URL: a log view can be link
   await waitFor(() => expect(router.state.location.search).toEqual({ tab: "tasks" }));
   await userEvent.click(screen.getByRole("tab", { name: "Summary" }));
   await waitFor(() => expect(router.state.location.search).toEqual({}));
+});
+
+test("FU-P3-109: the URL is the source of truth: Back and Forward step through the tabs and log sources", async () => {
+  detail({}, { [`${URL_}/logs?source=head-err`]: () => new Response("boom\n") });
+  const router = app(`/runs/${ID}`);
+  await userEvent.click(await screen.findByRole("tab", { name: "Logs" }));
+  await userEvent.click(screen.getByRole("button", { name: "Head errors" }));
+  await userEvent.click(screen.getByRole("tab", { name: "Parameters" }));
+  await waitFor(() => expect(router.state.location.search).toEqual({ tab: "parameters" }));
+  act(() => router.history.back());
+  await waitFor(() => expect(router.state.location.search).toEqual({ tab: "logs", source: "head-err" }));
+  expect(screen.getByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true");
+  expect(screen.getByRole("button", { name: "Head errors" })).toHaveAttribute("aria-pressed", "true");
+  act(() => router.history.back());
+  await waitFor(() => expect(router.state.location.search).toEqual({ tab: "logs", source: "engine" }));
+  expect(screen.getByRole("button", { name: "Engine log" })).toHaveAttribute("aria-pressed", "true");
+  act(() => router.history.back());
+  await waitFor(() => expect(router.state.location.search).toEqual({}));
+  expect(screen.getByRole("tab", { name: "Summary" })).toHaveAttribute("aria-selected", "true");
+  act(() => router.history.forward());
+  await waitFor(() => expect(screen.getByRole("tab", { name: "Logs" })).toHaveAttribute("aria-selected", "true"));
+  expect(router.state.location.pathname).toBe(`/runs/${ID}`);
 });
 
 test("P3-parC: the picked log source is kept across a tab switch (CR-P3PARC-02)", async () => {
