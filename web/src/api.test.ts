@@ -3,7 +3,7 @@
 // be the schema's properties, so a field added to or dropped from a response model fails here.
 import { expect, test } from "vitest";
 import snapshot from "../../packages/spectio-server/openapi/0.0.1.json";
-import type { CodeLoading, Efficiency, EngineSettings, Failure, LaunchTemplate, Process, ProcessEfficiency, ResultEntry, ResultReport, ResultStat, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Slurm, SlurmAllocated, SlurmRequest, Stage, Task, TaskFile, TaskFiles, TaskOutput } from "./api";
+import type { RunEnvironment, CodeLoading, Efficiency, EngineSettings, Failure, LaunchTemplate, Process, ProcessEfficiency, ResultEntry, ResultReport, ResultStat, Results, Resources, Run, RunDetail, Scheduler, ServerVersion, Slurm, SlurmAllocated, SlurmRequest, Stage, Task, TaskFile, TaskFiles, TaskOutput } from "./api";
 
 const schemas = snapshot.components.schemas as unknown as Record<
   string,
@@ -20,6 +20,14 @@ const run = {
   ended_at: null,
   workflow: { engine: null, engine_version: null, location: "", name: null, version: null },
   profiles: [],
+  environment: {
+    name: "slurm",
+    label: "SLURM (from spectio init)",
+    executor: "slurm",
+    slurm: { partition: "htc", account: null, time_min: null, mem_mib: null },
+    local: { cpus: null, mem_mib: null },
+    state: "recorded",
+  },
   failure: null,
   head: { session: null, node: "", alive: false, exit_code: null, checked: true },
   task_counts: {},
@@ -158,12 +166,17 @@ const SAMPLES: Record<string, object> = {
     params: {},
     non_default: [],
     code_loading: [],
+    environment: "local",
+    environment_notice: null,
   } satisfies LaunchTemplate,
   TemplateWorkflow: { location: "", revision: null, engine: "nextflow" },
   Failure: failure,
   Scheduler: scheduler,
   Resources: resources,
   WorkflowRef: run.workflow,
+  RunEnvironment: run.environment satisfies RunEnvironment,
+  EnvironmentSlurm: run.environment.slurm,
+  EnvironmentLocal: run.environment.local,
   Head: run.head,
   RunSummary: run.summary,
   TaskSummary: run.summary.tasks,

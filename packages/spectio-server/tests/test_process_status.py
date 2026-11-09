@@ -52,7 +52,9 @@ RULES = ["all", "make_reads", "split", "align", "merge", "report", "unused"]
 RULEGRAPH = {"nodes": [{"rule": r} for r in ("make_reads", "split", "merge", "report", "all")]}
 
 
-def smk_run(settings: Settings, writer: Writer, tmp_path: Path, plan: bool = True) -> Run:
+def smk_run(
+    settings: Settings, writer: Writer, tmp_path: Path, plan: bool = True, rules: list[str] = RULES
+) -> Run:
     """A Snakemake run of SNAKEFILE: its rule files and `rules.txt`, `workflow_started`, the rule
     graph, and `run_info` planning make_reads (2 jobs), split, merge and all (report is up to
     date)."""
@@ -65,7 +67,7 @@ def smk_run(settings: Settings, writer: Writer, tmp_path: Path, plan: bool = Tru
         lambda c: c.execute(text("UPDATE workflows SET location = :l"), {"l": str(pipeline)})
     ).result()
     with private_dir(settings.runs_root, RUN, "launch", ".spectio", create=True) as fd:
-        write_file(fd, "rules.txt", "\n".join(RULES).encode() + b"\n")
+        write_file(fd, "rules.txt", "\n".join(rules).encode() + b"\n")
     run.push("snakemake.workflow_started", snakefile_main=str(main), snakemake_version="9.27.1")
     run.push("snakemake.rulegraph", rulegraph=RULEGRAPH)
     if plan:
@@ -274,6 +276,34 @@ def test_pipeline_order_rule_missing_from_rulegraph(
     run.push("snakemake.rulegraph", rulegraph={"nodes": nodes, "links": later})
     chain = ["make_reads", "split", "align", "merge", "report", "all"]
     assert pipeline_order(client) == [*chain, "unused"]
+
+
+def test_rules_in_first_seen_order(settings: Settings, writer: Writer, tmp_path: Path) -> None:
+    """The list (the Summary table) is in first-seen order: the rules by their first job, then
+    those with no job in the rule files' order, never in `rules.txt`'s, which `snakemake
+    --list-rules` sorts by name (snakemake/workflow.py:734-740, 9.27.1). A rule in no rule graph
+    that has a job is placed by it: `align` right after `split`, not last (FU-P3-107)."""
+    client = client_for(settings, writer)
+    run = smk_run(settings, writer, tmp_path, rules=sorted(RULES))
+    assert list(processes(client)) == RULES  # no job yet: the Snakefile's order
+    first = ["make_reads", "split", "merge", "report", "all"]
+    links = [{"sourcerule": a, "targetrule": b} for a, b in pairwise(first)]
+    run.push("snakemake.rulegraph", rulegraph={"nodes": RULEGRAPH["nodes"], "links": links})
+    checkpoint_running(run)
+    job(run, 4, "align")
+    seen = ["make_reads", "split", "align"]
+    assert list(processes(client)) == [*seen, "all", "merge", "report", "unused"]
+    assert pipeline_order(client) == [*seen, "merge", "report", "all", "unused"]
+
+
+def test_listed_rule_in_no_rule_file_comes_last(
+    settings: Settings, writer: Writer, tmp_path: Path
+) -> None:
+    """A rule `rules.txt` lists that no parsed rule file holds (one from a `module` or `use rule`)
+    is kept, after the rule files' rules (CR-P3FU107-02)."""
+    client = client_for(settings, writer)
+    smk_run(settings, writer, tmp_path, rules=sorted([*RULES, "from_module"]))
+    assert list(processes(client)) == [*RULES, "from_module"]
 
 
 def test_pipeline_order_without_links(settings: Settings, writer: Writer, tmp_path: Path) -> None:

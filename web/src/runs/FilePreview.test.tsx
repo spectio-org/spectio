@@ -411,6 +411,24 @@ test("a folder's stat opens the folder page", async () => {
   expect(router.state.location.search).toEqual({ path: "fastqc" });
 });
 
+test("an *.ome.zarr folder stays on the preview page, which holds the viewer's place", async () => {
+  serve({
+    [`${RUN}/results/stat/cells.ome.zarr`]: stat("cells.ome.zarr", null, "dir"),
+    [RUN]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
+  });
+  const router = open("cells.ome.zarr");
+  expect(await screen.findByText("Image viewer: coming")).toBeInTheDocument();
+  expect(router.state.location.pathname).toBe(`/runs/${ID}/results/file`);
+});
+
+test("a TIFF holds the viewer's place, and reads nothing yet", async () => {
+  const mock = files("gel.tif", 2048);
+  open("gel.tif");
+  expect(await screen.findByText("Image viewer: coming")).toBeInTheDocument();
+  expect(screen.getByText(/^TIFF · 2 KiB/)).toBeInTheDocument();
+  expect(fetched(mock).filter((url) => url.includes("/raw/"))).toEqual([]);
+});
+
 test("an HTML file links to the report viewer", async () => {
   files("multiqc/multiqc_report.html", 100);
   open("multiqc/multiqc_report.html");

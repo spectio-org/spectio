@@ -15,13 +15,13 @@ from typing import Any
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import insert, update
+from sqlalchemy import insert
 
 from spectio.config import Settings
 from spectio.runner.sacct import SacctRow
 from spectio_server import efficiency, failure
 from spectio_server.api import runs_read
-from spectio_server.store.schema import attempts, environments, tasks
+from spectio_server.store.schema import attempts, tasks
 from spectio_server.store.writer import Writer
 
 from .api.conftest import client_for, lone_host  # noqa: F401 - autouse: a lone host, any test host
@@ -29,6 +29,7 @@ from .api.test_failure import (
     API,
     HASHES,
     RUN,
+    Clock,
     Fake,
     Run,
     accounting,
@@ -45,11 +46,6 @@ BENCH_HEAD = "s\th:m:s\tmax_rss\tmax_vms\tmax_uss\tmax_pss\tio_in\tio_out\tmean_
 @pytest.fixture
 def fakebin(tmp_path: Path) -> Fake:
     return Fake(tmp_path)
-
-
-def on_slurm(writer: Writer) -> None:
-    """The run's environment is a SLURM one (the test settings are local)."""
-    writer.submit(lambda c: c.execute(update(environments).values(kind="slurm"))).result()
 
 
 def processes(client: TestClient) -> dict[str, dict[str, Any]]:
@@ -152,8 +148,7 @@ def test_slurm_request_smk(settings: Settings, writer: Writer) -> None:
     """From `job_info.resources`; `slurm_extra` set gives `custom_options` true, never its text;
     a text value out of charset is null; a `localrule` job has no SLURM request."""
     client = client_for(settings, writer)
-    on_slurm(writer)
-    run = Run(settings, writer, "snakemake")
+    run = Run(settings, writer, "snakemake", slurm=True)
     asked = {
         "slurm_partition": "htc",
         "slurm_account": "lab",
@@ -219,8 +214,7 @@ def test_slurm_request_nf(settings: Settings, writer: Writer, fakebin: Fake) -> 
     while not known; `allocated` from `sacct` once the job ended."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    on_slurm(writer)
-    run = Run(settings, writer)
+    run = Run(settings, writer, slurm=True)
     workdir = run.paths.work_dir.joinpath(*HASHES[0])
     workdir.mkdir(parents=True)
     trace = {
@@ -239,6 +233,7 @@ def test_slurm_request_nf(settings: Settings, writer: Writer, fakebin: Fake) -> 
     run.push("nextflow.onFlowCreate", clusterOptionsSet=True)
     fakebin.at(NATIVE, workdir)
     finish(run, "nextflow")
+    run.end()
     task_items(client)
     assert acct.step()
     (item,) = task_items(client)
@@ -330,11 +325,11 @@ def test_eff_sacct_row() -> None:
 
 @pytest.mark.parametrize("engine", ENGINES)
 def test_eff_states(settings: Settings, writer: Writer, fakebin: Fake, engine: str) -> None:
-    """running → pending_accounting with the engine's measure → available with sacct's."""
+    """running → pending_accounting with the engine's measure (the run live: nothing asked,
+    CON-SLURM-POLL-01) → available with sacct's, after the run's end sweep."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    on_slurm(writer)
-    run = Run(settings, writer, engine)
+    run = Run(settings, writer, engine, slurm=True)
     fakebin.at(NATIVE, submit(run, engine))
     (item,) = task_items(client)
     assert item["efficiency"] == {**NOTHING, "state": "running"}
@@ -347,6 +342,9 @@ def test_eff_states(settings: Settings, writer: Writer, fakebin: Fake, engine: s
         "state": "pending_accounting",
         "source": ENGINE_SOURCE[engine],
     }
+    assert not acct.step()  # the run is live
+    run.end()
+    task_items(client)
     assert acct.step() and fakebin.ids() == [NATIVE]
     (item,) = task_items(client)
     assert item["efficiency"] == {**NOTHING, **FROM_SACCT, "state": "available", "source": "sacct"}
@@ -358,20 +356,23 @@ def test_eff_states(settings: Settings, writer: Writer, fakebin: Fake, engine: s
 def test_eff_unavailable(
     settings: Settings, writer: Writer, fakebin: Fake, engine: str, case: str
 ) -> None:
-    """`unavailable` with its reason, the engine's measure kept; a local run never asks."""
+    """`unavailable` with its reason, the engine's measure kept; a local run never asks. The
+    `local` case is a `not_recorded` run on a local server, read as the server's built-in
+    `local` (api §5.4, CR-P3FU86A-02); on a SLURM server it would be asked."""
     client = client_for(settings, writer)
-    acct = accounting(settings, fakebin, enabled=case != "accounting_off")
+    clock = Clock()
+    acct = accounting(settings, fakebin, enabled=case != "accounting_off", clock=clock)
     client.app.state.accounting = acct  # type: ignore[attr-defined]
-    if case != "local":
-        on_slurm(writer)
     if case == "not_found":
-        (fakebin.dir / "lag").write_text("-,-,-")
-    run = Run(settings, writer, engine)
+        (fakebin.dir / "lag").write_text("-,-")
+    run = Run(settings, writer, engine, slurm=case != "local")
     fakebin.at(NATIVE, submit(run, engine, native=None if case == "no_job_id" else NATIVE))
     finish(run, engine)
-    for _ in range(3 if case == "not_found" else 1):
-        task_items(client)
-        acct.step()
+    run.end()
+    task_items(client)
+    acct.step()
+    clock.now += failure.FOLLOW_UP_S  # not_found: its follow-up has no line either
+    acct.step()
     (item,) = task_items(client)
     assert item["efficiency"] == {
         **NOTHING,
@@ -380,7 +381,7 @@ def test_eff_unavailable(
         "source": ENGINE_SOURCE[engine],
         "reason": case,
     }
-    assert len(fakebin.calls()) == (3 if case == "not_found" else 0)
+    assert len(fakebin.calls()) == (2 if case == "not_found" else 0)
 
 
 @pytest.mark.parametrize("engine", ENGINES)
@@ -430,12 +431,11 @@ def test_aggregate_empty(settings: Settings, writer: Writer, engine: str) -> Non
 
 @pytest.mark.parametrize("engine", ENGINES)
 def test_req15_5000_jobs(settings: Settings, writer: Writer, fakebin: Fake, engine: str) -> None:
-    """The By process view queues every ended job with a SLURM ID: 5,000 jobs take 50 calls of
-    at most 100 IDs, each asked once."""
+    """Once the run has ended, the By process view queues every ended job with a SLURM ID (the
+    end sweep): 5,000 jobs take 50 calls of at most 100 IDs, each asked once."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    on_slurm(writer)
-    Run(settings, writer, engine)
+    Run(settings, writer, engine, slurm=True).end()
     now = datetime.now(UTC)
 
     def many(conn: Any) -> None:

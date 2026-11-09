@@ -17,6 +17,8 @@ spectio/cli/main.py
 spectio/cli/open.py
 spectio/cli/serve.py
 spectio/config.py
+spectio/envfile.py
+spectio/environments.py
 spectio/fsmodes.py
 spectio/loginshell.py
 spectio/open_remote.py

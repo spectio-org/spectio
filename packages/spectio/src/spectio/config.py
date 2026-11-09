@@ -8,6 +8,7 @@ shared home holds it (dev-env §15.3, Where data lives), whatever `data_dir` say
 
 import json
 import os
+import re
 import shlex
 import stat
 import tomllib
@@ -31,6 +32,9 @@ DEFAULT_PORT = 8080  # architecture §7.3
 # gave SQLite 3.50.4, uv 0.13.7 with Python 3.13.14 gave 3.53.1 (login-node audit 2026-11-08 §8).
 MIN_UV = (0, 13, 7)
 LOOPBACK = "127.0.0.1"  # the only address 0.0.1 listens on (dev-env §15.3 req. 1)
+# A SLURM partition or account (api §5.4): no quote, backslash, `~`, `$`, comma or leading `-`,
+# matched in full, since Snakemake evaluates its resource values (SEC-PRE-FU86-01).
+SLURM_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}")
 
 
 class UnsafeConfig(ValueError):
@@ -75,7 +79,14 @@ def _absolute(path: Path) -> Path:
     return path
 
 
+def slurm_name(value: str) -> str:
+    if not SLURM_NAME.fullmatch(value):
+        raise ValueError(f"{value!r} is not a SLURM name")
+    return value
+
+
 AbsPath = Annotated[Path, AfterValidator(_absolute)]
+SlurmName = Annotated[str, AfterValidator(slurm_name)]
 Seconds = Annotated[float, Field(gt=0, allow_inf_nan=False)]
 
 
@@ -88,8 +99,8 @@ class SlurmOpts(_Model):
     failed jobs and job resources (dev-env §15.3 req. 15): its path, resolved once by `spectio
     init`, and `accounting = false` to never call it."""
 
-    partition: str | None = None
-    account: str | None = None
+    partition: SlurmName | None = None
+    account: SlurmName | None = None
     accounting: bool = True
     sacct: AbsPath | None = None
 

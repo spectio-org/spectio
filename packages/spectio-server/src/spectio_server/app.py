@@ -28,10 +28,12 @@ from fastapi import FastAPI
 from fastapi.responses import JSONResponse, PlainTextResponse
 
 from spectio.config import Settings
+from spectio.envfile import environments_path
 from spectio_server import static
 from spectio_server.api import (
     browser,
     cancel,
+    environments,
     logs,
     problems,
     relaunch,
@@ -129,6 +131,7 @@ def create_app(
     app.state.settings = settings
     app.state.writer = writer
     app.state.files = FilePool() if files is None else files  # dev-env §15.3 req. 13
+    app.state.imaging_slots = results.ImagingSlots(results.IMAGING_SLOTS)  # api §5.3.1
     # dev-env §15.3 req. 15: its thread starts on the first job asked
     app.state.accounting = Accounting.from_settings(settings) if accounting is None else accounting
     app.state.measures = Measures()  # benchmarks of ended attempts, read once (CR-P3T34-01)
@@ -164,6 +167,7 @@ def create_app(
         # relaunch first: `GET /runs/{id}:launch-template` before `GET /runs/{run_id}`
         app.state.reports = {}  # the reports of ended runs (P1 Task 31)
         app.state.follows = logs.Follows()  # dev-env §15.3 req. 14
+        app.state.environments = environments.Store(environments_path())  # §15.3 req. 18
         routers = (
             workflows,
             runs_write,
@@ -174,6 +178,7 @@ def create_app(
             results,
             workdir,
             cancel,
+            environments,
         )
         for module in (*routers, stream):
             app.include_router(module.router, prefix=API)

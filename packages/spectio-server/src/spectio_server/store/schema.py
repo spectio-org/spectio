@@ -161,6 +161,8 @@ environments = Table(
     Column("owning_group_id", String),
     Column("kind", String, nullable=False),  # slurm, k8s, local…: open-ended, no CHECK
     Column("config", Json),
+    # 0.0.1: the server's built-in (`local` or `slurm`), which `ensure_tenancy` keys on (FU-P3-86a)
+    Column("name", String),
 )
 
 runners = Table(
@@ -233,6 +235,9 @@ runs = Table(
     # What the engine said of the run (P1 Task 34): {cleanup, notemp, cluster_options}, the
     # last a flag, never the text; the API shows `cleanup` and `notemp`.
     Column("engine_settings", Json),
+    # The run's own environment, {name, label, executor, slurm, local, state} (FU-P3-86a, api
+    # §5.4): the source of every per-run executor decision; null for a run from a terminal.
+    Column("environment", Json),
     _check("runs", "state", RUN_STATES),
     _check("runs", "origin", RUN_ORIGINS, nullable=True),
     Index("ix_runs_project_created", "project_id", "created_at"),
@@ -374,10 +379,13 @@ run_stages = Table(
 )
 
 # The processes (Nextflow) or rules (Snakemake) of a run, in first-seen order, with their stage:
-# Nextflow's from `onProcessCreate`, Snakemake's from the rule files read when the stages freeze,
-# and any other from its first task (P1 Task 27). `ended`: `onProcessTerminate` was seen;
-# `jobs_planned`: the rule's jobs in Snakemake's last `run_info`. Not in api §7, which keys
-# processes by name only: the stage of a process with no task yet needs a row.
+# Nextflow's from `onProcessCreate`; Snakemake's at the freeze, the rules of the detected stages,
+# then those of the rule files that `rules.txt` lists (or all of them) in the rule files' order,
+# then the `rules.txt` rules no rule file holds; any other from its first task (P1 Task 27,
+# FU-P3-107, ui-spec §5.1). `GET /runs/{id}/processes` puts Snakemake rules with a job first.
+# `ended`: `onProcessTerminate` was seen; `jobs_planned`: the rule's jobs in Snakemake's last
+# `run_info`. Not in api §7, which keys processes by name only: the stage of a process with no
+# task yet needs a row.
 run_processes = Table(
     "run_processes",
     metadata,

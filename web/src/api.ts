@@ -75,6 +75,17 @@ export type StageState = "not_started" | "running" | "awaiting_review" | "comple
 export type Counts = Record<string, number>;
 export type Json = string | number | boolean | null | Json[] | { [key: string]: Json };
 
+/** Schema `RunEnvironment`: the run's own environment, as resolved at launch (FU-P3-86a, api
+ * §5.4); its fields are null unless `state` is `recorded`. */
+export interface RunEnvironment {
+  name: string | null;
+  label: string | null;
+  executor: "local" | "slurm" | null;
+  slurm: { partition: string | null; account: string | null; time_min: number | null; mem_mib: number | null } | null;
+  local: { cpus: number | null; mem_mib: number | null } | null;
+  state: "recorded" | "not_recorded" | "not_readable";
+}
+
 /** Schema `Run`: an item of `GET /runs`. */
 export interface Run {
   id: string;
@@ -92,6 +103,8 @@ export interface Run {
     version: string | null;
   };
   profiles: string[];
+  /** Null for a run started from a terminal (optional until the screens of FU-P3-86g read it). */
+  environment?: RunEnvironment | null;
   failure: { [key: string]: Json } | null;
   /** `checked` false: a run started from a terminal on another host or boot, whose head the
    * server cannot see (architecture §13.8). */
@@ -193,6 +206,10 @@ export interface LaunchTemplate {
   /** The top-level parameters that differ from the pipeline's schema defaults. */
   non_default: string[];
   code_loading: CodeLoading[];
+  /** The run's environment by name, or the default when that name is gone (FU-P3-86c). */
+  environment: string;
+  /** Why the default is chosen instead of the run's environment. */
+  environment_notice: string | null;
 }
 
 /** Why Resume is refused (`actions.resume.reason`, and the `reason` of a `409`). */
@@ -409,6 +426,8 @@ export class ApiError extends Error {
     message: string,
     readonly errors: FieldError[] = [],
     readonly reason: string | null = null,
+    /** The problem's `type` slug, such as `environment-exists` (api §5.4). */
+    readonly slug: string | null = null,
   ) {
     super(message);
   }
@@ -422,7 +441,8 @@ async function call<T>(path: string, init?: RequestInit): Promise<T> {
   if (!response.ok) {
     const detail = body?.detail ?? body?.title ?? `HTTP ${response.status}`;
     const reason = typeof body?.reason === "string" ? body.reason : null;
-    throw new ApiError(response.status, detail, Array.isArray(body?.errors) ? body.errors : [], reason);
+    const slug = typeof body?.type === "string" ? body.type.replace("/problems/", "") : null;
+    throw new ApiError(response.status, detail, Array.isArray(body?.errors) ? body.errors : [], reason, slug);
   }
   return body as T;
 }
@@ -481,7 +501,7 @@ export function listStages(id: string, signal?: AbortSignal): Promise<{ items: S
 
 export function listTasks(
   id: string,
-  params: { state?: string; process?: string; cursor?: string | null; limit?: number },
+  params: { state?: string; process?: string; task?: string; cursor?: string | null; limit?: number },
   signal?: AbortSignal,
 ): Promise<Page<Task>> {
   return call(`${run(id)}/tasks${query({ ...params })}`, { signal });
@@ -560,7 +580,7 @@ const resultPath = (path: string) => path.split("/").map(encodeURIComponent).joi
 /** Where a results file is served: an HTML report with the sandbox CSP of req. 14 (for the
  * report viewer's iframe), any other file, or `download`, as an attachment; `as: "image"` for
  * the preview's `<img>` (api §5.3). */
-export const resultUrl = (id: string, path: string, opts: { download?: boolean; as?: "image" } = {}, work?: WorkRoot) =>
+export const resultUrl = (id: string, path: string, opts: { download?: boolean; as?: "image" | "tiff" } = {}, work?: WorkRoot) =>
   `${API}${tree(id, work)}/raw/${resultPath(path)}${query({ download: opts.download ? "true" : null, as: opts.as })}`;
 
 /** Where a results file is read as text (api §5.3). */
@@ -608,3 +628,42 @@ export function launch(body: LaunchBody): Promise<Launched> {
     body: JSON.stringify(body),
   });
 }
+
+/** Schema `EnvironmentItem` (api §5.4): a built-in or one of `environments.toml`'s. */
+export interface EnvironmentItem {
+  name: string;
+  label: string | null;
+  executor: "local" | "slurm";
+  builtin: boolean;
+  default: boolean;
+  usable: boolean;
+  unusable_reason: string | null;
+  slurm: NonNullable<RunEnvironment["slurm"]> | null;
+  local: NonNullable<RunEnvironment["local"]> | null;
+  profiles: { nextflow: string | null; snakemake: string | null };
+  etag: string;
+}
+export type EnvironmentBody = Omit<EnvironmentItem, "builtin" | "default" | "usable" | "unusable_reason" | "etag">;
+
+/** Schema `EnvironmentList`. */
+export interface EnvironmentList {
+  items: EnvironmentItem[];
+  default: string;
+  file: { path: string; state: "missing" | "ok" | "refused" | "invalid" | "unreachable"; detail: string | null };
+}
+
+const env = (name: string) => `/environments/${encodeURIComponent(name)}`;
+const sendJson = (method: string, body: unknown, etag?: string): RequestInit => ({
+  method,
+  headers: { "content-type": "application/json", ...(etag ? { "if-match": etag } : {}) },
+  body: JSON.stringify(body),
+});
+
+export const listEnvironments = (signal?: AbortSignal): Promise<EnvironmentList> => call("/environments", { signal });
+export const getEnvironment = (name: string, signal?: AbortSignal): Promise<EnvironmentItem> => call(env(name), { signal });
+export const createEnvironment = (body: EnvironmentBody): Promise<EnvironmentItem> => call("/environments", sendJson("POST", body));
+export const replaceEnvironment = (body: EnvironmentBody, etag: string): Promise<EnvironmentItem> =>
+  call(env(body.name), sendJson("PUT", body, etag));
+export const deleteEnvironment = (name: string, etag: string): Promise<null> =>
+  call(env(name), { method: "DELETE", headers: { "if-match": etag } });
+export const makeDefault = (name: string): Promise<null> => call(`${env(name)}:make-default`, { method: "POST" });

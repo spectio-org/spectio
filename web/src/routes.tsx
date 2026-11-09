@@ -10,6 +10,7 @@ import {
 } from "@tanstack/react-router";
 import { useMemo } from "react";
 import type { WorkRoot } from "./api";
+import { EnvironmentPage, EnvironmentsPage } from "./environments/EnvironmentsPage";
 import { HomePage } from "./home/HomePage";
 import { LaunchPage } from "./launch/LaunchPage";
 import { useRecentRuns } from "./launch/TryPipelines";
@@ -23,7 +24,8 @@ import { AppShell } from "./shell/AppShell";
 // The four routes of 0.0.1 (mvp-0.0.1 §1) in the Paper shell (G4): home, the runs list and the
 // run detail (P1 Task 20), and the launch form (Task 19); and the report viewer (Task 31) and the
 // results browser (Task 32), and the preview of one results file (FU-P3-85c); the same two on a
-// Nextflow attempt's work directory (FU-P3-85e), which need `task` and `attempt`.
+// Nextflow attempt's work directory (FU-P3-85e), which need `task` and `attempt`; and the
+// Environments list and form (FU-P3-86f).
 
 /** `/launch?location=<pipeline>`: Launch opens on that pipeline (Home's pipeline links);
  * `/launch?from=<run ID>`: Copy to a new launch, prefilled from that run. */
@@ -95,6 +97,20 @@ function WorkdirFileRoute() {
   return <FilePreview key={`${id}:${work.task}:${work.attempt}:${search.path ?? ""}`} id={id} search={search} work={work} />;
 }
 
+/** `/environments/new?from=<name>`: the form, prefilled from that environment (Duplicate). */
+export const envSearch = (search: Record<string, unknown>): { from?: string } =>
+  typeof search.from === "string" && /^[a-z][a-z0-9-]{0,31}$/.test(search.from) ? { from: search.from } : {};
+
+function NewEnvironmentRoute() {
+  const { from } = envSearch(useSearch({ from: "/environments/new" }));
+  return <EnvironmentPage key={from ?? ""} name={null} from={from} />;
+}
+
+function EnvironmentRoute() {
+  const { name } = useParams({ from: "/environments/$name" });
+  return <EnvironmentPage key={name} name={name} />;
+}
+
 function NotFoundRoute() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   return <NotFound run={pathname.startsWith("/runs/")} />;
@@ -111,6 +127,9 @@ const routes = [
   createRoute({ getParentRoute: () => root, path: "/runs/$id/results/file", component: FileRoute, validateSearch: resultsSearch }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id/workdir", component: WorkdirRoute, validateSearch: resultsSearch }),
   createRoute({ getParentRoute: () => root, path: "/runs/$id/workdir/file", component: WorkdirFileRoute, validateSearch: resultsSearch }),
+  createRoute({ getParentRoute: () => root, path: "/environments", component: EnvironmentsPage }),
+  createRoute({ getParentRoute: () => root, path: "/environments/new", component: NewEnvironmentRoute, validateSearch: envSearch }),
+  createRoute({ getParentRoute: () => root, path: "/environments/$name", component: EnvironmentRoute }),
 ];
 
 const routeTree = root.addChildren(routes);

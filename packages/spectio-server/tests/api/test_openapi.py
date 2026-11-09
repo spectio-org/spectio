@@ -45,6 +45,10 @@ MODELS = {
     ("/api/v1/runs", "get", "200"): "RunList",
     ("/api/v1/runs/{run_id}", "get", "200"): "RunDetail",
     ("/api/v1/runs/{run_id}:cancel", "post", "202"): "RunDetail",
+    ("/api/v1/environments", "get", "200"): "EnvironmentList",  # FU-P3-86d
+    ("/api/v1/environments/{name}", "get", "200"): "EnvironmentItem",
+    ("/api/v1/environments", "post", "201"): "EnvironmentItem",
+    ("/api/v1/environments/{name}", "put", "200"): "EnvironmentItem",
     ("/api/v1/runs:summary", "get", "200"): "Summary",
     ("/api/v1/version", "get", "200"): "ServerVersion",
     ("/api/v1/runs/{run_id}/processes", "get", "200"): "ProcessList",

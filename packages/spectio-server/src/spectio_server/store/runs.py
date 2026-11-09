@@ -11,6 +11,7 @@ from typing import Any
 
 from sqlalchemy import Connection, insert, null, select
 
+from spectio.environments import run_column
 from spectio.runner.observed import ObservedRun
 from spectio.runner.rundir import RunManifest, run_paths
 from spectio_server.files.results import results_dir
@@ -99,7 +100,8 @@ def insert_run(
     (`m.parent_run_id`, P1 Task 30) runs in its lineage's directories: those of its parent's row,
     or, when the rebuild finds no such row, the parent's own. Its results directory (P1 Task 31)
     follows from its launch directory and its parameters, `default_outdir` standing for a
-    Nextflow `outdir` it does not set (the schema's default); a child's is its parent's row's."""
+    Nextflow `outdir` it does not set (the schema's default); a child's is its parent's row's.
+    Its `environment` is the manifest's snapshot, through the validators (FU-P3-86a)."""
     mine = {"created_at": now, "created_by": first(conn, principals)}
     project = first(conn, projects)
     engine = m.workflow.engine
@@ -152,6 +154,7 @@ def insert_run(
             work_dir=work_dir,
             results_dir=results
             or results_dir(engine, m.run_id, runs_root, launch_dir, m.params, default_outdir),
+            environment=run_column(m.environment),
             **lineage,
             **{**mine, "created_at": m.created_at},
         )
