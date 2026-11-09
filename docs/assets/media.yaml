@@ -574,6 +574,14 @@ media:
       - docs/assets/diagrams/p3-b10-environments-imaging_dark.svg
       - docs/assets/diagrams/p3-b10-environments-imaging_light.png
       - docs/assets/diagrams/p3-b10-environments-imaging_dark.png
+  - id: p3-b11-environments-screens
+    kind: diagram
+    generator: python3 tools/diagrams/p3_b11_environments_screens.py
+    outputs:
+      - docs/assets/diagrams/p3-b11-environments-screens_light.svg
+      - docs/assets/diagrams/p3-b11-environments-screens_dark.svg
+      - docs/assets/diagrams/p3-b11-environments-screens_light.png
+      - docs/assets/diagrams/p3-b11-environments-screens_dark.png
   - id: p3-t17-launch
     kind: diagram
     generator: python3 tools/diagrams/p3_t17_launch.py
