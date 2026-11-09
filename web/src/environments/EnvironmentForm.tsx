@@ -74,7 +74,12 @@ export function EnvironmentForm({ initial, etag, onSaved, onCancel, onReload, re
       .then(onSaved)
       .catch((e: Error) => {
         if (e instanceof ApiError && e.status === 409 && e.slug === "environment-exists") return setServer422({ name: e.message });
-        if (e instanceof ApiError && e.errors.length) return setServer422(Object.fromEntries(e.errors.map((f) => [f.field, f.message])));
+        if (e instanceof ApiError && e.errors.length) {
+          // A field the form shows gets its message; the rest (`executor`, `body`…) go in the banner.
+          setServer422(Object.fromEntries(e.errors.filter((f) => f.field in NAMES).map((f) => [f.field, f.message])));
+          const rest = e.errors.filter((f) => !(f.field in NAMES));
+          return rest.length ? setBanner({ text: rest.map((f) => f.message).join(" ") || e.message, reload: false }) : undefined;
+        }
         const known = e instanceof ApiError ? (BANNERS[String(e.status)] ?? BANNERS[e.slug ?? ""]) : undefined;
         setBanner({ text: known ?? e.message, reload: !!known });
       })

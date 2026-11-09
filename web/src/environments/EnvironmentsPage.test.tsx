@@ -3,7 +3,7 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, beforeEach, expect, test, vi } from "vitest";
-import { VERSION, app, json, serve, stubStream } from "../testing";
+import { VERSION, app, json, serve, stubStream, viewport } from "../testing";
 
 beforeEach(stubStream);
 afterEach(() => vi.unstubAllGlobals());
@@ -193,4 +193,88 @@ test("a built-in opens read only, with Duplicate", async () => {
   expect(await screen.findByLabelText("Partition")).toHaveAttribute("readonly");
   expect(screen.queryByRole("button", { name: "Save" })).toBeNull();
   expect(screen.getByRole("link", { name: "Duplicate slurm" })).toHaveAttribute("href", "/environments/new?from=slurm");
+});
+
+test("a 422 on a field the form does not show is a banner", async () => {
+  serve({
+    "/api/v1/version": SLURM,
+    [API]: (_u: URL, init?: RequestInit) =>
+      init?.method === "POST"
+        ? json(422, { title: "x", detail: "Invalid", errors: [{ field: "executor", message: "This server has no SLURM." }] })
+        : json(200, list(BUILTINS)),
+  });
+  app("/environments/new");
+  await userEvent.type(await screen.findByLabelText("Name"), "mylab");
+  await userEvent.click(screen.getByRole("button", { name: "Save" }));
+  expect(await screen.findByRole("alert")).toHaveTextContent("This server has no SLURM.");
+});
+
+test("an environment that cannot be read is an alert with Retry, not a missing one", async () => {
+  let status = 500;
+  serve({
+    "/api/v1/version": SLURM,
+    [`${API}/gpu-test`]: () => (status === 500 ? json(500, { title: "x", detail: "Server error" }) : json(200, MINE[1])),
+  });
+  app("/environments/gpu-test");
+  expect(await screen.findByRole("alert")).toHaveTextContent("gpu-test could not be read. Server error");
+  expect(screen.queryByText(/deleted in another tab/)).toBeNull();
+  status = 200;
+  await userEvent.click(screen.getByRole("button", { name: "Retry" }));
+  expect(await screen.findByLabelText("Name")).toHaveValue("gpu-test");
+});
+
+test("duplicating a built-in clears its name and its label", async () => {
+  serve({ "/api/v1/version": SLURM, [`${API}/slurm`]: BUILTINS[0], [API]: list(BUILTINS) });
+  app("/environments/new?from=slurm");
+  expect(await screen.findByLabelText("Name")).toHaveValue("");
+  expect(screen.getByLabelText("Label (optional)")).toHaveValue("");
+});
+
+test("an invalid file: no empty line beside the file line", async () => {
+  serve({ [API]: list(BUILTINS, "invalid", "Expected"), "/api/v1/version": SLURM });
+  app("/environments");
+  await screen.findByText(/has a mistake/);
+  expect(screen.queryByText(/Only the built-in environments so far/)).toBeNull();
+});
+
+test("while the list loads: its line and the cards' skeleton", async () => {
+  serve({ [API]: () => new Promise<Response>(() => {}), "/api/v1/version": SLURM });
+  app("/environments");
+  expect(await screen.findByText("Loading environments…")).toBeInTheDocument();
+  expect(document.querySelectorAll(".sp-env[aria-hidden]").length).toBeGreaterThan(0);
+});
+
+test("phone: a card is one link to its page, with no action buttons", async () => {
+  viewport(390);
+  serve({ [API]: list([...BUILTINS, ...MINE]), "/api/v1/version": SLURM });
+  app("/environments");
+  const link = await screen.findByRole("link", { name: "Long jobs, mylab" });
+  expect(link).toHaveAttribute("href", "/environments/mylab-long");
+  expect(screen.getByRole("link", { name: "SLURM (from spectio init)" })).toHaveAttribute("href", "/environments/slurm");
+  const card = link.closest("article")!;
+  expect(within(card).queryAllByRole("button")).toEqual([]);
+  expect(within(card).queryAllByRole("link")).toEqual([link]);
+});
+
+test("phone: the page stacks its actions, named with the environment, Delete last behind its sheet", async () => {
+  viewport(390);
+  let items = [...BUILTINS, ...MINE];
+  serve({
+    "/api/v1/version": SLURM,
+    [`${API}/gpu-test`]: (_u: URL, init?: RequestInit) => {
+      if (init?.method !== "DELETE") return json(200, MINE[1]);
+      items = items.filter((i) => i.name !== "gpu-test");
+      return new Response(null, { status: 204 });
+    },
+    [API]: () => json(200, list(items)),
+  });
+  app("/environments/gpu-test");
+  const more = await screen.findByRole("group", { name: "More for this environment" });
+  const names = [...more.querySelectorAll("a, button")].map((b) => b.textContent);
+  expect(names).toEqual(["Make default gpu-test", "Duplicate gpu-test", "Delete gpu-test"]);
+  await userEvent.click(within(more).getByRole("button", { name: "Delete gpu-test" }));
+  const sheet = await screen.findByRole("dialog", { name: "Delete gpu-test?" });
+  await userEvent.click(within(sheet).getByRole("button", { name: "Delete gpu-test" }));
+  expect(await screen.findByText("Deleted gpu-test")).toHaveAttribute("role", "status");
+  expect(screen.queryByRole("link", { name: "gpu-test" })).toBeNull();
 });

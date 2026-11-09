@@ -23,6 +23,39 @@
   margin: 6px 0;
   font-size: 14px;
 }
+.sp-env {
+  position: relative;
+}
+/* The phone: the heading's link covers the whole card (UX-PRE-FU86-R1-22). */
+.sp-env-link {
+  color: inherit;
+  text-decoration: none;
+}
+.sp-env-link::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+}
+.sp-env-link:focus-visible {
+  outline: none;
+}
+.sp-env:has(.sp-env-link:focus-visible) {
+  outline: 2px solid var(--sp-line-focus);
+  outline-offset: 2px;
+}
+.sp-env-more {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.sp-env-more h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.sp-env-more .mantine-Button-root {
+  min-height: 44px;
+}
 .sp-env[data-default] {
   box-shadow: inset 3px 0 0 var(--sp-section-environments), var(--sp-shadow);
 }
