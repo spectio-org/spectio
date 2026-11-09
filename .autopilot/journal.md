@@ -781,3 +781,4 @@ One entry per tick: time, steps started and finished, verification results, tria
 
 - 2026-11-09 · P3-fu86a merged (#193): each run keeps its own environment snapshot (`runs.environment`, `read_as`); failure/resume read it; `--local-cores 2` last. 3 rounds: code approve 0/0/2, security approve 0/0/2 (R3 items to -86c). Security CI jobs hit GitHub release 504s, green on one re-run. Thomas: AG Grid, imaging viewers, shorter cycle → PR #194 (inbox #134, autopilot §13). Next: FU-P3-86b+c+d as one task (§13.2).
 - 2026-11-09 — P3-fu86bcd merged (#197). P3-fu102a built (1 round, approve 0/0/2, security 0/0/2), PR #198 opened; 535 lines, over the 300 target: 102b..g cut smaller.
+- 2026-11-09 — P3-fu102a merged (#198) after one re-run of the security linters (504 on the release download).
