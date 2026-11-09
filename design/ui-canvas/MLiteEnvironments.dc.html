@@ -15,6 +15,7 @@ body{margin:0}
 main > *{flex-shrink:0}
 a{color:#6344B2}
 a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2px}
+.menv-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .menv-badge{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:7px;font-size:11.5px;font-weight:600}
 </style>
 </helmet>
@@ -26,17 +27,17 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
     <ul aria-label="Environments, built-ins first" style="list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px;">
       <sc-for list="{{envs}}" as="e" hint-placeholder-count="4">
         <li>
-          <a href="LiteEnvironmentEdit.dc.html" aria-describedby="{{e.did}}" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: {{e.bg}}; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden; min-height: 44px;">
+          <a href="LiteEnvironmentEdit.dc.html" aria-labelledby="{{e.nid}} {{e.bid}}" aria-describedby="{{e.did}}" style="text-decoration: none; color: inherit; display: flex; border-radius: 16px; background: {{e.bg}}; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); overflow: hidden; min-height: 44px;">
             <span style="width: 4px; flex-shrink: 0; background: {{e.rail}};"></span>
             <span style="flex-grow: 1; min-width: 0; padding: 12px 14px; display: flex; flex-direction: column; gap: 5px;">
               <span style="display: flex; align-items: flex-start; gap: 8px;">
                 <span style="flex: 1 1 auto; min-width: 0; display: flex; flex-direction: column; gap: 1px;">
-                  <span style="font-size: 16px; font-weight: 600; overflow-wrap: anywhere;">{{e.label}}</span>
+                  <span id="{{e.nid}}" style="font-size: 16px; font-weight: 600; overflow-wrap: anywhere;">{{e.label}}<span class="menv-sr">,</span></span>
                   <sc-if value="{{e.label !== e.name}}" hint-placeholder-val="{{true}}"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #4D5065;">{{e.name}}</span></sc-if>
                 </span>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0; margin-top: 3px;"><path d="M9 6l6 6-6 6"/></svg>
               </span>
-              <span style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{e.badges}}" as="b" hint-placeholder-count="2"><span class="menv-badge" style="background: {{b.bg}}; color: {{b.fg}};">{{b.t}}</span></sc-for></span>
+              <span id="{{e.bid}}" style="display: flex; gap: 6px; flex-wrap: wrap;"><sc-for list="{{e.badges}}" as="b" hint-placeholder-count="2"><span class="menv-sr">{{b.sep}}</span><span class="menv-badge" style="background: {{b.bg}}; color: {{b.fg}};">{{b.t}}</span></sc-for></span>
               <span id="{{e.did}}" style="display: flex; flex-direction: column; gap: 4px;">
                 <span style="font-size: 13px; color: #33364A; line-height: 1.45;">{{e.summary}}</span>
                 <sc-if value="{{e.profiles}}" hint-placeholder-val="{{false}}"><span style="font-size: 12.5px; color: #4D5065;">{{e.profiles}}</span></sc-if>
@@ -57,7 +58,9 @@ class Component extends DCLogic {
 renderVals() {
   const B = { slurm: { t: 'SLURM', bg: '#F0F9FF', fg: '#075985' }, local: { t: 'Local', bg: '#F1F2F6', fg: '#33364A' },
     def: { t: 'Default', bg: '#E8F6EF', fg: '#157A4B' }, built: { t: 'Built-in', bg: '#F1F2F6', fg: '#4D5065' } };
-  const env = (o) => ({ bg: '#FFFFFF', rail: 'transparent', profiles: '', unusable: '', did: 'menv-' + o.name, ...o });
+  // Name = label and badges ("Long jobs, mylab, SLURM, Default"); the summary is the description only (CR-P3FU86E-03).
+  const env = (o) => ({ bg: '#FFFFFF', rail: 'transparent', profiles: '', unusable: '', did: 'menv-' + o.name,
+    nid: 'menv-n-' + o.name, bid: 'menv-b-' + o.name, ...o, badges: o.badges.map((b, i) => ({ ...b, sep: i ? ',' : '' })) });
   // Same fixture as LiteEnvironments; on the phone a card is a link to the environment's page (UX-PRE-FU86-R1-22).
   return { envs: [
     env({ name: 'slurm', label: 'SLURM (from spectio init)', badges: [B.slurm, B.built], summary: 'partition htc · SLURM account mylab' }),
