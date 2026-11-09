@@ -59,3 +59,33 @@ test.each(["a/../b.html", "./b.html", "a//b.html", "/etc/b.html", "a\u202eb.html
   expect(screen.queryByTitle(/sandboxed/)).toBeNull();
   expect(screen.queryByText(path)).toBeNull();
 });
+
+test("opened from the results browser: back to the file's folder with its sort, filter and row; the folder path ends with the file (FU-P3-85d)", async () => {
+  serve({ [URL_]: detail() });
+  app(`/runs/${ID}/report?path=${encodeURIComponent(PATH)}&from=results&sort=-mtime&q=multi`);
+  await screen.findByRole("heading", { level: 1, name: "MultiQC report" });
+  const back = screen.getAllByRole("link", { name: "star_salmon" })[0]; // the back link, then the folder path
+  const url = new URL(back.getAttribute("href")!, "http://x");
+  expect(url.pathname).toBe(`/runs/${ID}/results`);
+  expect(Object.fromEntries(url.searchParams)).toEqual({ path: "multiqc/star_salmon", sort: "-mtime", q: "multi", focus: "multiqc_report.html" });
+  expect(screen.queryByRole("link", { name: /Summary/ })).toBeNull();
+  const bar = screen.getByRole("navigation", { name: "Folder" });
+  expect(within(bar).getAllByRole("link").map((a) => a.textContent)).toEqual(["results", "multiqc", "star_salmon"]);
+  expect(within(bar).getByRole("link", { name: "multiqc" }).getAttribute("href")).toBe(`/runs/${ID}/results?path=multiqc&sort=-mtime`);
+  expect(within(bar).getByText("multiqc_report.html")).toHaveAttribute("aria-current", "page");
+});
+
+test("a report at the results root opened from the browser goes back to the root", async () => {
+  serve({ [URL_]: detail() });
+  app(`/runs/${ID}/report?path=report.html&from=results`);
+  await screen.findByRole("heading", { level: 1, name: "report" });
+  const back = screen.getAllByRole("link", { name: "results" })[0];
+  expect(back.getAttribute("href")).toBe(`/runs/${ID}/results?focus=report.html`);
+});
+
+test("opened from the Summary there is no folder path", async () => {
+  serve({ [URL_]: detail() });
+  app(`/runs/${ID}/report?path=${encodeURIComponent(PATH)}`);
+  await screen.findByRole("heading", { level: 1, name: "MultiQC report" });
+  expect(screen.queryByRole("navigation", { name: "Folder" })).toBeNull();
+});

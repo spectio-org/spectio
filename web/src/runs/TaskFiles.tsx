@@ -1,4 +1,5 @@
 import { Button } from "@mantine/core";
+import { Link } from "@tanstack/react-router";
 import { type KeyboardEvent, useEffect, useId, useRef, useState } from "react";
 import {
   ApiError,
@@ -15,6 +16,7 @@ import { ICONS, Icon } from "../icons";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
 import { LogLines } from "./LogViewer";
+import { isResultPath } from "./ReportViewer";
 import { duration, when } from "./stateWord";
 
 // Each job's files (P1 Task 32; ui-spec §4.4 note 2026-10-28, Job files; boards LiteTaskFiles,
@@ -65,16 +67,29 @@ const OUTPUT_WORDS: Record<TaskOutput["state"], string> = {
   tbd: "decided after the checkpoint",
 };
 
-function OutputsPanel({ outputs }: { outputs: TaskOutput[] }) {
+/** Each output with Copy path; a present one inside the results (Snakemake: the launch directory)
+ * also gets Preview: the preview page asks `stat`, and sends a folder to the folder page; both
+ * come back to this sheet on this attempt (ui-spec §4.4.1, Snakemake outputs). */
+function OutputsPanel({ run, task, n, outputs }: { run: RunDetail; task: Task; n: number; outputs: TaskOutput[] }) {
   if (!outputs.length) return <p className="sp-muted">This job declares no output.</p>;
   return (
     <>
       <ul className="sp-sheet-list sp-outputs" aria-label="Outputs">
         {outputs.map((o) => (
           <li key={o.path} className="sp-sheet-row">
-            {[o.path, OUTPUT_WORDS[o.state], o.state === "temp_removed" && o.removed_at ? when(o.removed_at) : null, o.protected ? "write-protected" : null]
-              .filter(Boolean)
-              .join(" · ")}
+            <span className="sp-grow">
+              {[o.path, OUTPUT_WORDS[o.state], o.state === "temp_removed" && o.removed_at ? when(o.removed_at) : null, o.protected ? "write-protected" : null]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+            <span className="sp-actions">
+              {o.state === "present" && isResultPath(o.path) && (
+                <Link to="/runs/$id/results/file" params={{ id: run.id }} search={{ path: o.path, task: task.id, attempt: n }} aria-label={`Preview ${o.path}`}>
+                  Preview
+                </Link>
+              )}
+              <CopyButton text={o.path} label="Copy path" name={`Copy ${o.path}`} />
+            </span>
           </li>
         ))}
       </ul>
@@ -202,13 +217,14 @@ function FilePanel({ task, n, file, running, cleanup, onReload }: { task: Task; 
   );
 }
 
-/** The files of the task's last attempt, or of an earlier one picked in Attempt. */
-export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
+/** The files of the task's last attempt, or of an earlier one picked in Attempt; `attempt`: the
+ * one to open on (the sheet reopened from a URL). */
+export function TaskFiles({ run, task, attempt }: { run: RunDetail; task: Task; attempt?: number }) {
   const phone = usePhone();
   const base = useId();
   const snakemake = run.workflow.engine === "snakemake";
   const last = task.attempt_n;
-  const [n, setN] = useState(last ?? 1);
+  const [n, setN] = useState(Math.min(attempt ?? last ?? 1, last ?? 1));
   const [listing, setListing] = useState<Listing | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [lists, setLists] = useState(0);
@@ -337,7 +353,7 @@ export function TaskFiles({ run, task }: { run: RunDetail; task: Task }) {
                 onReload={reload}
               />
             ) : (
-              <OutputsPanel outputs={outputs ?? []} />
+              <OutputsPanel run={run} task={task} n={n} outputs={outputs ?? []} />
             )}
           </div>
         </>

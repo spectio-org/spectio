@@ -556,14 +556,19 @@ test("a report opens in the viewer with its 'Untrusted report' banner", async ({
   await expect(page.locator('iframe[title$="sandboxed"]')).toHaveAttribute('sandbox', 'allow-scripts allow-downloads');
 });
 
-test('the results browser shows one folder; an HTML file opens in the viewer, another downloads', async ({ page }) => {
+test('the results browser shows one folder; an HTML file opens in the viewer, another opens its preview', async ({ page }, info) => {
   await mockResults(page);
   await page.goto(`/runs/${RUN}/results?path=fastqc`);
   await expect(page.getByRole('heading', { level: 1, name: 'Results' })).toBeVisible();
   await expect(page.getByRole('navigation', { name: 'Folder' }).getByRole('link', { name: 'results' })).toBeVisible();
-  const table = page.getByRole('table', { name: 'fastqc' });
-  await expect(table.getByRole('link', { name: 'versions.yml' })).toHaveAttribute('href', `/api/v1/runs/${RUN}/results/raw/fastqc/versions.yml?download=true`);
-  await expect(table.getByText('link outside the results directory')).toBeVisible();
-  await table.getByRole('link', { name: 'S01_fastqc.html' }).click();
+  const phone = info.project.name === 'phone';
+  const table = page.getByRole(phone ? 'list' : 'table', { name: 'fastqc' });
+  // FU-P3-85d: a file's name opens its preview; on the desktop, Download is the row's icon button.
+  await expect(table.getByRole('link', { name: /^versions\.yml/ })).toHaveAttribute('href', `/runs/${RUN}/results/file?path=${encodeURIComponent('fastqc/versions.yml')}`);
+  if (!phone) {
+    await expect(table.getByRole('link', { name: 'Download versions.yml' })).toHaveAttribute('href', `/api/v1/runs/${RUN}/results/raw/fastqc/versions.yml?download=true`);
+  }
+  await expect(table.getByText('not followed')).toBeVisible();
+  await table.getByRole('link', { name: /^S01_fastqc\.html/ }).click();
   await expect(page.getByText('Untrusted report: fastqc/S01_fastqc.html')).toBeVisible();
 });

@@ -1985,3 +1985,14 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
   - (c) also add Firefox and WebKit to the preview spec in CI before 0.0.1.
 - **Recommendation:** (b). The two caps are cheap (estimate the formatted size before building it, or lower the input size for the formatter; stop the search at a fixed number of matches) and the DOM and CPU budget is a stated rule of §4.4.1. (c) when the CI minutes allow, since the SVG check is the one that needs a real browser engine. **Assumed:** (b), by the standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30); until FU-P3-94 is built the preview stays as built.
 - **Why a question:** the choice is between releasing a preview that can stall a tab on a hostile 1 MiB results file and holding 0.0.1 for a cap.
+
+### #131 · Assumed: the status line of a lost task sheet follows the engine's words (FU-P3-85d)
+
+- **Covers:** step P3-fu85d (`autopilot/P3-fu85d`); finding [CR-P3FU85D-r2-02](code/P3-fu85d.md#findings); [ui-spec §4.4](../specs/ui-spec.md#44-run-detail), "The engine's words" (UX-PAR-20), and §4.4.1, "Back to the task sheet".
+- **Context:** when the task sheet cannot be reopened from `&task=&attempt=`, the page shows "This job's sheet could not be reopened." The line is built with "job's" for every engine, and its test runs on a Nextflow run. A Nextflow run reads "task" everywhere else on the screen.
+- **Options:**
+  - (a) keep "job's" for every engine, as built;
+  - (b) the line takes the engine's word (`words(run.workflow.engine)`): "task's" on Nextflow, "job's" on Snakemake, with the test on both engines;
+  - (c) a neutral line with no noun: "The sheet could not be reopened."
+- **Recommendation:** (b), in FU-P3-97 or with FU-P3-96, which touches the same lines. It is the rule of the screen, and it costs one call and one test. **Assumed:** (b); until then the line is built as (a).
+- **Why a question:** the choice is between one word that is wrong on one engine and a rule the rest of the screen already follows.

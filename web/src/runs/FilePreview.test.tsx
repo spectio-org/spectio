@@ -48,8 +48,9 @@ test("stat first, then the whole file: facts, path, Copy path, Download, focus o
   expect(urls[0]).toBe(`${RUN}/results/stat/pipeline_info/versions.yml`);
   // the back link and the path bar name the folder; the page title names the file and the run
   const folders = screen.getAllByRole("link", { name: "pipeline_info" });
-  expect(folders).toHaveLength(2); // the back link, and the path bar
-  for (const a of folders) expect(a.getAttribute("href")).toBe(`/runs/${ID}/results?path=pipeline_info`);
+  expect(folders).toHaveLength(2); // the back link (which returns to the file's row), and the path bar
+  expect(folders[0].getAttribute("href")).toBe(`/runs/${ID}/results?path=pipeline_info&focus=versions.yml`);
+  expect(folders[1].getAttribute("href")).toBe(`/runs/${ID}/results?path=pipeline_info`);
   const bar = screen.getByRole("navigation", { name: "Folder" });
   expect(within(bar).getByText("versions.yml")).toHaveAttribute("aria-current", "page");
   await waitFor(() => expect(document.title).toBe("versions.yml · rnaseq-2026-10-25 · Spectio"));
@@ -416,4 +417,48 @@ test("an HTML file links to the report viewer", async () => {
   const link = await screen.findByRole("link", { name: "Open it in the report viewer" });
   expect(link.getAttribute("href")).toBe(`/runs/${ID}/report?path=${encodeURIComponent("multiqc/multiqc_report.html")}`);
   await act(async () => {});
+});
+
+const query = (a: HTMLElement) => Object.fromEntries(new URL(a.getAttribute("href")!, "http://x").searchParams);
+
+test("the back link returns to the folder with its sort and filter, and the file's row to focus (FU-P3-85d)", async () => {
+  files("pipeline_info/versions.yml", 12, { [`${RUN}/results/text/pipeline_info/versions.yml`]: () => text("a: 1\n") });
+  app(`/runs/${ID}/results/file?path=${encodeURIComponent("pipeline_info/versions.yml")}&sort=-size&q=ver`);
+  await heading("versions.yml");
+  const back = screen.getAllByRole("link", { name: "pipeline_info" })[0];
+  expect(new URL(back.getAttribute("href")!, "http://x").pathname).toBe(`/runs/${ID}/results`);
+  expect(query(back)).toEqual({ path: "pipeline_info", sort: "-size", q: "ver", focus: "versions.yml" });
+  await act(async () => {});
+});
+
+test("a file at the results root goes back to the root, with the row to focus", async () => {
+  files("notes.txt", 3, { [`${RUN}/results/text/notes.txt`]: () => text("a\n") });
+  open("notes.txt");
+  await heading("notes.txt");
+  const back = screen.getAllByRole("link", { name: "results" })[0]; // the back link, then the path bar
+  expect(query(back)).toEqual({ focus: "notes.txt" });
+  await act(async () => {});
+});
+
+test("opened from the task sheet's Outputs, the back link reopens the sheet on that attempt", async () => {
+  files("counts/S19.tsv", 3, { [`${RUN}/results/text/counts/S19.tsv`]: () => text("a\tb\n") }, {
+    workflow: { engine: "snakemake", engine_version: "9.5.1", location: "/g/x", name: null, version: null },
+  });
+  app(`/runs/${ID}/results/file?path=${encodeURIComponent("counts/S19.tsv")}&task=tsk_19&attempt=2`);
+  await heading("S19.tsv");
+  const back = screen.getByRole("link", { name: /rnaseq-2026-10-25 · job, attempt 2/ });
+  expect(new URL(back.getAttribute("href")!, "http://x").pathname).toBe(`/runs/${ID}`);
+  expect(query(back)).toEqual({ task: "tsk_19", attempt: "2" });
+  await act(async () => {});
+});
+
+test("a folder opened from the task sheet's Outputs keeps the way back to the sheet", async () => {
+  serve({
+    [`${RUN}/results/stat/counts`]: stat("counts", null, "dir"),
+    [`${RUN}/results`]: { root: ROOT, path: "counts", exists: true, entries: [], truncated: false, reports: [] },
+    [RUN]: { ...DETAIL, ...run({ state: "succeeded" }), results_dir: ROOT },
+  });
+  const router = app(`/runs/${ID}/results/file?path=counts&task=tsk_19&attempt=2`);
+  await waitFor(() => expect(router.state.location.pathname).toBe(`/runs/${ID}/results`));
+  expect(router.state.location.search).toEqual({ path: "counts", task: "tsk_19", attempt: 2 });
 });

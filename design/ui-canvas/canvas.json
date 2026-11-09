@@ -1238,6 +1238,22 @@
    "h": 844,
    "title": "0.0.1 phone · File preview",
    "page": "lite"
+  },
+  "MLiteResults.dc.html": {
+   "x": 5640,
+   "y": 3000,
+   "w": 390,
+   "h": 844,
+   "title": "0.0.1 phone · Results browser",
+   "page": "lite"
+  },
+  "LiteKind.dc.html": {
+   "x": 4376,
+   "y": 4400,
+   "w": 160,
+   "h": 32,
+   "title": "0.0.1 · Kind badge",
+   "page": "lite"
   }
  },
  "order": [
@@ -1361,6 +1377,7 @@
   "MLiteCancelSheet.dc.html",
   "MLiteResumeSheet.dc.html",
   "MLiteFilePreview.dc.html",
+  "MLiteResults.dc.html",
   "MLiteLaunch.dc.html",
   "LiteLegend.dc.html",
   "LiteStates.dc.html",
@@ -1368,7 +1385,8 @@
   "LiteSidebar.dc.html",
   "LiteTopbar.dc.html",
   "MLiteTopbar.dc.html",
-  "MLiteTabbar.dc.html"
+  "MLiteTabbar.dc.html",
+  "LiteKind.dc.html"
  ],
  "notes": {
   "ia": {

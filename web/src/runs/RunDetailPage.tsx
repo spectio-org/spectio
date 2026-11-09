@@ -4,6 +4,7 @@ import { type KeyboardEvent, useCallback, useEffect, useId, useRef, useState } f
 import {
   ApiError,
   type LogSource,
+  type Page,
   type Process,
   type RunDetail,
   type ServerVersion,
@@ -25,6 +26,7 @@ import { FoldSection } from "../shell/FoldSection";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
 import { type Detail, DetailSheet } from "./DetailSheet";
+import { taskSearch } from "./explorer";
 import { FailureSummary } from "./FailureSummary";
 import { LogLines, LogViewer } from "./LogViewer";
 import { ByProcess } from "./ByProcess";
@@ -61,10 +63,17 @@ const LOGS: { source: LogSource; label: string }[] = [
 const TABS = ["summary", "tasks", "parameters", "logs"] as const;
 type Tab = (typeof TABS)[number];
 
+type RunSearch = { tab?: Exclude<Tab, "summary">; source?: LogSource; process?: string; task?: string; attempt?: number };
+
 /** The run's URL keeps its tab, the log source on Logs (?tab=logs&source=engine) and the process
  * on Tasks (?tab=tasks&process=ALIGN), so a view can be linked and reloaded; anything else falls
- * back to the Summary, the engine log and every process. */
-export function runSearch(search: Record<string, unknown>): { tab?: Exclude<Tab, "summary">; source?: LogSource; process?: string } {
+ * back to the Summary, the engine log and every process. `&task=<id>&attempt=<n>` reopens that
+ * task's sheet on that attempt (ui-spec §4.4.1, Back to the task sheet). */
+export function runSearch(search: Record<string, unknown>): RunSearch {
+  return { ...tabSearch(search), ...taskSearch(search) };
+}
+
+function tabSearch(search: Record<string, unknown>): RunSearch {
   const tab = TABS.find((t) => t !== "summary" && t === search.tab) as Exclude<Tab, "summary"> | undefined;
   if (tab === "tasks" && typeof search.process === "string" && search.process !== "") return { tab, process: search.process };
   if (tab !== "logs") return tab ? { tab } : {};
@@ -349,9 +358,9 @@ function WhyItFailed({ run, processes, onTasks, onOpen }: { run: RunDetail; proc
       let cursor: string | null = null;
       for (let n = 0; n < 5; n += 1) {
         const page = await listTasks(run.id, { state: "failed", limit: 50, cursor }, controller.signal);
-        const found = page.items?.find((t) => t.id === culpritId);
+        const found = page.items.find((t) => t.id === culpritId);
         if (found) return setCulprit(found);
-        cursor = page.next ?? null;
+        cursor = page.next;
         if (!cursor) return;
       }
     };
@@ -995,6 +1004,22 @@ function CancelDialog({ run, server, opened, onClose, onConfirm }: { run: RunDet
   );
 }
 
+const FIND_PAGES = 10; // of 200 tasks: the first 2,000 tasks of a run, in ID order
+
+/** One task of the run by its ID, from the run's task listing (no route reads one task alone yet:
+ * `GET /tasks/{id}` is FU-P3-96), so a task past the first 2,000 is not found. */
+async function findTask(runId: string, taskId: string, signal: AbortSignal): Promise<Task | null> {
+  let cursor: string | null = null;
+  for (let n = 0; n < FIND_PAGES; n += 1) {
+    const page: Page<Task> = await listTasks(runId, { limit: 200, cursor }, signal);
+    const found = page.items.find((t) => t.id === taskId);
+    if (found) return found;
+    cursor = page.next;
+    if (!cursor) return null;
+  }
+  return null;
+}
+
 /** The run detail (ui-spec §4.4, 0.0.1): the shared header with Cancel, the facts and counts, then
  * Summary (why it failed, stages or processes, and the aside), Tasks, Parameters and Logs;
  * refetched on each stream frame for the run until it ends. */
@@ -1026,6 +1051,23 @@ export function RunDetailPage({ id }: { id: string }) {
   const [taskFilter, setTaskFilter] = useState<number | null>(null);
   // the detail sheet's views, the shown one last (DetailSheet)
   const [views, setViews] = useState<Detail[]>([]);
+  const [sheetLost, setSheetLost] = useState(false);
+  // &task=&attempt= (back from a Preview of the sheet's Outputs): that task's sheet, on that attempt
+  const { task: openTask, attempt: openAttempt } = search;
+  useEffect(() => {
+    setSheetLost(false);
+    if (!valid || !openTask || !openAttempt) return;
+    const controller = new AbortController();
+    // not found or not read: the page shows without the sheet, and says so
+    findTask(id, openTask, controller.signal)
+      .then((task) => (task ? setViews([{ kind: "task", task, attempt: openAttempt }]) : setSheetLost(true)))
+      .catch(() => controller.signal.aborted || setSheetLost(true));
+    return () => controller.abort();
+  }, [id, valid, openTask, openAttempt]);
+  const closeSheet = () => {
+    setViews([]);
+    if (openTask) navigate({ search: (prev) => runSearch({ ...prev, task: undefined, attempt: undefined }), replace: true });
+  };
   const title = useRef<HTMLHeadingElement>(null);
   const panels = { tasks: useRef<HTMLDivElement>(null), logs: useRef<HTMLDivElement>(null) };
   const focusPanel = useRef(false);
@@ -1115,6 +1157,7 @@ export function RunDetailPage({ id }: { id: string }) {
         cancelError={cancelError}
         onChip={showTasks}
       />
+      {sheetLost && <p role="status">This job's sheet could not be reopened.</p>}
       <DetailSheet
         run={run}
         stages={stages}
@@ -1122,7 +1165,7 @@ export function RunDetailPage({ id }: { id: string }) {
         views={views}
         onOpen={(view) => setViews((shown) => [...shown, view])}
         onBack={() => setViews((shown) => shown.slice(0, -1))}
-        onClose={() => setViews([])}
+        onClose={closeSheet}
         onTasks={showProcess}
       />
       <CancelDialog run={run} server={server} opened={asking} onClose={() => setAsking(false)} onConfirm={confirm} />

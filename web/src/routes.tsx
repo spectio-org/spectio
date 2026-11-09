@@ -54,20 +54,20 @@ function RunRoute() {
 
 function ReportRoute() {
   const { id } = useParams({ from: "/runs/$id/report" });
-  const { path } = reportSearch(useSearch({ from: "/runs/$id/report" }));
-  return <ReportViewer key={id} id={id} path={path} />;
+  const search = reportSearch(useSearch({ from: "/runs/$id/report" }));
+  return <ReportViewer key={id} id={id} {...search} />;
 }
 
 function ResultsRoute() {
   const { id } = useParams({ from: "/runs/$id/results" });
-  const { path } = resultsSearch(useSearch({ from: "/runs/$id/results" }));
-  return <ResultsBrowser key={id} id={id} path={path} />;
+  const search = resultsSearch(useSearch({ from: "/runs/$id/results" }));
+  return <ResultsBrowser key={id} id={id} search={search} />;
 }
 
 function FileRoute() {
   const { id } = useParams({ from: "/runs/$id/results/file" });
-  const { path } = resultsSearch(useSearch({ from: "/runs/$id/results/file" }));
-  return <FilePreview key={`${id}:${path ?? ""}`} id={id} path={path} />;
+  const search = resultsSearch(useSearch({ from: "/runs/$id/results/file" }));
+  return <FilePreview key={`${id}:${search.path ?? ""}`} id={id} search={search} />;
 }
 
 function NotFoundRoute() {

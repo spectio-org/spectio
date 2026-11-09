@@ -26,6 +26,7 @@ import {
   wholeLines,
 } from "./preview";
 import { isResultPath } from "./ReportViewer";
+import { BackToRun, type ResultsSearch } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
 import { runName } from "./RunState";
 import { isTerminal, when } from "./stateWord";
@@ -413,8 +414,10 @@ function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind:
   }
 }
 
-/** `/runs/$id/results/file?path=<file>` */
-export function FilePreview({ id, path = "" }: { id: string; path?: string }) {
+/** `/runs/$id/results/file?path=<file>`, with the folder's `sort` and `q` it returns to, or the
+ * `task` and `attempt` of the sheet a Preview of its Outputs came from. */
+export function FilePreview({ id, search }: { id: string; search: ResultsSearch }) {
+  const path = search.path ?? "";
   const [run, setRun] = useState<RunDetail | null>(null);
   const [missing, setMissing] = useState(false);
   const [file, setFile] = useState<ResultStat | null>(null);
@@ -459,7 +462,8 @@ export function FilePreview({ id, path = "" }: { id: string; path?: string }) {
   }, [name, fileName]);
 
   if (missing) return <NotFound />;
-  if (file?.type === "dir") return <Navigate to="/runs/$id/results" params={{ id }} search={{ path: file.path }} replace />;
+  const { sort, q, task, attempt } = search;
+  if (file?.type === "dir") return <Navigate to="/runs/$id/results" params={{ id }} search={{ path: file.path, sort, q, task, attempt }} replace />;
 
   const retry = () => setReads((r) => r + 1);
   const shown = file?.path ?? "";
@@ -470,9 +474,13 @@ export function FilePreview({ id, path = "" }: { id: string; path?: string }) {
   const kind = file ? fileKind(file.name) : null;
   return (
     <div className="sp-runs sp-file-page">
-      <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={folder ? { path: folder } : {}}>
-        <Icon path={ICONS.chevronLeft} size={14} /> {file ? folder.split("/").pop() || "results" : "Results"}
-      </Link>
+      {task && attempt ? (
+        <BackToRun id={id} run={run} task={task} attempt={attempt} />
+      ) : (
+        <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name }}>
+          <Icon path={ICONS.chevronLeft} size={14} /> {file ? folder.split("/").pop() || "results" : "Results"}
+        </Link>
+      )}
       <h1 ref={title} tabIndex={-1} className="sp-page-title sp-file-name">
         {fileName ?? "File preview"}
       </h1>
