@@ -392,6 +392,7 @@ export function LaunchPage({
       aria-disabled={why ? true : undefined}
       data-disabled={why ? true : undefined}
       aria-describedby={summary ? "launch-missing launch-reason" : "launch-missing"}
+      leftSection={<Icon path={ICONS.runs} size={16} />}
     >
       Launch
     </Button>
