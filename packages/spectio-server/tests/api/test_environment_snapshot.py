@@ -100,7 +100,8 @@ def test_req18_snapshot_rebuilt_from_the_manifest(settings: Settings, writer: Wr
 
 
 def jobs(client: TestClient, writer: Writer, settings: Settings, rid: str, native: str) -> None:
-    """One Snakemake job of `rid` ended, with SLURM ID `native`, its launch directory made."""
+    """One Snakemake job of `rid` ended, with SLURM ID `native`, its launch directory made;
+    then the run ended, so its jobs are swept (CON-SLURM-POLL-01)."""
     query = select(launches.c.id).where(launches.c.run_id == rid)
     launch_id = writer.submit(lambda c: c.execute(query).scalar_one()).result()
     paths = make_run_dirs(settings.runs_root, rid)
@@ -111,6 +112,10 @@ def jobs(client: TestClient, writer: Writer, settings: Settings, rid: str, nativ
         event(3, "snakemake.job_finished", rid, job_id=1),
     ]
     push(writer, settings, launch_id, *found)
+    done = (
+        update(runs).where(runs.c.id == rid).values(state="succeeded", ended_at=datetime.now(UTC))
+    )
+    writer.submit(lambda c: c.execute(done)).result()
 
 
 def test_req18_snapshot_local_to_slurm_rename(

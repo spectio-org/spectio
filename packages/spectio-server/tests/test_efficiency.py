@@ -29,6 +29,7 @@ from .api.test_failure import (
     API,
     HASHES,
     RUN,
+    Clock,
     Fake,
     Run,
     accounting,
@@ -232,6 +233,7 @@ def test_slurm_request_nf(settings: Settings, writer: Writer, fakebin: Fake) -> 
     run.push("nextflow.onFlowCreate", clusterOptionsSet=True)
     fakebin.at(NATIVE, workdir)
     finish(run, "nextflow")
+    run.end()
     task_items(client)
     assert acct.step()
     (item,) = task_items(client)
@@ -323,7 +325,8 @@ def test_eff_sacct_row() -> None:
 
 @pytest.mark.parametrize("engine", ENGINES)
 def test_eff_states(settings: Settings, writer: Writer, fakebin: Fake, engine: str) -> None:
-    """running → pending_accounting with the engine's measure → available with sacct's."""
+    """running → pending_accounting with the engine's measure (the run live: nothing asked,
+    CON-SLURM-POLL-01) → available with sacct's, after the run's end sweep."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
     run = Run(settings, writer, engine, slurm=True)
@@ -339,6 +342,9 @@ def test_eff_states(settings: Settings, writer: Writer, fakebin: Fake, engine: s
         "state": "pending_accounting",
         "source": ENGINE_SOURCE[engine],
     }
+    assert not acct.step()  # the run is live
+    run.end()
+    task_items(client)
     assert acct.step() and fakebin.ids() == [NATIVE]
     (item,) = task_items(client)
     assert item["efficiency"] == {**NOTHING, **FROM_SACCT, "state": "available", "source": "sacct"}
@@ -354,16 +360,19 @@ def test_eff_unavailable(
     `local` case is a `not_recorded` run on a local server, read as the server's built-in
     `local` (api §5.4, CR-P3FU86A-02); on a SLURM server it would be asked."""
     client = client_for(settings, writer)
-    acct = accounting(settings, fakebin, enabled=case != "accounting_off")
+    clock = Clock()
+    acct = accounting(settings, fakebin, enabled=case != "accounting_off", clock=clock)
     client.app.state.accounting = acct  # type: ignore[attr-defined]
     if case == "not_found":
-        (fakebin.dir / "lag").write_text("-,-,-")
+        (fakebin.dir / "lag").write_text("-,-")
     run = Run(settings, writer, engine, slurm=case != "local")
     fakebin.at(NATIVE, submit(run, engine, native=None if case == "no_job_id" else NATIVE))
     finish(run, engine)
-    for _ in range(3 if case == "not_found" else 1):
-        task_items(client)
-        acct.step()
+    run.end()
+    task_items(client)
+    acct.step()
+    clock.now += failure.FOLLOW_UP_S  # not_found: its follow-up has no line either
+    acct.step()
     (item,) = task_items(client)
     assert item["efficiency"] == {
         **NOTHING,
@@ -372,7 +381,7 @@ def test_eff_unavailable(
         "source": ENGINE_SOURCE[engine],
         "reason": case,
     }
-    assert len(fakebin.calls()) == (3 if case == "not_found" else 0)
+    assert len(fakebin.calls()) == (2 if case == "not_found" else 0)
 
 
 @pytest.mark.parametrize("engine", ENGINES)
@@ -422,11 +431,11 @@ def test_aggregate_empty(settings: Settings, writer: Writer, engine: str) -> Non
 
 @pytest.mark.parametrize("engine", ENGINES)
 def test_req15_5000_jobs(settings: Settings, writer: Writer, fakebin: Fake, engine: str) -> None:
-    """The By process view queues every ended job with a SLURM ID: 5,000 jobs take 50 calls of
-    at most 100 IDs, each asked once."""
+    """Once the run has ended, the By process view queues every ended job with a SLURM ID (the
+    end sweep): 5,000 jobs take 50 calls of at most 100 IDs, each asked once."""
     client = client_for(settings, writer)
     acct = client.app.state.accounting = accounting(settings, fakebin)  # type: ignore[attr-defined]
-    Run(settings, writer, engine, slurm=True)
+    Run(settings, writer, engine, slurm=True).end()
     now = datetime.now(UTC)
 
     def many(conn: Any) -> None:

@@ -1302,3 +1302,10 @@ Step page: [OPEN1](../progress/W4/OPEN1.md).
 - **Changed.** [schedulers](../specs/schedulers-and-monitoring.md) new §3.7 and one line in §3.6 (the CPU waste line); [api](../specs/api-and-data-model.md) new §5.5, `range-too-wide` in §4.1, notes of 2026-11-09 in §5.4 and §7; [ui-spec](../specs/ui-spec.md) new §4.12 and a pointer in §4.4; [dev-env](../specs/dev-environment-and-testing.md) §15.1 (resource plots in 0.0.2).
 - **Build.** FU-P3-105a to -105i, one P3 batch in 0.0.2, server first ([inbox #139](../reviews/inbox.md#139-assumed-performance-per-run-and-across-runs-fu-p3-105)); revised after the independent pre-review R1 ([record](../reviews/code/P3-fu105-spec.md#r1-independent)).
 - **[to be validated].** The items listed in inbox #139.
+
+## 2026-11-09 — The SLURM query budget, sacct part built (FU-P3-106a, Thomas and assumed)
+
+- **Decided (Thomas, 2026-11-09):** do not saturate or over-poll SLURM; the engines already poll often.
+- **Assumed (unattended mode, [inbox #144](../reviews/inbox.md#144-assumed-the-slurm-query-budget-fu-p3-106a)):** on a live run, `sacct` only for a failure when opened and a job whose SLURM facts are opened; an end-of-run sweep on the first view after the run ended, plus one follow-up 10 min later; a failed call requeued with a back-off of 60 s doubled up to 600 s; give up 24 h after the job ended; `null` only when slurmdbd answered without the job; timeout 30 s; a call over 5 s is back-pressure; `-S <earliest launch − 300 s> -E now` on every call.
+- **Changed.** [schedulers](../specs/schedulers-and-monitoring.md) new §3.8 (owner of every SLURM call), §1, §2, §3.2 and §3.6 point to it; [dev-env](../specs/dev-environment-and-testing.md) §15.3 req. 15 links to it; `GET /runs/{id}/tasks?task=` (the task sheet's SLURM facts).
+- **[to be validated].** EMBL's `rl_*`, `MinJobAge`, `MaxQueryTimeRange` and acceptable calls per user (inbox #144); `-S` in UTC under `TZ=UTC`; the Slurm source lines on `squeue -j` and `--only-job-state` as read by the audit.

@@ -7,10 +7,11 @@ Where a failure's facts come from:
   measured resources (the Nextflow trace; Snakemake's `job_info`), and on Snakemake the SLURM
   state and reason that the SLURM executor plugin wrote in its error text, parsed here
   (`parse_smk_slurm_message`) and stored as `attempts.scheduler`, the text never;
-- `sacct`, for a Nextflow failure and for a Snakemake job's measures when it has no
-  `benchmark:` file: asked only when someone opens the failure or the job, through the
-  server's one `Accounting` (its limiter and its own thread), and cached in memory and in
-  `<run dir>/.spectio/sacct.json`; nothing here waits for it;
+- `sacct`, through the server's one `Accounting` (its limiter and its own thread), cached in
+  memory and in `<run dir>/.spectio/sacct.json`; nothing here waits for it. While a run is
+  live, only a Nextflow failure when it is first opened and a job whose SLURM panel is opened
+  are asked; every other ended job waits for the run's end, then one sweep and one follow-up
+  (CON-SLURM-POLL-01; schedulers §3.8, the SLURM query budget);
 - the job's files: the last lines of its log, and a Snakemake job's benchmark file, read by
   the job-file reader of P1 Task 28 (`files.taskfiles`, confined, escape sequences removed) in
   the file pool, with its timeout.
@@ -47,6 +48,7 @@ from spectio_server.files.taskfiles import (
     read_task_file,
     run_root,
 )
+from spectio_server.projector.runs import TERMINAL as RUN_ENDED
 from spectio_server.store.schema import attempts, runs, tasks
 
 log = logging.getLogger(__name__)
@@ -60,7 +62,8 @@ MAX_BENCHMARKS_PER_VIEW = 500  # read by one view; later views read the rest (SE
 BENCHMARK_CHUNK = 100  # benchmarks kept as each batch is read, even past a timeout (CR-P3T34-03)
 ENDED = ("succeeded", "failed", "aborted")
 MIB = 1048576
-MAX_TRIES = 3  # sacct calls for a job it does not know yet, or not as ended; then null
+FOLLOW_UP_S = 600.0  # a job answered with no terminal row is asked once more this much later
+GIVE_UP_S = 86400.0  # a job whose calls fail is asked again until this long after it ended
 MAX_RESOLVE = BATCH  # directories one view resolves for new jobs; later views the rest (CON-PRE-14)
 MAX_REAL = 200_000  # resolved directories kept; emptied when full (CR-P3FU53-01)
 # The states a job ends in (`sacct(1)`, JOB STATE CODES); a row in any other is not kept.
@@ -266,17 +269,22 @@ class Accounting:
     in memory and in `<run dir>/.spectio/sacct.json`, 0600, written by a rename in the run's
     checked directory and read back with no link followed. A run's file is read (`load`, in
     the file pool) before any of its jobs is asked (`want`), so a cached job is never asked
-    again, after a rebuild too. A job whose call failed is not asked again by this process.
-    Only a row in a TERMINAL state is kept: a job `sacct` does not know yet, or not as ended
-    (slurmdbd records a job after it ends, with a lag, [to be validated] on `slurm-mini`, P1
-    Task 22), is asked again on the next view, up to MAX_TRIES calls, then kept as None. So is
-    a job with no line whose WorkDir is the directory it was launched from (the Nextflow
-    attempt's work directory, Snakemake's launch directory), as it was given or resolved, and
-    whose Submit is not before the run's launch: the lines of other jobs with that number, such
-    as a local PID read as a SLURM ID, are dropped (SEC-P3T29-01; inbox #116 rule 10 (b); WorkDir
-    [to be validated] on `slurm-mini`). A job with no directory is never asked. Each call asks
-    the (run, job) pairs queued when it starts; a run that asks a job during that call is
-    queued again, with no try counted (CON-PRE-16)."""
+    again, after a rebuild too. A job whose call failed (an error, a timeout) is put back in
+    the queue unchanged, as the limiter backs off, until GIVE_UP_S after it ended; then it is
+    given up in memory, never stored (CON-SLURM-POLL-02). A batch whose answer is over
+    MAX_OUTPUT is split in two by the limiter; a call that would fail every time (a refused
+    tool, too much output for one ID) gives its jobs up at once (SEC-P3FU106A-01). Only a row
+    in a TERMINAL state is kept: a job
+    `sacct` does not know yet, or not as ended (slurmdbd records a job after it ends, with a
+    lag, [to be validated] on `slurm-mini`, P1 Task 22), is asked once more FOLLOW_UP_S later,
+    with no view; then it is kept as None when that answer had no line for it, else given up
+    in memory. So is a job with no line whose WorkDir is the directory it was launched from
+    (the Nextflow attempt's work directory, Snakemake's launch directory), as it was given or
+    resolved, and whose Submit is not before the run's launch: the lines of other jobs with
+    that number, such as a local PID read as a SLURM ID, are dropped (SEC-P3T29-01; inbox #116
+    rule 10 (b); WorkDir [to be validated] on `slurm-mini`). A job with no directory is never
+    asked. Each call asks the (run, job) pairs queued when it starts; a run that asks a job
+    during that call is queued again, with no follow-up counted (CON-PRE-16)."""
 
     def __init__(
         self,
@@ -287,12 +295,14 @@ class Accounting:
         start_thread: bool = True,
         interval_s: float = sacct.INTERVAL_S,
         timeout_s: float = sacct.TIMEOUT_S,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.runs_root = runs_root
         self.enabled = enabled and sacct_path is not None
         self._path = sacct_path
         self._timeout = timeout_s
-        self._limiter = SacctLimiter(self._call, interval_s=interval_s)
+        self._clock = clock
+        self._limiter = SacctLimiter(self._call, interval_s=interval_s, clock=clock)
         self._lock = threading.Lock()
         self._rows: dict[str, dict[str, SacctRow | None]] = {}
         self._loaded: set[str] = set()
@@ -302,7 +312,8 @@ class Accounting:
         self._where: dict[tuple[str, str], tuple[frozenset[str], float]] = {}
         self._called: dict[tuple[str, str], tuple[frozenset[str], float]] = {}  # the last call's
         self._logged: set[str] = set()  # runs whose dropped lines were logged
-        self._tries: dict[tuple[str, str], int] = {}  # (run, job) → calls with no answer yet
+        self._followed: set[tuple[str, str]] = set()  # (run, job) whose follow-up is due
+        self._deadline: dict[tuple[str, str], float] = {}  # (run, job) → given up after (clock)
         self._real: dict[str, str] = {}  # directory → its `realpath`, kept as each is resolved
         self._resolving: dict[str, object] = {}  # run → its resolve in flight (CR-P3FU53-01)
         self._wake = threading.Event()
@@ -367,7 +378,8 @@ class Accounting:
             return run_id in self._loaded
 
     def failed(self, run_id: str, job: str) -> bool:
-        """True when the call that asked `job` failed: this process does not ask it again."""
+        """True when `job` was given up: its calls failed until GIVE_UP_S after it ended, or
+        its follow-up found it in no terminal state. This process does not ask it again."""
         with self._lock:
             return job in self._failed.get(run_id, set())
 
@@ -377,10 +389,13 @@ class Accounting:
         jobs: Iterable[tuple[str | None, str | None]],
         since: float,
         in_pool: InPool | None = None,
+        *,
+        ended: float | None = None,
     ) -> None:
         """Ask `sacct` for the run's jobs, (job ID, the directory it was launched from), it has
         not answered yet, once the run's cache file was read. `since` is the run's launch,
-        epoch seconds. A job is asked once its directory's `realpath` is known: up to
+        `ended` when its jobs had ended at the latest (the run's end; now when None), epoch
+        seconds. A job is asked once its directory's `realpath` is known: up to
         MAX_RESOLVE directories are resolved by one job sent through `in_pool` (the file pool,
         with the view's timeout; CON-PRE-14), at most one per run in flight, each kept as it
         is resolved, so a view that times out still leaves its work and a later view asks the
@@ -414,10 +429,12 @@ class Accounting:
         with self._lock:
             new = {j: where for j, where in self._new(run_id, new).items() if where in self._real}
             queued = self._limiter.request(new)  # the job IDs it took, as the limit allows
+            ago = 0.0 if ended is None else max(0.0, time.time() - ended)
             for job_id in queued:
                 where = new[job_id]
                 self._asked.setdefault(job_id, set()).add(run_id)
                 self._where[run_id, job_id] = frozenset({where, self._real[where]}), since
+                self._deadline[run_id, job_id] = self._clock() + GIVE_UP_S - ago
         if queued:
             self._ensure_thread()
             self._wake.set()
@@ -496,38 +513,60 @@ class Accounting:
         touched: dict[str, dict[str, SacctRow | None]] = {}
         with self._lock:
             called, self._called = self._called, {}
+            now = self._clock()
             for job in ids:
-                answer = found.get(job, {}) if found is not None else {}
-                later = set()
+                answer = found.get(job, {}) if isinstance(found, dict) else {}
+                again, follow = set(), set()  # the runs that wait: asked now, or later
                 for run_id in self._asked.pop(job, set()):
                     key = run_id, job
-                    if key not in called:  # asked during the call: not in it, no try
-                        later.add(run_id)
+                    if key not in called:  # asked during the call: not in it, no follow-up
+                        again.add(run_id)
                         continue
-                    self._where.pop(key, None)
+                    if found is sacct.FINAL:  # it would fail every time: given up at once
+                        self._give_up(key)
+                        continue
+                    if found is None:  # no answer: asked again, as the limiter backs off
+                        if now < self._deadline.get(key, now):
+                            again.add(run_id)
+                        else:
+                            self._give_up(key)
+                        continue
                     dirs = called[key][0]
-                    if found is None:
-                        self._failed.setdefault(run_id, set()).add(job)
-                        continue
                     matches = [answer[where] for where in dirs if where in answer]
                     row = matches[0] if len(matches) == 1 else None
                     mine = row if _answers(row, dirs) else None
-                    if mine is None:
-                        tries = self._tries.get(key, 0) + 1
-                        if tries < MAX_TRIES:
-                            self._tries[key] = tries
-                            continue  # not answered: the next view asks it again
-                    self._tries.pop(key, None)  # final: a terminal row, or the cap reached
+                    if mine is None and key not in self._followed:
+                        self._followed.add(key)  # slurmdbd may lag: once more, later
+                        follow.add(run_id)
+                        continue
+                    if mine is None and answer:  # known, but in no terminal state
+                        self._give_up(key)
+                        continue
+                    self._final(key)  # a terminal row, or slurmdbd answered without the job
                     self._rows.setdefault(run_id, {})[job] = mine
                     touched[run_id] = dict(self._rows[run_id])
-                if later and self._limiter.request([job]):
-                    self._asked[job] = later
-                else:
-                    for run_id in later:
-                        self._where.pop((run_id, job), None)
+                # with a call due now, the follow-ups ride along with it
+                queued = self._limiter.request([job]) if again else []
+                if follow and not again:
+                    queued = self._limiter.later([job], FOLLOW_UP_S)
+                for run_id in again | follow:
+                    if queued:
+                        self._asked.setdefault(job, set()).add(run_id)
+                    else:  # the queue is full: dropped, asked by a later view
+                        self._final((run_id, job))
         for run_id, rows in touched.items():
             self._save(run_id, rows)
         return True
+
+    def _final(self, key: tuple[str, str]) -> None:
+        """Forget what the (run, job) waited with; under the lock."""
+        self._where.pop(key, None)
+        self._deadline.pop(key, None)
+        self._followed.discard(key)
+
+    def _give_up(self, key: tuple[str, str]) -> None:
+        self._final(key)
+        self._failed.setdefault(key[0], set()).add(key[1])
 
     def _ensure_thread(self) -> None:
         with self._lock:
@@ -713,12 +752,15 @@ def build_failures(
     except Stalled:
         tails = [None] * len(rows)
     run = conn.execute(
-        select(runs.c.created_at, runs.c.started_at, runs.c.environment).where(runs.c.id == run_id)
+        select(runs.c.created_at, runs.c.started_at, runs.c.ended_at, runs.c.environment).where(
+            runs.c.id == run_id
+        )
     ).one()
     # Snakemake's state comes from its own message (§13.7); a run not on SLURM never asks
     if engine == "nextflow" and on_slurm(run.environment, ctx.settings):
         jobs = ((r.native_id, r.work_dir) for r in rows)
-        ctx.accounting.want(run_id, jobs, _launched(run.created_at, run.started_at), _resolver(ctx))
+        since = _launched(run.created_at, run.started_at)
+        ctx.accounting.want(run_id, jobs, since, _resolver(ctx), ended=_ended(run.ended_at))
     cached = ctx.accounting.rows(run_id)
     culprit = (failure or {}).get("task_id"), (failure or {}).get("attempt_n")
     message = (failure or {}).get("message") or None
@@ -806,6 +848,10 @@ def _int(value: Any) -> int | None:
     return None if value is None else int(value)
 
 
+def _ended(ended_at: Any) -> float | None:
+    return None if ended_at is None else float(ended_at.timestamp())
+
+
 # --- Resources per task (GET /runs/{id}/tasks) -----------------------------------------------
 
 
@@ -820,17 +866,24 @@ def task_resources(
     engine: str,
     task_ids: list[str] | None,
     ctx: Context,
+    opened: str | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Per task (the run's `task_ids`, or all of them), from its last attempt: its number,
     `resources` (api §5 note of 2026-10-28), `slurm` and `efficiency` (note of 2026-11-07),
     with the task's `process`, `state` and `requested` values for the aggregate. `resources`
     are the trace's on Nextflow; on Snakemake the requested values of `job_info`, measured by
-    the job's benchmark file when it has one, else by `sacct`. On a SLURM run every ended job
-    with a job ID is asked of `sacct` here (answered on a later read; schedulers §3.6), which
-    a local run never is."""
+    the job's benchmark file when it has one, else by `sacct`. On a SLURM run, ended jobs with
+    a job ID are asked of `sacct` here (answered on a later read; schedulers §3.6), which a
+    local run never is: all of them once the run has ended (its one sweep), and while it is
+    live only the task `opened`, whose SLURM panel is open (CON-SLURM-POLL-01)."""
     run = conn.execute(
         select(
-            runs.c.environment, runs.c.engine_settings, runs.c.created_at, runs.c.started_at
+            runs.c.state,
+            runs.c.environment,
+            runs.c.engine_settings,
+            runs.c.created_at,
+            runs.c.started_at,
+            runs.c.ended_at,
         ).where(runs.c.id == run_id)
     ).one()
     slurm_run, smk = on_slurm(run.environment, ctx.settings), engine == "snakemake"
@@ -895,10 +948,11 @@ def task_resources(
     cached: dict[str, SacctRow | None] = {}
     if slurm_run:
         launch = str(run_paths(ctx.runs_root, dirs).launch_dir)
-        ended = (r for r in rows if r.state in ENDED)
+        swept = run.state in RUN_ENDED
+        ended = (r for r in rows if r.state in ENDED and (swept or r.id == opened))
         jobs = ((r.native_id, launch if smk else r.work_dir) for r in ended)
         since = _launched(run.created_at, run.started_at)
-        ctx.accounting.want(run_id, jobs, since, _resolver(ctx))
+        ctx.accounting.want(run_id, jobs, since, _resolver(ctx), ended=_ended(run.ended_at))
         cached = ctx.accounting.rows(run_id)
     off = "local" if not slurm_run else None if ctx.accounting.enabled else "accounting_off"
     if (run.environment or {}).get("state") == "not_readable":
