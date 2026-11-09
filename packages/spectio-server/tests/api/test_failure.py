@@ -873,6 +873,29 @@ def test_sacct_failed_call_requeued(
     assert acct.rows(RUN) == {} and acct._limiter.wait_s() is None
 
 
+def test_sacct_tool_briefly_missing_retried(
+    settings: Settings, writer: Writer, fakebin: Fake
+) -> None:
+    """CR-P3FU106A-04: a sacct path that cannot be read for a moment (ENOENT, EIO, ESTALE) is
+    retried under back-off, not given up: the job gets its row on the next call."""
+    clock = Clock()
+    run = Run(settings, writer)
+    acct = Accounting(settings.runs_root, fakebin.path, start_thread=False, clock=clock)
+    acct.load(RUN)
+    fakebin.at("8812401", run.paths.work_dir)
+    acct.want(RUN, [("8812401", str(run.paths.work_dir))], 0.0)
+    away = fakebin.dir / "sacct.away"
+    fakebin.path.rename(away)
+    assert acct.step() and fakebin.calls() == []
+    assert not acct.failed(RUN, "8812401") and acct.status(RUN, "8812401") == "pending"
+    away.rename(fakebin.path)
+    wait = acct._limiter.wait_s()
+    assert wait is not None
+    clock.now += wait
+    assert acct.step() and fakebin.ids() == ["8812401"]
+    assert not acct.failed(RUN, "8812401") and "8812401" in acct.rows(RUN)
+
+
 def test_sacct_bad_id_holds_no_batch(settings: Settings, writer: Writer, fakebin: Fake) -> None:
     """SEC-P3FU106A-01: a call that fails whenever one ID is in it is split after its second
     failure, so the other IDs of the batch are answered on later calls; the bad one is asked

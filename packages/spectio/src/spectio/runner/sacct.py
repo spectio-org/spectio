@@ -137,13 +137,11 @@ def check_ids(ids: Iterable[str]) -> list[str]:
 
 def check_tool(path: Path) -> None:
     """The stored `sacct`: an absolute path to a regular file that only its owner (root or the
-    user) can write."""
+    user) can write. An OSError of the stat itself (ENOENT, EIO, ESTALE) may pass, so it is
+    raised as is, not Refused: the call is retried (CR-P3FU106A-04)."""
     if not path.is_absolute():
         raise Refused(f"the sacct path {path} is not absolute")
-    try:
-        st = os.stat(path)
-    except OSError as exc:
-        raise Refused(f"sacct at {path}: {exc.strerror}") from None
+    st = os.stat(path)
     if not stat.S_ISREG(st.st_mode) or st.st_mode & (stat.S_IWGRP | stat.S_IWOTH):
         raise Refused(f"sacct at {path} is not a regular file, or others can write it")
     if st.st_uid not in (0, os.geteuid()):
@@ -187,7 +185,8 @@ def sacct_jobs(
 ) -> Found | None:
     """The rows `sacct` gives for the `wanted` jobs and directories (`parse_sacct`); None when
     it failed or timed out. Raises Refused, before any call, for an ID or a tool that is not
-    accepted, and TooMuch when it said more than MAX_OUTPUT."""
+    accepted, OSError when the tool cannot be read for now, and TooMuch when it said more
+    than MAX_OUTPUT."""
     ids = check_ids(wanted)
     check_tool(sacct)
     delimiter = new_delimiter()
@@ -489,8 +488,13 @@ class SacctLimiter:
                 return None
             if self._last is not None and self._clock() < self._last + self._interval:
                 return None
-            size = self._size.get(next(iter(self._pending)), self._batch)
-            ids = list(self._pending)[: min(size, self._batch)]
+            ids: list[str] = []
+            cap = self._batch  # the smallest recorded size among the IDs taken (SEC-P3FU106A-02)
+            for job in self._pending:
+                cap = min(cap, self._size.get(job, self._batch))
+                if len(ids) >= cap:
+                    break
+                ids.append(job)
             failed = {job: self._size.pop(job) for job in ids if job in self._size}
             for job in ids:
                 del self._pending[job]

@@ -698,3 +698,23 @@ def test_sacct_limiter_classifies_failures() -> None:
         else:
             answered += done[0]
     assert sorted(answered) == ["1", "2", "4"] and limiter.pending() == 1
+
+
+def test_sacct_limiter_bad_id_isolated_in_busy_queue() -> None:
+    """SEC-P3FU106A-02: new IDs arriving before every call do not undo the split: once the bad
+    ID has failed twice, no call that holds it is larger than its recorded size."""
+    limiter = SacctLimiter(lambda ids: None if "9" in ids else {}, interval_s=0)
+    limiter.request(["9"])
+    fresh = itertools.count(1000)
+    failures = 0
+    for _ in range(60):
+        limiter.request(str(next(fresh)) for _ in range(30))
+        size = limiter._size.get("9", sacct.BATCH)
+        done = limiter.run_once()
+        assert done is not None
+        if done[1] is None:
+            failures += 1
+            if failures > 2:
+                assert len(done[0]) <= size
+            limiter.request(done[0])  # the caller puts a failed call's IDs back
+    assert failures > 2 and limiter._size["9"] == 1
