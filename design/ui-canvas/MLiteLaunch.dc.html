@@ -32,6 +32,7 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
 .env-sr{position:absolute;width:1px;height:1px;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .env-b{display:inline-flex;align-items:center;height:20px;padding:0 7px;border-radius:6px;font-size:11px;font-weight:600;margin-left:6px;vertical-align:1px}
 .btn-env{min-height:44px;padding:0 14px;border-radius:12px;border:none;background:#F0F9FF;color:#075985;font:600 14px 'Inter',sans-serif;cursor:pointer;width:100%}
+.btn-env[aria-disabled="true"]{background:#F1F2F6;color:#4D5065;cursor:not-allowed}
 /* FU-P3-86e3 layout: one column, Pipeline, Where it runs, Parameters, then the summary; Launch stays in the bar at the bottom. */
 .sum{margin:0;display:flex;flex-direction:column;gap:7px;font-size:13px}
 .sum > div{display:flex;gap:10px;align-items:baseline}
@@ -159,11 +160,11 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
         <div><dt>Engine</dt><dd>Nextflow 25.10.4</dd></div>
         <div><dt>Environment</dt><dd>Login node · Local</dd></div>
         <div><dt>Engine head</dt><dd>tmux session on login1</dd></div>
-        <div><dt>Tasks</dt><dd>run on login1 · at most 2 CPUs</dd></div>
+        <div><dt>Tasks</dt><dd>run on login1 by Nextflow · at most 2 CPUs</dd></div>
         <div><dt>Run directory</dt><dd style="font-family: 'JetBrains Mono', monospace; font-size: 12px; font-weight: 400;">/scratch/amartin/spectio-runs/&lt;run ID&gt;</dd></div>
       </dl>
       <h3 id="m-h-missing" style="margin: 2px 0 0; font-size: 13.5px; font-weight: 600;">Before Launch</h3>
-      <span id="m-launch-missing" style="font-size: 13px; font-weight: 600; color: #157A4B; line-height: 1.4;">Nothing is missing: 2 required fields filled.</span>
+      <span id="m-launch-missing" role="status" style="font-size: 13px; font-weight: 600; color: #157A4B; line-height: 1.4;">Nothing is missing: 2 required fields filled.</span>
     </section>
     <section class="cx" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 4px 14px;"><h2 id="m-h-preview" style="margin: 0; font-size: 15px; font-weight: 600;"><button type="button" class="cx-btn" aria-expanded="false" aria-controls="m-cx-preview" style="min-height: 48px;"><span style="min-width: 0;">params.json preview</span><span style="flex-grow: 1;"></span><span class="cx-sum" style="font-size: 12.5px; color: #4D5065;">values you set</span><svg class="cx-chev" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6E7287" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0;"><path d="M6 9l6 6 6-6"/></svg></button></h2><div id="m-cx-preview" hidden><pre tabindex="0" style="margin: 0 0 12px; font-family: 'JetBrains Mono', monospace; font-size: 12px; white-space: pre-wrap;">{
   "input": "/g/demo-lab/rnaseq/liver-tc/samplesheet.csv",
@@ -201,6 +202,18 @@ input:disabled{background:#F7F7FB !important;color:#6E7287 !important;border-col
           <span id="s2-revision-help" style="font-size: 12px; color: #4D5065;">Tag, branch or commit; required for a Git repository.</span>
         </div>
         <button type="button" class="btn-load" aria-describedby="s2-h">Load</button>
+    </section>
+    <h2 style="margin: 10px 2px 0; font-size: 12px; font-weight: 600; letter-spacing: 0.06em; color: #4D5065;">WHERE IT RUNS · THE ENVIRONMENTS FILE IS INVALID</h2>
+    <span style="font-size: 12px; color: #4D5065; padding: 0 2px; line-height: 1.4;">ui-spec §4.8.1 (UX-PRE-FU86-R1-04): only the built-ins are offered; New environment waits with its reason. The same state as LiteLaunch, full width.</span>
+    <section aria-labelledby="mei-h" style="border-radius: 16px; background: #FFFFFF; box-shadow: 0 0 0 1px rgba(15,16,32,0.07), 0 1px 2px rgba(15,16,32,0.05); padding: 12px 14px; display: flex; flex-direction: column; gap: 10px;">
+        <h3 id="mei-h" style="margin: 0; font-size: 14px; font-weight: 600;">Where it runs</h3>
+        <fieldset aria-describedby="mei-why" style="margin: 0; padding: 0; border: 0; min-width: 0; display: flex; flex-direction: column; gap: 8px;">
+          <legend style="padding: 0; margin-bottom: 6px; font-size: 13.5px; font-weight: 600;">Environment</legend>
+          <label class="env-r"><input type="radio" name="m-env-inv" value="slurm" checked aria-labelledby="mei-n-slurm" aria-describedby="mei-d-slurm"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-weight: 600;"><span id="mei-n-slurm">SLURM (from spectio init)<span class="env-sr">,</span> <span class="env-b" style="background: #E0F2FE; color: #075985;">SLURM</span></span></span><span id="mei-d-slurm" style="font-size: 12.5px; color: #4D5065;">partition htc · SLURM account mylab</span></span></label>
+          <label class="env-r"><input type="radio" name="m-env-inv" value="local" aria-labelledby="mei-n-local" aria-describedby="mei-d-local"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0;"><span style="font-weight: 600;"><span id="mei-n-local">Login node<span class="env-sr">,</span> <span class="env-b" style="background: #F1F2F6; color: #33364A;">Local</span></span></span><span id="mei-d-local" style="font-size: 12.5px; color: #4D5065;">on login1 (the login node) · at most 2 CPUs and 8 GiB</span></span></label>
+          <span id="mei-why" style="font-size: 13px; color: #5C3A05; background: #FEF7EC; border-radius: 10px; padding: 8px 10px; line-height: 1.45;">Your environments file has a mistake: only the built-ins are offered. See <a href="MLiteEnvironments.dc.html">Environments</a></span>
+          <button type="button" class="btn-env" aria-disabled="true" aria-describedby="mei-why">New environment</button>
+        </fieldset>
     </section>
   </main>
   <div role="region" aria-label="Launch" style="position: absolute; left: 0; right: 0; bottom: 0; z-index: 3; background: #FFFFFF; box-shadow: 0 -1px 0 rgba(15,16,32,0.08); padding: 10px 12px calc(84px + env(safe-area-inset-bottom)); display: flex; align-items: center; gap: 12px; box-sizing: border-box;">

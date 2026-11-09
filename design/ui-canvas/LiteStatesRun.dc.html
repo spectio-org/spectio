@@ -118,8 +118,61 @@ a:focus-visible,button:focus-visible{outline:2px solid #7750D4;outline-offset:2p
           <span style="font-size: 13px; color: #33364A; line-height: 1.5;"><span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">.spectio/head.err</span> does not exist yet: the head has written nothing to its standard error.</span>
           <button type="button" style="height: 40px; padding: 0 14px; border-radius: 11px; border: none; box-shadow: inset 0 0 0 1px #C4C7D4; background: #FFFFFF; font: 600 13.5px 'Inter', sans-serif; color: #22253A; cursor: pointer; align-self: flex-start;">Reload</button>
         </section>
+        <section aria-label="Run detail, environment deleted or renamed since the launch" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">RUN DETAIL · ENVIRONMENT · DELETED OR RENAMED SINCE THE LAUNCH</span>
+          <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; font-size: 13px;">
+            <div style="grid-column: 1 / -1;"><dt style="color: #6E7287; font-size: 12px;">Environment</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">mylab-long<span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; font-size: 11px; font-weight: 600; background: #E0F2FE; color: #075985; margin-left: 8px; vertical-align: 1px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);"> · </span>SLURM</span><span style="display: block; margin-top: 3px; font-weight: 400; font-size: 12.5px; color: #4D5065;">partition htc · SLURM account mylab · 2 h per job · 8 GiB per job</span></dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Executor</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">SLURM · runs the tasks</dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Login node</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">login1 · runs the engine head</dd></div>
+          </dl>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">Unchanged: the facts read the run's own snapshot (<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">runs.environment</span>, api §5.4), so a deleted or renamed <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">mylab-long</span> changes nothing here. "as launched" is not shown: the 0.0.1 API does not say the environment changed. Copy to a new launch says it is gone (ui-spec §4.8.1).</span>
+        </section>
+        <section aria-label="Run detail, environments file unusable" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">RUN DETAIL · ENVIRONMENT · FILE UNUSABLE</span>
+          <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; font-size: 13px;">
+            <div style="grid-column: 1 / -1;"><dt style="color: #6E7287; font-size: 12px;">Environment</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">Login node<span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; font-size: 11px; font-weight: 600; background: #F1F2F6; color: #33364A; margin-left: 8px; vertical-align: 1px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);"> · </span>Local</span><span style="display: block; margin-top: 3px; font-weight: 400; font-size: 12.5px; color: #4D5065;">on login1 (the login node) · at most 2 CPUs and 8 GiB</span></dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Executor</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">Local · runs the tasks</dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Login node</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">login1 · runs the engine head</dd></div>
+          </dl>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">An <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">invalid</span>, <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">refused</span> or <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">unreachable</span> <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">~/.spectio/environments.toml</span> does not touch a run: no file line on Run detail. The label is the snapshot's, the name <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">local</span> is not repeated.</span>
+        </section>
+        <section aria-label="Run detail, environment not recorded" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">RUN DETAIL · ENVIRONMENT · NOT RECORDED</span>
+          <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; font-size: 13px;">
+            <div style="grid-column: 1 / -1;"><dt style="color: #6E7287; font-size: 12px;">Environment</dt><dd style="margin: 0; font-weight: 500; color: #4D5065;">not recorded</dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Executor</dt><dd style="margin: 0; font-weight: 500; color: #4D5065;">not recorded</dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Login node</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">login1 · runs the engine head</dd></div>
+          </dl>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">A run launched before FU-P3-86: its manifest has no <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">environment</span> (<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">state: not_recorded</span>). The Executor row reads the snapshot too, never <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">GET /version</span>. Resume says it runs on the server's default.</span>
+        </section>
+        <section aria-label="Run detail, environment cannot be read" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">RUN DETAIL · ENVIRONMENT · CANNOT BE READ</span>
+          <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; font-size: 13px;">
+            <div style="grid-column: 1 / -1;"><dt style="color: #6E7287; font-size: 12px;">Environment</dt><dd style="margin: 0; font-weight: 500; color: #4D5065;">cannot be read</dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Executor</dt><dd style="margin: 0; font-weight: 500; color: #4D5065;">not recorded</dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Login node</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">login1 · runs the engine head</dd></div>
+          </dl>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">The manifest's snapshot fails the validators (<span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">state: not_readable</span>). No value from it is shown. Resume is <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">aria-disabled</span> with "Its recorded environment cannot be read"; Copy to a new launch is the way on.</span>
+        </section>
+        <section aria-label="Run detail, run started from a terminal" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">RUN DETAIL · ENVIRONMENT · RUN STARTED FROM A TERMINAL</span>
+          <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; font-size: 13px;">
+            <div><dt style="color: #6E7287; font-size: 12px;">Login node</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">login2 (the server runs on login1)</dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Executor</dt><dd style="margin: 0; font-weight: 500; color: #4D5065;">not recorded</dd></div>
+          </dl>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">No Environment row: Spectio did not launch the run, so it has no snapshot (architecture §13.8), and the Executor row reads "not recorded". The other facts are those of LiteRunObserved, whose Executor row still reads SLURM until its next board change.</span>
+        </section>
+        <section aria-label="Run detail, Snakemake run with a profile" style="border-radius: 18px; box-shadow: 0 0 0 1px rgba(15,16,32,0.11); padding: 16px 18px; display: flex; flex-direction: column; gap: 10px; min-width: 0;">
+          <span style="font-size: 11.5px; font-weight: 600; color: #6E7287; letter-spacing: 0.02em;">RUN DETAIL · ENVIRONMENT · SNAKEMAKE WITH A PROFILE</span>
+          <dl style="margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 16px; font-size: 13px;">
+            <div style="grid-column: 1 / -1;"><dt style="color: #6E7287; font-size: 12px;">Environment</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">mylab-long<span style="display: inline-flex; align-items: center; height: 20px; padding: 0 7px; border-radius: 6px; font-size: 11px; font-weight: 600; background: #E0F2FE; color: #075985; margin-left: 8px; vertical-align: 1px;"><span style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0);"> · </span>SLURM</span><span style="display: block; margin-top: 3px; font-weight: 400; font-size: 12.5px; color: #4D5065;">resources and partition from the profile slurm (this environment's are not passed)</span></dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Engine · profile</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">Snakemake 9.27.1 · slurm</dd></div>
+            <div><dt style="color: #6E7287; font-size: 12px;">Executor</dt><dd style="margin: 0; font-weight: 500; color: #0F1020;">SLURM · runs the tasks</dd></div>
+          </dl>
+          <span style="font-size: 12px; color: #4D5065; line-height: 1.45;">With a Snakemake workflow profile the profile owns the SLURM resources (api §5.4), so the summary line uses the words of the Launch form's Tasks row instead of the partition and account.</span>
+        </section>
       </div>
-      <p style="margin: 0; font-size: 12px; color: #4D5065;">Each panel stands in for the part of the screen it replaces (P1 Tasks 17 to 20).</p>
+      <p style="margin: 0; font-size: 12px; color: #4D5065;">Each panel stands in for the part of the screen it replaces (P1 Tasks 17 to 20). The Environment panels show the facts list of Run detail (LiteRunDetail) in each state of ui-spec §4.8.1.</p>
     </main>
 </div>
 </x-dc>
