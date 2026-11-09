@@ -6,6 +6,7 @@
  "files": {
   "multiqc-1.35_custom_content_report.html.gz": "out/multiqc_report.html, gzip -9 -n (2127199 bytes unpacked)",
   "align_mqc.tsv": "the custom content table the report shows (section Alignment, samples S01 and S02)",
-  "hostile_report.html": "hand-written: a report that tries to leave its sandbox (P1 Task 31, req. 14)"
+  "hostile_report.html": "hand-written: a report that tries to leave its sandbox (P1 Task 31, req. 14)",
+  "hostile_image.svg": "hand-written: an SVG with a script and outside images, for the preview's <img> and download check (FU-P3-85c, api §5.3)"
  }
 }
