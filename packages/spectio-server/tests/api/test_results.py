@@ -29,7 +29,7 @@ from spectio_server.files import results as files_results
 from spectio_server.store.schema import runs
 from spectio_server.store.writer import Writer
 
-from .conftest import add_run
+from .conftest import add_run, client_for
 
 RUN = "run_01K8T2F1XTVRES0000000000R1"
 API = "/api/v1"
@@ -80,6 +80,23 @@ def listing(client: TestClient, path: str | None = None, run_id: str = RUN) -> A
 
 def raw(client: TestClient, rel: str, run_id: str = RUN, **params: Any) -> Any:
     return client.get(f"{API}/runs/{run_id}/results/raw/{rel}", params=params)
+
+
+def text(client: TestClient, rel: str, run_id: str = RUN, **kwargs: Any) -> Any:
+    return client.get(f"{API}/runs/{run_id}/results/text/{rel}", **kwargs)
+
+
+def stat_of(client: TestClient, rel: str, run_id: str = RUN) -> Any:
+    return client.get(f"{API}/runs/{run_id}/results/stat/{rel}")
+
+
+def problem(response: Any, status: int, slug: str) -> None:
+    assert response.status_code == status, response.text
+    assert response.json()["type"] == f"/problems/{slug}"
+
+
+MIB = 1048576
+TEXT_CSP = "sandbox; default-src 'none'"
 
 
 # --- Listing ------------------------------------------------------------------------------
@@ -497,6 +514,173 @@ def test_raw_cut_mid_stream_is_incomplete(
         assert response.headers["content-length"] == "20"
         with pytest.raises(httpx2.RemoteProtocolError):
             response.read()
+
+
+# --- Stat and text reads (FU-P3-85a; api §5.3) ---------------------------------------------
+
+
+def test_req13_results_stat(authed_client: TestClient, results: Results) -> None:
+    """The listing's entry for one path, with the listing's checks and problems."""
+    problem(stat_of(authed_client, "a.txt"), 404, "not-found")  # no results directory yet
+    results.write("multiqc/a.txt", "four")
+    (results.task_dir / "out.bam").write_bytes(b"BAM\x01")
+    (results.root / "out.bam").symlink_to(results.task_dir / "out.bam")
+    (results.root / "away").symlink_to("/etc/hostname")
+    found = stat_of(authed_client, "multiqc/a.txt")
+    assert found.status_code == 200, found.text
+    body = found.json()
+    assert body.pop("mtime").endswith("+00:00")
+    assert body == {
+        "root": str(results.root),
+        "path": "multiqc/a.txt",
+        "name": "a.txt",
+        "type": "file",
+        "size": 4,
+    }
+    assert found.headers["cross-origin-resource-policy"] == "same-origin"
+    folder = stat_of(authed_client, "multiqc").json()
+    assert (folder["type"], folder["size"]) == ("dir", None)
+    assert stat_of(authed_client, "out.bam").json()["size"] == 4  # a published link
+    away = stat_of(authed_client, "away").json()
+    assert (away["type"], away["size"], away["mtime"]) == ("link_outside", None, None)
+    problem(stat_of(authed_client, "multiqc/none.txt"), 404, "not-found")
+    problem(stat_of(authed_client, "none/a.txt"), 404, "not-found")
+    for bad in (".spectio/x", "a\u202eb", ".nextflow", "a/%2e%2e/b"):
+        problem(stat_of(authed_client, bad), 422, "file-not-allowed")
+
+
+def test_req13_results_text_tail(authed_client: TestClient, results: Results) -> None:
+    data = bytes(range(32, 127)) * 1100  # ~100 KiB of printable text
+    results.write("big.txt")
+    (results.root / "big.txt").write_bytes(data)
+    found = text(authed_client, "big.txt")
+    assert found.status_code == 200, found.text
+    assert found.content == data[-65536:]
+    assert "content-range" not in found.headers
+    assert text(authed_client, "big.txt", params={"tail": 10}).content == data[-10:]
+    big = text(authed_client, "big.txt", params={"tail": MIB + 1})
+    problem(big, 422, "validation-failed")
+
+
+def test_req13_results_text_headers(authed_client: TestClient, results: Results) -> None:
+    results.write("page.html", "<script>alert(1)</script>\n")
+    found = text(authed_client, "page.html")
+    assert found.status_code == 200, found.text
+    assert found.text == "<script>alert(1)</script>\n"
+    assert found.headers["content-type"] == "text/plain; charset=utf-8"
+    assert found.headers["content-security-policy"] == TEXT_CSP
+    assert found.headers["cross-origin-resource-policy"] == "same-origin"
+    assert found.headers["x-content-type-options"] == "nosniff"
+    assert found.headers["cache-control"] == "no-store"
+    assert found.headers["referrer-policy"] == "no-referrer"
+    assert "content-disposition" not in found.headers
+
+
+def test_req13_results_text_range(authed_client: TestClient, results: Results) -> None:
+    results.write("a.txt", "0123456789")
+    found = text(authed_client, "a.txt", headers={"Range": "bytes=2-5"})
+    assert found.status_code == 206, found.text
+    assert found.text == "2345"
+    assert found.headers["content-range"] == "bytes 2-5/10"
+    rest = text(authed_client, "a.txt", headers={"Range": "bytes=6-"})
+    assert (rest.text, rest.headers["content-range"]) == ("6789", "bytes 6-9/10")
+    (results.root / "big.txt").write_bytes(b"y" * (2 * MIB))
+    capped = text(authed_client, "big.txt", headers={"Range": f"bytes=0-{5 * MIB}"})
+    assert len(capped.content) == MIB
+    assert capped.headers["content-range"] == f"bytes 0-{MIB - 1}/{2 * MIB}"
+    for bad in ("bytes=9-1", "bytes=10-", "bytes=0-1,4-5", "lines=1-2"):
+        problem(text(authed_client, "a.txt", headers={"Range": bad}), 422, "validation-failed")
+
+
+def test_req13_results_text_utf8_seam(authed_client: TestClient, results: Results) -> None:
+    """A range that splits `C3 A9` ends before it, `Content-Range` gives the real end, and the
+    next read from its last byte + 1 starts on the whole character."""
+    data = "abcé.def".encode()  # é is bytes 3 and 4
+    (results.root).mkdir()
+    (results.root / "seam.txt").write_bytes(data)
+    first = text(authed_client, "seam.txt", headers={"Range": "bytes=0-3"})
+    assert first.status_code == 206, first.text
+    assert first.content == b"abc"
+    assert first.headers["content-range"] == f"bytes 0-2/{len(data)}"
+    nxt = text(authed_client, "seam.txt", headers={"Range": "bytes=3-"})
+    assert nxt.text == "é.def"
+    assert nxt.headers["content-range"] == f"bytes 3-{len(data) - 1}/{len(data)}"
+    four = "x\U0001f600".encode()  # a 4-byte sequence cut after each of its first 3 bytes
+    (results.root / "emoji.txt").write_bytes(four + b"!")
+    for last in (1, 2, 3):
+        cut = text(authed_client, "emoji.txt", headers={"Range": f"bytes=0-{last}"})
+        assert (cut.text, cut.headers["content-range"]) == ("x", "bytes 0-0/6"), last
+    lone = text(authed_client, "seam.txt", headers={"Range": "bytes=3-3"})
+    assert lone.headers["content-range"] == f"bytes 3-3/{len(data)}"  # never an empty range
+    (results.root / "end.txt").write_bytes(b"ab\xc3")  # a file that ends mid-sequence
+    end = text(authed_client, "end.txt", headers={"Range": "bytes=0-"})
+    assert (end.text, end.headers["content-range"]) == ("ab\ufffd", "bytes 0-2/3")
+
+
+def test_req13_results_text_empty_file(authed_client: TestClient, results: Results) -> None:
+    results.write("empty.txt", "")
+    for headers in ({}, {"Range": "bytes=0-"}, {"Range": "bytes=0-99"}):
+        found = text(authed_client, "empty.txt", headers=headers)
+        assert found.status_code == 200, (headers, found.text)
+        assert found.content == b""
+        assert "content-range" not in found.headers
+
+
+def test_req13_results_text_not_text(authed_client: TestClient, results: Results) -> None:
+    results.root.mkdir()
+    (results.root / "reads.bam").write_bytes(b"BAM\x00" + b"x" * 100)
+    problem(text(authed_client, "reads.bam"), 415, "binary-file")
+    (results.root / "latin.txt").write_bytes(b"caf\xe9\n\x1b[31mred\x1b[0m\xe2\x80\xae\n")
+    assert text(authed_client, "latin.txt").text == "caf\ufffd\nred\n"  # U+202E removed
+
+
+def test_req13_results_text_confined(
+    authed_client: TestClient, results: Results, settings: Settings, writer: Writer
+) -> None:
+    results.write("sub/a.txt")
+    (results.task_dir / "out.txt").write_text("published\n")
+    (results.task_dir / ".command.env").write_text("export TOKEN=s3cret\n")
+    (results.root / "out.txt").symlink_to(results.task_dir / "out.txt")
+    (results.root / "env").symlink_to(results.task_dir / ".command.env")
+    (results.root / "rc").symlink_to(Path(os.environ["HOME"]) / ".bashrc")
+    assert text(authed_client, "out.txt").text == "published\n"
+    for bad in ("env", "rc", "sub", ".spectio/head.out", "a\u202eb", "a/%2e%2e/b"):
+        found = text(authed_client, bad)
+        problem(found, 422, "file-not-allowed")
+        assert "s3cret" not in found.text
+    problem(text(authed_client, "sub/none.txt"), 404, "not-found")
+    observed = "run_01K8T2F1XTVRES0000000000R5"
+    make_run_dirs(settings.runs_root, observed)
+    add_run(writer, settings, observed, "terminal", "running", origin="cli-observed")
+    problem(text(authed_client, "a.txt", observed), 404, "not-found")
+    problem(stat_of(authed_client, "a.txt", observed), 404, "not-found")
+
+
+def test_req14_corp_on_every_file_route(authed_client: TestClient, results: Results) -> None:
+    results.write("a.txt")
+    for found in (listing(authed_client), raw(authed_client, "a.txt")):
+        assert found.headers["cross-origin-resource-policy"] == "same-origin"
+
+
+def test_req2_results_stat_text_need_session(
+    settings: Settings, writer: Writer, results: Results
+) -> None:
+    results.write("a.txt")
+    anon = client_for(settings, writer, signed_in=False)
+    for found in (text(anon, "a.txt"), stat_of(anon, "a.txt")):
+        problem(found, 401, "unauthenticated")
+
+
+@pytest.mark.parametrize("site", ["same-site", "cross-site"])
+def test_req7_results_stat_text_same_site_403(
+    authed_client: TestClient, results: Results, site: str
+) -> None:
+    results.write("a.txt")
+    for route in ("text", "stat"):
+        found = authed_client.get(
+            f"{API}/runs/{RUN}/results/{route}/a.txt", headers={"Sec-Fetch-Site": site}
+        )
+        assert found.status_code == 403, (route, found.text)
 
 
 def test_observed_run_no_results(

@@ -918,6 +918,64 @@
         "title": "ResultReport",
         "type": "object"
       },
+      "ResultStat": {
+        "description": "The listing's entry for one results path (api \u00a75.3), with the root and the path the\nserver answered for.",
+        "properties": {
+          "mtime": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mtime"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "path": {
+            "title": "Path",
+            "type": "string"
+          },
+          "root": {
+            "title": "Root",
+            "type": "string"
+          },
+          "size": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Size"
+          },
+          "type": {
+            "enum": [
+              "dir",
+              "file",
+              "link_outside"
+            ],
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "root",
+          "path",
+          "name",
+          "type",
+          "size",
+          "mtime"
+        ],
+        "title": "ResultStat",
+        "type": "object"
+      },
       "Results": {
         "description": "One folder of a run's results directory, and the reports found below its root.",
         "properties": {
@@ -3043,6 +3101,107 @@
           }
         },
         "summary": "Result File"
+      }
+    },
+    "/api/v1/runs/{run_id}/results/stat/{path}": {
+      "get": {
+        "operationId": "result_stat_api_v1_runs__run_id__results_stat__path__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResultStat"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Result Stat"
+      }
+    },
+    "/api/v1/runs/{run_id}/results/text/{path}": {
+      "get": {
+        "operationId": "result_text_api_v1_runs__run_id__results_text__path__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "run_id",
+            "required": true,
+            "schema": {
+              "title": "Run Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "path",
+            "required": true,
+            "schema": {
+              "title": "Path",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tail",
+            "required": false,
+            "schema": {
+              "default": 65536,
+              "maximum": 1048576,
+              "minimum": 1,
+              "title": "Tail",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Result Text"
       }
     },
     "/api/v1/runs/{run_id}/stages": {

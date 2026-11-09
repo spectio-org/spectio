@@ -225,6 +225,32 @@ def test_req13_range_capped(nf_task: NfTask) -> None:
     problem(nf_task.get(".command.err", headers={"Range": "bytes=9-1"}), 422, "validation-failed")
 
 
+def test_req13_job_file_text_headers(nf_task: NfTask) -> None:
+    """The Job files read carries the text routes' CSP, and every route of it CORP
+    (api §5.3 Shared changes, SEC-PRE-FU85-R1-06)."""
+    found = nf_task.get(".command.err")
+    assert found.headers["content-security-policy"] == "sandbox; default-src 'none'"
+    for answer in (found, nf_task.get()):
+        assert answer.headers["cross-origin-resource-policy"] == "same-origin"
+
+
+def test_req13_job_file_shared_reader(nf_task: NfTask) -> None:
+    """The reader of the results text route: a range ends on a whole UTF-8 sequence, and an
+    empty file is 200 with an empty body, a Range too."""
+    data = "abcé.def".encode()
+    (nf_task.dir / ".command.err").write_bytes(data)
+    cut = nf_task.get(".command.err", headers={"Range": "bytes=0-3"})
+    assert (cut.status_code, cut.content) == (206, b"abc")
+    assert cut.headers["content-range"] == f"bytes 0-2/{len(data)}"
+    (nf_task.dir / ".command.out").write_bytes(b"")
+    for headers in ({}, {"Range": "bytes=0-"}, {"Range": "bytes=1-"}):
+        empty = nf_task.get(".command.out", headers=headers)
+        assert (empty.status_code, empty.content) == (200, b""), headers
+    (nf_task.dir / ".command.run").write_text("echo é\n")  # hidden first, then cut
+    wrapper = nf_task.get(".command.run", headers={"Range": "bytes=0-5"})
+    assert (wrapper.text, wrapper.headers["content-range"]) == ("echo ", "bytes 0-4/8")
+
+
 def test_unknown_attempt_404(nf_task: NfTask) -> None:
     problem(nf_task.client.get(f"{API}/tasks/{nf_task.task_id}/attempts/9/files"), 404, "not-found")
     problem(nf_task.client.get(f"{API}/tasks/tsk_nope/attempts/1/files"), 404, "not-found")

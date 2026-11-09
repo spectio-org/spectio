@@ -37,6 +37,7 @@ from spectio_server.files.confine import (
     NotAllowed,
     NotFound,
     Root,
+    entry_confined,
     list_confined,
     open_confined,
     open_dir,
@@ -46,7 +47,7 @@ from spectio_server.files.confine import (
     servable_name,
     size_of,
 )
-from spectio_server.files.taskfiles import run_root
+from spectio_server.files.taskfiles import Served, read_text, run_root
 
 MAX_ENTRIES = 1000  # of one listing
 MAX_REPORTS = 50
@@ -248,6 +249,18 @@ def _report(rel: PurePosixPath) -> Report:
     return Report(str(rel), title, group)
 
 
+def stat_result(where: Where, rel: PurePosixPath) -> Entry:
+    """The listing's entry for `rel` (`stat` route, api §5.3); raises NotFound when the listing
+    would not show it, NotAllowed for a refused folder on the way."""
+    with _roots(where) as (root, work):
+        if root is None:
+            raise NotFound("the results directory does not exist yet")
+        found = entry_confined(root, rel, work=work)
+    if found is None:
+        raise NotFound(f"{rel}: no such entry")
+    return found
+
+
 def find_reports(where: Where) -> list[Report]:
     """At most `MAX_REPORTS` reports below the root, MultiQC's first, then by path (a folder's
     together)."""
@@ -329,3 +342,18 @@ def read_chunk(where: Where, rel: PurePosixPath, start: int, n: int) -> bytes:
             raise NotFound("the results directory does not exist yet")
         with open_confined(root, rel, work=work) as f:
             return read_at(f, start, min(n, CHUNK))
+
+
+def read_result_text(
+    where: Where,
+    rel: PurePosixPath,
+    *,
+    max_bytes: int,
+    byte_range: tuple[int, int | None] | None,
+) -> Served:
+    """The text of the results file `rel`, by the Job files reader (api §5.3)."""
+    with _roots(where) as (root, work):
+        if root is None:
+            raise NotFound("the results directory does not exist yet")
+        with open_confined(root, rel, work=work) as f:
+            return read_text(f, rel.name, max_bytes=max_bytes, byte_range=byte_range)

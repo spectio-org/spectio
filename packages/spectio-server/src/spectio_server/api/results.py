@@ -1,5 +1,10 @@
-"""`GET /runs/{id}/results?path=` and `GET /runs/{id}/results/raw/{path}`: a run's results,
-read only (P1 Task 31; api §5 note of 2026-10-28, Results; dev-env §15.3 req. 13 and 14).
+"""`GET /runs/{id}/results?path=`, `GET /runs/{id}/results/raw/{path}`, and the `stat` and
+`text` routes of the preview: a run's results, read only (P1 Task 31; api §5 note of
+2026-10-28, Results; api §5.3, FU-P3-85a; dev-env §15.3 req. 13 and 14).
+
+`stat` answers the listing's entry for one path; `text` reads a file as the Job files read does
+(`files.taskfiles.read_text`: the tail, or one `Range`, at most 1 MiB, ended on a whole UTF-8
+sequence), with the text CSP.
 
 The listing is one folder of the results directory and the reports found below its root
 (`files.results`); the search runs once per listing while the run is active, and its result is
@@ -14,19 +19,19 @@ results directory: unknown, or a run started from a terminal (`cli-observed`), w
 
 import logging
 from collections.abc import Iterator
-from typing import Any
+from typing import Annotated, Any
 from urllib.parse import quote
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, Query, Request
 from fastapi.responses import Response, StreamingResponse
 
-from spectio_server.api.models import Results
+from spectio_server.api.models import Results, ResultStat
 from spectio_server.api.problems import Problem, not_found
 from spectio_server.api.runs_read import read, results_of, run_row
-from spectio_server.api.taskfiles import HEADERS, _iso, in_pool
+from spectio_server.api.taskfiles import HEADERS, _byte_range, _iso, in_pool, text_response
 from spectio_server.failure import dir_run_id
 from spectio_server.files import results as files
-from spectio_server.files.confine import NotAllowed
+from spectio_server.files.confine import MAX_READ, TAIL, NotAllowed
 from spectio_server.files.pool import READ_TIMEOUT_S
 from spectio_server.projector.runs import TERMINAL
 
@@ -98,12 +103,53 @@ def run_results(request: Request, run_id: str, path: str = "") -> Response:
     return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)
 
 
-@router.get("/runs/{run_id}/results/raw/{path:path}", response_class=Response)
-def result_file(request: Request, run_id: str, path: str, download: bool = False) -> Response:
-    where, _ = _where(request, run_id)
+def _file_rel(path: str) -> Any:
     rel = _rel(path)
     if rel is None:
         raise Problem(422, "file-not-allowed", "File not allowed", "not a file")
+    return rel
+
+
+@router.get("/runs/{run_id}/results/stat/{path:path}", response_model=ResultStat)
+def result_stat(request: Request, run_id: str, path: str) -> Response:
+    where, _ = _where(request, run_id)
+    rel = _file_rel(path)
+    e = in_pool(request, lambda: files.stat_result(where, rel), missing="not-found")
+    body = ResultStat.model_validate(
+        {
+            "root": where.results_dir,
+            "path": path,
+            "name": e.name,
+            "type": e.type,
+            "size": e.size,
+            "mtime": _iso(e.mtime),
+        }
+    )
+    return Response(body.model_dump_json(), media_type="application/json", headers=HEADERS)
+
+
+@router.get("/runs/{run_id}/results/text/{path:path}", response_class=Response)
+def result_text(
+    request: Request,
+    run_id: str,
+    path: str,
+    tail: Annotated[int, Query(ge=1, le=MAX_READ)] = TAIL,
+) -> Response:
+    where, _ = _where(request, run_id)
+    rel = _file_rel(path)
+    byte_range = _byte_range(request.headers.get("range"))
+    served = in_pool(
+        request,
+        lambda: files.read_result_text(where, rel, max_bytes=tail, byte_range=byte_range),
+        missing="not-found",
+    )
+    return text_response(served, HEADERS)
+
+
+@router.get("/runs/{run_id}/results/raw/{path:path}", response_class=Response)
+def result_file(request: Request, run_id: str, path: str, download: bool = False) -> Response:
+    where, _ = _where(request, run_id)
+    rel = _file_rel(path)
     size = in_pool(request, lambda: files.file_size(where, rel), missing="not-found")
     if size > MAX_RAW:
         raise Problem(413, "file-too-large", "File too large", f"more than {MAX_RAW} bytes")
