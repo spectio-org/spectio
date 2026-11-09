@@ -40,6 +40,7 @@ from spectio_server.api import (
     runs_write,
     stream,
     taskfiles,
+    workdir,
     workflows,
 )
 from spectio_server.auth import host, middleware, routes, writes
@@ -163,7 +164,17 @@ def create_app(
         # relaunch first: `GET /runs/{id}:launch-template` before `GET /runs/{run_id}`
         app.state.reports = {}  # the reports of ended runs (P1 Task 31)
         app.state.follows = logs.Follows()  # dev-env §15.3 req. 14
-        routers = (workflows, runs_write, relaunch, runs_read, logs, taskfiles, results, cancel)
+        routers = (
+            workflows,
+            runs_write,
+            relaunch,
+            runs_read,
+            logs,
+            taskfiles,
+            results,
+            workdir,
+            cancel,
+        )
         for module in (*routers, stream):
             app.include_router(module.router, prefix=API)
     else:

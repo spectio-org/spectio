@@ -451,6 +451,17 @@ class ResultReport(BaseModel):
     group: str | None  # the folder it shares with other reports, such as FastQC's
 
 
+class WorkDir(BaseModel):
+    """One folder of a Nextflow attempt's work directory (api §5.3, FU-P3-85e): the results
+    listing without `reports`, names that start with `.` hidden."""
+
+    root: str
+    path: str
+    exists: bool
+    entries: list[ResultEntry]
+    truncated: bool
+
+
 class Results(BaseModel):
     """One folder of a run's results directory, and the reports found below its root."""
 
