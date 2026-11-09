@@ -2202,3 +2202,20 @@ From the [spikes round](spikes.md): the differences that T2, T3, T4 and T7 measu
 - **Open choice, with the recommendation (assumed):** (a) a follow-up task, **FU-P3-86h · UI, the Launch aside**: the summary, "Before Launch" as a list of every reason (`role="status"`, each reason a link to its field, the outdir warning), the preview folded by default, Launch in the aside and in the page head described by the list, and the phone order (the summary after Parameters); Vitest for the list, its links and the description; (b) build it inside FU-P3-86g. **(a)**: the reasons become a list, which changes `reason()` and both Launch buttons, a change of its own beyond the environment work of FU-P3-86g; until then the 0.0.1 form keeps one reason beside Launch, as the UI parity C note says.
 - **Why a question:** the boards are the design source, and this split leaves the built aside behind them for one task.
 - **Assumed (2026-11-09, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** (a).
+
+### #146 · Assumed: Thomas's UI feedback of 2026-11-09 (FU-P3-109 to FU-P3-113)
+
+- **Covers:** Thomas's own try of the UI on main (2026-11-09); [ui-spec](../specs/ui-spec.md) §4.6 (Launch), §4.8.1 (Environments) and the run detail; FU-P3-86h, FU-P3-88, FU-P3-89.
+- **Context and placement, each with the recommendation (assumed):**
+  1. **Defects, FU-P3-109 · UI fixes (0.0.1, next after FU-P3-86h):** Previous / Next do not follow the URL; "Try a test pipeline" stays on Loading for a long time; on Home, "Your pipelines" lets the path and the container run past the right edge of the page. Each one gets a reproducing test first.
+  2. **Launch, into FU-P3-86h and its fix round:** Launch sits in the aside and in the page head with an icon; "Where it runs" is a row of the main column that can be changed, not a fixed side block. What 86h does not cover goes to FU-P3-109.
+  3. **"Scenario", into FU-P3-109:** it names the synthetic test pipelines of [dev-env §10.1](../specs/dev-environment-and-testing.md#101-synthetic-scenario-pipelines-testspipelinessynthetic), a developer word. The Try card says "Test pipeline" and one line says what it is.
+  4. **Run detail, into FU-P3-88 (UI and UX pass):** the engine log's "last lines" opens the full log with a clear way back; the checkpoint badge becomes a lighter mark in the list and in the drawer; the drawer says what a checkpoint does (what a resume skips); an HTML file opens in the report viewer, not as raw text, when the viewer can show it.
+  5. **Resources, FU-P3-110 · spec first (0.0.1 for the first part):** 0.0.1 adds, beside the time limit, default resources (CPUs, memory, time) and one extra config file per run (Nextflow `-c`, Snakemake `--configfile` or a profile **[to be validated]**), shown in the summary and kept with the run; per-process or per-rule editing in the form is 0.0.2. Security review on the file path.
+  6. **Environments, FU-P3-111 (0.0.1):** icons per kind, a cards view and a table view, and every environment editable: a built-in opens as "Duplicate to edit" (built-ins stay read-only, the copy is a file environment).
+  7. **Profile, FU-P3-112 (0.0.1):** a Profile page in single-user mode too (who the server runs as, the session, the config paths, the theme).
+  8. **Search, FU-P3-89:** already 0.0.1; unchanged.
+  9. **Notifications, FU-P3-113 (0.0.1):** the bell is on screen, so it works: an in-app list fed by the event stream (run finished, failed, gate waiting), unread count, no e-mail.
+- **Order:** FU-P3-86h, FU-P3-109, then FU-P3-102c2 and the imaging tasks, then FU-P3-87, FU-P3-88 (with 101, 104), FU-P3-110 spec, 111, 112, 89, 113.
+- **Why a question:** it sets what 0.0.1 holds; Thomas can move any item.
+- **Assumed (2026-11-09, standing rule of [autopilot §10](../playbooks/autopilot.md#10-unattended-mode-thomas-2026-10-30)):** every recommendation above.
