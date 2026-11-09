@@ -257,6 +257,7 @@ test("Snakemake: the launch directory, the SLURM log first, and no job script", 
   expect(await within(sheet).findByText(/mem_process_seqs/)).toBeInTheDocument();
   expect(fetched(mock)).toContain(`${FILES}/2/files/.snakemake/slurm_logs/rule_bwa_mem/WGS-07/48731209.log`);
   expect(within(sheet).getByText("Snakemake keeps no job script; the rule's command is in the Snakefile.")).toBeInTheDocument();
+  expect(within(sheet).queryByRole("link", { name: "Browse work directory" })).toBeNull(); // FU-P3-85e: Nextflow only
 });
 
 test("on the phone the files are a native select labelled File", async () => {
@@ -398,4 +399,29 @@ test("a task the run's listing does not have opens no sheet and says so (CR-P3FU
   await screen.findByRole("heading", { level: 1 });
   expect(await screen.findByText("This job's sheet could not be reopened.")).toHaveAttribute("role", "status");
   expect(screen.queryByRole("dialog")).toBeNull();
+});
+
+test("a Nextflow attempt with a work directory: Browse work directory beside Copy, to the folder page (FU-P3-85e)", async () => {
+  detail({ [`${FILES}/2/files`]: listing(NF_FILES) });
+  const { sheet } = await openFiles();
+  const browse = await within(sheet).findByRole("link", { name: "Browse work directory" });
+  const href = new URL(browse.getAttribute("href")!, "http://x");
+  expect(href.pathname).toBe(`/runs/${ID}/workdir`);
+  expect(Object.fromEntries(href.searchParams)).toEqual({ task: "tsk_19", attempt: "2" });
+  expect(within(sheet).getByRole("button", { name: "Copy the work directory" })).toBeInTheDocument();
+});
+
+test("a cleaned work directory: 'The work directory was removed' in place of Browse (FU-P3-85e)", async () => {
+  detail({ [`${FILES}/2/files`]: listing([file(".command.log", "job_log", { state: "cleaned", size: null, mtime: null }), file(".exitcode", "exit", { state: "cleaned", size: null, mtime: null })]) });
+  const { sheet } = await openFiles();
+  const row = await within(sheet).findByText(WORK);
+  await waitFor(() => expect(row.parentElement).toHaveTextContent("The work directory was removed"));
+  expect(within(sheet).queryByRole("link", { name: "Browse work directory" })).toBeNull();
+});
+
+test("no Browse for a run started from a terminal, nor for Snakemake (FU-P3-85e)", async () => {
+  detail({ [`${FILES}/2/files`]: listing(NF_FILES) }, { origin: "cli-observed" });
+  const { sheet } = await openFiles();
+  await within(sheet).findByText(WORK);
+  expect(within(sheet).queryByRole("link", { name: "Browse work directory" })).toBeNull();
 });

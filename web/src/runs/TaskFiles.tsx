@@ -255,6 +255,10 @@ export function TaskFiles({ run, task, attempt }: { run: RunDetail; task: Task; 
   const visible = files.filter((f) => more || !MORE.has(f.kind) || f === shown);
   const hasMore = files.some((f) => MORE.has(f.kind));
   const directory = listing?.work_dir ?? null;
+  // a Nextflow attempt's work directory opens its own page (FU-P3-85e), unless the listing says it
+  // was cleaned; a run started from a terminal has no such route
+  const browsable = !snakemake && run.origin !== "cli-observed";
+  const cleaned = files.length > 0 && files.every((f) => f.state === "cleaned");
   // the tabs: the files shown, then Outputs on a Snakemake attempt
   const outputsLabel = outputs ? `Outputs (${outputs.length})` : "";
   const tabList = [...visible.map((f) => ({ key: f.name, label: label(f), state: f.state as string })), ...(outputs ? [{ key: OUTPUTS, label: outputsLabel, state: "present" }] : [])];
@@ -289,6 +293,14 @@ export function TaskFiles({ run, task, attempt }: { run: RunDetail; task: Task; 
           <span className="sp-muted">{snakemake ? "Launch directory" : "Work directory"}</span>
           <code>{directory}</code>
           <CopyButton text={directory} label="Copy" name={`Copy the ${snakemake ? "launch" : "work"} directory`} />
+          {browsable &&
+            (cleaned ? (
+              <span className="sp-muted">The work directory was removed</span>
+            ) : (
+              <Link to="/runs/$id/workdir" params={{ id: run.id }} search={{ task: task.id, attempt: n }}>
+                Browse work directory
+              </Link>
+            ))}
         </div>
       )}
       {error && error.status === 503 && <Refused title={OFFLINE} body="The file system does not answer. Nothing was lost; try again in a moment." onRetry={reload} />}

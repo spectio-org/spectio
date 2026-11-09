@@ -12,6 +12,10 @@ export type EntryKind = Kind | "folder" | "link";
 export const entryKind = (entry: Pick<ResultEntry, "name" | "type">): EntryKind =>
   entry.type === "dir" ? "folder" : entry.type === "link_outside" ? "link" : fileKind(entry.name);
 
+/** A work directory's path with a part that starts with `.`: refused before any read, as the
+ * server refuses it (FU-P3-85e); the job's own files are in the task sheet. */
+export const hasDotPart = (path: string) => path.split("/").some((part) => part.startsWith("."));
+
 // natural order (S2 before S10), case-insensitive
 const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });
 const byName = (a: ResultEntry, b: ResultEntry) => collator.compare(a.name, b.name) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0);

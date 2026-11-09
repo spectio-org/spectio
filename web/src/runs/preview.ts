@@ -17,6 +17,9 @@ export const KIND_WORDS: Record<Kind | "folder" | "link", string> = {
   link: "Link outside",
 };
 
+/** The kind's word; in a work directory an HTML file is "HTML (not opened)" (ui-spec §4.4.1). */
+export const kindWord = (kind: keyof typeof KIND_WORDS, work: boolean) => (work && kind === "html" ? "HTML (not opened)" : KIND_WORDS[kind]);
+
 const words = (list: string) => new Set(list.split(" "));
 const BY_SUFFIX: [Kind, Set<string>][] = [
   ["text", words("txt log out err yml yaml md fa fasta fq fastq sam vcf bed gtf gff gff3 nf smk py r sh config")],

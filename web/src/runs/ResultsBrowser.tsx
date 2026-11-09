@@ -1,16 +1,16 @@
 import { ActionIcon, Button } from "@mantine/core";
 import { Link, useNavigate } from "@tanstack/react-router";
 import { type ReactNode, type Ref, useEffect, useMemo, useRef, useState } from "react";
-import { type ApiError, type ResultEntry, type Results, type RunDetail, getRun, listResults, resultUrl } from "../api";
+import { type ApiError, type ResultEntry, type Results, type RunDetail, type WorkRoot, getRun, listResults, resultUrl } from "../api";
 import { ICONS, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
 import { CopyButton } from "./CopyMenu";
-import { type EntryKind, type Sort, SORTS, counts, entryKind, filterEntries, sortEntries, taskSearch } from "./explorer";
-import { KIND_WORDS, size } from "./preview";
+import { type EntryKind, type Sort, SORTS, counts, entryKind, filterEntries, hasDotPart, sortEntries, taskSearch } from "./explorer";
+import { kindWord, size } from "./preview";
 import { isPlainText, isResultPath } from "./ReportViewer";
-import { NotFound } from "./RunDetailPage";
-import { runName } from "./RunState";
+import { NotFound, findTask } from "./RunDetailPage";
+import { runName, taskLabel } from "./RunState";
 import { when, words } from "./stateWord";
 
 // The results browser (P1 Task 32 part two; ui-spec §4.4 run tools note and §4.4.1, Explorer,
@@ -19,7 +19,9 @@ import { when, words } from "./stateWord";
 // the counts and the filter, then a table (rows on the phone) sorted with folders first. A folder
 // opens here, an HTML file in the report viewer, any other file in its preview; each file row ends
 // with Download. A link that leaves the results directory is not followed. Sort, filter and the
-// row to focus on the way back are kept in the URL.
+// row to focus on the way back are kept in the URL. The same page shows a Nextflow attempt's work
+// directory (`work`, FU-P3-85e; board LiteWorkdir): its routes, the task's name in the h1, the back
+// link and the title, an HTML file opening its preview (never the report viewer), no dot name.
 
 export interface ResultsSearch {
   path?: string;
@@ -66,11 +68,11 @@ const KIND_ICONS: Record<EntryKind, string> = {
 };
 
 /** The kind as a text badge with its icon: colour is never the only signal (board LiteKind). */
-export function KindBadge({ kind }: { kind: EntryKind }) {
+export function KindBadge({ kind, work = false }: { kind: EntryKind; work?: boolean }) {
   return (
     <span className="sp-kind" data-kind={kind}>
       <Icon path={KIND_ICONS[kind]} size={13} />
-      {KIND_WORDS[kind]}
+      {kindWord(kind, work)}
     </span>
   );
 }
@@ -91,9 +93,21 @@ const SORT_WORDS: Record<Sort, string> = {
 
 /** The entry's name: a link to the folder, the report viewer or the preview; a link outside is
  * not followed. `view` is the sort and filter a file's page returns with. */
-function EntryLink({ id, folder, entry, view, focusRef, children }: { id: string; folder: string; entry: ResultEntry; view: { sort?: Sort; q?: string }; focusRef?: Ref<HTMLAnchorElement>; children: ReactNode }) {
+function EntryLink({ id, folder, entry, view, work, focusRef, children }: { id: string; folder: string; entry: ResultEntry; view: { sort?: Sort; q?: string }; work?: WorkRoot; focusRef?: Ref<HTMLAnchorElement>; children: ReactNode }) {
   const path = join(folder, entry.name);
   const props = { ref: focusRef, className: "sp-explorer-link", params: { id } };
+  if (work) {
+    const keep = { task: work.task, attempt: work.attempt };
+    return entry.type === "dir" ? (
+      <Link {...props} to="/runs/$id/workdir" search={{ path, sort: view.sort, ...keep }}>
+        {children}
+      </Link>
+    ) : (
+      <Link {...props} to="/runs/$id/workdir/file" search={{ path, ...view, ...keep }}>
+        {children}
+      </Link>
+    );
+  }
   if (entry.type === "dir") {
     return (
       <Link {...props} to="/runs/$id/results" search={{ path, sort: view.sort }}>
@@ -112,9 +126,9 @@ function EntryLink({ id, folder, entry, view, focusRef, children }: { id: string
   );
 }
 
-function Listing({ id, folder, results, search }: { id: string; folder: string; results: Results; search: ResultsSearch }) {
+function Listing({ id, folder, results, search, work }: { id: string; folder: string; results: Results; search: ResultsSearch; work?: WorkRoot }) {
   const phone = usePhone();
-  const navigate = useNavigate({ from: "/runs/$id/results" });
+  const navigate = useNavigate({ from: work ? "/runs/$id/workdir" : "/runs/$id/results" });
   const sort = search.sort ?? "name";
   const [typed, setTyped] = useState(search.q ?? "");
   const [said, setSaid] = useState("");
@@ -139,6 +153,14 @@ function Listing({ id, folder, results, search }: { id: string; folder: string; 
     focused.current?.focus();
   }, []);
 
+  if (!results.exists && work) {
+    return (
+      <div className="sp-results-state">
+        <strong>The work directory is not there yet</strong>
+        <span className="sp-muted">The job creates it when it starts; on a shared file system it may take a moment to appear. Spectio checks again when you reload.</span>
+      </div>
+    );
+  }
   if (!results.exists) {
     return (
       <div className="sp-results-state">
@@ -147,10 +169,10 @@ function Listing({ id, folder, results, search }: { id: string; folder: string; 
       </div>
     );
   }
-  const label = folder.split("/").pop() || "results";
+  const label = folder.split("/").pop() || (work ? "work directory" : "results");
   const view = { sort: search.sort, q: typed || undefined };
   const focusRef = (entry: ResultEntry) => (entry.name === search.focus ? focused : undefined);
-  const facts = (entry: ResultEntry) => [KIND_WORDS[entryKind(entry)], entry.type === "file" && entry.size !== null ? size(entry.size) : null, when(entry.mtime)].filter(Boolean).join(" · ");
+  const facts = (entry: ResultEntry) => [kindWord(entryKind(entry), !!work), entry.type === "file" && entry.size !== null ? size(entry.size) : null, when(entry.mtime)].filter(Boolean).join(" · ");
   const clear = () => {
     setTyped("");
     field.current?.focus();
@@ -173,7 +195,7 @@ function Listing({ id, folder, results, search }: { id: string; folder: string; 
             {entry.type === "link_outside" ? (
               <div className="sp-explorer-row">{first}</div>
             ) : (
-              <EntryLink id={id} folder={folder} entry={entry} view={view} focusRef={focusRef(entry)}>
+              <EntryLink id={id} folder={folder} entry={entry} view={view} work={work} focusRef={focusRef(entry)}>
                 {first}
               </EntryLink>
             )}
@@ -215,20 +237,20 @@ function Listing({ id, folder, results, search }: { id: string; folder: string; 
                       {entry.name} <span className="sp-muted">not followed</span>
                     </span>
                   ) : (
-                    <EntryLink id={id} folder={folder} entry={entry} view={view} focusRef={focusRef(entry)}>
+                    <EntryLink id={id} folder={folder} entry={entry} view={view} work={work} focusRef={focusRef(entry)}>
                       {entry.name}
                     </EntryLink>
                   )}
                 </span>
               </th>
               <td>
-                <KindBadge kind={entryKind(entry)} />
+                <KindBadge kind={entryKind(entry)} work={!!work} />
               </td>
               <td className="sp-num">{entry.type === "file" && entry.size !== null ? size(entry.size) : "—"}</td>
               <td>{when(entry.mtime)}</td>
               <td className="sp-explorer-act">
                 {entry.type === "file" && (
-                  <ActionIcon component="a" variant="default" size={32} href={resultUrl(id, join(folder, entry.name), { download: true })} download aria-label={`Download ${entry.name}`}>
+                  <ActionIcon component="a" variant="default" size={32} href={resultUrl(id, join(folder, entry.name), { download: true }, work)} download aria-label={`Download ${entry.name}`}>
                     <Icon path={ICONS.download} size={16} />
                   </ActionIcon>
                 )}
@@ -244,7 +266,9 @@ function Listing({ id, folder, results, search }: { id: string; folder: string; 
     <>
       <section className="sp-card sp-explorer" aria-labelledby={`${id}-explorer`}>
         <div className="sp-explorer-head">
-          <h2 id={`${id}-explorer`}>Results · {counts(entries)}</h2>
+          <h2 id={`${id}-explorer`}>
+            {work ? "Work directory" : "Results"} · {counts(entries)}
+          </h2>
           <label className="sp-search-field">
             <Icon path={ICONS.search} size={16} />
             <input ref={field} type="search" aria-label="Filter this folder" placeholder="Filter this folder" value={typed} onChange={(e) => setTyped(e.currentTarget.value)} />
@@ -288,7 +312,11 @@ function Listing({ id, folder, results, search }: { id: string; folder: string; 
           rows
         )}
       </section>
-      <p className="sp-muted">Read-only. A folder's size is not counted. A file's name opens its preview; an HTML report opens in Spectio's report viewer.</p>
+      <p className="sp-muted">
+        {work
+          ? "Read-only. A folder's size is not counted. Names that start with a dot are not listed: the job's own files are in the task sheet. A staged input copied here, or linked from another task of this run, reads like an output."
+          : "Read-only. A folder's size is not counted. A file's name opens its preview; an HTML report opens in Spectio's report viewer."}
+      </p>
     </>
   );
 }
@@ -307,13 +335,66 @@ export function BackToRun({ id, run, task, attempt }: { id: string; run: RunDeta
   );
 }
 
-export function ResultsBrowser({ id, search }: { id: string; search: ResultsSearch }) {
+/** The task's name for a work directory's pages, from the run's task listing (the task's ID when
+ * the listing does not have it); null until known, or with no `work`. */
+export function useTaskName(id: string, work?: WorkRoot): string | null {
+  const [name, setName] = useState<string | null>(null);
+  const task = work?.task;
+  useEffect(() => {
+    if (!task) return;
+    const controller = new AbortController();
+    findTask(id, task, controller.signal)
+      .then((t) => setName(t ? taskLabel(t) : task))
+      .catch(() => controller.signal.aborted || setName(task));
+    return () => controller.abort();
+  }, [id, task]);
+  return name;
+}
+
+/** A work directory's link back: the run, with the task sheet open on that attempt. */
+export function BackToTask({ id, work, name }: { id: string; work: WorkRoot; name: string | null }) {
+  return (
+    <Link className="sp-report-back" to="/runs/$id" params={{ id }} search={{ task: work.task, attempt: work.attempt }}>
+      <Icon path={ICONS.chevronLeft} size={14} /> {name ?? "Task"} · attempt {work.attempt}
+    </Link>
+  );
+}
+
+/** The path bar: links from `results` (or `work directory`) down, the last part the current page. */
+export function Crumbs({ id, parts, work, sort }: { id: string; parts: string[]; work?: WorkRoot; sort?: Sort }) {
+  const keep = work ? { task: work.task, attempt: work.attempt } : {};
+  const to = (path: string) =>
+    work ? (
+      <Link to="/runs/$id/workdir" params={{ id }} search={{ path: path || undefined, sort, ...keep }}>
+        {path.split("/").pop() || "work directory"}
+      </Link>
+    ) : (
+      <Link to="/runs/$id/results" params={{ id }} search={{ path: path || undefined, sort }}>
+        {path.split("/").pop() || "results"}
+      </Link>
+    );
+  const root = work ? "work directory" : "results";
+  return (
+    <nav aria-label="Folder">
+      <ol>
+        <li>{parts.length ? to("") : <span aria-current="page">{root}</span>}</li>
+        {parts.map((part, i) => (
+          <li key={i}>{i < parts.length - 1 ? to(parts.slice(0, i + 1).join("/")) : <span aria-current="page">{part}</span>}</li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
+
+export function ResultsBrowser({ id, search, work }: { id: string; search: ResultsSearch; work?: WorkRoot }) {
   const path = search.path ?? "";
   const [run, setRun] = useState<RunDetail | null>(null);
   const [missing, setMissing] = useState(false);
   const [results, setResults] = useState<Results | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const valid = path === "" || isResultPath(path);
+  const valid = path === "" || (isResultPath(path) && !(work && hasDotPart(path)));
+  const taskName = useTaskName(id, work);
+  const where_ = work ? "this job's work directory" : "this run's results";
   useEffect(() => {
     const controller = new AbortController();
     getRun(id, controller.signal)
@@ -326,20 +407,30 @@ export function ResultsBrowser({ id, search }: { id: string; search: ResultsSear
     setError(null);
     if (!valid) return;
     const controller = new AbortController();
-    listResults(id, path, controller.signal)
+    listResults(id, path, controller.signal, work)
       .then(setResults)
       .catch((e: ApiError) => {
         if (controller.signal.aborted) return;
-        setError(e.status === 404 && path ? "No such folder in this run's results." : e.status === 422 ? "Not a folder of this run's results." : e.message);
+        setError(
+          e.status === 404 && path
+            ? `No such folder in ${where_}.`
+            : e.status === 422
+              ? `Not a folder of ${where_}.`
+              : e.status === 410 && work
+                ? "The work directory was removed"
+                : e.message,
+        );
       });
     return () => controller.abort();
-  }, [id, path, valid]);
+  }, [id, path, valid, work?.task, work?.attempt]);
 
   const name = run ? runName(run) : null;
   usePageCrumb(name);
+  const folderName = (results?.path ?? "").split("/").pop() || "work directory";
   useEffect(() => {
-    if (name) document.title = `Results · ${name} · Spectio`;
-  }, [name]);
+    if (name && !work) document.title = `Results · ${name} · Spectio`;
+    else if (name && taskName) document.title = `${folderName} · ${taskName} · ${name} · Spectio`;
+  }, [name, taskName, folderName, work]);
 
   if (missing) return <NotFound />;
   // The path bar shows the folder the server answered for, never the URL's own text (SEC-P3T32B-02).
@@ -348,33 +439,10 @@ export function ResultsBrowser({ id, search }: { id: string; search: ResultsSear
   const where = results ? join(results.root, shown) : null;
   return (
     <div className="sp-runs">
-      <BackToRun id={id} run={run} task={search.task} attempt={search.attempt} />
-      <h1 className="sp-page-title">Results</h1>
+      {work ? <BackToTask id={id} work={work} name={taskName} /> : <BackToRun id={id} run={run} task={search.task} attempt={search.attempt} />}
+      <h1 className="sp-page-title">{work ? (taskName ? `Work directory · ${taskName} · attempt ${work.attempt}` : "Work directory") : "Results"}</h1>
       <div className="sp-pathbar">
-        <nav aria-label="Folder">
-          <ol>
-            <li>
-              {parts.length ? (
-                <Link to="/runs/$id/results" params={{ id }} search={{ sort: search.sort }}>
-                  results
-                </Link>
-              ) : (
-                <span aria-current="page">results</span>
-              )}
-            </li>
-            {parts.map((part, i) => (
-              <li key={i}>
-                {i < parts.length - 1 ? (
-                  <Link to="/runs/$id/results" params={{ id }} search={{ path: parts.slice(0, i + 1).join("/"), sort: search.sort }}>
-                    {part}
-                  </Link>
-                ) : (
-                  <span aria-current="page">{part}</span>
-                )}
-              </li>
-            ))}
-          </ol>
-        </nav>
+        <Crumbs id={id} parts={parts} work={work} sort={search.sort} />
         {where && (
           <span className="sp-copy-line">
             <span className="sp-mono">{where}</span>
@@ -383,11 +451,11 @@ export function ResultsBrowser({ id, search }: { id: string; search: ResultsSear
         )}
       </div>
       {!valid ? (
-        <p role="alert">Not a folder of this run's results.</p>
+        <p role="alert">Not a folder of {where_}.</p>
       ) : error ? (
         <p role="alert">{error}</p>
       ) : results ? (
-        <Listing key={path} id={id} folder={path} results={results} search={search} />
+        <Listing key={path} id={id} folder={path} results={results} search={search} work={work} />
       ) : (
         <p className="sp-muted">Loading the folder…</p>
       )}

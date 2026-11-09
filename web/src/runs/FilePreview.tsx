@@ -1,7 +1,7 @@
 import { Button } from "@mantine/core";
 import { Link, Navigate } from "@tanstack/react-router";
-import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
-import { type ApiError, type ResultStat, type RunDetail, type TextRead, getRun, readResultText, resultUrl, statResult } from "../api";
+import { type ReactNode, createContext, useContext, useEffect, useMemo, useRef, useState } from "react";
+import { type ApiError, type ResultStat, type RunDetail, type TextRead, type WorkRoot, getRun, readResultText, resultUrl, statResult } from "../api";
 import { ICONS, Icon } from "../icons";
 import { usePageCrumb } from "../shell/crumb";
 import { usePhone } from "../shell/layout";
@@ -11,7 +11,6 @@ import {
   COLUMNS_MAX,
   IMAGE_MAX,
   KIB,
-  KIND_WORDS,
   type Kind,
   READ,
   ROWS_MAX,
@@ -21,12 +20,14 @@ import {
   fileKind,
   hasLevels,
   jsonView,
+  kindWord,
   parseTable,
   size,
   wholeLines,
 } from "./preview";
 import { isResultPath } from "./ReportViewer";
-import { BackToRun, type ResultsSearch } from "./ResultsBrowser";
+import { hasDotPart } from "./explorer";
+import { BackToRun, BackToTask, Crumbs, type ResultsSearch, useTaskName } from "./ResultsBrowser";
 import { NotFound } from "./RunDetailPage";
 import { runName } from "./RunState";
 import { isTerminal, when } from "./stateWord";
@@ -34,7 +35,12 @@ import { isTerminal, when } from "./stateWord";
 // The preview page of one results file (ui-spec §4.4.1, FU-P3-85c; boards LiteFilePreview,
 // MLiteFilePreview, LiteFilePreviewStates; api §5.3): the `stat` route first (facts, kind, the
 // caps, the path the server answered for), then the viewer of its kind. Text, table cells and
-// formatted JSON are text nodes only; an image is an <img> of the raw route with `as=image`.
+// formatted JSON are text nodes only; an image is an <img> of the raw route with `as=image`. The
+// same page previews a file of a Nextflow attempt's work directory (`work`, FU-P3-85e): the viewers
+// read it from the `workdir` routes (the Work context), and an HTML file is never opened.
+
+/** The work directory the viewers read from; undefined for the run's results. */
+const Work = createContext<WorkRoot | undefined>(undefined);
 
 const join = (folder: string, name: string) => (folder ? `${folder}/${name}` : name);
 const parent = (path: string) => path.split("/").slice(0, -1).join("/");
@@ -43,6 +49,7 @@ const clock = (d: Date) => `${String(d.getHours()).padStart(2, "0")}:${String(d.
 
 /** A refusal in words (the States of ui-spec §4.4.1), with Retry when trying again may help. */
 function Problem({ error, onRetry }: { error: ApiError; onRetry: () => void }) {
+  const work = useContext(Work);
   const [title, body, retry]: [string, string | null, boolean] =
     error.status === 404
       ? ["This file is not there now", "It may have been moved or deleted since the folder was listed.", true]
@@ -51,12 +58,14 @@ function Problem({ error, onRetry }: { error: ApiError; onRetry: () => void }) {
         : error.status === 410
           ? ["The work directory was removed", null, false]
           : error.status === 422
-            ? ["Not a file of this run's results.", null, false]
+            ? [notAFile(work), null, false]
             : error.status === 503
               ? ["Spectio cannot read the cluster's files right now", "The file system does not answer. Nothing was lost; try again in a moment.", true]
               : ["The file could not be read", error.message, true];
   return <Note title={title} body={body} actions={retry ? <Button variant="default" size="xs" onClick={onRetry}>Retry</Button> : null} />;
 }
+
+const notAFile = (work?: WorkRoot) => (work ? "Not a file of this job's work directory." : "Not a file of this run's results.");
 
 function Note({ title, body, actions }: { title: string; body?: string | null; actions?: ReactNode }) {
   return (
@@ -101,6 +110,7 @@ type Read = { text: string; next: number | null };
 
 /** The text viewer: whole up to 64 KiB; else Start (with Load more, to 1 MiB) or End. */
 function TextView({ id, file, levels, note, retry }: { id: string; file: ResultStat; levels: boolean; note?: string; retry: () => void }) {
+  const work = useContext(Work);
   const phone = usePhone();
   const total = file.size ?? 0;
   const whole = total <= READ;
@@ -117,11 +127,11 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
     setRead(null);
     setError(null);
     const opts = whole || end ? { tail: READ } : { from: 0, to: READ - 1 };
-    readResultText(id, file.path, opts, controller.signal)
+    readResultText(id, file.path, opts, controller.signal, work)
       .then((r: TextRead) => setRead({ text: end && !whole ? wholeLines(r.text) : r.text, next: r.next }))
       .catch((e: ApiError) => controller.signal.aborted || setError(e));
     return () => controller.abort();
-  }, [id, file, whole, end]);
+  }, [id, file, whole, end, work]);
 
   const next = read?.next ?? null;
   const capped = next !== null && next >= SHOWN_MAX && next < total;
@@ -144,7 +154,7 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
     const controller = new AbortController();
     moreRead.current = controller;
     setLoading(true);
-    readResultText(id, file.path, { from: next, to: Math.min(next + READ, SHOWN_MAX) - 1 }, controller.signal)
+    readResultText(id, file.path, { from: next, to: Math.min(next + READ, SHOWN_MAX) - 1 }, controller.signal, work)
       .then((r) => controller.signal.aborted || setRead((s) => ({ text: (s?.text ?? "") + r.text, next: r.next })))
       .catch((e: ApiError) => controller.signal.aborted || setError(e))
       .finally(() => moreRead.current === controller && setLoading(false));
@@ -210,6 +220,7 @@ function TextView({ id, file, levels, note, retry }: { id: string; file: ResultS
 }
 
 function JsonView({ id, file, retry }: { id: string; file: ResultStat; retry: () => void }) {
+  const work = useContext(Work);
   const [text, setText] = useState<string | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [raw, setRaw] = useState(false);
@@ -219,11 +230,11 @@ function JsonView({ id, file, retry }: { id: string; file: ResultStat; retry: ()
     const controller = new AbortController();
     setText(null);
     setError(null);
-    readResultText(id, file.path, { tail: SHOWN_MAX }, controller.signal)
+    readResultText(id, file.path, { tail: SHOWN_MAX }, controller.signal, work)
       .then((r) => setText(r.text))
       .catch((e: ApiError) => controller.signal.aborted || setError(e));
     return () => controller.abort();
-  }, [id, file, big]);
+  }, [id, file, big, work]);
   if (big) return <TextView id={id} file={file} levels={false} note="Not shown formatted: larger than 1 MiB" retry={retry} />;
   if (error?.status === 415) return <Binary id={id} file={file} />;
   if (error) return <Problem error={error} onRetry={retry} />;
@@ -252,6 +263,7 @@ function JsonView({ id, file, retry }: { id: string; file: ResultStat; retry: ()
 }
 
 function TableView({ id, file, retry }: { id: string; file: ResultStat; retry: () => void }) {
+  const work = useContext(Work);
   const [read, setRead] = useState<TextRead | null>(null);
   const [error, setError] = useState<ApiError | null>(null);
   const [header, setHeader] = useState(true);
@@ -262,11 +274,11 @@ function TableView({ id, file, retry }: { id: string; file: ResultStat; retry: (
     const controller = new AbortController();
     setRead(null);
     setError(null);
-    readResultText(id, file.path, { from: 0, to: SHOWN_MAX - 1 }, controller.signal)
+    readResultText(id, file.path, { from: 0, to: SHOWN_MAX - 1 }, controller.signal, work)
       .then(setRead)
       .catch((e: ApiError) => controller.signal.aborted || setError(e));
     return () => controller.abort();
-  }, [id, file, empty, asText]);
+  }, [id, file, empty, asText, work]);
   if (asText) return <TextView id={id} file={file} levels={false} retry={retry} />;
   if (empty || read?.text === "") return <Note title="This file is empty." />;
   if (error?.status === 415) return <Binary id={id} file={file} />;
@@ -329,6 +341,7 @@ function TableView({ id, file, retry }: { id: string; file: ResultStat; retry: (
 }
 
 function ImageView({ id, file }: { id: string; file: ResultStat }) {
+  const work = useContext(Work);
   const [failed, setFailed] = useState(false);
   const [tries, setTries] = useState(0);
   const [natural, setNatural] = useState<string | null>(null);
@@ -343,7 +356,7 @@ function ImageView({ id, file }: { id: string; file: ResultStat }) {
             <Button variant="default" size="xs" onClick={() => (setFailed(false), setTries((t) => t + 1))}>
               Retry
             </Button>
-            <DownloadLink href={resultUrl(id, file.path, { download: true })} name={file.name} />
+            <DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />
           </>
         }
       />
@@ -354,7 +367,7 @@ function ImageView({ id, file }: { id: string; file: ResultStat }) {
       key={tries}
       className="sp-file-image"
       data-actual={actual || undefined}
-      src={resultUrl(id, file.path, { as: "image" })}
+      src={resultUrl(id, file.path, { as: "image" }, work)}
       alt={file.name}
       onLoad={(e) => setNatural(`${e.currentTarget.naturalWidth} × ${e.currentTarget.naturalHeight} px`)}
       onError={() => setFailed(true)}
@@ -382,18 +395,22 @@ function ImageView({ id, file }: { id: string; file: ResultStat }) {
 }
 
 function Binary({ id, file }: { id: string; file: ResultStat }) {
-  return <Note title="This file is not text. Download it to open it." actions={<DownloadLink href={resultUrl(id, file.path, { download: true })} name={file.name} />} />;
+  const work = useContext(Work);
+  return <Note title="This file is not text. Download it to open it." actions={<DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />} />;
 }
 
 function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind: Kind; retry: () => void }) {
-  const download = <DownloadLink href={resultUrl(id, file.path, { download: true })} name={file.name} />;
+  const work = useContext(Work);
+  const download = <DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />;
   switch (kind) {
     case "binary":
       return <Binary id={id} file={file} />;
     case "pdf":
       return <Note title="Spectio does not open PDF files. Download it to open it." actions={download} />;
     case "html":
-      return (
+      return work ? (
+        <Note title="Spectio does not open HTML from a work directory. Download it to open it." actions={download} />
+      ) : (
         <Note
           title="An HTML report opens in Spectio's report viewer."
           actions={
@@ -416,7 +433,7 @@ function Viewer({ id, file, kind, retry }: { id: string; file: ResultStat; kind:
 
 /** `/runs/$id/results/file?path=<file>`, with the folder's `sort` and `q` it returns to, or the
  * `task` and `attempt` of the sheet a Preview of its Outputs came from. */
-export function FilePreview({ id, search }: { id: string; search: ResultsSearch }) {
+export function FilePreview({ id, search, work }: { id: string; search: ResultsSearch; work?: WorkRoot }) {
   const path = search.path ?? "";
   const [run, setRun] = useState<RunDetail | null>(null);
   const [missing, setMissing] = useState(false);
@@ -425,7 +442,8 @@ export function FilePreview({ id, search }: { id: string; search: ResultsSearch 
   const [reads, setReads] = useState(0);
   const [readAt, setReadAt] = useState<Date | null>(null);
   const title = useRef<HTMLHeadingElement>(null);
-  const valid = isResultPath(path);
+  const valid = isResultPath(path) && !(work && hasDotPart(path));
+  const taskName = useTaskName(id, work);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -438,14 +456,14 @@ export function FilePreview({ id, search }: { id: string; search: ResultsSearch 
     if (!valid) return;
     const controller = new AbortController();
     setError(null);
-    statResult(id, path, controller.signal)
+    statResult(id, path, controller.signal, work)
       .then((found) => {
         setFile(found);
         setReadAt(new Date());
       })
       .catch((e: ApiError) => controller.signal.aborted || (setFile(null), setError(e)));
     return () => controller.abort();
-  }, [id, path, valid, reads]);
+  }, [id, path, valid, reads, work?.task, work?.attempt]);
 
   const loaded = file !== null;
   useEffect(() => {
@@ -458,11 +476,13 @@ export function FilePreview({ id, search }: { id: string; search: ResultsSearch 
   const fileName = file?.name ?? (valid ? path.split("/").pop()! : null);
   usePageCrumb(name);
   useEffect(() => {
-    if (name) document.title = `${fileName ?? "File preview"} · ${name} · Spectio`;
-  }, [name, fileName]);
+    if (name && !work) document.title = `${fileName ?? "File preview"} · ${name} · Spectio`;
+    else if (name && taskName) document.title = `${fileName ?? "File preview"} · ${taskName} · ${name} · Spectio`;
+  }, [name, fileName, taskName, work]);
 
   if (missing) return <NotFound />;
   const { sort, q, task, attempt } = search;
+  if (file?.type === "dir" && work) return <Navigate to="/runs/$id/workdir" params={{ id }} search={{ path: file.path, sort, q, task, attempt }} replace />;
   if (file?.type === "dir") return <Navigate to="/runs/$id/results" params={{ id }} search={{ path: file.path, sort, q, task, attempt }} replace />;
 
   const retry = () => setReads((r) => r + 1);
@@ -473,72 +493,57 @@ export function FilePreview({ id, search }: { id: string; search: ResultsSearch 
   const ended = run ? isTerminal(run.state) : true;
   const kind = file ? fileKind(file.name) : null;
   return (
-    <div className="sp-runs sp-file-page">
-      {task && attempt ? (
-        <BackToRun id={id} run={run} task={task} attempt={attempt} />
-      ) : (
-        <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name }}>
-          <Icon path={ICONS.chevronLeft} size={14} /> {file ? folder.split("/").pop() || "results" : "Results"}
-        </Link>
-      )}
-      <h1 ref={title} tabIndex={-1} className="sp-page-title sp-file-name">
-        {fileName ?? "File preview"}
-      </h1>
-      {file && kind && (
-        <div className="sp-file-facts">
-          <span>
-            {[file.type === "link_outside" ? KIND_WORDS.link : KIND_WORDS[kind], file.size === null ? null : size(file.size), file.mtime ? `modified ${when(file.mtime)}` : null, !ended && readAt ? `read at ${clock(readAt)}` : null]
-              .filter(Boolean)
-              .join(" · ")}
-          </span>
-          {!ended && (
-            <Button variant="default" size="xs" leftSection={<Icon path={ICONS.reload} size={14} />} onClick={retry}>
-              Reload
-            </Button>
-          )}
-        </div>
-      )}
-      {file && !ended && <p className="sp-muted">The view does not follow the file on its own: Reload reads it again.</p>}
-      {file && where && (
-        <div className="sp-pathbar">
-          <nav aria-label="Folder">
-            <ol>
-              <li>
-                <Link to="/runs/$id/results" params={{ id }}>
-                  results
-                </Link>
-              </li>
-              {parts.map((part, i) => (
-                <li key={i}>
-                  {i < parts.length - 1 ? (
-                    <Link to="/runs/$id/results" params={{ id }} search={{ path: parts.slice(0, i + 1).join("/") }}>
-                      {part}
-                    </Link>
-                  ) : (
-                    <span aria-current="page">{part}</span>
-                  )}
-                </li>
-              ))}
-            </ol>
-          </nav>
-          <span className="sp-copy-line">
-            <span className="sp-mono">{where}</span>
-            <CopyButton text={where} label="Copy path" name="Copy path" />
-            {file.type === "file" && <DownloadLink href={resultUrl(id, file.path, { download: true })} name={file.name} />}
-          </span>
-        </div>
-      )}
-      {!valid ? (
-        <Note title="Not a file of this run's results." />
-      ) : error ? (
-        <Problem error={error} onRetry={retry} />
-      ) : !file || !kind ? (
-        <p className="sp-muted">Loading the file…</p>
-      ) : file.type === "link_outside" ? (
-        <Note title="A link outside the results directory: not followed." />
-      ) : (
-        <Viewer id={id} file={file} kind={kind} retry={retry} />
-      )}
-    </div>
+    <Work.Provider value={work}>
+      <div className="sp-runs sp-file-page">
+        {work ? (
+          <BackToTask id={id} work={work} name={taskName} />
+        ) : task && attempt ? (
+          <BackToRun id={id} run={run} task={task} attempt={attempt} />
+        ) : (
+          <Link className="sp-report-back" to="/runs/$id/results" params={{ id }} search={{ path: folder || undefined, sort, q, focus: file?.name }}>
+            <Icon path={ICONS.chevronLeft} size={14} /> {file ? folder.split("/").pop() || "results" : "Results"}
+          </Link>
+        )}
+        <h1 ref={title} tabIndex={-1} className="sp-page-title sp-file-name">
+          {fileName ?? "File preview"}
+        </h1>
+        {file && kind && (
+          <div className="sp-file-facts">
+            <span>
+              {[kindWord(file.type === "link_outside" ? "link" : kind, !!work), file.size === null ? null : size(file.size), file.mtime ? `modified ${when(file.mtime)}` : null, !ended && readAt ? `read at ${clock(readAt)}` : null]
+                .filter(Boolean)
+                .join(" · ")}
+            </span>
+            {!ended && (
+              <Button variant="default" size="xs" leftSection={<Icon path={ICONS.reload} size={14} />} onClick={retry}>
+                Reload
+              </Button>
+            )}
+          </div>
+        )}
+        {file && !ended && <p className="sp-muted">The view does not follow the file on its own: Reload reads it again.</p>}
+        {file && where && (
+          <div className="sp-pathbar">
+            <Crumbs id={id} parts={parts} work={work} />
+            <span className="sp-copy-line">
+              <span className="sp-mono">{where}</span>
+              <CopyButton text={where} label="Copy path" name="Copy path" />
+              {file.type === "file" && <DownloadLink href={resultUrl(id, file.path, { download: true }, work)} name={file.name} />}
+            </span>
+          </div>
+        )}
+        {!valid ? (
+          <Note title={notAFile(work)} />
+        ) : error ? (
+          <Problem error={error} onRetry={retry} />
+        ) : !file || !kind ? (
+          <p className="sp-muted">Loading the file…</p>
+        ) : file.type === "link_outside" ? (
+          <Note title={work ? "A link outside the run: not followed." : "A link outside the results directory: not followed."} />
+        ) : (
+          <Viewer id={id} file={file} kind={kind} retry={retry} />
+        )}
+      </div>
+    </Work.Provider>
   );
 }
