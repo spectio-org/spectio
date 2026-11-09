@@ -754,3 +754,5 @@ One entry per tick: time, steps started and finished, verification results, tria
 - 2026-11-09T00:3xZ · P3-fu85a (FU-P3-85a) built: review approve 0/0/1, security approve 0/0/3, round 1. PR #184 opened, subscribed. Inbox #128 assumed. FU-P3-93 opened. Cost recorded: 18 USD.
 
 - 2026-11-09T00:5xZ · FU-P3-85a merged (#184, squash b01788f0). Next: FU-P3-85b (image mode of the raw route).
+
+- 2026-11-09T01:1xZ · P3-fu85b (FU-P3-85b) built: review approve 0/0/1, security approve 0/0/3, round 1. A wrong attribution trailer on the docs commit was fixed before the push. PR #185 opened, subscribed. Inbox #129 assumed. Cost recorded: 16 USD.
