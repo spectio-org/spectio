@@ -2,7 +2,7 @@
 
 `review-code` on `autopilot/P3-fu86g`, base `autopilot/integration`, commits `3c2198b2` (the feature) and `0f6b9c7e` (the round-1 fix), 2026-11-09. Behaviour is owned by [ui-spec §4.8.1](../../specs/ui-spec.md); the plan is [inbox #133](../inbox.md). Progress: [P3 · M9](../../progress/W5/P3-M9.md#fu-p3-86g-the-environment-row-on-launch-and-the-environment-fact-on-run-detail). Format: [`README.md`](../README.md).
 
-16 files, +875 −160 is the diff of the two commits, `3c2198b2^..0f6b9c7e`, and counts one docs file (`docs/reviews/inbox.md`, +8). Outside `docs/` it is 15 files, +867 −160 (`git diff --numstat`). The batch table of [P3-B11](P3-B11.md) uses the squash commit `be551cfc` of PR #211: 15 files, +870 −160 outside `docs/`, with 3 more lines in `web/src/app.css` than the two commits; the cause was not traced **[to be validated]**. The files: `LaunchPage.tsx`, the new `EnvironmentRow.tsx`, `RunHeader.tsx`, `ResumeDialog.tsx`, CSS, three Vitest files and a Playwright spec.
+The two commits, `3c2198b2^..0f6b9c7e`, change 16 files, +875 −160. The files: `LaunchPage.tsx`, the new `EnvironmentRow.tsx`, `RunHeader.tsx`, `ResumeDialog.tsx`, CSS, three Vitest files and a Playwright spec.
 
 ## Review rounds
 
@@ -12,7 +12,7 @@
 | fix | `0f6b9c7e` | CR-P3FU86G-01, -03 fixed (-03 test first); -02 split out | |
 | 2 | `0f6b9c7e` | **approve** | approve |
 
-The round-2 counts were not relayed in detail. The `b/M/m=0/0/4` below counts the four round-1 minors that were not fixed by name: CR-P3FU86G-04 (covered by the test added for -03), -05, -06 and -07. Round 1 had five minors (-03 to -07); -03 is fixed. Only -05, -06 and -07 are still open in the table; -04 is covered, not open.
+The round-2 counts were not relayed in detail. The `b/M/m=0/0/4` below counts the four round-1 minors not fixed by name: -04 (covered by the test added for -03), -05, -06 and -07. Three are open; -04 is covered.[^diff]
 
 ```text
 CODE  step=P3-fu86g  review=approve b/M/m=0/0/4  security=approve b/M/m=0/0/0  rounds=2  simplify=skipped -0/+0  tests=pass
@@ -30,3 +30,5 @@ CODE  step=P3-fu86g  review=approve b/M/m=0/0/4  security=approve b/M/m=0/0/0  r
 | CR-P3FU86G-07 | minor | Board differences: ` · runs the tasks` suffix; badges wrap at 1440 | Open, disclosed |
 
 Open: inbox #145 may need renumbering at merge.
+
+[^diff]: The 16 files include one docs file (`docs/reviews/inbox.md`, +8). Outside `docs/` it is 15 files, +867 −160 (`git diff --numstat`). The batch table of [P3-B11](P3-B11.md) uses the squash commit `be551cfc` of PR #211: +870 −160, with 3 more lines in `web/src/app.css`; the cause was not traced **[to be validated]**.

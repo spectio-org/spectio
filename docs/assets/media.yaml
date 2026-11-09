@@ -89,7 +89,7 @@ media:
     outputs: [docs/assets/shots/app-runs-phone_light.webp]
   - id: app-launch-snakemake
     kind: screenshot
-    # live, as app-launch, with SPECTIO_DEMO_SMK_PIPELINE (tools/media/README.md, live shots: config.yaml with a nested map `ref`), at 1440 x 1380
+    # live, as app-launch, with SPECTIO_DEMO_SMK_PIPELINE (tools/media/README.md, live shots), at 1440 x 1380; opens two schema groups
     generator: python3 tools/media/shots.py run --shot app-launch-snakemake --theme light
     outputs: [docs/assets/shots/app-launch-snakemake_light.webp]
   - id: app-run-detail

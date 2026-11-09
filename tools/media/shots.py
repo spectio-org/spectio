@@ -57,11 +57,11 @@ APP_LAUNCH = ("wait:Try a test pipeline", "click:Use Test pipeline (Nextflow), $
 APP_LAUNCH_CHECKED = APP_LAUNCH + ("open:Scenario", "fill:scale=0", "wait:Must be at least 1", "view:Must be at least 1")
 
 # The synthetic Snakemake pipeline (tests/pipelines/synthetic/snakemake) copied to
-# $SPECTIO_DEMO_SMK_PIPELINE, with a config/config.yaml of the Snakefile's own defaults plus a nested
-# map `ref` (tools/media/README.md, live shots). Its two sections are opened, one dotted field is set.
-# Since UI parity C the Parameters card folds too, so its first group is named with its status.
+# $SPECTIO_DEMO_SMK_PIPELINE (tools/media/README.md, live shots). Its schema (workflow/schemas) names four
+# groups, each a folded section; two are opened and one value is set. The nested map `ref` of the demo
+# config.yaml is not in that schema, so the form no longer shows a dotted-key section (DW-P3B11-01 follow-up).
 APP_LAUNCH_SMK = ("fill:Pipeline=$SPECTIO_DEMO_SMK_PIPELINE", "click:Load", "wait:Config preview, as YAML",
-                  "open:Parameters defaults", "open:ref", "fill:outdir=results-smk", "fill:ref.release=114")
+                  "open:Input/output options", "open:Scenario", "fill:outdir=results-smk")
 
 # The report viewer, on the MultiQC fixture (tests/fixtures/results/multiqc-1.35_custom_content_report.html.gz).
 REPORT_VIEWER = ("wait:Untrusted report", "frame:/data/demo/mqc/in")
@@ -100,7 +100,7 @@ REGISTRY: dict[str, Shot] = {
         Shot("app-runs-phone", "/runs", 390, 844, "0.0.1, live: the runs list on a phone, one card per run",
              live=("wait:Succeeded",)),
         Shot("app-launch-snakemake", "/launch", 1440, 1380,
-             "0.0.1, live: the launch form with the synthetic Snakemake pipeline loaded, its config as YAML",
+             "0.0.1, live: the launch form with the synthetic Snakemake pipeline loaded, its schema groups opened",
              live=APP_LAUNCH_SMK),
         Shot("app-run-detail", "/runs/$SPECTIO_DEMO_RUN", 1440, 1180,
              "0.0.1, live: a finished run of the synthetic Nextflow pipeline, its processes and facts",
