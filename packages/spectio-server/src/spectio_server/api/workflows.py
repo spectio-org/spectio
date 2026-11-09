@@ -24,8 +24,11 @@ import shutil
 import signal
 import stat
 import subprocess
+import threading
+import time
 import unicodedata
 from collections.abc import Callable
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -43,6 +46,8 @@ router = APIRouter()
 
 GIT_SCHEMES: tuple[str, ...] = ("https", "ssh")  # api §5; a test adds "file" for a local repo
 GIT_TIMEOUT_S = 300
+VERSIONS_TTL_S = 300.0  # how long the engines' versions are kept (FU-P3-109)
+VERSIONS_FAILED_TTL_S = 10.0  # the same, when an engine was not found (CR-P3FU109-03)
 MAX_LOCATION = 4096  # characters (FU-P3-17)
 GITHUB = "https://github.com"
 SHORT_NAME = re.compile(r"[A-Za-z0-9][A-Za-z0-9-]{0,38}/[A-Za-z0-9_][A-Za-z0-9._-]{0,99}")
@@ -422,20 +427,66 @@ def inspect_dir(directory: Path, default_name: str) -> Found:
     )
 
 
-def engine_versions(settings: Settings) -> Callable[[], dict[str, str | None]]:
-    """The version of each engine the server would launch with, or None (UX-296, UX-G2-04)."""
+def _daemon(target: Callable[[], None]) -> None:
+    threading.Thread(target=target, name="spectio-engine-versions", daemon=True).start()
 
-    def versions() -> dict[str, str | None]:
-        found: dict[str, str | None] = {}
-        for engine in ENTRY_FILES:
-            cmd = getattr(settings.engines, f"{engine}_cmd")
-            try:
-                found[engine] = check_engine(engine, cmd).version
-            except (EngineError, OSError):
-                found[engine] = None
-        return found
 
-    return versions
+class EngineVersions:
+    """The version of each engine the server would launch with, or None (UX-296, UX-G2-04).
+    Each check runs a login shell, and Nextflow starts a JVM: a second or more (FU-P3-109), so
+    it runs off the request path: `warm` starts it at server start, and a stale answer is
+    returned as is while one background refresh replaces it (CR-P3FU109-01). The answer is kept
+    for `ttl_s`, one with an engine not found only for `failed_ttl_s` (CR-P3FU109-03). Only the
+    very first call, before any answer, waits for the check."""
+
+    def __init__(
+        self,
+        settings: Settings,
+        ttl_s: float = VERSIONS_TTL_S,
+        failed_ttl_s: float = VERSIONS_FAILED_TTL_S,
+        clock: Callable[[], float] = time.monotonic,
+        spawn: Callable[[Callable[[], None]], None] = _daemon,
+    ) -> None:
+        self._settings, self._ttl, self._failed_ttl = settings, ttl_s, failed_ttl_s
+        self._clock, self._spawn = clock, spawn
+        self._lock = threading.Lock()
+        self._kept: tuple[float, dict[str, str | None]] | None = None
+        self._refreshing = False
+        self._ready = threading.Event()
+
+    def _one(self, engine: str) -> str | None:
+        try:
+            return check_engine(engine, getattr(self._settings.engines, f"{engine}_cmd")).version
+        except (EngineError, OSError):
+            return None
+
+    def _refresh(self) -> None:
+        try:  # both engines at once: a cold check costs the slower one, not their sum
+            with ThreadPoolExecutor(len(ENTRY_FILES)) as pool:
+                found = dict(zip(ENTRY_FILES, pool.map(self._one, ENTRY_FILES), strict=True))
+            with self._lock:
+                self._kept = (self._clock(), found)
+        finally:
+            with self._lock:
+                self._refreshing = False
+            self._ready.set()
+
+    def warm(self) -> None:
+        """Start a refresh unless one runs or the answer is fresh."""
+        with self._lock:
+            kept = self._kept
+            ttl = self._failed_ttl if kept and None in kept[1].values() else self._ttl
+            if self._refreshing or (kept is not None and self._clock() - kept[0] < ttl):
+                return
+            self._refreshing = True
+        self._spawn(self._refresh)
+
+    def __call__(self) -> dict[str, str | None]:
+        self.warm()
+        self._ready.wait()
+        with self._lock:
+            kept = self._kept
+        return dict(kept[1]) if kept else dict.fromkeys(ENTRY_FILES)
 
 
 @router.get("/workflows:inspect")

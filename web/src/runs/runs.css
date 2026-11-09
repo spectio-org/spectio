@@ -269,6 +269,7 @@
 }
 .sp-home-grid {
   display: grid;
+  grid-template-columns: minmax(0, 1fr); /* a long path never widens the page (FU-P3-109) */
   gap: 20px;
 }
 @media (min-width: 1200px) {
@@ -511,6 +512,7 @@
 }
 .sp-quick {
   display: grid;
+  grid-template-columns: minmax(0, 1fr);
   gap: 8px;
   margin: 10px 0 0;
   padding: 0;
@@ -525,11 +527,14 @@
   border-radius: 12px;
   box-shadow: 0 0 0 1px var(--sp-line-border);
 }
+/* a path or a name with no space wraps anywhere, shown whole: no ellipsis to hover (FU-P3-109) */
+.sp-quick .sp-mono,
+.sp-quick .sp-pipeline span,
+.sp-where .sp-mono {
+  overflow-wrap: anywhere;
+}
 .sp-quick .sp-mono {
   font-size: 12px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 .sp-where {
   display: grid;
